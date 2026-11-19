@@ -7,7 +7,7 @@ import { withPayeeIcons } from '@/components/payees/withPayeeIcons';
 import { useInstitutionLogos } from '@/hooks/useInstitutionLogos';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import type { RuleLookups } from '@/hooks/useRuleLookups';
-import { buildAccountDropdownOptions } from '@/lib/account-utils';
+import { buildAccountDropdownOptions, SEPARATOR_VALUE } from '@/lib/account-utils';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import type { Account } from '@/types/account';
 import type { Category } from '@/types/category';
@@ -35,7 +35,6 @@ export interface RuleOptions {
   readonly currencyCodes: readonly string[];
 }
 
-const SEPARATOR = '__separator__';
 
 export function useRuleOptions(lookups: RuleLookups): RuleOptions {
   const accountLabel = useAccountOptionLabel();
@@ -56,21 +55,21 @@ export function useRuleOptions(lookups: RuleLookups): RuleOptions {
     };
     return {
       accounts: buildAccountDropdownOptions([...lookups.accounts], () => true, accountLabel)
-        .filter((option) => option.value !== SEPARATOR)
+        .filter((option) => option.value !== SEPARATOR_VALUE)
         .map(withAccountIcon),
       transferAccounts: buildAccountDropdownOptions(
         [...lookups.accounts],
         (account) => account.accountSubType !== 'INVESTMENT_BROKERAGE' && !account.isClosed,
         accountLabel,
       )
-        .filter((option) => option.value !== SEPARATOR)
+        .filter((option) => option.value !== SEPARATOR_VALUE)
         .map(withAccountIcon),
       loanAccounts: buildAccountDropdownOptions(
         [...lookups.accounts],
         (account) => (account.accountType === 'MORTGAGE' || account.accountType === 'LOAN') && !account.isClosed,
         accountLabel,
       )
-        .filter((option) => option.value !== SEPARATOR)
+        .filter((option) => option.value !== SEPARATOR_VALUE)
         .map(withAccountIcon),
       payees: withPayeeIcons(
         lookups.payees.map((p) => ({ value: p.id, label: p.name })),

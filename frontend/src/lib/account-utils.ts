@@ -1,5 +1,11 @@
 import { Account, AccountType } from '@/types/account';
 
+/**
+ * The value of the disabled rule a picker draws between favourites and the
+ * rest. `IconSelect` draws it as a divider and never offers it as a choice.
+ */
+export const SEPARATOR_VALUE = '__separator__';
+
 export interface AccountSelectOption {
   value: string;
   label: string;
@@ -118,7 +124,7 @@ export function buildAccountDropdownOptions(
 
   if (favourites.length > 0 && rest.length > 0) {
     options.push({
-      value: '__separator__',
+      value: SEPARATOR_VALUE,
       label: '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
       disabled: true,
     });

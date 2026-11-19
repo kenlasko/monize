@@ -20,6 +20,7 @@ import { ChevronUpDownIcon } from '@heroicons/react/20/solid';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { isTouchDevice } from '@/lib/touch-device';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
+import { SEPARATOR_VALUE } from '@/lib/account-utils';
 
 export interface IconSelectOption {
   value: string;
@@ -36,8 +37,7 @@ export interface IconSelectProps
   options: IconSelectOption[];
 }
 
-/** The rule `buildAccountDropdownOptions` draws between favourites and the rest. */
-export const SEPARATOR_VALUE = '__separator__';
+export { SEPARATOR_VALUE };
 /** Beyond this many rows, scanning the list is slower than typing into the filter. */
 export const FILTER_THRESHOLD = 8;
 /** Breathing room kept between the list and every viewport edge. */

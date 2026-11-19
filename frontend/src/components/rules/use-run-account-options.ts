@@ -4,13 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import type { RuleOption } from '@/components/rules/use-rule-options';
 import { accountsApi } from '@/lib/accounts';
-import { buildAccountDropdownOptions } from '@/lib/account-utils';
+import { buildAccountDropdownOptions, SEPARATOR_VALUE } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
 import type { Account } from '@/types/account';
 
 const logger = createLogger('RunAccountOptions');
 
-const SEPARATOR = '__separator__';
 
 export type RunAccountOptionsState =
   | { status: 'loading' }
@@ -56,7 +55,7 @@ export function useRunAccountOptions(provided?: readonly RuleOption[]): {
     () =>
       loaded.status === 'ready'
         ? buildAccountDropdownOptions(loaded.accounts, () => true, accountLabel)
-            .filter((option) => option.value !== SEPARATOR)
+            .filter((option) => option.value !== SEPARATOR_VALUE)
             .map(({ value, label }) => ({ value, label }))
         : [],
     [loaded, accountLabel],
