@@ -23,6 +23,8 @@ import {
 import { SparklesIcon } from '@heroicons/react/20/solid';
 import { CARD_CLASS, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
+import { pickTriviaVariant } from '@/lib/trivia-variant';
 import type { TriviaItem, TriviaTopic } from '@/types/dashboard-trivia';
 import { useDashboardTrivia } from './useDashboardTrivia';
 import { useTriviaFigureFormat } from './trivia-format';
@@ -174,6 +176,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
   }, [paused, count, step]);
 
   const formatFigure = useTriviaFigureFormat();
+  const today = useFinancialToday();
 
   const heading = (
     <WidgetHeading id="trivia" className="mb-4">
@@ -224,9 +227,17 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
     item.source === 'ai'
       ? item.text
       : // The catalog's sentence with each figure left as its placeholder, to be
-        // picked out below the same way as a model's.
+        // picked out below the same way as a model's. Its wording is one of the
+        // variants this locale has, chosen by the fact and the reader's day; a
+        // locale without variants has only the first.
         t(
-          `trivia.facts.${item.factId}` as Parameters<typeof t>[0],
+          `trivia.${pickTriviaVariant(
+            [`facts.${item.factId}`, `variants.${item.factId}.b`, `variants.${item.factId}.c`].filter((key) =>
+              t.has(`trivia.${key}` as Parameters<typeof t>[0]),
+            ),
+            item.factId,
+            today,
+          )}` as Parameters<typeof t>[0],
           {
             ...Object.fromEntries(Object.keys(trivia.figures).map((name) => [name, `{${name}}`])),
             window: item.params?.window ?? 'other',

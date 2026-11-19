@@ -19,7 +19,7 @@ Rules for every phase:
 | C | Parametrised (windowed and ranked) facts | B2 | Done |
 | D | Daily selection and rotation | C | Done |
 | E | Prompt, validator, equivalence facts | D | Done |
-| F | Catalog variants in English, widget pick | E | Open |
+| F | Catalog variants in English, widget pick | E | Done |
 | G1 | Translations: de, es, fr, it, nl, pl, pt, pt-BR, en-GB | F | Open |
 | G2 | Translations: hi, id, ja, ko, ru, tr, uk, vi, zh-CN, zh-TW | G1 | Open |
 | H | Docs and final gate | G2 | Open |

@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ReactNode } from 'react';
 import { act, fireEvent, render, screen } from '@/test/render';
+import { recordIfIntlError } from '@/test/intl-guard';
+import dashboardMessages from '@/i18n/messages/en/dashboard.json';
 import { TriviaWidget, TRIVIA_ROTATE_MS } from './TriviaWidget';
 import type { DashboardTriviaResponse } from '@/types/dashboard-trivia';
 
-const state: { trivia: DashboardTriviaResponse | null; asked: boolean[]; enabled: boolean | undefined } = {
+const state: {
+  trivia: DashboardTriviaResponse | null;
+  asked: boolean[];
+  enabled: boolean | undefined;
+  today: string;
+} = {
   trivia: null,
+  today: '',
   asked: [],
   enabled: undefined,
 };
@@ -14,6 +24,9 @@ vi.mock('./useDashboardTrivia', () => ({
     return enabled ? state.trivia : null;
   },
 }));
+// A day on which every fact these tests read picks its first wording (see trivia-variant.ts).
+const FIRST_WORDING_DAY = '2026-01-26';
+vi.mock('@/hooks/useFinancialToday', () => ({ useFinancialToday: () => state.today }));
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector: (s: unknown) => unknown) =>
     selector({ preferences: { aiTriviaEnabled: state.enabled } }),
@@ -43,6 +56,7 @@ describe('TriviaWidget', () => {
     state.trivia = null;
     state.asked = [];
     state.enabled = undefined;
+    state.today = FIRST_WORDING_DAY;
     vi.useFakeTimers();
     vi.setSystemTime(0);
   });
@@ -273,5 +287,66 @@ describe('TriviaWidget', () => {
     render(<TriviaWidget isLoading />);
     expect(state.asked).not.toContain(true);
     expect(screen.queryByTestId('trivia-sentence')).not.toBeInTheDocument();
+  });
+
+  describe('wording variants', () => {
+    const highPoint = () => {
+      state.trivia = list({
+        items: [{ topic: 'netWorth', source: 'calculated', factId: 'netWorthHighPoint' }],
+        figures: {
+          peakAmount: { kind: 'money', value: 3913005.98, currency: 'CAD' },
+          peakMonth: { kind: 'month', value: '2026-09' },
+          peakBelow: { kind: 'money', value: 64910, currency: 'CAD' },
+        },
+      });
+    };
+
+    it('words a fact differently on different days', () => {
+      highPoint();
+      state.today = '2026-11-01';
+      const first = render(<TriviaWidget isLoading={false} />);
+      expect(sentence()).toHaveTextContent('Your high point was');
+      first.unmount();
+
+      state.today = '2026-11-03';
+      const second = render(<TriviaWidget isLoading={false} />);
+      expect(sentence()).toHaveTextContent('Net worth peaked at');
+      second.unmount();
+
+      state.today = '2026-11-02';
+      render(<TriviaWidget isLoading={false} />);
+      expect(sentence()).toHaveTextContent('under your high point of');
+      // Every variant still picks out the same figures.
+      expect(screen.getByText('September 2026')).toHaveClass('font-semibold');
+    });
+
+    it('keeps one wording for the whole day, across re-renders and steps', () => {
+      highPoint();
+      state.today = '2026-11-03';
+      const { rerender } = render(<TriviaWidget isLoading={false} />);
+      const before = sentence().textContent;
+      rerender(<TriviaWidget isLoading={false} />);
+      expect(sentence().textContent).toBe(before);
+      expect(before).toContain('Net worth peaked at');
+    });
+
+    it('falls back to the first wording where the locale has no variants, without an error', () => {
+      highPoint();
+      state.today = '2026-11-03'; // picks variant b where there is one
+      const { variants: _variants, ...trivia } = dashboardMessages.trivia;
+      void _variants;
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <NextIntlClientProvider
+          locale="en"
+          messages={{ dashboard: { ...dashboardMessages, trivia } }}
+          onError={recordIfIntlError}
+        >
+          {children}
+        </NextIntlClientProvider>
+      );
+      render(<TriviaWidget isLoading={false} />, { wrapper });
+      expect(sentence()).toHaveTextContent('Your high point was');
+      expect(sentence().textContent).not.toContain('trivia.');
+    });
   });
 });

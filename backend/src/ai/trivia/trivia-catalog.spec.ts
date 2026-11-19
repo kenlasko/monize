@@ -43,7 +43,11 @@ describe("trivia catalog", () => {
       "utf8",
     ),
   ) as {
-    trivia: { topics: Record<string, string>; facts: Record<string, string> };
+    trivia: {
+      topics: Record<string, string>;
+      facts: Record<string, string>;
+      variants?: Record<string, Record<string, string>>;
+    };
   };
 
   it.each(TRIVIA_FACT_IDS)("has a sentence for %s", (id) => {
@@ -208,6 +212,72 @@ describe("trivia catalog", () => {
           ...(select as string[])[0].matchAll(/ (\w+) \{/g),
         ].map((m) => m[1]);
         expect(branches).toEqual([...TRIVIA_WINDOWS, "other"]);
+      }
+    });
+  });
+
+  describe("the wording variants", () => {
+    const variants = catalog.trivia.variants ?? {};
+    const branchesOf = (sentence: string): string[] | undefined => {
+      const select = sentence.match(WINDOW_SELECT);
+      return select
+        ? [...select[0].matchAll(/ (\w+) \{/g)].map((m) => m[1])
+        : undefined;
+    };
+
+    it("has exactly the variants b and c for every fact id, and none for an unknown id", () => {
+      expect(Object.keys(variants).sort()).toEqual([...TRIVIA_FACT_IDS].sort());
+      for (const id of TRIVIA_FACT_IDS) {
+        expect(Object.keys(variants[id]).sort()).toEqual(["b", "c"]);
+      }
+    });
+
+    it.each(TRIVIA_FACT_IDS)(
+      "quotes in each variant of %s the figures of its fact, with the same window select",
+      (id) => {
+        const base = catalog.trivia.facts[id];
+        for (const [key, sentence] of Object.entries(variants[id])) {
+          expect({ id, key, figures: quotedFigures(sentence) }).toEqual({
+            id,
+            key,
+            figures: quotedFigures(base),
+          });
+          expect({ id, key, branches: branchesOf(sentence) }).toEqual({
+            id,
+            key,
+            branches: branchesOf(base),
+          });
+          expect({
+            id,
+            key,
+            selects: sentence.match(WINDOW_SELECT)?.length,
+          }).toEqual({
+            id,
+            key,
+            selects: base.match(WINDOW_SELECT)?.length,
+          });
+          // Shown in a narrow column: with the longest window branch and a
+          // figure about fourteen characters wide, it stays under 160.
+          const shown = sentence
+            .replace(WINDOW_SELECT, "over the last twelve months")
+            .replace(/\{[A-Za-z0-9]+\}/g, "x".repeat(14));
+          expect(shown.length).toBeLessThan(160);
+          expect(sentence).not.toContain("--");
+          expect(sentence).not.toContain("!");
+          expect(sentence).not.toBe(base);
+        }
+      },
+    );
+
+    it("holds a windowed id's select with every window and the fallback", () => {
+      const windowed = TRIVIA_FACT_IDS.filter((id) =>
+        catalog.trivia.facts[id].match(WINDOW_SELECT),
+      );
+      expect(windowed.length).toBeGreaterThan(0);
+      for (const id of windowed) {
+        for (const sentence of Object.values(variants[id])) {
+          expect(branchesOf(sentence)).toEqual([...TRIVIA_WINDOWS, "other"]);
+        }
       }
     });
   });
