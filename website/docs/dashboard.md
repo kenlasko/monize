@@ -394,18 +394,18 @@ The Cash Flow Sankey widget (opt-in) is a flow diagram of the chosen period (def
 
 ## Trivia
 
-The **Trivia** widget points out something about your Monize, one fact at a time. It covers six topics, each with its own colour and picture:
+The **Trivia** widget points out something about your Monize, one fact at a time. Each morning it shows about eight facts, chosen afresh from everything Monize can say about you. The list changes from day to day: a fact that moves with the calendar or with your latest spending (yesterday's spending, an anniversary) shows when it has something new to say, and the others take turns, so a fact you have seen comes back after about a week. A sentence is also worded a little differently from one day to the next. If you have only a few facts to show, you see all of them. The facts cover six topics, each with its own colour and picture:
 
-- **Net worth**: your high point, your biggest single-month jump, your biggest dip and your largest asset.
-- **Investments**: your gain or loss, your annualized return, your largest holding and your best performer.
-- **Spending**: over the last twelve whole months, the category and the payee that took the most, and your biggest spending month.
-- **Income**: over the same months, how much of what came in you kept, how many months came out ahead, and your biggest source of income.
-- **Your records**: how many transactions your registers hold and how far back they go, how many payees and categories you keep, and how many scheduled transactions Monize tracks.
-- **Warranties**: how many of your warranties are still in cover, and which runs out next.
+- **Net worth**: your high point, your biggest single-month jump, your biggest dip, your largest asset, where you stood a year ago, and the milestones you pass.
+- **Investments**: your gain or loss, your annualized return, your largest holding, your best performer, and the top mover of the latest trading session.
+- **Spending**: yesterday and the last seven days, the month so far against last month, how your budget is pacing, your biggest recent purchase, a streak of days with no spending, and how long it has been since you paid a payee. Over a window that changes (the past 30 or 90 days, the year so far, the past twelve months or all your records) it names the category or payee that took the most, sometimes the second or third largest, and a year-ago month and your biggest spending month.
+- **Income**: over a window, how much of what came in you kept, how many months came out ahead, and your biggest source of income, sometimes the second or third.
+- **Your records**: how many transactions your registers hold and how far back they go, how many payees you keep, how many scheduled transactions Monize tracks, your upcoming bills for the week and the next one due, and the anniversaries of your first transaction and your accounts.
+- **Warranties**: how many of your warranties are still in cover, which runs out next, and a countdown when one is about to.
 
 A fact's figures are picked out in the sentence. The widget stays the same size whatever the sentence, so the widgets around it never move. It moves to the next fact every 12 seconds, pauses while you point at it, and the arrows below it step through by hand.
 
-The list is rebuilt each morning while the widget is on your dashboard, and a fact is only stated when every figure in it is fully known. If you have an [AI provider](ai.md) set up, it words the facts in your language, marked **Written by AI from your figures**; every figure still comes from your own data, and account, security, category, payee and warranty names are not sent to the provider. Without one, or if it doesn't answer, Monize words them itself from the same calculations. A provider reached through the MCP relay is not used for this. To switch the facts off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
+The list is rebuilt each morning, in your time zone, while the widget is on your dashboard, and a fact is only stated when every figure in it is fully known. Upcoming bills are worked out by the morning rebuild, so a list built when you first open the dashboard has none until the next morning. If you have an [AI provider](ai.md) set up, it words the facts in your language, marked **Written by AI from your figures**, and may join two facts of one topic in a sentence; every figure still comes from your own data. The provider is sent the amounts, dates and counts of the day's facts so it knows what each one says, and the wording of yesterday's sentences so it does not repeat them. It is never sent account, security, category, payee or warranty names, or the figures from yesterday's sentences. Without a provider, or if it doesn't answer, Monize words the facts itself from the same calculations. A provider reached through the MCP relay is not used for this. To switch the facts off, use **AI trivia** in [AI Settings](ai.md#ai-trivia).
 
 ## Refreshing Data
 

@@ -192,7 +192,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Bill payment history tracking
 
 ### Dashboard and Appearance
-- 26 widgets that you can add, remove, drag and resize in place on the dashboard, and configure (time range, accounts, chart type), among them Favourite Accounts and Securities, Upcoming Bills (a list or a small calendar), Cash Flow Forecast, Top Movers (gainers or losers, by amount or percent), Portfolio Value, Assets vs Liabilities, Credit Utilization, Warranties expiring soon, Favourite Reports and a daily Trivia fact about your finances
+- 26 widgets that you can add, remove, drag and resize in place on the dashboard, and configure (time range, accounts, chart type), among them Favourite Accounts and Securities, Upcoming Bills (a list or a small calendar), Cash Flow Forecast, Top Movers (gainers or losers, by amount or percent), Portfolio Value, Assets vs Liabilities, Credit Utilization, Warranties expiring soon, Favourite Reports and daily Trivia facts about your finances
 - A hero at the top with your net worth or portfolio value and its chart
 - Each widget title opens its full report
 - Fifteen colour themes for the whole app, each with a light and a dark variant (Settings -> Preferences)
