@@ -4,6 +4,23 @@ export interface AccountSelectOption {
   value: string;
   label: string;
   disabled?: boolean;
+  /**
+   * What `AccountSelect` draws the row's mark from: the institution's logo,
+   * else the type icon. Absent on a row that is not an account (a placeholder,
+   * "All accounts"), which then has no mark.
+   */
+  accountType?: AccountType;
+  institutionId?: string | null;
+}
+
+/** The option an account contributes to a picker, carrying what its mark is drawn from. */
+export function accountSelectOption(account: Account, label: string): AccountSelectOption {
+  return {
+    value: account.id,
+    label,
+    accountType: account.accountType,
+    institutionId: account.institutionId,
+  };
 }
 
 /** What ordering a picker's entries needs to know about each one. */
@@ -96,7 +113,7 @@ export function buildAccountDropdownOptions(
   const options: AccountSelectOption[] = [];
 
   for (const account of favourites) {
-    options.push({ value: account.id, label: labelFn(account) });
+    options.push(accountSelectOption(account, labelFn(account)));
   }
 
   if (favourites.length > 0 && rest.length > 0) {
@@ -108,7 +125,7 @@ export function buildAccountDropdownOptions(
   }
 
   for (const account of rest) {
-    options.push({ value: account.id, label: labelFn(account) });
+    options.push(accountSelectOption(account, labelFn(account)));
   }
 
   return options;
