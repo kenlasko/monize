@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { investmentsApi } from '@/lib/investments';
@@ -88,6 +89,7 @@ const DIVIDEND_INTEREST_ACTIONS = INCOME_ACTIONS.filter((action) => {
  * allocation, value-over-time, holdings, YTD income, and recent transactions.
  */
 export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDetailViewProps) {
+  const router = useRouter();
   const [brokerage, setBrokerage] = useState<Account>(account);
   const [cash, setCash] = useState<Account | null>(null);
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
@@ -201,6 +203,8 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
         isLoading={isLoading}
         totalPortfolioValue={summary?.totalPortfolioValue ?? null}
         valuationComplete={summary?.valuationComplete}
+        onSecurityClick={(securityId) => router.push(`/securities/${securityId}`)}
+        onCashClick={(cashAccountId) => router.push(`/transactions?accountId=${cashAccountId}`)}
       />
 
       <InvestmentIncomePanel
