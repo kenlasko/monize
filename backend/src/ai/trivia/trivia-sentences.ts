@@ -98,20 +98,39 @@ export function parseTriviaSentences(
 }
 
 /**
- * The day's list: a model's sentences for each topic it answered, the
- * calculated sentence of every fact for a topic it did not.
+ * The day's list, in the order of `facts`: a model's sentence stands where the
+ * first fact it covers would be, and every fact no sentence covers keeps its
+ * calculated one (carrying `params`). A sentence covers the facts in its
+ * `factIds`; one without `factIds` (a row from before the rotation) covers
+ * every fact of its topic, as it always did. A sentence covering nothing
+ * follows the rest.
  */
 export function mergeTriviaItems(
   facts: TriviaFact[],
   aiItems: TriviaItem[],
 ): TriviaItem[] {
-  const answered = new Set(aiItems.map((i) => i.topic));
-  const calculated = facts
-    .filter((f) => !answered.has(f.topic))
-    .map((f): TriviaItem => ({
-      topic: f.topic,
-      source: "calculated",
-      factId: f.id,
-    }));
-  return [...aiItems, ...calculated];
+  const coverage = (item: TriviaItem, fact: TriviaFact): boolean =>
+    item.source === "ai" &&
+    (item.factIds ? item.factIds.includes(fact.id) : item.topic === fact.topic);
+  const emitted = new Set<TriviaItem>();
+  const items: TriviaItem[] = [];
+  for (const fact of facts) {
+    const covering = aiItems.filter((ai) => coverage(ai, fact));
+    if (covering.length === 0) {
+      items.push({
+        topic: fact.topic,
+        source: "calculated",
+        factId: fact.id,
+        ...(fact.params ? { params: fact.params } : {}),
+      });
+      continue;
+    }
+    for (const ai of covering) {
+      if (!emitted.has(ai)) {
+        emitted.add(ai);
+        items.push(ai);
+      }
+    }
+  }
+  return [...items, ...aiItems.filter((ai) => !emitted.has(ai))];
 }

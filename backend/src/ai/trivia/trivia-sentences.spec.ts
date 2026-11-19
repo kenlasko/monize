@@ -202,4 +202,83 @@ describe("mergeTriviaItems", () => {
       },
     ]);
   });
+
+  it("carries params onto a calculated item", () => {
+    const windowed: TriviaFact = {
+      id: "spendingTopCategoryWindow",
+      topic: "spending",
+      figures: { topCategoryName: { kind: "text", value: "x" } },
+      params: { window: "d90" },
+    };
+    expect(mergeTriviaItems([windowed], [])).toEqual([
+      {
+        topic: "spending",
+        source: "calculated",
+        factId: "spendingTopCategoryWindow",
+        params: { window: "d90" },
+      },
+    ]);
+  });
+
+  it("keeps the order of the facts and puts a sentence where its fact stands", () => {
+    const ai = {
+      topic: "investments" as const,
+      source: "ai" as const,
+      text: "{largestValue}",
+      factIds: ["investmentsLargestAccount" as const],
+    };
+    expect(mergeTriviaItems(facts, [ai])).toEqual([
+      { topic: "netWorth", source: "calculated", factId: "netWorthHighPoint" },
+      ai,
+    ]);
+  });
+
+  it("covers per fact: a sentence for one fact leaves its topic's others calculated", () => {
+    const two: TriviaFact[] = [
+      facts[0],
+      { ...facts[0], id: "netWorthBiggestJump" },
+    ];
+    const ai = {
+      topic: "netWorth" as const,
+      source: "ai" as const,
+      text: "{peakAmount}",
+      factIds: ["netWorthHighPoint" as const],
+    };
+    expect(mergeTriviaItems(two, [ai])).toEqual([
+      ai,
+      {
+        topic: "netWorth",
+        source: "calculated",
+        factId: "netWorthBiggestJump",
+      },
+    ]);
+  });
+
+  it("emits a sentence covering two facts once", () => {
+    const two: TriviaFact[] = [
+      facts[0],
+      { ...facts[0], id: "netWorthBiggestJump" },
+    ];
+    const ai = {
+      topic: "netWorth" as const,
+      source: "ai" as const,
+      text: "{peakAmount}",
+      factIds: ["netWorthHighPoint" as const, "netWorthBiggestJump" as const],
+    };
+    expect(mergeTriviaItems(two, [ai])).toEqual([ai]);
+  });
+
+  it("keeps a sentence that covers no fact, at the end", () => {
+    const stray = {
+      topic: "income" as const,
+      source: "ai" as const,
+      text: "{x}",
+    };
+    expect(
+      (() => {
+        const merged = mergeTriviaItems(facts, [stray]);
+        return merged[merged.length - 1];
+      })(),
+    ).toBe(stray);
+  });
 });

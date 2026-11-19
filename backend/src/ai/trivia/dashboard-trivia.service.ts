@@ -1,4 +1,3 @@
-import { randomInt } from "crypto";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { DataSource } from "typeorm";
@@ -24,6 +23,11 @@ import { currentRequestLocale } from "../../i18n/request-locale";
 import { DashboardTrivia } from "../entities/dashboard-trivia.entity";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
 import {
+  orderForDisplay,
+  selectDailyTrivia,
+  yesterdayOf,
+} from "./trivia-rotation";
+import {
   buildTriviaPrompt,
   mergeTriviaItems,
   parseTriviaSentences,
@@ -44,15 +48,6 @@ const TRIVIA_GENERATION_CONCURRENCY = 5;
  * that lists it shows the facts.
  */
 const TRIVIA_WIDGET_ID = "trivia";
-
-function shuffled<T>(items: readonly T[]): T[] {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
 
 @Injectable()
 export class DashboardTriviaService {
@@ -96,10 +91,17 @@ export class DashboardTriviaService {
       today,
       mode: "page",
     });
+    const selected = stored
+      ? this.keptFacts(stored, facts)
+      : selectDailyTrivia(facts, null, userId, today);
+    const shown =
+      selected.length > 0
+        ? selected
+        : selectDailyTrivia(facts, null, userId, today);
     const row: DashboardTrivia = {
       userId,
-      items: shuffled(mergeTriviaItems(facts, [])),
-      figures: this.figuresOf(facts),
+      items: mergeTriviaItems(orderForDisplay(shown, userId, today), []),
+      figures: this.figuresOf(shown),
       language,
       generatedAt: new Date(),
     };
@@ -188,25 +190,62 @@ export class DashboardTriviaService {
     );
     if (!claimed) return;
 
-    const facts = await this.pool.build(userId, preferences, {
+    const pool = await this.pool.build(userId, preferences, {
       today,
       mode: "cron",
     });
-    if (facts.length === 0) {
+    if (pool.length === 0) {
       await this.deleteRow(userId);
       return;
     }
+    const stored = await withScopedDb(this.dataSource, (manager) =>
+      manager.getRepository(DashboardTrivia).findOne({ where: { userId } }),
+    );
+    const selected = selectDailyTrivia(
+      pool,
+      yesterdayOf(stored),
+      userId,
+      today,
+    );
     const language = await this.jobLanguage(userId, preferences);
-    const aiItems = await this.phraseWithAi(userId, facts, language);
+    const aiItems = await this.phraseWithAi(userId, selected, language);
     const row: DashboardTrivia = {
       userId,
-      items: shuffled(mergeTriviaItems(facts, aiItems)),
-      figures: this.figuresOf(facts),
+      items: mergeTriviaItems(
+        orderForDisplay(selected, userId, today),
+        aiItems,
+      ),
+      figures: this.figuresOf(selected),
       language: language ?? null,
       generatedAt: new Date(),
     };
     await withScopedDb(this.dataSource, (manager) =>
       manager.getRepository(DashboardTrivia).upsert(row, ["userId"]),
+    );
+  }
+
+  /**
+   * Today's choice kept for a rewording: the pool facts the stored row shows,
+   * by id and params for a calculated item, by `factIds` for a model's. An
+   * old row naming none of them keeps nothing, so the caller selects afresh.
+   */
+  private keptFacts(row: DashboardTrivia, pool: TriviaFact[]): TriviaFact[] {
+    const calculated = row.items.flatMap((item) =>
+      item.source === "calculated" ? [item] : [],
+    );
+    const aiIds = new Set(
+      row.items.flatMap((item) =>
+        item.source === "ai" && Array.isArray(item.factIds) ? item.factIds : [],
+      ),
+    );
+    return pool.filter(
+      (fact) =>
+        aiIds.has(fact.id) ||
+        calculated.some(
+          (item) =>
+            item.factId === fact.id &&
+            item.params?.window === fact.params?.window,
+        ),
     );
   }
 

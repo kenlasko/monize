@@ -7,6 +7,13 @@ import { withUserContext } from "../../common/db/with-context";
 import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
 import { emptyWindowedReads } from "./trivia-windowed-reads";
+import {
+  fullDailyInput,
+  fullLedgerLoad,
+} from "./__fixtures__/trivia-pool.fixture";
+import { familyOf } from "./trivia-families";
+import { TRIVIA_DAILY_COUNT } from "./trivia-rotation";
+import type { TriviaFactId } from "./trivia.types";
 
 const manager: Record<string, any> = {};
 jest.mock("../../common/db/scoped-db", () => ({
@@ -622,6 +629,90 @@ describe("DashboardTriviaService", () => {
         "2026-11-20",
         expect.objectContaining({ bills: true }),
       );
+    });
+  });
+
+  describe("the rotating subset", () => {
+    const familyOfItem = (item: { source: string; factId?: string }) =>
+      familyOf(item.factId as TriviaFactId);
+
+    beforeEach(() => {
+      ledger.load.mockResolvedValue(fullLedgerLoad());
+      daily.load.mockResolvedValue(fullDailyInput());
+      ai.getStatus.mockResolvedValue({ configured: false, relayActive: false });
+    });
+
+    it("stores at most the daily count, with figures only of the shown facts", async () => {
+      await service.generateForUser(userId);
+      const row = triviaRepo.upsert.mock.calls[0][0];
+      expect(row.items.length).toBeLessThanOrEqual(TRIVIA_DAILY_COUNT);
+      expect(row.items.length).toBeGreaterThan(0);
+      const shown = row.items.length;
+      expect(new Set(row.items.map(familyOfItem)).size).toBe(shown);
+      expect(Object.keys(row.figures).length).toBeGreaterThan(0);
+    });
+
+    it("stores lists on two dates that share no family", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-11-19T07:00:00Z"));
+      try {
+        await service.generateForUser(userId);
+        const first = triviaRepo.upsert.mock.calls[0][0];
+        triviaRepo.findOne.mockResolvedValue(first);
+        jest.setSystemTime(new Date("2026-11-20T07:00:00Z"));
+        await service.generateForUser(userId);
+      } finally {
+        jest.useRealTimers();
+      }
+      const [first, second] = triviaRepo.upsert.mock.calls.map((c) => c[0]);
+      const before = new Set(first.items.map(familyOfItem));
+      expect(
+        second.items.map(familyOfItem).filter((f) => before.has(f)),
+      ).toEqual([]);
+    });
+
+    it("keeps the stored facts when a language change rewords the row", async () => {
+      await service.generateForUser(userId);
+      const stored = triviaRepo.upsert.mock.calls[0][0];
+      triviaRepo.upsert.mockClear();
+      triviaRepo.findOne.mockResolvedValue({
+        ...stored,
+        items: [
+          {
+            topic: "netWorth",
+            source: "ai",
+            text: "{currentHigh}",
+            factIds: ["netWorthAtHighPoint"],
+          },
+          ...stored.items.filter(
+            (i: { topic: string }) => i.topic !== "netWorth",
+          ),
+        ],
+        language: "de",
+      });
+      prefRepo.findOne.mockResolvedValue({ language: "fr" });
+      const result = await service.getTrivia(userId);
+      const ids = (items: object[]) =>
+        (items as { factId?: string }[]).map((i) => i.factId).filter(Boolean);
+      const storedIds = ids(stored.items).filter(
+        (id) => !String(id).startsWith("netWorth"),
+      );
+      expect(ids(result.items)).toEqual(expect.arrayContaining(storedIds));
+      expect(result.items.every((i) => i.source === "calculated")).toBe(true);
+      expect(result.items.length).toBeLessThanOrEqual(TRIVIA_DAILY_COUNT);
+    });
+
+    it("selects afresh when the stored AI row names no fact", async () => {
+      triviaRepo.findOne.mockResolvedValue({
+        userId,
+        items: [{ topic: "netWorth", source: "ai", text: "{currentHigh}" }],
+        figures: {},
+        language: "de",
+        generatedAt: new Date(),
+      });
+      prefRepo.findOne.mockResolvedValue({ language: "fr" });
+      const result = await service.getTrivia(userId);
+      expect(result.items.length).toBeGreaterThan(0);
+      expect(result.items.length).toBeLessThanOrEqual(TRIVIA_DAILY_COUNT);
     });
   });
 });

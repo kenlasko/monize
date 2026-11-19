@@ -17,7 +17,7 @@ Rules for every phase:
 | B1 | Daily-moving facts, the purchase predicate, the pool builder, cron timezone | A | Done |
 | B2 | Calendar and event facts | B1 | Done |
 | C | Parametrised (windowed and ranked) facts | B2 | Done |
-| D | Daily selection and rotation | C | Open |
+| D | Daily selection and rotation | C | Done |
 | E | Prompt, validator, equivalence facts | D | Open |
 | F | Catalog variants in English, widget pick | E | Open |
 | G1 | Translations: de, es, fr, it, nl, pl, pt, pt-BR, en-GB | F | Open |
