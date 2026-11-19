@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, other {# 件の証券}}が他の証券とシンボルを共有していました。別々のまま保つため、後のものは名前を変更しました。",
     "generatedSecuritySymbol": "{count, plural, other {# 件の証券}}には KMyMoney 上でシンボルがないため、仮のシンボルを生成し、価格更新はオフのままにしました。",
     "loanInterestRateNotImported": "{count, plural, other {# 件のローン}}には KMyMoney に金利が設定されていますが、インポートしませんでした。Monize のローン口座で入力してください。",
+    "loanTermsNotImported": "{count, plural, other {# 件のローン}}には KMyMoney に期間または当初の金額が設定されていますが、読み取れなかったためインポートしませんでした。",
     "loanInterestCategoryUnclear": "{count, plural, other {# 件のローン返済}}に元本以外の複数のカテゴリが含まれていたため、ローンの利息カテゴリは未設定のままになりました。支払いにエスクロー (escrow) が含まれるか確認し、インポート後に利息カテゴリを設定してください。",
     "loanScheduleSimplified": "{count, plural, other {# 件のローン返済スケジュール}}は入力時に各支払いを元本と利息に分割しますが、支払額の 1 件の振替としてインポートしました。",
     "investmentScheduleNotImported": "{count, plural, other {# 件の定期投資取引}}はインポートしませんでした。",

@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, other {증권 #개}}가 다른 증권과 심볼을 공유했습니다. 서로 구분되도록 나중 것의 이름을 바꿨습니다.",
     "generatedSecuritySymbol": "{count, plural, other {증권 #개}}에 KMyMoney의 심볼이 없어 임시 심볼을 만들고 가격 업데이트는 꺼 두었습니다.",
     "loanInterestRateNotImported": "{count, plural, other {대출 #건}}에 KMyMoney에 설정된 이자율이 있지만 가져오지 않았습니다. Monize의 대출 계정에 직접 입력하세요.",
+    "loanTermsNotImported": "{count, plural, other {대출 #건}}에 KMyMoney에 설정된 기간 또는 원래 금액이 있지만 읽을 수 없어 가져오지 않았습니다.",
     "loanInterestCategoryUnclear": "{count, plural, other {#건의 대출 상환}}에 원금 외 여러 카테고리가 포함되어 있어 대출의 이자 카테고리가 설정되지 않았습니다. 상환에 에스크로(escrow)가 포함되는지 확인하고 가져오기 후 이자 카테고리를 설정하세요.",
     "loanScheduleSimplified": "{count, plural, other {대출 상환 일정 #건}}은 입력할 때 각 상환을 원금과 이자로 나누지만, 상환 금액 전체의 이체 한 건으로 가져왔습니다.",
     "investmentScheduleNotImported": "{count, plural, other {예약된 투자 거래 #건}}은 가져오지 않았습니다.",

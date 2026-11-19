@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, other {# efek}} berbagi simbol dengan efek lain; yang berikutnya diganti namanya agar tetap terpisah.",
     "generatedSecuritySymbol": "{count, plural, other {# efek}} tidak memiliki simbol di KMyMoney, jadi simbol sementara dibuat dan pembaruan harga dibiarkan mati.",
     "loanInterestRateNotImported": "{count, plural, other {# pinjaman}} memiliki suku bunga di KMyMoney yang tidak diimpor. Masukkan di akun pinjaman di Monize.",
+    "loanTermsNotImported": "{count, plural, other {# pinjaman}} memiliki jangka waktu atau jumlah awal di KMyMoney yang tidak dapat dibaca, sehingga tidak diimpor.",
     "loanInterestCategoryUnclear": "{count, plural, other {# pembayaran pinjaman}} menyertakan beberapa kategori selain pokok, sehingga kategori bunga pinjaman dibiarkan kosong. Periksa apakah pembayaran mencakup escrow dan atur kategori bunga setelah impor.",
     "loanScheduleSimplified": "{count, plural, other {# jadwal pembayaran pinjaman}} memisahkan setiap pembayaran menjadi pokok dan bunga saat dimasukkan; jadwal itu diimpor sebagai satu transfer sebesar jumlah pembayaran.",
     "investmentScheduleNotImported": "{count, plural, other {# transaksi investasi terjadwal}} tidak diimpor.",

@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, other {# menkul kıymet}} sembolünü bir başkasıyla paylaşıyordu; ayrı kalsınlar diye sonrakiler yeniden adlandırıldı.",
     "generatedSecuritySymbol": "{count, plural, other {# menkul kıymetin}} KMyMoney'de sembolü yok, bu yüzden bir yer tutucu oluşturuldu ve fiyat güncellemeleri kapalı bırakıldı.",
     "loanInterestRateNotImported": "{count, plural, other {# kredinin}} KMyMoney'de içe aktarılmayan bir faiz oranı var. Bunu Monize'de kredi hesabına girin.",
+    "loanTermsNotImported": "{count, plural, other {# kredinin}} KMyMoney'de okunamayan bir vadesi veya ilk tutarı var, bu nedenle içe aktarılmadı.",
     "loanInterestCategoryUnclear": "{count, plural, other {# kredi ödemesi}} ana para dışında birden fazla kategori içeriyordu, bu yüzden kredinin faiz kategorisi ayarlanmadı. Ödemenin emanet (escrow) içerip içermediğini kontrol edin ve içe aktarmadan sonra faiz kategorisini ayarlayın.",
     "loanScheduleSimplified": "{count, plural, other {# kredi ödeme zamanlaması}} girildiğinde her ödemeyi ana para ve faize böler; bunlar ödeme tutarında tek bir transfer olarak içe aktarıldı.",
     "investmentScheduleNotImported": "{count, plural, other {# zamanlanmış yatırım işlemi}} içe aktarılmadı.",
