@@ -110,6 +110,22 @@ describe('IconSelect', () => {
     expect(onChange.mock.results[0].value).toBe('v-11');
   });
 
+  it('returns to the field when Tab leaves the filter, so focus moves on from there', () => {
+    render(<IconSelect label="Account" options={many(12)} value="v-0" onChange={vi.fn()} />);
+    const trigger = screen.getByRole('combobox', { name: 'Account' });
+    fireEvent.click(trigger);
+    fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Tab' });
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('hands focus to the field when a form focuses the hidden select', () => {
+    render(<IconSelect label="Account" options={options} value="" onChange={vi.fn()} />);
+    const native = document.querySelector<HTMLSelectElement>('select[data-icon-select-native]')!;
+    act(() => native.focus());
+    expect(screen.getByRole('combobox', { name: 'Account' })).toHaveFocus();
+  });
+
   it('says so when the filter matches nothing', () => {
     render(<IconSelect label="Account" options={many(12)} value="v-0" onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole('combobox', { name: 'Account' }));

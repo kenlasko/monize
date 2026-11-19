@@ -4,6 +4,7 @@ import { screen, fireEvent } from '@testing-library/react';
 import { CsvTransferRules } from './CsvTransferRules';
 import { CsvTransferRule } from '@/lib/import';
 import { Account } from '@/types/account';
+import { selectOptionValues } from '@/test/icon-select';
 
 function makeAccount(overrides: Partial<Account> & { id: string; name: string }): Account {
   return {
@@ -153,5 +154,21 @@ describe('CsvTransferRules', () => {
     expect(options[0]).toHaveTextContent('Select account...');
     expect(options[1]).toHaveTextContent('Chequing');
     expect(options[2]).toHaveTextContent('Savings');
+  });
+
+  it('offers two accounts that share a name once, since a rule names its account by name', () => {
+    const rules: CsvTransferRule[] = [{ type: 'payee', pattern: 'X', accountName: '' }];
+    render(
+      <CsvTransferRules
+        rules={rules}
+        onChange={onChange}
+        accounts={[
+          makeAccount({ id: '1', name: 'Chequing' }),
+          makeAccount({ id: '9', name: 'Chequing', institution: 'Other Bank' }),
+        ]}
+      />,
+    );
+    const select = document.querySelector<HTMLSelectElement>('select[data-icon-select-native]')!;
+    expect(selectOptionValues(select)).toEqual(['', 'Chequing']);
   });
 });

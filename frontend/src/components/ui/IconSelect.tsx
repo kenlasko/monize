@@ -286,7 +286,9 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
         close(true);
         return true;
       case 'Tab':
-        close();
+        // Back to the field first, so Tab moves on from it rather than from
+        // the filter box, which is about to disappear.
+        close(true);
         return true;
       default:
         return false;
@@ -357,6 +359,9 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
           className="sr-only"
           data-icon-select-native=""
           {...selectProps}
+          // A form that focuses its first invalid field (react-hook-form's
+          // `shouldFocusError`) reaches this select; the person gets the field.
+          onFocus={() => triggerRef.current?.focus()}
         >
           {options.map((option) => (
             <option key={option.value} value={option.value} disabled={option.disabled}>

@@ -26,14 +26,23 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
     orderAccountsForPicker(filtered);
   // A rule names its account by NAME (the CSV carries names), so each row's
   // value is the name; the mark is still the account's own.
+  // Two accounts sharing a name are one choice here, offered once.
   const toOption = (account: Account) => ({ ...accountSelectOption(account, account.name), value: account.name });
+  const offered = new Set<string>();
+  const firstByName = (account: Account) => {
+    if (offered.has(account.name)) return false;
+    offered.add(account.name);
+    return true;
+  };
+  const favouriteOptions = favouriteAccounts.filter(firstByName).map(toOption);
+  const otherOptions = nonFavouriteAccounts.filter(firstByName).map(toOption);
   const accountNameOptions: AccountSelectOption[] = [
     { value: '', label: t('transferRules.selectAccount') },
-    ...favouriteAccounts.map(toOption),
-    ...(favouriteAccounts.length > 0 && nonFavouriteAccounts.length > 0
+    ...favouriteOptions,
+    ...(favouriteOptions.length > 0 && otherOptions.length > 0
       ? [{ value: SEPARATOR_VALUE, label: '', disabled: true }]
       : []),
-    ...nonFavouriteAccounts.map(toOption),
+    ...otherOptions,
   ];
 
   const addRule = () => {
@@ -102,7 +111,7 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
                 aria-label={t('transferRules.selectAccount')}
                 value={rule.accountName}
                 onChange={(e) => updateRule(index, 'accountName', e.target.value)}
-                className="px-2 py-1.5 text-sm"
+                className="py-1.5 pl-2 text-sm"
                 options={accountNameOptions}
               />
             </div>
