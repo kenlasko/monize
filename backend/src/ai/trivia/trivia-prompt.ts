@@ -1,5 +1,6 @@
 import { TRIVIA_ANGLES, type TriviaAngle } from "../context/prompt-templates";
 import type { TriviaFact, TriviaFigure, TriviaWindow } from "./trivia.types";
+import { TRIVIA_PERIODS } from "./trivia-families";
 import { hasOwnFigure } from "./trivia-sentences";
 import { seedHash, dayIndex } from "./trivia-windows";
 
@@ -68,7 +69,9 @@ export function buildTriviaPrompt(
       const window = f.params?.window
         ? [`  window: ${WINDOW_WORDS[f.params.window]}`]
         : [];
-      return `Fact ${f.id} (topic ${f.topic}):\n${[...window, ...figures].join("\n")}`;
+      const fixed = TRIVIA_PERIODS[f.id];
+      const period = !f.params?.window && fixed ? [`  period: ${fixed}`] : [];
+      return `Fact ${f.id} (topic ${f.topic}):\n${[...window, ...period, ...figures].join("\n")}`;
     })
     .join("\n\n");
 

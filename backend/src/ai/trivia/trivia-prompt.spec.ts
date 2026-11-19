@@ -1,6 +1,8 @@
+import * as fs from "fs";
+import * as path from "path";
 import { TRIVIA_ANGLES } from "../context/prompt-templates";
 import { buildTriviaPrompt, pickTriviaAngle } from "./trivia-prompt";
-import type { TriviaFact } from "./trivia.types";
+import { TRIVIA_FACT_IDS, type TriviaFact } from "./trivia.types";
 
 const facts: TriviaFact[] = [
   {
@@ -142,6 +144,61 @@ describe("buildTriviaPrompt", () => {
     expect(prompt).toContain("  window: the past quarter");
     expect(prompt).not.toContain("Rent");
     expect(prompt).not.toMatch(/window: .*\d/);
+  });
+});
+
+describe("the period of a fact", () => {
+  const catalog = JSON.parse(
+    fs.readFileSync(
+      path.resolve(
+        __dirname,
+        "../../../../frontend/src/i18n/messages/en/dashboard.json",
+      ),
+      "utf8",
+    ),
+  ) as { trivia: { facts: Record<string, string> } };
+
+  /** What an English sentence says when it names a period. */
+  const NAMES_A_PERIOD =
+    /last twelve|last \{windowMonths\}|seven days|last 30|this month|last month|this week|a year ago|annualized|average spending|of the month|\{window, select/i;
+  const WINDOWED = /\{window, select/;
+
+  const sheetOf = (id: (typeof TRIVIA_FACT_IDS)[number]) =>
+    buildTriviaPrompt(
+      [
+        {
+          id,
+          topic: "spending",
+          figures: {},
+          ...(WINDOWED.test(catalog.trivia.facts[id])
+            ? { params: { window: "d30" as const } }
+            : {}),
+        },
+      ],
+      options,
+    );
+
+  it.each(TRIVIA_FACT_IDS)(
+    "tells the model the period of %s when its sentence names one",
+    (id) => {
+      const sheet = sheetOf(id);
+      const line = sheet
+        .split("\n")
+        .find((l) => /^ {2}(period|window): /.test(l));
+      if (NAMES_A_PERIOD.test(catalog.trivia.facts[id])) {
+        expect(line).toBeDefined();
+        // In words: the model is told never to write a number itself.
+        expect(line).not.toMatch(/\d/);
+      } else {
+        expect(line).toBeUndefined();
+      }
+    },
+  );
+
+  it("says the twelve-month facts cover whole months before this one", () => {
+    expect(sheetOf("spendingTopCategory")).toContain(
+      "  period: the past year, as whole months, not counting the current month",
+    );
   });
 });
 

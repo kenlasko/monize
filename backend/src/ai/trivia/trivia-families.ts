@@ -207,6 +207,45 @@ export const TRIVIA_FAMILIES = {
 
 export type TriviaFamily = keyof typeof TRIVIA_FAMILIES;
 
+/** The twelve whole months before the current one, in words. */
+const PAST_YEAR =
+  "the past year, as whole months, not counting the current month";
+
+/**
+ * The period a fact covers when it is fixed, in words with no numeral, for the
+ * model to paraphrase: every fact whose English catalog sentence names one,
+ * except the windowed facts, whose period is `params.window` (the prompt's
+ * `window:` line). A fact without an entry here and without a window covers no
+ * period beyond the dates its figures carry.
+ */
+export const TRIVIA_PERIODS: Partial<Record<TriviaFactId, string>> = {
+  spendingTopCategory: PAST_YEAR,
+  spendingTopPayee: PAST_YEAR,
+  spendingBiggestMonth: PAST_YEAR,
+  incomeKeptShare: PAST_YEAR,
+  incomeSurplusMonths: PAST_YEAR,
+  incomeTopSource: PAST_YEAR,
+  spendingPayeeInCategoryMonths: PAST_YEAR,
+  spendingDailyAverage: PAST_YEAR,
+  incomeKeptCoversDays: PAST_YEAR,
+  investmentsGainInMonthsOfSpending: `average monthly spending over ${PAST_YEAR}`,
+  investmentsCagr: "a yearly rate, annualized",
+  spendingMonthToDateLess:
+    "this month so far, against the same days of last month",
+  spendingMonthToDateMore:
+    "this month so far, against the same days of last month",
+  spendingLastSevenDays: "a week ending on the last complete day",
+  spendingBiggestRecentPurchase: "the past week",
+  activityBillsDueThisWeek: "the coming week",
+  spendingBudgetPace: "the current calendar month",
+  activityAnniversary: "this week",
+  activityAccountAnniversary: "this week",
+  activityTransactionMilestone: "the past month",
+  spendingYearAgoMonth: "one calendar month, a year ago",
+  netWorthYearAgoUp: "a year ago, against now",
+  netWorthYearAgoDown: "a year ago, against now",
+};
+
 const FAMILY_BY_ID: ReadonlyMap<TriviaFactId, TriviaFamily> = new Map(
   (Object.keys(TRIVIA_FAMILIES) as TriviaFamily[]).flatMap((family) =>
     (TRIVIA_FAMILIES[family].ids as readonly TriviaFactId[]).map(
