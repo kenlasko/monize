@@ -410,7 +410,6 @@ function SecurityDetailContent() {
           onRefreshPrice={handleRefreshPrice}
           isRefreshingPrice={isRefreshingPrice}
           securities={securities}
-          onSelectSecurity={(id) => router.push(`/securities/${id}`)}
         />
 
         <BondRefreshProgress

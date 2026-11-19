@@ -1,17 +1,23 @@
 'use client';
 
+import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   ArrowTopRightOnSquareIcon,
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from '@/hooks/useCollapsingHeaderTitle';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { parseLocalDate } from '@/lib/utils';
 import { toSafeExternalUrl } from '@/lib/external-url';
 import type { Payee } from '@/types/payee';
 import { PayeeLogo } from '@/components/payees/PayeeLogo';
-import { PayeeSwitcher } from './PayeeSwitcher';
+import { usePayeeSwitcher } from './PayeeSwitcher';
 
 interface PayeeDetailHeaderProps {
   payee: Payee;
@@ -28,9 +34,8 @@ interface PayeeDetailHeaderProps {
   /** Deactivate for an active payee, reactivate for an inactive one. */
   onToggleActive: () => void;
   isTogglePending: boolean;
-  /** Payees the caret beside the name can jump to. */
+  /** Payees the caret beside the name can jump to; inactive ones are left out. */
   payees: readonly Payee[];
-  onSelectPayee: (id: string) => void;
 }
 
 /**
@@ -48,9 +53,16 @@ export function PayeeDetailHeader({
   onToggleActive,
   isTogglePending,
   payees,
-  onSelectPayee,
 }: PayeeDetailHeaderProps) {
   const t = useTranslations('payeeDetail');
+  const tp = useTranslations('payees');
+  const switcher = usePayeeSwitcher(payee.id, payees);
+  // Below `xl`, once the name scrolls behind the app header, the header reads
+  // "Payees - <this payee>" and carries the same caret.
+  const collapses = useContext(CollapsingTitleContext);
+  const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
+    collapses ? { title: tp('page.title'), context: payee.name, switcher } : null,
+  );
   const { formatDate } = useDateFormat();
 
   // Null unless the stored address is really http(s); a link built from an
@@ -80,16 +92,12 @@ export function PayeeDetailHeader({
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
           <div className="flex min-w-0 items-center gap-1">
             <PayeeLogo payee={payee} size={28} className="mr-2" />
-            <h1 className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 ref={titleRef} className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
               {payee.name}
             </h1>
             {/* Jump straight to another payee instead of going back to the
                 list and clicking again. */}
-            <PayeeSwitcher
-              currentId={payee.id}
-              payees={payees}
-              onSelect={onSelectPayee}
-            />
+            <EntitySwitcher {...switcher} />
             {websiteUrl && (
               // `noopener` is the security control, not decoration: without it
               // the opened page gets a handle on this one via window.opener.

@@ -601,7 +601,6 @@ function CategoryDetailContent() {
           onEdit={() => openEdit(category)}
           onDelete={() => setIsDeleting(true)}
           categories={categories}
-          onSelectCategory={(id) => router.push(`/categories/${id}`)}
         />
 
         <div className="space-y-6">

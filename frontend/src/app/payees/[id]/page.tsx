@@ -608,7 +608,6 @@ function PayeeDetailContent() {
           }
           isTogglePending={isTogglePending}
           payees={payees}
-          onSelectPayee={(id) => router.push(`/payees/${id}`)}
         />
 
         <div className="space-y-6">

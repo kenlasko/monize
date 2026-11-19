@@ -1,19 +1,24 @@
 'use client';
 
+import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { Badge } from '@/components/ui/Badge';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from '@/hooks/useCollapsingHeaderTitle';
 import type { CurrencyInfo } from '@/lib/exchange-rates';
-import { CurrencySwitcher } from './CurrencySwitcher';
+import { useCurrencySwitcher } from './CurrencySwitcher';
 
 interface CurrencyDetailHeaderProps {
   currency: CurrencyInfo;
   /** The reader's reporting currency; its own page has no exchange rate. */
   defaultCurrency: string;
   onBack: () => void;
-  /** Currencies the caret beside the name can jump to. */
+  /** Currencies the caret beside the name can jump to; inactive ones are left out. */
   currencies: readonly CurrencyInfo[];
-  onSelectCurrency: (code: string) => void;
 }
 
 /**
@@ -26,10 +31,18 @@ export function CurrencyDetailHeader({
   defaultCurrency,
   onBack,
   currencies,
-  onSelectCurrency,
 }: CurrencyDetailHeaderProps) {
   const t = useTranslations('currencyDetail');
+  const tc = useTranslations('currencies');
   const isDefault = currency.code === defaultCurrency;
+  const title = t('header.title', { code: currency.code, name: currency.name });
+  const switcher = useCurrencySwitcher(currency.code, currencies);
+  // Below `xl`, once the name scrolls behind the app header, the header reads
+  // "Currencies - <this currency>" and carries the same caret.
+  const collapses = useContext(CollapsingTitleContext);
+  const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
+    collapses ? { title: tc('page.title'), context: title, switcher } : null,
+  );
 
   return (
     <div className="mb-6">
@@ -44,14 +57,10 @@ export function CurrencyDetailHeader({
 
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-center gap-1">
-          <h1 className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t('header.title', { code: currency.code, name: currency.name })}
+          <h1 ref={titleRef} className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {title}
           </h1>
-          <CurrencySwitcher
-            currentCode={currency.code}
-            currencies={currencies}
-            onSelect={onSelectCurrency}
-          />
+          <EntitySwitcher {...switcher} />
         </div>
         {isDefault && <Badge variant="blue">{t('header.defaultBadge')}</Badge>}
         {currency.kind === 'CRYPTO' && <Badge variant="purple">{t('header.cryptoBadge')}</Badge>}
