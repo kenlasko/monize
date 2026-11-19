@@ -209,25 +209,87 @@ describe('Tabs overflow cue', () => {
     expect(scroller.dataset.overflow).toBe('both');
   });
 
-  it('brings the selected tab on screen when the selection changes', () => {
-    const scrolled: string[] = [];
-    const original = HTMLElement.prototype.scrollIntoView;
-    HTMLElement.prototype.scrollIntoView = function (this: HTMLElement) {
-      scrolled.push(this.textContent ?? '');
-    };
-    try {
-      function Harness() {
-        const [value, setValue] = useState<Key>('overview');
-        return (
-          <Tabs tabs={TABS} value={value} onChange={setValue} idPrefix="security" ariaLabel="Security sections" />
-        );
+  // A 300px row over three 120px tabs: the third (240-360) runs 60px past the
+  // right edge until the row is scrolled. Each rect moves with the row's own
+  // `scrollLeft`, as a real horizontal scroller's children do.
+  function fakeRowLayout() {
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      const rect = (left: number, right: number) =>
+        ({ left, right, top: 0, bottom: 40, width: right - left, height: 40, x: left, y: 0 }) as DOMRect;
+      if (this.getAttribute('role') === 'tab') {
+        const tabs = Array.from(this.parentElement?.children ?? []);
+        const offset = (this.closest('.scroll-fade-x') as HTMLElement | null)?.scrollLeft ?? 0;
+        const left = tabs.indexOf(this) * 120 - offset;
+        return rect(left, left + 120);
       }
-      render(<Harness />);
-      expect(scrolled).toEqual(['Overview']);
-      fireEvent.click(screen.getByRole('tab', { name: 'Price history' }));
-      expect(scrolled).toEqual(['Overview', 'Price history']);
+      if (this.classList.contains('scroll-fade-x')) return rect(0, 300);
+      return original.call(this);
+    };
+    return () => {
+      HTMLElement.prototype.getBoundingClientRect = original;
+    };
+  }
+
+  function Harness({ initial = 'overview' as Key }) {
+    const [value, setValue] = useState<Key>(initial);
+    const [, setRenders] = useState(0);
+    return (
+      <>
+        {/* A fresh array every render, as the security detail page builds it. */}
+        <Tabs tabs={TABS.map((tab) => ({ ...tab }))} value={value} onChange={setValue} idPrefix="security" ariaLabel="Security sections" />
+        <button type="button" onClick={() => setRenders((n) => n + 1)}>
+          Re-render
+        </button>
+      </>
+    );
+  }
+
+  it('brings a selected tab past the edge on screen by scrolling the row sideways', () => {
+    const restore = fakeRowLayout();
+    try {
+      const { container } = render(<Harness initial="prices" />);
+      const scroller = container.querySelector('.scroll-fade-x') as HTMLElement;
+      // A deep link to the last tab opens with it on screen.
+      expect(scroller.scrollLeft).toBe(60);
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Overview' }));
+      expect(scroller.scrollLeft).toBe(0);
     } finally {
+      restore();
+    }
+  });
+
+  it('never scrolls the page to the tab bar (#2283)', () => {
+    // On a phone the security detail tabs sit halfway down the page; the old
+    // `scrollIntoView` scrolled the window there on every mount, so switching
+    // security or toggling the chart's series left the reader mid-page.
+    const scrollIntoView = vi.fn();
+    const original = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    const restore = fakeRowLayout();
+    try {
+      render(<Harness initial="prices" />);
+      fireEvent.click(screen.getByRole('button', { name: 'Re-render' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'Transactions' }));
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      restore();
       HTMLElement.prototype.scrollIntoView = original;
+    }
+  });
+
+  it('leaves a sideways swipe alone when the page re-renders without a new selection', () => {
+    const restore = fakeRowLayout();
+    try {
+      const { container } = render(<Harness />);
+      const scroller = container.querySelector('.scroll-fade-x') as HTMLElement;
+      // The reader swiped the row to see the last tab, keeping Overview selected.
+      scroller.scrollLeft = 60;
+      fireEvent.click(screen.getByRole('button', { name: 'Re-render' }));
+      expect(scroller.scrollLeft).toBe(60);
+    } finally {
+      restore();
     }
   });
 });
