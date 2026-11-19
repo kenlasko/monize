@@ -69,6 +69,7 @@
     "detectedTypeLabel": "偵測到的類型：",
     "investmentFileNotice": "此檔案包含投資交易，僅顯示券商科目。",
     "importIntoAccount": "匯入至科目",
+    "importFileIntoAccount": "將 {fileName} 匯入帳戶",
     "createNewAccount": "+ 建立新科目",
     "createNew": "+ 建立新",
     "createNewAccountTitle": "建立新科目",

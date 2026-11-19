@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Tipo Detetado:",
     "investmentFileNotice": "Este ficheiro contém transações de investimento. Apenas são mostradas contas de corretagem.",
     "importIntoAccount": "Importar para a conta",
+    "importFileIntoAccount": "Importar {fileName} para a conta",
     "createNewAccount": "+ Criar nova conta",
     "createNew": "+ Criar nova",
     "createNewAccountTitle": "Criar Nova Conta",

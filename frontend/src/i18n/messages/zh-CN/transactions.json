@@ -513,6 +513,7 @@
       "ariaAmountsIn": "以 {code} 显示和编辑拆分金额"
     },
     "splitLabel": "拆分项 {number}",
+    "accountForSplit": "拆分 {number} 的账户",
     "columns": {
       "type": "类型",
       "categoryAccount": "分类/账户",

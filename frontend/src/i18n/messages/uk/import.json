@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Виявлений тип:",
     "investmentFileNotice": "Цей файл містить інвестиційні транзакції. Показано лише брокерські рахунки.",
     "importIntoAccount": "Імпортувати на рахунок",
+    "importFileIntoAccount": "Імпортувати {fileName} у рахунок",
     "createNewAccount": "+ Створити новий рахунок",
     "createNew": "+ Створити новий",
     "createNewAccountTitle": "Створити новий рахунок",

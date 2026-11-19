@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Показать и редактировать суммы разбивки в {code}"
     },
     "splitLabel": "Часть {number}",
+    "accountForSplit": "Счёт для части {number}",
     "columns": {
       "type": "Тип",
       "categoryAccount": "Категория / Счёт",

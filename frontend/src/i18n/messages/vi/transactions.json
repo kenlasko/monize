@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Hiển thị và chỉnh sửa các khoản chia bằng {code}"
     },
     "splitLabel": "Phần {number}",
+    "accountForSplit": "Tài khoản cho phần chia {number}",
     "columns": {
       "type": "Loại",
       "categoryAccount": "Danh mục / Tài khoản",

@@ -740,6 +740,7 @@ export function SplitEditor({
                   />
                 ) : (
                   <AccountSelect
+                    aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
                     options={[
                       { value: '', label: t('splitEditor.selectAccount') },
                       ...accountOptions,
@@ -910,6 +911,7 @@ export function SplitEditor({
                     />
                   ) : (
                     <AccountSelect
+                      aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
                       options={[
                         { value: '', label: t('splitEditor.selectAccount') },
                         ...accountOptions,

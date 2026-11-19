@@ -69,6 +69,7 @@
     "detectedTypeLabel": "検出された種類:",
     "investmentFileNotice": "このファイルには投資取引が含まれています。証券口座のみが表示されます。",
     "importIntoAccount": "勘定科目にインポート",
+    "importFileIntoAccount": "{fileName} をインポートする口座",
     "createNewAccount": "+ 新しい勘定科目を作成",
     "createNew": "+ 新規作成",
     "createNewAccountTitle": "新しい勘定科目の作成",

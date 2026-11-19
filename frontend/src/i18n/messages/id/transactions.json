@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Tampilkan dan edit jumlah pembagian dalam {code}"
     },
     "splitLabel": "Pembagian {number}",
+    "accountForSplit": "Akun untuk pembagian {number}",
     "columns": {
       "type": "Tipe",
       "categoryAccount": "Kategori / Akun",

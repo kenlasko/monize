@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Показувати та редагувати суми розбиття в {code}"
     },
     "splitLabel": "Розподіл {number}",
+    "accountForSplit": "Рахунок для частини {number}",
     "columns": {
       "type": "Тип",
       "categoryAccount": "Категорія / Рахунок",

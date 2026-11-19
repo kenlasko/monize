@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Type détecté :",
     "investmentFileNotice": "Ce fichier contient des transactions d'investissement. Seuls les comptes de courtage sont affichés.",
     "importIntoAccount": "Importer dans le compte",
+    "importFileIntoAccount": "Importer {fileName} dans le compte",
     "createNewAccount": "+ Créer un nouveau compte",
     "createNew": "+ Créer nouveau",
     "createNewAccountTitle": "Créer un nouveau compte",

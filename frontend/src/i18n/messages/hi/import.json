@@ -69,6 +69,7 @@
     "detectedTypeLabel": "पता लगाया गया प्रकार:",
     "investmentFileNotice": "इस फ़ाइल में निवेश लेनदेन हैं। केवल ब्रोकरेज खाते दिखाए जाते हैं।",
     "importIntoAccount": "खाते में आयात करें",
+    "importFileIntoAccount": "{fileName} को खाते में आयात करें",
     "createNewAccount": "+ नया खाता बनाएं",
     "createNew": "+ नया बनाएं",
     "createNewAccountTitle": "नया खाता बनाएं",

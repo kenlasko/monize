@@ -238,6 +238,7 @@ export function SelectAccountStep({
                   </div>
                   <div className="sm:w-80">
                     <AccountSelect
+                      aria-label={t('selectAccount.importFileIntoAccount', { fileName: fileData.fileName })}
                       options={compatibleAccountOptions}
                       value={fileData.selectedAccountId}
                       onChange={(e) => setFileAccountId(index, e.target.value)}

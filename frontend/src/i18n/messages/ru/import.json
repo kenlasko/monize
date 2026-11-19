@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Определённый тип:",
     "investmentFileNotice": "Этот файл содержит инвестиционные проводки. Показаны только брокерские счета.",
     "importIntoAccount": "Импортировать в счёт",
+    "importFileIntoAccount": "Импортировать {fileName} в счёт",
     "createNewAccount": "+ Создать новый счёт",
     "createNew": "+ Создать новый",
     "createNewAccountTitle": "Создать новый счёт",

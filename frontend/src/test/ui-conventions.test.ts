@@ -3824,6 +3824,18 @@ describe("a register()-wired IconSelect also passes its value", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("names every one, since a combobox button takes no name from its text", () => {
+    // `label`, `aria-label`, or an `id` an outside <label htmlFor> points at.
+    const offenders = productionSources()
+      .filter(([path]) => path !== "/src/components/accounts/shared/AccountSelect.tsx")
+      .flatMap(([path, content]) =>
+        iconSelectElements(withoutComments(content))
+          .filter(({ text }) => !/\b(?:label|aria-label|aria-labelledby|id)=/.test(text))
+          .map(({ line }) => `${path}:${line}`),
+      );
+    expect(offenders).toEqual([]);
+  });
+
   it("catches the pattern it bans, and finds the fields it checks", () => {
     const sample = `<AccountSelect label="A" options={o} {...register('accountId')} />
 <AccountSelect label="B" value={watched} options={o} {...register('accountId')} />`;

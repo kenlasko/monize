@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Afficher et modifier les montants ventilés en {code}"
     },
     "splitLabel": "Répartition {number}",
+    "accountForSplit": "Compte de la ventilation {number}",
     "columns": {
       "type": "Type",
       "categoryAccount": "Catégorie / Compte",
