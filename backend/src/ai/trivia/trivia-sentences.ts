@@ -13,6 +13,8 @@ import {
  */
 const MAX_AI_ITEMS = 26;
 const MAX_SENTENCE_CHARS = 240;
+/** One sentence may combine two facts of its topic, no more. */
+const MAX_FACTS_PER_SENTENCE = 2;
 
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
 /**
@@ -29,29 +31,16 @@ function isTriviaTopic(value: unknown): value is TriviaTopic {
   return (TRIVIA_TOPICS as readonly unknown[]).includes(value);
 }
 
-/** The prompt's list of facts. Names never leave the server, only their meaning. */
-export function buildTriviaPrompt(facts: TriviaFact[]): string {
-  return facts
-    .map((f) => {
-      const figures = Object.entries(f.figures).map(([name, figure]) => {
-        switch (figure.kind) {
-          case "money":
-            return `  {${name}}: money, ${figure.value} ${figure.currency}`;
-          case "text":
-            return `  {${name}}: a name, filled in later`;
-          default:
-            return `  {${name}}: ${figure.kind}, ${figure.value}`;
-        }
-      });
-      return `Fact ${f.id} (topic ${f.topic}):\n${figures.join("\n")}`;
-    })
-    .join("\n\n");
+/** Whether a sentence holds a figure of its own outside its placeholders. */
+export function hasOwnFigure(sentence: string): boolean {
+  return OWN_FIGURE.test(sentence.replace(PLACEHOLDER, ""));
 }
 
 /**
  * The usable sentences of a model's reply. One is dropped when it could state
- * anything the fact sheet does not: an unknown placeholder, one from the other
- * topic, no placeholder at all, or a figure written outside one.
+ * anything the fact sheet does not: an unknown placeholder, one from another
+ * topic, no placeholder at all, a figure written outside one, or figures of
+ * more than two facts. A kept sentence records the facts it quotes.
  */
 export function parseTriviaSentences(
   content: string,
@@ -60,10 +49,10 @@ export function parseTriviaSentences(
   const parsed = extractJsonObject(content) as { trivia?: unknown } | undefined;
   if (!parsed || !Array.isArray(parsed.trivia)) return [];
 
-  const topicOfFigure = new Map<string, TriviaTopic>();
+  const factOfFigure = new Map<string, TriviaFact>();
   for (const f of facts) {
     for (const name of Object.keys(f.figures)) {
-      topicOfFigure.set(name, f.topic);
+      factOfFigure.set(name, f);
     }
   }
 
@@ -84,15 +73,20 @@ export function parseTriviaSentences(
       continue;
     }
     const names = [...sentence.matchAll(PLACEHOLDER)].map((m) => m[1]);
+    const owners = names.map((name) => factOfFigure.get(name));
     if (
       names.length === 0 ||
-      names.some((name) => topicOfFigure.get(name) !== topic) ||
-      OWN_FIGURE.test(sentence.replace(PLACEHOLDER, ""))
+      owners.some((owner) => !owner || owner.topic !== topic) ||
+      hasOwnFigure(sentence)
     ) {
       continue;
     }
+    const factIds = [
+      ...new Set((owners as TriviaFact[]).map((owner) => owner.id)),
+    ];
+    if (factIds.length > MAX_FACTS_PER_SENTENCE) continue;
     seen.add(sentence);
-    items.push({ topic, source: "ai", text: sentence });
+    items.push({ topic, source: "ai", text: sentence, factIds });
   }
   return items;
 }

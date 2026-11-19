@@ -1,8 +1,4 @@
-import {
-  buildTriviaPrompt,
-  mergeTriviaItems,
-  parseTriviaSentences,
-} from "./trivia-sentences";
+import { mergeTriviaItems, parseTriviaSentences } from "./trivia-sentences";
 import type { TriviaFact } from "./trivia.types";
 
 const facts: TriviaFact[] = [
@@ -26,16 +22,6 @@ const facts: TriviaFact[] = [
 
 const reply = (...trivia: unknown[]) => JSON.stringify({ trivia });
 
-describe("buildTriviaPrompt", () => {
-  it("lists figures by placeholder and never sends a name", () => {
-    const prompt = buildTriviaPrompt(facts);
-    expect(prompt).toContain("{peakAmount}: money, 200 CAD");
-    expect(prompt).toContain("{peakMonth}: month, 2025-02");
-    expect(prompt).toContain("{largestName}: a name");
-    expect(prompt).not.toContain("Secret RRSP");
-  });
-});
-
 describe("parseTriviaSentences", () => {
   it("keeps a sentence built from its topic's placeholders", () => {
     expect(
@@ -51,6 +37,7 @@ describe("parseTriviaSentences", () => {
         topic: "netWorth",
         source: "ai",
         text: "You peaked at {peakAmount} in {peakMonth}.",
+        factIds: ["netWorthHighPoint"],
       },
     ]);
   });
@@ -162,16 +149,71 @@ describe("parseTriviaSentences", () => {
     ]);
   });
 
-  it("describes a count to the model by its value", () => {
-    expect(
-      buildTriviaPrompt([
-        {
-          id: "warrantiesCovered",
-          topic: "warranties",
-          figures: { warrantyCount: { kind: "count", value: 3 } },
+  describe("a sentence combining facts", () => {
+    const pair: TriviaFact[] = [
+      ...facts,
+      {
+        id: "netWorthBiggestJump",
+        topic: "netWorth",
+        figures: {
+          jumpAmount: { kind: "money", value: 50, currency: "CAD" },
+          jumpMonth: { kind: "month", value: "2025-03" },
         },
-      ]),
-    ).toContain("{warrantyCount}: count, 3");
+      },
+      {
+        id: "netWorthSinceStart",
+        topic: "netWorth",
+        figures: {
+          sinceStartAmount: { kind: "money", value: 5, currency: "CAD" },
+        },
+      },
+    ];
+    const one = (text: string, topic = "netWorth") =>
+      parseTriviaSentences(reply({ topic, text }), pair);
+
+    it("records the fact a single-fact sentence quotes", () => {
+      expect(one("{peakAmount} in {peakMonth}.")[0]).toMatchObject({
+        factIds: ["netWorthHighPoint"],
+      });
+    });
+
+    it("keeps two facts of one topic, with both factIds in first-quoted order", () => {
+      expect(
+        one("{jumpAmount} in {jumpMonth}, after {peakAmount}, {jumpAmount}."),
+      ).toEqual([
+        {
+          topic: "netWorth",
+          source: "ai",
+          text: "{jumpAmount} in {jumpMonth}, after {peakAmount}, {jumpAmount}.",
+          factIds: ["netWorthBiggestJump", "netWorthHighPoint"],
+        },
+      ]);
+    });
+
+    it("drops a sentence quoting three facts", () => {
+      expect(one("{peakAmount}, {jumpAmount} and {sinceStartAmount}.")).toEqual(
+        [],
+      );
+    });
+
+    it("drops a sentence quoting two topics", () => {
+      expect(one("{peakAmount} and {largestValue}.")).toEqual([]);
+      expect(one("{peakAmount} and {largestValue}.", "investments")).toEqual(
+        [],
+      );
+    });
+
+    it("still drops a digit, a sign or a stray brace beside two facts", () => {
+      for (const text of [
+        "{peakAmount} and {jumpAmount} 2025.",
+        "{peakAmount} and {jumpAmount}%.",
+        "{peakAmount} and {jumpAmount} in $.",
+        "{peakAmount} and {jumpAmount} {.",
+        "{peakAmount} and {madeUp}.",
+      ]) {
+        expect(one(text)).toEqual([]);
+      }
+    });
   });
 });
 

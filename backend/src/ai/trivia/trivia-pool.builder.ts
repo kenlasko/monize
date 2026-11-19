@@ -17,6 +17,7 @@ import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
 import { buildRankedTriviaFacts } from "./trivia-ranked-facts";
 import { pickAll } from "./trivia-windowed-reads";
+import { buildEquivalenceTriviaFacts } from "./trivia-equivalence-facts";
 import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { TriviaCalendarLoader } from "./trivia-calendar.loader";
 import { TriviaDailyLoader } from "./trivia-daily.loader";
@@ -117,6 +118,13 @@ export class TriviaPoolBuilder {
         records: ledger.records,
         warranties: ledger.warranties,
         calendar,
+      }),
+      // Comparisons the server works out, so the model never has to.
+      ...buildEquivalenceTriviaFacts({
+        today,
+        currency,
+        ledger,
+        portfolio,
       }),
     ];
     // The countdown and "the next warranty to run out" are one warranty said twice.

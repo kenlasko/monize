@@ -3,6 +3,7 @@ import type { TriviaFactsInput } from "../trivia-facts";
 import type { ResolvedScheduledOccurrence } from "../../../scheduled-transactions/scheduled-occurrence.service";
 import type { TopMover } from "../../../securities/portfolio.service";
 import type { TriviaCalendarInput } from "../trivia-calendar-facts";
+import type { TriviaEquivalenceInput } from "../trivia-equivalence-facts";
 import type { TriviaDailyInput } from "../trivia-daily-facts";
 import type { TriviaLedgerInput } from "../trivia-ledger-facts";
 import type { TriviaLedgerLoad } from "../trivia-ledger.loader";
@@ -424,5 +425,19 @@ export function alternateCalendarInput(): TriviaCalendarInput {
     months: input.months.map((m) =>
       m.month === "2025-11-01" ? { ...m, netWorth: 1200, assets: 1200 } : m,
     ),
+  };
+}
+
+/**
+ * Three months of flows (12 spent, 18 kept) over 2026-01-01 to 2026-10-31
+ * (304 days), a 5 top category and payee, and a complete portfolio gaining
+ * 100: every equivalence id.
+ */
+export function fullEquivalenceInput(): TriviaEquivalenceInput {
+  return {
+    today: "2026-11-19",
+    currency: "CAD",
+    ledger: fullLedgerInput(),
+    portfolio: portfolio(),
   };
 }

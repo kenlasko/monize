@@ -184,6 +184,22 @@ export const TRIVIA_FAMILIES = {
     lane: "evergreen",
     ids: ["incomeRankedSource"],
   },
+  spendingPayeeInCategoryMonths: {
+    lane: "evergreen",
+    ids: ["spendingPayeeInCategoryMonths"],
+  },
+  spendingDailyAverage: {
+    lane: "evergreen",
+    ids: ["spendingDailyAverage"],
+  },
+  incomeKeptCoversDays: {
+    lane: "evergreen",
+    ids: ["incomeKeptCoversDays"],
+  },
+  investmentsGainInMonthsOfSpending: {
+    lane: "evergreen",
+    ids: ["investmentsGainInMonthsOfSpending"],
+  },
 } as const satisfies Record<
   string,
   { lane: TriviaLane; ids: readonly TriviaFactId[] }

@@ -29,9 +29,10 @@ import {
 } from "./trivia-rotation";
 import {
   buildTriviaPrompt,
-  mergeTriviaItems,
-  parseTriviaSentences,
-} from "./trivia-sentences";
+  pickTriviaAngle,
+  type TriviaPromptOptions,
+} from "./trivia-prompt";
+import { mergeTriviaItems, parseTriviaSentences } from "./trivia-sentences";
 import type {
   DashboardTriviaResponse,
   TriviaFact,
@@ -180,9 +181,8 @@ export class DashboardTriviaService {
     }
 
     const day = new Date().toISOString().slice(0, 10);
-    const today = todayInTimezoneOrUtc(
-      (await this.pool.timezoneOf(userId)) ?? "UTC",
-    );
+    const timezone = (await this.pool.timezoneOf(userId)) ?? "UTC";
+    const today = todayInTimezoneOrUtc(timezone);
     const claimed = await this.jobClaims.claimOnce(
       JobClaimType.DashboardTrivia,
       userId,
@@ -201,14 +201,22 @@ export class DashboardTriviaService {
     const stored = await withScopedDb(this.dataSource, (manager) =>
       manager.getRepository(DashboardTrivia).findOne({ where: { userId } }),
     );
+    // A row a page load wrote earlier today is today's, not yesterday's.
+    const previous =
+      stored && todayInTimezoneOrUtc(timezone, stored.generatedAt) < today
+        ? stored
+        : null;
     const selected = selectDailyTrivia(
       pool,
-      yesterdayOf(stored),
+      yesterdayOf(previous),
       userId,
       today,
     );
     const language = await this.jobLanguage(userId, preferences);
-    const aiItems = await this.phraseWithAi(userId, selected, language);
+    const aiItems = await this.phraseWithAi(userId, selected, language, {
+      avoid: this.avoidSentences(previous),
+      angle: pickTriviaAngle(userId, today),
+    });
     const row: DashboardTrivia = {
       userId,
       items: mergeTriviaItems(
@@ -221,6 +229,17 @@ export class DashboardTriviaService {
     };
     await withScopedDb(this.dataSource, (manager) =>
       manager.getRepository(DashboardTrivia).upsert(row, ["userId"]),
+    );
+  }
+
+  /**
+   * Yesterday's model sentences, as stored: templates with `{placeholder}`
+   * names, never text with figures filled in.
+   */
+  private avoidSentences(row: DashboardTrivia | null): string[] {
+    if (!row || !Array.isArray(row.items)) return [];
+    return row.items.flatMap((item) =>
+      item?.source === "ai" && typeof item.text === "string" ? [item.text] : [],
     );
   }
 
@@ -309,6 +328,7 @@ export class DashboardTriviaService {
     userId: string,
     facts: TriviaFact[],
     language: string | undefined,
+    prompt: TriviaPromptOptions,
   ): Promise<TriviaItem[]> {
     try {
       const status = await this.aiService.getStatus(userId);
@@ -317,7 +337,9 @@ export class DashboardTriviaService {
         userId,
         {
           systemPrompt: TRIVIA_SYSTEM_PROMPT + aiLanguageInstruction(language),
-          messages: [{ role: "user", content: buildTriviaPrompt(facts) }],
+          messages: [
+            { role: "user", content: buildTriviaPrompt(facts, prompt) },
+          ],
           maxTokens: 4096,
           temperature: 0.7,
           responseFormat: "json",

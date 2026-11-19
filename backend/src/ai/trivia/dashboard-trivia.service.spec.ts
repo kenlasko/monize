@@ -333,6 +333,7 @@ describe("DashboardTriviaService", () => {
       expect(items).toContainEqual({
         topic: "activity",
         source: "ai",
+        factIds: ["activityTransactions"],
         text: "{transactionCount} rows since {firstTransactionMonth}.",
       });
       // The model left net worth and warranties out; their sentences stay.
@@ -378,6 +379,81 @@ describe("DashboardTriviaService", () => {
     it("keeps the relay out of the provider fall-through", async () => {
       await service.generateForUser(userId);
       expect(ai.complete.mock.calls[0][3]).toEqual({ skipRelay: true });
+    });
+
+    describe("yesterday's wording and the angle of the day", () => {
+      const yesterdayRow = (generatedAt: Date) => ({
+        userId,
+        items: [
+          {
+            topic: "netWorth",
+            source: "ai",
+            text: "Your peak was {peakAmount}.",
+            factIds: ["netWorthHighPoint"],
+          },
+          {
+            topic: "spending",
+            source: "calculated",
+            factId: "spendingLastDay",
+          },
+        ],
+        figures: {
+          peakAmount: { kind: "money", value: 987654, currency: "CAD" },
+          lastDayDate: { kind: "day", value: "2026-11-17" },
+        },
+        language: "fr",
+        generatedAt,
+      });
+
+      beforeEach(() => {
+        jest.useFakeTimers().setSystemTime(new Date("2026-11-19T07:00:00Z"));
+      });
+      afterEach(() => jest.useRealTimers());
+
+      it("sends yesterday's stored templates as wording not to reuse, with an angle", async () => {
+        triviaRepo.findOne.mockResolvedValue(
+          yesterdayRow(new Date("2026-11-18T07:00:00Z")),
+        );
+        await service.generateForUser(userId);
+        const content = ai.complete.mock.calls[0][1].messages[0].content;
+        expect(content).toContain("Angle for today: ");
+        expect(content).toContain(
+          "Sentences shown yesterday (do not reuse their wording; their placeholders belong to yesterday):\n- Your peak was {peakAmount}.",
+        );
+        // Templates only: no stored figure value reaches the provider.
+        expect(content).not.toContain("987654");
+        expect(ai.complete.mock.calls[0][3]).toEqual({ skipRelay: true });
+      });
+
+      it("sends no avoid list for a row a page load wrote earlier today", async () => {
+        triviaRepo.findOne.mockResolvedValue(
+          yesterdayRow(new Date("2026-11-19T01:00:00Z")),
+        );
+        await service.generateForUser(userId);
+        const content = ai.complete.mock.calls[0][1].messages[0].content;
+        expect(content).not.toContain("Sentences shown yesterday");
+      });
+
+      it("does not treat a row written earlier today as yesterday for the rotation", async () => {
+        ledger.load.mockResolvedValue(fullLedgerLoad());
+        daily.load.mockResolvedValue(fullDailyInput());
+        ai.getStatus.mockResolvedValue({
+          configured: false,
+          relayActive: false,
+        });
+        await service.generateForUser(userId);
+        const first = triviaRepo.upsert.mock.calls[0][0];
+        triviaRepo.findOne.mockResolvedValue(first);
+        await service.generateForUser(userId);
+        const second = triviaRepo.upsert.mock.calls[1][0];
+        expect(second.items).toEqual(first.items);
+      });
+
+      it("never calls the relay", async () => {
+        ai.getStatus.mockResolvedValue({ configured: true, relayActive: true });
+        await service.generateForUser(userId);
+        expect(ai.complete).not.toHaveBeenCalled();
+      });
     });
 
     it("gives the model room for every fact", async () => {
@@ -437,9 +513,12 @@ describe("DashboardTriviaService", () => {
       await service.generateForUser(userId);
       const [row, conflict] = triviaRepo.upsert.mock.calls[0];
       expect(conflict).toEqual(["userId"]);
-      expect(row.items).toEqual([
-        { topic: "netWorth", source: "ai", text: "Peak {currentHigh}" },
-      ]);
+      expect(row.items).toContainEqual({
+        topic: "netWorth",
+        source: "ai",
+        text: "Peak {currentHigh}",
+        factIds: ["netWorthAtHighPoint"],
+      });
       expect(ai.complete.mock.calls[0][1].systemPrompt).toContain("French");
       expect(ai.complete.mock.calls[0][2]).toBe("dashboard_trivia");
     });
@@ -674,18 +753,17 @@ describe("DashboardTriviaService", () => {
       await service.generateForUser(userId);
       const stored = triviaRepo.upsert.mock.calls[0][0];
       triviaRepo.upsert.mockClear();
+      const [first, ...rest] = stored.items;
       triviaRepo.findOne.mockResolvedValue({
         ...stored,
         items: [
           {
-            topic: "netWorth",
+            topic: first.topic,
             source: "ai",
             text: "{currentHigh}",
-            factIds: ["netWorthAtHighPoint"],
+            factIds: [first.factId],
           },
-          ...stored.items.filter(
-            (i: { topic: string }) => i.topic !== "netWorth",
-          ),
+          ...rest,
         ],
         language: "de",
       });
@@ -693,9 +771,7 @@ describe("DashboardTriviaService", () => {
       const result = await service.getTrivia(userId);
       const ids = (items: object[]) =>
         (items as { factId?: string }[]).map((i) => i.factId).filter(Boolean);
-      const storedIds = ids(stored.items).filter(
-        (id) => !String(id).startsWith("netWorth"),
-      );
+      const storedIds = ids(rest);
       expect(ids(result.items)).toEqual(expect.arrayContaining(storedIds));
       expect(result.items.every((i) => i.source === "calculated")).toBe(true);
       expect(result.items.length).toBeLessThanOrEqual(TRIVIA_DAILY_COUNT);

@@ -75,7 +75,7 @@ function spendingFacts(input: TriviaLedgerInput): TriviaFact[] {
  * so a ledger begun last month arrives as twelve months, eleven of them
  * empty; counted from its first active month it is one, and says nothing.
  */
-function completeFlows(
+export function completeFlows(
   report: IncomeVsExpensesResponse | null,
 ): IncomeVsExpensesResponse | null {
   if (

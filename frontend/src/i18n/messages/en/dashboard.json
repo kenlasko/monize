@@ -110,7 +110,11 @@
       "incomeTopSourceWindow": "{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {topSourceName} brought in {topSourcePercent} of your income.",
       "spendingRankedCategory": "{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedCategoryName} was number {rankedCategoryRank} among your spending categories, at {rankedCategoryAmount} ({rankedCategoryPercent} of the total).",
       "spendingRankedPayee": "{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedPayeeName} was number {rankedPayeeRank} among the payees you spent the most with, at {rankedPayeeAmount}.",
-      "incomeRankedSource": "{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedSourceName} was number {rankedSourceRank} among your sources of income, bringing in {rankedSourcePercent} of it."
+      "incomeRankedSource": "{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedSourceName} was number {rankedSourceRank} among your sources of income, bringing in {rankedSourcePercent} of it.",
+      "spendingPayeeInCategoryMonths": "Over the last twelve months you spent {equivPayeeAmount} with {equivPayeeName}, about {equivCategoryMonths} months of your average spending on {equivCategoryName}.",
+      "spendingDailyAverage": "Over the last twelve months your spending averaged about {dailyAverageSpent} a day.",
+      "incomeKeptCoversDays": "The {keptCoversAmount} you kept over the last twelve months would cover about {keptCoversDays} of your spending.",
+      "investmentsGainInMonthsOfSpending": "Your investments' {gainCoversAmount} gain is about {gainCoversMonths} months of your average spending."
     }
   },
   "favouriteAccounts": {

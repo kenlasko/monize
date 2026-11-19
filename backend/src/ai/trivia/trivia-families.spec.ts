@@ -6,12 +6,14 @@ import {
   alternateRankedInput,
   fullRankedInput,
   fullDailyInput,
+  fullEquivalenceInput,
   fullLedgerInput,
   fullTriviaFactsInput,
 } from "./__fixtures__/trivia-pool.fixture";
 import { buildTriviaFacts } from "./trivia-facts";
 import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
+import { buildEquivalenceTriviaFacts } from "./trivia-equivalence-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { buildRankedTriviaFacts } from "./trivia-ranked-facts";
 import {
@@ -34,6 +36,7 @@ function builderOutputs(): TriviaFact[][] {
     buildDailyTriviaFacts(alternateDailyInput()),
     buildCalendarTriviaFacts(fullCalendarInput()),
     buildCalendarTriviaFacts(alternateCalendarInput()),
+    buildEquivalenceTriviaFacts(fullEquivalenceInput()),
   ];
 }
 

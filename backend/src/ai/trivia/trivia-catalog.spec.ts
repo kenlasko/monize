@@ -5,11 +5,13 @@ import {
   alternateDailyInput,
   fullCalendarInput,
   fullDailyInput,
+  fullEquivalenceInput,
   alternateRankedInput,
   fullRankedInput,
 } from "./__fixtures__/trivia-pool.fixture";
 import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
+import { buildEquivalenceTriviaFacts } from "./trivia-equivalence-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { buildRankedTriviaFacts } from "./trivia-ranked-facts";
 import { TRIVIA_FACT_IDS, TRIVIA_TOPICS, TRIVIA_WINDOWS } from "./trivia.types";
@@ -150,6 +152,21 @@ describe("trivia catalog", () => {
     ];
     // Every calendar id is produced, so none escapes the check.
     expect(new Set(facts.map((f) => f.id)).size).toBe(8);
+    for (const f of facts) {
+      expect({
+        id: f.id,
+        figures: quotedFigures(catalog.trivia.facts[f.id]),
+      }).toEqual({
+        id: f.id,
+        figures: Object.keys(f.figures).sort(),
+      });
+    }
+  });
+
+  it("quotes in each equivalence sentence exactly the figures its fact carries", () => {
+    const facts = buildEquivalenceTriviaFacts(fullEquivalenceInput());
+    // Every equivalence id is produced, so none escapes the check.
+    expect(new Set(facts.map((f) => f.id)).size).toBe(4);
     for (const f of facts) {
       expect({
         id: f.id,
