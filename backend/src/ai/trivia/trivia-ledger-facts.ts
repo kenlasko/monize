@@ -1,15 +1,9 @@
-import { roundMoney } from "../../common/round.util";
 import type { SpendingByCategoryResponse } from "../../built-in-reports/dto/spending-by-category.dto";
 import type { SpendingByPayeeResponse } from "../../built-in-reports/dto/spending-by-payee.dto";
 import type { IncomeVsExpensesResponse } from "../../built-in-reports/dto/income-vs-expenses.dto";
 import type { IncomeBySourceResponse } from "../../built-in-reports/dto/income-by-source.dto";
-import type {
-  TriviaFact,
-  TriviaFactId,
-  TriviaFigure,
-  TriviaFigures,
-  TriviaTopic,
-} from "./trivia.types";
+import type { TriviaFact } from "./trivia.types";
+import { count, fact, money, month, percent, text } from "./trivia-figures";
 
 /** The reader's records, counted. */
 export interface TriviaRecordCounts {
@@ -47,30 +41,6 @@ export interface TriviaLedgerInput {
 
 /** Fewer months than this is not a year's picture of spending and saving. */
 const MIN_WINDOW_MONTHS = 3;
-
-const money = (value: number, currency: string): TriviaFigure => ({
-  kind: "money",
-  value: roundMoney(value),
-  currency,
-});
-const percent = (value: number): TriviaFigure => ({
-  kind: "percent",
-  value: roundMoney(value),
-});
-const count = (value: number): TriviaFigure => ({ kind: "count", value });
-const month = (value: string): TriviaFigure => ({
-  kind: "month",
-  value: value.slice(0, 7),
-});
-const text = (value: string): TriviaFigure => ({ kind: "text", value });
-
-function fact(
-  id: TriviaFactId,
-  topic: TriviaTopic,
-  figures: TriviaFigures,
-): TriviaFact {
-  return { id, topic, figures };
-}
 
 /**
  * A report total is a total only with every currency converted (its

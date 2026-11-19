@@ -18,7 +18,15 @@ export type TriviaFigure =
   | { kind: "count"; value: number }
   /** `YYYY-MM`. */
   | { kind: "month"; value: string }
-  | { kind: "text"; value: string };
+  | { kind: "text"; value: string }
+  /** `YYYY-MM-DD`, shown as a full date. */
+  | { kind: "date"; value: string }
+  /** `YYYY-MM-DD`, a recent day shown with its weekday. */
+  | { kind: "day"; value: string }
+  /** A whole number of days, shown with its unit. */
+  | { kind: "days"; value: number }
+  /** A whole number of years, shown with its unit. */
+  | { kind: "years"; value: number };
 
 /** Every figure of the day's facts, by the unique name a sentence quotes it by. */
 export type TriviaFigures = Record<string, TriviaFigure>;
@@ -53,10 +61,17 @@ export const TRIVIA_FACT_IDS = [
 ] as const;
 export type TriviaFactId = (typeof TRIVIA_FACT_IDS)[number];
 
+/** The span a windowed fact describes. */
+export const TRIVIA_WINDOWS = ["d30", "d90", "ytd", "m12", "all"] as const;
+export type TriviaWindow = (typeof TRIVIA_WINDOWS)[number];
+
+export type TriviaFactParams = { window?: TriviaWindow };
+
 export interface TriviaFact {
   id: TriviaFactId;
   topic: TriviaTopic;
   figures: TriviaFigures;
+  params?: TriviaFactParams;
 }
 
 /**
@@ -64,8 +79,18 @@ export interface TriviaFact {
  * `factId`; a model's is `text`, with figures as `{name}` placeholders.
  */
 export type TriviaItem =
-  | { topic: TriviaTopic; source: "calculated"; factId: TriviaFactId }
-  | { topic: TriviaTopic; source: "ai"; text: string };
+  | {
+      topic: TriviaTopic;
+      source: "calculated";
+      factId: TriviaFactId;
+      params?: TriviaFactParams;
+    }
+  | {
+      topic: TriviaTopic;
+      source: "ai";
+      text: string;
+      factIds?: TriviaFactId[];
+    };
 
 export interface DashboardTriviaResponse {
   items: TriviaItem[];

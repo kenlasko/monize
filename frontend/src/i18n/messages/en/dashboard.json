@@ -54,6 +54,10 @@
       "warranties": "Warranties"
     },
     "aiGenerated": "Written by AI from your figures",
+    "units": {
+      "days": "{count, plural, one {{value} day} other {{value} days}}",
+      "years": "{count, plural, one {{value} year} other {{value} years}}"
+    },
     "facts": {
       "netWorthSinceStart": "Your net worth was {startAmount} in {startMonth}. It has gained {startGain} since then, so it is about {startMultiple} times larger.",
       "netWorthBiggestJump": "{jumpMonth} was your biggest single-month jump. Net worth rose by {jumpAmount}, from {jumpFrom} in {jumpPreviousMonth} to {jumpTo}.",

@@ -165,6 +165,29 @@ describe('TriviaWidget', () => {
     }
   });
 
+  it('skips a calculated fact its catalog lacks and counts only what it shows', () => {
+    state.trivia = list({
+      items: [
+        { topic: 'netWorth', source: 'calculated', factId: 'aFactFromANewerServer' },
+        { topic: 'netWorth', source: 'ai', text: 'one {a}' },
+        { topic: 'investments', source: 'ai', text: 'two {a}' },
+      ],
+      figures: { a: { kind: 'text', value: 'A' } },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(screen.getByText('1 of 2')).toBeInTheDocument();
+    expect(sentence()).not.toHaveTextContent('aFactFromANewerServer');
+  });
+
+  it('writes a day figure with its weekday', () => {
+    state.trivia = list({
+      items: [{ topic: 'spending', source: 'ai', text: 'On {d} you spent {n}.' }],
+      figures: { d: { kind: 'day', value: '2026-11-18' }, n: { kind: 'count', value: 2 } },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent('On Wednesday, November 18 you spent 2.');
+  });
+
   it('offers no arrows for a single fact', () => {
     state.trivia = list({
       items: [{ topic: 'netWorth', source: 'ai', text: 'only {a}' }],
