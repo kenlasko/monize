@@ -22,6 +22,8 @@ import {
 import { currentRequestLocale } from "../../i18n/request-locale";
 import { DashboardTrivia } from "../entities/dashboard-trivia.entity";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
+import { dueTriviaUsers } from "./trivia-due-users";
+import { keepForRewording } from "./trivia-kept";
 import {
   orderForDisplay,
   selectDailyTrivia,
@@ -65,9 +67,19 @@ export class DashboardTriviaService {
    * The stored list. A user the daily job has not reached yet (a new account,
    * the day this ships) gets a calculated one, stored so the next dashboard
    * load does not work it out again. So does a list a model worded in another
-   * language than the reader now uses, until the next daily run. A list with nothing in it is not stored,
-   * so a reader's first import shows up on the next load rather than the next
-   * morning. No provider is called from a page load.
+   * language than the reader now uses, until the next daily run. A list with
+   * nothing in it is not stored, so a reader's first import shows up on the
+   * next load rather than the next morning. No provider is called from a page
+   * load.
+   *
+   * Which row counts as yesterday: the stored row, while its `generatedAt` is
+   * on an earlier local day than the reader's today. Only the daily job
+   * replaces such a row. A page load that finds one (the job has not reached
+   * the reader yet, or missed) answers with a calculated list for today,
+   * rotated away from the stored one, and stores nothing, so the job still
+   * sees the real yesterday and still words the day's list. A rewording
+   * rewrites a row of today and keeps its `generatedAt`, so the row stays what
+   * it was.
    */
   async getTrivia(userId: string): Promise<DashboardTriviaResponse> {
     const preferences = await this.loadPreferences(userId);
@@ -79,33 +91,44 @@ export class DashboardTriviaService {
       manager.getRepository(DashboardTrivia).findOne({ where: { userId } }),
     );
     const language = this.readerLanguage(preferences);
-    if (stored && !this.needsRewording(stored, language)) {
+    const timezone = (await this.pool.timezoneOf(userId)) ?? "UTC";
+    const today = todayInTimezoneOrUtc(timezone);
+    const stale =
+      stored !== null &&
+      todayInTimezoneOrUtc(timezone, stored.generatedAt) < today;
+    if (stored && !stale && !this.needsRewording(stored, language)) {
       if (stored.language !== language)
         await this.saveLanguage(userId, language);
       return this.toResponse(stored);
     }
 
-    const today = todayInTimezoneOrUtc(
-      (await this.pool.timezoneOf(userId)) ?? "UTC",
-    );
     const facts = await this.pool.build(userId, preferences, {
       today,
       mode: "page",
     });
-    const selected = stored
-      ? this.keptFacts(stored, facts)
-      : selectDailyTrivia(facts, null, userId, today);
-    const shown =
-      selected.length > 0
-        ? selected
-        : selectDailyTrivia(facts, null, userId, today);
-    const row: DashboardTrivia = {
+    if (stored && stale) {
+      if (stored.language !== language)
+        await this.saveLanguage(userId, language);
+      const selected = selectDailyTrivia(
+        facts,
+        yesterdayOf(stored),
+        userId,
+        today,
+      );
+      return this.toResponse(
+        this.calculatedRow(userId, selected, language, today, new Date()),
+      );
+    }
+    const kept = stored ? keepForRewording(stored, facts, userId, today) : [];
+    const selected =
+      kept.length > 0 ? kept : selectDailyTrivia(facts, null, userId, today);
+    const row = this.calculatedRow(
       userId,
-      items: mergeTriviaItems(orderForDisplay(shown, userId, today), []),
-      figures: this.figuresOf(shown),
+      selected,
       language,
-      generatedAt: new Date(),
-    };
+      today,
+      stored?.generatedAt ?? new Date(),
+    );
     if (row.items.length === 0) return this.toResponse(row);
     if (stored) {
       await withScopedDb(this.dataSource, (manager) =>
@@ -126,25 +149,30 @@ export class DashboardTriviaService {
     return this.toResponse(row);
   }
 
-  @Cron("30 6 * * *")
+  /**
+   * The hourly tick. Each reader whose local day began within the last few
+   * hours is offered to `generateForUser`, whose per-day claim lets one tick
+   * (and one replica) build the day's list.
+   */
+  @Cron("17 * * * *")
   async handleDailyGeneration(): Promise<void> {
-    this.logger.log("Starting daily dashboard trivia generation");
-    // RLS: a cross-user fan-out over the active users.
-    const userIds = await withSystemContext(() => this.getActiveUserIds());
+    // RLS: a cross-user fan-out over the active users, by timezone bucket.
+    const due = await withSystemContext(() =>
+      dueTriviaUsers(this.dataSource, new Date()),
+    );
+    if (due.length === 0) return;
+    this.logger.log(`Dashboard trivia: ${due.length} users in their window`);
     await mapWithConcurrency(
-      userIds,
+      due,
       TRIVIA_GENERATION_CONCURRENCY,
-      async (userId) => {
+      async ({ userId, timezone }) => {
         try {
           // RLS: each user's list is built and stored under that user, in
           // that user's timezone, so the day the reads call "today" is theirs.
-          const timezone = await withUserContext(userId, () =>
-            this.pool.timezoneOf(userId),
-          );
           await withUserContext(
             userId,
-            () => this.generateForUser(userId),
-            timezone ?? undefined,
+            () => this.generateForUser(userId, timezone),
+            timezone,
           );
         } catch (error) {
           const message =
@@ -155,23 +183,29 @@ export class DashboardTriviaService {
         }
       },
     );
-    this.logger.log(
-      `Daily dashboard trivia generation complete for ${userIds.length} users`,
-    );
   }
 
   /**
-   * One user's list for the day. Every replica fires the cron, and a model call
-   * is paid for, so the claim comes first. It is permanent for the day and not
-   * released on failure: yesterday's row stays until tomorrow's run, which is
-   * what a list of trivia can afford.
+   * One user's list for their local day. Every replica fires the cron, a
+   * model call is paid for, and the user is reached on several ticks, so the
+   * claim, keyed by the reader's local day, comes before any other read. It is
+   * permanent for the day and not released on failure: yesterday's row stays
+   * until tomorrow's run, which is what a list of trivia can afford.
    *
    * A reader who switched the trivia off, or has no Trivia widget on the
    * dashboard, never sees the list, so nothing is built or sent to their
    * provider. Their row goes, as does one with nothing
    * left to say, so the next dashboard load works out a current list.
    */
-  async generateForUser(userId: string): Promise<void> {
+  async generateForUser(userId: string, timezone: string): Promise<void> {
+    const today = todayInTimezoneOrUtc(timezone);
+    const claimed = await this.jobClaims.claimOnce(
+      JobClaimType.DashboardTrivia,
+      userId,
+      `daily:${today}`,
+    );
+    if (!claimed) return;
+
     const preferences = await this.loadPreferences(userId);
     const widgetShown =
       preferences?.dashboardWidgets?.includes(TRIVIA_WIDGET_ID) ?? false;
@@ -179,16 +213,6 @@ export class DashboardTriviaService {
       await this.deleteRow(userId);
       return;
     }
-
-    const day = new Date().toISOString().slice(0, 10);
-    const timezone = (await this.pool.timezoneOf(userId)) ?? "UTC";
-    const today = todayInTimezoneOrUtc(timezone);
-    const claimed = await this.jobClaims.claimOnce(
-      JobClaimType.DashboardTrivia,
-      userId,
-      `daily:${day}`,
-    );
-    if (!claimed) return;
 
     const pool = await this.pool.build(userId, preferences, {
       today,
@@ -201,7 +225,7 @@ export class DashboardTriviaService {
     const stored = await withScopedDb(this.dataSource, (manager) =>
       manager.getRepository(DashboardTrivia).findOne({ where: { userId } }),
     );
-    // A row a page load wrote earlier today is today's, not yesterday's.
+    // A row written earlier today (a new reader's first load) is today's.
     const previous =
       stored && todayInTimezoneOrUtc(timezone, stored.generatedAt) < today
         ? stored
@@ -232,6 +256,23 @@ export class DashboardTriviaService {
     );
   }
 
+  /** A row of calculated sentences for `selected`, in the day's order. */
+  private calculatedRow(
+    userId: string,
+    selected: TriviaFact[],
+    language: string,
+    today: string,
+    generatedAt: Date,
+  ): DashboardTrivia {
+    return {
+      userId,
+      items: mergeTriviaItems(orderForDisplay(selected, userId, today), []),
+      figures: this.figuresOf(selected),
+      language,
+      generatedAt,
+    };
+  }
+
   /**
    * Yesterday's model sentences, as stored: templates with `{placeholder}`
    * names, never text with figures filled in.
@@ -240,31 +281,6 @@ export class DashboardTriviaService {
     if (!row || !Array.isArray(row.items)) return [];
     return row.items.flatMap((item) =>
       item?.source === "ai" && typeof item.text === "string" ? [item.text] : [],
-    );
-  }
-
-  /**
-   * Today's choice kept for a rewording: the pool facts the stored row shows,
-   * by id and params for a calculated item, by `factIds` for a model's. An
-   * old row naming none of them keeps nothing, so the caller selects afresh.
-   */
-  private keptFacts(row: DashboardTrivia, pool: TriviaFact[]): TriviaFact[] {
-    const calculated = row.items.flatMap((item) =>
-      item.source === "calculated" ? [item] : [],
-    );
-    const aiIds = new Set(
-      row.items.flatMap((item) =>
-        item.source === "ai" && Array.isArray(item.factIds) ? item.factIds : [],
-      ),
-    );
-    return pool.filter(
-      (fact) =>
-        aiIds.has(fact.id) ||
-        calculated.some(
-          (item) =>
-            item.factId === fact.id &&
-            item.params?.window === fact.params?.window,
-        ),
     );
   }
 
@@ -355,18 +371,6 @@ export class DashboardTriviaService {
       );
       return [];
     }
-  }
-
-  private async getActiveUserIds(): Promise<string[]> {
-    const rows = await withScopedDb(this.dataSource, (manager) =>
-      manager
-        .createQueryBuilder()
-        .select("u.id", "userId")
-        .from("users", "u")
-        .where("u.is_active = true")
-        .getRawMany<{ userId: string }>(),
-    );
-    return rows.map((r) => r.userId);
   }
 
   private figuresOf(facts: TriviaFact[]): TriviaFigures {
