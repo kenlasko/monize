@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, one {# effect deelt} other {# effecten delen}} een symbool met een ander; de latere zijn hernoemd zodat ze gescheiden blijven.",
     "generatedSecuritySymbol": "{count, plural, one {# effect heeft} other {# effecten hebben}} geen symbool in KMyMoney, dus er is een tijdelijk symbool gemaakt en koersupdates zijn uitgezet.",
     "loanInterestRateNotImported": "{count, plural, one {# lening heeft} other {# leningen hebben}} in KMyMoney een rentepercentage dat niet is geïmporteerd. Voer het in op de leningrekening in Monize.",
+    "loanTermsNotImported": "{count, plural, one {# lening heeft} other {# leningen hebben}} in KMyMoney een looptijd of oorspronkelijk bedrag dat niet kon worden gelezen en daarom niet is geïmporteerd.",
     "loanInterestCategoryUnclear": "{count, plural, one {# leningbetaling bevatte} other {# leningbetalingen bevatten}} meerdere categorieën naast de aflossing, dus de rentecategorie van de lening is niet ingesteld. Controleer of de betaling escrow bevat en stel de rentecategorie na het importeren in.",
     "loanScheduleSimplified": "{count, plural, one {# geplande aflossing splitst} other {# geplande aflossingen splitsen}} elke betaling bij het invoeren in hoofdsom en rente; {count, plural, one {die is} other {die zijn}} geïmporteerd als één overboeking van het betalingsbedrag.",
     "investmentScheduleNotImported": "{count, plural, one {# geplande beleggingstransactie is} other {# geplande beleggingstransacties zijn}} niet geïmporteerd.",

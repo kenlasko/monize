@@ -34,6 +34,7 @@ import {
 } from "./kmy-file-summary";
 import { mapKmyAccounts, withOpeningBalances } from "./kmy-map-accounts";
 import { mapKmyCategories } from "./kmy-map-categories";
+import { readKmyLoanTerms, withKmyLoanTerms } from "./kmy-loan-terms";
 import { mapKmyInvestmentsSteps } from "./kmy-map-investments";
 import {
   mapKmyPayees,
@@ -170,7 +171,15 @@ function* mapKmyFileSteps(
       : options.bills.filter((handle) => candidates.has(handle));
   const chosen = selectedBills(bills, selectedHandles);
   const billRefs = billReferences(chosen);
-  const loans = mapLoans({ accounts, transactions, bills: chosen });
+  const statedLoanTerms = readKmyLoanTerms({
+    raw,
+    mapping,
+    coinDecimals: input.coinDecimals,
+  });
+  const loans = withKmyLoanTerms(
+    mapLoans({ accounts, transactions, bills: chosen }),
+    statedLoanTerms.terms,
+  );
 
   const referencedPayees = options.referencedOnlyPayees
     ? union(
@@ -330,6 +339,7 @@ function* mapKmyFileSteps(
       ...prices.warnings,
       ...bills.warnings,
       ...loans.warnings,
+      ...statedLoanTerms.warnings,
       ...payees.warnings,
       ...repeated("costCentersNotImported", costCenters),
       ...repeated("budgetsNotImported", raw.counts.budgets),

@@ -149,6 +149,7 @@ export const KMY_WARNING_CODES: readonly string[] = [
   'reconciliationHistoryNotImported',
   'securityTransferInferred',
   'sharesRounded',
+  'loanTermsNotImported',
 ];
 
 /**

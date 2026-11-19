@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, one {# प्रतिभूति} other {# प्रतिभूतियाँ}} किसी अन्य के साथ प्रतीक साझा करती थीं; अलग बनी रहें इसलिए बाद वाली का नाम बदल दिया गया।",
     "generatedSecuritySymbol": "{count, plural, one {# प्रतिभूति का} other {# प्रतिभूतियों का}} KMyMoney में कोई प्रतीक नहीं है, इसलिए एक अस्थायी प्रतीक बनाया गया और मूल्य अद्यतन बंद रखे गए।",
     "loanInterestRateNotImported": "{count, plural, one {# ऋण की} other {# ऋणों की}} KMyMoney में एक ब्याज दर है जिसे आयात नहीं किया गया। उसे Monize में ऋण खाते पर दर्ज करें।",
+    "loanTermsNotImported": "{count, plural, one {# ऋण की} other {# ऋणों की}} KMyMoney में एक अवधि या मूल राशि है जिसे पढ़ा नहीं जा सका, इसलिए उसे आयात नहीं किया गया।",
     "loanInterestCategoryUnclear": "{count, plural, one {# ऋण भुगतान में} other {# ऋण भुगतानों में}} मूलधन के अलावा कई श्रेणियाँ शामिल थीं, इसलिए ऋण की ब्याज श्रेणी अनसेट रह गई। जाँचें कि क्या भुगतान में एस्क्रो (escrow) शामिल है और आयात के बाद ब्याज श्रेणी सेट करें।",
     "loanScheduleSimplified": "{count, plural, one {# ऋण भुगतान शेड्यूल} other {# ऋण भुगतान शेड्यूल}} दर्ज करते समय हर भुगतान को मूलधन और ब्याज में बाँटता है; उन्हें भुगतान राशि के एक स्थानांतरण के रूप में आयात किया गया।",
     "investmentScheduleNotImported": "{count, plural, one {# निर्धारित निवेश लेन-देन} other {# निर्धारित निवेश लेन-देन}} आयात नहीं किया गया।",

@@ -54,7 +54,9 @@ export function accountWarnings(
   if (account.hasOnlineBanking) {
     warnings.push({ code: "onlineBankingNotImported", subject });
   }
-  if (account.type === KMY_TYPE.LOAN || account.type === KMY_TYPE.ASSET_LOAN) {
+  // A loan's own rates import (spec 5.11, `kmy-loan-terms`); an asset loan
+  // imports as an asset, which has no rate timeline to carry them.
+  if (account.type === KMY_TYPE.ASSET_LOAN) {
     const latest = latestInterestRate(account);
     if (latest !== null) {
       warnings.push({

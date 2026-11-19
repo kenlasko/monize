@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, other {# 只证券}}与另一只共用代码；为保持区分，后出现的已重命名。",
     "generatedSecuritySymbol": "{count, plural, other {# 只证券}}在 KMyMoney 中没有代码，因此生成了占位代码并关闭了价格更新。",
     "loanInterestRateNotImported": "{count, plural, other {# 笔贷款}}在 KMyMoney 中设有利率，但未导入。请在 Monize 的贷款账户中输入。",
+    "loanTermsNotImported": "{count, plural, other {# 笔贷款}}在 KMyMoney 中的期限或原始金额无法读取，因此未导入。",
     "loanInterestCategoryUnclear": "{count, plural, other {# 笔贷款还款}}包含了本金以外的多个类别，因此贷款的利息类别未设置。请检查还款是否包含托管款项（escrow），并在导入后设置利息类别。",
     "loanScheduleSimplified": "{count, plural, other {# 个贷款还款计划}}在录入时会把每笔还款拆分为本金和利息；它们已作为一笔金额为还款额的转账导入。",
     "investmentScheduleNotImported": "{count, plural, other {# 笔计划的投资交易}}未导入。",

@@ -115,7 +115,7 @@ With **Start fresh** ticked, **Start import** first opens **Remove Existing Data
 - **Securities and price history.** Only securities that a holding in an imported account refers to, with their type (stock, mutual fund, bond) where KMyMoney records one.
 - **Exchange rates**, for the currencies your accounts and securities actually use. Rates already stored in Monize are never replaced, and every imported rate and price is labelled as coming from the KMyMoney import.
 - **Scheduled transactions** you ticked, with their frequency and next due date, created active and set **not** to post automatically, so nothing lands in your accounts without you.
-- **Loans.** The payment structure is kept: the principal leg is a transfer to the loan account and the interest leg is a category. Where payments and a selected schedule make it unambiguous, the loan's funding account, payment amount, frequency and start date are filled in too.
+- **Loans.** The payment structure is kept: the principal leg is a transfer to the loan account and the interest leg is a category. Where payments and a selected schedule make it unambiguous, the loan's funding account, payment amount, frequency and start date are filled in too. The loan's interest rate, original amount and term come across from the loan account: the first rate becomes the account's interest rate, and every later change becomes an entry in the loan's rate history, dated as it is in KMyMoney. The term (KMyMoney's number of payments) becomes the loan's amortization period in months. A loan you already set any of these on in Monize keeps your values.
 
 ### Payee Matching Rules
 
@@ -200,7 +200,7 @@ Each of the items above that exists in your file is counted in the **Notes about
 
 **Schedules.** The weekend rule and automatic entry are not carried over: a due date stays on the date as scheduled, and a schedule KMyMoney would have entered automatically waits for you to post it. A schedule whose next due date was already in the past arrives overdue, as it shows in KMyMoney. Monize also writes every imported schedule without auto-posting. A loan payment schedule imports as one transfer of the payment amount, because KMyMoney works out the principal and interest split when the payment is entered and does not store it.
 
-**Loan interest rate.** KMyMoney stores a loan's interest rate, original principal and term on the account. Monize does not import them; the notes name each loan and its latest rate so you can enter it on the loan account.
+**Loan terms.** A rate history entry records the rate only: KMyMoney keeps one payment amount for the loan, not the payment at each rate, so the loan's payment stays the one amount it imported. Change the payment on a rate history entry if it changed with the rate. A rate, an original amount or a term that cannot be read is listed in the notes, and so is the rate of a loan you made to someone else, which imports as an asset account. The final payment amount, fixed or variable rate setting and compounding frequency are not imported.
 
 **Investment accounts without a findable cash account.** If Monize cannot find an investment account's brokerage account, it creates an empty cash account for it and says so. Trades paid from other accounts still move those accounts correctly.
 
@@ -242,7 +242,7 @@ When the import finishes, the **Balance verification** table lists every account
 Then:
 
 1. **Review auto-created securities** in **Tools > Securities**. A security that had no symbol gets a placeholder and is excluded from price updates until you give it a real symbol and exchange.
-2. **Enter loan interest rates** on your loan accounts (see Known Limitations).
+2. **Check your loans' rate history**, and enter any rate or term the notes listed (see Known Limitations).
 3. **Recreate budgets** -- see [Budgets](budgets.md).
 4. **Check your scheduled transactions** in [Bills and Deposits](bills-and-deposits.md). Imported schedules are active but set not to post automatically; switch on auto-posting for the ones you want it on, and post or skip anything that arrived overdue.
 5. **Check your payee aliases** in **Payees** for the ones the notes named as overlapping, and add by hand any matching rule that was skipped.

@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "[XX-{count, plural, one {# security shares} other {# securities share}} a symbol with another; the later ones were renamed so they stay separate.-XX]",
     "generatedSecuritySymbol": "[XX-{count, plural, one {# security has} other {# securities have}} no symbol in KMyMoney, so a placeholder was generated and price updates left off.-XX]",
     "loanInterestRateNotImported": "[XX-{count, plural, one {# loan has} other {# loans have}} an interest rate in KMyMoney that was not imported. Enter it on the loan account in Monize.-XX]",
+    "loanTermsNotImported": "[XX-{count, plural, one {# loan has} other {# loans have}} a term or original amount in KMyMoney that could not be read, so it was not imported.-XX]",
     "loanInterestCategoryUnclear": "[XX-{count, plural, one {# loan payment included} other {# loan payments included}} multiple non-principal categories, so the loan's interest category was left unset. Check whether the payment includes escrow and set the interest category after import.-XX]",
     "loanScheduleSimplified": "[XX-{count, plural, one {# scheduled loan payment splits} other {# scheduled loan payments split}} each payment into principal and interest when it is entered; {count, plural, one {it was} other {they were}} imported as one transfer of the payment amount.-XX]",
     "investmentScheduleNotImported": "[XX-{count, plural, one {# scheduled investment transaction was} other {# scheduled investment transactions were}} not imported.-XX]",

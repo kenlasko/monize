@@ -59,7 +59,8 @@ Import a KMyMoney file end to end, preserving:
 Also: active schedules as scheduled transactions the user ticks in the review step; tags; payees, with
 their KMyMoney matching rules as payee aliases wherever the rule translates exactly, their default
 categories and their contact details (section 5.5); institutions as the account's institution name; loan payment structure (principal transfer plus interest
-category) and the loan's inferred terms through the existing `backend/src/import/mny/map/map-loans.ts`.
+category) and the loan's inferred terms through the existing `backend/src/import/mny/map/map-loans.ts`;
+the loan's rate history, original amount and term from its account KVPs (section 5.11).
 
 ### Non-goals (v1, said in the review step's notes, the user guide and the verification report)
 
@@ -367,6 +368,9 @@ and each change gets its own new spec case.
 | `backend/src/import/mny/writers/write-prices.ts` | `KMY_PRICE_SOURCE = "kmy_import"`; `writeSecurityPrices` and `writeExchangeRates` take an optional trailing `source` (default `MNY_PRICE_SOURCE`) |
 | `backend/src/import/mny/map/map-investments.ts` | `pairShareTransfers` is exported (no body change); rows take their ids from `moneyJournalIds` and `orderForReplay` moved to `replay-order.ts` (5.7.8: the one Money change in behaviour, and only in the order of same-day rows, which was random before) |
 | `backend/src/import/import.module.ts` | the KMyMoney controller and providers, and `{ provide: KMY_SOURCE_PARSER, useExisting: KmyParserService }` |
+| `backend/src/import/mny/model/mny-import-model.ts` (loan-terms amendment) | `MappedLoanTerms` gains optional `rates?`, `originalPrincipal?` and `amortizationMonths?`, and the `MappedLoanRate` interface (5.11) |
+| `backend/src/import/mny/writers/write-loans.ts` (loan-terms amendment) | fills `interestRate`, `originalPrincipal` and `amortizationMonths` where empty and writes the rate timeline (5.11); a loan without the new fields issues the queries it did before |
+| `backend/src/import/mny/model/mny-warnings.ts` (loan-terms amendment) | `loanTermsNotImported` appended |
 
 New shared file (no Money behaviour): a model file under `backend/src/import/mny/model/` holding
 `ImportSourceFormat = "mny" | "kmy"`, `KmyFileSummary`, `ImportSourceParser`, `ImportSourceParseInput`
@@ -1180,20 +1184,65 @@ Example (the reference's section 18): `SCH000001` "Electricity", Bill, Monthly x
 ### 5.11 Loans
 
 KMyMoney stores loan terms as account KVPs (R5.9); Monize's model for an imported loan is
-`MappedLoanTerms`, inferred from payments and bills. The shared `mapLoans` is called over the KMyMoney
-model exactly as the Money parser calls it (accounts, transactions, selected bills), so loan payments
-booked as a transfer leg plus an interest leg give the interest category, the SPLIT booking mode, the
-source account and, from a selected loan schedule, the payment amount, frequency and start date. The
-interest rate (`ir-YYYY-MM-DD`), original principal, term and final payment have no field in
-`MappedLoanTerms`: `loanInterestRateNotImported` names the loan and its latest rate so the user enters it
-(adding the field is a follow-up, section 13). The "Loan payout" transaction imports as an ordinary
-transfer.
+`MappedLoanTerms`, filled from two sources and merged per account key.
+
+**Inferred from payments and bills.** The shared `mapLoans` is called over the KMyMoney model exactly as
+the Money parser calls it (accounts, transactions, selected bills), so loan payments booked as a transfer
+leg plus an interest leg give the interest category, the SPLIT booking mode, the source account and, from
+a selected loan schedule, the payment amount, frequency and start date.
+
+**Read from the account's KVPs** (`backend/src/import/kmy/map/kmy-loan-terms.ts`), for a type 5 (Loan)
+account that imports as a Monize LOAN:
+
+| `MappedLoanTerms` field | KMyMoney source | Rule |
+|---|---|---|
+| `rates` | every `ir-YYYY-MM-DD` key | keys whose date is a calendar date, ascending; the value parsed as a KMyMoney number and read as percent per annum (reference section 19, item 3), at 4 places; a value that does not parse or lies outside 0 to 100 is left out and named in `loanInterestRateNotImported`; a rate equal to the one kept before it is dropped, since it changes nothing |
+| `originalPrincipal` | `loan-amount` | the absolute value at the account currency's places; 0 is no amount; unreadable or above 999,999,999,999 (the account DTO's bound) is null and named in `loanTermsNotImported` |
+| `amortizationMonths` | `term` and the loan-payment schedule | `term` is a count of payments (R5.9) and the schedule is the one the `schedule` KVP names. Months = round(term x 12 / payments per year), with payments per year 12/m (monthly), 1/m (yearly), 52/m (weekly) or 24/m (half-month), m the normalized multiplier. A missing or unknown schedule, a daily or once occurrence, a term that is not a positive integer, or a result outside 1 to 1,200 is null and named in `loanTermsNotImported` |
+
+KMyMoney's `term` goes to `amortizationMonths`, not `termMonths`: it is the whole life of the loan, which
+is Monize's amortization period, and `termMonths` is a mortgage's renewal term, which KMyMoney does not
+record. `final-payment`, `fixed-interest`, `interest-calculation`, `compoundingFrequency`,
+`interest-nextchange` and the change-frequency keys have no Monize field and are not imported.
+
+`withKmyLoanTerms` merges the two: an account with KVP terms and no `mapLoans` entry gets one whose
+inferred fields are all null and whose `paymentsObserved` is 0, so it raises no
+`loanInterestCategoryUnclear`. The Money mapper never sets the three fields.
+
+**Writing** (`writeLoans`, shared). The writer's fill-only-empty rule covers the new fields:
+`interestRate`, `originalPrincipal` and `amortizationMonths` are each written only where the account's
+column is null.
+
+- `interestRate` is the earliest rate, the origination rate. That is what the scalar means once a loan
+  has a timeline: the rate before the first `loan_rate_changes` row (`effectiveAnnualRateOn`).
+- With two or more rates the writer also adds `loan_rate_changes` rows, in the import's transaction: the
+  first rate as an `initial` row effective on its own date and every later rate as a `manual` row
+  effective on its date. They are `manual` because they are the user's own records, which rate detection
+  keeps (it replaces only `inferred` rows). `new_payment_amount` is null on every row: the file records
+  one payment (`periodic-payment`), not the payment at each rate, and a null payment leaves the
+  installment reading `accounts.payment_amount` (`datedAnnuityPayment`, INV-LOAN-009).
+- The rows are written only when the same import writes the scalar (the account had no rate) and the
+  account holds no `loan_rate_changes` row; otherwise the timeline is the user's and is left alone. The
+  dates are unique per account because the KVP keys are, which `uq_loan_rate_changes_account_date`
+  requires.
+- Nothing re-prices the scheduled bill. The import writes the timeline the way detection does; the
+  rate-change sync stays an offer the user confirms on the rate-history screen.
+
+Example: `ir-2023-01-01` = `3/1`, `ir-2024-01-01` = `9/2`, `ir-2024-06-01` = `9/2`, `loan-amount` =
+`250000/1`, `term` = `300`, a monthly x1 schedule: `interestRate` 3, `originalPrincipal` 250000,
+`amortizationMonths` 300, timeline rows (2023-01-01, 3, initial) and (2024-01-01, 4.5, manual); the
+2024-06-01 key repeats 4.5 and is dropped. A weekly x2 schedule with `term` 650 gives 650 x 12 / 26 = 300
+months.
+
+A type 14 (AssetLoan) account imports as an asset (`assetLoanAsAsset`), which carries no loan terms; its
+latest rate stays named in `loanInterestRateNotImported`. The "Loan payout" transaction imports as an
+ordinary transfer.
 
 ### 5.12 Warning catalogue
 
 Every code is appended to `MNY_WARNING_CODES` unless marked "existing"; the seven `payeeMatching*`,
 `payeeMatch*`, `payeeDefaultCategoryNotImported` and `payeeDetailsKept` codes of the payee amendment are
-appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing` and then the codes of the review fixes in this order: `tradeAmountsDiffer`, `investmentTransactionUnclassified`, `sameAccountTransferUnlinked`, `reconciliationHistoryNotImported`, `securityTransferInferred`, `sharesRounded`. A warning carries no English;
+appended after `holdingsReplayDiffers`, in the order of this table, followed by `crossCurrencyTransferRateMissing` and then the codes of the review fixes in this order: `tradeAmountsDiffer`, `investmentTransactionUnclassified`, `sameAccountTransferUnlinked`, `reconciliationHistoryNotImported`, `securityTransferInferred`, `sharesRounded`, then `loanTermsNotImported` (the loan-terms amendment, 5.11). A warning carries no English;
 the frontend renders `import.kmyWarnings.<code>` with the count (ICU plural). `row` is set when the
 warning is about one transaction (the review step lists the rows). The en sentences below are the copy
 WP4 writes; they avoid `--` (frontend rule).
@@ -1234,7 +1283,8 @@ WP4 writes; they avoid `--` (frontend rule).
 | crossCurrencyTradeUnconverted (existing) | commodity not convertible | yes | {count} trades were recorded in a currency other than the security's and the file has no rate to convert them; their amounts were imported unconverted. Check the price of each. |
 | duplicateSecuritySymbol (existing) | | | {count} securities share a symbol with another; the later ones were renamed so they stay separate. |
 | generatedSecuritySymbol (existing) | | | {count} securities have no symbol in KMyMoney, so a placeholder was generated and price updates left off. |
-| loanInterestRateNotImported | loan with `ir-` KVPs | | {count} loans have an interest rate in KMyMoney that was not imported. Enter it on the loan account in Monize. |
+| loanInterestRateNotImported | 5.11: an AssetLoan with `ir-` KVPs (its latest rate), or a loan's `ir-` value that does not parse or lies outside 0 to 100 (that value) | | {count} loans have an interest rate in KMyMoney that was not imported. Enter it on the loan account in Monize. |
+| loanTermsNotImported | 5.11: a loan's `loan-amount` or `term` that could not be read or converted (`detail` names the KVP and its value) | | {count} loans have a term or original amount in KMyMoney that could not be read, so it was not imported. |
 | loanInterestCategoryUnclear (existing) | from `mapLoans` | | as Money's copy, with KMyMoney named |
 | loanScheduleSimplified | loan schedule | | {count} loan payment schedules split each payment into principal and interest when it is entered; they were imported as one transfer of the payment amount. |
 | investmentScheduleNotImported | template on a stock account | | {count} scheduled investment transactions were not imported. |
@@ -1621,6 +1671,9 @@ Reused unchanged (format-neutral): `mnyJobNotFound`, `mnyImportAlreadyRunning`, 
 | a payee phone number without a country code, and no region in the user's preferences | not imported, `payeeDetailsNotImported` | a guessed region stores a plausible wrong number (`backend/src/common/phone-number.util.ts`) |
 | an existing Monize payee already has a default category or a contact field | kept, `payeeDetailsKept` | it is the user's own data; the import only fills what is empty |
 | a matching key Monize cannot express exactly | not imported, named in `payeeMatchKeyNotImported` | an alias that matches differently would assign later rows to the wrong payee without anyone noticing |
+| a loan rate, original amount or term the file holds in a form Monize cannot read (5.11) | null, named in `loanInterestRateNotImported` or `loanTermsNotImported` | never 0 or a default term: a 0 % rate or a 300-month default would price every installment wrong |
+| a loan with one payment amount and several rates | each rate row's `new_payment_amount` null | the file does not say what was paid at each rate; null keeps the account's payment, the honest reading of one stated payment |
+| a loan account that already has a rate, an original amount, an amortization period or rate history | kept | it is the user's own data; the import only fills what is empty |
 
 ## 10. Invariants touched
 
@@ -1628,7 +1681,9 @@ INV-IMPORT-001 (one active job per user, shared across formats; its wording wide
 "MNY or KMY import"), INV-IMPORT-002 (a retry never double-imports: unchanged mechanism), INV-IMPORT-003
 (category collision: shared writer), INV-FX-003 and INV-FX-004 (rate orientation and additive insert:
 shared writer), INV-FX-002 (a transfer's own rate), INV-TRADE-001, INV-CRYPTO-001 (5.2.1, 5.8),
-INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multiplies).
+INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multiplies), INV-LOAN-006 and
+INV-LOAN-009 (an imported loan's rate timeline is the one installment pricing reads; its rows state no
+payment, so the installment keeps `accounts.payment_amount`).
 
 ## 11. Test matrix
 
@@ -1646,6 +1701,8 @@ INV-HOLDING-001 (holdings only from the canonical rebuild), FIN-003 (SPLIT multi
 | stock-split checks | map-stock-splits spec | raw builders | the three rows of 5.7.5 |
 | securities and prices | map-securities / map-prices specs | raw builders | symbols, types, crypto skip, price filter, rate filter, orientation of both directions |
 | schedules | map-schedules spec | raw builders | every row of 5.10.2; next-due recomputation (31 Jan, 28/29 Feb, 31 Mar); loan schedule; auto-calc payment; finished; overdue |
+| loan terms | kmy loan-terms spec | raw builders | the 5.11 example; each rate rule (bad date, unparsable, out of range, repeated rate, single rate); principal sign, zero and bound; term for monthly, yearly, weekly x2 and half-month schedules, a daily one, a missing schedule, a non-integer term and the 1,200 bound; AssetLoan and Liability carry no terms; the merge with and without a `mapLoans` entry |
+| loan writer (amendment) | write-loans spec | mocked manager | the three fields fill only an empty column; the timeline rows (sources, dates, null payment) when the scalar is written and the account has none; no rows when the account had a rate or already has rows, or with one rate; a Money loan (no new fields) issues the same queries as before |
 | file expectations | file-expectations spec | raw builders | balances of the reference's section 18 (Checking 2804.50, EUR Savings 1000.00, cash 647.50, holding 15); split rounding per method; cut-off at `asOf` |
 | whole mapping | map-kmy-file spec | the committed synthetic XML | the full section 5.7.9 and 5.10.3 outcome, the warning set, every `fileBalances` equal to `expectedBalances` |
 | shared generalisation | the existing specs of each file in 4.9, plus one new case each | | Money behaviour unchanged: existing cases green, their assertions unedited except where a signature changed (`remove(..., "mny")`, `sourceFormat: "mny"` on two job mocks, the staging SQL gaining `AND source_format = $3`); each optional field honoured when set |
@@ -1674,7 +1731,8 @@ of section 4.3.
 | Memory on a very large file (raw model plus mapped model) | the XML bound; the per-import timing log reports peak RSS per format; measured on a 50,000-transaction builder file in WP3b and written into the importer README |
 | A brokerage account renamed by the user is not found | the trades still fund from it correctly (5.7.3); `brokerageAccountNotFound` says so; the dropdown is the follow-up (14.4) |
 | An upstream rename of the localized suffix | the suffix list is a constant with its provenance commit; KVP `kmm-brokerage-account` is tried first |
-| Loan interest rate not imported | warning naming the rate; follow-up to add the field (13) |
+| A rate history is written with a payment per row KMyMoney never recorded | every imported row's `new_payment_amount` is null, so the installment reads the account's one payment (5.11) |
+| KMyMoney's `term` unit is misread | R5.9 says a count of payments, which is what KMyMoney's calculator takes as the number of periods; the conversion is per schedule interval and its result is bounded, and an unknown interval is named rather than guessed |
 | The parity tests (`frontend/src/i18n/messages.parity.test.ts`, `backend/src/i18n/locales.parity.spec.ts`) are red on the branch between the first English strings and the translation commit | expected; the translation work package is their gate, and the branch is not pushed for review before it |
 | Many real keys are plain names typed or merged into KMyMoney's key list with a `.`, `(` or `+` in them, which are regular expressions outside the subset | each is named in `payeeMatchKeyNotImported` (payee and key in the samples, the full count in the sentence); the website page shows how to add the alias by hand |
 | A file with many contains-style rules (`*X*`) raises many overlap warnings, since any two of them can match one text | counted per alias, not per pair; five samples; the sentence says what differs |
@@ -1684,8 +1742,9 @@ of section 4.3.
 
 ## 13. Open questions
 
-1. **Loan terms.** Add `interestRate` (and optionally original amount and term) to `MappedLoanTerms` and
-   `writeLoans`? Deferred: it is a Money-path writer change with no Money source. Owner: maintainer.
+1. **Loan terms.** Resolved by the loan-terms amendment (5.11): the rate history, original amount and
+   term are read from the KVPs; the three fields are optional on `MappedLoanTerms`, so the Money path is
+   unchanged.
 2. **Brokerage association control.** Is the per-investment-account dropdown (14.4) wanted in v1 after
    real files are tried? Owner: maintainer, after the first real import.
 3. **Yield.** Mapped to DIVIDEND because KMyMoney's manual calls Dividend, Yield and Interest Income

@@ -101,6 +101,7 @@ describe('binary import format descriptors', () => {
       'reconciliationHistoryNotImported',
       'securityTransferInferred',
       'sharesRounded',
+      'loanTermsNotImported',
     ]);
   });
 

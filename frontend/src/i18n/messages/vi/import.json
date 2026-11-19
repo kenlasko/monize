@@ -701,6 +701,7 @@
     "duplicateSecuritySymbol": "{count, plural, other {# chứng khoán}} dùng chung mã với chứng khoán khác; những mã sau đã được đổi tên để giữ riêng biệt.",
     "generatedSecuritySymbol": "{count, plural, other {# chứng khoán}} không có mã trong KMyMoney, nên một mã giữ chỗ đã được tạo và tính năng cập nhật giá bị tắt.",
     "loanInterestRateNotImported": "{count, plural, other {# khoản vay}} có lãi suất trong KMyMoney chưa được nhập. Hãy nhập lãi suất đó vào tài khoản khoản vay trong Monize.",
+    "loanTermsNotImported": "{count, plural, other {# khoản vay}} có kỳ hạn hoặc số tiền ban đầu trong KMyMoney không đọc được nên chưa được nhập.",
     "loanInterestCategoryUnclear": "{count, plural, other {# khoản thanh toán khoản vay}} bao gồm nhiều danh mục ngoài phần gốc, nên danh mục lãi của khoản vay chưa được đặt. Hãy kiểm tra xem khoản thanh toán có bao gồm escrow (ký quỹ) không và đặt danh mục lãi sau khi nhập.",
     "loanScheduleSimplified": "{count, plural, other {# lịch thanh toán khoản vay}} tách mỗi khoản thanh toán thành phần gốc và lãi khi nhập; chúng được nhập thành một khoản chuyển khoản duy nhất bằng số tiền thanh toán.",
     "investmentScheduleNotImported": "{count, plural, other {# giao dịch đầu tư theo lịch}} đã không được nhập.",

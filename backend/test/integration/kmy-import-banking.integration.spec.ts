@@ -4,6 +4,7 @@ import {
   kmyAccount,
   kmyCurrency,
   kmyFile,
+  kmySchedule,
   kmySplit,
   kmyTransaction,
   kmyTxId,
@@ -21,16 +22,23 @@ describe("kmy import: banking builder files (integration)", () => {
   });
 
   /** Checking, a three-level category tree and a 100 loan payment (90 + 10). */
-  const loanFile = () =>
+  const loanFile = (
+    loanKvp?: Readonly<Record<string, string>>,
+    schedules?: readonly string[],
+  ) =>
     kmyFile({
+      schedules,
       accounts: [
         kmyAccount({ id: "A000001", name: "Checking", type: 1 }),
-        kmyAccount({
-          id: "A000002",
-          name: "Car Loan",
-          type: 5,
-          parentaccount: "AStd::Liability",
-        }),
+        kmyAccount(
+          {
+            id: "A000002",
+            name: "Car Loan",
+            type: 5,
+            parentaccount: "AStd::Liability",
+          },
+          { kvp: loanKvp },
+        ),
         kmyAccount({
           id: "A000003",
           name: "Home",
@@ -217,6 +225,80 @@ describe("kmy import: banking builder files (integration)", () => {
     expect(splits.reduce((sum, s) => sum + Number(s.amount), 0)).toBe(
       Number(parent.amount),
     );
+  });
+
+  it("writes the loan's stated rates, original amount and term (spec 5.11)", async () => {
+    const xml = loanFile(
+      {
+        "ir-2023-01-01": "3/1",
+        "ir-2024-01-01": "9/2",
+        "ir-2024-06-01": "9/2",
+        "loan-amount": "250000/1",
+        term: "650",
+        schedule: "SCH000001",
+      },
+      [
+        // A fortnightly loan payment: 650 of them is 300 months.
+        kmySchedule(
+          [
+            kmySplit({
+              id: "S0001",
+              account: "A000001",
+              value: "-100/1",
+              shares: "-100/1",
+            }),
+            kmySplit({
+              id: "S0002",
+              account: "A000002",
+              value: "100/1",
+              shares: "100/1",
+            }),
+          ],
+          { type: 5, occurence: 4, occurenceMultiplier: 2 },
+        ),
+      ],
+    );
+    const job = await runKmy(toKmyBytes(xml, "gzip"));
+    expect(job.status).toBe("completed");
+
+    const [loan]: {
+      id: string;
+      interest_rate: string | null;
+      original_principal: string | null;
+      amortization_months: number | null;
+    }[] = await dataSource.query(
+      `SELECT id, interest_rate, original_principal, amortization_months
+         FROM accounts WHERE user_id = $1 AND name = 'Car Loan'`,
+      [userId],
+    );
+    expect(Number(loan.interest_rate)).toBe(3);
+    expect(Number(loan.original_principal)).toBe(250000);
+    expect(loan.amortization_months).toBe(300);
+
+    const timeline: {
+      effective_date: string;
+      annual_rate: string;
+      new_payment_amount: string | null;
+      source: string;
+    }[] = await dataSource.query(
+      `SELECT TO_CHAR(effective_date, 'YYYY-MM-DD') AS effective_date,
+              annual_rate, new_payment_amount, source
+         FROM loan_rate_changes
+        WHERE user_id = $1 AND account_id = $2
+        ORDER BY effective_date`,
+      [userId, loan.id],
+    );
+    expect(
+      timeline.map((row) => [
+        row.effective_date,
+        Number(row.annual_rate),
+        row.new_payment_amount,
+        row.source,
+      ]),
+    ).toEqual([
+      ["2023-01-01", 3, null, "initial"],
+      ["2024-01-01", 4.5, null, "manual"],
+    ]);
   });
 
   it("links transfers in both directions with opposite amounts (A to B and B to A)", async () => {
