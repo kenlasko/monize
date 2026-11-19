@@ -104,7 +104,13 @@
       "warrantiesExpiresSoon": "[XX-Your {expiringWarrantyName} warranty runs out in {expiringWarrantyDays}, on {expiringWarrantyDate}.-XX]",
       "spendingYearAgoMonth": "[XX-A year ago, in {yearAgoMonth}, you spent {yearAgoSpent}, and {yearAgoTopCategoryName} took the most of it.-XX]",
       "netWorthYearAgoUp": "[XX-A year ago, in {yearAgoNetWorthMonth}, your net worth was {yearAgoNetWorth}. It is {yearAgoNetWorthChange} higher now.-XX]",
-      "netWorthYearAgoDown": "[XX-A year ago, in {yearAgoNetWorthMonth}, your net worth was {yearAgoNetWorth}. It is {yearAgoNetWorthChange} lower now.-XX]"
+      "netWorthYearAgoDown": "[XX-A year ago, in {yearAgoNetWorthMonth}, your net worth was {yearAgoNetWorth}. It is {yearAgoNetWorthChange} lower now.-XX]",
+      "spendingTopCategoryWindow": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {topCategoryName} took the most of your spending: {topCategoryAmount}, or {topCategoryPercent} of it.-XX]",
+      "spendingTopPayeeWindow": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, you spent the most with {topPayeeName}: {topPayeeAmount}.-XX]",
+      "incomeTopSourceWindow": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {topSourceName} brought in {topSourcePercent} of your income.-XX]",
+      "spendingRankedCategory": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedCategoryName} was number {rankedCategoryRank} among your spending categories, at {rankedCategoryAmount} ({rankedCategoryPercent} of the total).-XX]",
+      "spendingRankedPayee": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedPayeeName} was number {rankedPayeeRank} among the payees you spent the most with, at {rankedPayeeAmount}.-XX]",
+      "incomeRankedSource": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedSourceName} was number {rankedSourceRank} among your sources of income, bringing in {rankedSourcePercent} of it.-XX]"
     }
   },
   "favouriteAccounts": {

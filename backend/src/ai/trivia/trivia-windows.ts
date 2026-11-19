@@ -1,6 +1,9 @@
 import { createHash } from "crypto";
-import { addDaysYMD } from "../../common/date-utils";
-import { triviaWindow } from "./trivia-ledger.loader";
+import {
+  addDaysYMD,
+  formatMonthKey,
+  getMonthEndYMD,
+} from "../../common/date-utils";
 import { TRIVIA_WINDOWS, type TriviaWindow } from "./trivia.types";
 import type { TriviaFamily } from "./trivia-families";
 
@@ -32,6 +35,29 @@ export function weekIndex(today: string): number {
 /** The last complete day: daily-moving facts end here, never at `today`. */
 export function asOfDay(today: string): string {
   return addDaysYMD(today, -1);
+}
+
+/** The window the spending and income facts describe, in whole months. */
+export const TRIVIA_WINDOW_MONTHS = 12;
+
+/**
+ * The last `TRIVIA_WINDOW_MONTHS` whole months before `today`'s, so the
+ * figures never move with the day of the month a reader happens to look.
+ */
+export function triviaWindow(today: string): {
+  startDate: string;
+  endDate: string;
+} {
+  const [year, month] = today.split("-").map(Number);
+  // `month - 1` is the last whole month; Date arithmetic would bring a zone.
+  const endIndex = year * 12 + (month - 1) - 1;
+  const startIndex = endIndex - (TRIVIA_WINDOW_MONTHS - 1);
+  const yearOf = (index: number) => Math.floor(index / 12);
+  const monthOf = (index: number) => (index % 12) + 1;
+  return {
+    startDate: `${formatMonthKey(yearOf(startIndex), monthOf(startIndex))}-01`,
+    endDate: getMonthEndYMD(yearOf(endIndex), monthOf(endIndex)),
+  };
 }
 
 /** A window's dates; `startDate` is `undefined` for all time. */

@@ -5,11 +5,27 @@ import {
   alternateDailyInput,
   fullCalendarInput,
   fullDailyInput,
+  alternateRankedInput,
+  fullRankedInput,
 } from "./__fixtures__/trivia-pool.fixture";
 import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
-import { TRIVIA_FACT_IDS, TRIVIA_TOPICS } from "./trivia.types";
+import { buildRankedTriviaFacts } from "./trivia-ranked-facts";
+import { TRIVIA_FACT_IDS, TRIVIA_TOPICS, TRIVIA_WINDOWS } from "./trivia.types";
+
+/** A windowed sentence's `{window, select, ...}`, whose braces nest one deep. */
+const WINDOW_SELECT = /\{window, select,(?:[^{}]|\{[^{}]*\})*\}/g;
+
+/** The `{name}` placeholders of a sentence, its window select set aside. */
+const quotedFigures = (sentence: string): string[] =>
+  [
+    ...new Set(
+      [
+        ...sentence.replace(WINDOW_SELECT, "").matchAll(/\{([A-Za-z0-9]+)\}/g),
+      ].map((m) => m[1]),
+    ),
+  ].sort();
 
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
@@ -97,12 +113,12 @@ describe("trivia catalog", () => {
       },
     });
     // Every ledger fact is produced, so none escapes the check.
-    expect(new Set(facts.map((f) => f.id)).size).toBe(11);
+    expect(new Set(facts.map((f) => f.id)).size).toBe(8);
     for (const f of facts) {
-      const quoted = [
-        ...catalog.trivia.facts[f.id].matchAll(/\{([A-Za-z]+)\}/g),
-      ].map((m) => m[1]);
-      expect({ id: f.id, figures: [...new Set(quoted)].sort() }).toEqual({
+      expect({
+        id: f.id,
+        figures: quotedFigures(catalog.trivia.facts[f.id]),
+      }).toEqual({
         id: f.id,
         figures: Object.keys(f.figures).sort(),
       });
@@ -117,10 +133,10 @@ describe("trivia catalog", () => {
     // Every daily id is produced, so none escapes the check.
     expect(new Set(facts.map((f) => f.id)).size).toBe(12);
     for (const f of facts) {
-      const quoted = [
-        ...catalog.trivia.facts[f.id].matchAll(/\{([A-Za-z]+)\}/g),
-      ].map((m) => m[1]);
-      expect({ id: f.id, figures: [...new Set(quoted)].sort() }).toEqual({
+      expect({
+        id: f.id,
+        figures: quotedFigures(catalog.trivia.facts[f.id]),
+      }).toEqual({
         id: f.id,
         figures: Object.keys(f.figures).sort(),
       });
@@ -135,13 +151,47 @@ describe("trivia catalog", () => {
     // Every calendar id is produced, so none escapes the check.
     expect(new Set(facts.map((f) => f.id)).size).toBe(8);
     for (const f of facts) {
-      const quoted = [
-        ...catalog.trivia.facts[f.id].matchAll(/\{([A-Za-z]+)\}/g),
-      ].map((m) => m[1]);
-      expect({ id: f.id, figures: [...new Set(quoted)].sort() }).toEqual({
+      expect({
+        id: f.id,
+        figures: quotedFigures(catalog.trivia.facts[f.id]),
+      }).toEqual({
         id: f.id,
         figures: Object.keys(f.figures).sort(),
       });
     }
+  });
+
+  describe("the windowed and ranked sentences", () => {
+    const facts = [
+      ...buildRankedTriviaFacts(fullRankedInput()),
+      ...buildRankedTriviaFacts(alternateRankedInput()),
+    ];
+
+    it("quotes in each ranked sentence exactly the figures its fact carries", () => {
+      // Every ranked and top id is produced, so none escapes the check.
+      expect(new Set(facts.map((f) => f.id)).size).toBe(9);
+      for (const f of facts) {
+        expect({
+          id: f.id,
+          figures: quotedFigures(catalog.trivia.facts[f.id]),
+        }).toEqual({ id: f.id, figures: Object.keys(f.figures).sort() });
+      }
+    });
+
+    it("holds the window select, with exactly its branches, in every windowed sentence", () => {
+      const windowed = facts.filter((f) => f.params?.window);
+      expect(windowed.length).toBeGreaterThan(0);
+      for (const f of windowed) {
+        const select = catalog.trivia.facts[f.id].match(WINDOW_SELECT);
+        expect({ id: f.id, selects: select?.length }).toEqual({
+          id: f.id,
+          selects: 1,
+        });
+        const branches = [
+          ...(select as string[])[0].matchAll(/ (\w+) \{/g),
+        ].map((m) => m[1]);
+        expect(branches).toEqual([...TRIVIA_WINDOWS, "other"]);
+      }
+    });
   });
 });

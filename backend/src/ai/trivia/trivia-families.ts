@@ -62,11 +62,11 @@ export const TRIVIA_FAMILIES = {
   },
   spendingTopCategory: {
     lane: "evergreen",
-    ids: ["spendingTopCategory"],
+    ids: ["spendingTopCategory", "spendingTopCategoryWindow"],
   },
   spendingTopPayee: {
     lane: "evergreen",
-    ids: ["spendingTopPayee"],
+    ids: ["spendingTopPayee", "spendingTopPayeeWindow"],
   },
   spendingBiggestMonth: {
     lane: "evergreen",
@@ -82,7 +82,7 @@ export const TRIVIA_FAMILIES = {
   },
   incomeTopSource: {
     lane: "evergreen",
-    ids: ["incomeTopSource"],
+    ids: ["incomeTopSource", "incomeTopSourceWindow"],
   },
   activityTransactions: {
     lane: "evergreen",
@@ -171,6 +171,18 @@ export const TRIVIA_FAMILIES = {
   netWorthYearAgo: {
     lane: "evergreen",
     ids: ["netWorthYearAgoUp", "netWorthYearAgoDown"],
+  },
+  spendingRankedCategory: {
+    lane: "evergreen",
+    ids: ["spendingRankedCategory"],
+  },
+  spendingRankedPayee: {
+    lane: "evergreen",
+    ids: ["spendingRankedPayee"],
+  },
+  incomeRankedSource: {
+    lane: "evergreen",
+    ids: ["incomeRankedSource"],
   },
 } as const satisfies Record<
   string,

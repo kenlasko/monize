@@ -5,6 +5,14 @@ import type { TopMover } from "../../../securities/portfolio.service";
 import type { TriviaCalendarInput } from "../trivia-calendar-facts";
 import type { TriviaDailyInput } from "../trivia-daily-facts";
 import type { TriviaLedgerInput } from "../trivia-ledger-facts";
+import type { TriviaLedgerLoad } from "../trivia-ledger.loader";
+import type { TriviaRankedInput } from "../trivia-ranked-facts";
+import {
+  WINDOWED_FAMILIES,
+  emptyWindowedReads,
+  type TriviaPicks,
+} from "../trivia-windowed-reads";
+import { TRIVIA_WINDOWS, type TriviaWindow } from "../trivia.types";
 
 /**
  * Inputs that make each builder produce every id it can. Each phase that adds
@@ -183,6 +191,94 @@ export function fullLedgerInput(): TriviaLedgerInput {
       nextExpiring: { name: "W", expiresOn: "2027-01-01" },
     },
   };
+}
+
+const rankedReports = () => ({
+  spendingByCategory: {
+    data: [
+      { categoryId: "c1", categoryName: "Rent", color: null, total: 60 },
+      { categoryId: "c2", categoryName: "Food", color: null, total: 30 },
+      { categoryId: "c3", categoryName: "Fun", color: null, total: 10 },
+    ],
+    totalSpending: 100,
+    knownSpending: 100,
+    currency: "CAD",
+    missingCurrencies: [],
+    excludedCount: 0,
+  },
+  spendingByPayee: {
+    data: [
+      { payeeId: "p1", payeeName: "Landlord", total: 60 },
+      { payeeId: "p2", payeeName: "Grocer", total: 30 },
+      { payeeId: "p3", payeeName: "Cafe", total: 10 },
+    ],
+    totalSpending: 100,
+    knownSpending: 100,
+    currency: "CAD",
+    missingCurrencies: [],
+    excludedCount: 0,
+  },
+  incomeBySource: {
+    data: [
+      { categoryId: "s1", categoryName: "Salary", color: null, total: 80 },
+      { categoryId: "s2", categoryName: "Interest", color: null, total: 15 },
+      { categoryId: "s3", categoryName: "Gifts", color: null, total: 5 },
+    ],
+    totalIncome: 100,
+    knownIncome: 100,
+    currency: "CAD",
+    missingCurrencies: [],
+    excludedCount: 0,
+  },
+});
+
+/** Every windowed family picked the same window and rank, with three rows each. */
+export function rankedInput(
+  window: TriviaWindow,
+  rank: 2 | 3 = 2,
+): TriviaRankedInput {
+  const reports = rankedReports();
+  const windowed = emptyWindowedReads();
+  if (window !== "m12") {
+    windowed.spendingByCategory.set(window, reports.spendingByCategory);
+    windowed.spendingByPayee.set(window, reports.spendingByPayee);
+    windowed.incomeBySource.set(window, reports.incomeBySource);
+  }
+  return {
+    currency: "CAD",
+    picks: Object.fromEntries(
+      WINDOWED_FAMILIES.map((family) => [family, { window, rank }]),
+    ) as TriviaPicks,
+    windowed,
+    m12:
+      window === "m12"
+        ? reports
+        : {
+            spendingByCategory: null,
+            spendingByPayee: null,
+            incomeBySource: null,
+          },
+  };
+}
+
+/** The legacy ids (m12) and the six ranked ones. */
+export const fullRankedInput = (): TriviaRankedInput => rankedInput("m12");
+/** The `...Window` ids, over ninety days. */
+export const alternateRankedInput = (): TriviaRankedInput => rankedInput("d90");
+
+/**
+ * What the ledger loader returns: the twelve-month reads and, for every other
+ * window, three-row reports, so whatever window a pick lands on has data.
+ */
+export function fullLedgerLoad(): TriviaLedgerLoad {
+  const windowed = emptyWindowedReads();
+  for (const window of TRIVIA_WINDOWS.filter((w) => w !== "m12")) {
+    const reports = rankedReports();
+    windowed.spendingByCategory.set(window, reports.spendingByCategory);
+    windowed.spendingByPayee.set(window, reports.spendingByPayee);
+    windowed.incomeBySource.set(window, reports.incomeBySource);
+  }
+  return { ...fullLedgerInput(), windowed };
 }
 
 /** A resolved bill; only what the daily facts read is real. */

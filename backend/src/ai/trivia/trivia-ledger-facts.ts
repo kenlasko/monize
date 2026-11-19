@@ -26,7 +26,8 @@ export interface TriviaWarranties {
 
 /**
  * Everything the ledger can say over the window: the last twelve whole
- * months. Each source is `null` when it could not be read, which drops its
+ * months. The category, payee and source reports are read here for the ranked
+ * facts (`buildRankedTriviaFacts`); this builder does not use them. Each source is `null` when it could not be read, which drops its
  * facts and only those.
  */
 export interface TriviaLedgerInput {
@@ -42,47 +43,9 @@ export interface TriviaLedgerInput {
 /** Fewer months than this is not a year's picture of spending and saving. */
 const MIN_WINDOW_MONTHS = 3;
 
-/**
- * A report total is a total only with every currency converted (its
- * `totalSpending`/`totalIncome` is `null` otherwise): a share of a partial sum
- * would be a share of nothing the reader can see.
- */
 function spendingFacts(input: TriviaLedgerInput): TriviaFact[] {
   const { currency } = input;
   const facts: TriviaFact[] = [];
-
-  const byCategory = input.spendingByCategory;
-  const categoryTotal = byCategory?.totalSpending ?? null;
-  if (byCategory && categoryTotal !== null && categoryTotal > 0) {
-    const top = byCategory.data
-      .filter((row) => row.categoryId !== null && row.total > 0)
-      .sort((a, b) => b.total - a.total)[0];
-    if (top) {
-      facts.push(
-        fact("spendingTopCategory", "spending", {
-          topCategoryName: text(top.categoryName),
-          topCategoryAmount: money(top.total, currency),
-          topCategoryPercent: percent((top.total / categoryTotal) * 100),
-        }),
-      );
-    }
-  }
-
-  const byPayee = input.spendingByPayee;
-  if (byPayee && byPayee.totalSpending !== null && byPayee.totalSpending > 0) {
-    const top = byPayee.data
-      // A row with no payee is the report's "Unknown" bucket, not a payee.
-      .filter((row) => row.payeeId !== null && row.total > 0)
-      .sort((a, b) => b.total - a.total)[0];
-    if (top) {
-      facts.push(
-        fact("spendingTopPayee", "spending", {
-          topPayeeName: text(top.payeeName),
-          topPayeeAmount: money(top.total, currency),
-        }),
-      );
-    }
-  }
 
   const flows = completeFlows(input.incomeVsExpenses);
   if (flows) {
@@ -154,22 +117,6 @@ function incomeFacts(input: TriviaLedgerInput): TriviaFact[] {
         fact("incomeSurplusMonths", "income", {
           surplusMonths: count(surplus),
           windowMonths: count(flows.data.length),
-        }),
-      );
-    }
-  }
-
-  const bySource = input.incomeBySource;
-  const incomeTotal = bySource?.totalIncome ?? null;
-  if (bySource && incomeTotal !== null && incomeTotal > 0) {
-    const top = bySource.data
-      .filter((row) => row.categoryId !== null && row.total > 0)
-      .sort((a, b) => b.total - a.total)[0];
-    if (top) {
-      facts.push(
-        fact("incomeTopSource", "income", {
-          topSourceName: text(top.categoryName),
-          topSourcePercent: percent((top.total / incomeTotal) * 100),
         }),
       );
     }

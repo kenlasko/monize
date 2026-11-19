@@ -15,6 +15,8 @@ import { UserPreference } from "../../users/entities/user-preference.entity";
 import { buildTriviaFacts, TriviaAsset } from "./trivia-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
+import { buildRankedTriviaFacts } from "./trivia-ranked-facts";
+import { pickAll } from "./trivia-windowed-reads";
 import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { TriviaCalendarLoader } from "./trivia-calendar.loader";
 import { TriviaDailyLoader } from "./trivia-daily.loader";
@@ -75,7 +77,9 @@ export class TriviaPoolBuilder {
     const allAccounts = await this.accountsService.findAll(userId, true);
     const accounts = allAccounts.filter((a) => !a.isClosed);
 
-    const ledger = await this.ledger.load(userId, currency, today);
+    // The window and rank of each rotating family, chosen before any read.
+    const picks = pickAll(userId, today);
+    const ledger = await this.ledger.load(userId, currency, today, picks);
     const daily = await this.daily.load(userId, currency, today, {
       bills: mode === "cron",
       spendingByPayee: ledger.spendingByPayee,
@@ -96,6 +100,13 @@ export class TriviaPoolBuilder {
       }),
       // Spending, income, records and warranties: the rest of Monize.
       ...buildLedgerTriviaFacts(ledger),
+      // The top and ranked categories, payees and sources, over a rotating window.
+      ...buildRankedTriviaFacts({
+        currency,
+        picks,
+        windowed: ledger.windowed,
+        m12: ledger,
+      }),
       // What moves with each day.
       ...buildDailyTriviaFacts(daily),
       // Anniversaries, milestones and the year-ago comparisons.

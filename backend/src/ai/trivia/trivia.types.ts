@@ -78,6 +78,12 @@ export const TRIVIA_FACT_IDS = [
   "spendingYearAgoMonth",
   "netWorthYearAgoUp",
   "netWorthYearAgoDown",
+  "spendingTopCategoryWindow",
+  "spendingTopPayeeWindow",
+  "incomeTopSourceWindow",
+  "spendingRankedCategory",
+  "spendingRankedPayee",
+  "incomeRankedSource",
 ] as const;
 export type TriviaFactId = (typeof TRIVIA_FACT_IDS)[number];
 

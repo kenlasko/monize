@@ -9,11 +9,13 @@ import {
   fullCalendarInput,
   fullDailyInput,
   fullLedgerInput,
+  fullLedgerLoad,
 } from "./__fixtures__/trivia-pool.fixture";
 import { TriviaCalendarLoader } from "./trivia-calendar.loader";
 import { TriviaDailyLoader } from "./trivia-daily.loader";
 import { TriviaLedgerLoader } from "./trivia-ledger.loader";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
+import { pickAll } from "./trivia-windowed-reads";
 
 jest.mock("../../common/db/scoped-db", () => ({ withScopedDb: jest.fn() }));
 jest.mock("../../common/users-by-timezone.util", () => ({
@@ -40,7 +42,7 @@ describe("TriviaPoolBuilder", () => {
     accounts = { findAll: jest.fn().mockResolvedValue([]) };
     netWorth = { getMonthlyNetWorth: jest.fn().mockResolvedValue([]) };
     portfolio = { getPortfolioSummary: jest.fn().mockResolvedValue(null) };
-    ledger = { load: jest.fn().mockResolvedValue(fullLedgerInput()) };
+    ledger = { load: jest.fn().mockResolvedValue(fullLedgerLoad()) };
     daily = { load: jest.fn().mockResolvedValue(fullDailyInput()) };
     calendar = {
       load: jest.fn().mockResolvedValue(fullCalendarInput().calendar),
@@ -80,7 +82,12 @@ describe("TriviaPoolBuilder", () => {
 
   it("hands the day to every loader, and the payee report to the daily one", async () => {
     await builder.build(userId, prefs, { today: "2026-11-20", mode: "cron" });
-    expect(ledger.load).toHaveBeenCalledWith(userId, "CAD", "2026-11-20");
+    expect(ledger.load).toHaveBeenCalledWith(
+      userId,
+      "CAD",
+      "2026-11-20",
+      pickAll(userId, "2026-11-20"),
+    );
     expect(calendar.load).toHaveBeenCalledWith(userId, "CAD", "2026-11-20");
     expect(daily.load).toHaveBeenCalledWith(
       userId,
@@ -98,8 +105,30 @@ describe("TriviaPoolBuilder", () => {
       mode: "cron",
     });
     const ids = facts.map((f) => f.id);
-    expect(ids).toContain("spendingTopCategory");
     expect(ids).toContain("spendingLastDay");
+  });
+
+  it("builds the top and ranked facts over the window each family picked", async () => {
+    const today = "2026-11-19";
+    const picks = pickAll(userId, today);
+    const facts = await builder.build(userId, prefs, { today, mode: "page" });
+    const topCategory = facts.find((f) =>
+      f.id.startsWith("spendingTopCategory"),
+    );
+    expect(topCategory?.id).toBe(
+      picks.spendingTopCategory.window === "m12"
+        ? "spendingTopCategory"
+        : "spendingTopCategoryWindow",
+    );
+    // The ranked families read the windowed reports, never the m12 ones.
+    const ranked = facts.find((f) => f.id === "spendingRankedCategory");
+    if (picks.spendingRankedCategory.window === "m12") {
+      expect(ranked).toBeUndefined();
+    } else {
+      expect(ranked?.params).toEqual({
+        window: picks.spendingRankedCategory.window,
+      });
+    }
   });
 
   it("still builds when the portfolio cannot be read", async () => {
@@ -115,7 +144,7 @@ describe("TriviaPoolBuilder", () => {
 
     it("replaces the next-expiry fact, which says the same warranty", async () => {
       ledger.load.mockResolvedValue({
-        ...fullLedgerInput(),
+        ...fullLedgerLoad(),
         warranties: {
           covered: 1,
           nextExpiring: { name: "Laptop", expiresOn: "2026-12-04" },
@@ -136,7 +165,7 @@ describe("TriviaPoolBuilder", () => {
 
   it("concatenates the calendar facts", async () => {
     ledger.load.mockResolvedValue({
-      ...fullLedgerInput(),
+      ...fullLedgerLoad(),
       records: fullCalendarInput().records,
     });
     const ids = (

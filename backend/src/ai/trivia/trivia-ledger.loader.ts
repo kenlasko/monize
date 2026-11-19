@@ -1,36 +1,26 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import { formatMonthKey, getMonthEndYMD } from "../../common/date-utils";
 import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
 import { warrantyStatusBounds } from "../../warranties/warranty-status.util";
+import { triviaWindow } from "./trivia-windows";
+import {
+  readWindowedReports,
+  type TriviaPicks,
+  type TriviaWindowedReads,
+} from "./trivia-windowed-reads";
 import type {
   TriviaLedgerInput,
   TriviaRecordCounts,
   TriviaWarranties,
 } from "./trivia-ledger-facts";
 
-/** The window the spending and income facts describe, in whole months. */
-export const TRIVIA_WINDOW_MONTHS = 12;
+// `triviaWindow` lives with the other window arithmetic; kept exported here.
+export { TRIVIA_WINDOW_MONTHS, triviaWindow } from "./trivia-windows";
 
-/**
- * The last `TRIVIA_WINDOW_MONTHS` whole months before `today`'s, so the
- * figures never move with the day of the month a reader happens to look.
- */
-export function triviaWindow(today: string): {
-  startDate: string;
-  endDate: string;
-} {
-  const [year, month] = today.split("-").map(Number);
-  // `month - 1` is the last whole month; Date arithmetic would bring a zone.
-  const endIndex = year * 12 + (month - 1) - 1;
-  const startIndex = endIndex - (TRIVIA_WINDOW_MONTHS - 1);
-  const yearOf = (index: number) => Math.floor(index / 12);
-  const monthOf = (index: number) => (index % 12) + 1;
-  return {
-    startDate: `${formatMonthKey(yearOf(startIndex), monthOf(startIndex))}-01`,
-    endDate: getMonthEndYMD(yearOf(endIndex), monthOf(endIndex)),
-  };
+/** The ledger's twelve-month reads, and the other windows the picks asked for. */
+export interface TriviaLedgerLoad extends TriviaLedgerInput {
+  windowed: TriviaWindowedReads;
 }
 
 /**
@@ -52,7 +42,8 @@ export class TriviaLedgerLoader {
     userId: string,
     currency: string,
     today: string,
-  ): Promise<TriviaLedgerInput> {
+    picks: TriviaPicks,
+  ): Promise<TriviaLedgerLoad> {
     const { startDate, endDate } = triviaWindow(today);
 
     // Independent reads, each already isolated by `attempt`.
@@ -63,6 +54,7 @@ export class TriviaLedgerLoader {
       incomeBySource,
       records,
       warranties,
+      windowed,
     ] = await Promise.all([
       this.attempt(userId, "spending", () =>
         this.reports.getSpendingByCategory(userId, startDate, endDate),
@@ -80,6 +72,13 @@ export class TriviaLedgerLoader {
       this.attempt(userId, "warranties", () =>
         this.readWarranties(userId, today),
       ),
+      readWindowedReports(
+        this.reports,
+        (source, read) => this.attempt(userId, source, read),
+        userId,
+        today,
+        picks,
+      ),
     ]);
 
     return {
@@ -90,6 +89,7 @@ export class TriviaLedgerLoader {
       incomeBySource,
       records,
       warranties,
+      windowed,
     };
   }
 

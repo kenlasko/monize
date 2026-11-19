@@ -6,6 +6,7 @@ import { AccountType } from "../../accounts/entities/account.entity";
 import { withUserContext } from "../../common/db/with-context";
 import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
+import { emptyWindowedReads } from "./trivia-windowed-reads";
 
 const manager: Record<string, any> = {};
 jest.mock("../../common/db/scoped-db", () => ({
@@ -102,6 +103,7 @@ describe("DashboardTriviaService", () => {
         spendingByPayee: null,
         incomeVsExpenses: null,
         incomeBySource: null,
+        windowed: emptyWindowedReads(),
         records: null,
         warranties: null,
       }),
@@ -266,6 +268,7 @@ describe("DashboardTriviaService", () => {
         spendingByPayee: null,
         incomeVsExpenses: null,
         incomeBySource: null,
+        windowed: emptyWindowedReads(),
         records,
         warranties: { covered: 2, nextExpiring: null },
       });
@@ -274,6 +277,7 @@ describe("DashboardTriviaService", () => {
         userId,
         "CAD",
         expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        expect.any(Object),
       );
       const ids = result.items.map((item) =>
         item.source === "calculated" ? item.factId : null,
@@ -300,6 +304,7 @@ describe("DashboardTriviaService", () => {
         spendingByPayee: null,
         incomeVsExpenses: null,
         incomeBySource: null,
+        windowed: emptyWindowedReads(),
         records,
         warranties: { covered: 1, nextExpiring: null },
       });
@@ -605,7 +610,12 @@ describe("DashboardTriviaService", () => {
         jest.useRealTimers();
       }
       // 12:30 UTC on the 19th is already the 20th in Auckland (UTC+13).
-      expect(ledger.load).toHaveBeenCalledWith(userId, "CAD", "2026-11-20");
+      expect(ledger.load).toHaveBeenCalledWith(
+        userId,
+        "CAD",
+        "2026-11-20",
+        expect.any(Object),
+      );
       expect(daily.load).toHaveBeenCalledWith(
         userId,
         "CAD",

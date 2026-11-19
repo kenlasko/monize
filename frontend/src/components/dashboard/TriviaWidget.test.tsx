@@ -202,6 +202,50 @@ describe('TriviaWidget', () => {
     );
   });
 
+  it('words a windowed fact by its window', () => {
+    state.trivia = list({
+      items: [
+        {
+          topic: 'spending',
+          source: 'calculated',
+          factId: 'spendingTopCategoryWindow',
+          params: { window: 'd90' },
+        },
+      ],
+      figures: {
+        topCategoryName: { kind: 'text', value: 'Groceries' },
+        topCategoryAmount: { kind: 'money', value: 600, currency: 'CAD' },
+        topCategoryPercent: { kind: 'percent', value: 33.3 },
+      },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent(
+      'Over the last 90 days, Groceries took the most of your spending:',
+    );
+  });
+
+  it('words a ranked fact with its rank and window', () => {
+    state.trivia = list({
+      items: [
+        {
+          topic: 'income',
+          source: 'calculated',
+          factId: 'incomeRankedSource',
+          params: { window: 'all' },
+        },
+      ],
+      figures: {
+        rankedSourceName: { kind: 'text', value: 'Interest' },
+        rankedSourceRank: { kind: 'count', value: 2 },
+        rankedSourcePercent: { kind: 'percent', value: 15 },
+      },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent(
+      'Since your records began, Interest was number 2 among your sources of income, bringing in',
+    );
+  });
+
   it('offers no arrows for a single fact', () => {
     state.trivia = list({
       items: [{ topic: 'netWorth', source: 'ai', text: 'only {a}' }],

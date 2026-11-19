@@ -3,6 +3,8 @@ import {
   alternateDailyInput,
   fullCalendarInput,
   alternateInputs,
+  alternateRankedInput,
+  fullRankedInput,
   fullDailyInput,
   fullLedgerInput,
   fullTriviaFactsInput,
@@ -11,6 +13,7 @@ import { buildTriviaFacts } from "./trivia-facts";
 import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
+import { buildRankedTriviaFacts } from "./trivia-ranked-facts";
 import {
   familyOf,
   laneOf,
@@ -25,6 +28,8 @@ function builderOutputs(): TriviaFact[][] {
     buildTriviaFacts(fullTriviaFactsInput()),
     ...alternateInputs().map(buildTriviaFacts),
     buildLedgerTriviaFacts(fullLedgerInput()),
+    buildRankedTriviaFacts(fullRankedInput()),
+    buildRankedTriviaFacts(alternateRankedInput()),
     buildDailyTriviaFacts(fullDailyInput()),
     buildDailyTriviaFacts(alternateDailyInput()),
     buildCalendarTriviaFacts(fullCalendarInput()),
