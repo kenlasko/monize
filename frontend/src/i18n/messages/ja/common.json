@@ -144,6 +144,10 @@
     "createOption": "\"{value}\" を作成",
     "deleteOption": "「{value}」を削除"
   },
+  "iconSelect": {
+    "filter": "検索...",
+    "noMatches": "一致する項目がありません"
+  },
   "passwordInput": {
     "show": "入力を表示",
     "hide": "入力を非表示"

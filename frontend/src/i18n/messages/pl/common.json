@@ -144,6 +144,10 @@
     "createOption": "Utwórz \"{value}\"",
     "deleteOption": "Usuń „{value}”"
   },
+  "iconSelect": {
+    "filter": "Szukaj...",
+    "noMatches": "Brak wyników"
+  },
   "passwordInput": {
     "show": "Pokaż treść",
     "hide": "Ukryj treść"

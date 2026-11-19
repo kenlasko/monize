@@ -144,6 +144,10 @@
     "createOption": "Créer « {value} »",
     "deleteOption": "Supprimer « {value} »"
   },
+  "iconSelect": {
+    "filter": "Rechercher...",
+    "noMatches": "Aucun résultat"
+  },
   "passwordInput": {
     "show": "Afficher la saisie",
     "hide": "Masquer la saisie"

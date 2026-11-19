@@ -144,6 +144,10 @@
     "createOption": "Maak \"{value}\" aan",
     "deleteOption": "\"{value}\" verwijderen"
   },
+  "iconSelect": {
+    "filter": "Zoeken...",
+    "noMatches": "Geen overeenkomsten"
+  },
   "passwordInput": {
     "show": "Invoer tonen",
     "hide": "Invoer verbergen"

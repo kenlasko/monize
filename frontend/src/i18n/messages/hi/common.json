@@ -144,6 +144,10 @@
     "createOption": "\"{value}\" बनाएं",
     "deleteOption": "\"{value}\" हटाएँ"
   },
+  "iconSelect": {
+    "filter": "खोजें...",
+    "noMatches": "कोई मिलान नहीं"
+  },
   "passwordInput": {
     "show": "इनपुट दिखाएं",
     "hide": "इनपुट छुपाएं"

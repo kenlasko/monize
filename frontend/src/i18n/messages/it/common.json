@@ -144,6 +144,10 @@
     "createOption": "Crea \"{value}\"",
     "deleteOption": "Elimina «{value}»"
   },
+  "iconSelect": {
+    "filter": "Cerca...",
+    "noMatches": "Nessuna corrispondenza"
+  },
   "passwordInput": {
     "show": "Mostra input",
     "hide": "Nascondi input"

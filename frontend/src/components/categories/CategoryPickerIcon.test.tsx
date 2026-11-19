@@ -42,4 +42,16 @@ describe('withCategoryIcons', () => {
     expect(options[1].label).toBe('Groceries');
     expect(options[1].icon).toBeDefined();
   });
+
+  it('decorates a hierarchical filter list down its children', () => {
+    const options = withCategoryIcons(
+      [{ value: 'c-1', label: 'Food', children: [{ value: 'c-2', label: 'Fruit' }] }],
+      [
+        { ...base, id: 'c-1', effectiveIcon: 'cart' },
+        { ...base, id: 'c-2', effectiveColor: '#00ff00' },
+      ],
+    );
+    expect(options[0].icon).toBeDefined();
+    expect((options[0].children?.[0] as { icon?: unknown }).icon).toBeDefined();
+  });
 });

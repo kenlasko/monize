@@ -27,6 +27,7 @@ import { Account } from '@/types/account';
 import { accountsApi } from '@/lib/accounts';
 import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 
 const logger = createLogger('InvestmentReportForm');
 
@@ -68,6 +69,7 @@ export function InvestmentReportForm({
   onCancel,
 }: InvestmentReportFormProps) {
   const t = useTranslations('reports');
+  const accountIcon = useAccountPickerIcon();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [columns, setColumns] = useState<string[]>(
@@ -168,7 +170,7 @@ export function InvestmentReportForm({
       label: INVESTMENT_COLUMN_MAP[key]?.label ?? key,
     })),
   ];
-  const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name }));
+  const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name, icon: accountIcon(a) }));
   const watchGroupBy = useWatch({ control, name: 'groupBy' });
 
   if (isLoadingData) {

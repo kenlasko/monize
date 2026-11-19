@@ -32,6 +32,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 
 const logger = createLogger('InvestmentReportViewer');
 
@@ -53,6 +54,7 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
   const router = useRouter();
   const { formatNumber, formatPercent, formatCurrency, formatQuantity } = useNumberFormat();
   const { formatDate } = useDateFormat();
+  const accountIcon = useAccountPickerIcon();
   const [report, setReport] = useState<InvestmentReport | null>(null);
   const [result, setResult] = useState<InvestmentReportResult | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -326,7 +328,7 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
               <MultiSelect
                 ariaLabel={t('investmentReportViewer.accountsLabel')}
                 placeholder={t('investmentReportViewer.accountsPlaceholder')}
-                options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+                options={accounts.map((a) => ({ value: a.id, label: a.name, icon: accountIcon(a) }))}
                 value={selectedAccountIds}
                 onChange={setSelectedAccountIds}
               />

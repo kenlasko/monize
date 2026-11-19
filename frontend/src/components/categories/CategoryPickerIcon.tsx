@@ -35,17 +35,23 @@ type IconSource = CategoryPickerIconProps['category'] & { id: string };
 
 /**
  * `options` with each category row carrying its picker icon, for an option list
- * built elsewhere (`getCategorySelectOptions`) that knows only ids and labels.
- * A row whose value is not a category (a placeholder, "Uncategorized") is left
- * without one.
+ * built elsewhere (`getCategorySelectOptions`, `buildCategoryFilterOptions`)
+ * that knows only ids and labels. A hierarchical filter list is decorated all
+ * the way down its `children`. A row whose value is not a category (a
+ * placeholder, "Uncategorized") is left without one.
  */
-export function withCategoryIcons<T extends { value: string }>(
+export function withCategoryIcons<T extends { value: string; children?: unknown[] }>(
   options: readonly T[],
   categories: readonly IconSource[],
 ): (T & { icon?: ReactNode })[] {
   const byId = new Map(categories.map((category) => [category.id, category]));
-  return options.map((option) => {
-    const category = byId.get(option.value);
-    return category ? { ...option, icon: <CategoryPickerIcon category={category} /> } : option;
-  });
+  const decorate = (list: readonly T[]): (T & { icon?: ReactNode })[] =>
+    list.map((option) => {
+      const category = byId.get(option.value);
+      const children = option.children ? { children: decorate(option.children as T[]) } : {};
+      return category
+        ? { ...option, ...children, icon: <CategoryPickerIcon category={category} /> }
+        : { ...option, ...children };
+    });
+  return decorate(options);
 }

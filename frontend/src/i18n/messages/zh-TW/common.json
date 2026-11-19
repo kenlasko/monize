@@ -144,6 +144,10 @@
     "createOption": "建立「{value}」",
     "deleteOption": "刪除「{value}」"
   },
+  "iconSelect": {
+    "filter": "搜尋...",
+    "noMatches": "無相符項目"
+  },
   "passwordInput": {
     "show": "顯示輸入",
     "hide": "隱藏輸入"

@@ -144,6 +144,10 @@
     "createOption": "\"{value}\" oluştur",
     "deleteOption": "\"{value}\" sil"
   },
+  "iconSelect": {
+    "filter": "Ara...",
+    "noMatches": "Eşleşme yok"
+  },
   "passwordInput": {
     "show": "Girdiyi göster",
     "hide": "Girdiyi gizle"

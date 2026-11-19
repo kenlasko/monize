@@ -144,6 +144,10 @@
     "createOption": "[XX-Create \"{value}\"-XX]",
     "deleteOption": "[XX-Delete \"{value}\"-XX]"
   },
+  "iconSelect": {
+    "filter": "[XX-Search...-XX]",
+    "noMatches": "[XX-No matches-XX]"
+  },
   "passwordInput": {
     "show": "[XX-Show input-XX]",
     "hide": "[XX-Hide input-XX]"

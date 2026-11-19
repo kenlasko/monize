@@ -19,6 +19,9 @@ import { Payee } from '@/types/payee';
 import { Tag } from '@/types/tag';
 import { TransactionStatus } from '@/types/transaction';
 import { isUuid } from '@/lib/uuid';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 type AccountStatusFilter = 'active' | 'closed' | '';
 
@@ -360,8 +363,9 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
   }, [accounts]);
 
   // Memoize filter option arrays
+  const accountIcon = useAccountPickerIcon();
   const categoryFilterOptions = useMemo(
-    () => buildCategoryFilterOptions(categories, categoryFilterLabels),
+    () => withCategoryIcons(buildCategoryFilterOptions(categories, categoryFilterLabels), categories),
     [categories, categoryFilterLabels],
   );
 
@@ -375,14 +379,14 @@ export function useTransactionFilters({ accounts, categories, payees, tags, week
     // from), and Array.prototype.sort reorders in place.
     return [...filteredAccounts]
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map(account => ({ value: account.id, label: account.name }));
-  }, [filteredAccounts]);
+      .map(account => ({ value: account.id, label: account.name, icon: accountIcon(account) }));
+  }, [filteredAccounts, accountIcon]);
 
   const payeeFilterOptions = useMemo(() => {
     return payees
       .filter(payee => payee.isActive)
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-      .map(payee => ({ value: payee.id, label: payee.name }));
+      .map(payee => ({ value: payee.id, label: payee.name, icon: payeeOptionIcon(payee) }));
   }, [payees]);
 
   const tagFilterOptions = useMemo(() => {

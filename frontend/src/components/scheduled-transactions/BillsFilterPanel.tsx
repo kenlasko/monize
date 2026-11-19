@@ -14,6 +14,8 @@ import { Category } from '@/types/category';
 import { BillsPayeeOption, BillsTypeFilter } from '@/lib/bills-filters';
 import { buildCategoryFilterOptions, resolveSelectedCategories } from '@/lib/categoryUtils';
 import { useCategoryFilterLabels } from '@/hooks/useCategoryFilterLabels';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
 
 const TYPE_FILTERS: readonly BillsTypeFilter[] = ['all', 'bills', 'deposits'];
 
@@ -63,9 +65,10 @@ export function BillsFilterPanel(props: BillsFilterPanelProps) {
     onClearFilters,
   } = props;
 
+  const accountIcon = useAccountPickerIcon();
   const accountOptions: MultiSelectOption[] = useMemo(
-    () => accounts.map((a) => ({ value: a.id, label: a.name })),
-    [accounts],
+    () => accounts.map((a) => ({ value: a.id, label: a.name, icon: accountIcon(a) })),
+    [accounts, accountIcon],
   );
 
   const payeeOptions: MultiSelectOption[] = useMemo(
@@ -75,7 +78,7 @@ export function BillsFilterPanel(props: BillsFilterPanelProps) {
 
   const categoryFilterLabels = useCategoryFilterLabels();
   const categoryOptions: MultiSelectOption[] = useMemo(
-    () => buildCategoryFilterOptions(categories, categoryFilterLabels),
+    () => withCategoryIcons(buildCategoryFilterOptions(categories, categoryFilterLabels), categories),
     [categories, categoryFilterLabels],
   );
 
