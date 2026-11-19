@@ -5,6 +5,7 @@ import {
   createInvestmentTransaction,
 } from '../helpers/factories';
 import { uniqueId } from '../helpers/api';
+import { chooseIconSelectOption } from '../helpers/select';
 
 // Investments portfolio view. Preconditions (account pair, security, trades)
 // are seeded through the API; one test also drives the transaction form in the
@@ -104,7 +105,7 @@ test.describe('Investments', () => {
     await expect(
       dialog.getByRole('heading', { name: 'New Investment Transaction' }),
     ).toBeVisible();
-    await dialog.getByLabel('Brokerage Account').selectOption(pair.brokerageAccount.id);
+    await chooseIconSelectOption(dialog.getByLabel('Brokerage Account'), { value: pair.brokerageAccount.id });
     await dialog.getByLabel('Transaction Type').selectOption('BUY');
     await dialog.getByRole('textbox', { name: 'Security', exact: true }).click();
     await page.getByText(`${security.symbol} - `, { exact: false }).first().click();

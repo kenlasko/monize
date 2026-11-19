@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures';
 import { uniqueId } from '../helpers/api';
 import { createAccount, createTransaction } from '../helpers/factories';
+import { chooseIconSelectOption } from '../helpers/select';
 
 // Responsive / mobile-viewport pass. The nav collapses on small screens, so
 // these reach pages by direct navigation and then exercise a primary flow to
@@ -61,7 +62,7 @@ test.describe('Mobile reconcile', { tag: '@chromium-only' }, () => {
     await expect(page.getByText(/start reconciliation/i).first()).toBeVisible({
       timeout: 10000,
     });
-    await page.getByLabel(/^account$/i).first().selectOption({ value: account.id });
+    await chooseIconSelectOption(page.getByLabel(/^account$/i).first(), { value: account.id });
     await page.getByLabel(/statement ending balance/i).first().fill('-50');
     await page.getByRole('button', { name: /start reconciliation/i }).click();
     await expect(

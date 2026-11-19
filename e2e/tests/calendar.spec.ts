@@ -9,6 +9,7 @@ import {
   createTransaction,
 } from '../helpers/factories';
 import { uniqueId } from '../helpers/api';
+import { chooseIconSelectOption } from '../helpers/select';
 
 /**
  * The calendar view on the Transactions and Investments pages.
@@ -265,7 +266,7 @@ test.describe('Transactions calendar', () => {
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await dialog.getByLabel(/^account$/i).selectOption({ value: account.id });
+    await chooseIconSelectOption(dialog.getByLabel(/^account$/i), { value: account.id });
     await dialog.getByLabel(/amount/i).first().fill('12.34');
     await dialog.getByRole('button', { name: /create transaction/i }).click();
 

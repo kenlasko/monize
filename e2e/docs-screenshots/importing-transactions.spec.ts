@@ -12,6 +12,7 @@ import {
   stepCard,
   upload,
 } from "./import-files";
+import { chooseIconSelectOption } from "../helpers/select";
 
 // website/docs/importing-transactions.md (and the QIF steps the Microsoft Money
 // and Quicken pages share). Each wizard is walked to its review step and left:
@@ -86,11 +87,10 @@ test.describe("the CSV wizard", () => {
   test("import-csv-transfer-rules", async () => {
     await page.getByRole("button", { name: "Add Rule" }).click();
     await page.getByPlaceholder("Pattern...").fill("TRANSFER TO SAVINGS");
-    await page
-      .getByRole("main")
-      .locator("select")
-      .filter({ has: page.locator("option", { hasText: "Select account..." }) })
-      .selectOption("Emergency Fund");
+    await chooseIconSelectOption(
+      page.getByRole("main").getByRole("combobox", { name: "Select account..." }),
+      { label: "Emergency Fund" },
+    );
     const rules = page
       .getByRole("heading", { name: "Transfer Detection Rules" })
       .locator('xpath=ancestor::div[contains(@class, "space-y-3")][1]');

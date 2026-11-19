@@ -10,6 +10,7 @@ import {
 } from "../helpers/shared-expenses";
 import { dismissNotificationPrompt } from "../readme/session";
 import { VIDEO_VIEWPORT } from "../readme/settings";
+import { chooseIconSelectOption } from '../helpers/select';
 
 test.use({ viewport: VIDEO_VIEWPORT });
 
@@ -37,7 +38,7 @@ test("keeps ordinary transaction creation separate and explains an old sharing U
   await expect(
     form.getByRole("heading", { name: "New Transaction", exact: true }),
   ).toBeVisible();
-  await form.getByLabel("Account", { exact: true }).selectOption(bank.id);
+  await chooseIconSelectOption(form.getByLabel("Account", { exact: true }), { value: bank.id });
   await form
     .getByRole("textbox", { name: "Select or type payee name...", exact: true })
     .click();

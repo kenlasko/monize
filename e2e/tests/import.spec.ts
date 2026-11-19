@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures';
 import { createAccount } from '../helpers/factories';
 import { uniqueId } from '../helpers/api';
+import { chooseIconSelectOption } from '../helpers/select';
 
 test.describe('Import Transactions', () => {
   test('navigates to the import page', async ({ authedPage: page }) => {
@@ -47,7 +48,7 @@ test.describe('Import Transactions', () => {
     await expect(
       page.getByRole('heading', { name: /select destination account/i }),
     ).toBeVisible({ timeout: 15000 });
-    await page.getByLabel(/import into account/i).selectOption({ value: account.id });
+    await chooseIconSelectOption(page.getByLabel(/import into account/i), { value: account.id });
     await page.getByRole('button', { name: /^next$/i }).click();
 
     // Review -> import.

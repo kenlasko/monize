@@ -3,6 +3,7 @@ import { test, expect } from '../fixtures';
 import { createAccount } from '../helpers/factories';
 import { uniqueId } from '../helpers/api';
 import { syntheticDocumentPng } from '../helpers/document-fixture';
+import { chooseIconSelectOption } from '../helpers/select';
 
 /**
  * The Web Share Target, end to end.
@@ -174,7 +175,7 @@ test.describe('Web Share Target', { tag: '@chromium-only' }, () => {
     // A share names no account, so the form opens without one: picking it is
     // part of the review, which is the point. Filled the same way
     // transactions.spec.ts fills this form.
-    await dialog.getByLabel(/^account$/i).selectOption({ value: account.id });
+    await chooseIconSelectOption(dialog.getByLabel(/^account$/i), { value: account.id });
     await dialog.getByLabel(/amount/i).first().fill('24.99');
 
     await dialog
