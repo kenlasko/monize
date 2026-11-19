@@ -321,11 +321,21 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
     handleListKeys(event);
   };
 
-  const handleTriggerBlur = (event: FocusEvent<HTMLButtonElement>) => {
+  // The field is left when focus goes somewhere that is neither the field nor
+  // its list -- from the button or from the filter box, open or closed -- and
+  // the caller hears it as the native select's blur (react-hook-form marks the
+  // field touched). Moving between the button and the filter is not leaving.
+  const handleFocusLeave = (event: FocusEvent<HTMLElement>) => {
     const next = event.relatedTarget;
-    if (next instanceof Node && menuRef.current?.contains(next)) return;
-    if (!isOpen && selectRef.current) {
-      onBlur?.({ ...event, target: selectRef.current, currentTarget: selectRef.current } as FocusEvent<HTMLSelectElement>);
+    if (
+      next instanceof Node &&
+      (containerRef.current?.contains(next) || menuRef.current?.contains(next))
+    ) {
+      return;
+    }
+    const select = selectRef.current;
+    if (select) {
+      onBlur?.({ ...event, target: select, currentTarget: select } as FocusEvent<HTMLSelectElement>);
     }
   };
 
@@ -385,7 +395,7 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
           disabled={disabled}
           onClick={() => (isOpen ? close() : open())}
           onKeyDown={handleTriggerKeyDown}
-          onBlur={handleTriggerBlur}
+          onBlur={handleFocusLeave}
           className={cn(
             inputBaseClasses,
             'flex items-center gap-2 border bg-white py-2 pl-3 pr-8 text-left font-sans focus:outline-none focus-visible:ring-1 dark:bg-gray-800',
@@ -416,6 +426,11 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
         createPortal(
           <div
             ref={menuRef}
+            // A press inside the list (its scrollbar, a rule, a heading) keeps
+            // focus where it is; only the filter box takes it.
+            onMouseDown={(event) => {
+              if (event.target !== filterRef.current) event.preventDefault();
+            }}
             style={{
               position: 'fixed',
               left: placement.left,
@@ -430,6 +445,7 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
               <div className="shrink-0 border-b border-gray-200 p-2 dark:border-gray-700">
                 <input
                   ref={filterRef}
+                  onBlur={handleFocusLeave}
                   type="text"
                   value={query}
                   onChange={(event) => {

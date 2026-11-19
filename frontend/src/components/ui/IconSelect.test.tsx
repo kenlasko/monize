@@ -176,6 +176,49 @@ describe('IconSelect', () => {
     expect(screen.getByRole('combobox', { name: 'Account' })).toHaveAccessibleDescription('Pick one');
   });
 
+  describe('marks a react-hook-form field touched when focus leaves it', () => {
+    function TouchedForm({ many: long }: { many?: boolean }) {
+      const { register, watch, formState } = useForm({
+        mode: 'onTouched',
+        defaultValues: { accountId: '' },
+      });
+      const list = long ? [{ value: '', label: 'Select account' }, ...many(12)] : options;
+      return (
+        <>
+          <IconSelect label="Account" options={list} value={watch('accountId')} {...register('accountId')} />
+          <button type="button">Elsewhere</button>
+          <p>{formState.touchedFields.accountId ? 'touched' : 'untouched'}</p>
+        </>
+      );
+    }
+
+    it('from the field, with its short list open', async () => {
+      render(<TouchedForm />);
+      const trigger = screen.getByRole('combobox', { name: 'Account' });
+      fireEvent.click(trigger);
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.blur(trigger, { relatedTarget: screen.getByRole('button', { name: 'Elsewhere' }) });
+      });
+      expect(screen.getByText('touched')).toBeInTheDocument();
+    });
+
+    it('from the filter box of a long list, but not when it moves into the filter', async () => {
+      render(<TouchedForm many />);
+      const trigger = screen.getByRole('combobox', { name: 'Account' });
+      fireEvent.click(trigger);
+      const filter = screen.getByRole('searchbox');
+      await act(async () => {
+        fireEvent.blur(trigger, { relatedTarget: filter });
+      });
+      expect(screen.getByText('untouched')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.blur(filter, { relatedTarget: screen.getByRole('button', { name: 'Elsewhere' }) });
+      });
+      expect(screen.getByText('touched')).toBeInTheDocument();
+    });
+  });
+
   describe('placeList', () => {
     it('hangs under the field at its width, never narrower than a readable list', () => {
       expect(placeList({ left: 20, top: 100, bottom: 136, width: 400 }, 1280, 800)).toEqual({

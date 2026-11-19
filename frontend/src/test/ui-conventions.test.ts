@@ -3783,3 +3783,54 @@ describe("an account, payee or category dropdown draws its icons", () => {
     ).toEqual([1, 2, 4, 5]);
   });
 });
+
+describe("a register()-wired IconSelect also passes its value", () => {
+  /** Each `<AccountSelect ...>` / `<IconSelect ...>` element through its `/>`. */
+  function iconSelectElements(source: string): { text: string; line: number }[] {
+    const found: { text: string; line: number }[] = [];
+    const opening = /<(?:AccountSelect|IconSelect)\b/g;
+    let match: RegExpExecArray | null;
+    while ((match = opening.exec(source))) {
+      let depth = 0;
+      let end = source.length;
+      for (let at = match.index + match[0].length; at < source.length; at += 1) {
+        const char = source[at];
+        if (char === "{") depth += 1;
+        else if (char === "}") depth -= 1;
+        else if (depth === 0 && source.startsWith("/>", at)) {
+          end = at + 2;
+          break;
+        }
+      }
+      found.push({
+        text: source.slice(match.index, end),
+        line: source.slice(0, match.index).split("\n").length,
+      });
+    }
+    return found;
+  }
+
+  const unsynced = (text: string) => /\bregister\(/.test(text) && !/\bvalue=/.test(text);
+
+  it("passes the watched value beside every register() spread", () => {
+    // The visible field cannot observe reset() or setValue() on the hidden
+    // select register() attaches to; without `value` it shows the first option,
+    // or the old pick, while the form holds something else.
+    const offenders = productionSources().flatMap(([path, content]) =>
+      iconSelectElements(withoutComments(content))
+        .filter(({ text }) => unsynced(text))
+        .map(({ line }) => `${path}:${line}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("catches the pattern it bans, and finds the fields it checks", () => {
+    const sample = `<AccountSelect label="A" options={o} {...register('accountId')} />
+<AccountSelect label="B" value={watched} options={o} {...register('accountId')} />`;
+    expect(iconSelectElements(sample).filter(({ text }) => unsynced(text)).map(({ line }) => line)).toEqual([1]);
+    const wired = productionSources().flatMap(([, content]) =>
+      iconSelectElements(withoutComments(content)).filter(({ text }) => /\bregister\(/.test(text)),
+    );
+    expect(wired.length).toBeGreaterThan(0);
+  });
+});
