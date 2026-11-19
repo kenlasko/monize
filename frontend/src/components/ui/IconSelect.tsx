@@ -5,7 +5,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -140,7 +139,16 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
   const menuRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  useImperativeHandle(ref, () => selectRef.current as HTMLSelectElement);
+  // The caller's ref (a `register()` ref included) lands on the native select,
+  // exactly as it would on a `Select`.
+  const setSelect = useCallback(
+    (element: HTMLSelectElement | null) => {
+      selectRef.current = element;
+      if (typeof ref === 'function') ref(element);
+      else if (ref) ref.current = element;
+    },
+    [ref],
+  );
 
   const firstEnabled = options.find((o) => !o.disabled && o.value !== SEPARATOR_VALUE)?.value ?? '';
   const [ownValue, setOwnValue] = useState<string>(() =>
@@ -336,7 +344,7 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
         {/* The form's value. Hidden from sight and from assistive technology:
             the button below is the control a person uses. */}
         <select
-          ref={selectRef}
+          ref={setSelect}
           value={value}
           defaultValue={value == null ? defaultValue : undefined}
           disabled={disabled}
