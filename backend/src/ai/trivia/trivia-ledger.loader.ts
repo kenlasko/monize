@@ -15,9 +15,6 @@ import type {
   TriviaWarranties,
 } from "./trivia-ledger-facts";
 
-// `triviaWindow` lives with the other window arithmetic; kept exported here.
-export { TRIVIA_WINDOW_MONTHS, triviaWindow } from "./trivia-windows";
-
 /** The ledger's twelve-month reads, and the other windows the picks asked for. */
 export interface TriviaLedgerLoad extends TriviaLedgerInput {
   windowed: TriviaWindowedReads;

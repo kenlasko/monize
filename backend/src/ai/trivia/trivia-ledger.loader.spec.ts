@@ -1,6 +1,7 @@
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import { TriviaLedgerLoader, triviaWindow } from "./trivia-ledger.loader";
+import { TriviaLedgerLoader } from "./trivia-ledger.loader";
+import { triviaWindow } from "./trivia-windows";
 import { WINDOWED_FAMILIES, type TriviaPicks } from "./trivia-windowed-reads";
 import type { TriviaWindow } from "./trivia.types";
 

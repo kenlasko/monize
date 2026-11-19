@@ -175,10 +175,13 @@ describe("buildCalendarTriviaFacts", () => {
   });
 
   describe("netWorthMilestone", () => {
-    const run = (series: TriviaNetWorthMonth[]) =>
+    // A first month of history, so the series is not just starting out.
+    const history = month("2026-05-01", 500);
+    const runRaw = (series: TriviaNetWorthMonth[]) =>
       buildCalendarTriviaFacts(only({ months: series })).filter(
         (f) => f.id === "netWorthMilestone",
       );
+    const run = (series: TriviaNetWorthMonth[]) => runRaw([history, ...series]);
     const amount = (series: TriviaNetWorthMonth[]) =>
       run(series)[0]?.figures.milestoneAmount;
 
@@ -217,6 +220,20 @@ describe("buildCalendarTriviaFacts", () => {
       expect(
         amount([month("2026-10-01", 4000), month("2026-11-01", 5000)]),
       ).toMatchObject({ value: 5000 });
+    });
+
+    it("gives none while the ledger is still being entered", () => {
+      // The previous month is the series' first: a jump from the first entry.
+      expect(
+        runRaw([month("2026-10-01", 990), month("2026-11-01", 1050)]),
+      ).toEqual([]);
+      // The previous month holds no balance: the series climbs from nothing.
+      expect(run([month("2026-10-01", 0), month("2026-11-01", 1050)])).toEqual(
+        [],
+      );
+      expect(
+        run([month("2026-10-01", -50), month("2026-11-01", 1050)]),
+      ).toEqual([]);
     });
 
     it("has no milestone below 1,000", () => {

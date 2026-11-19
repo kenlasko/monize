@@ -5,9 +5,10 @@ import {
   pickWindow,
   seedHash,
   weekIndex,
+  triviaWindow,
   windowRange,
 } from "./trivia-windows";
-import { triviaWindow } from "./trivia-ledger.loader";
+
 import { TRIVIA_WINDOWS } from "./trivia.types";
 
 describe("trivia windows", () => {

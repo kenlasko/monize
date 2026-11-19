@@ -297,6 +297,7 @@ export function occurrence(
     directionAmount: -80,
     currencyCode: "CAD",
     complete: true,
+    estimated: false,
     schedule: { name: name ?? "Rent" },
     ...rest,
   } as unknown as ResolvedScheduledOccurrence;
@@ -335,6 +336,9 @@ export function fullDailyInput(): TriviaDailyInput {
       singleCurrency: true,
     },
     lastSpendDate: "2026-11-15",
+    // A sample of every id, not one coherent week: the loader only passes a
+    // streak the report confirms, which `lastDay` would then contradict.
+    streakSpent: 0,
     sincePayee: { name: "Cafe", lastDate: "2026-11-10" },
     bills: {
       occurrences: [occurrence(), occurrence({ dueDate: "2026-11-23" })],

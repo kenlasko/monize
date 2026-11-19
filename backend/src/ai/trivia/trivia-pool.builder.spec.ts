@@ -88,7 +88,7 @@ describe("TriviaPoolBuilder", () => {
       "2026-11-20",
       pickAll(userId, "2026-11-20"),
     );
-    expect(calendar.load).toHaveBeenCalledWith(userId, "CAD", "2026-11-20");
+    expect(calendar.load).toHaveBeenCalledWith(userId, "2026-11-20");
     expect(daily.load).toHaveBeenCalledWith(
       userId,
       "CAD",

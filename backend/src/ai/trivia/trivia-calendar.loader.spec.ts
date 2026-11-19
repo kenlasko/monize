@@ -30,7 +30,7 @@ describe("TriviaCalendarLoader", () => {
   });
 
   it("reads the whole month a year before today's", async () => {
-    await loader.load(USER, "CAD", "2026-01-15");
+    await loader.load(USER, "2026-01-15");
     expect(reports.getSpendingByCategory).toHaveBeenCalledWith(
       USER,
       "2025-01-01",
@@ -49,7 +49,7 @@ describe("TriviaCalendarLoader", () => {
           : [{ recorded_before: "990" }],
       ),
     );
-    const input = await loader.load(USER, "CAD", "2026-11-19");
+    const input = await loader.load(USER, "2026-11-19");
     expect(input.accountFirstDates).toEqual([
       { name: "TFSA", firstDate: "2022-11-16" },
       { name: "Chequing", firstDate: "2021-11-15" },
@@ -58,7 +58,7 @@ describe("TriviaCalendarLoader", () => {
   });
 
   it("reads open accounts' non-VOID top-level rows, scoped to the reader", async () => {
-    await loader.load(USER, "CAD", "2026-11-19");
+    await loader.load(USER, "2026-11-19");
     const [sql, params] = query.mock.calls.find(([s]) =>
       s.includes("first_date"),
     );
@@ -70,7 +70,7 @@ describe("TriviaCalendarLoader", () => {
   });
 
   it("counts rows created before the last 30 days", async () => {
-    await loader.load(USER, "CAD", "2026-11-19");
+    await loader.load(USER, "2026-11-19");
     const [sql, params] = query.mock.calls.find(([s]) =>
       s.includes("recorded_before"),
     );
@@ -80,7 +80,7 @@ describe("TriviaCalendarLoader", () => {
 
   it("counts none as zero, not as unknown", async () => {
     query.mockResolvedValue([]);
-    const input = await loader.load(USER, "CAD", "2026-11-19");
+    const input = await loader.load(USER, "2026-11-19");
     expect(input.transactionsRecordedBefore).toBe(0);
   });
 
@@ -91,7 +91,7 @@ describe("TriviaCalendarLoader", () => {
           ? Promise.reject(new Error("boom"))
           : Promise.resolve([{ recorded_before: 5 }]),
       );
-      const input = await loader.load(USER, "CAD", "2026-11-19");
+      const input = await loader.load(USER, "2026-11-19");
       expect(input.accountFirstDates).toBeNull();
       expect(input.transactionsRecordedBefore).toBe(5);
       expect(input.yearAgoMonth).not.toBeNull();
@@ -103,7 +103,7 @@ describe("TriviaCalendarLoader", () => {
           ? Promise.reject(new Error("boom"))
           : Promise.resolve([]),
       );
-      const input = await loader.load(USER, "CAD", "2026-11-19");
+      const input = await loader.load(USER, "2026-11-19");
       expect(input.transactionsRecordedBefore).toBeNull();
       expect(input.accountFirstDates).toEqual([]);
       expect(input.yearAgoMonth).not.toBeNull();
@@ -111,7 +111,7 @@ describe("TriviaCalendarLoader", () => {
 
     it("nulls only the year-ago report", async () => {
       reports.getSpendingByCategory.mockRejectedValue(new Error("boom"));
-      const input = await loader.load(USER, "CAD", "2026-11-19");
+      const input = await loader.load(USER, "2026-11-19");
       expect(input.yearAgoMonth).toBeNull();
       expect(input.accountFirstDates).toEqual([]);
       expect(input.transactionsRecordedBefore).toBe(0);

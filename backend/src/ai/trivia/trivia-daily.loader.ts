@@ -24,7 +24,7 @@ import { ScheduledOccurrenceService } from "../../scheduled-transactions/schedul
 import { PortfolioService } from "../../securities/portfolio.service";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../../transactions/entities/transaction-split.entity";
-import type { TriviaDailyInput } from "./trivia-daily-facts";
+import { isStreakLength, type TriviaDailyInput } from "./trivia-daily-facts";
 import { asOfDay, dayIndex, seedHash } from "./trivia-windows";
 
 export interface TriviaDailyOptions {
@@ -84,6 +84,9 @@ export class TriviaDailyLoader {
     const lastSpendDate = await this.attempt(userId, "last spend", () =>
       this.readLastSpendDate(userId, asOf, null),
     );
+    const streakSpent = await this.attempt(userId, "streak", () =>
+      this.readStreakSpent(userId, lastSpendDate, asOf),
+    );
     const sincePayee = await this.attempt(userId, "payee recency", () =>
       this.readSincePayee(userId, today, asOf, options.spendingByPayee),
     );
@@ -109,6 +112,7 @@ export class TriviaDailyLoader {
       lastSevenDays,
       biggestPurchase,
       lastSpendDate,
+      streakSpent,
       sincePayee,
       bills,
       budget,
@@ -235,6 +239,27 @@ export class TriviaDailyLoader {
       );
       return rows[0]?.last_date ?? null;
     });
+  }
+
+  /**
+   * What the spending report says was spent on the days after the last
+   * purchase, to the last complete day. The streak is stated only when this is
+   * zero, so it never sits beside "you spent X" on one of those days: the last
+   * day and the week come from the same report. `null` when there is no streak
+   * to check or the report could not say.
+   */
+  private async readStreakSpent(
+    userId: string,
+    lastSpendDate: string | null,
+    asOf: string,
+  ): Promise<number | null> {
+    if (!lastSpendDate || !isStreakLength(lastSpendDate, asOf)) return null;
+    const report = await this.reports.getSpendingByCategory(
+      userId,
+      addDaysYMD(lastSpendDate, 1),
+      asOf,
+    );
+    return report.totalSpending;
   }
 
   /** One of the reader's top five payees, a different one most days. */

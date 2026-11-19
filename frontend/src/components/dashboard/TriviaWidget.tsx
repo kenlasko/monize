@@ -151,8 +151,9 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
   const enabled = usePreferencesStore((s) => s.preferences?.aiTriviaEnabled) !== false;
   const trivia = useDashboardTrivia(enabled && !parentLoading);
 
-  // The server shuffles the list; the minute the page opened is where a reader
-  // joins it, so a reload does not always start on the same fact.
+  // The server orders the list for the day (the same on every load); the
+  // minute the page opened is where a reader joins it, so a reload does not
+  // always start on the same fact.
   const [start] = useState(() => Math.floor(Date.now() / 60_000));
   const [step, setStep] = useState(0);
   const [paused, setPaused] = useState(false);

@@ -136,6 +136,18 @@ describe("buildDailyTriviaFacts", () => {
       );
     });
 
+    it("states a streak only when the report confirms nothing was spent on its days", () => {
+      // The purchase rule says nothing since the 15th; the report says 25 went
+      // out on one of the days (a refund-netted category), so the list would
+      // say "no spending for 3 days" beside "you spent 25".
+      for (const streakSpent of [25, 0.01, null]) {
+        expect(ids(build({ streakSpent }))).not.toContain(
+          "spendingNoSpendStreak",
+        );
+      }
+      expect(ids(build({ streakSpent: 0 }))).toContain("spendingNoSpendStreak");
+    });
+
     it("counts the days since a payee to today, and needs 2 or more", () => {
       expect(find(build(), "spendingDaysSincePayee")?.figures).toEqual({
         sincePayeeName: { kind: "text", value: "Cafe" },
@@ -148,6 +160,30 @@ describe("buildDailyTriviaFacts", () => {
       expect(
         ids(build({ sincePayee: { name: null, lastDate: "2026-11-01" } })),
       ).not.toContain("spendingDaysSincePayee");
+    });
+  });
+
+  describe("the day of a payee last spent with", () => {
+    const dayFigure = (lastDate: string) =>
+      find(
+        build({ sincePayee: { name: "Cafe", lastDate } }),
+        "spendingDaysSincePayee",
+      )?.figures.sincePayeeDay;
+
+    it("is a weekday figure within 60 days and a dated one beyond", () => {
+      expect(dayFigure("2026-09-20")).toEqual({
+        kind: "day",
+        value: "2026-09-20",
+      });
+      // 61 days back: a weekday with no year would be ambiguous.
+      expect(dayFigure("2026-09-19")).toEqual({
+        kind: "date",
+        value: "2026-09-19",
+      });
+      expect(dayFigure("2025-12-01")).toEqual({
+        kind: "date",
+        value: "2025-12-01",
+      });
     });
   });
 
@@ -186,6 +222,28 @@ describe("buildDailyTriviaFacts", () => {
       });
       expect(ids(facts)).toContain("activityNextBill");
       expect(ids(facts)).not.toContain("activityBillsDueThisWeek");
+    });
+
+    it("gives no next-bill fact when the next bill is an estimate", () => {
+      const facts = build({
+        bills: {
+          occurrences: [occurrence({ estimated: true }), occurrence()],
+          total: 160,
+        },
+      });
+      expect(ids(facts)).not.toContain("activityNextBill");
+    });
+
+    it("gives no total when any bill in the window is an estimate", () => {
+      const facts = build({
+        bills: {
+          occurrences: [occurrence(), occurrence({ estimated: true })],
+          total: 160,
+        },
+      });
+      expect(ids(facts)).not.toContain("activityBillsDueThisWeek");
+      // The first bill is exact, so it is still the next bill.
+      expect(ids(facts)).toContain("activityNextBill");
     });
 
     it("says nothing without occurrences", () => {

@@ -26,11 +26,7 @@ export class TriviaCalendarLoader {
     private readonly reports: BuiltInReportsService,
   ) {}
 
-  async load(
-    userId: string,
-    _currency: string,
-    today: string,
-  ): Promise<TriviaCalendarData> {
+  async load(userId: string, today: string): Promise<TriviaCalendarData> {
     const { startDate, endDate } = yearAgoMonthRange(today);
     const accountFirstDates = await this.attempt(userId, "accounts", () =>
       this.readAccountFirstDates(userId),

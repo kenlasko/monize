@@ -4,7 +4,16 @@ import { daysBetween } from "../../common/time-series/price-boundary.util";
 import type { TopMover } from "../../securities/portfolio.service";
 import type { ResolvedScheduledOccurrence } from "../../scheduled-transactions/scheduled-occurrence.service";
 import type { TriviaFact } from "./trivia.types";
-import { count, day, days, fact, money, percent, text } from "./trivia-figures";
+import {
+  count,
+  date,
+  day,
+  days,
+  fact,
+  money,
+  percent,
+  text,
+} from "./trivia-figures";
 import { asOfDay } from "./trivia-windows";
 
 /** One expense line of the budget, as the budget page resolves it. */
@@ -39,6 +48,13 @@ export interface TriviaDailyInput {
     singleCurrency: boolean;
   } | null;
   lastSpendDate: string | null;
+  /**
+   * The spending report's total over the days after `lastSpendDate`, to the
+   * last complete day: the purchase rule behind `lastSpendDate` and the report
+   * behind `lastDay` disagree on refunds and transfers, so a streak needs the
+   * report to confirm it. `null` when unread.
+   */
+  streakSpent: number | null;
   sincePayee: { name: string | null; lastDate: string } | null;
   /** `null` when the read was skipped (a page load) or failed. */
   bills: {
@@ -59,6 +75,14 @@ const MIN_NO_SPEND_DAYS = 2;
 const MAX_NO_SPEND_DAYS = 30;
 /** "Since you last spent with" needs at least this many days. */
 const MIN_SINCE_PAYEE_DAYS = 2;
+/** A "day" figure carries no year, so a date older than this is a full date. */
+const RECENT_DAY_LIMIT = 60;
+
+/** Whether `lastSpendDate` to `asOf` is a streak worth stating. */
+export function isStreakLength(lastSpendDate: string, asOf: string): boolean {
+  const noSpend = daysBetween(lastSpendDate, asOf);
+  return noSpend >= MIN_NO_SPEND_DAYS && noSpend <= MAX_NO_SPEND_DAYS;
+}
 
 function positive(value: number | null | undefined): value is number {
   return value !== null && value !== undefined && value > 0;
@@ -124,16 +148,19 @@ function recentSpendingFacts(input: TriviaDailyInput): TriviaFact[] {
 
 function streakFacts(input: TriviaDailyInput): TriviaFact[] {
   const facts: TriviaFact[] = [];
-  if (input.lastSpendDate) {
-    const noSpend = daysBetween(input.lastSpendDate, asOfDay(input.today));
-    if (noSpend >= MIN_NO_SPEND_DAYS && noSpend <= MAX_NO_SPEND_DAYS) {
-      facts.push(
-        fact("spendingNoSpendStreak", "spending", {
-          noSpendDays: days(noSpend),
-          lastSpendDay: day(input.lastSpendDate),
-        }),
-      );
-    }
+  const asOf = asOfDay(input.today);
+  // The report must agree that nothing was spent on the streak's days.
+  if (
+    input.lastSpendDate &&
+    input.streakSpent === 0 &&
+    isStreakLength(input.lastSpendDate, asOf)
+  ) {
+    facts.push(
+      fact("spendingNoSpendStreak", "spending", {
+        noSpendDays: days(daysBetween(input.lastSpendDate, asOf)),
+        lastSpendDay: day(input.lastSpendDate),
+      }),
+    );
   }
   const since = input.sincePayee;
   if (since?.name) {
@@ -143,7 +170,11 @@ function streakFacts(input: TriviaDailyInput): TriviaFact[] {
         fact("spendingDaysSincePayee", "spending", {
           sincePayeeName: text(since.name),
           sincePayeeDays: days(sinceDays),
-          sincePayeeDay: day(since.lastDate),
+          // `day` shows a weekday with no year: past two months it is a date.
+          sincePayeeDay:
+            sinceDays > RECENT_DAY_LIMIT
+              ? date(since.lastDate)
+              : day(since.lastDate),
         }),
       );
     }
@@ -155,7 +186,9 @@ function billFacts(input: TriviaDailyInput): TriviaFact[] {
   const { bills, currency } = input;
   if (!bills || bills.occurrences.length === 0) return [];
   const facts: TriviaFact[] = [];
-  if (bills.total !== null) {
+  // An estimate is a forecast, not an amount: a total that holds one, or a next
+  // bill that is one, would be stated as exact. Both facts need exact figures.
+  if (bills.total !== null && !bills.occurrences.some((o) => o.estimated)) {
     facts.push(
       fact("activityBillsDueThisWeek", "activity", {
         billsDueCount: count(bills.occurrences.length),
@@ -168,7 +201,7 @@ function billFacts(input: TriviaDailyInput): TriviaFact[] {
   const next = [...bills.occurrences].sort((a, b) =>
     a.dueDate.localeCompare(b.dueDate),
   )[0];
-  if (next.amount !== null) {
+  if (next.amount !== null && !next.estimated) {
     facts.push(
       fact("activityNextBill", "activity", {
         nextBillName: text(next.schedule.name),

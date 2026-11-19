@@ -86,7 +86,7 @@ export class TriviaPoolBuilder {
       spendingByPayee: ledger.spendingByPayee,
     });
 
-    const calendar = await this.calendar.load(userId, currency, today);
+    const calendar = await this.calendar.load(userId, today);
 
     const facts = [
       ...buildTriviaFacts({

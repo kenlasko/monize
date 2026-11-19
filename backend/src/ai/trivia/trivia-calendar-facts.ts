@@ -131,8 +131,12 @@ function accountAnniversaryFact(input: TriviaCalendarInput): TriviaFact[] {
 /** The largest {1, 2, 5} x 10^k at or above 1,000 that `latest` reached from below. */
 function netWorthMilestoneFact(input: TriviaCalendarInput): TriviaFact[] {
   const { months, currency } = input;
-  if (months.length < 2) return [];
+  if (months.length < 3) return [];
   const [previous, latest] = months.slice(-2);
+  // A ledger still being entered climbs from nothing: the month before must
+  // hold a balance and must not be the series' first, or data entry would be
+  // reported as a milestone (as `netWorthSinceStart` guards).
+  if (previous.netWorth <= 0 || previous === months[0]) return [];
   if (previous.fxComplete === false || latest.fxComplete === false) return [];
   // "In {month}" is only true of a crossing between two consecutive months.
   if (monthsBetween(previous.month, latest.month) !== 1) return [];

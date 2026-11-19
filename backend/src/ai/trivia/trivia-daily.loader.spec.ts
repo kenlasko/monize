@@ -203,6 +203,32 @@ describe("TriviaDailyLoader", () => {
       expect(input.lastSpendDate).toBe("2026-11-15");
     });
 
+    it("reads the report's spending over the days after the last purchase", async () => {
+      query.mockImplementation((sql: string) =>
+        Promise.resolve(
+          sql.includes("foreign_rows") ? [] : [{ last_date: "2026-11-15" }],
+        ),
+      );
+      reports.getSpendingByCategory.mockImplementation((_u, from) =>
+        Promise.resolve(report(from === "2026-11-16" ? 25 : 10)),
+      );
+      const input = await loader.load(USER, "CAD", TODAY, noOptions);
+      expect(
+        reports.getSpendingByCategory.mock.calls.map((c) => c.slice(1)),
+      ).toContainEqual(["2026-11-16", "2026-11-18"]);
+      expect(input.streakSpent).toBe(25);
+    });
+
+    it("reads no streak report without a streak", async () => {
+      query.mockImplementation((sql: string) =>
+        Promise.resolve(
+          sql.includes("foreign_rows") ? [] : [{ last_date: "2026-11-17" }],
+        ),
+      );
+      const input = await loader.load(USER, "CAD", TODAY, noOptions);
+      expect(input.streakSpent).toBeNull();
+    });
+
     it("marks a window holding another currency", async () => {
       query.mockImplementation((sql: string) =>
         Promise.resolve(
