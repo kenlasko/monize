@@ -15,6 +15,8 @@ export interface CollapsedHeaderSwitcher {
   noMatchesLabel: string;
   /** List the current entry too, highlighted (the reports switcher). */
   showCurrent?: boolean;
+  /** Where a row's secondary text sits (the securities switcher: `inline`). */
+  secondaryAlign?: 'inline' | 'end';
 }
 
 /** What the page's scrolled-away title leaves behind in the app header. */

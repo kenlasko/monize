@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
 import { render, act } from '@/test/render';
+import { stubCollapsingTitle } from '@/test/collapsing-title';
 import { SecurityDetailHeader, type SecurityQuote } from './SecurityDetailHeader';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { Security } from '@/types/investment';
+
+// One router object, as the real hook returns, whose `push` this file asserts on.
+const router = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 function security(overrides: Partial<Security> = {}): Security {
   return {
@@ -47,6 +52,7 @@ function quote(overrides: Partial<SecurityQuote> = {}): SecurityQuote {
 function renderHeader(
   securityOverrides: Partial<Security> = {},
   quoteValue: SecurityQuote | null = quote(),
+  securities: Security[] = [],
 ) {
   render(
     <SecurityDetailHeader
@@ -58,8 +64,7 @@ function renderHeader(
       isFavouritePending={false}
       onRefreshPrice={vi.fn()}
       isRefreshingPrice={false}
-      securities={[]}
-      onSelectSecurity={vi.fn()}
+      securities={securities}
     />,
   );
 }
@@ -150,6 +155,31 @@ describe('SecurityDetailHeader', () => {
         expect.stringContaining('holidays'),
       );
     });
+  });
+
+  it('hands the app header "Securities" with the name and the same caret, active securities only', async () => {
+    const title = stubCollapsingTitle();
+    try {
+      const other = security({ id: 'sec-2', symbol: 'MSFT', name: 'Microsoft' });
+      const sold = security({ id: 'sec-3', symbol: 'OLD', name: 'Sold Fund', isActive: false });
+      await act(async () => {
+        renderHeader({}, quote(), [security(), other, sold]);
+      });
+      title.collapse();
+      expect(title.current()).toMatchObject({
+        title: 'Securities',
+        context: 'Apple Inc.',
+        switcher: { currentId: 'sec-1', secondaryAlign: 'inline' },
+      });
+      expect(title.current()?.switcher?.items.map((item) => item.id)).toEqual([
+        'sec-1',
+        'sec-2',
+      ]);
+      act(() => title.current()?.switcher?.onSelect('sec-2'));
+      expect(router.push).toHaveBeenCalledWith('/securities/sec-2');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('wraps the name while the header is stacked and truncates only once it goes row-wise', async () => {

@@ -31,7 +31,7 @@ A currency that is in use, and your home currency, cannot be deactivated or dele
 
 ### Currency Details
 
-Click a currency's row, or **Details** in its actions, to open its details page. **Back to Currencies** above the title returns to the list, and the arrow beside the title jumps straight to another currency.
+Click a currency's row, or **Details** in its actions, to open its details page. **Back to Currencies** above the title returns to the list, and the arrow beside the title jumps straight to another active currency (inactive currencies are not listed). On a phone or tablet, once you scroll the title away, the header bar reads **Currencies – *currency*** with a chevron that opens the same menu.
 
 ![The details page of a currency, with its totals, its exchange rate chart and its rate history](images/currency-detail.png)
 

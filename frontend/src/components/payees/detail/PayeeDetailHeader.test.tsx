@@ -1,8 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
-import { render } from '@/test/render';
+import { act, render } from '@/test/render';
+import { stubCollapsingTitle } from '@/test/collapsing-title';
 import { PayeeDetailHeader } from './PayeeDetailHeader';
 import type { Payee } from '@/types/payee';
+
+// One router object, as the real hook returns, whose `push` this file asserts on.
+const router = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 function payee(overrides: Partial<Payee> = {}): Payee {
   return {
@@ -29,6 +34,7 @@ function payee(overrides: Partial<Payee> = {}): Payee {
 function renderHeader(
   overrides: Partial<Payee> = {},
   firstTransactionDate: string | null = null,
+  payees: Payee[] = [],
 ) {
   const handlers = {
     onBack: vi.fn(),
@@ -36,14 +42,13 @@ function renderHeader(
     onEdit: vi.fn(),
     onMerge: vi.fn(),
     onToggleActive: vi.fn(),
-    onSelectPayee: vi.fn(),
   };
   render(
     <PayeeDetailHeader
       payee={payee(overrides)}
       firstTransactionDate={firstTransactionDate}
       isTogglePending={false}
-      payees={[]}
+      payees={payees}
       {...handlers}
     />,
   );
@@ -51,6 +56,30 @@ function renderHeader(
 }
 
 describe('PayeeDetailHeader', () => {
+  it('hands the app header "Payees" with the payee\'s name and the same caret', () => {
+    const title = stubCollapsingTitle();
+    try {
+      const other = payee({ id: 'payee-2', name: 'Tim Hortons' });
+      const retired = payee({ id: 'payee-3', name: 'Old Gym', isActive: false });
+      renderHeader({}, null, [payee(), other, retired]);
+      title.collapse();
+      expect(title.current()).toMatchObject({
+        title: 'Payees',
+        context: 'Starbucks',
+        switcher: { currentId: 'payee-1' },
+      });
+      // Only active payees are destinations, in the header as on the page.
+      expect(title.current()?.switcher?.items.map((item) => item.id)).toEqual([
+        'payee-1',
+        'payee-2',
+      ]);
+      act(() => title.current()?.switcher?.onSelect('payee-2'));
+      expect(router.push).toHaveBeenCalledWith('/payees/payee-2');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('shows the payee name', () => {
     renderHeader();
     expect(screen.getByRole('heading', { name: 'Starbucks' })).toBeInTheDocument();

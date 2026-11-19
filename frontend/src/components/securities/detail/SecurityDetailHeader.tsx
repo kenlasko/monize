@@ -1,9 +1,15 @@
 'use client';
 
+import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { Button } from '@/components/ui/Button';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from '@/hooks/useCollapsingHeaderTitle';
 import { RefreshPricesButton } from '@/components/investments/RefreshPricesButton';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -11,7 +17,7 @@ import { useNow } from '@/hooks/useNow';
 import { getMarketState } from '@/lib/market-hours';
 import { gainLossColor, withCurrencyCode } from '@/lib/format';
 import type { Security } from '@/types/investment';
-import { SecuritySwitcher } from './SecuritySwitcher';
+import { useSecuritySwitcher } from './SecuritySwitcher';
 
 /** The latest quote and how far it moved on the day it was quoted. */
 export interface SecurityQuote {
@@ -45,9 +51,8 @@ interface SecurityDetailHeaderProps {
   /** Re-fetch this security's quote from its price provider. */
   onRefreshPrice: () => void;
   isRefreshingPrice: boolean;
-  /** Active securities the caret beside the name can jump to. */
+  /** Securities the caret beside the name can jump to; inactive ones are left out. */
   securities: readonly Security[];
-  onSelectSecurity: (id: string) => void;
 }
 
 /**
@@ -69,10 +74,16 @@ export function SecurityDetailHeader({
   onRefreshPrice,
   isRefreshingPrice,
   securities,
-  onSelectSecurity,
 }: SecurityDetailHeaderProps) {
   const t = useTranslations('securityDetail');
   const ts = useTranslations('securities');
+  const switcher = useSecuritySwitcher(security.id, securities);
+  // Below `xl`, once the name scrolls behind the app header, the header reads
+  // "Securities - <this security>" and carries the same caret.
+  const collapses = useContext(CollapsingTitleContext);
+  const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
+    collapses ? { title: ts('page.title'), context: security.name, switcher } : null,
+  );
   const { formatDate, formatDateTime, formatTimeZoneAbbrev } = useDateFormat();
   const { formatCurrencyPrecise, formatSignedPercent, defaultCurrency } =
     useNumberFormat();
@@ -132,6 +143,7 @@ export function SecurityDetailHeader({
                 caret stays beside it either way -- same treatment as the
                 mobile-table identity cells. */}
             <h1
+              ref={titleRef}
               className="break-words text-2xl font-bold text-gray-900 lg:truncate dark:text-gray-100"
               title={security.name}
             >
@@ -139,11 +151,7 @@ export function SecurityDetailHeader({
             </h1>
             {/* Jump straight to another security instead of going back to the
                 list and picking Details again. */}
-            <SecuritySwitcher
-              currentId={security.id}
-              securities={securities}
-              onSelect={onSelectSecurity}
-            />
+            <EntitySwitcher {...switcher} />
           </div>
 
           {!security.isActive && (

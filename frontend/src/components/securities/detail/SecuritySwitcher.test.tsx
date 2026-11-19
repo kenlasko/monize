@@ -1,8 +1,24 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import { render } from '@/test/render';
-import { SecuritySwitcher } from './SecuritySwitcher';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
+import { useSecuritySwitcher } from './SecuritySwitcher';
 import type { Security } from '@/types/investment';
+
+// One router object, as the real hook returns: the switcher is memoized on it.
+const router = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
+/** The caret exactly as the detail header draws it. */
+function SecuritySwitcher({
+  currentId,
+  securities,
+}: {
+  currentId: string;
+  securities: Security[];
+}) {
+  return <EntitySwitcher {...useSecuritySwitcher(currentId, securities)} />;
+}
 
 function security(id: string, symbol: string, name: string): Security {
   return {
@@ -45,12 +61,12 @@ const two = [
 ];
 
 function open(securities: Security[], currentId = 'sec-1') {
-  const onSelect = vi.fn();
+  const onSelect = router.push;
+  onSelect.mockClear();
   render(
     <SecuritySwitcher
       currentId={currentId}
       securities={securities}
-      onSelect={onSelect}
     />,
   );
   fireEvent.click(
@@ -66,7 +82,6 @@ describe('SecuritySwitcher', () => {
       <SecuritySwitcher
         currentId="sec-1"
         securities={[security('sec-1', 'IUSQ', 'All World')]}
-        onSelect={vi.fn()}
       />,
     );
     expect(container).toBeEmptyDOMElement();
@@ -74,7 +89,7 @@ describe('SecuritySwitcher', () => {
 
   it('renders nothing while the list is still loading', () => {
     const { container } = render(
-      <SecuritySwitcher currentId="sec-1" securities={[]} onSelect={vi.fn()} />,
+      <SecuritySwitcher currentId="sec-1" securities={[]} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
@@ -85,10 +100,16 @@ describe('SecuritySwitcher', () => {
     expect(screen.queryByRole('menuitem', { name: /IUSQ/ })).not.toBeInTheDocument();
   });
 
+  it('leaves inactive securities out of the menu', () => {
+    open([...two, { ...security('sec-3', 'OLD', 'Sold Fund'), isActive: false }]);
+    expect(screen.getByRole('menuitem', { name: /VWCE/ })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /OLD/ })).not.toBeInTheDocument();
+  });
+
   it('reports the chosen security and closes', () => {
     const { onSelect } = open(two);
     fireEvent.click(screen.getByRole('menuitem', { name: /VWCE/ }));
-    expect(onSelect).toHaveBeenCalledWith('sec-2');
+    expect(onSelect).toHaveBeenCalledWith('/securities/sec-2');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 

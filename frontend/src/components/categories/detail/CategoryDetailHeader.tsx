@@ -1,13 +1,19 @@
 'use client';
 
+import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
+import {
+  CollapsingTitleContext,
+  useCollapsingHeaderTitle,
+} from '@/hooks/useCollapsingHeaderTitle';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { parseLocalDate } from '@/lib/utils';
 import type { Category } from '@/types/category';
 import { CategoryGlyph } from '@/components/categories/CategoryGlyph';
-import { CategorySwitcher } from './CategorySwitcher';
+import { useCategorySwitcher } from './CategorySwitcher';
 
 interface CategoryDetailHeaderProps {
   category: Category;
@@ -29,7 +35,6 @@ interface CategoryDetailHeaderProps {
   onDelete: () => void;
   /** Categories the caret beside the name can jump to. */
   categories: readonly Category[];
-  onSelectCategory: (id: string) => void;
 }
 
 /**
@@ -49,9 +54,10 @@ export function CategoryDetailHeader({
   onEdit,
   onDelete,
   categories,
-  onSelectCategory,
 }: CategoryDetailHeaderProps) {
   const t = useTranslations('categoryDetail');
+  const tc = useTranslations('categories');
+  const switcher = useCategorySwitcher(category.id, categories);
   const { formatDate } = useDateFormat();
 
   // The user's own colour and icon, or the nearest ancestor's; never themed.
@@ -62,6 +68,13 @@ export function CategoryDetailHeader({
   // "Parent: Child" for a subcategory, the bare name for a top-level one. A
   // bare "Fees" as the page title would not say which Fees this is.
   const title = parentName ? `${parentName}: ${category.name}` : category.name;
+
+  // Below `xl`, once the name scrolls behind the app header, the header reads
+  // "Categories - <this category>" and carries the same caret.
+  const collapses = useContext(CollapsingTitleContext);
+  const titleRef = useCollapsingHeaderTitle<HTMLHeadingElement>(
+    collapses ? { title: tc('page.title'), context: title, switcher } : null,
+  );
 
   // Compare calendar days (parseLocalDate drops the time), matching what
   // formatDate renders.
@@ -91,16 +104,12 @@ export function CategoryDetailHeader({
               inherited={!category.icon && !category.color}
               size={20}
             />
-            <h1 className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 ref={titleRef} className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
               {title}
             </h1>
             {/* Jump straight to another category instead of going back to the
                 list and clicking again. */}
-            <CategorySwitcher
-              currentId={category.id}
-              categories={categories}
-              onSelect={onSelectCategory}
-            />
+            <EntitySwitcher {...switcher} />
           </div>
 
           <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">

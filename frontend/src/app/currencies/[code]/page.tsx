@@ -229,7 +229,6 @@ function CurrencyDetailContent() {
           defaultCurrency={reportingCurrency}
           onBack={() => router.push('/currencies')}
           currencies={shownDetail.currencies}
-          onSelectCurrency={(next) => router.push(`/currencies/${next}`)}
         />
 
         <div className="space-y-6">

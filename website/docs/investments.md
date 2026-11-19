@@ -325,7 +325,7 @@ Then record buys and sells in the account like any other security, with quantiti
 
 ## Security Detail Page
 
-Click a security on the Securities page, or its symbol in the holdings list, to open its detail page. The header shows the latest price with the day's change ("today", or "last move" when the market has not traded today), whether the market is open, and the buttons **Favourites**, **Edit**, and **Refresh**. The arrow beside the name switches to another security.
+Click a security on the Securities page, or its symbol in the holdings list, to open its detail page. The header shows the latest price with the day's change ("today", or "last move" when the market has not traded today), whether the market is open, and the buttons **Favourites**, **Edit**, and **Refresh**. The arrow beside the name switches to another active security (inactive securities are not listed). On a phone or tablet, once you scroll the name away, the header bar reads **Securities – *security name*** with a chevron that opens the same menu.
 
 ![A security's detail page: price, position cards, price chart and key information](images/security-detail.png)
 

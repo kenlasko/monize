@@ -1,21 +1,15 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { EntitySwitcher, type EntitySwitcherItem } from '@/components/ui/EntitySwitcher';
+import type { EntitySwitcherItem } from '@/components/ui/EntitySwitcher';
+import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import type { Category } from '@/types/category';
 
-interface CategorySwitcherProps {
-  /** The category currently on screen; it is not offered as a destination. */
-  currentId: string;
-  /** Categories to switch between. Empty until the list has loaded. */
-  categories: readonly Category[];
-  onSelect: (id: string) => void;
-}
-
 /**
- * A caret beside the category's name that jumps straight to another one,
+ * The caret beside the category's name that jumps straight to another one,
  * without going back to the list and clicking again.
  *
  * The list is the same one the transaction form's Category dropdown offers:
@@ -24,9 +18,21 @@ interface CategorySwitcherProps {
  * selectable. A bare leaf name would be ambiguous (several parents can own a
  * "Fees"), and a differently-shaped list here would make the same picker read
  * two ways in one app. The filter matches the full hierarchical label.
+ * Categories have no inactive state, so every one is a destination.
+ *
+ * Picking a category navigates, and the route is built here, as the report
+ * switcher does. Returns `EntitySwitcher`'s props, memoized, so the header
+ * draws the caret with `<EntitySwitcher {...switcher} />` and hands the very
+ * same menu to the app header's collapsed title.
+ *
+ * @param categories Categories to switch between. Empty until the list has loaded.
  */
-export function CategorySwitcher({ currentId, categories, onSelect }: CategorySwitcherProps) {
+export function useCategorySwitcher(
+  currentId: string,
+  categories: readonly Category[],
+): CollapsedHeaderSwitcher {
   const t = useTranslations('categoryDetail');
+  const router = useRouter();
 
   const items = useMemo<EntitySwitcherItem[]>(() => {
     const byId = new Map(categories.map((c) => [c.id, c]));
@@ -43,14 +49,15 @@ export function CategorySwitcher({ currentId, categories, onSelect }: CategorySw
     });
   }, [categories]);
 
-  return (
-    <EntitySwitcher
-      currentId={currentId}
-      items={items}
-      onSelect={onSelect}
-      triggerLabel={t('header.switchCategory')}
-      filterPlaceholder={t('header.switchPlaceholder')}
-      noMatchesLabel={t('header.switchNoMatches')}
-    />
+  return useMemo(
+    () => ({
+      currentId,
+      items,
+      onSelect: (id: string) => router.push(`/categories/${id}`),
+      triggerLabel: t('header.switchCategory'),
+      filterPlaceholder: t('header.switchPlaceholder'),
+      noMatchesLabel: t('header.switchNoMatches'),
+    }),
+    [currentId, items, router, t],
   );
 }

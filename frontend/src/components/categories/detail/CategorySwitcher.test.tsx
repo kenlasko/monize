@@ -1,8 +1,24 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import { render } from '@/test/render';
-import { CategorySwitcher } from './CategorySwitcher';
+import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
+import { useCategorySwitcher } from './CategorySwitcher';
 import type { Category } from '@/types/category';
+
+// One router object, as the real hook returns: the switcher is memoized on it.
+const router = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
+/** The caret exactly as the detail header draws it. */
+function CategorySwitcher({
+  currentId,
+  categories,
+}: {
+  currentId: string;
+  categories: Category[];
+}) {
+  return <EntitySwitcher {...useCategorySwitcher(currentId, categories)} />;
+}
 
 function category(
   id: string,
@@ -38,9 +54,10 @@ const travel = category('cat-travel', 'Travel');
 const all = [food, coffee, salary, travel];
 
 function open(categories: Category[], currentId = 'cat-travel') {
-  const onSelect = vi.fn();
+  const onSelect = router.push;
+  onSelect.mockClear();
   render(
-    <CategorySwitcher currentId={currentId} categories={categories} onSelect={onSelect} />,
+    <CategorySwitcher currentId={currentId} categories={categories} />,
   );
   fireEvent.click(screen.getByRole('button', { name: 'Switch category' }));
   return { onSelect };
@@ -49,7 +66,7 @@ function open(categories: Category[], currentId = 'cat-travel') {
 describe('CategorySwitcher', () => {
   it('renders nothing when there is no other category to switch to', () => {
     render(
-      <CategorySwitcher currentId="cat-travel" categories={[travel]} onSelect={vi.fn()} />,
+      <CategorySwitcher currentId="cat-travel" categories={[travel]} />,
     );
     expect(screen.queryByRole('button', { name: 'Switch category' })).toBeNull();
   });
@@ -77,14 +94,14 @@ describe('CategorySwitcher', () => {
   it('selects a subcategory and closes', () => {
     const { onSelect } = open(all);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Food: Coffee' }));
-    expect(onSelect).toHaveBeenCalledWith('cat-coffee');
+    expect(onSelect).toHaveBeenCalledWith('/categories/cat-coffee');
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
   it('lets a top-level parent be picked, even from its own child\'s page', () => {
     const { onSelect } = open(all, 'cat-coffee');
     fireEvent.click(screen.getByRole('menuitem', { name: 'Food' }));
-    expect(onSelect).toHaveBeenCalledWith('cat-food');
+    expect(onSelect).toHaveBeenCalledWith('/categories/cat-food');
   });
 
   it('filters a long list on the hierarchical label, not the bare leaf', () => {

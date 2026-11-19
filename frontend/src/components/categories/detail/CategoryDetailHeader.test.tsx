@@ -1,8 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
-import { render } from '@/test/render';
+import { act, render } from '@/test/render';
+import { stubCollapsingTitle } from '@/test/collapsing-title';
 import { CategoryDetailHeader } from './CategoryDetailHeader';
 import type { Category } from '@/types/category';
+
+// One router object, as the real hook returns, whose `push` this file asserts on.
+const router = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 function category(overrides: Partial<Category> = {}): Category {
   return {
@@ -37,7 +42,6 @@ function renderHeader(
     onViewTransactions: vi.fn(),
     onEdit: vi.fn(),
     onDelete: vi.fn(),
-    onSelectCategory: vi.fn(),
   };
   const { container } = render(
     <CategoryDetailHeader
@@ -126,10 +130,33 @@ describe('CategoryDetailHeader', () => {
 
   it('jumps to another category through the switcher', () => {
     const other = category({ id: 'cat-2', name: 'Travel' });
-    const { onSelectCategory } = renderHeader({}, null, [category(), other]);
+    renderHeader({}, null, [category(), other]);
     fireEvent.click(screen.getByRole('button', { name: 'Switch category' }));
     fireEvent.click(screen.getByRole('menuitem', { name: /Travel/ }));
-    expect(onSelectCategory).toHaveBeenCalledWith('cat-2');
+    expect(router.push).toHaveBeenCalledWith('/categories/cat-2');
+  });
+
+  it('hands the app header "Categories" with the hierarchical label and the same caret', () => {
+    const title = stubCollapsingTitle();
+    try {
+      const parent = category({ id: 'cat-parent', name: 'Groceries' });
+      renderHeader(
+        { name: 'Produce', parentId: 'cat-parent' },
+        null,
+        [parent, category({ name: 'Produce', parentId: 'cat-parent' })],
+        'Groceries',
+      );
+      title.collapse();
+      expect(title.current()).toMatchObject({
+        title: 'Categories',
+        context: 'Groceries: Produce',
+        switcher: { currentId: 'cat-1' },
+      });
+      act(() => title.current()?.switcher?.onSelect('cat-parent'));
+      expect(router.push).toHaveBeenCalledWith('/categories/cat-parent');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
   describe('the category glyph', () => {
     it('draws the icon rather than printing its name', () => {
