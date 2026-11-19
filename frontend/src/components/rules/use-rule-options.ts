@@ -1,15 +1,22 @@
 'use client';
 
-import { useMemo } from 'react';
+import { createElement, useMemo, type ReactNode } from 'react';
+import { AccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
+import { withPayeeIcons } from '@/components/payees/withPayeeIcons';
+import { useInstitutionLogos } from '@/hooks/useInstitutionLogos';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import type { RuleLookups } from '@/hooks/useRuleLookups';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import type { Account } from '@/types/account';
 import type { Category } from '@/types/category';
 
 export interface RuleOption {
   value: string;
   label: string;
+  /** The row's mark in a single-value picker (a `Combobox`); lists ignore it. */
+  icon?: ReactNode;
 }
 
 /** The lists the editor's pickers offer, built once from the loaded lookups. */
@@ -32,30 +39,49 @@ const SEPARATOR = '__separator__';
 
 export function useRuleOptions(lookups: RuleLookups): RuleOptions {
   const accountLabel = useAccountOptionLabel();
-  return useMemo(
-    () => ({
+  const institutionLogos = useInstitutionLogos();
+  return useMemo(() => {
+    const accountsById = new Map(lookups.accounts.map((account) => [account.id, account]));
+    const withAccountIcon = ({ value, label }: RuleOption): RuleOption => {
+      const account: Account | undefined = accountsById.get(value);
+      if (!account) return { value, label };
+      return {
+        value,
+        label,
+        icon: createElement(AccountPickerIcon, {
+          institution: account.institutionId ? institutionLogos.get(account.institutionId) : undefined,
+          accountType: account.accountType,
+        }),
+      };
+    };
+    return {
       accounts: buildAccountDropdownOptions([...lookups.accounts], () => true, accountLabel)
         .filter((option) => option.value !== SEPARATOR)
-        .map(({ value, label }) => ({ value, label })),
+        .map(withAccountIcon),
       transferAccounts: buildAccountDropdownOptions(
         [...lookups.accounts],
         (account) => account.accountSubType !== 'INVESTMENT_BROKERAGE' && !account.isClosed,
         accountLabel,
       )
         .filter((option) => option.value !== SEPARATOR)
-        .map(({ value, label }) => ({ value, label })),
+        .map(withAccountIcon),
       loanAccounts: buildAccountDropdownOptions(
         [...lookups.accounts],
         (account) => (account.accountType === 'MORTGAGE' || account.accountType === 'LOAN') && !account.isClosed,
         accountLabel,
       )
         .filter((option) => option.value !== SEPARATOR)
-        .map(({ value, label }) => ({ value, label })),
-      payees: lookups.payees.map((p) => ({ value: p.id, label: p.name })),
-      categories: getCategorySelectOptions(lookups.categories as Category[]),
+        .map(withAccountIcon),
+      payees: withPayeeIcons(
+        lookups.payees.map((p) => ({ value: p.id, label: p.name })),
+        lookups.payees,
+      ),
+      categories: withCategoryIcons(
+        getCategorySelectOptions(lookups.categories as Category[]),
+        lookups.categories,
+      ),
       tags: lookups.tags.map((t) => ({ value: t.id, label: t.name })),
       currencyCodes: lookups.currencyCodes,
-    }),
-    [lookups, accountLabel],
-  );
+    };
+  }, [lookups, accountLabel, institutionLogos]);
 }

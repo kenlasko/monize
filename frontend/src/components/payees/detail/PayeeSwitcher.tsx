@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import type { EntitySwitcherItem } from '@/components/ui/EntitySwitcher';
 import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
 import type { Payee } from '@/types/payee';
+import { PayeeLogo } from '@/components/payees/PayeeLogo';
 
 /**
  * The caret beside the payee's name that jumps straight to another one, without
@@ -39,6 +40,7 @@ export function usePayeeSwitcher(
           id: payee.id,
           primary: payee.name,
           secondary: payee.defaultCategory?.name,
+          icon: <PayeeLogo payee={payee} size={20} />,
         })),
     [payees],
   );

@@ -17,6 +17,7 @@ import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { RecentTransactionsPopover } from './RecentTransactionsPopover';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { NoteLinks } from '@/components/ui/LinkifiedText';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 interface SplitTransactionFieldsProps {
   register: UseFormRegister<any>;
@@ -125,6 +126,7 @@ export function SplitTransactionFields({
               options={payees.map(payee => ({
                 value: payee.id,
                 label: payee.name,
+                icon: payeeOptionIcon(payee),
                 subtitle: payee.defaultCategory?.name,
               }))}
               value={selectedPayeeId}

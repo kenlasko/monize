@@ -98,6 +98,7 @@ export function AccountIdentity({
                 triggerLabel={ta('header.switchAccount')}
                 filterPlaceholder={ta('header.switchPlaceholder')}
                 noMatchesLabel={ta('header.switchNoMatches')}
+                tall
               />
             </span>
           )}

@@ -78,6 +78,8 @@ import { CustomRecurrence, normalizeCustomRecurrence } from '@/lib/custom-recurr
 import { customRecurrenceErrorKey } from '@/lib/custom-recurrence-edit';
 import { CustomRecurrenceEditor } from './CustomRecurrenceEditor';
 import { useCustomRecurrenceField } from './useCustomRecurrenceField';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 const logger = createLogger('ScheduledTxForm');
 
@@ -645,6 +647,7 @@ export function ScheduledTransactionForm({
     return {
       value: category.id,
       label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+      icon: <CategoryPickerIcon category={category} />,
     };
   }), [categories]);
 
@@ -716,6 +719,7 @@ export function ScheduledTransactionForm({
     payees.map((payee) => ({
       value: payee.id,
       label: payee.name,
+      icon: payeeOptionIcon(payee),
       subtitle: payee.defaultCategory?.name,
     })),
     [payees]

@@ -13,6 +13,8 @@ import { InterestBookingMode, INTEREST_BOOKING_MODES } from '@/types/account';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { payeesApi } from '@/lib/payees';
 import { createLogger } from '@/lib/logger';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 const logger = createLogger('OverpaymentRecognitionFields');
 
@@ -82,6 +84,7 @@ export function OverpaymentRecognitionFields({
         return {
           value: category.id,
           label: parent ? `${parent.name}: ${category.name}` : category.name,
+          icon: <CategoryPickerIcon category={category} />,
         };
       }),
     [categories],
@@ -90,7 +93,7 @@ export function OverpaymentRecognitionFields({
     () =>
       [...payees]
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map((p) => ({ value: p.id, label: p.name })),
+        .map((p) => ({ value: p.id, label: p.name, icon: payeeOptionIcon(p) })),
     [payees],
   );
   const initialCategoryName = useMemo(() => {

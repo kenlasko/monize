@@ -15,6 +15,7 @@ import { buildCategoryTree, buildCategoryLabelMap } from '@/lib/categoryUtils';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 type CategoryGranularity = 'category' | 'subcategory';
 
@@ -108,6 +109,7 @@ export function AutoMergePayeesDialog({
         return {
           value: category.id,
           label: parent ? `${parent.name}: ${category.name}` : category.name,
+          icon: <CategoryPickerIcon category={category} />,
         };
       }),
     [categories],

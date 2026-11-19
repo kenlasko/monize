@@ -1,8 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen, fireEvent, within } from '@testing-library/react';
+import { screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { render } from '@/test/render';
 import { AccountSwitcher } from './AccountSwitcher';
 import type { Account } from '@/types/account';
+
+const { getAllInstitutions } = vi.hoisted(() => ({ getAllInstitutions: vi.fn() }));
+vi.mock('@/lib/institutions', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/institutions')>()),
+  institutionsApi: { getAll: getAllInstitutions },
+}));
+getAllInstitutions.mockResolvedValue([]);
 
 function account(id: string, name: string, accountType = 'CHEQUING'): Account {
   return {
@@ -42,6 +49,33 @@ describe('AccountSwitcher', () => {
   it('names each account type, so alike-named accounts are told apart', () => {
     open(two);
     expect(screen.getByRole('menuitem', { name: /Savings/ })).toHaveTextContent('Savings');
+  });
+
+  it("marks each account with its institution's logo, else its type icon", async () => {
+    getAllInstitutions.mockResolvedValueOnce([
+      { id: 'inst-1', name: 'Big Bank', hasLogo: true },
+    ]);
+    const banked = { ...account('acc-2', 'Savings', 'SAVINGS'), institutionId: 'inst-1' } as Account;
+    const loose = account('acc-3', 'Wallet', 'CASH');
+    render(
+      <AccountSwitcher
+        currentId="acc-1"
+        accounts={[two[0], banked, loose]}
+        onSelect={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(getAllInstitutions).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to another account' }));
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('menuitem', { name: /Savings/ }))
+          .getByRole('img', { hidden: true })
+          .getAttribute('src'),
+      ).toBe('/api/v1/institutions/inst-1/logo'),
+    );
+    const wallet = screen.getByRole('menuitem', { name: /Wallet/ });
+    expect(wallet.querySelector('img')).toBeNull();
+    expect(wallet.querySelector('svg')).not.toBeNull();
   });
 
   it('selects an account and closes', () => {

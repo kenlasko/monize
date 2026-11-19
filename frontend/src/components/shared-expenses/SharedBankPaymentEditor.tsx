@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -36,7 +36,7 @@ export function SharedBankPaymentEditor({
   input: SharedBankPaymentInput;
   onChange: (patch: Partial<SharedBankPaymentInput>) => void;
   accounts: Account[];
-  categories: { value: string; label: string }[];
+  categories: { value: string; label: string; icon?: ReactNode }[];
   groupCurrency: string;
   originalCurrency: string;
   multiple: boolean;

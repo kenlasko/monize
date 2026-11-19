@@ -9,6 +9,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { payeesApi } from '@/lib/payees';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/errors';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 interface MergePayeeDialogProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export function MergePayeeDialog({
       .map((p) => ({
         value: p.id,
         label: p.name,
+        icon: payeeOptionIcon(p),
       }));
   }, [allPayees, sourcePayee]);
 

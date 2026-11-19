@@ -16,6 +16,7 @@ import { entryDecimalPlaces, getCurrencySymbol } from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { useAuthStore } from '@/store/authStore';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 interface CrossCurrencyInfo {
   fromCurrency: string;
@@ -48,7 +49,7 @@ interface TransferTransactionFieldsProps {
   crossCurrencyInfo: CrossCurrencyInfo | null;
   payees: Payee[];
   payeeAliasMap?: Record<string, string[]>;
-  categoryOptions: Array<{ value: string; label: string }>;
+  categoryOptions: Array<{ value: string; label: string; icon?: ReactNode }>;
   selectedCategoryId: string;
   handleCategoryChange: (categoryId: string, name: string) => void;
   /** Absent when the surface cannot create categories (a joint account
@@ -297,6 +298,7 @@ export function TransferTransactionFields({
           options={payees.map(payee => ({
             value: payee.id,
             label: payee.name,
+            icon: payeeOptionIcon(payee),
             keywords: payeeAliasMap?.[payee.id],
           }))}
           value={transferPayeeId}

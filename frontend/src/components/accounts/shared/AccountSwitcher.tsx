@@ -7,6 +7,8 @@ import { formatAccountType, orderForPicker } from '@/lib/account-utils';
 import { buildLogicalAccounts } from '@/lib/logical-accounts';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import type { Account } from '@/types/account';
+import { useInstitutionLogos } from '@/hooks/useInstitutionLogos';
+import { AccountPickerIcon } from './AccountPickerIcon';
 
 interface AccountSwitcherProps {
   /** The account currently on screen; it is not offered as a destination. */
@@ -25,6 +27,7 @@ export function AccountSwitcher({ currentId, accounts, onSelect }: AccountSwitch
   const t = useTranslations('accountDetail');
   const tc = useTranslations('common');
   const stripAccountName = useMainAccountName();
+  const institutionLogos = useInstitutionLogos();
 
   // A linked brokerage/cash pair is one account, so it is one entry here --
   // otherwise the switcher offers the same account twice, under two names the
@@ -71,6 +74,16 @@ export function AccountSwitcher({ currentId, accounts, onSelect }: AccountSwitch
         // and a starred account stays findable from either section.
         searchText: `${logical.displayName} ${storedNames} ${type}`,
         group,
+        icon: (
+          <AccountPickerIcon
+            institution={
+              logical.primary.institutionId
+                ? institutionLogos.get(logical.primary.institutionId)
+                : undefined
+            }
+            accountType={logical.primary.accountType}
+          />
+        ),
       };
     };
     // Emitted favourites-first: `EntitySwitcher` takes its section order from
@@ -83,7 +96,7 @@ export function AccountSwitcher({ currentId, accounts, onSelect }: AccountSwitch
         toItem(logical, sectioned ? t('header.switchOtherAccounts') : undefined),
       ),
     ];
-  }, [logicalAccounts, currentId, t, tc]);
+  }, [logicalAccounts, currentId, institutionLogos, t, tc]);
 
   return (
     <EntitySwitcher
@@ -93,6 +106,7 @@ export function AccountSwitcher({ currentId, accounts, onSelect }: AccountSwitch
       triggerLabel={t('header.switchAccount')}
       filterPlaceholder={t('header.switchPlaceholder')}
       noMatchesLabel={t('header.switchNoMatches')}
+      tall
     />
   );
 }

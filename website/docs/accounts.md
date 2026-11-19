@@ -254,7 +254,7 @@ When you leave the Accounts page and come back, by **Back** or by its tab, the l
 
 ## Account Detail Pages
 
-An account's **detail page** is tailored to its type, rather than a plain transaction list. The header has **View Transactions** (the account's register) and **Edit Account**, plus **Reconcile** on banking accounts and credit cards (an investment account has its own buttons, below), and a caret beside the account name that switches to another account, with your favourites first.
+An account's **detail page** is tailored to its type, rather than a plain transaction list. The header has **View Transactions** (the account's register) and **Edit Account**, plus **Reconcile** on banking accounts and credit cards (an investment account has its own buttons, below), and a caret beside the account name that switches to another account, with your favourites first. Each account in that menu carries its institution's logo (or its account-type icon when it has no institution), and on a desktop the menu is tall enough to show a long list of accounts without scrolling.
 
 ### Banking (Chequing / Savings / Cash)
 

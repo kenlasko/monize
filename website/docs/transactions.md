@@ -237,7 +237,7 @@ The fields are `payee`, `memo` (the description), `cat`, `tag`, `account`, `ref`
 
 When you filter the list to a single **account**, **payee**, or **category**, an **info panel** appears beside the chart summarizing it:
 
-- **Account** -- the current balance, type, account number, currency, credit limit or interest rate, and the next scheduled payment; for loans and mortgages, the current payment, estimated payoff, and remaining interest. A caret beside the name switches to another account, and an icon opens the account's [detail page](accounts.md#account-detail-pages)
+- **Account** -- the current balance, type, account number, currency, credit limit or interest rate, and the next scheduled payment; for loans and mortgages, the current payment, estimated payoff, and remaining interest. A caret beside the name switches to another account (each marked with its institution's logo, in a menu tall enough on a desktop to show every account without scrolling), and an icon opens the account's [detail page](accounts.md#account-detail-pages)
 - **Payee** -- total spent, income, the number of transactions, the average amount, the last transaction, the default category, the next bill, the top categories, and a detected recurring pattern
 - **Category** -- the total, this month's budget, the monthly average, subcategories, top payees, and the next scheduled transaction
 

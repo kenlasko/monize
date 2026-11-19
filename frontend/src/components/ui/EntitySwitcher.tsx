@@ -32,6 +32,12 @@ export interface EntitySwitcherItem {
    * by ordering `items`. Omit on every item for a flat list.
    */
   group?: string;
+  /**
+   * A mark drawn before the name: an account's institution logo, a payee's
+   * favicon, a category's glyph. Decoration only -- the name is what the row
+   * is announced as.
+   */
+  icon?: ReactNode;
 }
 
 interface EntitySwitcherProps {
@@ -67,6 +73,13 @@ interface EntitySwitcherProps {
    * and truncates the primary instead (a payee name then its category).
    */
   secondaryAlign?: 'inline' | 'end';
+  /**
+   * Let the menu grow to the room the viewport has beside the caret instead of
+   * stopping at `MENU_MAX_HEIGHT`, so a desktop reader sees a long list without
+   * scrolling it -- the account switchers, where the whole set of accounts is
+   * the point. A short viewport still scrolls the list.
+   */
+  tall?: boolean;
 }
 
 /** Beyond this many, scanning the list is slower than typing into the filter. */
@@ -105,6 +118,8 @@ export function placeMenu(
   rect: Pick<DOMRect, 'left' | 'top' | 'bottom'>,
   viewportWidth: number,
   viewportHeight: number,
+  /** The tallest the menu may grow; `Infinity` lets it take all the room it has. */
+  maxMenuHeight: number = MENU_MAX_HEIGHT,
 ): MenuPlacement {
   const width = Math.max(0, Math.min(MENU_WIDTH, viewportWidth - 2 * VIEWPORT_MARGIN));
   const left = Math.min(
@@ -114,7 +129,7 @@ export function placeMenu(
   const spaceBelow = viewportHeight - rect.bottom - MENU_GAP - VIEWPORT_MARGIN;
   const spaceAbove = rect.top - MENU_GAP - VIEWPORT_MARGIN;
   const openUp = spaceBelow < FLIP_THRESHOLD && spaceAbove > spaceBelow;
-  const maxHeight = Math.min(MENU_MAX_HEIGHT, Math.max(0, openUp ? spaceAbove : spaceBelow));
+  const maxHeight = Math.min(maxMenuHeight, Math.max(0, openUp ? spaceAbove : spaceBelow));
   return openUp
     ? { left, width, maxHeight, bottom: viewportHeight - rect.top + MENU_GAP }
     : { left, width, maxHeight, top: rect.bottom + MENU_GAP };
@@ -160,6 +175,7 @@ export function EntitySwitcher({
   noMatchesLabel,
   secondaryAlign = 'end',
   showCurrent = false,
+  tall = false,
 }: EntitySwitcherProps) {
   const [placement, setPlacement] = useState<MenuPlacement | null>(null);
   const [query, setQuery] = useState('');
@@ -170,11 +186,12 @@ export function EntitySwitcher({
   const listRef = useRef<HTMLDivElement>(null);
   const currentRowRef = useRef<HTMLButtonElement>(null);
   const isOpen = placement !== null;
+  const maxMenuHeight = tall ? Infinity : MENU_MAX_HEIGHT;
 
   const open = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setPlacement(placeMenu(rect, window.innerWidth, window.innerHeight));
+    setPlacement(placeMenu(rect, window.innerWidth, window.innerHeight, maxMenuHeight));
   };
 
   const close = () => {
@@ -205,7 +222,9 @@ export function EntitySwitcher({
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const rect = triggerRef.current?.getBoundingClientRect();
-        if (rect) setPlacement(placeMenu(rect, window.innerWidth, window.innerHeight));
+        if (rect) {
+          setPlacement(placeMenu(rect, window.innerWidth, window.innerHeight, maxMenuHeight));
+        }
       });
     };
     window.addEventListener('scroll', reposition, true);
@@ -215,7 +234,7 @@ export function EntitySwitcher({
       window.removeEventListener('scroll', reposition, true);
       window.removeEventListener('resize', reposition);
     };
-  }, [isOpen]);
+  }, [isOpen, maxMenuHeight]);
 
   // Focus the filter once the menu is up, without scrolling it into view: the
   // scroll that `autoFocus` triggered is what closed the menu on open. Not on
@@ -297,6 +316,13 @@ export function EntitySwitcher({
             : 'hover:bg-gray-50 dark:hover:bg-gray-700'
         }`}
       >
+        {item.icon != null && (
+          // Centred on the row rather than sat on the text baseline, which
+          // would drop a logo below the line it belongs to.
+          <span aria-hidden="true" className="flex shrink-0 self-center">
+            {item.icon}
+          </span>
+        )}
         <span
           className={`text-sm ${
             isCurrent

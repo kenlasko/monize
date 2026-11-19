@@ -43,6 +43,7 @@ import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { buildTagOptions } from '@/lib/tag-options';
 import { Th } from '@/components/ui/Table';
 import { newClientId } from '@/lib/client-id';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 export type { SplitType, SplitRow } from './split-rows';
 export { createEmptySplits, toSplitRows, toCreateSplitData } from './split-rows';
@@ -184,6 +185,7 @@ export function SplitEditor({
     return {
       value: category.id,
       label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+      icon: <CategoryPickerIcon category={category} />,
     };
   }), [categories]);
 

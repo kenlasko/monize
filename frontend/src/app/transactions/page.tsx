@@ -1196,6 +1196,7 @@ function TransactionsContent() {
             triggerLabel: ta('header.switchAccount'),
             filterPlaceholder: ta('header.switchPlaceholder'),
             noMatchesLabel: ta('header.switchNoMatches'),
+            tall: true,
           }
         : undefined,
     [singleFilteredAccount, headerSwitcherItems, handleWidgetAccountSwitch, ta],

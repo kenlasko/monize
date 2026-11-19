@@ -19,6 +19,7 @@ import {
   LoanFeeDraftErrors,
   newLoanFeeDraft,
 } from '@/lib/loan-fees';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 interface LoanFeesEditorProps {
   fees: LoanFeeDraft[];
@@ -63,6 +64,7 @@ export function LoanFeesEditor({
     return buildCategoryTree(categories).map(({ category }) => ({
       value: category.id,
       label: labels.get(category.id) ?? category.name,
+      icon: <CategoryPickerIcon category={category} />,
     }));
   }, [categories]);
   const labels = useMemo(() => buildCategoryLabelMap(categories), [categories]);

@@ -267,6 +267,7 @@ function InvestmentsContent() {
       triggerLabel: ta('header.switchAccount'),
       filterPlaceholder: ta('header.switchPlaceholder'),
       noMatchesLabel: ta('header.switchNoMatches'),
+      tall: true,
     }),
     [headerCurrentId, headerAccountItems, handleAccountChange, t, ta],
   );

@@ -101,8 +101,13 @@ describe('useReceiptParserLookups', () => {
     expect(payeesApi.getAll).toHaveBeenCalledWith('all');
     const state = result.current.state;
     if (state.status !== 'ready') throw new Error('not ready');
-    expect(state.lookups.payees).toEqual([{ value: 'p-1', label: 'Allegro' }]);
+    expect(state.lookups.payees.map(({ value, label }) => ({ value, label }))).toEqual([
+      { value: 'p-1', label: 'Allegro' },
+    ]);
     expect(state.lookups.categories.map((c) => c.label)).toEqual(['Electronics', 'Electronics: Cables']);
+    // Every row carries its mark for the parser editor's pickers.
+    expect(state.lookups.payees[0].icon).toBeDefined();
+    expect(state.lookups.categories.every((c) => c.icon !== undefined)).toBe(true);
   });
 
   it('is an error, not empty lists, when either request fails, and reloads on demand', async () => {

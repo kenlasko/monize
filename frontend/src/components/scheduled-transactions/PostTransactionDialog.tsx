@@ -61,6 +61,7 @@ import { getProjectedBalanceAtDate, FutureTransaction } from '@/lib/forecast';
 import { computeInvestmentCashImpact } from '@/lib/investmentCashImpact';
 import { InvestmentAction } from '@/types/investment';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 const logger = createLogger('PostTransactionDialog');
 
@@ -861,6 +862,7 @@ export function PostTransactionDialog({
       return {
         value: category.id,
         label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+        icon: <CategoryPickerIcon category={category} />,
       };
     });
   }, [categories]);
