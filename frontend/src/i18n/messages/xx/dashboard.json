@@ -59,7 +59,7 @@
       "years": "[XX-{count, plural, one {{value} year} other {{value} years}}-XX]"
     },
     "facts": {
-      "netWorthSinceStart": "[XX-Your net worth was {startAmount} in {startMonth}. It has gained {startGain} since then, so it is about {startMultiple} times larger.-XX]",
+      "netWorthSinceStart": "[XX-Your net worth was {startAmount} in {startMonth}. It has gained {startGain} since then, for a growth multiple of {startMultiple}.-XX]",
       "netWorthBiggestJump": "[XX-{jumpMonth} was your biggest single-month jump. Net worth rose by {jumpAmount}, from {jumpFrom} in {jumpPreviousMonth} to {jumpTo}.-XX]",
       "netWorthHighPoint": "[XX-Your high point was {peakAmount} in {peakMonth}. You're {peakBelow} below that now.-XX]",
       "netWorthAtHighPoint": "[XX-You're at your high point: net worth has never been above {currentHigh}.-XX]",
@@ -111,15 +111,15 @@
       "spendingRankedCategory": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedCategoryName} was number {rankedCategoryRank} among your spending categories, at {rankedCategoryAmount} ({rankedCategoryPercent} of the total).-XX]",
       "spendingRankedPayee": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedPayeeName} was number {rankedPayeeRank} among the payees you spent the most with, at {rankedPayeeAmount}.-XX]",
       "incomeRankedSource": "[XX-{window, select, d30 {Over the last 30 days} d90 {Over the last 90 days} ytd {So far this year} m12 {Over the last twelve months} all {Since your records began} other {Over this period}}, {rankedSourceName} was number {rankedSourceRank} among your sources of income, bringing in {rankedSourcePercent} of it.-XX]",
-      "spendingPayeeInCategoryMonths": "[XX-Over the last twelve months you spent {equivPayeeAmount} with {equivPayeeName}, about {equivCategoryMonths} months of your average spending on {equivCategoryName}.-XX]",
+      "spendingPayeeInCategoryMonths": "[XX-Over the last twelve months you spent {equivPayeeAmount} with {equivPayeeName}. Months of your average spending on {equivCategoryName}: about {equivCategoryMonths}.-XX]",
       "spendingDailyAverage": "[XX-Over the last twelve months your spending averaged about {dailyAverageSpent} a day.-XX]",
       "incomeKeptCoversDays": "[XX-The {keptCoversAmount} you kept over the last twelve months would cover about {keptCoversDays} of your spending.-XX]",
-      "investmentsGainInMonthsOfSpending": "[XX-Your investments' {gainCoversAmount} gain is about {gainCoversMonths} months of your average spending.-XX]"
+      "investmentsGainInMonthsOfSpending": "[XX-Your investments' {gainCoversAmount} gain, in months of your average spending: about {gainCoversMonths}.-XX]"
     },
     "variants": {
       "netWorthSinceStart": {
-        "b": "[XX-Since {startMonth}, your net worth has grown by {startGain}, from {startAmount} to about {startMultiple} times that.-XX]",
-        "c": "[XX-About {startMultiple} times larger: that is your net worth now against {startAmount} in {startMonth}, a gain of {startGain}.-XX]"
+        "b": "[XX-Since {startMonth}, your net worth has grown by {startGain}, from {startAmount}. Growth multiple: {startMultiple}.-XX]",
+        "c": "[XX-Net worth against {startAmount} in {startMonth}: a gain of {startGain}, and a growth multiple of {startMultiple}.-XX]"
       },
       "netWorthBiggestJump": {
         "b": "[XX-Net worth went from {jumpFrom} in {jumpPreviousMonth} to {jumpTo} in {jumpMonth}, a rise of {jumpAmount} and your biggest single-month jump.-XX]",
@@ -202,20 +202,20 @@
         "c": "[XX-Your income over the last twelve months came {topSourcePercent} from {topSourceName}.-XX]"
       },
       "activityTransactions": {
-        "b": "[XX-Your registers hold {transactionCount} transactions, the earliest from {firstTransactionMonth}.-XX]",
-        "c": "[XX-Since {firstTransactionMonth}, {transactionCount} transactions have been recorded in your registers.-XX]"
+        "b": "[XX-From {firstTransactionMonth} on, your registers hold this many transactions: {transactionCount}.-XX]",
+        "c": "[XX-Since {firstTransactionMonth}, you have recorded this many transactions: {transactionCount}.-XX]"
       },
       "activityPayees": {
-        "b": "[XX-You keep {payeeCount} payees and {categoryCount} categories in Monize.-XX]",
-        "c": "[XX-Monize holds {payeeCount} of your payees and {categoryCount} of your categories.-XX]"
+        "b": "[XX-In Monize you keep these counts: payees {payeeCount}, categories {categoryCount}.-XX]",
+        "c": "[XX-Monize holds your payees ({payeeCount}) and your categories ({categoryCount}).-XX]"
       },
       "activityScheduled": {
-        "b": "[XX-Monize is tracking {scheduledCount} scheduled transactions for you.-XX]",
-        "c": "[XX-You have {scheduledCount} scheduled transactions set up in Monize.-XX]"
+        "b": "[XX-Monize tracks your scheduled transactions, {scheduledCount} in all.-XX]",
+        "c": "[XX-Set up in Monize and scheduled for you: {scheduledCount}.-XX]"
       },
       "warrantiesCovered": {
-        "b": "[XX-{warrantyCount} of the warranties you track are still in cover.-XX]",
-        "c": "[XX-You track {warrantyCount} warranties that have not yet run out.-XX]"
+        "b": "[XX-Still in cover, among the warranties you track: {warrantyCount}.-XX]",
+        "c": "[XX-Of your tracked warranties, those that have not yet run out: {warrantyCount}.-XX]"
       },
       "warrantiesNextExpiry": {
         "b": "[XX-In {nextWarrantyMonth}, your {nextWarrantyName} warranty is the next to run out.-XX]",
@@ -250,8 +250,8 @@
         "c": "[XX-Your last spending with {sincePayeeName} was on {sincePayeeDay}, {sincePayeeDays} ago.-XX]"
       },
       "activityBillsDueThisWeek": {
-        "b": "[XX-{billsDueCount} bills fall due in the next seven days, adding up to {billsDueTotal}.-XX]",
-        "c": "[XX-Over the next seven days, you have {billsDueCount} bills due, for {billsDueTotal} in all.-XX]"
+        "b": "[XX-Due in the next seven days, as a count of bills: {billsDueCount}, adding up to {billsDueTotal}.-XX]",
+        "c": "[XX-Bills falling due over the next seven days: {billsDueCount}, for {billsDueTotal} in all.-XX]"
       },
       "activityNextBill": {
         "b": "[XX-{nextBillName} is your next bill: {nextBillAmount}, due {nextBillDate}.-XX]",
@@ -290,7 +290,7 @@
         "c": "[XX-Your {expiringWarrantyName} warranty ends on {expiringWarrantyDate}, which is {expiringWarrantyDays} away.-XX]"
       },
       "spendingYearAgoMonth": {
-        "b": "[XX-In {yearAgoMonth} a year ago, you spent {yearAgoSpent}, most of it on {yearAgoTopCategoryName}.-XX]",
+        "b": "[XX-In {yearAgoMonth} a year ago, you spent {yearAgoSpent}, with {yearAgoTopCategoryName} the largest share.-XX]",
         "c": "[XX-{yearAgoTopCategoryName} took the most of the {yearAgoSpent} you spent a year ago, in {yearAgoMonth}.-XX]"
       },
       "netWorthYearAgoUp": {
@@ -326,8 +326,8 @@
         "c": "[XX-Among your sources of income {window, select, d30 {over the last 30 days} d90 {over the last 90 days} ytd {so far this year} m12 {over the last twelve months} all {since your records began} other {over this period}}, number {rankedSourceRank} is {rankedSourceName}, at {rankedSourcePercent} of it.-XX]"
       },
       "spendingPayeeInCategoryMonths": {
-        "b": "[XX-Your {equivPayeeAmount} with {equivPayeeName} over the last twelve months equals about {equivCategoryMonths} months of your average spending on {equivCategoryName}.-XX]",
-        "c": "[XX-About {equivCategoryMonths} months of your average spending on {equivCategoryName} is what you spent with {equivPayeeName} over the last twelve months: {equivPayeeAmount}.-XX]"
+        "b": "[XX-Your {equivPayeeAmount} with {equivPayeeName} over the last twelve months, in months of your average spending on {equivCategoryName}: about {equivCategoryMonths}.-XX]",
+        "c": "[XX-Spent with {equivPayeeName} over the last twelve months: {equivPayeeAmount}, or about {equivCategoryMonths} in months of your average {equivCategoryName} spending.-XX]"
       },
       "spendingDailyAverage": {
         "b": "[XX-Your spending over the last twelve months works out to about {dailyAverageSpent} a day.-XX]",
@@ -338,8 +338,8 @@
         "c": "[XX-About {keptCoversDays} of your spending would be covered by the {keptCoversAmount} you kept over the last twelve months.-XX]"
       },
       "investmentsGainInMonthsOfSpending": {
-        "b": "[XX-About {gainCoversMonths} months of your average spending equals the {gainCoversAmount} your investments have gained.-XX]",
-        "c": "[XX-Your investments have gained {gainCoversAmount}, which is about {gainCoversMonths} months of your average spending.-XX]"
+        "b": "[XX-In months of your average spending, the {gainCoversAmount} your investments have gained comes to about {gainCoversMonths}.-XX]",
+        "c": "[XX-Your investments have gained {gainCoversAmount}. Months of your average spending that covers: about {gainCoversMonths}.-XX]"
       }
     }
   },

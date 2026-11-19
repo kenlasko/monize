@@ -269,6 +269,25 @@ describe("trivia catalog", () => {
       },
     );
 
+    it("never glues a count or ratio chip to a noun, which could not agree with a figure of 1", () => {
+      // Counts and ratios are substituted as preformatted chips, so "{n}
+      // bills" would read "1 bills" and "about {n} months" "about 1 months".
+      // The label form ("Bills due: {n}") needs no agreement.
+      const GLUED =
+        /\{(?:billsDueCount|transactionCount|payeeCount|categoryCount|scheduledCount|warrantyCount|startMultiple|equivCategoryMonths|gainCoversMonths)\}(?: of (?:your|the))? (?:times|months|transactions|payees|categories|scheduled|bills|warranties)\b/;
+      const sentences = TRIVIA_FACT_IDS.flatMap((id) => [
+        { id, key: "a", sentence: catalog.trivia.facts[id] },
+        ...Object.entries(variants[id]).map(([key, sentence]) => ({
+          id,
+          key,
+          sentence,
+        })),
+      ]);
+      expect(sentences.filter(({ sentence }) => GLUED.test(sentence))).toEqual(
+        [],
+      );
+    });
+
     it("holds a windowed id's select with every window and the fallback", () => {
       const windowed = TRIVIA_FACT_IDS.filter((id) =>
         catalog.trivia.facts[id].match(WINDOW_SELECT),
