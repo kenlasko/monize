@@ -53,6 +53,30 @@ describe('Combobox', () => {
     expect(onChange).toHaveBeenCalledWith('1', 'Apple');
   });
 
+  it("shows the picked option's icon in the field, and drops it once the reader types", async () => {
+    render(
+      <Combobox
+        options={[
+          { value: '1', label: 'Apple', icon: <span>A</span> },
+          { value: '2', label: 'Banana' },
+        ]}
+        value="1"
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByTestId('combobox-picked-icon')).toHaveTextContent('A');
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+    await new Promise(r => setTimeout(r, 150));
+    fireEvent.change(input, { target: { value: 'Ban' } });
+    await waitFor(() => expect(screen.queryByTestId('combobox-picked-icon')).toBeNull());
+  });
+
+  it('shows no picked icon for an option without one', () => {
+    render(<Combobox options={options} value="2" onChange={onChange} />);
+    expect(screen.queryByTestId('combobox-picked-icon')).toBeNull();
+  });
+
   it('renders with label and placeholder', () => {
     render(
       <Combobox label="Fruit" placeholder="Pick a fruit" options={options} onChange={onChange} />,

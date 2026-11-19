@@ -493,6 +493,14 @@ export function Combobox({
     e.preventDefault();
   };
 
+  // The picked option's mark sits in the field while the field still shows that
+  // option; once the reader types something else, it is no longer theirs.
+  const pickedIcon = (() => {
+    if (!value) return null;
+    const picked = options.find((opt) => opt.value === value);
+    return picked?.icon != null && inputValue === picked.label ? picked.icon : null;
+  })();
+
   const dropdownContent = (
     <div
       ref={listRef}
@@ -642,6 +650,15 @@ export function Combobox({
         </label>
       )}
       <div className="relative">
+        {pickedIcon != null && (
+          <span
+            aria-hidden="true"
+            data-testid="combobox-picked-icon"
+            className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5"
+          >
+            {pickedIcon}
+          </span>
+        )}
         <input
           ref={inputRef}
           type="text"
@@ -656,7 +673,8 @@ export function Combobox({
           className={cn(
             inputBaseClasses,
             error && inputErrorClasses,
-            inputValue && !disabled && 'pr-8'
+            inputValue && !disabled && 'pr-8',
+            pickedIcon != null && 'pl-9'
           )}
         />
         {inputValue && !disabled && (
