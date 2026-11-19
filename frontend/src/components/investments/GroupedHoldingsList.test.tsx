@@ -64,15 +64,18 @@ vi.mock('@/hooks/useExchangeRates', () => ({
   }),
 }));
 
+// Both handlers are required props; a test that is not about them passes these.
+const clickHandlers = { onSecurityClick: vi.fn(), onCashClick: vi.fn() };
+
 describe('GroupedHoldingsList', () => {
   it('renders loading state', () => {
-    render(<GroupedHoldingsList holdingsByAccount={[]} isLoading={true} totalPortfolioValue={0} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={[]} isLoading={true} totalPortfolioValue={0} />);
     expect(screen.getByText('Holdings by Account')).toBeInTheDocument();
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders empty state', () => {
-    render(<GroupedHoldingsList holdingsByAccount={[]} isLoading={false} totalPortfolioValue={0} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={[]} isLoading={false} totalPortfolioValue={0} />);
     expect(screen.getByText('No holdings in your portfolio.')).toBeInTheDocument();
   });
 
@@ -99,7 +102,7 @@ describe('GroupedHoldingsList', () => {
       },
     ] as any[];
 
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />);
     expect(screen.getByText('RRSP')).toBeInTheDocument();
     expect(screen.getByText('XEQT')).toBeInTheDocument();
   });
@@ -115,7 +118,7 @@ describe('GroupedHoldingsList', () => {
       },
     ] as any[];
 
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />);
 
     // The holding, cash and summary rows are grid cards below `sm` and ordinary
     // table rows from `sm` up, so a phone needs no horizontal scroll.
@@ -155,7 +158,7 @@ describe('GroupedHoldingsList', () => {
       },
     ] as any[];
 
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />);
 
     const figureCells = screen
       .getAllByRole('cell')
@@ -181,7 +184,7 @@ describe('GroupedHoldingsList', () => {
       },
     ] as any[];
 
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5000} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5000} />);
     // Initially expanded — XEQT should be visible
     expect(screen.getByText('XEQT')).toBeInTheDocument();
 
@@ -231,6 +234,7 @@ describe('GroupedHoldingsList', () => {
 
     render(
       <GroupedHoldingsList
+        {...clickHandlers}
         holdingsByAccount={holdingsByAccount}
         isLoading={false}
         totalPortfolioValue={2020}
@@ -272,7 +276,7 @@ describe('GroupedHoldingsList', () => {
         ],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={500} onSecurityClick={onSecurityClick} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={500} onSecurityClick={onSecurityClick} />);
     fireEvent.click(screen.getByText('XEQT'));
     // The id, not the symbol: the destination is that security's own page.
     expect(onSecurityClick).toHaveBeenCalledWith('sec-xeqt');
@@ -288,7 +292,7 @@ describe('GroupedHoldingsList', () => {
         holdings: [],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={700} onCashClick={onCashClick} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={700} onCashClick={onCashClick} />);
     fireEvent.click(screen.getByText('Cash'));
     expect(onCashClick).toHaveBeenCalledWith('cash-acc-1');
   });
@@ -304,7 +308,7 @@ describe('GroupedHoldingsList', () => {
         ],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={700} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={700} />);
     expect(screen.getByText(/\+ Cash/)).toBeInTheDocument();
   });
 
@@ -318,7 +322,7 @@ describe('GroupedHoldingsList', () => {
         ],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={500} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={500} />);
     expect(screen.getByText(/1 account with 1 position/)).toBeInTheDocument();
   });
 
@@ -340,7 +344,7 @@ describe('GroupedHoldingsList', () => {
         ],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={300} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={300} />);
     expect(screen.getByText(/2 accounts with 3 positions/)).toBeInTheDocument();
   });
 
@@ -354,7 +358,7 @@ describe('GroupedHoldingsList', () => {
         ],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={0} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={0} />);
     expect(screen.getAllByText('-').length).toBeGreaterThan(0);
   });
 
@@ -367,7 +371,7 @@ describe('GroupedHoldingsList', () => {
         holdings: [],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={500} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={500} />);
     expect(screen.getByText('Cash')).toBeInTheDocument();
   });
 
@@ -381,7 +385,7 @@ describe('GroupedHoldingsList', () => {
         ],
       },
     ] as any[];
-    render(<GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={1350} />);
+    render(<GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={1350} />);
     // USD account shown with USD prefix since USD != CAD (default currency in mock)
     expect(screen.getAllByText(/USD \$1000\.00 USD/).length).toBeGreaterThan(0);
   });
@@ -418,6 +422,7 @@ describe('GroupedHoldingsList', () => {
 
     render(
       <GroupedHoldingsList
+        {...clickHandlers}
         holdingsByAccount={holdingsByAccount}
         isLoading={false}
         totalPortfolioValue={500}
@@ -474,6 +479,7 @@ describe('GroupedHoldingsList', () => {
 
     render(
       <GroupedHoldingsList
+        {...clickHandlers}
         holdingsByAccount={accounts as never}
         isLoading={false}
         totalPortfolioValue={600}
@@ -529,6 +535,7 @@ describe('GroupedHoldingsList', () => {
 
     render(
       <GroupedHoldingsList
+        {...clickHandlers}
         holdingsByAccount={accounts as never}
         isLoading={false}
         totalPortfolioValue={100000}
@@ -586,6 +593,7 @@ describe('GroupedHoldingsList', () => {
 
     render(
       <GroupedHoldingsList
+        {...clickHandlers}
         holdingsByAccount={accounts as never}
         isLoading={false}
         totalPortfolioValue={600}
@@ -640,6 +648,7 @@ describe('GroupedHoldingsList', () => {
 
     render(
       <GroupedHoldingsList
+        {...clickHandlers}
         holdingsByAccount={accounts as never}
         isLoading={false}
         totalPortfolioValue={600}
@@ -695,6 +704,7 @@ describe('GroupedHoldingsList', () => {
 
     render(
       <GroupedHoldingsList
+        {...clickHandlers}
         holdingsByAccount={accounts as never}
         isLoading={false}
         totalPortfolioValue={500}
@@ -753,6 +763,7 @@ describe('GroupedHoldingsList', () => {
 
       render(
         <GroupedHoldingsList
+          {...clickHandlers}
           holdingsByAccount={holdingsByAccount}
           isLoading={false}
           totalPortfolioValue={3600}
@@ -818,6 +829,7 @@ describe('GroupedHoldingsList', () => {
 
       render(
         <GroupedHoldingsList
+          {...clickHandlers}
           holdingsByAccount={holdingsByAccount}
           isLoading={false}
           totalPortfolioValue={6000}
@@ -867,7 +879,7 @@ describe('GroupedHoldingsList hidden columns', () => {
 
   const renderList = () =>
     render(
-      <GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />,
+      <GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={5500} />,
     );
 
   const rowWith = (text: string) =>
@@ -1018,7 +1030,7 @@ describe('GroupedHoldingsList sorting', () => {
 
   const renderList = () =>
     render(
-      <GroupedHoldingsList holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={11500} />,
+      <GroupedHoldingsList {...clickHandlers} holdingsByAccount={holdingsByAccount} isLoading={false} totalPortfolioValue={11500} />,
     );
 
   const accountOrder = () =>

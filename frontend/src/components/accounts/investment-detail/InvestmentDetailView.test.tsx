@@ -22,8 +22,25 @@ vi.mock('@/components/investments/InvestmentValueChart', () => ({
     <div data-testid="value-chart">{refreshKey}</div>
   ),
 }));
+// The stub exposes the two click handlers as buttons, so where a symbol or the
+// cash row navigates to is observable without the real list.
 vi.mock('@/components/investments/GroupedHoldingsList', () => ({
-  GroupedHoldingsList: () => <div data-testid="holdings" />,
+  GroupedHoldingsList: ({
+    onSecurityClick,
+    onCashClick,
+  }: {
+    onSecurityClick: (securityId: string) => void;
+    onCashClick: (cashAccountId: string) => void;
+  }) => (
+    <div data-testid="holdings">
+      <button type="button" onClick={() => onSecurityClick('sec-1')}>
+        open security
+      </button>
+      <button type="button" onClick={() => onCashClick('cash-1')}>
+        open cash
+      </button>
+    </div>
+  ),
 }));
 vi.mock('@/components/investments/InvestmentTransactionList', () => ({
   InvestmentTransactionList: () => <div data-testid="inv-tx-list" />,
@@ -304,6 +321,20 @@ describe('InvestmentDetailView', () => {
     await waitFor(() =>
       expect(screen.getByTestId('value-chart')).toHaveTextContent('1'),
     );
+  });
+
+  // Issue #2255: the list was rendered without its click handlers, so the
+  // symbol drew as a link and clicking it did nothing.
+  it('opens the security when a holding is clicked', async () => {
+    await renderView();
+    fireEvent.click(screen.getByRole('button', { name: 'open security' }));
+    expect(mockPush).toHaveBeenCalledWith('/securities/sec-1');
+  });
+
+  it('opens the cash register when the cash row is clicked', async () => {
+    await renderView();
+    fireEvent.click(screen.getByRole('button', { name: 'open cash' }));
+    expect(mockPush).toHaveBeenCalledWith('/transactions?accountId=cash-1');
   });
 
   it('falls back to a standalone brokerage when there is no pair', async () => {

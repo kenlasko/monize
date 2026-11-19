@@ -72,8 +72,12 @@ interface GroupedHoldingsListProps {
    * (review #1133). Absent reads as complete.
    */
   valuationComplete?: boolean;
-  onSecurityClick?: (securityId: string) => void;
-  onCashClick?: (cashAccountId: string) => void;
+  /**
+   * Required: the symbol and the cash row render as links whatever is passed,
+   * so a caller that left these out drew links that did nothing (issue #2255).
+   */
+  onSecurityClick: (securityId: string) => void;
+  onCashClick: (cashAccountId: string) => void;
 }
 
 export function GroupedHoldingsList({
@@ -452,7 +456,7 @@ export function GroupedHoldingsList({
                         <tr role="row" className="grid grid-cols-4 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/20 sm:table-row sm:p-0">
                           <td role="cell" className="col-span-2 row-start-1 p-0 whitespace-nowrap sm:table-cell sm:px-6 sm:py-3">
                             <button
-                              onClick={() => account.cashAccountId && onCashClick?.(account.cashAccountId)}
+                              onClick={() => account.cashAccountId && onCashClick(account.cashAccountId)}
                               className="flex items-center gap-2 text-left hover:underline focus:outline-none focus:underline"
                               title={t('groupedHoldings.cashClickTitle')}
                             >
@@ -590,7 +594,7 @@ interface HoldingRowProps {
   formatPercent: (value: number | null, showSign?: boolean) => string;
   getGainLossColor: (value: number | null) => string;
   getPortfolioPercent: (value: number | null, currencyCode?: string) => string;
-  onSecurityClick?: (securityId: string) => void;
+  onSecurityClick: (securityId: string) => void;
 }
 
 const HoldingRow = memo(function HoldingRow({
@@ -661,7 +665,7 @@ const HoldingRow = memo(function HoldingRow({
     >
       <td role="cell" className="col-span-2 row-start-1 p-0 sm:table-cell sm:whitespace-nowrap sm:px-6 sm:py-3">
         <button
-          onClick={() => onSecurityClick?.(holding.securityId)}
+          onClick={() => onSecurityClick(holding.securityId)}
           className="text-left hover:underline focus:outline-none focus:underline"
           title={t('groupedHoldings.symbolClickTitle')}
         >
