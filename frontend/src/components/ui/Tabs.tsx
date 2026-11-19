@@ -69,8 +69,9 @@ export function tabPanelId(idPrefix: string, key: string): string {
  * things make the overflow legible without a bar. The wrapper fades the
  * content out at whichever edge has more behind it (`scroll-fade-x`, driven by
  * a `data-overflow` attribute the scroll and resize handlers keep current), and
- * the selected tab is scrolled into view whenever the selection changes, so a
- * deep link to the last tab opens with that tab on screen.
+ * the selected tab is scrolled into view (within the row, never the page)
+ * whenever the selection changes, so a deep link to the last tab opens with
+ * that tab on screen.
  */
 
 type OverflowEdge = 'none' | 'start' | 'end' | 'both';
@@ -126,14 +127,25 @@ export function Tabs<K extends string>({
 
   // A tab selected from outside the row (a `?tab=` deep link, a widget's link
   // to Price history) can sit past the visible edge; bring it on screen.
+  // Only the row scrolls, sideways: `scrollIntoView` also scrolled the page to
+  // the tab bar, which on a phone sits halfway down the security detail page,
+  // so every remount (switching security) landed the reader there (#2283).
+  // Keyed on the selected index rather than `tabs`, which a caller may rebuild
+  // on every render, so an unrelated re-render (the chart's Price / Value /
+  // Return toggle) does not undo a sideways swipe the reader made.
+  const selectedIndex = tabs.findIndex((tab) => tab.key === value);
   useEffect(() => {
-    if (wrap) return;
-    const index = tabs.findIndex((tab) => tab.key === value);
-    const button = buttonRefs.current[index];
-    if (button && typeof button.scrollIntoView === 'function') {
-      button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const scroller = scrollerRef.current;
+    const button = buttonRefs.current[selectedIndex];
+    if (wrap || !scroller || !button) return;
+    const row = scroller.getBoundingClientRect();
+    const tab = button.getBoundingClientRect();
+    if (tab.left < row.left) {
+      scroller.scrollLeft -= row.left - tab.left;
+    } else if (tab.right > row.right) {
+      scroller.scrollLeft += tab.right - row.right;
     }
-  }, [tabs, value, wrap]);
+  }, [selectedIndex, wrap]);
 
   const selectAt = useCallback(
     (index: number) => {
