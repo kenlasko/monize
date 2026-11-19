@@ -54,6 +54,7 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 import { accountsApi } from '@/lib/accounts';
+import { getSelectByLabel } from '@/test/icon-select';
 
 const mockAccounts: Account[] = [
   {
@@ -141,18 +142,18 @@ describe('LoanFields', () => {
 
   it('renders accounts in the source account select', () => {
     render(<LoanFields {...defaultProps} />);
-    const sourceAccountSelect = screen.getByLabelText('Payment From Account');
+    const sourceAccountSelect = getSelectByLabel('Payment From Account');
     const options = sourceAccountSelect.querySelectorAll('option');
-    expect(options[0].textContent).toBe('Select account...');
-    expect(options[1].textContent).toBe('Main Chequing (CAD)');
+    expect(options[0].label).toBe('Select account...');
+    expect(options[1].label).toBe('Main Chequing (CAD)');
   });
 
   it('renders categories in the interest category select', () => {
     render(<LoanFields {...defaultProps} />);
     const categorySelect = screen.getByTestId('combobox-select-Interest Category');
     const options = categorySelect.querySelectorAll('option');
-    expect(options[0].textContent).toBe('Select category...');
-    expect(options[1].textContent).toBe('Interest Expenses');
+    expect(options[0].label).toBe('Select category...');
+    expect(options[1].label).toBe('Interest Expenses');
   });
 
   it('does not show amortization preview when required fields are missing', () => {
@@ -223,7 +224,7 @@ describe('LoanFields', () => {
   it('shows placeholder options in frequency and account selects', () => {
     render(<LoanFields {...defaultProps} />);
     expect(screen.getByText('Select frequency...')).toBeInTheDocument();
-    expect(screen.getByText('Select account...')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Payment From Account' })).toHaveTextContent('Select account...');
   });
 
   it('debounces preview API call by 500ms', async () => {
@@ -282,13 +283,13 @@ describe('LoanFields', () => {
     ] as any[];
 
     render(<LoanFields {...defaultProps} accounts={multipleAccounts} />);
-    const sourceSelect = screen.getByLabelText('Payment From Account');
+    const sourceSelect = getSelectByLabel('Payment From Account');
     const options = sourceSelect.querySelectorAll('option');
     // First option is placeholder
-    expect(options[0].textContent).toBe('Select account...');
-    expect(options[1].textContent).toBe('Alpha Account (CAD)');
-    expect(options[2].textContent).toBe('Middle Account (CAD)');
-    expect(options[3].textContent).toBe('Zebra Account (CAD)');
+    expect(options[0].label).toBe('Select account...');
+    expect(options[1].label).toBe('Alpha Account (CAD)');
+    expect(options[2].label).toBe('Middle Account (CAD)');
+    expect(options[3].label).toBe('Zebra Account (CAD)');
   });
 
   it('passes correct parameters to preview API', async () => {

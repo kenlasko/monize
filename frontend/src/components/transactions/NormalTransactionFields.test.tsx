@@ -5,6 +5,7 @@ import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { useTourStore } from '@/store/tourStore';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import { getSelectByLabel } from '@/test/icon-select';
 
 vi.mock('@/lib/format', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/format')>()),
@@ -283,9 +284,9 @@ describe('NormalTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const optionLabels = options.map(o => o.textContent);
+    const optionLabels = options.map(o => o.label);
 
     expect(optionLabels).toContain('Chequing (CAD)');
     expect(optionLabels).not.toContain('Brokerage (CAD)');
@@ -302,9 +303,9 @@ describe('NormalTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const optionLabels = options.map(o => o.textContent);
+    const optionLabels = options.map(o => o.label);
 
     expect(optionLabels).toContain('Open Account (CAD)');
     expect(optionLabels).not.toContain('Closed Account (CAD) (Closed)');
@@ -321,9 +322,9 @@ describe('NormalTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const optionLabels = options.map(o => o.textContent);
+    const optionLabels = options.map(o => o.label);
 
     expect(optionLabels).toContain('Closed Account (CAD) (Closed)');
   });
@@ -340,10 +341,10 @@ describe('NormalTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
     // First option is the placeholder
-    const accountLabels = options.slice(1).map(o => o.textContent);
+    const accountLabels = options.slice(1).map(o => o.label);
 
     expect(accountLabels).toEqual([
       'Alpha Account (CAD)',
@@ -367,7 +368,7 @@ describe('NormalTransactionFields', () => {
 
     const payeeSelect = screen.getByTestId('combobox-select-Payee');
     const options = Array.from(payeeSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Grocery Store');
     expect(labels).toContain('Gas Station');
@@ -415,7 +416,7 @@ describe('NormalTransactionFields', () => {
 
     const categorySelect = screen.getByTestId('combobox-select-Category');
     const options = Array.from(categorySelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Groceries');
     expect(labels).toContain('Entertainment');
@@ -509,9 +510,9 @@ describe('NormalTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('US Savings (USD)');
   });
@@ -524,10 +525,10 @@ describe('NormalTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const firstOption = accountSelect.querySelector('option');
 
-    expect(firstOption?.textContent).toBe('Select account...');
+    expect(firstOption?.label).toBe('Select account...');
     expect(firstOption?.value).toBe('');
   });
 

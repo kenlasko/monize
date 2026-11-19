@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { TransferIncomeLineForm } from './TransferIncomeLineForm';
 import type { Account } from '@/types/account';
+import { getSelectByLabel } from '@/test/icon-select';
 
 const accounts = [
   { id: 'acc-hisa', name: 'HISA' },
@@ -20,7 +21,7 @@ describe('TransferIncomeLineForm (issue #2141)', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('From Account'), {
+    fireEvent.change(getSelectByLabel('From Account'), {
       target: { value: 'acc-hisa' },
     });
     const amount = screen.getByLabelText('Planned Amount');

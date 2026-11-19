@@ -32,6 +32,8 @@ import { useTranslations } from 'next-intl';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { accountSelectOption } from '@/lib/account-utils';
 
 
 type AmortizationSortField = 'paymentNumber' | 'date' | 'payment' | 'principal' | 'interest' | 'balance';
@@ -469,23 +471,15 @@ export function LoanAmortizationReport() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('loanAmortization.labelSelectLoan')}
-            </label>
-            <select
+            <AccountSelect
+              label={t('loanAmortization.labelSelectLoan')}
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              {accounts
+              options={accounts
                 .slice()
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-            </select>
+                .map((account) => accountSelectOption(account, account.name))}
+            />
           </div>
           {/* The export stands beside a LABELLED field, so from `sm` up it is
               the height of the field, not of the field plus its label: reserve

@@ -3,6 +3,22 @@ import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-
 import { render, screen, waitFor, fireEvent, within, act } from '@/test/render';
 import ReconcilePage from './page';
 import { TransactionStatus } from '@/types/transaction';
+import { getSelectByLabel, querySelectByLabel } from '@/test/icon-select';
+
+/**
+ * The Account picker's option matching `label` (a pattern, or the exact text),
+ * or null -- read from the form select behind the picker, so a wait on it
+ * waits for the accounts to load.
+ */
+function accountOption(label: RegExp | string): HTMLOptionElement | null {
+  const select = querySelectByLabel('Account');
+  if (!select) return null;
+  return (
+    Array.from(select.options).find((option) =>
+      typeof label === 'string' ? option.label === label : label.test(option.label),
+    ) ?? null
+  );
+}
 
 // Mock next/image
 vi.mock('next/image', () => ({
@@ -261,7 +277,7 @@ describe('ReconcilePage', () => {
     it('renders the setup form fields', async () => {
       render(<ReconcilePage />);
       await waitFor(() => {
-        expect(screen.getByLabelText('Account')).toBeInTheDocument();
+        expect(getSelectByLabel('Account')).toBeInTheDocument();
         expect(screen.getByLabelText('Statement Date')).toBeInTheDocument();
         expect(screen.getByLabelText('Statement Ending Balance')).toBeInTheDocument();
       });
@@ -270,11 +286,11 @@ describe('ReconcilePage', () => {
     it('filters out investment brokerage and closed accounts', async () => {
       render(<ReconcilePage />);
       await waitFor(() => {
-        expect(screen.getByText(/Checking/)).toBeInTheDocument();
+        expect(accountOption(/Checking/)).toBeInTheDocument();
       });
-      expect(screen.getByText(/Visa/)).toBeInTheDocument();
-      expect(screen.queryByText(/Brokerage/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Old Savings/)).not.toBeInTheDocument();
+      expect(accountOption(/Visa/)).toBeInTheDocument();
+      expect(accountOption(/Brokerage/)).not.toBeInTheDocument();
+      expect(accountOption(/Old Savings/)).not.toBeInTheDocument();
     });
 
     it("labels each account option in that account's own currency", async () => {
@@ -285,11 +301,11 @@ describe('ReconcilePage', () => {
         { id: 'acc-6', name: 'Loonie Chequing', accountType: 'CHEQUING', accountSubType: null, currencyCode: 'CAD', currentBalance: 250, isClosed: false },
       ]);
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Loonie Chequing/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-6' } });
+      await waitFor(() => expect(accountOption(/Loonie Chequing/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-6' } });
 
-      expect(screen.getByRole('option', { name: 'Loonie Chequing ($250.00 CAD)' })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: 'Checking ($1500.00)' })).toBeInTheDocument();
+      expect(accountOption('Loonie Chequing ($250.00 CAD)')).toBeInTheDocument();
+      expect(accountOption('Checking ($1500.00)')).toBeInTheDocument();
     });
 
     it('lists favourites first, then every other account A-Z', async () => {
@@ -300,9 +316,9 @@ describe('ReconcilePage', () => {
         { ...mockAccounts[0], id: 'f1', name: 'Fav One', isFavourite: true, favouriteSortOrder: 1 },
       ]);
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Zeta/)).toBeInTheDocument());
+      await waitFor(() => expect(accountOption(/Zeta/)).toBeInTheDocument());
       const values = Array.from(
-        (screen.getByLabelText('Account') as HTMLSelectElement).options,
+        (getSelectByLabel('Account') as HTMLSelectElement).options,
       ).map((o) => o.value);
       expect(values).toEqual(['', 'f1', 'f2', '__separator__', 'a', 'z']);
     });
@@ -317,10 +333,10 @@ describe('ReconcilePage', () => {
           { date: params.startDate, balance: 1234.56, accountId: params.accountIds, currencyCode: 'USD' },
         ]);
         render(<ReconcilePage />);
-        await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+        await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument());
         expect(dateInput()).toBeInTheDocument();
         await act(async () => {
-          fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+          fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
         });
         expect(mockGetDailyBalances).toHaveBeenCalledWith({
           startDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
@@ -339,9 +355,9 @@ describe('ReconcilePage', () => {
           { date: params.startDate, balance: 25, accountId: params.accountIds, currencyCode: 'USD' },
         ]);
         render(<ReconcilePage />);
-        await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
+        await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
         await act(async () => {
-          fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+          fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
         });
         // A card in credit: the auto-negation is for typed entries only.
         expect(Number(balanceInput().value)).toBe(25);
@@ -352,9 +368,9 @@ describe('ReconcilePage', () => {
           { date: params.startDate, balance: params.startDate === '2026-09-30' ? 900 : 1000, accountId: params.accountIds, currencyCode: 'USD' },
         ]);
         render(<ReconcilePage />);
-        await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+        await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument());
         await act(async () => {
-          fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+          fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
         });
         expect(Number(balanceInput().value)).toBe(1000);
 
@@ -379,8 +395,8 @@ describe('ReconcilePage', () => {
             }),
         );
         render(<ReconcilePage />);
-        await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
-        fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+        await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument());
+        fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
         fireEvent.change(balanceInput(), { target: { value: '1500' } });
         await act(async () => {
           resolve(undefined);
@@ -414,9 +430,9 @@ describe('ReconcilePage', () => {
           reconciledBalance: 0, clearedBalance: 0, difference: 500,
         });
         render(<ReconcilePage />);
-        await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+        await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument());
         await act(async () => {
-          fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+          fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
         });
         // The pre-filled balance and the pre-ticked row already agree.
         await act(async () => {
@@ -434,9 +450,9 @@ describe('ReconcilePage', () => {
       it('leaves the field empty when the lookup fails', async () => {
         mockGetDailyBalances.mockRejectedValue(new Error('down'));
         render(<ReconcilePage />);
-        await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+        await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument());
         await act(async () => {
-          fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+          fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
         });
         expect(balanceInput().value).toBe('');
       });
@@ -451,7 +467,7 @@ describe('ReconcilePage', () => {
 
     it('disables start button when required fields are empty', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByLabelText('Account')).toBeInTheDocument());
+      await waitFor(() => expect(getSelectByLabel('Account')).toBeInTheDocument());
       const startButtons = screen.getAllByText('Start Reconciliation');
       const button = startButtons.find(el => el.tagName === 'BUTTON');
       expect(button).toBeDisabled();
@@ -462,8 +478,8 @@ describe('ReconcilePage', () => {
       // minus -- so an unnormalized entry would print "-$0.00" across the
       // reconcile step and go into the request as -0.
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), {
         target: { value: '-0' },
       });
@@ -480,8 +496,8 @@ describe('ReconcilePage', () => {
   describe('Reconcile Step', () => {
     async function advanceToReconcileStep() {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       await waitFor(() => {
         const button = screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON');
@@ -619,8 +635,8 @@ describe('ReconcilePage', () => {
         difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Bitcoin Wallet/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-btc' } });
+      await waitFor(() => expect(accountOption(/Bitcoin Wallet/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-btc' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: statementBalance } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument(), { timeout: 3000 });
@@ -662,8 +678,8 @@ describe('ReconcilePage', () => {
     it('shows empty state when no transactions', async () => {
       mockGetReconciliationData.mockResolvedValue({ ...mockReconciliationData, transactions: [] });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => {
@@ -684,8 +700,8 @@ describe('ReconcilePage', () => {
   describe('Editing from inside the reconcile step', () => {
     async function advanceToReconcileStep() {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Statement Balance')).toBeInTheDocument(), { timeout: 3000 });
@@ -834,8 +850,8 @@ describe('ReconcilePage', () => {
         reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
@@ -866,8 +882,8 @@ describe('ReconcilePage', () => {
   describe('Liability Account Auto-Negation', () => {
     it('auto-negates a positive statement balance for a credit card account', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
       const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
       expect(Number(input.value)).toBe(-500);
@@ -875,8 +891,8 @@ describe('ReconcilePage', () => {
 
     it('leaves a negative statement balance unchanged for a liability account', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '-500' } });
       const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
       expect(Number(input.value)).toBe(-500);
@@ -884,8 +900,8 @@ describe('ReconcilePage', () => {
 
     it('does not auto-negate for a non-liability account', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
       expect(Number(input.value)).toBe(1500);
@@ -893,8 +909,8 @@ describe('ReconcilePage', () => {
 
     it('passes undefined through without negating for liability account', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '' } });
       const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
       expect(input.value).toBe('');
@@ -902,15 +918,15 @@ describe('ReconcilePage', () => {
 
     it('does not render an override checkbox for liability accounts', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       expect(screen.queryByLabelText(/Allow positive balance/i)).not.toBeInTheDocument();
     });
 
     it('respects an explicit sign flip from negative to positive', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       // First entry: positive value gets auto-negated
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
       const input = screen.getByLabelText('Statement Ending Balance') as HTMLInputElement;
@@ -922,8 +938,8 @@ describe('ReconcilePage', () => {
 
     it('auto-negates again when the absolute value changes', async () => {
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
       // Different absolute value -- auto-negate kicks in again
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '750' } });
@@ -936,9 +952,9 @@ describe('ReconcilePage', () => {
       // auto-negation above already owns the sign, so no account type gets a
       // placeholder of its own (CurrencyInput's built-in "0.00" applies).
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument());
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument());
       for (const accountId of ['acc-1', 'acc-2']) {
-        fireEvent.change(screen.getByLabelText('Account'), { target: { value: accountId } });
+        fireEvent.change(getSelectByLabel('Account'), { target: { value: accountId } });
         expect(screen.getByLabelText('Statement Ending Balance')).not.toHaveAttribute(
           'placeholder',
         );
@@ -960,8 +976,8 @@ describe('ReconcilePage', () => {
       const toast = await import('react-hot-toast');
       mockGetReconciliationData.mockRejectedValue(new Error('Server error'));
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => {
@@ -980,8 +996,8 @@ describe('ReconcilePage', () => {
         reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
@@ -1005,8 +1021,8 @@ describe('ReconcilePage', () => {
         reconciledBalance: 0, clearedBalance: -500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Visa/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(accountOption(/Visa/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
@@ -1055,8 +1071,8 @@ describe('ReconcilePage', () => {
         reconciledBalance: 0, clearedBalance: -8000, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Car Loan/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-5' } });
+      await waitFor(() => expect(accountOption(/Car Loan/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-5' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '8000' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });
@@ -1076,8 +1092,8 @@ describe('ReconcilePage', () => {
         reconciledBalance: 1000, clearedBalance: 1500, difference: 0,
       });
       render(<ReconcilePage />);
-      await waitFor(() => expect(screen.getByText(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      await waitFor(() => expect(accountOption(/Checking/)).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
       fireEvent.change(screen.getByLabelText('Statement Ending Balance'), { target: { value: '1500' } });
       fireEvent.click(screen.getAllByText('Start Reconciliation').find(el => el.tagName === 'BUTTON')!);
       await waitFor(() => expect(screen.getByText('Finish Reconciliation')).toBeInTheDocument(), { timeout: 3000 });

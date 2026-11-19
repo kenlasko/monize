@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@/test/render';
 import { CategoryMappingRow } from './CategoryMappingRow';
 import type { CategoryMapping } from '@/lib/import';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { getSelectByLabel } from '@/test/icon-select';
 
 describe('CategoryMappingRow', () => {
   const defaultMapping = {
@@ -235,12 +236,7 @@ describe('CategoryMappingRow', () => {
         isHighlighted={true}
       />
     );
-    const selects = screen.getAllByRole('combobox');
-    // Find the loan account select
-    const loanSelect = selects.find((s) => {
-      const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent?.includes('Mortgage'));
-    });
+    const loanSelect = getSelectByLabel('Select existing loan');
     expect(loanSelect).toBeDefined();
     fireEvent.change(loanSelect!, { target: { value: 'loan1' } });
     expect(onMappingChange).toHaveBeenCalledWith(
@@ -479,9 +475,9 @@ describe('CategoryMappingRow', () => {
       />
     );
     expect(screen.getByText('Loan type')).toBeInTheDocument();
-    const loanTypeSelect = screen.getAllByRole('combobox').find((s) => {
+    const loanTypeSelect = Array.from(document.querySelectorAll('select')).find((s) => {
       const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent === 'Mortgage');
+      return options.some((o) => o.label === 'Mortgage');
     });
     expect(loanTypeSelect).toBeDefined();
   });
@@ -515,9 +511,9 @@ describe('CategoryMappingRow', () => {
         isHighlighted={true}
       />
     );
-    const loanTypeSelect = screen.getAllByRole('combobox').find((s) => {
+    const loanTypeSelect = Array.from(document.querySelectorAll('select')).find((s) => {
       const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent === 'Mortgage');
+      return options.some((o) => o.label === 'Mortgage');
     });
     fireEvent.change(loanTypeSelect!, { target: { value: 'MORTGAGE' } });
     expect(onMappingChange).toHaveBeenCalledWith(
@@ -538,9 +534,9 @@ describe('CategoryMappingRow', () => {
         isHighlighted={true}
       />
     );
-    const loanSelect = screen.getAllByRole('combobox').find((s) => {
+    const loanSelect = Array.from(document.querySelectorAll('select')).find((s) => {
       const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent?.includes('Mortgage'));
+      return options.some((o) => o.label.includes('Mortgage'));
     });
     fireEvent.change(loanSelect!, { target: { value: 'loan1' } });
     expect(onMappingChange).toHaveBeenCalledWith(

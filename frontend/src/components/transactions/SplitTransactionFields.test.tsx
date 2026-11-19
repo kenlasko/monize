@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@/test/render';
 import { SplitTransactionFields } from './SplitTransactionFields';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
+import { getSelectByLabel } from '@/test/icon-select';
 
 vi.mock('@/lib/format', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/format')>()),
@@ -247,9 +248,9 @@ describe('SplitTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Chequing (CAD)');
     expect(labels).not.toContain('Brokerage (CAD)');
@@ -266,9 +267,9 @@ describe('SplitTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Open Account (CAD)');
     expect(labels).not.toContain('Closed Account (CAD) (Closed)');
@@ -285,9 +286,9 @@ describe('SplitTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Closed Account (CAD) (Closed)');
   });
@@ -304,9 +305,9 @@ describe('SplitTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const accountLabels = options.slice(1).map(o => o.textContent);
+    const accountLabels = options.slice(1).map(o => o.label);
 
     expect(accountLabels).toEqual([
       'Alpha (CAD)',
@@ -330,7 +331,7 @@ describe('SplitTransactionFields', () => {
 
     const payeeSelect = screen.getByTestId('combobox-select-Payee');
     const options = Array.from(payeeSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Grocery Store');
     expect(labels).toContain('Hardware Store');
@@ -428,9 +429,9 @@ describe('SplitTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('US Savings (USD)');
   });
@@ -443,10 +444,10 @@ describe('SplitTransactionFields', () => {
       />
     );
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     const firstOption = accountSelect.querySelector('option');
 
-    expect(firstOption?.textContent).toBe('Select account...');
+    expect(firstOption?.label).toBe('Select account...');
     expect(firstOption?.value).toBe('');
   });
 

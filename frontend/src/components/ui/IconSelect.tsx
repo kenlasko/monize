@@ -131,6 +131,8 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
   const generatedId = useId();
   const triggerId = id || `select-${label?.toLowerCase().replace(/\s+/g, '-') ?? generatedId}`;
   const listId = `${generatedId}-list`;
+  const errorId = `${generatedId}-error`;
+  const describedBy = [ariaDescribedBy, error ? errorId : null].filter(Boolean).join(' ') || undefined;
 
   const selectRef = useRef<HTMLSelectElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -364,7 +366,7 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
           aria-controls={isOpen ? listId : undefined}
           aria-activedescendant={isOpen && !showFilter ? activeId : undefined}
           aria-label={ariaLabel}
-          aria-describedby={ariaDescribedBy}
+          aria-describedby={describedBy}
           aria-invalid={error ? true : undefined}
           title={title}
           disabled={disabled}
@@ -373,7 +375,7 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
           onBlur={handleTriggerBlur}
           className={cn(
             inputBaseClasses,
-            'flex items-center gap-2 border bg-white py-2 pl-3 pr-8 text-left font-sans focus:ring-1 focus:outline-none dark:bg-gray-800',
+            'flex items-center gap-2 border bg-white py-2 pl-3 pr-8 text-left font-sans focus:outline-none focus-visible:ring-1 dark:bg-gray-800',
             isPlaceholder ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100',
             error && inputErrorClasses,
             className,
@@ -391,7 +393,11 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
           />
         </button>
       </div>
-      {error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p id={errorId} className="mt-1 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
 
       {placement &&
         createPortal(

@@ -48,6 +48,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { accountSelectOption } from '@/lib/account-utils';
 
 interface PayoffScheduleItem {
   date: string;
@@ -667,23 +669,16 @@ export function DebtPayoffTimelineReport() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('debtPayoff.labelSelectAccount')}
-            </label>
-            <select
+            <AccountSelect
+              label={t('debtPayoff.labelSelectAccount')}
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 min-w-[200px]"
-            >
-              {accounts
+              options={accounts
                 .slice()
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-            </select>
+                .map((account) => accountSelectOption(account, account.name))}
+              className="min-w-[200px]"
+            />
           </div>
           <div
             className={`${SEGMENTED_GROUP_CLASS} flex-wrap`}

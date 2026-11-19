@@ -8,6 +8,8 @@ import { CategoryMapping } from '@/lib/import';
 import { parseLocaleNumber } from '@/lib/number-parse';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Account } from '@/types/account';
+import { accountSelectOption } from '@/lib/account-utils';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface CategoryMappingRowProps {
   mapping: CategoryMapping;
@@ -208,10 +210,12 @@ export function CategoryMappingRow({
   // Build loan account options
   const loanAccountOptions = [
     { value: '', label: t('mapCategories.selectExistingLoanPlaceholder') },
-    ...loanAccounts.map((account) => ({
-      value: account.id,
-      label: `${account.name}${account.institution ? ` (${account.institution})` : ''}`,
-    })),
+    ...loanAccounts.map((account) =>
+      accountSelectOption(
+        account,
+        `${account.name}${account.institution ? ` (${account.institution})` : ''}`,
+      ),
+    ),
   ];
 
   // Get display name for matched loan
@@ -258,7 +262,7 @@ export function CategoryMappingRow({
                 {t('mapCategories.loanTransferNotice')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
+                <AccountSelect
                   label={t('mapCategories.selectExistingLoan')}
                   options={loanAccountOptions}
                   value={mapping.loanAccountId || ''}

@@ -80,6 +80,7 @@ import { CustomRecurrenceEditor } from './CustomRecurrenceEditor';
 import { useCustomRecurrenceField } from './useCustomRecurrenceField';
 import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('ScheduledTxForm');
 
@@ -1754,7 +1755,7 @@ export function ScheduledTransactionForm({
 
           {/* Row 2: Account, Next Due Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
+            <AccountSelect
               label={t('form.accountLabel')}
               error={errors.accountId?.message}
               value={watchedAccountId || ''}
@@ -1934,7 +1935,7 @@ export function ScheduledTransactionForm({
 
           {/* Row 2: Account, Next Due Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
+            <AccountSelect
               label={t('form.accountLabel')}
               error={errors.accountId?.message}
               value={watchedAccountId || ''}
@@ -2085,7 +2086,7 @@ export function ScheduledTransactionForm({
 
           {/* Row 3: From Account, To Account */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
+            <AccountSelect
               label={t('form.fromAccountLabel')}
               error={errors.accountId?.message}
               value={watchedAccountId || ''}
@@ -2095,7 +2096,7 @@ export function ScheduledTransactionForm({
               ]}
               {...register('accountId')}
             />
-            <Select
+            <AccountSelect
               label={t('form.toAccountLabel')}
               value={transferToAccountId}
               onChange={(e) => setTransferToAccountId(e.target.value)}
@@ -2238,7 +2239,7 @@ export function ScheduledTransactionForm({
 
           {/* Row 2: Account, Next Due Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
+            <AccountSelect
               label={t('form.investmentAccountLabel')}
               error={errors.accountId?.message}
               value={watchedAccountId || ''}
@@ -2331,7 +2332,7 @@ export function ScheduledTransactionForm({
                         learnMore="billSettlementAccount"
                       />
                     </div>
-                    <Select
+                    <AccountSelect
                       id="scheduled-funding-account"
                       value={investmentFundingAccountId}
                       onChange={(e) => setInvestmentFundingAccountId(e.target.value)}

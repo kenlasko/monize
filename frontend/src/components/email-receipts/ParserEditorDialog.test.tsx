@@ -6,6 +6,7 @@ import { ParserEditorDialog } from './ParserEditorDialog';
 import { makeParser, makeReceipt, PARSED_RECEIPT } from './email-receipts-fixtures';
 import type { ReceiptParserLookupsState } from '@/hooks/useReceiptParserLookups';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { getSelectByLabel, selectOptionLabels } from '@/test/icon-select';
 
 const api = vi.hoisted(() => ({ create: vi.fn(), update: vi.fn(), test: vi.fn(), list: vi.fn() }));
 vi.mock('@/lib/email-receipts-api', () => ({
@@ -681,11 +682,10 @@ describe('ParserEditorDialog', () => {
   });
 
   describe('a brokerage trade profile', () => {
-    const optionTexts = (label: string) =>
-      within(screen.getByLabelText(label)).getAllByRole('option').map((option) => option.textContent);
+    const optionTexts = (label: string) => selectOptionLabels(getSelectByLabel(label));
     const choose = async (label: string, value: string) => {
       await act(async () => {
-        fireEvent.change(screen.getByLabelText(label), { target: { value } });
+        fireEvent.change(getSelectByLabel(label), { target: { value } });
       });
     };
     const clickButton = async (name: string) => {
@@ -805,7 +805,7 @@ describe('ParserEditorDialog', () => {
       expect(screen.getByRole('button', { name: 'Form' })).toHaveAttribute('aria-pressed', 'true');
       expect(screen.queryByRole('button', { name: 'Brokerage trade' })).not.toBeInTheDocument();
       expect((screen.getByLabelText('Currency of rule 1') as HTMLSelectElement).value).toBe('GBP');
-      expect((screen.getByLabelText('Account of rule 1') as HTMLSelectElement).value).toBe(RRSP_CASH);
+      expect(getSelectByLabel('Account of rule 1').value).toBe(RRSP_CASH);
       expect(optionTexts('Account of rule 1')).toContain('RRSP Cash (not an open brokerage account)');
       expect(optionTexts('Default account')).toContain('An account not in your list');
       const notes = screen.getAllByRole('note').map((note) => note.textContent);

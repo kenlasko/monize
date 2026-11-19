@@ -3,6 +3,7 @@ import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
 import { act, fireEvent, render, screen, within } from '@/test/render';
 import { RuleEditor } from './RuleEditor';
 import { lookupFixtures, makeRule } from './rules-test-fixtures';
+import { nativeSelectOf, selectOptionLabels } from '@/test/icon-select';
 
 Element.prototype.scrollIntoView = vi.fn();
 
@@ -80,7 +81,7 @@ async function renderEditor(ruleId?: string) {
 const card = (label: 'Condition' | 'Action', index = 0) => screen.getAllByRole('group', { name: label })[index];
 const part = (action: HTMLElement, n: number) => within(action).getByRole('group', { name: `Split ${n}` });
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
-const optionLabels = (select: HTMLElement) => within(select).getAllByRole('option').map((o) => o.textContent);
+const optionLabels = (control: HTMLElement) => selectOptionLabels(nativeSelectOf(control));
 
 async function save() {
   await act(async () => {
@@ -153,7 +154,7 @@ describe('RuleEditor: a split action', () => {
       'Checking account (PLN)',
       'Loan account (PLN)',
     ]);
-    fireEvent.change(within(part(action, 1)).getByLabelText('Account'), { target: { value: LOAN } });
+    fireEvent.change(nativeSelectOf(within(part(action, 1)).getByLabelText('Account')), { target: { value: LOAN } });
     pickCombobox(part(action, 1), 'Select or type payee name...', 'Loan overpayment');
 
     fireEvent.change(within(part(action, 2)).getByLabelText('Amount'), { target: { value: '{interest}' } });
@@ -244,7 +245,7 @@ describe('RuleEditor: a transfer action', () => {
     await renderEditor();
     startRule();
     const action = addAction('convert_to_transfer', 0);
-    fireEvent.change(within(action).getByLabelText('To Account'), { target: { value: LOAN } });
+    fireEvent.change(nativeSelectOf(within(action).getByLabelText('To Account')), { target: { value: LOAN } });
     pickCombobox(action, 'Select or type payee name...', 'Loan repayment');
     await save();
     expect(mocks.rules.create.mock.calls[0][0].actions).toEqual([
@@ -258,7 +259,7 @@ describe('RuleEditor: a transfer action', () => {
     startRule();
     const action = addAction('convert_to_transfer', 0);
     fireEvent.change(within(action).getByLabelText('Direction'), { target: { value: 'from' } });
-    fireEvent.change(within(action).getByLabelText('From Account'), { target: { value: CHECKING } });
+    fireEvent.change(nativeSelectOf(within(action).getByLabelText('From Account')), { target: { value: CHECKING } });
     fireEvent.click(within(action).getByRole('switch', { name: 'Clear the category' }));
     await save();
     expect(mocks.rules.create.mock.calls[0][0].actions).toEqual([
@@ -272,7 +273,7 @@ describe('RuleEditor: a transfer action', () => {
     const action = addAction('convert_to_transfer', 0);
     await save();
     expect(mocks.rules.create).not.toHaveBeenCalled();
-    expect(within(action).getByLabelText('To Account').parentElement).toHaveTextContent('Enter or choose a value.');
+    expect(within(action).getByLabelText('To Account')).toHaveAccessibleDescription('Enter or choose a value.');
   });
 });
 
@@ -297,7 +298,7 @@ describe('RuleEditor: combining the structural actions', () => {
     const category = addAction('set_category', 0);
     pickCombobox(category, 'Choose a category', 'Loans: Interest');
     const transfer = addAction('convert_to_transfer', 1);
-    fireEvent.change(within(transfer).getByLabelText('To Account'), { target: { value: LOAN } });
+    fireEvent.change(nativeSelectOf(within(transfer).getByLabelText('To Account')), { target: { value: LOAN } });
     await save();
     expect(mocks.rules.create).not.toHaveBeenCalled();
     expect(within(card('Action', 1)).getByText(/cannot be combined with “Set the category”/)).toBeInTheDocument();
@@ -333,7 +334,7 @@ describe('RuleEditor: a stored transfer or split', () => {
     const action = card('Action', 0);
     expect(within(part(action, 1)).getByLabelText('Amount')).toHaveValue('{principal}');
     expect(within(part(action, 1)).getByLabelText('Type')).toHaveValue('transfer');
-    expect(within(part(action, 1)).getByLabelText('Account')).toHaveValue(LOAN);
+    expect(nativeSelectOf(within(part(action, 1)).getByLabelText('Account'))).toHaveValue(LOAN);
     expect(within(part(action, 2)).getByLabelText('Memo')).toHaveValue('Interest');
     expect(within(part(action, 3)).getByLabelText('Amount')).toHaveValue('rest');
     expect(screen.getByRole('button', { name: 'Save rule' })).toBeDisabled();
@@ -375,7 +376,7 @@ describe('RuleEditor: a stored transfer or split', () => {
     await renderEditor('rule-transfer');
     const action = card('Action', 0);
     expect(within(action).getByLabelText('Direction')).toHaveValue('from');
-    expect(within(action).getByLabelText('From Account')).toHaveValue(LOAN);
+    expect(nativeSelectOf(within(action).getByLabelText('From Account'))).toHaveValue(LOAN);
     expect(within(action).getByRole('switch', { name: 'Clear the category' })).toHaveAttribute('aria-checked', 'false');
   });
 });
@@ -406,7 +407,7 @@ describe('RuleEditor: a loan settlement action', () => {
     expect(within(action).getByLabelText('Days after the due date')).toHaveValue('7');
 
     await act(async () => {
-      fireEvent.change(within(action).getByLabelText('Loan account'), { target: { value: MORTGAGE } });
+      fireEvent.change(nativeSelectOf(within(action).getByLabelText('Loan account')), { target: { value: MORTGAGE } });
     });
     fireEvent.change(within(action).getByLabelText('Debit Below the Installment'), {
       target: { value: 'interest_first' },
@@ -459,14 +460,14 @@ describe('RuleEditor: a loan settlement action', () => {
     const action = addAction('settle_loan_installment', 0);
     expect(mocks.bill).not.toHaveBeenCalled();
     await act(async () => {
-      fireEvent.change(within(action).getByLabelText('Loan account'), { target: { value: MORTGAGE } });
+      fireEvent.change(nativeSelectOf(within(action).getByLabelText('Loan account')), { target: { value: MORTGAGE } });
     });
     expect(mocks.bill).toHaveBeenCalledWith(BILL);
     expect(screen.getByText("The loan's scheduled payment posts itself")).toBeInTheDocument();
 
     // A loan without a scheduled payment asks for nothing and warns about nothing.
     await act(async () => {
-      fireEvent.change(within(action).getByLabelText('Loan account'), { target: { value: LOAN } });
+      fireEvent.change(nativeSelectOf(within(action).getByLabelText('Loan account')), { target: { value: LOAN } });
     });
     expect(screen.queryByText("The loan's scheduled payment posts itself")).not.toBeInTheDocument();
   });

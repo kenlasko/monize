@@ -8,6 +8,7 @@ import { ParsedQifResponse } from '@/lib/import';
 import { Account, AccountType } from '@/types/account';
 import { formatAccountType, isInvestmentBrokerageAccount, buildAccountDropdownOptions } from '@/lib/account-utils';
 import { ImportFileData, ImportStep } from '@/app/import/import-utils';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface SelectAccountStepProps {
   accounts: Account[];
@@ -113,7 +114,7 @@ export function SelectAccountStep({
           )}
 
           {compatibleAccountOptions.length > 0 && (
-            <Select
+            <AccountSelect
               label={t('selectAccount.importIntoAccount')}
               options={compatibleAccountOptions}
               value={selectedAccountId}
@@ -236,7 +237,7 @@ export function SelectAccountStep({
                     </p>
                   </div>
                   <div className="sm:w-80">
-                    <Select
+                    <AccountSelect
                       options={compatibleAccountOptions}
                       value={fileData.selectedAccountId}
                       onChange={(e) => setFileAccountId(index, e.target.value)}

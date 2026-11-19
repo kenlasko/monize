@@ -20,6 +20,8 @@ import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
 import type { LoanRateChange } from '@/types/loan-rate-change';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { accountSelectOption } from '@/lib/account-utils';
 
 const DEBT_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
 
@@ -140,23 +142,16 @@ export function LoanOverpaymentSimulatorReport() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('loanOverpayment.labelSelectAccount')}
-            </label>
-            <select
+            <AccountSelect
+              label={t('loanOverpayment.labelSelectAccount')}
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 min-w-[200px]"
-            >
-              {accounts
+              options={accounts
                 .slice()
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-            </select>
+                .map((account) => accountSelectOption(account, account.name))}
+              className="min-w-[200px]"
+            />
           </div>
           {selectedAccount && (
             <Button

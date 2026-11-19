@@ -4,6 +4,7 @@ import { ScheduledTransactionForm } from './ScheduledTransactionForm';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 import { getLocalDateString } from '@/lib/utils';
+import { getSelectByLabel, nativeSelectOf, querySelectByLabel } from '@/test/icon-select';
 
 vi.mock('react-hot-toast', () => ({
   default: {
@@ -602,7 +603,7 @@ describe('ScheduledTransactionForm', () => {
     await waitFor(() => {
       expect(screen.getByText('From Account')).toBeInTheDocument();
     });
-    const toAccountSelect = screen.getByLabelText('To Account') as HTMLSelectElement;
+    const toAccountSelect = getSelectByLabel('To Account') as HTMLSelectElement;
     expect(toAccountSelect.value).toBe('acc-2');
     const amountInput = screen.getByLabelText('Transfer Amount') as HTMLInputElement;
     expect(Number(amountInput.value)).toBe(250);
@@ -754,7 +755,7 @@ describe('ScheduledTransactionForm', () => {
       expect(screen.getByText('Account')).toBeInTheDocument();
     });
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     expect(accountSelect).toBeInTheDocument();
   });
 
@@ -953,7 +954,7 @@ describe('ScheduledTransactionForm', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test Bill' } });
 
     // Select account
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     fireEvent.change(accountSelect, { target: { value: 'acc-1' } });
 
     // Submit form
@@ -1033,13 +1034,13 @@ describe('ScheduledTransactionForm', () => {
 
     // Wait for accounts to load
     await waitFor(() => {
-      const accountSelect = screen.getByLabelText('Account');
+      const accountSelect = getSelectByLabel('Account');
       expect(accountSelect).toBeInTheDocument();
     });
 
-    const accountSelect = screen.getByLabelText('Account') as HTMLSelectElement;
+    const accountSelect = getSelectByLabel('Account') as HTMLSelectElement;
     const options = Array.from(accountSelect.querySelectorAll('option'));
-    const optionTexts = options.map(o => o.textContent);
+    const optionTexts = options.map(o => o.label);
 
     // Should include active non-investment non-asset accounts
     expect(optionTexts.some(t => t?.includes('Chequing'))).toBe(true);
@@ -1066,20 +1067,20 @@ describe('ScheduledTransactionForm', () => {
     render(<ScheduledTransactionForm />);
 
     await waitFor(() => {
-      const accountSelect = screen.getByLabelText('Account') as HTMLSelectElement;
-      const texts = Array.from(accountSelect.querySelectorAll('option')).map(o => o.textContent);
+      const accountSelect = getSelectByLabel('Account') as HTMLSelectElement;
+      const texts = Array.from(accountSelect.querySelectorAll('option')).map(o => o.label);
       expect(texts.some(t => t?.includes('Bitcoin Wallet'))).toBe(true);
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
     });
     await act(async () => {
       fireEvent.click(screen.getByText('Transfer'));
     });
 
-    const toAccountSelect = await screen.findByLabelText('To Account') as HTMLSelectElement;
-    const toTexts = Array.from(toAccountSelect.querySelectorAll('option')).map(o => o.textContent);
+    const toAccountSelect = nativeSelectOf(await screen.findByLabelText('To Account')) as HTMLSelectElement;
+    const toTexts = Array.from(toAccountSelect.querySelectorAll('option')).map(o => o.label);
     expect(toTexts.some(t => t?.includes('Bitcoin Wallet'))).toBe(true);
   });
 
@@ -1092,7 +1093,7 @@ describe('ScheduledTransactionForm', () => {
 
     // Select source account in transaction mode first
     await waitFor(() => {
-      const accountSelect = screen.getByLabelText('Account');
+      const accountSelect = getSelectByLabel('Account');
       fireEvent.change(accountSelect, { target: { value: 'acc-1' } });
     });
 
@@ -1100,7 +1101,7 @@ describe('ScheduledTransactionForm', () => {
     fireEvent.click(screen.getByText('Transfer'));
 
     await waitFor(() => {
-      const toAccountSelect = screen.getByLabelText('To Account') as HTMLSelectElement;
+      const toAccountSelect = getSelectByLabel('To Account') as HTMLSelectElement;
       expect(toAccountSelect).toBeInTheDocument();
     });
   });
@@ -2015,11 +2016,11 @@ describe('ScheduledTransactionForm', () => {
     await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
 
     await waitFor(() => {
-      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+      expect(getSelectByLabel('From Account')).toBeInTheDocument();
     });
 
     // Fill source account and name but no destination
-    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('From Account'), { target: { value: 'acc-1' } });
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'No Destination Transfer' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
@@ -2041,13 +2042,13 @@ describe('ScheduledTransactionForm', () => {
     await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
 
     await waitFor(() => {
-      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+      expect(getSelectByLabel('From Account')).toBeInTheDocument();
     });
 
     // Set To Account first (before From Account changes the available options),
     // then set From Account to the same value to trigger same-account validation.
-    fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-1' } });
-    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('To Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('From Account'), { target: { value: 'acc-1' } });
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Self Transfer' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
@@ -2070,12 +2071,12 @@ describe('ScheduledTransactionForm', () => {
     await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
 
     await waitFor(() => {
-      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+      expect(getSelectByLabel('From Account')).toBeInTheDocument();
     });
 
     // Set valid source and destination
-    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
-    fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-2' } });
+    fireEvent.change(getSelectByLabel('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('To Account'), { target: { value: 'acc-2' } });
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Savings Transfer' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
@@ -2099,11 +2100,11 @@ describe('ScheduledTransactionForm', () => {
     await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
 
     await waitFor(() => {
-      expect(screen.getByLabelText('From Account')).toBeInTheDocument();
+      expect(getSelectByLabel('From Account')).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
-    fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-2' } });
+    fireEvent.change(getSelectByLabel('From Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('To Account'), { target: { value: 'acc-2' } });
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Transfer' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
@@ -2159,7 +2160,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Bill' } });
-    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
     await act(async () => { fireEvent.click(submitBtn); });
@@ -2318,7 +2319,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test' } });
-    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
     await act(async () => { fireEvent.click(submitBtn); });
@@ -2364,7 +2365,7 @@ describe('ScheduledTransactionForm', () => {
 
     // Fill required fields
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test Bill' } });
-    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
     await act(async () => { fireEvent.click(submitBtn); });
@@ -2581,7 +2582,7 @@ describe('ScheduledTransactionForm', () => {
       expect(mockAccountsGetAll).toHaveBeenCalled();
     });
 
-    const accountSelect = screen.getByLabelText('Account');
+    const accountSelect = getSelectByLabel('Account');
     fireEvent.change(accountSelect, { target: { value: 'acc-usd' } });
 
     // No crash after currency change
@@ -2619,7 +2620,7 @@ describe('ScheduledTransactionForm', () => {
     });
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Tagged Bill' } });
-    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
 
     const submitBtn = container.querySelector('button[type="submit"]')!;
     await act(async () => { fireEvent.click(submitBtn); });
@@ -2660,8 +2661,8 @@ describe('ScheduledTransactionForm', () => {
         },
       ]);
       await openInvestmentTab();
-      const funding = screen.getByLabelText('Funding Account (optional)') as HTMLSelectElement;
-      const texts = Array.from(funding.querySelectorAll('option')).map(o => o.textContent);
+      const funding = getSelectByLabel('Funding Account (optional)') as HTMLSelectElement;
+      const texts = Array.from(funding.querySelectorAll('option')).map(o => o.label);
       expect(texts.some(t => t?.includes('Chequing'))).toBe(true);
       expect(texts.some(t => t?.includes('Bitcoin Wallet'))).toBe(false);
     });
@@ -2669,7 +2670,7 @@ describe('ScheduledTransactionForm', () => {
     it('renders the Investment tab and an Action selector', async () => {
       await openInvestmentTab();
       expect(screen.getByLabelText('Action')).toBeInTheDocument();
-      expect(screen.getByLabelText('Investment Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Investment Account')).toBeInTheDocument();
     });
 
     it('shows Quantity / Price / Commission inputs for BUY', async () => {
@@ -2700,10 +2701,10 @@ describe('ScheduledTransactionForm', () => {
 
     it('shows Funding Account dropdown for BUY only', async () => {
       await openInvestmentTab();
-      expect(screen.getByLabelText('Funding Account (optional)')).toBeInTheDocument();
+      expect(getSelectByLabel('Funding Account (optional)')).toBeInTheDocument();
       fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'DIVIDEND' } });
       await waitFor(() => {
-        expect(screen.queryByLabelText('Funding Account (optional)')).not.toBeInTheDocument();
+        expect(querySelectByLabel('Funding Account (optional)')).not.toBeInTheDocument();
       });
     });
 
@@ -2718,7 +2719,7 @@ describe('ScheduledTransactionForm', () => {
     it('fetches the latest market price when a security is chosen', async () => {
       await openInvestmentTab();
       // Pick a brokerage account to satisfy the form
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2737,7 +2738,7 @@ describe('ScheduledTransactionForm', () => {
 
     it('back-derives Quantity from Total Value using the effective price', async () => {
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2759,7 +2760,7 @@ describe('ScheduledTransactionForm', () => {
 
     it('forward-derives Total Value from Quantity', async () => {
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2794,7 +2795,7 @@ describe('ScheduledTransactionForm', () => {
         }),
       );
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2822,7 +2823,7 @@ describe('ScheduledTransactionForm', () => {
 
     it('recomputes Total Value when the commission changes', async () => {
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2859,7 +2860,7 @@ describe('ScheduledTransactionForm', () => {
 
     it('recomputes Total Value when the action flips BUY to SELL', async () => {
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2905,7 +2906,7 @@ describe('ScheduledTransactionForm', () => {
         Promise.resolve([{ closePrice: id === 'sec-voo' ? 100 : 250, priceDate: '2026-05-09' }]),
       );
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2942,7 +2943,7 @@ describe('ScheduledTransactionForm', () => {
         Promise.resolve([{ closePrice: id === 'sec-voo' ? 100 : 250, priceDate: '2026-05-09' }]),
       );
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -2989,7 +2990,7 @@ describe('ScheduledTransactionForm', () => {
       // stay off, not falsely claim the security has no price history.
       mockGetSecurityPrices.mockRejectedValueOnce(new Error('network'));
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -3004,7 +3005,7 @@ describe('ScheduledTransactionForm', () => {
 
     it('does not re-fetch the close when toggling within quantity-price actions', async () => {
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -3029,7 +3030,7 @@ describe('ScheduledTransactionForm', () => {
         { closePrice: 'not-a-number', priceDate: '2026-05-09' },
       ]);
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -3054,7 +3055,7 @@ describe('ScheduledTransactionForm', () => {
         { closePrice: 0, priceDate: '2026-05-09' },
       ]);
       await openInvestmentTab();
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -3083,7 +3084,7 @@ describe('ScheduledTransactionForm', () => {
       fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'VOO Dividend' },
       });
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'DIVIDEND' } });
@@ -3148,7 +3149,7 @@ describe('ScheduledTransactionForm', () => {
       fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Missing qty' },
       });
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       // Skip security/qty/price entirely
@@ -3176,7 +3177,7 @@ describe('ScheduledTransactionForm', () => {
       fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Monthly VOO DCA' },
       });
-      fireEvent.change(screen.getByLabelText('Investment Account'), {
+      fireEvent.change(getSelectByLabel('Investment Account'), {
         target: { value: 'acc-4' },
       });
       fireEvent.change(screen.getByLabelText('Security'), {
@@ -3237,7 +3238,7 @@ describe('ScheduledTransactionForm', () => {
         expect(mockGetSecurities).toHaveBeenCalled();
       });
       // Investment-only fields are present
-      expect(screen.getByLabelText('Investment Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Investment Account')).toBeInTheDocument();
       expect(screen.getByLabelText('Action')).toBeInTheDocument();
     });
   });
@@ -3283,7 +3284,7 @@ describe('ScheduledTransactionForm - extra coverage', () => {
   it('seeds the split editor when switching to the Split tab', async () => {
     await renderForm();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
     });
     await act(async () => { fireEvent.click(screen.getByText('Split')); });
     expect(screen.getByTestId('split-editor')).toBeInTheDocument();
@@ -3346,8 +3347,8 @@ describe('ScheduledTransactionForm - extra coverage', () => {
   it('shows From/To account selects on the Transfer tab', async () => {
     await renderForm();
     await act(async () => { fireEvent.click(screen.getByText('Transfer')); });
-    expect(screen.getByLabelText('From Account')).toBeInTheDocument();
-    expect(screen.getByLabelText('To Account')).toBeInTheDocument();
+    expect(getSelectByLabel('From Account')).toBeInTheDocument();
+    expect(getSelectByLabel('To Account')).toBeInTheDocument();
   });
 
   it('shows only the quantity field for an ADD_SHARES investment action', async () => {
@@ -3357,7 +3358,7 @@ describe('ScheduledTransactionForm - extra coverage', () => {
       fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'ADD_SHARES' } });
     });
     expect(screen.getByLabelText('Quantity (Shares)')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Funding Account (optional)')).not.toBeInTheDocument();
+    expect(querySelectByLabel('Funding Account (optional)')).not.toBeInTheDocument();
   });
 
   it('recomputes total value from quantity in investment BUY mode', async () => {
@@ -3386,7 +3387,7 @@ describe('ScheduledTransactionForm - extra coverage', () => {
       fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Move money' } });
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(getSelectByLabel('From Account'), { target: { value: 'acc-1' } });
     });
     await act(async () => { submit(container); });
     await act(async () => {});
@@ -3404,10 +3405,10 @@ describe('ScheduledTransactionForm - extra coverage', () => {
       fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'CC Payment' } });
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('From Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(getSelectByLabel('From Account'), { target: { value: 'acc-1' } });
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-2' } });
+      fireEvent.change(getSelectByLabel('To Account'), { target: { value: 'acc-2' } });
     });
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Transfer Amount'), { target: { value: '100' } });
@@ -3425,7 +3426,7 @@ describe('ScheduledTransactionForm - extra coverage', () => {
   it('renders the SplitEditor when in split mode after selecting a category', async () => {
     await renderForm();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
     });
     await act(async () => {
       fireEvent.click(screen.getByTestId('option-cat-1'));
@@ -3479,7 +3480,7 @@ describe('ScheduledTransactionForm - extra coverage', () => {
       fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'DCA VOO' } });
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Investment Account'), { target: { value: 'acc-4' } });
+      fireEvent.change(getSelectByLabel('Investment Account'), { target: { value: 'acc-4' } });
     });
     await act(async () => { submit(container); });
     await act(async () => {});
@@ -3495,7 +3496,7 @@ describe('ScheduledTransactionForm - extra coverage', () => {
       fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'DCA VOO' } });
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Investment Account'), { target: { value: 'acc-4' } });
+      fireEvent.change(getSelectByLabel('Investment Account'), { target: { value: 'acc-4' } });
     });
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Security'), { target: { value: 'sec-voo' } });
@@ -3520,7 +3521,7 @@ describe('ScheduledTransactionForm - extra coverage', () => {
   it('flips the amount sign when an expense category is chosen', async () => {
     await renderForm();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
     });
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '100' } });
@@ -3553,7 +3554,7 @@ describe('ScheduledTransactionForm - foreign currency', () => {
     const result = render(<ScheduledTransactionForm />);
     await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Netflix' } });
-    fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-1' } });
+    fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-1' } });
     await act(async () => {
       fireEvent.click(screen.getByTestId('pick-usd'));
     });

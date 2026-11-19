@@ -7,7 +7,6 @@ import { AccountFormModal } from "@/components/accounts/AccountFormModal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import { Select } from "@/components/ui/Select";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useFormModal } from "@/hooks/useFormModal";
 import { useNumberFormat } from "@/hooks/useNumberFormat";
@@ -32,6 +31,7 @@ import { BankSyncPreviewModal } from "./BankSyncPreviewModal";
 import { useAccountTypeMismatchMessage } from "./useAccountTypeMismatchMessage";
 import { useBankAccountTypeLabel } from "./useBankAccountTypeLabel";
 import { useBankSyncToast } from "./useBankSyncToast";
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 /** The picker's "Create a new account" entry; no account id can equal it. */
 const CREATE_NEW_VALUE = "__create_new__";
@@ -392,7 +392,7 @@ export function BankSyncAccountRow({
       </div>
 
       <div className="mt-3 max-w-md">
-        <Select
+        <AccountSelect
           label={t("linkLabel")}
           id={`bank-sync-link-${bankAccount.id}`}
           value={bankAccount.accountId ?? ""}

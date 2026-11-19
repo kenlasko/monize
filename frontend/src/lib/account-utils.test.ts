@@ -136,10 +136,17 @@ describe('buildAccountDropdownOptions', () => {
   it('sorts non-favourite accounts alphabetically', () => {
     const options = buildAccountDropdownOptions(accounts, () => true);
 
-    expect(options).toEqual([
+    expect(options.map(({ value, label }) => ({ value, label }))).toEqual([
       { value: '2', label: 'Alpha Account (CAD)' },
       { value: '3', label: 'Middle Account (EUR)' },
       { value: '1', label: 'Zebra Account (USD)' },
+    ]);
+  });
+
+  it('carries what each account row draws its mark from', () => {
+    const banked = makeAccount({ id: '9', name: 'Banked', accountType: 'SAVINGS', institutionId: 'inst-1' });
+    expect(buildAccountDropdownOptions([banked], () => true)).toEqual([
+      { value: '9', label: 'Banked (CAD)', accountType: 'SAVINGS', institutionId: 'inst-1' },
     ]);
   });
 
@@ -153,9 +160,9 @@ describe('buildAccountDropdownOptions', () => {
 
     const options = buildAccountDropdownOptions(withFavourites, () => true);
 
-    expect(options[0]).toEqual({ value: '2', label: 'Alpha Account (CAD)' });
-    expect(options[1]).toEqual({ value: '4', label: 'Beta Account (CAD)' });
-    expect(options[2]).toEqual({ value: '1', label: 'Zebra Account (CAD)' });
+    expect(options[0]).toMatchObject({ value: '2', label: 'Alpha Account (CAD)' });
+    expect(options[1]).toMatchObject({ value: '4', label: 'Beta Account (CAD)' });
+    expect(options[2]).toMatchObject({ value: '1', label: 'Zebra Account (CAD)' });
     // separator
     expect(options[3]).toEqual({
       value: '__separator__',
@@ -163,7 +170,7 @@ describe('buildAccountDropdownOptions', () => {
       disabled: true,
     });
     // non-favourite
-    expect(options[4]).toEqual({ value: '3', label: 'Middle Account (CAD)' });
+    expect(options[4]).toMatchObject({ value: '3', label: 'Middle Account (CAD)' });
   });
 
   it('inserts a disabled separator between favourites and non-favourites', () => {

@@ -41,6 +41,7 @@ import { createLogger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('LoanPaymentSetupDialog');
 
@@ -587,7 +588,7 @@ export function LoanPaymentSetupDialog({
 
               {/* Source Account */}
               <div>
-                <Select
+                <AccountSelect
                   label={t('loanPaymentSetup.paymentFromAccount')}
                   value={sourceAccountId}
                   onChange={(e) => setSourceAccountId(e.target.value)}

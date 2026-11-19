@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
+import { getSelectByLabel } from '@/test/icon-select';
 
 // ---- Mock data ----
 
@@ -1036,7 +1037,7 @@ describe('TransactionForm', () => {
 
         // The user moves to their own account while the create is in flight.
         await act(async () => {
-          fireEvent.change(screen.getByLabelText('Account'), {
+          fireEvent.change(getSelectByLabel('Account'), {
             target: { value: 'acc-1' },
           });
         });
@@ -1955,7 +1956,7 @@ describe('TransactionForm', () => {
       expect(screen.getByRole('button', { name: /^Transaction$/ })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /^Split$/ })).toBeInTheDocument();
       expect(screen.queryByText('This is a linked transfer transaction')).not.toBeInTheDocument();
-      expect(screen.getByLabelText('To Account')).toBeInTheDocument();
+      expect(getSelectByLabel('To Account')).toBeInTheDocument();
     });
   });
 
@@ -2788,7 +2789,7 @@ describe('TransactionForm', () => {
       );
 
       await waitFor(() => {
-        const accountSelect = screen.getByLabelText('Account') as HTMLSelectElement;
+        const accountSelect = getSelectByLabel('Account') as HTMLSelectElement;
         expect(accountSelect.value).toBe('acc-1');
       });
     });
@@ -2886,8 +2887,8 @@ describe('TransactionForm', () => {
       });
 
       fireEvent.click(screen.getByRole('button', { name: /^Transfer$/ }));
-      await waitFor(() => expect(screen.getByLabelText('To Account')).toBeInTheDocument());
-      fireEvent.change(screen.getByLabelText('To Account'), { target: { value: 'acc-2' } });
+      await waitFor(() => expect(getSelectByLabel('To Account')).toBeInTheDocument());
+      fireEvent.change(getSelectByLabel('To Account'), { target: { value: 'acc-2' } });
 
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Convert to Transfer/i }));
@@ -3171,7 +3172,7 @@ describe('TransactionForm', () => {
         expect(screen.getByTestId('combobox-value-Payee')).not.toHaveTextContent(/^$/);
       });
       // Accounts have loaded and the account effect has run by now.
-      await waitFor(() => expect(screen.getByLabelText('Account')).toHaveValue('acc-1'));
+      await waitFor(() => expect(getSelectByLabel('Account')).toHaveValue('acc-1'));
       expect(screen.getByTestId('combobox-value-Category')).toHaveTextContent('cat-1');
     });
 
@@ -3185,7 +3186,7 @@ describe('TransactionForm', () => {
           defaultPayee={{ id: 'payee-1', name: 'Grocery Store', defaultCategoryId: 'cat-1' }}
         />
       );
-      await waitFor(() => expect(screen.getByLabelText('Account')).toHaveValue('acc-1'));
+      await waitFor(() => expect(getSelectByLabel('Account')).toHaveValue('acc-1'));
       expect(screen.getByTestId('combobox-value-Category')).toHaveTextContent('cat-1');
     });
 
@@ -4274,7 +4275,7 @@ describe('TransactionForm', () => {
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
 
       await waitFor(() => {
-        const accountSelect = screen.getByLabelText('Account') as HTMLSelectElement;
+        const accountSelect = getSelectByLabel('Account') as HTMLSelectElement;
         expect(accountSelect.value).toBe('');
       });
     });
@@ -4682,7 +4683,7 @@ describe('TransactionForm', () => {
         );
       });
       // ...but the account the user opened the form on is still selected.
-      expect((screen.getByLabelText('Account') as HTMLSelectElement).value).toBe(
+      expect((getSelectByLabel('Account') as HTMLSelectElement).value).toBe(
         'acc-1',
       );
     });
@@ -4773,7 +4774,7 @@ describe('TransactionForm', () => {
           '-30.00',
         );
       });
-      expect((screen.getByLabelText('Account') as HTMLSelectElement).value).toBe(
+      expect((getSelectByLabel('Account') as HTMLSelectElement).value).toBe(
         'acc-1',
       );
 
@@ -6066,7 +6067,7 @@ describe('TransactionForm', () => {
       await waitFor(() => {
         expect((document.querySelector('textarea') as HTMLTextAreaElement).value).toBe('');
       });
-      expect((screen.getByLabelText('Account') as HTMLSelectElement).value).toBe('acc-1');
+      expect((getSelectByLabel('Account') as HTMLSelectElement).value).toBe('acc-1');
       expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe(getLocalDateString());
     });
 
@@ -6087,7 +6088,7 @@ describe('TransactionForm', () => {
       await chooseCreateAndNew();
 
       await act(async () => {
-        fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'acc-2' } });
+        fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-2' } });
       });
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Create Transaction & New' }));
@@ -6099,7 +6100,7 @@ describe('TransactionForm', () => {
       // Resetting to the host's default here would send the next receipt to the
       // wrong account, which is the whole reason the account is carried over.
       await waitFor(() => {
-        expect((screen.getByLabelText('Account') as HTMLSelectElement).value).toBe('acc-2');
+        expect((getSelectByLabel('Account') as HTMLSelectElement).value).toBe('acc-2');
       });
 
       await act(async () => {

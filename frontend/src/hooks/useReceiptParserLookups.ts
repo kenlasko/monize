@@ -7,7 +7,7 @@ import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { createLogger } from '@/lib/logger';
 import { payeesApi } from '@/lib/payees';
-import type { Account } from '@/types/account';
+import type { Account, AccountType } from '@/types/account';
 import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
 import { withPayeeIcons } from '@/components/payees/withPayeeIcons';
 
@@ -28,6 +28,9 @@ export interface ReceiptParserAccountOption extends ReceiptParserOption {
    * the only kind the server lets a trade profile book to.
    */
   tradable: boolean;
+  /** What the account picker draws the row's mark from. */
+  accountType?: AccountType;
+  institutionId?: string | null;
 }
 
 export interface ReceiptParserLookups {
@@ -56,6 +59,8 @@ export function toReceiptAccountOptions(accounts: readonly Account[]): ReceiptPa
       label: account.name,
       currencyCode: account.currencyCode,
       tradable: isTradableAccount(account),
+      accountType: account.accountType,
+      institutionId: account.institutionId,
     }));
 }
 

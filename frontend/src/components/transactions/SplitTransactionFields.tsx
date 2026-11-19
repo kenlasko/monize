@@ -6,7 +6,6 @@ import { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
-import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { Transaction } from '@/types/transaction';
 import { Account } from '@/types/account';
@@ -18,6 +17,7 @@ import { RecentTransactionsPopover } from './RecentTransactionsPopover';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { NoteLinks } from '@/components/ui/LinkifiedText';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface SplitTransactionFieldsProps {
   register: UseFormRegister<any>;
@@ -89,7 +89,7 @@ export function SplitTransactionFields({
     <div className="space-y-4">
       {/* Row 1: Account, Date, and optionally Create Date */}
       <div className={`grid grid-cols-1 gap-4 ${createdAtSlot ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-        <Select
+        <AccountSelect
           label={t('form.fields.account')}
           error={errors.accountId?.message as string | undefined}
           value={watchedAccountId || ''}

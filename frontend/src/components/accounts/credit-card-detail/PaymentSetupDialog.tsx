@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { accountsApi } from '@/lib/accounts';
@@ -18,6 +17,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { createLogger } from '@/lib/logger';
 import type { Account } from '@/types/account';
 import type { StatementCycle } from '@/types/credit-card-detail';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('PaymentSetupDialog');
 
@@ -213,7 +213,7 @@ export function PaymentSetupDialog({
               )}
             </fieldset>
 
-            <Select
+            <AccountSelect
               label={t('payment.fromAccount')}
               value={fundingAccountId}
               onChange={(e) => setFundingAccountId(e.target.value)}

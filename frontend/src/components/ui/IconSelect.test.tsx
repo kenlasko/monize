@@ -155,6 +155,11 @@ describe('IconSelect', () => {
     expect(onSubmit.mock.calls[0][0]).toEqual({ accountId: 'a-2' });
   });
 
+  it('describes the field by its error', () => {
+    render(<IconSelect label="Account" options={options} value="" onChange={vi.fn()} error="Pick one" />);
+    expect(screen.getByRole('combobox', { name: 'Account' })).toHaveAccessibleDescription('Pick one');
+  });
+
   describe('placeList', () => {
     it('hangs under the field at its width, never narrower than a readable list', () => {
       expect(placeList({ left: 20, top: 100, bottom: 136, width: 400 }, 1280, 800)).toEqual({

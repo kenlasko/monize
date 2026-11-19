@@ -12,6 +12,7 @@ import {
   MAX_RULE_DESCRIPTION_TEMPLATE_LENGTH,
   MAX_RULE_PAYEE_TEMPLATE_LENGTH,
 } from '@/lib/rule-fields';
+import { nativeSelectOf, selectOptionLabels } from '@/test/icon-select';
 
 Element.prototype.scrollIntoView = vi.fn();
 
@@ -48,7 +49,7 @@ function Card({
   );
 }
 
-const optionLabels = (select: HTMLElement) => within(select).getAllByRole('option').map((o) => o.textContent);
+const optionLabels = (control: HTMLElement) => selectOptionLabels(nativeSelectOf(control));
 
 describe('RuleActionCard', () => {
   describe('usage guide', () => {
@@ -330,19 +331,19 @@ describe('RuleActionCard: convert to transfer', () => {
     expect(onAction).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: 'convert_to_transfer', direction: 'to', accountId: '', clearCategory: true, payeeId: '' }),
     );
-    expect(screen.getByLabelText('To Account')).toHaveValue('');
+    expect(nativeSelectOf(screen.getByLabelText('To Account'))).toHaveValue('');
     expect(screen.getByRole('switch', { name: 'Clear the category' })).toHaveAttribute('aria-checked', 'true');
   });
 
   it('stores an expense as toAccountId and an income as fromAccountId', () => {
     const onAction = vi.fn();
     render(<Card initial={createAction('convert_to_transfer')} onAction={onAction} />);
-    fireEvent.change(screen.getByLabelText('To Account'), { target: { value: ACCOUNT } });
+    fireEvent.change(nativeSelectOf(screen.getByLabelText('To Account')), { target: { value: ACCOUNT } });
     const expense = onAction.mock.lastCall?.[0] as EditorAction;
     expect(actionToApi(expense)).toEqual({ type: 'convert_to_transfer', toAccountId: ACCOUNT, clearCategory: true });
 
     fireEvent.change(screen.getByLabelText('Direction'), { target: { value: 'from' } });
-    expect(screen.getByLabelText('From Account')).toHaveValue(ACCOUNT);
+    expect(nativeSelectOf(screen.getByLabelText('From Account'))).toHaveValue(ACCOUNT);
     const income = onAction.mock.lastCall?.[0] as EditorAction;
     expect(actionToApi(income)).toEqual({ type: 'convert_to_transfer', fromAccountId: ACCOUNT, clearCategory: true });
   });
@@ -364,7 +365,7 @@ describe('RuleActionCard: convert to transfer', () => {
         onChange={vi.fn()}
       />,
     );
-    expect(screen.getByLabelText('To Account')).toHaveValue(ACCOUNT);
+    expect(nativeSelectOf(screen.getByLabelText('To Account'))).toHaveValue(ACCOUNT);
   });
 
   it('turns the category clearing off and picks a payee for both legs', () => {
@@ -389,8 +390,9 @@ describe('RuleActionCard: convert to transfer', () => {
         fieldErrors={structuralFieldErrors(placed, 0)}
       />,
     );
-    const select = screen.getByLabelText('To Account');
-    expect(select.parentElement).toHaveTextContent('An item chosen here no longer exists. Choose another.');
+    expect(screen.getByLabelText('To Account')).toHaveAccessibleDescription(
+      'An item chosen here no longer exists. Choose another.',
+    );
     // The card's own list holds only the code with no field; the field's code is not said twice.
     expect(screen.getAllByText(/An item chosen here no longer exists/)).toHaveLength(1);
     expect(screen.getByText(/cannot be combined with/)).toBeInTheDocument();
@@ -462,7 +464,7 @@ describe('RuleActionCard: split', () => {
 
     fireEvent.change(within(part(1)).getByLabelText('Amount'), { target: { value: '{principal}' } });
     fireEvent.change(within(part(1)).getByLabelText('Type'), { target: { value: 'transfer' } });
-    fireEvent.change(within(part(1)).getByLabelText('Account'), { target: { value: ACCOUNT } });
+    fireEvent.change(nativeSelectOf(within(part(1)).getByLabelText('Account')), { target: { value: ACCOUNT } });
     fireEvent.focus(within(part(1)).getByPlaceholderText('Select or type payee name...'));
     fireEvent.click(screen.getByText('Corner Cafe'));
 
@@ -491,7 +493,7 @@ describe('RuleActionCard: split', () => {
 
   it('shows the payee field for a transfer part only, and clears the other kind when the kind changes', () => {
     render(<Card initial={loan} captures={captures} />);
-    expect(within(part(1)).getByLabelText('Account')).toHaveValue(ACCOUNT);
+    expect(nativeSelectOf(within(part(1)).getByLabelText('Account'))).toHaveValue(ACCOUNT);
     expect(within(part(1)).getByText('Payee of the other leg (optional)')).toBeInTheDocument();
     expect(within(part(2)).queryByText('Payee of the other leg (optional)')).not.toBeInTheDocument();
 
@@ -551,7 +553,7 @@ describe('RuleActionCard: split', () => {
     expect(within(part(2)).getByLabelText('Amount').parentElement).toHaveTextContent(
       'This uses a capture that no condition of this rule defines.',
     );
-    expect(within(part(1)).getByLabelText('Account').parentElement).toHaveTextContent('Enter or choose a value.');
+    expect(within(part(1)).getByLabelText('Account')).toHaveAccessibleDescription('Enter or choose a value.');
     expect(within(part(2)).getByText('The text is too long.')).toBeInTheDocument();
     expect(screen.getByText('Too many items are chosen.')).toBeInTheDocument();
     expect(screen.getByText(/cannot be combined with/)).toBeInTheDocument();

@@ -87,7 +87,7 @@ describe("Personal booking review", () => {
         onSaved={vi.fn()}
       />,
     );
-    await screen.findByRole("option", { name: "My bank · PLN" });
+    await screen.findByRole("option", { name: "My bank · PLN", hidden: true });
     fireEvent.click(screen.getAllByText("More Options").at(-1)!);
     fireEvent.click(
       screen.getByRole("button", { name: "Add Another Payment" }),
@@ -132,7 +132,7 @@ describe("Personal booking review", () => {
         onCommit={onCommit}
       />,
     );
-    await screen.findByRole("option", { name: "My bank · PLN" });
+    await screen.findByRole("option", { name: "My bank · PLN", hidden: true });
     fireEvent.click(screen.getByRole("button", { name: "Preview Changes" }));
     fireEvent.click(
       await screen.findByRole("button", { name: "Save to My Finances" }),

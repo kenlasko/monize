@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@/test/render';
 import { SecurityTransactionHistory } from './SecurityTransactionHistory';
 import { investmentsApi } from '@/lib/investments';
+import { getSelectByLabel } from '@/test/icon-select';
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
@@ -113,7 +114,7 @@ describe('SecurityTransactionHistory', () => {
   it('loads and shows transactions with the cross-account running total', async () => {
     await renderHistory();
     await waitFor(() => {
-      expect(screen.getByLabelText('Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Account')).toBeInTheDocument();
     });
     // Cross-account running totals are shown in "All accounts" mode.
     expect(screen.getByText('150')).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe('SecurityTransactionHistory', () => {
     // page header, and rendering it again duplicated it on screen.
     await renderHistory();
     await waitFor(() => {
-      expect(screen.getByLabelText('Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Account')).toBeInTheDocument();
     });
     expect(screen.queryByText('ACME')).not.toBeInTheDocument();
     expect(screen.queryByText('Inactive')).not.toBeInTheDocument();
@@ -137,11 +138,11 @@ describe('SecurityTransactionHistory', () => {
   it('filters to a single account and shows its per-account running total', async () => {
     await renderHistory();
     await waitFor(() => {
-      expect(screen.getByLabelText('Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Account')).toBeInTheDocument();
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Account'), { target: { value: 'a1' } });
+      fireEvent.change(getSelectByLabel('Account'), { target: { value: 'a1' } });
     });
 
     // Account B's transaction (running-all 150) is filtered out.
@@ -154,7 +155,7 @@ describe('SecurityTransactionHistory', () => {
     const onChanged = vi.fn();
     await renderHistory({ onChanged });
     await waitFor(() => {
-      expect(screen.getByLabelText('Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Account')).toBeInTheDocument();
     });
     expect(investmentsApi.getSecurityTransactionHistory).toHaveBeenCalledTimes(1);
 
@@ -190,7 +191,7 @@ describe('SecurityTransactionHistory', () => {
     const onChanged = vi.fn();
     await renderHistory({ onChanged });
     await waitFor(() => {
-      expect(screen.getByLabelText('Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Account')).toBeInTheDocument();
     });
     expect(investmentsApi.getSecurityTransactionHistory).toHaveBeenCalledTimes(1);
 
@@ -219,7 +220,7 @@ describe('SecurityTransactionHistory', () => {
     // the captions that ride in the markup at every width.
     await renderHistory();
     await waitFor(() => {
-      expect(screen.getByLabelText('Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Account')).toBeInTheDocument();
     });
 
     // Every data row carries the wrapped-card grid and restores the table row
@@ -248,7 +249,7 @@ describe('SecurityTransactionHistory', () => {
     // card row cannot reopen horizontal scroll while the desktop size is unchanged.
     await renderHistory();
     await waitFor(() => {
-      expect(screen.getByLabelText('Account')).toBeInTheDocument();
+      expect(getSelectByLabel('Account')).toBeInTheDocument();
     });
 
     const cells = screen.getAllByRole('cell');

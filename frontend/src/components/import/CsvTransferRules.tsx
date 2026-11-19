@@ -4,7 +4,9 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { CsvTransferRule } from '@/lib/import';
 import { Account } from '@/types/account';
-import { orderAccountsForPicker } from '@/lib/account-utils';
+import { accountSelectOption, orderAccountsForPicker, type AccountSelectOption } from '@/lib/account-utils';
+import { SEPARATOR_VALUE } from '@/components/ui/IconSelect';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface CsvTransferRulesProps {
   rules: CsvTransferRule[];
@@ -22,6 +24,18 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
   // by name. This block was a hand-copied version of exactly that.
   const { favourites: favouriteAccounts, rest: nonFavouriteAccounts } =
     orderAccountsForPicker(filtered);
+  // A rule names its account by NAME (the CSV carries names), so each row's
+  // value is the name; the mark is still the account's own.
+  const toOption = (account: Account) => ({ ...accountSelectOption(account, account.name), value: account.name });
+  const accountNameOptions: AccountSelectOption[] = [
+    { value: '', label: t('transferRules.selectAccount') },
+    ...favouriteAccounts.map(toOption),
+    ...(favouriteAccounts.length > 0 && nonFavouriteAccounts.length > 0
+      ? [{ value: SEPARATOR_VALUE, label: '', disabled: true }]
+      : []),
+    ...nonFavouriteAccounts.map(toOption),
+  ];
+
   const addRule = () => {
     onChange([...rules, { type: 'payee', pattern: '', accountName: '' }]);
   };
@@ -83,26 +97,15 @@ export function CsvTransferRules({ rules, onChange, accounts }: CsvTransferRules
           </div>
           <div className="flex items-center gap-2 md:flex-1">
             <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{t('transferRules.asTransferFromTo')}</span>
-            <select
-              value={rule.accountName}
-              onChange={(e) => updateRule(index, 'accountName', e.target.value)}
-              className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">{t('transferRules.selectAccount')}</option>
-              {favouriteAccounts.map((account) => (
-                <option key={account.id} value={account.name}>
-                  {account.name}
-                </option>
-              ))}
-              {favouriteAccounts.length > 0 && nonFavouriteAccounts.length > 0 && (
-                <option disabled value="">{'────────────────────'}</option>
-              )}
-              {nonFavouriteAccounts.map((account) => (
-                <option key={account.id} value={account.name}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex-1 min-w-0">
+              <AccountSelect
+                aria-label={t('transferRules.selectAccount')}
+                value={rule.accountName}
+                onChange={(e) => updateRule(index, 'accountName', e.target.value)}
+                className="px-2 py-1.5 text-sm"
+                options={accountNameOptions}
+              />
+            </div>
             <button
               onClick={() => removeRule(index)}
               className="hidden md:inline-flex text-red-500 hover:text-red-700 text-sm px-1"
