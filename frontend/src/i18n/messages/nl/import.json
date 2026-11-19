@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Gedetecteerd type:",
     "investmentFileNotice": "Dit bestand bevat beleggingstransacties. Alleen effectenrekeningen worden getoond.",
     "importIntoAccount": "Importeren in rekening",
+    "importFileIntoAccount": "{fileName} importeren in rekening",
     "createNewAccount": "+ Nieuwe rekening aanmaken",
     "createNew": "+ Nieuw aanmaken",
     "createNewAccountTitle": "Nieuwe rekening aanmaken",

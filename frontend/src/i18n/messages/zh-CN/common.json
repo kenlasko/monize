@@ -144,6 +144,10 @@
     "createOption": "创建 \"{value}\"",
     "deleteOption": "删除“{value}”"
   },
+  "iconSelect": {
+    "filter": "搜索...",
+    "noMatches": "无匹配项"
+  },
   "passwordInput": {
     "show": "显示输入",
     "hide": "隐藏输入"

@@ -26,6 +26,7 @@ import { sharedExpensesApi } from "@/lib/shared-expenses";
 import { payeesApi } from "@/lib/payees";
 import type { SharedPerson } from "@/types/shared-expense";
 import { SharedAmount, SharedError, SharedNotice } from "./SharedPrimitives";
+import { payeeOptionIcon } from "@/components/payees/withPayeeIcons";
 
 export function SharedPeople({
   linkedPayeeId,
@@ -261,6 +262,7 @@ export function SharedPeople({
               options={(payees.data ?? []).map((p) => ({
                 value: p.id,
                 label: p.name,
+                icon: payeeOptionIcon(p),
               }))}
               value={payeeId}
               onChange={setPayee}

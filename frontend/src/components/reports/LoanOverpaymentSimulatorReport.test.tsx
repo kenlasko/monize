@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, fireEvent } from '@/test/render';
 import { LoanOverpaymentSimulatorReport } from './LoanOverpaymentSimulatorReport';
 import { Account } from '@/types/account';
+import { nativeSelectOf } from '@/test/icon-select';
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -98,8 +99,8 @@ describe('LoanOverpaymentSimulatorReport', () => {
 
     await renderReport();
 
-    const select = screen.getByRole('combobox');
-    const options = Array.from(select.querySelectorAll('option')).map((o) => o.textContent);
+    const select = nativeSelectOf(screen.getByRole('combobox'));
+    const options = Array.from(select.querySelectorAll('option')).map((o) => o.label);
     expect(options).toEqual(['Car Loan', 'Mortgage']); // Checking excluded, sorted
     expect(screen.getByTestId('loan-detail-view')).toHaveTextContent('Car Loan');
     expect(loanViewProps?.transactions).toHaveLength(1);
@@ -126,7 +127,7 @@ describe('LoanOverpaymentSimulatorReport', () => {
     await renderReport();
 
     await act(async () => {
-      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'mtg-1' } });
+      fireEvent.change(nativeSelectOf(screen.getByRole('combobox')), { target: { value: 'mtg-1' } });
     });
     await act(async () => {}); // flush the dependent fetch
 
@@ -191,7 +192,7 @@ describe('LoanOverpaymentSimulatorReport', () => {
 
     await renderReport();
 
-    expect(screen.getByRole('combobox')).toHaveValue('mtg-1');
+    expect(nativeSelectOf(screen.getByRole('combobox'))).toHaveValue('mtg-1');
     expect(screen.getByTestId('loan-detail-view')).toHaveTextContent('Mortgage');
   });
 
@@ -204,6 +205,6 @@ describe('LoanOverpaymentSimulatorReport', () => {
 
     await renderReport();
 
-    expect(screen.getByRole('combobox')).toHaveValue('loan-1');
+    expect(nativeSelectOf(screen.getByRole('combobox'))).toHaveValue('loan-1');
   });
 });

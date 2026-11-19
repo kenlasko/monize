@@ -24,6 +24,8 @@ import type {
 import { SharedAmount, SharedError, SharedNotice } from "./SharedPrimitives";
 import { SharedBankPaymentEditor } from "./SharedBankPaymentEditor";
 import { newClientId } from "@/lib/client-id";
+import { withCategoryIcons } from "@/components/categories/CategoryPickerIcon";
+import { payeeOptionIcon } from "@/components/payees/withPayeeIcons";
 
 export function SharedBooking({
   group,
@@ -99,9 +101,12 @@ export function SharedBooking({
         a.accountType,
       ),
   );
-  const categoryOptions = getCategorySelectOptions(
+  const categoryOptions = withCategoryIcons(
+    getCategorySelectOptions(options.data?.categories ?? [], {
+      includeEmpty: true,
+      emptyLabel: t("choose"),
+    }),
     options.data?.categories ?? [],
-    { includeEmpty: true, emptyLabel: t("choose") },
   );
   const change = (patch: Partial<SharedFinanceInput>) => {
     setInput({ ...input, ...patch });
@@ -341,6 +346,7 @@ export function SharedBooking({
               options={(options.data?.payees ?? []).map((p) => ({
                 value: p.id,
                 label: p.name,
+                icon: payeeOptionIcon(p),
               }))}
               value={input.payeeId ?? ""}
               onChange={(payeeId) => change({ payeeId: payeeId || undefined })}

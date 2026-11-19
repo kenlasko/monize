@@ -1,11 +1,10 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Combobox } from "@/components/ui/Combobox";
-import { Select } from "@/components/ui/Select";
 import { NumericInput } from "@/components/ui/NumericInput";
 import { useReportData } from "@/hooks/useReportData";
 import { transactionsApi } from "@/lib/transactions";
@@ -21,6 +20,8 @@ import {
   SharedTabs,
 } from "./SharedPrimitives";
 import { SharedTransactionPicker } from "./SharedTransactionPicker";
+import { accountSelectOption } from "@/lib/account-utils";
+import { AccountSelect } from "@/components/accounts/shared/AccountSelect";
 
 /** One own payment. The parent allocates the contribution between these sources. */
 export function SharedBankPaymentEditor({
@@ -36,7 +37,7 @@ export function SharedBankPaymentEditor({
   input: SharedBankPaymentInput;
   onChange: (patch: Partial<SharedBankPaymentInput>) => void;
   accounts: Account[];
-  categories: { value: string; label: string }[];
+  categories: { value: string; label: string; icon?: ReactNode }[];
   groupCurrency: string;
   originalCurrency: string;
   multiple: boolean;
@@ -111,7 +112,7 @@ export function SharedBankPaymentEditor({
           onChange(clearSource);
         }}
       />
-      <Select
+      <AccountSelect
         id={`${inputId}-account`}
         label={t("bankAccount")}
         value={
@@ -121,10 +122,7 @@ export function SharedBankPaymentEditor({
         }
         options={[
           { value: "", label: t("choose") },
-          ...accounts.map((a) => ({
-            value: a.id,
-            label: `${a.name} · ${a.currencyCode}`,
-          })),
+          ...accounts.map((a) => accountSelectOption(a, `${a.name} · ${a.currencyCode}`)),
         ]}
         onChange={(e) => {
           setMatchingAccount(e.target.value);

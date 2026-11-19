@@ -513,6 +513,7 @@
       "ariaAmountsIn": "{code} में विभाजित राशियाँ दिखाएँ और संपादित करें"
     },
     "splitLabel": "विभाजन {number}",
+    "accountForSplit": "विभाजन {number} का खाता",
     "columns": {
       "type": "प्रकार",
       "categoryAccount": "श्रेणी / खाता",

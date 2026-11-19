@@ -19,6 +19,7 @@ import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { OverpaymentRecognitionFields } from './OverpaymentRecognitionFields';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('LoanFields');
 
@@ -30,6 +31,8 @@ interface LoanFieldsProps {
   paymentFrequency: PaymentFrequency | undefined;
   paymentStartDate: string | undefined;
   openingBalance: number | undefined;
+  /** The watched Payment From account, so the picker shows what the form holds. */
+  sourceAccountId?: string;
   setValue: UseFormSetValue<any>;
   register: UseFormRegister<any>;
   errors: FieldErrors<any>;
@@ -68,6 +71,7 @@ export function LoanFields({
   paymentFrequency,
   paymentStartDate,
   openingBalance,
+  sourceAccountId,
   setValue,
   register,
   errors,
@@ -178,7 +182,7 @@ export function LoanFields({
           {...register('paymentStartDate')}
         />
 
-        <Select
+        <AccountSelect
           label={t('loanFields.paymentFromAccount')}
           options={[
             { value: '', label: t('loanFields.selectAccount') },
@@ -189,6 +193,7 @@ export function LoanFields({
             ),
           ]}
           error={errors.sourceAccountId?.message as string | undefined}
+          value={sourceAccountId ?? ''}
           {...register('sourceAccountId')}
         />
       </div>

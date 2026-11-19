@@ -15,6 +15,8 @@ import {
   type TradeAccountRuleRow,
 } from '@/lib/receipt-parser-form';
 import { RECEIPT_PARSER_LIMITS } from '@/types/email-receipts';
+import type { AccountSelectOption } from '@/lib/account-utils';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 type Translator = ReturnType<typeof useTranslations>;
 
@@ -29,12 +31,17 @@ export function tradeAccountOptions(
   heldId: string,
   placeholder: string,
   t: Translator,
-): { value: string; label: string }[] {
-  const options = [
+): AccountSelectOption[] {
+  const options: AccountSelectOption[] = [
     { value: '', label: placeholder },
     ...accounts
       .filter((account) => account.tradable)
-      .map((account) => ({ value: account.value, label: t('accountOption', { name: account.label, currency: account.currencyCode }) })),
+      .map((account) => ({
+        value: account.value,
+        label: t('accountOption', { name: account.label, currency: account.currencyCode }),
+        accountType: account.accountType,
+        institutionId: account.institutionId,
+      })),
   ];
   if (heldId === '' || options.some((option) => option.value === heldId)) return options;
   const held = accounts.find((account) => account.value === heldId);
@@ -146,7 +153,7 @@ export function TradeAccountRulesFields({ form, accounts, currencies, baseCurren
                     options={currencyOptions}
                     onChange={(e) => update(rule.id, { currency: e.target.value })}
                   />
-                  <Select
+                  <AccountSelect
                     id={`parser-trade-rule-${rule.id}-account`}
                     aria-label={t('ruleAccountLabel', { rule: number })}
                     value={rule.accountId}
@@ -191,7 +198,7 @@ export function TradeAccountRulesFields({ form, accounts, currencies, baseCurren
       </div>
 
       <div>
-        <Select
+        <AccountSelect
           id="parser-trade-default-account"
           label={t('defaultAccountLabel')}
           value={form.tradeDefaultAccountId}

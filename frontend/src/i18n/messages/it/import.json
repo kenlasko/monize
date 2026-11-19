@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Tipo rilevato:",
     "investmentFileNotice": "Questo file contiene transazioni di investimento. Vengono mostrati solo i conti di intermediazione.",
     "importIntoAccount": "Importa nel conto",
+    "importFileIntoAccount": "Importa {fileName} nel conto",
     "createNewAccount": "+ Crea nuovo conto",
     "createNew": "+ Crea nuovo",
     "createNewAccountTitle": "Crea nuovo conto",

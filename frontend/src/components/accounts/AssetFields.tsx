@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { DateInput } from '@/components/ui/DateInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { Category } from '@/types/category';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 interface AssetFieldsProps {
   categories: Category[];
@@ -48,6 +49,7 @@ export function AssetFields({
           label: c.parentId
             ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
             : c.name,
+          icon: <CategoryPickerIcon category={c} />,
         })).sort((a, b) => a.label.localeCompare(b.label))}
         value={selectedAssetCategoryId}
         initialDisplayValue={assetCategoryName || accountAssetCategoryId ? categories.find(c => c.id === (selectedAssetCategoryId || accountAssetCategoryId))?.name : ''}

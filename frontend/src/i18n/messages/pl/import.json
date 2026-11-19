@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Wykryty typ:",
     "investmentFileNotice": "Ten plik zawiera transakcje inwestycyjne. Wyświetlane są tylko konta maklerskie.",
     "importIntoAccount": "Importuj na konto",
+    "importFileIntoAccount": "Importuj {fileName} na konto",
     "createNewAccount": "+ Utwórz nowe konto",
     "createNew": "+ Utwórz nowe",
     "createNewAccountTitle": "Utwórz nowe konto",

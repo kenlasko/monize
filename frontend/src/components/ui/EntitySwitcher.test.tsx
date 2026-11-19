@@ -116,6 +116,17 @@ describe('EntitySwitcher', () => {
     expect(screen.getByRole('menuitem', { name: /Thing number 3/ })).toBeInTheDocument();
   });
 
+  it("draws an item's icon before its name, hidden from assistive technology", () => {
+    open([
+      item('item-1', 'Alpha'),
+      { ...item('item-2', 'Beta'), icon: <span data-testid="beta-icon">B</span> },
+    ]);
+    const row = screen.getByRole('menuitem', { name: 'Beta' });
+    const icon = within(row).getByTestId('beta-icon');
+    expect(icon.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(row.firstElementChild).toBe(icon.parentElement);
+  });
+
   describe('showCurrent', () => {
     function openShowingCurrent(items: EntitySwitcherItem[], currentId: string) {
       const onSelect = vi.fn();
@@ -275,6 +286,31 @@ describe('EntitySwitcher', () => {
       expect(placed.bottom).toBe(800 - 700 + 4);
       expect(placed.top).toBeUndefined();
       expect(placed.maxHeight).toBeLessThanOrEqual(700);
+    });
+
+    it('stops a menu below the caret at its usual height by default', () => {
+      const placed = placeMenu({ left: 40, top: 16, bottom: 40 }, 1280, 1000);
+      expect(placed.maxHeight).toBe(336);
+    });
+
+    it('lets a tall menu take all the room below the caret, inside the margin', () => {
+      // A desktop reader with thirty accounts sees them without scrolling the list.
+      const placed = placeMenu({ left: 40, top: 16, bottom: 40 }, 1280, 1000, Infinity);
+      expect(placed.maxHeight).toBe(1000 - 40 - 4 - VIEWPORT_MARGIN);
+    });
+
+    it('draws a tall menu taller than the default one in a roomy viewport', () => {
+      const originalHeight = window.innerHeight;
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: 1000 });
+      try {
+        render(
+          <EntitySwitcher currentId="item-0" items={many(30)} onSelect={vi.fn()} tall {...LABELS} />,
+        );
+        fireEvent.click(screen.getByRole('button', { name: LABELS.triggerLabel }));
+        expect(Number.parseFloat(screen.getByRole('menu').style.maxHeight)).toBeGreaterThan(336);
+      } finally {
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalHeight });
+      }
     });
 
     it('renders the menu in a portal, so a clipping or transformed ancestor cannot cut it off', () => {

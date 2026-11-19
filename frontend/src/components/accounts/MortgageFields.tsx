@@ -29,6 +29,7 @@ import { createLogger } from '@/lib/logger';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('MortgageFields');
 
@@ -486,7 +487,7 @@ export function MortgageFields({
       {/* Editable after creation: the server moves the scheduled payment and
           the payment-matching rule to the new account on save. */}
       <div>
-        <Select
+        <AccountSelect
           label={t('mortgageFields.paymentFromAccount')}
           options={[
             { value: '', label: t('mortgageFields.selectAccount') },
@@ -497,6 +498,7 @@ export function MortgageFields({
             ),
           ]}
           error={errors.sourceAccountId?.message as string | undefined}
+          value={sourceAccountId ?? ''}
           {...register('sourceAccountId')}
         />
         {isEditing && (

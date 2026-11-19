@@ -15,6 +15,7 @@ import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
 import { Category } from '@/types/category';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 const buildCategorySchema = (t: (key: string) => string) => z.object({
   name: z.string().min(1, t('validation.nameRequired')).max(255),
@@ -140,6 +141,7 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
     return {
       value: cat.id,
       label: displayName,
+      icon: <CategoryPickerIcon category={cat} />,
     };
   });
 

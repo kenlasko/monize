@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { LoanAmortizationReport } from './LoanAmortizationReport';
+import { nativeSelectOf } from '@/test/icon-select';
+
+/** The account picker's option labelled `label`, or null. */
+const offeredAccount = (label: string) =>
+  Array.from(nativeSelectOf(screen.getByRole('combobox')).options).find((o) => o.label === label) ?? null;
 
 vi.mock('@/lib/csv-export', () => ({
   exportToCsv: vi.fn(),
@@ -241,8 +246,8 @@ describe('LoanAmortizationReport', () => {
       expect(screen.getByText('Select Loan')).toBeInTheDocument();
     });
     // Both accounts should appear as options
-    expect(screen.getByText('Car Loan')).toBeInTheDocument();
-    expect(screen.getByText('Home Mortgage')).toBeInTheDocument();
+    expect(offeredAccount('Car Loan')).toBeInTheDocument();
+    expect(offeredAccount('Home Mortgage')).toBeInTheDocument();
   });
 
   it('filters out non-loan account types', async () => {
@@ -267,8 +272,8 @@ describe('LoanAmortizationReport', () => {
     await waitFor(() => {
       expect(screen.getByText('Select Loan')).toBeInTheDocument();
     });
-    expect(screen.getByText('Car Loan')).toBeInTheDocument();
-    expect(screen.queryByText('Chequing')).not.toBeInTheDocument();
+    expect(offeredAccount('Car Loan')).toBeInTheDocument();
+    expect(offeredAccount('Chequing')).not.toBeInTheDocument();
   });
 
   it('shows "No payments found" when account has no transactions', async () => {
@@ -1176,7 +1181,7 @@ describe('LoanAmortizationReport', () => {
     mockGetAllPages.mockResolvedValue([]);
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveValue('loan-2');
+      expect(nativeSelectOf(screen.getByRole('combobox'))).toHaveValue('loan-2');
     });
   });
 
@@ -1201,7 +1206,7 @@ describe('LoanAmortizationReport', () => {
     mockGetAllPages.mockResolvedValue([]);
     await renderReport();
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveValue('loan-1');
+      expect(nativeSelectOf(screen.getByRole('combobox'))).toHaveValue('loan-1');
     });
   });
 });

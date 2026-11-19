@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { AccountMapping } from '@/lib/import';
+import type { AccountSelectOption } from '@/lib/account-utils';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 
 interface MapAccountsStepProps {
   accountMappings: AccountMapping[];
   handleAccountMappingChange: (index: number, field: keyof AccountMapping, value: string) => void;
-  accountOptions: Array<{ value: string; label: string }>;
+  accountOptions: AccountSelectOption[];
   accountTypeOptions: Array<{ value: string; label: string }>;
   currencyOptions: Array<{ value: string; label: string }>;
   defaultCurrency: string;
@@ -59,7 +61,7 @@ export function MapAccountsStep({
                 {mapping.originalName}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
+                <AccountSelect
                   label={t('mapAccounts.mapToExisting')}
                   options={accountOptions}
                   value={mapping.accountId || ''}

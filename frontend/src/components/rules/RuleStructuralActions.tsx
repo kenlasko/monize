@@ -26,6 +26,7 @@ import {
 } from '@/lib/rule-actions';
 import type { StructuralFieldErrors } from '@/lib/rule-errors';
 import { MAX_RULE_SPLIT_DESCRIPTION_LENGTH, MAX_RULE_SPLIT_PARTS } from '@/lib/rule-fields';
+import { IconSelect } from '@/components/ui/IconSelect';
 
 type ConvertAction = Extract<EditorAction, { type: 'convert_to_transfer' }>;
 type SplitEditorAction = Extract<EditorAction, { type: 'split' }>;
@@ -89,7 +90,7 @@ export function ConvertToTransferFields({ action, options, onChange, fields }: C
             }
           }}
         />
-        <Select
+        <IconSelect
           id={`${action.uid}-account`}
           label={toSide ? tx('fields.toAccount') : tx('fields.fromAccount')}
           value={action.accountId}
@@ -206,7 +207,7 @@ function SplitPartRow({ part, index, parts, captures, options, onChange, onRemov
         />
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Select
+          <IconSelect
             id={`${part.uid}-account`}
             label={t('partAccount')}
             value={part.transferAccountId}

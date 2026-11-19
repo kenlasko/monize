@@ -4,6 +4,7 @@ import { TransferTransactionFields } from './TransferTransactionFields';
 import { Account, TransferCandidate } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import { getSelectByLabel } from '@/test/icon-select';
 
 let mockActingAsUserId: string | null = null;
 vi.mock('@/store/authStore', () => ({
@@ -262,9 +263,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const fromSelect = screen.getByLabelText('From Account');
+    const fromSelect = getSelectByLabel('From Account');
     const options = Array.from(fromSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Chequing (CAD)');
     expect(labels).not.toContain('Brokerage (CAD)');
@@ -291,9 +292,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const toSelect = screen.getByLabelText('To Account');
+    const toSelect = getSelectByLabel('To Account');
     const options = Array.from(toSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Savings (CAD)');
     expect(labels).not.toContain('Brokerage (CAD)');
@@ -313,9 +314,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const toSelect = screen.getByLabelText('To Account');
+    const toSelect = getSelectByLabel('To Account');
     const options = Array.from(toSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Savings (CAD)');
     expect(labels).not.toContain('Chequing (CAD)');
@@ -332,9 +333,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const fromSelect = screen.getByLabelText('From Account');
+    const fromSelect = getSelectByLabel('From Account');
     const options = Array.from(fromSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Open Account (CAD)');
     // Closed accounts are shown but disabled (unless currently selected)
@@ -353,9 +354,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const fromSelect = screen.getByLabelText('From Account');
+    const fromSelect = getSelectByLabel('From Account');
     const options = Array.from(fromSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Closed Account (CAD) (Closed)');
   });
@@ -372,9 +373,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const fromSelect = screen.getByLabelText('From Account');
+    const fromSelect = getSelectByLabel('From Account');
     const fromOptions = Array.from(fromSelect.querySelectorAll('option'));
-    const fromLabels = fromOptions.slice(1).map(o => o.textContent);
+    const fromLabels = fromOptions.slice(1).map(o => o.label);
 
     expect(fromLabels).toEqual([
       'Alpha (CAD)',
@@ -548,7 +549,7 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const toSelect = screen.getByLabelText('To Account');
+    const toSelect = getSelectByLabel('To Account');
     fireEvent.change(toSelect, { target: { value: 'acc-2' } });
 
     expect(defaultProps.setTransferToAccountId).toHaveBeenCalledWith('acc-2');
@@ -565,7 +566,7 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const toSelect = screen.getByLabelText('To Account');
+    const toSelect = getSelectByLabel('To Account');
     fireEvent.change(toSelect, { target: { value: 'acc-2' } });
 
     expect(defaultProps.setTransferTargetAmount).toHaveBeenCalledWith(undefined);
@@ -586,7 +587,7 @@ describe('TransferTransactionFields', () => {
 
     const payeeSelect = screen.getByTestId('combobox-select-Payee (optional)');
     const options = Array.from(payeeSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('Bank Transfer');
     expect(labels).toContain('Wire Service');
@@ -619,10 +620,10 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const toSelect = screen.getByLabelText('To Account');
+    const toSelect = getSelectByLabel('To Account');
     const firstOption = toSelect.querySelector('option');
 
-    expect(firstOption?.textContent).toBe('Select destination account...');
+    expect(firstOption?.label).toBe('Select destination account...');
   });
 
   it('calls setValue for amount when Transfer Amount changes', () => {
@@ -649,9 +650,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const fromSelect = screen.getByLabelText('From Account');
+    const fromSelect = getSelectByLabel('From Account');
     const options = Array.from(fromSelect.querySelectorAll('option'));
-    const labels = options.map(o => o.textContent);
+    const labels = options.map(o => o.label);
 
     expect(labels).toContain('CAD Account (CAD)');
     expect(labels).toContain('US Account (USD)');
@@ -673,9 +674,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const toSelect = screen.getByLabelText('To Account');
+    const toSelect = getSelectByLabel('To Account');
     const labels = Array.from(toSelect.querySelectorAll('option')).map(
-      (o) => o.textContent,
+      (o) => o.label,
     );
     expect(labels).toContain('Hidden account');
   });
@@ -691,9 +692,9 @@ describe('TransferTransactionFields', () => {
       />
     );
 
-    const fromSelect = screen.getByLabelText('From Account');
+    const fromSelect = getSelectByLabel('From Account');
     const labels = Array.from(fromSelect.querySelectorAll('option')).map(
-      (o) => o.textContent,
+      (o) => o.label,
     );
     expect(labels).toContain('Hidden account');
   });
@@ -708,9 +709,9 @@ describe('TransferTransactionFields', () => {
         />,
       );
 
-      const toSelect = screen.getByLabelText('To Account');
+      const toSelect = getSelectByLabel('To Account');
       const labels = Array.from(toSelect.querySelectorAll('option')).map(
-        (o) => o.textContent,
+        (o) => o.label,
       );
       expect(labels).toContain('Shared with you');
       expect(labels).toContain('Owner Chequing (CAD) — Alice Owner');
@@ -726,9 +727,9 @@ describe('TransferTransactionFields', () => {
         />,
       );
 
-      const toSelect = screen.getByLabelText('To Account');
+      const toSelect = getSelectByLabel('To Account');
       const labels = Array.from(toSelect.querySelectorAll('option')).map(
-        (o) => o.textContent,
+        (o) => o.label,
       );
       expect(labels).toContain('Your accounts');
     });
@@ -745,9 +746,9 @@ describe('TransferTransactionFields', () => {
         />,
       );
 
-      const toSelect = screen.getByLabelText('To Account');
+      const toSelect = getSelectByLabel('To Account');
       const labels = Array.from(toSelect.querySelectorAll('option')).map(
-        (o) => o.textContent,
+        (o) => o.label,
       );
       expect(labels).toContain('Creatable (CAD) — Alice Owner');
       expect(labels).not.toContain('ReadOnly (CAD) — Alice Owner');
@@ -770,9 +771,9 @@ describe('TransferTransactionFields', () => {
         />,
       );
 
-      const toSelect = screen.getByLabelText('To Account');
+      const toSelect = getSelectByLabel('To Account');
       const labels = Array.from(toSelect.querySelectorAll('option')).map(
-        (o) => o.textContent,
+        (o) => o.label,
       );
       expect(labels).not.toContain('NoEdit (CAD) — Alice Owner');
     });
@@ -787,9 +788,9 @@ describe('TransferTransactionFields', () => {
         />,
       );
 
-      const toSelect = screen.getByLabelText('To Account');
+      const toSelect = getSelectByLabel('To Account');
       const labels = Array.from(toSelect.querySelectorAll('option')).map(
-        (o) => o.textContent,
+        (o) => o.label,
       );
       expect(labels).not.toContain('Hidden account');
       expect(labels).toContain('Owner Chequing (CAD) — Alice Owner');
@@ -811,8 +812,8 @@ describe('TransferTransactionFields', () => {
         />,
       );
 
-      expect(screen.getByLabelText('From Account')).toBeDisabled();
-      expect(screen.getByLabelText('To Account')).toBeDisabled();
+      expect(getSelectByLabel('From Account')).toBeDisabled();
+      expect(getSelectByLabel('To Account')).toBeDisabled();
       expect(
         screen.getByText(/no longer shared with you/i),
       ).toBeInTheDocument();
@@ -826,8 +827,8 @@ describe('TransferTransactionFields', () => {
         />,
       );
 
-      expect(screen.getByLabelText('From Account')).not.toBeDisabled();
-      expect(screen.getByLabelText('To Account')).not.toBeDisabled();
+      expect(getSelectByLabel('From Account')).not.toBeDisabled();
+      expect(getSelectByLabel('To Account')).not.toBeDisabled();
       expect(
         screen.queryByText(/no longer shared with you/i),
       ).not.toBeInTheDocument();

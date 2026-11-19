@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
@@ -19,6 +19,8 @@ export interface MultiSelectOption {
    * nothing when this option is the last one left.
    */
   separatorAfter?: boolean;
+  /** A mark drawn between the checkbox and the label: an account's institution logo. */
+  icon?: ReactNode;
 }
 
 interface MultiSelectProps {
@@ -511,6 +513,11 @@ export function MultiSelect({
                           'dark:border-gray-500 dark:bg-gray-700 dark:focus:ring-blue-400'
                         )}
                       />
+                      {option.icon != null && (
+                        <span aria-hidden="true" className="ml-2 flex shrink-0">
+                          {option.icon}
+                        </span>
+                      )}
                       <span className={cn(
                         'ml-2 text-sm text-gray-900 dark:text-gray-100',
                         option.hasChildren && 'font-medium'

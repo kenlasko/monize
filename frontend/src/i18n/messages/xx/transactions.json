@@ -513,6 +513,7 @@
       "ariaAmountsIn": "[XX-Show and edit split amounts in {code}-XX]"
     },
     "splitLabel": "[XX-Split {number}-XX]",
+    "accountForSplit": "[XX-Account for split {number}-XX]",
     "columns": {
       "type": "[XX-Type-XX]",
       "categoryAccount": "[XX-Category / Account-XX]",

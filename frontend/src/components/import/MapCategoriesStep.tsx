@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/Button';
 import { CategoryMappingRow } from '@/components/import/CategoryMappingRow';
 import { CategoryMapping } from '@/lib/import';
 import { Account } from '@/types/account';
+import type { IconSelectOption } from '@/components/ui/IconSelect';
 
 type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'complete';
 
 interface MapCategoriesStepProps {
   categoryMappings: CategoryMapping[];
   setCategoryMappings: React.Dispatch<React.SetStateAction<CategoryMapping[]>>;
-  categoryOptions: Array<{ value: string; label: string }>;
-  parentCategoryOptions: Array<{ value: string; label: string }>;
+  categoryOptions: IconSelectOption[];
+  parentCategoryOptions: IconSelectOption[];
   accounts: Account[];
   scrollContainerRef: RefObject<HTMLDivElement | null>;
   formatCategoryPath: (path: string) => string;

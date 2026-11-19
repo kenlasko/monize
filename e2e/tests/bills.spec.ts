@@ -4,6 +4,7 @@ import {
   createScheduledTransaction,
 } from '../helpers/factories';
 import { uniqueId } from '../helpers/api';
+import { chooseIconSelectOption } from '../helpers/select';
 
 // Full CRUD matrix for Bills & Deposits (scheduled transactions). Preconditions
 // seeded via the API; behaviour driven through the UI. Account is required, so
@@ -27,7 +28,7 @@ test.describe('Bills & Deposits', () => {
     ).toBeVisible({ timeout: 10000 });
     await dialog.getByLabel(/^name$/i).first().fill(name);
     // First real option after the "Select account..." placeholder.
-    await dialog.getByLabel(/^account$/i).first().selectOption({ index: 1 });
+    await chooseIconSelectOption(dialog.getByLabel(/^account$/i).first(), { index: 1 });
     await dialog.getByLabel(/amount/i).first().fill('1500');
     await dialog.getByRole('button', { name: /^create$/i }).first().click();
 

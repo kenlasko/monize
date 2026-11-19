@@ -11,6 +11,7 @@ import type {
   BankSyncProfileNote,
   BankSyncResult,
 } from '@/types/bank-sync';
+import { getSelectByLabel, selectOptionLabels } from '@/test/icon-select';
 
 const mockUpdateConnection = vi.fn();
 const mockDeleteConnection = vi.fn();
@@ -204,8 +205,8 @@ const click = async (name: string | RegExp) => {
   });
 };
 
-const linkSelect = () => screen.getByLabelText('Monize account') as HTMLSelectElement;
-const optionLabels = () => Array.from(linkSelect().options).map((o) => o.textContent);
+const linkSelect = () => getSelectByLabel('Monize account');
+const optionLabels = () => selectOptionLabels(linkSelect());
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -17,6 +17,8 @@ export interface CollapsedHeaderSwitcher {
   showCurrent?: boolean;
   /** Where a row's secondary text sits (the securities switcher: `inline`). */
   secondaryAlign?: 'inline' | 'end';
+  /** Let the menu take the room the viewport has (the account switchers). */
+  tall?: boolean;
 }
 
 /** What the page's scrolled-away title leaves behind in the app header. */

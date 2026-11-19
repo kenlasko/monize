@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Tipe Terdeteksi:",
     "investmentFileNotice": "File ini berisi transaksi investasi. Hanya akun pialang yang ditampilkan.",
     "importIntoAccount": "Impor ke akun",
+    "importFileIntoAccount": "Impor {fileName} ke akun",
     "createNewAccount": "+ Buat akun baru",
     "createNew": "+ Buat baru",
     "createNewAccountTitle": "Buat Akun Baru",

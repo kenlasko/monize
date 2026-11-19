@@ -64,6 +64,7 @@ import {
 import { PAGE_SIZE } from '@/lib/constants';
 import { useMobileAddChoices } from '@/store/mobileAddActionStore';
 import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 
 /** The header switcher's row for "every investment account"; never an account id. */
 const ALL_INVESTMENT_ACCOUNTS = '__all-investment-accounts__';
@@ -267,6 +268,7 @@ function InvestmentsContent() {
       triggerLabel: ta('header.switchAccount'),
       filterPlaceholder: ta('header.switchPlaceholder'),
       noMatchesLabel: ta('header.switchNoMatches'),
+      tall: true,
     }),
     [headerCurrentId, headerAccountItems, handleAccountChange, t, ta],
   );
@@ -337,13 +339,15 @@ function InvestmentsContent() {
   // One or more accounts, or all of them. The header shows the full field;
   // the desktop's pinned bar names the selection in its title and opens the
   // same picker from a caret beside it, so both choose the same way.
+  const accountIcon = useAccountPickerIcon();
   const accountOptions = useMemo(
     () =>
       data.selectableAccounts.map((account: Account) => ({
         value: account.id,
         label: getAccountDisplayName(account),
+        icon: accountIcon(account),
       })),
-    [data.selectableAccounts, getAccountDisplayName],
+    [data.selectableAccounts, getAccountDisplayName, accountIcon],
   );
   const accountPicker = (
     <MultiSelect

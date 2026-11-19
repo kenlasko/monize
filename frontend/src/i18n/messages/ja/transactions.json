@@ -513,6 +513,7 @@
       "ariaAmountsIn": "{code} で分割金額を表示・編集"
     },
     "splitLabel": "分割{number}",
+    "accountForSplit": "分割 {number} の口座",
     "columns": {
       "type": "種類",
       "categoryAccount": "カテゴリ / 口座",

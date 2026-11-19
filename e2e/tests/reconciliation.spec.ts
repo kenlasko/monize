@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures';
 import { createAccount, createTransaction } from '../helpers/factories';
 import { uniqueId } from '../helpers/api';
+import { chooseIconSelectOption } from '../helpers/select';
 
 // Reconciliation is a setup -> reconcile -> complete flow. The end-to-end test
 // seeds a transaction whose amount matches the statement balance: the
@@ -37,7 +38,7 @@ test.describe('Reconciliation', () => {
       page.getByText(/start reconciliation/i).first(),
     ).toBeVisible({ timeout: 10000 });
 
-    await page.getByLabel(/^account$/i).first().selectOption({ value: account.id });
+    await chooseIconSelectOption(page.getByLabel(/^account$/i).first(), { value: account.id });
     await page.getByLabel(/statement ending balance/i).first().fill('100');
     await page.getByRole('button', { name: /start reconciliation/i }).click();
 

@@ -513,6 +513,7 @@
       "ariaAmountsIn": "以 {code} 顯示和編輯拆分金額"
     },
     "splitLabel": "分割 {number}",
+    "accountForSplit": "分割 {number} 的帳戶",
     "columns": {
       "type": "類型",
       "categoryAccount": "類別 / 科目",

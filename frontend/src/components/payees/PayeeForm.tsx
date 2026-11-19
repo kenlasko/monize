@@ -36,6 +36,7 @@ import {
   phoneRegionFromPreferences,
 } from '@/lib/phone-number';
 import type { CountryCode } from 'libphonenumber-js/max';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 /**
  * Exported so the validation rules can be tested directly: `PayeeForm.test.tsx`
@@ -413,6 +414,7 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
       return {
         value: category.id,
         label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+        icon: <CategoryPickerIcon category={category} />,
       };
     });
     return treeOptions;

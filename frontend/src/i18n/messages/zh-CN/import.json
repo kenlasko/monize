@@ -69,6 +69,7 @@
     "detectedTypeLabel": "检测到的类型：",
     "investmentFileNotice": "此文件包含投资交易，仅显示经纪账户。",
     "importIntoAccount": "导入到账户",
+    "importFileIntoAccount": "将 {fileName} 导入账户",
     "createNewAccount": "+ 创建新账户",
     "createNew": "+ 创建新建",
     "createNewAccountTitle": "创建新账户",

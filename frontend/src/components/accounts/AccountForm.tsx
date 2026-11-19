@@ -1397,6 +1397,7 @@ export function AccountForm({
           paymentFrequency={watchedPaymentFrequency}
           paymentStartDate={watchedPaymentStartDate}
           openingBalance={watchedOpeningBalance}
+          sourceAccountId={watchedSourceAccountId}
           setValue={setValue}
           register={register}
           errors={errors}

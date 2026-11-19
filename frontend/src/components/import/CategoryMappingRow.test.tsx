@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@/test/render';
 import { CategoryMappingRow } from './CategoryMappingRow';
 import type { CategoryMapping } from '@/lib/import';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { getSelectByLabel } from '@/test/icon-select';
 
 describe('CategoryMappingRow', () => {
   const defaultMapping = {
@@ -158,7 +159,28 @@ describe('CategoryMappingRow', () => {
     expect(screen.queryByText('Or create new loan')).not.toBeInTheDocument();
   });
 
-  it('calls onMappingChange when a category is selected', () => {
+  it('marks each category it offers with its icon', () => {
+    render(
+      <CategoryMappingRow
+        mapping={defaultMapping}
+        categoryOptions={[
+          { value: '', label: 'Skip (no category)' },
+          { value: 'c1', label: 'Groceries', icon: <span data-testid="groceries-icon">G</span> },
+        ]}
+        parentCategoryOptions={parentCategoryOptions}
+        loanAccounts={loanAccounts}
+        onMappingChange={onMappingChange}
+        formatCategoryPath={formatCategoryPath}
+        isHighlighted={true}
+      />
+    );
+    fireEvent.click(screen.getByRole('combobox', { name: 'Map to existing' }));
+    expect(screen.getByRole('option', { name: 'Groceries' })).toContainElement(
+      screen.getByTestId('groceries-icon'),
+    );
+  });
+
+    it('calls onMappingChange when a category is selected', () => {
     render(
       <CategoryMappingRow
         mapping={defaultMapping}
@@ -170,9 +192,7 @@ describe('CategoryMappingRow', () => {
         isHighlighted={true}
       />
     );
-    const selects = screen.getAllByRole('combobox');
-    // The first select should be "Map to existing"
-    fireEvent.change(selects[0], { target: { value: 'c1' } });
+    fireEvent.change(getSelectByLabel('Map to existing'), { target: { value: 'c1' } });
     expect(onMappingChange).toHaveBeenCalledWith(
       expect.objectContaining({
         categoryId: 'c1',
@@ -235,12 +255,7 @@ describe('CategoryMappingRow', () => {
         isHighlighted={true}
       />
     );
-    const selects = screen.getAllByRole('combobox');
-    // Find the loan account select
-    const loanSelect = selects.find((s) => {
-      const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent?.includes('Mortgage'));
-    });
+    const loanSelect = getSelectByLabel('Select existing loan');
     expect(loanSelect).toBeDefined();
     fireEvent.change(loanSelect!, { target: { value: 'loan1' } });
     expect(onMappingChange).toHaveBeenCalledWith(
@@ -479,9 +494,9 @@ describe('CategoryMappingRow', () => {
       />
     );
     expect(screen.getByText('Loan type')).toBeInTheDocument();
-    const loanTypeSelect = screen.getAllByRole('combobox').find((s) => {
+    const loanTypeSelect = Array.from(document.querySelectorAll('select')).find((s) => {
       const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent === 'Mortgage');
+      return options.some((o) => o.label === 'Mortgage');
     });
     expect(loanTypeSelect).toBeDefined();
   });
@@ -515,9 +530,9 @@ describe('CategoryMappingRow', () => {
         isHighlighted={true}
       />
     );
-    const loanTypeSelect = screen.getAllByRole('combobox').find((s) => {
+    const loanTypeSelect = Array.from(document.querySelectorAll('select')).find((s) => {
       const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent === 'Mortgage');
+      return options.some((o) => o.label === 'Mortgage');
     });
     fireEvent.change(loanTypeSelect!, { target: { value: 'MORTGAGE' } });
     expect(onMappingChange).toHaveBeenCalledWith(
@@ -538,9 +553,9 @@ describe('CategoryMappingRow', () => {
         isHighlighted={true}
       />
     );
-    const loanSelect = screen.getAllByRole('combobox').find((s) => {
+    const loanSelect = Array.from(document.querySelectorAll('select')).find((s) => {
       const options = Array.from(s.querySelectorAll('option'));
-      return options.some((o) => o.textContent?.includes('Mortgage'));
+      return options.some((o) => o.label.includes('Mortgage'));
     });
     fireEvent.change(loanSelect!, { target: { value: 'loan1' } });
     expect(onMappingChange).toHaveBeenCalledWith(

@@ -3716,3 +3716,133 @@ describe("a documentation URL is built in one place", () => {
     expect(DOCS_URL_USE.test("<HelpLink link=\"budgets\">Learn more</HelpLink>")).toBe(false);
   });
 });
+
+describe("an account, payee or category dropdown draws its icons", () => {
+  /**
+   * A `<Select ...>` or `<select ...>` element's opening tag through its end,
+   * as one string: `/>` for the self-closing `Select`, `</select>` for a raw
+   * one. Braces are counted so a `>` or `/>` inside an expression does not end
+   * it early.
+   */
+  function selectElements(source: string): { text: string; line: number }[] {
+    const found: { text: string; line: number }[] = [];
+    const opening = /<(Select|select)\b/g;
+    let match: RegExpExecArray | null;
+    while ((match = opening.exec(source))) {
+      const raw = match[1] === "select";
+      let depth = 0;
+      let end = source.length;
+      for (let at = match.index + match[0].length; at < source.length; at += 1) {
+        const char = source[at];
+        if (char === "{") depth += 1;
+        else if (char === "}") depth -= 1;
+        else if (depth === 0 && !raw && source.startsWith("/>", at)) {
+          end = at + 2;
+          break;
+        } else if (depth === 0 && raw && source.startsWith("</select>", at)) {
+          end = at + "</select>".length;
+          break;
+        }
+      }
+      found.push({
+        text: source.slice(match.index, end),
+        line: source.slice(0, match.index).split("\n").length,
+      });
+    }
+    return found;
+  }
+
+  /** What an account, payee or category option list is built from or named. */
+  const ACCOUNT_OPTIONS = /buildAccountDropdownOptions|accountSelectOption|\b\w*[aA]ccountOptions\b|\b[aA]ccounts\s*(?:\n\s*)?\.(?:map|slice|filter)\(|getCategorySelectOptions|withCategoryIcons|withPayeeIcons|\b\w*[cC]ategor\w*Options\b|\b\w*[pP]ayee\w*Options\b|\b(?:categories|payees)\s*(?:\n\s*)?\.(?:map|slice|filter)\(/;
+
+  it("has no native select over accounts, payees or categories, which cannot draw their icons", () => {
+    const offenders = productionSources()
+      .filter(([path]) => path !== "/src/components/ui/IconSelect.tsx")
+      .flatMap(([path, content]) =>
+        selectElements(withoutComments(content))
+          .filter(({ text }) => ACCOUNT_OPTIONS.test(text))
+          .map(({ line }) => `${path}:${line}`),
+      );
+
+    // Every account dropdown marks its rows, and the picked account, with the
+    // institution's logo (issue #2288): `AccountSelect` over options from
+    // `buildAccountDropdownOptions` or `accountSelectOption`. A payee or
+    // category dropdown is a `Combobox`, or an `IconSelect` over options from
+    // `withPayeeIcons` / `withCategoryIcons`.
+    expect(offenders).toEqual([]);
+  });
+
+  it("catches the pattern it bans", () => {
+    const sample = `<Select label="Account" options={[...buildAccountDropdownOptions(a, f)]} />
+<select value={id}>{accounts.map((a) => <option key={a.id}>{a.name}</option>)}</select>
+<Select label="Type" options={typeOptions} />
+<Select label="Category" options={categoryOptions} />
+<Select label="Payee" options={payees.map((p) => ({ value: p.id, label: p.name }))} />`;
+    expect(
+      selectElements(sample).filter(({ text }) => ACCOUNT_OPTIONS.test(text)).map(({ line }) => line),
+    ).toEqual([1, 2, 4, 5]);
+  });
+});
+
+describe("a register()-wired IconSelect also passes its value", () => {
+  /** Each `<AccountSelect ...>` / `<IconSelect ...>` element through its `/>`. */
+  function iconSelectElements(source: string): { text: string; line: number }[] {
+    const found: { text: string; line: number }[] = [];
+    const opening = /<(?:AccountSelect|IconSelect)\b/g;
+    let match: RegExpExecArray | null;
+    while ((match = opening.exec(source))) {
+      let depth = 0;
+      let end = source.length;
+      for (let at = match.index + match[0].length; at < source.length; at += 1) {
+        const char = source[at];
+        if (char === "{") depth += 1;
+        else if (char === "}") depth -= 1;
+        else if (depth === 0 && source.startsWith("/>", at)) {
+          end = at + 2;
+          break;
+        }
+      }
+      found.push({
+        text: source.slice(match.index, end),
+        line: source.slice(0, match.index).split("\n").length,
+      });
+    }
+    return found;
+  }
+
+  const unsynced = (text: string) => /\bregister\(/.test(text) && !/\bvalue=/.test(text);
+
+  it("passes the watched value beside every register() spread", () => {
+    // The visible field cannot observe reset() or setValue() on the hidden
+    // select register() attaches to; without `value` it shows the first option,
+    // or the old pick, while the form holds something else.
+    const offenders = productionSources().flatMap(([path, content]) =>
+      iconSelectElements(withoutComments(content))
+        .filter(({ text }) => unsynced(text))
+        .map(({ line }) => `${path}:${line}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("names every one, since a combobox button takes no name from its text", () => {
+    // `label`, `aria-label`, or an `id` an outside <label htmlFor> points at.
+    const offenders = productionSources()
+      .filter(([path]) => path !== "/src/components/accounts/shared/AccountSelect.tsx")
+      .flatMap(([path, content]) =>
+        iconSelectElements(withoutComments(content))
+          .filter(({ text }) => !/\b(?:label|aria-label|aria-labelledby|id)=/.test(text))
+          .map(({ line }) => `${path}:${line}`),
+      );
+    expect(offenders).toEqual([]);
+  });
+
+  it("catches the pattern it bans, and finds the fields it checks", () => {
+    const sample = `<AccountSelect label="A" options={o} {...register('accountId')} />
+<AccountSelect label="B" value={watched} options={o} {...register('accountId')} />`;
+    expect(iconSelectElements(sample).filter(({ text }) => unsynced(text)).map(({ line }) => line)).toEqual([1]);
+    const wired = productionSources().flatMap(([, content]) =>
+      iconSelectElements(withoutComments(content)).filter(({ text }) => /\bregister\(/.test(text)),
+    );
+    expect(wired.length).toBeGreaterThan(0);
+  });
+});

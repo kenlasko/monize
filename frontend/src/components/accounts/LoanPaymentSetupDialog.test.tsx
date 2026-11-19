@@ -8,6 +8,7 @@ import { payeesApi } from '@/lib/payees';
 import { Account, DetectedLoanPayment } from '@/types/account';
 import toast from 'react-hot-toast';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { getSelectByLabel } from '@/test/icon-select';
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
@@ -743,7 +744,7 @@ describe('LoanPaymentSetupDialog', () => {
     mockDetectLoanPayments.mockResolvedValue(defaultDetected);
     await renderDialog();
 
-    const select = screen.getByLabelText(/Payment From Account/i) as HTMLSelectElement;
+    const select = getSelectByLabel(/Payment From Account/i);
     fireEvent.change(select, { target: { value: 'acc-1' } });
     expect(select.value).toBe('acc-1');
   });
@@ -1000,7 +1001,7 @@ describe('LoanPaymentSetupDialog', () => {
       accounts: [sourceAccount],
     };
     await renderDialog(props);
-    const select = screen.getByLabelText(/Payment From Account/i) as HTMLSelectElement;
+    const select = getSelectByLabel(/Payment From Account/i);
     expect(select.value).toBe('acc-1');
   });
 

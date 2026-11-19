@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Loại được phát hiện:",
     "investmentFileNotice": "Tệp này chứa các giao dịch đầu tư. Chỉ hiển thị các tài khoản môi giới.",
     "importIntoAccount": "Nhập khẩu vào tài khoản",
+    "importFileIntoAccount": "Nhập {fileName} vào tài khoản",
     "createNewAccount": "+ Tạo tài khoản mới",
     "createNew": "+ Tạo mới",
     "createNewAccountTitle": "Tạo Tài Khoản Mới",

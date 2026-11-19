@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Exibir e editar os valores da divisão em {code}"
     },
     "splitLabel": "Divisão {number}",
+    "accountForSplit": "Conta da divisão {number}",
     "columns": {
       "type": "Tipo",
       "categoryAccount": "Categoria / Conta",

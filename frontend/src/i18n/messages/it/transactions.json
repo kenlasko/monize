@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Mostra e modifica gli importi suddivisi in {code}"
     },
     "splitLabel": "Suddivisione {number}",
+    "accountForSplit": "Conto della suddivisione {number}",
     "columns": {
       "type": "Tipo",
       "categoryAccount": "Categoria / Conto",

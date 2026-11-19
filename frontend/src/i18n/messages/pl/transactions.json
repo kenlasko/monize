@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Pokaż i edytuj kwoty podziału w {code}"
     },
     "splitLabel": "Podział {number}",
+    "accountForSplit": "Konto dla podziału {number}",
     "columns": {
       "type": "Typ",
       "categoryAccount": "Kategoria / Konto",

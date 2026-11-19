@@ -144,6 +144,10 @@
     "createOption": "Tạo \"{value}\"",
     "deleteOption": "Xóa \"{value}\""
   },
+  "iconSelect": {
+    "filter": "Tìm kiếm...",
+    "noMatches": "Không có kết quả phù hợp"
+  },
   "passwordInput": {
     "show": "Hiển thị mật khẩu",
     "hide": "Ẩn mật khẩu"

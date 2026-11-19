@@ -70,6 +70,8 @@ import {
   useTransactionSubmitMode,
 } from '@/hooks/useTransactionSubmitMode';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
+import { accountSelectOption } from '@/lib/account-utils';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('InvestmentTxForm');
 
@@ -1431,15 +1433,13 @@ function InvestmentTransactionFormFields({
     <>
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Account Selection */}
-      <Select
+      <AccountSelect
         label={transferMode ? t('transactionForm.fromAccount') : t('transactionForm.brokerageAccount')}
         error={errors.accountId?.message}
+        value={watchedAccountId || ''}
         options={[
           { value: '', label: t('transactionForm.selectAccount') },
-          ...brokerageAccounts.map((a) => ({
-            value: a.id,
-            label: `${a.name} (${a.currencyCode})`,
-          })),
+          ...brokerageAccounts.map((a) => accountSelectOption(a, `${a.name} (${a.currencyCode})`)),
         ]}
         {...register('accountId')}
       />
@@ -1465,14 +1465,12 @@ function InvestmentTransactionFormFields({
 
       {/* Funding Account - for Buy/Sell to specify where funds come from/go to */}
       {canHaveFundingAccount && (
-        <Select
+        <AccountSelect
           label={baseInvestmentAction(watchedAction) === 'BUY' ? t('transactionForm.fundsFrom') : t('transactionForm.fundsTo')}
+          value={watchedFundingAccountId || ''}
           options={[
             { value: '', label: t('transactionForm.linkedCashDefault') },
-            ...fundingAccounts.map((a) => ({
-              value: a.id,
-              label: a.name,
-            })),
+            ...fundingAccounts.map((a) => accountSelectOption(a, a.name)),
           ]}
           {...register('fundingAccountId')}
         />
@@ -1480,14 +1478,14 @@ function InvestmentTransactionFormFields({
 
       {/* Destination Cash Account - for Dividend/Interest/Capital Gain */}
       {canHaveCashDestination && (
-        <Select
+        <AccountSelect
           label={t('transactionForm.depositTo')}
+          value={watchedFundingAccountId || ''}
           options={[
             { value: '', label: t('transactionForm.linkedCashDefault') },
-            ...cashDestinationAccountsList.map((a) => ({
-              value: a.id,
-              label: `${a.name} (${a.currencyCode})`,
-            })),
+            ...cashDestinationAccountsList.map((a) =>
+              accountSelectOption(a, `${a.name} (${a.currencyCode})`),
+            ),
           ]}
           {...register('fundingAccountId')}
         />
@@ -1500,7 +1498,7 @@ function InvestmentTransactionFormFields({
           uncontrolled select would silently drop a value not yet in its
           options (the cause of the blank "To Account" on TRANSFER_IN). */}
       {transferMode && (
-        <Select
+        <AccountSelect
           label={t('transactionForm.toAccount')}
           error={errors.destinationAccountId?.message}
           value={watchedDestinationAccountId || ''}
@@ -1512,10 +1510,9 @@ function InvestmentTransactionFormFields({
           }
           options={[
             { value: '', label: t('transactionForm.selectAccount') },
-            ...destinationAccounts.map((a) => ({
-              value: a.id,
-              label: `${a.name} (${a.currencyCode})`,
-            })),
+            ...destinationAccounts.map((a) =>
+              accountSelectOption(a, `${a.name} (${a.currencyCode})`),
+            ),
           ]}
         />
       )}

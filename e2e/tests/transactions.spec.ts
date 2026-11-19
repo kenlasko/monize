@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures';
 import { createAccount, createTransaction } from '../helpers/factories';
 import { uniqueId } from '../helpers/api';
+import { chooseIconSelectOption } from '../helpers/select';
 
 // Transactions run through a tabbed normal/split/transfer form. The payee field
 // is a custom-value combobox that's awkward to drive, so create/edit identify
@@ -15,7 +16,7 @@ test.describe('Transactions', () => {
     await page.getByRole('button', { name: /new transaction/i }).first().click();
 
     const dialog = page.getByRole('dialog');
-    await dialog.getByLabel(/^account$/i).selectOption({ value: account.id });
+    await chooseIconSelectOption(dialog.getByLabel(/^account$/i), { value: account.id });
     await dialog.getByLabel(/amount/i).first().fill('987.65');
     await dialog.getByRole('button', { name: /create transaction/i }).click();
 

@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Algılanan Tür:",
     "investmentFileNotice": "Bu dosya yatırım işlemleri içeriyor. Yalnızca aracı kurum hesapları gösteriliyor.",
     "importIntoAccount": "Hesaba içe aktar",
+    "importFileIntoAccount": "{fileName} dosyasını hesaba aktar",
     "createNewAccount": "+ Yeni hesap oluştur",
     "createNew": "+ Yeni oluştur",
     "createNewAccountTitle": "Yeni Hesap Oluştur",

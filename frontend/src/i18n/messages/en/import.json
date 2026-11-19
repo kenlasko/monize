@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Detected Type:",
     "investmentFileNotice": "This file contains investment transactions. Only brokerage accounts are shown.",
     "importIntoAccount": "Import into account",
+    "importFileIntoAccount": "Import {fileName} into account",
     "createNewAccount": "+ Create new account",
     "createNew": "+ Create new",
     "createNewAccountTitle": "Create New Account",

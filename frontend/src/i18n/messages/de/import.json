@@ -69,6 +69,7 @@
     "detectedTypeLabel": "Erkannter Typ:",
     "investmentFileNotice": "Diese Datei enthält Investitionsbuchungen. Es werden nur Brokeragekonten angezeigt.",
     "importIntoAccount": "In Konto importieren",
+    "importFileIntoAccount": "{fileName} in Konto importieren",
     "createNewAccount": "+ Neues Konto erstellen",
     "createNew": "+ Neu erstellen",
     "createNewAccountTitle": "Neues Konto erstellen",

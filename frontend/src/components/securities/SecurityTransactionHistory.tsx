@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { CAPTION_CLASS, CellLabel } from '@/components/ui/Table';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -24,6 +23,8 @@ import type {
   Security,
   SecurityTransactionHistory as SecurityTransactionHistoryData,
 } from '@/types/investment';
+import { historyAccountOption } from './history-account-option';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('SecurityTxHistory');
 
@@ -160,16 +161,19 @@ export function SecurityTransactionHistory({
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         {accounts.length > 0 && (
           <div className="w-full sm:max-w-xs">
-            <Select
+            <AccountSelect
               label={t('transactionHistory.accountLabel')}
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
               options={[
                 { value: 'all', label: t('transactionHistory.allAccounts', { shares: formatShareQuantity(history?.currentQuantityAll ?? 0) }) },
-                ...accounts.map((a) => ({
-                  value: a.accountId,
-                  label: `${a.isClosed ? t('transactionHistory.accountClosed', { name: a.accountName }) : a.accountName} — ${formatShareQuantity(a.currentQuantity)}`,
-                })),
+                ...accounts.map((a) =>
+                  historyAccountOption(
+                    a,
+                    `${a.isClosed ? t('transactionHistory.accountClosed', { name: a.accountName }) : a.accountName} — ${formatShareQuantity(a.currentQuantity)}`,
+                    allAccounts,
+                  ),
+                ),
               ]}
             />
           </div>
@@ -186,6 +190,7 @@ export function SecurityTransactionHistory({
           <SecurityShareAdjustmentForm
             securityId={security.id}
             accounts={accounts}
+            accountDetails={allAccounts}
             defaultAccountId={defaultAdjustAccountId}
             onSubmitted={handleAdjustmentSubmitted}
             onCancel={() => setShowAddForm(false)}

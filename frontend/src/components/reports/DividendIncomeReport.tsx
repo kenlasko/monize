@@ -49,6 +49,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 
 type SeriesKey = 'dividends' | 'interest' | 'capitalGains';
 type MonthlyIncomeSortField = 'month' | 'startValue' | 'endValue' | 'dividends' | 'interest' | 'capitalGains' | 'total';
@@ -650,6 +651,7 @@ export function DividendIncomeReport() {
 
   // Account filter options for the MultiSelect, memoized so the filter/sort/map
   // chain (and the new array of option objects) is not rebuilt every render.
+  const accountIcon = useAccountPickerIcon();
   const accountOptions = useMemo(
     () =>
       accounts
@@ -658,8 +660,9 @@ export function DividendIncomeReport() {
         .map((account) => ({
           value: account.id,
           label: mainAccountName(account.name),
+          icon: accountIcon(account),
         })),
-    [accounts, mainAccountName],
+    [accounts, mainAccountName, accountIcon],
   );
 
   const securityData = useMemo((): SecurityIncome[] => {

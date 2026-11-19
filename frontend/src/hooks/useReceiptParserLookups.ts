@@ -1,19 +1,23 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { getCategorySelectOptions } from '@/lib/categoryUtils';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { createLogger } from '@/lib/logger';
 import { payeesApi } from '@/lib/payees';
-import type { Account } from '@/types/account';
+import type { Account, AccountType } from '@/types/account';
+import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
+import { withPayeeIcons } from '@/components/payees/withPayeeIcons';
 
 const logger = createLogger('ReceiptParserLookups');
 
 export interface ReceiptParserOption {
   value: string;
   label: string;
+  /** The row's mark in a picker: a payee's favicon, a category's glyph. */
+  icon?: ReactNode;
 }
 
 /** An account a trade profile may name, or one a stored profile names. */
@@ -24,6 +28,9 @@ export interface ReceiptParserAccountOption extends ReceiptParserOption {
    * the only kind the server lets a trade profile book to.
    */
   tradable: boolean;
+  /** What the account picker draws the row's mark from. */
+  accountType?: AccountType;
+  institutionId?: string | null;
 }
 
 export interface ReceiptParserLookups {
@@ -52,6 +59,8 @@ export function toReceiptAccountOptions(accounts: readonly Account[]): ReceiptPa
       label: account.name,
       currencyCode: account.currencyCode,
       tradable: isTradableAccount(account),
+      accountType: account.accountType,
+      institutionId: account.institutionId,
     }));
 }
 
@@ -95,8 +104,14 @@ export function useReceiptParserLookups(): { state: ReceiptParserLookupsState; r
         setState({
           status: 'ready',
           lookups: {
-            payees: payees.map((p) => ({ value: p.id, label: p.name })),
-            categories: getCategorySelectOptions(categories).map(({ value, label }) => ({ value, label })),
+            payees: withPayeeIcons(
+              payees.map((p) => ({ value: p.id, label: p.name })),
+              payees,
+            ),
+            categories: withCategoryIcons(
+              getCategorySelectOptions(categories).map(({ value, label }) => ({ value, label })),
+              categories,
+            ),
             accounts: toReceiptAccountOptions(accounts),
             currencyCodes: currencies.filter((currency) => currency.isActive).map((currency) => currency.code),
           },

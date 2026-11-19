@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { SelectAccountStep } from './SelectAccountStep';
+import { nativeSelectOf } from '@/test/icon-select';
 
 describe('SelectAccountStep', () => {
   const defaultProps = {
@@ -512,7 +513,7 @@ describe('SelectAccountStep', () => {
         accounts={accounts}
       />
     );
-    const select = screen.getByRole('combobox');
+    const select = nativeSelectOf(screen.getByRole('combobox'));
     fireEvent.change(select, { target: { value: 'acc-1' } });
     expect(defaultProps.setFileAccountId).toHaveBeenCalledWith(0, 'acc-1');
   });

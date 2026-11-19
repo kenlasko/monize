@@ -9,6 +9,9 @@ import { Payee } from '@/types/payee';
 import { Tag } from '@/types/tag';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 interface FilterBuilderProps {
   value: FilterGroup[];
@@ -32,11 +35,12 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees, t
     { value: 'text', label: t('filterBuilder.fieldText') },
   ];
 
+  const accountIcon = useAccountPickerIcon();
   const accountOptions: MultiSelectOption[] = useMemo(() =>
     [...accounts]
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((a) => ({ value: a.id, label: a.name })),
-    [accounts]
+      .map((a) => ({ value: a.id, label: a.name, icon: accountIcon(a) })),
+    [accounts, accountIcon]
   );
 
   const categoryOptions: MultiSelectOption[] = useMemo(() => {
@@ -53,6 +57,7 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees, t
           return [{
             value: cat.id,
             label: cat.name,
+            icon: <CategoryPickerIcon category={cat} />,
             parentId: cat.parentId,
             children: children.length > 0 ? children : undefined,
           }];
@@ -65,7 +70,7 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees, t
   const payeeOptions: MultiSelectOption[] = useMemo(() =>
     [...payees]
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => ({ value: p.id, label: p.name })),
+      .map((p) => ({ value: p.id, label: p.name, icon: payeeOptionIcon(p) })),
     [payees]
   );
 

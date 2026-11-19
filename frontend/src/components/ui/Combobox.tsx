@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
@@ -13,6 +13,11 @@ interface ComboboxOption {
   subtitle?: string;
   /** Additional search terms that participate in filtering but are not displayed by default */
   keywords?: string[];
+  /**
+   * A mark drawn before the label in the list: a payee's favicon, a
+   * category's glyph. Decoration only; the label is what is matched and typed.
+   */
+  icon?: ReactNode;
 }
 
 interface ComboboxProps {
@@ -488,6 +493,14 @@ export function Combobox({
     e.preventDefault();
   };
 
+  // The picked option's mark sits in the field while the field still shows that
+  // option; once the reader types something else, it is no longer theirs.
+  const pickedIcon = (() => {
+    if (!value) return null;
+    const picked = options.find((opt) => opt.value === value);
+    return picked?.icon != null && inputValue === picked.label ? picked.icon : null;
+  })();
+
   const dropdownContent = (
     <div
       ref={listRef}
@@ -536,30 +549,37 @@ export function Combobox({
               isSelected && !isHighlighted && 'bg-blue-50 dark:bg-blue-900/30'
             )}
           >
-            <div className="flex flex-col">
-              <span className={cn(
-                'block truncate dark:text-gray-100',
-                isSelected ? 'font-semibold' : 'font-medium'
-              )}>
-                {option.label}
-              </span>
-              {option.subtitle && (alwaysShowSubtitle || (isTyping && filterText)) && (
-                <span className="text-gray-500 dark:text-gray-400 text-xs truncate">
-                  {option.subtitle}
+            <div className="flex items-center gap-2 min-w-0">
+              {option.icon != null && (
+                <span aria-hidden="true" className="flex shrink-0">
+                  {option.icon}
                 </span>
               )}
-              {isTyping && filterText && option.keywords && (() => {
-                const lowerFilter = filterText.toLowerCase();
-                const labelMatches = option.label.toLowerCase().includes(lowerFilter);
-                if (labelMatches) return null;
-                const matchedKeyword = option.keywords.find(kw => kw.toLowerCase().includes(lowerFilter));
-                if (!matchedKeyword) return null;
-                return (
-                  <span className="text-purple-500 dark:text-purple-400 text-xs truncate">
-                    alias: {matchedKeyword}
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className={cn(
+                  'block truncate dark:text-gray-100',
+                  isSelected ? 'font-semibold' : 'font-medium'
+                )}>
+                  {option.label}
+                </span>
+                {option.subtitle && (alwaysShowSubtitle || (isTyping && filterText)) && (
+                  <span className="text-gray-500 dark:text-gray-400 text-xs truncate">
+                    {option.subtitle}
                   </span>
-                );
-              })()}
+                )}
+                {isTyping && filterText && option.keywords && (() => {
+                  const lowerFilter = filterText.toLowerCase();
+                  const labelMatches = option.label.toLowerCase().includes(lowerFilter);
+                  if (labelMatches) return null;
+                  const matchedKeyword = option.keywords.find(kw => kw.toLowerCase().includes(lowerFilter));
+                  if (!matchedKeyword) return null;
+                  return (
+                    <span className="text-purple-500 dark:text-purple-400 text-xs truncate">
+                      alias: {matchedKeyword}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
             {onDeleteOption && (
               <button
@@ -630,6 +650,15 @@ export function Combobox({
         </label>
       )}
       <div className="relative">
+        {pickedIcon != null && (
+          <span
+            aria-hidden="true"
+            data-testid="combobox-picked-icon"
+            className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5"
+          >
+            {pickedIcon}
+          </span>
+        )}
         <input
           ref={inputRef}
           type="text"
@@ -644,7 +673,8 @@ export function Combobox({
           className={cn(
             inputBaseClasses,
             error && inputErrorClasses,
-            inputValue && !disabled && 'pr-8'
+            inputValue && !disabled && 'pr-8',
+            pickedIcon != null && 'pl-9'
           )}
         />
         {inputValue && !disabled && (

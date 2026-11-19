@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Splitsbedragen tonen en bewerken in {code}"
     },
     "splitLabel": "Splitsing {number}",
+    "accountForSplit": "Rekening voor splitsing {number}",
     "columns": {
       "type": "Type",
       "categoryAccount": "Categorie / rekening",

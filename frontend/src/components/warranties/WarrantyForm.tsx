@@ -39,6 +39,7 @@ import {
   type Warranty,
   type WarrantyKind,
 } from '@/types/warranty';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 const logger = createLogger('WarrantyForm');
 
@@ -350,7 +351,12 @@ export function WarrantyForm({
   };
 
   const payeeOptions = useMemo(
-    () => payees.map((payee) => ({ value: payee.id, label: payee.name })),
+    () =>
+      payees.map((payee) => ({
+        value: payee.id,
+        label: payee.name,
+        icon: payeeOptionIcon(payee),
+      })),
     [payees],
   );
 

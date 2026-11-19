@@ -34,6 +34,21 @@ describe('MultiSelect', () => {
     vi.clearAllMocks();
   });
 
+  it("draws an option's icon between its checkbox and its label", () => {
+    render(
+      <MultiSelect
+        placeholder="Choose"
+        options={[{ value: 'a', label: 'Alpha', icon: <span data-testid="alpha-icon">A</span> }]}
+        value={[]}
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByText('Choose'));
+    const icon = screen.getByTestId('alpha-icon');
+    expect(icon.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(icon.closest('label')).toHaveTextContent('Alpha');
+  });
+
   it('renders with label and placeholder', () => {
     render(
       <MultiSelect

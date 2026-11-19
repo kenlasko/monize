@@ -14,6 +14,7 @@ import {
   LOAN_SETTLEMENT_SHORTFALL_POLICIES,
   MAX_LOAN_SETTLEMENT_WINDOW_DAYS,
 } from '@/lib/rule-fields';
+import { IconSelect } from '@/components/ui/IconSelect';
 
 type SettleLoanAction = Extract<EditorAction, { type: 'settle_loan_installment' }>;
 
@@ -51,7 +52,7 @@ export function RuleLoanSettlementFields({ action, options, onChange, fields }: 
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-500 dark:text-gray-400">{t('help')}</p>
-      <Select
+      <IconSelect
         id={`${action.uid}-loan-account`}
         label={t('account')}
         value={action.loanAccountId}

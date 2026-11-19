@@ -513,6 +513,7 @@
       "ariaAmountsIn": "Teilbeträge in {code} anzeigen und bearbeiten"
     },
     "splitLabel": "Buchungsteil {number}",
+    "accountForSplit": "Konto für Aufteilung {number}",
     "columns": {
       "type": "Typ",
       "categoryAccount": "Kategorie / Konto",

@@ -1,16 +1,17 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import '@/lib/zodConfig';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FormActions } from '@/components/ui/FormActions';
-import { Select } from '@/components/ui/Select';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { entryDecimalPlaces, getCurrencySymbol } from '@/lib/format';
 import type { Account } from '@/types/account';
 import type { CreateTransferIncomeLineData } from '@/types/budget';
+import { accountSelectOption } from '@/lib/account-utils';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const buildSchema = (t: (key: string) => string) =>
   z.object({
@@ -51,6 +52,8 @@ export function TransferIncomeLineForm({
     defaultValues: { transferAccountId: '', amount: 0 },
   });
 
+  const transferAccountId = useWatch({ control, name: 'transferAccountId' });
+
   const onSubmit = (data: TransferIncomeLineFormData) =>
     onSave({ transferAccountId: data.transferAccountId, amount: data.amount });
 
@@ -59,13 +62,14 @@ export function TransferIncomeLineForm({
       <p className="text-sm text-gray-500 dark:text-gray-400">
         {t('transferIncomeForm.hint')}
       </p>
-      <Select
+      <AccountSelect
         label={t('transferIncomeForm.account')}
+        value={transferAccountId ?? ''}
         {...register('transferAccountId')}
         error={errors.transferAccountId?.message}
         options={[
           { value: '', label: t('transferIncomeForm.accountPlaceholder') },
-          ...accounts.map((a) => ({ value: a.id, label: a.name })),
+          ...accounts.map((a) => accountSelectOption(a, a.name)),
         ]}
       />
       <Controller

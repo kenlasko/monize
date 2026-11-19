@@ -12,6 +12,7 @@ import {
   stepCard,
   upload,
 } from "./import-files";
+import { chooseIconSelectOption } from "../helpers/select";
 
 // website/docs/importing-transactions.md (and the QIF steps the Microsoft Money
 // and Quicken pages share). Each wizard is walked to its review step and left:
@@ -86,11 +87,10 @@ test.describe("the CSV wizard", () => {
   test("import-csv-transfer-rules", async () => {
     await page.getByRole("button", { name: "Add Rule" }).click();
     await page.getByPlaceholder("Pattern...").fill("TRANSFER TO SAVINGS");
-    await page
-      .getByRole("main")
-      .locator("select")
-      .filter({ has: page.locator("option", { hasText: "Select account..." }) })
-      .selectOption("Emergency Fund");
+    await chooseIconSelectOption(
+      page.getByRole("main").getByRole("combobox", { name: "Select account..." }),
+      { label: "Emergency Fund" },
+    );
     const rules = page
       .getByRole("heading", { name: "Transfer Detection Rules" })
       .locator('xpath=ancestor::div[contains(@class, "space-y-3")][1]');
@@ -102,7 +102,8 @@ test.describe("the CSV wizard", () => {
     await nextButton(page).click();
     const card = stepCard(page, "Select Destination Account");
     await expect(card).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByLabel("Import into account")).toHaveValue(/.+/);
+    // An account is already picked: the field shows its name.
+    await expect(page.getByLabel("Import into account")).toHaveText(/\S/);
     await waitForReady(page);
     await docShot(page, "import-select-account", card);
   });

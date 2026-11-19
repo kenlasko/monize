@@ -12,11 +12,16 @@ import { investmentsApi } from '@/lib/investments';
 import { getLocalDateString } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/errors';
 import type { InvestmentAction, SecurityHistoryAccount } from '@/types/investment';
+import { historyAccountOption } from './history-account-option';
+import type { Account } from '@/types/account';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface SecurityShareAdjustmentFormProps {
   securityId: string;
   /** Accounts the security has been used in (including closed ones). */
   accounts: SecurityHistoryAccount[];
+  /** The full account rows, for each option's institution logo and type icon. */
+  accountDetails?: readonly Account[];
   defaultAccountId?: string;
   onSubmitted: () => void;
   onCancel: () => void;
@@ -35,6 +40,7 @@ const ADJUSTMENT_ACTION_VALUES: InvestmentAction[] = ['REMOVE_SHARES', 'ADD_SHAR
 export function SecurityShareAdjustmentForm({
   securityId,
   accounts,
+  accountDetails = [],
   defaultAccountId,
   onSubmitted,
   onCancel,
@@ -89,16 +95,19 @@ export function SecurityShareAdjustmentForm({
         {t('shareAdjustment.heading')}
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Select
+        <AccountSelect
           label={t('shareAdjustment.accountLabel')}
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
           options={[
             { value: '', label: t('shareAdjustment.accountPlaceholder') },
-            ...accounts.map((a) => ({
-              value: a.accountId,
-              label: a.isClosed ? t('shareAdjustment.accountClosed', { name: a.accountName }) : a.accountName,
-            })),
+            ...accounts.map((a) =>
+              historyAccountOption(
+                a,
+                a.isClosed ? t('shareAdjustment.accountClosed', { name: a.accountName }) : a.accountName,
+                accountDetails,
+              ),
+            ),
           ]}
         />
         <Select

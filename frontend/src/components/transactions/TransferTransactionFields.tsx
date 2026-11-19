@@ -6,7 +6,6 @@ import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
-import { Select } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { HelpLink } from '@/components/help/HelpLink';
 import { Transaction } from '@/types/transaction';
@@ -16,6 +15,8 @@ import { entryDecimalPlaces, getCurrencySymbol } from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { useAuthStore } from '@/store/authStore';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface CrossCurrencyInfo {
   fromCurrency: string;
@@ -48,7 +49,7 @@ interface TransferTransactionFieldsProps {
   crossCurrencyInfo: CrossCurrencyInfo | null;
   payees: Payee[];
   payeeAliasMap?: Record<string, string[]>;
-  categoryOptions: Array<{ value: string; label: string }>;
+  categoryOptions: Array<{ value: string; label: string; icon?: ReactNode }>;
   selectedCategoryId: string;
   handleCategoryChange: (categoryId: string, name: string) => void;
   /** Absent when the surface cannot create categories (a joint account
@@ -182,7 +183,7 @@ export function TransferTransactionFields({
 
       {/* Row 2: From and To Accounts side by side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
+        <AccountSelect
           label={t('form.fields.fromAccount')}
           error={errors.accountId?.message as string | undefined}
           value={watchedAccountId || ''}
@@ -201,7 +202,7 @@ export function TransferTransactionFields({
           ]}
           {...register('accountId')}
         />
-        <Select
+        <AccountSelect
           label={t('form.fields.toAccount')}
           value={transferToAccountId}
           disabled={counterpartLocked}
@@ -297,6 +298,7 @@ export function TransferTransactionFields({
           options={payees.map(payee => ({
             value: payee.id,
             label: payee.name,
+            icon: payeeOptionIcon(payee),
             keywords: payeeAliasMap?.[payee.id],
           }))}
           value={transferPayeeId}

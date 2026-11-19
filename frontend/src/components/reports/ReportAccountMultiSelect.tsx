@@ -7,6 +7,7 @@ import { MultiSelect, type MultiSelectOption } from '@/components/ui/MultiSelect
 import { orderForPicker } from '@/lib/account-utils';
 import { Account } from '@/types/account';
 import { buildLogicalAccounts } from '@/lib/logical-accounts';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 
 // Rapid checkbox toggles (the typical multi-account selection flow) should
 // collapse into a single reload once the user pauses, matching the debounce in
@@ -51,6 +52,7 @@ export function ReportAccountMultiSelect({
 }: ReportAccountMultiSelectProps) {
   const t = useTranslations('reports');
   const mainAccountName = useMainAccountName();
+  const accountIcon = useAccountPickerIcon();
   // One option per account the user has, whichever ledger the report reads.
   // An entity with no ledger for this mode -- an orphan brokerage has no cash
   // register, an orphan cash half holds no securities -- is not offered,
@@ -81,6 +83,7 @@ export function ReportAccountMultiSelect({
   const options: MultiSelectOption[] = [...favourites, ...rest].map((entry, index) => ({
     value: entry.id,
     label: entry.logical.displayName,
+    icon: accountIcon(entry.logical.primary),
     // A rule between the favourites and the rest, when there are both.
     ...(index === favourites.length - 1 && rest.length > 0 ? { separatorAfter: true } : {}),
   }));

@@ -88,6 +88,7 @@ import {
 } from '@/hooks/useTransactionSubmitMode';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { NoteLinks } from '@/components/ui/LinkifiedText';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 const logger = createLogger('TransactionForm');
 
@@ -654,6 +655,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     return {
       value: category.id,
       label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+      icon: <CategoryPickerIcon category={category} />,
     };
   }), [categoryTree, effectiveCategories]);
 

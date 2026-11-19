@@ -144,6 +144,10 @@
     "createOption": "Buat \"{value}\"",
     "deleteOption": "Hapus \"{value}\""
   },
+  "iconSelect": {
+    "filter": "Cari...",
+    "noMatches": "Tidak ada yang cocok"
+  },
   "passwordInput": {
     "show": "Tampilkan input",
     "hide": "Sembunyikan input"

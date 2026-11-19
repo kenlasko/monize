@@ -3,6 +3,7 @@ import { apiFor, scrollUnderHeader, waitForReady } from "../readme/session";
 import { loadIds, type Ids } from "../readme/ids";
 import { showcaseMonth } from "../readme/settings";
 import { cardOf, docShot, openDocsSession } from "./capture";
+import { chooseIconSelectOption } from "../helpers/select";
 
 // website/docs/investments.md. Dialogs are opened, filled in for the picture,
 // and cancelled; nothing is saved.
@@ -119,9 +120,9 @@ test("investment-transaction-form", async () => {
     name: "New Investment Transaction",
   });
   await expect(dialog).toBeVisible();
-  await dialog
-    .getByLabel("Brokerage Account")
-    .selectOption({ label: "TFSA - Tax Free - Brokerage (CAD)" });
+  await chooseIconSelectOption(dialog.getByLabel("Brokerage Account"), {
+    label: "TFSA - Tax Free - Brokerage (CAD)",
+  });
   // Security is a combobox; its list renders at the page root. The fourth
   // listed security, as the native select's index 4 (after its placeholder).
   await dialog.getByRole("textbox", { name: "Security", exact: true }).click();

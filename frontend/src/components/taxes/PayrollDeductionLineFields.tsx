@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import { Combobox } from '@/components/ui/Combobox';
@@ -48,7 +49,7 @@ interface PayrollDeductionLineFieldsProps {
   index: number;
   control: Control<PayrollDeductionFormValues>;
   errors?: FieldErrors<PayrollDeductionLineValues>;
-  categoryOptions: { value: string; label: string }[];
+  categoryOptions: { value: string; label: string; icon?: ReactNode }[];
   /** The bill's deduction for the chosen category, or `null` when it has none. */
   lineAmount: number | null;
   currencyCode?: string;

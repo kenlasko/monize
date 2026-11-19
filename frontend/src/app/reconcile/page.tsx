@@ -11,7 +11,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
-import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { transactionModalProps } from '@/components/transactions/transaction-modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -49,6 +48,7 @@ import {
 } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { notifyReconciliationChanged } from '@/lib/reconciliationSignal';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const TransactionForm = dynamic(
   () => import('@/components/transactions/TransactionForm').then((m) => m.TransactionForm),
@@ -497,7 +497,7 @@ function ReconcileContent() {
         </p>
 
         <div className="space-y-4">
-          <Select
+          <AccountSelect
             label={t('setup.accountLabel')}
             options={[
               { value: '', label: t('setup.accountPlaceholder') },

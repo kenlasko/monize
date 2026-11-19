@@ -39,6 +39,9 @@ import { getCurrencySymbol } from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { createLogger } from '@/lib/logger';
 import toast from 'react-hot-toast';
+import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
+import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 const logger = createLogger('LoanPaymentSetupDialog');
 
@@ -169,11 +172,12 @@ export function LoanPaymentSetupDialog({
   const effectiveAutoPost = paymentMatchingEnabled ? false : autoPost;
   const sourceAccountName = accounts.find((a) => a.id === sourceAccountId)?.name;
 
-  const categoryOptions = getCategorySelectOptions(categories);
+  const categoryOptions = withCategoryIcons(getCategorySelectOptions(categories), categories);
 
   const payeeOptions = payees.map((p) => ({
     value: p.id,
     label: p.name,
+    icon: payeeOptionIcon(p),
   }));
 
   const hasDetectedSplit =
@@ -584,7 +588,7 @@ export function LoanPaymentSetupDialog({
 
               {/* Source Account */}
               <div>
-                <Select
+                <AccountSelect
                   label={t('loanPaymentSetup.paymentFromAccount')}
                   value={sourceAccountId}
                   onChange={(e) => setSourceAccountId(e.target.value)}

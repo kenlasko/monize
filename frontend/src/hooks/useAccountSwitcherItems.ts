@@ -1,15 +1,18 @@
 'use client';
 
-import { useMemo } from 'react';
+import { createElement, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Account } from '@/types/account';
 import { formatAccountType, orderAccountsForPicker } from '@/lib/account-utils';
 import type { EntitySwitcherItem } from '@/components/ui/EntitySwitcher';
+import { AccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { useInstitutionLogos } from '@/hooks/useInstitutionLogos';
 
 /**
  * An account switcher's rows: one per account the page's account filter
  * offers, each qualified by its type the way the account detail page's
- * switcher does, so alike-named accounts at two banks are told apart. The
+ * switcher does, so alike-named accounts at two banks are told apart, and
+ * marked with its institution's logo (else its type icon). The
  * order is `orderAccountsForPicker`'s -- the starred accounts in the order the
  * user arranged them, then the rest by name -- so the menu opens on the same
  * accounts, in the same order, as every account `<select>` in the app. The
@@ -26,6 +29,7 @@ export function useAccountSwitcherItems(
   const tc = useTranslations('common');
   // The account detail page's switcher copy, so the surfaces say the same thing.
   const ta = useTranslations('accountDetail');
+  const institutionLogos = useInstitutionLogos();
 
   return useMemo<EntitySwitcherItem[]>(() => {
     const { favourites, rest } = orderAccountsForPicker(accounts ?? []);
@@ -46,6 +50,12 @@ export function useAccountSwitcherItems(
         // typing narrows across both sections rather than only below the fold.
         searchText: `${name} ${type}`,
         group,
+        icon: createElement(AccountPickerIcon, {
+          institution: candidate.institutionId
+            ? institutionLogos.get(candidate.institutionId)
+            : undefined,
+          accountType: candidate.accountType,
+        }),
       };
     };
     // Emitted favourites-first because `EntitySwitcher` takes its section order
@@ -58,5 +68,5 @@ export function useAccountSwitcherItems(
         toItem(candidate, sectioned ? ta('header.switchOtherAccounts') : undefined),
       ),
     ];
-  }, [accounts, currentId, displayName, ta, tc]);
+  }, [accounts, currentId, displayName, institutionLogos, ta, tc]);
 }

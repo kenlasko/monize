@@ -1289,6 +1289,26 @@ describe('SplitEditor — desktop layout interactions', () => {
     expect(accountSelects.length).toBeGreaterThan(0);
   });
 
+  it("names each transfer account picker by its split, since a combobox takes no name from its text", () => {
+    render(
+      <SplitEditor
+        splits={[
+          createSplitRow({ id: 'split-1', splitType: 'transfer', transferAccountId: 'acc-2', amount: -30 }),
+          createSplitRow({ id: 'split-2', amount: -20 }),
+        ]}
+        onChange={mockOnChange}
+        categories={mockCategories}
+        accounts={mockAccounts}
+        sourceAccountId="acc-1"
+        transactionAmount={-50}
+      />
+    );
+    // One for the phone layout, one for the desktop table.
+    const pickers = screen.getAllByRole('combobox', { name: 'Account for split 1' });
+    expect(pickers.length).toBeGreaterThan(0);
+    pickers.forEach((picker) => expect(picker).toHaveTextContent('Savings'));
+  });
+
   it('updates transferAccountId via desktop account selector', () => {
     const splits: SplitRow[] = [
       createSplitRow({ id: 'split-1', splitType: 'transfer', transferAccountId: '', amount: -30 }),

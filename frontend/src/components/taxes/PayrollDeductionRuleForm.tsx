@@ -29,6 +29,7 @@ import {
   PayrollDeductionLineFields,
   type PayrollDeductionFormValues,
 } from './PayrollDeductionLineFields';
+import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
 
 const logger = createLogger('PayrollDeductionRuleForm');
 
@@ -268,7 +269,10 @@ export function PayrollDeductionRuleForm({
       ),
     [existingRules, billId, rule?.id],
   );
-  const allCategoryOptions = useMemo(() => getCategorySelectOptions(categories), [categories]);
+  const allCategoryOptions = useMemo(
+    () => withCategoryIcons(getCategorySelectOptions(categories), categories),
+    [categories],
+  );
   const optionsForRow = useCallback(
     (index: number) => {
       const taken = new Set(

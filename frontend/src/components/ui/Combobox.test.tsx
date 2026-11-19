@@ -29,6 +29,54 @@ describe('Combobox', () => {
     expect(Number.parseFloat(list.style.top) + 240).toBeLessThanOrEqual(window.innerHeight);
   });
 
+  it("draws an option's icon before its label, and still matches on the label", async () => {
+    render(
+      <Combobox
+        options={[
+          { value: '1', label: 'Apple', icon: <span data-testid="apple-icon">A</span> },
+          { value: '2', label: 'Banana' },
+        ]}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+    const icon = screen.getByTestId('apple-icon');
+    expect(icon.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(icon.closest('[data-option-index]')).toHaveTextContent('Apple');
+
+    // Need a small delay to clear justOpenedRef
+    await new Promise(r => setTimeout(r, 150));
+    fireEvent.change(input, { target: { value: 'App' } });
+    await waitFor(() => expect(screen.queryByText('Banana')).toBeNull());
+    fireEvent.click(screen.getByText('Apple'));
+    expect(onChange).toHaveBeenCalledWith('1', 'Apple');
+  });
+
+  it("shows the picked option's icon in the field, and drops it once the reader types", async () => {
+    render(
+      <Combobox
+        options={[
+          { value: '1', label: 'Apple', icon: <span>A</span> },
+          { value: '2', label: 'Banana' },
+        ]}
+        value="1"
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByTestId('combobox-picked-icon')).toHaveTextContent('A');
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+    await new Promise(r => setTimeout(r, 150));
+    fireEvent.change(input, { target: { value: 'Ban' } });
+    await waitFor(() => expect(screen.queryByTestId('combobox-picked-icon')).toBeNull());
+  });
+
+  it('shows no picked icon for an option without one', () => {
+    render(<Combobox options={options} value="2" onChange={onChange} />);
+    expect(screen.queryByTestId('combobox-picked-icon')).toBeNull();
+  });
+
   it('renders with label and placeholder', () => {
     render(
       <Combobox label="Fruit" placeholder="Pick a fruit" options={options} onChange={onChange} />,

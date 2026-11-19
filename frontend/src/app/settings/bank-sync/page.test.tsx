@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@/test/render";
 import BankSyncSettingsPage from "./page";
 import type { BankSyncConnection, BankSyncStatus } from "@/types/bank-sync";
+import { nativeSelectOf, selectOptionLabels } from "@/test/icon-select";
 
 vi.mock("@/components/auth/ProtectedRoute", () => ({
   ProtectedRoute: ({ children }: { children: React.ReactNode }) => (
@@ -309,17 +310,17 @@ describe("BankSyncSettingsPage", () => {
     ]);
     await renderPage();
 
-    const [first, second] = screen.getAllByLabelText(
-      "Monize account",
-    ) as HTMLSelectElement[];
-    expect(Array.from(first.options).map((o) => o.textContent)).toEqual([
+    const [first, second] = screen
+      .getAllByLabelText("Monize account")
+      .map(nativeSelectOf);
+    expect(selectOptionLabels(first)).toEqual([
       "Not linked",
       "Create a new account",
       "Checking (EUR)",
       "Savings (EUR)",
     ]);
     expect(first.value).toBe("a1");
-    expect(Array.from(second.options).map((o) => o.textContent)).toEqual([
+    expect(selectOptionLabels(second)).toEqual([
       "Not linked",
       "Create a new account",
       "Savings (EUR)",

@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@/test/render';
 import { DebtPayoffTimelineReport } from './DebtPayoffTimelineReport';
 import { axisTickLabel } from '@/lib/chart-sampling';
+import { nativeSelectOf } from '@/test/icon-select';
+
+/** The account picker's option labelled `label`, or null. */
+const offeredAccount = (label: string) =>
+  Array.from(nativeSelectOf(screen.getByRole('combobox')).options).find((o) => o.label === label) ?? null;
 
 vi.mock('@/hooks/useNumberFormat', async () => {
   const { numberFormatMockDefaults } = await import('@/test/number-format-mock');
@@ -483,8 +488,8 @@ describe('DebtPayoffTimelineReport', () => {
     await waitFor(() => {
       expect(screen.getByText('Select Account')).toBeInTheDocument();
     });
-    expect(screen.getByText('Car Loan')).toBeInTheDocument();
-    expect(screen.queryByText('Savings')).not.toBeInTheDocument();
+    expect(offeredAccount('Car Loan')).toBeInTheDocument();
+    expect(offeredAccount('Savings')).not.toBeInTheDocument();
   });
 
   it('shows progress percentage in summary card', async () => {
@@ -1044,8 +1049,8 @@ describe('DebtPayoffTimelineReport', () => {
     await waitFor(() => {
       expect(screen.getByText('Select Account')).toBeInTheDocument();
     });
-    expect(screen.getByText('Home Mortgage')).toBeInTheDocument();
-    expect(screen.getByText('My LOC')).toBeInTheDocument();
+    expect(offeredAccount('Home Mortgage')).toBeInTheDocument();
+    expect(offeredAccount('My LOC')).toBeInTheDocument();
   });
 
   it('restores the persisted account selection instead of the first account', async () => {
@@ -1081,7 +1086,7 @@ describe('DebtPayoffTimelineReport', () => {
     ]);
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveValue('loan-2');
+      expect(nativeSelectOf(screen.getByRole('combobox'))).toHaveValue('loan-2');
     });
   });
 
@@ -1104,7 +1109,7 @@ describe('DebtPayoffTimelineReport', () => {
       }]);
     render(<DebtPayoffTimelineReport />);
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveValue('loan-1');
+      expect(nativeSelectOf(screen.getByRole('combobox'))).toHaveValue('loan-1');
     });
   });
 

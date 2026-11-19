@@ -144,6 +144,10 @@
     "createOption": "Создать \"{value}\"",
     "deleteOption": "Удалить «{value}»"
   },
+  "iconSelect": {
+    "filter": "Поиск...",
+    "noMatches": "Нет совпадений"
+  },
   "passwordInput": {
     "show": "Показать поле",
     "hide": "Скрыть поле"

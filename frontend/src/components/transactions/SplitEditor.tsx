@@ -43,6 +43,8 @@ import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { buildTagOptions } from '@/lib/tag-options';
 import { Th } from '@/components/ui/Table';
 import { newClientId } from '@/lib/client-id';
+import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 export type { SplitType, SplitRow } from './split-rows';
 export { createEmptySplits, toSplitRows, toCreateSplitData } from './split-rows';
@@ -184,6 +186,7 @@ export function SplitEditor({
     return {
       value: category.id,
       label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+      icon: <CategoryPickerIcon category={category} />,
     };
   }), [categories]);
 
@@ -736,7 +739,8 @@ export function SplitEditor({
                     disabled={disabled}
                   />
                 ) : (
-                  <Select
+                  <AccountSelect
+                    aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
                     options={[
                       { value: '', label: t('splitEditor.selectAccount') },
                       ...accountOptions,
@@ -906,7 +910,8 @@ export function SplitEditor({
                       disabled={disabled}
                     />
                   ) : (
-                    <Select
+                    <AccountSelect
+                      aria-label={t('splitEditor.accountForSplit', { number: index + 1 })}
                       options={[
                         { value: '', label: t('splitEditor.selectAccount') },
                         ...accountOptions,

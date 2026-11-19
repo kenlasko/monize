@@ -8,6 +8,7 @@ import {
 import { apiFor, scrollUnderHeader, waitForReady } from "../readme/session";
 import { STATE_FILE } from "../readme/settings";
 import { docShot, openDocsSession } from "./capture";
+import { chooseIconSelectOption } from "../helpers/select";
 
 // website/docs/rules.md. The rules are the showcase rules readme/01-seed.spec.ts
 // adds (readme/seed-tags-rules.ts). Nothing is saved or run: the new rule is
@@ -340,9 +341,9 @@ test("rules-split-action", async () => {
   const principal = action.getByRole("group", { name: "Split 1", exact: true });
   await principal.getByLabel("Amount").selectOption({ label: "{principal}" });
   await principal.getByLabel("Type").selectOption({ label: "Transfer" });
-  await principal
-    .getByLabel("Account")
-    .selectOption({ label: "Home Mortgage (CAD)" });
+  await chooseIconSelectOption(principal.getByLabel("Account"), {
+    label: "Home Mortgage (CAD)",
+  });
   const interest = action.getByRole("group", { name: "Split 2", exact: true });
   await interest.getByLabel("Amount").selectOption({ label: "{interest}" });
   const category = interest.getByPlaceholder("Select category...");

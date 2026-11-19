@@ -69,6 +69,7 @@
     "detectedTypeLabel": "감지된 유형:",
     "investmentFileNotice": "이 파일에는 투자 거래가 포함되어 있습니다. 브로커리지 계정만 표시됩니다.",
     "importIntoAccount": "계정으로 가져오기",
+    "importFileIntoAccount": "{fileName}을(를) 가져올 계좌",
     "createNewAccount": "+ 새 계정 만들기",
     "createNew": "+ 새로 만들기",
     "createNewAccountTitle": "새 계정 만들기",

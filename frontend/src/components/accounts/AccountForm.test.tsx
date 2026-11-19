@@ -8,6 +8,7 @@ import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { institutionsApi } from '@/lib/institutions';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import { getSelectByLabel } from '@/test/icon-select';
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: {
@@ -963,7 +964,7 @@ describe('AccountForm', () => {
       );
     });
 
-    const select = screen.getByLabelText(/^Payment From Account/) as HTMLSelectElement;
+    const select = getSelectByLabel(/^Payment From Account/);
     await waitFor(() => {
       expect(select.value).toBe('chq-2');
     });

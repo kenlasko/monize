@@ -28,7 +28,7 @@ The three buttons at the top of the form choose what you are entering: a **Trans
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| **Account** | Yes | Which account this transaction belongs to |
+| **Account** | Yes | Which account this transaction belongs to. Each account is marked with its institution's logo (or its account type's icon), your favourites are listed first, and with a long list you can type to search it |
 | **Date** | Yes | The date of the transaction |
 | **Payee** | No | Who the transaction was with |
 | **Category** | No | The expense or income category |
@@ -38,6 +38,8 @@ The three buttons at the top of the form choose what you are entering: a **Trans
 | **Tags** | No | One or more [tags](tags.md) for flexible labelling; the tags you used most recently are listed first. **Status** sits beside it |
 | **Status** | No | Unreconciled, Cleared, Reconciled, or Void |
 | **Attachments** | No | Receipts, invoices, and other files (see [Attachments](#attachments)) |
+
+The Payee and Category lists show each payee's logo and each category's icon, and the one you pick keeps its mark in the field. Every account list in Monize, and the account, payee and category filters, are marked the same way.
 
 Picking a payee fills in its default category, if you have not chosen one yet. When the Amount is an expense or income, its sign follows the category you choose, unless that category has automatic sign turned off.
 
@@ -237,7 +239,7 @@ The fields are `payee`, `memo` (the description), `cat`, `tag`, `account`, `ref`
 
 When you filter the list to a single **account**, **payee**, or **category**, an **info panel** appears beside the chart summarizing it:
 
-- **Account** -- the current balance, type, account number, currency, credit limit or interest rate, and the next scheduled payment; for loans and mortgages, the current payment, estimated payoff, and remaining interest. A caret beside the name switches to another account, and an icon opens the account's [detail page](accounts.md#account-detail-pages)
+- **Account** -- the current balance, type, account number, currency, credit limit or interest rate, and the next scheduled payment; for loans and mortgages, the current payment, estimated payoff, and remaining interest. A caret beside the name switches to another account (each marked with its institution's logo, in a menu tall enough on a desktop to show every account without scrolling), and an icon opens the account's [detail page](accounts.md#account-detail-pages)
 - **Payee** -- total spent, income, the number of transactions, the average amount, the last transaction, the default category, the next bill, the top categories, and a detected recurring pattern
 - **Category** -- the total, this month's budget, the monthly average, subcategories, top payees, and the next scheduled transaction
 

@@ -31,6 +31,7 @@ The e2e frontend is `next dev` with Turbopack's on-disk cache off (`NEXT_DEV_FIL
 - **An API-only login does not authenticate the page.** `authStore` persists only `isAuthenticated` and re-fetches the profile on load; `authedPage` registers through the UI.
 - **CSRF cookie values are URL-encoded** (`:` becomes `%3A`); the header value must be `decodeURIComponent`'d.
 - **Randomness is `crypto.randomInt(n)`**, never `Math.random()` or a biased `bytes % n`; CodeQL and Bearer both scan this directory.
+- **Account fields are not native selects** (`AccountSelect`): pick with `chooseIconSelectOption` (`helpers/select.ts`), never `selectOption`.
 - **Custom comboboxes** (the transaction payee field) swallow `fill()`; identify a row by a distinctive seeded amount and click a cell that does not stop propagation.
 - **Push tests observe only through `push/fixture.ts`.** Never call `deliverPushMessage` or `registration.getNotifications()` from a spec; `frontend/src/test/e2e-conventions.test.ts` scans for both, and for the bare alert locator above.
 - **A control renamed or removed in the app has consumers here that no unit suite loads.** Grep this directory for the accessible name in the same commit.

@@ -513,6 +513,7 @@
       "ariaAmountsIn": "{code}(으)로 분할 금액 표시 및 편집"
     },
     "splitLabel": "분할 {number}",
+    "accountForSplit": "분할 {number}의 계좌",
     "columns": {
       "type": "유형",
       "categoryAccount": "카테고리 / 계정",

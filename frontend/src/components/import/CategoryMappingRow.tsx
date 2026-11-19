@@ -8,11 +8,14 @@ import { CategoryMapping } from '@/lib/import';
 import { parseLocaleNumber } from '@/lib/number-parse';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { Account } from '@/types/account';
+import { accountSelectOption } from '@/lib/account-utils';
+import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { IconSelect, type IconSelectOption } from '@/components/ui/IconSelect';
 
 interface CategoryMappingRowProps {
   mapping: CategoryMapping;
-  categoryOptions: Array<{ value: string; label: string }>;
-  parentCategoryOptions: Array<{ value: string; label: string }>;
+  categoryOptions: IconSelectOption[];
+  parentCategoryOptions: IconSelectOption[];
   loanAccounts: Account[];
   onMappingChange: (update: Partial<CategoryMapping>) => void;
   formatCategoryPath: (path: string) => string;
@@ -208,10 +211,12 @@ export function CategoryMappingRow({
   // Build loan account options
   const loanAccountOptions = [
     { value: '', label: t('mapCategories.selectExistingLoanPlaceholder') },
-    ...loanAccounts.map((account) => ({
-      value: account.id,
-      label: `${account.name}${account.institution ? ` (${account.institution})` : ''}`,
-    })),
+    ...loanAccounts.map((account) =>
+      accountSelectOption(
+        account,
+        `${account.name}${account.institution ? ` (${account.institution})` : ''}`,
+      ),
+    ),
   ];
 
   // Get display name for matched loan
@@ -258,7 +263,7 @@ export function CategoryMappingRow({
                 {t('mapCategories.loanTransferNotice')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
+                <AccountSelect
                   label={t('mapCategories.selectExistingLoan')}
                   options={loanAccountOptions}
                   value={mapping.loanAccountId || ''}
@@ -311,7 +316,7 @@ export function CategoryMappingRow({
           ) : (
             // Standard category mapping UI
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
+              <IconSelect
                 label={t('mapCategories.mapToExisting')}
                 options={categoryOptions}
                 value={mapping.categoryId || ''}
@@ -328,7 +333,7 @@ export function CategoryMappingRow({
                 />
                 {showParentSelector && (
                   <div className="mt-2">
-                    <Select
+                    <IconSelect
                       label={t('mapCategories.parentCategory')}
                       options={[
                         ...parentCategoryOptions,
@@ -366,12 +371,14 @@ export function CategoryMappingRow({
               {t('mapCategories.loanPrefix')} {getMatchedLoanName()}
             </span>
           ) : (
-            <Select
-              options={categoryOptions}
-              value={mapping.categoryId || ''}
-              onChange={(e) => handleCategorySelect(e.target.value)}
-              className="flex-1"
-            />
+            <div className="flex-1">
+              <IconSelect
+                aria-label={t('mapCategories.mapToExisting')}
+                options={categoryOptions}
+                value={mapping.categoryId || ''}
+                onChange={(e) => handleCategorySelect(e.target.value)}
+              />
+            </div>
           )}
         </div>
       )}

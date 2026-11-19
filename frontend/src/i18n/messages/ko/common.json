@@ -144,6 +144,10 @@
     "createOption": "\"{value}\" 만들기",
     "deleteOption": "\"{value}\" 삭제"
   },
+  "iconSelect": {
+    "filter": "검색...",
+    "noMatches": "일치하는 항목 없음"
+  },
   "passwordInput": {
     "show": "입력 표시",
     "hide": "입력 숨기기"
