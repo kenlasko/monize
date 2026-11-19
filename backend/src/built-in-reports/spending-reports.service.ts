@@ -29,11 +29,12 @@ import {
   MonthlySpendingItem,
   MonthlyCategorySpending,
 } from "./dto";
-import {
-  investmentExclusionSql,
-  reportableTransactionAmountSql,
-} from "../common/investment-filter.util";
+import { investmentExclusionSql } from "../common/investment-filter.util";
 import { tagValuesArrayExpr } from "./tag-values-sql";
+import {
+  PURCHASE_AMOUNT_SQL,
+  PURCHASE_ROW_CONDITIONS_SQL,
+} from "./purchase-rows-sql";
 
 /**
  * Investment scope is LINKAGE, never account type (INV-REPORT-001, issue #1257):
@@ -47,17 +48,6 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
   transactionAlias: "t",
   splitAlias: "ts",
 });
-const INVESTMENT_EXCLUSION_NO_SPLITS = investmentExclusionSql({
-  accountAlias: "a",
-  transactionAlias: "t",
-});
-
-/**
- * The ordinary cash the parent row represents. A payee total reads only the
- * parent, so a split's embedded investment or transfer line has to come out of
- * the amount rather than out of the row (branch audit F-RPT-001).
- */
-const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
 
 /**
  * Spending in a category is the DEBITS NET OF THE CREDITS filed against it: a
@@ -324,22 +314,12 @@ export class SpendingReportsService {
         t.payee_name,
         t.currency_code,
         ${rateBasisColumnsSql("$3")},
-        SUM(ABS(${REPORTABLE_TX_AMOUNT})) as total
+        SUM(ABS(${PURCHASE_AMOUNT_SQL})) as total
       FROM transactions t
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
-        AND ${REPORTABLE_TX_AMOUNT} < 0
-        AND t.is_transfer = false
-        AND (t.status IS NULL OR t.status != 'VOID')
-        AND t.parent_transaction_id IS NULL
-        AND ${INVESTMENT_EXCLUSION_NO_SPLITS}
-        AND NOT EXISTS (
-          SELECT 1 FROM accounts ax
-          WHERE ax.user_id = t.user_id
-            AND ax.asset_category_id IS NOT NULL
-            AND ax.asset_category_id = t.category_id
-        )
+        AND ${PURCHASE_ROW_CONDITIONS_SQL}
       `;
 
     const params: (string | undefined)[] = [userId, endDate, defaultCurrency];

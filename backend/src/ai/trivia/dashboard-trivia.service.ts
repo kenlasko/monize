@@ -12,15 +12,7 @@ import {
   JobClaimType,
 } from "../../common/jobs/job-claim.service";
 import { mapWithConcurrency } from "../../common/concurrency.util";
-import { preferredCurrency } from "../../common/default-currency.util";
-import { AccountsService } from "../../accounts/accounts.service";
-import { accountCarriesBalance } from "../../accounts/account-carries-balance";
-import { Account, AccountType } from "../../accounts/entities/account.entity";
-import { NetWorthService } from "../../net-worth/net-worth.service";
-import {
-  PortfolioService,
-  PortfolioSummary,
-} from "../../securities/portfolio.service";
+import { todayInTimezoneOrUtc } from "../../common/date-utils";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { AiService } from "../ai.service";
 import { TRIVIA_SYSTEM_PROMPT } from "../context/prompt-templates";
@@ -30,9 +22,7 @@ import {
 } from "../context/language-directive";
 import { currentRequestLocale } from "../../i18n/request-locale";
 import { DashboardTrivia } from "../entities/dashboard-trivia.entity";
-import { buildTriviaFacts, TriviaAsset } from "./trivia-facts";
-import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
-import { TriviaLedgerLoader } from "./trivia-ledger.loader";
+import { TriviaPoolBuilder } from "./trivia-pool.builder";
 import {
   buildTriviaPrompt,
   mergeTriviaItems,
@@ -70,12 +60,9 @@ export class DashboardTriviaService {
 
   constructor(
     private readonly dataSource: DataSource,
-    private readonly accountsService: AccountsService,
-    private readonly netWorthService: NetWorthService,
-    private readonly portfolioService: PortfolioService,
     private readonly aiService: AiService,
     private readonly jobClaims: JobClaimService,
-    private readonly ledger: TriviaLedgerLoader,
+    private readonly pool: TriviaPoolBuilder,
   ) {}
 
   /**
@@ -102,7 +89,13 @@ export class DashboardTriviaService {
       return this.toResponse(stored);
     }
 
-    const facts = await this.loadFacts(userId, preferences);
+    const today = todayInTimezoneOrUtc(
+      (await this.pool.timezoneOf(userId)) ?? "UTC",
+    );
+    const facts = await this.pool.build(userId, preferences, {
+      today,
+      mode: "page",
+    });
     const row: DashboardTrivia = {
       userId,
       items: shuffled(mergeTriviaItems(facts, [])),
@@ -140,8 +133,16 @@ export class DashboardTriviaService {
       TRIVIA_GENERATION_CONCURRENCY,
       async (userId) => {
         try {
-          // RLS: each user's list is built and stored under that user.
-          await withUserContext(userId, () => this.generateForUser(userId));
+          // RLS: each user's list is built and stored under that user, in
+          // that user's timezone, so the day the reads call "today" is theirs.
+          const timezone = await withUserContext(userId, () =>
+            this.pool.timezoneOf(userId),
+          );
+          await withUserContext(
+            userId,
+            () => this.generateForUser(userId),
+            timezone ?? undefined,
+          );
         } catch (error) {
           const message =
             error instanceof Error ? error.message : "Unknown error";
@@ -177,6 +178,9 @@ export class DashboardTriviaService {
     }
 
     const day = new Date().toISOString().slice(0, 10);
+    const today = todayInTimezoneOrUtc(
+      (await this.pool.timezoneOf(userId)) ?? "UTC",
+    );
     const claimed = await this.jobClaims.claimOnce(
       JobClaimType.DashboardTrivia,
       userId,
@@ -184,7 +188,10 @@ export class DashboardTriviaService {
     );
     if (!claimed) return;
 
-    const facts = await this.loadFacts(userId, preferences);
+    const facts = await this.pool.build(userId, preferences, {
+      today,
+      mode: "cron",
+    });
     if (facts.length === 0) {
       await this.deleteRow(userId);
       return;
@@ -251,77 +258,6 @@ export class DashboardTriviaService {
     await withScopedDb(this.dataSource, (manager) =>
       manager.getRepository(DashboardTrivia).delete({ userId }),
     );
-  }
-
-  private async loadFacts(
-    userId: string,
-    preferences: UserPreference | null,
-  ): Promise<TriviaFact[]> {
-    const currency = preferredCurrency(preferences);
-
-    const months = await this.netWorthService.getMonthlyNetWorth(
-      userId,
-      undefined,
-      undefined,
-      undefined,
-      { fetchMissing: false },
-    );
-    const portfolio = await this.loadPortfolio(userId);
-    // Closed accounts too: a closed asset still carrying a value ranks, as it
-    // counts in net worth. The portfolio flag reads the open accounts.
-    const allAccounts = await this.accountsService.findAll(userId, true);
-    const accounts = allAccounts.filter((a) => !a.isClosed);
-
-    const ledger = await this.ledger.load(userId, currency);
-
-    return [
-      ...buildTriviaFacts({
-        currency,
-        months,
-        portfolio,
-        otherAssets: this.otherAssets(allAccounts, currency),
-        portfolioInNetWorth: !accounts.some(
-          (a) =>
-            a.accountType === AccountType.INVESTMENT && a.excludeFromNetWorth,
-        ),
-      }),
-      // Spending, income, records and warranties: the rest of Monize.
-      ...buildLedgerTriviaFacts(ledger),
-    ];
-  }
-
-  /** A portfolio that cannot be read leaves out its facts, and only those. */
-  private async loadPortfolio(
-    userId: string,
-  ): Promise<PortfolioSummary | null> {
-    try {
-      return await this.portfolioService.getPortfolioSummary(userId);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      this.logger.warn(
-        `Trivia could not read the portfolio for user ${userId}: ${message}`,
-      );
-      return null;
-    }
-  }
-
-  /** `null` when a balance in another currency makes the accounts unrankable. */
-  private otherAssets(
-    accounts: Account[],
-    currency: string,
-  ): TriviaAsset[] | null {
-    const assets = accounts.filter(
-      (a) =>
-        a.accountType === AccountType.ASSET &&
-        // A closed asset still carrying a value counts, as in net worth.
-        accountCarriesBalance(a) &&
-        !a.excludeFromNetWorth,
-    );
-    if (assets.some((a) => a.currencyCode !== currency)) return null;
-    return assets.map((a) => ({
-      name: a.name,
-      value: Number(a.currentBalance),
-    }));
   }
 
   /**

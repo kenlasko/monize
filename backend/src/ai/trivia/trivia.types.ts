@@ -58,6 +58,18 @@ export const TRIVIA_FACT_IDS = [
   "activityScheduled",
   "warrantiesCovered",
   "warrantiesNextExpiry",
+  "spendingMonthToDateLess",
+  "spendingMonthToDateMore",
+  "spendingLastDay",
+  "spendingLastSevenDays",
+  "spendingBiggestRecentPurchase",
+  "spendingNoSpendStreak",
+  "spendingDaysSincePayee",
+  "activityBillsDueThisWeek",
+  "activityNextBill",
+  "spendingBudgetPace",
+  "investmentsTopMoverUp",
+  "investmentsTopMoverDown",
 ] as const;
 export type TriviaFactId = (typeof TRIVIA_FACT_IDS)[number];
 

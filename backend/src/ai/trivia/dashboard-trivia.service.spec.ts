@@ -3,6 +3,9 @@ import { DashboardTriviaService } from "./dashboard-trivia.service";
 import { DashboardTrivia } from "../entities/dashboard-trivia.entity";
 import { UserPreference } from "../../users/entities/user-preference.entity";
 import { AccountType } from "../../accounts/entities/account.entity";
+import { withUserContext } from "../../common/db/with-context";
+import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
+import { TriviaPoolBuilder } from "./trivia-pool.builder";
 
 const manager: Record<string, any> = {};
 jest.mock("../../common/db/scoped-db", () => ({
@@ -14,7 +17,10 @@ jest.mock("../../i18n/request-locale", () => ({
 }));
 jest.mock("../../common/db/with-context", () => ({
   withSystemContext: (fn: () => unknown) => fn(),
-  withUserContext: (_id: string, fn: () => unknown) => fn(),
+  withUserContext: jest.fn((_id: string, fn: () => unknown) => fn()),
+}));
+jest.mock("../../common/users-by-timezone.util", () => ({
+  getEffectiveTimezoneOfUser: jest.fn(),
 }));
 
 describe("DashboardTriviaService", () => {
@@ -32,6 +38,7 @@ describe("DashboardTriviaService", () => {
   let ai: Record<string, jest.Mock>;
   let jobClaims: Record<string, jest.Mock>;
   let ledger: Record<string, jest.Mock>;
+  let daily: Record<string, jest.Mock>;
   let service: DashboardTriviaService;
   let prefRepo: { findOne: jest.Mock };
 
@@ -99,14 +106,36 @@ describe("DashboardTriviaService", () => {
         warranties: null,
       }),
     };
-    service = new DashboardTriviaService(
+    daily = {
+      load: jest.fn().mockResolvedValue({
+        currency: "CAD",
+        today: "2026-11-19",
+        monthToDate: null,
+        lastDay: null,
+        lastSevenDays: null,
+        biggestPurchase: null,
+        lastSpendDate: null,
+        sincePayee: null,
+        bills: null,
+        budget: null,
+        topMover: null,
+      }),
+    };
+    (getEffectiveTimezoneOfUser as jest.Mock).mockResolvedValue("UTC");
+    (withUserContext as jest.Mock).mockClear();
+    const pool = new TriviaPoolBuilder(
       {} as DataSource,
       accounts as never,
       netWorth as never,
       portfolio as never,
+      ledger as never,
+      daily as never,
+    );
+    service = new DashboardTriviaService(
+      {} as DataSource,
       ai as never,
       jobClaims as never,
-      ledger as never,
+      pool,
     );
   });
 
@@ -234,7 +263,11 @@ describe("DashboardTriviaService", () => {
         warranties: { covered: 2, nextExpiring: null },
       });
       const result = await service.getTrivia(userId);
-      expect(ledger.load).toHaveBeenCalledWith(userId, "CAD");
+      expect(ledger.load).toHaveBeenCalledWith(
+        userId,
+        "CAD",
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      );
       const ids = result.items.map((item) =>
         item.source === "calculated" ? item.factId : null,
       );
@@ -538,6 +571,40 @@ describe("DashboardTriviaService", () => {
       await expect(service.handleDailyGeneration()).resolves.toBeUndefined();
       expect(spy).toHaveBeenCalledTimes(2);
       expect(selectQb.where).toHaveBeenCalledWith("u.is_active = true");
+    });
+
+    it("runs each user's body under that user's timezone", async () => {
+      manager.createQueryBuilder = jest.fn(() => selectQb);
+      (getEffectiveTimezoneOfUser as jest.Mock).mockResolvedValue(
+        "Pacific/Auckland",
+      );
+      jest.spyOn(service, "generateForUser").mockResolvedValue(undefined);
+      await service.handleDailyGeneration();
+      const bodyCalls = (withUserContext as jest.Mock).mock.calls.filter(
+        (call) => call.length === 3,
+      );
+      expect(bodyCalls).toHaveLength(2);
+      expect(bodyCalls[0][2]).toBe("Pacific/Auckland");
+    });
+
+    it("builds the pool for the reader's day, with bills, on the cron path", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-11-19T12:30:00Z"));
+      (getEffectiveTimezoneOfUser as jest.Mock).mockResolvedValue(
+        "Pacific/Auckland",
+      );
+      try {
+        await service.generateForUser(userId);
+      } finally {
+        jest.useRealTimers();
+      }
+      // 12:30 UTC on the 19th is already the 20th in Auckland (UTC+13).
+      expect(ledger.load).toHaveBeenCalledWith(userId, "CAD", "2026-11-20");
+      expect(daily.load).toHaveBeenCalledWith(
+        userId,
+        "CAD",
+        "2026-11-20",
+        expect.objectContaining({ bills: true }),
+      );
     });
   });
 });

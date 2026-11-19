@@ -1,9 +1,12 @@
 import {
+  alternateDailyInput,
   alternateInputs,
+  fullDailyInput,
   fullLedgerInput,
   fullTriviaFactsInput,
 } from "./__fixtures__/trivia-pool.fixture";
 import { buildTriviaFacts } from "./trivia-facts";
+import { buildDailyTriviaFacts } from "./trivia-daily-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { familyOf, laneOf, TRIVIA_FAMILIES } from "./trivia-families";
 import { TRIVIA_FACT_IDS, type TriviaFact } from "./trivia.types";
@@ -14,6 +17,8 @@ function builderOutputs(): TriviaFact[][] {
     buildTriviaFacts(fullTriviaFactsInput()),
     ...alternateInputs().map(buildTriviaFacts),
     buildLedgerTriviaFacts(fullLedgerInput()),
+    buildDailyTriviaFacts(fullDailyInput()),
+    buildDailyTriviaFacts(alternateDailyInput()),
   ];
 }
 
@@ -32,9 +37,17 @@ describe("trivia families", () => {
     expect(all.sort()).toEqual([...TRIVIA_FACT_IDS].sort());
   });
 
-  it("keeps every family evergreen in this phase", () => {
+  it("puts the daily facts in the daily lane and the rest in evergreen", () => {
+    const daily = buildDailyTriviaFacts(fullDailyInput())
+      .concat(buildDailyTriviaFacts(alternateDailyInput()))
+      .map((f) => familyOf(f.id));
+    expect(new Set(daily).size).toBe(10);
     for (const family of Object.keys(TRIVIA_FAMILIES)) {
-      expect(laneOf(family as keyof typeof TRIVIA_FAMILIES)).toBe("evergreen");
+      expect(laneOf(family as keyof typeof TRIVIA_FAMILIES)).toBe(
+        daily.includes(family as keyof typeof TRIVIA_FAMILIES)
+          ? "daily"
+          : "evergreen",
+      );
     }
   });
 

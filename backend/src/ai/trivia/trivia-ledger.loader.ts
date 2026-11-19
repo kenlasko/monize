@@ -1,12 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import {
-  formatMonthKey,
-  getMonthEndYMD,
-  todayInTimezoneOrUtc,
-} from "../../common/date-utils";
-import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
+import { formatMonthKey, getMonthEndYMD } from "../../common/date-utils";
 import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
 import { warrantyStatusBounds } from "../../warranties/warranty-status.util";
 import type {
@@ -53,11 +48,11 @@ export class TriviaLedgerLoader {
     private readonly reports: BuiltInReportsService,
   ) {}
 
-  async load(userId: string, currency: string): Promise<TriviaLedgerInput> {
-    const timezone = await withScopedDb(this.dataSource, (m) =>
-      getEffectiveTimezoneOfUser(m, userId),
-    );
-    const today = todayInTimezoneOrUtc(timezone);
+  async load(
+    userId: string,
+    currency: string,
+    today: string,
+  ): Promise<TriviaLedgerInput> {
     const { startDate, endDate } = triviaWindow(today);
 
     // Independent reads, each already isolated by `attempt`.

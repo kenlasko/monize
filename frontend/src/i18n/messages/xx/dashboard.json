@@ -84,7 +84,19 @@
       "activityPayees": "[XX-Payees you keep in Monize: {payeeCount}. Categories: {categoryCount}.-XX]",
       "activityScheduled": "[XX-Scheduled transactions Monize is tracking for you: {scheduledCount}.-XX]",
       "warrantiesCovered": "[XX-Warranties you track that are still in cover: {warrantyCount}.-XX]",
-      "warrantiesNextExpiry": "[XX-The next warranty to run out is {nextWarrantyName}, in {nextWarrantyMonth}.-XX]"
+      "warrantiesNextExpiry": "[XX-The next warranty to run out is {nextWarrantyName}, in {nextWarrantyMonth}.-XX]",
+      "spendingMonthToDateLess": "[XX-Through {mtdThrough}, you have spent {mtdSpent} this month, {mtdDifference} less than by the same day last month ({mtdPreviousSpent}).-XX]",
+      "spendingMonthToDateMore": "[XX-Through {mtdThrough}, you have spent {mtdSpent} this month, {mtdDifference} more than by the same day last month ({mtdPreviousSpent}).-XX]",
+      "spendingLastDay": "[XX-On {lastDayDate}, you spent {lastDaySpent}.-XX]",
+      "spendingLastSevenDays": "[XX-In the seven days from {weekFrom}, you spent {weekSpent}.-XX]",
+      "spendingBiggestRecentPurchase": "[XX-Your biggest purchase of the last seven days was {recentPurchaseAmount} with {recentPurchasePayee} on {recentPurchaseDay}.-XX]",
+      "spendingNoSpendStreak": "[XX-No spending recorded for {noSpendDays}, since {lastSpendDay}.-XX]",
+      "spendingDaysSincePayee": "[XX-It has been {sincePayeeDays} since you last spent with {sincePayeeName}, on {sincePayeeDay}.-XX]",
+      "activityBillsDueThisWeek": "[XX-Bills due in the next seven days: {billsDueCount}, coming to {billsDueTotal}.-XX]",
+      "activityNextBill": "[XX-Your next bill is {nextBillName}, for {nextBillAmount}, due {nextBillDate}.-XX]",
+      "spendingBudgetPace": "[XX-You have used {budgetUsedPercent} of your {budgetName} budget ({budgetSpent} of {budgetTotal}), with {budgetMonthPercent} of the month gone.-XX]",
+      "investmentsTopMoverUp": "[XX-Your top mover on {moverSession} was {moverSymbol}, up {moverPercent}, which added {moverValueChange} to your position.-XX]",
+      "investmentsTopMoverDown": "[XX-Your top mover on {moverSession} was {moverSymbol}, down {moverPercent}, which took {moverValueChange} off your position.-XX]"
     }
   },
   "favouriteAccounts": {

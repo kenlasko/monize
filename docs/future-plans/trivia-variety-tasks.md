@@ -14,7 +14,7 @@ Rules for every phase:
 | ID | Phase | Depends on | Status |
 | --- | --- | --- | --- |
 | A | Types, figure kinds, families table, shared figure helpers, frontend formatting | none | Done |
-| B1 | Daily-moving facts, the purchase predicate, the pool builder, cron timezone | A | Open |
+| B1 | Daily-moving facts, the purchase predicate, the pool builder, cron timezone | A | Done |
 | B2 | Calendar and event facts | B1 | Open |
 | C | Parametrised (windowed and ranked) facts | B2 | Open |
 | D | Daily selection and rotation | C | Open |

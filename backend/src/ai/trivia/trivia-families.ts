@@ -104,6 +104,46 @@ export const TRIVIA_FAMILIES = {
     lane: "evergreen",
     ids: ["warrantiesNextExpiry"],
   },
+  spendingMonthToDate: {
+    lane: "daily",
+    ids: ["spendingMonthToDateLess", "spendingMonthToDateMore"],
+  },
+  spendingLastDay: {
+    lane: "daily",
+    ids: ["spendingLastDay"],
+  },
+  spendingLastSevenDays: {
+    lane: "daily",
+    ids: ["spendingLastSevenDays"],
+  },
+  spendingBiggestRecentPurchase: {
+    lane: "daily",
+    ids: ["spendingBiggestRecentPurchase"],
+  },
+  spendingNoSpendStreak: {
+    lane: "daily",
+    ids: ["spendingNoSpendStreak"],
+  },
+  spendingDaysSincePayee: {
+    lane: "daily",
+    ids: ["spendingDaysSincePayee"],
+  },
+  activityBillsDueThisWeek: {
+    lane: "daily",
+    ids: ["activityBillsDueThisWeek"],
+  },
+  activityNextBill: {
+    lane: "daily",
+    ids: ["activityNextBill"],
+  },
+  spendingBudgetPace: {
+    lane: "daily",
+    ids: ["spendingBudgetPace"],
+  },
+  investmentsTopMover: {
+    lane: "daily",
+    ids: ["investmentsTopMoverUp", "investmentsTopMoverDown"],
+  },
 } as const satisfies Record<
   string,
   { lane: TriviaLane; ids: readonly TriviaFactId[] }

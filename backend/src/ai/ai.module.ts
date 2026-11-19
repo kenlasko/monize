@@ -16,6 +16,8 @@ import { AiInsightsController } from "./insights/ai-insights.controller";
 import { InsightsAggregatorService } from "./insights/insights-aggregator.service";
 import { DashboardTriviaService } from "./trivia/dashboard-trivia.service";
 import { TriviaLedgerLoader } from "./trivia/trivia-ledger.loader";
+import { TriviaPoolBuilder } from "./trivia/trivia-pool.builder";
+import { TriviaDailyLoader } from "./trivia/trivia-daily.loader";
 import { DashboardTriviaController } from "./trivia/dashboard-trivia.controller";
 import { AiForecastService } from "./forecast/ai-forecast.service";
 import { AiForecastController } from "./forecast/ai-forecast.controller";
@@ -110,6 +112,8 @@ import { TagsModule } from "../tags/tags.module";
     AiInsightsService,
     DashboardTriviaService,
     TriviaLedgerLoader,
+    TriviaPoolBuilder,
+    TriviaDailyLoader,
     InsightsAggregatorService,
     AiForecastService,
     ForecastAggregatorService,

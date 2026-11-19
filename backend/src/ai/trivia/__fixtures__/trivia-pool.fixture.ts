@@ -1,5 +1,8 @@
 import type { PortfolioSummary } from "../../../securities/portfolio.service";
 import type { TriviaFactsInput } from "../trivia-facts";
+import type { ResolvedScheduledOccurrence } from "../../../scheduled-transactions/scheduled-occurrence.service";
+import type { TopMover } from "../../../securities/portfolio.service";
+import type { TriviaDailyInput } from "../trivia-daily-facts";
 import type { TriviaLedgerInput } from "../trivia-ledger-facts";
 
 /**
@@ -178,5 +181,89 @@ export function fullLedgerInput(): TriviaLedgerInput {
       covered: 1,
       nextExpiring: { name: "W", expiresOn: "2027-01-01" },
     },
+  };
+}
+
+/** A resolved bill; only what the daily facts read is real. */
+export function occurrence(
+  over: Partial<ResolvedScheduledOccurrence> & {
+    name?: string;
+  } = {},
+): ResolvedScheduledOccurrence {
+  const { name, ...rest } = over;
+  return {
+    scheduledTransactionId: "s1",
+    originalDate: "2026-11-21",
+    dueDate: "2026-11-21",
+    amount: -80,
+    directionAmount: -80,
+    currencyCode: "CAD",
+    complete: true,
+    schedule: { name: name ?? "Rent" },
+    ...rest,
+  } as unknown as ResolvedScheduledOccurrence;
+}
+
+function mover(over: Partial<TopMover> = {}): TopMover {
+  return {
+    securityId: "s1",
+    symbol: "XGRO",
+    name: "XGRO",
+    currencyCode: "CAD",
+    currentPrice: 102,
+    previousPrice: 100,
+    dailyChange: 2,
+    dailyChangePercent: 2,
+    priceDate: "2026-11-18",
+    marketValue: 1020,
+    dailyValueChange: 20,
+    ...over,
+  };
+}
+
+/** Today is 2026-11-19, so the last complete day is 2026-11-18. */
+export function fullDailyInput(): TriviaDailyInput {
+  return {
+    currency: "CAD",
+    today: "2026-11-19",
+    monthToDate: { through: "2026-11-18", spent: 400, previousSpent: 500 },
+    lastDay: { date: "2026-11-18", spent: 42.5 },
+    lastSevenDays: { from: "2026-11-12", spent: 310 },
+    biggestPurchase: {
+      amount: 120,
+      currency: "CAD",
+      payee: "Grocer",
+      date: "2026-11-15",
+      singleCurrency: true,
+    },
+    lastSpendDate: "2026-11-15",
+    sincePayee: { name: "Cafe", lastDate: "2026-11-10" },
+    bills: {
+      occurrences: [occurrence(), occurrence({ dueDate: "2026-11-23" })],
+      total: 160,
+    },
+    budget: {
+      name: "Household",
+      currency: "CAD",
+      incomeLinked: false,
+      lines: [
+        { spent: 100, budgeted: 200 },
+        { spent: 50, budgeted: 100 },
+      ],
+    },
+    topMover: mover(),
+  };
+}
+
+/** The other variant of each exclusive pair: more than last month, a down mover. */
+export function alternateDailyInput(): TriviaDailyInput {
+  return {
+    ...fullDailyInput(),
+    monthToDate: { through: "2026-11-18", spent: 600, previousSpent: 500 },
+    topMover: mover({
+      dailyChangePercent: -2,
+      dailyChange: -2,
+      dailyValueChange: -20,
+    }),
   };
 }

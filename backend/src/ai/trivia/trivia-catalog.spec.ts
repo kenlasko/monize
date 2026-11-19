@@ -1,5 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
+import {
+  alternateDailyInput,
+  fullDailyInput,
+} from "./__fixtures__/trivia-pool.fixture";
+import { buildDailyTriviaFacts } from "./trivia-daily-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { TRIVIA_FACT_IDS, TRIVIA_TOPICS } from "./trivia.types";
 
@@ -90,6 +95,24 @@ describe("trivia catalog", () => {
     });
     // Every ledger fact is produced, so none escapes the check.
     expect(new Set(facts.map((f) => f.id)).size).toBe(11);
+    for (const f of facts) {
+      const quoted = [
+        ...catalog.trivia.facts[f.id].matchAll(/\{([A-Za-z]+)\}/g),
+      ].map((m) => m[1]);
+      expect({ id: f.id, figures: [...new Set(quoted)].sort() }).toEqual({
+        id: f.id,
+        figures: Object.keys(f.figures).sort(),
+      });
+    }
+  });
+
+  it("quotes in each daily sentence exactly the figures its fact carries", () => {
+    const facts = [
+      ...buildDailyTriviaFacts(fullDailyInput()),
+      ...buildDailyTriviaFacts(alternateDailyInput()),
+    ];
+    // Every daily id is produced, so none escapes the check.
+    expect(new Set(facts.map((f) => f.id)).size).toBe(12);
     for (const f of facts) {
       const quoted = [
         ...catalog.trivia.facts[f.id].matchAll(/\{([A-Za-z]+)\}/g),
