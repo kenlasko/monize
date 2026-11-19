@@ -3,6 +3,7 @@
     "title": "投資",
     "subtitle": "追蹤您的投資組合",
     "allInvestmentAccounts": "所有投資科目",
+    "chooseAccounts": "選擇科目",
     "updating": "更新中...",
     "refresh": "重新整理",
     "lastUpdated": "上次更新：{time}",

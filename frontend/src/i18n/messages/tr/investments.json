@@ -3,6 +3,7 @@
     "title": "Yatırımlar",
     "subtitle": "Yatırım portföyünüzü takip edin",
     "allInvestmentAccounts": "Tüm Yatırım Hesapları",
+    "chooseAccounts": "Hesapları seç",
     "updating": "Güncelleniyor...",
     "refresh": "Yenile",
     "lastUpdated": "Son güncelleme: {time}",

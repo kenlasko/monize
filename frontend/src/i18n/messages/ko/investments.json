@@ -3,6 +3,7 @@
     "title": "투자",
     "subtitle": "투자 포트폴리오를 추적하세요",
     "allInvestmentAccounts": "모든 투자 계정",
+    "chooseAccounts": "계정 선택",
     "updating": "업데이트 중...",
     "refresh": "새로 고침",
     "lastUpdated": "마지막 업데이트: {time}",

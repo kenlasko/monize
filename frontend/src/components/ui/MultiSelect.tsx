@@ -43,7 +43,18 @@ interface MultiSelectProps {
    * measurement pass and tracks the real font.
    */
   sizeToLongestOption?: boolean;
+  /**
+   * `caret` draws the trigger as a bare chevron, for a control that sits
+   * beside text already naming the selection (the Investments pinned bar's
+   * "Investments - <accounts>"). `ariaLabel` names it. The menu is at least
+   * 16rem wide, since the caret is far narrower than its options, and is
+   * kept inside the viewport.
+   */
+  variant?: 'field' | 'caret';
 }
+
+/** The caret variant's menu: wide enough for an account name and its checkbox. */
+const CARET_MENU_MIN_WIDTH = 256;
 
 export function MultiSelect({
   label,
@@ -58,7 +69,9 @@ export function MultiSelect({
   onCreateNew,
   createNewLabel = 'Create new...',
   sizeToLongestOption = false,
+  variant = 'field',
 }: MultiSelectProps) {
+  const isCaret = variant === 'caret';
   const t = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -219,15 +232,19 @@ export function MultiSelect({
     // Prefer below; flip up only when below is cramped and above has more room.
     const openUp = spaceBelow < 240 && spaceAbove > spaceBelow;
     const maxHeight = Math.max(160, openUp ? spaceAbove : spaceBelow);
+    const width = isCaret ? Math.max(rect.width, CARET_MENU_MIN_WIDTH) : rect.width;
+    const left = isCaret
+      ? Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin))
+      : rect.left;
     setDropdownPos({
-      left: rect.left,
-      width: rect.width,
+      left,
+      width,
       maxHeight,
       ...(openUp
         ? { bottom: window.innerHeight - rect.top + gap }
         : { top: rect.bottom + gap }),
     });
-  }, []);
+  }, [isCaret]);
 
   // Update position when opening
   useEffect(() => {
@@ -286,7 +303,7 @@ export function MultiSelect({
   }, [value, flatOptions, placeholder, t]);
 
   return (
-    <div ref={wrapperRef} className="w-full relative">
+    <div ref={wrapperRef} className={isCaret ? 'relative inline-block' : 'w-full relative'}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           {label}
@@ -294,6 +311,28 @@ export function MultiSelect({
       )}
 
       {/* Trigger button */}
+      {isCaret ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          aria-label={ariaLabel}
+          title={ariaLabel}
+          aria-expanded={isOpen}
+          className={cn(
+            'inline-flex items-center rounded p-1 text-gray-400 transition-colors motion-reduce:transition-none',
+            'hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+            'dark:hover:bg-gray-700 dark:hover:text-gray-200',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+          )}
+        >
+          <ChevronDownIcon
+            className={cn('h-5 w-5 transition-transform', isOpen && 'rotate-180')}
+            aria-hidden="true"
+          />
+        </button>
+      ) : (
       <button
         ref={triggerRef}
         type="button"
@@ -354,6 +393,7 @@ export function MultiSelect({
           </div>
         )}
       </button>
+      )}
 
       {/* Dropdown (portal-rendered to avoid overflow clipping) */}
       {isOpen && dropdownPos && createPortal(

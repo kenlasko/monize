@@ -3,6 +3,7 @@
     "title": "Inwestycje",
     "subtitle": "Śledź swój portfel inwestycyjny",
     "allInvestmentAccounts": "Wszystkie konta inwestycyjne",
+    "chooseAccounts": "Wybierz konta",
     "updating": "Aktualizowanie...",
     "refresh": "Odśwież",
     "lastUpdated": "Ostatnia aktualizacja: {time}",

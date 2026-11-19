@@ -87,6 +87,7 @@ function InvestmentsContent() {
   const t = useTranslations('investments');
   const tc = useTranslations('common');
   const ta = useTranslations('accountDetail');
+  const tl = useTranslations('layout');
   const { formatCurrency } = useNumberFormat();
   // On a desktop, as soon as the account picker (the account names) has
   // scrolled behind the header, a bar carrying the same picker and Refresh
@@ -333,18 +334,24 @@ function InvestmentsContent() {
     />
   );
 
-  // One or more accounts, or all of them: the header's picker, and the same
-  // picker in the desktop's pinned bar, so both choose the same way.
+  // One or more accounts, or all of them. The header shows the full field;
+  // the desktop's pinned bar names the selection in its title and opens the
+  // same picker from a caret beside it, so both choose the same way.
+  const accountOptions = useMemo(
+    () =>
+      data.selectableAccounts.map((account: Account) => ({
+        value: account.id,
+        label: getAccountDisplayName(account),
+      })),
+    [data.selectableAccounts, getAccountDisplayName],
+  );
   const accountPicker = (
     <MultiSelect
       value={data.selectedAccountIds}
       onChange={data.handleAccountChange}
       placeholder={t('page.allInvestmentAccounts')}
       showSearch={false}
-      options={data.selectableAccounts.map((account: Account) => ({
-        value: account.id,
-        label: getAccountDisplayName(account),
-      }))}
+      options={accountOptions}
     />
   );
 
@@ -381,13 +388,29 @@ function InvestmentsContent() {
           {!hasMobileTabBar && (
             <FloatingPageBar visible={accountPickerScrolledAway} testId="investments-floating-bar">
               <div className="flex items-center justify-between gap-3 py-2">
-                {/* The section name and the header's own account picker, so
-                    the bar picks one or more accounts as the page does. */}
-                <div className="flex min-w-0 items-center gap-3">
-                  <p className="flex-shrink-0 text-base font-semibold text-gray-900 dark:text-gray-100">
-                    {t('page.title')}
+                {/* "Investments - <the Portfolio Summary's bracket label>", then
+                    a caret that opens the same multi-account picker. */}
+                <div className="flex min-w-0 items-center gap-1">
+                  <p
+                    data-testid="investments-floating-title"
+                    className="truncate text-base font-semibold text-gray-900 dark:text-gray-100"
+                  >
+                    {tl('pageHeader.collapsedTitleWithContext', {
+                      title: t('page.title'),
+                      context: accountFilterLabel,
+                    })}
                   </p>
-                  <div className="w-64 min-w-0">{accountPicker}</div>
+                  <div className="flex-shrink-0">
+                    <MultiSelect
+                      variant="caret"
+                      ariaLabel={t('page.chooseAccounts')}
+                      value={data.selectedAccountIds}
+                      onChange={data.handleAccountChange}
+                      placeholder={t('page.allInvestmentAccounts')}
+                      showSearch={false}
+                      options={accountOptions}
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-3">
                   {refreshButton}
