@@ -1812,7 +1812,7 @@ describe('useImportWizard - derived options', () => {
     ]);
     const { result } = renderHook(() => useImportWizard());
     await waitFor(() => expect(result.current.categories).toHaveLength(3));
-    expect(result.current.parentCategoryOptions).toEqual([
+    expect(result.current.parentCategoryOptions.map(({ value, label }) => ({ value, label }))).toEqual([
       { value: '', label: 'No parent (top-level)' },
       { value: 'c1', label: 'A' },
       { value: 'c2', label: 'A: B' },

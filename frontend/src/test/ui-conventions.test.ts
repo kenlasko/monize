@@ -3717,7 +3717,7 @@ describe("a documentation URL is built in one place", () => {
   });
 });
 
-describe("an account dropdown is AccountSelect", () => {
+describe("an account, payee or category dropdown draws its icons", () => {
   /**
    * A `<Select ...>` or `<select ...>` element's opening tag through its end,
    * as one string: `/>` for the self-closing `Select`, `</select>` for a raw
@@ -3752,10 +3752,10 @@ describe("an account dropdown is AccountSelect", () => {
     return found;
   }
 
-  /** What an account option list is built from or named. */
-  const ACCOUNT_OPTIONS = /buildAccountDropdownOptions|accountSelectOption|\b\w*[aA]ccountOptions\b|\b[aA]ccounts\s*(?:\n\s*)?\.(?:map|slice|filter)\(/;
+  /** What an account, payee or category option list is built from or named. */
+  const ACCOUNT_OPTIONS = /buildAccountDropdownOptions|accountSelectOption|\b\w*[aA]ccountOptions\b|\b[aA]ccounts\s*(?:\n\s*)?\.(?:map|slice|filter)\(|getCategorySelectOptions|withCategoryIcons|withPayeeIcons|\b\w*[cC]ategor\w*Options\b|\b\w*[pP]ayee\w*Options\b|\b(?:categories|payees)\s*(?:\n\s*)?\.(?:map|slice|filter)\(/;
 
-  it("has no native select over accounts, which cannot draw the institution logo", () => {
+  it("has no native select over accounts, payees or categories, which cannot draw their icons", () => {
     const offenders = productionSources()
       .filter(([path]) => path !== "/src/components/ui/IconSelect.tsx")
       .flatMap(([path, content]) =>
@@ -3766,16 +3766,20 @@ describe("an account dropdown is AccountSelect", () => {
 
     // Every account dropdown marks its rows, and the picked account, with the
     // institution's logo (issue #2288): `AccountSelect` over options from
-    // `buildAccountDropdownOptions` or `accountSelectOption`.
+    // `buildAccountDropdownOptions` or `accountSelectOption`. A payee or
+    // category dropdown is a `Combobox`, or an `IconSelect` over options from
+    // `withPayeeIcons` / `withCategoryIcons`.
     expect(offenders).toEqual([]);
   });
 
   it("catches the pattern it bans", () => {
     const sample = `<Select label="Account" options={[...buildAccountDropdownOptions(a, f)]} />
 <select value={id}>{accounts.map((a) => <option key={a.id}>{a.name}</option>)}</select>
-<Select label="Type" options={typeOptions} />`;
+<Select label="Type" options={typeOptions} />
+<Select label="Category" options={categoryOptions} />
+<Select label="Payee" options={payees.map((p) => ({ value: p.id, label: p.name }))} />`;
     expect(
       selectElements(sample).filter(({ text }) => ACCOUNT_OPTIONS.test(text)).map(({ line }) => line),
-    ).toEqual([1, 2]);
+    ).toEqual([1, 2, 4, 5]);
   });
 });

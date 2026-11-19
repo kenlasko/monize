@@ -67,6 +67,7 @@ import {
 import { preferredCurrency } from '@/lib/default-currency';
 import { readXmlHead, sniffXmlImportKind } from '@/lib/xml-import-sniff';
 import { accountSelectOption } from '@/lib/account-utils';
+import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
 
 const logger = createLogger('Import');
 
@@ -1284,7 +1285,7 @@ export function useImportWizard() {
     tree.forEach(({ category }) => {
       options.push({ value: category.id, label: getCategoryPath(category, categories) });
     });
-    return options;
+    return withCategoryIcons(options, categories);
   }, [categories]);
 
   // Every category, not only the top-level ones: a QIF path three or four
@@ -1294,7 +1295,7 @@ export function useImportWizard() {
     buildCategoryTree(categories).forEach(({ category }) => {
       options.push({ value: category.id, label: getCategoryPath(category, categories) });
     });
-    return options;
+    return withCategoryIcons(options, categories);
   }, [categories]);
 
   const getAccountOptions = () => {
