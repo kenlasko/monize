@@ -6,9 +6,11 @@ import { NetWorthService } from "../../net-worth/net-worth.service";
 import { PortfolioService } from "../../securities/portfolio.service";
 import type { UserPreference } from "../../users/entities/user-preference.entity";
 import {
+  fullCalendarInput,
   fullDailyInput,
   fullLedgerInput,
 } from "./__fixtures__/trivia-pool.fixture";
+import { TriviaCalendarLoader } from "./trivia-calendar.loader";
 import { TriviaDailyLoader } from "./trivia-daily.loader";
 import { TriviaLedgerLoader } from "./trivia-ledger.loader";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
@@ -26,6 +28,7 @@ describe("TriviaPoolBuilder", () => {
   let portfolio: jest.Mocked<Pick<PortfolioService, "getPortfolioSummary">>;
   let ledger: jest.Mocked<Pick<TriviaLedgerLoader, "load">>;
   let daily: jest.Mocked<Pick<TriviaDailyLoader, "load">>;
+  let calendar: jest.Mocked<Pick<TriviaCalendarLoader, "load">>;
   let builder: TriviaPoolBuilder;
 
   beforeEach(() => {
@@ -39,6 +42,9 @@ describe("TriviaPoolBuilder", () => {
     portfolio = { getPortfolioSummary: jest.fn().mockResolvedValue(null) };
     ledger = { load: jest.fn().mockResolvedValue(fullLedgerInput()) };
     daily = { load: jest.fn().mockResolvedValue(fullDailyInput()) };
+    calendar = {
+      load: jest.fn().mockResolvedValue(fullCalendarInput().calendar),
+    };
     builder = new TriviaPoolBuilder(
       {} as DataSource,
       accounts as unknown as AccountsService,
@@ -46,6 +52,7 @@ describe("TriviaPoolBuilder", () => {
       portfolio as unknown as PortfolioService,
       ledger as unknown as TriviaLedgerLoader,
       daily as unknown as TriviaDailyLoader,
+      calendar as unknown as TriviaCalendarLoader,
     );
   });
 
@@ -74,6 +81,7 @@ describe("TriviaPoolBuilder", () => {
   it("hands the day to every loader, and the payee report to the daily one", async () => {
     await builder.build(userId, prefs, { today: "2026-11-20", mode: "cron" });
     expect(ledger.load).toHaveBeenCalledWith(userId, "CAD", "2026-11-20");
+    expect(calendar.load).toHaveBeenCalledWith(userId, "CAD", "2026-11-20");
     expect(daily.load).toHaveBeenCalledWith(
       userId,
       "CAD",
@@ -99,5 +107,41 @@ describe("TriviaPoolBuilder", () => {
     await expect(
       builder.build(userId, prefs, { today: "2026-11-19", mode: "page" }),
     ).resolves.not.toHaveLength(0);
+  });
+
+  describe("the warranty countdown", () => {
+    const build = () =>
+      builder.build(userId, prefs, { today: "2026-11-19", mode: "page" });
+
+    it("replaces the next-expiry fact, which says the same warranty", async () => {
+      ledger.load.mockResolvedValue({
+        ...fullLedgerInput(),
+        warranties: {
+          covered: 1,
+          nextExpiring: { name: "Laptop", expiresOn: "2026-12-04" },
+        },
+      });
+      const ids = (await build()).map((f) => f.id);
+      expect(ids).toContain("warrantiesExpiresSoon");
+      expect(ids).not.toContain("warrantiesNextExpiry");
+      expect(ids).toContain("warrantiesCovered");
+    });
+
+    it("keeps the next-expiry fact when the expiry is not near", async () => {
+      const ids = (await build()).map((f) => f.id);
+      expect(ids).not.toContain("warrantiesExpiresSoon");
+      expect(ids).toContain("warrantiesNextExpiry");
+    });
+  });
+
+  it("concatenates the calendar facts", async () => {
+    ledger.load.mockResolvedValue({
+      ...fullLedgerInput(),
+      records: fullCalendarInput().records,
+    });
+    const ids = (
+      await builder.build(userId, prefs, { today: "2026-11-19", mode: "page" })
+    ).map((f) => f.id);
+    expect(ids).toContain("activityAnniversary");
   });
 });

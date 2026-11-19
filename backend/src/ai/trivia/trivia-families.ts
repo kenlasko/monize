@@ -144,6 +144,34 @@ export const TRIVIA_FAMILIES = {
     lane: "daily",
     ids: ["investmentsTopMoverUp", "investmentsTopMoverDown"],
   },
+  activityAnniversary: {
+    lane: "event",
+    ids: ["activityAnniversary"],
+  },
+  activityAccountAnniversary: {
+    lane: "event",
+    ids: ["activityAccountAnniversary"],
+  },
+  netWorthMilestone: {
+    lane: "event",
+    ids: ["netWorthMilestone"],
+  },
+  activityTransactionMilestone: {
+    lane: "event",
+    ids: ["activityTransactionMilestone"],
+  },
+  warrantiesExpiresSoon: {
+    lane: "event",
+    ids: ["warrantiesExpiresSoon"],
+  },
+  spendingYearAgoMonth: {
+    lane: "evergreen",
+    ids: ["spendingYearAgoMonth"],
+  },
+  netWorthYearAgo: {
+    lane: "evergreen",
+    ids: ["netWorthYearAgoUp", "netWorthYearAgoDown"],
+  },
 } as const satisfies Record<
   string,
   { lane: TriviaLane; ids: readonly TriviaFactId[] }

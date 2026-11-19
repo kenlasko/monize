@@ -96,7 +96,15 @@
       "activityNextBill": "[XX-Your next bill is {nextBillName}, for {nextBillAmount}, due {nextBillDate}.-XX]",
       "spendingBudgetPace": "[XX-You have used {budgetUsedPercent} of your {budgetName} budget ({budgetSpent} of {budgetTotal}), with {budgetMonthPercent} of the month gone.-XX]",
       "investmentsTopMoverUp": "[XX-Your top mover on {moverSession} was {moverSymbol}, up {moverPercent}, which added {moverValueChange} to your position.-XX]",
-      "investmentsTopMoverDown": "[XX-Your top mover on {moverSession} was {moverSymbol}, down {moverPercent}, which took {moverValueChange} off your position.-XX]"
+      "investmentsTopMoverDown": "[XX-Your top mover on {moverSession} was {moverSymbol}, down {moverPercent}, which took {moverValueChange} off your position.-XX]",
+      "activityAnniversary": "[XX-This week marks {anniversaryYears} since your first transaction in Monize, on {anniversaryFirstDate}.-XX]",
+      "activityAccountAnniversary": "[XX-Your {anniversaryAccountName} account turns {anniversaryAccountYears} in Monize this week: its first transaction was on {anniversaryAccountSince}.-XX]",
+      "netWorthMilestone": "[XX-In {milestoneMonth}, your net worth passed {milestoneAmount}.-XX]",
+      "activityTransactionMilestone": "[XX-In the last 30 days you recorded transaction number {transactionMilestone}.-XX]",
+      "warrantiesExpiresSoon": "[XX-Your {expiringWarrantyName} warranty runs out in {expiringWarrantyDays}, on {expiringWarrantyDate}.-XX]",
+      "spendingYearAgoMonth": "[XX-A year ago, in {yearAgoMonth}, you spent {yearAgoSpent}, and {yearAgoTopCategoryName} took the most of it.-XX]",
+      "netWorthYearAgoUp": "[XX-A year ago, in {yearAgoNetWorthMonth}, your net worth was {yearAgoNetWorth}. It is {yearAgoNetWorthChange} higher now.-XX]",
+      "netWorthYearAgoDown": "[XX-A year ago, in {yearAgoNetWorthMonth}, your net worth was {yearAgoNetWorth}. It is {yearAgoNetWorthChange} lower now.-XX]"
     }
   },
   "favouriteAccounts": {

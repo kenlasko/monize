@@ -1,14 +1,22 @@
 import {
+  alternateCalendarInput,
   alternateDailyInput,
+  fullCalendarInput,
   alternateInputs,
   fullDailyInput,
   fullLedgerInput,
   fullTriviaFactsInput,
 } from "./__fixtures__/trivia-pool.fixture";
 import { buildTriviaFacts } from "./trivia-facts";
+import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
-import { familyOf, laneOf, TRIVIA_FAMILIES } from "./trivia-families";
+import {
+  familyOf,
+  laneOf,
+  TRIVIA_FAMILIES,
+  type TriviaFamily,
+} from "./trivia-families";
 import { TRIVIA_FACT_IDS, type TriviaFact } from "./trivia.types";
 
 /** Every fact a builder can produce from the fixtures, one list per builder. */
@@ -19,6 +27,8 @@ function builderOutputs(): TriviaFact[][] {
     buildLedgerTriviaFacts(fullLedgerInput()),
     buildDailyTriviaFacts(fullDailyInput()),
     buildDailyTriviaFacts(alternateDailyInput()),
+    buildCalendarTriviaFacts(fullCalendarInput()),
+    buildCalendarTriviaFacts(alternateCalendarInput()),
   ];
 }
 
@@ -37,17 +47,34 @@ describe("trivia families", () => {
     expect(all.sort()).toEqual([...TRIVIA_FACT_IDS].sort());
   });
 
-  it("puts the daily facts in the daily lane and the rest in evergreen", () => {
-    const daily = buildDailyTriviaFacts(fullDailyInput())
-      .concat(buildDailyTriviaFacts(alternateDailyInput()))
-      .map((f) => familyOf(f.id));
+  it("puts the daily facts in the daily lane, the calendar moments in the event lane and the rest in evergreen", () => {
+    const familiesOf = (facts: TriviaFact[]) =>
+      facts.map((f) => familyOf(f.id));
+    const daily = [
+      ...familiesOf(buildDailyTriviaFacts(fullDailyInput())),
+      ...familiesOf(buildDailyTriviaFacts(alternateDailyInput())),
+    ];
     expect(new Set(daily).size).toBe(10);
+    const event = [
+      "activityAnniversary",
+      "activityAccountAnniversary",
+      "netWorthMilestone",
+      "activityTransactionMilestone",
+      "warrantiesExpiresSoon",
+    ];
+    // Every event family is produced by the calendar builder.
+    const calendar = familiesOf(buildCalendarTriviaFacts(fullCalendarInput()));
+    for (const family of event) expect(calendar).toContain(family);
     for (const family of Object.keys(TRIVIA_FAMILIES)) {
-      expect(laneOf(family as keyof typeof TRIVIA_FAMILIES)).toBe(
-        daily.includes(family as keyof typeof TRIVIA_FAMILIES)
-          ? "daily"
-          : "evergreen",
-      );
+      const expected = daily.includes(family as TriviaFamily)
+        ? "daily"
+        : event.includes(family)
+          ? "event"
+          : "evergreen";
+      expect({ family, lane: laneOf(family as TriviaFamily) }).toEqual({
+        family,
+        lane: expected,
+      });
     }
   });
 

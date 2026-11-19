@@ -15,6 +15,8 @@ import { UserPreference } from "../../users/entities/user-preference.entity";
 import { buildTriviaFacts, TriviaAsset } from "./trivia-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
+import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
+import { TriviaCalendarLoader } from "./trivia-calendar.loader";
 import { TriviaDailyLoader } from "./trivia-daily.loader";
 import { TriviaLedgerLoader } from "./trivia-ledger.loader";
 import type { TriviaFact } from "./trivia.types";
@@ -42,6 +44,7 @@ export class TriviaPoolBuilder {
     private readonly portfolioService: PortfolioService,
     private readonly ledger: TriviaLedgerLoader,
     private readonly daily: TriviaDailyLoader,
+    private readonly calendar: TriviaCalendarLoader,
   ) {}
 
   /** The reader's effective timezone, which dates the cron's per-user body. */
@@ -78,7 +81,9 @@ export class TriviaPoolBuilder {
       spendingByPayee: ledger.spendingByPayee,
     });
 
-    return [
+    const calendar = await this.calendar.load(userId, currency, today);
+
+    const facts = [
       ...buildTriviaFacts({
         currency,
         months,
@@ -93,7 +98,20 @@ export class TriviaPoolBuilder {
       ...buildLedgerTriviaFacts(ledger),
       // What moves with each day.
       ...buildDailyTriviaFacts(daily),
+      // Anniversaries, milestones and the year-ago comparisons.
+      ...buildCalendarTriviaFacts({
+        today,
+        currency,
+        months,
+        records: ledger.records,
+        warranties: ledger.warranties,
+        calendar,
+      }),
     ];
+    // The countdown and "the next warranty to run out" are one warranty said twice.
+    return facts.some((f) => f.id === "warrantiesExpiresSoon")
+      ? facts.filter((f) => f.id !== "warrantiesNextExpiry")
+      : facts;
   }
 
   /** A portfolio that cannot be read leaves out its facts, and only those. */

@@ -188,6 +188,20 @@ describe('TriviaWidget', () => {
     expect(sentence()).toHaveTextContent('On Wednesday, November 18 you spent 2.');
   });
 
+  it('writes a date figure in full and a years figure with its unit', () => {
+    state.trivia = list({
+      items: [{ topic: 'activity', source: 'calculated', factId: 'activityAnniversary' }],
+      figures: {
+        anniversaryYears: { kind: 'years', value: 3 },
+        anniversaryFirstDate: { kind: 'date', value: '2023-11-17' },
+      },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent(
+      'This week marks 3 years since your first transaction in Monize, on November 17, 2023.',
+    );
+  });
+
   it('offers no arrows for a single fact', () => {
     state.trivia = list({
       items: [{ topic: 'netWorth', source: 'ai', text: 'only {a}' }],

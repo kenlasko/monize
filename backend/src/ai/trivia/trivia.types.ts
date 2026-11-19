@@ -70,6 +70,14 @@ export const TRIVIA_FACT_IDS = [
   "spendingBudgetPace",
   "investmentsTopMoverUp",
   "investmentsTopMoverDown",
+  "activityAnniversary",
+  "activityAccountAnniversary",
+  "netWorthMilestone",
+  "activityTransactionMilestone",
+  "warrantiesExpiresSoon",
+  "spendingYearAgoMonth",
+  "netWorthYearAgoUp",
+  "netWorthYearAgoDown",
 ] as const;
 export type TriviaFactId = (typeof TRIVIA_FACT_IDS)[number];
 

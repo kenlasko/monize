@@ -96,7 +96,15 @@
       "activityNextBill": "Your next bill is {nextBillName}, for {nextBillAmount}, due {nextBillDate}.",
       "spendingBudgetPace": "You have used {budgetUsedPercent} of your {budgetName} budget ({budgetSpent} of {budgetTotal}), with {budgetMonthPercent} of the month gone.",
       "investmentsTopMoverUp": "Your top mover on {moverSession} was {moverSymbol}, up {moverPercent}, which added {moverValueChange} to your position.",
-      "investmentsTopMoverDown": "Your top mover on {moverSession} was {moverSymbol}, down {moverPercent}, which took {moverValueChange} off your position."
+      "investmentsTopMoverDown": "Your top mover on {moverSession} was {moverSymbol}, down {moverPercent}, which took {moverValueChange} off your position.",
+      "activityAnniversary": "This week marks {anniversaryYears} since your first transaction in Monize, on {anniversaryFirstDate}.",
+      "activityAccountAnniversary": "Your {anniversaryAccountName} account turns {anniversaryAccountYears} in Monize this week: its first transaction was on {anniversaryAccountSince}.",
+      "netWorthMilestone": "In {milestoneMonth}, your net worth passed {milestoneAmount}.",
+      "activityTransactionMilestone": "In the last 30 days you recorded transaction number {transactionMilestone}.",
+      "warrantiesExpiresSoon": "Your {expiringWarrantyName} warranty runs out in {expiringWarrantyDays}, on {expiringWarrantyDate}.",
+      "spendingYearAgoMonth": "A year ago, in {yearAgoMonth}, you spent {yearAgoSpent}, and {yearAgoTopCategoryName} took the most of it.",
+      "netWorthYearAgoUp": "A year ago, in {yearAgoNetWorthMonth}, your net worth was {yearAgoNetWorth}. It is {yearAgoNetWorthChange} higher now.",
+      "netWorthYearAgoDown": "A year ago, in {yearAgoNetWorthMonth}, your net worth was {yearAgoNetWorth}. It is {yearAgoNetWorthChange} lower now."
     }
   },
   "favouriteAccounts": {

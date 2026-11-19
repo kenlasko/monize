@@ -1,9 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
 import {
+  alternateCalendarInput,
   alternateDailyInput,
+  fullCalendarInput,
   fullDailyInput,
 } from "./__fixtures__/trivia-pool.fixture";
+import { buildCalendarTriviaFacts } from "./trivia-calendar-facts";
 import { buildDailyTriviaFacts } from "./trivia-daily-facts";
 import { buildLedgerTriviaFacts } from "./trivia-ledger-facts";
 import { TRIVIA_FACT_IDS, TRIVIA_TOPICS } from "./trivia.types";
@@ -113,6 +116,24 @@ describe("trivia catalog", () => {
     ];
     // Every daily id is produced, so none escapes the check.
     expect(new Set(facts.map((f) => f.id)).size).toBe(12);
+    for (const f of facts) {
+      const quoted = [
+        ...catalog.trivia.facts[f.id].matchAll(/\{([A-Za-z]+)\}/g),
+      ].map((m) => m[1]);
+      expect({ id: f.id, figures: [...new Set(quoted)].sort() }).toEqual({
+        id: f.id,
+        figures: Object.keys(f.figures).sort(),
+      });
+    }
+  });
+
+  it("quotes in each calendar sentence exactly the figures its fact carries", () => {
+    const facts = [
+      ...buildCalendarTriviaFacts(fullCalendarInput()),
+      ...buildCalendarTriviaFacts(alternateCalendarInput()),
+    ];
+    // Every calendar id is produced, so none escapes the check.
+    expect(new Set(facts.map((f) => f.id)).size).toBe(8);
     for (const f of facts) {
       const quoted = [
         ...catalog.trivia.facts[f.id].matchAll(/\{([A-Za-z]+)\}/g),

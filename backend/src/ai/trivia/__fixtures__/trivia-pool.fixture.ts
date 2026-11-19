@@ -2,6 +2,7 @@ import type { PortfolioSummary } from "../../../securities/portfolio.service";
 import type { TriviaFactsInput } from "../trivia-facts";
 import type { ResolvedScheduledOccurrence } from "../../../scheduled-transactions/scheduled-occurrence.service";
 import type { TopMover } from "../../../securities/portfolio.service";
+import type { TriviaCalendarInput } from "../trivia-calendar-facts";
 import type { TriviaDailyInput } from "../trivia-daily-facts";
 import type { TriviaLedgerInput } from "../trivia-ledger-facts";
 
@@ -265,5 +266,67 @@ export function alternateDailyInput(): TriviaDailyInput {
       dailyChange: -2,
       dailyValueChange: -20,
     }),
+  };
+}
+
+/**
+ * Today is 2026-11-19. The ledger began 2023-11-17 (an anniversary in its
+ * week), net worth crossed 1,000 in October and was 800 a year ago, the 1,000th
+ * row was recorded this month, and a warranty runs out in 15 days.
+ */
+export function fullCalendarInput(): TriviaCalendarInput {
+  return {
+    today: "2026-11-19",
+    currency: "CAD",
+    months: [
+      netWorthMonth("2025-11-01", 800),
+      netWorthMonth("2026-09-01", 950),
+      netWorthMonth("2026-10-01", 990),
+      netWorthMonth("2026-11-01", 1050),
+    ].sort((a, b) => a.month.localeCompare(b.month)),
+    records: {
+      transactions: 1000,
+      firstTransactionDate: "2023-11-17",
+      activePayees: 1,
+      categories: 1,
+      activeScheduled: 1,
+    },
+    warranties: {
+      covered: 1,
+      nextExpiring: { name: "Laptop", expiresOn: "2026-12-04" },
+    },
+    calendar: {
+      accountFirstDates: [
+        { name: "Chequing", firstDate: "2021-11-15" },
+        { name: "Savings", firstDate: "2024-03-01" },
+      ],
+      transactionsRecordedBefore: 990,
+      yearAgoMonth: {
+        data: [
+          {
+            categoryId: "c1",
+            categoryName: "Groceries",
+            color: null,
+            total: 300,
+          },
+        ],
+        totalSpending: 900,
+        knownSpending: 900,
+        currency: "CAD",
+        missingCurrencies: [],
+        excludedCount: 0,
+      },
+    },
+  };
+}
+
+/** The other variant of the year-ago pair: net worth lower now than a year ago. */
+export function alternateCalendarInput(): TriviaCalendarInput {
+  const input = fullCalendarInput();
+  return {
+    ...input,
+    months: input.months.map((m) =>
+      m.month === "2025-11-01" ? { ...m, netWorth: 1200, assets: 1200 } : m,
+    ),
   };
 }

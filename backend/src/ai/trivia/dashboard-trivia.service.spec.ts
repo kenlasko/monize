@@ -130,6 +130,13 @@ describe("DashboardTriviaService", () => {
       portfolio as never,
       ledger as never,
       daily as never,
+      {
+        load: jest.fn().mockResolvedValue({
+          accountFirstDates: null,
+          transactionsRecordedBefore: null,
+          yearAgoMonth: null,
+        }),
+      } as never,
     );
     service = new DashboardTriviaService(
       {} as DataSource,
