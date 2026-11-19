@@ -3716,3 +3716,66 @@ describe("a documentation URL is built in one place", () => {
     expect(DOCS_URL_USE.test("<HelpLink link=\"budgets\">Learn more</HelpLink>")).toBe(false);
   });
 });
+
+describe("an account dropdown is AccountSelect", () => {
+  /**
+   * A `<Select ...>` or `<select ...>` element's opening tag through its end,
+   * as one string: `/>` for the self-closing `Select`, `</select>` for a raw
+   * one. Braces are counted so a `>` or `/>` inside an expression does not end
+   * it early.
+   */
+  function selectElements(source: string): { text: string; line: number }[] {
+    const found: { text: string; line: number }[] = [];
+    const opening = /<(Select|select)\b/g;
+    let match: RegExpExecArray | null;
+    while ((match = opening.exec(source))) {
+      const raw = match[1] === "select";
+      let depth = 0;
+      let end = source.length;
+      for (let at = match.index + match[0].length; at < source.length; at += 1) {
+        const char = source[at];
+        if (char === "{") depth += 1;
+        else if (char === "}") depth -= 1;
+        else if (depth === 0 && !raw && source.startsWith("/>", at)) {
+          end = at + 2;
+          break;
+        } else if (depth === 0 && raw && source.startsWith("</select>", at)) {
+          end = at + "</select>".length;
+          break;
+        }
+      }
+      found.push({
+        text: source.slice(match.index, end),
+        line: source.slice(0, match.index).split("\n").length,
+      });
+    }
+    return found;
+  }
+
+  /** What an account option list is built from or named. */
+  const ACCOUNT_OPTIONS = /buildAccountDropdownOptions|accountSelectOption|\b\w*[aA]ccountOptions\b|\b[aA]ccounts\s*(?:\n\s*)?\.(?:map|slice|filter)\(/;
+
+  it("has no native select over accounts, which cannot draw the institution logo", () => {
+    const offenders = productionSources()
+      .filter(([path]) => path !== "/src/components/ui/IconSelect.tsx")
+      .flatMap(([path, content]) =>
+        selectElements(withoutComments(content))
+          .filter(({ text }) => ACCOUNT_OPTIONS.test(text))
+          .map(({ line }) => `${path}:${line}`),
+      );
+
+    // Every account dropdown marks its rows, and the picked account, with the
+    // institution's logo (issue #2288): `AccountSelect` over options from
+    // `buildAccountDropdownOptions` or `accountSelectOption`.
+    expect(offenders).toEqual([]);
+  });
+
+  it("catches the pattern it bans", () => {
+    const sample = `<Select label="Account" options={[...buildAccountDropdownOptions(a, f)]} />
+<select value={id}>{accounts.map((a) => <option key={a.id}>{a.name}</option>)}</select>
+<Select label="Type" options={typeOptions} />`;
+    expect(
+      selectElements(sample).filter(({ text }) => ACCOUNT_OPTIONS.test(text)).map(({ line }) => line),
+    ).toEqual([1, 2]);
+  });
+});
