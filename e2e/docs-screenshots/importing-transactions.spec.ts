@@ -102,7 +102,8 @@ test.describe("the CSV wizard", () => {
     await nextButton(page).click();
     const card = stepCard(page, "Select Destination Account");
     await expect(card).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByLabel("Import into account")).toHaveValue(/.+/);
+    // An account is already picked: the field shows its name.
+    await expect(page.getByLabel("Import into account")).toHaveText(/\S/);
     await waitForReady(page);
     await docShot(page, "import-select-account", card);
   });
