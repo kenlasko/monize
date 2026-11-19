@@ -443,13 +443,14 @@ describe("mapKmyFile: options and the model's other inputs", () => {
       interestBookingMode: "SPLIT",
       sourceAccountKey: "acct-6",
       paymentAmount: 500,
+      rates: [{ effectiveDate: "2024-01-01", annualRate: 4.5 }],
+      originalPrincipal: null,
+      amortizationMonths: null,
     });
-    expect(parsed.warnings.map((w) => w.code)).toEqual(
-      expect.arrayContaining([
-        "loanInterestRateNotImported",
-        "loanScheduleSimplified",
-      ]),
-    );
+    const codes = parsed.warnings.map((w) => w.code);
+    expect(codes).toContain("loanScheduleSimplified");
+    // The rate is imported (spec 5.11), so it is no longer a warning.
+    expect(codes).not.toContain("loanInterestRateNotImported");
   });
 
   it("explains a holding the mapped replay cannot reproduce (a ratio inexact at 8 places)", () => {

@@ -204,7 +204,12 @@ describe("mapKmyAccounts: fields (spec 5.2.1)", () => {
         number: "123",
         hasOnlineBanking: true,
       }),
-      rawAccount({ id: "L", name: "Lent", type: 14 }),
+      rawAccount({
+        id: "L",
+        name: "Lent",
+        type: 14,
+        kvp: { "ir-2023-01-01": "3/1", "ir-2024-01-01": "9/2" },
+      }),
       rawAccount({ id: "T", name: "Trading", type: 11, kvp: { iban: "X" } }),
       rawAccount({
         id: "M",
@@ -230,10 +235,10 @@ describe("mapKmyAccounts: fields (spec 5.2.1)", () => {
       ["accountNumbersNotImported", "Child", undefined],
       ["onlineBankingNotImported", "Child", undefined],
       ["assetLoanAsAsset", "Lent", undefined],
+      // An asset loan has no rate timeline; a loan's rates import (5.11).
+      ["loanInterestRateNotImported", "Lent", "4.5000"],
       ["currencyTradingAccount", "Trading", undefined],
       ["accountNumbersNotImported", "Trading", undefined],
-      ["loanInterestRateNotImported", "Mortgage", "4.5000"],
-      ["loanInterestRateNotImported", "Loan2", "x"],
     ]);
   });
 

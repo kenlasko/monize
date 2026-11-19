@@ -155,7 +155,7 @@ export const MNY_WARNING_CODES = [
   "priceCurrencyMismatch",
   /** Exchange rates for currencies the import never uses were skipped. */
   "unusedCurrencyRatesSkipped",
-  /** A loan's interest rate history is not imported. */
+  /** A loan's interest rate is not imported: an asset loan's, or one that could not be read. */
   "loanInterestRateNotImported",
   /** A loan's payment schedule was simplified to Monize's loan model. */
   "loanScheduleSimplified",
@@ -217,6 +217,8 @@ export const MNY_WARNING_CODES = [
   "securityTransferInferred",
   /** A share count finer than eight decimal places was rounded. */
   "sharesRounded",
+  /** A KMyMoney loan's original amount or term could not be read; it was not imported. */
+  "loanTermsNotImported",
 ] as const;
 
 export type MnyWarningCode = (typeof MNY_WARNING_CODES)[number];

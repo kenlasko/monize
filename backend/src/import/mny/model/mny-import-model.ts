@@ -657,6 +657,23 @@ export interface MappedLoanTerms {
   readonly paymentStartDate: string | null;
   /** Split-booked payments seen; 0 when the terms came only from a bill. */
   readonly paymentsObserved: number;
+  /**
+   * The loan's stated rates, ascending by date, the first one the
+   * origination rate. Only a KMyMoney file states them (its `ir-YYYY-MM-DD`
+   * KVPs, spec kmymoney-import 5.11); absent or empty writes no rate.
+   */
+  readonly rates?: readonly MappedLoanRate[];
+  /** The amount originally borrowed, positive; absent or null writes none. */
+  readonly originalPrincipal?: number | null;
+  /** The whole life of the loan in months; absent or null writes none. */
+  readonly amortizationMonths?: number | null;
+}
+
+/** One stated annual rate (percent) and the date it is effective from. */
+export interface MappedLoanRate {
+  /** YYYY-MM-DD. */
+  readonly effectiveDate: string;
+  readonly annualRate: number;
 }
 
 export interface MappedLoans {
