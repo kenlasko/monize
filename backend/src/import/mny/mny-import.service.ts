@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   forwardRef,
 } from "@nestjs/common";
 import { DataSource, In } from "typeorm";
@@ -28,6 +29,11 @@ import {
   importAlreadyRunningException,
 } from "./mny-import-job.service";
 import { MnyParsedFile } from "./mny-parser.service";
+import {
+  ImportSourceFormat,
+  ImportSourceParser,
+  KMY_SOURCE_PARSER,
+} from "./model/import-source";
 import { MnyMarketRateService } from "./mny-market-rates.service";
 import { MnyStagingService } from "./mny-staging.service";
 import {
@@ -58,12 +64,18 @@ import {
 } from "./writers/write-transactions";
 import { writeInvestments, writeSecurities } from "./writers/write-investments";
 import { applyImportRules } from "./writers/apply-import-rules";
+import {
+  writePayeeExtras,
+  WrittenPayeeExtras,
+} from "./writers/write-payee-extras";
 import { writeBills } from "./writers/write-bills";
 import { throttleProgress } from "./writers/progress-throttle";
 import { writeLoans } from "./writers/write-loans";
 import { writeTags } from "./writers/write-tags";
 import { selectedBills } from "./map/map-bills";
 import {
+  KMY_PRICE_SOURCE,
+  MNY_PRICE_SOURCE,
   writeExchangeRates,
   writeSecurityPrices,
 } from "./writers/write-prices";
@@ -107,6 +119,8 @@ export interface WipeCredentials {
 
 export interface StartImportInput {
   readonly stagedFileId: string;
+  /** Default `mny`. A staged file of the other format is refused as missing. */
+  readonly sourceFormat?: ImportSourceFormat;
   readonly options?: Partial<MnyImportOptions>;
   readonly wipeCredentials?: WipeCredentials;
 }
@@ -129,6 +143,9 @@ export class MnyImportService {
     private holdings: HoldingsService,
     private rulesApplier: TransactionRulesApplierService,
     private tags: TagsService,
+    @Optional()
+    @Inject(KMY_SOURCE_PARSER)
+    private readonly kmyParser?: ImportSourceParser,
   ) {}
 
   /**
@@ -143,12 +160,18 @@ export class MnyImportService {
    */
   async start(userId: string, input: StartImportInput): Promise<ImportJob> {
     const staged = await this.staging.findInfo(userId, input.stagedFileId);
-    if (!staged) {
+    const format: ImportSourceFormat = input.sourceFormat ?? "mny";
+    if (!staged || (staged.sourceFormat ?? "mny") !== format) {
       throw new NotFoundException(
-        tr(
-          "errors.import.mnyStagedFileMissing",
-          "The uploaded Money file is no longer available. Please upload it again.",
-        ),
+        format === "kmy"
+          ? tr(
+              "errors.import.kmyStagedFileMissing",
+              "The uploaded KMyMoney file is no longer available. Please upload it again.",
+            )
+          : tr(
+              "errors.import.mnyStagedFileMissing",
+              "The uploaded Money file is no longer available. Please upload it again.",
+            ),
       );
     }
 
@@ -164,7 +187,9 @@ export class MnyImportService {
     // The job row is the lock, so it is taken *before* the destructive wipe:
     // with the wipe first, two concurrent starts could both pass the advisory
     // check and both delete the user's data before either row existed.
-    const job = await this.jobs.create(userId, staged.id, options);
+    const job = await (format === "mny"
+      ? this.jobs.create(userId, staged.id, options)
+      : this.jobs.create(userId, staged.id, options, format));
 
     // Still outside the job body, and never with the credentials in tow:
     // `deleteData` re-authenticates, so running it in the body would mean
@@ -219,7 +244,12 @@ export class MnyImportService {
     // once the request scope is gone.
     void withUserContext(userId, () =>
       this.jobs.runClaimed(userId, job.id, (context) =>
-        this.runImport(userId, staged.id, options, context),
+        format === "mny"
+          ? this.runImport(userId, staged.id, options, context)
+          : this.runImport(userId, staged.id, options, context, {
+              format,
+              filename: staged.filename,
+            }),
       ),
     ).catch(async (error) => {
       const detail = error instanceof Error ? error.message : String(error);
@@ -246,6 +276,10 @@ export class MnyImportService {
     stagedFileId: string,
     options: MnyImportOptions,
     context: JobRunContext,
+    source: {
+      readonly format: ImportSourceFormat;
+      readonly filename: string;
+    } = { format: "mny", filename: "" },
   ): Promise<MnyImportResult> {
     await context.reportProgress({
       phase: "preparing",
@@ -270,15 +304,30 @@ export class MnyImportService {
     const loadedAt = Date.now();
     sampleRss();
 
-    const parsed = await this.parser.parse({
-      buffer: bytes,
-      options,
-      // Staged bytes are stored decrypted, so the password is spent on the
-      // parse request and never persisted. Decrypting them again would
-      // re-encrypt them -- see `openDecryptedMnyFile`.
-      alreadyDecrypted: true,
-      userDefaultCurrency: await this.defaultCurrency(userId),
-    });
+    const userDefaultCurrency = await this.defaultCurrency(userId);
+    let parsed: MnyParsedFile;
+    if (source.format === "kmy") {
+      if (!this.kmyParser) {
+        throw new Error("No KMyMoney parser is registered");
+      }
+      parsed = await this.kmyParser.parse({
+        userId,
+        buffer: bytes,
+        filename: source.filename,
+        options,
+        userDefaultCurrency,
+      });
+    } else {
+      parsed = await this.parser.parse({
+        buffer: bytes,
+        options,
+        // Staged bytes are stored decrypted, so the password is spent on the
+        // parse request and never persisted. Decrypting them again would
+        // re-encrypt them -- see `openDecryptedMnyFile`.
+        alreadyDecrypted: true,
+        userDefaultCurrency,
+      });
+    }
     const parsedAt = Date.now();
     sampleRss();
 
@@ -330,6 +379,7 @@ export class MnyImportService {
     sampleRss();
 
     this.logTiming({
+      format: source.format,
       sizeBytes,
       peakRss,
       load: loadedAt - startedAt,
@@ -361,6 +411,8 @@ export class MnyImportService {
           subject: `${holding.accountName}: ${holding.symbol}`,
           detail: `imported ${holding.importedQuantity} vs lots ${holding.lotQuantity}`,
         })),
+      // Commit-time payee refusals the preview could not see.
+      ...written.payeeExtras.warnings,
     ];
 
     return {
@@ -376,6 +428,14 @@ export class MnyImportService {
       investmentTransactionsCreated: written.investmentTransactionsCreated,
       ...(written.bondRowsWithoutSeries > 0
         ? { bondRowsWithoutSeries: written.bondRowsWithoutSeries }
+        : {}),
+      ...(parsed.sourceFormat === "kmy"
+        ? {
+            ...(parsed.kmyFile ? { fileAsOf: parsed.kmyFile.asOf } : {}),
+            payeeAliasesCreated: written.payeeExtras.aliasesCreated,
+            payeeDefaultCategoriesSet: written.payeeExtras.defaultCategoriesSet,
+            payeeContactDetailsSet: written.payeeExtras.contactDetailsSet,
+          }
         : {}),
       pricesImported: written.pricesImported,
       exchangeRatesImported: written.exchangeRatesImported,
@@ -412,6 +472,7 @@ export class MnyImportService {
    * because it says which phase to blame.
    */
   private logTiming(timing: {
+    format: ImportSourceFormat;
     sizeBytes: number;
     peakRss: number;
     load: number;
@@ -427,7 +488,7 @@ export class MnyImportService {
     const ratio = (timing.peakRss / Math.max(timing.sizeBytes, 1)).toFixed(1);
 
     this.logger.log(
-      `.mny import timing: ${mib(timing.sizeBytes)} MiB file, ` +
+      `.${timing.format} import timing: ${mib(timing.sizeBytes)} MiB file, ` +
         `${timing.transactions} transactions, ${timing.investments} investment rows, ` +
         `${timing.prices} prices -- ` +
         `load ${timing.load} ms, parse ${timing.parse} ms, write ${timing.write} ms, ` +
@@ -460,6 +521,7 @@ export class MnyImportService {
     affectedAccountIds: ReadonlySet<string>;
     /** Schedules a settlement rule claimed on, repriced after the commit. */
     settledScheduleIds: ReadonlySet<string>;
+    payeeExtras: WrittenPayeeExtras;
   }> {
     return withScopedDb(this.dataSource, async (manager) => {
       await context.reportProgress({
@@ -472,6 +534,7 @@ export class MnyImportService {
         manager,
         userId,
         parsed.accounts.accounts,
+        parsed.sourceFormat ?? "mny",
       );
       const categories = await writeCategories(
         manager,
@@ -512,6 +575,7 @@ export class MnyImportService {
         tagIdByHandle: tags.idByHandle,
         onProgress: (processed, total) =>
           reportTransactions({ phase: "transactions", processed, total }),
+        ...(parsed.moneyPlaces ? { moneyPlaces: parsed.moneyPlaces } : {}),
       });
 
       // Transaction rules (design 6.3): one bulk pass over the regular rows just
@@ -532,6 +596,16 @@ export class MnyImportService {
           ),
         },
       );
+
+      // KMyMoney payee aliases, default categories and contact details: after
+      // the rule pass, so this import's own rows keep the payee KMyMoney
+      // assigned (the pass resolves names through aliases). A no-op, without a
+      // query, for a payee list that carries none (every Money file).
+      const payeeExtras = await writePayeeExtras(manager, userId, {
+        payees: parsed.payees.payees,
+        payeeIdByName: payees.idByName,
+        categoryIdByHandle,
+      });
 
       await context.reportProgress({
         phase: "investments",
@@ -566,6 +640,7 @@ export class MnyImportService {
         tagIdByHandle: tags.idByHandle,
         onProgress: (processed, total) =>
           reportInvestments({ phase: "investments", processed, total }),
+        ...(parsed.moneyPlaces ? { moneyPlaces: parsed.moneyPlaces } : {}),
       });
 
       // Holdings come only from the canonical rebuild, never from an importer's
@@ -605,6 +680,7 @@ export class MnyImportService {
             .map((account) => [account.key, account.linkedKey as string]),
         ),
         tagIdByHandle: tags.idByHandle,
+        ...(parsed.moneyPlaces ? { moneyPlaces: parsed.moneyPlaces } : {}),
       });
 
       await context.reportProgress({
@@ -617,6 +693,8 @@ export class MnyImportService {
 
       // The biggest phase in a real file -- 68,000 rows in the maintainer's --
       // and so the one where an unthrottled report per chunk costs the most.
+      const priceSource =
+        parsed.sourceFormat === "kmy" ? KMY_PRICE_SOURCE : MNY_PRICE_SOURCE;
       const reportPrices = throttleProgress(context.reportProgress);
       const pricesImported = parsed.options.importPrices
         ? await writeSecurityPrices(
@@ -625,6 +703,7 @@ export class MnyImportService {
             securities.idByHandle,
             (processed, total) =>
               reportPrices({ phase: "prices", processed, total }),
+            priceSource,
           )
         : 0;
       const exchangeRatesImported = parsed.options.importExchangeRates
@@ -632,6 +711,7 @@ export class MnyImportService {
             manager,
             parsed.rawExchangeRates,
             parsed.currencyByHandle,
+            priceSource,
           )
         : 0;
 
@@ -658,6 +738,21 @@ export class MnyImportService {
                 entry[0] !== undefined && !accounts.reusedIds.has(entry[0]),
             ),
         ),
+        ...(parsed.balancePrecision
+          ? [
+              new Map(
+                [...parsed.balancePrecision]
+                  .map(([key, rule]): [string | undefined, number] => [
+                    accounts.idByKey.get(key),
+                    rule.places,
+                  ])
+                  .filter(
+                    (entry): entry is [string, number] =>
+                      entry[0] !== undefined,
+                  ),
+              ),
+            ]
+          : []),
       );
 
       // Last, because a closed account rejects balance updates.
@@ -695,6 +790,7 @@ export class MnyImportService {
           ...ruleResult.affectedAccountIds,
         ]),
         settledScheduleIds: ruleResult.settledScheduleIds,
+        payeeExtras,
       };
 
       // Last statement before commit, and both halves of the fence in one
@@ -776,20 +872,47 @@ export class MnyImportService {
 
     return parsed.accounts.accounts.map((account) => {
       const accountId = accountIdByKey.get(account.key) ?? null;
-      const expectedBalance = parsed.expectedBalances.get(account.key) ?? 0;
+      const expectedBalance =
+        (parsed.fileBalances ?? parsed.expectedBalances).get(account.key) ?? 0;
       const importedBalance =
         accountId === null ? 0 : (balanceById.get(accountId) ?? 0);
-      const delta = roundMoney(importedBalance - expectedBalance);
+      // KMyMoney: at the account's own places, within the exact allowance
+      // per-row rounding explains (a coin keeps eight). Money: four places,
+      // within half a cent.
+      const precision = parsed.balancePrecision?.get(account.key);
+      const delta =
+        precision === undefined
+          ? roundMoney(importedBalance - expectedBalance)
+          : roundToDecimals(
+              importedBalance - expectedBalance,
+              precision.places,
+            );
 
       return {
         accountName: account.name,
         accountType: account.accountType,
         accountId,
         expectedBalance,
+        ...(parsed.fileBalances === undefined
+          ? {}
+          : {
+              mappedBalance: parsed.expectedBalances.get(account.key) ?? 0,
+              mappedDiffers:
+                roundToDecimals(
+                  (parsed.expectedBalances.get(account.key) ?? 0) -
+                    expectedBalance,
+                  precision?.places ?? 4,
+                ) !== 0,
+              currencyCode: account.currencyCode,
+            }),
         importedBalance,
         delta,
         transactionCount: parsed.transactionCounts.get(account.key) ?? 0,
-        matches: balanceMatches(delta),
+        matches:
+          precision === undefined
+            ? balanceMatches(delta)
+            : Math.abs(delta) <=
+              roundToDecimals(precision.tolerance, precision.places),
       };
     });
   }

@@ -48,6 +48,12 @@ const RATE_DECIMALS = 10;
 /** Marks the rows this import wrote, alongside `yahoo_finance` and friends. */
 export const MNY_PRICE_SOURCE = "mny_import";
 
+/** The same marker for rows a KMyMoney import wrote. */
+export const KMY_PRICE_SOURCE = "kmy_import";
+
+export type ImportPriceSource =
+  typeof MNY_PRICE_SOURCE | typeof KMY_PRICE_SOURCE;
+
 export interface PriceRow {
   readonly securityId: string;
   readonly priceDate: string;
@@ -102,6 +108,7 @@ export async function writeSecurityPrices(
   prices: readonly MnySecurityPrice[],
   securityIdByHandle: ReadonlyMap<number, string>,
   onProgress?: (processed: number, total: number) => Promise<void>,
+  source: ImportPriceSource = MNY_PRICE_SOURCE,
 ): Promise<number> {
   const rows = dedupePrices(prices, securityIdByHandle);
   let processed = 0;
@@ -123,7 +130,7 @@ export async function writeSecurityPrices(
         row.securityId,
         row.priceDate,
         row.closePrice,
-        MNY_PRICE_SOURCE,
+        source,
       ]),
     );
     processed += batch.length;
@@ -222,6 +229,7 @@ export async function writeExchangeRates(
   manager: EntityManager,
   rates: readonly MnyExchangeRate[],
   currencyByHandle: ReadonlyMap<number, string>,
+  source: ImportPriceSource = MNY_PRICE_SOURCE,
 ): Promise<number> {
   const rows = resolveExchangeRates(
     rates,
@@ -247,7 +255,7 @@ export async function writeExchangeRates(
         row.toCurrency,
         row.rate,
         row.rateDate,
-        MNY_PRICE_SOURCE,
+        source,
       ]),
     );
     // A skipped conflict returns no row, so this counts what was added rather

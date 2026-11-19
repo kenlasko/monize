@@ -6,6 +6,7 @@ import { Category } from "../../../categories/entities/category.entity";
 import { Payee } from "../../../payees/entities/payee.entity";
 import { tr } from "../../../i18n/translate";
 import { assertAccountCurrencyKindIn } from "../../../accounts/account-currency-kind.util";
+import type { ImportSourceFormat } from "../model/import-source";
 import { insertCategoryIfAbsent } from "../../insert-category-if-absent";
 import {
   MappedAccount,
@@ -48,6 +49,7 @@ export async function writeAccounts(
   manager: EntityManager,
   userId: string,
   accounts: readonly MappedAccount[],
+  sourceFormat: ImportSourceFormat = "mny",
 ): Promise<WrittenAccounts> {
   const repo = manager.getRepository(Account);
   const idByKey = new Map<string, string>();
@@ -75,8 +77,10 @@ export async function writeAccounts(
     if (match.isClosed) {
       throw new BadRequestException(
         tr(
-          "errors.import.mnyExistingAccountClosed",
-          `The existing account "${match.name}" is closed, so the Money file cannot be merged into it. Reopen it or rename it, then import again.`,
+          sourceFormat === "kmy"
+            ? "errors.import.kmyExistingAccountClosed"
+            : "errors.import.mnyExistingAccountClosed",
+          `The existing account "${match.name}" is closed, so the ${sourceFormat === "kmy" ? "KMyMoney" : "Money"} file cannot be merged into it. Reopen it or rename it, then import again.`,
           { name: match.name },
         ),
       );
@@ -84,8 +88,10 @@ export async function writeAccounts(
     if (match.currencyCode !== account.currencyCode) {
       throw new BadRequestException(
         tr(
-          "errors.import.mnyExistingAccountCurrency",
-          `The existing account "${match.name}" uses ${match.currencyCode}, but the Money file account uses ${account.currencyCode}. Rename one of them, then import again.`,
+          sourceFormat === "kmy"
+            ? "errors.import.kmyExistingAccountCurrency"
+            : "errors.import.mnyExistingAccountCurrency",
+          `The existing account "${match.name}" uses ${match.currencyCode}, but the ${sourceFormat === "kmy" ? "KMyMoney" : "Money"} file account uses ${account.currencyCode}. Rename one of them, then import again.`,
           {
             name: match.name,
             existing: match.currencyCode,
@@ -133,6 +139,7 @@ export async function writeAccounts(
       currentBalance: balance,
       creditLimit: account.creditLimit,
       description: account.description,
+      institution: account.institutionName ?? null,
       isFavourite: account.favourite,
       excludeFromNetWorth: account.excludeFromNetWorth,
       isClosed: false,

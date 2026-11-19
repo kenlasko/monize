@@ -109,8 +109,9 @@ function ImportContent() {
             // is where the reason has to appear. The password prompt is not a
             // failure and shows itself.
             mnyError={
-              wizard.mny.passwordPrompt ? null : wizard.mny.uploadError
+              wizard.binary.passwordPrompt ? null : wizard.binary.uploadError
             }
+            binaryErrorFormat={wizard.binaryFormat}
           />
         );
 
@@ -275,22 +276,23 @@ function ImportContent() {
         ) : null;
 
       case 'mnyReview':
-        return wizard.mny.preview ? (
+        return wizard.binary.preview ? (
           <MnyReviewStep
-            preview={wizard.mny.preview}
-            excludedHandles={wizard.mny.excludedHandles}
-            currencyOverrides={wizard.mny.currencyOverrides}
-            selectedBillHandles={wizard.mny.selectedBillHandles}
-            options={wizard.mny.options}
+            preview={wizard.binary.preview}
+            excludedHandles={wizard.binary.excludedHandles}
+            currencyOverrides={wizard.binary.currencyOverrides}
+            selectedBillHandles={wizard.binary.selectedBillHandles}
+            options={wizard.binary.options}
+            format={wizard.binaryFormat}
             currencyOptions={wizard.currencyOptions}
-            isLoading={wizard.mny.isStarting}
-            startError={wizard.mny.uploadError}
-            onToggleAccount={wizard.mny.toggleAccount}
-            onSetAllAccounts={wizard.mny.setAllAccounts}
-            onSetAccountCurrency={wizard.mny.setAccountCurrency}
-            onToggleBill={wizard.mny.toggleBill}
-            onSetAllBills={wizard.mny.setAllBills}
-            onSetOption={wizard.mny.setOption}
+            isLoading={wizard.binary.isStarting}
+            startError={wizard.binary.uploadError}
+            onToggleAccount={wizard.binary.toggleAccount}
+            onSetAllAccounts={wizard.binary.setAllAccounts}
+            onSetAccountCurrency={wizard.binary.setAccountCurrency}
+            onToggleBill={wizard.binary.toggleBill}
+            onSetAllBills={wizard.binary.setAllBills}
+            onSetOption={wizard.binary.setOption}
             onBack={wizard.handleMnyDone}
             onImport={wizard.handleMnyImportClick}
           />
@@ -299,20 +301,22 @@ function ImportContent() {
       case 'mnyImporting':
         // The same step covers running, failed and finished: the job row is the
         // single source of truth for which of the three the user is looking at.
-        return wizard.mny.job?.status === 'completed' &&
-          wizard.mny.job.result ? (
+        return wizard.binary.job?.status === 'completed' &&
+          wizard.binary.job.result ? (
           <MnyVerificationReport
-            result={wizard.mny.job.result}
-            currencyCode={wizard.mny.preview?.baseCurrency ?? 'USD'}
+            result={wizard.binary.job.result}
+            currencyCode={wizard.binary.preview?.baseCurrency ?? 'USD'}
             filename={wizard.mnyFileName}
+            format={wizard.binaryFormat}
             onDone={wizard.handleMnyDone}
           />
         ) : (
           <MnyImportProgress
-            job={wizard.mny.job}
-            isStarting={wizard.mny.isStarting}
-            onRetry={wizard.mny.retry}
+            job={wizard.binary.job}
+            isStarting={wizard.binary.isStarting}
+            onRetry={wizard.binary.retry}
             onStartOver={wizard.handleMnyDone}
+            format={wizard.binaryFormat}
           />
         );
 
@@ -335,16 +339,19 @@ function ImportContent() {
   return (
     <PageLayout>
       <MnyPasswordDialog
-        isOpen={wizard.mny.passwordPrompt !== null}
-        isRetry={wizard.mny.passwordPrompt?.retry ?? false}
-        isLoading={wizard.mny.isUploading}
+        isOpen={
+          wizard.binaryFormat.passwordPrompt &&
+          wizard.binary.passwordPrompt !== null
+        }
+        isRetry={wizard.binary.passwordPrompt?.retry ?? false}
+        isLoading={wizard.binary.isUploading}
         onSubmit={wizard.handleMnyPasswordSubmit}
-        onCancel={wizard.mny.cancelPasswordPrompt}
+        onCancel={wizard.binary.cancelPasswordPrompt}
       />
       <MnyWipeConfirmDialog
         isOpen={wizard.showMnyWipeConfirm}
         isOidc={user?.authProvider === 'oidc'}
-        isLoading={wizard.mny.isStarting}
+        isLoading={wizard.binary.isStarting}
         onConfirm={wizard.handleMnyWipeConfirm}
         onCancel={wizard.cancelMnyWipeConfirm}
       />
@@ -356,10 +363,18 @@ function ImportContent() {
         />
         {/* Progress indicator */}
         <div className="mb-8">
-          <div className="flex items-center justify-center space-x-4">
+          <ol className="flex items-center justify-center space-x-4">
             {(() => {
-              const stepOrder = ['upload', 'csvColumnMapping', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'duplicates', 'multiAccountReview', 'complete'];
-              const currentIndex = stepOrder.indexOf(wizard.step);
+              // A Money or KMyMoney import has its own three steps: the text
+              // formats' mapping steps never apply, and its review and progress
+              // steps are not in their list.
+              const isBinaryFlow = wizard.step === 'mnyReview' || wizard.step === 'mnyImporting';
+              const stepOrder = isBinaryFlow
+                ? ['upload', 'mnyReview', 'mnyImporting']
+                : ['upload', 'csvColumnMapping', 'selectAccount', 'mapCategories', 'mapSecurities', 'mapAccounts', 'review', 'duplicates', 'multiAccountReview', 'complete'];
+              // The report closes the last step once the job has finished.
+              const importFinished = isBinaryFlow && wizard.binary.job?.status === 'completed';
+              const currentIndex = importFinished ? stepOrder.length : stepOrder.indexOf(wizard.step);
 
               // Filter to only visible steps
               const visibleSteps = stepOrder.filter((s) => {
@@ -381,8 +396,14 @@ function ImportContent() {
                 const isLastStep = visibleIndex === visibleSteps.length - 1;
 
                 return (
-                  <div key={s} className="flex items-center">
+                  <li
+                    key={s}
+                    className="flex items-center"
+                    aria-current={isActive ? 'step' : undefined}
+                    aria-label={t('page.stepOf', { current: visibleIndex + 1, total: visibleSteps.length })}
+                  >
                     <div
+                      aria-hidden="true"
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                         isComplete
                           ? 'bg-blue-600 text-white'
@@ -410,11 +431,11 @@ function ImportContent() {
                         }`}
                       />
                     )}
-                  </div>
+                  </li>
                 );
               });
             })()}
-          </div>
+          </ol>
         </div>
 
         {renderStep()}

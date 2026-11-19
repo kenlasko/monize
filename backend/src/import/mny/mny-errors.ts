@@ -28,9 +28,9 @@ export type MnyErrorCode =
  * Base class for every `.mny` parse failure. Never include the password (or
  * any part of it) in `message` -- these messages are logged.
  */
-export class MnyImportError extends Error {
+export class MnyImportError<C extends string = MnyErrorCode> extends Error {
   constructor(
-    readonly code: MnyErrorCode,
+    readonly code: C,
     message: string,
     readonly cause?: unknown,
   ) {

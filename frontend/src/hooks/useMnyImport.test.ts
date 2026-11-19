@@ -199,6 +199,43 @@ describe('useMnyImport', () => {
       });
     });
 
+    it.each([
+      ['a timeout with no response', undefined],
+      ['a proxy 502', 502],
+      ['a 503', 503],
+      ['a 504', 504],
+    ])('marks %s as a request that failed, not a refused file', async (_label, status) => {
+      const error = new AxiosError('timeout of 300000ms exceeded');
+      if (status !== undefined) {
+        error.response = {
+          data: { error: 'Backend unavailable' },
+          status,
+          statusText: 'Bad Gateway',
+          headers: {},
+          config: {} as never,
+        };
+      }
+      mockedApi.parse.mockRejectedValueOnce(error);
+      const { result } = renderHook(() => useMnyImport());
+
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      expect(result.current.uploadError?.requestFailed).toBe(true);
+    });
+
+    it('does not mark a refusal with a code, or a plain 400, as a failed request', async () => {
+      mockedApi.parse.mockRejectedValueOnce(apiError('kmyCorruptFile'));
+      const { result } = renderHook(() => useMnyImport());
+
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      expect(result.current.uploadError?.requestFailed).toBeUndefined();
+    });
+
     it('retries with a password without asking for the file again', async () => {
       mockedApi.parse.mockRejectedValueOnce(apiError('mnyPasswordRequired'));
       const { result } = renderHook(() => useMnyImport());
@@ -672,6 +709,54 @@ describe('useMnyImport', () => {
       });
     });
 
+    it('discards a staged file nothing started', async () => {
+      mockedApi.discardStagedFile.mockResolvedValue(undefined);
+      const { result } = renderHook(() => useMnyImport());
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      await act(async () => result.current.reset());
+
+      expect(mockedApi.discardStagedFile).toHaveBeenCalledWith('staged-1');
+    });
+
+    it('discards the staged file of a failed job, and keeps that of a running or finished one', async () => {
+      mockedApi.discardStagedFile.mockResolvedValue(undefined);
+      for (const [status, discarded] of [
+        ['failed', true],
+        ['running', false],
+        ['completed', false],
+      ] as const) {
+        mockedApi.discardStagedFile.mockClear();
+        mockedApi.start.mockResolvedValue(job({ status }));
+        const { result, unmount } = renderHook(() => useMnyImport());
+        await act(async () => {
+          await result.current.upload(file);
+        });
+        await act(async () => {
+          await result.current.start();
+        });
+
+        await act(async () => result.current.reset());
+
+        expect(mockedApi.discardStagedFile).toHaveBeenCalledTimes(discarded ? 1 : 0);
+        unmount();
+      }
+    });
+
+    it('does not surface a failed discard', async () => {
+      mockedApi.discardStagedFile.mockRejectedValue(new Error('gone'));
+      const { result } = renderHook(() => useMnyImport());
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      await act(async () => result.current.reset());
+
+      expect(result.current.uploadError).toBeNull();
+    });
+
     it('cancels the password prompt without keeping the file', async () => {
       mockedApi.parse.mockRejectedValue(apiError('mnyPasswordRequired'));
       const { result } = renderHook(() => useMnyImport());
@@ -686,5 +771,57 @@ describe('useMnyImport', () => {
         expect(await result.current.retryWithPassword('x')).toBe(false);
       });
     });
+  });
+});
+
+describe('useMnyImport with another client', () => {
+  const fake = {
+    parse: vi.fn(),
+    start: vi.fn(),
+    getJob: vi.fn(),
+    discardStagedFile: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fake.parse.mockResolvedValue(preview({ filename: 'budget.kmy' }));
+    fake.start.mockResolvedValue(job());
+    fake.getJob.mockResolvedValue(job());
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('uploads, starts and polls through the client it was given, never the Money one', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useMnyImport(fake));
+
+    await act(async () => {
+      expect(await result.current.upload(new File(['x'], 'budget.kmy'))).toBe(true);
+    });
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+
+    expect(fake.parse).toHaveBeenCalledWith(expect.any(File), undefined);
+    expect(fake.start).toHaveBeenCalledWith('staged-1', expect.anything(), undefined);
+    expect(fake.getJob).toHaveBeenCalledWith('job-1');
+    expect(mockedApi.parse).not.toHaveBeenCalled();
+    expect(mockedApi.start).not.toHaveBeenCalled();
+    expect(mockedApi.getJob).not.toHaveBeenCalled();
+  });
+
+  it('reports a refused file as an upload error and never opens the password prompt', async () => {
+    fake.parse.mockRejectedValue(apiError('kmyEncryptedFile', 'encrypted'));
+    const { result } = renderHook(() => useMnyImport(fake));
+
+    await act(async () => {
+      expect(await result.current.upload(new File(['x'], 'budget.kmy'))).toBe(false);
+    });
+
+    expect(result.current.passwordPrompt).toBeNull();
+    expect(result.current.uploadError).toEqual({ code: 'kmyEncryptedFile', message: 'encrypted' });
   });
 });

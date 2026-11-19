@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { MnyImportProgress } from './MnyImportProgress';
 import type { MnyImportJob } from '@/lib/import-mny';
+import { KMY_FORMAT } from '@/lib/binary-import-format';
 
 function job(overrides: Partial<MnyImportJob> = {}): MnyImportJob {
   return {
@@ -228,5 +229,51 @@ describe('MnyImportProgress', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
       expect(defaultProps.onStartOver).toHaveBeenCalled();
     });
+  });
+});
+
+describe('MnyImportProgress with a KMyMoney import', () => {
+  const props = {
+    job: job(),
+    isStarting: false,
+    onRetry: vi.fn(),
+    onStartOver: vi.fn(),
+    format: KMY_FORMAT,
+  };
+
+  it('names the KMyMoney file in the heading and keeps the same phases', () => {
+    render(<MnyImportProgress {...props} />);
+
+    expect(
+      screen.getByRole('heading', { name: 'Importing your KMyMoney file' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Scheduled bills')).toBeInTheDocument();
+  });
+
+  it('reads a failed job from the Money catalog when the key is format-neutral', () => {
+    render(
+      <MnyImportProgress
+        {...props}
+        job={job({ status: 'failed', errorKey: 'mnyJobStalled', retryable: true })}
+      />,
+    );
+
+    expect(screen.getByText(/stopped responding/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Learn more' }).getAttribute('href')).toContain(
+      'troubleshooting-the-kmymoney-import',
+    );
+  });
+
+  it('reads the staged-file key from the KMyMoney catalog', () => {
+    render(
+      <MnyImportProgress
+        {...props}
+        job={job({ status: 'failed', errorKey: 'mnyStagedFileMissing' })}
+      />,
+    );
+
+    expect(
+      screen.getByText('The uploaded KMyMoney file is no longer available. Please upload it again.'),
+    ).toBeInTheDocument();
   });
 });

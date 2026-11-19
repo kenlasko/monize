@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { HelpLink } from '@/components/help/HelpLink';
 import { MnyImportJob, MnyImportPhase } from '@/lib/import-mny';
-import { mnyErrorDocsLink } from '@/lib/import-mny-error-docs';
+import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
 
 interface MnyImportProgressProps {
   job: MnyImportJob | null;
   isStarting: boolean;
   onRetry: () => void;
   onStartOver: () => void;
+  /** Which file format is importing; Money when omitted. */
+  format?: BinaryImportFormat;
 }
 
 /** The phases the backend reports, in the order it runs them. */
@@ -59,6 +61,7 @@ export function MnyImportProgress({
   isStarting,
   onRetry,
   onStartOver,
+  format = MNY_FORMAT,
 }: MnyImportProgressProps) {
   const t = useTranslations('import');
 
@@ -70,11 +73,11 @@ export function MnyImportProgress({
             {t('mnyImporting.failedHeading')}
           </h2>
           <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-            {t(`mnyErrors.${failedJobMessageKey(job)}`)}
+            {t(format.errorKey(failedJobMessageKey(job)))}
           </p>
           <p className="mt-2 text-sm">
             <HelpLink
-              link={mnyErrorDocsLink(failedJobMessageKey(job))}
+              link={format.errorDocsLink(failedJobMessageKey(job))}
               className="font-medium text-red-800 underline hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
             >
               {t('mnyImporting.learnMore')}
@@ -107,7 +110,7 @@ export function MnyImportProgress({
         <div className="flex items-center gap-3 mb-4">
           <LoadingSpinner size="sm" fullContainer={false} />
           <h2 className="text-lg font-semibold text-foreground">
-            {t('mnyImporting.heading')}
+            {t(format.copy.importingHeading)}
           </h2>
         </div>
 
@@ -156,7 +159,7 @@ export function MnyImportProgress({
               aria-valuenow={percent}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={t('mnyImporting.heading')}
+              aria-label={t(format.copy.importingHeading)}
             >
               <div
                 className="h-2 rounded bg-primary transition-all"

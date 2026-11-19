@@ -66,7 +66,7 @@ export const MNY_IMPORT_LIMIT_BYTES = MNY_IMPORT_LIMIT_MB * 1024 * 1024;
 /** Extensions the wizard accepts. `.mbf` backup archives are a documented non-goal. */
 const MNY_EXTENSION = /\.mny$/i;
 
-function toJobDto(job: ImportJob): MnyImportJobDto {
+export function toJobDto(job: ImportJob): MnyImportJobDto {
   return {
     id: job.id,
     status: job.status,
@@ -196,7 +196,7 @@ export class MnyImportController {
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<MnyImportJobDto> {
     const job = await this.jobs.findOne(req.user.id, id);
-    if (!job) {
+    if (!job || job.sourceFormat !== "mny") {
       throw new NotFoundException(
         tr("errors.import.mnyJobNotFound", "Import job not found"),
       );
@@ -222,7 +222,7 @@ export class MnyImportController {
     @Request() req,
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<void> {
-    const removed = await this.staging.remove(req.user.id, id);
+    const removed = await this.staging.remove(req.user.id, id, "mny");
     if (!removed) {
       throw new NotFoundException(
         tr(

@@ -40,6 +40,7 @@
     "frankfurter": "Frankfurter (BCE)",
     "frankfurterV2": "Frankfurter (bancos centrales)",
     "mnyImport": "Importación de Money",
+    "kmyImport": "Importación de KMyMoney",
     "transaction": "Transacción",
     "unknown": "Desconocido"
   },

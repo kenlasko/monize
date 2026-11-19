@@ -182,7 +182,14 @@ export interface UpdateTransferPreview {
   toCurrencyCode: string;
   amount: number;
   toAmount: number;
-  exchangeRate: number;
+  /**
+   * The settlement rate the transfer holds after the edit (`heldTransferRate`).
+   * `null` for a cross-currency transfer that holds no rate and keeps it (an
+   * import whose amounts implied none): never shown as 1, and carried to the
+   * commit as "no rate given", which `resolveTransferFxForUpdate` reads as
+   * unchanged, so neither leg's amount moves.
+   */
+  exchangeRate: number | null;
   transactionDate: string;
   description: string | null;
   payeeId: string | null;
@@ -497,7 +504,8 @@ export class TransactionTransferService {
   }): Promise<{
     fromCurrencyCode: string;
     toCurrencyCode: string;
-    exchangeRate: number;
+    /** Always a number when `repriced`; `heldTransferRate` otherwise. */
+    exchangeRate: number | null;
     toAmount: number;
     repriced: boolean;
   }> {
@@ -542,6 +550,20 @@ export class TransactionTransferService {
       supplied !== undefined &&
       roundMoney(supplied, decimals) !== roundMoney(existing, decimals);
 
+    // The same for the rate, against the rate the row holds, never against a
+    // stand-in. A transfer that holds no rate (null: an import whose amounts
+    // implied none) is unchanged by a payload that gives none either -- its
+    // preview carries null, and reading null as 1 or as "resolve one" would
+    // re-price a transfer whose rate the edit did not touch. Any rate supplied
+    // against it is a new value, so it re-prices at that rate.
+    const rateDiffers = (): boolean => {
+      const supplied: number | null | undefined = updateDto.exchangeRate;
+      if (supplied === undefined) return false;
+      const held = input.existingExchangeRate;
+      if (held === null || held === undefined) return supplied !== null;
+      return roundFxRate(Number(supplied)) !== roundFxRate(Number(held));
+    };
+
     const financialStructureChanged =
       (updateDto.fromAccountId !== undefined &&
         updateDto.fromAccountId !== input.existingFromAccountId) ||
@@ -549,9 +571,7 @@ export class TransactionTransferService {
         updateDto.toAccountId !== input.existingToAccountId) ||
       differs(updateDto.amount, input.existingFromAmount, fromDecimals) ||
       differs(updateDto.toAmount, input.existingToAmount, toDecimals) ||
-      (updateDto.exchangeRate !== undefined &&
-        roundFxRate(Number(updateDto.exchangeRate)) !==
-          roundFxRate(Number(input.existingExchangeRate ?? 1)));
+      rateDiffers();
 
     if (financialStructureChanged) {
       // An echoed untrusted stored rate (1 on a zero-amount cross-currency
@@ -595,7 +615,6 @@ export class TransactionTransferService {
 
     // Nothing financial changed: keep the settlement the transfer already has.
     // The currencies are still derived from the accounts and still validated.
-    const storedRate = Number(input.existingExchangeRate);
     return {
       fromCurrencyCode: assertTransactionCurrencyMatchesAccount(
         updateDto.fromCurrencyCode,
@@ -605,11 +624,34 @@ export class TransactionTransferService {
         updateDto.toCurrencyCode,
         input.toAccount.currencyCode,
       ),
-      exchangeRate:
-        Number.isFinite(storedRate) && storedRate > 0 ? storedRate : 1,
+      exchangeRate: this.heldTransferRate(
+        fromCode,
+        toCode,
+        input.existingExchangeRate,
+      ),
       toAmount: input.existingToAmount,
       repriced: false,
     };
+  }
+
+  /**
+   * The settlement rate a transfer's destination leg holds: its stored rate
+   * when that is a positive number, 1 between two accounts in one currency
+   * (rate 1 means "same currency"), and `null` for a cross-currency leg that
+   * holds none -- a KMyMoney import with one empty side leaves the rate null
+   * rather than invent one. Never 1 for a pair whose rate is unknown.
+   */
+  private heldTransferRate(
+    fromCurrencyCode: string,
+    toCurrencyCode: string,
+    storedRate: number | null | undefined,
+  ): number | null {
+    const rate = Number(storedRate);
+    if (storedRate !== null && storedRate !== undefined) {
+      if (Number.isFinite(rate) && rate > 0) return rate;
+    }
+    if (fromCurrencyCode === toCurrencyCode) return 1;
+    return null;
   }
 
   private assertAccountsOpen(...accounts: Account[]): void {
@@ -1595,7 +1637,14 @@ export class TransactionTransferService {
 
     const oldFromAmount = Math.abs(Number(fromTransaction.amount));
     const oldToAmount = Number(toTransaction.amount);
-    let exchangeRate = Number(toTransaction.exchangeRate) || 1;
+    // What the commit keeps when the edit leaves the money alone
+    // (`resolveTransferFxForUpdate`): null for a cross-currency transfer that
+    // holds no rate, never a 1 that would claim the two currencies trade 1:1.
+    let exchangeRate = this.heldTransferRate(
+      fromTransaction.currencyCode,
+      toTransaction.currencyCode,
+      toTransaction.exchangeRate,
+    );
 
     const places = await this.readCurrencyPlacesForPreview([
       fromTransaction.currencyCode,
@@ -1621,8 +1670,10 @@ export class TransactionTransferService {
     const newDate = input.transactionDate ?? fromTransaction.transactionDate;
     // When only the amount changes, scale the destination leg by the stored
     // exchange rate; when nothing money-related changes, keep the stored toAmount.
+    // A transfer that holds no rate has nothing to scale by: it keeps its
+    // stored toAmount here and resolves a rate below only if the amount moved.
     let newToAmount =
-      input.amount !== undefined
+      input.amount !== undefined && exchangeRate !== null
         ? applyFxConversion(newAmount, exchangeRate, null, {
             toDecimals,
           }).amount
@@ -1631,9 +1682,13 @@ export class TransactionTransferService {
     // A zero-amount cross-currency transfer is stored at rate 1 because zero
     // needs no rate; that 1 is not a settlement rate, so scaling a new amount
     // by it posts 500 USD as 500 EUR. Resolve the rate the way creation does,
-    // so the preview and the commit agree.
+    // so the preview and the commit agree. A transfer holding no rate at all
+    // resolves only on a new amount (a value difference): a resent amount
+    // leaves the commit's settlement alone, so the preview does too.
+    const amountChanged =
+      input.amount !== undefined && newAmount !== oldFromAmount;
     if (
-      input.amount !== undefined &&
+      (exchangeRate === null ? amountChanged : input.amount !== undefined) &&
       fromTransaction.currencyCode !== toTransaction.currencyCode &&
       this.isStoredRateUntrusted(oldFromAmount, toTransaction.exchangeRate)
     ) {
@@ -3441,7 +3496,7 @@ export class TransactionTransferService {
   private buildToUpdateData(
     updateDto: Partial<UpdateTransferDto>,
     newToAmount: number,
-    newExchangeRate: number,
+    newExchangeRate: number | null,
     oldFromAccountId: string,
     oldToAccountId: string,
     oldFromAccountName: string,
@@ -3486,7 +3541,7 @@ export class TransactionTransferService {
     // presentation-only edit cannot rewrite the settlement it did not touch.
     if (
       repriced &&
-      newExchangeRate !== undefined &&
+      newExchangeRate !== null &&
       Number(newExchangeRate) !== Number(existingExchangeRate)
     )
       data.exchangeRate = newExchangeRate;

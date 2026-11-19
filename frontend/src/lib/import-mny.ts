@@ -1,32 +1,5 @@
-import apiClient from './api';
-import { clearAllCache } from './apiCache';
+import { createBinaryImportClient } from './import-binary-client';
 import { AccountType } from '@/types/account';
-
-/**
- * Client for the Microsoft Money (`.mny`) import endpoints.
- *
- * Two things differ from the QIF/OFX/CSV client. The file goes up as multipart
- * binary rather than as text in a JSON body -- a `.mny` file is a Jet database
- * and reading it with `File.text()` would corrupt it. And the import is a
- * background job, so `start` returns a job to poll rather than a result.
- *
- * Timeouts are per call because the defaults cannot fit both: decrypting and
- * parsing a 200 MB file takes far longer than the shared 10 s, while a poll that
- * hangs for 10 s makes the progress bar feel broken.
- */
-
-/** Upload + parse of a 200 MB-class file, including the round trip. */
-const PARSE_TIMEOUT_MS = 300_000;
-/**
- * Starting is normally an insert and a return -- except with "start fresh",
- * where the wipe runs **inside** this request on purpose, so its credentials
- * never reach the job row. Deleting a populated profile does not fit in the
- * shared 10 s, and timing out here is worse than slow: the server carries on
- * wiping and importing while the wizard reports a failed start.
- */
-const START_TIMEOUT_MS = 120_000;
-/** A poll is a single indexed row read; anything slower is a real problem. */
-const POLL_TIMEOUT_MS = 10_000;
 
 export type MnyEra =
   | 'money99'
@@ -129,6 +102,10 @@ export interface MnyPreviewCounts {
   billsDetected: number;
   /** Bill series the mapper could not use -- not unticked ones. */
   billsSkipped: number;
+  /** Payee aliases a KMyMoney file's matching rules become; absent for Money. */
+  payeeAliasesToCreate?: number;
+  /** Payees that get a default category from a KMyMoney file; absent for Money. */
+  payeeDefaultCategoriesToSet?: number;
 }
 
 export interface MnyFileCounts {
@@ -189,6 +166,17 @@ export interface MnyImportOptions {
   bills: number[];
 }
 
+/** Container facts of a KMyMoney file; mirrors the backend `KmyFileSummary`. */
+export interface KmyFileSummary {
+  container: 'gzip' | 'xml';
+  /** Decoded FIXVERSION; 12 is current. */
+  fixVersion: number;
+  appVersion: string | null;
+  lastModified: string | null;
+  /** YYYY-MM-DD the file's balances and holdings are cut off at: the day the file was read. */
+  asOf: string;
+}
+
 export interface MnyPreview {
   stagedFileId: string;
   filename: string;
@@ -205,6 +193,9 @@ export interface MnyPreview {
   missingFields: string[];
   warnings: MnyWarningSummary[];
   options: MnyImportOptions;
+  /** Set only for a KMyMoney file; absent means a Money file. */
+  sourceFormat?: 'kmy';
+  kmyFile?: KmyFileSummary;
 }
 
 export interface MnyAccountVerification {
@@ -217,6 +208,12 @@ export interface MnyAccountVerification {
   delta: number;
   transactionCount: number;
   matches: boolean;
+  /** KMyMoney only: what the import's own rows sum to; `expectedBalance` is then the file's figure. */
+  mappedBalance?: number;
+  /** KMyMoney only: the backend's verdict on whether `mappedBalance` differs from `expectedBalance`. */
+  mappedDiffers?: boolean;
+  /** KMyMoney only: the account's own currency; absent means the file's base currency. */
+  currencyCode?: string;
 }
 
 export interface MnyHoldingVerification {
@@ -252,6 +249,14 @@ export interface MnyImportResult {
    * lots report such a row until its series is chosen. Absent when zero.
    */
   bondRowsWithoutSeries?: number;
+  /** Payee aliases written; absent for a Money import. */
+  payeeAliasesCreated?: number;
+  /** Payees given a default category; absent for a Money import. */
+  payeeDefaultCategoriesSet?: number;
+  /** Payees given contact details; absent for a Money import. */
+  payeeContactDetailsSet?: number;
+  /** KMyMoney only: the day the figures in `verification` and `holdings` are cut off at. */
+  fileAsOf?: string;
   pricesImported: number;
   exchangeRatesImported: number;
   billsCreated: number;
@@ -301,67 +306,28 @@ export type MnyImportOptionsInput = Partial<
   bills?: number[];
 };
 
-export const mnyImportApi = {
+/**
+ * The calls the wizard makes to a binary-file import backend. Microsoft Money
+ * and KMyMoney share the whole job machinery, so one hook drives either client;
+ * see `createBinaryImportClient` for what each call does and why its timeout is
+ * what it is.
+ */
+export interface BinaryImportClient {
   /**
-   * Uploads the file, decrypts and previews it, and stages it for import.
-   * The password is sent only on this call and is never stored server-side.
+   * Uploads the file, reads and previews it, and stages it for import. A
+   * password is sent only on this call and is never stored server-side; only
+   * the Money client uses one.
    */
-  parse: async (file: File, password?: string): Promise<MnyPreview> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (password) {
-      formData.append('password', password);
-    }
-    const response = await apiClient.post<MnyPreview>(
-      '/import/mny/parse',
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: PARSE_TIMEOUT_MS,
-      },
-    );
-    return response.data;
-  },
-
-  start: async (
+  parse: (file: File, password?: string) => Promise<MnyPreview>;
+  start: (
     stagedFileId: string,
     options?: MnyImportOptionsInput,
     wipeCredentials?: { password?: string; oidcIdToken?: string },
-  ): Promise<MnyImportJob> => {
-    const response = await apiClient.post<MnyImportJob>(
-      '/import/mny/start',
-      {
-        stagedFileId,
-        ...(options ? { options } : {}),
-        ...(wipeCredentials?.password
-          ? { wipePassword: wipeCredentials.password }
-          : {}),
-        ...(wipeCredentials?.oidcIdToken
-          ? { wipeOidcIdToken: wipeCredentials.oidcIdToken }
-          : {}),
-      },
-      { timeout: START_TIMEOUT_MS },
-    );
-    return response.data;
-  },
+  ) => Promise<MnyImportJob>;
+  getJob: (id: string) => Promise<MnyImportJob>;
+  discardStagedFile: (id: string) => Promise<void>;
+}
 
-  getJob: async (id: string): Promise<MnyImportJob> => {
-    const response = await apiClient.get<MnyImportJob>(
-      `/import/mny/jobs/${id}`,
-      { timeout: POLL_TIMEOUT_MS },
-    );
-    // The import runs server-side after `start` returns, so the write lands
-    // here rather than at a mutation call. A failed job can still have written
-    // rows before it stopped, so both terminal states invalidate. An MNY import
-    // writes accounts, categories, payees, tags, securities and schedules, and a
-    // wipe deletes them, so no prefix is narrow enough.
-    if (response.data.status === 'completed' || response.data.status === 'failed') {
-      clearAllCache();
-    }
-    return response.data;
-  },
-
-  discardStagedFile: async (id: string): Promise<void> => {
-    await apiClient.delete(`/import/mny/staged/${id}`);
-  },
-};
+/** Client for the Microsoft Money (`.mny`) import endpoints. */
+export const mnyImportApi: BinaryImportClient =
+  createBinaryImportClient('/import/mny');

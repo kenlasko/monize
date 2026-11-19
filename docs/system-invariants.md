@@ -56,7 +56,7 @@ implied.
 
 | ID | Invariant | Status |
 | --- | --- | --- |
-| INV-IMPORT-001 | At most one pending or running MNY import per user | enforced |
+| INV-IMPORT-001 | At most one pending or running MNY or KMY import per user | enforced |
 | INV-IMPORT-002 | A retry never double-imports | partial |
 | INV-IMPORT-003 | A category collision does not abort an import | enforced |
 | INV-IMPORT-004 | A possible duplicate is never written without the person's decision | enforced |
@@ -260,7 +260,7 @@ implied.
 
 ## Imports
 
-### INV-IMPORT-001 -- at most one pending or running MNY import per user
+### INV-IMPORT-001 -- at most one pending or running MNY or KMY import per user
 
 ```text
 Statement           For one user, at most one import job may be pending or running.
@@ -2193,7 +2193,8 @@ Status              enforced -- for the rows the chain writes. Rows written
                     outside it are not provider answers and are not covered:
                     the demo seed stores its BTC->CAD series under yahoo_crypto
                     through ExchangeRateService.storeRateSeries, and a Money
-                    import's rate history is written under mny_import.
+                    import's rate history is written under mny_import and a KMyMoney
+                    import's under kmy_import.
 ```
 
 Spec: `docs/specs/crypto-accounts.md`, decision 5.

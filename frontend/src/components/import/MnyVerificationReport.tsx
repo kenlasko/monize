@@ -4,10 +4,12 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { formatAccountType } from '@/lib/account-utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { MnyImportResult } from '@/lib/import-mny';
+import { useDateFormat } from '@/hooks/useDateFormat';
+import { MnyAccountVerification, MnyImportResult } from '@/lib/import-mny';
 import { AccountType } from '@/types/account';
 import { MnyWarningsPanel } from './MnyWarningsPanel';
 import { Th } from '@/components/ui/Table';
+import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
 
 /** Account types whose verification line is badged, per the comment below. */
 const LOAN_TYPES: ReadonlySet<string> = new Set(['LOAN', 'MORTGAGE']);
@@ -18,6 +20,8 @@ interface MnyVerificationReportProps {
   currencyCode: string;
   filename: string;
   onDone: () => void;
+  /** Which file format was imported; Money when omitted. */
+  format?: BinaryImportFormat;
 }
 
 /**
@@ -37,12 +41,18 @@ export function MnyVerificationReport({
   currencyCode,
   filename,
   onDone,
+  format = MNY_FORMAT,
 }: MnyVerificationReportProps) {
   const t = useTranslations('import');
   const tc = useTranslations('common');
   // Share counts go through the app's own quantity formatter, so the report
   // reads in the user's number locale like every other holdings view.
-  const { formatQuantity, formatCurrency } = useNumberFormat();
+  const { formatQuantity, formatCurrency, formatNumber } = useNumberFormat();
+  const { formatDate } = useDateFormat();
+
+  // A KMyMoney account carries its own currency; Money's report is in the file's base currency.
+  const lineCurrency = (line: MnyAccountVerification) =>
+    line.currencyCode ?? currencyCode;
 
   const mismatches = result.verification.filter((line) => !line.matches);
   const holdingMismatches = result.holdings.filter((line) => !line.matches);
@@ -58,7 +68,7 @@ export function MnyVerificationReport({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${filename.replace(/\.mny$/i, '')}-import-report.json`;
+    link.download = `${filename.replace(format.reportExtension, '')}-import-report.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -89,10 +99,10 @@ export function MnyVerificationReport({
           }`}
         >
           {allMatch
-            ? t('mnyComplete.allMatch', { count: result.verification.length })
+            ? t(format.copy.allMatch, { count: result.verification.length })
             : mismatches.length > 0
-              ? t('mnyComplete.someDiffer', { count: mismatches.length })
-              : t('mnyComplete.someHoldingsDiffer', {
+              ? t(format.copy.someDiffer, { count: mismatches.length })
+              : t(format.copy.someHoldingsDiffer, {
                   count: holdingMismatches.length,
                 })}
         </p>
@@ -142,6 +152,20 @@ export function MnyVerificationReport({
             value={result.investmentTransactionsCreated}
           />
         )}
+        {format.copy.completePayeeAliases &&
+          (result.payeeAliasesCreated ?? 0) > 0 && (
+            <Tile
+              label={t(format.copy.completePayeeAliases)}
+              value={formatNumber(result.payeeAliasesCreated ?? 0, 0)}
+            />
+          )}
+        {format.copy.completePayeeDefaultCategories &&
+          (result.payeeDefaultCategoriesSet ?? 0) > 0 && (
+            <Tile
+              label={t(format.copy.completePayeeDefaultCategories)}
+              value={formatNumber(result.payeeDefaultCategoriesSet ?? 0, 0)}
+            />
+          )}
         {result.billsCreated > 0 && (
           <Tile
             label={t('mnyComplete.counts.bills')}
@@ -179,6 +203,11 @@ export function MnyVerificationReport({
         <h3 className="text-sm font-semibold text-foreground mb-2">
           {t('mnyComplete.verificationHeading')}
         </h3>
+        {format.copy.completeAsOf && result.fileAsOf && (
+          <p className="text-xs text-muted-foreground mb-2">
+            {t(format.copy.completeAsOf, { date: formatDate(result.fileAsOf) })}
+          </p>
+        )}
         <div className="bg-card border border-border rounded-lg overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -190,7 +219,7 @@ export function MnyVerificationReport({
                   {t('mnyComplete.table.transactions')}
                 </Th>
                 <Th align="right" className="px-3 py-2">
-                  {t('mnyComplete.table.expected')}
+                  {t(format.copy.tableExpected)}
                 </Th>
                 <Th align="right" className="px-3 py-2">
                   {t('mnyComplete.table.imported')}
@@ -226,10 +255,22 @@ export function MnyVerificationReport({
                     {line.transactionCount}
                   </td>
                   <td className="px-3 py-2 text-right text-muted-foreground">
-                    {formatCurrency(line.expectedBalance, currencyCode)}
+                    {formatCurrency(line.expectedBalance, lineCurrency(line))}
+                    {/* KMyMoney only: what the import's own rows sum to, shown where the backend found it differs from the file's figure. */}
+                    {line.mappedDiffers === true &&
+                      line.mappedBalance !== undefined && (
+                        <span className="block text-xs text-amber-700 dark:text-amber-400">
+                          {t('kmyComplete.table.mappedDiffers', {
+                            amount: formatCurrency(
+                              line.mappedBalance,
+                              lineCurrency(line),
+                            ),
+                          })}
+                        </span>
+                      )}
                   </td>
                   <td className="px-3 py-2 text-right text-foreground">
-                    {formatCurrency(line.importedBalance, currencyCode)}
+                    {formatCurrency(line.importedBalance, lineCurrency(line))}
                   </td>
                   <td
                     className={`px-3 py-2 text-right font-medium ${
@@ -238,7 +279,7 @@ export function MnyVerificationReport({
                         : 'text-amber-700 dark:text-amber-400'
                     }`}
                   >
-                    {formatCurrency(line.delta, currencyCode)}
+                    {formatCurrency(line.delta, lineCurrency(line))}
                   </td>
                 </tr>
               ))}
@@ -259,7 +300,7 @@ export function MnyVerificationReport({
             {t('mnyComplete.holdingsHeading')}
           </h3>
           <p className="text-xs text-muted-foreground mb-2">
-            {t('mnyComplete.holdingsExplainer')}
+            {t(format.copy.holdingsExplainer)}
           </p>
           <div className="bg-card border border-border rounded-lg overflow-x-auto">
             <table className="min-w-full text-sm">
@@ -272,7 +313,7 @@ export function MnyVerificationReport({
                     {t('mnyComplete.table.security')}
                   </Th>
                   <Th align="right" className="px-3 py-2">
-                    {t('mnyComplete.table.lotShares')}
+                    {t(format.copy.tableLotShares)}
                   </Th>
                   <Th align="right" className="px-3 py-2">
                     {t('mnyComplete.table.importedShares')}
@@ -323,6 +364,7 @@ export function MnyVerificationReport({
       <MnyWarningsPanel
         warnings={result.warnings}
         heading={t('mnyComplete.warningsHeading')}
+        format={format}
       />
 
       <div className="flex justify-between pt-4">
@@ -335,7 +377,7 @@ export function MnyVerificationReport({
   );
 }
 
-function Tile({ label, value }: { label: string; value: number }) {
+function Tile({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="bg-card border border-border rounded-lg px-3 py-2">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { MnyVerificationReport } from './MnyVerificationReport';
+import { KMY_FORMAT } from '@/lib/binary-import-format';
 import type {
   MnyAccountVerification,
   MnyHoldingVerification,
@@ -353,5 +354,213 @@ describe('MnyVerificationReport', () => {
 
     expect(screen.getByText('Scheduled bills')).toBeInTheDocument();
     expect(screen.getByText('21')).toBeInTheDocument();
+  });
+});
+
+describe('MnyVerificationReport with a KMyMoney import', () => {
+  const props = {
+    result: result({
+      holdings: [holding()],
+      verification: [
+        line({ expectedBalance: 100, importedBalance: 100, mappedBalance: 100 }),
+      ],
+    }),
+    currencyCode: 'USD',
+    filename: 'budget.kmy',
+    onDone: vi.fn(),
+    format: KMY_FORMAT,
+  };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('reconciles against the KMyMoney file and labels the columns for it', () => {
+    render(<MnyVerificationReport {...props} />);
+
+    expect(
+      screen.getByText(/every balance matches the one computed from your KMyMoney file/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('From KMyMoney file')).toBeInTheDocument();
+    expect(screen.getByText('Shares in KMyMoney')).toBeInTheDocument();
+    expect(screen.getByText(/against the share balance KMyMoney computes/)).toBeInTheDocument();
+  });
+
+  it('words a balance difference and a holdings difference for KMyMoney', () => {
+    const { rerender } = render(
+      <MnyVerificationReport
+        {...props}
+        result={result({ verification: [line({ matches: false, delta: 5 })] })}
+      />,
+    );
+    expect(screen.getByText(/^1 account does not match the balance computed from your KMyMoney file/)).toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({ holdings: [holding({ matches: false, delta: 1 })] })}
+      />,
+    );
+    expect(screen.getByText(/not match the shares computed from your KMyMoney file/)).toBeInTheDocument();
+  });
+
+  it('shows the payee alias and default category tiles when the counts are above zero', () => {
+    const { rerender } = render(<MnyVerificationReport {...props} />);
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+    expect(screen.queryByText('Default categories')).not.toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({ payeeAliasesCreated: 7, payeeDefaultCategoriesSet: 0 })}
+      />,
+    );
+    expect(screen.getByText('Payee aliases')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.queryByText('Default categories')).not.toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({ payeeAliasesCreated: 0, payeeDefaultCategoriesSet: 3 })}
+      />,
+    );
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+    expect(screen.getByText('Default categories')).toBeInTheDocument();
+  });
+
+  it('never shows the payee tiles for a Money report, whatever the counts', () => {
+    render(
+      <MnyVerificationReport
+        result={result({ payeeAliasesCreated: 7, payeeDefaultCategoriesSet: 3 })}
+        currencyCode="USD"
+        filename="finances.mny"
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('Payee aliases')).not.toBeInTheDocument();
+    expect(screen.queryByText('Default categories')).not.toBeInTheDocument();
+  });
+
+  it('shows what the import rows sum to only when it differs from the file figure', () => {
+    const { rerender } = render(<MnyVerificationReport {...props} />);
+    expect(screen.queryByText(/Import rows sum to/)).not.toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({
+          verification: [
+            line({ expectedBalance: 100, importedBalance: 100, mappedBalance: 90, mappedDiffers: true }),
+          ],
+        })}
+      />,
+    );
+    expect(screen.getByText('Import rows sum to $90.00')).toBeInTheDocument();
+  });
+
+  it('words one reconciled account and several differing accounts in the singular and the plural', () => {
+    const { rerender } = render(<MnyVerificationReport {...props} />);
+    expect(screen.getByText(/^Your only account reconciles: every balance matches/)).toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({ verification: [line(), line({ accountName: 'Savings' })] })}
+      />,
+    );
+    expect(screen.getByText(/^All 2 accounts reconcile: every balance matches/)).toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        result={result({
+          verification: [line({ matches: false, delta: 5 }), line({ accountName: 'Savings', matches: false, delta: 5 })],
+        })}
+      />,
+    );
+    expect(screen.getByText(/^2 accounts do not match the balance/)).toBeInTheDocument();
+  });
+
+  it('formats the payee tiles with the reader\'s number format', () => {
+    render(
+      <MnyVerificationReport
+        {...props}
+        result={result({ payeeAliasesCreated: 1234, payeeDefaultCategoriesSet: 5678 })}
+      />,
+    );
+    expect(screen.getByText('1,234')).toBeInTheDocument();
+    expect(screen.getByText('5,678')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['the backend says the mapped balance differs', true, true],
+    ['the backend says it does not, whatever the figures', false, false],
+    ['the backend sent no verdict', undefined, false],
+  ])('shows the mapped line by the backend verdict alone: %s', (_label, differs, shown) => {
+    render(
+      <MnyVerificationReport
+        {...props}
+        result={result({
+          verification: [
+            line({ expectedBalance: 100, importedBalance: 100, mappedBalance: 90, mappedDiffers: differs }),
+          ],
+        })}
+      />,
+    );
+    expect(screen.queryByText(/Import rows sum to/) !== null).toBe(shown);
+  });
+
+  it('formats each account in its own currency, falling back to the base currency', () => {
+    render(
+      <MnyVerificationReport
+        {...props}
+        result={result({
+          verification: [
+            line({ accountName: 'Euro', expectedBalance: 10, importedBalance: 10, currencyCode: 'EUR' }),
+            line({ accountName: 'Base', expectedBalance: 20, importedBalance: 20 }),
+          ],
+        })}
+      />,
+    );
+    expect(screen.getAllByText('€10.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$20.00').length).toBeGreaterThan(0);
+  });
+
+  it('says the day the figures are cut off at, for KMyMoney only', () => {
+    const { rerender } = render(
+      <MnyVerificationReport {...props} result={result({ fileAsOf: '2026-06-01', verification: [line()] })} />,
+    );
+    expect(screen.getByText(/^Balances and share counts are as of .*2026/)).toBeInTheDocument();
+
+    rerender(<MnyVerificationReport {...props} result={result({ verification: [line()] })} />);
+    expect(screen.queryByText(/Balances and share counts are as of/)).not.toBeInTheDocument();
+
+    rerender(
+      <MnyVerificationReport
+        {...props}
+        format={undefined}
+        result={result({ fileAsOf: '2026-06-01', verification: [line()] })}
+      />,
+    );
+    expect(screen.queryByText(/Balances and share counts are as of/)).not.toBeInTheDocument();
+  });
+
+  it('names the report after the file with .kmy and .xml stripped', () => {
+    const createObjectURL = vi.fn(() => 'blob:report');
+    Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, writable: true });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), writable: true });
+    const names: string[] = [];
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        names.push(this.download);
+      });
+
+    const { rerender } = render(<MnyVerificationReport {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Download report' }));
+    rerender(<MnyVerificationReport {...props} filename="budget.xml" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Download report' }));
+
+    expect(names).toEqual(['budget-import-report.json', 'budget-import-report.json']);
+    clickSpy.mockRestore();
   });
 });

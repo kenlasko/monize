@@ -255,6 +255,7 @@ describe("MnyImportController", () => {
       jobs.findOne.mockResolvedValue({
         id: "job-1",
         userId: "user-1",
+        sourceFormat: "mny",
         stagedFileId: "staged-1",
         status: "failed",
         progress: null,
@@ -282,6 +283,7 @@ describe("MnyImportController", () => {
       jobs.findOne.mockResolvedValue({
         id: "job-1",
         userId: "user-1",
+        sourceFormat: "mny",
         stagedFileId: "staged-1",
         status: "running",
         progress: { phase: "transactions", processed: 10, total: 20 },
@@ -310,6 +312,18 @@ describe("MnyImportController", () => {
         NotFoundException,
       );
     });
+
+    it("404s for a KMyMoney job, as the KMyMoney route does for a Money job", async () => {
+      jobs.findOne.mockResolvedValue({
+        id: "job-1",
+        userId: "user-1",
+        sourceFormat: "kmy",
+      } as ImportJob);
+
+      await expect(controller.findJob(USER, "job-1")).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
   });
 
   describe("discard", () => {
@@ -317,7 +331,16 @@ describe("MnyImportController", () => {
       await expect(
         controller.discard(USER, "staged-1"),
       ).resolves.toBeUndefined();
-      expect(staging.remove).toHaveBeenCalledWith("user-1", "staged-1");
+      expect(staging.remove).toHaveBeenCalledWith("user-1", "staged-1", "mny");
+    });
+
+    it("asks the staging service to discard only a Money file, so a KMyMoney file is a 404", async () => {
+      staging.remove.mockResolvedValue(false);
+
+      await expect(controller.discard(USER, "kmy-file")).rejects.toThrow(
+        /Money file is no longer available/,
+      );
+      expect(staging.remove).toHaveBeenCalledWith("user-1", "kmy-file", "mny");
     });
 
     it("404s when there was nothing to discard", async () => {

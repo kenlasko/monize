@@ -240,6 +240,19 @@ describe("MnyImportJobService", () => {
       expect(job.id).toBe("job-1");
     });
 
+    it("writes the source format when one is passed", async () => {
+      await service.create(
+        "user-1",
+        "staged-1",
+        DEFAULT_MNY_IMPORT_OPTIONS,
+        "kmy",
+      );
+
+      expect(repo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ sourceFormat: "kmy" }),
+      );
+    });
+
     it("translates the one-active-job index into the 409 the wizard renders", async () => {
       repo.save.mockRejectedValue(activeJobViolation());
 

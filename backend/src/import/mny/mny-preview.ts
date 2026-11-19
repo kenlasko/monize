@@ -4,6 +4,7 @@ import {
 } from "../../accounts/entities/account.entity";
 import { FrequencyType } from "../../scheduled-transactions/dto/create-scheduled-transaction.dto";
 import { MnyImportOptions } from "./model/mny-import-options";
+import type { KmyFileSummary } from "./model/import-source";
 import {
   MnyWarningSummary,
   summarizeWarnings,
@@ -95,6 +96,10 @@ export interface MnyPreviewCounts {
   readonly billsDetected: number;
   /** Bill series the mapper could not use (no template, no usable date). */
   readonly billsSkipped: number;
+  /** Payee aliases the KMyMoney rules become; set only for a KMyMoney file. */
+  readonly payeeAliasesToCreate?: number;
+  /** Payees that get a default category; set only for a KMyMoney file. */
+  readonly payeeDefaultCategoriesToSet?: number;
 }
 
 export interface MnyPreview {
@@ -122,6 +127,10 @@ export interface MnyPreview {
   readonly warnings: readonly MnyWarningSummary[];
   /** The option set the import will use, with server-computed defaults filled. */
   readonly options: MnyImportOptions;
+  /** Set only for a KMyMoney file; absent means a Money file. */
+  readonly sourceFormat?: "kmy";
+  /** Set only for a KMyMoney file. */
+  readonly kmyFile?: KmyFileSummary;
 }
 
 export interface BuildPreviewInput {
@@ -164,7 +173,8 @@ export function buildPreview(input: BuildPreviewInput): MnyPreview {
       transactionCount: parsed.transactionCounts.get(account.key) ?? 0,
       investmentCount: parsed.investmentCounts.get(account.key) ?? 0,
       openingBalance: account.openingBalance,
-      finalBalance: parsed.expectedBalances.get(account.key) ?? 0,
+      finalBalance:
+        (parsed.fileBalances ?? parsed.expectedBalances).get(account.key) ?? 0,
       closed: account.closed,
       favourite: account.favourite,
       excludeFromNetWorth: account.excludeFromNetWorth,
@@ -205,6 +215,17 @@ export function buildPreview(input: BuildPreviewInput): MnyPreview {
         : 0,
       billsDetected: parsed.bills.bills.length,
       billsSkipped: parsed.bills.skipped,
+      ...(parsed.sourceFormat === "kmy"
+        ? {
+            payeeAliasesToCreate: parsed.payees.payees.reduce(
+              (total, payee) => total + (payee.aliases?.length ?? 0),
+              0,
+            ),
+            payeeDefaultCategoriesToSet: parsed.payees.payees.filter(
+              (payee) => (payee.defaultCategoryHandle ?? null) !== null,
+            ).length,
+          }
+        : {}),
     },
     fileCounts: parsed.fileCounts,
     missingTables: parsed.missingTables,
@@ -217,5 +238,7 @@ export function buildPreview(input: BuildPreviewInput): MnyPreview {
       }),
     ),
     options: parsed.options,
+    ...(parsed.sourceFormat === "kmy" ? { sourceFormat: "kmy" as const } : {}),
+    ...(parsed.kmyFile !== undefined ? { kmyFile: parsed.kmyFile } : {}),
   };
 }

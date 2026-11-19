@@ -1187,6 +1187,35 @@ describe("AiActionBuilderService", () => {
     expect(action.preview).toMatchObject({ payeeWillBeCreated: true });
   });
 
+  it("signs the null rate of a transfer that holds none, never a 1", () => {
+    const action = builder.buildUpdateTransfer("user-1", {
+      transactionId: "t1",
+      fromAccountId: "a1",
+      fromAccountName: "Checking",
+      fromCurrencyCode: "USD",
+      toAccountId: "a2",
+      toAccountName: "Euro savings",
+      toCurrencyCode: "EUR",
+      amount: 100,
+      toAmount: 0,
+      exchangeRate: null,
+      transactionDate: "2026-01-15",
+      description: "note",
+      payeeId: null,
+      payeeName: null,
+      payeeMatched: true,
+      payeeWillBeCreated: false,
+      categoryId: null,
+      categoryName: null,
+    });
+    expect(action.descriptor).toMatchObject({
+      type: "update_transfer",
+      amount: 100,
+      toAmount: 0,
+      exchangeRate: null,
+    });
+  });
+
   it("builds a signed update_transfer action carrying the category", () => {
     const action = builder.buildUpdateTransfer("user-1", {
       transactionId: "t1",

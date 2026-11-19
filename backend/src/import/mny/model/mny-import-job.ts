@@ -61,6 +61,19 @@ export interface MnyAccountVerification {
   readonly transactionCount: number;
   /** True when `delta` is within the reconciliation tolerance. */
   readonly matches: boolean;
+  /**
+   * KMyMoney only: what the import's own rows sum to; `expectedBalance` is then
+   * the file's figure. Absent means the Money behaviour.
+   */
+  readonly mappedBalance?: number;
+  /**
+   * KMyMoney only: true when `mappedBalance` differs from `expectedBalance`
+   * at the account's own decimal places, so the report need not guess a
+   * tolerance of its own.
+   */
+  readonly mappedDiffers?: boolean;
+  /** KMyMoney only: the account's currency, which the report formats it in. */
+  readonly currencyCode?: string;
 }
 
 /**
@@ -74,7 +87,7 @@ export interface MnyAccountVerification {
 export interface MnyHoldingVerification {
   readonly accountName: string;
   readonly symbol: string;
-  /** Shares Money's open lots claim. */
+  /** The file's own share count: Money's open lots, or KMyMoney's replay. */
   readonly lotQuantity: number;
   /** Shares the mapper's own action replay produces. */
   readonly replayQuantity: number;
@@ -108,6 +121,20 @@ export interface MnyImportResult {
    * row until its series is chosen. Absent when zero.
    */
   readonly bondRowsWithoutSeries?: number;
+  /** Payee aliases written (KMyMoney file only; absent for Money). */
+  readonly payeeAliasesCreated?: number;
+  /**
+   * KMyMoney only: the date the file's figures in `verification` and
+   * `holdings` are computed at, the commit's own day (`todayYMD`, the same
+   * cut-off post-processing gives `current_balance`). The preview shows its
+   * own (`kmyFile.asOf`); the two differ only when the import started on a
+   * later day than the upload.
+   */
+  readonly fileAsOf?: string;
+  /** Payees that received a default category (KMyMoney file only). */
+  readonly payeeDefaultCategoriesSet?: number;
+  /** Payees that received at least one contact field (KMyMoney file only). */
+  readonly payeeContactDetailsSet?: number;
   /** Rows the mapper could not use, by reason. Mirrors the warning codes. */
   readonly skipped: {
     readonly accounts: number;

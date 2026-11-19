@@ -1,6 +1,9 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { ImportController } from "./import.controller";
 import { MnyImportController } from "./mny/mny-import.controller";
+import { KmyImportController } from "./kmy/kmy-import.controller";
+import { KmyParserService } from "./kmy/kmy-parser.service";
+import { KMY_SOURCE_PARSER } from "./mny/model/import-source";
 import { ImportService } from "./import.service";
 import { ImportEntityCreatorService } from "./import-entity-creator.service";
 import { ImportInvestmentProcessorService } from "./import-investment-processor.service";
@@ -31,7 +34,7 @@ import { TransactionsModule } from "../transactions/transactions.module";
     // duplicate goes through the one delete path, in the import's transaction.
     TransactionsModule,
   ],
-  controllers: [ImportController, MnyImportController],
+  controllers: [ImportController, MnyImportController, KmyImportController],
   providers: [
     ImportService,
     ImportPostProcessingService,
@@ -43,6 +46,8 @@ import { TransactionsModule } from "../transactions/transactions.module";
     MnyMarketRateService,
     MnyImportJobService,
     MnyImportService,
+    KmyParserService,
+    { provide: KMY_SOURCE_PARSER, useExisting: KmyParserService },
   ],
   exports: [
     ImportService,

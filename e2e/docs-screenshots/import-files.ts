@@ -12,6 +12,12 @@ export const MNY_FIXTURES = join(
   "../../backend/src/import/mny/__fixtures__",
 );
 
+/** The hand-written KMyMoney files the backend's own specs read. */
+export const KMY_FIXTURES = join(
+  __dirname,
+  "../../backend/src/import/kmy/__fixtures__",
+);
+
 /** A bank's CSV download for the demo's Primary Chequing. */
 export const CHEQUING_CSV = [
   "Date,Description,Category,Amount,Memo,Reference",

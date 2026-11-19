@@ -28,6 +28,7 @@ import {
 import { MnyAlreadyImportedError, MnyImportError } from "./mny-errors";
 import { MnyImportProgress, MnyImportResult } from "./model/mny-import-job";
 import { MnyImportOptions } from "./model/mny-import-options";
+import type { ImportSourceFormat } from "./model/import-source";
 
 /**
  * Lifecycle of a background `.mny` import (design ADR-3).
@@ -340,6 +341,7 @@ export class MnyImportJobService {
     userId: string,
     stagedFileId: string,
     options: MnyImportOptions,
+    sourceFormat: ImportSourceFormat = "mny",
   ): Promise<ImportJob> {
     try {
       return await withScopedDb(this.dataSource, async (manager) => {
@@ -411,7 +413,7 @@ export class MnyImportJobService {
           repo.create({
             userId,
             stagedFileId,
-            sourceFormat: "mny",
+            sourceFormat,
             status: "pending",
             options,
             retryable: false,

@@ -51,6 +51,7 @@ describe("computeExpectedBalances", () => {
         transactionDate: row.date,
         amount: row.amount,
         currencyCode: "USD",
+        exchangeRate: 1,
         status: row.status ?? TransactionStatus.CLEARED,
         payeeHandle: null,
         categoryHandle: null,
@@ -86,6 +87,28 @@ describe("computeExpectedBalances", () => {
     );
 
     expect(balances.get("acct-1")).toBe(84.75);
+  });
+
+  it("sums at an account's own places when the source names them, four otherwise (a coin keeps 8)", () => {
+    const rows = transactionsWith([
+      { amount: 0.33333333, date: "2026-01-02" },
+      { amount: 0.12345678, date: "2026-01-03" },
+    ]);
+    expect(
+      computeExpectedBalances(
+        accountsWith(1),
+        rows,
+        "2026-12-31",
+        undefined,
+        new Map([["acct-1", 8]]),
+      ).get("acct-1"),
+    ).toBe(1.45679011);
+    // The Money path: no places, four decimal places as before.
+    expect(
+      computeExpectedBalances(accountsWith(1), rows, "2026-12-31").get(
+        "acct-1",
+      ),
+    ).toBe(1.4568);
   });
 
   it("excludes voided transactions, as Monize's own balance query does", () => {

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { AccountSubType } from "../../../accounts/entities/account.entity";
 import { InvestmentAction } from "../../../securities/entities/investment-transaction.entity";
 import { baseInvestmentAction } from "../../../securities/investment-replay.util";
@@ -46,6 +45,7 @@ import { cashKeyByAccountKey } from "./map-reference";
 import { transactionTagHandles } from "./map-classifications";
 import { MnyTransactionData } from "../tables/read-transactions";
 import { ExchangeRateRow } from "../writers/write-prices";
+import { JournalIds, moneyJournalIds, orderForReplay } from "./replay-order";
 
 /**
  * `TRN` rows carrying a security, mapped onto Monize investment transactions.
@@ -136,6 +136,8 @@ interface Context {
   readonly marketRateByKey: ReadonlyMap<string, number>;
   readonly rateGaps: MnyRateGap[];
   readonly warnings: MnyWarning[];
+  /** `TRN.htrn` -> the ids its rows take, handed out in journal order (S1). */
+  readonly journalIds: ReadonlyMap<number, JournalIds>;
 }
 
 function rateKey(from: string, to: string, date: string): string {
@@ -170,24 +172,6 @@ interface MnyInvestmentDetailValues {
   readonly commission: number;
   /** `TRN_INV.amtInt`: accrued interest, paid out with a redemption. */
   readonly interest: number;
-}
-
-/**
- * Replay order: by date, and by file order within a date. The holdings rebuild
- * orders the same way -- by date and then by insertion, since rows inserted in
- * one statement share a `created_at` -- so this is the order the positions will
- * be folded in after the write.
- */
-function orderForReplay(
-  transactions: readonly MappedInvestmentTransaction[],
-): MappedInvestmentTransaction[] {
-  return [...transactions].sort((a, b) =>
-    a.transactionDate === b.transactionDate
-      ? 0
-      : a.transactionDate < b.transactionDate
-        ? -1
-        : 1,
-  );
 }
 
 function indexDetails(
@@ -494,7 +478,8 @@ function mapOne(
   // The cash leg settles in the account's currency, so it is worked out from
   // the account-currency total before any conversion into the security's.
   const cashAmount = cashAmountOf(mappedAction, totalAmount, accruedInterest);
-  const id = randomUUID();
+  const ids = context.journalIds.get(handle) as JournalIds;
+  const id = ids.id;
   const currencyCode =
     context.input.accounts.currencyByHandle.get(row.account as number) ?? "";
   const converted = convertToSecurityCurrency(
@@ -511,7 +496,7 @@ function mapOne(
     context,
   );
   const status = mapTransactionStatus(row.clearedStatus, row.flags);
-  const companionId = accruedInterest > 0 ? randomUUID() : null;
+  const companionId = accruedInterest > 0 ? ids.companionId : null;
   const units = byAmount
     ? unitsBoughtByAmount(converted.totalAmount, converted.commission)
     : null;
@@ -595,7 +580,7 @@ function mapOne(
  * ordinary case, not an anomaly -- `money2002.mny` alone has 60 of them, which
  * is 60 lines of noise burying the warnings that do mean something.
  */
-function pairShareTransfers(
+export function pairShareTransfers(
   transactions: readonly MappedInvestmentTransaction[],
 ): { transactions: MappedInvestmentTransaction[]; paired: number } {
   const key = (transaction: MappedInvestmentTransaction): string =>
@@ -775,6 +760,7 @@ function buildContext(input: MapInvestmentsInput): Context {
     ),
     rateGaps: [],
     warnings: [],
+    journalIds: moneyJournalIds(input.transactions.transactions),
   };
 }
 

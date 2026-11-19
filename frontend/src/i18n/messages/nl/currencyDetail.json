@@ -40,6 +40,7 @@
     "frankfurter": "Frankfurter (ECB)",
     "frankfurterV2": "Frankfurter (centrale banken)",
     "mnyImport": "Money-import",
+    "kmyImport": "KMyMoney-import",
     "transaction": "Transactie",
     "unknown": "Onbekend"
   },

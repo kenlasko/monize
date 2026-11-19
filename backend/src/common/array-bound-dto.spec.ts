@@ -121,8 +121,6 @@ const PREEXISTING_UNBOUNDED: readonly string[] = [
   "CreateTransactionSplitDto.tagIds",
   "CreateTransferDto.tagIds",
   "FilterGroupDto.conditions",
-  "MnyImportOptionsDto.accounts",
-  "MnyImportOptionsDto.bills",
   "PostScheduledTransactionDto.splits",
   "ReportConfigDto.tableColumns",
   "ReportFiltersDto.accountIds",

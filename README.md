@@ -121,6 +121,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 - Multi-currency transactions with automatic exchange rate tracking
 - Import from CSV (including brokerage exports), OFX/QFX, and QIF (Quicken, including Quicken for Mac .qmtf transfer files, and Microsoft Money) with smart column auto-matching and categories nested to any depth. Drag files onto the Import page; OFX re-imports skip rows already imported, and a CSV row with a date or amount that can't be read is listed with its line number instead of being dropped
 - Microsoft Money full-file import (Money 97 and later): read a `.mny` file directly -- accounts, transfers, splits, investments, price history, exchange rates and scheduled bills -- and reconcile every balance against the file afterwards ([guide](docs/import-ms-money.md))
+- KMyMoney full-file import: read a `.kmy` or `.xml` file directly -- accounts, the full category tree, transfers, splits, investments, price history, exchange rates and schedules -- and reconcile every balance and holding against figures computed from the file afterwards ([guide](website/docs/importing-from-kmymoney.md))
 - Quicken full-file import: import all accounts, categories, and tags from a single QIF export
 - Bank sync (Settings -> Bank sync): import booked transactions from your bank through Open Banking (Enable Banking) or SimpleFIN Bridge, with a preview before the first import, your `import` rules applied, and a daily or on-demand sync
 - Email receipts (Settings -> Email receipts): Monize reads order confirmations from a dedicated mailbox (Google, Microsoft 365 or IMAP), matches each one to the transaction that paid for it, and proposes a description, a payee and a split by line item for your approval. Built-in parsers for Amazon, Allegro, PayU and Google Play, a parser editor, and parsers drafted by AI. Brokerage trade confirmations become buys, sells, dividends and reinvestments, and buy-now-pay-later purchases are split into their items when the repayment arrives
@@ -474,7 +475,7 @@ monize/
 │   │   ├── push/              # Browser push and UnifiedPush
 │   │   ├── delegation/        # Shared access for delegates
 │   │   ├── emergency-access/  # Emergency access for trusted contacts
-│   │   ├── import/            # QIF, CSV, OFX/QFX and Microsoft Money (.mny) file import
+│   │   ├── import/            # QIF, CSV, OFX/QFX, Microsoft Money (.mny) and KMyMoney (.kmy) file import
 │   │   ├── database/          # Seeders, including the demo data (demo-seed-data/)
 │   │   ├── health/            # Health check endpoints
 │   │   └── main.ts            # Application entry point

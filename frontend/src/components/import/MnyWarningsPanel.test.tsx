@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { MnyWarningsPanel } from './MnyWarningsPanel';
+import { KMY_FORMAT } from '@/lib/binary-import-format';
 import type { MnyFlaggedRow, MnyWarningSummary } from '@/lib/import-mny';
 
 function flaggedRow(overrides: Partial<MnyFlaggedRow> = {}): MnyFlaggedRow {
@@ -190,5 +191,30 @@ describe('MnyWarningsPanel', () => {
 
       expect(screen.queryByRole('button')).toBeNull();
     });
+  });
+});
+
+describe('MnyWarningsPanel with a KMyMoney import', () => {
+  const renderKmy = (warnings: MnyWarningSummary[]) =>
+    render(<MnyWarningsPanel warnings={warnings} heading="Warnings" format={KMY_FORMAT} />);
+
+  it('reads the KMyMoney sentence for the code', () => {
+    renderKmy([warning({ code: 'unbalancedTransaction', count: 3, rows: [] })]);
+
+    expect(screen.getByText(/3 transactions do not balance \(KMyMoney marks them/)).toBeInTheDocument();
+  });
+
+  it('points the footer at KMyMoney, in full and truncated', () => {
+    renderKmy([warning({ code: 'singleSplitTransaction' })]);
+    fireEvent.click(screen.getByRole('button'));
+    expect(
+      screen.getByText('Open these in KMyMoney to check or correct them, then save and import again.'),
+    ).toBeInTheDocument();
+  });
+
+  it('says how many of the flagged rows are shown when truncated', () => {
+    renderKmy([warning({ code: 'singleSplitTransaction', count: 90, rowsTruncated: true })]);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText(/Showing the first 2 of 90. Open these in KMyMoney/)).toBeInTheDocument();
   });
 });

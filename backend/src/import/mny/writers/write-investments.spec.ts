@@ -208,6 +208,18 @@ describe("writeSecurities", () => {
     });
   });
 
+  it("writes the security type a source supplies", async () => {
+    const { manager, securities } = doubles();
+
+    await writeSecurities(manager, "user-1", [
+      security({ securityType: "ETF" }),
+    ]);
+
+    expect(securities.insert.mock.calls[0][0][0]).toMatchObject({
+      securityType: "ETF",
+    });
+  });
+
   it("carries the placeholder-symbol flag through so quotes are not fetched", async () => {
     const { manager, securities } = doubles();
 
@@ -259,6 +271,27 @@ describe("writeInvestments", () => {
       totalAmount: 1009.99,
       linkedTransactionId: null,
     });
+  });
+
+  it("writes the cash leg at its currency's own places when the source names them", async () => {
+    const coin = doubles();
+    await writeInvestments(coin.manager, "user-1", {
+      ...baseInput,
+      moneyPlaces: new Map([["BTC", 8]]),
+      transactions: [
+        investment({ cashAmount: -0.123456789, currencyCode: "BTC" }),
+      ],
+    });
+    expect(coin.transactions.insert.mock.calls[0][0][0].amount).toBe(
+      -0.12345679,
+    );
+
+    const fiat = doubles();
+    await writeInvestments(fiat.manager, "user-1", {
+      ...baseInput,
+      transactions: [investment({ cashAmount: -0.123456789 })],
+    });
+    expect(fiat.transactions.insert.mock.calls[0][0][0].amount).toBe(-0.1235);
   });
 
   it("puts the trade's Money classification on the cash leg it writes", async () => {

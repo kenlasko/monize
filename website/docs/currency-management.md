@@ -55,7 +55,7 @@ The period you pick on the chart applies to the cards and the table below it as 
 | **Rates in Period** | How many rates the period holds, stored and from your transactions, and the first and last date among them |
 | **Average Spread** | How far the rates your transactions settled at were from the stored rate for the same date, on average, whether yours was higher or lower. A transaction with no stored rate within 45 days before its date cannot be compared; the card says how many there are, names the missing pair and the oldest date it is missing on, and **Fill gaps in rate history** fetches what the rate provider holds for them |
 
-The **Rate History** table lists every rate in the period, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Frankfurter (central banks), Money import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
+The **Rate History** table lists every rate in the period, a page at a time, with its **Date**, the rate both ways round, and its **Source**: Yahoo Finance, Frankfurter (ECB), Frankfurter (central banks), Money import, KMyMoney import, or **Transaction** for a rate one of your transactions settled at, with what the transaction was. Click a column heading to sort by it, use **All** / **Yahoo** / **Frankfurter** / **Transactions** above the table to show one source, and click **Export CSV** to download every row the filter shows.
 
 Your home currency has no exchange rate of its own, so its page shows the transaction count and total only.
 
@@ -207,7 +207,7 @@ Cross-currency transfers imported from QIF files require special handling becaus
 
 This is noted in the transaction with a memo: *"PENDING IMPORT: Amount may need adjustment..."*
 
-Importing a Microsoft Money `.mny` file brings across Money's own exchange rate history as well (shown with the source "Money import").
+Importing a Microsoft Money `.mny` file brings across Money's own exchange rate history as well (shown with the source "Money import"). Importing a KMyMoney file does the same with KMyMoney's own rate history (shown with the source "KMyMoney import").
 
 ---
 

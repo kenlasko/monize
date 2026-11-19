@@ -103,6 +103,8 @@ vi.mock('@/lib/import', () => ({
 }));
 vi.mock('@/lib/import-mny', () => ({
   importMnyApi: { upload: vi.fn(), start: vi.fn(), getJob: vi.fn(), cancel: vi.fn() },
+  // The wizard's format descriptors read the Money client when they load.
+  mnyImportApi: { parse: vi.fn(), start: vi.fn(), getJob: vi.fn(), discardStagedFile: vi.fn() },
 }));
 
 vi.mock('@/lib/share-inbox', async (importOriginal) => ({

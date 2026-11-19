@@ -34,6 +34,7 @@ const PAT_CONTROLLERS = [
   "email-receipts/parsers/email-receipt-parsers.controller.ts",
   "email-receipts/receipts/email-receipts.controller.ts",
   "import/import.controller.ts",
+  "import/kmy/kmy-import.controller.ts",
   "import/mny/mny-import.controller.ts",
   "institutions/institutions.controller.ts",
   "investment-reports/investment-reports.controller.ts",

@@ -56,12 +56,14 @@ describe('rate sources', () => {
     expect(rateSourceGroup('frankfurter_v2')).toBe('frankfurter');
     expect(rateSourceGroup('transaction')).toBe('transaction');
     expect(rateSourceGroup('mny_import')).toBe('other');
+    expect(rateSourceGroup('kmy_import')).toBe('other');
     expect(rateSourceGroup(null)).toBe('other');
   });
 
   it('names each slug, and an unknown one as unknown', () => {
     expect(rateSourceLabelKey('yahoo_crypto')).toBe('yahooCrypto');
     expect(rateSourceLabelKey('mny_import')).toBe('mnyImport');
+    expect(rateSourceLabelKey('kmy_import')).toBe('kmyImport');
     expect(rateSourceLabelKey('frankfurter')).toBe('frankfurter');
     expect(rateSourceLabelKey('frankfurter_v2')).toBe('frankfurterV2');
     expect(rateSourceLabelKey('transaction')).toBe('transaction');

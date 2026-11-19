@@ -21,3 +21,4 @@ test
 
 # Microsoft Money files: never belong in an image
 **/*.mny
+**/*.kmy

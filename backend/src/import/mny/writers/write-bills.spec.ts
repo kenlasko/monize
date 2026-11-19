@@ -96,6 +96,29 @@ describe("writeBills", () => {
     );
   });
 
+  it("stores the custom recurrence a source supplies, and null otherwise", async () => {
+    const scheduled = repoDouble();
+    const rule = { unit: "MONTH" as const, interval: 2 };
+
+    await writeBills(
+      managerFor(scheduled, repoDouble()),
+      "user-1",
+      input({
+        bills: [
+          bill({ customRecurrence: rule }),
+          bill({ handle: 8, seriesKey: 8, name: "Other" }),
+        ],
+      }),
+    );
+
+    expect(scheduled.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Hydro One", customRecurrence: rule }),
+    );
+    expect(scheduled.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Other", customRecurrence: null }),
+    );
+  });
+
   it("creates an active, non-auto-posting schedule from a plain bill", async () => {
     const scheduled = repoDouble();
     const splits = repoDouble();
@@ -129,6 +152,23 @@ describe("writeBills", () => {
       }),
     );
     expect(splits.insert).not.toHaveBeenCalled();
+  });
+
+  it("writes a bill's amounts at its currency's own places when the source names them", async () => {
+    const scheduled = repoDouble();
+    const splits = repoDouble();
+
+    await writeBills(
+      managerFor(scheduled, splits),
+      "user-1",
+      input({
+        moneyPlaces: new Map([["BTC", 8]]),
+        bills: [bill({ amount: -0.123456789, currencyCode: "BTC" })],
+      }),
+    );
+    expect(scheduled.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: -0.12345679 }),
+    );
   });
 
   it("writes nothing for a bill the wizard left unticked", async () => {

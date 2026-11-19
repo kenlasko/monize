@@ -4,10 +4,14 @@ import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DataSource, EntityManager } from "typeorm";
 
-import { Account } from "@/accounts/entities/account.entity";
+import { Account, AccountType } from "@/accounts/entities/account.entity";
 import { Category } from "@/categories/entities/category.entity";
 import { Payee } from "@/payees/entities/payee.entity";
-import { Transaction } from "@/transactions/entities/transaction.entity";
+import {
+  Transaction,
+  TransactionStatus,
+} from "@/transactions/entities/transaction.entity";
+import { FrequencyType } from "@/scheduled-transactions/dto/create-scheduled-transaction.dto";
 import { TransactionSplit } from "@/transactions/entities/transaction-split.entity";
 import { SplitKind } from "@/transactions/entities/split-kind.enum";
 import { UserPreference } from "@/users/entities/user-preference.entity";
@@ -2265,6 +2269,152 @@ describe("mny writers (integration)", () => {
         // Securities and investment rows are not price history and still land.
         expect(job.result!.securitiesCreated).toBe(30);
       });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Fields a second source format supplies (WP3a): each is optional and the
+  // Money path leaves it off, so these write them by hand and read them back.
+  // -------------------------------------------------------------------------
+
+  describe("optional source-format fields", () => {
+    it("persists exchangeRate, reconciledDate, institutionName, securityType and customRecurrence", async () => {
+      const written = await inTransaction(async (manager) => {
+        const accounts = await writeAccounts(manager, userId, [
+          {
+            key: "acct-1",
+            handle: 1,
+            name: "Chequing",
+            moneyName: "Chequing",
+            accountType: AccountType.CHEQUING,
+            accountSubType: null,
+            currencyCode: "USD",
+            openingBalance: 0,
+            creditLimit: null,
+            closed: false,
+            closedDate: null,
+            favourite: false,
+            excludeFromNetWorth: false,
+            description: null,
+            linkedKey: null,
+            institutionName: "Royal Bank",
+          },
+        ]);
+        const securities = await writeSecurities(manager, userId, [
+          {
+            handle: 1,
+            symbol: "VOO",
+            moneySymbol: "VOO",
+            name: "Vanguard S&P 500",
+            currencyCode: "USD",
+            skipPriceUpdates: false,
+            securityType: "ETF",
+          },
+        ]);
+        await writeTransactions(manager, userId, {
+          transactions: [
+            {
+              id: "11111111-1111-4111-8111-111111111111",
+              handle: 1,
+              accountKey: "acct-1",
+              transactionDate: "2024-03-01",
+              amount: -25.5,
+              currencyCode: "USD",
+              status: TransactionStatus.RECONCILED,
+              payeeHandle: null,
+              categoryHandle: null,
+              description: null,
+              referenceNumber: null,
+              isTransfer: false,
+              linkedTransactionId: null,
+              splits: [],
+              collapsedTradeHandle: null,
+              tagHandles: [],
+              exchangeRate: 0.7412345678,
+              reconciledDate: "2024-03-05",
+            },
+          ],
+          accountIdByKey: accounts.idByKey,
+          categoryIdByHandle: new Map(),
+          payeeIdByHandle: new Map(),
+          payeeNameByHandle: new Map(),
+          tagIdByHandle: new Map(),
+        });
+        await writeBills(manager, userId, {
+          bills: [
+            {
+              handle: 7,
+              seriesKey: 7,
+              status: 0,
+              name: "Rent",
+              accountKey: "acct-1",
+              payeeHandle: null,
+              categoryHandle: null,
+              amount: -900,
+              currencyCode: "USD",
+              frequency: FrequencyType.CUSTOM,
+              approximate: false,
+              nextDueDate: "2026-08-02",
+              endDate: null,
+              description: null,
+              isTransfer: false,
+              transferAccountKey: null,
+              investment: null,
+              splits: [],
+              tagHandles: [],
+              customRecurrence: { unit: "MONTH", interval: 2 },
+            },
+          ],
+          accountIdByKey: accounts.idByKey,
+          payeeIdByHandle: new Map(),
+          payeeNameByHandle: new Map(),
+          tagIdByHandle: new Map(),
+          categoryIdByHandle: new Map(),
+          securityIdByHandle: securities.idByHandle,
+          linkedKeyByKey: new Map(),
+        });
+        return accounts;
+      });
+
+      const account = await dataSource
+        .getRepository(Account)
+        .findOneOrFail({ where: { id: written.idByKey.get("acct-1")! } });
+      expect(account.institution).toBe("Royal Bank");
+      const transaction = await dataSource
+        .getRepository(Transaction)
+        .findOneOrFail({ where: { userId } });
+      expect(Number(transaction.exchangeRate)).toBe(0.7412345678);
+      expect(transaction.reconciledDate).toBe("2024-03-05");
+      const security = await dataSource
+        .getRepository(Security)
+        .findOneOrFail({ where: { userId } });
+      expect(security.securityType).toBe("ETF");
+      const bill = await dataSource
+        .getRepository(ScheduledTransaction)
+        .findOneOrFail({ where: { userId } });
+      expect(bill.customRecurrence).toEqual({ unit: "MONTH", interval: 2 });
+    });
+
+    it("stores source_format = 'kmy' when a job is created for a KMyMoney file", async () => {
+      const staging = module.get(MnyStagingService);
+      const jobs = module.get(MnyImportJobService);
+      const staged = await withUserContext(userId, () =>
+        staging.stage(userId, {
+          filename: "Home.kmy",
+          data: Buffer.from("kmy bytes"),
+          sourceFormat: "kmy",
+        }),
+      );
+
+      const job = await withUserContext(userId, () =>
+        jobs.create(userId, staged.id, DEFAULT_MNY_IMPORT_OPTIONS, "kmy"),
+      );
+
+      const rows: { source_format: string }[] = await dataSource.query(
+        "SELECT source_format FROM import_jobs WHERE id = $1",
+        [job.id],
+      );
+      expect(rows).toEqual([{ source_format: "kmy" }]);
     });
   });
 });

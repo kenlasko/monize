@@ -27,6 +27,7 @@ function transaction(
     transactionDate: "2024-03-01",
     amount: -25.5,
     currencyCode: "CAD",
+    exchangeRate: 1,
     status: TransactionStatus.CLEARED,
     payeeHandle: null,
     categoryHandle: null,
@@ -125,6 +126,50 @@ describe("writeTransactions", () => {
       isSplit: false,
       linkedTransactionId: null,
     });
+  });
+
+  it("writes the exchange rate and reconciled date a source supplies", async () => {
+    const { manager, transactions } = doubles();
+
+    await writeTransactions(manager, "user-1", {
+      ...baseInput,
+      transactions: [
+        transaction({
+          exchangeRate: 0.7412345678,
+          reconciledDate: "2024-03-05",
+        }),
+      ],
+    });
+
+    expect(transactions.insert.mock.calls[0][0][0]).toMatchObject({
+      exchangeRate: 0.7412345678,
+      reconciledDate: "2024-03-05",
+    });
+  });
+
+  it("writes the mapper's rate of 1 as it always did, and the reconciled date as null", async () => {
+    const { manager, transactions } = doubles();
+
+    await writeTransactions(manager, "user-1", {
+      ...baseInput,
+      transactions: [transaction()],
+    });
+
+    expect(transactions.insert.mock.calls[0][0][0]).toMatchObject({
+      exchangeRate: 1,
+      reconciledDate: null,
+    });
+  });
+
+  it("writes a missing rate as null, never as 1", async () => {
+    const { manager, transactions } = doubles();
+
+    await writeTransactions(manager, "user-1", {
+      ...baseInput,
+      transactions: [transaction({ exchangeRate: null })],
+    });
+
+    expect(transactions.insert.mock.calls[0][0][0].exchangeRate).toBeNull();
   });
 
   it("carries the reference number into the column the register's Ref # reads", async () => {
@@ -295,6 +340,32 @@ describe("writeTransactions", () => {
     });
   });
 
+  it("writes a split leg at its currency's own places when the source names them (a coin keeps 8)", async () => {
+    const { manager, splits } = doubles();
+
+    await writeTransactions(manager, "user-1", {
+      ...baseInput,
+      moneyPlaces: new Map([["BTC", 8]]),
+      transactions: [
+        transaction({
+          currencyCode: "BTC",
+          splits: [split({ amount: 0.123456789 })],
+        }),
+        transaction({
+          id: "22222222-2222-2222-2222-222222222222",
+          // A currency the map does not name keeps the fiat four places.
+          splits: [split({ amount: 0.123456789 })],
+        }),
+      ],
+    });
+
+    expect(
+      splits.insert.mock.calls[0][0].map(
+        (row: { amount: number }) => row.amount,
+      ),
+    ).toEqual([0.12345679, 0.1235]);
+  });
+
   it("keeps a transfer split pointing at its account and counterpart", async () => {
     const { manager, splits } = doubles();
 
@@ -457,6 +528,26 @@ describe("writeAccountBalances", () => {
     expect(String(sql)).toContain("UPDATE accounts SET current_balance");
     expect(String(sql)).toContain("($1::uuid, $2::numeric)");
     expect(params).toEqual(["account-1", 100, "account-2", -50.5]);
+  });
+
+  it("rounds a balance at the places the source names for its account, four otherwise", async () => {
+    const { manager, query } = doubles();
+
+    await writeAccountBalances(
+      manager,
+      new Map([
+        ["account-1", 1.123456789],
+        ["account-2", 1.123456789],
+      ]),
+      new Map([["account-1", 8]]),
+    );
+
+    expect(query.mock.calls[0][1]).toEqual([
+      "account-1",
+      1.12345679,
+      "account-2",
+      1.1235,
+    ]);
   });
 
   it("chunks a large balance write", async () => {

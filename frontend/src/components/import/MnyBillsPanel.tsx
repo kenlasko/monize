@@ -5,6 +5,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { MnyPreviewBill } from '@/lib/import-mny';
 import { Th } from '@/components/ui/Table';
+import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
 
 interface MnyBillsPanelProps {
   bills: MnyPreviewBill[];
@@ -16,6 +17,8 @@ interface MnyBillsPanelProps {
   skipped: number;
   onToggleBill: (handle: number) => void;
   onSetAllBills: (include: boolean) => void;
+  /** Which file format this is; Money when omitted. */
+  format?: BinaryImportFormat;
 }
 
 /**
@@ -35,6 +38,7 @@ export function MnyBillsPanel({
   skipped,
   onToggleBill,
   onSetAllBills,
+  format = MNY_FORMAT,
 }: MnyBillsPanelProps) {
   const t = useTranslations('import');
   const ts = useTranslations('scheduledTransactions');
@@ -59,7 +63,7 @@ export function MnyBillsPanel({
     <div className="mb-6">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-foreground">
-          {t('mnyBills.heading', { count: bills.length })}
+          {t(format.copy.billsHeading, { count: bills.length })}
         </h3>
         <div className="flex gap-2">
           <button
@@ -80,7 +84,7 @@ export function MnyBillsPanel({
       </div>
 
       <p className="text-xs text-muted-foreground mb-2">
-        {t('mnyBills.explainer')}
+        {t(format.copy.billsExplainer)}
       </p>
 
       <div className="bg-card border border-border rounded-lg overflow-x-auto">
@@ -170,7 +174,7 @@ export function MnyBillsPanel({
 
       {skipped > 0 && (
         <p className="mt-2 text-xs text-muted-foreground">
-          {t('mnyBills.skipped', { count: skipped })}
+          {t(format.copy.billsSkipped, { count: skipped })}
         </p>
       )}
     </div>

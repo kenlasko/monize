@@ -10,7 +10,7 @@ import { Security } from "../../../securities/entities/security.entity";
 import { assertSecurityCurrencyIsFiatIn } from "../../../securities/security-currency-kind.util";
 import { InvestmentTransaction } from "../../../securities/entities/investment-transaction.entity";
 import { Transaction } from "../../../transactions/entities/transaction.entity";
-import { roundMoney } from "../../../common/round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../../../common/round.util";
 import { formatInvestmentCashPayeeName } from "../../../securities/investment-cash-payee.util";
 import {
   MappedInvestmentTransaction,
@@ -95,8 +95,9 @@ export async function writeSecurities(
       symbol: security.symbol,
       name: security.name,
       // Money's `sct` codes are not stable across releases, so the type is
-      // left for the user rather than guessed (design 6.3).
-      securityType: null,
+      // left for the user rather than guessed (design 6.3). A source whose
+      // format does name the type (KMyMoney) supplies it.
+      securityType: security.securityType ?? null,
       exchange: null,
       currencyCode: security.currencyCode,
       isActive: true,
@@ -155,6 +156,8 @@ export interface WriteInvestmentsInput {
    */
   readonly tagIdByHandle: ReadonlyMap<number, string>;
   readonly onProgress?: (processed: number, total: number) => Promise<void>;
+  /** Currency code -> the places a cash leg is written at; absent: four (Money). */
+  readonly moneyPlaces?: ReadonlyMap<string, number>;
 }
 
 export interface WrittenInvestments {
@@ -304,7 +307,11 @@ export async function writeInvestments(
           userId,
           accountId: cashAccountId,
           transactionDate: transaction.transactionDate,
-          amount: roundMoney(transaction.cashAmount),
+          amount: roundMoney(
+            transaction.cashAmount,
+            input.moneyPlaces?.get(transaction.currencyCode) ??
+              FIAT_MONEY_DECIMALS,
+          ),
           currencyCode: transaction.currencyCode,
           exchangeRate: 1,
           status: transaction.status,

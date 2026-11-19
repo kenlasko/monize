@@ -2,7 +2,7 @@ import { EntityManager } from "typeorm";
 import { Transaction } from "../../../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../../../transactions/entities/transaction-split.entity";
 import { SplitKind } from "../../../transactions/entities/split-kind.enum";
-import { roundMoney } from "../../../common/round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../../../common/round.util";
 import { MappedTransaction } from "../model/mny-import-model";
 import { INSERT_CHUNK_SIZE, chunk } from "./chunk";
 import {
@@ -45,6 +45,11 @@ export interface WriteTransactionsInput {
   readonly tagIdByHandle: ReadonlyMap<number, string>;
   /** Called after each chunk, so the wizard's progress bar moves. */
   readonly onProgress?: (processed: number, total: number) => Promise<void>;
+  /**
+   * Currency code -> the places a split leg is written at (`MnyParsedFile.moneyPlaces`).
+   * Absent, or a code it does not name: four, the Money behaviour.
+   */
+  readonly moneyPlaces?: ReadonlyMap<string, number>;
 }
 
 export interface WrittenTransactions {
@@ -94,7 +99,8 @@ export async function writeTransactions(
         transactionDate: transaction.transactionDate,
         amount: transaction.amount,
         currencyCode: transaction.currencyCode,
-        exchangeRate: 1,
+        exchangeRate: transaction.exchangeRate,
+        reconciledDate: transaction.reconciledDate ?? null,
         status: transaction.status,
         payeeId:
           transaction.payeeHandle === null
@@ -225,7 +231,10 @@ async function writeSplits(
         inserted.has(split.linkedTransactionId)
           ? split.linkedTransactionId
           : null,
-      amount: roundMoney(split.amount),
+      amount: roundMoney(
+        split.amount,
+        input.moneyPlaces?.get(transaction.currencyCode) ?? FIAT_MONEY_DECIMALS,
+      ),
       memo: split.memo,
     })),
   );
@@ -255,6 +264,8 @@ async function writeSplits(
 export async function writeAccountBalances(
   manager: EntityManager,
   balances: ReadonlyMap<string, number>,
+  /** Account id -> places; absent, or an id it does not name: four (Money). */
+  placesById?: ReadonlyMap<string, number>,
 ): Promise<number> {
   const entries = [...balances];
   if (entries.length === 0) {
@@ -271,7 +282,10 @@ export async function writeAccountBalances(
       `UPDATE accounts SET current_balance = v.balance
          FROM (VALUES ${values}) AS v(id, balance)
         WHERE accounts.id = v.id`,
-      batch.flatMap(([id, balance]) => [id, roundMoney(balance)]),
+      batch.flatMap(([id, balance]) => [
+        id,
+        roundMoney(balance, placesById?.get(id) ?? FIAT_MONEY_DECIMALS),
+      ]),
     );
   }
 
