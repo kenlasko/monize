@@ -78,7 +78,7 @@ import { CustomRecurrence, normalizeCustomRecurrence } from '@/lib/custom-recurr
 import { customRecurrenceErrorKey } from '@/lib/custom-recurrence-edit';
 import { CustomRecurrenceEditor } from './CustomRecurrenceEditor';
 import { useCustomRecurrenceField } from './useCustomRecurrenceField';
-import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
@@ -648,7 +648,7 @@ export function ScheduledTransactionForm({
     return {
       value: category.id,
       label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-      icon: <CategoryPickerIcon category={category} />,
+      icon: categoryPickerIcon(category),
     };
   }), [categories]);
 

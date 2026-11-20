@@ -20,7 +20,7 @@ import { payeesApi } from '@/lib/payees';
 import { tagsApi } from '@/lib/tags';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
-import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 interface BulkUpdateModalProps {
@@ -115,7 +115,7 @@ export function BulkUpdateModal({
       return {
         value: category.id,
         label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-        icon: <CategoryPickerIcon category={category} />,
+        icon: categoryPickerIcon(category),
       };
     }), [categoryTree, categories]);
 

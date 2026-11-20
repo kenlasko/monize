@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@/test/render';
-import { CategoryPickerIcon, withCategoryIcons } from './CategoryPickerIcon';
+import { CategoryPickerIcon, categoryPickerIcon, withCategoryIcons } from './CategoryPickerIcon';
 
 const base = { icon: null, color: null, effectiveIcon: null, effectiveColor: null };
 
@@ -29,6 +29,17 @@ describe('CategoryPickerIcon', () => {
   });
 });
 
+describe('categoryPickerIcon', () => {
+  it('gives a category with an icon or a colour its mark', () => {
+    expect(categoryPickerIcon({ ...base, effectiveIcon: 'cart' })).toBeDefined();
+    expect(categoryPickerIcon({ ...base, color: '#00ff00' })).toBeDefined();
+  });
+
+  it('gives a category with neither no mark, so its row leaves no blank slot', () => {
+    expect(categoryPickerIcon(base)).toBeUndefined();
+  });
+});
+
 describe('withCategoryIcons', () => {
   it('adds an icon to each category row and leaves a placeholder row alone', () => {
     const options = withCategoryIcons(
@@ -41,6 +52,14 @@ describe('withCategoryIcons', () => {
     expect(options[0]).toEqual({ value: '', label: 'Choose' });
     expect(options[1].label).toBe('Groceries');
     expect(options[1].icon).toBeDefined();
+  });
+
+  it('leaves a category with no icon or colour without an icon key', () => {
+    const options = withCategoryIcons(
+      [{ value: 'c-1', label: 'Misc' }],
+      [{ ...base, id: 'c-1' }],
+    );
+    expect(options[0]).toEqual({ value: 'c-1', label: 'Misc' });
   });
 
   it('decorates a hierarchical filter list down its children', () => {
