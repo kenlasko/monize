@@ -62,6 +62,7 @@ Preferences are grouped into seven blocks. **They save as you change them** -- t
 | Setting | Description |
 |---------|-------------|
 | **Theme** | System (follow device setting), Light, or Dark |
+| **UI style** | The shape of the interface: Standard, Classic or Modern (see [Theme and Colour Theme](#theme-and-colour-theme)) |
 | **Colour theme** | The palette used within your light/dark mode (see [Theme and Colour Theme](#theme-and-colour-theme)) |
 
 #### Dates & Numbers
@@ -138,9 +139,17 @@ Monize is built for multiple languages. Choose your preferred display language f
 
 ### Theme and Colour Theme
 
-Appearance is two independent settings.
+Appearance is three independent settings.
 
 **Theme** decides light or dark: **System** follows your device setting and switches with it, or you can pin **Light** or **Dark**.
+
+**UI style** decides the shape of the interface: its typefaces, corners, cards, tables and navigation. It never changes colours, so every style works with every colour theme and in both light and dark mode.
+
+| Style | |
+|-------|---|
+| **Standard** | The familiar Monize look |
+| **Classic** | Ledger-inspired: serif headings, tables ruled top and bottom with every other row lightly banded, square corners, and the current section underlined in the menu |
+| **Modern** | Bold grotesque headings, large rounded cards, pill-shaped buttons and a segmented menu bar |
 
 **Colour theme** decides the palette used *within* that light or dark mode. The picker shows a swatch preview of each palette rendered in your current mode rather than only naming it.
 

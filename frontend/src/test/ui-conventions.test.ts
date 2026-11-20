@@ -1560,9 +1560,11 @@ describe("a panel card is the shared Card surface", () => {
    * New code takes the primitive from the start.
    */
   const CARD = "/src/components/ui/Card.tsx";
+  // The shared surface's radius is the UI style token (`ui-styles.css`), so
+  // a copy of CARD_CLASS pasted inline is the same offence as the old trio.
   const CARD_FINGERPRINT = (line: string) =>
     line.includes("bg-white dark:bg-gray-800") &&
-    line.includes("rounded-lg") &&
+    (line.includes("rounded-lg") || line.includes("rounded-(--ui-radius-card)")) &&
     line.includes("shadow");
 
   const BASELINE: ReadonlyArray<string> = [
@@ -1721,7 +1723,6 @@ describe("a panel card is the shared Card surface", () => {
     "/src/components/transactions/TagKeyBreakdownChart.tsx",
     "/src/components/transactions/TransactionFilterPanel.tsx",
     "/src/components/ui/CalendarPopover.tsx",
-    "/src/components/ui/Modal.tsx",
     "/src/components/ui/Pagination.tsx",
   ];
 
@@ -2567,8 +2568,10 @@ describe("a status pill is Badge, not a hand-rolled rounded-full", () => {
     "/src/lib/account-type-meta.tsx",
     "/src/lib/scheduled-kind.ts",
   ]);
+  // `rounded-(--ui-radius-pill)` is Badge's own spelling of the pill (the UI
+  // style token), so a hand-copied Badge class string is caught too.
   const PILL_FINGERPRINT =
-    /rounded-full[^"'`]*(?:text-xs|text-\[10px\])[^"'`]*font-medium|(?:text-xs|text-\[10px\])[^"'`]*font-medium[^"'`]*rounded-full|rounded-full[^"'`]*font-medium[^"'`]*(?:text-xs|text-\[10px\])/;
+    /(?:rounded-full|rounded-\(--ui-radius-pill\))[^"'`]*(?:text-xs|text-\[10px\])[^"'`]*font-medium|(?:text-xs|text-\[10px\])[^"'`]*font-medium[^"'`]*(?:rounded-full|rounded-\(--ui-radius-pill\))|(?:rounded-full|rounded-\(--ui-radius-pill\))[^"'`]*font-medium[^"'`]*(?:text-xs|text-\[10px\])/;
 
   const BASELINE: ReadonlyArray<string> = [
     "/src/components/budgets/BudgetCategoryTrend.tsx",
@@ -2615,7 +2618,7 @@ describe("a status pill is Badge, not a hand-rolled rounded-full", () => {
   it("still finds the primitive, so the rule cannot pass by accident", () => {
     const badge = sources[BADGE];
     expect(badge, `${BADGE} not found -- update BADGE in this test`).toBeTruthy();
-    expect(badge).toContain("rounded-full");
+    expect(badge).toContain("rounded-(--ui-radius-pill)");
     expect(badge).toContain("font-medium");
   });
 

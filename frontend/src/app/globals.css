@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./themes.css";
+@import "./ui-styles.css";
 
 /* Custom theme extensions */
 @theme {
@@ -89,6 +90,23 @@
 
 /* Dark mode variant */
 @variant dark (&:where(.dark, .dark *));
+
+/* The shape tokens the shared primitives read (Card, Button, inputs, Modal,
+   Badge), at their Standard values. A UI style in ui-styles.css redefines
+   them under `html[data-ui-style]`; Standard sets no attribute and keeps
+   these, which equal the literal utilities the primitives used to carry. */
+:root {
+  --ui-radius-card: var(--radius-lg);
+  --ui-radius-control: var(--radius-md);
+  --ui-radius-field: var(--radius-md);
+  --ui-radius-dialog: var(--radius-lg);
+  --ui-radius-pill: 9999px;
+  --ui-card-border: var(--color-gray-200);
+  --ui-font-display: var(--font-sans);
+}
+.dark {
+  --ui-card-border: var(--color-gray-700);
+}
 
 /* Flash colours (amber-50 / amber-400 in light, amber-900@30% / amber-500 in
    dark) for the highlight-flash animation above. */

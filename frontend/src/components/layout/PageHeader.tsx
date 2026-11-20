@@ -125,7 +125,7 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
           ref={headingRef}
           className={`${
             collapses ? 'text-3xl' : 'text-2xl sm:text-3xl'
-          } font-bold tracking-tight text-gray-900 dark:text-gray-100`}
+          } ui-page-title font-bold tracking-tight text-gray-900 dark:text-gray-100`}
         >
           {title}
         </h1>

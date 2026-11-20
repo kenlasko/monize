@@ -18,7 +18,7 @@ import { SortIcon } from './SortIcon';
  */
 
 /** The table element itself: full width, hairline rules between rows. */
-export const TABLE_CLASS = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
+export const TABLE_CLASS = 'ui-table min-w-full divide-y divide-gray-200 dark:divide-gray-700';
 
 /** The `<tbody>` rules, where a table divides its body separately. */
 export const TABLE_BODY_CLASS = 'divide-y divide-gray-200 dark:divide-gray-700';
@@ -32,7 +32,7 @@ export const TABLE_BODY_CLASS = 'divide-y divide-gray-200 dark:divide-gray-700';
  * on all of them -- a restyle of every report, arriving as a refactor.
  */
 export const TH_CLASS =
-  'px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider';
+  'ui-th px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider';
 
 /** The ordinary body cell. */
 export const TD_CLASS = 'px-4 py-3 text-sm text-gray-900 dark:text-gray-100';

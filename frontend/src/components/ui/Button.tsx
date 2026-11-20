@@ -13,8 +13,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 // A pressed button sinks by 2% so a click is felt, not only seen. `not-disabled`
 // rather than `enabled` so a ButtonLink (an <a>, which `:enabled` never matches)
 // presses too; reduced motion keeps it still.
+// The radius is the UI style's control token (`ui-styles.css`); `ui-btn` is
+// the marker a style uses for what a token cannot express.
 const baseStyles =
-  'inline-flex items-center justify-center font-medium rounded-md transition-[color,background-color,border-color,box-shadow,scale] duration-150 not-disabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:not-disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:focus-visible:ring-offset-gray-900';
+  'ui-btn inline-flex items-center justify-center font-medium rounded-(--ui-radius-control) transition-[color,background-color,border-color,box-shadow,scale] duration-150 not-disabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:not-disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:focus-visible:ring-offset-gray-900';
 
 const variants: Record<ButtonVariant, string> = {
   primary:

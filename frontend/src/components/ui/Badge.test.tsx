@@ -6,7 +6,7 @@ describe('Badge', () => {
   it('renders its children in a pill', () => {
     render(<Badge>Pending</Badge>);
     const badge = screen.getByText('Pending');
-    expect(badge.className).toContain('rounded-full');
+    expect(badge.className).toContain('rounded-(--ui-radius-pill)');
     expect(badge.className).toContain('font-medium');
   });
 
@@ -56,6 +56,6 @@ describe('Badge', () => {
     render(<Badge className="ml-2">Tagged</Badge>);
     const badge = screen.getByText('Tagged');
     expect(badge.className).toContain('ml-2');
-    expect(badge.className).toContain('rounded-full');
+    expect(badge.className).toContain('rounded-(--ui-radius-pill)');
   });
 });

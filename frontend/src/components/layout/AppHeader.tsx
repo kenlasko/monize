@@ -323,13 +323,14 @@ export function AppHeader() {
               visibleNavLinks.length > 0 ||
               visibleToolsLinks.length > 0 ||
               showAiMenu) && (
-              <nav className="hidden xl:ml-8 xl:flex xl:items-center xl:space-x-4">
+              <nav className="ui-nav hidden xl:ml-8 xl:flex xl:items-center xl:space-x-4">
                 {visibleNavLinks.map((link) => (
                   <button
                     key={link.href}
                     {...NAV_TOUR_ANCHORS[link.href]}
                     onClick={() => router.push(link.href)}
-                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    aria-current={isNavSectionActive(pathname, link.href) ? 'page' : undefined}
+                    className={`ui-nav-link px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       isNavSectionActive(pathname, link.href)
                         ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                         : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -345,7 +346,8 @@ export function AppHeader() {
                     <div className="relative" ref={aiRef}>
                       <button
                         onClick={() => setAiOpen(!aiOpen)}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
+                        data-active={isAiActive ? '' : undefined}
+                        className={`ui-nav-link px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
                           isAiActive
                             ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                             : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -398,7 +400,8 @@ export function AppHeader() {
                       <button
                         {...tourAnchor(TOUR_ANCHORS.navTools)}
                         onClick={() => setToolsOpen(!toolsOpen)}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
+                        data-active={isToolsActive ? '' : undefined}
+                        className={`ui-nav-link px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
                           isToolsActive
                             ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                             : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -458,7 +461,8 @@ export function AppHeader() {
                   <div className="relative" ref={adminRef}>
                     <button
                       onClick={() => setAdminOpen(!adminOpen)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
+                      data-active={pathname.startsWith('/admin') ? '' : undefined}
+                      className={`ui-nav-link px-3 py-2 text-sm font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
                         pathname.startsWith('/admin')
                           ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                           : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
