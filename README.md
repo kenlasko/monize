@@ -202,7 +202,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
   - Spending by Category / Payee
   - Income by Source
   - Monthly Spending Trend
-  - Monthly Breakdown
+  - Monthly & Yearly Breakdown
   - Income vs Expenses
   - Cash Flow
   - Cash Flow Sankey (where income went: spending, savings, debt and what was left)

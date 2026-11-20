@@ -9,11 +9,17 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { FundingReportControls } from '@/hooks/useFundingReportControls';
 import { monthlyFundsSummary } from '@/lib/monthly-funds-summary';
+import type { BreakdownPeriod } from '@/lib/breakdown-period';
 
 interface MonthlyTaggedBalanceSummaryProps {
   controls: FundingReportControls;
-  /** The months the report's own table shows, `YYYY-MM`, in order. */
+  /**
+   * The columns the report's own table shows, in order: `YYYY-MM` months, or
+   * `YYYY` years when `period` is 'year'.
+   */
   months: readonly string[];
+  /** The report's column width. Defaults to monthly. */
+  period?: BreakdownPeriod;
 }
 
 const DASH = '—';
@@ -23,10 +29,14 @@ const DASH = '—';
  * (`docs/specs/report-tag-key-breakdown.md` section 11.5): Income, Tagged
  * inflows, Expenses, Tagged outflows (only when a shown month has some),
  * Balance and Balance %, from the Income vs Expenses answer for the same window
- * and accounts. The category rows above it never include a transfer. Renders
+ * and accounts, per month or per year as the table above is. The category rows above it never include a transfer. Renders
  * nothing unless the funding view is on.
  */
-export function MonthlyTaggedBalanceSummary({ controls, months }: MonthlyTaggedBalanceSummaryProps) {
+export function MonthlyTaggedBalanceSummary({
+  controls,
+  months,
+  period = 'month',
+}: MonthlyTaggedBalanceSummaryProps) {
   const t = useTranslations('reports');
   const { formatMonth } = useDateFormat();
   const { formatCurrency, formatPercent } = useNumberFormat();
@@ -34,8 +44,10 @@ export function MonthlyTaggedBalanceSummary({ controls, months }: MonthlyTaggedB
 
   const summary = useMemo(
     () =>
-      funding.response ? monthlyFundsSummary(funding.response, filter.tagValue, months) : null,
-    [funding.response, filter.tagValue, months],
+      funding.response
+        ? monthlyFundsSummary(funding.response, filter.tagValue, months, period)
+        : null,
+    [funding.response, filter.tagValue, months, period],
   );
 
   if (!filter.include) return null;
@@ -51,7 +63,9 @@ export function MonthlyTaggedBalanceSummary({ controls, months }: MonthlyTaggedB
   return (
     <Card padding="sm" data-testid="monthly-tagged-balance">
       <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-        {t('tagBreakdown.monthlySummaryTitle', { value: filter.tagValue })}
+        {period === 'year'
+          ? t('tagBreakdown.yearlySummaryTitle', { value: filter.tagValue })
+          : t('tagBreakdown.monthlySummaryTitle', { value: filter.tagValue })}
       </h3>
       {funding.status === 'error' ? (
         <p className="text-sm text-red-600 dark:text-red-400" role="alert">
@@ -68,7 +82,7 @@ export function MonthlyTaggedBalanceSummary({ controls, months }: MonthlyTaggedB
                   <Th>{DASH}</Th>
                   {summary.columns.map((c) => (
                     <Th key={c.month} align="right">
-                      {formatMonth(c.month)}
+                      {period === 'year' ? c.month : formatMonth(c.month)}
                     </Th>
                   ))}
                 </tr>

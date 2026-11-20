@@ -76,12 +76,12 @@ When a figure cannot be worked out completely -- for example an amount in a curr
 | **Spending by Category** | See where your money goes with a breakdown of expenses by category over time |
 | **Spending by Payee** | Track how much you spend with each merchant or vendor over time |
 | **Monthly Spending Trend** | View your spending patterns month over month to identify trends |
-| **Monthly Breakdown** | Expense and income by category, month by month, with subtotals, a total, and an average per month. A category with no parent and no subcategories is a line of its own, in alphabetical order among the parent categories. Spending recorded directly on a parent category is a row inside that parent's section, counted in its subtotal; only uncategorized transactions are left under **Other expenses** or **Other income**. Switches turn on **Summary only** (just the Summary at the bottom), **Include current month**, **Show percentages**, and **Highlight deviations** (months well above or below the category's average). Transfers are listed separately, click **Income**, **Expenses**, or **Transfers** to fold that group down to its total, and a cell opens its transactions |
+| **Monthly & Yearly Breakdown** | Expense and income by category, month by month or year by year, with subtotals, a total, and an average per month or per year. Choose **Monthly** or **Yearly** for the columns: the monthly view offers the 3M, 6M, 1Y and YTD ranges, the yearly view 2Y, 5Y, 10Y and All, and both take a **Custom** range. A yearly column covers whole calendar years, so 5Y shows the five years before the current one. A category with no parent and no subcategories is a line of its own, in alphabetical order among the parent categories. Spending recorded directly on a parent category is a row inside that parent's section, counted in its subtotal; only uncategorized transactions are left under **Other expenses** or **Other income**. Switches turn on **Summary only** (just the Summary at the bottom), **Include current month** (**Include current year** in the yearly view), **Show percentages**, and **Highlight deviations** (months or years well above or below the category's average). Transfers are listed separately, click **Income**, **Expenses**, or **Transfers** to fold that group down to its total, and a cell opens its transactions |
 | **Year Over Year Comparison** | Compare this year's income, expenses, and savings with up to four previous years |
 
 ![The Spending by Category report](images/report-spending-category.png)
 
-![The Monthly Breakdown report](images/report-monthly-breakdown.png)
+![The Monthly & Yearly Breakdown report](images/report-monthly-breakdown.png)
 
 ### Income Reports
 
@@ -99,7 +99,7 @@ When a figure cannot be worked out completely -- for example an amount in a curr
 
 ![Income vs Expenses broken down by the values of a tag key](images/report-tag-breakdown.png)
 
-**Spending by Category**, **Income by Source**, **Budget vs Actual**, and **Monthly Breakdown** can instead focus on a single **Tag value**: they then show the **Available funds** for that value (its income plus the transfers tagged with it) next to what was spent.
+**Spending by Category**, **Income by Source**, **Budget vs Actual**, and **Monthly & Yearly Breakdown** can instead focus on a single **Tag value**: they then show the **Available funds** for that value (its income plus the transfers tagged with it) next to what was spent.
 
 ### Net Worth Reports
 

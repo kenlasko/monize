@@ -1,9 +1,11 @@
 import { taggedBalance } from './tagged-balance';
 import { findFundingBucket, fundingCompleteness } from './tagged-funding';
+import { periodKeyOf, type BreakdownPeriod } from './breakdown-period';
+import { sumMoney } from './format';
 import type { IncomeVsExpensesResponse } from '@/types/built-in-reports';
 
 export interface MonthlyFundsColumn {
-  /** `YYYY-MM`. */
+  /** The column key: `YYYY-MM`, or `YYYY` in a yearly summary. */
   month: string;
   /** False when the funding answer has no row for the month: every figure is unknown. */
   known: boolean;
@@ -32,20 +34,43 @@ export interface MonthlyFundsSummary {
  * 0; a month the chosen bucket has no row for had no tagged transfer, which is
  * a known zero. Under a gap (a missing rate) Balance is a subtotal and Balance %
  * is withheld.
+ *
+ * A yearly summary (`period` 'year', `months` holding `YYYY` keys) sums the
+ * answer's months that fall in each year before the one Balance formula runs:
+ * a year is known when the answer covers at least one of its months, and its
+ * figures are those months' totals.
  */
 export function monthlyFundsSummary(
   response: IncomeVsExpensesResponse,
   tagValue: string,
   months: readonly string[],
+  period: BreakdownPeriod = 'month',
 ): MonthlyFundsSummary {
   const bucket = findFundingBucket(response, tagValue);
-  const flowsByPeriod = new Map((bucket?.data ?? []).map((d) => [d.period, d]));
   const { complete, missingCurrencies } = fundingCompleteness(response, tagValue);
 
-  const itemsByPeriod = new Map(response.data.map((d) => [d.period, d]));
+  const flowsByKey = new Map<string, { taggedInflows: number[]; taggedOutflows: number[] }>();
+  for (const d of bucket?.data ?? []) {
+    const key = periodKeyOf(d.period, period);
+    const prev = flowsByKey.get(key) ?? { taggedInflows: [], taggedOutflows: [] };
+    flowsByKey.set(key, {
+      taggedInflows: [...prev.taggedInflows, d.taggedInflows],
+      taggedOutflows: [...prev.taggedOutflows, d.taggedOutflows],
+    });
+  }
+  const itemsByKey = new Map<string, { income: number[]; expenses: number[] }>();
+  for (const d of response.data) {
+    const key = periodKeyOf(d.period, period);
+    const prev = itemsByKey.get(key) ?? { income: [], expenses: [] };
+    itemsByKey.set(key, {
+      income: [...prev.income, d.income],
+      expenses: [...prev.expenses, d.expenses],
+    });
+  }
+
   const columns = months.map<MonthlyFundsColumn>((month) => {
-    const item = itemsByPeriod.get(month);
-    if (!item) {
+    const parts = itemsByKey.get(month);
+    if (!parts) {
       return {
         month,
         known: false,
@@ -57,21 +82,23 @@ export function monthlyFundsSummary(
         balancePercent: null,
       };
     }
-    const flows = flowsByPeriod.get(month);
-    const taggedInflows = flows ? flows.taggedInflows : 0;
-    const taggedOutflows = flows ? flows.taggedOutflows : 0;
+    const flows = flowsByKey.get(month);
+    const income = sumMoney(parts.income);
+    const expenses = sumMoney(parts.expenses);
+    const taggedInflows = flows ? sumMoney(flows.taggedInflows) : 0;
+    const taggedOutflows = flows ? sumMoney(flows.taggedOutflows) : 0;
     const { balance, balancePercent } = taggedBalance({
-      income: item.income,
-      expenses: item.expenses,
+      income,
+      expenses,
       taggedInflows,
       taggedOutflows,
     });
     return {
       month,
       known: true,
-      income: item.income,
+      income,
       taggedInflows,
-      expenses: item.expenses,
+      expenses,
       taggedOutflows,
       balance,
       balancePercent: complete ? balancePercent : null,
