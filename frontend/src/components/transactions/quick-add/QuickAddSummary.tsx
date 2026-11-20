@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 import { RuleEffectsLines } from '@/components/ai/RuleEffectsLines';
+import { Badge } from '@/components/ui/Badge';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { Account } from '@/types/account';
@@ -76,9 +77,9 @@ function BalanceCard({
             <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">{current}</span>
           )}
           {movesOn && (
-            <span className="ml-auto self-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+            <Badge variant="amber" className="ml-auto self-center">
               {t('balance.movesOnNote', { date: movesOn })}
-            </span>
+            </Badge>
           )}
         </div>
       </div>
