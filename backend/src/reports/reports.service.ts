@@ -38,6 +38,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
+import { Tag } from "../tags/entities/tag.entity";
 import { CreateCustomReportDto } from "./dto/create-custom-report.dto";
 import { UpdateCustomReportDto } from "./dto/update-custom-report.dto";
 import {
@@ -1017,6 +1018,20 @@ export class ReportsService {
     return category.name;
   }
 
+  // A split line sits under its own tags plus the parent's, the same merge
+  // `aggregateByTag` applies when it groups lines by tag.
+  private formatLineTags(
+    tx: Transaction,
+    splitTags?: Tag[],
+  ): string | undefined {
+    const tags = [...(tx.tags || [])];
+    for (const tag of splitTags ?? []) {
+      if (!tags.some((t) => t.id === tag.id)) tags.push(tag);
+    }
+    if (tags.length === 0) return undefined;
+    return tags.map((tag) => tag.name).join(", ");
+  }
+
   private aggregateNoGrouping(
     transactions: Transaction[],
     metric: MetricType,
@@ -1076,6 +1091,7 @@ export class ReportsService {
               memo: split.memo || undefined,
               category: this.formatCategoryLabel(split.category),
               account: tx.account?.name || undefined,
+              tags: this.formatLineTags(tx, split.tags),
               accountAmount,
               accountCurrency: tx.currencyCode,
             });
@@ -1097,6 +1113,7 @@ export class ReportsService {
             memo: undefined, // Transactions don't have memo, only splits do
             category: this.formatCategoryLabel(tx.category),
             account: tx.account?.name || undefined,
+            tags: this.formatLineTags(tx),
             accountAmount,
             accountCurrency: tx.currencyCode,
             // Only a row entered in a foreign currency has one; it is stored
@@ -1606,6 +1623,8 @@ export class ReportsService {
           );
         case TableColumn.ACCOUNT:
           return multiplier * (a.account || "").localeCompare(b.account || "");
+        case TableColumn.TAG:
+          return multiplier * (a.tags || "").localeCompare(b.tags || "");
         // Amounts in different currencies do not compare: rows are ordered by
         // currency first and by amount within one.
         case TableColumn.ACCOUNT_AMOUNT:
