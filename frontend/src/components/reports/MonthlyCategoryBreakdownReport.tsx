@@ -36,8 +36,24 @@ import { FundingReportControls } from '@/components/reports/FundingReportControl
 import { MonthlyTaggedBalanceSummary } from '@/components/reports/MonthlyTaggedBalanceSummary';
 import { useFundingReportControls } from '@/hooks/useFundingReportControls';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import {
+  BREAKDOWN_PERIODS,
+  alignPeriodStart,
+  asBreakdownPeriod,
+  breakdownByPeriod,
+  currentPeriodKey,
+  periodBounds,
+  yearlyWindowStart,
+  type BreakdownPeriod,
+} from '@/lib/breakdown-period';
 
+// The storage keys keep the report's original id so a reader's choices survive
+// the rename to Monthly & Yearly Breakdown.
 const RANGE_STORAGE_KEY = 'monize-reports-monthly-category-breakdown-range';
+const YEARLY_RANGE_STORAGE_KEY =
+  'monize-reports-monthly-category-breakdown-yearly-range';
+const PERIOD_STORAGE_KEY = 'monize-reports-monthly-category-breakdown-period';
 const PERCENTAGES_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-percentages';
 const DEVIATIONS_STORAGE_KEY =
@@ -48,12 +64,22 @@ const SORT_DIR_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-sort-dir';
 const INCLUDE_CURRENT_MONTH_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-include-current-month';
+const INCLUDE_CURRENT_YEAR_STORAGE_KEY =
+  'monize-reports-monthly-category-breakdown-include-current-year';
 const NAME_OFFSET_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-name-offset';
 const SUMMARY_ONLY_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-summary-only';
 const COLLAPSED_GROUPS_STORAGE_KEY =
   'monize-reports-monthly-category-breakdown-collapsed-groups';
+
+/**
+ * The window presets per column width. A yearly preset of N years is N whole
+ * calendar years before the current one, which "Include current year" adds
+ * (`yearlyWindowStart`).
+ */
+const MONTHLY_RANGES = ['3m', '6m', '1y', 'ytd'] as const;
+const YEARLY_RANGES = ['2y', '5y', '10y', 'all'] as const;
 
 /** The three top-level groups a reader can fold down to their total row. */
 type GroupId = 'income' | 'expense' | 'transfer';
@@ -398,6 +424,22 @@ export function MonthlyCategoryBreakdownReport() {
     SUMMARY_ONLY_STORAGE_KEY,
     false,
   );
+  // One column per calendar month or per calendar year. A stored value that is
+  // not a known period reads as monthly.
+  const [storedPeriod, setStoredPeriod] = useLocalStorage<BreakdownPeriod>(
+    PERIOD_STORAGE_KEY,
+    'month',
+  );
+  const period = asBreakdownPeriod(storedPeriod);
+  const isYearly = period === 'year';
+  const [includeCurrentYear, setIncludeCurrentYear] = useLocalStorage<boolean>(
+    INCLUDE_CURRENT_YEAR_STORAGE_KEY,
+    false,
+  );
+  const includeCurrentPeriod = isYearly ? includeCurrentYear : includeCurrentMonth;
+  const setIncludeCurrentPeriod = isYearly
+    ? setIncludeCurrentYear
+    : setIncludeCurrentMonth;
   // Groups folded down to their total row. A stored value that is not a list
   // (a corrupted entry) folds nothing rather than hiding a group.
   const [storedCollapsedGroups, setCollapsedGroups] = useLocalStorage<
@@ -497,12 +539,9 @@ export function MonthlyCategoryBreakdownReport() {
     e.stopPropagation();
   };
 
-  // The current calendar month (YYYY-MM); the latest column is in progress and
-  // excluded by default unless the user opts to include it.
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(
-    now.getMonth() + 1,
-  ).padStart(2, '0')}`;
+  // The current calendar month (YYYY-MM) or year (YYYY); the latest column is
+  // in progress and excluded by default unless the user opts to include it.
+  const currentPeriod = currentPeriodKey(period, new Date());
 
   // Toggle the sort column/direction. Selecting a new column defaults to
   // ascending for the category name and descending for value columns.
@@ -514,6 +553,31 @@ export function MonthlyCategoryBreakdownReport() {
       setSortDir(column === CATEGORY_COLUMN ? 'asc' : 'desc');
     }
   };
+  // Switching the column width drops a sort on a column the other width does
+  // not have (a month key in a yearly table), rather than leaving every row
+  // tied at zero under a header that is not there.
+  const handlePeriodChange = (next: BreakdownPeriod) => {
+    if (next === period) return;
+    setStoredPeriod(next);
+    if (
+      sortColumn !== CATEGORY_COLUMN &&
+      sortColumn !== TOTAL_COLUMN &&
+      sortColumn !== AVG_COLUMN
+    ) {
+      setSortColumn(CATEGORY_COLUMN);
+      setSortDir('asc');
+    }
+  };
+
+  // Each width keeps its own window, since their presets differ.
+  const monthlyRange = useDateRange({
+    defaultRange: '6m',
+    storageKey: RANGE_STORAGE_KEY,
+  });
+  const yearlyRange = useDateRange({
+    defaultRange: '5y',
+    storageKey: YEARLY_RANGE_STORAGE_KEY,
+  });
   const {
     dateRange,
     setDateRange,
@@ -523,18 +587,20 @@ export function MonthlyCategoryBreakdownReport() {
     setEndDate,
     resolvedRange,
     isValid,
-  } = useDateRange({ defaultRange: '6m', storageKey: RANGE_STORAGE_KEY });
+  } = isYearly ? yearlyRange : monthlyRange;
 
   const { start: rangeStart, end: rangeEnd } = resolvedRange;
 
-  // This report is month-columnar: every column is a whole calendar month. Day-
-  // level presets (e.g. "3m" = last 90 days) resolve to a mid-month start, which
-  // would render a partial leading month -- the column is labelled "2026-03" but
-  // silently omits transactions dated before the cut-off, so the same month
-  // shows different figures depending on the preset. Snap the start down to the
-  // first of its month so every visible month is fully covered and consistent
-  // across presets. An empty start ("all") stays empty.
-  const reportStart = rangeStart ? `${rangeStart.slice(0, 7)}-01` : '';
+  // Every column is a whole calendar month or year. A preset resolves to a day
+  // inside its leading column (e.g. "3m" = last 90 days), which would render a
+  // partial leading column -- labelled "2026-03" or "2024" but silently
+  // omitting transactions dated before the cut-off, so the same column shows
+  // different figures depending on the preset. Snap the start down to the
+  // first day of its column so every visible column is fully covered and
+  // consistent across presets. An empty start ("all") stays empty.
+  const reportStart = isYearly
+    ? yearlyWindowStart(dateRange, rangeStart, new Date())
+    : alignPeriodStart(rangeStart, period);
 
   // Account filter, tag controls and the funding fetch (spec section 11.5).
   const funds = useFundingReportControls({
@@ -561,13 +627,16 @@ export function MonthlyCategoryBreakdownReport() {
 
   const model = useMemo(() => {
     if (!data) return null;
-    // Drop the in-progress (current) month unless the user opts in. The current
-    // month is removed wherever it appears so the toggle always takes effect.
-    const months = includeCurrentMonth
-      ? data.months
-      : data.months.filter((m) => m !== currentMonth);
+    // The server answers in months; a yearly table folds them into years. From
+    // here on a "month" is a column key: YYYY-MM, or YYYY in a yearly table.
+    const columns = breakdownByPeriod(data, period);
+    // Drop the in-progress (current) column unless the user opts in. It is
+    // removed wherever it appears so the toggle always takes effect.
+    const months = includeCurrentPeriod
+      ? columns.months
+      : columns.months.filter((m) => m !== currentPeriod);
     const monthCount = months.length || 1;
-    const rows = data.data;
+    const rows = columns.data;
 
     // Group categories by parent. A category with a parent forms (or joins) a
     // section keyed by that parent, and a top-level category keys its own
@@ -675,7 +744,7 @@ export function MonthlyCategoryBreakdownReport() {
 
     // Transfers form their own group (signed: "from" positive, "to" negative).
     const transfers = processTransfers(
-      data.transfers || [],
+      columns.transfers || [],
       months,
       monthCount,
       (name) => `${t('monthlyCategoryBreakdown.transferFrom')} ${name}`,
@@ -750,15 +819,21 @@ export function MonthlyCategoryBreakdownReport() {
     otherIncomeLabel,
     sortColumn,
     sortDir,
-    includeCurrentMonth,
-    currentMonth,
+    includeCurrentPeriod,
+    currentPeriod,
+    period,
     t,
   ]);
 
-  const lastDayOfMonth = (month: string): string => {
-    const [year, mon] = month.split('-').map(Number);
-    const lastDay = new Date(year, mon, 0).getDate();
-    return `${year}-${String(mon).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  // The days one column covers, ending no later than the report's window, so
+  // the transactions a cell opens are the ones its figure counts: the current
+  // year (or month) ends today, and a custom window may end mid-column.
+  const columnRange = (key: string): { start: string; end: string } => {
+    const bounds = periodBounds(key, period);
+    return {
+      start: bounds.start,
+      end: rangeEnd && rangeEnd < bounds.end ? rangeEnd : bounds.end,
+    };
   };
 
   // Navigate to the transactions page with the given filters. Empty filter
@@ -790,9 +865,10 @@ export function MonthlyCategoryBreakdownReport() {
     pushTransactions({ categoryIds, start, end });
   };
 
-  // Drill into a single month for the given categories.
+  // Drill into a single column (month or year) for the given categories.
   const drillDown = (month: string, categoryIds: string[]) => {
-    navigateToTransactions(categoryIds, `${month}-01`, lastDayOfMonth(month));
+    const { start, end } = columnRange(month);
+    navigateToTransactions(categoryIds, start, end);
   };
 
   // Drill into the full report date range for the given categories (used when
@@ -819,13 +895,16 @@ export function MonthlyCategoryBreakdownReport() {
     });
   };
   const drillTransfersMonth = (month: string, accountIds: string[]) => {
-    pushTransactions({
-      categoryIds: ['transfer'],
-      accountIds,
-      start: `${month}-01`,
-      end: lastDayOfMonth(month),
-    });
+    const { start, end } = columnRange(month);
+    pushTransactions({ categoryIds: ['transfer'], accountIds, start, end });
   };
+
+  // A column header: the localized month, or the year as it is.
+  const columnLabel = (key: string): string =>
+    isYearly ? key : formatMonth(key);
+  const avgLabel = isYearly
+    ? t('monthlyCategoryBreakdown.avgPerYear')
+    : t('monthlyCategoryBreakdown.avgPerMonth');
 
   // Export the breakdown as a CSV matrix: one row per category (with its parent
   // group), then the income/expense/balance summary rows. Amounts carry the same
@@ -837,9 +916,9 @@ export function MonthlyCategoryBreakdownReport() {
     const headers = [
       t('monthlyCategoryBreakdown.csvParentColumn'),
       t('monthlyCategoryBreakdown.category'),
-      ...model.months.map((m) => formatMonth(m)),
+      ...model.months.map((m) => columnLabel(m)),
       t('monthlyCategoryBreakdown.total'),
-      t('monthlyCategoryBreakdown.avgPerMonth'),
+      avgLabel,
     ];
     const rows: (string | number)[][] = [];
     for (const section of model.sections) {
@@ -902,7 +981,11 @@ export function MonthlyCategoryBreakdownReport() {
         model.overallAvg,
       ]);
     }
-    exportToCsv('monthly-category-breakdown', headers, rows);
+    exportToCsv(
+      isYearly ? 'yearly-category-breakdown' : 'monthly-category-breakdown',
+      headers,
+      rows,
+    );
   };
 
   // Render a single signed amount cell value (or a percentage in percent mode).
@@ -943,6 +1026,10 @@ export function MonthlyCategoryBreakdownReport() {
       </div>
     </td>
   );
+
+  const includeCurrentLabel = isYearly
+    ? t('monthlyCategoryBreakdown.includeCurrentYear')
+    : t('monthlyCategoryBreakdown.includeCurrentMonth');
 
   const months = model?.months ?? [];
   const hasData =
@@ -1354,8 +1441,31 @@ export function MonthlyCategoryBreakdownReport() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <FundingReportControls controls={funds} />
+          <div
+            className={SEGMENTED_GROUP_CLASS}
+            role="group"
+            aria-label={t('monthlyCategoryBreakdown.periodLabel')}
+          >
+            {BREAKDOWN_PERIODS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={period === p}
+                className={segmentClass(period === p)}
+                onClick={() => handlePeriodChange(p)}
+              >
+                {p === 'year'
+                  ? t('monthlyCategoryBreakdown.periodYearly')
+                  : t('monthlyCategoryBreakdown.periodMonthly')}
+              </button>
+            ))}
+          </div>
           <DateRangeSelector
-            ranges={['3m', '6m', '1y', 'ytd']}
+            // Remount on a width change so the custom date fields belong to
+            // the window they edit.
+            key={period}
+            ranges={isYearly ? YEARLY_RANGES : MONTHLY_RANGES}
+            labels={{ all: t('monthlyCategoryBreakdown.rangeAll') }}
             value={dateRange}
             onChange={setDateRange}
             showCustom
@@ -1376,12 +1486,12 @@ export function MonthlyCategoryBreakdownReport() {
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ToggleSwitch
-                checked={includeCurrentMonth}
-                onChange={setIncludeCurrentMonth}
-                label={t('monthlyCategoryBreakdown.includeCurrentMonth')}
+                checked={includeCurrentPeriod}
+                onChange={setIncludeCurrentPeriod}
+                label={includeCurrentLabel}
                 size="sm"
               />
-              <span>{t('monthlyCategoryBreakdown.includeCurrentMonth')}</span>
+              <span>{includeCurrentLabel}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ToggleSwitch
@@ -1474,7 +1584,7 @@ export function MonthlyCategoryBreakdownReport() {
                       align="right"
                       className="px-2 py-2 font-medium whitespace-nowrap"
                     >
-                      {formatMonth(m)}
+                      {columnLabel(m)}
                     </SortableHeader>
                   ))}
                   <SortableHeader
@@ -1495,7 +1605,7 @@ export function MonthlyCategoryBreakdownReport() {
                     align="right"
                     className="px-2 py-2 font-medium"
                   >
-                    {t('monthlyCategoryBreakdown.avgPerMonth')}
+                    {avgLabel}
                   </SortableHeader>
                 </tr>
               </thead>
@@ -1742,7 +1852,7 @@ export function MonthlyCategoryBreakdownReport() {
           </div>
         )}
       </div>
-      <MonthlyTaggedBalanceSummary controls={funds} months={months} />
+      <MonthlyTaggedBalanceSummary controls={funds} months={months} period={period} />
     </div>
   );
 }

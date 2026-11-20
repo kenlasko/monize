@@ -108,6 +108,29 @@ describe('monthlyFundsSummary', () => {
     ).toBe(false);
   });
 
+  it('sums the months of each year before the Balance formula runs', () => {
+    const r = response({
+      data: [item('2025-12', 500, 100), item('2026-07', 3000, 2000), item('2026-08', 3279, 8486)],
+    });
+    r.buckets![0].data = [flow('2026-07', 0, 300), flow('2026-08', 4516)];
+    const s = monthlyFundsSummary(r, 'household', ['2025', '2026', '2027'], 'year');
+    // 2026: (3000 + 3279) + 4516 - (2000 + 8486) - 300 = 9.
+    expect(s.columns[1]).toMatchObject({
+      month: '2026',
+      known: true,
+      income: 6279,
+      taggedInflows: 4516,
+      expenses: 10486,
+      taggedOutflows: 300,
+      balance: 9,
+    });
+    // A year with months in the answer but no tagged row has known-zero flows.
+    expect(s.columns[0]).toMatchObject({ known: true, taggedInflows: 0, balance: 400 });
+    // A year the answer does not cover is unknown, never zero.
+    expect(s.columns[2]).toMatchObject({ known: false, income: null, balance: null });
+    expect(s.showOutflows).toBe(true);
+  });
+
   it('withholds the percentage when nothing came in', () => {
     const r = response({ data: [item('2026-08', 0, 100)] });
     r.buckets![0].data = [flow('2026-08', 0)];

@@ -202,6 +202,26 @@ describe('MonthlyCategoryBreakdownReport funding view', () => {
     expect(block.queryByText('Tagged outflows')).toBeNull();
   });
 
+  it('shows the Balance block per year in the yearly view: 6,279 + 4,516 - 8,586 = 2,209', async () => {
+    window.localStorage.setItem('monize-reports-monthly-category-breakdown-period', '"year"');
+    mockGetIncomeVsExpenses.mockResolvedValue(funding());
+    await renderReport();
+    await chooseScopeHousehold();
+    await turnSwitchOn();
+
+    await waitFor(() => expect(screen.getByTestId('monthly-tagged-balance').querySelector('table')).toBeTruthy());
+    expect(screen.getByText('Balance by year, including tagged transfers: household')).toBeInTheDocument();
+    const block = within(screen.getByTestId('monthly-tagged-balance'));
+    expect(block.getByText('2025')).toBeInTheDocument();
+    const row = (label: string) => block.getByText(label).closest('tr') as HTMLElement;
+    expect(row('Income')).toHaveTextContent('$6279.00');
+    expect(row('Tagged inflows')).toHaveTextContent('$4516.00');
+    expect(row('Expenses')).toHaveTextContent('$8586.00');
+    expect(row('Balance')).toHaveTextContent('$2209.00');
+    // 2,209 / (6,279 + 4,516).
+    expect(row('Balance %')).toHaveTextContent('20.46%');
+  });
+
   it('draws the Tagged outflows row once a shown month has some', async () => {
     mockGetIncomeVsExpenses.mockResolvedValue(
       funding({}, { data: [flow('2025-01', 0, 300), flow('2025-02', 4516)] }),
