@@ -571,7 +571,9 @@
       "message": "Tất cả tài khoản đã chọn đều có số dư bằng 0, nên không có biểu đồ số dư để hiển thị."
     },
     "monthlyTotals": {
-      "title": "Tổng hàng tháng",
+      "titleMonthly": "Tổng hàng tháng",
+      "titleQuarterly": "Tổng hàng quý",
+      "titleYearly": "Tổng hàng năm",
       "noData": "Không có dữ liệu giao tác",
       "monthlyAvg": "Trung bình tháng",
       "quarterlyAvg": "Trung bình quý",

@@ -571,7 +571,9 @@
       "message": "선택한 모든 계좌의 잔액이 0이므로 표시할 잔액 차트가 없습니다."
     },
     "monthlyTotals": {
-      "title": "월별 합계",
+      "titleMonthly": "월별 합계",
+      "titleQuarterly": "분기별 합계",
+      "titleYearly": "연도별 합계",
       "noData": "거래 데이터가 없습니다",
       "monthlyAvg": "월 평균",
       "quarterlyAvg": "분기 평균",

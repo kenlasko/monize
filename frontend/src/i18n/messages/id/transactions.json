@@ -571,7 +571,9 @@
       "message": "Semua akun yang dipilih memiliki saldo nol, sehingga tidak ada grafik saldo untuk ditampilkan."
     },
     "monthlyTotals": {
-      "title": "Total Bulanan",
+      "titleMonthly": "Total Bulanan",
+      "titleQuarterly": "Total Kuartalan",
+      "titleYearly": "Total Tahunan",
       "noData": "Tidak ada data transaksi yang tersedia",
       "monthlyAvg": "Rata-rata Bulanan",
       "quarterlyAvg": "Rata-rata Kuartalan",
