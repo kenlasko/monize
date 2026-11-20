@@ -173,7 +173,8 @@ One request's work is bounded whatever the reader has stored, because the readin
 
 - **Length after normalizing.** The 200-character cap applies to the text after NFKC (one character can expand to 18), and the reader stops at a fixed number of words. The dialog counts the same way and does not send a longer line.
 - **Folding names.** Each candidate name is folded once per request, by whole-string operations, whatever its script.
-- **Matching work.** Alias matching has a fixed budget of glob evaluations per request, and the spans each name contributes are deduplicated before the longest are chosen.
+- **Matching work.** Alias matching has a fixed budget of glob evaluations per request. Every name (account, payee, plain or wildcard alias, category) contributes at most a few non-overlapping occurrences, and one reading collects a fixed total of spans, after which further names are not read.
+- **Not yet bounded:** folding grows with the number of stored payees, aliases and categories (linear, around 100 ms at 20,000 payees with two non-ASCII aliases each). A per-user cache of folded names is the follow-up.
 - **The transaction is short.** Candidates are loaded in one scoped read, the text is read outside any transaction, and usage and history are a second short scoped read over a capped list of ids.
 - **Rate.** The route carries its own `@Throttle`.
 

@@ -1,10 +1,19 @@
 import * as aliasMatch from "../../payees/alias-match.util";
-import { ALIAS_GLOB_BUDGET, ALIAS_MAX_SPANS } from "./quick-add-names.util";
+import {
+  ALIAS_GLOB_BUDGET,
+  NAME_MAX_SPANS,
+  NAME_SPAN_BUDGET,
+  NamesInput,
+  readNames,
+} from "./quick-add-names.util";
 import { QuickAddParseInput, readQuickAddText } from "./quick-add-parse.util";
+import * as textUtil from "./quick-add-text.util";
 import {
   QUICK_ADD_MAX_WORDS,
   QUICK_ADD_TEXT_MAX_LENGTH,
+  UnitSpan,
   buildQuickAddText,
+  findOccurrences,
   foldForComparison,
 } from "./quick-add-text.util";
 import { resolveQuickAddVocabulary } from "./quick-add-vocabulary";
@@ -13,8 +22,9 @@ import type { QuickAddCandidatePayee } from "./quick-add.types";
 /**
  * One reading's work is bounded whatever the reader has stored
  * (`docs/future-plans/quick-add.md`, "Bounds"): the line is read after NFKC
- * and cut to a fixed number of words, and wildcard aliases share a fixed
- * budget of glob evaluations.
+ * and cut to a fixed number of words, wildcard aliases share a fixed budget
+ * of glob evaluations, and every name's spans are capped, per name and per
+ * reading.
  */
 const payee = (
   id: string,
@@ -228,7 +238,7 @@ describe("Quick Add reading bounds", () => {
       expect(tried).toEqual([]);
     });
 
-    it(`still find their payee when an alias matches past ${ALIAS_MAX_SPANS} words`, () => {
+    it(`still find their payee when an alias matches past ${NAME_MAX_SPANS} words`, () => {
       // One alias matching every word, its spans capped: the payee found is
       // that alias's, at its earliest span, and the rest is leftover.
       const r = read(`5 ${"ab ".repeat(20).trim()}`, {
@@ -236,6 +246,120 @@ describe("Quick Add reading bounds", () => {
       });
       expect(r.payee?.candidates.map((p) => p.id)).toEqual(["p-ab"]);
       expect(r.leftover?.split(" ")).toHaveLength(19);
+    });
+  });
+
+  describe("names", () => {
+    /** The spans `readNames` hands to the longest-wins selection. */
+    function selectedFrom(line: string, over: Partial<NamesInput>) {
+      const text = buildQuickAddText(line, "ja");
+      const used = text.units.map(() => false);
+      const select = jest.spyOn(textUtil, "selectLongest");
+      try {
+        const names = readNames(text, used, {
+          locale: "ja",
+          accounts: [],
+          payees: [],
+          categories: [],
+          connectors: [],
+          ...over,
+        });
+        const spans = select.mock.calls[0][0] as ReadonlyArray<{
+          span: UnitSpan;
+          item: { id: string };
+        }>;
+        return { names, spans };
+      } finally {
+        select.mockRestore();
+      }
+    }
+
+    const overlapping = (spans: readonly UnitSpan[]) =>
+      spans.some((a, i) =>
+        spans.some((b, j) => i !== j && a.start < b.end && b.start < a.end),
+      );
+
+    it.each([
+      ["a plain alias", { payees: [payee("p", "店", ["ああ"])] }],
+      ["a payee's name", { payees: [payee("p", "ああ")] }],
+      [
+        "an account's name",
+        {
+          accounts: [
+            { id: "p", name: "ああ", currencyCode: "JPY", currentBalance: 0 },
+          ],
+        },
+      ],
+      [
+        "a category's name and path",
+        {
+          categories: [
+            { id: "p", name: "ああ", path: "ああ: ああ", isIncome: false },
+          ],
+        },
+      ],
+    ])(
+      `contribute at most ${NAME_MAX_SPANS} spans, never overlapping, from %s`,
+      (_label, over: Partial<NamesInput>) => {
+        // Every position of the line starts `ああ`: 199 overlapping places.
+        const { names, spans } = selectedFrom("あ".repeat(200), over);
+        expect(spans.length).toBeGreaterThan(0);
+        expect(spans.length).toBeLessThanOrEqual(NAME_MAX_SPANS);
+        expect(overlapping(spans.map((s) => s.span))).toBe(false);
+        // The earliest occurrence is still the one read.
+        const read = names.payee ?? names.category ?? names.accounts[0];
+        expect(read?.span).toEqual({ start: 0, end: 2 });
+      },
+    );
+
+    it("collect at most the span budget in one reading, and the reading stands", () => {
+      const line = `12 ${"あ".repeat(QUICK_ADD_TEXT_MAX_LENGTH - 3)}`;
+      const payees = Array.from({ length: 400 }, (_v, i) =>
+        payee(`p${i}`, `店${i}`, ["あ", "ああ", "あああ"]),
+      );
+      const { names, spans } = selectedFrom(line, { payees });
+      expect(spans.length).toBeLessThanOrEqual(NAME_SPAN_BUDGET);
+      expect(spans.length).toBeGreaterThan(NAME_SPAN_BUDGET / 2);
+      // Every payee is still folded for the partial match.
+      expect(names.foldedPayeeNames).toHaveLength(payees.length);
+      const r = read(line, {
+        payees,
+        locale: "ja",
+        vocabulary: resolveQuickAddVocabulary("ja"),
+      });
+      expect(r.amount?.value).toBe(12);
+      expect(r.payee?.partial).toBe(false);
+      expect(r.payee?.candidates.length).toBeGreaterThan(0);
+    });
+
+    it("find a name's leftmost occurrences that do not overlap, free and on word boundaries", () => {
+      const cjk = buildQuickAddText("あ".repeat(200), "ja");
+      const free = cjk.units.map(() => false);
+      const all = findOccurrences(cjk, "ああ", free, Infinity);
+      expect(all).toHaveLength(100);
+      expect(overlapping(all)).toBe(false);
+      expect(findOccurrences(cjk, "ああ", free, 3)).toEqual([
+        { start: 0, end: 2 },
+        { start: 2, end: 4 },
+        { start: 4, end: 6 },
+      ]);
+      // A used unit moves the first occurrence past it, one unit at a time.
+      const usedFirst = free.map((_v, i) => i === 0);
+      expect(findOccurrences(cjk, "ああ", usedFirst, 1)).toEqual([
+        { start: 1, end: 3 },
+      ]);
+      const latin = buildQuickAddText("abab ab x ab", "en");
+      expect(
+        findOccurrences(
+          latin,
+          "ab",
+          latin.units.map(() => false),
+          4,
+        ),
+      ).toEqual([
+        { start: 5, end: 7 },
+        { start: 10, end: 12 },
+      ]);
     });
   });
 });

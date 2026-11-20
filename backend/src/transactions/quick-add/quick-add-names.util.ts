@@ -18,6 +18,7 @@ import {
 import {
   QuickAddText,
   UnitSpan,
+  findOccurrences,
   findPhrase,
   foldForComparison,
   markUsed,
@@ -88,26 +89,31 @@ const ALIAS_MIN_LITERAL = 2;
  * whose literal parts all occur in the line, which is all a real line needs.
  */
 export const ALIAS_GLOB_BUDGET = 12_000;
-/** The most spans one wildcard alias contributes to a reading. */
-export const ALIAS_MAX_SPANS = 4;
+/**
+ * The most spans one name contributes to a reading: an account's, a payee's
+ * or a category's name, its path, a plain alias or a wildcard one. They are
+ * its leftmost occurrences that do not overlap each other (two that overlap
+ * can never both be chosen). The reading keeps one payee, one category and
+ * two accounts, so a name needs a second occurrence only where a longer name
+ * took its first, or to be both accounts of a transfer; four leaves room for
+ * that twice over, and a name typed more often than that in one line is
+ * read at its first four.
+ */
+export const NAME_MAX_SPANS = 4;
+/**
+ * The spans one reading collects over every name, after which no further
+ * span is collected and the reading goes on with those it has. Each is keyed
+ * and sorted before the longest are chosen, so without a cap a reader's
+ * names multiply that work (a thousand payees with twenty short aliases each
+ * over a line of one repeated kana gave two million). A real line's names
+ * contribute a few spans each, a few dozen in all; a thousand is far above
+ * that and costs well under a millisecond to choose from.
+ */
+export const NAME_SPAN_BUDGET = 1_000;
 
 /** What is left of {@link ALIAS_GLOB_BUDGET} for this reading. */
 export interface GlobBudget {
   remaining: number;
-}
-
-/** Where each distinct name of `folded` (already folded) occurs in the line. */
-function phraseMatches(
-  text: QuickAddText,
-  used: readonly boolean[],
-  folded: readonly string[],
-): UnitSpan[] {
-  if (folded.length === 1) return findPhrase(text, folded[0], used);
-  const spans: UnitSpan[] = [];
-  for (const name of new Set(folded)) {
-    spans.push(...findPhrase(text, name, used));
-  }
-  return spans;
 }
 
 /** The words of the line, as unit spans. */
@@ -162,13 +168,15 @@ function occursInOrder(line: string, literals: readonly string[]): boolean {
  * and never the amount typed before it. An alias whose literal parts do not
  * all occur in the line, in order, is skipped before any run is tried. Each
  * run tried spends one of `budget`; when it runs out the alias stops, keeping
- * only the spans already proven smallest, and at most {@link ALIAS_MAX_SPANS}.
+ * only the spans already proven smallest, and at most `limit`.
  */
 function aliasSpans(
   runs: WordRuns,
   pattern: string,
   budget: GlobBudget,
+  limit: number,
 ): UnitSpan[] {
+  if (limit <= 0) return [];
   const literals = pattern.split("*").filter((part) => part !== "");
   const literalLength = literals.join("").length;
   if (literalLength < ALIAS_MIN_LITERAL) return [];
@@ -199,27 +207,64 @@ function aliasSpans(
       if (withoutFirst === null || withoutLast === null) return found;
       if (withoutFirst || withoutLast) continue;
       found.push({ start: words[i].start, end: words[j].end });
-      if (found.length >= ALIAS_MAX_SPANS) return found;
+      if (found.length >= limit) return found;
     }
   }
   return found;
 }
 
-/** `matches` with each span once per item: a name and its aliases often agree. */
-function distinctMatches(matches: readonly NameMatch[]): NameMatch[] {
-  const seen = new Set<string>();
-  return matches.filter((match) => {
-    const key = `${match.kind}:${match.item.id}:${match.span.start}:${match.span.end}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+/**
+ * The spans one reading collects, each once per item (a name and its aliases
+ * often agree), within {@link NAME_SPAN_BUDGET}. It lives for one reading;
+ * a span is keyed as one number, so no key is built per span.
+ */
+interface SpanCollector {
+  /** What is left of {@link NAME_SPAN_BUDGET}. */
+  readonly remaining: number;
+  /** How many spans the next name may still contribute. */
+  readonly limit: number;
+  /** Starts the spans of the next item. */
+  nextItem(): void;
+  /** Where `name` (already folded) occurs, as far as the budget allows. */
+  occurrences(name: string): UnitSpan[];
+  /** Whether `span` is new for this item; a kept span spends the budget. */
+  keep(span: UnitSpan): boolean;
+}
+
+function spanCollector(
+  text: QuickAddText,
+  used: readonly boolean[],
+): SpanCollector {
+  const seen = new Set<number>();
+  const stride = text.units.length + 1;
+  let remaining = NAME_SPAN_BUDGET;
+  const limit = () => Math.min(NAME_MAX_SPANS, remaining);
+  return {
+    get remaining() {
+      return remaining;
+    },
+    get limit() {
+      return limit();
+    },
+    nextItem: () => seen.clear(),
+    occurrences: (name) => findOccurrences(text, name, used, limit()),
+    keep: (span) => {
+      if (remaining <= 0) return false;
+      const key = span.start * stride + span.end;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      remaining -= 1;
+      return true;
+    },
+  };
 }
 
 /**
  * Every name's spans in the line, each candidate name folded once
  * (`docs/future-plans/quick-add.md`, "Bounds"), and the payees' folded names
- * for the partial match.
+ * for the partial match. Once {@link NAME_SPAN_BUDGET} is spent the names
+ * still to come contribute nothing, though every payee's name is still
+ * folded for the partial match.
  */
 function collectMatches(
   text: QuickAddText,
@@ -230,41 +275,53 @@ function collectMatches(
   const budget: GlobBudget = {
     remaining: input.aliasGlobBudget ?? ALIAS_GLOB_BUDGET,
   };
+  const spans = spanCollector(text, used);
   const fold = (value: string) => foldForComparison(value, input.locale);
   // One list, appended to in place: a reader may hold thousands of names,
   // nearly all of which match nothing.
   const matches: NameMatch[] = [];
   for (const item of input.accounts) {
-    for (const span of phraseMatches(text, used, [fold(item.name)])) {
-      matches.push({ span, kind: "account", item });
+    if (spans.remaining <= 0) break;
+    spans.nextItem();
+    for (const span of spans.occurrences(fold(item.name))) {
+      if (spans.keep(span)) matches.push({ span, kind: "account", item });
     }
   }
   const foldedPayeeNames: string[] = [];
   for (const item of input.payees) {
     const name = fold(item.name);
     foldedPayeeNames.push(name);
+    if (spans.remaining <= 0) continue;
+    spans.nextItem();
     const plain = [name];
     const wildcard: string[] = [];
     for (const alias of item.aliases) {
       if (!alias.includes("*")) plain.push(fold(alias));
       else if (budget.remaining > 0) wildcard.push(fold(alias));
     }
-    for (const span of phraseMatches(text, used, plain)) {
-      matches.push({ span, kind: "payee", item });
+    for (const phrase of plain.length === 1 ? plain : new Set(plain)) {
+      for (const span of spans.occurrences(phrase)) {
+        if (spans.keep(span)) matches.push({ span, kind: "payee", item });
+      }
     }
     for (const pattern of wildcard) {
-      for (const span of aliasSpans(runs, pattern, budget)) {
-        matches.push({ span, kind: "payee", item });
+      for (const span of aliasSpans(runs, pattern, budget, spans.limit)) {
+        if (spans.keep(span)) matches.push({ span, kind: "payee", item });
       }
     }
   }
   for (const item of input.categories) {
-    const names = [fold(item.name), fold(item.path)];
-    for (const span of phraseMatches(text, used, names)) {
-      matches.push({ span, kind: "category", item });
+    if (spans.remaining <= 0) break;
+    spans.nextItem();
+    const name = fold(item.name);
+    const path = fold(item.path);
+    for (const phrase of name === path ? [name] : [name, path]) {
+      for (const span of spans.occurrences(phrase)) {
+        if (spans.keep(span)) matches.push({ span, kind: "category", item });
+      }
     }
   }
-  return { matches: distinctMatches(matches), foldedPayeeNames };
+  return { matches, foldedPayeeNames };
 }
 
 function uniqueById<T extends { id: string }>(items: readonly T[]): T[] {

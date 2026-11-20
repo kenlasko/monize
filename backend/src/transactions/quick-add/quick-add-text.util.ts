@@ -337,6 +337,37 @@ export function isSpanFree(
 }
 
 /**
+ * Where an occurrence of a folded phrase `length` long at index `at` of the
+ * folded line ends, in units, or -1 when it does not start and end on whole
+ * units and on word boundaries, or covers a used unit.
+ */
+function occurrenceEnd(
+  text: QuickAddText,
+  at: number,
+  length: number,
+  used: readonly boolean[],
+): number {
+  const start = text.unitAt[at];
+  if (text.foldedStart[start] !== at) return -1;
+  const lastFolded = at + length - 1;
+  const lastUnit = text.unitAt[lastFolded];
+  const lastEnds =
+    text.foldedStart[lastUnit] + text.units[lastUnit].folded.length;
+  if (lastEnds !== lastFolded + 1) return -1;
+  let end = lastUnit + 1;
+  // A stripped combining mark folds to nothing and belongs to its letter.
+  while (end < text.units.length && text.units[end].folded === "") end++;
+  if (!onWordBoundaries(text, start, end)) return -1;
+  if (!isSpanFree(used, start, end)) return -1;
+  return end;
+}
+
+/** Whether `phrase` (already folded) can be looked for at all. */
+function isSearchable(phrase: string): boolean {
+  return phrase !== "" && phrase.trim() === phrase;
+}
+
+/**
  * Every occurrence of `phrase` (already folded) in the free units of `text`
  * that starts and ends on whole units and on word boundaries.
  */
@@ -346,33 +377,53 @@ export function findPhrase(
   used: readonly boolean[],
 ): UnitSpan[] {
   const found: UnitSpan[] = [];
-  if (phrase === "" || phrase.trim() !== phrase) return found;
-  const count = text.units.length;
+  if (!isSearchable(phrase)) return found;
   for (
     let at = text.folded.indexOf(phrase);
     at !== -1;
     at = text.folded.indexOf(phrase, at + 1)
   ) {
-    const start = text.unitAt[at];
-    const lastFolded = at + phrase.length - 1;
-    const lastUnit = text.unitAt[lastFolded];
-    if (text.foldedStart[start] !== at) continue;
-    const lastEnds =
-      text.foldedStart[lastUnit] + text.units[lastUnit].folded.length;
-    if (lastEnds !== lastFolded + 1) continue;
-    let end = lastUnit + 1;
-    // A stripped combining mark folds to nothing and belongs to its letter.
-    while (end < count && text.units[end].folded === "") end++;
-    if (!onWordBoundaries(text, start, end)) continue;
-    if (!isSpanFree(used, start, end)) continue;
-    found.push({ start, end });
+    const end = occurrenceEnd(text, at, phrase.length, used);
+    if (end !== -1) found.push({ start: text.unitAt[at], end });
+  }
+  return found;
+}
+
+/**
+ * The first `limit` occurrences of `phrase` that {@link findPhrase} would
+ * find, leftmost first and never two that overlap each other. Two
+ * occurrences of one name that overlap can never both be chosen by
+ * {@link selectLongest}, so the line holds no more of these than it holds
+ * copies of the name side by side (`ああ` in two hundred `あ` has a hundred,
+ * where {@link findPhrase} finds 199), and `limit` bounds them further.
+ */
+export function findOccurrences(
+  text: QuickAddText,
+  phrase: string,
+  used: readonly boolean[],
+  limit: number,
+): UnitSpan[] {
+  const found: UnitSpan[] = [];
+  if (limit <= 0 || !isSearchable(phrase)) return found;
+  let at = text.folded.indexOf(phrase);
+  while (at !== -1) {
+    const end = occurrenceEnd(text, at, phrase.length, used);
+    if (end === -1) {
+      at = text.folded.indexOf(phrase, at + 1);
+      continue;
+    }
+    found.push({ start: text.unitAt[at], end });
+    if (found.length >= limit) break;
+    // Past the whole occurrence: the next one starts at or after `end`.
+    at = text.folded.indexOf(phrase, at + phrase.length);
   }
   return found;
 }
 
 /**
  * The longest spans first, then the earliest, never two that overlap each
- * other or a used unit. Items sharing one span are returned together.
+ * other or a used unit. Items sharing one span are returned together. Every
+ * span lies within `used`.
  */
 export function selectLongest<T extends { span: UnitSpan }>(
   items: readonly T[],
@@ -385,17 +436,21 @@ export function selectLongest<T extends { span: UnitSpan }>(
   );
   const taken = [...used];
   const groups: Array<{ span: UnitSpan; items: T[] }> = [];
+  // A span as one number, `start * stride + end`: no key string per item.
+  const stride = used.length + 1;
+  const byKey = new Map<number, { span: UnitSpan; items: T[] }>();
   for (const item of sorted) {
-    const same = groups.find(
-      (g) => g.span.start === item.span.start && g.span.end === item.span.end,
-    );
+    const key = item.span.start * stride + item.span.end;
+    const same = byKey.get(key);
     if (same) {
       same.items.push(item);
       continue;
     }
     if (!isSpanFree(taken, item.span.start, item.span.end)) continue;
     for (let i = item.span.start; i < item.span.end; i++) taken[i] = true;
-    groups.push({ span: item.span, items: [item] });
+    const group = { span: item.span, items: [item] };
+    groups.push(group);
+    byKey.set(key, group);
   }
   return groups;
 }
