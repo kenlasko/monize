@@ -34,6 +34,7 @@ import {
   reportableTransactionAmountSql,
 } from "../common/investment-filter.util";
 import { tagValuesArrayExpr } from "./tag-values-sql";
+import { purchaseRowConditionsSql } from "./purchase-rows-sql";
 
 /**
  * Investment scope is LINKAGE, never account type (INV-REPORT-001, issue #1257):
@@ -329,17 +330,7 @@ export class SpendingReportsService {
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
-        AND ${REPORTABLE_TX_AMOUNT} < 0
-        AND t.is_transfer = false
-        AND (t.status IS NULL OR t.status != 'VOID')
-        AND t.parent_transaction_id IS NULL
-        AND ${INVESTMENT_EXCLUSION_NO_SPLITS}
-        AND NOT EXISTS (
-          SELECT 1 FROM accounts ax
-          WHERE ax.user_id = t.user_id
-            AND ax.asset_category_id IS NOT NULL
-            AND ax.asset_category_id = t.category_id
-        )
+        AND ${purchaseRowConditionsSql(REPORTABLE_TX_AMOUNT, INVESTMENT_EXCLUSION_NO_SPLITS)}
       `;
 
     const params: (string | undefined)[] = [userId, endDate, defaultCurrency];

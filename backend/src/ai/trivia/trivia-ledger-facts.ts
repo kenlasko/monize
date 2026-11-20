@@ -1,15 +1,9 @@
-import { roundMoney } from "../../common/round.util";
 import type { SpendingByCategoryResponse } from "../../built-in-reports/dto/spending-by-category.dto";
 import type { SpendingByPayeeResponse } from "../../built-in-reports/dto/spending-by-payee.dto";
 import type { IncomeVsExpensesResponse } from "../../built-in-reports/dto/income-vs-expenses.dto";
 import type { IncomeBySourceResponse } from "../../built-in-reports/dto/income-by-source.dto";
-import type {
-  TriviaFact,
-  TriviaFactId,
-  TriviaFigure,
-  TriviaFigures,
-  TriviaTopic,
-} from "./trivia.types";
+import type { TriviaFact } from "./trivia.types";
+import { count, fact, money, month, percent, text } from "./trivia-figures";
 
 /** The reader's records, counted. */
 export interface TriviaRecordCounts {
@@ -32,7 +26,8 @@ export interface TriviaWarranties {
 
 /**
  * Everything the ledger can say over the window: the last twelve whole
- * months. Each source is `null` when it could not be read, which drops its
+ * months. The category, payee and source reports are read here for the ranked
+ * facts (`buildRankedTriviaFacts`); this builder does not use them. Each source is `null` when it could not be read, which drops its
  * facts and only those.
  */
 export interface TriviaLedgerInput {
@@ -48,71 +43,9 @@ export interface TriviaLedgerInput {
 /** Fewer months than this is not a year's picture of spending and saving. */
 const MIN_WINDOW_MONTHS = 3;
 
-const money = (value: number, currency: string): TriviaFigure => ({
-  kind: "money",
-  value: roundMoney(value),
-  currency,
-});
-const percent = (value: number): TriviaFigure => ({
-  kind: "percent",
-  value: roundMoney(value),
-});
-const count = (value: number): TriviaFigure => ({ kind: "count", value });
-const month = (value: string): TriviaFigure => ({
-  kind: "month",
-  value: value.slice(0, 7),
-});
-const text = (value: string): TriviaFigure => ({ kind: "text", value });
-
-function fact(
-  id: TriviaFactId,
-  topic: TriviaTopic,
-  figures: TriviaFigures,
-): TriviaFact {
-  return { id, topic, figures };
-}
-
-/**
- * A report total is a total only with every currency converted (its
- * `totalSpending`/`totalIncome` is `null` otherwise): a share of a partial sum
- * would be a share of nothing the reader can see.
- */
 function spendingFacts(input: TriviaLedgerInput): TriviaFact[] {
   const { currency } = input;
   const facts: TriviaFact[] = [];
-
-  const byCategory = input.spendingByCategory;
-  const categoryTotal = byCategory?.totalSpending ?? null;
-  if (byCategory && categoryTotal !== null && categoryTotal > 0) {
-    const top = byCategory.data
-      .filter((row) => row.categoryId !== null && row.total > 0)
-      .sort((a, b) => b.total - a.total)[0];
-    if (top) {
-      facts.push(
-        fact("spendingTopCategory", "spending", {
-          topCategoryName: text(top.categoryName),
-          topCategoryAmount: money(top.total, currency),
-          topCategoryPercent: percent((top.total / categoryTotal) * 100),
-        }),
-      );
-    }
-  }
-
-  const byPayee = input.spendingByPayee;
-  if (byPayee && byPayee.totalSpending !== null && byPayee.totalSpending > 0) {
-    const top = byPayee.data
-      // A row with no payee is the report's "Unknown" bucket, not a payee.
-      .filter((row) => row.payeeId !== null && row.total > 0)
-      .sort((a, b) => b.total - a.total)[0];
-    if (top) {
-      facts.push(
-        fact("spendingTopPayee", "spending", {
-          topPayeeName: text(top.payeeName),
-          topPayeeAmount: money(top.total, currency),
-        }),
-      );
-    }
-  }
 
   const flows = completeFlows(input.incomeVsExpenses);
   if (flows) {
@@ -142,7 +75,7 @@ function spendingFacts(input: TriviaLedgerInput): TriviaFact[] {
  * so a ledger begun last month arrives as twelve months, eleven of them
  * empty; counted from its first active month it is one, and says nothing.
  */
-function completeFlows(
+export function completeFlows(
   report: IncomeVsExpensesResponse | null,
 ): IncomeVsExpensesResponse | null {
   if (
@@ -184,22 +117,6 @@ function incomeFacts(input: TriviaLedgerInput): TriviaFact[] {
         fact("incomeSurplusMonths", "income", {
           surplusMonths: count(surplus),
           windowMonths: count(flows.data.length),
-        }),
-      );
-    }
-  }
-
-  const bySource = input.incomeBySource;
-  const incomeTotal = bySource?.totalIncome ?? null;
-  if (bySource && incomeTotal !== null && incomeTotal > 0) {
-    const top = bySource.data
-      .filter((row) => row.categoryId !== null && row.total > 0)
-      .sort((a, b) => b.total - a.total)[0];
-    if (top) {
-      facts.push(
-        fact("incomeTopSource", "income", {
-          topSourceName: text(top.categoryName),
-          topSourcePercent: percent((top.total / incomeTotal) * 100),
         }),
       );
     }

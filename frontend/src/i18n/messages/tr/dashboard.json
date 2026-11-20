@@ -54,8 +54,12 @@
       "warranties": "Garantiler"
     },
     "aiGenerated": "Rakamlarınızdan yapay zekayla yazıldı",
+    "units": {
+      "days": "{count, plural, one {{value} gün} other {{value} gün}}",
+      "years": "{count, plural, one {{value} yıl} other {{value} yıl}}"
+    },
     "facts": {
-      "netWorthSinceStart": "Net değeriniz {startMonth} ayında {startAmount} idi. O zamandan beri {startGain} arttı, yani yaklaşık {startMultiple} kat büyüdü.",
+      "netWorthSinceStart": "Net değeriniz {startMonth} ayında {startAmount} idi. O zamandan beri {startGain} arttı, büyüme katı {startMultiple}.",
       "netWorthBiggestJump": "{jumpMonth}, tek bir aydaki en büyük sıçramanız oldu. Net değer {jumpAmount} artarak {jumpPreviousMonth} ayındaki {jumpFrom} seviyesinden {jumpTo} seviyesine çıktı.",
       "netWorthHighPoint": "En yüksek noktanız {peakMonth} ayında {peakAmount} idi. Şu an bunun {peakBelow} altındasınız.",
       "netWorthAtHighPoint": "En yüksek noktanızdasınız: net değeriniz hiçbir zaman {currentHigh} seviyesinin üzerine çıkmadı.",
@@ -80,7 +84,263 @@
       "activityPayees": "Monize'da tuttuğunuz alacaklılar: {payeeCount}. Kategoriler: {categoryCount}.",
       "activityScheduled": "Monize'ın sizin için takip ettiği zamanlanmış işlemler: {scheduledCount}.",
       "warrantiesCovered": "Takip ettiğiniz ve hâlâ geçerli olan garantiler: {warrantyCount}.",
-      "warrantiesNextExpiry": "Süresi dolacak bir sonraki garanti {nextWarrantyName}, {nextWarrantyMonth} ayında."
+      "warrantiesNextExpiry": "Süresi dolacak bir sonraki garanti {nextWarrantyName}, {nextWarrantyMonth} ayında.",
+      "spendingMonthToDateLess": "{mtdThrough} tarihine kadar bu ay {mtdSpent} harcadınız; bu, geçen ayın aynı gününe kadarki tutardan ({mtdPreviousSpent}) {mtdDifference} daha az.",
+      "spendingMonthToDateMore": "{mtdThrough} tarihine kadar bu ay {mtdSpent} harcadınız; bu, geçen ayın aynı gününe kadarki tutardan ({mtdPreviousSpent}) {mtdDifference} daha fazla.",
+      "spendingLastDay": "{lastDayDate} tarihinde {lastDaySpent} harcadınız.",
+      "spendingLastSevenDays": "{weekFrom} tarihinden başlayan yedi günde {weekSpent} harcadınız.",
+      "spendingBiggestRecentPurchase": "Son yedi günün en büyük alışverişiniz {recentPurchaseDay} tarihinde {recentPurchasePayee} için harcadığınız {recentPurchaseAmount} oldu.",
+      "spendingNoSpendStreak": "{lastSpendDay} tarihinden beri {noSpendDays} boyunca kayıtlı harcama yok.",
+      "spendingDaysSincePayee": "{sincePayeeName} için en son {sincePayeeDay} tarihinde harcama yaptınız, bu {sincePayeeDays} önceydi.",
+      "activityBillsDueThisWeek": "Önümüzdeki yedi günde vadesi gelen faturalar: {billsDueCount}, toplam {billsDueTotal}.",
+      "activityNextBill": "Sıradaki faturanız {nextBillName}, tutarı {nextBillAmount}, vadesi {nextBillDate}.",
+      "spendingBudgetPace": "Ayın {budgetMonthPercent} kısmı geçerken {budgetName} bütçenizin ({budgetSpent} / {budgetTotal}) {budgetUsedPercent} kısmını kullandınız.",
+      "investmentsTopMoverUp": "{moverSession} tarihinde en çok hareket eden varlığınız {moverSymbol} oldu, {moverPercent} yükseldi ve pozisyonunuza {moverValueChange} ekledi.",
+      "investmentsTopMoverDown": "{moverSession} tarihinde en çok hareket eden varlığınız {moverSymbol} oldu, {moverPercent} düştü ve pozisyonunuzdan {moverValueChange} eksiltti.",
+      "activityAnniversary": "Bu hafta, Monize'daki ilk işleminizin ({anniversaryFirstDate}) üzerinden {anniversaryYears} geçmiş oluyor.",
+      "activityAccountAnniversary": "{anniversaryAccountName} hesabınız bu hafta Monize'da {anniversaryAccountYears} oluyor: ilk işlemi {anniversaryAccountSince} tarihindeydi.",
+      "netWorthMilestone": "{milestoneMonth} ayında net değeriniz {milestoneAmount} seviyesini geçti.",
+      "activityTransactionMilestone": "Son 30 günde {transactionMilestone} numaralı işleminizi kaydettiniz.",
+      "warrantiesExpiresSoon": "{expiringWarrantyName} garantinizin süresi {expiringWarrantyDays} sonra, {expiringWarrantyDate} tarihinde doluyor.",
+      "spendingYearAgoMonth": "Bir yıl önce, {yearAgoMonth} ayında {yearAgoSpent} harcadınız ve en büyük pay {yearAgoTopCategoryName} kategorisinindi.",
+      "netWorthYearAgoUp": "Bir yıl önce, {yearAgoNetWorthMonth} ayında net değeriniz {yearAgoNetWorth} idi. Şimdi {yearAgoNetWorthChange} daha yüksek.",
+      "netWorthYearAgoDown": "Bir yıl önce, {yearAgoNetWorthMonth} ayında net değeriniz {yearAgoNetWorth} idi. Şimdi {yearAgoNetWorthChange} daha düşük.",
+      "spendingTopCategoryWindow": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} giderlerinizin en büyük kısmı {topCategoryName} kategorisine gitti: {topCategoryAmount}, yani {topCategoryPercent}.",
+      "spendingTopPayeeWindow": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} en çok {topPayeeName} için harcadınız: {topPayeeAmount}.",
+      "incomeTopSourceWindow": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} gelirinizin {topSourcePercent} kadarı {topSourceName} kaynağından geldi.",
+      "spendingRankedCategory": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} giderlerinizde {rankedCategoryName} kategorisi {rankedCategoryRank}. sırada yer aldı: {rankedCategoryAmount} (toplamın {rankedCategoryPercent} kadarı).",
+      "spendingRankedPayee": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} en çok harcadığınız alacaklılar arasında {rankedPayeeName} {rankedPayeeRank}. sırada yer aldı: {rankedPayeeAmount}.",
+      "incomeRankedSource": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} gelir kaynaklarınız arasında {rankedSourceName} {rankedSourceRank}. sırada yer aldı ve gelirinizin {rankedSourcePercent} kadarını getirdi.",
+      "spendingPayeeInCategoryMonths": "Son on iki ayda {equivPayeeName} için {equivPayeeAmount} harcadınız. {equivCategoryName} kategorisindeki ortalama harcamanızın ay karşılığı: yaklaşık {equivCategoryMonths}.",
+      "spendingDailyAverage": "Son on iki ayda harcamanız günde ortalama yaklaşık {dailyAverageSpent} oldu.",
+      "incomeKeptCoversDays": "Son on iki ayda elinizde tuttuğunuz {keptCoversAmount}, harcamalarınızın yaklaşık {keptCoversDays} kadarını karşılar.",
+      "investmentsGainInMonthsOfSpending": "Yatırımlarınızın {gainCoversAmount} tutarındaki kazancı, ortalama harcamanızın ay karşılığı olarak: yaklaşık {gainCoversMonths}."
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "{startMonth} ayından beri net değeriniz {startAmount} seviyesinden {startGain} arttı. Büyüme katı: {startMultiple}.",
+        "c": "{startMonth} ayındaki {startAmount} ile karşılaştırınca net değer {startGain} arttı, büyüme katı {startMultiple}."
+      },
+      "netWorthBiggestJump": {
+        "b": "Net değer, {jumpPreviousMonth} ayındaki {jumpFrom} seviyesinden {jumpMonth} ayında {jumpTo} seviyesine çıktı; {jumpAmount} artışla tek aydaki en büyük sıçramanız.",
+        "c": "Tek aydaki en büyük sıçramanız olan {jumpAmount}, {jumpMonth} ayında geldi; net değer {jumpPreviousMonth} ayındaki {jumpFrom} seviyesinden {jumpTo} seviyesine çıktı."
+      },
+      "netWorthHighPoint": {
+        "b": "Net değer {peakMonth} ayında {peakAmount} ile zirve yaptı ve bugün bunun {peakBelow} altında.",
+        "c": "{peakMonth} ayında ulaştığınız {peakAmount} seviyesindeki en yüksek noktanızın {peakBelow} altındasınız."
+      },
+      "netWorthAtHighPoint": {
+        "b": "Net değeriniz hiçbir zaman {currentHigh} seviyesinden yüksek olmadı ve şu an tam orada.",
+        "c": "Bugünkü net değeriniz {currentHigh}; bu aynı zamanda en yüksek noktanız."
+      },
+      "netWorthBiggestDip": {
+        "b": "En büyük düşüşte net değer {dipPercent} azalarak {dipFromMonth} ayındaki {dipFromAmount} seviyesinden {dipToMonth} ayında {dipToAmount} seviyesine indi.",
+        "c": "{dipFromMonth} ile {dipToMonth} arasında net değer {dipFromAmount} seviyesinden {dipToAmount} seviyesine düştü; {dipPercent} düşüşle en büyük düşüş."
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "Net değer, {dipFromMonth} ayındaki {dipFromAmount} seviyesinden {dipToMonth} ayında {dipToAmount} seviyesine inen en büyük düşüşten {dipRecoveredMonth} ayına kadar toparlandı.",
+        "c": "{dipFromMonth} ayında net değer {dipFromAmount} idi, {dipToMonth} ayında {dipToAmount} oldu; bu en büyük düşüştü. {dipRecoveredMonth} ayına kadar toparlandı."
+      },
+      "netWorthLargestAsset": {
+        "b": "{assetValue} değerindeki {assetName}, varlıklarınızın {assetPercent} kadarını oluşturuyor.",
+        "c": "{assetName} varlıklarınızın {assetPercent} kadarını oluşturuyor ve değeri {assetValue}."
+      },
+      "investmentsShareOfAssets": {
+        "b": "Varlıklarınızın {investmentsPercent} kadarı yatırımlarda; toplam değeri {investmentsValue}.",
+        "c": "Yatırımlar varlıklarınızın {investmentsPercent} kadarını oluşturuyor; değeri {investmentsValue}."
+      },
+      "investmentsGain": {
+        "b": "{gainCostBasis} maliyet bazına göre yatırımlarınız {gainAmount}, yani {gainPercent} arttı.",
+        "c": "Yatırımlarınız {gainCostBasis} maliyet bazının {gainPercent} üzerinde; kazanç {gainAmount}."
+      },
+      "investmentsLoss": {
+        "b": "{gainCostBasis} maliyet bazına göre yatırımlarınız {gainAmount}, yani {gainPercent} azaldı.",
+        "c": "Yatırımlarınız {gainCostBasis} maliyet bazının {gainPercent} altında; kayıp {gainAmount}."
+      },
+      "investmentsCagr": {
+        "b": "CAGR olarak ölçüldüğünde yatırımlarınız yılda yaklaşık {cagrPercent} getiri sağladı.",
+        "c": "Yaklaşık {cagrPercent}: bu, yatırımlarınızın yıllıklandırılmış getirisi (CAGR)."
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol} en büyük varlığınız; {holdingAccounts} içinde {holdingValue} değerinde ve portföyün yaklaşık {holdingPercent} kadarı.",
+        "c": "Portföyünüzün yaklaşık {holdingPercent} kadarı, yani {holdingAccounts} içindeki {holdingValue}, en büyük varlığınız olan {holdingSymbol} içinde."
+      },
+      "investmentsBestPerformer": {
+        "b": "En iyi performans gösteren {bestSymbol}, {bestPercent} yükseldi: maliyeti {bestCost} idi ve şimdi {bestValue} değerinde.",
+        "c": "{bestPercent} yükselişle {bestSymbol} varlıklarınızın başında geliyor. Maliyeti {bestCost} iken değeri {bestValue} oldu."
+      },
+      "investmentsForeignAccount": {
+        "b": "{foreignName} hesabınız {foreignCurrency} cinsinden {foreignBalance} tutarında varlık tutuyor; bu, yaklaşık {foreignRate} kuruyla {foreignConverted} eder.",
+        "c": "Yaklaşık {foreignRate} kuruyla, {foreignName} hesabınızdaki ({foreignCurrency}) {foreignBalance} tutarındaki varlıklar {foreignConverted} eder."
+      },
+      "investmentsLargestAccount": {
+        "b": "En büyük yatırım hesabınız {largestName}, değeri {largestValue}.",
+        "c": "Yatırım hesaplarınız arasında en büyüğü {largestName}, tutarı {largestValue}."
+      },
+      "spendingTopCategory": {
+        "b": "Son on iki ayda en büyük kategoriniz {topCategoryName} oldu; giderlerinizin {topCategoryPercent} kadarını, yani {topCategoryAmount} tutarını aldı.",
+        "c": "Son on iki ayda en çok harcadığınız kategori {topCategoryName} oldu: {topCategoryAmount}, yani toplamın {topCategoryPercent} kadarı."
+      },
+      "spendingTopPayee": {
+        "b": "Son on iki ayda {topPayeeName}, paranızdan diğer tüm alacaklılardan daha fazlasını aldı: {topPayeeAmount}.",
+        "c": "Son on iki ayda en büyük alacaklınız {topPayeeName} oldu; {topPayeeAmount} harcadınız."
+      },
+      "spendingBiggestMonth": {
+        "b": "Harcamanız {biggestSpendMonth} ayında {biggestSpendAmount} ile zirve yaptı; son on iki ayın en yüksek ayı.",
+        "c": "Son on iki ayın içinde en çok harcama {biggestSpendMonth} ayında yapıldı: {biggestSpendAmount}."
+      },
+      "incomeKeptShare": {
+        "b": "Son on iki ayda gelirinizin {keptPercent} kadarı elinizde kaldı; bu {keptAmount} eder.",
+        "c": "Son on iki ayda gelen tüm paranın içinden {keptAmount}, yani {keptPercent} kadarını elinizde tuttunuz."
+      },
+      "incomeSurplusMonths": {
+        "b": "Son {windowMonths} ayın içinde gelenin çıkandan fazla olduğu aylar: {surplusMonths}.",
+        "c": "Son {windowMonths} ayın içinde harcadığınızdan fazlasını kazandığınız aylar: {surplusMonths}."
+      },
+      "incomeTopSource": {
+        "b": "Son on iki ayda gelirinizin {topSourcePercent} kadarı {topSourceName} kaynağından geldi.",
+        "c": "Son on iki ayda gelirinizin {topSourcePercent} kadarı {topSourceName} kaynağından oluştu."
+      },
+      "activityTransactions": {
+        "b": "{firstTransactionMonth} ayından itibaren kayıtlarınızdaki işlemler: {transactionCount}.",
+        "c": "{firstTransactionMonth} ayından beri kaydettiğiniz işlemler: {transactionCount}."
+      },
+      "activityPayees": {
+        "b": "Monize'da tuttuğunuz sayılar: alacaklılar {payeeCount}, kategoriler {categoryCount}.",
+        "c": "Monize'da alacaklılarınız ({payeeCount}) ve kategorileriniz ({categoryCount}) bulunuyor."
+      },
+      "activityScheduled": {
+        "b": "Monize zamanlanmış işlemlerinizi takip ediyor; toplam {scheduledCount}.",
+        "c": "Monize'da kurulmuş ve sizin için zamanlanmış işlemler: {scheduledCount}."
+      },
+      "warrantiesCovered": {
+        "b": "Takip ettiğiniz garantilerden hâlâ geçerli olanlar: {warrantyCount}.",
+        "c": "Takip ettiğiniz garantilerden süresi henüz dolmamış olanlar: {warrantyCount}."
+      },
+      "warrantiesNextExpiry": {
+        "b": "{nextWarrantyMonth} ayında, {nextWarrantyName} garantiniz süresi dolacak bir sonraki garanti.",
+        "c": "Garantileriniz arasında süresi dolacak bir sonraki: {nextWarrantyName}, {nextWarrantyMonth} ayında."
+      },
+      "spendingMonthToDateLess": {
+        "b": "{mtdThrough} tarihine kadar bu ay {mtdSpent} harcadınız; geçen ayın aynı gününe kadar harcanan {mtdPreviousSpent} tutarından {mtdDifference} daha az.",
+        "c": "Geçen ayın aynı gününe kadar {mtdPreviousSpent} harcamıştınız. Bu ay {mtdThrough} tarihine kadar {mtdSpent}; yani {mtdDifference} daha az."
+      },
+      "spendingMonthToDateMore": {
+        "b": "{mtdThrough} tarihine kadar bu ay {mtdSpent} harcadınız; geçen ayın aynı gününe kadar harcanan {mtdPreviousSpent} tutarından {mtdDifference} daha fazla.",
+        "c": "Geçen ayın aynı gününe kadar {mtdPreviousSpent} harcamıştınız. Bu ay {mtdThrough} tarihine kadar {mtdSpent}; yani {mtdDifference} daha fazla."
+      },
+      "spendingLastDay": {
+        "b": "{lastDayDate} tarihindeki harcamanız {lastDaySpent} tuttu.",
+        "c": "{lastDayDate} tarihinde {lastDaySpent} çıktı."
+      },
+      "spendingLastSevenDays": {
+        "b": "{weekFrom} tarihinden başlayan yedi günlük harcamanız {weekSpent} tuttu.",
+        "c": "{weekFrom} tarihinden başlayan yedi günde harcadığınız tutar {weekSpent}."
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "{recentPurchaseDay} tarihinde {recentPurchasePayee} için {recentPurchaseAmount} harcadınız; bu, son yedi günün en büyük alışverişiniz.",
+        "c": "{recentPurchaseDay} tarihinde {recentPurchasePayee} için harcadığınız {recentPurchaseAmount}, son yedi günde yaptığınız en büyük alışveriş."
+      },
+      "spendingNoSpendStreak": {
+        "b": "{noSpendDays} boyunca kayıtlı harcama yok: son harcamanız {lastSpendDay} tarihindeydi.",
+        "c": "{lastSpendDay} tarihinden beri {noSpendDays} boyunca kayıtlı harcama bulunmuyor."
+      },
+      "spendingDaysSincePayee": {
+        "b": "{sincePayeeName} için en son {sincePayeeDay} tarihinde harcama yaptınız; bu {sincePayeeDays} önceydi.",
+        "c": "{sincePayeeName} için son harcamanız {sincePayeeDay} tarihindeydi, {sincePayeeDays} önce."
+      },
+      "activityBillsDueThisWeek": {
+        "b": "Önümüzdeki yedi günde vadesi gelenler, fatura sayısı olarak: {billsDueCount}, toplamı {billsDueTotal}.",
+        "c": "Önümüzdeki yedi günde vadesi gelen faturalar: {billsDueCount}, toplam {billsDueTotal}."
+      },
+      "activityNextBill": {
+        "b": "Sıradaki faturanız {nextBillName}: {nextBillAmount}, vadesi {nextBillDate}.",
+        "c": "Vadesi {nextBillDate} olan sıradaki faturanız {nextBillName}, tutarı {nextBillAmount}."
+      },
+      "spendingBudgetPace": {
+        "b": "Ayın {budgetMonthPercent} kısmı geçmişken, {budgetName} bütçenizin {budgetTotal} tutarından {budgetSpent} harcadınız; yani {budgetUsedPercent}.",
+        "c": "{budgetName} bütçenizin {budgetUsedPercent} kısmı kullanıldı ({budgetSpent} / {budgetTotal}) ve ayın {budgetMonthPercent} kısmı geçti."
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSession} tarihinde portföyünüzde en çok hareket eden {moverSymbol} oldu: {moverPercent} yükseldi, pozisyonunuza {moverValueChange} ekledi.",
+        "c": "{moverSession} tarihinde en çok hareket eden varlığınız {moverSymbol} oldu, {moverPercent} yükseldi; pozisyonunuzda {moverValueChange} kazanç."
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSession} tarihinde portföyünüzde en çok hareket eden {moverSymbol} oldu: {moverPercent} düştü, pozisyonunuzdan {moverValueChange} eksiltti.",
+        "c": "{moverSession} tarihinde en çok hareket eden varlığınız {moverSymbol} oldu, {moverPercent} düştü; pozisyonunuzda {moverValueChange} kayıp."
+      },
+      "activityAnniversary": {
+        "b": "Monize'daki ilk işleminiz {anniversaryFirstDate} tarihindeydi ve bu hafta üzerinden {anniversaryYears} geçmiş oluyor.",
+        "c": "Monize'da ilk işleminizi {anniversaryFirstDate} tarihinde kaydettiniz; bu hafta üzerinden {anniversaryYears} geçmiş oluyor."
+      },
+      "activityAccountAnniversary": {
+        "b": "{anniversaryAccountName} hesabınız Monize'da ilk kez {anniversaryAccountSince} tarihinde göründü ve bu hafta {anniversaryAccountYears} oluyor.",
+        "c": "İlk işlemi {anniversaryAccountSince} tarihinden sayıldığında, {anniversaryAccountName} hesabınız bu hafta Monize'da {anniversaryAccountYears} oluyor."
+      },
+      "netWorthMilestone": {
+        "b": "Net değeriniz {milestoneMonth} ayında {milestoneAmount} seviyesini geçti.",
+        "c": "Net değeriniz {milestoneAmount} seviyesini {milestoneMonth} ayında aştı."
+      },
+      "activityTransactionMilestone": {
+        "b": "{transactionMilestone} numaralı işlem, son 30 gün içinde kayıtlarınıza girdi.",
+        "c": "Son 30 günde işlem sayınız {transactionMilestone} numaralı işleme ulaştı."
+      },
+      "warrantiesExpiresSoon": {
+        "b": "{expiringWarrantyDate} tarihinde, yani {expiringWarrantyDays} sonra, {expiringWarrantyName} garantinizin süresi doluyor.",
+        "c": "{expiringWarrantyName} garantiniz {expiringWarrantyDate} tarihinde bitiyor; bu, {expiringWarrantyDays} sonra."
+      },
+      "spendingYearAgoMonth": {
+        "b": "Bir yıl önce, {yearAgoMonth} ayında {yearAgoSpent} harcadınız; en büyük pay {yearAgoTopCategoryName} kategorisinindi.",
+        "c": "Bir yıl önce, {yearAgoMonth} ayında harcadığınız {yearAgoSpent} tutarının en büyük kısmı {yearAgoTopCategoryName} kategorisine gitti."
+      },
+      "netWorthYearAgoUp": {
+        "b": "Net değeriniz, bir yıl önce {yearAgoNetWorthMonth} ayındaki {yearAgoNetWorth} seviyesinden {yearAgoNetWorthChange} daha yüksek.",
+        "c": "Bir yılda {yearAgoNetWorthChange} artış: {yearAgoNetWorthMonth} ayındaki {yearAgoNetWorth} seviyesinden şimdiki düzeye."
+      },
+      "netWorthYearAgoDown": {
+        "b": "Net değeriniz, bir yıl önce {yearAgoNetWorthMonth} ayındaki {yearAgoNetWorth} seviyesinden {yearAgoNetWorthChange} daha düşük.",
+        "c": "Bir yılda {yearAgoNetWorthChange} azalış: {yearAgoNetWorthMonth} ayındaki {yearAgoNetWorth} seviyesinden şimdiki düzeye."
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} en büyük gider kategoriniz {topCategoryName} oldu: {topCategoryAmount}, yani giderlerinizin {topCategoryPercent} kadarı.",
+        "c": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} giderlerinizin en büyük kısmını {topCategoryName} kategorisi aldı: {topCategoryAmount}, yani toplamın {topCategoryPercent} kadarı."
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} {topPayeeName}, paranızdan diğer tüm alacaklılardan daha fazlasını aldı: {topPayeeAmount}.",
+        "c": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} en çok {topPayeeName} için harcadınız: {topPayeeAmount}."
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} gelirinizin {topSourcePercent} kadarı {topSourceName} kaynağından geldi.",
+        "c": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} gelirinizin {topSourcePercent} kadarının kaynağı {topSourceName} oldu."
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} gider kategorilerinizde {rankedCategoryRank}. sırada {rankedCategoryName} yer aldı: {rankedCategoryAmount}, yani toplamın {rankedCategoryPercent} kadarı.",
+        "c": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} {rankedCategoryName} kategorisi gider kategorileriniz arasında {rankedCategoryRank}. sırada yer aldı: {rankedCategoryAmount} (toplamın {rankedCategoryPercent} kadarı)."
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} {rankedPayeeName} için {rankedPayeeAmount} harcadınız; harcamaya göre alacaklılar arasında {rankedPayeeRank}. sıradaydı.",
+        "c": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} en çok harcadığınız alacaklılar arasında {rankedPayeeRank}. sırada {rankedPayeeName} yer aldı: {rankedPayeeAmount}."
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} {rankedSourceName}, gelirinizin {rankedSourcePercent} kadarını getirdi ve kaynaklarınız arasında {rankedSourceRank}. sıradaydı.",
+        "c": "{window, select, d30 {Son 30 günde} d90 {Son 90 günde} ytd {Bu yılın başından beri} m12 {Son on iki ayda} all {Kayıtlarınızın başından beri} other {Bu dönemde}} gelir kaynaklarınız arasında {rankedSourceRank}. sırada {rankedSourceName} yer aldı: gelirin {rankedSourcePercent} kadarı."
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "Son on iki ayda {equivPayeeName} için harcadığınız {equivPayeeAmount}, {equivCategoryName} kategorisindeki ortalama harcamanızın ay karşılığı olarak: yaklaşık {equivCategoryMonths}.",
+        "c": "Son on iki ayda {equivPayeeName} için harcanan: {equivPayeeAmount}; {equivCategoryName} kategorisindeki ortalama harcamanızın ay karşılığı yaklaşık {equivCategoryMonths}."
+      },
+      "spendingDailyAverage": {
+        "b": "Son on iki aydaki harcamanız günde yaklaşık {dailyAverageSpent} ediyor.",
+        "c": "Günde yaklaşık {dailyAverageSpent}: bu, son on iki aydaki ortalama harcamanız."
+      },
+      "incomeKeptCoversDays": {
+        "b": "Son on iki ayda elinizde tuttuğunuz {keptCoversAmount}, harcamalarınızın yaklaşık {keptCoversDays} kadarını karşılar.",
+        "c": "Harcamalarınızın yaklaşık {keptCoversDays} kadarı, son on iki ayda elinizde tuttuğunuz {keptCoversAmount} ile karşılanır."
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "Ortalama harcamanızın ay karşılığı olarak, yatırımlarınızın kazandığı {gainCoversAmount} yaklaşık {gainCoversMonths} eder.",
+        "c": "Yatırımlarınız {gainCoversAmount} kazandı. Bunun ortalama harcamanızın kaç ayına denk geldiği: yaklaşık {gainCoversMonths}."
+      }
     }
   },
   "favouriteAccounts": {

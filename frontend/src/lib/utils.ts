@@ -210,6 +210,7 @@ export type ChartDatePattern =
   | 'MMMM yyyy' // January 2025
   | 'MMM d' // Jan 5
   | 'MMM d, yyyy' // Jan 5, 2025
+  | 'MMMM d, yyyy' // January 5, 2025
   | 'MMM d HH:mm' // Jan 5, 14:30
   | 'HH:mm' // 14:30
   | 'yyyy' // 2025
@@ -222,6 +223,7 @@ const CHART_DATE_OPTIONS: Record<ChartDatePattern, Intl.DateTimeFormatOptions> =
   'MMMM yyyy': { month: 'long', year: 'numeric' },
   'MMM d': { month: 'short', day: 'numeric' },
   'MMM d, yyyy': { month: 'short', day: 'numeric', year: 'numeric' },
+  'MMMM d, yyyy': { month: 'long', day: 'numeric', year: 'numeric' },
   'MMM d HH:mm': { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false },
   'HH:mm': { hour: '2-digit', minute: '2-digit', hour12: false },
   yyyy: { year: 'numeric' },

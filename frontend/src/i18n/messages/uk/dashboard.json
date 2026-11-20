@@ -54,8 +54,12 @@
       "warranties": "Гарантії"
     },
     "aiGenerated": "Текст створено ШІ на основі ваших даних",
+    "units": {
+      "days": "{count, plural, one {{value} день} few {{value} дні} many {{value} днів} other {{value} дня}}",
+      "years": "{count, plural, one {{value} рік} few {{value} роки} many {{value} років} other {{value} року}}"
+    },
     "facts": {
-      "netWorthSinceStart": "У {startMonth} ваші чисті активи становили {startAmount}. Відтоді вони зросли на {startGain}, тобто приблизно у {startMultiple} раза.",
+      "netWorthSinceStart": "У {startMonth} ваші чисті активи становили {startAmount}. Відтоді вони зросли на {startGain}. Кратність зростання: {startMultiple}.",
       "netWorthBiggestJump": "{jumpMonth} став вашим найбільшим стрибком за один місяць. Чисті активи зросли на {jumpAmount}: з {jumpFrom} у {jumpPreviousMonth} до {jumpTo}.",
       "netWorthHighPoint": "Ваш пік становив {peakAmount} у {peakMonth}. Зараз ви на {peakBelow} нижче.",
       "netWorthAtHighPoint": "Ви на піку: чисті активи ніколи не були вищими за {currentHigh}.",
@@ -80,7 +84,263 @@
       "activityPayees": "Одержувачів платежів у Monize: {payeeCount}. Категорій: {categoryCount}.",
       "activityScheduled": "Запланованих транзакцій, які Monize відстежує для вас: {scheduledCount}.",
       "warrantiesCovered": "Гарантії, які ви відстежуєте і які ще діють: {warrantyCount}.",
-      "warrantiesNextExpiry": "Наступна гарантія, термін дії якої спливає, це {nextWarrantyName}, у {nextWarrantyMonth}."
+      "warrantiesNextExpiry": "Наступна гарантія, термін дії якої спливає, це {nextWarrantyName}, у {nextWarrantyMonth}.",
+      "spendingMonthToDateLess": "Станом на {mtdThrough} цього місяця ви витратили {mtdSpent}. Це на {mtdDifference} менше, ніж до того самого дня минулого місяця ({mtdPreviousSpent}).",
+      "spendingMonthToDateMore": "Станом на {mtdThrough} цього місяця ви витратили {mtdSpent}. Це на {mtdDifference} більше, ніж до того самого дня минулого місяця ({mtdPreviousSpent}).",
+      "spendingLastDay": "Витрати за день, {lastDayDate}: {lastDaySpent}.",
+      "spendingLastSevenDays": "Витрати за сім днів, починаючи з дати {weekFrom}: {weekSpent}.",
+      "spendingBiggestRecentPurchase": "Найбільша покупка за останні сім днів: {recentPurchaseAmount}, одержувач {recentPurchasePayee}, день {recentPurchaseDay}.",
+      "spendingNoSpendStreak": "Витрат не записано вже {noSpendDays}, з дати {lastSpendDay}.",
+      "spendingDaysSincePayee": "Востаннє ви витрачали в одержувача «{sincePayeeName}» у день {sincePayeeDay}, {sincePayeeDays} тому.",
+      "activityBillsDueThisWeek": "Рахунків до сплати в найближчі сім днів: {billsDueCount}, на суму {billsDueTotal}.",
+      "activityNextBill": "Ваш наступний рахунок: «{nextBillName}», сума {nextBillAmount}, термін {nextBillDate}.",
+      "spendingBudgetPace": "Бюджет «{budgetName}» використано на {budgetUsedPercent} ({budgetSpent} із {budgetTotal}), а від місяця минуло {budgetMonthPercent}.",
+      "investmentsTopMoverUp": "Найбільше рухався папір {moverSymbol}, сесія {moverSession}: зростання на {moverPercent}, до вашої позиції додалося {moverValueChange}.",
+      "investmentsTopMoverDown": "Найбільше рухався папір {moverSymbol}, сесія {moverSession}: падіння на {moverPercent}, ваша позиція зменшилася на {moverValueChange}.",
+      "activityAnniversary": "Цього тижня виповнюється {anniversaryYears} з вашої першої транзакції в Monize, дата: {anniversaryFirstDate}.",
+      "activityAccountAnniversary": "Рахунку «{anniversaryAccountName}» цього тижня виповнюється {anniversaryAccountYears} у Monize. Перша транзакція, дата: {anniversaryAccountSince}.",
+      "netWorthMilestone": "Місяць, коли ваші чисті активи перевищили {milestoneAmount}: {milestoneMonth}.",
+      "activityTransactionMilestone": "За останні 30 днів у ваших реєстрах з'явилася транзакція з номером {transactionMilestone}.",
+      "warrantiesExpiresSoon": "Гарантія «{expiringWarrantyName}» спливає через {expiringWarrantyDays}, дата: {expiringWarrantyDate}.",
+      "spendingYearAgoMonth": "Рік тому, місяць {yearAgoMonth}: ви витратили {yearAgoSpent}, найбільше припало на «{yearAgoTopCategoryName}».",
+      "netWorthYearAgoUp": "Рік тому, місяць {yearAgoNetWorthMonth}, ваші чисті активи становили {yearAgoNetWorth}. Тепер вони вищі на {yearAgoNetWorthChange}.",
+      "netWorthYearAgoDown": "Рік тому, місяць {yearAgoNetWorthMonth}, ваші чисті активи становили {yearAgoNetWorth}. Тепер вони нижчі на {yearAgoNetWorthChange}.",
+      "spendingTopCategoryWindow": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} найбільше ваших витрат припало на «{topCategoryName}»: {topCategoryAmount}, або {topCategoryPercent}.",
+      "spendingTopPayeeWindow": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} найбільше ви витратили в одержувача «{topPayeeName}»: {topPayeeAmount}.",
+      "incomeTopSourceWindow": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} джерело «{topSourceName}» принесло {topSourcePercent} вашого доходу.",
+      "spendingRankedCategory": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} категорія «{rankedCategoryName}» у списку ваших витрат: місце {rankedCategoryRank}, {rankedCategoryAmount} ({rankedCategoryPercent} від підсумку).",
+      "spendingRankedPayee": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} одержувач «{rankedPayeeName}» серед тих, у кого ви витрачали найбільше: місце {rankedPayeeRank}, {rankedPayeeAmount}.",
+      "incomeRankedSource": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} джерело «{rankedSourceName}» серед ваших джерел доходу: місце {rankedSourceRank}, {rankedSourcePercent} доходу.",
+      "spendingPayeeInCategoryMonths": "За останні дванадцять місяців в одержувача «{equivPayeeName}» ви витратили {equivPayeeAmount}. У місяцях середніх витрат на «{equivCategoryName}»: близько {equivCategoryMonths}.",
+      "spendingDailyAverage": "За останні дванадцять місяців ваші витрати в середньому становили близько {dailyAverageSpent} на день.",
+      "incomeKeptCoversDays": "Сума {keptCoversAmount}, збережена за останні дванадцять місяців, покриває ваші витрати приблизно на такий строк: {keptCoversDays}.",
+      "investmentsGainInMonthsOfSpending": "Дохід ваших інвестицій, {gainCoversAmount}, у місяцях ваших середніх витрат: близько {gainCoversMonths}."
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "Від {startMonth} ваші чисті активи зросли на {startGain}, починаючи з {startAmount}. Кратність зростання: {startMultiple}.",
+        "c": "Чисті активи: {startAmount} у {startMonth}. Приріст {startGain}, кратність зростання {startMultiple}."
+      },
+      "netWorthBiggestJump": {
+        "b": "Чисті активи зросли на {jumpAmount}: з {jumpFrom} у {jumpPreviousMonth} до {jumpTo} у {jumpMonth}. Це ваш найрізкіший стрибок за один місяць.",
+        "c": "Ваш найрізкіший стрибок за один місяць, {jumpAmount}, припав на {jumpMonth}: чисті активи піднялися з {jumpFrom} у {jumpPreviousMonth} до {jumpTo}."
+      },
+      "netWorthHighPoint": {
+        "b": "Чисті активи досягли піку в {peakAmount} у {peakMonth}, а зараз нижчі за нього на {peakBelow}.",
+        "c": "Ви нижче свого піку в {peakAmount}, досягнутого у {peakMonth}, на {peakBelow}."
+      },
+      "netWorthAtHighPoint": {
+        "b": "Чисті активи ніколи не були вищими за {currentHigh}, і зараз ви саме там.",
+        "c": "Сьогодні ваші чисті активи становлять {currentHigh}, і це також ваш пік."
+      },
+      "netWorthBiggestDip": {
+        "b": "Під час найбільшого падіння чисті активи знизилися на {dipPercent}: з {dipFromAmount} у {dipFromMonth} до {dipToAmount} у {dipToMonth}.",
+        "c": "З {dipFromMonth} по {dipToMonth} чисті активи впали з {dipFromAmount} до {dipToAmount}, тобто на {dipPercent}. Це ваше найбільше падіння."
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "До {dipRecoveredMonth} чисті активи відновилися після найбільшого падіння, яке тривало з {dipFromAmount} у {dipFromMonth} до {dipToAmount} у {dipToMonth}.",
+        "c": "У {dipFromMonth} чисті активи становили {dipFromAmount}, а до {dipToMonth} стали {dipToAmount}: це найбільше падіння. До {dipRecoveredMonth} ви відновилися."
+      },
+      "netWorthLargestAsset": {
+        "b": "Вартість: {assetValue}. {assetName} становить {assetPercent} ваших активів.",
+        "c": "{assetName} займає {assetPercent} ваших активів і коштує {assetValue}."
+      },
+      "investmentsShareOfAssets": {
+        "b": "{investmentsPercent} ваших активів вкладено в інвестиції, їхня загальна вартість {investmentsValue}.",
+        "c": "Інвестиції становлять {investmentsPercent} ваших активів, їхня вартість {investmentsValue}."
+      },
+      "investmentsGain": {
+        "b": "До базової вартості {gainCostBasis} ваші інвестиції додали {gainAmount}, або {gainPercent}.",
+        "c": "Ваші інвестиції на {gainPercent} вищі за базову вартість {gainCostBasis}: приріст {gainAmount}."
+      },
+      "investmentsLoss": {
+        "b": "До базової вартості {gainCostBasis} ваші інвестиції втратили {gainAmount}, або {gainPercent}.",
+        "c": "Ваші інвестиції на {gainPercent} нижчі за базову вартість {gainCostBasis}: збиток {gainAmount}."
+      },
+      "investmentsCagr": {
+        "b": "У перерахунку на CAGR ваші інвестиції приносять близько {cagrPercent} на рік.",
+        "c": "Близько {cagrPercent}: це річна дохідність (CAGR) ваших інвестицій."
+      },
+      "investmentsBiggestHolding": {
+        "b": "Ваша найбільша позиція: {holdingSymbol}, {holdingValue} у {holdingAccounts}, приблизно {holdingPercent} портфеля.",
+        "c": "Приблизно {holdingPercent} вашого портфеля, тобто {holdingValue} у {holdingAccounts}, припадає на {holdingSymbol}, вашу найбільшу позицію."
+      },
+      "investmentsBestPerformer": {
+        "b": "Найкращий результат у {bestSymbol}: зростання на {bestPercent}. Купівля коштувала {bestCost}, зараз це {bestValue}.",
+        "c": "Зростання на {bestPercent} ставить {bestSymbol} на перше місце серед ваших позицій. Вартість купівлі {bestCost}, поточна вартість {bestValue}."
+      },
+      "investmentsForeignAccount": {
+        "b": "Ваш рахунок {foreignName} ведеться у валюті {foreignCurrency}, на ньому {foreignBalance}, що дорівнює {foreignConverted} за курсом близько {foreignRate}.",
+        "c": "За курсом близько {foreignRate} активи на {foreignBalance} на вашому рахунку {foreignName} ({foreignCurrency}) дорівнюють {foreignConverted}."
+      },
+      "investmentsLargestAccount": {
+        "b": "Ваш найбільший інвестиційний рахунок: {largestName}, вартість {largestValue}.",
+        "c": "Серед ваших інвестиційних рахунків найбільший: {largestName}, {largestValue}."
+      },
+      "spendingTopCategory": {
+        "b": "За останні дванадцять місяців головною категорією витрат стала «{topCategoryName}»: {topCategoryPercent} витрат, або {topCategoryAmount}.",
+        "c": "Категорія з найбільшими витратами за останні дванадцять місяців: «{topCategoryName}», {topCategoryAmount}, або {topCategoryPercent}."
+      },
+      "spendingTopPayee": {
+        "b": "За останні дванадцять місяців одержувач «{topPayeeName}» отримав від вас більше за всіх: {topPayeeAmount}.",
+        "c": "Найбільший одержувач ваших грошей за останні дванадцять місяців: «{topPayeeName}», витрачено {topPayeeAmount}."
+      },
+      "spendingBiggestMonth": {
+        "b": "Пік витрат припав на {biggestSpendMonth}: {biggestSpendAmount}. Це найвитратніший місяць з останніх дванадцяти.",
+        "c": "Найбільші витрати з останніх дванадцяти місяців припали на {biggestSpendMonth}: {biggestSpendAmount}."
+      },
+      "incomeKeptShare": {
+        "b": "За останні дванадцять місяців збережено {keptPercent} доходу, тобто {keptAmount}.",
+        "c": "З усіх надходжень за останні дванадцять місяців ви зберегли {keptAmount}, або {keptPercent}."
+      },
+      "incomeSurplusMonths": {
+        "b": "Місяці з останніх {windowMonths}, у які надійшло більше, ніж пішло: {surplusMonths}.",
+        "c": "Місяці з останніх {windowMonths}, у які ви отримали більше, ніж витратили: {surplusMonths}."
+      },
+      "incomeTopSource": {
+        "b": "За останні дванадцять місяців {topSourcePercent} вашого доходу надійшло з джерела «{topSourceName}».",
+        "c": "Ваш дохід за останні дванадцять місяців на {topSourcePercent} складається з надходжень від «{topSourceName}»."
+      },
+      "activityTransactions": {
+        "b": "Починаючи з {firstTransactionMonth}, транзакцій у ваших реєстрах: {transactionCount}.",
+        "c": "Від {firstTransactionMonth} ви записали транзакцій: {transactionCount}."
+      },
+      "activityPayees": {
+        "b": "Що ви зберігаєте в Monize: одержувачів {payeeCount}, категорій {categoryCount}.",
+        "c": "У Monize зберігаються ваші одержувачі ({payeeCount}) і категорії ({categoryCount})."
+      },
+      "activityScheduled": {
+        "b": "Monize відстежує заплановані транзакції, усього: {scheduledCount}.",
+        "c": "Налаштовано в Monize і заплановано для вас транзакцій: {scheduledCount}."
+      },
+      "warrantiesCovered": {
+        "b": "З гарантій, які ви відстежуєте, ще діють: {warrantyCount}.",
+        "c": "З гарантій, які ви відстежуєте, термін яких не сплив: {warrantyCount}."
+      },
+      "warrantiesNextExpiry": {
+        "b": "Наступною спливає гарантія «{nextWarrantyName}», місяць: {nextWarrantyMonth}.",
+        "c": "З ваших гарантій наступною спливає «{nextWarrantyName}», місяць: {nextWarrantyMonth}."
+      },
+      "spendingMonthToDateLess": {
+        "b": "Станом на {mtdThrough} ви витратили цього місяця {mtdSpent}, що на {mtdDifference} менше, ніж {mtdPreviousSpent} до того самого дня минулого місяця.",
+        "c": "До того самого дня минулого місяця ви витратили {mtdPreviousSpent}. Станом на {mtdThrough} цього місяця: {mtdSpent}, тобто на {mtdDifference} менше."
+      },
+      "spendingMonthToDateMore": {
+        "b": "Станом на {mtdThrough} ви витратили цього місяця {mtdSpent}, що на {mtdDifference} більше, ніж {mtdPreviousSpent} до того самого дня минулого місяця.",
+        "c": "До того самого дня минулого місяця ви витратили {mtdPreviousSpent}. Станом на {mtdThrough} цього місяця: {mtdSpent}, тобто на {mtdDifference} більше."
+      },
+      "spendingLastDay": {
+        "b": "Ваші витрати за {lastDayDate} склали {lastDaySpent}.",
+        "c": "{lastDayDate}: витрачено {lastDaySpent}."
+      },
+      "spendingLastSevenDays": {
+        "b": "Ваші витрати за сім днів, починаючи з {weekFrom}, склали {weekSpent}.",
+        "c": "За сім днів, починаючи з {weekFrom}, ви витратили {weekSpent}."
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "День {recentPurchaseDay}: ви витратили {recentPurchaseAmount} в одержувача «{recentPurchasePayee}». Це найбільша покупка за останні сім днів.",
+        "c": "Одержувач «{recentPurchasePayee}», день {recentPurchaseDay}, сума {recentPurchaseAmount}: найбільша покупка, яку ви зробили за останні сім днів."
+      },
+      "spendingNoSpendStreak": {
+        "b": "Без записаних витрат уже {noSpendDays}: остання витрата була {lastSpendDay}.",
+        "c": "Від {lastSpendDay} витрат не записано вже {noSpendDays}."
+      },
+      "spendingDaysSincePayee": {
+        "b": "Остання витрата в одержувача «{sincePayeeName}» була {sincePayeeDay}, тобто {sincePayeeDays} тому.",
+        "c": "Ваші останні витрати в одержувача «{sincePayeeName}»: {sincePayeeDay}, {sincePayeeDays} тому."
+      },
+      "activityBillsDueThisWeek": {
+        "b": "До сплати в найближчі сім днів, кількість рахунків: {billsDueCount}, на суму {billsDueTotal}.",
+        "c": "Рахунки, термін сплати яких настане в найближчі сім днів: {billsDueCount}, разом на {billsDueTotal}."
+      },
+      "activityNextBill": {
+        "b": "Ваш наступний рахунок: «{nextBillName}», {nextBillAmount}, термін {nextBillDate}.",
+        "c": "Термін {nextBillDate}: найближчий рахунок «{nextBillName}» на суму {nextBillAmount}."
+      },
+      "spendingBudgetPace": {
+        "b": "Коли від місяця минуло {budgetMonthPercent}, ви витратили {budgetSpent} із {budgetTotal} бюджету «{budgetName}», це {budgetUsedPercent}.",
+        "c": "Бюджет «{budgetName}» використано на {budgetUsedPercent} ({budgetSpent} із {budgetTotal}), від місяця минуло {budgetMonthPercent}."
+      },
+      "investmentsTopMoverUp": {
+        "b": "Найсильніше у вашому портфелі рухався папір {moverSymbol}, сесія {moverSession}: зростання на {moverPercent}, позиція збільшилася на {moverValueChange}.",
+        "c": "Сесія {moverSession}: найсильніше рухався папір {moverSymbol}, зростання на {moverPercent}, приріст позиції {moverValueChange}."
+      },
+      "investmentsTopMoverDown": {
+        "b": "Найсильніше у вашому портфелі рухався папір {moverSymbol}, сесія {moverSession}: падіння на {moverPercent}, позиція зменшилася на {moverValueChange}.",
+        "c": "Сесія {moverSession}: найсильніше рухався папір {moverSymbol}, падіння на {moverPercent}, втрата за позицією {moverValueChange}."
+      },
+      "activityAnniversary": {
+        "b": "Ваша перша транзакція в Monize була {anniversaryFirstDate}, і цього тижня виповнюється {anniversaryYears}.",
+        "c": "Дата вашої першої транзакції в Monize: {anniversaryFirstDate}. Цього тижня виповнюється {anniversaryYears}."
+      },
+      "activityAccountAnniversary": {
+        "b": "Рахунок «{anniversaryAccountName}» уперше з'явився в Monize {anniversaryAccountSince}, і цього тижня йому виповнюється {anniversaryAccountYears}.",
+        "c": "Рахунку «{anniversaryAccountName}» цього тижня виповнюється {anniversaryAccountYears} у Monize, рахуючи від першої транзакції {anniversaryAccountSince}."
+      },
+      "netWorthMilestone": {
+        "b": "Ваші чисті активи перевищили {milestoneAmount} у місяці {milestoneMonth}.",
+        "c": "Місяць {milestoneMonth}: тоді чисті активи перевищили {milestoneAmount}."
+      },
+      "activityTransactionMilestone": {
+        "b": "Транзакція з номером {transactionMilestone} з'явилася у ваших реєстрах за останні 30 днів.",
+        "c": "За останні 30 днів кількість ваших транзакцій дійшла до номера {transactionMilestone}."
+      },
+      "warrantiesExpiresSoon": {
+        "b": "Дата {expiringWarrantyDate}, через {expiringWarrantyDays}: спливає гарантія «{expiringWarrantyName}».",
+        "c": "Гарантія «{expiringWarrantyName}» закінчується {expiringWarrantyDate}, через {expiringWarrantyDays}."
+      },
+      "spendingYearAgoMonth": {
+        "b": "Рік тому, місяць {yearAgoMonth}: ви витратили {yearAgoSpent}, і найбільша частка припала на «{yearAgoTopCategoryName}».",
+        "c": "З {yearAgoSpent}, витрачених рік тому, місяць {yearAgoMonth}, найбільше пішло на «{yearAgoTopCategoryName}»."
+      },
+      "netWorthYearAgoUp": {
+        "b": "Ваші чисті активи вищі на {yearAgoNetWorthChange}, ніж рік тому, місяць {yearAgoNetWorthMonth}: тоді вони були {yearAgoNetWorth}.",
+        "c": "Зростання на {yearAgoNetWorthChange} за рік: з {yearAgoNetWorth}, місяць {yearAgoNetWorthMonth}, до нинішнього рівня."
+      },
+      "netWorthYearAgoDown": {
+        "b": "Ваші чисті активи нижчі на {yearAgoNetWorthChange}, ніж рік тому, місяць {yearAgoNetWorthMonth}: тоді вони були {yearAgoNetWorth}.",
+        "c": "Зниження на {yearAgoNetWorthChange} за рік: з {yearAgoNetWorth}, місяць {yearAgoNetWorthMonth}, до нинішнього рівня."
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} головна категорія ваших витрат: «{topCategoryName}», {topCategoryAmount}, або {topCategoryPercent} витрат.",
+        "c": "Категорія «{topCategoryName}» посіла найбільшу частину ваших витрат {window, select, d30 {за останні 30 днів} d90 {за останні 90 днів} ytd {з початку року} m12 {за останні дванадцять місяців} all {за весь час ваших записів} other {за цей період}}: {topCategoryAmount}, або {topCategoryPercent}."
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} одержувач «{topPayeeName}» отримав від вас більше за всіх: {topPayeeAmount}.",
+        "c": "Найбільше ви витратили в одержувача «{topPayeeName}» {window, select, d30 {за останні 30 днів} d90 {за останні 90 днів} ytd {з початку року} m12 {за останні дванадцять місяців} all {за весь час ваших записів} other {за цей період}}: {topPayeeAmount}."
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} {topSourcePercent} вашого доходу надійшло з джерела «{topSourceName}».",
+        "c": "Джерело «{topSourceName}» дало {topSourcePercent} вашого доходу {window, select, d30 {за останні 30 днів} d90 {за останні 90 днів} ytd {з початку року} m12 {за останні дванадцять місяців} all {за весь час ваших записів} other {за цей період}}."
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} у списку ваших категорій витрат місце {rankedCategoryRank} у «{rankedCategoryName}»: {rankedCategoryAmount}, або {rankedCategoryPercent} від підсумку.",
+        "c": "Категорія «{rankedCategoryName}» {window, select, d30 {за останні 30 днів} d90 {за останні 90 днів} ytd {з початку року} m12 {за останні дванадцять місяців} all {за весь час ваших записів} other {за цей період}}: місце {rankedCategoryRank} серед ваших категорій витрат, {rankedCategoryAmount} ({rankedCategoryPercent} від підсумку)."
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} в одержувача «{rankedPayeeName}» ви витратили {rankedPayeeAmount}: місце {rankedPayeeRank} серед одержувачів за витратами.",
+        "c": "Місце {rankedPayeeRank} серед одержувачів, у яких ви витрачали найбільше {window, select, d30 {за останні 30 днів} d90 {за останні 90 днів} ytd {з початку року} m12 {за останні дванадцять місяців} all {за весь час ваших записів} other {за цей період}}: «{rankedPayeeName}», {rankedPayeeAmount}."
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {За останні 30 днів} d90 {За останні 90 днів} ytd {З початку року} m12 {За останні дванадцять місяців} all {За весь час ваших записів} other {За цей період}} джерело «{rankedSourceName}» принесло {rankedSourcePercent} вашого доходу: місце {rankedSourceRank} серед джерел.",
+        "c": "Серед ваших джерел доходу {window, select, d30 {за останні 30 днів} d90 {за останні 90 днів} ytd {з початку року} m12 {за останні дванадцять місяців} all {за весь час ваших записів} other {за цей період}} місце {rankedSourceRank} посідає «{rankedSourceName}», {rankedSourcePercent} доходу."
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "Ваші {equivPayeeAmount} в одержувача «{equivPayeeName}» за останні дванадцять місяців, у місяцях ваших середніх витрат на «{equivCategoryName}»: близько {equivCategoryMonths}.",
+        "c": "Витрачено в одержувача «{equivPayeeName}» за останні дванадцять місяців: {equivPayeeAmount}. У місяцях середніх витрат на «{equivCategoryName}»: близько {equivCategoryMonths}."
+      },
+      "spendingDailyAverage": {
+        "b": "Ваші витрати за останні дванадцять місяців у перерахунку на день становлять близько {dailyAverageSpent}.",
+        "c": "Близько {dailyAverageSpent} на день: такі ваші середні витрати за останні дванадцять місяців."
+      },
+      "incomeKeptCoversDays": {
+        "b": "За останні дванадцять місяців ви зберегли {keptCoversAmount}. На такий строк цього вистачило б для ваших витрат, приблизно: {keptCoversDays}.",
+        "c": "Ваших витрат вистачило б приблизно на такий строк: {keptCoversDays}. Це сума {keptCoversAmount}, збережена за останні дванадцять місяців."
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "У місяцях ваших середніх витрат дохід ваших інвестицій, {gainCoversAmount}, становить близько {gainCoversMonths}.",
+        "c": "Ваші інвестиції принесли {gainCoversAmount}. У місяцях ваших середніх витрат це: близько {gainCoversMonths}."
+      }
     }
   },
   "favouriteAccounts": {

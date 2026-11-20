@@ -60,70 +60,6 @@ describe("buildLedgerTriviaFacts", () => {
   });
 
   describe("spending", () => {
-    const byCategory = {
-      data: [
-        {
-          categoryId: null,
-          categoryName: "Uncategorized",
-          color: null,
-          total: 900,
-        },
-        {
-          categoryId: "food",
-          categoryName: "Groceries",
-          color: null,
-          total: 600,
-        },
-        { categoryId: "fun", categoryName: "Fun", color: null, total: 300 },
-      ],
-      totalSpending: 1800,
-      knownSpending: 1800,
-      currency: "CAD",
-      missingCurrencies: [],
-      excludedCount: 0,
-    };
-
-    it("names the top real category and its share of the whole", () => {
-      expect(
-        figuresOf({ spendingByCategory: byCategory }, "spendingTopCategory"),
-      ).toEqual({
-        topCategoryName: { kind: "text", value: "Groceries" },
-        topCategoryAmount: { kind: "money", value: 600, currency: "CAD" },
-        topCategoryPercent: { kind: "percent", value: 33.3333 },
-      });
-    });
-
-    it("withholds a share of a total that did not fully convert", () => {
-      expect(
-        ids({ spendingByCategory: { ...byCategory, totalSpending: null } }),
-      ).toEqual([]);
-    });
-
-    it("names the payee spent with most, skipping a blank name", () => {
-      expect(
-        figuresOf(
-          {
-            spendingByPayee: {
-              data: [
-                // No payee: the report's "Unknown" bucket, never a payee.
-                { payeeId: null, payeeName: "Unknown", total: 999 },
-                { payeeId: "p", payeeName: "Grocer", total: 400 },
-              ],
-              totalSpending: 1399,
-              knownSpending: 1399,
-              currency: "CAD",
-              missingCurrencies: [],
-              excludedCount: 0,
-            },
-          },
-          "spendingTopPayee",
-        ),
-      ).toEqual({
-        topPayeeName: { kind: "text", value: "Grocer" },
-        topPayeeAmount: { kind: "money", value: 400, currency: "CAD" },
-      });
-    });
-
     it("dates the month that spent the most", () => {
       expect(
         figuresOf({ incomeVsExpenses: flows() }, "spendingBiggestMonth"),
@@ -195,40 +131,6 @@ describe("buildLedgerTriviaFacts", () => {
           incomeVsExpenses: flows(patch as Partial<IncomeVsExpensesResponse>),
         }),
       ).toEqual([]);
-    });
-
-    it("names the biggest source of income", () => {
-      expect(
-        figuresOf(
-          {
-            incomeBySource: {
-              data: [
-                {
-                  categoryId: "pay",
-                  categoryName: "Salary",
-                  color: null,
-                  total: 9000,
-                },
-                {
-                  categoryId: "int",
-                  categoryName: "Interest",
-                  color: null,
-                  total: 1000,
-                },
-              ],
-              totalIncome: 10000,
-              knownIncome: 10000,
-              currency: "CAD",
-              missingCurrencies: [],
-              excludedCount: 0,
-            },
-          },
-          "incomeTopSource",
-        ),
-      ).toEqual({
-        topSourceName: { kind: "text", value: "Salary" },
-        topSourcePercent: { kind: "percent", value: 90 },
-      });
     });
   });
 

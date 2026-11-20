@@ -1,10 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, fireEvent, render, screen } from '@/test/render';
+import { act, fireEvent, render, renderInLocale, screen } from '@/test/render';
+import dashboardMessages from '@/i18n/messages/en/dashboard.json';
 import { TriviaWidget, TRIVIA_ROTATE_MS } from './TriviaWidget';
 import type { DashboardTriviaResponse } from '@/types/dashboard-trivia';
 
-const state: { trivia: DashboardTriviaResponse | null; asked: boolean[]; enabled: boolean | undefined } = {
+const state: {
+  trivia: DashboardTriviaResponse | null;
+  asked: boolean[];
+  enabled: boolean | undefined;
+  today: string;
+} = {
   trivia: null,
+  today: '',
   asked: [],
   enabled: undefined,
 };
@@ -14,6 +21,9 @@ vi.mock('./useDashboardTrivia', () => ({
     return enabled ? state.trivia : null;
   },
 }));
+// A day on which every fact these tests read picks its first wording (see trivia-variant.ts).
+const FIRST_WORDING_DAY = '2026-01-26';
+vi.mock('@/hooks/useFinancialToday', () => ({ useFinancialToday: () => state.today }));
 vi.mock('@/store/preferencesStore', () => ({
   usePreferencesStore: (selector: (s: unknown) => unknown) =>
     selector({ preferences: { aiTriviaEnabled: state.enabled } }),
@@ -43,6 +53,7 @@ describe('TriviaWidget', () => {
     state.trivia = null;
     state.asked = [];
     state.enabled = undefined;
+    state.today = FIRST_WORDING_DAY;
     vi.useFakeTimers();
     vi.setSystemTime(0);
   });
@@ -165,6 +176,87 @@ describe('TriviaWidget', () => {
     }
   });
 
+  it('skips a calculated fact its catalog lacks and counts only what it shows', () => {
+    state.trivia = list({
+      items: [
+        { topic: 'netWorth', source: 'calculated', factId: 'aFactFromANewerServer' },
+        { topic: 'netWorth', source: 'ai', text: 'one {a}' },
+        { topic: 'investments', source: 'ai', text: 'two {a}' },
+      ],
+      figures: { a: { kind: 'text', value: 'A' } },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(screen.getByText('1 of 2')).toBeInTheDocument();
+    expect(sentence()).not.toHaveTextContent('aFactFromANewerServer');
+  });
+
+  it('writes a day figure with its weekday', () => {
+    state.trivia = list({
+      items: [{ topic: 'spending', source: 'ai', text: 'On {d} you spent {n}.' }],
+      figures: { d: { kind: 'day', value: '2026-11-18' }, n: { kind: 'count', value: 2 } },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent('On Wednesday, November 18 you spent 2.');
+  });
+
+  it('writes a date figure in full and a years figure with its unit', () => {
+    state.trivia = list({
+      items: [{ topic: 'activity', source: 'calculated', factId: 'activityAnniversary' }],
+      figures: {
+        anniversaryYears: { kind: 'years', value: 3 },
+        anniversaryFirstDate: { kind: 'date', value: '2023-11-17' },
+      },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent(
+      'This week marks 3 years since your first transaction in Monize, on November 17, 2023.',
+    );
+  });
+
+  it('words a windowed fact by its window', () => {
+    state.trivia = list({
+      items: [
+        {
+          topic: 'spending',
+          source: 'calculated',
+          factId: 'spendingTopCategoryWindow',
+          params: { window: 'd90' },
+        },
+      ],
+      figures: {
+        topCategoryName: { kind: 'text', value: 'Groceries' },
+        topCategoryAmount: { kind: 'money', value: 600, currency: 'CAD' },
+        topCategoryPercent: { kind: 'percent', value: 33.3 },
+      },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent(
+      'Over the last 90 days, Groceries took the most of your spending:',
+    );
+  });
+
+  it('words a ranked fact with its rank and window', () => {
+    state.trivia = list({
+      items: [
+        {
+          topic: 'income',
+          source: 'calculated',
+          factId: 'incomeRankedSource',
+          params: { window: 'all' },
+        },
+      ],
+      figures: {
+        rankedSourceName: { kind: 'text', value: 'Interest' },
+        rankedSourceRank: { kind: 'count', value: 2 },
+        rankedSourcePercent: { kind: 'percent', value: 15 },
+      },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent(
+      'Since your records began, Interest was number 2 among your sources of income, bringing in',
+    );
+  });
+
   it('offers no arrows for a single fact', () => {
     state.trivia = list({
       items: [{ topic: 'netWorth', source: 'ai', text: 'only {a}' }],
@@ -192,5 +284,61 @@ describe('TriviaWidget', () => {
     render(<TriviaWidget isLoading />);
     expect(state.asked).not.toContain(true);
     expect(screen.queryByTestId('trivia-sentence')).not.toBeInTheDocument();
+  });
+
+  describe('wording variants', () => {
+    const highPoint = () => {
+      state.trivia = list({
+        items: [{ topic: 'netWorth', source: 'calculated', factId: 'netWorthHighPoint' }],
+        figures: {
+          peakAmount: { kind: 'money', value: 3913005.98, currency: 'CAD' },
+          peakMonth: { kind: 'month', value: '2026-09' },
+          peakBelow: { kind: 'money', value: 64910, currency: 'CAD' },
+        },
+      });
+    };
+
+    it('words a fact differently on different days', () => {
+      highPoint();
+      state.today = '2026-11-01';
+      const first = render(<TriviaWidget isLoading={false} />);
+      expect(sentence()).toHaveTextContent('Your high point was');
+      first.unmount();
+
+      state.today = '2026-11-03';
+      const second = render(<TriviaWidget isLoading={false} />);
+      expect(sentence()).toHaveTextContent('Net worth peaked at');
+      second.unmount();
+
+      state.today = '2026-11-02';
+      render(<TriviaWidget isLoading={false} />);
+      expect(sentence()).toHaveTextContent('under your high point of');
+      // Every variant still picks out the same figures.
+      expect(screen.getByText('September 2026')).toHaveClass('font-semibold');
+    });
+
+    it('keeps one wording for the whole day, across re-renders and steps', () => {
+      highPoint();
+      state.today = '2026-11-03';
+      const { rerender } = render(<TriviaWidget isLoading={false} />);
+      const before = sentence().textContent;
+      rerender(<TriviaWidget isLoading={false} />);
+      expect(sentence().textContent).toBe(before);
+      expect(before).toContain('Net worth peaked at');
+    });
+
+    it('falls back to the first wording where the locale has no variants, without an error', () => {
+      highPoint();
+      state.today = '2026-11-03'; // picks variant b where there is one
+      const { variants: _variants, ...trivia } = dashboardMessages.trivia;
+      void _variants;
+      // An intl error (a missing key) fails the test through renderInLocale's onError.
+      renderInLocale(<TriviaWidget isLoading={false} />, {
+        locale: 'en',
+        messages: { dashboard: { ...dashboardMessages, trivia } },
+      });
+      expect(sentence()).toHaveTextContent('Your high point was');
+      expect(sentence().textContent).not.toContain('trivia.');
+    });
   });
 });

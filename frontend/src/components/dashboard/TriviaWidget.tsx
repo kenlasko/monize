@@ -22,11 +22,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/20/solid';
 import { CARD_CLASS, HOVER_TOOLBAR_BUTTON } from '@/components/ui/Card';
-import { useChartDateFormat } from '@/hooks/useChartDateFormat';
-import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import type { TriviaFigure, TriviaItem, TriviaTopic } from '@/types/dashboard-trivia';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
+import { pickTriviaVariant } from '@/lib/trivia-variant';
+import type { TriviaItem, TriviaTopic } from '@/types/dashboard-trivia';
 import { useDashboardTrivia } from './useDashboardTrivia';
+import { useTriviaFigureFormat } from './trivia-format';
 import { WidgetHeading } from './widget-meta';
 
 /** How long one fact stays before the next, unless the reader is pointing at it. */
@@ -147,17 +148,24 @@ function splitSentence(template: string): Part[] {
  */
 export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean }) {
   const t = useTranslations('dashboard');
-  const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
-  const formatChartDate = useChartDateFormat();
   const enabled = usePreferencesStore((s) => s.preferences?.aiTriviaEnabled) !== false;
   const trivia = useDashboardTrivia(enabled && !parentLoading);
 
-  // The server shuffles the list; the minute the page opened is where a reader
-  // joins it, so a reload does not always start on the same fact.
+  // The server orders the list for the day (the same on every load); the
+  // minute the page opened is where a reader joins it, so a reload does not
+  // always start on the same fact.
   const [start] = useState(() => Math.floor(Date.now() / 60_000));
   const [step, setStep] = useState(0);
   const [paused, setPaused] = useState(false);
-  const count = trivia?.items.length ?? 0;
+  // A fact id this build's catalog lacks (a newer server) is skipped, not shown as a missing message.
+  const items = useMemo(
+    () =>
+      (trivia?.items ?? []).filter(
+        (item) => item.source === 'ai' || t.has(`trivia.facts.${item.factId}` as Parameters<typeof t>[0]),
+      ),
+    [trivia, t],
+  );
+  const count = items.length;
 
   useEffect(() => {
     if (paused || count < 2) return;
@@ -168,28 +176,8 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
     return () => clearInterval(id);
   }, [paused, count, step]);
 
-  const formatFigure = useMemo(
-    () =>
-      (figure: TriviaFigure): string => {
-        switch (figure.kind) {
-          case 'money':
-            return formatCurrency(figure.value, figure.currency);
-          case 'percent':
-            return formatPercent(figure.value, 2);
-          case 'multiple':
-            return formatNumber(figure.value, 2);
-          case 'rate':
-            return formatNumber(figure.value, 4);
-          case 'count':
-            return formatNumber(figure.value, 0);
-          case 'month':
-            return formatChartDate(`${figure.value}-01`, 'MMMM yyyy');
-          case 'text':
-            return figure.value;
-        }
-      },
-    [formatCurrency, formatNumber, formatPercent, formatChartDate],
-  );
+  const formatFigure = useTriviaFigureFormat();
+  const today = useFinancialToday();
 
   const heading = (
     <WidgetHeading id="trivia" className="mb-4">
@@ -233,17 +221,28 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
   }
 
   const index = (((start + step) % count) + count) % count;
-  const item: TriviaItem = trivia.items[index];
+  const item: TriviaItem = items[index];
   const look = lookOf(item.topic);
   const TopicIcon = look.icon;
   const template =
     item.source === 'ai'
       ? item.text
       : // The catalog's sentence with each figure left as its placeholder, to be
-        // picked out below the same way as a model's.
+        // picked out below the same way as a model's. Its wording is one of the
+        // variants this locale has, chosen by the fact and the reader's day; a
+        // locale without variants has only the first.
         t(
-          `trivia.facts.${item.factId}` as Parameters<typeof t>[0],
-          Object.fromEntries(Object.keys(trivia.figures).map((name) => [name, `{${name}}`])),
+          `trivia.${pickTriviaVariant(
+            [`facts.${item.factId}`, `variants.${item.factId}.b`, `variants.${item.factId}.c`].filter((key) =>
+              t.has(`trivia.${key}` as Parameters<typeof t>[0]),
+            ),
+            item.factId,
+            today,
+          )}` as Parameters<typeof t>[0],
+          {
+            ...Object.fromEntries(Object.keys(trivia.figures).map((name) => [name, `{${name}}`])),
+            window: item.params?.window ?? 'other',
+          },
         );
 
   return (
@@ -322,7 +321,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
           </button>
           {/* One mark per fact, the current one drawn out; decoration beside the count above. */}
           <div aria-hidden="true" className="flex max-w-[70%] flex-wrap justify-center gap-1.5">
-            {trivia.items.map((other, i) => (
+            {items.map((other, i) => (
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all motion-reduce:transition-none ${

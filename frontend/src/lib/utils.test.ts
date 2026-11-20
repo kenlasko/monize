@@ -262,6 +262,7 @@ describe('formatChartDate', () => {
 
   it('formats a long weekday date in the locale\'s own order', () => {
     expect(formatChartDate('2026-11-06', 'EEEE MMMM d', 'en-US')).toBe('Friday, November 6');
+    expect(formatChartDate('2026-11-06', 'MMMM d, yyyy', 'en-US')).toBe('November 6, 2026');
     expect(formatChartDate('2026-11-06', 'EEEE MMMM d', 'en-GB')).toBe('Friday 6 November');
   });
 

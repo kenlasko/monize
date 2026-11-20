@@ -1,16 +1,19 @@
-import { roundFxRate } from "../../common/fx-entry.util";
-import { roundMoney, sumMoney } from "../../common/round.util";
+import { sumMoney } from "../../common/round.util";
 import type {
   HoldingWithMarketValue,
   PortfolioSummary,
 } from "../../securities/portfolio.service";
 import { stripBrokerageSuffix } from "../../accounts/account-name.util";
-import type {
-  TriviaFact,
-  TriviaFigure,
-  TriviaFigures,
-  TriviaTopic,
-} from "./trivia.types";
+import type { TriviaFact, TriviaFigures } from "./trivia.types";
+import {
+  fact,
+  money,
+  multiple,
+  percent,
+  rate,
+  text,
+  month,
+} from "./trivia-figures";
 
 export interface TriviaNetWorthMonth {
   /** The first of the month, `YYYY-MM-DD`, as the net worth series dates it. */
@@ -47,33 +50,10 @@ const MIN_MONTHS_SINCE_START = 12;
 /** A smaller fall than this is noise, not a dip worth a sentence. */
 const MIN_DIP_FRACTION = 0.01;
 
-const money = (value: number, currency: string): TriviaFigure => ({
-  kind: "money",
-  value: roundMoney(value),
-  currency,
-});
-const percent = (value: number): TriviaFigure => ({
-  kind: "percent",
-  value: roundMoney(value),
-});
-const month = (value: string): TriviaFigure => ({
-  kind: "month",
-  value: value.slice(0, 7),
-});
-const text = (value: string): TriviaFigure => ({ kind: "text", value });
-
-function monthsBetween(from: string, to: string): number {
+export function monthsBetween(from: string, to: string): number {
   const [fromYear, fromMonth] = from.split("-").map(Number);
   const [toYear, toMonth] = to.split("-").map(Number);
   return (toYear - fromYear) * 12 + (toMonth - fromMonth);
-}
-
-function fact(
-  id: TriviaFact["id"],
-  topic: TriviaTopic,
-  figures: TriviaFigures,
-): TriviaFact {
-  return { id, topic, figures };
 }
 
 function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
@@ -98,10 +78,7 @@ function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
         startMonth: month(first.month),
         startAmount: money(first.netWorth, currency),
         startGain: money(latest.netWorth - first.netWorth, currency),
-        startMultiple: {
-          kind: "multiple",
-          value: roundMoney(latest.netWorth / first.netWorth, 2),
-        },
+        startMultiple: multiple(latest.netWorth / first.netWorth),
       }),
     );
   }
@@ -366,10 +343,7 @@ function investmentFacts(input: TriviaFactsInput): TriviaFact[] {
         foreignCurrency: text(foreign.currency),
         foreignBalance: money(foreign.balance, foreign.currency),
         foreignConverted: money(foreign.reporting, currency),
-        foreignRate: {
-          kind: "rate",
-          value: roundFxRate(foreign.reporting / foreign.balance),
-        },
+        foreignRate: rate(foreign.reporting / foreign.balance),
       }),
     );
   }

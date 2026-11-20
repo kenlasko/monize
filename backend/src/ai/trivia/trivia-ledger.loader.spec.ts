@@ -1,12 +1,11 @@
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
-import { TriviaLedgerLoader, triviaWindow } from "./trivia-ledger.loader";
+import { TriviaLedgerLoader } from "./trivia-ledger.loader";
+import { triviaWindow } from "./trivia-windows";
+import { WINDOWED_FAMILIES, type TriviaPicks } from "./trivia-windowed-reads";
+import type { TriviaWindow } from "./trivia.types";
 
 jest.mock("../../common/db/scoped-db", () => ({ withScopedDb: jest.fn() }));
-jest.mock("../../common/users-by-timezone.util", () => ({
-  getEffectiveTimezoneOfUser: jest.fn(),
-}));
 
 describe("triviaWindow", () => {
   it("is the twelve whole months before this one", () => {
@@ -28,6 +27,17 @@ describe("triviaWindow", () => {
   });
 });
 
+const TODAY = "2026-11-10";
+
+const picksOf = (
+  window: TriviaWindow,
+  over: Partial<Record<(typeof WINDOWED_FAMILIES)[number], TriviaWindow>> = {},
+): TriviaPicks =>
+  Object.fromEntries(
+    WINDOWED_FAMILIES.map((f) => [f, { window: over[f] ?? window, rank: 2 }]),
+  ) as TriviaPicks;
+const M12 = picksOf("m12");
+
 describe("TriviaLedgerLoader", () => {
   let query: jest.Mock;
   let reports: Record<string, jest.Mock>;
@@ -40,7 +50,6 @@ describe("TriviaLedgerLoader", () => {
       (_ds: DataSource, fn: (m: EntityManager) => unknown) =>
         fn({ query } as unknown as EntityManager),
     );
-    (getEffectiveTimezoneOfUser as jest.Mock).mockResolvedValue("UTC");
     reports = {
       getSpendingByCategory: jest.fn().mockResolvedValue({ id: "cat" }),
       getSpendingByPayee: jest.fn().mockResolvedValue({ id: "payee" }),
@@ -71,7 +80,7 @@ describe("TriviaLedgerLoader", () => {
       },
       [],
     );
-    const input = await loader.load("user-1", "CAD");
+    const input = await loader.load("user-1", "CAD", TODAY, M12);
     for (const read of Object.values(reports)) {
       expect(read).toHaveBeenCalledWith("user-1", "2025-11-01", "2026-10-31");
     }
@@ -101,10 +110,90 @@ describe("TriviaLedgerLoader", () => {
       [],
     );
     reports.getSpendingByPayee.mockRejectedValue(new Error("boom"));
-    const input = await loader.load("user-1", "CAD");
+    const input = await loader.load("user-1", "CAD", TODAY, M12);
     expect(input.spendingByPayee).toBeNull();
     expect(input.spendingByCategory).toEqual({ id: "cat" });
     expect(input.records).not.toBeNull();
+  });
+
+  describe("the windowed reads", () => {
+    beforeEach(() =>
+      answer(
+        {
+          transactions: 0,
+          first_date: null,
+          payees: 0,
+          categories: 0,
+          scheduled: 0,
+        },
+        [],
+      ),
+    );
+
+    it("reads only the m12 windows when every pick is m12", async () => {
+      const input = await loader.load("user-1", "CAD", TODAY, M12);
+      expect(reports.getSpendingByCategory).toHaveBeenCalledTimes(1);
+      expect(reports.getSpendingByPayee).toHaveBeenCalledTimes(1);
+      expect(reports.getIncomeBySource).toHaveBeenCalledTimes(1);
+      expect(input.windowed.spendingByCategory.size).toBe(0);
+    });
+
+    it("reads a window once for two families that picked it", async () => {
+      const input = await loader.load("user-1", "CAD", TODAY, picksOf("d90"));
+      // One m12 read, plus one d90 read, however many families picked d90.
+      expect(reports.getSpendingByCategory).toHaveBeenCalledTimes(2);
+      expect(reports.getSpendingByCategory).toHaveBeenCalledWith(
+        "user-1",
+        "2026-08-12",
+        "2026-11-09",
+      );
+      expect(input.windowed.spendingByCategory.get("d90")).toEqual({
+        id: "cat",
+      });
+      expect(input.windowed.spendingByPayee.get("d90")).toEqual({
+        id: "payee",
+      });
+      expect(input.windowed.incomeBySource.get("d90")).toEqual({
+        id: "income",
+      });
+    });
+
+    it("reads all time from no start date, and each report on its own pick", async () => {
+      await loader.load(
+        "user-1",
+        "CAD",
+        TODAY,
+        picksOf("m12", {
+          spendingTopPayee: "all",
+          spendingRankedCategory: "d30",
+        }),
+      );
+      expect(reports.getSpendingByPayee).toHaveBeenCalledWith(
+        "user-1",
+        undefined,
+        "2026-11-09",
+      );
+      expect(reports.getSpendingByCategory).toHaveBeenCalledWith(
+        "user-1",
+        "2026-10-11",
+        "2026-11-09",
+      );
+      expect(reports.getIncomeBySource).toHaveBeenCalledTimes(1);
+    });
+
+    it("lets one failing windowed read drop only its own window", async () => {
+      reports.getSpendingByPayee.mockImplementation(
+        (_u: string, start: string | undefined) =>
+          start === "2026-08-12"
+            ? Promise.reject(new Error("boom"))
+            : Promise.resolve({ id: "payee" }),
+      );
+      const input = await loader.load("user-1", "CAD", TODAY, picksOf("d90"));
+      expect(input.windowed.spendingByPayee.get("d90")).toBeNull();
+      expect(input.windowed.spendingByCategory.get("d90")).toEqual({
+        id: "cat",
+      });
+    });
   });
 
   it("reads warranty cover by warrantyStatus's bounds: a warranty ending today is in cover", async () => {
@@ -125,7 +214,7 @@ describe("TriviaLedgerLoader", () => {
             : [{ name: "Phone", expires_on: "2026-11-10" }],
       ),
     );
-    const input = await loader.load("user-1", "CAD");
+    const input = await loader.load("user-1", "CAD", TODAY, M12);
     expect(input.warranties).toEqual({
       covered: 4,
       nextExpiring: { name: "Phone", expiresOn: "2026-11-10" },
@@ -159,17 +248,11 @@ describe("TriviaLedgerLoader", () => {
             : [],
       ),
     );
-    const input = await loader.load("user-1", "CAD");
+    const input = await loader.load("user-1", "CAD", TODAY, M12);
     expect(input.warranties).toEqual({ covered: 1, nextExpiring: null });
   });
 
-  it("dates the window by the reader's own zone", async () => {
-    // 20:00 UTC on 31 October is already 1 November in Kiritimati (UTC+14),
-    // so October is a whole month there; in UTC it would still be running.
-    jest.setSystemTime(new Date("2026-10-31T20:00:00Z"));
-    (getEffectiveTimezoneOfUser as jest.Mock).mockResolvedValue(
-      "Pacific/Kiritimati",
-    );
+  it("dates every window by the day it is given, not by the clock", async () => {
     answer(
       {
         transactions: 0,
@@ -180,7 +263,8 @@ describe("TriviaLedgerLoader", () => {
       },
       [],
     );
-    await loader.load("user-1", "CAD");
+    // The system clock says 10 November; the reader's day is 1 November.
+    await loader.load("user-1", "CAD", "2026-11-01", M12);
     expect(reports.getSpendingByCategory).toHaveBeenCalledWith(
       "user-1",
       "2025-11-01",

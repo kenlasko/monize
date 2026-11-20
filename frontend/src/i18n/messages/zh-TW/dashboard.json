@@ -54,8 +54,12 @@
       "warranties": "保固"
     },
     "aiGenerated": "由 AI 根據您的數據撰寫",
+    "units": {
+      "days": "{count, plural, other {{value}天}}",
+      "years": "{count, plural, other {{value}年}}"
+    },
     "facts": {
-      "netWorthSinceStart": "{startMonth}時您的淨資產為{startAmount}。此後增加了{startGain},已是當時的約{startMultiple}倍。",
+      "netWorthSinceStart": "{startMonth}時您的淨資產為{startAmount}。此後增加了{startGain}，增長倍數為{startMultiple}倍。",
       "netWorthBiggestJump": "{jumpMonth}是您單月漲幅最大的一個月。淨資產增加{jumpAmount},從{jumpPreviousMonth}的{jumpFrom}升至{jumpTo}。",
       "netWorthHighPoint": "您的最高點是{peakMonth}的{peakAmount}。目前比該水準低{peakBelow}。",
       "netWorthAtHighPoint": "您正處於最高點:淨資產從未超過{currentHigh}。",
@@ -80,7 +84,263 @@
       "activityPayees": "您在 Monize 中儲存的收款人：{payeeCount}位。類別：{categoryCount}個。",
       "activityScheduled": "Monize 為您追蹤的排程交易：{scheduledCount}筆。",
       "warrantiesCovered": "您追蹤的仍在保固期內的保固：{warrantyCount}份。",
-      "warrantiesNextExpiry": "下一個到期的保固是{nextWarrantyName}，時間為{nextWarrantyMonth}。"
+      "warrantiesNextExpiry": "下一個到期的保固是{nextWarrantyName}，時間為{nextWarrantyMonth}。",
+      "spendingMonthToDateLess": "截至{mtdThrough}，您本月已支出{mtdSpent}，比上月同一天（{mtdPreviousSpent}）少{mtdDifference}。",
+      "spendingMonthToDateMore": "截至{mtdThrough}，您本月已支出{mtdSpent}，比上月同一天（{mtdPreviousSpent}）多{mtdDifference}。",
+      "spendingLastDay": "{lastDayDate}，您支出了{lastDaySpent}。",
+      "spendingLastSevenDays": "從{weekFrom}起的七天裡，您支出了{weekSpent}。",
+      "spendingBiggestRecentPurchase": "最近七天您最大的一筆消費是{recentPurchaseDay}在{recentPurchasePayee}花的{recentPurchaseAmount}。",
+      "spendingNoSpendStreak": "自{lastSpendDay}以來，已有{noSpendDays}沒有記錄到支出。",
+      "spendingDaysSincePayee": "您上次在{sincePayeeName}消費是{sincePayeeDay}，距今{sincePayeeDays}前。",
+      "activityBillsDueThisWeek": "未來七天內到期的帳單：{billsDueCount}筆，共計{billsDueTotal}。",
+      "activityNextBill": "您的下一筆帳單是{nextBillName}，金額{nextBillAmount}，到期日為{nextBillDate}。",
+      "spendingBudgetPace": "本月已過去{budgetMonthPercent}，您的{budgetName}預算（{budgetTotal}）已用掉{budgetSpent}，即{budgetUsedPercent}。",
+      "investmentsTopMoverUp": "{moverSession}波動最大的是{moverSymbol}，上漲{moverPercent}，使您的持股增加了{moverValueChange}。",
+      "investmentsTopMoverDown": "{moverSession}波動最大的是{moverSymbol}，下跌{moverPercent}，使您的持股減少了{moverValueChange}。",
+      "activityAnniversary": "本週距您在 Monize 中的第一筆交易（{anniversaryFirstDate}）滿{anniversaryYears}。",
+      "activityAccountAnniversary": "您的{anniversaryAccountName}帳戶本週在 Monize 中滿{anniversaryAccountYears}：第一筆交易發生在{anniversaryAccountSince}。",
+      "netWorthMilestone": "{milestoneMonth}，您的淨資產超過了{milestoneAmount}。",
+      "activityTransactionMilestone": "最近30天內，您記錄了第{transactionMilestone}筆交易。",
+      "warrantiesExpiresSoon": "您的{expiringWarrantyName}保固將在{expiringWarrantyDays}後的{expiringWarrantyDate}到期。",
+      "spendingYearAgoMonth": "一年前的{yearAgoMonth}，您支出了{yearAgoSpent}，其中{yearAgoTopCategoryName}占比最大。",
+      "netWorthYearAgoUp": "一年前的{yearAgoNetWorthMonth}，您的淨資產為{yearAgoNetWorth}。現在高出{yearAgoNetWorthChange}。",
+      "netWorthYearAgoDown": "一年前的{yearAgoNetWorthMonth}，您的淨資產為{yearAgoNetWorth}。現在低了{yearAgoNetWorthChange}。",
+      "spendingTopCategoryWindow": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{topCategoryName}占了您支出的最大部分：{topCategoryAmount}，即{topCategoryPercent}。",
+      "spendingTopPayeeWindow": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您在{topPayeeName}花得最多：{topPayeeAmount}。",
+      "incomeTopSourceWindow": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{topSourceName}帶來了您收入的{topSourcePercent}。",
+      "spendingRankedCategory": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{rankedCategoryName}在您的支出類別中排第{rankedCategoryRank}，為{rankedCategoryAmount}（占總額的{rankedCategoryPercent}）。",
+      "spendingRankedPayee": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{rankedPayeeName}在您花錢最多的收款人中排第{rankedPayeeRank}，為{rankedPayeeAmount}。",
+      "incomeRankedSource": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{rankedSourceName}在您的收入來源中排第{rankedSourceRank}，帶來了收入的{rankedSourcePercent}。",
+      "spendingPayeeInCategoryMonths": "過去十二個月您在{equivPayeeName}花了{equivPayeeAmount}。折合{equivCategoryName}平均月支出的月數：約{equivCategoryMonths}。",
+      "spendingDailyAverage": "過去十二個月，您的支出平均每天約{dailyAverageSpent}。",
+      "incomeKeptCoversDays": "過去十二個月您留下的{keptCoversAmount}，大約夠支付{keptCoversDays}的支出。",
+      "investmentsGainInMonthsOfSpending": "您的投資收益{gainCoversAmount}，折合平均月支出的月數：約{gainCoversMonths}。"
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "自{startMonth}以來，您的淨資產從{startAmount}增加了{startGain}。增長倍數：{startMultiple}倍。",
+        "c": "相比{startMonth}的{startAmount}，淨資產增加了{startGain}，增長倍數為{startMultiple}倍。"
+      },
+      "netWorthBiggestJump": {
+        "b": "淨資產從{jumpPreviousMonth}的{jumpFrom}升至{jumpMonth}的{jumpTo}，增加{jumpAmount}，是您單月漲幅最大的一次。",
+        "c": "您單月最大的漲幅{jumpAmount}出現在{jumpMonth}，淨資產從{jumpPreviousMonth}的{jumpFrom}升至{jumpTo}。"
+      },
+      "netWorthHighPoint": {
+        "b": "淨資產在{peakMonth}達到{peakAmount}的峰值，現在比該水準低{peakBelow}。",
+        "c": "您現在比{peakMonth}創下的最高點{peakAmount}低{peakBelow}。"
+      },
+      "netWorthAtHighPoint": {
+        "b": "淨資產從未高於{currentHigh}，而這正是您現在的水準。",
+        "c": "您今天的淨資產是{currentHigh}，同時也是最高點。"
+      },
+      "netWorthBiggestDip": {
+        "b": "在最大的一次下跌中，淨資產從{dipFromMonth}的{dipFromAmount}降至{dipToMonth}的{dipToAmount}，跌了{dipPercent}。",
+        "c": "從{dipFromMonth}到{dipToMonth}，淨資產從{dipFromAmount}降至{dipToAmount}，跌幅為{dipPercent}，是最大的一次下跌。"
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "到{dipRecoveredMonth}，淨資產已從最大的一次下跌中恢復。那次下跌從{dipFromMonth}的{dipFromAmount}降至{dipToMonth}的{dipToAmount}。",
+        "c": "{dipFromMonth}時淨資產為{dipFromAmount}，到{dipToMonth}降至{dipToAmount}，這是最大的一次下跌。到{dipRecoveredMonth}已經恢復。"
+      },
+      "netWorthLargestAsset": {
+        "b": "{assetName}價值{assetValue}，占您資產的{assetPercent}。",
+        "c": "您資產的{assetPercent}是{assetName}，價值{assetValue}。"
+      },
+      "investmentsShareOfAssets": {
+        "b": "您資產的{investmentsPercent}是投資，總價值{investmentsValue}。",
+        "c": "投資占您資產的{investmentsPercent}，價值{investmentsValue}。"
+      },
+      "investmentsGain": {
+        "b": "相對{gainCostBasis}的成本基礎，您的投資增長了{gainAmount}，即{gainPercent}。",
+        "c": "您的投資比{gainCostBasis}的成本基礎高出{gainPercent}，增長了{gainAmount}。"
+      },
+      "investmentsLoss": {
+        "b": "相對{gainCostBasis}的成本基礎，您的投資下降了{gainAmount}，即{gainPercent}。",
+        "c": "您的投資比{gainCostBasis}的成本基礎低了{gainPercent}，下降了{gainAmount}。"
+      },
+      "investmentsCagr": {
+        "b": "按 CAGR 計算，您的投資每年報酬約{cagrPercent}。",
+        "c": "約{cagrPercent}：這是您投資的年化報酬率（CAGR）。"
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol}是您最大的持股，在{holdingAccounts}中價值{holdingValue}，約占投資組合的{holdingPercent}。",
+        "c": "投資組合的約{holdingPercent}，即{holdingAccounts}中的{holdingValue}，是您最大的持股{holdingSymbol}。"
+      },
+      "investmentsBestPerformer": {
+        "b": "{bestSymbol}是您表現最好的持股，上漲{bestPercent}：成本為{bestCost}，現在價值{bestValue}。",
+        "c": "{bestSymbol}上漲{bestPercent}，領先於您的各項持股。它的成本為{bestCost}，現在價值{bestValue}。"
+      },
+      "investmentsForeignAccount": {
+        "b": "您的{foreignName}帳戶以{foreignCurrency}持有{foreignBalance}，按約{foreignRate}的匯率相當於{foreignConverted}。",
+        "c": "按約{foreignRate}的匯率，您{foreignName}帳戶（{foreignCurrency}）中{foreignBalance}的持股相當於{foreignConverted}。"
+      },
+      "investmentsLargestAccount": {
+        "b": "{largestName}是您最大的投資帳戶，價值{largestValue}。",
+        "c": "在您的投資帳戶中，{largestName}最大，為{largestValue}。"
+      },
+      "spendingTopCategory": {
+        "b": "過去十二個月中，{topCategoryName}是您支出最多的類別，占支出的{topCategoryPercent}，即{topCategoryAmount}。",
+        "c": "過去十二個月中，您花得最多的類別是{topCategoryName}：{topCategoryAmount}，占總額的{topCategoryPercent}。"
+      },
+      "spendingTopPayee": {
+        "b": "過去十二個月中，{topPayeeName}得到的錢比其他任何收款人都多：{topPayeeAmount}。",
+        "c": "過去十二個月中，您最大的收款人是{topPayeeName}，共花了{topPayeeAmount}。"
+      },
+      "spendingBiggestMonth": {
+        "b": "您的支出在{biggestSpendMonth}達到峰值{biggestSpendAmount}，是過去十二個月中最多的一個月。",
+        "c": "過去十二個月中，{biggestSpendMonth}的支出最多，為{biggestSpendAmount}。"
+      },
+      "incomeKeptShare": {
+        "b": "過去十二個月中，您收入的{keptPercent}被留了下來，即{keptAmount}。",
+        "c": "過去十二個月中，在所有入帳的錢裡，您留下了{keptAmount}，即{keptPercent}。"
+      },
+      "incomeSurplusMonths": {
+        "b": "最近{windowMonths}個月中，收入多於支出的月份：{surplusMonths}。",
+        "c": "最近{windowMonths}個月中，入帳多於花費的月份：{surplusMonths}。"
+      },
+      "incomeTopSource": {
+        "b": "過去十二個月中，您收入的{topSourcePercent}來自{topSourceName}。",
+        "c": "過去十二個月中，您的收入有{topSourcePercent}來自{topSourceName}。"
+      },
+      "activityTransactions": {
+        "b": "自{firstTransactionMonth}起，您帳簿中的交易：{transactionCount}筆。",
+        "c": "自{firstTransactionMonth}以來，您記錄的交易：{transactionCount}筆。"
+      },
+      "activityPayees": {
+        "b": "您在 Monize 中保存的數量：收款人{payeeCount}個，類別{categoryCount}個。",
+        "c": "Monize 中有您的收款人（{payeeCount}個）和類別（{categoryCount}個）。"
+      },
+      "activityScheduled": {
+        "b": "Monize 為您追蹤的排程交易共有{scheduledCount}筆。",
+        "c": "在 Monize 中設定並為您安排的交易：{scheduledCount}筆。"
+      },
+      "warrantiesCovered": {
+        "b": "您追蹤的保固中仍在保固期內的：{warrantyCount}份。",
+        "c": "您追蹤的保固中尚未到期的：{warrantyCount}份。"
+      },
+      "warrantiesNextExpiry": {
+        "b": "{nextWarrantyMonth}，您的{nextWarrantyName}保固是下一個到期的。",
+        "c": "下一個到期的保固：{nextWarrantyName}，時間為{nextWarrantyMonth}。"
+      },
+      "spendingMonthToDateLess": {
+        "b": "截至{mtdThrough}，您本月支出了{mtdSpent}，比上月同一天已支出的{mtdPreviousSpent}少{mtdDifference}。",
+        "c": "到上月同一天，您已支出{mtdPreviousSpent}。截至{mtdThrough}，本月為{mtdSpent}，少{mtdDifference}。"
+      },
+      "spendingMonthToDateMore": {
+        "b": "截至{mtdThrough}，您本月支出了{mtdSpent}，比上月同一天已支出的{mtdPreviousSpent}多{mtdDifference}。",
+        "c": "到上月同一天，您已支出{mtdPreviousSpent}。截至{mtdThrough}，本月為{mtdSpent}，多{mtdDifference}。"
+      },
+      "spendingLastDay": {
+        "b": "您在{lastDayDate}的支出為{lastDaySpent}。",
+        "c": "{lastDayDate}花出去了{lastDaySpent}。"
+      },
+      "spendingLastSevenDays": {
+        "b": "從{weekFrom}起七天裡，您的支出為{weekSpent}。",
+        "c": "從{weekFrom}起的七天裡，您花了{weekSpent}。"
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "{recentPurchaseDay}，您在{recentPurchasePayee}支出{recentPurchaseAmount}，是最近七天最大的一筆消費。",
+        "c": "{recentPurchaseDay}在{recentPurchasePayee}的{recentPurchaseAmount}，是您最近七天最大的一筆消費。"
+      },
+      "spendingNoSpendStreak": {
+        "b": "已有{noSpendDays}沒有記錄到支出：您上一次支出在{lastSpendDay}。",
+        "c": "自{lastSpendDay}以來，已有{noSpendDays}沒有記錄到支出。"
+      },
+      "spendingDaysSincePayee": {
+        "b": "您上次在{sincePayeeName}消費是{sincePayeeDay}，距今{sincePayeeDays}前。",
+        "c": "您在{sincePayeeName}的上一次消費是{sincePayeeDay}，距今{sincePayeeDays}前。"
+      },
+      "activityBillsDueThisWeek": {
+        "b": "未來七天內到期的帳單數量：{billsDueCount}筆，合計{billsDueTotal}。",
+        "c": "未來七天內到期的帳單：{billsDueCount}筆，共計{billsDueTotal}。"
+      },
+      "activityNextBill": {
+        "b": "{nextBillName}是您的下一筆帳單：{nextBillAmount}，到期日為{nextBillDate}。",
+        "c": "到期日為{nextBillDate}的下一筆帳單是{nextBillName}，金額{nextBillAmount}。"
+      },
+      "spendingBudgetPace": {
+        "b": "本月已過去{budgetMonthPercent}，您的{budgetName}預算{budgetTotal}已用掉{budgetSpent}，即{budgetUsedPercent}。",
+        "c": "您的{budgetName}預算已用{budgetUsedPercent}（{budgetSpent}／{budgetTotal}），本月已過去{budgetMonthPercent}。"
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSession}，{moverSymbol}是您投資組合中波動最大的，上漲{moverPercent}，使持股增加{moverValueChange}。",
+        "c": "{moverSession}波動最大的是{moverSymbol}，上漲{moverPercent}，持股增加了{moverValueChange}。"
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSession}，{moverSymbol}是您投資組合中波動最大的，下跌{moverPercent}，使持股減少{moverValueChange}。",
+        "c": "{moverSession}波動最大的是{moverSymbol}，下跌{moverPercent}，持股減少了{moverValueChange}。"
+      },
+      "activityAnniversary": {
+        "b": "您在 Monize 中的第一筆交易發生在{anniversaryFirstDate}，本週距今滿{anniversaryYears}。",
+        "c": "您在{anniversaryFirstDate}記錄了在 Monize 中的第一筆交易，本週距今滿{anniversaryYears}。"
+      },
+      "activityAccountAnniversary": {
+        "b": "您的{anniversaryAccountName}帳戶最早出現在 Monize 是{anniversaryAccountSince}，本週滿{anniversaryAccountYears}。",
+        "c": "從{anniversaryAccountSince}的第一筆交易算起，您的{anniversaryAccountName}帳戶本週在 Monize 中滿{anniversaryAccountYears}。"
+      },
+      "netWorthMilestone": {
+        "b": "您的淨資產在{milestoneMonth}超過了{milestoneAmount}。",
+        "c": "{milestoneMonth}，您的淨資產越過了{milestoneAmount}。"
+      },
+      "activityTransactionMilestone": {
+        "b": "第{transactionMilestone}筆交易在最近30天內記入了您的帳簿。",
+        "c": "最近30天內，您的交易筆數達到了第{transactionMilestone}筆。"
+      },
+      "warrantiesExpiresSoon": {
+        "b": "{expiringWarrantyDate}，即{expiringWarrantyDays}後，您的{expiringWarrantyName}保固到期。",
+        "c": "您的{expiringWarrantyName}保固在{expiringWarrantyDate}結束，距今{expiringWarrantyDays}。"
+      },
+      "spendingYearAgoMonth": {
+        "b": "一年前的{yearAgoMonth}，您支出了{yearAgoSpent}，其中占比最大的是{yearAgoTopCategoryName}。",
+        "c": "一年前的{yearAgoMonth}，您花的{yearAgoSpent}中，{yearAgoTopCategoryName}占得最多。"
+      },
+      "netWorthYearAgoUp": {
+        "b": "您的淨資產比一年前的{yearAgoNetWorthMonth}（{yearAgoNetWorth}）高出{yearAgoNetWorthChange}。",
+        "c": "一年內增加了{yearAgoNetWorthChange}：從{yearAgoNetWorthMonth}的{yearAgoNetWorth}到現在的水準。"
+      },
+      "netWorthYearAgoDown": {
+        "b": "您的淨資產比一年前的{yearAgoNetWorthMonth}（{yearAgoNetWorth}）低了{yearAgoNetWorthChange}。",
+        "c": "一年內減少了{yearAgoNetWorthChange}：從{yearAgoNetWorthMonth}的{yearAgoNetWorth}到現在的水準。"
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您支出最多的類別是{topCategoryName}：{topCategoryAmount}，占支出的{topCategoryPercent}。",
+        "c": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{topCategoryName}占了您支出的大頭：{topCategoryAmount}，即{topCategoryPercent}。"
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{topPayeeName}得到的錢比其他任何收款人都多：{topPayeeAmount}。",
+        "c": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您花得最多的是{topPayeeName}，為{topPayeeAmount}。"
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您收入的{topSourcePercent}來自{topSourceName}。",
+        "c": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{topSourceName}是您收入的{topSourcePercent}的來源。"
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您的支出類別中排第{rankedCategoryRank}的是{rankedCategoryName}：{rankedCategoryAmount}，占總額的{rankedCategoryPercent}。",
+        "c": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{rankedCategoryName}在您的支出類別中排第{rankedCategoryRank}，為{rankedCategoryAmount}（占總額的{rankedCategoryPercent}）。"
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您在{rankedPayeeName}花了{rankedPayeeAmount}，在收款人支出中排第{rankedPayeeRank}。",
+        "c": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您花錢最多的收款人中排第{rankedPayeeRank}的是{rankedPayeeName}，為{rankedPayeeAmount}。"
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，{rankedSourceName}帶來了您收入的{rankedSourcePercent}，在收入來源中排第{rankedSourceRank}。",
+        "c": "{window, select, d30 {過去30天} d90 {過去90天} ytd {今年以來} m12 {過去十二個月} all {自記錄開始以來} other {這段時間}}，您的收入來源中排第{rankedSourceRank}的是{rankedSourceName}，占收入的{rankedSourcePercent}。"
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "過去十二個月您在{equivPayeeName}花的{equivPayeeAmount}，折合{equivCategoryName}平均月支出的月數：約{equivCategoryMonths}。",
+        "c": "過去十二個月在{equivPayeeName}的支出：{equivPayeeAmount}，折合{equivCategoryName}平均月支出約{equivCategoryMonths}個月。"
+      },
+      "spendingDailyAverage": {
+        "b": "過去十二個月，您的支出折合每天約{dailyAverageSpent}。",
+        "c": "每天約{dailyAverageSpent}：這是您過去十二個月的平均支出。"
+      },
+      "incomeKeptCoversDays": {
+        "b": "過去十二個月您留下了{keptCoversAmount}，大約夠支付{keptCoversDays}的支出。",
+        "c": "您過去十二個月留下的{keptCoversAmount}，大約能覆蓋{keptCoversDays}的支出。"
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "折合平均月支出的月數，您的投資收益{gainCoversAmount}約為{gainCoversMonths}。",
+        "c": "您的投資收益為{gainCoversAmount}。折合平均月支出的月數：約{gainCoversMonths}。"
+      }
     }
   },
   "favouriteAccounts": {

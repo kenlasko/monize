@@ -89,7 +89,9 @@ Under **Query limits (optional)** you decide how much work this provider may do 
 
 ### AI Trivia
 
-**AI trivia**, under the floating chat bubble in **AI Settings**, fills the dashboard's [Trivia widget](dashboard.md#trivia) with facts about your net worth and investments. Add the widget from the dashboard's **Customize** gear, with **Add Widget**, then click **Done**. The setting is on by default, with or without an AI provider. Turn it off and the widget says so, nothing is built for it each day, and no AI provider is asked about it.
+**AI trivia**, under the floating chat bubble in **AI Settings**, fills the dashboard's [Trivia widget](dashboard.md#trivia) with facts about your money and your records: net worth, investments, spending, income, your registers and warranties. About eight facts are shown each day and the list changes every morning. Add the widget from the dashboard's **Customize** gear, with **Add Widget**, then click **Done**. The setting is on by default, with or without an AI provider. Turn it off and the widget says so, nothing is built for it each day, and no AI provider is asked about it.
+
+With a provider, the model words the day's facts. It is sent the amounts, dates and counts of those facts, never account, security, category, payee or warranty names, and the sentences it wrote the day before so that it does not repeat them. It may join two facts of one topic into one sentence. A provider reached through the MCP relay is never used. Without a provider, Monize words the facts itself.
 
 ---
 

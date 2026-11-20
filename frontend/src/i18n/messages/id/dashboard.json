@@ -54,8 +54,12 @@
       "warranties": "Garansi"
     },
     "aiGenerated": "Ditulis oleh AI dari angka Anda",
+    "units": {
+      "days": "{count, plural, other {{value} hari}}",
+      "years": "{count, plural, other {{value} tahun}}"
+    },
     "facts": {
-      "netWorthSinceStart": "Kekayaan bersih Anda adalah {startAmount} pada {startMonth}. Sejak itu bertambah {startGain}, sehingga kini sekitar {startMultiple} kali lebih besar.",
+      "netWorthSinceStart": "Kekayaan bersih Anda adalah {startAmount} pada {startMonth}. Sejak itu bertambah {startGain}, dengan kelipatan pertumbuhan {startMultiple}.",
       "netWorthBiggestJump": "{jumpMonth} adalah lonjakan satu bulan terbesar Anda. Kekayaan bersih naik {jumpAmount}, dari {jumpFrom} pada {jumpPreviousMonth} menjadi {jumpTo}.",
       "netWorthHighPoint": "Titik tertinggi Anda adalah {peakAmount} pada {peakMonth}. Saat ini Anda {peakBelow} di bawahnya.",
       "netWorthAtHighPoint": "Anda berada di titik tertinggi: kekayaan bersih belum pernah melampaui {currentHigh}.",
@@ -80,7 +84,263 @@
       "activityPayees": "Penerima yang Anda simpan di Monize: {payeeCount}. Kategori: {categoryCount}.",
       "activityScheduled": "Transaksi terjadwal yang dipantau Monize untuk Anda: {scheduledCount}.",
       "warrantiesCovered": "Garansi yang Anda catat dan masih berlaku: {warrantyCount}.",
-      "warrantiesNextExpiry": "Garansi berikutnya yang akan berakhir adalah {nextWarrantyName}, pada {nextWarrantyMonth}."
+      "warrantiesNextExpiry": "Garansi berikutnya yang akan berakhir adalah {nextWarrantyName}, pada {nextWarrantyMonth}.",
+      "spendingMonthToDateLess": "Hingga {mtdThrough}, Anda telah membelanjakan {mtdSpent} bulan ini, {mtdDifference} lebih sedikit daripada pada hari yang sama bulan lalu ({mtdPreviousSpent}).",
+      "spendingMonthToDateMore": "Hingga {mtdThrough}, Anda telah membelanjakan {mtdSpent} bulan ini, {mtdDifference} lebih banyak daripada pada hari yang sama bulan lalu ({mtdPreviousSpent}).",
+      "spendingLastDay": "Pada {lastDayDate}, Anda membelanjakan {lastDaySpent}.",
+      "spendingLastSevenDays": "Dalam tujuh hari sejak {weekFrom}, Anda membelanjakan {weekSpent}.",
+      "spendingBiggestRecentPurchase": "Pembelian terbesar Anda dalam tujuh hari terakhir adalah {recentPurchaseAmount} di {recentPurchasePayee} pada {recentPurchaseDay}.",
+      "spendingNoSpendStreak": "Sudah {noSpendDays} tanpa pengeluaran tercatat, sejak {lastSpendDay}.",
+      "spendingDaysSincePayee": "Terakhir kali Anda berbelanja di {sincePayeeName} adalah pada {sincePayeeDay}, {sincePayeeDays} yang lalu.",
+      "activityBillsDueThisWeek": "Tagihan yang jatuh tempo dalam tujuh hari ke depan: {billsDueCount}, totalnya {billsDueTotal}.",
+      "activityNextBill": "Tagihan Anda berikutnya adalah {nextBillName}, sebesar {nextBillAmount}, jatuh tempo {nextBillDate}.",
+      "spendingBudgetPace": "Anda telah memakai {budgetUsedPercent} dari anggaran {budgetName} ({budgetSpent} dari {budgetTotal}), saat bulan ini sudah berjalan {budgetMonthPercent}.",
+      "investmentsTopMoverUp": "Pergerakan terbesar Anda pada {moverSession} adalah {moverSymbol}, naik {moverPercent}, yang menambah {moverValueChange} pada posisi Anda.",
+      "investmentsTopMoverDown": "Pergerakan terbesar Anda pada {moverSession} adalah {moverSymbol}, turun {moverPercent}, yang mengurangi {moverValueChange} dari posisi Anda.",
+      "activityAnniversary": "Minggu ini genap {anniversaryYears} sejak transaksi pertama Anda di Monize, pada {anniversaryFirstDate}.",
+      "activityAccountAnniversary": "Minggu ini akun {anniversaryAccountName} Anda genap {anniversaryAccountYears} di Monize: transaksi pertamanya pada {anniversaryAccountSince}.",
+      "netWorthMilestone": "Pada {milestoneMonth}, kekayaan bersih Anda melampaui {milestoneAmount}.",
+      "activityTransactionMilestone": "Dalam 30 hari terakhir Anda mencatat transaksi nomor {transactionMilestone}.",
+      "warrantiesExpiresSoon": "Garansi {expiringWarrantyName} Anda berakhir dalam {expiringWarrantyDays}, pada {expiringWarrantyDate}.",
+      "spendingYearAgoMonth": "Setahun lalu, pada {yearAgoMonth}, Anda membelanjakan {yearAgoSpent}, dan {yearAgoTopCategoryName} menyerap paling banyak.",
+      "netWorthYearAgoUp": "Setahun lalu, pada {yearAgoNetWorthMonth}, kekayaan bersih Anda adalah {yearAgoNetWorth}. Sekarang lebih tinggi {yearAgoNetWorthChange}.",
+      "netWorthYearAgoDown": "Setahun lalu, pada {yearAgoNetWorthMonth}, kekayaan bersih Anda adalah {yearAgoNetWorth}. Sekarang lebih rendah {yearAgoNetWorthChange}.",
+      "spendingTopCategoryWindow": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {topCategoryName} menyerap pengeluaran terbesar Anda: {topCategoryAmount}, atau {topCategoryPercent} dari total.",
+      "spendingTopPayeeWindow": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, Anda paling banyak berbelanja di {topPayeeName}: {topPayeeAmount}.",
+      "incomeTopSourceWindow": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {topSourceName} menyumbang {topSourcePercent} dari pemasukan Anda.",
+      "spendingRankedCategory": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {rankedCategoryName} di peringkat {rankedCategoryRank} kategori pengeluaran Anda: {rankedCategoryAmount} ({rankedCategoryPercent} dari total).",
+      "spendingRankedPayee": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {rankedPayeeName} berada di peringkat {rankedPayeeRank} di antara penerima yang paling banyak Anda bayar, sebesar {rankedPayeeAmount}.",
+      "incomeRankedSource": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {rankedSourceName} berada di peringkat {rankedSourceRank} di antara sumber pemasukan Anda, menyumbang {rankedSourcePercent} dari pemasukan.",
+      "spendingPayeeInCategoryMonths": "Dalam dua belas bulan terakhir Anda membelanjakan {equivPayeeAmount} di {equivPayeeName}. Dalam bulan pengeluaran rata-rata {equivCategoryName} Anda: sekitar {equivCategoryMonths}.",
+      "spendingDailyAverage": "Dalam dua belas bulan terakhir, pengeluaran Anda rata-rata sekitar {dailyAverageSpent} per hari.",
+      "incomeKeptCoversDays": "Dana {keptCoversAmount} yang Anda sisihkan dalam dua belas bulan terakhir cukup untuk menutup sekitar {keptCoversDays} pengeluaran Anda.",
+      "investmentsGainInMonthsOfSpending": "Keuntungan investasi Anda sebesar {gainCoversAmount}, dalam bulan pengeluaran rata-rata Anda: sekitar {gainCoversMonths}."
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "Sejak {startMonth}, kekayaan bersih Anda bertambah {startGain}, dari {startAmount}. Kelipatan pertumbuhan: {startMultiple}.",
+        "c": "Dibandingkan {startAmount} pada {startMonth}, kekayaan bersih bertambah {startGain}, dengan kelipatan pertumbuhan {startMultiple}."
+      },
+      "netWorthBiggestJump": {
+        "b": "Kekayaan bersih naik dari {jumpFrom} pada {jumpPreviousMonth} menjadi {jumpTo} pada {jumpMonth}, kenaikan {jumpAmount} dan lonjakan satu bulan terbesar Anda.",
+        "c": "Lonjakan satu bulan terbesar Anda, {jumpAmount}, terjadi pada {jumpMonth}, saat kekayaan bersih naik dari {jumpFrom} pada {jumpPreviousMonth} menjadi {jumpTo}."
+      },
+      "netWorthHighPoint": {
+        "b": "Kekayaan bersih memuncak di {peakAmount} pada {peakMonth}, dan kini berada {peakBelow} di bawahnya.",
+        "c": "Anda berada {peakBelow} di bawah titik tertinggi {peakAmount}, yang tercapai pada {peakMonth}."
+      },
+      "netWorthAtHighPoint": {
+        "b": "Kekayaan bersih belum pernah lebih tinggi dari {currentHigh}, dan di situlah Anda sekarang.",
+        "c": "Kekayaan bersih Anda hari ini adalah {currentHigh}, yang juga titik tertinggi Anda."
+      },
+      "netWorthBiggestDip": {
+        "b": "Pada penurunan terbesar, kekayaan bersih turun {dipPercent}, dari {dipFromAmount} pada {dipFromMonth} menjadi {dipToAmount} pada {dipToMonth}.",
+        "c": "Dari {dipFromMonth} hingga {dipToMonth}, kekayaan bersih turun dari {dipFromAmount} menjadi {dipToAmount}, penurunan {dipPercent} dan yang terbesar."
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "Kekayaan bersih sudah pulih pada {dipRecoveredMonth} dari penurunan terbesarnya, yang berlangsung dari {dipFromAmount} pada {dipFromMonth} menjadi {dipToAmount} pada {dipToMonth}.",
+        "c": "Pada {dipFromMonth} kekayaan bersih sebesar {dipFromAmount}, dan pada {dipToMonth} menjadi {dipToAmount}, penurunan terbesarnya. Pada {dipRecoveredMonth} sudah pulih."
+      },
+      "netWorthLargestAsset": {
+        "b": "Bernilai {assetValue}, {assetName} mencakup {assetPercent} dari aset Anda.",
+        "c": "{assetName} membentuk {assetPercent} dari aset Anda, dan bernilai {assetValue}."
+      },
+      "investmentsShareOfAssets": {
+        "b": "{investmentsPercent} dari aset Anda ada di investasi, bernilai {investmentsValue} seluruhnya.",
+        "c": "Investasi membentuk {investmentsPercent} dari aset Anda, dengan nilai {investmentsValue}."
+      },
+      "investmentsGain": {
+        "b": "Dibandingkan biaya dasar {gainCostBasis}, investasi Anda naik {gainAmount}, atau {gainPercent}.",
+        "c": "Investasi Anda {gainPercent} di atas biaya dasarnya sebesar {gainCostBasis}, keuntungan {gainAmount}."
+      },
+      "investmentsLoss": {
+        "b": "Dibandingkan biaya dasar {gainCostBasis}, investasi Anda turun {gainAmount}, atau {gainPercent}.",
+        "c": "Investasi Anda {gainPercent} di bawah biaya dasarnya sebesar {gainCostBasis}, kerugian {gainAmount}."
+      },
+      "investmentsCagr": {
+        "b": "Diukur sebagai CAGR, investasi Anda memberi imbal hasil sekitar {cagrPercent} per tahun.",
+        "c": "Sekitar {cagrPercent}: itulah imbal hasil tahunan (CAGR) investasi Anda."
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol} adalah kepemilikan terbesar Anda, bernilai {holdingValue} di {holdingAccounts} dan sekitar {holdingPercent} dari portofolio.",
+        "c": "Sekitar {holdingPercent} portofolio Anda, atau {holdingValue} di {holdingAccounts}, ada di {holdingSymbol}, kepemilikan terbesar Anda."
+      },
+      "investmentsBestPerformer": {
+        "b": "{bestSymbol} adalah performa terbaik Anda, naik {bestPercent}: biayanya {bestCost} dan kini bernilai {bestValue}.",
+        "c": "Naik {bestPercent}, {bestSymbol} memimpin kepemilikan Anda. Dari biaya {bestCost} menjadi nilai {bestValue}."
+      },
+      "investmentsForeignAccount": {
+        "b": "Akun {foreignName} Anda menyimpan {foreignBalance} dalam {foreignCurrency}, setara dengan {foreignConverted} pada kurs sekitar {foreignRate}.",
+        "c": "Pada kurs sekitar {foreignRate}, kepemilikan senilai {foreignBalance} di akun {foreignName} Anda ({foreignCurrency}) setara dengan {foreignConverted}."
+      },
+      "investmentsLargestAccount": {
+        "b": "{largestName} adalah akun investasi terbesar Anda, bernilai {largestValue}.",
+        "c": "Dari akun investasi Anda, {largestName} yang terbesar, sebesar {largestValue}."
+      },
+      "spendingTopCategory": {
+        "b": "{topCategoryName} adalah kategori teratas Anda dalam dua belas bulan terakhir, menyerap {topCategoryPercent} pengeluaran Anda, atau {topCategoryAmount}.",
+        "c": "Kategori yang paling banyak Anda belanjakan dalam dua belas bulan terakhir adalah {topCategoryName}: {topCategoryAmount}, atau {topCategoryPercent} dari total."
+      },
+      "spendingTopPayee": {
+        "b": "{topPayeeName} menerima lebih banyak uang Anda daripada penerima lain dalam dua belas bulan terakhir: {topPayeeAmount}.",
+        "c": "Penerima terbesar Anda dalam dua belas bulan terakhir adalah {topPayeeName}, dengan {topPayeeAmount} dibelanjakan."
+      },
+      "spendingBiggestMonth": {
+        "b": "Pengeluaran Anda memuncak pada {biggestSpendMonth} sebesar {biggestSpendAmount}, bulan terbesar dalam dua belas bulan terakhir.",
+        "c": "Dari dua belas bulan terakhir, {biggestSpendMonth} mencatat pengeluaran terbanyak, sebesar {biggestSpendAmount}."
+      },
+      "incomeKeptShare": {
+        "b": "{keptPercent} dari pemasukan Anda dalam dua belas bulan terakhir disimpan, yaitu {keptAmount}.",
+        "c": "Dari semua uang yang masuk dalam dua belas bulan terakhir, Anda menyimpan {keptAmount}, atau {keptPercent}."
+      },
+      "incomeSurplusMonths": {
+        "b": "Bulan dalam {windowMonths} bulan terakhir ketika uang yang masuk lebih banyak daripada yang keluar: {surplusMonths}.",
+        "c": "Bulan dalam {windowMonths} bulan terakhir ketika Anda menerima lebih banyak daripada membelanjakan: {surplusMonths}."
+      },
+      "incomeTopSource": {
+        "b": "Dalam dua belas bulan terakhir, {topSourcePercent} dari pemasukan Anda berasal dari {topSourceName}.",
+        "c": "Pemasukan Anda dalam dua belas bulan terakhir berasal {topSourcePercent} dari {topSourceName}."
+      },
+      "activityTransactions": {
+        "b": "Sejak {firstTransactionMonth}, transaksi di register Anda: {transactionCount}.",
+        "c": "Sejak {firstTransactionMonth}, transaksi yang Anda catat: {transactionCount}."
+      },
+      "activityPayees": {
+        "b": "Jumlah yang Anda simpan di Monize: penerima {payeeCount}, kategori {categoryCount}.",
+        "c": "Monize menyimpan penerima Anda ({payeeCount}) dan kategori Anda ({categoryCount})."
+      },
+      "activityScheduled": {
+        "b": "Monize memantau transaksi terjadwal Anda, totalnya {scheduledCount}.",
+        "c": "Diatur di Monize dan dijadwalkan untuk Anda: {scheduledCount}."
+      },
+      "warrantiesCovered": {
+        "b": "Garansi yang Anda catat dan masih berlaku: {warrantyCount}.",
+        "c": "Dari garansi yang Anda catat, yang belum berakhir: {warrantyCount}."
+      },
+      "warrantiesNextExpiry": {
+        "b": "Pada {nextWarrantyMonth}, garansi {nextWarrantyName} Anda adalah yang berikutnya berakhir.",
+        "c": "Garansi berikutnya yang akan berakhir: {nextWarrantyName}, pada {nextWarrantyMonth}."
+      },
+      "spendingMonthToDateLess": {
+        "b": "Hingga {mtdThrough}, Anda telah membelanjakan {mtdSpent} bulan ini, {mtdDifference} lebih sedikit daripada {mtdPreviousSpent} yang dibelanjakan pada hari yang sama bulan lalu.",
+        "c": "Pada hari yang sama bulan lalu Anda telah membelanjakan {mtdPreviousSpent}. Hingga {mtdThrough} bulan ini jumlahnya {mtdSpent}, atau {mtdDifference} lebih sedikit."
+      },
+      "spendingMonthToDateMore": {
+        "b": "Hingga {mtdThrough}, Anda telah membelanjakan {mtdSpent} bulan ini, {mtdDifference} lebih banyak daripada {mtdPreviousSpent} yang dibelanjakan pada hari yang sama bulan lalu.",
+        "c": "Pada hari yang sama bulan lalu Anda telah membelanjakan {mtdPreviousSpent}. Hingga {mtdThrough} bulan ini jumlahnya {mtdSpent}, atau {mtdDifference} lebih banyak."
+      },
+      "spendingLastDay": {
+        "b": "Pengeluaran Anda pada {lastDayDate} sebesar {lastDaySpent}.",
+        "c": "{lastDaySpent} keluar pada {lastDayDate}."
+      },
+      "spendingLastSevenDays": {
+        "b": "Pengeluaran Anda dalam tujuh hari sejak {weekFrom} sebesar {weekSpent}.",
+        "c": "{weekSpent} adalah yang Anda belanjakan dalam tujuh hari sejak {weekFrom}."
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "Pada {recentPurchaseDay}, Anda membelanjakan {recentPurchaseAmount} di {recentPurchasePayee}, pembelian terbesar Anda dalam tujuh hari terakhir.",
+        "c": "{recentPurchasePayee} menerima {recentPurchaseAmount} pada {recentPurchaseDay}, pembelian terbesar yang Anda lakukan dalam tujuh hari terakhir."
+      },
+      "spendingNoSpendStreak": {
+        "b": "Sudah {noSpendDays} tanpa pengeluaran tercatat: pengeluaran terakhir Anda pada {lastSpendDay}.",
+        "c": "Sejak {lastSpendDay}, tidak ada pengeluaran tercatat selama {noSpendDays}."
+      },
+      "spendingDaysSincePayee": {
+        "b": "Terakhir kali Anda berbelanja di {sincePayeeName} adalah pada {sincePayeeDay}, {sincePayeeDays} yang lalu.",
+        "c": "Pengeluaran terakhir Anda di {sincePayeeName} adalah pada {sincePayeeDay}, {sincePayeeDays} yang lalu."
+      },
+      "activityBillsDueThisWeek": {
+        "b": "Jatuh tempo dalam tujuh hari ke depan, dihitung dari jumlah tagihan: {billsDueCount}, totalnya {billsDueTotal}.",
+        "c": "Tagihan yang jatuh tempo dalam tujuh hari ke depan: {billsDueCount}, senilai {billsDueTotal} seluruhnya."
+      },
+      "activityNextBill": {
+        "b": "{nextBillName} adalah tagihan Anda berikutnya: {nextBillAmount}, jatuh tempo {nextBillDate}.",
+        "c": "Jatuh tempo {nextBillDate}, tagihan Anda berikutnya adalah {nextBillName} sebesar {nextBillAmount}."
+      },
+      "spendingBudgetPace": {
+        "b": "Saat bulan ini sudah berjalan {budgetMonthPercent}, Anda telah membelanjakan {budgetSpent} dari anggaran {budgetName} sebesar {budgetTotal}, atau {budgetUsedPercent}.",
+        "c": "Anggaran {budgetName} Anda terpakai {budgetUsedPercent} ({budgetSpent} dari {budgetTotal}), dan bulan ini sudah berjalan {budgetMonthPercent}."
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSymbol} adalah pergerakan terbesar di portofolio Anda pada {moverSession}: naik {moverPercent}, menambah {moverValueChange} pada posisi Anda.",
+        "c": "Pada {moverSession}, pergerakan terbesar Anda adalah {moverSymbol}, naik {moverPercent}, keuntungan {moverValueChange} pada posisi Anda."
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSymbol} adalah pergerakan terbesar di portofolio Anda pada {moverSession}: turun {moverPercent}, mengurangi {moverValueChange} dari posisi Anda.",
+        "c": "Pada {moverSession}, pergerakan terbesar Anda adalah {moverSymbol}, turun {moverPercent}, kerugian {moverValueChange} pada posisi Anda."
+      },
+      "activityAnniversary": {
+        "b": "Transaksi pertama Anda di Monize adalah pada {anniversaryFirstDate}, dan minggu ini genap {anniversaryYears} sejak itu.",
+        "c": "Minggu ini genap {anniversaryYears} sejak Anda mencatat transaksi pertama di Monize, pada {anniversaryFirstDate}."
+      },
+      "activityAccountAnniversary": {
+        "b": "Akun {anniversaryAccountName} Anda pertama muncul di Monize pada {anniversaryAccountSince}, dan minggu ini genap {anniversaryAccountYears}.",
+        "c": "Minggu ini akun {anniversaryAccountName} Anda mencapai {anniversaryAccountYears} di Monize, dihitung dari transaksi pertamanya pada {anniversaryAccountSince}."
+      },
+      "netWorthMilestone": {
+        "b": "Kekayaan bersih Anda melampaui {milestoneAmount} pada {milestoneMonth}.",
+        "c": "{milestoneMonth} adalah saat kekayaan bersih Anda melewati {milestoneAmount}."
+      },
+      "activityTransactionMilestone": {
+        "b": "Transaksi nomor {transactionMilestone} masuk ke register Anda dalam 30 hari terakhir.",
+        "c": "Dalam 30 hari terakhir, jumlah transaksi Anda mencapai nomor {transactionMilestone}."
+      },
+      "warrantiesExpiresSoon": {
+        "b": "Pada {expiringWarrantyDate}, {expiringWarrantyDays} lagi, garansi {expiringWarrantyName} Anda berakhir.",
+        "c": "Garansi {expiringWarrantyName} Anda berakhir pada {expiringWarrantyDate}, yaitu {expiringWarrantyDays} lagi."
+      },
+      "spendingYearAgoMonth": {
+        "b": "Setahun lalu, pada {yearAgoMonth}, Anda membelanjakan {yearAgoSpent}, dengan {yearAgoTopCategoryName} sebagai porsi terbesar.",
+        "c": "{yearAgoTopCategoryName} menyerap paling banyak dari {yearAgoSpent} yang Anda belanjakan setahun lalu, pada {yearAgoMonth}."
+      },
+      "netWorthYearAgoUp": {
+        "b": "Kekayaan bersih Anda {yearAgoNetWorthChange} lebih tinggi daripada {yearAgoNetWorth} setahun lalu, pada {yearAgoNetWorthMonth}.",
+        "c": "Naik {yearAgoNetWorthChange} dalam setahun: dari {yearAgoNetWorth} pada {yearAgoNetWorthMonth} ke posisi sekarang."
+      },
+      "netWorthYearAgoDown": {
+        "b": "Kekayaan bersih Anda {yearAgoNetWorthChange} lebih rendah daripada {yearAgoNetWorth} setahun lalu, pada {yearAgoNetWorthMonth}.",
+        "c": "Turun {yearAgoNetWorthChange} dalam setahun: dari {yearAgoNetWorth} pada {yearAgoNetWorthMonth} ke posisi sekarang."
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, kategori pengeluaran teratas Anda adalah {topCategoryName}: {topCategoryAmount}, atau {topCategoryPercent} dari pengeluaran Anda.",
+        "c": "{topCategoryName} menyerap pengeluaran terbesar Anda {window, select, d30 {dalam 30 hari terakhir} d90 {dalam 90 hari terakhir} ytd {sejak awal tahun ini} m12 {dalam dua belas bulan terakhir} all {sejak catatan Anda dimulai} other {dalam periode ini}}: {topCategoryAmount}, atau {topCategoryPercent} dari total."
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {topPayeeName} menerima lebih banyak uang Anda daripada penerima lain: {topPayeeAmount}.",
+        "c": "Anda paling banyak berbelanja di {topPayeeName} {window, select, d30 {dalam 30 hari terakhir} d90 {dalam 90 hari terakhir} ytd {sejak awal tahun ini} m12 {dalam dua belas bulan terakhir} all {sejak catatan Anda dimulai} other {dalam periode ini}}, sebesar {topPayeeAmount}."
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {topSourcePercent} dari pemasukan Anda berasal dari {topSourceName}.",
+        "c": "{topSourceName} adalah sumber {topSourcePercent} dari pemasukan Anda {window, select, d30 {dalam 30 hari terakhir} d90 {dalam 90 hari terakhir} ytd {sejak awal tahun ini} m12 {dalam dua belas bulan terakhir} all {sejak catatan Anda dimulai} other {dalam periode ini}}."
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, kategori peringkat {rankedCategoryRank} Anda adalah {rankedCategoryName}: {rankedCategoryAmount}, atau {rankedCategoryPercent} dari total.",
+        "c": "{rankedCategoryName} di peringkat {rankedCategoryRank} kategori pengeluaran Anda {window, select, d30 {dalam 30 hari terakhir} d90 {dalam 90 hari terakhir} ytd {sejak awal tahun ini} m12 {dalam dua belas bulan terakhir} all {sejak catatan Anda dimulai} other {dalam periode ini}}: {rankedCategoryAmount} ({rankedCategoryPercent} dari total)."
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, Anda membelanjakan {rankedPayeeAmount} di {rankedPayeeName}, peringkat {rankedPayeeRank} di antara penerima berdasarkan pengeluaran.",
+        "c": "Peringkat {rankedPayeeRank} di antara penerima yang paling banyak Anda bayar {window, select, d30 {dalam 30 hari terakhir} d90 {dalam 90 hari terakhir} ytd {sejak awal tahun ini} m12 {dalam dua belas bulan terakhir} all {sejak catatan Anda dimulai} other {dalam periode ini}} adalah {rankedPayeeName}, sebesar {rankedPayeeAmount}."
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {Dalam 30 hari terakhir} d90 {Dalam 90 hari terakhir} ytd {Sejak awal tahun ini} m12 {Dalam dua belas bulan terakhir} all {Sejak catatan Anda dimulai} other {Dalam periode ini}}, {rankedSourceName} menyumbang {rankedSourcePercent} dari pemasukan Anda, peringkat {rankedSourceRank} di antara sumber Anda.",
+        "c": "Di antara sumber pemasukan Anda {window, select, d30 {dalam 30 hari terakhir} d90 {dalam 90 hari terakhir} ytd {sejak awal tahun ini} m12 {dalam dua belas bulan terakhir} all {sejak catatan Anda dimulai} other {dalam periode ini}}, peringkat {rankedSourceRank} adalah {rankedSourceName}, sebesar {rankedSourcePercent} dari pemasukan."
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "{equivPayeeAmount} Anda di {equivPayeeName} dalam dua belas bulan terakhir, dalam bulan pengeluaran rata-rata {equivCategoryName} Anda: sekitar {equivCategoryMonths}.",
+        "c": "Dibelanjakan di {equivPayeeName} dalam dua belas bulan terakhir: {equivPayeeAmount}, atau sekitar {equivCategoryMonths} dalam bulan pengeluaran rata-rata {equivCategoryName} Anda."
+      },
+      "spendingDailyAverage": {
+        "b": "Pengeluaran Anda dalam dua belas bulan terakhir setara sekitar {dailyAverageSpent} per hari.",
+        "c": "Sekitar {dailyAverageSpent} per hari: itulah pengeluaran rata-rata Anda dalam dua belas bulan terakhir."
+      },
+      "incomeKeptCoversDays": {
+        "b": "Dalam dua belas bulan terakhir Anda menyisihkan {keptCoversAmount}, cukup untuk menutup sekitar {keptCoversDays} pengeluaran Anda.",
+        "c": "Sekitar {keptCoversDays} pengeluaran Anda akan tertutup oleh {keptCoversAmount} yang Anda sisihkan dalam dua belas bulan terakhir."
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "Dalam bulan pengeluaran rata-rata Anda, keuntungan investasi sebesar {gainCoversAmount} setara sekitar {gainCoversMonths}.",
+        "c": "Investasi Anda telah untung {gainCoversAmount}. Dalam bulan pengeluaran rata-rata Anda, itu setara: sekitar {gainCoversMonths}."
+      }
     }
   },
   "favouriteAccounts": {

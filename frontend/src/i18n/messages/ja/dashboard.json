@@ -54,8 +54,12 @@
       "warranties": "保証"
     },
     "aiGenerated": "あなたの数字をもとにAIが作成しました",
+    "units": {
+      "days": "{count, plural, other {{value}日}}",
+      "years": "{count, plural, other {{value}年}}"
+    },
     "facts": {
-      "netWorthSinceStart": "{startMonth}の純資産は{startAmount}でした。その後{startGain}増え、約{startMultiple}倍になっています。",
+      "netWorthSinceStart": "{startMonth}の純資産は{startAmount}でした。その後{startGain}増え、成長倍率は{startMultiple}倍です。",
       "netWorthBiggestJump": "{jumpMonth}が1か月で最も大きく伸びた月でした。純資産は{jumpAmount}増え、{jumpPreviousMonth}の{jumpFrom}から{jumpTo}になりました。",
       "netWorthHighPoint": "過去最高は{peakMonth}の{peakAmount}でした。現在はそこから{peakBelow}下回っています。",
       "netWorthAtHighPoint": "今が最高値です。純資産が{currentHigh}を超えたことはありません。",
@@ -80,7 +84,263 @@
       "activityPayees": "Monize に登録している受取人:{payeeCount}件。カテゴリ:{categoryCount}件。",
       "activityScheduled": "Monize があなたのために管理している定期取引:{scheduledCount}件。",
       "warrantiesCovered": "管理している保証のうち、まだ有効なもの:{warrantyCount}件。",
-      "warrantiesNextExpiry": "次に期限が切れる保証は{nextWarrantyName}で、{nextWarrantyMonth}です。"
+      "warrantiesNextExpiry": "次に期限が切れる保証は{nextWarrantyName}で、{nextWarrantyMonth}です。",
+      "spendingMonthToDateLess": "{mtdThrough}までの今月の支出は{mtdSpent}で、先月の同じ日まで({mtdPreviousSpent})より{mtdDifference}少なくなっています。",
+      "spendingMonthToDateMore": "{mtdThrough}までの今月の支出は{mtdSpent}で、先月の同じ日まで({mtdPreviousSpent})より{mtdDifference}多くなっています。",
+      "spendingLastDay": "{lastDayDate}の支出は{lastDaySpent}でした。",
+      "spendingLastSevenDays": "{weekFrom}からの 7 日間の支出は{weekSpent}でした。",
+      "spendingBiggestRecentPurchase": "過去 7 日間で最大の支出は、{recentPurchaseDay}の{recentPurchasePayee}での{recentPurchaseAmount}でした。",
+      "spendingNoSpendStreak": "{lastSpendDay}以降、{noSpendDays}の間、支出の記録がありません。",
+      "spendingDaysSincePayee": "{sincePayeeName}で最後に支出したのは{sincePayeeDay}で、{sincePayeeDays}前です。",
+      "activityBillsDueThisWeek": "今後 7 日間に支払期限が来る請求:{billsDueCount}件、合計{billsDueTotal}。",
+      "activityNextBill": "次の請求は{nextBillName}で、{nextBillAmount}、期限は{nextBillDate}です。",
+      "spendingBudgetPace": "今月の経過は{budgetMonthPercent}で、{budgetName}の予算({budgetTotal})のうち{budgetSpent}、{budgetUsedPercent}を使っています。",
+      "investmentsTopMoverUp": "{moverSession}の値動きが最も大きかったのは{moverSymbol}で、{moverPercent}上昇し、保有分は{moverValueChange}増えました。",
+      "investmentsTopMoverDown": "{moverSession}の値動きが最も大きかったのは{moverSymbol}で、{moverPercent}下落し、保有分は{moverValueChange}減りました。",
+      "activityAnniversary": "今週は、Monize での最初の取引({anniversaryFirstDate})から{anniversaryYears}です。",
+      "activityAccountAnniversary": "{anniversaryAccountName}口座は、今週で Monize での最初の取引({anniversaryAccountSince})から{anniversaryAccountYears}になります。",
+      "netWorthMilestone": "{milestoneMonth}に、純資産が{milestoneAmount}を超えました。",
+      "activityTransactionMilestone": "過去 30 日間に、取引の通算件数が{transactionMilestone}件目に達しました。",
+      "warrantiesExpiresSoon": "{expiringWarrantyName}の保証は{expiringWarrantyDays}後の{expiringWarrantyDate}に期限が切れます。",
+      "spendingYearAgoMonth": "1 年前の{yearAgoMonth}の支出は{yearAgoSpent}で、最も多かったのは{yearAgoTopCategoryName}でした。",
+      "netWorthYearAgoUp": "1 年前の{yearAgoNetWorthMonth}、純資産は{yearAgoNetWorth}でした。現在は{yearAgoNetWorthChange}多くなっています。",
+      "netWorthYearAgoDown": "1 年前の{yearAgoNetWorthMonth}、純資産は{yearAgoNetWorth}でした。現在は{yearAgoNetWorthChange}少なくなっています。",
+      "spendingTopCategoryWindow": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、支出が最も多かったカテゴリは{topCategoryName}で、{topCategoryAmount}、支出全体の{topCategoryPercent}でした。",
+      "spendingTopPayeeWindow": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、最も多くお金を使った相手は{topPayeeName}で、{topPayeeAmount}でした。",
+      "incomeTopSourceWindow": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、収入の{topSourcePercent}は{topSourceName}によるものでした。",
+      "spendingRankedCategory": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、{rankedCategoryName}は支出カテゴリの中で{rankedCategoryRank}位で、{rankedCategoryAmount}(全体の{rankedCategoryPercent})でした。",
+      "spendingRankedPayee": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、{rankedPayeeName}は支出額の多い支払先の中で{rankedPayeeRank}位で、{rankedPayeeAmount}でした。",
+      "incomeRankedSource": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、{rankedSourceName}は収入源の中で{rankedSourceRank}位で、収入の{rankedSourcePercent}を占めました。",
+      "spendingPayeeInCategoryMonths": "過去 12 か月に{equivPayeeName}で使ったのは{equivPayeeAmount}です。{equivCategoryName}の月平均支出に換算した月数:約{equivCategoryMonths}。",
+      "spendingDailyAverage": "過去 12 か月の支出は、1 日あたり平均で約{dailyAverageSpent}です。",
+      "incomeKeptCoversDays": "過去 12 か月に手元に残した{keptCoversAmount}は、支出の約{keptCoversDays}分にあたります。",
+      "investmentsGainInMonthsOfSpending": "投資の{gainCoversAmount}の利益を月平均支出の月数に換算すると:約{gainCoversMonths}。"
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "{startMonth}から純資産は{startAmount}から{startGain}増えました。成長倍率:{startMultiple}倍。",
+        "c": "{startMonth}の{startAmount}に対して、純資産は{startGain}増え、成長倍率は{startMultiple}倍です。"
+      },
+      "netWorthBiggestJump": {
+        "b": "純資産は{jumpPreviousMonth}の{jumpFrom}から{jumpMonth}には{jumpTo}になり、{jumpAmount}増えました。単月で最大の伸びです。",
+        "c": "単月で最大の伸び({jumpAmount})は{jumpMonth}で、純資産は{jumpPreviousMonth}の{jumpFrom}から{jumpTo}になりました。"
+      },
+      "netWorthHighPoint": {
+        "b": "純資産は{peakMonth}に{peakAmount}でピークに達し、現在はそこから{peakBelow}下回っています。",
+        "c": "{peakMonth}につけた最高点{peakAmount}から、現在は{peakBelow}下回っています。"
+      },
+      "netWorthAtHighPoint": {
+        "b": "純資産が{currentHigh}を上回ったことはなく、今がその水準です。",
+        "c": "今の純資産は{currentHigh}で、これが最高点でもあります。"
+      },
+      "netWorthBiggestDip": {
+        "b": "最大の下落で、純資産は{dipFromMonth}の{dipFromAmount}から{dipToMonth}の{dipToAmount}まで、{dipPercent}減りました。",
+        "c": "{dipFromMonth}から{dipToMonth}にかけて、純資産は{dipFromAmount}から{dipToAmount}へ、{dipPercent}下落しました。最大の下落です。"
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "純資産は{dipRecoveredMonth}までに、最大の下落から回復しました。下落は{dipFromMonth}の{dipFromAmount}から{dipToMonth}の{dipToAmount}まででした。",
+        "c": "純資産は{dipFromMonth}に{dipFromAmount}、{dipToMonth}には{dipToAmount}となり、最大の下落でした。{dipRecoveredMonth}までに回復しています。"
+      },
+      "netWorthLargestAsset": {
+        "b": "{assetName}の評価額は{assetValue}で、資産の{assetPercent}を占めます。",
+        "c": "資産の{assetPercent}は{assetName}で、評価額は{assetValue}です。"
+      },
+      "investmentsShareOfAssets": {
+        "b": "資産の{investmentsPercent}が投資で、評価額は合計{investmentsValue}です。",
+        "c": "投資は資産の{investmentsPercent}を占め、評価額は{investmentsValue}です。"
+      },
+      "investmentsGain": {
+        "b": "取得原価{gainCostBasis}に対して、投資は{gainAmount}、{gainPercent}の増加です。",
+        "c": "投資は取得原価{gainCostBasis}を{gainPercent}上回っており、{gainAmount}の増加です。"
+      },
+      "investmentsLoss": {
+        "b": "取得原価{gainCostBasis}に対して、投資は{gainAmount}、{gainPercent}の減少です。",
+        "c": "投資は取得原価{gainCostBasis}を{gainPercent}下回っており、{gainAmount}の減少です。"
+      },
+      "investmentsCagr": {
+        "b": "CAGR で見ると、投資の年間リターンは約{cagrPercent}です。",
+        "c": "約{cagrPercent}。これが投資の年率リターン(CAGR)です。"
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol}が最大の保有銘柄で、{holdingAccounts}で{holdingValue}、ポートフォリオの約{holdingPercent}です。",
+        "c": "ポートフォリオの約{holdingPercent}、つまり{holdingAccounts}の{holdingValue}が、最大の保有銘柄{holdingSymbol}です。"
+      },
+      "investmentsBestPerformer": {
+        "b": "{bestSymbol}が最も好調で、{bestPercent}上昇しました。取得額は{bestCost}で、現在は{bestValue}です。",
+        "c": "{bestPercent}上昇した{bestSymbol}がトップです。取得額{bestCost}から評価額{bestValue}になりました。"
+      },
+      "investmentsForeignAccount": {
+        "b": "{foreignName}口座は{foreignCurrency}で{foreignBalance}を保有しており、約{foreignRate}のレートで{foreignConverted}に相当します。",
+        "c": "約{foreignRate}のレートで、{foreignName}口座({foreignCurrency})の保有額{foreignBalance}は{foreignConverted}に相当します。"
+      },
+      "investmentsLargestAccount": {
+        "b": "最大の投資口座は{largestName}で、評価額は{largestValue}です。",
+        "c": "投資口座のうち最大は{largestName}で、{largestValue}です。"
+      },
+      "spendingTopCategory": {
+        "b": "過去 12 か月で支出が最も多かったカテゴリは{topCategoryName}で、支出の{topCategoryPercent}、{topCategoryAmount}でした。",
+        "c": "過去 12 か月で最も多く使ったカテゴリは{topCategoryName}で、{topCategoryAmount}、全体の{topCategoryPercent}でした。"
+      },
+      "spendingTopPayee": {
+        "b": "過去 12 か月で、{topPayeeName}が他のどの相手よりも多く、{topPayeeAmount}でした。",
+        "c": "過去 12 か月で最大の支払先は{topPayeeName}で、{topPayeeAmount}を使いました。"
+      },
+      "spendingBiggestMonth": {
+        "b": "支出のピークは{biggestSpendMonth}の{biggestSpendAmount}で、過去 12 か月で最も多い月です。",
+        "c": "過去 12 か月で最も支出が多かったのは{biggestSpendMonth}で、{biggestSpendAmount}でした。"
+      },
+      "incomeKeptShare": {
+        "b": "過去 12 か月の収入の{keptPercent}が手元に残り、{keptAmount}でした。",
+        "c": "過去 12 か月に入ってきたお金のうち、{keptAmount}、つまり{keptPercent}が残りました。"
+      },
+      "incomeSurplusMonths": {
+        "b": "直近{windowMonths}か月のうち、出ていくより入ってくるお金が多かった月:{surplusMonths}。",
+        "c": "直近{windowMonths}か月のうち、支出より収入が多かった月:{surplusMonths}。"
+      },
+      "incomeTopSource": {
+        "b": "過去 12 か月の収入の{topSourcePercent}は{topSourceName}からでした。",
+        "c": "過去 12 か月の収入は、{topSourcePercent}が{topSourceName}からでした。"
+      },
+      "activityTransactions": {
+        "b": "{firstTransactionMonth}以降、登録簿にある取引:{transactionCount}件。",
+        "c": "{firstTransactionMonth}から記録した取引:{transactionCount}件。"
+      },
+      "activityPayees": {
+        "b": "Monize に登録している件数:受取人{payeeCount}件、カテゴリ{categoryCount}件。",
+        "c": "Monize にある受取人({payeeCount}件)とカテゴリ({categoryCount}件)。"
+      },
+      "activityScheduled": {
+        "b": "Monize が管理している定期取引は、合計{scheduledCount}件です。",
+        "c": "Monize に設定され、あなたのために予定されている取引:{scheduledCount}件。"
+      },
+      "warrantiesCovered": {
+        "b": "管理している保証のうち、まだ有効なもの:{warrantyCount}件。",
+        "c": "管理している保証のうち、まだ期限が切れていないもの:{warrantyCount}件。"
+      },
+      "warrantiesNextExpiry": {
+        "b": "{nextWarrantyMonth}に、{nextWarrantyName}の保証が次に期限切れになります。",
+        "c": "保証のうち次に期限が切れるもの:{nextWarrantyName}、{nextWarrantyMonth}。"
+      },
+      "spendingMonthToDateLess": {
+        "b": "{mtdThrough}までの今月の支出は{mtdSpent}で、先月の同じ日までの{mtdPreviousSpent}より{mtdDifference}少なくなっています。",
+        "c": "先月の同じ日までの支出は{mtdPreviousSpent}でした。今月は{mtdThrough}までで{mtdSpent}、{mtdDifference}少ない額です。"
+      },
+      "spendingMonthToDateMore": {
+        "b": "{mtdThrough}までの今月の支出は{mtdSpent}で、先月の同じ日までの{mtdPreviousSpent}より{mtdDifference}多くなっています。",
+        "c": "先月の同じ日までの支出は{mtdPreviousSpent}でした。今月は{mtdThrough}までで{mtdSpent}、{mtdDifference}多い額です。"
+      },
+      "spendingLastDay": {
+        "b": "{lastDayDate}の支出額は{lastDaySpent}でした。",
+        "c": "{lastDayDate}に{lastDaySpent}が出ていきました。"
+      },
+      "spendingLastSevenDays": {
+        "b": "{weekFrom}から 7 日間の支出額は{weekSpent}でした。",
+        "c": "{weekFrom}からの 7 日間に使った額は{weekSpent}です。"
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "{recentPurchaseDay}に{recentPurchasePayee}で{recentPurchaseAmount}を使いました。過去 7 日間で最大の支出です。",
+        "c": "{recentPurchaseDay}の{recentPurchasePayee}での{recentPurchaseAmount}が、過去 7 日間で最大の支出でした。"
+      },
+      "spendingNoSpendStreak": {
+        "b": "{noSpendDays}の間、支出の記録がありません。最後の支出は{lastSpendDay}でした。",
+        "c": "{lastSpendDay}以降、{noSpendDays}の間、支出は記録されていません。"
+      },
+      "spendingDaysSincePayee": {
+        "b": "{sincePayeeName}で最後に支出したのは{sincePayeeDay}で、{sincePayeeDays}前でした。",
+        "c": "{sincePayeeName}への最後の支出は{sincePayeeDay}で、{sincePayeeDays}前です。"
+      },
+      "activityBillsDueThisWeek": {
+        "b": "今後 7 日間に期限が来る請求の件数:{billsDueCount}件、合計{billsDueTotal}。",
+        "c": "今後 7 日間に期限が来る請求:{billsDueCount}件、合計{billsDueTotal}。"
+      },
+      "activityNextBill": {
+        "b": "次の請求は{nextBillName}で、{nextBillAmount}、期限は{nextBillDate}です。",
+        "c": "期限が{nextBillDate}の次の請求は{nextBillName}で、{nextBillAmount}です。"
+      },
+      "spendingBudgetPace": {
+        "b": "今月の経過は{budgetMonthPercent}で、{budgetName}の予算{budgetTotal}のうち{budgetSpent}、{budgetUsedPercent}を使いました。",
+        "c": "{budgetName}の予算は{budgetUsedPercent}を使用({budgetSpent}/{budgetTotal})、今月の経過は{budgetMonthPercent}です。"
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSession}にポートフォリオで最も動いたのは{moverSymbol}で、{moverPercent}上昇し、保有分は{moverValueChange}増えました。",
+        "c": "{moverSession}に最も動いたのは{moverSymbol}で、{moverPercent}上昇、保有分は{moverValueChange}の増加でした。"
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSession}にポートフォリオで最も動いたのは{moverSymbol}で、{moverPercent}下落し、保有分は{moverValueChange}減りました。",
+        "c": "{moverSession}に最も動いたのは{moverSymbol}で、{moverPercent}下落、保有分は{moverValueChange}の減少でした。"
+      },
+      "activityAnniversary": {
+        "b": "Monize での最初の取引は{anniversaryFirstDate}で、今週でちょうど{anniversaryYears}です。",
+        "c": "Monize で最初の取引を記録した{anniversaryFirstDate}から、今週で{anniversaryYears}です。"
+      },
+      "activityAccountAnniversary": {
+        "b": "{anniversaryAccountName}口座が Monize に初めて現れたのは{anniversaryAccountSince}で、今週で{anniversaryAccountYears}になります。",
+        "c": "{anniversaryAccountName}口座は、{anniversaryAccountSince}の最初の取引から数えて、今週 Monize で{anniversaryAccountYears}になります。"
+      },
+      "netWorthMilestone": {
+        "b": "純資産は{milestoneMonth}に{milestoneAmount}を超えました。",
+        "c": "純資産が{milestoneAmount}を超えたのは{milestoneMonth}です。"
+      },
+      "activityTransactionMilestone": {
+        "b": "取引番号{transactionMilestone}が、過去 30 日間に登録簿に入りました。",
+        "c": "過去 30 日間に、取引の件数が{transactionMilestone}件目に達しました。"
+      },
+      "warrantiesExpiresSoon": {
+        "b": "{expiringWarrantyDate}、{expiringWarrantyDays}後に、{expiringWarrantyName}の保証が切れます。",
+        "c": "{expiringWarrantyName}の保証は{expiringWarrantyDate}に終了し、それは{expiringWarrantyDays}後です。"
+      },
+      "spendingYearAgoMonth": {
+        "b": "1 年前の{yearAgoMonth}は{yearAgoSpent}を使い、最も大きな割合は{yearAgoTopCategoryName}でした。",
+        "c": "1 年前の{yearAgoMonth}に使った{yearAgoSpent}のうち、最も多かったのは{yearAgoTopCategoryName}です。"
+      },
+      "netWorthYearAgoUp": {
+        "b": "純資産は、1 年前の{yearAgoNetWorthMonth}の{yearAgoNetWorth}より{yearAgoNetWorthChange}多くなっています。",
+        "c": "1 年で{yearAgoNetWorthChange}増加:{yearAgoNetWorthMonth}の{yearAgoNetWorth}から現在の額へ。"
+      },
+      "netWorthYearAgoDown": {
+        "b": "純資産は、1 年前の{yearAgoNetWorthMonth}の{yearAgoNetWorth}より{yearAgoNetWorthChange}少なくなっています。",
+        "c": "1 年で{yearAgoNetWorthChange}減少:{yearAgoNetWorthMonth}の{yearAgoNetWorth}から現在の額へ。"
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、支出が最も多かったカテゴリは{topCategoryName}で、{topCategoryAmount}、支出の{topCategoryPercent}でした。",
+        "c": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、支出の中で最も多かったのは{topCategoryName}で、{topCategoryAmount}、全体の{topCategoryPercent}です。"
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、他のどの支払先よりも多くお金を使ったのは{topPayeeName}で、{topPayeeAmount}でした。",
+        "c": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、最も多く使った相手は{topPayeeName}で、{topPayeeAmount}でした。"
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、収入の{topSourcePercent}は{topSourceName}からでした。",
+        "c": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、収入の{topSourcePercent}は{topSourceName}によるものです。"
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、支出カテゴリの{rankedCategoryRank}位は{rankedCategoryName}で、{rankedCategoryAmount}、全体の{rankedCategoryPercent}でした。",
+        "c": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、{rankedCategoryName}は支出カテゴリで{rankedCategoryRank}位で、{rankedCategoryAmount}(全体の{rankedCategoryPercent})です。"
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、{rankedPayeeName}に{rankedPayeeAmount}を使い、支出額の多い支払先で{rankedPayeeRank}位でした。",
+        "c": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、支出額の多い支払先の{rankedPayeeRank}位は{rankedPayeeName}で、{rankedPayeeAmount}です。"
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、{rankedSourceName}は収入の{rankedSourcePercent}を占め、収入源で{rankedSourceRank}位でした。",
+        "c": "{window, select, d30 {過去 30 日間} d90 {過去 90 日間} ytd {今年のこれまで} m12 {過去 12 か月} all {記録を始めてから今まで} other {この期間}}、収入源の{rankedSourceRank}位は{rankedSourceName}で、収入の{rankedSourcePercent}です。"
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "過去 12 か月に{equivPayeeName}で使った{equivPayeeAmount}を、{equivCategoryName}の月平均支出の月数にすると:約{equivCategoryMonths}。",
+        "c": "過去 12 か月に{equivPayeeName}で使った額:{equivPayeeAmount}、{equivCategoryName}の月平均支出に換算して約{equivCategoryMonths}か月分です。"
+      },
+      "spendingDailyAverage": {
+        "b": "過去 12 か月の支出は、1 日あたり約{dailyAverageSpent}になります。",
+        "c": "1 日あたり約{dailyAverageSpent}。過去 12 か月の平均支出です。"
+      },
+      "incomeKeptCoversDays": {
+        "b": "過去 12 か月に残した{keptCoversAmount}で、支出の約{keptCoversDays}分をまかなえます。",
+        "c": "過去 12 か月に残した{keptCoversAmount}は、支出の約{keptCoversDays}分にあたります。"
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "月平均支出の月数にすると、投資で増えた{gainCoversAmount}は約{gainCoversMonths}です。",
+        "c": "投資の利益は{gainCoversAmount}です。月平均支出の何か月分にあたるか:約{gainCoversMonths}。"
+      }
     }
   },
   "favouriteAccounts": {
