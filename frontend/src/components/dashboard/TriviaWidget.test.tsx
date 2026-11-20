@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NextIntlClientProvider } from 'next-intl';
-import type { ReactNode } from 'react';
-import { act, fireEvent, render, screen } from '@/test/render';
-import { recordIfIntlError } from '@/test/intl-guard';
+import { act, fireEvent, render, renderInLocale, screen } from '@/test/render';
 import dashboardMessages from '@/i18n/messages/en/dashboard.json';
 import { TriviaWidget, TRIVIA_ROTATE_MS } from './TriviaWidget';
 import type { DashboardTriviaResponse } from '@/types/dashboard-trivia';
@@ -335,16 +332,11 @@ describe('TriviaWidget', () => {
       state.today = '2026-11-03'; // picks variant b where there is one
       const { variants: _variants, ...trivia } = dashboardMessages.trivia;
       void _variants;
-      const wrapper = ({ children }: { children: ReactNode }) => (
-        <NextIntlClientProvider
-          locale="en"
-          messages={{ dashboard: { ...dashboardMessages, trivia } }}
-          onError={recordIfIntlError}
-        >
-          {children}
-        </NextIntlClientProvider>
-      );
-      render(<TriviaWidget isLoading={false} />, { wrapper });
+      // An intl error (a missing key) fails the test through renderInLocale's onError.
+      renderInLocale(<TriviaWidget isLoading={false} />, {
+        locale: 'en',
+        messages: { dashboard: { ...dashboardMessages, trivia } },
+      });
       expect(sentence()).toHaveTextContent('Your high point was');
       expect(sentence().textContent).not.toContain('trivia.');
     });

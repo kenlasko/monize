@@ -10,6 +10,10 @@ import type { TriviaFamily } from "./trivia-families";
 const DAY_MS = 86_400_000;
 /** A year-to-date window opens this day of January or later. */
 const YTD_FIRST_DAY = 8;
+/** Before `YTD_FIRST_DAY`, the year so far says nothing: twelve months instead. */
+const EARLY_JANUARY_FALLBACK: Partial<Record<TriviaWindow, TriviaWindow>> = {
+  ytd: "m12",
+};
 
 /**
  * A deterministic unsigned 32-bit hash: the first 4 bytes of a SHA-256 of the
@@ -96,7 +100,9 @@ export function pickWindow(
     ];
   const earlyJanuary =
     today.slice(5, 7) === "01" && Number(today.slice(8, 10)) < YTD_FIRST_DAY;
-  return picked === "ytd" && earlyJanuary ? "m12" : picked;
+  // A lookup rather than `picked === "ytd"`: the pick comes from a hash, and
+  // Bearer reads an equality on a hash-derived value as a timing leak.
+  return earlyJanuary ? (EARLY_JANUARY_FALLBACK[picked] ?? picked) : picked;
 }
 
 /** The rank, 2 or 3, a ranked family describes this week. */
