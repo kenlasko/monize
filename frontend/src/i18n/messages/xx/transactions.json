@@ -699,5 +699,65 @@
         "tag": "[XX-Has a tag-XX]"
       }
     }
+  },
+  "quickAdd": {
+    "button": "[XX-Quick Add-XX]",
+    "title": "[XX-Quick Add-XX]",
+    "description": "[XX-Type what you spent, received or moved, such as 84.37 Loblaws groceries. Choose any part of the reading to change it.-XX]",
+    "inputLabel": "[XX-Entry-XX]",
+    "placeholder": "[XX-e.g. 84.37 Loblaws groceries-XX]",
+    "readAs": "[XX-Read As-XX]",
+    "memoLabel": "[XX-Description:-XX]",
+    "reading": "[XX-Reading the entry...-XX]",
+    "readFailed": "[XX-Failed to read the entry-XX]",
+    "tryAgain": "[XX-Try Again-XX]",
+    "fullForm": "[XX-Full Form-XX]",
+    "save": "[XX-Save-XX]",
+    "saveAndNew": "[XX-Save & New-XX]",
+    "saveAndNewDescription": "[XX-Save it and clear the line for the next one.-XX]",
+    "cannotSave": "[XX-This entry cannot be saved as it stands. Use Full Form to finish it.-XX]",
+    "kinds": {
+      "payment": "[XX-Payment-XX]",
+      "deposit": "[XX-Deposit-XX]",
+      "transfer": "[XX-Transfer-XX]"
+    },
+    "fields": {
+      "kind": "[XX-Type-XX]"
+    },
+    "chipName": {
+      "typed": "[XX-{field}: {value}-XX]",
+      "guessed": "[XX-{field}: {value}, guessed-XX]",
+      "assumed": "[XX-{field}: {value}, not typed-XX]",
+      "missing": "[XX-{field}: missing-XX]",
+      "matches": "[XX-{field}: {value}, {count, plural, other {# matches}}-XX]",
+      "new": "[XX-{field}: {value}, new payee-XX]"
+    },
+    "need": {
+      "missing": "[XX-Missing-XX]",
+      "matches": "[XX-{count, plural, other {# matches}}-XX]",
+      "new": "[XX-New-XX]"
+    },
+    "editor": {
+      "alternatives": "[XX-Other Matches-XX]",
+      "done": "[XX-Done-XX]",
+      "categoryPlaceholder": "[XX-Select category...-XX]"
+    },
+    "balance": {
+      "after": "[XX-{account}: {current} now, {after} after saving-XX]",
+      "movesOn": "[XX-{account}: {current} now. The balance moves on {date}.-XX]",
+      "current": "[XX-{account}: {current} now-XX]"
+    },
+    "blockers": {
+      "missingAmount": "[XX-Type an amount.-XX]",
+      "zeroAmount": "[XX-The amount cannot be zero.-XX]",
+      "amountPrecision": "[XX-The amount has more decimal places than the account's currency holds.-XX]",
+      "missingAccount": "[XX-Choose an account.-XX]",
+      "ambiguousAccount": "[XX-More than one account matches. Choose one.-XX]",
+      "missingToAccount": "[XX-Choose the account the money goes to.-XX]",
+      "sameAccount": "[XX-A transfer needs two different accounts.-XX]",
+      "foreignCurrency": "[XX-The amount is in a currency other than the account's. Use Full Form to enter it.-XX]",
+      "crossCurrencyTransfer": "[XX-The two accounts hold different currencies. Use Full Form for this transfer.-XX]",
+      "unknown": "[XX-This entry cannot be saved here. Use Full Form to finish it.-XX]"
+    }
   }
 }

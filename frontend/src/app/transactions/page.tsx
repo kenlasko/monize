@@ -21,6 +21,8 @@ const ScheduledTransactionForm = dynamic(() => import('@/components/scheduled-tr
 const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m => m.PayeeForm), { ssr: false });
 const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });
 const BulkUpdateModal = dynamic(() => import('@/components/transactions/BulkUpdateModal').then(m => m.BulkUpdateModal), { ssr: false });
+// Loaded the first time Quick Add opens, so the register keeps the bundle it had.
+const QuickAddDialog = dynamic(() => import('@/components/transactions/quick-add/QuickAddDialog').then(m => m.QuickAddDialog), { ssr: false });
 // Reserve the chart card's height while the chunk loads so the rest of the
 // page (filter row, table) doesn't jump down when the chart hydrates.
 const ChartLoadingPlaceholder = () => (
@@ -80,6 +82,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useCommandPaletteStore, type NewTransactionPayee } from '@/store/commandPaletteStore';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { useTourStore } from '@/store/tourStore';
+import type { TransactionFormDraft } from '@/components/transactions/transaction-form-draft';
 import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
 import { SWIPE_PAGINATE_ATTR } from '@/hooks/swipe-gesture';
@@ -196,6 +200,12 @@ function TransactionsContent() {
   // button keeps the remembered date it has always opened on.
   const [createOnDate, setCreateOnDate] = useState<string | undefined>(undefined);
   const [createForPayee, setCreateForPayee] = useState<NewTransactionPayee | null>(null);
+  // Quick Add: its own dialog, the line it opens with (the command palette's),
+  // a counter that gives each opening a fresh dialog, and the entry its Full
+  // Form hands to New Transaction (`seq` makes each hand-off a new form).
+  const quickAddModal = useFormModal<never>();
+  const [quickAddOpening, setQuickAddOpening] = useState({ seq: 0, text: '' });
+  const [formDraft, setFormDraft] = useState<{ seq: number; draft: TransactionFormDraft } | null>(null);
   // Separate modal instances for editing the account/category behind a
   // single-entity filter, reusing the same forms as their own pages.
   const accountModal = useFormModal<Account>();
@@ -781,12 +791,39 @@ function TransactionsContent() {
   const handleCreateNew = () => {
     setCreateOnDate(undefined);
     setCreateForPayee(null);
+    setFormDraft(null);
     openCreate();
   };
 
-  useMobileAddAction(t('page.newButton'), handleCreateNew, {
-    tourAnchor: TOUR_ANCHORS.transactionsNewButton,
-  });
+  const openQuickAdd = (text = '') => {
+    setQuickAddOpening((prev) => ({ seq: prev.seq + 1, text }));
+    quickAddModal.openCreate();
+  };
+
+  // Full Form: Quick Add closes, then New Transaction opens with the entry,
+  // blocked or not. It opens once the closing dialog's history entry is gone,
+  // or that entry's pop would land on the form's.
+  const handleQuickAddFullForm = (draft: TransactionFormDraft) => {
+    quickAddModal.close();
+    setDuplicatingFrom(undefined);
+    setCreateOnDate(undefined);
+    setCreateForPayee(null);
+    setFormDraft((prev) => ({ seq: (prev?.seq ?? 0) + 1, draft }));
+    afterModalHistoryPop(() => openCreate());
+  };
+
+  // Below `xl` the tab bar's + opens Quick Add (the header button is not
+  // drawn there), and the full form is one tap further, behind Full Form. A
+  // delegate has no Quick Add, and a running tour walks the New Transaction
+  // form from the +, so both keep it; a desktop's pinned + does too.
+  const hasMobileTabBar = useHasMobileTabBar();
+  const tourRunning = useTourStore((s) => s.active !== null);
+  const plusOpensQuickAdd = hasMobileTabBar && !actingAsDelegate && !tourRunning;
+  useMobileAddAction(
+    t(plusOpensQuickAdd ? 'quickAdd.button' : 'page.newButton'),
+    plusOpensQuickAdd ? () => openQuickAdd() : handleCreateNew,
+    { tourAnchor: TOUR_ANCHORS.transactionsNewButton },
+  );
 
   // The command palette's "New transaction", on arrival or while already here.
   const newTransactionRequest = useCommandPaletteStore((s) => s.newTransactionRequest);
@@ -796,13 +833,30 @@ function TransactionsContent() {
     /* eslint-disable react-hooks/set-state-in-effect -- consuming a one-shot request from another surface */
     setCreateOnDate(undefined);
     setCreateForPayee(newTransactionRequest.payee);
+    setFormDraft(null);
     /* eslint-enable react-hooks/set-state-in-effect */
     openCreate();
   }, [newTransactionRequest, openCreate]);
 
+  // The command palette's "Quick add" row: the line it read opens in Quick
+  // Add, which reads it again in this register's context. A delegate is never
+  // offered the row; a request that reaches one anyway is dropped.
+  const quickAddRequest = useCommandPaletteStore((s) => s.quickAddRequest);
+  const openQuickAddModal = quickAddModal.openCreate;
+  useEffect(() => {
+    if (!quickAddRequest) return;
+    useCommandPaletteStore.getState().clearQuickAddRequest();
+    if (actingAsDelegate) return;
+    /* eslint-disable react-hooks/set-state-in-effect -- consuming a one-shot request from another surface */
+    setQuickAddOpening((prev) => ({ seq: prev.seq + 1, text: quickAddRequest.text }));
+    /* eslint-enable react-hooks/set-state-in-effect */
+    openQuickAddModal();
+  }, [quickAddRequest, actingAsDelegate, openQuickAddModal]);
+
   const handleCreateOnDay = (date: string) => {
     setCreateOnDate(date);
     setCreateForPayee(null);
+    setFormDraft(null);
     openCreate();
   };
 
@@ -840,6 +894,7 @@ function TransactionsContent() {
     } else {
       setDuplicatingFrom(transaction);
     }
+    setFormDraft(null);
     openCreate();
   };
 
@@ -917,6 +972,7 @@ function TransactionsContent() {
   const handleClose = () => {
     pendingFormNavigation.current = null;
     setDuplicatingFrom(undefined);
+    setFormDraft(null);
     close();
   };
 
@@ -924,6 +980,7 @@ function TransactionsContent() {
 
   const handleFormSuccess = () => {
     setDuplicatingFrom(undefined);
+    setFormDraft(null);
     close();
     setFormKey(prev => prev + 1);
     loadData();
@@ -1286,7 +1343,6 @@ function TransactionsContent() {
   // bar floats at the top of the page, and slides away again when the name
   // scrolls back. Below `xl` the app header's collapsed title carries the
   // account instead.
-  const hasMobileTabBar = useHasMobileTabBar();
   // Read from this render's filter, which is what `retainedWidget` is synced
   // to above, never from `retainedWidget` itself: on the render that switches
   // accounts it still holds the previous one until that sync re-renders, and
@@ -1496,6 +1552,14 @@ function TransactionsContent() {
           floatingBar={!accountBandActive}
           collapsedContext={singleFilteredAccount?.name}
           collapsedSwitcher={collapsedSwitcher}
+          // Quick Add is not offered to an acting delegate.
+          actions={
+            actingAsDelegate ? undefined : (
+              <Button variant="outline" onClick={() => openQuickAdd()}>
+                {t('quickAdd.button')}
+              </Button>
+            )
+          }
           primaryAction={
             <Button
               {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}
@@ -1754,11 +1818,12 @@ function TransactionsContent() {
         {/* Form Modal */}
         <Modal isOpen={showForm} onClose={handleClose} {...modalProps} {...transactionModalProps} title={editingTransaction ? t('page.editModal.editTitle') : duplicatingFrom ? t('page.editModal.duplicateTitle') : t('page.editModal.newTitle')}>
           <TransactionForm
-            key={`${editingTransaction?.id || 'new'}-${duplicatingFrom?.id || ''}-${filters.filterAccountIds.join(',')}-${createOnDate || ''}-${createForPayee?.id || ''}-${formKey}`}
+            key={`${editingTransaction?.id || 'new'}-${duplicatingFrom?.id || ''}-${filters.filterAccountIds.join(',')}-${createOnDate || ''}-${createForPayee?.id || ''}-${formDraft?.seq ?? ''}-${formKey}`}
             transaction={editingTransaction}
             duplicateFrom={duplicatingFrom}
             defaultDate={createOnDate}
             defaultPayee={createForPayee ?? undefined}
+            draft={editingTransaction || duplicatingFrom ? undefined : formDraft?.draft}
             defaultAccountId={filters.filterAccountIds.length === 1 ? filters.filterAccountIds[0] : undefined}
             defaultCategoryId={(() => {
               if (filters.filterAccountIds.length !== 1) return undefined;
@@ -1777,9 +1842,24 @@ function TransactionsContent() {
         </Modal>
         <UnsavedChangesDialog
           {...unsavedChangesDialog}
-          onDiscard={() => { setDuplicatingFrom(undefined); unsavedChangesDialog.onDiscard(); releaseFormNavigation(); }}
+          onDiscard={() => { setDuplicatingFrom(undefined); setFormDraft(null); unsavedChangesDialog.onDiscard(); releaseFormNavigation(); }}
           onCancel={() => { pendingFormNavigation.current = null; unsavedChangesDialog.onCancel(); }}
         />
+
+        {/* Quick Add: mounted while open, so each opening starts from its own line */}
+        {quickAddModal.showForm && (
+          <QuickAddDialog
+            key={quickAddOpening.seq}
+            formModal={quickAddModal}
+            initialText={quickAddOpening.text}
+            contextAccountId={filters.filterAccountIds.length === 1 ? filters.filterAccountIds[0] : undefined}
+            accounts={accounts}
+            payees={payees}
+            categories={categories}
+            onSaved={() => loadData()}
+            onFullForm={handleQuickAddFullForm}
+          />
+        )}
 
         {/* Schedule as Recurring Modal */}
         {showScheduleForm && (

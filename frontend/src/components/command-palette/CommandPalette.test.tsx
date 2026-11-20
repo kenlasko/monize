@@ -33,11 +33,19 @@ vi.mock('@/lib/transactions', () => ({
   transactionsApi: { getAll: (params: unknown) => getTransactions(params) },
 }));
 vi.mock('@/lib/help', () => ({ helpApi: { search: (q: string) => searchHelp(q) } }));
+const interpret = vi.fn();
+vi.mock('@/lib/quick-add', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/quick-add')>()),
+  quickAddApi: { interpret: (...args: unknown[]) => interpret(...args) },
+}));
+vi.mock('@/hooks/useFinancialToday', () => ({ useFinancialToday: () => '2026-11-20' }));
 
 import { CommandPalette } from './CommandPalette';
 import { useAuthStore } from '@/store/authStore';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useHelpStore } from '@/store/helpStore';
+import { qaField, qaMissing, qaPaymentReading, qaTransferReading } from '@/test/quick-add-fixtures';
+import type { QuickAddInterpretation } from '@/types/quick-add';
 
 const hydro = {
   id: 'p1',
@@ -80,6 +88,7 @@ beforeEach(() => {
   getSecurities.mockResolvedValue([]);
   getTransactions.mockResolvedValue({ data: [] });
   searchHelp.mockResolvedValue({ results: [] });
+  interpret.mockReset().mockResolvedValue(null);
 });
 
 describe('CommandPalette', () => {
@@ -378,5 +387,127 @@ describe('CommandPalette', () => {
     await openPalette();
     expect(screen.getByRole('dialog', { name: 'Command palette' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Command palette' })).toHaveClass('sr-only');
+  });
+
+  describe('the Quick add row', () => {
+    const quickAddRow = () => screen.queryByRole('option', { name: /^Quick add:/ });
+
+    it('reads a line with an amount and offers it first among the actions', async () => {
+      interpret.mockResolvedValue(qaPaymentReading());
+      const box = await openPalette();
+      await type(box, '84.37 loblaws groceries');
+      expect(await screen.findByRole('option', { name: /Quick add: \$84\.37 Loblaws, Food: Groceries/ })).toBeInTheDocument();
+      expect(interpret).toHaveBeenCalledWith({ text: '84.37 loblaws groceries', today: '2026-11-20' });
+      fireEvent.keyDown(box, { key: 'Tab' });
+      expect(activeLabel()).toMatch(/^Quick add:/);
+    });
+
+    it('leaves out what the line did not settle', async () => {
+      interpret.mockResolvedValue(
+        qaPaymentReading({ amount: qaField(12.5), payee: qaMissing(), category: qaMissing() }),
+      );
+      const box = await openPalette();
+      await type(box, '12.50');
+      await waitFor(() => expect(quickAddRow()).toBeInTheDocument());
+      // The row is the only result here, so it is the active one and carries ↵.
+      expect(quickAddRow()?.textContent).toMatch(/^Quick add: \$12\.50(↵)?$/);
+    });
+
+    it('reads a transfer as from and to', async () => {
+      interpret.mockResolvedValue(qaTransferReading());
+      const box = await openPalette();
+      await type(box, '500 chequing to savings');
+      expect(await screen.findByRole('option', { name: /Quick add: \$500\.00 Chequing to Savings/ })).toBeInTheDocument();
+    });
+
+    it('offers nothing for a line without an amount, and does not ask', async () => {
+      const box = await openPalette();
+      await type(box, 'hydro');
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      });
+      expect(interpret).not.toHaveBeenCalled();
+      expect(quickAddRow()).not.toBeInTheDocument();
+    });
+
+    it('offers nothing when the reading found no amount', async () => {
+      interpret.mockResolvedValue(qaPaymentReading({ amount: qaMissing() }));
+      const box = await openPalette();
+      await type(box, '2024 report');
+      await waitFor(() => expect(interpret).toHaveBeenCalled());
+      await act(async () => {});
+      expect(quickAddRow()).not.toBeInTheDocument();
+    });
+
+    it('asks nothing for an acting delegate', async () => {
+      useAuthStore.setState({
+        actingAsUserId: 'owner',
+        delegateSections: { transactions: true } as never,
+        delegateCapabilities: null,
+      });
+      const box = await openPalette();
+      await type(box, '84.37 loblaws');
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      });
+      expect(interpret).not.toHaveBeenCalled();
+      expect(quickAddRow()).not.toBeInTheDocument();
+    });
+
+    it('asks nothing when the register cannot be reached', async () => {
+      useAuthStore.setState({
+        actingAsUserId: 'owner',
+        delegateSections: { bills: true } as never,
+        delegateCapabilities: null,
+      });
+      const box = await openPalette();
+      await type(box, '84.37 loblaws');
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      });
+      expect(interpret).not.toHaveBeenCalled();
+    });
+
+    it('adds no row and reports nothing when the reading fails', async () => {
+      interpret.mockRejectedValue(new Error('down'));
+      const box = await openPalette();
+      await type(box, '84.37 loblaws');
+      await waitFor(() => expect(interpret).toHaveBeenCalled());
+      await act(async () => {});
+      expect(quickAddRow()).not.toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      // The search the line also is still offered.
+      expect(screen.getByRole('option', { name: /Search transactions for/ })).toBeInTheDocument();
+    });
+
+    it('never draws an earlier line\'s reading under a newer one', async () => {
+      let resolveFirst!: (value: QuickAddInterpretation) => void;
+      interpret.mockImplementationOnce(
+        () => new Promise<QuickAddInterpretation>((resolve) => {
+          resolveFirst = resolve;
+        }),
+      );
+      const box = await openPalette();
+      await type(box, '84.37 loblaws');
+      await waitFor(() => expect(interpret).toHaveBeenCalledTimes(1));
+      interpret.mockResolvedValueOnce(qaPaymentReading({ amount: qaField(12), payee: qaField({ id: 't', name: 'Tim Hortons' }), category: qaMissing() }));
+      await type(box, '12 tim');
+      expect(await screen.findByRole('option', { name: /Quick add: \$12\.00 Tim Hortons/ })).toBeInTheDocument();
+      await act(async () => {
+        resolveFirst(qaPaymentReading());
+      });
+      expect(screen.queryByRole('option', { name: /Loblaws/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /Quick add: \$12\.00 Tim Hortons/ })).toBeInTheDocument();
+    });
+
+    it('opens Quick Add on the register with the line', async () => {
+      interpret.mockResolvedValue(qaPaymentReading());
+      const box = await openPalette();
+      await type(box, '84.37 loblaws groceries');
+      fireEvent.click(await screen.findByRole('option', { name: /^Quick add:/ }));
+      expect(useCommandPaletteStore.getState().quickAddRequest).toEqual({ text: '84.37 loblaws groceries' });
+      expect(push).toHaveBeenCalledWith('/transactions');
+      expect(useCommandPaletteStore.getState().open).toBe(false);
+    });
   });
 });

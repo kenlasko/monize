@@ -89,6 +89,7 @@ import {
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { NoteLinks } from '@/components/ui/LinkifiedText';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import type { TransactionFormDraft } from './transaction-form-draft';
 
 const logger = createLogger('TransactionForm');
 
@@ -215,6 +216,16 @@ interface TransactionFormProps {
    * filled in (the command palette's action). Ignored when editing or duplicating.
    */
   defaultPayee?: { id: string; name: string; defaultCategoryId?: string | null };
+  /**
+   * A new entry started somewhere else (Quick Add's Full Form): its mode,
+   * accounts, signed amount, date, payee, category and description. Read only
+   * when creating; an edit or a duplicate ignores it. It replaces
+   * `defaultPayee` and `defaultCategoryId`, and its account and date win over
+   * `defaultAccountId` and `defaultDate` where it names them: those describe
+   * the page, the draft describes the entry. A seeded form counts as unsaved
+   * work, so closing it asks first.
+   */
+  draft?: TransactionFormDraft;
   onSuccess?: () => void;
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -274,7 +285,7 @@ type AfterCreate = 'addWarranty';
 // Transaction mode type
 type TransactionMode = 'normal' | 'split' | 'transfer';
 
-function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, defaultPayee, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
+function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, defaultCategoryId, defaultDate, defaultPayee, draft, onSuccess, onCancel, onDirtyChange, submitRef, onCreateAnother, initialStagedFiles, onAddWarranty, onAddWarrantyAfterCreate, onShareAfterCreate, onOpenWarranty }: TransactionFormFieldsProps) {
   const t = useTranslations('transactions');
   const th = useTranslations('help');
   const sharedT = useTranslations('sharedExpenses');
@@ -312,20 +323,32 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const [tags, setTags] = useState<Tag[]>([]);
   // initSource: the transaction to pre-fill from (either editing or duplicating)
   const initSource = transaction || duplicateFrom;
-  const newEntryPayee = initSource ? undefined : defaultPayee;
+  // A draft seeds a new entry only, and over the page's own defaults.
+  const newEntryDraft = initSource ? undefined : draft;
+  const draftCategoryId = newEntryDraft?.categoryId || undefined;
+  // A transfer's payee is the transfer form's own field, so the draft's payee
+  // goes there in Transfer mode and here otherwise.
+  const draftPayeeId = newEntryDraft?.mode === 'normal' ? newEntryDraft.payeeId || '' : '';
+  const draftPayeeName = newEntryDraft?.mode === 'normal' ? newEntryDraft.payeeName || '' : '';
+  const newEntryPayee = initSource || newEntryDraft ? undefined : defaultPayee;
   const payeeCategoryId = newEntryPayee?.defaultCategoryId || undefined;
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     initSource?.tags?.map(t => t.id) || []
   );
-  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(initSource?.payeeId || newEntryPayee?.id || '');
+  const [selectedPayeeId, setSelectedPayeeId] = useState<string>(
+    initSource?.payeeId || newEntryPayee?.id || draftPayeeId,
+  );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
-    initSource?.categoryId || (initSource ? '' : payeeCategoryId || defaultCategoryId || '')
+    initSource?.categoryId ||
+      (initSource ? '' : newEntryDraft ? draftCategoryId || '' : payeeCategoryId || defaultCategoryId || ''),
   );
   const [, setCategoryName] = useState<string>('');
   // Tracks whether the current categoryId was set by the asset-account auto-fill
   // (so we can clear it when switching away to a non-asset account). A payee's
   // category is the reader's choice of payee, as when one is picked in the form.
-  const categoryWasAutoSetRef = useRef<boolean>(!initSource && !!defaultCategoryId && !payeeCategoryId);
+  const categoryWasAutoSetRef = useRef<boolean>(
+    !initSource && !newEntryDraft && !!defaultCategoryId && !payeeCategoryId,
+  );
 
   // ─── new payee's contact details ──────────────────────────────────────
   //
@@ -355,6 +378,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
 
   // Determine initial mode based on transaction or duplicateFrom
   const getInitialMode = (): TransactionMode => {
+    if (newEntryDraft) return newEntryDraft.mode === 'transfer' ? 'transfer' : 'normal';
     if (initSource?.isTransfer) return 'transfer';
     if (initSource?.isSplit) return 'split';
     return 'normal';
@@ -410,7 +434,9 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
 
   // Transfer state - initialize from linked transaction if editing a transfer
   const [transferToAccountId, setTransferToAccountId] = useState<string>(
-    initialTransferAccounts.toAccountId
+    newEntryDraft?.mode === 'transfer'
+      ? newEntryDraft.toAccountId || ''
+      : initialTransferAccounts.toAccountId,
   );
 
   // Target amount for cross-currency transfers
@@ -425,10 +451,14 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   });
   // Transfer payee (optional)
   const [transferPayeeId, setTransferPayeeId] = useState<string>(
-    initSource?.isTransfer ? (initSource.payeeId || '') : '',
+    initSource?.isTransfer
+      ? (initSource.payeeId || '')
+      : newEntryDraft?.mode === 'transfer' ? newEntryDraft.payeeId || '' : '',
   );
   const [transferPayeeName, setTransferPayeeName] = useState<string>(
-    initSource?.isTransfer ? (initSource.payeeName || '') : '',
+    initSource?.isTransfer
+      ? (initSource.payeeName || '')
+      : newEntryDraft?.mode === 'transfer' ? newEntryDraft.payeeName || '' : '',
   );
 
   // Foreign-currency entry state. `entryCurrency` is the currency the user is
@@ -437,8 +467,11 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // (account-currency units per 1 unit of entryCurrency). On a new transaction
   // the entry currency is seeded from the sticky remembered currency; when
   // editing/duplicating a foreign transaction it comes from the source.
+  // A draft's amount is in the account's currency, so it starts there rather
+  // than in the remembered entry currency.
   const [entryCurrency, setEntryCurrency] = useState<string>(
-    initSource?.originalCurrencyCode || (initSource ? '' : getRememberedTransactionCurrency()),
+    initSource?.originalCurrencyCode ||
+      (initSource || newEntryDraft ? '' : getRememberedTransactionCurrency()),
   );
   const [foreignAmount, setForeignAmount] = useState<number | undefined>(
     initSource?.originalAmount != null ? Number(initSource.originalAmount) : undefined,
@@ -488,18 +521,34 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           referenceNumber: initSource.referenceNumber || '',
           status: duplicateFrom ? TransactionStatus.UNRECONCILED : (initSource.status || TransactionStatus.UNRECONCILED),
         }
-      : {
-          accountId: defaultAccountId || '',
-          payeeId: defaultPayee?.id || '',
-          payeeName: defaultPayee?.name || '',
-          categoryId: payeeCategoryId || defaultCategoryId || '',
-          transactionDate: defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
-          currencyCode: defaultCurrency,
-          status: TransactionStatus.UNRECONCILED,
-        },
+      : newEntryDraft
+        ? {
+            accountId: newEntryDraft.accountId || defaultAccountId || '',
+            payeeId: draftPayeeId,
+            payeeName: draftPayeeName,
+            // The draft's own; an asset account's category is filled by the
+            // account effect below, for whichever account the draft names.
+            categoryId: draftCategoryId || '',
+            transactionDate:
+              newEntryDraft.date || defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
+            ...(newEntryDraft.amount !== undefined ? { amount: newEntryDraft.amount } : {}),
+            currencyCode: defaultCurrency,
+            description: newEntryDraft.description || '',
+            status: TransactionStatus.UNRECONCILED,
+          }
+        : {
+            accountId: defaultAccountId || '',
+            payeeId: defaultPayee?.id || '',
+            payeeName: defaultPayee?.name || '',
+            categoryId: payeeCategoryId || defaultCategoryId || '',
+            transactionDate: defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
+            currencyCode: defaultCurrency,
+            status: TransactionStatus.UNRECONCILED,
+          },
   });
 
-  useFormDirtyNotify(isDirty, onDirtyChange);
+  // An entry handed over from elsewhere is unsaved work from the first render.
+  useFormDirtyNotify(isDirty || !!newEntryDraft, onDirtyChange);
 
   const watchedAccountId = useWatch({ control, name: 'accountId' });
   const watchedAmount = useWatch({ control, name: 'amount' });
@@ -748,11 +797,13 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   };
 
   // Set defaultAccountId when it changes (and we're not editing an existing transaction)
+  // A draft that names its account keeps it.
+  const draftAccountId = newEntryDraft?.accountId;
   useEffect(() => {
-    if (!transaction && defaultAccountId) {
+    if (!transaction && defaultAccountId && !draftAccountId) {
       setValue('accountId', defaultAccountId);
     }
-  }, [defaultAccountId, transaction, setValue]);
+  }, [defaultAccountId, draftAccountId, transaction, setValue]);
 
   // Set defaultCategoryId when it changes (and we're not editing/duplicating).
   // The picker's own state follows during render (the "info from previous
@@ -763,16 +814,16 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     categoryDefaultFor.initSource !== initSource
   ) {
     setCategoryDefaultFor({ defaultCategoryId, initSource });
-    if (!initSource && defaultCategoryId && !payeeCategoryId) {
+    if (!initSource && !newEntryDraft && defaultCategoryId && !payeeCategoryId) {
       setSelectedCategoryId(defaultCategoryId);
     }
   }
   useEffect(() => {
-    if (!initSource && defaultCategoryId && !payeeCategoryId) {
+    if (!initSource && !newEntryDraft && defaultCategoryId && !payeeCategoryId) {
       setValue('categoryId', defaultCategoryId);
       categoryWasAutoSetRef.current = true;
     }
-  }, [defaultCategoryId, payeeCategoryId, initSource, setValue]);
+  }, [defaultCategoryId, payeeCategoryId, newEntryDraft, initSource, setValue]);
 
   // Load accounts, categories, active payees on mount
   // When editing, also fetch the transaction's payee if it's inactive so it appears in the dropdown
@@ -1937,6 +1988,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           handleModeChange={handleModeChange}
           onQuickFill={!transaction && !duplicateFrom ? handleQuickFill : undefined}
           transaction={transaction}
+          initialPayeeName={draftPayeeName || undefined}
           createdAtSlot={createdAtSlot}
           currencyPickerSlot={currencyPickerSlot}
           convertedAmountSlot={convertedAmountSlot}
@@ -2256,6 +2308,8 @@ export function TransactionForm(props: TransactionFormProps) {
       // first one was duplicated from.
       duplicateFrom={restart ? undefined : props.duplicateFrom}
       defaultPayee={restart ? undefined : props.defaultPayee}
+      // The handed-over entry was the one just created.
+      draft={restart ? undefined : props.draft}
       // Same for shared files: they were uploaded to the entry just created, so
       // re-staging them here would attach a second copy to the next one.
       initialStagedFiles={restart ? undefined : props.initialStagedFiles}

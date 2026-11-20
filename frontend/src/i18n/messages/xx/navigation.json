@@ -79,6 +79,13 @@
     "transactionsFor": "[XX-All transactions for {name}-XX]",
     "searchTransactions": "[XX-Search transactions for “{query}”-XX]",
     "searchHelp": "[XX-Search help-XX]",
-    "keyboardShortcuts": "[XX-Keyboard shortcuts-XX]"
+    "keyboardShortcuts": "[XX-Keyboard shortcuts-XX]",
+    "quickAdd": {
+      "amount": "[XX-Quick add: {amount}-XX]",
+      "payee": "[XX-Quick add: {amount} {payee}-XX]",
+      "category": "[XX-Quick add: {amount} {category}-XX]",
+      "payeeCategory": "[XX-Quick add: {amount} {payee}, {category}-XX]",
+      "transfer": "[XX-Quick add: {amount} {from} to {to}-XX]"
+    }
   }
 }
