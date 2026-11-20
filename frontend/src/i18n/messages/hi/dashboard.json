@@ -54,8 +54,12 @@
       "warranties": "वारंटी"
     },
     "aiGenerated": "आपके आँकड़ों से AI द्वारा लिखा गया",
+    "units": {
+      "days": "{count, plural, one {{value} दिन} other {{value} दिन}}",
+      "years": "{count, plural, one {{value} साल} other {{value} साल}}"
+    },
     "facts": {
-      "netWorthSinceStart": "{startMonth} में आपकी कुल संपत्ति {startAmount} थी। तब से यह {startGain} बढ़ी है, यानी लगभग {startMultiple} गुना बड़ी हो गई है।",
+      "netWorthSinceStart": "{startMonth} में आपकी कुल संपत्ति {startAmount} थी। तब से यह {startGain} बढ़ी है, वृद्धि का गुणक: {startMultiple}।",
       "netWorthBiggestJump": "{jumpMonth} आपकी सबसे बड़ी एक-महीने की छलांग थी। कुल संपत्ति {jumpAmount} बढ़ी, {jumpPreviousMonth} में {jumpFrom} से {jumpTo} तक।",
       "netWorthHighPoint": "आपका उच्चतम स्तर {peakMonth} में {peakAmount} था। अभी आप उससे {peakBelow} नीचे हैं।",
       "netWorthAtHighPoint": "आप अपने उच्चतम स्तर पर हैं: कुल संपत्ति कभी {currentHigh} से ऊपर नहीं गई।",
@@ -80,7 +84,263 @@
       "activityPayees": "Monize में आपके रखे भुगतानकर्ता: {payeeCount}। श्रेणियाँ: {categoryCount}।",
       "activityScheduled": "Monize आपके लिए जिन निर्धारित लेन-देन को ट्रैक कर रहा है: {scheduledCount}।",
       "warrantiesCovered": "आपकी ट्रैक की गई वारंटियाँ जो अभी भी लागू हैं: {warrantyCount}।",
-      "warrantiesNextExpiry": "अगली वारंटी जो खत्म होगी, वह {nextWarrantyName} है, {nextWarrantyMonth} में।"
+      "warrantiesNextExpiry": "अगली वारंटी जो खत्म होगी, वह {nextWarrantyName} है, {nextWarrantyMonth} में।",
+      "spendingMonthToDateLess": "{mtdThrough} तक इस महीने आपने {mtdSpent} खर्च किए हैं, जो पिछले महीने की इसी तारीख तक ({mtdPreviousSpent}) से {mtdDifference} कम है।",
+      "spendingMonthToDateMore": "{mtdThrough} तक इस महीने आपने {mtdSpent} खर्च किए हैं, जो पिछले महीने की इसी तारीख तक ({mtdPreviousSpent}) से {mtdDifference} ज़्यादा है।",
+      "spendingLastDay": "{lastDayDate} को आपने {lastDaySpent} खर्च किए।",
+      "spendingLastSevenDays": "{weekFrom} से शुरू होने वाले सात दिनों में आपने {weekSpent} खर्च किए।",
+      "spendingBiggestRecentPurchase": "पिछले सात दिनों की आपकी सबसे बड़ी खरीदारी {recentPurchaseDay} को {recentPurchasePayee} पर {recentPurchaseAmount} की थी।",
+      "spendingNoSpendStreak": "{lastSpendDay} के बाद से {noSpendDays} से कोई खर्च दर्ज नहीं हुआ है।",
+      "spendingDaysSincePayee": "आपने {sincePayeeName} पर आखिरी बार {sincePayeeDay} को खर्च किया था, यानी {sincePayeeDays} पहले।",
+      "activityBillsDueThisWeek": "अगले सात दिनों में देय बिल: {billsDueCount}, कुल {billsDueTotal}।",
+      "activityNextBill": "आपका अगला बिल {nextBillName} है, {nextBillAmount} का, देय तिथि {nextBillDate}।",
+      "spendingBudgetPace": "महीने का {budgetMonthPercent} बीत जाने पर आपने अपने {budgetName} बजट ({budgetSpent} / {budgetTotal}) का {budgetUsedPercent} इस्तेमाल कर लिया है।",
+      "investmentsTopMoverUp": "{moverSession} को आपका सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा, जो {moverPercent} बढ़ा और आपकी पोज़िशन में {moverValueChange} जोड़ गया।",
+      "investmentsTopMoverDown": "{moverSession} को आपका सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा, जो {moverPercent} गिरा और आपकी पोज़िशन से {moverValueChange} घटा गया।",
+      "activityAnniversary": "इस हफ़्ते Monize में आपके पहले लेन-देन ({anniversaryFirstDate}) को {anniversaryYears} पूरे हो रहे हैं।",
+      "activityAccountAnniversary": "आपके {anniversaryAccountName} खाते को इस हफ़्ते Monize में {anniversaryAccountYears} पूरे हो रहे हैं: उसका पहला लेन-देन {anniversaryAccountSince} को हुआ था।",
+      "netWorthMilestone": "{milestoneMonth} में आपकी कुल संपत्ति {milestoneAmount} के पार चली गई।",
+      "activityTransactionMilestone": "पिछले 30 दिनों में आपने लेन-देन संख्या {transactionMilestone} दर्ज किया।",
+      "warrantiesExpiresSoon": "आपकी {expiringWarrantyName} वारंटी {expiringWarrantyDays} में, {expiringWarrantyDate} को खत्म हो रही है।",
+      "spendingYearAgoMonth": "एक साल पहले, {yearAgoMonth} में, आपने {yearAgoSpent} खर्च किए थे, और उसका सबसे बड़ा हिस्सा {yearAgoTopCategoryName} पर गया था।",
+      "netWorthYearAgoUp": "एक साल पहले, {yearAgoNetWorthMonth} में, आपकी कुल संपत्ति {yearAgoNetWorth} थी। अब यह {yearAgoNetWorthChange} ज़्यादा है।",
+      "netWorthYearAgoDown": "एक साल पहले, {yearAgoNetWorthMonth} में, आपकी कुल संपत्ति {yearAgoNetWorth} थी। अब यह {yearAgoNetWorthChange} कम है।",
+      "spendingTopCategoryWindow": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपके खर्च का सबसे बड़ा हिस्सा {topCategoryName} पर गया: {topCategoryAmount}, यानी {topCategoryPercent}।",
+      "spendingTopPayeeWindow": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपने सबसे ज़्यादा {topPayeeName} पर खर्च किया: {topPayeeAmount}।",
+      "incomeTopSourceWindow": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपकी आय का {topSourcePercent} {topSourceName} से आया।",
+      "spendingRankedCategory": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपकी खर्च श्रेणियों में {rankedCategoryName} का क्रम {rankedCategoryRank} रहा: {rankedCategoryAmount} (कुल का {rankedCategoryPercent})।",
+      "spendingRankedPayee": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} सबसे ज़्यादा खर्च वाले भुगतानकर्ताओं में {rankedPayeeName} का क्रम {rankedPayeeRank} रहा: {rankedPayeeAmount}।",
+      "incomeRankedSource": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपके आय स्रोतों में {rankedSourceName} का क्रम {rankedSourceRank} रहा, जिसने आय का {rankedSourcePercent} दिया।",
+      "spendingPayeeInCategoryMonths": "पिछले बारह महीनों में आपने {equivPayeeName} पर {equivPayeeAmount} खर्च किए। {equivCategoryName} पर आपके औसत खर्च के महीनों में: लगभग {equivCategoryMonths}।",
+      "spendingDailyAverage": "पिछले बारह महीनों में आपका खर्च औसतन लगभग {dailyAverageSpent} प्रतिदिन रहा।",
+      "incomeKeptCoversDays": "पिछले बारह महीनों में आपने जो {keptCoversAmount} बचाए, वे आपके लगभग {keptCoversDays} के खर्च को कवर करेंगे।",
+      "investmentsGainInMonthsOfSpending": "आपके निवेश का {gainCoversAmount} का लाभ, आपके औसत खर्च के महीनों में: लगभग {gainCoversMonths}।"
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "{startMonth} से आपकी कुल संपत्ति {startAmount} से {startGain} बढ़ी है। वृद्धि का गुणक: {startMultiple}।",
+        "c": "{startMonth} में {startAmount} की तुलना में कुल संपत्ति {startGain} बढ़ी है, और वृद्धि का गुणक {startMultiple} है।"
+      },
+      "netWorthBiggestJump": {
+        "b": "कुल संपत्ति {jumpPreviousMonth} में {jumpFrom} से {jumpMonth} में {jumpTo} हो गई, यानी {jumpAmount} की बढ़त, जो आपकी सबसे बड़ी एक-महीने की छलांग है।",
+        "c": "आपकी सबसे बड़ी एक-महीने की छलांग, {jumpAmount}, {jumpMonth} में आई, जब कुल संपत्ति {jumpPreviousMonth} में {jumpFrom} से बढ़कर {jumpTo} हो गई।"
+      },
+      "netWorthHighPoint": {
+        "b": "कुल संपत्ति {peakMonth} में {peakAmount} पर पहुँची थी, और आज वह उससे {peakBelow} नीचे है।",
+        "c": "{peakMonth} में बने {peakAmount} के उच्चतम स्तर से आप {peakBelow} नीचे हैं।"
+      },
+      "netWorthAtHighPoint": {
+        "b": "कुल संपत्ति कभी {currentHigh} से ऊपर नहीं गई, और आप अभी वहीं हैं।",
+        "c": "आज आपकी कुल संपत्ति {currentHigh} है, और यही आपका उच्चतम स्तर भी है।"
+      },
+      "netWorthBiggestDip": {
+        "b": "सबसे बड़ी गिरावट में कुल संपत्ति {dipPercent} घटी, {dipFromMonth} में {dipFromAmount} से {dipToMonth} में {dipToAmount} तक।",
+        "c": "{dipFromMonth} से {dipToMonth} तक कुल संपत्ति {dipFromAmount} से घटकर {dipToAmount} हो गई, यानी {dipPercent} की गिरावट, जो सबसे बड़ी गिरावट है।"
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "कुल संपत्ति {dipRecoveredMonth} तक अपनी सबसे बड़ी गिरावट से उबर चुकी थी, जो {dipFromMonth} में {dipFromAmount} से {dipToMonth} में {dipToAmount} तक थी।",
+        "c": "{dipFromMonth} में कुल संपत्ति {dipFromAmount} थी, और {dipToMonth} तक {dipToAmount} हो गई, यही सबसे बड़ी गिरावट थी। {dipRecoveredMonth} तक वह उबर चुकी थी।"
+      },
+      "netWorthLargestAsset": {
+        "b": "{assetValue} मूल्य वाला {assetName} आपकी परिसंपत्तियों का {assetPercent} है।",
+        "c": "आपकी परिसंपत्तियों का {assetPercent} {assetName} है, और उसका मूल्य {assetValue} है।"
+      },
+      "investmentsShareOfAssets": {
+        "b": "आपकी परिसंपत्तियों का {investmentsPercent} निवेश में है, जिसका कुल मूल्य {investmentsValue} है।",
+        "c": "निवेश आपकी परिसंपत्तियों का {investmentsPercent} है, जिसका मूल्य {investmentsValue} है।"
+      },
+      "investmentsGain": {
+        "b": "{gainCostBasis} की लागत के मुकाबले आपके निवेश {gainAmount}, यानी {gainPercent} बढ़े हैं।",
+        "c": "आपके निवेश अपनी {gainCostBasis} की लागत से {gainPercent} ऊपर हैं, यानी {gainAmount} का लाभ।"
+      },
+      "investmentsLoss": {
+        "b": "{gainCostBasis} की लागत के मुकाबले आपके निवेश {gainAmount}, यानी {gainPercent} घटे हैं।",
+        "c": "आपके निवेश अपनी {gainCostBasis} की लागत से {gainPercent} नीचे हैं, यानी {gainAmount} की हानि।"
+      },
+      "investmentsCagr": {
+        "b": "CAGR के रूप में मापने पर आपके निवेश ने सालाना लगभग {cagrPercent} रिटर्न दिया है।",
+        "c": "लगभग {cagrPercent}: यह आपके निवेश का वार्षिकीकृत रिटर्न (CAGR) है।"
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol} आपकी सबसे बड़ी होल्डिंग है, {holdingAccounts} में {holdingValue} मूल्य की और पोर्टफ़ोलियो का लगभग {holdingPercent}।",
+        "c": "आपके पोर्टफ़ोलियो का लगभग {holdingPercent}, यानी {holdingAccounts} में {holdingValue}, {holdingSymbol} में है, जो आपकी सबसे बड़ी होल्डिंग है।"
+      },
+      "investmentsBestPerformer": {
+        "b": "{bestSymbol} आपका सबसे अच्छा प्रदर्शन करने वाला निवेश है, {bestPercent} बढ़ा: इसकी लागत {bestCost} थी और अब मूल्य {bestValue} है।",
+        "c": "{bestPercent} की बढ़त के साथ {bestSymbol} आपकी होल्डिंग में सबसे आगे है। लागत {bestCost} से मूल्य {bestValue} हो गया।"
+      },
+      "investmentsForeignAccount": {
+        "b": "आपके {foreignName} खाते में {foreignCurrency} में {foreignBalance} हैं, जो लगभग {foreignRate} की दर पर {foreignConverted} के बराबर है।",
+        "c": "लगभग {foreignRate} की दर पर, आपके {foreignName} खाते ({foreignCurrency}) की {foreignBalance} की होल्डिंग {foreignConverted} के बराबर है।"
+      },
+      "investmentsLargestAccount": {
+        "b": "{largestName} आपका सबसे बड़ा निवेश खाता है, जिसका मूल्य {largestValue} है।",
+        "c": "आपके निवेश खातों में {largestName} सबसे बड़ा है, {largestValue} के साथ।"
+      },
+      "spendingTopCategory": {
+        "b": "पिछले बारह महीनों में {topCategoryName} आपकी शीर्ष श्रेणी रही, जिसने आपके खर्च का {topCategoryPercent}, यानी {topCategoryAmount} लिया।",
+        "c": "पिछले बारह महीनों में आपने सबसे ज़्यादा {topCategoryName} श्रेणी पर खर्च किया: {topCategoryAmount}, यानी कुल का {topCategoryPercent}।"
+      },
+      "spendingTopPayee": {
+        "b": "पिछले बारह महीनों में {topPayeeName} को आपका पैसा किसी भी अन्य भुगतानकर्ता से ज़्यादा मिला: {topPayeeAmount}।",
+        "c": "पिछले बारह महीनों में आपका सबसे बड़ा भुगतानकर्ता {topPayeeName} रहा, जिस पर {topPayeeAmount} खर्च हुए।"
+      },
+      "spendingBiggestMonth": {
+        "b": "आपका खर्च {biggestSpendMonth} में {biggestSpendAmount} पर पहुँचा, जो पिछले बारह महीनों का सबसे बड़ा महीना है।",
+        "c": "पिछले बारह महीनों में {biggestSpendMonth} में सबसे ज़्यादा खर्च हुआ, {biggestSpendAmount}।"
+      },
+      "incomeKeptShare": {
+        "b": "पिछले बारह महीनों में आपकी आय का {keptPercent} बचा, यानी {keptAmount}।",
+        "c": "पिछले बारह महीनों में जितना भी पैसा आया, उसमें से आपने {keptAmount} बचाए, यानी {keptPercent}।"
+      },
+      "incomeSurplusMonths": {
+        "b": "पिछले {windowMonths} महीनों में वे महीने जिनमें जाने से ज़्यादा आया: {surplusMonths}।",
+        "c": "पिछले {windowMonths} महीनों में वे महीने जिनमें आपने खर्च से ज़्यादा कमाया: {surplusMonths}।"
+      },
+      "incomeTopSource": {
+        "b": "पिछले बारह महीनों में आपकी आय का {topSourcePercent} {topSourceName} से आया।",
+        "c": "पिछले बारह महीनों में आपकी आय का {topSourcePercent} {topSourceName} से मिला।"
+      },
+      "activityTransactions": {
+        "b": "{firstTransactionMonth} से आपके रजिस्टरों में लेन-देन: {transactionCount}।",
+        "c": "{firstTransactionMonth} से आपने जितने लेन-देन दर्ज किए: {transactionCount}।"
+      },
+      "activityPayees": {
+        "b": "Monize में आपके रखे गए आँकड़े: भुगतानकर्ता {payeeCount}, श्रेणियाँ {categoryCount}।",
+        "c": "Monize में आपके भुगतानकर्ता ({payeeCount}) और आपकी श्रेणियाँ ({categoryCount}) हैं।"
+      },
+      "activityScheduled": {
+        "b": "Monize आपके निर्धारित लेन-देन ट्रैक करता है, कुल {scheduledCount}।",
+        "c": "Monize में सेट किए गए और आपके लिए निर्धारित लेन-देन: {scheduledCount}।"
+      },
+      "warrantiesCovered": {
+        "b": "आपकी ट्रैक की गई वारंटियों में जो अभी लागू हैं: {warrantyCount}।",
+        "c": "आपकी ट्रैक की गई वारंटियों में जो अभी खत्म नहीं हुई हैं: {warrantyCount}।"
+      },
+      "warrantiesNextExpiry": {
+        "b": "{nextWarrantyMonth} में आपकी {nextWarrantyName} वारंटी अगली है जो खत्म होगी।",
+        "c": "आपकी वारंटियों में अगली जो खत्म होगी: {nextWarrantyName}, {nextWarrantyMonth} में।"
+      },
+      "spendingMonthToDateLess": {
+        "b": "{mtdThrough} तक इस महीने आपने {mtdSpent} खर्च किए हैं, जो पिछले महीने की इसी तारीख तक खर्च हुए {mtdPreviousSpent} से {mtdDifference} कम है।",
+        "c": "पिछले महीने की इसी तारीख तक आपने {mtdPreviousSpent} खर्च किए थे। इस महीने {mtdThrough} तक यह {mtdSpent} है, यानी {mtdDifference} कम।"
+      },
+      "spendingMonthToDateMore": {
+        "b": "{mtdThrough} तक इस महीने आपने {mtdSpent} खर्च किए हैं, जो पिछले महीने की इसी तारीख तक खर्च हुए {mtdPreviousSpent} से {mtdDifference} ज़्यादा है।",
+        "c": "पिछले महीने की इसी तारीख तक आपने {mtdPreviousSpent} खर्च किए थे। इस महीने {mtdThrough} तक यह {mtdSpent} है, यानी {mtdDifference} ज़्यादा।"
+      },
+      "spendingLastDay": {
+        "b": "{lastDayDate} को आपका खर्च {lastDaySpent} रहा।",
+        "c": "{lastDayDate} को {lastDaySpent} खर्च हुए।"
+      },
+      "spendingLastSevenDays": {
+        "b": "{weekFrom} से शुरू होने वाले सात दिनों में आपका खर्च {weekSpent} रहा।",
+        "c": "{weekFrom} से सात दिनों में आपने {weekSpent} खर्च किए।"
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "{recentPurchaseDay} को आपने {recentPurchasePayee} पर {recentPurchaseAmount} खर्च किए, जो पिछले सात दिनों की आपकी सबसे बड़ी खरीदारी है।",
+        "c": "{recentPurchaseDay} को {recentPurchasePayee} पर गए {recentPurchaseAmount} पिछले सात दिनों की आपकी सबसे बड़ी खरीदारी थी।"
+      },
+      "spendingNoSpendStreak": {
+        "b": "{noSpendDays} से कोई खर्च दर्ज नहीं हुआ है: आपका आखिरी खर्च {lastSpendDay} को था।",
+        "c": "{lastSpendDay} के बाद से {noSpendDays} तक कोई खर्च दर्ज नहीं हुआ।"
+      },
+      "spendingDaysSincePayee": {
+        "b": "आपने {sincePayeeName} पर आखिरी बार {sincePayeeDay} को खर्च किया था, यानी {sincePayeeDays} पहले।",
+        "c": "{sincePayeeName} पर आपका आखिरी खर्च {sincePayeeDay} को था, {sincePayeeDays} पहले।"
+      },
+      "activityBillsDueThisWeek": {
+        "b": "अगले सात दिनों में देय, बिलों की संख्या के रूप में: {billsDueCount}, कुल {billsDueTotal}।",
+        "c": "अगले सात दिनों में देय होने वाले बिल: {billsDueCount}, कुल {billsDueTotal}।"
+      },
+      "activityNextBill": {
+        "b": "{nextBillName} आपका अगला बिल है: {nextBillAmount}, देय तिथि {nextBillDate}।",
+        "c": "देय तिथि {nextBillDate} वाला आपका अगला बिल {nextBillName} है, {nextBillAmount} का।"
+      },
+      "spendingBudgetPace": {
+        "b": "महीने का {budgetMonthPercent} बीत जाने पर आपने {budgetName} बजट के {budgetTotal} में से {budgetSpent} खर्च किए हैं, यानी {budgetUsedPercent}।",
+        "c": "आपका {budgetName} बजट {budgetUsedPercent} इस्तेमाल हो चुका है ({budgetSpent} / {budgetTotal}), और महीने का {budgetMonthPercent} बीत चुका है।"
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSession} को आपके पोर्टफ़ोलियो में सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा: {moverPercent} बढ़ा, पोज़िशन में {moverValueChange} जोड़ गया।",
+        "c": "{moverSession} को आपका सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा, {moverPercent} बढ़ा, आपकी पोज़िशन पर {moverValueChange} का लाभ।"
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSession} को आपके पोर्टफ़ोलियो में सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा: {moverPercent} गिरा, पोज़िशन से {moverValueChange} घटा गया।",
+        "c": "{moverSession} को आपका सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा, {moverPercent} गिरा, आपकी पोज़िशन पर {moverValueChange} की हानि।"
+      },
+      "activityAnniversary": {
+        "b": "Monize में आपका पहला लेन-देन {anniversaryFirstDate} को था, और इस हफ़्ते उसे {anniversaryYears} पूरे हो रहे हैं।",
+        "c": "आपने Monize में पहला लेन-देन {anniversaryFirstDate} को दर्ज किया था; इस हफ़्ते उसे {anniversaryYears} पूरे हो रहे हैं।"
+      },
+      "activityAccountAnniversary": {
+        "b": "आपका {anniversaryAccountName} खाता Monize में पहली बार {anniversaryAccountSince} को दिखा, और इस हफ़्ते उसे {anniversaryAccountYears} पूरे हो रहे हैं।",
+        "c": "{anniversaryAccountSince} के पहले लेन-देन से गिनें तो आपके {anniversaryAccountName} खाते को इस हफ़्ते Monize में {anniversaryAccountYears} पूरे हो रहे हैं।"
+      },
+      "netWorthMilestone": {
+        "b": "आपकी कुल संपत्ति {milestoneMonth} में {milestoneAmount} के पार गई।",
+        "c": "{milestoneMonth} वह समय है जब आपकी कुल संपत्ति {milestoneAmount} के पार गई।"
+      },
+      "activityTransactionMilestone": {
+        "b": "लेन-देन संख्या {transactionMilestone} पिछले 30 दिनों में आपके रजिस्टरों में दर्ज हुआ।",
+        "c": "पिछले 30 दिनों में आपके लेन-देन की गिनती संख्या {transactionMilestone} तक पहुँची।"
+      },
+      "warrantiesExpiresSoon": {
+        "b": "{expiringWarrantyDate} को, यानी {expiringWarrantyDays} में, आपकी {expiringWarrantyName} वारंटी खत्म हो रही है।",
+        "c": "आपकी {expiringWarrantyName} वारंटी {expiringWarrantyDate} को खत्म होती है, जो {expiringWarrantyDays} दूर है।"
+      },
+      "spendingYearAgoMonth": {
+        "b": "एक साल पहले {yearAgoMonth} में आपने {yearAgoSpent} खर्च किए थे, जिसमें सबसे बड़ा हिस्सा {yearAgoTopCategoryName} का था।",
+        "c": "एक साल पहले {yearAgoMonth} में आपके खर्च किए {yearAgoSpent} में सबसे ज़्यादा हिस्सा {yearAgoTopCategoryName} पर गया।"
+      },
+      "netWorthYearAgoUp": {
+        "b": "आपकी कुल संपत्ति एक साल पहले {yearAgoNetWorthMonth} के {yearAgoNetWorth} से {yearAgoNetWorthChange} ज़्यादा है।",
+        "c": "एक साल में {yearAgoNetWorthChange} की बढ़त: {yearAgoNetWorthMonth} के {yearAgoNetWorth} से आज के स्तर तक।"
+      },
+      "netWorthYearAgoDown": {
+        "b": "आपकी कुल संपत्ति एक साल पहले {yearAgoNetWorthMonth} के {yearAgoNetWorth} से {yearAgoNetWorthChange} कम है।",
+        "c": "एक साल में {yearAgoNetWorthChange} की कमी: {yearAgoNetWorthMonth} के {yearAgoNetWorth} से आज के स्तर तक।"
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपकी सबसे बड़ी खर्च श्रेणी {topCategoryName} रही: {topCategoryAmount}, यानी आपके खर्च का {topCategoryPercent}।",
+        "c": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपके खर्च का सबसे बड़ा हिस्सा {topCategoryName} ने लिया: {topCategoryAmount}, यानी कुल का {topCategoryPercent}।"
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} {topPayeeName} को आपका पैसा किसी भी अन्य भुगतानकर्ता से ज़्यादा मिला: {topPayeeAmount}।",
+        "c": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपने सबसे ज़्यादा {topPayeeName} पर खर्च किया, {topPayeeAmount}।"
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपकी आय का {topSourcePercent} {topSourceName} से आया।",
+        "c": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपकी आय के {topSourcePercent} का स्रोत {topSourceName} रहा।"
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपकी खर्च श्रेणियों में क्रम {rankedCategoryRank} पर {rankedCategoryName} रही: {rankedCategoryAmount}, यानी कुल का {rankedCategoryPercent}।",
+        "c": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपकी खर्च श्रेणियों में {rankedCategoryName} का क्रम {rankedCategoryRank} रहा, {rankedCategoryAmount} के साथ (कुल का {rankedCategoryPercent})।"
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपने {rankedPayeeName} पर {rankedPayeeAmount} खर्च किए, जो खर्च के हिसाब से भुगतानकर्ताओं में क्रम {rankedPayeeRank} पर रहा।",
+        "c": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} सबसे ज़्यादा खर्च वाले भुगतानकर्ताओं में क्रम {rankedPayeeRank} पर {rankedPayeeName} रहा, {rankedPayeeAmount} के साथ।"
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} {rankedSourceName} ने आपकी आय का {rankedSourcePercent} दिया, जो आपके स्रोतों में क्रम {rankedSourceRank} पर रहा।",
+        "c": "{window, select, d30 {पिछले 30 दिनों में} d90 {पिछले 90 दिनों में} ytd {इस साल अब तक} m12 {पिछले बारह महीनों में} all {आपके रिकॉर्ड शुरू होने से अब तक} other {इस अवधि में}} आपके आय स्रोतों में क्रम {rankedSourceRank} पर {rankedSourceName} रहा, आय के {rankedSourcePercent} के साथ।"
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "पिछले बारह महीनों में {equivPayeeName} पर आपके {equivPayeeAmount}, {equivCategoryName} पर आपके औसत खर्च के महीनों में: लगभग {equivCategoryMonths}।",
+        "c": "{equivPayeeName} पर पिछले बारह महीनों में खर्च: {equivPayeeAmount}, यानी {equivCategoryName} पर आपके औसत खर्च के महीनों में लगभग {equivCategoryMonths}।"
+      },
+      "spendingDailyAverage": {
+        "b": "पिछले बारह महीनों में आपका खर्च औसतन लगभग {dailyAverageSpent} प्रतिदिन बैठता है।",
+        "c": "लगभग {dailyAverageSpent} प्रतिदिन: यह पिछले बारह महीनों में आपका औसत खर्च है।"
+      },
+      "incomeKeptCoversDays": {
+        "b": "पिछले बारह महीनों में आपने {keptCoversAmount} बचाए, जो आपके लगभग {keptCoversDays} के खर्च को कवर करने के लिए काफ़ी हैं।",
+        "c": "आपके लगभग {keptCoversDays} के खर्च को वे {keptCoversAmount} कवर करेंगे जो आपने पिछले बारह महीनों में बचाए।"
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "आपके औसत खर्च के महीनों में, आपके निवेश का {gainCoversAmount} का लाभ लगभग {gainCoversMonths} बैठता है।",
+        "c": "आपके निवेश ने {gainCoversAmount} का लाभ कमाया है। आपके औसत खर्च के कितने महीनों के बराबर: लगभग {gainCoversMonths}।"
+      }
     }
   },
   "favouriteAccounts": {

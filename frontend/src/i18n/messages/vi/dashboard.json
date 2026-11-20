@@ -54,8 +54,12 @@
       "warranties": "Bảo hành"
     },
     "aiGenerated": "Do AI viết từ số liệu của bạn",
+    "units": {
+      "days": "{count, plural, other {{value} ngày}}",
+      "years": "{count, plural, other {{value} năm}}"
+    },
     "facts": {
-      "netWorthSinceStart": "Giá trị ròng của bạn là {startAmount} vào {startMonth}. Kể từ đó đã tăng {startGain}, tức lớn hơn khoảng {startMultiple} lần.",
+      "netWorthSinceStart": "Giá trị ròng của bạn là {startAmount} vào {startMonth}. Kể từ đó đã tăng {startGain}, với hệ số tăng trưởng {startMultiple}.",
       "netWorthBiggestJump": "{jumpMonth} là bước nhảy lớn nhất trong một tháng của bạn. Giá trị ròng tăng {jumpAmount}, từ {jumpFrom} vào {jumpPreviousMonth} lên {jumpTo}.",
       "netWorthHighPoint": "Đỉnh cao của bạn là {peakAmount} vào {peakMonth}. Hiện bạn đang thấp hơn {peakBelow}.",
       "netWorthAtHighPoint": "Bạn đang ở đỉnh cao: giá trị ròng chưa bao giờ vượt quá {currentHigh}.",
@@ -80,7 +84,263 @@
       "activityPayees": "Người nhận thanh toán bạn lưu trong Monize: {payeeCount}. Danh mục: {categoryCount}.",
       "activityScheduled": "Giao dịch định kỳ mà Monize đang theo dõi cho bạn: {scheduledCount}.",
       "warrantiesCovered": "Các bảo hành bạn theo dõi và vẫn còn hiệu lực: {warrantyCount}.",
-      "warrantiesNextExpiry": "Bảo hành tiếp theo hết hạn là {nextWarrantyName}, vào {nextWarrantyMonth}."
+      "warrantiesNextExpiry": "Bảo hành tiếp theo hết hạn là {nextWarrantyName}, vào {nextWarrantyMonth}.",
+      "spendingMonthToDateLess": "Tính đến {mtdThrough}, bạn đã chi {mtdSpent} trong tháng này, ít hơn {mtdDifference} so với cùng ngày tháng trước ({mtdPreviousSpent}).",
+      "spendingMonthToDateMore": "Tính đến {mtdThrough}, bạn đã chi {mtdSpent} trong tháng này, nhiều hơn {mtdDifference} so với cùng ngày tháng trước ({mtdPreviousSpent}).",
+      "spendingLastDay": "Vào {lastDayDate}, bạn đã chi {lastDaySpent}.",
+      "spendingLastSevenDays": "Trong bảy ngày kể từ {weekFrom}, bạn đã chi {weekSpent}.",
+      "spendingBiggestRecentPurchase": "Khoản mua lớn nhất của bạn trong bảy ngày qua là {recentPurchaseAmount} tại {recentPurchasePayee} vào {recentPurchaseDay}.",
+      "spendingNoSpendStreak": "Đã {noSpendDays} không ghi nhận khoản chi nào, kể từ {lastSpendDay}.",
+      "spendingDaysSincePayee": "Bạn chi lần gần nhất cho {sincePayeeName} vào {sincePayeeDay}, cách đây {sincePayeeDays}.",
+      "activityBillsDueThisWeek": "Hóa đơn đến hạn trong bảy ngày tới: {billsDueCount}, tổng cộng {billsDueTotal}.",
+      "activityNextBill": "Hóa đơn tiếp theo của bạn là {nextBillName}, {nextBillAmount}, đến hạn {nextBillDate}.",
+      "spendingBudgetPace": "Bạn đã dùng {budgetUsedPercent} ngân sách {budgetName} ({budgetSpent} trên {budgetTotal}), khi tháng đã trôi qua {budgetMonthPercent}.",
+      "investmentsTopMoverUp": "Mã biến động mạnh nhất của bạn vào {moverSession} là {moverSymbol}, tăng {moverPercent}, thêm {moverValueChange} vào vị thế của bạn.",
+      "investmentsTopMoverDown": "Mã biến động mạnh nhất của bạn vào {moverSession} là {moverSymbol}, giảm {moverPercent}, làm vị thế của bạn mất {moverValueChange}.",
+      "activityAnniversary": "Tuần này tròn {anniversaryYears} kể từ giao dịch đầu tiên của bạn trong Monize, vào {anniversaryFirstDate}.",
+      "activityAccountAnniversary": "Tuần này tài khoản {anniversaryAccountName} của bạn tròn {anniversaryAccountYears} trong Monize: giao dịch đầu tiên là vào {anniversaryAccountSince}.",
+      "netWorthMilestone": "Vào {milestoneMonth}, giá trị ròng của bạn đã vượt {milestoneAmount}.",
+      "activityTransactionMilestone": "Trong 30 ngày qua, bạn đã ghi giao dịch thứ {transactionMilestone}.",
+      "warrantiesExpiresSoon": "Bảo hành {expiringWarrantyName} của bạn hết hạn sau {expiringWarrantyDays}, vào {expiringWarrantyDate}.",
+      "spendingYearAgoMonth": "Một năm trước, vào {yearAgoMonth}, bạn đã chi {yearAgoSpent}, và {yearAgoTopCategoryName} chiếm nhiều nhất.",
+      "netWorthYearAgoUp": "Một năm trước, vào {yearAgoNetWorthMonth}, giá trị ròng của bạn là {yearAgoNetWorth}. Hiện nay cao hơn {yearAgoNetWorthChange}.",
+      "netWorthYearAgoDown": "Một năm trước, vào {yearAgoNetWorthMonth}, giá trị ròng của bạn là {yearAgoNetWorth}. Hiện nay thấp hơn {yearAgoNetWorthChange}.",
+      "spendingTopCategoryWindow": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {topCategoryName} chiếm phần lớn nhất trong chi tiêu của bạn: {topCategoryAmount}, tức {topCategoryPercent}.",
+      "spendingTopPayeeWindow": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, bạn chi nhiều nhất cho {topPayeeName}: {topPayeeAmount}.",
+      "incomeTopSourceWindow": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {topSourceName} đem lại {topSourcePercent} thu nhập của bạn.",
+      "spendingRankedCategory": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {rankedCategoryName} đứng thứ {rankedCategoryRank} trong các danh mục chi tiêu của bạn, với {rankedCategoryAmount} ({rankedCategoryPercent} tổng số).",
+      "spendingRankedPayee": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {rankedPayeeName} đứng thứ {rankedPayeeRank} trong những người nhận bạn chi nhiều nhất, với {rankedPayeeAmount}.",
+      "incomeRankedSource": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {rankedSourceName} đứng thứ {rankedSourceRank} trong các nguồn thu nhập của bạn, đem lại {rankedSourcePercent} thu nhập.",
+      "spendingPayeeInCategoryMonths": "Trong mười hai tháng qua bạn đã chi {equivPayeeAmount} cho {equivPayeeName}. Quy ra số tháng chi tiêu trung bình cho {equivCategoryName}: khoảng {equivCategoryMonths}.",
+      "spendingDailyAverage": "Trong mười hai tháng qua, chi tiêu của bạn trung bình khoảng {dailyAverageSpent} mỗi ngày.",
+      "incomeKeptCoversDays": "Khoản {keptCoversAmount} bạn giữ lại trong mười hai tháng qua đủ trang trải chi tiêu khoảng {keptCoversDays}.",
+      "investmentsGainInMonthsOfSpending": "Khoản lãi {gainCoversAmount} từ đầu tư của bạn, quy ra số tháng chi tiêu trung bình: khoảng {gainCoversMonths}."
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "Từ {startMonth}, giá trị ròng của bạn đã tăng {startGain}, từ {startAmount}. Hệ số tăng trưởng: {startMultiple}.",
+        "c": "So với {startAmount} vào {startMonth}, giá trị ròng tăng {startGain}, với hệ số tăng trưởng {startMultiple}."
+      },
+      "netWorthBiggestJump": {
+        "b": "Giá trị ròng đi từ {jumpFrom} vào {jumpPreviousMonth} lên {jumpTo} vào {jumpMonth}, tăng {jumpAmount}, bước nhảy lớn nhất trong một tháng của bạn.",
+        "c": "Bước nhảy lớn nhất trong một tháng của bạn, {jumpAmount}, diễn ra vào {jumpMonth}, khi giá trị ròng tăng từ {jumpFrom} vào {jumpPreviousMonth} lên {jumpTo}."
+      },
+      "netWorthHighPoint": {
+        "b": "Giá trị ròng đạt đỉnh {peakAmount} vào {peakMonth}, và hiện nay thấp hơn mức đó {peakBelow}.",
+        "c": "Bạn đang thấp hơn đỉnh cao {peakAmount} lập vào {peakMonth} là {peakBelow}."
+      },
+      "netWorthAtHighPoint": {
+        "b": "Giá trị ròng chưa bao giờ cao hơn {currentHigh}, và hiện bạn đang ở mức đó.",
+        "c": "Giá trị ròng hôm nay của bạn là {currentHigh}, cũng là đỉnh cao của bạn."
+      },
+      "netWorthBiggestDip": {
+        "b": "Trong đợt sụt giảm lớn nhất, giá trị ròng giảm {dipPercent}, từ {dipFromAmount} vào {dipFromMonth} xuống {dipToAmount} vào {dipToMonth}.",
+        "c": "Từ {dipFromMonth} đến {dipToMonth}, giá trị ròng giảm từ {dipFromAmount} xuống {dipToAmount}, tức giảm {dipPercent}, đợt sụt giảm lớn nhất."
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "Đến {dipRecoveredMonth}, giá trị ròng đã phục hồi sau đợt sụt giảm lớn nhất, từ {dipFromAmount} vào {dipFromMonth} xuống {dipToAmount} vào {dipToMonth}.",
+        "c": "Vào {dipFromMonth} giá trị ròng là {dipFromAmount}, đến {dipToMonth} còn {dipToAmount}, đợt sụt giảm lớn nhất. Đến {dipRecoveredMonth} đã phục hồi."
+      },
+      "netWorthLargestAsset": {
+        "b": "Trị giá {assetValue}, {assetName} chiếm {assetPercent} tài sản của bạn.",
+        "c": "{assetName} chiếm {assetPercent} tài sản của bạn, trị giá {assetValue}."
+      },
+      "investmentsShareOfAssets": {
+        "b": "{investmentsPercent} tài sản của bạn nằm trong đầu tư, tổng trị giá {investmentsValue}.",
+        "c": "Đầu tư chiếm {investmentsPercent} tài sản của bạn, với giá trị {investmentsValue}."
+      },
+      "investmentsGain": {
+        "b": "So với giá vốn {gainCostBasis}, các khoản đầu tư của bạn tăng {gainAmount}, tức {gainPercent}.",
+        "c": "Các khoản đầu tư của bạn cao hơn giá vốn {gainCostBasis} là {gainPercent}, tức lãi {gainAmount}."
+      },
+      "investmentsLoss": {
+        "b": "So với giá vốn {gainCostBasis}, các khoản đầu tư của bạn giảm {gainAmount}, tức {gainPercent}.",
+        "c": "Các khoản đầu tư của bạn thấp hơn giá vốn {gainCostBasis} là {gainPercent}, tức lỗ {gainAmount}."
+      },
+      "investmentsCagr": {
+        "b": "Tính theo CAGR, các khoản đầu tư của bạn sinh lời khoảng {cagrPercent} mỗi năm.",
+        "c": "Khoảng {cagrPercent}: đó là lợi suất hằng năm (CAGR) của các khoản đầu tư của bạn."
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol} là khoản nắm giữ lớn nhất của bạn, trị giá {holdingValue} trong {holdingAccounts} và chiếm khoảng {holdingPercent} danh mục.",
+        "c": "Khoảng {holdingPercent} danh mục của bạn, tức {holdingValue} trong {holdingAccounts}, nằm ở {holdingSymbol}, khoản nắm giữ lớn nhất của bạn."
+      },
+      "investmentsBestPerformer": {
+        "b": "{bestSymbol} là khoản hiệu quả nhất của bạn, tăng {bestPercent}: giá vốn {bestCost}, nay trị giá {bestValue}.",
+        "c": "Tăng {bestPercent}, {bestSymbol} dẫn đầu các khoản nắm giữ của bạn. Từ giá vốn {bestCost} lên giá trị {bestValue}."
+      },
+      "investmentsForeignAccount": {
+        "b": "Tài khoản {foreignName} của bạn giữ {foreignBalance} bằng {foreignCurrency}, tương đương {foreignConverted} theo tỷ giá khoảng {foreignRate}.",
+        "c": "Theo tỷ giá khoảng {foreignRate}, {foreignBalance} nắm giữ trong tài khoản {foreignName} ({foreignCurrency}) của bạn tương đương {foreignConverted}."
+      },
+      "investmentsLargestAccount": {
+        "b": "{largestName} là tài khoản đầu tư lớn nhất của bạn, trị giá {largestValue}.",
+        "c": "Trong các tài khoản đầu tư của bạn, {largestName} lớn nhất, với {largestValue}."
+      },
+      "spendingTopCategory": {
+        "b": "{topCategoryName} là danh mục hàng đầu của bạn trong mười hai tháng qua, chiếm {topCategoryPercent} chi tiêu, tức {topCategoryAmount}.",
+        "c": "Danh mục bạn chi nhiều nhất trong mười hai tháng qua là {topCategoryName}: {topCategoryAmount}, tức {topCategoryPercent} tổng số."
+      },
+      "spendingTopPayee": {
+        "b": "{topPayeeName} nhận nhiều tiền của bạn hơn bất kỳ người nhận nào khác trong mười hai tháng qua: {topPayeeAmount}.",
+        "c": "Người nhận lớn nhất của bạn trong mười hai tháng qua là {topPayeeName}, với {topPayeeAmount} đã chi."
+      },
+      "spendingBiggestMonth": {
+        "b": "Chi tiêu của bạn đạt đỉnh vào {biggestSpendMonth} với {biggestSpendAmount}, tháng lớn nhất trong mười hai tháng qua.",
+        "c": "Trong mười hai tháng qua, {biggestSpendMonth} có chi tiêu nhiều nhất, với {biggestSpendAmount}."
+      },
+      "incomeKeptShare": {
+        "b": "{keptPercent} thu nhập của bạn trong mười hai tháng qua được giữ lại, tức {keptAmount}.",
+        "c": "Trong tất cả số tiền nhận được trong mười hai tháng qua, bạn giữ lại {keptAmount}, tức {keptPercent}."
+      },
+      "incomeSurplusMonths": {
+        "b": "Các tháng trong {windowMonths} tháng qua có tiền vào nhiều hơn tiền ra: {surplusMonths}.",
+        "c": "Các tháng trong {windowMonths} tháng qua bạn thu nhiều hơn chi: {surplusMonths}."
+      },
+      "incomeTopSource": {
+        "b": "Trong mười hai tháng qua, {topSourcePercent} thu nhập của bạn đến từ {topSourceName}.",
+        "c": "Thu nhập của bạn trong mười hai tháng qua đến từ {topSourceName} là {topSourcePercent}."
+      },
+      "activityTransactions": {
+        "b": "Từ {firstTransactionMonth}, giao dịch trong sổ của bạn: {transactionCount}.",
+        "c": "Kể từ {firstTransactionMonth}, giao dịch bạn đã ghi: {transactionCount}."
+      },
+      "activityPayees": {
+        "b": "Số lượng bạn lưu trong Monize: người nhận thanh toán {payeeCount}, danh mục {categoryCount}.",
+        "c": "Monize lưu người nhận thanh toán của bạn ({payeeCount}) và danh mục của bạn ({categoryCount})."
+      },
+      "activityScheduled": {
+        "b": "Monize theo dõi giao dịch định kỳ của bạn, tổng cộng {scheduledCount}.",
+        "c": "Giao dịch được thiết lập trong Monize và lên lịch cho bạn: {scheduledCount}."
+      },
+      "warrantiesCovered": {
+        "b": "Các bảo hành bạn theo dõi vẫn còn hiệu lực: {warrantyCount}.",
+        "c": "Trong các bảo hành bạn theo dõi, số chưa hết hạn: {warrantyCount}."
+      },
+      "warrantiesNextExpiry": {
+        "b": "Vào {nextWarrantyMonth}, bảo hành {nextWarrantyName} của bạn là bảo hành tiếp theo hết hạn.",
+        "c": "Bảo hành hết hạn tiếp theo của bạn: {nextWarrantyName}, vào {nextWarrantyMonth}."
+      },
+      "spendingMonthToDateLess": {
+        "b": "Tính đến {mtdThrough}, bạn đã chi {mtdSpent} tháng này, ít hơn {mtdDifference} so với {mtdPreviousSpent} đã chi tính đến cùng ngày tháng trước.",
+        "c": "Tính đến cùng ngày tháng trước, bạn đã chi {mtdPreviousSpent}. Tính đến {mtdThrough} tháng này là {mtdSpent}, ít hơn {mtdDifference}."
+      },
+      "spendingMonthToDateMore": {
+        "b": "Tính đến {mtdThrough}, bạn đã chi {mtdSpent} tháng này, nhiều hơn {mtdDifference} so với {mtdPreviousSpent} đã chi tính đến cùng ngày tháng trước.",
+        "c": "Tính đến cùng ngày tháng trước, bạn đã chi {mtdPreviousSpent}. Tính đến {mtdThrough} tháng này là {mtdSpent}, nhiều hơn {mtdDifference}."
+      },
+      "spendingLastDay": {
+        "b": "Chi tiêu của bạn vào {lastDayDate} là {lastDaySpent}.",
+        "c": "{lastDaySpent} đã được chi vào {lastDayDate}."
+      },
+      "spendingLastSevenDays": {
+        "b": "Chi tiêu của bạn trong bảy ngày bắt đầu từ {weekFrom} là {weekSpent}.",
+        "c": "{weekSpent} là số bạn đã chi trong bảy ngày kể từ {weekFrom}."
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "Vào {recentPurchaseDay}, bạn đã chi {recentPurchaseAmount} tại {recentPurchasePayee}, khoản mua lớn nhất của bạn trong bảy ngày qua.",
+        "c": "{recentPurchasePayee} nhận {recentPurchaseAmount} vào {recentPurchaseDay}, khoản mua lớn nhất bạn đã thực hiện trong bảy ngày qua."
+      },
+      "spendingNoSpendStreak": {
+        "b": "Đã {noSpendDays} không ghi nhận khoản chi: lần chi gần nhất của bạn là vào {lastSpendDay}.",
+        "c": "Kể từ {lastSpendDay}, đã {noSpendDays} không ghi nhận khoản chi nào."
+      },
+      "spendingDaysSincePayee": {
+        "b": "Bạn chi lần gần nhất cho {sincePayeeName} vào {sincePayeeDay}, cách đây {sincePayeeDays}.",
+        "c": "Lần chi gần nhất của bạn cho {sincePayeeName} là vào {sincePayeeDay}, cách đây {sincePayeeDays}."
+      },
+      "activityBillsDueThisWeek": {
+        "b": "Đến hạn trong bảy ngày tới, tính theo số hóa đơn: {billsDueCount}, tổng cộng {billsDueTotal}.",
+        "c": "Hóa đơn đến hạn trong bảy ngày tới: {billsDueCount}, tổng cộng {billsDueTotal}."
+      },
+      "activityNextBill": {
+        "b": "{nextBillName} là hóa đơn tiếp theo của bạn: {nextBillAmount}, đến hạn {nextBillDate}.",
+        "c": "Đến hạn {nextBillDate}, hóa đơn tiếp theo của bạn là {nextBillName}, {nextBillAmount}."
+      },
+      "spendingBudgetPace": {
+        "b": "Khi tháng đã trôi qua {budgetMonthPercent}, bạn đã chi {budgetSpent} trên ngân sách {budgetName} {budgetTotal}, tức {budgetUsedPercent}.",
+        "c": "Ngân sách {budgetName} của bạn đã dùng {budgetUsedPercent} ({budgetSpent} trên {budgetTotal}), và tháng đã trôi qua {budgetMonthPercent}."
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSymbol} là mã biến động mạnh nhất trong danh mục của bạn vào {moverSession}: tăng {moverPercent}, thêm {moverValueChange} vào vị thế của bạn.",
+        "c": "Vào {moverSession}, mã biến động mạnh nhất của bạn là {moverSymbol}, tăng {moverPercent}, lãi {moverValueChange} trên vị thế của bạn."
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSymbol} là mã biến động mạnh nhất trong danh mục của bạn vào {moverSession}: giảm {moverPercent}, làm vị thế của bạn mất {moverValueChange}.",
+        "c": "Vào {moverSession}, mã biến động mạnh nhất của bạn là {moverSymbol}, giảm {moverPercent}, lỗ {moverValueChange} trên vị thế của bạn."
+      },
+      "activityAnniversary": {
+        "b": "Giao dịch đầu tiên của bạn trong Monize là vào {anniversaryFirstDate}, và tuần này tròn {anniversaryYears} kể từ đó.",
+        "c": "Tuần này tròn {anniversaryYears} kể từ khi bạn ghi giao dịch đầu tiên trong Monize, vào {anniversaryFirstDate}."
+      },
+      "activityAccountAnniversary": {
+        "b": "Tài khoản {anniversaryAccountName} của bạn xuất hiện lần đầu trong Monize vào {anniversaryAccountSince}, và tuần này tròn {anniversaryAccountYears}.",
+        "c": "Tuần này tài khoản {anniversaryAccountName} của bạn tròn {anniversaryAccountYears} trong Monize, tính từ giao dịch đầu tiên vào {anniversaryAccountSince}."
+      },
+      "netWorthMilestone": {
+        "b": "Giá trị ròng của bạn đã vượt {milestoneAmount} vào {milestoneMonth}.",
+        "c": "{milestoneMonth} là lúc giá trị ròng của bạn vượt qua {milestoneAmount}."
+      },
+      "activityTransactionMilestone": {
+        "b": "Giao dịch thứ {transactionMilestone} được ghi vào sổ của bạn trong 30 ngày qua.",
+        "c": "Trong 30 ngày qua, số giao dịch của bạn đã đạt giao dịch thứ {transactionMilestone}."
+      },
+      "warrantiesExpiresSoon": {
+        "b": "Vào {expiringWarrantyDate}, sau {expiringWarrantyDays}, bảo hành {expiringWarrantyName} của bạn hết hạn.",
+        "c": "Bảo hành {expiringWarrantyName} của bạn kết thúc vào {expiringWarrantyDate}, tức sau {expiringWarrantyDays}."
+      },
+      "spendingYearAgoMonth": {
+        "b": "Một năm trước, vào {yearAgoMonth}, bạn đã chi {yearAgoSpent}, trong đó {yearAgoTopCategoryName} chiếm phần lớn nhất.",
+        "c": "{yearAgoTopCategoryName} chiếm nhiều nhất trong {yearAgoSpent} bạn đã chi một năm trước, vào {yearAgoMonth}."
+      },
+      "netWorthYearAgoUp": {
+        "b": "Giá trị ròng của bạn cao hơn {yearAgoNetWorthChange} so với {yearAgoNetWorth} cách đây một năm, vào {yearAgoNetWorthMonth}.",
+        "c": "Tăng {yearAgoNetWorthChange} trong một năm: từ {yearAgoNetWorth} vào {yearAgoNetWorthMonth} lên mức hiện nay."
+      },
+      "netWorthYearAgoDown": {
+        "b": "Giá trị ròng của bạn thấp hơn {yearAgoNetWorthChange} so với {yearAgoNetWorth} cách đây một năm, vào {yearAgoNetWorthMonth}.",
+        "c": "Giảm {yearAgoNetWorthChange} trong một năm: từ {yearAgoNetWorth} vào {yearAgoNetWorthMonth} xuống mức hiện nay."
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, danh mục chi tiêu hàng đầu của bạn là {topCategoryName}: {topCategoryAmount}, tức {topCategoryPercent} chi tiêu của bạn.",
+        "c": "{topCategoryName} chiếm phần lớn nhất trong chi tiêu của bạn {window, select, d30 {trong 30 ngày qua} d90 {trong 90 ngày qua} ytd {từ đầu năm đến nay} m12 {trong mười hai tháng qua} all {từ khi bạn bắt đầu ghi chép} other {trong giai đoạn này}}: {topCategoryAmount}, tức {topCategoryPercent}."
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {topPayeeName} nhận nhiều tiền của bạn hơn bất kỳ người nhận nào khác: {topPayeeAmount}.",
+        "c": "Bạn chi nhiều nhất cho {topPayeeName} {window, select, d30 {trong 30 ngày qua} d90 {trong 90 ngày qua} ytd {từ đầu năm đến nay} m12 {trong mười hai tháng qua} all {từ khi bạn bắt đầu ghi chép} other {trong giai đoạn này}}, với {topPayeeAmount}."
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {topSourcePercent} thu nhập của bạn đến từ {topSourceName}.",
+        "c": "{topSourceName} là nguồn của {topSourcePercent} thu nhập của bạn {window, select, d30 {trong 30 ngày qua} d90 {trong 90 ngày qua} ytd {từ đầu năm đến nay} m12 {trong mười hai tháng qua} all {từ khi bạn bắt đầu ghi chép} other {trong giai đoạn này}}."
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, danh mục chi tiêu thứ {rankedCategoryRank} của bạn là {rankedCategoryName}: {rankedCategoryAmount}, tức {rankedCategoryPercent} tổng số.",
+        "c": "{rankedCategoryName} đứng thứ {rankedCategoryRank} trong các danh mục chi tiêu của bạn {window, select, d30 {trong 30 ngày qua} d90 {trong 90 ngày qua} ytd {từ đầu năm đến nay} m12 {trong mười hai tháng qua} all {từ khi bạn bắt đầu ghi chép} other {trong giai đoạn này}}, với {rankedCategoryAmount} ({rankedCategoryPercent} tổng số)."
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, bạn đã chi {rankedPayeeAmount} cho {rankedPayeeName}, thứ {rankedPayeeRank} trong số người nhận theo chi tiêu.",
+        "c": "Thứ {rankedPayeeRank} trong số người nhận bạn chi nhiều nhất {window, select, d30 {trong 30 ngày qua} d90 {trong 90 ngày qua} ytd {từ đầu năm đến nay} m12 {trong mười hai tháng qua} all {từ khi bạn bắt đầu ghi chép} other {trong giai đoạn này}} là {rankedPayeeName}, với {rankedPayeeAmount}."
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {Trong 30 ngày qua} d90 {Trong 90 ngày qua} ytd {Từ đầu năm đến nay} m12 {Trong mười hai tháng qua} all {Từ khi bạn bắt đầu ghi chép} other {Trong giai đoạn này}}, {rankedSourceName} đem lại {rankedSourcePercent} thu nhập của bạn, thứ {rankedSourceRank} trong các nguồn.",
+        "c": "Trong các nguồn thu nhập của bạn {window, select, d30 {trong 30 ngày qua} d90 {trong 90 ngày qua} ytd {từ đầu năm đến nay} m12 {trong mười hai tháng qua} all {từ khi bạn bắt đầu ghi chép} other {trong giai đoạn này}}, thứ {rankedSourceRank} là {rankedSourceName}, với {rankedSourcePercent} thu nhập."
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "{equivPayeeAmount} bạn chi cho {equivPayeeName} trong mười hai tháng qua, quy ra số tháng chi tiêu trung bình cho {equivCategoryName}: khoảng {equivCategoryMonths}.",
+        "c": "Đã chi cho {equivPayeeName} trong mười hai tháng qua: {equivPayeeAmount}, tương đương khoảng {equivCategoryMonths} tháng chi tiêu trung bình cho {equivCategoryName}."
+      },
+      "spendingDailyAverage": {
+        "b": "Chi tiêu của bạn trong mười hai tháng qua tính ra khoảng {dailyAverageSpent} mỗi ngày.",
+        "c": "Khoảng {dailyAverageSpent} mỗi ngày: đó là chi tiêu trung bình của bạn trong mười hai tháng qua."
+      },
+      "incomeKeptCoversDays": {
+        "b": "Trong mười hai tháng qua bạn giữ lại {keptCoversAmount}, đủ trang trải chi tiêu khoảng {keptCoversDays}.",
+        "c": "Chi tiêu khoảng {keptCoversDays} sẽ được trang trải bằng {keptCoversAmount} bạn đã giữ lại trong mười hai tháng qua."
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "Tính theo số tháng chi tiêu trung bình, khoản lãi {gainCoversAmount} từ đầu tư của bạn là khoảng {gainCoversMonths}.",
+        "c": "Các khoản đầu tư của bạn đã lãi {gainCoversAmount}. Quy ra số tháng chi tiêu trung bình: khoảng {gainCoversMonths}."
+      }
     }
   },
   "favouriteAccounts": {

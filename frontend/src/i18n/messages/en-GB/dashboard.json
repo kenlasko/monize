@@ -4,7 +4,22 @@
   },
   "trivia": {
     "facts": {
-      "investmentsCagr": "Your investments' annualised return is about {cagrPercent} (CAGR)."
+      "investmentsCagr": "Your investments' annualised return is about {cagrPercent} (CAGR).",
+      "spendingMonthToDateLess": "Up to and including {mtdThrough}, you have spent {mtdSpent} this month, {mtdDifference} less than by the same day last month ({mtdPreviousSpent}).",
+      "spendingMonthToDateMore": "Up to and including {mtdThrough}, you have spent {mtdSpent} this month, {mtdDifference} more than by the same day last month ({mtdPreviousSpent})."
+    },
+    "variants": {
+      "investmentsCagr": {
+        "c": "Roughly {cagrPercent}: that is the annualised return (CAGR) on your investments."
+      },
+      "spendingMonthToDateLess": {
+        "b": "You have spent {mtdSpent} this month up to and including {mtdThrough}, which is {mtdDifference} less than the {mtdPreviousSpent} spent by the same day last month.",
+        "c": "By the same day last month you had spent {mtdPreviousSpent}. Up to and including {mtdThrough} this month, it is {mtdSpent}, or {mtdDifference} less."
+      },
+      "spendingMonthToDateMore": {
+        "b": "You have spent {mtdSpent} this month up to and including {mtdThrough}, which is {mtdDifference} more than the {mtdPreviousSpent} spent by the same day last month.",
+        "c": "By the same day last month you had spent {mtdPreviousSpent}. Up to and including {mtdThrough} this month, it is {mtdSpent}, or {mtdDifference} more."
+      }
     }
   }
 }

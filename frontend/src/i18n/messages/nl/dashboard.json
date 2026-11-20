@@ -54,8 +54,12 @@
       "warranties": "Garanties"
     },
     "aiGenerated": "Door AI geschreven op basis van je cijfers",
+    "units": {
+      "days": "{count, plural, one {{value} dag} other {{value} dagen}}",
+      "years": "{count, plural, one {{value} jaar} other {{value} jaar}}"
+    },
     "facts": {
-      "netWorthSinceStart": "Je nettovermogen was {startAmount} in {startMonth}. Sindsdien is het {startGain} gestegen, dus het is ongeveer {startMultiple} keer zo groot.",
+      "netWorthSinceStart": "Je nettovermogen was {startAmount} in {startMonth}. Sindsdien is het {startGain} gestegen, met een groeifactor van {startMultiple}.",
       "netWorthBiggestJump": "{jumpMonth} was je grootste sprong in één maand. Het nettovermogen steeg met {jumpAmount}, van {jumpFrom} in {jumpPreviousMonth} naar {jumpTo}.",
       "netWorthHighPoint": "Je hoogtepunt was {peakAmount} in {peakMonth}. Je zit nu {peakBelow} eronder.",
       "netWorthAtHighPoint": "Je zit op je hoogtepunt: je nettovermogen is nooit hoger geweest dan {currentHigh}.",
@@ -80,7 +84,263 @@
       "activityPayees": "Begunstigden die je in Monize bewaart: {payeeCount}. Categorieën: {categoryCount}.",
       "activityScheduled": "Geplande transacties die Monize voor je bijhoudt: {scheduledCount}.",
       "warrantiesCovered": "Garanties die je bijhoudt en die nog lopen: {warrantyCount}.",
-      "warrantiesNextExpiry": "De eerstvolgende garantie die afloopt is {nextWarrantyName}, in {nextWarrantyMonth}."
+      "warrantiesNextExpiry": "De eerstvolgende garantie die afloopt is {nextWarrantyName}, in {nextWarrantyMonth}.",
+      "spendingMonthToDateLess": "Tot en met {mtdThrough} heb je deze maand {mtdSpent} uitgegeven, {mtdDifference} minder dan op dezelfde dag vorige maand ({mtdPreviousSpent}).",
+      "spendingMonthToDateMore": "Tot en met {mtdThrough} heb je deze maand {mtdSpent} uitgegeven, {mtdDifference} meer dan op dezelfde dag vorige maand ({mtdPreviousSpent}).",
+      "spendingLastDay": "Op {lastDayDate} gaf je {lastDaySpent} uit.",
+      "spendingLastSevenDays": "In de zeven dagen vanaf {weekFrom} gaf je {weekSpent} uit.",
+      "spendingBiggestRecentPurchase": "Je grootste aankoop van de afgelopen zeven dagen was {recentPurchaseAmount} bij {recentPurchasePayee}, op {recentPurchaseDay}.",
+      "spendingNoSpendStreak": "Geen uitgaven geregistreerd gedurende {noSpendDays}, sinds {lastSpendDay}.",
+      "spendingDaysSincePayee": "Het is {sincePayeeDays} geleden dat je voor het laatst uitgaf bij {sincePayeeName}, op {sincePayeeDay}.",
+      "activityBillsDueThisWeek": "Rekeningen die in de komende zeven dagen verschuldigd zijn: {billsDueCount}, samen {billsDueTotal}.",
+      "activityNextBill": "Je volgende rekening is {nextBillName}, van {nextBillAmount}, te betalen op {nextBillDate}.",
+      "spendingBudgetPace": "Je hebt {budgetUsedPercent} van je budget {budgetName} gebruikt ({budgetSpent} van {budgetTotal}), en {budgetMonthPercent} van de maand is voorbij.",
+      "investmentsTopMoverUp": "Je grootste beweger op {moverSession} was {moverSymbol}, {moverPercent} omhoog, wat {moverValueChange} aan je positie toevoegde.",
+      "investmentsTopMoverDown": "Je grootste beweger op {moverSession} was {moverSymbol}, {moverPercent} omlaag, wat {moverValueChange} van je positie afhaalde.",
+      "activityAnniversary": "Deze week is het {anniversaryYears} geleden dat je je eerste transactie in Monize registreerde, op {anniversaryFirstDate}.",
+      "activityAccountAnniversary": "Je rekening {anniversaryAccountName} bestaat deze week {anniversaryAccountYears} in Monize: de eerste transactie was op {anniversaryAccountSince}.",
+      "netWorthMilestone": "In {milestoneMonth} ging je nettovermogen over {milestoneAmount} heen.",
+      "activityTransactionMilestone": "In de afgelopen 30 dagen registreerde je transactie nummer {transactionMilestone}.",
+      "warrantiesExpiresSoon": "De garantie van {expiringWarrantyName} loopt over {expiringWarrantyDays} af, op {expiringWarrantyDate}.",
+      "spendingYearAgoMonth": "Een jaar geleden, in {yearAgoMonth}, gaf je {yearAgoSpent} uit, en {yearAgoTopCategoryName} nam daarvan het grootste deel voor zijn rekening.",
+      "netWorthYearAgoUp": "Een jaar geleden, in {yearAgoNetWorthMonth}, was je nettovermogen {yearAgoNetWorth}. Nu is het {yearAgoNetWorthChange} hoger.",
+      "netWorthYearAgoDown": "Een jaar geleden, in {yearAgoNetWorthMonth}, was je nettovermogen {yearAgoNetWorth}. Nu is het {yearAgoNetWorthChange} lager.",
+      "spendingTopCategoryWindow": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} ging het grootste deel van je uitgaven naar {topCategoryName}: {topCategoryAmount}, oftewel {topCategoryPercent}.",
+      "spendingTopPayeeWindow": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} gaf je het meest uit bij {topPayeeName}: {topPayeeAmount}.",
+      "incomeTopSourceWindow": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} leverde {topSourceName} {topSourcePercent} van je inkomen op.",
+      "spendingRankedCategory": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} was {rankedCategoryName} nummer {rankedCategoryRank} van je uitgavencategorieën, met {rankedCategoryAmount} ({rankedCategoryPercent} van het totaal).",
+      "spendingRankedPayee": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} was {rankedPayeeName} nummer {rankedPayeeRank} van de begunstigden bij wie je het meest uitgaf, met {rankedPayeeAmount}.",
+      "incomeRankedSource": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} was {rankedSourceName} nummer {rankedSourceRank} van je inkomstenbronnen en leverde {rankedSourcePercent} daarvan op.",
+      "spendingPayeeInCategoryMonths": "In de afgelopen twaalf maanden gaf je {equivPayeeAmount} uit bij {equivPayeeName}. Maanden van je gemiddelde uitgaven aan {equivCategoryName}: ongeveer {equivCategoryMonths}.",
+      "spendingDailyAverage": "In de afgelopen twaalf maanden gaf je gemiddeld ongeveer {dailyAverageSpent} per dag uit.",
+      "incomeKeptCoversDays": "Wat je in de afgelopen twaalf maanden overhield, {keptCoversAmount}, zou je uitgaven dekken voor ongeveer {keptCoversDays}.",
+      "investmentsGainInMonthsOfSpending": "De winst op je beleggingen, {gainCoversAmount}, in maanden van je gemiddelde uitgaven: ongeveer {gainCoversMonths}."
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "Sinds {startMonth} is je nettovermogen met {startGain} gegroeid, vanaf {startAmount}. Groeifactor: {startMultiple}.",
+        "c": "Nettovermogen ten opzichte van {startAmount} in {startMonth}: een winst van {startGain} en een groeifactor van {startMultiple}."
+      },
+      "netWorthBiggestJump": {
+        "b": "Het nettovermogen ging van {jumpFrom} in {jumpPreviousMonth} naar {jumpTo} in {jumpMonth}, een stijging van {jumpAmount} en je grootste sprong in één maand.",
+        "c": "Je grootste sprong in één maand, {jumpAmount}, kwam in {jumpMonth}, toen het nettovermogen steeg van {jumpFrom} in {jumpPreviousMonth} naar {jumpTo}."
+      },
+      "netWorthHighPoint": {
+        "b": "Het nettovermogen piekte op {peakAmount} in {peakMonth}, en vandaag zit je er {peakBelow} onder.",
+        "c": "Je zit {peakBelow} onder je hoogtepunt van {peakAmount}, bereikt in {peakMonth}."
+      },
+      "netWorthAtHighPoint": {
+        "b": "Het nettovermogen is nooit hoger geweest dan {currentHigh}, en daar sta je nu.",
+        "c": "{currentHigh} is je nettovermogen vandaag, en dat is ook je hoogtepunt."
+      },
+      "netWorthBiggestDip": {
+        "b": "Het nettovermogen daalde met {dipPercent} bij je grootste dip, van {dipFromAmount} in {dipFromMonth} naar {dipToAmount} in {dipToMonth}.",
+        "c": "Van {dipFromMonth} tot {dipToMonth} zakte het nettovermogen van {dipFromAmount} naar {dipToAmount}, een daling van {dipPercent} en je grootste dip."
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "Het nettovermogen had zich in {dipRecoveredMonth} hersteld van zijn grootste dip, die liep van {dipFromAmount} in {dipFromMonth} naar {dipToAmount} in {dipToMonth}.",
+        "c": "In {dipFromMonth} stond het nettovermogen op {dipFromAmount}, en in {dipToMonth} op {dipToAmount}, zijn grootste dip. In {dipRecoveredMonth} had het zich hersteld."
+      },
+      "netWorthLargestAsset": {
+        "b": "{assetName} is {assetValue} waard en vormt {assetPercent} van je bezittingen.",
+        "c": "{assetName} vormt {assetPercent} van je bezittingen en is {assetValue} waard."
+      },
+      "investmentsShareOfAssets": {
+        "b": "{investmentsPercent} van je bezittingen zit in beleggingen, samen {investmentsValue} waard.",
+        "c": "Beleggingen vormen {investmentsPercent} van je bezittingen, met een waarde van {investmentsValue}."
+      },
+      "investmentsGain": {
+        "b": "Ten opzichte van een kostprijs van {gainCostBasis} staan je beleggingen {gainAmount} hoger, oftewel {gainPercent}.",
+        "c": "Je beleggingen staan {gainPercent} boven hun kostprijs van {gainCostBasis}, een winst van {gainAmount}."
+      },
+      "investmentsLoss": {
+        "b": "Ten opzichte van een kostprijs van {gainCostBasis} staan je beleggingen {gainAmount} lager, oftewel {gainPercent}.",
+        "c": "Je beleggingen staan {gainPercent} onder hun kostprijs van {gainCostBasis}, een verlies van {gainAmount}."
+      },
+      "investmentsCagr": {
+        "b": "Gemeten als CAGR hebben je beleggingen ongeveer {cagrPercent} per jaar opgeleverd.",
+        "c": "Ongeveer {cagrPercent}: dat is het geannualiseerde rendement (CAGR) van je beleggingen."
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol} is je grootste positie, {holdingValue} waard in {holdingAccounts} en ongeveer {holdingPercent} van de portefeuille.",
+        "c": "Ongeveer {holdingPercent} van je portefeuille, oftewel {holdingValue} in {holdingAccounts}, zit in {holdingSymbol}, je grootste positie."
+      },
+      "investmentsBestPerformer": {
+        "b": "{bestSymbol} is je beste belegging, {bestPercent} omhoog: hij kostte {bestCost} en is nu {bestValue} waard.",
+        "c": "Met {bestPercent} winst staat {bestSymbol} bovenaan je posities. Van een kostprijs van {bestCost} werd een waarde van {bestValue}."
+      },
+      "investmentsForeignAccount": {
+        "b": "Je rekening {foreignName} bevat {foreignBalance} in {foreignCurrency}, wat bij een koers van ongeveer {foreignRate} gelijk is aan {foreignConverted}.",
+        "c": "Bij een koers van ongeveer {foreignRate} zijn de {foreignBalance} aan posities op je rekening {foreignName} ({foreignCurrency}) gelijk aan {foreignConverted}."
+      },
+      "investmentsLargestAccount": {
+        "b": "{largestName} is je grootste beleggingsrekening, gewaardeerd op {largestValue}.",
+        "c": "Van je beleggingsrekeningen is {largestName} de grootste, met {largestValue}."
+      },
+      "spendingTopCategory": {
+        "b": "{topCategoryName} was je grootste categorie in de afgelopen twaalf maanden, met {topCategoryPercent} van je uitgaven, oftewel {topCategoryAmount}.",
+        "c": "De categorie waaraan je in de afgelopen twaalf maanden het meest uitgaf, was {topCategoryName}: {topCategoryAmount}, oftewel {topCategoryPercent}."
+      },
+      "spendingTopPayee": {
+        "b": "{topPayeeName} kreeg in de afgelopen twaalf maanden meer van je geld dan welke andere begunstigde ook: {topPayeeAmount}.",
+        "c": "Je grootste begunstigde van de afgelopen twaalf maanden was {topPayeeName}, met {topPayeeAmount} aan uitgaven."
+      },
+      "spendingBiggestMonth": {
+        "b": "Je uitgaven piekten in {biggestSpendMonth} op {biggestSpendAmount}, de duurste maand van de afgelopen twaalf.",
+        "c": "Van de afgelopen twaalf maanden had {biggestSpendMonth} de meeste uitgaven, met {biggestSpendAmount}."
+      },
+      "incomeKeptShare": {
+        "b": "Je hield {keptPercent} van je inkomen van de afgelopen twaalf maanden over, oftewel {keptAmount}.",
+        "c": "Van alles wat er in de afgelopen twaalf maanden binnenkwam, hield je {keptAmount} over, oftewel {keptPercent}."
+      },
+      "incomeSurplusMonths": {
+        "b": "Maanden met meer inkomsten dan uitgaven, van de afgelopen {windowMonths}: {surplusMonths}.",
+        "c": "Maanden waarin je meer ontving dan je uitgaf, van de afgelopen {windowMonths}: {surplusMonths}."
+      },
+      "incomeTopSource": {
+        "b": "In de afgelopen twaalf maanden kwam {topSourcePercent} van je inkomen van {topSourceName}.",
+        "c": "Je inkomen van de afgelopen twaalf maanden kwam voor {topSourcePercent} van {topSourceName}."
+      },
+      "activityTransactions": {
+        "b": "Vanaf {firstTransactionMonth} bevatten je registers dit aantal transacties: {transactionCount}.",
+        "c": "Sinds {firstTransactionMonth} heb je dit aantal transacties geregistreerd: {transactionCount}."
+      },
+      "activityPayees": {
+        "b": "In Monize bewaar je deze aantallen: begunstigden {payeeCount}, categorieën {categoryCount}.",
+        "c": "Monize bewaart je begunstigden ({payeeCount}) en je categorieën ({categoryCount})."
+      },
+      "activityScheduled": {
+        "b": "Monize houdt je geplande transacties bij, {scheduledCount} in totaal.",
+        "c": "In Monize ingesteld en voor je gepland: {scheduledCount}."
+      },
+      "warrantiesCovered": {
+        "b": "Nog lopend, van de garanties die je bijhoudt: {warrantyCount}.",
+        "c": "Van je bijgehouden garanties, die nog niet zijn verlopen: {warrantyCount}."
+      },
+      "warrantiesNextExpiry": {
+        "b": "In {nextWarrantyMonth} is je garantie voor {nextWarrantyName} de eerstvolgende die afloopt.",
+        "c": "De eerstvolgende die afloopt van je garanties: {nextWarrantyName}, in {nextWarrantyMonth}."
+      },
+      "spendingMonthToDateLess": {
+        "b": "Deze maand gaf je tot en met {mtdThrough} {mtdSpent} uit, dat is {mtdDifference} minder dan de {mtdPreviousSpent} op dezelfde dag vorige maand.",
+        "c": "Op dezelfde dag vorige maand had je {mtdPreviousSpent} uitgegeven. Tot en met {mtdThrough} deze maand is dat {mtdSpent}, dus {mtdDifference} minder."
+      },
+      "spendingMonthToDateMore": {
+        "b": "Deze maand gaf je tot en met {mtdThrough} {mtdSpent} uit, dat is {mtdDifference} meer dan de {mtdPreviousSpent} op dezelfde dag vorige maand.",
+        "c": "Op dezelfde dag vorige maand had je {mtdPreviousSpent} uitgegeven. Tot en met {mtdThrough} deze maand is dat {mtdSpent}, dus {mtdDifference} meer."
+      },
+      "spendingLastDay": {
+        "b": "Je uitgaven op {lastDayDate} kwamen uit op {lastDaySpent}.",
+        "c": "Op {lastDayDate} ging er {lastDaySpent} uit."
+      },
+      "spendingLastSevenDays": {
+        "b": "Je uitgaven in de zeven dagen vanaf {weekFrom} kwamen uit op {weekSpent}.",
+        "c": "{weekSpent} is wat je uitgaf in de zeven dagen vanaf {weekFrom}."
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "Op {recentPurchaseDay} gaf je {recentPurchaseAmount} uit bij {recentPurchasePayee}, je grootste aankoop van de afgelopen zeven dagen.",
+        "c": "{recentPurchasePayee} kreeg {recentPurchaseAmount} op {recentPurchaseDay}, de grootste aankoop die je in de afgelopen zeven dagen deed."
+      },
+      "spendingNoSpendStreak": {
+        "b": "{noSpendDays} zonder geregistreerde uitgaven: de laatste was op {lastSpendDay}.",
+        "c": "Sinds {lastSpendDay} zijn er geen uitgaven geregistreerd, gedurende {noSpendDays}."
+      },
+      "spendingDaysSincePayee": {
+        "b": "Je gaf voor het laatst uit bij {sincePayeeName} op {sincePayeeDay}, {sincePayeeDays} geleden.",
+        "c": "Je laatste uitgave bij {sincePayeeName} was op {sincePayeeDay}, {sincePayeeDays} geleden."
+      },
+      "activityBillsDueThisWeek": {
+        "b": "Verschuldigd in de komende zeven dagen, als aantal rekeningen: {billsDueCount}, samen {billsDueTotal}.",
+        "c": "Rekeningen die in de komende zeven dagen vervallen: {billsDueCount}, {billsDueTotal} in totaal."
+      },
+      "activityNextBill": {
+        "b": "{nextBillName} is je volgende rekening: {nextBillAmount}, te betalen op {nextBillDate}.",
+        "c": "Te betalen op {nextBillDate}: je volgende rekening is {nextBillName}, van {nextBillAmount}."
+      },
+      "spendingBudgetPace": {
+        "b": "{budgetMonthPercent} van de maand is voorbij en je hebt {budgetSpent} van je budget {budgetName} van {budgetTotal} gebruikt, oftewel {budgetUsedPercent}.",
+        "c": "Je budget {budgetName} is voor {budgetUsedPercent} gebruikt ({budgetSpent} van {budgetTotal}), en {budgetMonthPercent} van de maand is verstreken."
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSymbol} was de grootste beweger in je portefeuille op {moverSession}: {moverPercent} omhoog, wat {moverValueChange} aan je positie toevoegde.",
+        "c": "Op {moverSession} was je grootste beweger {moverSymbol}, {moverPercent} omhoog, een winst van {moverValueChange} op je positie."
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSymbol} was de grootste beweger in je portefeuille op {moverSession}: {moverPercent} omlaag, wat {moverValueChange} van je positie afhaalde.",
+        "c": "Op {moverSession} was je grootste beweger {moverSymbol}, {moverPercent} omlaag, een verlies van {moverValueChange} op je positie."
+      },
+      "activityAnniversary": {
+        "b": "Je eerste transactie in Monize was op {anniversaryFirstDate}, en deze week is dat {anniversaryYears} geleden.",
+        "c": "{anniversaryYears} geleden, deze week, registreerde je je eerste transactie in Monize, op {anniversaryFirstDate}."
+      },
+      "activityAccountAnniversary": {
+        "b": "Je rekening {anniversaryAccountName} verschijnt in Monize voor het eerst op {anniversaryAccountSince}, en deze week bestaat ze {anniversaryAccountYears}.",
+        "c": "Deze week komt je rekening {anniversaryAccountName} in Monize op {anniversaryAccountYears}, gerekend vanaf de eerste transactie op {anniversaryAccountSince}."
+      },
+      "netWorthMilestone": {
+        "b": "Je nettovermogen kwam in {milestoneMonth} boven {milestoneAmount}.",
+        "c": "{milestoneMonth} is de maand waarin je nettovermogen over {milestoneAmount} heen ging."
+      },
+      "activityTransactionMilestone": {
+        "b": "Transactie nummer {transactionMilestone} kwam in de afgelopen 30 dagen in je registers terecht.",
+        "c": "In de afgelopen 30 dagen bereikte je aantal transacties nummer {transactionMilestone}."
+      },
+      "warrantiesExpiresSoon": {
+        "b": "Op {expiringWarrantyDate}, over {expiringWarrantyDays}, loopt de garantie van {expiringWarrantyName} af.",
+        "c": "De garantie van {expiringWarrantyName} eindigt op {expiringWarrantyDate}, over {expiringWarrantyDays}."
+      },
+      "spendingYearAgoMonth": {
+        "b": "In {yearAgoMonth}, een jaar geleden, gaf je {yearAgoSpent} uit, met {yearAgoTopCategoryName} als grootste deel.",
+        "c": "{yearAgoTopCategoryName} nam het grootste deel van de {yearAgoSpent} die je een jaar geleden, in {yearAgoMonth}, uitgaf."
+      },
+      "netWorthYearAgoUp": {
+        "b": "Je nettovermogen is {yearAgoNetWorthChange} hoger dan de {yearAgoNetWorth} van een jaar geleden, in {yearAgoNetWorthMonth}.",
+        "c": "{yearAgoNetWorthChange} erbij in een jaar: van {yearAgoNetWorth} in {yearAgoNetWorthMonth} naar waar het nu staat."
+      },
+      "netWorthYearAgoDown": {
+        "b": "Je nettovermogen is {yearAgoNetWorthChange} lager dan de {yearAgoNetWorth} van een jaar geleden, in {yearAgoNetWorthMonth}.",
+        "c": "{yearAgoNetWorthChange} eraf in een jaar: van {yearAgoNetWorth} in {yearAgoNetWorthMonth} naar waar het nu staat."
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} was {topCategoryName} je grootste uitgavencategorie: {topCategoryAmount}, oftewel {topCategoryPercent} van je uitgaven.",
+        "c": "{topCategoryName} nam {window, select, d30 {in de afgelopen 30 dagen} d90 {in de afgelopen 90 dagen} ytd {sinds het begin van dit jaar} m12 {in de afgelopen twaalf maanden} all {sinds het begin van je gegevens} other {in deze periode}} het grootste deel van je uitgaven voor zijn rekening: {topCategoryAmount}, oftewel {topCategoryPercent}."
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} ging er meer van je geld naar {topPayeeName} dan naar welke andere begunstigde ook: {topPayeeAmount}.",
+        "c": "Je gaf {window, select, d30 {in de afgelopen 30 dagen} d90 {in de afgelopen 90 dagen} ytd {sinds het begin van dit jaar} m12 {in de afgelopen twaalf maanden} all {sinds het begin van je gegevens} other {in deze periode}} het meest uit bij {topPayeeName}, met {topPayeeAmount}."
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} kwam {topSourcePercent} van je inkomen van {topSourceName}.",
+        "c": "{topSourceName} was {window, select, d30 {in de afgelopen 30 dagen} d90 {in de afgelopen 90 dagen} ytd {sinds het begin van dit jaar} m12 {in de afgelopen twaalf maanden} all {sinds het begin van je gegevens} other {in deze periode}} de bron van {topSourcePercent} van je inkomen."
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} was je uitgavencategorie nummer {rankedCategoryRank} {rankedCategoryName}: {rankedCategoryAmount}, oftewel {rankedCategoryPercent} van het totaal.",
+        "c": "{rankedCategoryName} staat {window, select, d30 {in de afgelopen 30 dagen} d90 {in de afgelopen 90 dagen} ytd {sinds het begin van dit jaar} m12 {in de afgelopen twaalf maanden} all {sinds het begin van je gegevens} other {in deze periode}} op nummer {rankedCategoryRank} van je uitgavencategorieën, met {rankedCategoryAmount} ({rankedCategoryPercent} van het totaal)."
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} gaf je {rankedPayeeAmount} uit bij {rankedPayeeName}, nummer {rankedPayeeRank} van je begunstigden naar uitgaven.",
+        "c": "Nummer {rankedPayeeRank} van de begunstigden bij wie je {window, select, d30 {in de afgelopen 30 dagen} d90 {in de afgelopen 90 dagen} ytd {sinds het begin van dit jaar} m12 {in de afgelopen twaalf maanden} all {sinds het begin van je gegevens} other {in deze periode}} het meest uitgaf, is {rankedPayeeName}, met {rankedPayeeAmount}."
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {In de afgelopen 30 dagen} d90 {In de afgelopen 90 dagen} ytd {Sinds het begin van dit jaar} m12 {In de afgelopen twaalf maanden} all {Sinds het begin van je gegevens} other {In deze periode}} leverde {rankedSourceName} {rankedSourcePercent} van je inkomen op, nummer {rankedSourceRank} van je bronnen.",
+        "c": "Van je inkomstenbronnen {window, select, d30 {in de afgelopen 30 dagen} d90 {in de afgelopen 90 dagen} ytd {sinds het begin van dit jaar} m12 {in de afgelopen twaalf maanden} all {sinds het begin van je gegevens} other {in deze periode}} is nummer {rankedSourceRank} {rankedSourceName}, met {rankedSourcePercent} daarvan."
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "Je {equivPayeeAmount} bij {equivPayeeName} in de afgelopen twaalf maanden, in maanden van je gemiddelde uitgaven aan {equivCategoryName}: ongeveer {equivCategoryMonths}.",
+        "c": "Uitgegeven bij {equivPayeeName} in de afgelopen twaalf maanden: {equivPayeeAmount}, oftewel ongeveer {equivCategoryMonths} in maanden van je gemiddelde uitgaven aan {equivCategoryName}."
+      },
+      "spendingDailyAverage": {
+        "b": "Je uitgaven van de afgelopen twaalf maanden komen neer op ongeveer {dailyAverageSpent} per dag.",
+        "c": "Ongeveer {dailyAverageSpent} per dag: dat zijn je gemiddelde uitgaven van de afgelopen twaalf maanden."
+      },
+      "incomeKeptCoversDays": {
+        "b": "In de afgelopen twaalf maanden hield je {keptCoversAmount} over, genoeg om je uitgaven te dekken voor ongeveer {keptCoversDays}.",
+        "c": "Je uitgaven zouden voor ongeveer {keptCoversDays} gedekt zijn met {keptCoversAmount}, wat je in de afgelopen twaalf maanden overhield."
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "In maanden van je gemiddelde uitgaven komt de winst van {gainCoversAmount} op je beleggingen neer op ongeveer {gainCoversMonths}.",
+        "c": "Je beleggingen hebben {gainCoversAmount} winst gemaakt. Maanden van je gemiddelde uitgaven die dat dekt: ongeveer {gainCoversMonths}."
+      }
     }
   },
   "favouriteAccounts": {

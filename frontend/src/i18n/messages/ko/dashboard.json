@@ -54,8 +54,12 @@
       "warranties": "보증"
     },
     "aiGenerated": "회원님의 수치를 바탕으로 AI가 작성했습니다",
+    "units": {
+      "days": "{count, plural, other {{value}일}}",
+      "years": "{count, plural, other {{value}년}}"
+    },
     "facts": {
-      "netWorthSinceStart": "{startMonth}에 순자산은 {startAmount}였습니다. 그 후 {startGain} 늘어 약 {startMultiple}배가 되었습니다.",
+      "netWorthSinceStart": "{startMonth}에 순자산은 {startAmount}였습니다. 그 후 {startGain} 늘었고, 성장 배수는 {startMultiple}배입니다.",
       "netWorthBiggestJump": "{jumpMonth}은(는) 한 달 기준 가장 크게 오른 달이었습니다. 순자산이 {jumpAmount} 늘어, {jumpPreviousMonth}의 {jumpFrom}에서 {jumpTo}가 되었습니다.",
       "netWorthHighPoint": "최고점은 {peakMonth}의 {peakAmount}였습니다. 지금은 그보다 {peakBelow} 낮습니다.",
       "netWorthAtHighPoint": "지금이 최고점입니다. 순자산이 {currentHigh}을(를) 넘은 적은 없습니다.",
@@ -80,7 +84,263 @@
       "activityPayees": "Monize에 저장해 둔 수취인: {payeeCount}명. 카테고리: {categoryCount}개.",
       "activityScheduled": "Monize가 대신 추적하고 있는 예약 거래: {scheduledCount}건.",
       "warrantiesCovered": "관리 중인 보증 중 아직 유효한 것: {warrantyCount}건.",
-      "warrantiesNextExpiry": "다음에 만료되는 보증은 {nextWarrantyName}이며, {nextWarrantyMonth}입니다."
+      "warrantiesNextExpiry": "다음에 만료되는 보증은 {nextWarrantyName}이며, {nextWarrantyMonth}입니다.",
+      "spendingMonthToDateLess": "{mtdThrough}까지 이번 달 지출은 {mtdSpent}(으)로, 지난달 같은 날까지({mtdPreviousSpent})보다 {mtdDifference} 적습니다.",
+      "spendingMonthToDateMore": "{mtdThrough}까지 이번 달 지출은 {mtdSpent}(으)로, 지난달 같은 날까지({mtdPreviousSpent})보다 {mtdDifference} 많습니다.",
+      "spendingLastDay": "{lastDayDate}에 지출한 금액은 {lastDaySpent}입니다.",
+      "spendingLastSevenDays": "{weekFrom}부터 7일 동안의 지출은 {weekSpent}입니다.",
+      "spendingBiggestRecentPurchase": "최근 7일 동안 가장 큰 지출은 {recentPurchaseDay}에 {recentPurchasePayee}에서 쓴 {recentPurchaseAmount}입니다.",
+      "spendingNoSpendStreak": "{lastSpendDay} 이후 {noSpendDays} 동안 기록된 지출이 없습니다.",
+      "spendingDaysSincePayee": "{sincePayeeName}에서 마지막으로 지출한 날은 {sincePayeeDay}(이)며, {sincePayeeDays} 전입니다.",
+      "activityBillsDueThisWeek": "앞으로 7일 안에 결제일이 돌아오는 청구서: {billsDueCount}건, 합계 {billsDueTotal}.",
+      "activityNextBill": "다음 청구서는 {nextBillName}(이)며, 금액은 {nextBillAmount}, 기한은 {nextBillDate}입니다.",
+      "spendingBudgetPace": "이번 달이 {budgetMonthPercent} 지난 시점에 {budgetName} 예산 {budgetTotal} 중 {budgetSpent}, 즉 {budgetUsedPercent}를 사용했습니다.",
+      "investmentsTopMoverUp": "{moverSession}에 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 올라 보유분이 {moverValueChange} 늘었습니다.",
+      "investmentsTopMoverDown": "{moverSession}에 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 내려 보유분이 {moverValueChange} 줄었습니다.",
+      "activityAnniversary": "이번 주는 Monize에서 첫 거래를 기록한 {anniversaryFirstDate}(으)로부터 {anniversaryYears}이 되는 주입니다.",
+      "activityAccountAnniversary": "{anniversaryAccountName} 계좌는 첫 거래({anniversaryAccountSince})로부터 이번 주에 Monize에서 {anniversaryAccountYears}이 됩니다.",
+      "netWorthMilestone": "{milestoneMonth}에 순자산이 {milestoneAmount}을(를) 넘었습니다.",
+      "activityTransactionMilestone": "최근 30일 동안 거래가 누적 {transactionMilestone}번째에 이르렀습니다.",
+      "warrantiesExpiresSoon": "{expiringWarrantyName} 보증은 {expiringWarrantyDays} 뒤인 {expiringWarrantyDate}에 만료됩니다.",
+      "spendingYearAgoMonth": "1년 전인 {yearAgoMonth}에 지출은 {yearAgoSpent}였고, 가장 큰 비중은 {yearAgoTopCategoryName}(이)었습니다.",
+      "netWorthYearAgoUp": "1년 전인 {yearAgoNetWorthMonth}에 순자산은 {yearAgoNetWorth}였습니다. 지금은 {yearAgoNetWorthChange} 더 많습니다.",
+      "netWorthYearAgoDown": "1년 전인 {yearAgoNetWorthMonth}에 순자산은 {yearAgoNetWorth}였습니다. 지금은 {yearAgoNetWorthChange} 더 적습니다.",
+      "spendingTopCategoryWindow": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 지출이 가장 많았던 카테고리는 {topCategoryName}(이)며, {topCategoryAmount}(으)로 전체 지출의 {topCategoryPercent}입니다.",
+      "spendingTopPayeeWindow": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 가장 많이 지출한 곳은 {topPayeeName}(이)며, {topPayeeAmount}입니다.",
+      "incomeTopSourceWindow": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 수입의 {topSourcePercent}는 {topSourceName}에서 들어왔습니다.",
+      "spendingRankedCategory": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} {rankedCategoryName}은(는) 지출 카테고리 중 {rankedCategoryRank}위이며, {rankedCategoryAmount}(전체의 {rankedCategoryPercent})입니다.",
+      "spendingRankedPayee": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} {rankedPayeeName}은(는) 가장 많이 지출한 수취인 중 {rankedPayeeRank}위이며, {rankedPayeeAmount}입니다.",
+      "incomeRankedSource": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} {rankedSourceName}은(는) 수입원 중 {rankedSourceRank}위이며, 수입의 {rankedSourcePercent}를 차지했습니다.",
+      "spendingPayeeInCategoryMonths": "최근 12개월 동안 {equivPayeeName}에서 지출한 금액은 {equivPayeeAmount}입니다. {equivCategoryName}의 월평균 지출로 환산한 개월 수: 약 {equivCategoryMonths}.",
+      "spendingDailyAverage": "최근 12개월 동안 지출은 하루 평균 약 {dailyAverageSpent}입니다.",
+      "incomeKeptCoversDays": "최근 12개월 동안 남긴 {keptCoversAmount}은(는) 지출 약 {keptCoversDays}치에 해당합니다.",
+      "investmentsGainInMonthsOfSpending": "투자 수익 {gainCoversAmount}을(를) 월평균 지출의 개월 수로 환산하면 약 {gainCoversMonths}입니다."
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "{startMonth} 이후 순자산은 {startAmount}에서 {startGain} 늘었습니다. 성장 배수: {startMultiple}배.",
+        "c": "{startMonth}의 {startAmount}에 비해 순자산은 {startGain} 늘었고, 성장 배수는 {startMultiple}배입니다."
+      },
+      "netWorthBiggestJump": {
+        "b": "순자산은 {jumpPreviousMonth}의 {jumpFrom}에서 {jumpMonth}에 {jumpTo}이(가) 되어 {jumpAmount} 늘었고, 한 달 기준 가장 큰 상승입니다.",
+        "c": "한 달 기준 가장 큰 상승인 {jumpAmount}은(는) {jumpMonth}에 있었고, 순자산은 {jumpPreviousMonth}의 {jumpFrom}에서 {jumpTo}이(가) 되었습니다."
+      },
+      "netWorthHighPoint": {
+        "b": "순자산은 {peakMonth}에 {peakAmount}(으)로 정점에 이르렀고, 지금은 그보다 {peakBelow} 낮습니다.",
+        "c": "{peakMonth}에 기록한 최고점 {peakAmount}보다 지금은 {peakBelow} 낮습니다."
+      },
+      "netWorthAtHighPoint": {
+        "b": "순자산이 {currentHigh}보다 높았던 적은 없으며, 지금이 그 수준입니다.",
+        "c": "오늘 순자산은 {currentHigh}(이)며, 이것이 최고점이기도 합니다."
+      },
+      "netWorthBiggestDip": {
+        "b": "가장 큰 하락에서 순자산은 {dipFromMonth}의 {dipFromAmount}에서 {dipToMonth}의 {dipToAmount}(으)로 {dipPercent} 줄었습니다.",
+        "c": "{dipFromMonth}부터 {dipToMonth}까지 순자산은 {dipFromAmount}에서 {dipToAmount}(으)로 {dipPercent} 떨어졌고, 이것이 가장 큰 하락입니다."
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "순자산은 {dipRecoveredMonth}에 가장 큰 하락에서 회복했습니다. 하락은 {dipFromMonth}의 {dipFromAmount}에서 {dipToMonth}의 {dipToAmount}까지였습니다.",
+        "c": "{dipFromMonth}에 순자산은 {dipFromAmount}였고 {dipToMonth}에는 {dipToAmount}이(가) 되었으며, 이것이 가장 큰 하락입니다. {dipRecoveredMonth}에는 회복했습니다."
+      },
+      "netWorthLargestAsset": {
+        "b": "{assetName}의 가치는 {assetValue}(으)로, 자산의 {assetPercent}입니다.",
+        "c": "자산의 {assetPercent}는 {assetName}(이)며, 가치는 {assetValue}입니다."
+      },
+      "investmentsShareOfAssets": {
+        "b": "자산의 {investmentsPercent}가 투자이며, 가치는 모두 {investmentsValue}입니다.",
+        "c": "투자는 자산의 {investmentsPercent}를 차지하며, 가치는 {investmentsValue}입니다."
+      },
+      "investmentsGain": {
+        "b": "취득 원가 {gainCostBasis} 대비 투자는 {gainAmount}, 즉 {gainPercent} 늘었습니다.",
+        "c": "투자는 취득 원가 {gainCostBasis}보다 {gainPercent} 높으며, {gainAmount} 늘었습니다."
+      },
+      "investmentsLoss": {
+        "b": "취득 원가 {gainCostBasis} 대비 투자는 {gainAmount}, 즉 {gainPercent} 줄었습니다.",
+        "c": "투자는 취득 원가 {gainCostBasis}보다 {gainPercent} 낮으며, {gainAmount} 줄었습니다."
+      },
+      "investmentsCagr": {
+        "b": "CAGR로 보면 투자는 연평균 약 {cagrPercent}의 수익을 냈습니다.",
+        "c": "약 {cagrPercent}. 투자의 연환산 수익률(CAGR)입니다."
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol}이(가) 가장 큰 보유 종목으로, {holdingAccounts}에서 {holdingValue}, 포트폴리오의 약 {holdingPercent}입니다.",
+        "c": "포트폴리오의 약 {holdingPercent}, 곧 {holdingAccounts}의 {holdingValue}이(가) 가장 큰 보유 종목인 {holdingSymbol}에 있습니다."
+      },
+      "investmentsBestPerformer": {
+        "b": "가장 잘 나간 종목은 {bestSymbol}(으)로 {bestPercent} 올랐습니다. 매입 비용은 {bestCost}였고 현재 가치는 {bestValue}입니다.",
+        "c": "{bestPercent} 오른 {bestSymbol}이(가) 앞서 있습니다. 매입 비용 {bestCost}에서 가치 {bestValue}이(가) 되었습니다."
+      },
+      "investmentsForeignAccount": {
+        "b": "{foreignName} 계좌는 {foreignCurrency}로 {foreignBalance}을(를) 보유하고 있으며, 약 {foreignRate} 환율로 {foreignConverted}에 해당합니다.",
+        "c": "약 {foreignRate} 환율로 {foreignName} 계좌({foreignCurrency})의 보유액 {foreignBalance}은(는) {foreignConverted}에 해당합니다."
+      },
+      "investmentsLargestAccount": {
+        "b": "가장 큰 투자 계좌는 {largestName}(이)며, 평가액은 {largestValue}입니다.",
+        "c": "투자 계좌 중 가장 큰 것은 {largestName}(이)며, {largestValue}입니다."
+      },
+      "spendingTopCategory": {
+        "b": "최근 12개월 동안 지출이 가장 많았던 카테고리는 {topCategoryName}(이)며, 지출의 {topCategoryPercent}인 {topCategoryAmount}입니다.",
+        "c": "최근 12개월 동안 가장 많이 쓴 카테고리는 {topCategoryName}(이)며, {topCategoryAmount}(으)로 전체의 {topCategoryPercent}입니다."
+      },
+      "spendingTopPayee": {
+        "b": "최근 12개월 동안 {topPayeeName}이(가) 다른 어떤 수취인보다 많은 {topPayeeAmount}을(를) 받았습니다.",
+        "c": "최근 12개월 동안 가장 큰 수취인은 {topPayeeName}(이)며, {topPayeeAmount}을(를) 지출했습니다."
+      },
+      "spendingBiggestMonth": {
+        "b": "지출은 {biggestSpendMonth}에 {biggestSpendAmount}(으)로 정점이었으며, 최근 12개월 중 가장 많은 달입니다.",
+        "c": "최근 12개월 중 지출이 가장 많았던 달은 {biggestSpendMonth}(이)며, {biggestSpendAmount}였습니다."
+      },
+      "incomeKeptShare": {
+        "b": "최근 12개월 동안 수입의 {keptPercent}를 남겼으며, 금액은 {keptAmount}입니다.",
+        "c": "최근 12개월 동안 들어온 돈 중 {keptAmount}, 즉 {keptPercent}를 남겼습니다."
+      },
+      "incomeSurplusMonths": {
+        "b": "최근 {windowMonths}개월 중 나간 돈보다 들어온 돈이 많았던 달: {surplusMonths}.",
+        "c": "최근 {windowMonths}개월 중 지출보다 수입이 많았던 달: {surplusMonths}."
+      },
+      "incomeTopSource": {
+        "b": "최근 12개월 동안 수입의 {topSourcePercent}는 {topSourceName}에서 들어왔습니다.",
+        "c": "최근 12개월 동안 수입은 {topSourcePercent}가 {topSourceName}에서 나왔습니다."
+      },
+      "activityTransactions": {
+        "b": "{firstTransactionMonth}부터 장부에 있는 거래: {transactionCount}건.",
+        "c": "{firstTransactionMonth}부터 기록한 거래: {transactionCount}건."
+      },
+      "activityPayees": {
+        "b": "Monize에 저장해 둔 개수: 수취인 {payeeCount}명, 카테고리 {categoryCount}개.",
+        "c": "Monize에 있는 수취인({payeeCount}명)과 카테고리({categoryCount}개)."
+      },
+      "activityScheduled": {
+        "b": "Monize가 추적하는 예약 거래는 모두 {scheduledCount}건입니다.",
+        "c": "Monize에 설정되어 예약된 거래: {scheduledCount}건."
+      },
+      "warrantiesCovered": {
+        "b": "관리 중인 보증 중 아직 유효한 것: {warrantyCount}건.",
+        "c": "관리 중인 보증 중 아직 만료되지 않은 것: {warrantyCount}건."
+      },
+      "warrantiesNextExpiry": {
+        "b": "{nextWarrantyMonth}에 {nextWarrantyName} 보증이 다음으로 만료됩니다.",
+        "c": "다음에 만료되는 보증: {nextWarrantyName}, {nextWarrantyMonth}."
+      },
+      "spendingMonthToDateLess": {
+        "b": "이번 달 {mtdThrough}까지 지출은 {mtdSpent}(으)로, 지난달 같은 날까지의 {mtdPreviousSpent}보다 {mtdDifference} 적습니다.",
+        "c": "지난달 같은 날까지의 지출은 {mtdPreviousSpent}였습니다. 이번 달 {mtdThrough}까지는 {mtdSpent}(으)로, {mtdDifference} 적습니다."
+      },
+      "spendingMonthToDateMore": {
+        "b": "이번 달 {mtdThrough}까지 지출은 {mtdSpent}(으)로, 지난달 같은 날까지의 {mtdPreviousSpent}보다 {mtdDifference} 많습니다.",
+        "c": "지난달 같은 날까지의 지출은 {mtdPreviousSpent}였습니다. 이번 달 {mtdThrough}까지는 {mtdSpent}(으)로, {mtdDifference} 많습니다."
+      },
+      "spendingLastDay": {
+        "b": "{lastDayDate}의 지출은 {lastDaySpent}입니다.",
+        "c": "{lastDayDate}에 {lastDaySpent}이(가) 나갔습니다."
+      },
+      "spendingLastSevenDays": {
+        "b": "{weekFrom}부터 7일 동안의 지출은 {weekSpent}입니다.",
+        "c": "{weekFrom}부터 7일 동안 쓴 금액은 {weekSpent}입니다."
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "{recentPurchaseDay}에 {recentPurchasePayee}에서 {recentPurchaseAmount}을(를) 썼으며, 최근 7일 동안 가장 큰 지출입니다.",
+        "c": "{recentPurchaseDay}에 {recentPurchasePayee}에서 쓴 {recentPurchaseAmount}이(가) 최근 7일 동안 가장 큰 지출입니다."
+      },
+      "spendingNoSpendStreak": {
+        "b": "{noSpendDays} 동안 기록된 지출이 없습니다. 마지막 지출은 {lastSpendDay}였습니다.",
+        "c": "{lastSpendDay} 이후 {noSpendDays} 동안 지출이 기록되지 않았습니다."
+      },
+      "spendingDaysSincePayee": {
+        "b": "{sincePayeeName}에서 마지막으로 지출한 날은 {sincePayeeDay}였으며, {sincePayeeDays} 전입니다.",
+        "c": "{sincePayeeName}에 대한 마지막 지출은 {sincePayeeDay}였고, {sincePayeeDays} 전입니다."
+      },
+      "activityBillsDueThisWeek": {
+        "b": "앞으로 7일 안에 기한이 돌아오는 청구서 수: {billsDueCount}건, 합계 {billsDueTotal}.",
+        "c": "앞으로 7일 안에 기한이 돌아오는 청구서: {billsDueCount}건, 합계 {billsDueTotal}."
+      },
+      "activityNextBill": {
+        "b": "다음 청구서는 {nextBillName}(이)며, {nextBillAmount}, 기한은 {nextBillDate}입니다.",
+        "c": "기한이 {nextBillDate}인 다음 청구서는 {nextBillName}(이)며, {nextBillAmount}입니다."
+      },
+      "spendingBudgetPace": {
+        "b": "이번 달이 {budgetMonthPercent} 지난 시점에 {budgetName} 예산 {budgetTotal} 중 {budgetSpent}, 즉 {budgetUsedPercent}를 썼습니다.",
+        "c": "{budgetName} 예산은 {budgetUsedPercent} 사용했고({budgetSpent}/{budgetTotal}), 이번 달은 {budgetMonthPercent} 지났습니다."
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSession}에 포트폴리오에서 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 올라 보유분이 {moverValueChange} 늘었습니다.",
+        "c": "{moverSession}에 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 올라 보유분이 {moverValueChange} 늘었습니다."
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSession}에 포트폴리오에서 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 내려 보유분이 {moverValueChange} 줄었습니다.",
+        "c": "{moverSession}에 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 내려 보유분이 {moverValueChange} 줄었습니다."
+      },
+      "activityAnniversary": {
+        "b": "Monize의 첫 거래는 {anniversaryFirstDate}였고, 이번 주로 {anniversaryYears}이 됩니다.",
+        "c": "Monize에서 첫 거래를 기록한 {anniversaryFirstDate}(으)로부터 이번 주에 {anniversaryYears}이 됩니다."
+      },
+      "activityAccountAnniversary": {
+        "b": "{anniversaryAccountName} 계좌는 {anniversaryAccountSince}에 Monize에 처음 나타났고, 이번 주에 {anniversaryAccountYears}이 됩니다.",
+        "c": "{anniversaryAccountName} 계좌는 {anniversaryAccountSince}의 첫 거래부터 세어 이번 주에 Monize에서 {anniversaryAccountYears}이 됩니다."
+      },
+      "netWorthMilestone": {
+        "b": "순자산은 {milestoneMonth}에 {milestoneAmount}을(를) 넘었습니다.",
+        "c": "순자산이 {milestoneAmount}을(를) 넘은 때는 {milestoneMonth}입니다."
+      },
+      "activityTransactionMilestone": {
+        "b": "{transactionMilestone}번째 거래가 최근 30일 안에 장부에 들어왔습니다.",
+        "c": "최근 30일 동안 거래 수가 {transactionMilestone}번째에 이르렀습니다."
+      },
+      "warrantiesExpiresSoon": {
+        "b": "{expiringWarrantyDate}, 곧 {expiringWarrantyDays} 뒤에 {expiringWarrantyName} 보증이 만료됩니다.",
+        "c": "{expiringWarrantyName} 보증은 {expiringWarrantyDate}에 끝나며, {expiringWarrantyDays} 뒤입니다."
+      },
+      "spendingYearAgoMonth": {
+        "b": "1년 전 {yearAgoMonth}에 {yearAgoSpent}을(를) 지출했고, 가장 큰 비중은 {yearAgoTopCategoryName}(이)었습니다.",
+        "c": "1년 전인 {yearAgoMonth}에 쓴 {yearAgoSpent} 중 가장 큰 부분은 {yearAgoTopCategoryName}(이)었습니다."
+      },
+      "netWorthYearAgoUp": {
+        "b": "순자산은 1년 전인 {yearAgoNetWorthMonth}의 {yearAgoNetWorth}보다 {yearAgoNetWorthChange} 높습니다.",
+        "c": "1년 사이 {yearAgoNetWorthChange} 증가: {yearAgoNetWorthMonth}의 {yearAgoNetWorth}에서 현재 수준으로."
+      },
+      "netWorthYearAgoDown": {
+        "b": "순자산은 1년 전인 {yearAgoNetWorthMonth}의 {yearAgoNetWorth}보다 {yearAgoNetWorthChange} 낮습니다.",
+        "c": "1년 사이 {yearAgoNetWorthChange} 감소: {yearAgoNetWorthMonth}의 {yearAgoNetWorth}에서 현재 수준으로."
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 지출 카테고리 1위는 {topCategoryName}(이)며, {topCategoryAmount}(으)로 지출의 {topCategoryPercent}입니다.",
+        "c": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 지출이 가장 많았던 것은 {topCategoryName}(이)며, {topCategoryAmount}(으)로 전체의 {topCategoryPercent}입니다."
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} {topPayeeName}이(가) 다른 어떤 수취인보다 많은 {topPayeeAmount}을(를) 받았습니다.",
+        "c": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 가장 많이 지출한 곳은 {topPayeeName}(이)며, {topPayeeAmount}입니다."
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 수입의 {topSourcePercent}는 {topSourceName}에서 들어왔습니다.",
+        "c": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 수입의 {topSourcePercent}는 {topSourceName}에서 나왔습니다."
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 지출 카테고리 {rankedCategoryRank}위는 {rankedCategoryName}(이)며, {rankedCategoryAmount}(으)로 전체의 {rankedCategoryPercent}입니다.",
+        "c": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} {rankedCategoryName}은(는) 지출 카테고리 {rankedCategoryRank}위이며, {rankedCategoryAmount}(전체의 {rankedCategoryPercent})입니다."
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} {rankedPayeeName}에 {rankedPayeeAmount}을(를) 지출해 수취인 중 {rankedPayeeRank}위입니다.",
+        "c": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 가장 많이 지출한 수취인 {rankedPayeeRank}위는 {rankedPayeeName}(이)며, {rankedPayeeAmount}입니다."
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} {rankedSourceName}은(는) 수입의 {rankedSourcePercent}를 차지해 수입원 중 {rankedSourceRank}위입니다.",
+        "c": "{window, select, d30 {최근 30일 동안} d90 {최근 90일 동안} ytd {올해 지금까지} m12 {최근 12개월 동안} all {기록을 시작한 이후} other {이 기간 동안}} 수입원 {rankedSourceRank}위는 {rankedSourceName}(이)며, 수입의 {rankedSourcePercent}입니다."
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "최근 12개월 동안 {equivPayeeName}에서 쓴 {equivPayeeAmount}을(를) {equivCategoryName}의 월평균 지출로 환산한 개월 수: 약 {equivCategoryMonths}.",
+        "c": "최근 12개월 동안 {equivPayeeName}에서 지출한 금액: {equivPayeeAmount}, {equivCategoryName} 월평균 지출로 환산하면 약 {equivCategoryMonths}개월치입니다."
+      },
+      "spendingDailyAverage": {
+        "b": "최근 12개월 동안 지출은 하루 약 {dailyAverageSpent}입니다.",
+        "c": "하루 약 {dailyAverageSpent}. 최근 12개월 동안의 평균 지출입니다."
+      },
+      "incomeKeptCoversDays": {
+        "b": "최근 12개월 동안 남긴 {keptCoversAmount}(으)로 지출 약 {keptCoversDays}치를 충당할 수 있습니다.",
+        "c": "최근 12개월 동안 남긴 {keptCoversAmount}은(는) 지출 약 {keptCoversDays}치에 해당합니다."
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "월평균 지출의 개월 수로 보면, 투자로 늘어난 {gainCoversAmount}은(는) 약 {gainCoversMonths}입니다.",
+        "c": "투자 수익은 {gainCoversAmount}입니다. 월평균 지출의 몇 개월치인지: 약 {gainCoversMonths}."
+      }
     }
   },
   "favouriteAccounts": {

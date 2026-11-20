@@ -54,8 +54,12 @@
       "warranties": "Gwarancje"
     },
     "aiGenerated": "Napisane przez AI na podstawie Twoich danych",
+    "units": {
+      "days": "{count, plural, one {{value} dzień} few {{value} dni} many {{value} dni} other {{value} dnia}}",
+      "years": "{count, plural, one {{value} rok} few {{value} lata} many {{value} lat} other {{value} roku}}"
+    },
     "facts": {
-      "netWorthSinceStart": "Twoja wartość netto wynosiła {startAmount} w {startMonth}. Od tego czasu wzrosła o {startGain}, czyli jest około {startMultiple} razy większa.",
+      "netWorthSinceStart": "Twoja wartość netto wynosiła {startAmount} w {startMonth}. Od tego czasu wzrosła o {startGain}, co daje mnożnik wzrostu {startMultiple}.",
       "netWorthBiggestJump": "{jumpMonth} to Twój największy skok w ciągu jednego miesiąca. Wartość netto wzrosła o {jumpAmount}, z {jumpFrom} w {jumpPreviousMonth} do {jumpTo}.",
       "netWorthHighPoint": "Twój szczyt to {peakAmount} w {peakMonth}. Teraz jesteś {peakBelow} poniżej.",
       "netWorthAtHighPoint": "Jesteś na szczycie: wartość netto nigdy nie była wyższa niż {currentHigh}.",
@@ -80,7 +84,263 @@
       "activityPayees": "Kontrahenci zapisani w Monize: {payeeCount}. Kategorie: {categoryCount}.",
       "activityScheduled": "Zaplanowane transakcje, które Monize śledzi dla Ciebie: {scheduledCount}.",
       "warrantiesCovered": "Gwarancje, które śledzisz i które nadal obowiązują: {warrantyCount}.",
-      "warrantiesNextExpiry": "Następna gwarancja, która wygasa, to {nextWarrantyName}, w {nextWarrantyMonth}."
+      "warrantiesNextExpiry": "Następna gwarancja, która wygasa, to {nextWarrantyName}, w {nextWarrantyMonth}.",
+      "spendingMonthToDateLess": "{mtdThrough}: do tego dnia w tym miesiącu wydano {mtdSpent}, czyli o {mtdDifference} mniej niż do tego samego dnia w zeszłym miesiącu ({mtdPreviousSpent}).",
+      "spendingMonthToDateMore": "{mtdThrough}: do tego dnia w tym miesiącu wydano {mtdSpent}, czyli o {mtdDifference} więcej niż do tego samego dnia w zeszłym miesiącu ({mtdPreviousSpent}).",
+      "spendingLastDay": "{lastDayDate}: wydano {lastDaySpent}.",
+      "spendingLastSevenDays": "Wydatki w ciągu siedmiu dni (początek: {weekFrom}): {weekSpent}.",
+      "spendingBiggestRecentPurchase": "Twój największy zakup z ostatnich siedmiu dni: {recentPurchaseAmount}, {recentPurchasePayee} ({recentPurchaseDay}).",
+      "spendingNoSpendStreak": "Brak zapisanych wydatków przez {noSpendDays} (ostatnie wydatki: {lastSpendDay}).",
+      "spendingDaysSincePayee": "Ostatnie wydatki u kontrahenta {sincePayeeName}: {sincePayeeDay}, czyli {sincePayeeDays} temu.",
+      "activityBillsDueThisWeek": "Liczba rachunków do zapłaty w ciągu najbliższych siedmiu dni: {billsDueCount}, razem {billsDueTotal}.",
+      "activityNextBill": "Twój następny rachunek to {nextBillName}, na kwotę {nextBillAmount}, termin: {nextBillDate}.",
+      "spendingBudgetPace": "Wykorzystano {budgetUsedPercent} Twojego budżetu {budgetName} ({budgetSpent} z {budgetTotal}), a minęło {budgetMonthPercent} miesiąca.",
+      "investmentsTopMoverUp": "Największy ruch w Twoim portfelu ({moverSession}): {moverSymbol}, wzrost o {moverPercent}, co dodało {moverValueChange} do Twojej pozycji.",
+      "investmentsTopMoverDown": "Największy ruch w Twoim portfelu ({moverSession}): {moverSymbol}, spadek o {moverPercent}, co odjęło {moverValueChange} od Twojej pozycji.",
+      "activityAnniversary": "Ten tydzień to {anniversaryYears} od Twojej pierwszej transakcji w Monize ({anniversaryFirstDate}).",
+      "activityAccountAnniversary": "Twoje konto {anniversaryAccountName} ma w tym tygodniu w Monize {anniversaryAccountYears}: jego pierwsza transakcja miała miejsce {anniversaryAccountSince}.",
+      "netWorthMilestone": "{milestoneMonth}: Twoja wartość netto przekroczyła {milestoneAmount}.",
+      "activityTransactionMilestone": "W ciągu ostatnich 30 dni zapisano transakcję numer {transactionMilestone}.",
+      "warrantiesExpiresSoon": "Gwarancja na {expiringWarrantyName} wygasa za {expiringWarrantyDays}, dnia {expiringWarrantyDate}.",
+      "spendingYearAgoMonth": "Rok temu ({yearAgoMonth}) wydano {yearAgoSpent}, a najwięcej z tego pochłonęła kategoria {yearAgoTopCategoryName}.",
+      "netWorthYearAgoUp": "Rok temu ({yearAgoNetWorthMonth}) Twoja wartość netto wynosiła {yearAgoNetWorth}. Teraz jest wyższa o {yearAgoNetWorthChange}.",
+      "netWorthYearAgoDown": "Rok temu ({yearAgoNetWorthMonth}) Twoja wartość netto wynosiła {yearAgoNetWorth}. Teraz jest niższa o {yearAgoNetWorthChange}.",
+      "spendingTopCategoryWindow": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} najwięcej Twoich wydatków pochłonęła kategoria {topCategoryName}: {topCategoryAmount}, czyli {topCategoryPercent}.",
+      "spendingTopPayeeWindow": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} najwięcej wydano u kontrahenta {topPayeeName}: {topPayeeAmount}.",
+      "incomeTopSourceWindow": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} źródło {topSourceName} dało {topSourcePercent} Twoich przychodów.",
+      "spendingRankedCategory": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} kategoria {rankedCategoryName} zajęła miejsce {rankedCategoryRank} wśród Twoich kategorii wydatków, z kwotą {rankedCategoryAmount} ({rankedCategoryPercent} całości).",
+      "spendingRankedPayee": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} kontrahent {rankedPayeeName} zajął miejsce {rankedPayeeRank} wśród tych, u których wydano najwięcej, z kwotą {rankedPayeeAmount}.",
+      "incomeRankedSource": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} źródło {rankedSourceName} zajęło miejsce {rankedSourceRank} wśród Twoich źródeł przychodów i dało {rankedSourcePercent} z nich.",
+      "spendingPayeeInCategoryMonths": "W ciągu ostatnich dwunastu miesięcy wydano {equivPayeeAmount} u kontrahenta {equivPayeeName}. Miesiące Twoich przeciętnych wydatków na {equivCategoryName}: około {equivCategoryMonths}.",
+      "spendingDailyAverage": "W ciągu ostatnich dwunastu miesięcy Twoje wydatki wynosiły średnio około {dailyAverageSpent} dziennie.",
+      "incomeKeptCoversDays": "Kwota, którą zachowano w ciągu ostatnich dwunastu miesięcy, {keptCoversAmount}, pokryłaby Twoje wydatki na około {keptCoversDays}.",
+      "investmentsGainInMonthsOfSpending": "Zysk z Twoich inwestycji, {gainCoversAmount}, w miesiącach Twoich przeciętnych wydatków: około {gainCoversMonths}."
+    },
+    "variants": {
+      "netWorthSinceStart": {
+        "b": "Od miesiąca {startMonth} Twoja wartość netto wzrosła o {startGain}, z poziomu {startAmount}. Mnożnik wzrostu: {startMultiple}.",
+        "c": "Wartość netto wobec {startAmount} z miesiąca {startMonth}: zysk {startGain} i mnożnik wzrostu {startMultiple}."
+      },
+      "netWorthBiggestJump": {
+        "b": "Wartość netto wzrosła z {jumpFrom} ({jumpPreviousMonth}) do {jumpTo} ({jumpMonth}), czyli o {jumpAmount}, co jest Twoim największym skokiem w ciągu jednego miesiąca.",
+        "c": "Twój największy skok w ciągu jednego miesiąca, {jumpAmount}, przypadł na miesiąc {jumpMonth}: wartość netto wzrosła z {jumpFrom} ({jumpPreviousMonth}) do {jumpTo}."
+      },
+      "netWorthHighPoint": {
+        "b": "Wartość netto osiągnęła szczyt {peakAmount} ({peakMonth}), a dziś jesteś {peakBelow} poniżej.",
+        "c": "Jesteś {peakBelow} poniżej swojego szczytu {peakAmount} z miesiąca {peakMonth}."
+      },
+      "netWorthAtHighPoint": {
+        "b": "Wartość netto nigdy nie była wyższa niż {currentHigh} i właśnie tyle wynosi teraz.",
+        "c": "Dziś Twoja wartość netto to {currentHigh}, a to także Twój szczyt."
+      },
+      "netWorthBiggestDip": {
+        "b": "Wartość netto spadła o {dipPercent} podczas Twojego największego spadku, z {dipFromAmount} ({dipFromMonth}) do {dipToAmount} ({dipToMonth}).",
+        "c": "Od miesiąca {dipFromMonth} do miesiąca {dipToMonth} wartość netto spadła z {dipFromAmount} do {dipToAmount}, czyli o {dipPercent}, co jest Twoim największym spadkiem."
+      },
+      "netWorthBiggestDipRecovered": {
+        "b": "Po największym spadku, od {dipFromAmount} ({dipFromMonth}) do {dipToAmount} ({dipToMonth}), wartość netto odbudowała się w miesiącu {dipRecoveredMonth}.",
+        "c": "W miesiącu {dipFromMonth} wartość netto wynosiła {dipFromAmount}, a w miesiącu {dipToMonth} {dipToAmount}, co było jej największym spadkiem. W miesiącu {dipRecoveredMonth} była już odbudowana."
+      },
+      "netWorthLargestAsset": {
+        "b": "{assetName} jest warte {assetValue} i stanowi {assetPercent} Twoich aktywów.",
+        "c": "{assetName} stanowi {assetPercent} Twoich aktywów i jest warte {assetValue}."
+      },
+      "investmentsShareOfAssets": {
+        "b": "{investmentsPercent} Twoich aktywów to inwestycje, warte łącznie {investmentsValue}.",
+        "c": "Inwestycje stanowią {investmentsPercent} Twoich aktywów, a ich wartość to {investmentsValue}."
+      },
+      "investmentsGain": {
+        "b": "Względem kosztu bazowego {gainCostBasis} Twoje inwestycje są na plusie o {gainAmount}, czyli o {gainPercent}.",
+        "c": "Twoje inwestycje są o {gainPercent} powyżej kosztu bazowego {gainCostBasis}, co daje zysk {gainAmount}."
+      },
+      "investmentsLoss": {
+        "b": "Względem kosztu bazowego {gainCostBasis} Twoje inwestycje są na minusie o {gainAmount}, czyli o {gainPercent}.",
+        "c": "Twoje inwestycje są o {gainPercent} poniżej kosztu bazowego {gainCostBasis}, co daje stratę {gainAmount}."
+      },
+      "investmentsCagr": {
+        "b": "Mierzone jako CAGR, Twoje inwestycje przynosiły około {cagrPercent} rocznie.",
+        "c": "Około {cagrPercent}: to roczna stopa zwrotu (CAGR) z Twoich inwestycji."
+      },
+      "investmentsBiggestHolding": {
+        "b": "{holdingSymbol} to Twoja największa pozycja, warta {holdingValue} w {holdingAccounts}, czyli około {holdingPercent} portfela.",
+        "c": "Około {holdingPercent} Twojego portfela, czyli {holdingValue} w {holdingAccounts}, to {holdingSymbol}, Twoja największa pozycja."
+      },
+      "investmentsBestPerformer": {
+        "b": "{bestSymbol} to Twój najlepszy wynik, z zyskiem {bestPercent}: kosztowało {bestCost}, a teraz jest warte {bestValue}.",
+        "c": "Z zyskiem {bestPercent} {bestSymbol} prowadzi wśród Twoich pozycji. Koszt {bestCost} zamienił się w wartość {bestValue}."
+      },
+      "investmentsForeignAccount": {
+        "b": "Twoje konto {foreignName} zawiera {foreignBalance} w walucie {foreignCurrency}, co przy kursie około {foreignRate} odpowiada {foreignConverted}.",
+        "c": "Przy kursie około {foreignRate} aktywa o wartości {foreignBalance} na Twoim koncie {foreignName} ({foreignCurrency}) odpowiadają {foreignConverted}."
+      },
+      "investmentsLargestAccount": {
+        "b": "{largestName} to Twoje największe konto inwestycyjne, o wartości {largestValue}.",
+        "c": "Wśród Twoich kont inwestycyjnych największe jest {largestName}, z kwotą {largestValue}."
+      },
+      "spendingTopCategory": {
+        "b": "Największa kategoria w ciągu ostatnich dwunastu miesięcy: {topCategoryName}, z {topCategoryPercent} Twoich wydatków, czyli {topCategoryAmount}.",
+        "c": "Najwięcej wydano w ciągu ostatnich dwunastu miesięcy w kategorii {topCategoryName}: {topCategoryAmount}, czyli {topCategoryPercent}."
+      },
+      "spendingTopPayee": {
+        "b": "Najwięcej Twoich pieniędzy w ciągu ostatnich dwunastu miesięcy trafiło do kontrahenta {topPayeeName}: {topPayeeAmount}.",
+        "c": "Twój największy kontrahent z ostatnich dwunastu miesięcy to {topPayeeName}, z wydatkami {topPayeeAmount}."
+      },
+      "spendingBiggestMonth": {
+        "b": "Twoje wydatki osiągnęły szczyt w miesiącu {biggestSpendMonth}, z kwotą {biggestSpendAmount}: to najdroższy miesiąc z ostatnich dwunastu.",
+        "c": "Z ostatnich dwunastu miesięcy najwięcej wydano w miesiącu {biggestSpendMonth}: {biggestSpendAmount}."
+      },
+      "incomeKeptShare": {
+        "b": "Zachowano {keptPercent} przychodów z ostatnich dwunastu miesięcy, czyli {keptAmount}.",
+        "c": "Z całości wpływów z ostatnich dwunastu miesięcy zachowano {keptAmount}, czyli {keptPercent}."
+      },
+      "incomeSurplusMonths": {
+        "b": "Miesiące z większymi wpływami niż wydatkami, spośród ostatnich {windowMonths}: {surplusMonths}.",
+        "c": "Miesiące, w których wpłynęło więcej, niż wydano, spośród ostatnich {windowMonths}: {surplusMonths}."
+      },
+      "incomeTopSource": {
+        "b": "W ciągu ostatnich dwunastu miesięcy {topSourcePercent} Twoich przychodów pochodziło ze źródła {topSourceName}.",
+        "c": "Twoje przychody z ostatnich dwunastu miesięcy pochodziły w {topSourcePercent} ze źródła {topSourceName}."
+      },
+      "activityTransactions": {
+        "b": "Od miesiąca {firstTransactionMonth} Twoje rejestry zawierają tyle transakcji: {transactionCount}.",
+        "c": "Od miesiąca {firstTransactionMonth} zapisano tyle transakcji: {transactionCount}."
+      },
+      "activityPayees": {
+        "b": "W Monize zapisano następujące liczby: kontrahenci {payeeCount}, kategorie {categoryCount}.",
+        "c": "Monize przechowuje Twoich kontrahentów ({payeeCount}) i Twoje kategorie ({categoryCount})."
+      },
+      "activityScheduled": {
+        "b": "Monize śledzi Twoje zaplanowane transakcje, łącznie {scheduledCount}.",
+        "c": "Ustawione w Monize i zaplanowane dla Ciebie: {scheduledCount}."
+      },
+      "warrantiesCovered": {
+        "b": "Nadal obowiązują, spośród gwarancji, które śledzisz: {warrantyCount}.",
+        "c": "Spośród śledzonych gwarancji te, które jeszcze nie wygasły: {warrantyCount}."
+      },
+      "warrantiesNextExpiry": {
+        "b": "W miesiącu {nextWarrantyMonth} Twoja gwarancja na {nextWarrantyName} wygasa jako następna.",
+        "c": "Następna do wygaśnięcia wśród Twoich gwarancji: {nextWarrantyName}, w miesiącu {nextWarrantyMonth}."
+      },
+      "spendingMonthToDateLess": {
+        "b": "W tym miesiącu wydano {mtdSpent} (do dnia: {mtdThrough}), czyli o {mtdDifference} mniej niż {mtdPreviousSpent} wydane do tego samego dnia w zeszłym miesiącu.",
+        "c": "Do tego samego dnia w zeszłym miesiącu wydano {mtdPreviousSpent}. W tym miesiącu ({mtdThrough}) jest to {mtdSpent}, czyli o {mtdDifference} mniej."
+      },
+      "spendingMonthToDateMore": {
+        "b": "W tym miesiącu wydano {mtdSpent} (do dnia: {mtdThrough}), czyli o {mtdDifference} więcej niż {mtdPreviousSpent} wydane do tego samego dnia w zeszłym miesiącu.",
+        "c": "Do tego samego dnia w zeszłym miesiącu wydano {mtdPreviousSpent}. W tym miesiącu ({mtdThrough}) jest to {mtdSpent}, czyli o {mtdDifference} więcej."
+      },
+      "spendingLastDay": {
+        "b": "Wydatki ({lastDayDate}) wyniosły {lastDaySpent}.",
+        "c": "{lastDayDate}: z konta wyszło {lastDaySpent}."
+      },
+      "spendingLastSevenDays": {
+        "b": "Wydatki w ciągu siedmiu dni (początek: {weekFrom}) wyniosły {weekSpent}.",
+        "c": "{weekSpent} to kwota wydana w ciągu siedmiu dni, licząc od: {weekFrom}."
+      },
+      "spendingBiggestRecentPurchase": {
+        "b": "W ciągu ostatnich siedmiu dni największy zakup to {recentPurchaseAmount} u kontrahenta {recentPurchasePayee} ({recentPurchaseDay}).",
+        "c": "Kontrahent {recentPurchasePayee} otrzymał {recentPurchaseAmount} ({recentPurchaseDay}), co było Twoim największym zakupem w ciągu ostatnich siedmiu dni."
+      },
+      "spendingNoSpendStreak": {
+        "b": "{noSpendDays} bez zapisanych wydatków; ostatnie wydatki: {lastSpendDay}.",
+        "c": "Ostatnie wydatki: {lastSpendDay}. Od tego czasu brak zapisanych wydatków przez {noSpendDays}."
+      },
+      "spendingDaysSincePayee": {
+        "b": "Od ostatnich wydatków u kontrahenta {sincePayeeName} ({sincePayeeDay}) minęło {sincePayeeDays}.",
+        "c": "Kontrahent {sincePayeeName}, ostatnie wydatki: {sincePayeeDay}. Było to {sincePayeeDays} temu."
+      },
+      "activityBillsDueThisWeek": {
+        "b": "Do zapłaty w ciągu najbliższych siedmiu dni, jako liczba rachunków: {billsDueCount}, razem {billsDueTotal}.",
+        "c": "Rachunki, których termin przypada w ciągu najbliższych siedmiu dni, ich liczba: {billsDueCount}, łącznie {billsDueTotal}."
+      },
+      "activityNextBill": {
+        "b": "{nextBillName} to Twój następny rachunek: {nextBillAmount}, termin: {nextBillDate}.",
+        "c": "Termin: {nextBillDate}. Twój następny rachunek to {nextBillName}, na kwotę {nextBillAmount}."
+      },
+      "spendingBudgetPace": {
+        "b": "Minęło {budgetMonthPercent} miesiąca, a wydano {budgetSpent} z Twojego budżetu {budgetName} wynoszącego {budgetTotal}, czyli {budgetUsedPercent}.",
+        "c": "Twój budżet {budgetName} jest wykorzystany w {budgetUsedPercent} ({budgetSpent} z {budgetTotal}), a {budgetMonthPercent} miesiąca już minęło."
+      },
+      "investmentsTopMoverUp": {
+        "b": "{moverSymbol} to największy ruch w Twoim portfelu ({moverSession}): wzrost o {moverPercent}, co dodało {moverValueChange} do Twojej pozycji.",
+        "c": "Największy ruch w Twoim portfelu ({moverSession}) to {moverSymbol}: wzrost o {moverPercent}, czyli zysk {moverValueChange} na Twojej pozycji."
+      },
+      "investmentsTopMoverDown": {
+        "b": "{moverSymbol} to największy ruch w Twoim portfelu ({moverSession}): spadek o {moverPercent}, co odjęło {moverValueChange} od Twojej pozycji.",
+        "c": "Największy ruch w Twoim portfelu ({moverSession}) to {moverSymbol}: spadek o {moverPercent}, czyli strata {moverValueChange} na Twojej pozycji."
+      },
+      "activityAnniversary": {
+        "b": "Pierwszą transakcję w Monize zapisano {anniversaryFirstDate}, a w tym tygodniu mija od tego czasu {anniversaryYears}.",
+        "c": "Twoja pierwsza transakcja w Monize pochodzi z {anniversaryFirstDate}: w tym tygodniu to {anniversaryYears} temu."
+      },
+      "activityAccountAnniversary": {
+        "b": "Konto {anniversaryAccountName} pojawia się w Monize po raz pierwszy {anniversaryAccountSince}, a w tym tygodniu ma {anniversaryAccountYears}.",
+        "c": "W tym tygodniu Twoje konto {anniversaryAccountName} osiąga w Monize wiek: {anniversaryAccountYears}, licząc od pierwszej transakcji z {anniversaryAccountSince}."
+      },
+      "netWorthMilestone": {
+        "b": "Twoja wartość netto przekroczyła {milestoneAmount} w miesiącu {milestoneMonth}.",
+        "c": "Miesiąc, w którym Twoja wartość netto przekroczyła {milestoneAmount}: {milestoneMonth}."
+      },
+      "activityTransactionMilestone": {
+        "b": "Transakcja numer {transactionMilestone} trafiła do Twoich rejestrów w ciągu ostatnich 30 dni.",
+        "c": "W ciągu ostatnich 30 dni liczba Twoich transakcji doszła do numeru {transactionMilestone}."
+      },
+      "warrantiesExpiresSoon": {
+        "b": "W dniu {expiringWarrantyDate}, za {expiringWarrantyDays}, wygasa gwarancja na {expiringWarrantyName}.",
+        "c": "Gwarancja na {expiringWarrantyName} kończy się dnia {expiringWarrantyDate}, za {expiringWarrantyDays}."
+      },
+      "spendingYearAgoMonth": {
+        "b": "{yearAgoMonth}, rok temu: wydano {yearAgoSpent}, z kategorią {yearAgoTopCategoryName} jako największą częścią.",
+        "c": "Kategoria {yearAgoTopCategoryName} pochłonęła największą część z {yearAgoSpent} wydanych rok temu ({yearAgoMonth})."
+      },
+      "netWorthYearAgoUp": {
+        "b": "Twoja wartość netto jest o {yearAgoNetWorthChange} wyższa niż {yearAgoNetWorth} rok temu ({yearAgoNetWorthMonth}).",
+        "c": "Wzrost o {yearAgoNetWorthChange} w ciągu roku: z {yearAgoNetWorth} ({yearAgoNetWorthMonth}) do obecnego poziomu."
+      },
+      "netWorthYearAgoDown": {
+        "b": "Twoja wartość netto jest o {yearAgoNetWorthChange} niższa niż {yearAgoNetWorth} rok temu ({yearAgoNetWorthMonth}).",
+        "c": "Spadek o {yearAgoNetWorthChange} w ciągu roku: z {yearAgoNetWorth} ({yearAgoNetWorthMonth}) do obecnego poziomu."
+      },
+      "spendingTopCategoryWindow": {
+        "b": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} największą kategorią Twoich wydatków była {topCategoryName}: {topCategoryAmount}, czyli {topCategoryPercent} Twoich wydatków.",
+        "c": "Kategoria {topCategoryName} pochłonęła {window, select, d30 {w ciągu ostatnich 30 dni} d90 {w ciągu ostatnich 90 dni} ytd {od początku roku} m12 {w ciągu ostatnich dwunastu miesięcy} all {od początku Twoich zapisów} other {w tym okresie}} najwięcej Twoich wydatków: {topCategoryAmount}, czyli {topCategoryPercent}."
+      },
+      "spendingTopPayeeWindow": {
+        "b": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} do kontrahenta {topPayeeName} trafiło więcej Twoich pieniędzy niż do jakiegokolwiek innego: {topPayeeAmount}.",
+        "c": "Najwięcej wydano {window, select, d30 {w ciągu ostatnich 30 dni} d90 {w ciągu ostatnich 90 dni} ytd {od początku roku} m12 {w ciągu ostatnich dwunastu miesięcy} all {od początku Twoich zapisów} other {w tym okresie}} u kontrahenta {topPayeeName}, czyli {topPayeeAmount}."
+      },
+      "incomeTopSourceWindow": {
+        "b": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} {topSourcePercent} Twoich przychodów pochodziło ze źródła {topSourceName}.",
+        "c": "Źródło {topSourceName} dało {window, select, d30 {w ciągu ostatnich 30 dni} d90 {w ciągu ostatnich 90 dni} ytd {od początku roku} m12 {w ciągu ostatnich dwunastu miesięcy} all {od początku Twoich zapisów} other {w tym okresie}} {topSourcePercent} Twoich przychodów."
+      },
+      "spendingRankedCategory": {
+        "b": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} Twoja kategoria wydatków na miejscu {rankedCategoryRank} to {rankedCategoryName}: {rankedCategoryAmount}, czyli {rankedCategoryPercent} całości.",
+        "c": "Kategoria {rankedCategoryName} zajmuje {window, select, d30 {w ciągu ostatnich 30 dni} d90 {w ciągu ostatnich 90 dni} ytd {od początku roku} m12 {w ciągu ostatnich dwunastu miesięcy} all {od początku Twoich zapisów} other {w tym okresie}} miejsce {rankedCategoryRank} wśród Twoich kategorii wydatków, z kwotą {rankedCategoryAmount} ({rankedCategoryPercent} całości)."
+      },
+      "spendingRankedPayee": {
+        "b": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} u kontrahenta {rankedPayeeName} wydano {rankedPayeeAmount}, co daje miejsce {rankedPayeeRank} wśród Twoich kontrahentów pod względem wydatków.",
+        "c": "Miejsce {rankedPayeeRank} wśród kontrahentów, u których wydano {window, select, d30 {w ciągu ostatnich 30 dni} d90 {w ciągu ostatnich 90 dni} ytd {od początku roku} m12 {w ciągu ostatnich dwunastu miesięcy} all {od początku Twoich zapisów} other {w tym okresie}} najwięcej, zajmuje {rankedPayeeName}, z kwotą {rankedPayeeAmount}."
+      },
+      "incomeRankedSource": {
+        "b": "{window, select, d30 {W ciągu ostatnich 30 dni} d90 {W ciągu ostatnich 90 dni} ytd {Od początku roku} m12 {W ciągu ostatnich dwunastu miesięcy} all {Od początku Twoich zapisów} other {W tym okresie}} źródło {rankedSourceName} dało {rankedSourcePercent} Twoich przychodów, miejsce {rankedSourceRank} wśród Twoich źródeł.",
+        "c": "Wśród Twoich źródeł przychodów {window, select, d30 {w ciągu ostatnich 30 dni} d90 {w ciągu ostatnich 90 dni} ytd {od początku roku} m12 {w ciągu ostatnich dwunastu miesięcy} all {od początku Twoich zapisów} other {w tym okresie}} miejsce {rankedSourceRank} zajmuje {rankedSourceName}, z {rankedSourcePercent} z nich."
+      },
+      "spendingPayeeInCategoryMonths": {
+        "b": "Twoje {equivPayeeAmount} u kontrahenta {equivPayeeName} w ciągu ostatnich dwunastu miesięcy, w miesiącach Twoich przeciętnych wydatków na {equivCategoryName}: około {equivCategoryMonths}.",
+        "c": "Wydano u kontrahenta {equivPayeeName} w ciągu ostatnich dwunastu miesięcy: {equivPayeeAmount}, czyli około {equivCategoryMonths} w miesiącach Twoich przeciętnych wydatków na {equivCategoryName}."
+      },
+      "spendingDailyAverage": {
+        "b": "Twoje wydatki z ostatnich dwunastu miesięcy to około {dailyAverageSpent} dziennie.",
+        "c": "Około {dailyAverageSpent} dziennie: tyle wynoszą Twoje średnie wydatki z ostatnich dwunastu miesięcy."
+      },
+      "incomeKeptCoversDays": {
+        "b": "W ciągu ostatnich dwunastu miesięcy zachowano {keptCoversAmount}, co wystarczyłoby na pokrycie Twoich wydatków przez około {keptCoversDays}.",
+        "c": "Twoje wydatki zostałyby pokryte na około {keptCoversDays} kwotą {keptCoversAmount}, którą zachowano w ciągu ostatnich dwunastu miesięcy."
+      },
+      "investmentsGainInMonthsOfSpending": {
+        "b": "W miesiącach Twoich przeciętnych wydatków zysk Twoich inwestycji, {gainCoversAmount}, to około {gainCoversMonths}.",
+        "c": "Twoje inwestycje zyskały {gainCoversAmount}. Miesiące Twoich przeciętnych wydatków, które to pokrywa: około {gainCoversMonths}."
+      }
     }
   },
   "favouriteAccounts": {
