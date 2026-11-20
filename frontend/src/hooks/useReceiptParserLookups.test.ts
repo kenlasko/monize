@@ -94,7 +94,10 @@ describe('useReceiptParserLookups', () => {
 
   it('loads payees (inactive ones too) and categories in tree order', async () => {
     payeesApi.getAll.mockResolvedValue([{ id: 'p-1', name: 'Allegro' }]);
-    categoriesApi.getAll.mockResolvedValue([category('c-2', 'Cables', 'c-1'), category('c-1', 'Electronics')]);
+    categoriesApi.getAll.mockResolvedValue([
+      category('c-2', 'Cables', 'c-1'),
+      { ...category('c-1', 'Electronics'), icon: 'cart' },
+    ]);
     const { result } = renderHook(() => useReceiptParserLookups());
     expect(result.current.state.status).toBe('loading');
     await waitFor(() => expect(result.current.state.status).toBe('ready'));
@@ -105,9 +108,10 @@ describe('useReceiptParserLookups', () => {
       { value: 'p-1', label: 'Allegro' },
     ]);
     expect(state.lookups.categories.map((c) => c.label)).toEqual(['Electronics', 'Electronics: Cables']);
-    // Every row carries its mark for the parser editor's pickers.
+    // Rows carry their mark for the parser editor's pickers; a category with no
+    // icon or colour gets none, so its row leaves no blank slot.
     expect(state.lookups.payees[0].icon).toBeDefined();
-    expect(state.lookups.categories.every((c) => c.icon !== undefined)).toBe(true);
+    expect(state.lookups.categories.map((c) => c.icon !== undefined)).toEqual([true, false]);
   });
 
   it('is an error, not empty lists, when either request fails, and reloads on demand', async () => {
