@@ -447,6 +447,12 @@ html[data-ui-style='modern'] .ui-qa-summary [data-testid='quick-add-balance'] {
   border: 0;
   background-color: transparent;
 }
+/* "After saving" captions the account name, as the mockup's "Primary
+   Chequing after this" does. Pushed to the far edge it floated mid-panel,
+   tied to neither the name nor the figures. */
+html[data-ui-style='modern'] .ui-qa-summary .ui-qa-balance-label {
+  margin-inline-start: 0;
+}
 html[data-ui-style='modern'] .ui-qa-summary [data-testid='quick-add-balance'] .text-xl {
   font-family: var(--ui-font-display);
   font-size: 1.75rem;
