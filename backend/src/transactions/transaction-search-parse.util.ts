@@ -163,7 +163,13 @@ function parseAmountWithConvention(
   return roundMoney(value, MONEY_SCALE);
 }
 
-function parseAmount(term: string, numberFormat: string): number | null {
+/**
+ * Reads `term` as a number in the `numberFormat` locale's decimal convention,
+ * falling back to the other one; signed, at the column scale, or null.
+ * Exported for the Quick Add reader (`docs/future-plans/quick-add.md`), which
+ * reads amounts exactly as the search does.
+ */
+export function parseAmount(term: string, numberFormat: string): number | null {
   const primary = decimalSeparatorForLocale(numberFormat);
   const other = primary === "." ? "," : ".";
   const parsed = parseAmountWithConvention(term, primary);
@@ -171,7 +177,15 @@ function parseAmount(term: string, numberFormat: string): number | null {
   return parseAmountWithConvention(term, other);
 }
 
-function buildIsoDate(year: string, month: string, day: string): string | null {
+/**
+ * `YYYY-MM-DD` for the given parts, or null when they name no real calendar
+ * day (30 February, month 13).
+ */
+export function buildIsoDate(
+  year: string,
+  month: string,
+  day: string,
+): string | null {
   const y = Number(year);
   const m = Number(month);
   const d = Number(day);
@@ -332,15 +346,31 @@ function patternFromLocale(locale: string): string {
   }
 }
 
-function parseDate(
+/**
+ * The token pattern a user's `dateFormat` preference reads dates in: the
+ * pattern itself, or the one the `numberFormat` locale renders for "browser"
+ * (and for no preference).
+ */
+export function resolveDatePattern(
+  dateFormat: string,
+  numberFormat: string,
+): string {
+  return !dateFormat || dateFormat === "browser"
+    ? patternFromLocale(numberFormat)
+    : dateFormat;
+}
+
+/**
+ * Reads `term` as one complete date in the user's `dateFormat` (ISO
+ * `YYYY-MM-DD` always accepted too), or null. Exported for the Quick Add
+ * reader, which reads absolute dates exactly as the search does.
+ */
+export function parseDate(
   term: string,
   dateFormat: string,
   numberFormat: string,
 ): string | null {
-  const pattern =
-    !dateFormat || dateFormat === "browser"
-      ? patternFromLocale(numberFormat)
-      : dateFormat;
+  const pattern = resolveDatePattern(dateFormat, numberFormat);
 
   const fromPattern = parseDateWithPattern(term, pattern);
   if (fromPattern) return fromPattern;

@@ -699,5 +699,79 @@
         "tag": "Etiketi var"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Hızlı Ekle",
+    "title": "Hızlı Ekle",
+    "description": "Ne harcadığınızı, aldığınızı veya taşıdığınızı yazın, örneğin 84.37 Loblaws market. Değiştirmek için okunan sonucun herhangi bir bölümünü seçin.",
+    "inputLabel": "Giriş",
+    "placeholder": "örn. 84.37 Loblaws market",
+    "readAs": "Şöyle Okundu",
+    "memoLabel": "Açıklama:",
+    "reading": "Giriş okunuyor...",
+    "readFailed": "Giriş okunamadı",
+    "tooLong": "Bu satır okunamayacak kadar uzun. Devam etmek için kısaltın.",
+    "tryAgain": "Tekrar Dene",
+    "pinRefused": {
+      "title": "Seçtiğiniz bir öğe artık kullanılamıyor",
+      "description": "Bir çipte seçilen hesap, alacaklı veya kategori o zamandan beri kapatıldı ya da silindi. Girişi yeniden okumak için değişikliklerinizi temizleyin.",
+      "clearChanges": "Değişiklikleri Temizle"
+    },
+    "fullForm": "Tam Form",
+    "save": "Kaydet",
+    "saveAndNew": "Kaydet ve Yeni",
+    "saveAndNewDescription": "Kaydedin ve bir sonraki için satırı temizleyin.",
+    "cannotSave": "Bu giriş olduğu gibi kaydedilemez. Tamamlamak için Tam Form'u kullanın.",
+    "kinds": {
+      "payment": "Ödeme",
+      "deposit": "Para Girişi",
+      "transfer": "Transfer"
+    },
+    "fields": {
+      "kind": "Tür"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, tahmin",
+      "assumed": "{field}: {value}, yazılmadı",
+      "missing": "{field}: eksik",
+      "matches": "{field}: {value}, {count, plural, other {# eşleşme}}",
+      "new": "{field}: {value}, yeni alacaklı"
+    },
+    "need": {
+      "missing": "Eksik",
+      "matches": "{count, plural, other {# eşleşme}}",
+      "new": "Yeni"
+    },
+    "cleared": {
+      "payee": "Alacaklı yok",
+      "category": "Kategori yok"
+    },
+    "editor": {
+      "alternatives": "Diğer Eşleşmeler",
+      "done": "Bitti",
+      "categoryPlaceholder": "Kategori seçin..."
+    },
+    "balance": {
+      "after": "{account}: şimdi {current}, kaydedince {after}",
+      "movesOn": "{account}: şimdi {current}. Bakiye {date} tarihinde değişir.",
+      "current": "{account}: şimdi {current}",
+      "nowLabel": "Şimdi",
+      "afterLabel": "Kaydedince",
+      "movesOnNote": "{date} tarihinde değişir"
+    },
+    "blockers": {
+      "missingAmount": "Bir tutar yazın.",
+      "zeroAmount": "Tutar sıfır olamaz.",
+      "amountPrecision": "Tutarın ondalık basamağı, hesabın para biriminin izin verdiğinden fazla.",
+      "missingAccount": "Bir hesap seçin.",
+      "ambiguousAccount": "Birden fazla hesap eşleşiyor. Birini seçin.",
+      "missingToAccount": "Paranın gideceği hesabı seçin.",
+      "sameAccount": "Transfer için iki farklı hesap gerekir.",
+      "amountTooLarge": "Tutar, bir işlemin alabileceğinden büyük.",
+      "foreignCurrency": "Tutar, hesabın para biriminden farklı bir para biriminde. Girmek için Tam Form'u kullanın.",
+      "crossCurrencyTransfer": "İki hesabın para birimi farklı. Bu transfer için Tam Form'u kullanın.",
+      "unknown": "Bu giriş burada kaydedilemez. Tamamlamak için Tam Form'u kullanın."
+    }
   }
 }

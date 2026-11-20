@@ -24,6 +24,8 @@ interface NormalTransactionFieldsProps {
   setValue: UseFormSetValue<any>;
   errors: FieldErrors;
   watchedAccountId: string;
+  /** The reader picked another account. */
+  onAccountChange?: (accountId: string) => void;
   watchedAmount: number;
   watchedCurrencyCode: string;
   watchedPayeeName?: string;
@@ -46,6 +48,9 @@ interface NormalTransactionFieldsProps {
    *  history button is hidden (e.g. when editing). */
   onQuickFill?: (transaction: Transaction) => void;
   transaction?: Transaction;
+  /** The payee name a new entry was handed (a draft): shown until the list
+   *  resolves its id, and on its own when it names a payee not created yet. */
+  initialPayeeName?: string;
   createdAtSlot?: ReactNode;
   /** Foreign-currency entry: button placed left of the Amount input. */
   currencyPickerSlot?: ReactNode;
@@ -71,6 +76,7 @@ export function NormalTransactionFields({
   setValue,
   errors,
   watchedAccountId,
+  onAccountChange,
   watchedAmount,
   watchedCurrencyCode,
   watchedPayeeName,
@@ -88,6 +94,7 @@ export function NormalTransactionFields({
   handleModeChange,
   onQuickFill,
   transaction,
+  initialPayeeName,
   createdAtSlot,
   currencyPickerSlot,
   convertedAmountSlot,
@@ -125,7 +132,7 @@ export function NormalTransactionFields({
               accountOptionLabel,
             ),
           ]}
-          {...register('accountId')}
+          {...register('accountId', { onChange: (event) => onAccountChange?.(event.target.value) })}
         />
         <DateInput
           label={t('form.fields.date')}
@@ -154,7 +161,7 @@ export function NormalTransactionFields({
                 keywords: payeeAliasMap[payee.id],
               }))}
               value={selectedPayeeId}
-              initialDisplayValue={transaction?.payeeName || ''}
+              initialDisplayValue={transaction?.payeeName || initialPayeeName || ''}
               onChange={handlePayeeChange}
               onCreateNew={handlePayeeCreate}
               allowCustomValue={true}

@@ -7,7 +7,9 @@ import { useMobileTabs } from '@/hooks/useMobileTabs';
 import {
   BUILT_IN_VIEW_DEFAULTS,
   MOBILE_TAB_LIMIT,
+  VIEW_DEFAULT_FIELDS,
   readViewDefault,
+  type MobileAddOpens,
   type MobileTabId,
 } from '@/lib/view-defaults';
 import type { UpdatePreferencesData } from '@/types/auth';
@@ -32,6 +34,10 @@ const SLOTS = Array.from({ length: MOBILE_TAB_LIMIT }, (_, index) => index);
  * Picking a tab another place already holds swaps the two rather than refusing
  * or showing it twice. The whole list is one value on the wire, so a swap is
  * one save and the bar can never be stored half-way through it.
+ *
+ * Under the places, what the add button opens where it starts a new
+ * transaction: Quick Add or the New Transaction form
+ * (`docs/future-plans/quick-add.md`, "The + button setting").
  */
 export function MobileTabsGroup({ initial, commit, className }: MobileTabsGroupProps) {
   const t = useTranslations('settings.preferences');
@@ -40,6 +46,20 @@ export function MobileTabsGroup({ initial, commit, className }: MobileTabsGroupP
   const [tabs, setTabs] = useState<MobileTabId[]>(
     () => readViewDefault(initial, 'mobileTabs') ?? BUILT_IN_VIEW_DEFAULTS.mobileTabs,
   );
+  const [addOpens, setAddOpens] = useState<MobileAddOpens>(
+    () => readViewDefault(initial, 'mobileAddOpens') ?? BUILT_IN_VIEW_DEFAULTS.mobileAddOpens,
+  );
+
+  const changeAddOpens = (picked: string) => {
+    const next = VIEW_DEFAULT_FIELDS.mobileAddOpens.find((value) => value === picked);
+    // Picking what is already shown is not an edit, and must not toast as one.
+    if (next === undefined || next === addOpens) return;
+    const previous = addOpens;
+    setAddOpens(next);
+    commit({ viewDefaults: { mobileAddOpens: next } }, () =>
+      setAddOpens((current) => (current === next ? previous : current)),
+    );
+  };
 
   const change = (slot: number, picked: string) => {
     const previous = tabs;
@@ -77,6 +97,18 @@ export function MobileTabsGroup({ initial, commit, className }: MobileTabsGroupP
             onChange={(e) => change(slot, e.target.value)}
           />
         ))}
+      </div>
+      <div className="mt-4">
+        <Select
+          label={t('mobileTabs.addOpensLabel')}
+          options={VIEW_DEFAULT_FIELDS.mobileAddOpens.map((value) => ({
+            value,
+            label: t(`mobileTabs.addOpensOptions.${value}`),
+          }))}
+          value={addOpens}
+          onChange={(e) => changeAddOpens(e.target.value)}
+        />
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('mobileTabs.addOpensHelp')}</p>
       </div>
     </div>
   );

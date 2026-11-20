@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Scegli fino a tre schede per la barra in basso su telefono o tablet. Il pulsante Aggiungi e Altro sono sempre presenti.",
       "slotLabel": "Scheda {number}",
-      "none": "Nessuna"
+      "none": "Nessuna",
+      "addOpensLabel": "Il pulsante + apre",
+      "addOpensOptions": {
+        "quickAdd": "Aggiunta rapida",
+        "fullForm": "Modulo Nuova transazione"
+      },
+      "addOpensHelp": "Vale dove il pulsante + avvia una nuova transazione: nella pagina Transazioni e in una pagina che non ha nulla di proprio da aggiungere. L’aggiunta rapida ha un pulsante Modulo completo per tutto il resto."
     }
   },
   "notifications": {

@@ -699,5 +699,79 @@
         "tag": "Ha un tag"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Aggiunta rapida",
+    "title": "Aggiunta rapida",
+    "description": "Scrivi cosa hai speso, ricevuto o spostato, ad esempio 84.37 Loblaws spesa. Scegli una qualsiasi parte dell’interpretazione per modificarla.",
+    "inputLabel": "Voce",
+    "placeholder": "es. 84.37 Loblaws spesa",
+    "readAs": "Interpretato come",
+    "memoLabel": "Descrizione:",
+    "reading": "Lettura della voce...",
+    "readFailed": "Impossibile leggere la voce",
+    "tooLong": "Questa riga è troppo lunga per essere letta. Accorciala per continuare.",
+    "tryAgain": "Riprova",
+    "pinRefused": {
+      "title": "Qualcosa che hai scelto non è più disponibile",
+      "description": "Un conto, un beneficiario o una categoria scelti su un chip è stato chiuso o eliminato nel frattempo. Cancella le modifiche per leggere di nuovo la voce.",
+      "clearChanges": "Cancella modifiche"
+    },
+    "fullForm": "Modulo completo",
+    "save": "Salva",
+    "saveAndNew": "Salva e nuova",
+    "saveAndNewDescription": "Salvala e svuota la riga per la successiva.",
+    "cannotSave": "Questa voce non può essere salvata così com’è. Usa Modulo completo per completarla.",
+    "kinds": {
+      "payment": "Pagamento",
+      "deposit": "Deposito",
+      "transfer": "Trasferimento"
+    },
+    "fields": {
+      "kind": "Tipo"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, ipotizzato",
+      "assumed": "{field}: {value}, non digitato",
+      "missing": "{field}: mancante",
+      "matches": "{field}: {value}, {count, plural, one {# corrispondenza} other {# corrispondenze}}",
+      "new": "{field}: {value}, nuovo beneficiario"
+    },
+    "need": {
+      "missing": "Mancante",
+      "matches": "{count, plural, one {# corrispondenza} other {# corrispondenze}}",
+      "new": "Nuovo"
+    },
+    "cleared": {
+      "payee": "Nessun beneficiario",
+      "category": "Nessuna categoria"
+    },
+    "editor": {
+      "alternatives": "Altre corrispondenze",
+      "done": "Fine",
+      "categoryPlaceholder": "Seleziona categoria..."
+    },
+    "balance": {
+      "after": "{account}: ora {current}, dopo il salvataggio {after}",
+      "movesOn": "{account}: ora {current}. Il saldo cambia il {date}.",
+      "current": "{account}: ora {current}",
+      "nowLabel": "Ora",
+      "afterLabel": "Dopo il salvataggio",
+      "movesOnNote": "Cambia il {date}"
+    },
+    "blockers": {
+      "missingAmount": "Digita un importo.",
+      "zeroAmount": "L’importo non può essere zero.",
+      "amountPrecision": "L’importo ha più decimali di quelli ammessi dalla valuta del conto.",
+      "missingAccount": "Scegli un conto.",
+      "ambiguousAccount": "Più di un conto corrisponde. Scegline uno.",
+      "missingToAccount": "Scegli il conto su cui vanno i soldi.",
+      "sameAccount": "Un trasferimento richiede due conti diversi.",
+      "amountTooLarge": "L’importo è superiore a quello che una transazione può contenere.",
+      "foreignCurrency": "L’importo è in una valuta diversa da quella del conto. Usa Modulo completo per inserirlo.",
+      "crossCurrencyTransfer": "I due conti hanno valute diverse. Usa Modulo completo per questo trasferimento.",
+      "unknown": "Questa voce non può essere salvata qui. Usa Modulo completo per completarla."
+    }
   }
 }

@@ -1439,6 +1439,13 @@ export class TransactionTransferService {
       exchangeRate?: number;
       toAmount?: number;
       description?: string;
+      /**
+       * The payee the commit will link, already decided by the caller (Quick
+       * Add's reading): an id is checked as the caller's and used as given,
+       * null is no linked payee, and `payeeName` is not resolved again.
+       * Absent (every other caller) resolves `payeeName` as before.
+       */
+      payeeId?: string | null;
       payeeName?: string;
       /** Auto-create a payee for an unmatched custom label. Defaults to true. */
       createPayeeIfMissing?: boolean;
@@ -1506,19 +1513,31 @@ export class TransactionTransferService {
     let payeeId: string | null = null;
     let payeeName: string | null = inputPayeeName;
     let payeeMatched = false;
-    if (inputPayeeName) {
-      const payee = await this.payeesService.resolveByName(
-        userId,
-        inputPayeeName,
-      );
-      if (payee) {
-        payeeId = payee.id;
-        payeeMatched = true;
-        payeeName = payee.name;
-      }
+    // A decided id is the one the commit links: checked as the caller's
+    // (`PayeesService.findOne`, 404 otherwise), never looked up by name.
+    const decided =
+      input.payeeId === undefined
+        ? undefined
+        : input.payeeId === null
+          ? null
+          : await this.payeesService.findOne(userId, input.payeeId);
+    const payee =
+      decided !== undefined
+        ? decided
+        : inputPayeeName
+          ? await this.payeesService.resolveByName(userId, inputPayeeName)
+          : null;
+    if (payee) {
+      payeeId = payee.id;
+      payeeMatched = true;
+      payeeName = payee.name;
     }
+    // A caller that decided the payee itself has nothing for the confirm to create.
     const payeeWillBeCreated =
-      !!payeeName && !payeeMatched && input.createPayeeIfMissing !== false;
+      decided === undefined &&
+      !!payeeName &&
+      !payeeMatched &&
+      input.createPayeeIfMissing !== false;
 
     // Resolve an optional spending category to apply to both legs, validating
     // ownership so the confirm step re-applies the same id (mirrors

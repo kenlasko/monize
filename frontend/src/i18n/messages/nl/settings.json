@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Kies maximaal drie tabbladen voor de balk onder aan je telefoon of tablet. De knop Toevoegen en Meer zijn er altijd.",
       "slotLabel": "Tabblad {number}",
-      "none": "Geen"
+      "none": "Geen",
+      "addOpensLabel": "De knop + opent",
+      "addOpensOptions": {
+        "quickAdd": "Snel toevoegen",
+        "fullForm": "Formulier Nieuwe transactie"
+      },
+      "addOpensHelp": "Geldt waar de knop + een nieuwe transactie start: op de pagina Transacties en op een pagina die zelf niets heeft om toe te voegen. Snel toevoegen heeft een knop Volledig formulier voor de rest."
     }
   },
   "notifications": {

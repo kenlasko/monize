@@ -9,6 +9,7 @@ import {
 } from '@/hooks/useTransactionSubmitMode';
 import toast from 'react-hot-toast';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import { rememberTransactionCurrency } from '@/lib/lastTransactionCurrency';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
 import { getSelectByLabel } from '@/test/icon-select';
@@ -6221,6 +6222,254 @@ describe('TransactionForm', () => {
       await waitFor(() => expect(mockCreateTransfer).toHaveBeenCalledTimes(1));
       expect(onCreateAndNew).toHaveBeenCalledTimes(1);
       expect(mockOnSuccess).not.toHaveBeenCalled();
+    });
+  });
+
+  // =========================================================================
+  // draft: Quick Add's Full Form hands a new entry over, blocked or not.
+  // =========================================================================
+  describe('draft', () => {
+    const paymentDraft = {
+      mode: 'normal' as const,
+      accountId: 'acc-2',
+      amount: -84.37,
+      date: '2026-11-19',
+      payeeId: 'payee-1',
+      payeeName: 'Grocery Store',
+      categoryId: 'cat-1',
+      description: 'weekly shop',
+    };
+
+    it('seeds a new entry with every field it carries, and saves them', async () => {
+      const { container } = render(
+        <TransactionForm
+          draft={paymentDraft}
+          defaultAccountId="acc-1"
+          defaultDate="2026-03-07"
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(getSelectByLabel('Account').value).toBe('acc-2'));
+      expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2026-11-19');
+      expect((container.querySelector('textarea') as HTMLTextAreaElement).value).toBe('weekly shop');
+      expect(screen.getByTestId('combobox-value-Payee')).toHaveTextContent('payee-1');
+      expect(screen.getByTestId('combobox-value-Category')).toHaveTextContent('cat-1');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountId: 'acc-2',
+          transactionDate: '2026-11-19',
+          amount: -84.37,
+          payeeId: 'payee-1',
+          payeeName: 'Grocery Store',
+          categoryId: 'cat-1',
+          description: 'weekly shop',
+          currencyCode: 'CAD',
+        }),
+      );
+    });
+
+    it('seeds a payee name with no payee behind it, and saves it as that text', async () => {
+      render(
+        <TransactionForm
+          draft={{ mode: 'normal', accountId: 'acc-1', amount: -4.5, payeeName: 'Corner Cafe' }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(getSelectByLabel('Account').value).toBe('acc-1'));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ payeeId: null, payeeName: 'Corner Cafe', amount: -4.5 }),
+      );
+    });
+
+    it('seeds a figure typed in another currency as a foreign entry, as a duplicate of one does', async () => {
+      // 20 EUR on the CAD account at the day's 1.5: the amount the account
+      // moves by is derived from the foreign figure, never taken as 20 CAD.
+      render(
+        <TransactionForm
+          draft={{
+            mode: 'normal',
+            accountId: 'acc-1',
+            originalCurrencyCode: 'EUR',
+            originalAmount: -20,
+            date: '2026-11-19',
+            payeeName: 'Cafe',
+          }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalledWith('EUR', 'CAD', '2026-11-19'));
+      expect(screen.getByText('Total in EUR')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText(/1 EUR = 1\.500000 CAD/)).toBeInTheDocument());
+      expect((screen.getAllByPlaceholderText('0.00')[0] as HTMLInputElement).value).toBe('-20.00');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+      expect(mockCreate.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          accountId: 'acc-1',
+          originalAmount: -20,
+          originalCurrencyCode: 'EUR',
+          exchangeRate: 1.5,
+          amount: -30,
+          currencyCode: 'CAD',
+        }),
+      );
+    });
+
+    it('turns a typed-currency draft into a plain entry once an account in that currency is chosen', async () => {
+      mockAccountsGetAll.mockResolvedValue([
+        ...mockAccounts,
+        { ...mockAccounts[1], id: 'acc-eur', name: 'Euro Account', currencyCode: 'EUR' },
+      ]);
+      render(
+        <TransactionForm
+          draft={{ mode: 'normal', originalCurrencyCode: 'EUR', originalAmount: -20, date: '2026-11-19', payeeName: 'Cafe' }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Total in EUR')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(getSelectByLabel('Account').querySelector('option[value="acc-eur"]')).not.toBeNull(),
+      );
+      await act(async () => {
+        fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-eur' } });
+      });
+      await waitFor(() => expect(screen.queryByText('Total in EUR')).not.toBeInTheDocument());
+      expect((screen.getAllByPlaceholderText('0.00')[0] as HTMLInputElement).value).toBe('-20.00');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+      const sent = mockCreate.mock.calls[0][0];
+      expect(sent).toEqual(
+        expect.objectContaining({ accountId: 'acc-eur', amount: -20, currencyCode: 'EUR' }),
+      );
+      expect(sent.originalCurrencyCode).toBeUndefined();
+    });
+
+    it('keeps an account-currency draft in the account currency, whatever was entered last', async () => {
+      rememberTransactionCurrency('EUR');
+      try {
+        render(
+          <TransactionForm
+            draft={{ mode: 'normal', accountId: 'acc-1', amount: -4.5, payeeName: 'Cafe' }}
+            onSuccess={mockOnSuccess}
+            onCancel={mockOnCancel}
+          />,
+        );
+        await waitFor(() => expect(getSelectByLabel('Account').value).toBe('acc-1'));
+        expect(screen.queryByText('Total in EUR')).not.toBeInTheDocument();
+        expect(mockGetRateForDate).not.toHaveBeenCalled();
+      } finally {
+        rememberTransactionCurrency('');
+      }
+    });
+
+    it('opens a transfer draft in Transfer mode with both accounts and the magnitude', async () => {
+      render(
+        <TransactionForm
+          draft={{ mode: 'transfer', accountId: 'acc-1', toAccountId: 'acc-2', amount: 500, date: '2026-11-20' }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(screen.getByRole('button', { name: /Create Transfer/i })).toBeInTheDocument());
+      await waitFor(() => expect(getSelectByLabel('From Account').value).toBe('acc-1'));
+      expect(getSelectByLabel('To Account').value).toBe('acc-2');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transfer/i }));
+      });
+      await waitFor(() => expect(mockCreateTransfer).toHaveBeenCalledTimes(1));
+      expect(mockCreateTransfer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fromAccountId: 'acc-1',
+          toAccountId: 'acc-2',
+          amount: 500,
+          transactionDate: '2026-11-20',
+        }),
+      );
+    });
+
+    it('counts a handed-over entry as unsaved work', async () => {
+      render(
+        <TransactionForm
+          draft={paymentDraft}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+          onDirtyChange={mockOnDirtyChange}
+        />,
+      );
+      await waitFor(() => expect(mockOnDirtyChange).toHaveBeenLastCalledWith(true));
+    });
+
+    it('is ignored when editing', async () => {
+      const existing = createExistingTransaction();
+      render(
+        <TransactionForm
+          transaction={existing}
+          draft={{ ...paymentDraft, mode: 'transfer', toAccountId: 'acc-1' }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(screen.getByRole('button', { name: /Update Transaction/i })).toBeInTheDocument());
+      expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2024-01-15');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Update Transaction/i }));
+      });
+      await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+      expect(mockUpdate).toHaveBeenCalledWith(
+        existing.id,
+        expect.objectContaining({ accountId: 'acc-1', amount: -50, description: 'Weekly groceries' }),
+      );
+    });
+
+    it('is ignored when duplicating', async () => {
+      const source = createExistingTransaction({ amount: -75.5, description: 'Monthly bill' });
+      const { container } = render(
+        <TransactionForm
+          duplicateFrom={source}
+          draft={paymentDraft}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Description')).toBeInTheDocument());
+      expect((container.querySelector('textarea') as HTMLTextAreaElement).value).toBe('Monthly bill');
+      await waitFor(() => expect(getSelectByLabel('Account').value).toBe('acc-1'));
+      expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe(getLocalDateString());
+    });
+
+    it('leaves the default payee and date paths as they were without one', async () => {
+      render(
+        <TransactionForm
+          defaultDate="2026-03-07"
+          defaultPayee={{ id: 'payee-1', name: 'Grocery Store', defaultCategoryId: 'cat-1' }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+          onDirtyChange={mockOnDirtyChange}
+        />,
+      );
+      await waitFor(() => expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2026-03-07'));
+      expect(screen.getByTestId('combobox-value-Payee')).toHaveTextContent('payee-1');
+      expect(screen.getByTestId('combobox-value-Category')).toHaveTextContent('cat-1');
+      expect(mockOnDirtyChange).not.toHaveBeenCalledWith(true);
     });
   });
 });

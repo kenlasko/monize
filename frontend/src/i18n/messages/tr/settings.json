@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Telefon veya tabletin altındaki çubuk için en fazla üç sekme seçin. Ekle düğmesi ve Daha Fazla her zaman görünür.",
       "slotLabel": "Sekme {number}",
-      "none": "Yok"
+      "none": "Yok",
+      "addOpensLabel": "+ düğmesi şunu açar",
+      "addOpensOptions": {
+        "quickAdd": "Hızlı Ekle",
+        "fullForm": "Yeni İşlem formu"
+      },
+      "addOpensHelp": "+ düğmesinin yeni işlem başlattığı yerlerde geçerlidir: İşlemler sayfasında ve eklenecek kendi öğesi olmayan sayfalarda. Hızlı Ekle, geri kalanı için bir Tam Form düğmesi içerir."
     }
   },
   "notifications": {

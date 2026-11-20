@@ -79,6 +79,14 @@
     "transactionsFor": "Tất cả giao dịch của {name}",
     "searchTransactions": "Tìm giao dịch cho \"{query}\"",
     "searchHelp": "Tìm trong trợ giúp",
-    "keyboardShortcuts": "Phím tắt"
-  }
+    "keyboardShortcuts": "Phím tắt",
+    "quickAdd": {
+      "amount": "Thêm nhanh: {amount}",
+      "payee": "Thêm nhanh: {amount} {payee}",
+      "category": "Thêm nhanh: {amount} {category}",
+      "payeeCategory": "Thêm nhanh: {amount} {payee}, {category}",
+      "transfer": "Thêm nhanh: {amount} từ {from} sang {to}"
+    }
+  },
+  "quickAdd": "Thêm nhanh"
 }

@@ -79,6 +79,14 @@
     "transactionsFor": "{name}のすべての取引",
     "searchTransactions": "「{query}」の取引を検索",
     "searchHelp": "ヘルプを検索",
-    "keyboardShortcuts": "キーボードショートカット"
-  }
+    "keyboardShortcuts": "キーボードショートカット",
+    "quickAdd": {
+      "amount": "クイック追加: {amount}",
+      "payee": "クイック追加: {amount} {payee}",
+      "category": "クイック追加: {amount} {category}",
+      "payeeCategory": "クイック追加: {amount} {payee}、{category}",
+      "transfer": "クイック追加: {amount} {from}から{to}へ"
+    }
+  },
+  "quickAdd": "クイック追加"
 }

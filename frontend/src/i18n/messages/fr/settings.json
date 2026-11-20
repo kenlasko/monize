@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Choisissez jusqu’à trois onglets pour la barre en bas du téléphone ou de la tablette. Le bouton d’ajout et Plus sont toujours présents.",
       "slotLabel": "Onglet {number}",
-      "none": "Aucun"
+      "none": "Aucun",
+      "addOpensLabel": "Le bouton + ouvre",
+      "addOpensOptions": {
+        "quickAdd": "Ajout rapide",
+        "fullForm": "Formulaire de nouvelle transaction"
+      },
+      "addOpensHelp": "S’applique là où le bouton + commence une nouvelle transaction : sur la page Transactions et sur une page qui n’a rien à ajouter de son côté. L’ajout rapide comporte un bouton Formulaire complet pour le reste."
     }
   },
   "notifications": {

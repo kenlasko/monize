@@ -194,6 +194,7 @@ describe("TransactionTransferService", () => {
     // Default: no payee matches a custom label (free-text / will-be-created
     // paths). Tests that exercise the match path override resolveByName.
     payeesService = {
+      findOne: jest.fn(),
       resolveByName: jest.fn().mockResolvedValue(null),
       findOrCreate: jest.fn(),
     };
@@ -4733,6 +4734,78 @@ describe("TransactionTransferService", () => {
       expect(preview.payeeMatched).toBe(false);
       expect(preview.payeeWillBeCreated).toBe(true);
       expect(preview.payeeName).toBe("Brand New Label");
+    });
+
+    it("uses a payee id the caller decided, never resolving the label (Quick Add)", async () => {
+      payeesService.resolveByName.mockResolvedValue({
+        id: "payee-other",
+        name: "Someone Else",
+      });
+      payeesService.findOne.mockResolvedValueOnce({
+        id: "payee-1",
+        name: "Landlord",
+        defaultCategoryId: "cat-1",
+      });
+      const preview = await service.previewCreateTransfer("user-1", {
+        fromAccountId: "from-account",
+        toAccountId: "to-account",
+        amount: 100,
+        transactionDate: "2026-01-15",
+        payeeId: "payee-1",
+        payeeName: "Landlord",
+      });
+      expect(payeesService.findOne).toHaveBeenCalledWith("user-1", "payee-1");
+      expect(payeesService.resolveByName).not.toHaveBeenCalled();
+      expect(preview).toMatchObject({
+        payeeId: "payee-1",
+        payeeName: "Landlord",
+        payeeMatched: true,
+        payeeWillBeCreated: false,
+        // A transfer never inherits a payee's default category.
+        categoryId: null,
+      });
+      expect(rulesApplier.previewForRow).toHaveBeenCalledWith(
+        expect.anything(),
+        "user-1",
+        expect.objectContaining({ payeeId: "payee-1", payeeText: "Landlord" }),
+      );
+    });
+
+    it("reads a null payee id as none decided, the label free text for the rules", async () => {
+      payeesService.resolveByName.mockResolvedValue({
+        id: "payee-other",
+        name: "Someone Else",
+      });
+      const preview = await service.previewCreateTransfer("user-1", {
+        fromAccountId: "from-account",
+        toAccountId: "to-account",
+        amount: 100,
+        transactionDate: "2026-01-15",
+        payeeId: null,
+        payeeName: "Brand New Label",
+      });
+      expect(payeesService.resolveByName).not.toHaveBeenCalled();
+      expect(preview).toMatchObject({
+        payeeId: null,
+        payeeName: "Brand New Label",
+        payeeMatched: false,
+        payeeWillBeCreated: false,
+      });
+    });
+
+    it("refuses a payee id that is not the caller's", async () => {
+      payeesService.findOne.mockRejectedValueOnce(
+        new NotFoundException("Payee not found"),
+      );
+      await expect(
+        service.previewCreateTransfer("user-1", {
+          fromAccountId: "from-account",
+          toAccountId: "to-account",
+          amount: 100,
+          transactionDate: "2026-01-15",
+          payeeId: "payee-not-mine",
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("keeps an unmatched label as free text when createPayeeIfMissing is false", async () => {

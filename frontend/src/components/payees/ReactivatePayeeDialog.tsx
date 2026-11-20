@@ -9,7 +9,14 @@ interface ReactivatePayeeDialogProps {
   isOpen: boolean;
   payee: Payee | null;
   onReactivate: () => void;
+  /** "Keep Inactive". */
   onCancel: () => void;
+  /**
+   * Closing the dialog without answering (Escape, the backdrop), where that
+   * must differ from "Keep Inactive": Quick Add's save goes on under the typed
+   * name on the one and stops on the other. Defaults to `onCancel`.
+   */
+  onDismiss?: () => void;
   isReactivating?: boolean;
 }
 
@@ -18,6 +25,7 @@ export function ReactivatePayeeDialog({
   payee,
   onReactivate,
   onCancel,
+  onDismiss,
   isReactivating = false,
 }: ReactivatePayeeDialogProps) {
   const t = useTranslations('payees');
@@ -31,7 +39,7 @@ export function ReactivatePayeeDialog({
     // paragraph is the question being confirmed, not help text.
     <Modal
       isOpen={isOpen}
-      onClose={onCancel}
+      onClose={onDismiss ?? onCancel}
       maxWidth="sm"
       className="p-6"
       title={t('reactivate.title')}

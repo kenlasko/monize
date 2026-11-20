@@ -79,6 +79,14 @@
     "transactionsFor": "Semua transaksi untuk {name}",
     "searchTransactions": "Cari transaksi untuk \"{query}\"",
     "searchHelp": "Cari bantuan",
-    "keyboardShortcuts": "Pintasan keyboard"
-  }
+    "keyboardShortcuts": "Pintasan keyboard",
+    "quickAdd": {
+      "amount": "Tambah Cepat: {amount}",
+      "payee": "Tambah Cepat: {amount} {payee}",
+      "category": "Tambah Cepat: {amount} {category}",
+      "payeeCategory": "Tambah Cepat: {amount} {payee}, {category}",
+      "transfer": "Tambah Cepat: {amount} dari {from} ke {to}"
+    }
+  },
+  "quickAdd": "Tambah Cepat"
 }

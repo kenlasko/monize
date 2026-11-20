@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from './Button';
 import { SplitSubmitButton, SubmitOption } from './SplitSubmitButton';
@@ -35,6 +36,12 @@ interface FormActionsProps {
    * without it the chevron is an unlabelled control.
    */
   submitOptionsLabel?: string;
+  /**
+   * Buttons drawn between Cancel and the submit, such as Quick Add's Full
+   * Form, a hand-off to a fuller form. Outline buttons: the submit stays the
+   * row's one primary.
+   */
+  secondaryActions?: ReactNode;
 }
 
 /**
@@ -51,6 +58,7 @@ export function FormActions({
   selectedSubmitOptionId,
   onSubmitOptionChange,
   submitOptionsLabel,
+  secondaryActions,
 }: FormActionsProps) {
   const t = useTranslations('common');
   const resolvedSubmitLabel = submitLabel ?? t('formActions.save');
@@ -72,6 +80,7 @@ export function FormActions({
           {t('formActions.cancel')}
         </Button>
       )}
+      {secondaryActions}
       {hasOptions ? (
         <SplitSubmitButton
           options={submitOptions}

@@ -699,5 +699,79 @@
         "tag": "有标签"
       }
     }
+  },
+  "quickAdd": {
+    "button": "快速添加",
+    "title": "快速添加",
+    "description": "输入你花费、收到或转移的内容，例如 84.37 Loblaws 杂货。选择识别结果的任意部分即可修改。",
+    "inputLabel": "输入",
+    "placeholder": "例如 84.37 Loblaws 杂货",
+    "readAs": "识别为",
+    "memoLabel": "描述：",
+    "reading": "正在识别输入...",
+    "readFailed": "识别输入失败",
+    "tooLong": "这一行太长，无法识别。请缩短后继续。",
+    "tryAgain": "重试",
+    "pinRefused": {
+      "title": "你选择的某项已不可用",
+      "description": "在标签上选择的账户、收款人或分类此后已被关闭或删除。清除更改以重新识别输入。",
+      "clearChanges": "清除更改"
+    },
+    "fullForm": "完整表单",
+    "save": "保存",
+    "saveAndNew": "保存并新建",
+    "saveAndNewDescription": "保存后清空输入行，准备下一条。",
+    "cannotSave": "此条目无法按现状保存。请使用“完整表单”完成。",
+    "kinds": {
+      "payment": "付款",
+      "deposit": "存款",
+      "transfer": "转账"
+    },
+    "fields": {
+      "kind": "类型"
+    },
+    "chipName": {
+      "typed": "{field}：{value}",
+      "guessed": "{field}：{value}，推测",
+      "assumed": "{field}：{value}，未输入",
+      "missing": "{field}：缺失",
+      "matches": "{field}：{value}，{count, plural, other {# 个匹配}}",
+      "new": "{field}：{value}，新收款人"
+    },
+    "need": {
+      "missing": "缺失",
+      "matches": "{count, plural, other {# 个匹配}}",
+      "new": "新建"
+    },
+    "cleared": {
+      "payee": "无收款人",
+      "category": "无分类"
+    },
+    "editor": {
+      "alternatives": "其他匹配",
+      "done": "完成",
+      "categoryPlaceholder": "选择分类..."
+    },
+    "balance": {
+      "after": "{account}：当前 {current}，保存后 {after}",
+      "movesOn": "{account}：当前 {current}。余额将于 {date} 变动。",
+      "current": "{account}：当前 {current}",
+      "nowLabel": "当前",
+      "afterLabel": "保存后",
+      "movesOnNote": "{date} 变动"
+    },
+    "blockers": {
+      "missingAmount": "请输入金额。",
+      "zeroAmount": "金额不能为零。",
+      "amountPrecision": "金额的小数位数超过了账户币种可输入的位数。",
+      "missingAccount": "请选择账户。",
+      "ambiguousAccount": "有多个账户匹配。请选择一个。",
+      "missingToAccount": "请选择收款账户。",
+      "sameAccount": "转账需要两个不同的账户。",
+      "amountTooLarge": "金额超出了单笔交易可容纳的范围。",
+      "foreignCurrency": "金额的币种与账户不同。请使用“完整表单”输入。",
+      "crossCurrencyTransfer": "两个账户的币种不同。请使用“完整表单”办理此笔转账。",
+      "unknown": "此条目无法在此保存。请使用“完整表单”完成。"
+    }
   }
 }

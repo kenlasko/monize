@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "为手机或平板底部的标签栏选择最多三个标签。添加按钮和“更多”始终显示。",
       "slotLabel": "标签 {number}",
-      "none": "无"
+      "none": "无",
+      "addOpensLabel": "+ 按钮打开",
+      "addOpensOptions": {
+        "quickAdd": "快速添加",
+        "fullForm": "新建交易表单"
+      },
+      "addOpensHelp": "适用于 + 按钮开始新建交易的位置：交易页面，以及没有自己可添加内容的页面。快速添加提供“完整表单”按钮，用于处理其余情况。"
     }
   },
   "notifications": {

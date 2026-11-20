@@ -24,6 +24,12 @@ import { EXTERNAL_ID_MAX_LENGTH } from "../transaction-external-id";
 import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
 import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
+/** The longest free-text payee name a transaction create accepts. */
+export const TRANSACTION_PAYEE_NAME_MAX_LENGTH = 100;
+
+/** The largest magnitude a transaction amount may have. */
+export const TRANSACTION_AMOUNT_MAX_MAGNITUDE = 999999999999;
+
 export class CreateTransactionDto {
   @ApiProperty({ description: "Account ID where the transaction occurs" })
   @IsUUID()
@@ -43,7 +49,7 @@ export class CreateTransactionDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(TRANSACTION_PAYEE_NAME_MAX_LENGTH)
   @SanitizeHtml()
   payeeName?: string;
 
@@ -60,8 +66,8 @@ export class CreateTransactionDto {
       "Transaction amount (positive for income, negative for expense)",
   })
   @IsMoneyAmount()
-  @Min(-999999999999)
-  @Max(999999999999)
+  @Min(-TRANSACTION_AMOUNT_MAX_MAGNITUDE)
+  @Max(TRANSACTION_AMOUNT_MAX_MAGNITUDE)
   amount: number;
 
   @ApiProperty({ description: "Currency code (e.g., CAD, USD)" })

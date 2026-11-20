@@ -79,6 +79,14 @@
     "transactionsFor": "{name} के सभी लेनदेन",
     "searchTransactions": "\"{query}\" के लिए लेनदेन खोजें",
     "searchHelp": "मदद खोजें",
-    "keyboardShortcuts": "कीबोर्ड शॉर्टकट"
-  }
+    "keyboardShortcuts": "कीबोर्ड शॉर्टकट",
+    "quickAdd": {
+      "amount": "त्वरित जोड़ें: {amount}",
+      "payee": "त्वरित जोड़ें: {amount} {payee}",
+      "category": "त्वरित जोड़ें: {amount} {category}",
+      "payeeCategory": "त्वरित जोड़ें: {amount} {payee}, {category}",
+      "transfer": "त्वरित जोड़ें: {amount} {from} से {to} में"
+    }
+  },
+  "quickAdd": "त्वरित जोड़ें"
 }

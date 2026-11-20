@@ -699,5 +699,79 @@
         "tag": "Tiene una etiqueta"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Añadir rápido",
+    "title": "Añadir rápido",
+    "description": "Escribe lo que gastaste, recibiste o moviste, por ejemplo 84.37 Loblaws supermercado. Elige cualquier parte de la lectura para cambiarla.",
+    "inputLabel": "Entrada",
+    "placeholder": "p. ej. 84.37 Loblaws supermercado",
+    "readAs": "Interpretado como",
+    "memoLabel": "Descripción:",
+    "reading": "Leyendo la entrada...",
+    "readFailed": "No se pudo leer la entrada",
+    "tooLong": "Esta línea es demasiado larga para leerla. Acórtala para continuar.",
+    "tryAgain": "Intentar de nuevo",
+    "pinRefused": {
+      "title": "Algo que elegiste ya no está disponible",
+      "description": "Una cuenta, un beneficiario o una categoría elegidos en una etiqueta se ha cerrado o eliminado desde entonces. Borra tus cambios para volver a leer la entrada.",
+      "clearChanges": "Borrar cambios"
+    },
+    "fullForm": "Formulario completo",
+    "save": "Guardar",
+    "saveAndNew": "Guardar y nueva",
+    "saveAndNewDescription": "Guárdala y limpia la línea para la siguiente.",
+    "cannotSave": "Esta entrada no se puede guardar tal como está. Usa Formulario completo para terminarla.",
+    "kinds": {
+      "payment": "Pago",
+      "deposit": "Ingreso",
+      "transfer": "Transferencia"
+    },
+    "fields": {
+      "kind": "Tipo"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, supuesto",
+      "assumed": "{field}: {value}, no escrito",
+      "missing": "{field}: falta",
+      "matches": "{field}: {value}, {count, plural, one {# coincidencia} other {# coincidencias}}",
+      "new": "{field}: {value}, beneficiario nuevo"
+    },
+    "need": {
+      "missing": "Falta",
+      "matches": "{count, plural, one {# coincidencia} other {# coincidencias}}",
+      "new": "Nuevo"
+    },
+    "cleared": {
+      "payee": "Sin beneficiario",
+      "category": "Sin categoría"
+    },
+    "editor": {
+      "alternatives": "Otras coincidencias",
+      "done": "Listo",
+      "categoryPlaceholder": "Seleccionar categoría..."
+    },
+    "balance": {
+      "after": "{account}: {current} ahora, {after} después de guardar",
+      "movesOn": "{account}: {current} ahora. El saldo cambia el {date}.",
+      "current": "{account}: {current} ahora",
+      "nowLabel": "Ahora",
+      "afterLabel": "Después de guardar",
+      "movesOnNote": "Cambia el {date}"
+    },
+    "blockers": {
+      "missingAmount": "Escribe un importe.",
+      "zeroAmount": "El importe no puede ser cero.",
+      "amountPrecision": "El importe tiene más decimales de los que admite la moneda de la cuenta.",
+      "missingAccount": "Elige una cuenta.",
+      "ambiguousAccount": "Coinciden varias cuentas. Elige una.",
+      "missingToAccount": "Elige la cuenta a la que va el dinero.",
+      "sameAccount": "Una transferencia necesita dos cuentas distintas.",
+      "amountTooLarge": "El importe es mayor de lo que cabe en una transacción.",
+      "foreignCurrency": "El importe está en una moneda distinta a la de la cuenta. Usa Formulario completo para introducirlo.",
+      "crossCurrencyTransfer": "Las dos cuentas tienen monedas distintas. Usa Formulario completo para esta transferencia.",
+      "unknown": "Esta entrada no se puede guardar aquí. Usa Formulario completo para terminarla."
+    }
   }
 }

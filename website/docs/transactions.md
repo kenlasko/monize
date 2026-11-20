@@ -121,6 +121,75 @@ The register has an **Attachments** column with the count, and the **Attachments
 
 ---
 
+## Quick Add
+
+Quick Add is a one-line way to record a transaction. You type a sentence such as `84.37 loblaws groceries`, Monize reads it into the fields of a transaction, and you save it as shown or change any part of it first. Nothing leaves your Monize server while it reads the line.
+
+### Opening Quick Add
+
+- On a wide screen, click **Quick Add** beside **+ New Transaction** on the Transactions page.
+- On a phone, tap the **+** button while the Transactions page is showing. See [Mobile Navigation](settings-and-security.md#mobile-navigation) to make the **+** open the New Transaction form instead.
+- From any page, open the command palette and type a line that has an amount in it. A **Quick add** row appears, such as "Quick add: $84.37 Loblaws". Choose it and Monize goes to the Transactions page with Quick Add open on your line.
+
+If you are viewing the Transactions page filtered to one account, Quick Add starts with that account.
+
+### What to Type
+
+Type the amount and as much of the rest as you like, in any order that reads naturally:
+
+| You type | Quick Add reads |
+|----------|-----------------|
+| `84.37 loblaws groceries` | A payment of 84.37 to Loblaws, in the Groceries category |
+| `500 chequing to savings` | A transfer of 500 from Chequing to Savings |
+| `refund 20 amazon` | A deposit of 20 from Amazon |
+| `12.50 bakery yesterday` | A payment of 12.50 dated yesterday |
+| `45 shell friday` | A payment of 45 dated the most recent Friday |
+
+A date can be a word such as **yesterday** or **today**, a weekday (the most recent one, counting today), or a day and month such as `3 nov`. Anything you type that is not an amount, a date, an account or a payee is kept as the description.
+
+Quick Add works in the language you chose for Monize, and English words are always understood as well. On a phone you can tap the microphone on your keyboard and dictate the line; Quick Add reads whatever the keyboard types.
+
+### Reading the Chips
+
+Under **Read As**, each part of the entry is shown as a chip: the type (**Payment**, **Deposit** or **Transfer**), the amount, the date, the account (and the destination account for a transfer), the payee, the category, and the description when there is one. The look of a chip tells you how sure Monize is:
+
+| Chip | Look | Meaning |
+|------|------|---------|
+| **Typed** | Solid | You typed it, or you set it yourself. |
+| **Guessed** | Outlined, with an amber dot | Monize worked it out from your history, such as a category from the payee's recent transactions. |
+| **Assumed** | Dashed grey border | You did not type it, so Monize used a default, such as today's date or the account you used last. |
+| **Needs you** | Amber border with a badge: **Missing**, **2 matches** (or however many) or **New** | Monize cannot choose for you. Pick one before you save. |
+
+Click any chip to change it. The control that opens is the one the New Transaction form uses for that field, and the other matches are listed first. A chip you change becomes **Typed** and **the change sticks**: Monize keeps it as you carry on typing and does not guess it again.
+
+The line under the chips shows the account's balance now and what it will be after saving. When the entry is dated in the future it says the balance moves on that date.
+
+### Keyboard
+
+| Key | Action |
+|-----|--------|
+| **Enter** | Save, when the entry is complete |
+| **Shift+Enter** | Save and clear the line for the next entry (the same as **Save & New**) |
+| **Tab** | Move through the chips |
+| **Esc** | Close Quick Add |
+
+### What Quick Add Cannot Save
+
+Quick Add handles payments, deposits and transfers. It tells you why when it cannot save an entry, and **Full Form** opens the New Transaction form with everything it read already filled in, so you finish rather than start again. That covers:
+
+- a split across several categories,
+- an amount in a currency other than the account's,
+- a transfer between accounts that hold different currencies,
+- a transfer to another owner's account,
+- an account name that matches more than one account (the account is left for you to choose),
+- an entry with no amount, or an amount of zero.
+
+If the entry is only partly read, **Full Form** also carries your typed line over as the description, so your words are not lost.
+
+### Payees and Learning from Your History
+
+If you type a payee Monize has not seen, its chip is marked **New** and the payee is created when you save, the same as in [Quick Payee Creation](#quick-payee-creation). Quick Add learns from what you have already entered: the category and the account come from that payee's recent transactions, so typing `84.37 loblaws` is enough once you have paid Loblaws before.
+
 ## Transaction List
 
 ![The transaction list](images/transactions-list.png)

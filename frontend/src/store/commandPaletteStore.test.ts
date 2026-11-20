@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useCommandPaletteStore } from './commandPaletteStore';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { startQuickAdd, useCommandPaletteStore } from './commandPaletteStore';
 
 beforeEach(() => {
   useCommandPaletteStore.setState(useCommandPaletteStore.getInitialState(), true);
@@ -25,5 +25,21 @@ describe('commandPaletteStore', () => {
     expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({ payee });
     useCommandPaletteStore.getState().clearNewTransactionRequest();
     expect(useCommandPaletteStore.getState().newTransactionRequest).toBeNull();
+  });
+
+  it('leaves a Quick Add request for the register and goes there', () => {
+    const push = vi.fn();
+    startQuickAdd('84.37 loblaws', '/dashboard', push);
+    expect(useCommandPaletteStore.getState().quickAddRequest).toEqual({ text: '84.37 loblaws' });
+    expect(push).toHaveBeenCalledWith('/transactions');
+    useCommandPaletteStore.getState().clearQuickAddRequest();
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+  });
+
+  it('does not push over the register when already on it', () => {
+    const push = vi.fn();
+    startQuickAdd('84.37 loblaws', '/transactions', push);
+    expect(useCommandPaletteStore.getState().quickAddRequest).toEqual({ text: '84.37 loblaws' });
+    expect(push).not.toHaveBeenCalled();
   });
 });

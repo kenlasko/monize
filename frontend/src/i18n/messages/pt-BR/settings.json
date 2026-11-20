@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Escolha até três abas para a barra na parte inferior do celular ou tablet. O botão de adicionar e Mais estão sempre presentes.",
       "slotLabel": "Aba {number}",
-      "none": "Nenhuma"
+      "none": "Nenhuma",
+      "addOpensLabel": "O botão + abre",
+      "addOpensOptions": {
+        "quickAdd": "Adição rápida",
+        "fullForm": "Formulário de nova transação"
+      },
+      "addOpensHelp": "Vale onde o botão + inicia uma nova transação: na página Transações e em uma página que não tem nada próprio para adicionar. A adição rápida tem um botão Formulário completo para o resto."
     }
   },
   "notifications": {

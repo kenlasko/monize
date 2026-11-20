@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Escolha até três separadores para a barra na parte inferior do telemóvel ou tablet. O botão de adicionar e Mais estão sempre presentes.",
       "slotLabel": "Separador {number}",
-      "none": "Nenhum"
+      "none": "Nenhum",
+      "addOpensLabel": "O botão + abre",
+      "addOpensOptions": {
+        "quickAdd": "Adição rápida",
+        "fullForm": "Formulário de nova transação"
+      },
+      "addOpensHelp": "Aplica-se onde o botão + inicia uma nova transação: na página Transações e numa página que não tem nada próprio para adicionar. A adição rápida tem um botão Formulário completo para o resto."
     }
   },
   "notifications": {

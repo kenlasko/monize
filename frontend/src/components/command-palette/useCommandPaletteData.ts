@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { accountsApi } from '@/lib/accounts';
 import { categoriesApi } from '@/lib/categories';
 import { customReportsApi } from '@/lib/custom-reports';
@@ -11,6 +12,7 @@ import { investmentReportsApi } from '@/lib/investment-reports';
 import { investmentsApi } from '@/lib/investments';
 import { createLogger } from '@/lib/logger';
 import { payeesApi } from '@/lib/payees';
+import { isQuickAddTextTooLong, quickAddApi } from '@/lib/quick-add';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { transactionsApi } from '@/lib/transactions';
 import { useHelpStore } from '@/store/helpStore';
@@ -21,6 +23,7 @@ import type { InvestmentReport } from '@/types/investment-report';
 import type { Security } from '@/types/investment';
 import type { Payee } from '@/types/payee';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
+import type { QuickAddInterpretation } from '@/types/quick-add';
 import type { Transaction } from '@/types/transaction';
 
 const logger = createLogger('CommandPalette');
@@ -112,20 +115,48 @@ interface RemoteAnswer {
   help: HelpSearchAnswer['results'] | null;
 }
 
+/** A line with an amount in it, in any script's digits; only that is worth a reading. */
+const HAS_DIGIT = /\p{Nd}/u;
+
+/** Whether the palette asks Quick Add to read `query`: a line the server would read, with a digit in it. */
+function worthReading(query: string): boolean {
+  return !isQuickAddTextTooLong(query) && HAS_DIGIT.test(query);
+}
+
+/** Quick Add's reading of one query; null is a failed request. */
+interface QuickAddAnswer {
+  key: string;
+  reading: QuickAddInterpretation | null;
+}
+
 /**
- * The two searches only the server can answer, debounced. An answer is kept
- * with the query that produced it, so a slow response to an abandoned query
- * never draws under a newer one.
+ * The searches only the server can answer, debounced. An answer is kept with
+ * the query that produced it, so a slow response to an abandoned query never
+ * draws under a newer one.
  *
  * A help failure is reported only once the guide is known to be bundled: a
  * server without it refuses every search, which is not an outage.
+ *
+ * Quick Add's reading (`docs/future-plans/quick-add.md`, "The command palette
+ * row") is asked for only when `canQuickAdd` and the query holds a digit (and
+ * fits the server's bound). It is its own request with its own answer, beside
+ * the two searches rather than inside their `Promise.allSettled`, so a slow
+ * reading never holds back their results. It is an offer, not a search: a
+ * failed reading adds no row and is not reported, so it never marks the
+ * palette's search failed.
  */
-export function useCommandPaletteSearch(query: string, canSearchTransactions: boolean) {
+export function useCommandPaletteSearch(
+  query: string,
+  canSearchTransactions: boolean,
+  canQuickAdd = false,
+) {
   const contextPage = useHelpStore((s) => s.contextPage);
   const guideAvailable = useHelpStore((s) => s.guideAvailable);
   useHelpPrefetch();
+  const today = useFinancialToday();
   const rested = useDebouncedValue(query, COMMAND_SEARCH_DEBOUNCE_MS);
   const [answer, setAnswer] = useState<RemoteAnswer | null>(null);
+  const [quickAddAnswer, setQuickAddAnswer] = useState<QuickAddAnswer | null>(null);
 
   useEffect(() => {
     if (rested.length < MIN_REMOTE_QUERY_LENGTH) return;
@@ -149,10 +180,30 @@ export function useCommandPaletteSearch(query: string, canSearchTransactions: bo
     };
   }, [rested, canSearchTransactions, contextPage]);
 
+  useEffect(() => {
+    if (rested.length < MIN_REMOTE_QUERY_LENGTH || !canQuickAdd || !worthReading(rested)) return;
+    let cancelled = false;
+    // No account context and no pins: the page reads the line again in its own.
+    quickAddApi.interpret({ text: rested, today }).then(
+      (reading) => {
+        if (!cancelled) setQuickAddAnswer({ key: rested, reading });
+      },
+      (error: unknown) => {
+        if (cancelled) return;
+        logger.error(error);
+        setQuickAddAnswer({ key: rested, reading: null });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [rested, canQuickAdd, today]);
+
   const current = answer?.key === query ? answer : null;
   return {
     transactions: current?.transactions ?? [],
     help: current?.help ?? [],
+    quickAdd: quickAddAnswer?.key === query ? quickAddAnswer.reading : null,
     pending: query.length >= MIN_REMOTE_QUERY_LENGTH && current === null,
     failed:
       current !== null &&

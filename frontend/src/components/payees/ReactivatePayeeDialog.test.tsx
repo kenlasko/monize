@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { act, render, screen, fireEvent } from '@/test/render';
+import { __resetModalStateForTesting } from '@/components/ui/Modal';
 import { ReactivatePayeeDialog } from './ReactivatePayeeDialog';
 import { Payee } from '@/types/payee';
 
@@ -28,6 +29,42 @@ describe('ReactivatePayeeDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetModalStateForTesting();
+  });
+
+  /** Escape from inside the dialog, where the keyboard focus is once it opens. */
+  async function pressEscape() {
+    const button = screen.getByText('Reactivate');
+    await act(async () => {
+      button.focus();
+    });
+    await act(async () => {
+      fireEvent.keyDown(button, { key: 'Escape' });
+    });
+  }
+
+  it('reads closing it unanswered as Keep Inactive by default', async () => {
+    render(<ReactivatePayeeDialog isOpen={true} payee={mockPayee} onReactivate={onReactivate} onCancel={onCancel} />);
+    await pressEscape();
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells closing it unanswered apart from Keep Inactive when asked to', async () => {
+    const onDismiss = vi.fn();
+    render(
+      <ReactivatePayeeDialog
+        isOpen={true}
+        payee={mockPayee}
+        onReactivate={onReactivate}
+        onCancel={onCancel}
+        onDismiss={onDismiss}
+      />,
+    );
+    await pressEscape();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('No, Keep Inactive'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
   it('renders the payee name in the dialog', () => {

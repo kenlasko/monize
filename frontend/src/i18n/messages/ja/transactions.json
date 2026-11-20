@@ -699,5 +699,79 @@
         "tag": "タグあり"
       }
     }
+  },
+  "quickAdd": {
+    "button": "クイック追加",
+    "title": "クイック追加",
+    "description": "使った金額、受け取った金額、移した金額を入力します。例: 84.37 Loblaws 食料品。読み取り結果の任意の部分を選ぶと変更できます。",
+    "inputLabel": "入力",
+    "placeholder": "例: 84.37 Loblaws 食料品",
+    "readAs": "読み取り結果",
+    "memoLabel": "説明:",
+    "reading": "入力を読み取っています...",
+    "readFailed": "入力を読み取れませんでした",
+    "tooLong": "この行は長すぎて読み取れません。短くしてから続けてください。",
+    "tryAgain": "再試行",
+    "pinRefused": {
+      "title": "選択した項目が利用できなくなりました",
+      "description": "チップで選択した口座、支払先、カテゴリがその後に閉鎖または削除されました。変更をクリアして、入力を読み取り直してください。",
+      "clearChanges": "変更をクリア"
+    },
+    "fullForm": "詳細フォーム",
+    "save": "保存",
+    "saveAndNew": "保存して新規",
+    "saveAndNewDescription": "保存して、次の入力のために入力欄をクリアします。",
+    "cannotSave": "この入力はこのままでは保存できません。「詳細フォーム」で完成させてください。",
+    "kinds": {
+      "payment": "支払い",
+      "deposit": "入金",
+      "transfer": "振替"
+    },
+    "fields": {
+      "kind": "種類"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}、推測",
+      "assumed": "{field}: {value}、未入力",
+      "missing": "{field}: 不足",
+      "matches": "{field}: {value}、{count, plural, other {#件の一致}}",
+      "new": "{field}: {value}、新規の支払先"
+    },
+    "need": {
+      "missing": "不足",
+      "matches": "{count, plural, other {#件の一致}}",
+      "new": "新規"
+    },
+    "cleared": {
+      "payee": "支払先なし",
+      "category": "カテゴリなし"
+    },
+    "editor": {
+      "alternatives": "ほかの候補",
+      "done": "完了",
+      "categoryPlaceholder": "カテゴリを選択..."
+    },
+    "balance": {
+      "after": "{account}: 現在 {current}、保存後 {after}",
+      "movesOn": "{account}: 現在 {current}。残高は{date}に変わります。",
+      "current": "{account}: 現在 {current}",
+      "nowLabel": "現在",
+      "afterLabel": "保存後",
+      "movesOnNote": "{date} に変動"
+    },
+    "blockers": {
+      "missingAmount": "金額を入力してください。",
+      "zeroAmount": "金額をゼロにはできません。",
+      "amountPrecision": "金額の小数桁数が、口座の通貨で入力できる桁数を超えています。",
+      "missingAccount": "口座を選択してください。",
+      "ambiguousAccount": "複数の口座が一致します。1つ選択してください。",
+      "missingToAccount": "送金先の口座を選択してください。",
+      "sameAccount": "振替には異なる2つの口座が必要です。",
+      "amountTooLarge": "金額が1件の取引で扱える上限を超えています。",
+      "foreignCurrency": "金額が口座と異なる通貨です。入力するには「詳細フォーム」を使ってください。",
+      "crossCurrencyTransfer": "2つの口座の通貨が異なります。この振替には「詳細フォーム」を使ってください。",
+      "unknown": "この入力はここでは保存できません。「詳細フォーム」で完成させてください。"
+    }
   }
 }

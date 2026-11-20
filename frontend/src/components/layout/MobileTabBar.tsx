@@ -5,12 +5,15 @@ import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bars3Icon, PlusIcon } from '@heroicons/react/24/outline';
 import { useMobileTabs, type MobileTab } from '@/hooks/useMobileTabs';
+import { useViewDefault } from '@/hooks/useViewDefault';
+import { BUILT_IN_VIEW_DEFAULTS } from '@/lib/view-defaults';
 import { isNavSectionActive } from '@/lib/nav-section';
 import { isPublicPath } from '@/lib/public-paths';
 import { useAuthStore } from '@/store/authStore';
-import { startNewTransaction, useCommandPaletteStore } from '@/store/commandPaletteStore';
+import { startNewTransaction, startQuickAdd, useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
 import { useMobileAddActionStore, type MobileAddChoice } from '@/store/mobileAddActionStore';
+import { useTourStore } from '@/store/tourStore';
 import { tourAnchor } from '@/lib/tours/anchors';
 import { MobileAddChooser } from './MobileAddChooser';
 
@@ -46,7 +49,18 @@ export function MobileTabBar() {
   const clearNewTransactionRequest = useCommandPaletteStore(
     (s) => s.clearNewTransactionRequest,
   );
+  const clearQuickAddRequest = useCommandPaletteStore((s) => s.clearQuickAddRequest);
+  // A tab or the page's own action overtakes a palette request still on its
+  // way to the register: neither may open there later.
+  const clearPaletteRequests = () => {
+    clearNewTransactionRequest();
+    clearQuickAddRequest();
+  };
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const actingAsDelegate = useAuthStore((s) => !!s.actingAsUserId);
+  const tourRunning = useTourStore((s) => s.active !== null);
+  const addOpens = useViewDefault('mobileAddOpens') ?? BUILT_IN_VIEW_DEFAULTS.mobileAddOpens;
+  const fallbackOpensQuickAdd = addOpens === 'quickAdd' && !actingAsDelegate && !tourRunning;
   // The page on screen may name its own "new" action (a new account on
   // Accounts); without one the button opens a new transaction.
   const pageAction = useMobileAddActionStore((s) => s.action);
@@ -78,7 +92,7 @@ export function MobileTabBar() {
       <button
         type="button"
         onClick={() => {
-          clearNewTransactionRequest();
+          clearPaletteRequests();
           // Already here: a push would drop the page's filters from the URL and
           // leave a Back press that appears to do nothing.
           if (pathname !== tab.href) router.push(tab.href);
@@ -108,17 +122,22 @@ export function MobileTabBar() {
               type="button"
               onClick={() => {
                 if (pageAction) {
-                  clearNewTransactionRequest();
+                  clearPaletteRequests();
                   if (asksWhich && offeredChoices) {
                     setChooser({ owner: pageAction.owner, choices: offeredChoices });
                   } else {
                     pageAction.run();
                   }
+                } else if (fallbackOpensQuickAdd) {
+                  // An empty line: the register opens Quick Add on it.
+                  startQuickAdd('', pathname, router.push);
                 } else {
                   startNewTransaction(pathname, router.push);
                 }
               }}
-              aria-label={pageAction?.label ?? tPalette('newTransaction')}
+              aria-label={
+                pageAction?.label ?? (fallbackOpensQuickAdd ? t('quickAdd') : tPalette('newTransaction'))
+              }
               aria-haspopup={asksWhich ? 'dialog' : undefined}
               {...(pageAction?.tourAnchor ? tourAnchor(pageAction.tourAnchor) : {})}
               className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:focus-visible:ring-offset-gray-900"

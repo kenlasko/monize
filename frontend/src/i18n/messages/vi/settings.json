@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Chọn tối đa ba tab cho thanh ở cuối điện thoại hoặc máy tính bảng. Nút thêm và Thêm luôn hiển thị.",
       "slotLabel": "Tab {number}",
-      "none": "Không có"
+      "none": "Không có",
+      "addOpensLabel": "Nút + mở",
+      "addOpensOptions": {
+        "quickAdd": "Thêm nhanh",
+        "fullForm": "Biểu mẫu Giao dịch mới"
+      },
+      "addOpensHelp": "Áp dụng ở nơi nút + bắt đầu một giao dịch mới: trên trang Giao dịch và trên trang không có mục riêng nào để thêm. Thêm nhanh có nút Biểu mẫu đầy đủ cho phần còn lại."
     }
   },
   "notifications": {

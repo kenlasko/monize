@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import TransactionsPage from './page';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
+import { useMobileAddActionStore } from '@/store/mobileAddActionStore';
 import { TRANSACTION_SORT_STORAGE_KEY } from '@/lib/transaction-sort';
 import { useDensityStore } from '@/store/densityStore';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
@@ -49,10 +50,30 @@ vi.mock('next/dynamic', () => ({
   default: (_loader: any) => {
     // Return a component that passes through props
     const DynamicComponent = (props: any) => {
+      // Quick Add: its Full Form hands over a blocked foreign-currency entry.
+      if (props.onFullForm !== undefined) {
+        return (
+          <div
+            data-testid="dynamic-quick-add"
+            data-initial-text={props.initialText}
+            data-context-account={props.contextAccountId ?? ''}
+          >
+            <button
+              data-testid="quick-add-full-form"
+              onClick={() =>
+                props.onFullForm({ mode: 'normal', accountId: 'acc-1', amount: -20, payeeName: 'Corner Cafe' })
+              }
+            >
+              Full Form
+            </button>
+            <button data-testid="quick-add-saved" onClick={props.onSaved}>Saved</button>
+          </div>
+        );
+      }
       // Check loader path to determine which component
       if (props.transaction !== undefined || props.onSuccess !== undefined) {
         return (
-          <div data-testid="dynamic-transaction-form">
+          <div data-testid="dynamic-transaction-form" data-draft={props.draft ? JSON.stringify(props.draft) : ''}>
             TransactionForm
             {props.onAddWarranty && (
               <button data-testid="form-add-warranty" onClick={() => props.onAddWarranty(props.transaction)}>
@@ -541,8 +562,9 @@ vi.mock('@/components/layout/PageHeader', () => ({
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
-      {actions}
-      {primaryAction}
+      {actions && <div data-testid="page-header-actions">{actions}</div>}
+      {/* The slot PageHeader draws only from `xl` up. */}
+      {primaryAction && <div data-testid="page-header-primary-action">{primaryAction}</div>}
       {/* What the title hands the app header once it scrolls away. */}
       {collapsedContext && <span data-testid="collapsed-context">{collapsedContext}</span>}
       {collapsedSwitcher && (
@@ -3921,5 +3943,231 @@ describe('TransactionsPage register sorting', () => {
       `${mockTransactions.length} transactions`,
     );
     expect(screen.getByTestId('balance-withheld')).toHaveTextContent('none');
+  });
+});
+
+describe('TransactionsPage Quick Add', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetAll.mockResolvedValue({ data: [], pagination: { page: 1, totalPages: 1, total: 0 } });
+    mockGetAllForExport.mockResolvedValue([]);
+    mockGetSummary.mockResolvedValue({ totalIncome: 0, totalExpenses: 0, netCashFlow: 0, transactionCount: 0 });
+    mockGetAllAccounts.mockResolvedValue(mockAccounts);
+    mockGetAllCategories.mockResolvedValue(mockCategories);
+    mockGetAllPayees.mockResolvedValue(mockPayees);
+    mockGetDailyBalances.mockResolvedValue([]);
+    mockGetMonthlyTotals.mockResolvedValue([]);
+    mockRealFormModal.value = true;
+    mockSearchParams.value = '';
+    useCommandPaletteStore.setState(useCommandPaletteStore.getInitialState(), true);
+  });
+
+  /** The tab bar's width (below `xl`), where the + is the page's add button. */
+  const withTabBar = () => {
+    const original = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 1279px)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    return () => {
+      window.matchMedia = original;
+    };
+  };
+
+  async function renderPage() {
+    await act(async () => {
+      render(<TransactionsPage />);
+    });
+    await waitFor(() => expect(screen.getByText('+ New Transaction')).toBeInTheDocument());
+  }
+
+  it('offers Quick Add beside New Transaction, and opens it', async () => {
+    await renderPage();
+    expect(screen.queryByTestId('dynamic-quick-add')).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Quick Add' }));
+    });
+    expect(screen.getByTestId('dynamic-quick-add')).toHaveAttribute('data-initial-text', '');
+    expect(screen.queryByTestId('dynamic-transaction-form')).not.toBeInTheDocument();
+  });
+
+  it('draws the header Quick Add only where New Transaction is drawn, from xl up', async () => {
+    // Below xl the tab bar's + opens Quick Add, and PageHeader draws `actions`
+    // full width at every width: the button belongs in the slot it hides there.
+    await renderPage();
+    const desktopOnly = screen.getByTestId('page-header-primary-action');
+    expect(within(desktopOnly).getByRole('button', { name: 'Quick Add' })).toBeInTheDocument();
+    expect(within(desktopOnly).getByText('+ New Transaction')).toBeInTheDocument();
+    expect(screen.queryByTestId('page-header-actions')).not.toBeInTheDocument();
+  });
+
+  it('runs Quick Add from the + below xl', async () => {
+    const restore = withTabBar();
+    try {
+      await renderPage();
+      const action = useMobileAddActionStore.getState().action;
+      expect(action?.label).toBe('Quick Add');
+      await act(async () => {
+        action?.run();
+      });
+      expect(screen.getByTestId('dynamic-quick-add')).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it('runs New Transaction from the + below xl when the reader chose the form for it', async () => {
+    mockPreferences.value = { ...DEFAULT_MOCK_PREFERENCES, viewDefaults: { mobileAddOpens: 'fullForm' } };
+    const restore = withTabBar();
+    try {
+      await renderPage();
+      const action = useMobileAddActionStore.getState().action;
+      expect(action?.label).toBe('New Transaction');
+      await act(async () => {
+        action?.run();
+      });
+      expect(screen.queryByTestId('dynamic-quick-add')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dynamic-transaction-form')).toBeInTheDocument();
+    } finally {
+      restore();
+      mockPreferences.value = undefined;
+    }
+  });
+
+  it('runs Quick Add from the + below xl when the reader chose it outright', async () => {
+    mockPreferences.value = { ...DEFAULT_MOCK_PREFERENCES, viewDefaults: { mobileAddOpens: 'quickAdd' } };
+    const restore = withTabBar();
+    try {
+      await renderPage();
+      expect(useMobileAddActionStore.getState().action?.label).toBe('Quick Add');
+    } finally {
+      restore();
+      mockPreferences.value = undefined;
+    }
+  });
+
+  it('opens Quick Add on an empty line for the + of a page with nothing of its own to add', async () => {
+    // MobileTabBar's fallback: `startQuickAdd('')` on the way here.
+    useCommandPaletteStore.getState().requestQuickAdd('');
+    await renderPage();
+    expect(screen.getByTestId('dynamic-quick-add')).toHaveAttribute('data-initial-text', '');
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+    expect(screen.queryByTestId('dynamic-transaction-form')).not.toBeInTheDocument();
+  });
+
+  it('keeps New Transaction on a desktop pinned +', async () => {
+    await renderPage();
+    expect(useMobileAddActionStore.getState().action?.label).toBe('New Transaction');
+  });
+
+  it('offers neither entry point to an acting delegate', async () => {
+    mockActing.actingAsUserId = 'owner-1';
+    const restore = withTabBar();
+    try {
+      await renderPage();
+      expect(screen.queryByRole('button', { name: 'Quick Add' })).not.toBeInTheDocument();
+      const action = useMobileAddActionStore.getState().action;
+      expect(action?.label).toBe('New Transaction');
+      await act(async () => {
+        action?.run();
+      });
+      expect(screen.queryByTestId('dynamic-quick-add')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dynamic-transaction-form')).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  it('hands Full Form to New Transaction with the entry as its draft', async () => {
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Quick Add' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-add-full-form'));
+    });
+    expect(screen.queryByTestId('dynamic-quick-add')).not.toBeInTheDocument();
+    const form = await screen.findByTestId('dynamic-transaction-form', {}, { timeout: 2000 });
+    expect(JSON.parse(form.getAttribute('data-draft') ?? '{}')).toEqual({
+      mode: 'normal',
+      accountId: 'acc-1',
+      amount: -20,
+      payeeName: 'Corner Cafe',
+    });
+  });
+
+  it('gives a New Transaction opened afterwards no draft', async () => {
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Quick Add' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-add-full-form'));
+    });
+    await screen.findByTestId('dynamic-transaction-form', {}, { timeout: 2000 });
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ New Transaction'));
+    });
+    expect(screen.getByTestId('dynamic-transaction-form')).toHaveAttribute('data-draft', '');
+  });
+
+  it('reads the line against the account the register is narrowed to', async () => {
+    mockSearchParams.value = 'accountIds=acc-1';
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Quick Add' }));
+    });
+    expect(screen.getByTestId('dynamic-quick-add')).toHaveAttribute('data-context-account', 'acc-1');
+  });
+
+  it('sends no account context while the register shows every account', async () => {
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Quick Add' }));
+    });
+    expect(screen.getByTestId('dynamic-quick-add')).toHaveAttribute('data-context-account', '');
+  });
+
+  it('opens Quick Add for a palette request that arrives while the register is showing', async () => {
+    await renderPage();
+    expect(screen.queryByTestId('dynamic-quick-add')).not.toBeInTheDocument();
+    await act(async () => {
+      useCommandPaletteStore.getState().requestQuickAdd('12 tim hortons');
+    });
+    expect(screen.getByTestId('dynamic-quick-add')).toHaveAttribute('data-initial-text', '12 tim hortons');
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+  });
+
+  it('drops a palette request that reaches an acting delegate', async () => {
+    mockActing.actingAsUserId = 'owner-1';
+    useCommandPaletteStore.getState().requestQuickAdd('84.37 loblaws');
+    await renderPage();
+    expect(screen.queryByTestId('dynamic-quick-add')).not.toBeInTheDocument();
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+  });
+
+  it('opens Quick Add with the line a palette request carries, and consumes it', async () => {
+    useCommandPaletteStore.getState().requestQuickAdd('84.37 loblaws');
+    await renderPage();
+    expect(screen.getByTestId('dynamic-quick-add')).toHaveAttribute('data-initial-text', '84.37 loblaws');
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+  });
+
+  it('refreshes the register after a save', async () => {
+    await renderPage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Quick Add' }));
+    });
+    const loads = mockGetAll.mock.calls.length;
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('quick-add-saved'));
+    });
+    await waitFor(() => expect(mockGetAll.mock.calls.length).toBeGreaterThan(loads));
   });
 });

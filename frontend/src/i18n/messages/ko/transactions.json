@@ -699,5 +699,79 @@
         "tag": "태그 있음"
       }
     }
+  },
+  "quickAdd": {
+    "button": "빠른 추가",
+    "title": "빠른 추가",
+    "description": "쓴 돈, 받은 돈, 옮긴 돈을 입력하세요. 예: 84.37 Loblaws 식료품. 해석 결과의 어느 부분이든 선택해서 바꿀 수 있습니다.",
+    "inputLabel": "항목",
+    "placeholder": "예: 84.37 Loblaws 식료품",
+    "readAs": "해석 결과",
+    "memoLabel": "설명:",
+    "reading": "항목을 읽는 중...",
+    "readFailed": "항목을 읽지 못했습니다",
+    "tooLong": "이 줄이 너무 길어 읽을 수 없습니다. 줄여서 계속하세요.",
+    "tryAgain": "다시 시도",
+    "pinRefused": {
+      "title": "선택한 항목을 더 이상 사용할 수 없습니다",
+      "description": "칩에서 선택한 계정, 수취인 또는 카테고리가 그 후에 닫히거나 삭제되었습니다. 변경 사항을 지우고 항목을 다시 읽으세요.",
+      "clearChanges": "변경 사항 지우기"
+    },
+    "fullForm": "전체 양식",
+    "save": "저장",
+    "saveAndNew": "저장 후 새로 입력",
+    "saveAndNewDescription": "저장하고 다음 항목을 위해 입력란을 비웁니다.",
+    "cannotSave": "이 항목은 현재 상태로는 저장할 수 없습니다. 전체 양식으로 마무리하세요.",
+    "kinds": {
+      "payment": "지출",
+      "deposit": "입금",
+      "transfer": "이체"
+    },
+    "fields": {
+      "kind": "유형"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, 추정",
+      "assumed": "{field}: {value}, 입력하지 않음",
+      "missing": "{field}: 없음",
+      "matches": "{field}: {value}, {count, plural, other {#개 일치}}",
+      "new": "{field}: {value}, 새 수취인"
+    },
+    "need": {
+      "missing": "없음",
+      "matches": "{count, plural, other {#개 일치}}",
+      "new": "신규"
+    },
+    "cleared": {
+      "payee": "수취인 없음",
+      "category": "카테고리 없음"
+    },
+    "editor": {
+      "alternatives": "다른 일치 항목",
+      "done": "완료",
+      "categoryPlaceholder": "카테고리 선택..."
+    },
+    "balance": {
+      "after": "{account}: 현재 {current}, 저장 후 {after}",
+      "movesOn": "{account}: 현재 {current}. 잔액은 {date}에 변경됩니다.",
+      "current": "{account}: 현재 {current}",
+      "nowLabel": "현재",
+      "afterLabel": "저장 후",
+      "movesOnNote": "{date}에 변동"
+    },
+    "blockers": {
+      "missingAmount": "금액을 입력하세요.",
+      "zeroAmount": "금액은 0일 수 없습니다.",
+      "amountPrecision": "금액의 소수 자릿수가 계정 통화에서 입력할 수 있는 자릿수보다 많습니다.",
+      "missingAccount": "계정을 선택하세요.",
+      "ambiguousAccount": "일치하는 계정이 둘 이상입니다. 하나를 선택하세요.",
+      "missingToAccount": "돈을 보낼 계정을 선택하세요.",
+      "sameAccount": "이체에는 서로 다른 두 계정이 필요합니다.",
+      "amountTooLarge": "금액이 한 거래에 담을 수 있는 한도보다 큽니다.",
+      "foreignCurrency": "금액이 계정과 다른 통화입니다. 입력하려면 전체 양식을 사용하세요.",
+      "crossCurrencyTransfer": "두 계정의 통화가 다릅니다. 이 이체에는 전체 양식을 사용하세요.",
+      "unknown": "이 항목은 여기서 저장할 수 없습니다. 전체 양식으로 마무리하세요."
+    }
   }
 }

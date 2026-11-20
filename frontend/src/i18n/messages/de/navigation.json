@@ -79,6 +79,14 @@
     "transactionsFor": "Alle Buchungen für {name}",
     "searchTransactions": "Buchungen nach „{query}“ suchen",
     "searchHelp": "Hilfe durchsuchen",
-    "keyboardShortcuts": "Tastenkombinationen"
-  }
+    "keyboardShortcuts": "Tastenkombinationen",
+    "quickAdd": {
+      "amount": "Schnellerfassung: {amount}",
+      "payee": "Schnellerfassung: {amount} {payee}",
+      "category": "Schnellerfassung: {amount} {category}",
+      "payeeCategory": "Schnellerfassung: {amount} {payee}, {category}",
+      "transfer": "Schnellerfassung: {amount} von {from} nach {to}"
+    }
+  },
+  "quickAdd": "Schnellerfassung"
 }

@@ -49,6 +49,29 @@ describe('CommandPaletteShortcut', () => {
     mockPathname = '/dashboard';
   });
 
+  it('drops a Quick Add request overtaken by a navigation elsewhere', () => {
+    // Left standing, it would open Quick Add on that old line on a later
+    // visit, where one Enter writes it a second time.
+    mockPathname = '/accounts';
+    const { rerender } = render(<CommandPaletteShortcut />);
+    act(() => useCommandPaletteStore.getState().requestQuickAdd('84.37 loblaws'));
+    mockPathname = '/dashboard';
+    rerender(<CommandPaletteShortcut />);
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+    mockPathname = '/dashboard';
+  });
+
+  it('keeps a Quick Add request that reaches the register', () => {
+    mockPathname = '/accounts';
+    const { rerender } = render(<CommandPaletteShortcut />);
+    act(() => useCommandPaletteStore.getState().requestQuickAdd('84.37 loblaws'));
+    mockPathname = '/transactions';
+    rerender(<CommandPaletteShortcut />);
+    expect(useCommandPaletteStore.getState().quickAddRequest).toEqual({ text: '84.37 loblaws' });
+    act(() => useCommandPaletteStore.getState().clearQuickAddRequest());
+    mockPathname = '/dashboard';
+  });
+
   it('keeps a new-transaction request that reaches the register', () => {
     mockPathname = '/accounts';
     const { rerender } = render(<CommandPaletteShortcut />);

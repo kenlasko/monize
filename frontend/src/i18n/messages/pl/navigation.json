@@ -79,6 +79,14 @@
     "transactionsFor": "Wszystkie transakcje dla {name}",
     "searchTransactions": "Szukaj transakcji dla „{query}”",
     "searchHelp": "Szukaj w pomocy",
-    "keyboardShortcuts": "Skróty klawiaturowe"
-  }
+    "keyboardShortcuts": "Skróty klawiaturowe",
+    "quickAdd": {
+      "amount": "Szybkie dodawanie: {amount}",
+      "payee": "Szybkie dodawanie: {amount} {payee}",
+      "category": "Szybkie dodawanie: {amount} {category}",
+      "payeeCategory": "Szybkie dodawanie: {amount} {payee}, {category}",
+      "transfer": "Szybkie dodawanie: {amount} z {from} na {to}"
+    }
+  },
+  "quickAdd": "Szybkie dodawanie"
 }

@@ -699,5 +699,79 @@
         "tag": "Has a tag"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Quick Add",
+    "title": "Quick Add",
+    "description": "Type what you spent, received or moved, such as 84.37 Loblaws groceries. Choose any part of the reading to change it.",
+    "inputLabel": "Entry",
+    "placeholder": "e.g. 84.37 Loblaws groceries",
+    "readAs": "Read As",
+    "memoLabel": "Description:",
+    "reading": "Reading the entry...",
+    "readFailed": "Failed to read the entry",
+    "tooLong": "This line is too long to read. Shorten it to continue.",
+    "tryAgain": "Try Again",
+    "pinRefused": {
+      "title": "Something you chose is no longer available",
+      "description": "An account, payee or category picked on a chip has been closed or deleted since. Clear your changes to read the entry again.",
+      "clearChanges": "Clear Changes"
+    },
+    "fullForm": "Full Form",
+    "save": "Save",
+    "saveAndNew": "Save & New",
+    "saveAndNewDescription": "Save it and clear the line for the next one.",
+    "cannotSave": "This entry cannot be saved as it stands. Use Full Form to finish it.",
+    "kinds": {
+      "payment": "Payment",
+      "deposit": "Deposit",
+      "transfer": "Transfer"
+    },
+    "fields": {
+      "kind": "Type"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, guessed",
+      "assumed": "{field}: {value}, not typed",
+      "missing": "{field}: missing",
+      "matches": "{field}: {value}, {count, plural, other {# matches}}",
+      "new": "{field}: {value}, new payee"
+    },
+    "need": {
+      "missing": "Missing",
+      "matches": "{count, plural, other {# matches}}",
+      "new": "New"
+    },
+    "cleared": {
+      "payee": "No payee",
+      "category": "No category"
+    },
+    "editor": {
+      "alternatives": "Other Matches",
+      "done": "Done",
+      "categoryPlaceholder": "Select category..."
+    },
+    "balance": {
+      "after": "{account}: {current} now, {after} after saving",
+      "movesOn": "{account}: {current} now. The balance moves on {date}.",
+      "current": "{account}: {current} now",
+      "nowLabel": "Now",
+      "afterLabel": "After saving",
+      "movesOnNote": "Moves on {date}"
+    },
+    "blockers": {
+      "missingAmount": "Type an amount.",
+      "zeroAmount": "The amount cannot be zero.",
+      "amountPrecision": "The amount has more decimal places than the account's currency is entered in.",
+      "missingAccount": "Choose an account.",
+      "ambiguousAccount": "More than one account matches. Choose one.",
+      "missingToAccount": "Choose the account the money goes to.",
+      "sameAccount": "A transfer needs two different accounts.",
+      "amountTooLarge": "The amount is larger than a transaction can hold.",
+      "foreignCurrency": "The amount is in a currency other than the account's. Use Full Form to enter it.",
+      "crossCurrencyTransfer": "The two accounts hold different currencies. Use Full Form for this transfer.",
+      "unknown": "This entry cannot be saved here. Use Full Form to finish it."
+    }
   }
 }

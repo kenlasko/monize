@@ -79,6 +79,14 @@
     "transactionsFor": "{name} 的所有交易",
     "searchTransactions": "搜尋 「{query}」 的交易",
     "searchHelp": "搜尋說明",
-    "keyboardShortcuts": "鍵盤快速鍵"
-  }
+    "keyboardShortcuts": "鍵盤快速鍵",
+    "quickAdd": {
+      "amount": "快速新增：{amount}",
+      "payee": "快速新增：{amount} {payee}",
+      "category": "快速新增：{amount} {category}",
+      "payeeCategory": "快速新增：{amount} {payee}，{category}",
+      "transfer": "快速新增：{amount} 從 {from} 到 {to}"
+    }
+  },
+  "quickAdd": "快速新增"
 }

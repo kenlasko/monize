@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   ArrowsRightLeftIcon,
+  BoltIcon,
   BookOpenIcon,
   CommandLineIcon,
   ListBulletIcon,
@@ -34,11 +35,13 @@ import { nextOccurrenceDueDate, nextOccurrenceEffectiveAmount } from '@/lib/sche
 import { SETTINGS_SECTION_IDS } from '@/lib/settings-sections';
 import { buildTransactionsHref } from '@/lib/transactions-href';
 import { useAuthStore } from '@/store/authStore';
-import { startNewTransaction } from '@/store/commandPaletteStore';
+import { startNewTransaction, startQuickAdd } from '@/store/commandPaletteStore';
 import { useDemoStore } from '@/store/demoStore';
 import { useHelpSearchStore } from '@/store/helpSearchStore';
 import { useHelpShortcutsStore } from '@/store/helpShortcutsStore';
 import { useHelpStore } from '@/store/helpStore';
+import type { QuickAddInterpretation } from '@/types/quick-add';
+import { quickAddFigure } from '@/components/transactions/quick-add/quick-add-chips';
 import { useCommandPaletteData, useCommandPaletteSearch } from './useCommandPaletteData';
 
 const GROUP_LIMIT = 5;
@@ -82,7 +85,7 @@ export function useCommandItems(query: string) {
   const tReportNames = useTranslations('reportNames');
   const router = useRouter();
   const pathname = usePathname();
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, formatNumber, defaultCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
   const today = useFinancialToday();
 
@@ -97,7 +100,8 @@ export function useCommandItems(query: string) {
   );
   const canSearchTransactions = reachable.has('/transactions');
   const { data, loading, failed: loadFailed } = useCommandPaletteData(reachable);
-  const remote = useCommandPaletteSearch(query, canSearchTransactions);
+  // Quick Add lives on the register and refuses an acting delegate.
+  const remote = useCommandPaletteSearch(query, canSearchTransactions, canSearchTransactions && !isDelegateView);
 
   const items = useMemo(() => {
     const terms = commandTerms(query);
@@ -252,6 +256,41 @@ export function useCommandItems(query: string) {
       });
     }
 
+    /** "Quick add: $84.37 Loblaws, Food: Groceries", leaving out what the line did not settle. */
+    const quickAddLabel = (reading: QuickAddInterpretation, amount: number): string => {
+      const from = reading.account.value;
+      // As the dialog's amount chip reads it: a figure typed in another
+      // currency in that one, and a bare figure with no account yet.
+      const figure = quickAddFigure(reading, amount, { formatCurrency, formatNumber, defaultCurrency });
+      if (reading.kind.value === 'transfer') {
+        const to = reading.toAccount.value;
+        return from && to
+          ? t('quickAdd.transfer', { amount: figure, from: from.name, to: to.name })
+          : t('quickAdd.amount', { amount: figure });
+      }
+      const payee = reading.payee.value?.name;
+      const category = reading.category.value?.name;
+      if (payee && category) return t('quickAdd.payeeCategory', { amount: figure, payee, category });
+      if (payee) return t('quickAdd.payee', { amount: figure, payee });
+      if (category) return t('quickAdd.category', { amount: figure, category });
+      return t('quickAdd.amount', { amount: figure });
+    };
+
+    // The line read as an entry: first among the actions, so Tab then Enter
+    // runs it. Only a reading with an amount is an entry worth offering.
+    // A figure typed in another currency is an amount too.
+    const quickAdd = remote.quickAdd;
+    const quickAddAmount = quickAdd ? (quickAdd.amount.value ?? quickAdd.foreignAmount?.amount ?? null) : null;
+    if (quickAdd && quickAddAmount !== null) {
+      results.push({
+        id: 'action:quick-add',
+        group: 'actions',
+        label: quickAddLabel(quickAdd, quickAddAmount),
+        visual: <Tile icon={BoltIcon} tone="blue" />,
+        run: () => startQuickAdd(query, pathname, router.push),
+      });
+    }
+
     // The best-matching payee gets the actions a reader came for; the plain
     // "New transaction" gives up the chord to it rather than sharing the key.
     // A new entry takes the best ACTIVE payee, since the form cannot display an
@@ -327,9 +366,9 @@ export function useCommandItems(query: string) {
 
     return COMMAND_GROUPS.flatMap((group) => results.filter((item) => item.group === group));
   }, [
-    query, data, remote.transactions, remote.help, reachable, canSearchTransactions, visibleNavLinks,
-    visibleToolsLinks, visibleAiLinks, showAiMenu, isAdmin, isDelegateView, isDemoMode, today, router, pathname,
-    formatCurrency, formatDate, t, tNav, tSettings, tReportNames,
+    query, data, remote.transactions, remote.help, remote.quickAdd, reachable, canSearchTransactions,
+    visibleNavLinks, visibleToolsLinks, visibleAiLinks, showAiMenu, isAdmin, isDelegateView, isDemoMode, today,
+    router, pathname, formatCurrency, formatNumber, defaultCurrency, formatDate, t, tNav, tSettings, tReportNames,
   ]);
 
   return {

@@ -131,4 +131,15 @@ describe('FormActions', () => {
       expect(screen.getAllByRole('button')).toHaveLength(1);
     });
   });
+
+  it('draws secondary actions between Cancel and the submit', () => {
+    render(
+      <FormActions
+        onCancel={vi.fn()}
+        secondaryActions={<button type="button">Full Form</button>}
+      />,
+    );
+    const labels = screen.getAllByRole('button').map((button) => button.textContent);
+    expect(labels).toEqual(['Cancel', 'Full Form', 'Save']);
+  });
 });

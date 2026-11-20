@@ -383,8 +383,9 @@ export interface CreateTransferData {
   fromCurrencyCode: string;
   toCurrencyCode?: string;
   exchangeRate?: number;
-  description?: string;
-  referenceNumber?: string;
+  /** null: no description (the transfer form sends a cleared field as null). */
+  description?: string | null;
+  referenceNumber?: string | null;
   status?: TransactionStatus;
   /** Optional category; surfaces the transfer in the monthly category breakdown without counting as income/expense. null clears it. */
   categoryId?: string | null;

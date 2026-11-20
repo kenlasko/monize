@@ -699,5 +699,79 @@
         "tag": "Tem uma etiqueta"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Adição rápida",
+    "title": "Adição rápida",
+    "description": "Escreva o que gastou, recebeu ou moveu, por exemplo 84.37 Loblaws supermercado. Escolha qualquer parte da leitura para a alterar.",
+    "inputLabel": "Entrada",
+    "placeholder": "p. ex. 84.37 Loblaws supermercado",
+    "readAs": "Lido como",
+    "memoLabel": "Descrição:",
+    "reading": "A ler a entrada...",
+    "readFailed": "Falha ao ler a entrada",
+    "tooLong": "Esta linha é demasiado longa para ser lida. Encurte-a para continuar.",
+    "tryAgain": "Tentar novamente",
+    "pinRefused": {
+      "title": "Algo que escolheu já não está disponível",
+      "description": "Uma conta, um beneficiário ou uma categoria escolhidos num chip foi entretanto fechado ou eliminado. Limpe as alterações para ler a entrada de novo.",
+      "clearChanges": "Limpar alterações"
+    },
+    "fullForm": "Formulário completo",
+    "save": "Guardar",
+    "saveAndNew": "Guardar e novo",
+    "saveAndNewDescription": "Guarde-a e limpe a linha para a seguinte.",
+    "cannotSave": "Esta entrada não pode ser guardada tal como está. Use Formulário completo para a concluir.",
+    "kinds": {
+      "payment": "Pagamento",
+      "deposit": "Depósito",
+      "transfer": "Transferência"
+    },
+    "fields": {
+      "kind": "Tipo"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, presumido",
+      "assumed": "{field}: {value}, não escrito",
+      "missing": "{field}: em falta",
+      "matches": "{field}: {value}, {count, plural, one {# correspondência} other {# correspondências}}",
+      "new": "{field}: {value}, novo beneficiário"
+    },
+    "need": {
+      "missing": "Em falta",
+      "matches": "{count, plural, one {# correspondência} other {# correspondências}}",
+      "new": "Novo"
+    },
+    "cleared": {
+      "payee": "Sem beneficiário",
+      "category": "Sem categoria"
+    },
+    "editor": {
+      "alternatives": "Outras correspondências",
+      "done": "Concluído",
+      "categoryPlaceholder": "Selecionar categoria..."
+    },
+    "balance": {
+      "after": "{account}: {current} agora, {after} depois de guardar",
+      "movesOn": "{account}: {current} agora. O saldo muda em {date}.",
+      "current": "{account}: {current} agora",
+      "nowLabel": "Agora",
+      "afterLabel": "Depois de guardar",
+      "movesOnNote": "Muda a {date}"
+    },
+    "blockers": {
+      "missingAmount": "Escreva um montante.",
+      "zeroAmount": "O montante não pode ser zero.",
+      "amountPrecision": "O montante tem mais casas decimais do que a moeda da conta permite.",
+      "missingAccount": "Escolha uma conta.",
+      "ambiguousAccount": "Mais do que uma conta corresponde. Escolha uma.",
+      "missingToAccount": "Escolha a conta para onde vai o dinheiro.",
+      "sameAccount": "Uma transferência precisa de duas contas diferentes.",
+      "amountTooLarge": "O montante é superior ao que uma transação pode conter.",
+      "foreignCurrency": "O montante está numa moeda diferente da da conta. Use Formulário completo para o introduzir.",
+      "crossCurrencyTransfer": "As duas contas têm moedas diferentes. Use Formulário completo para esta transferência.",
+      "unknown": "Esta entrada não pode ser guardada aqui. Use Formulário completo para a concluir."
+    }
   }
 }
