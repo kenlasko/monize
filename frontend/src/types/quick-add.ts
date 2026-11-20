@@ -109,7 +109,10 @@ export interface QuickAddInterpretation {
   blockers: QuickAddBlocker[];
   /** Null without an account and an amount. */
   balance: QuickAddBalance | null;
-  /** Set exactly when `blockers` holds `foreignCurrency`. */
+  /**
+   * Set when `blockers` holds `foreignCurrency`, and when a currency was typed
+   * but no account is known yet to compare it with.
+   */
   foreignAmount: QuickAddForeignAmount | null;
   ruleEffects?: QuickAddRuleEffects;
 }
