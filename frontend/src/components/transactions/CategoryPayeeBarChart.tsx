@@ -55,6 +55,14 @@ const AVG_LABEL_KEY: Record<Granularity, string> = {
   year: 'yearlyAvg',
 };
 
+// Chart title switches to match the active bucket size, so it reflects the
+// timescale actually shown rather than always reading "Monthly Totals".
+const TITLE_KEY: Record<Granularity, string> = {
+  month: 'titleMonthly',
+  quarter: 'titleQuarterly',
+  year: 'titleYearly',
+};
+
 // Quarter number (1-4) from a 'YYYY-MM-DD' period start.
 function quarterOf(periodStart: string): number {
   return Math.floor((Number(periodStart.split('-')[1]) - 1) / 3) + 1;
@@ -125,7 +133,6 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
   onCollapse,
 }: CategoryPayeeBarChartProps) {
   const t = useTranslations('transactions');
-  const chartTitle = t('charts.monthlyTotals.title');
   const { formatCurrency, formatCurrencyAxis, formatNumber } = useNumberFormat();
   // The server names the currency its totals are in; the user default otherwise.
   const currency = data.find((d) => d.currency)?.currency;
@@ -139,7 +146,6 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
   );
   const formatChartDate = useChartDateFormat();
   const chartRef = useRef<HTMLDivElement>(null);
-  const downloadFilename = filterLabel ? `${chartTitle} - ${filterLabel}` : chartTitle;
   const isMobile = useIsMobile();
 
   const [granularityMode, setGranularityMode] = useState<GranularityMode>('auto');
@@ -149,6 +155,11 @@ export const CategoryPayeeBarChart = memo(function CategoryPayeeBarChart({
   );
   const granularity: Granularity =
     granularityMode === 'auto' ? autoGranularity : granularityMode;
+
+  // Names the timescale actually shown (Monthly/Quarterly/Yearly), not a
+  // fixed "Monthly Totals" regardless of the active bucket size.
+  const chartTitle = t(`charts.monthlyTotals.${TITLE_KEY[granularity]}`);
+  const downloadFilename = filterLabel ? `${chartTitle} - ${filterLabel}` : chartTitle;
 
   // Full label for the tooltip (e.g. "January 2024", "Q1 2024", "2024").
   const bucketFullLabel = useCallback(

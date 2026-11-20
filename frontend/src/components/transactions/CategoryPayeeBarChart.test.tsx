@@ -461,17 +461,20 @@ describe('CategoryPayeeBarChart', () => {
     it('auto-selects monthly buckets for a short span (Monthly Avg)', () => {
       render(<CategoryPayeeBarChart data={buildMonths(3)} isLoading={false} />);
       expect(screen.getByText('Monthly Avg')).toBeInTheDocument();
+      expect(screen.getByText('Monthly Totals')).toBeInTheDocument();
       expect(capturedProps.barChart.data).toHaveLength(3);
     });
 
-    it('auto-selects quarterly buckets for a medium span (Quarterly Avg)', () => {
+    it('auto-selects quarterly buckets for a medium span (Quarterly Avg) and titles the chart accordingly', () => {
       // 2020-01 .. 2023-01 = 37 monthly points -> 13 quarter buckets.
       render(<CategoryPayeeBarChart data={buildMonths(37)} isLoading={false} />);
       expect(screen.getByText('Quarterly Avg')).toBeInTheDocument();
+      expect(screen.getByText('Quarterly Totals')).toBeInTheDocument();
+      expect(screen.queryByText('Monthly Totals')).not.toBeInTheDocument();
       expect(capturedProps.barChart.data).toHaveLength(13);
     });
 
-    it('auto-selects yearly buckets for a long, sparse span (Yearly Avg)', () => {
+    it('auto-selects yearly buckets for a long, sparse span (Yearly Avg) and titles the chart accordingly', () => {
       render(
         <CategoryPayeeBarChart
           data={[
@@ -482,9 +485,27 @@ describe('CategoryPayeeBarChart', () => {
         />,
       );
       expect(screen.getByText('Yearly Avg')).toBeInTheDocument();
+      expect(screen.getByText('Yearly Totals')).toBeInTheDocument();
       // 2015..2024 inclusive = 10 year buckets.
       expect(capturedProps.barChart.data).toHaveLength(10);
       expect(capturedProps.barChart.data[0].periodStart).toBe('2015-01-01');
+    });
+
+    it('retitles the chart when the user overrides the bucket size', () => {
+      render(<CategoryPayeeBarChart data={buildMonths(48)} isLoading={false} />);
+      // Auto-rolls into quarters for this span.
+      expect(screen.getByText('Quarterly Totals')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Month' }));
+      expect(screen.getByText('Monthly Totals')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Year' }));
+      expect(screen.getByText('Yearly Totals')).toBeInTheDocument();
+    });
+
+    it('matches the download button title to the active bucket size', () => {
+      render(<CategoryPayeeBarChart data={buildMonths(37)} isLoading={false} />);
+      expect(
+        screen.getByRole('button', { name: /download quarterly totals as png/i }),
+      ).toBeInTheDocument();
     });
   });
 

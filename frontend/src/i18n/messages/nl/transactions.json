@@ -571,7 +571,9 @@
       "message": "Alle geselecteerde rekeningen hebben een saldo van nul, dus er is geen saldografiek om weer te geven."
     },
     "monthlyTotals": {
-      "title": "Maandtotalen",
+      "titleMonthly": "Maandtotalen",
+      "titleQuarterly": "Kwartaaltotalen",
+      "titleYearly": "Jaartotalen",
       "noData": "Geen transactiegegevens beschikbaar",
       "monthlyAvg": "Maandgemiddelde",
       "quarterlyAvg": "Kwartaalgemiddelde",

@@ -571,7 +571,9 @@
       "message": "[XX-All selected accounts have a zero balance, so there's no balance chart to show.-XX]"
     },
     "monthlyTotals": {
-      "title": "[XX-Monthly Totals-XX]",
+      "titleMonthly": "[XX-Monthly Totals-XX]",
+      "titleQuarterly": "[XX-Quarterly Totals-XX]",
+      "titleYearly": "[XX-Yearly Totals-XX]",
       "noData": "[XX-No transaction data available-XX]",
       "monthlyAvg": "[XX-Monthly Avg-XX]",
       "quarterlyAvg": "[XX-Quarterly Avg-XX]",

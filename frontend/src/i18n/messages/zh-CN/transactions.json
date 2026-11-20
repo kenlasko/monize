@@ -571,7 +571,9 @@
       "message": "所选账户的余额均为零，因此没有可显示的余额图表。"
     },
     "monthlyTotals": {
-      "title": "月度合计",
+      "titleMonthly": "月度合计",
+      "titleQuarterly": "季度合计",
+      "titleYearly": "年度合计",
       "noData": "无交易数据",
       "monthlyAvg": "月均",
       "quarterlyAvg": "季均",

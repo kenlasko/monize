@@ -571,7 +571,9 @@
       "message": "Alle ausgewählten Konten haben einen Saldo von null, daher gibt es kein Saldodiagramm anzuzeigen."
     },
     "monthlyTotals": {
-      "title": "Monatliche Summen",
+      "titleMonthly": "Monatliche Summen",
+      "titleQuarterly": "Quartalsweise Summen",
+      "titleYearly": "Jährliche Summen",
       "noData": "Keine Buchungsdaten verfügbar",
       "monthlyAvg": "Monatsdurchschnitt",
       "quarterlyAvg": "Quartalsdurchschnitt",

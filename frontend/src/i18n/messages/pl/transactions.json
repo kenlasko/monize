@@ -571,7 +571,9 @@
       "message": "Wszystkie wybrane konta mają zerowe saldo, więc nie ma wykresu salda do wyświetlenia."
     },
     "monthlyTotals": {
-      "title": "Sumy miesięczne",
+      "titleMonthly": "Sumy miesięczne",
+      "titleQuarterly": "Sumy kwartalne",
+      "titleYearly": "Sumy roczne",
       "noData": "Brak danych o transakcjach",
       "monthlyAvg": "Średnia miesięczna",
       "quarterlyAvg": "Średnia kwartalna",

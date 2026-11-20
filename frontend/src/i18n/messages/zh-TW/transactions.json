@@ -571,7 +571,9 @@
       "message": "所選帳戶的餘額皆為零，因此沒有可顯示的餘額圖表。"
     },
     "monthlyTotals": {
-      "title": "每月總計",
+      "titleMonthly": "每月總計",
+      "titleQuarterly": "每季總計",
+      "titleYearly": "每年總計",
       "noData": "無可用的交易資料",
       "monthlyAvg": "月平均",
       "quarterlyAvg": "季平均",

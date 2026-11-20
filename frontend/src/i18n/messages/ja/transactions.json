@@ -571,7 +571,9 @@
       "message": "選択したすべての口座の残高がゼロのため、表示する残高チャートはありません。"
     },
     "monthlyTotals": {
-      "title": "月次合計",
+      "titleMonthly": "月次合計",
+      "titleQuarterly": "四半期合計",
+      "titleYearly": "年次合計",
       "noData": "取引データがありません",
       "monthlyAvg": "月次平均",
       "quarterlyAvg": "四半期平均",

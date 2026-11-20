@@ -571,7 +571,9 @@
       "message": "Tous les comptes sélectionnés ont un solde nul ; il n'y a donc aucun graphique de solde à afficher."
     },
     "monthlyTotals": {
-      "title": "Totaux mensuels",
+      "titleMonthly": "Totaux mensuels",
+      "titleQuarterly": "Totaux trimestriels",
+      "titleYearly": "Totaux annuels",
       "noData": "Aucune donnée de transaction disponible",
       "monthlyAvg": "Moy. mensuelle",
       "quarterlyAvg": "Moy. trimestrielle",

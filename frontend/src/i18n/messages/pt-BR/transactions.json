@@ -571,7 +571,9 @@
       "message": "Todas as contas selecionadas têm saldo zero, portanto não há gráfico de saldo para exibir."
     },
     "monthlyTotals": {
-      "title": "Totais Mensais",
+      "titleMonthly": "Totais Mensais",
+      "titleQuarterly": "Totais Trimestrais",
+      "titleYearly": "Totais Anuais",
       "noData": "Sem dados de transações disponíveis",
       "monthlyAvg": "Média Mensal",
       "quarterlyAvg": "Média Trimestral",
