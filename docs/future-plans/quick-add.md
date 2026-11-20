@@ -14,7 +14,8 @@ These were agreed with the maintainer before the plan was written.
   - the command palette, from any page. Typing a line with an amount in it offers a "Quick add" row that reads the line the way the dialog will; choosing it goes to the Transactions page and opens Quick Add with the line already typed.
 
   The dashboard and every other page's + button are unchanged in this version.
-- **On a phone the + button opens Quick Add**, and the dialog's "Full Form" button opens the New Transaction form. So Quick Add costs no extra tap and the full form costs one.
+- **On a phone the + button opens Quick Add by default**, and the dialog's "Full Form" button opens the New Transaction form. So Quick Add costs no extra tap and the full form costs one.
+- **The reader chooses what the + opens.** Settings, Preferences, Mobile Navigation offers "The + button opens" with Quick Add (the default) or the New Transaction form. It governs the + wherever it starts a new transaction: on the Transactions page, and on a page whose + has no action of its own, which goes to the Transactions page and opens the chosen one there. A page whose + does something else (a new bill) is unchanged.
 - **Payments, deposits and transfers.** A split, an investment transaction, an entry in a foreign currency, a cross-currency transfer and a transfer to another owner's account are made in the full form; Quick Add reads the line, says why it cannot save it, and hands it to the full form.
 - **Every supported language.** The reader can type in the language of their Monize locale; English words are always understood as well.
 - **Voice is the phone keyboard's dictation.** Nothing is built for speech; the text box accepts what the keyboard's microphone types.
@@ -208,6 +209,12 @@ The reader's locale is the one `tr()` reads for the request; its words come firs
 - **Full Form.** It closes Quick Add and opens New Transaction through the page's existing `openCreate` with a new `draft` prop on `TransactionForm`, which seeds a new entry's mode, accounts, amount (signed), date, payee, category and description. A blocked entry is handed over too: that is how a split or a foreign amount gets finished.
 - **Entry points.** A `Button variant="outline"` in `PageHeader`'s `actions` slot. Below `xl`, `useMobileAddAction` on the Transactions page runs Quick Add instead of New Transaction. All entry points, the palette row included, are hidden while acting as a delegate.
 
+### The + button setting
+
+- **Stored as a view default.** `mobileAddOpens: ['quickAdd', 'fullForm']` joins `VIEW_DEFAULT_FIELDS` in `backend/src/users/view-defaults.ts` and `frontend/src/lib/view-defaults.ts` (the contract spec pins the two equal), with `quickAdd` as the built-in default. Like `accountOpenTarget` it has no browser copy and is read from the account preference alone. The validator's refusal message names the new key. `viewDefaults` is a JSON column, so nothing in the schema changes.
+- **The control.** `MobileTabsGroup` (Settings, Preferences, Mobile Navigation) gains a select under the tab places, saved through the same optimistic `commit` the tab selects use.
+- **The + button.** `useMobileAddAction` on the Transactions page runs Quick Add or New Transaction by the setting. The fallback `startNewTransaction` path of the phone + carries the choice, and the Transactions page opens Quick Add or New Transaction to match. The command palette's "New transaction" still opens the form, and its "Quick add" row still opens Quick Add.
+
 ### The command palette row
 
 - **When it asks.** `useCommandPaletteSearch` (`components/command-palette/useCommandPaletteData.ts`) adds the interpret call to the search it already debounces, but only when the rested query holds a digit, the reader can reach `/transactions`, and is not acting as a delegate. The call carries the query as `text`, `today` from `useFinancialToday()`, and no `contextAccountId` and no pins. Its answer is kept with the query that produced it, like the transaction results.
@@ -241,7 +248,7 @@ Strings live in `frontend/src/i18n/messages/{locale}/transactions.json` under `q
 - **Transfer.** Typing `500 chequing to savings` shows a transfer between the two accounts, and Save writes both legs.
 - **Blocked entry.** Typing `20 € cafe` against a CAD account refuses Save, says the amount is in another currency, and Full Form opens New Transaction with the entry filled in.
 - **Another language.** A German reader typing `12,50 bäckerei gestern` gets 12.50 dated yesterday.
-- **Phone.** On a phone the + button on the Transactions page opens Quick Add.
+- **Phone.** On a phone the + button on the Transactions page opens Quick Add. With "The + button opens" set to the New Transaction form, it opens the form there and from the dashboard.
 - **Command palette.** On the dashboard, typing `84.37 loblaws` in the palette shows "Quick add: $84.37 Loblaws, Food: Groceries" as the first action. Enter goes to Transactions with Quick Add open on that line.
 
 ## Invariants touched
