@@ -10,7 +10,8 @@
     },
     "defaultViews": {
       "accountOpenTargetHelp": "Applies when you click an account on the Accounts page or in Favorite Accounts on the dashboard."
-    }
+    },
+    "colorThemeStyleHint": "Showing the color themes made for the {style} style."
   },
   "about": {
     "description": "What this instance is running, and where to find the release notes, license and security policy.",

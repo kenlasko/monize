@@ -4,6 +4,7 @@ import { act, fireEvent, screen, waitFor, render } from '@/test/render';
 import { ColorThemeSelector } from './ColorThemeSelector';
 import { COLOR_THEMES } from '@/lib/color-themes';
 import { THEME_SWATCHES } from '@/lib/theme-swatches';
+import { UI_STYLE_PALETTES } from '@/lib/ui-styles';
 
 const { mockSetAppColorTheme, mockResolvedTheme } = vi.hoisted(() => ({
   mockSetAppColorTheme: vi.fn(),
@@ -136,5 +137,38 @@ describe('ColorThemeSelector', () => {
 
     expect(mockSetAppColorTheme).toHaveBeenCalledWith('nord');
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to save colour theme'));
+  });
+
+  describe('under a UI style', () => {
+    it('offers only the palettes made for the style, companion first', () => {
+      render(<ColorThemeSelector value="ledger" onChange={() => {}} uiStyle="classic" />);
+      const radios = screen.getAllByRole('radio');
+      expect(radios).toHaveLength(UI_STYLE_PALETTES.classic.length);
+      expect(radios[0]).toHaveAccessibleName(/ledger/i);
+      expect(screen.queryByRole('radio', { name: /nord/i })).not.toBeInTheDocument();
+      expect(screen.getByText('Showing the colour themes made for the Classic style.')).toBeInTheDocument();
+    });
+
+    it('keeps the accessibility palettes under every style', () => {
+      for (const style of ['classic', 'modern'] as const) {
+        const { unmount } = render(
+          <ColorThemeSelector value={UI_STYLE_PALETTES[style][0]} onChange={() => {}} uiStyle={style} />,
+        );
+        expect(screen.getByRole('radio', { name: /high contrast/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /colour-blind/i })).toBeInTheDocument();
+        unmount();
+      }
+    });
+
+    it('still lists a stored palette the style no longer offers, so something stays chosen', () => {
+      render(<ColorThemeSelector value="nord" onChange={() => {}} uiStyle="classic" />);
+      expect(screen.getByRole('radio', { name: /nord/i })).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('offers every palette under Standard, without the style hint', () => {
+      render(<ColorThemeSelector value="default" onChange={() => {}} uiStyle="standard" />);
+      expect(screen.getAllByRole('radio')).toHaveLength(COLOR_THEMES.length);
+      expect(screen.queryByText(/made for the/)).not.toBeInTheDocument();
+    });
   });
 });

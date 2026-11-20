@@ -202,3 +202,57 @@ html.dark[data-ui-style='modern'] .ui-nav-link:is([aria-current='page'], [data-a
   background-color: var(--color-gray-700);
   color: var(--color-gray-100);
 }
+
+/* ===================================================================== */
+/* Headline money figures (`MoneyFigure display`), both styles.           */
+/* ===================================================================== */
+
+/* A statement figure: large whole units, the symbol and cents set small,
+   raised to the cap line and muted. Standard renders the plain string. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display {
+  display: inline-flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  font-family: var(--ui-font-display);
+  line-height: 1;
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern'])
+  .ui-money-display
+  :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
+  font-size: 0.46em;
+  margin-top: 0.1em;
+  color: var(--color-gray-500);
+}
+html.dark:is([data-ui-style='classic'], [data-ui-style='modern'])
+  .ui-money-display
+  :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
+  color: var(--color-gray-400);
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .ui-money-prefix {
+  margin-inline-end: 0.12em;
+}
+/* The sign is set small and raised with the symbol it precedes. At the
+   figure's full size a minus is a long dash hanging at mid-height, apart from
+   the raised symbol after it. It keeps the figure's colour, never muted: the
+   sign is meaning, not ornament. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .ui-money-sign {
+  font-size: 0.46em;
+  margin-top: 0.1em;
+  margin-inline-end: 0.06em;
+}
+html[data-ui-style='classic'] .ui-money-display {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  /* Bodoni's automatic optical size at headline sizes is its display cut,
+     whose hairlines vanish on a dark page: the diagonal of a 4 disappears and
+     "461" reads "/161". A text-ish optical size keeps every stroke visible. */
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 28;
+}
+html[data-ui-style='modern'] .ui-money-display {
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+html[data-ui-style='modern'] .ui-money-display :is(.ui-money-prefix, .ui-money-fraction) {
+  letter-spacing: -0.02em;
+}

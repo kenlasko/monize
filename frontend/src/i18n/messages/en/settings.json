@@ -223,6 +223,7 @@
     },
     "colorThemeLabel": "Colour theme",
     "colorThemeHint": "Previews use your current light or dark mode.",
+    "colorThemeStyleHint": "Showing the colour themes made for the {style} style.",
     "colorThemeOptions": {
       "default": "Default",
       "latte": "Latte",
@@ -236,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Ledger",
+      "studio": "Studio",
       "midnight": "Midnight",
       "highcontrast": "High contrast",
       "colorblind": "Colour-blind safe"

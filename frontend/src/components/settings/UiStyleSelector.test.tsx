@@ -4,8 +4,9 @@ import { act, fireEvent, screen, waitFor, render } from '@/test/render';
 import { UiStyleSelector } from './UiStyleSelector';
 import { UI_STYLES } from '@/lib/ui-styles';
 
-const { mockSetAppUiStyle } = vi.hoisted(() => ({
+const { mockSetAppUiStyle, mockSetAppColorTheme } = vi.hoisted(() => ({
   mockSetAppUiStyle: vi.fn(),
+  mockSetAppColorTheme: vi.fn(),
 }));
 
 // Pass-through ThemeProvider keeps the custom test render wrapper working.
@@ -16,7 +17,7 @@ vi.mock('@/contexts/ThemeContext', () => ({
     resolvedTheme: 'light',
     setTheme: vi.fn(),
     colorTheme: 'default',
-    setColorTheme: vi.fn(),
+    setColorTheme: mockSetAppColorTheme,
     uiStyle: 'standard',
     setUiStyle: mockSetAppUiStyle,
   }),
@@ -45,7 +46,7 @@ describe('UiStyleSelector', () => {
   });
 
   it('renders every UI style as a radio option with a description', () => {
-    render(<UiStyleSelector value="standard" onChange={() => {}} />);
+    render(<UiStyleSelector value="standard" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
     expect(screen.getAllByRole('radio')).toHaveLength(UI_STYLES.length);
     expect(screen.getByRole('radiogroup')).toBeInTheDocument();
     expect(screen.getByText('The familiar Monize look.')).toBeInTheDocument();
@@ -54,14 +55,14 @@ describe('UiStyleSelector', () => {
   });
 
   it('shows the helper line', () => {
-    render(<UiStyleSelector value="standard" onChange={() => {}} />);
+    render(<UiStyleSelector value="standard" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
     expect(
       screen.getByText('Changes typography, shapes and table styling. Works with any colour theme.'),
     ).toBeInTheDocument();
   });
 
   it('marks only the selected style as checked, and gives it the one tab stop', () => {
-    render(<UiStyleSelector value="classic" onChange={() => {}} />);
+    render(<UiStyleSelector value="classic" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
     const radios = screen.getAllByRole('radio');
     const checked = radios.filter((r) => r.getAttribute('aria-checked') === 'true');
     expect(checked).toHaveLength(1);
@@ -71,7 +72,7 @@ describe('UiStyleSelector', () => {
 
   it('applies and persists the style immediately on click', async () => {
     const onChange = vi.fn();
-    render(<UiStyleSelector value="standard" onChange={onChange} />);
+    render(<UiStyleSelector value="standard" onChange={onChange} colorTheme="default" onColorThemeChange={() => {}} />);
 
     await act(async () => {
       fireEvent.click(screen.getByRole('radio', { name: /modern/i }));
@@ -87,7 +88,7 @@ describe('UiStyleSelector', () => {
 
   it('moves the selection with the arrow keys and wraps', async () => {
     const onChange = vi.fn();
-    render(<UiStyleSelector value="standard" onChange={onChange} />);
+    render(<UiStyleSelector value="standard" onChange={onChange} colorTheme="default" onColorThemeChange={() => {}} />);
 
     await act(async () => {
       fireEvent.keyDown(screen.getAllByRole('radio')[0], { key: 'ArrowRight' });
@@ -104,7 +105,7 @@ describe('UiStyleSelector', () => {
     (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new Error('network'),
     );
-    render(<UiStyleSelector value="standard" onChange={() => {}} />);
+    render(<UiStyleSelector value="standard" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
 
     await act(async () => {
       fireEvent.click(screen.getByRole('radio', { name: /classic/i }));
@@ -112,5 +113,55 @@ describe('UiStyleSelector', () => {
 
     expect(mockSetAppUiStyle).toHaveBeenCalledWith('classic');
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to save UI style'));
+  });
+
+  describe('palettes follow the style', () => {
+    it('switches to the companion when the palette in use is not one the style offers', async () => {
+      const onColorThemeChange = vi.fn();
+      render(
+        <UiStyleSelector
+          value="standard"
+          onChange={() => {}}
+          colorTheme="nord"
+          onColorThemeChange={onColorThemeChange}
+        />,
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('radio', { name: /classic/i }));
+      });
+
+      expect(onColorThemeChange).toHaveBeenCalledWith('ledger');
+      expect(mockSetAppColorTheme).toHaveBeenCalledWith('ledger');
+      // One request, so the style and its palette never land half-applied.
+      await waitFor(() =>
+        expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({
+          uiStyle: 'classic',
+          colorTheme: 'ledger',
+        }),
+      );
+    });
+
+    it('keeps a palette the new style offers', async () => {
+      const onColorThemeChange = vi.fn();
+      render(
+        <UiStyleSelector
+          value="standard"
+          onChange={() => {}}
+          colorTheme="nord"
+          onColorThemeChange={onColorThemeChange}
+        />,
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('radio', { name: /modern/i }));
+      });
+
+      expect(onColorThemeChange).not.toHaveBeenCalled();
+      expect(mockSetAppColorTheme).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'modern' }),
+      );
+    });
   });
 });

@@ -223,6 +223,7 @@
     },
     "colorThemeLabel": "[XX-Colour theme-XX]",
     "colorThemeHint": "[XX-Previews use your current light or dark mode.-XX]",
+    "colorThemeStyleHint": "[XX-Showing the colour themes made for the {style} style.-XX]",
     "colorThemeOptions": {
       "default": "[XX-Default-XX]",
       "latte": "[XX-Latte-XX]",
@@ -236,6 +237,8 @@
       "dracula": "[XX-Dracula-XX]",
       "tokyonight": "[XX-Tokyo Night-XX]",
       "rosepine": "[XX-Rosé Pine-XX]",
+      "ledger": "[XX-Ledger-XX]",
+      "studio": "[XX-Studio-XX]",
       "midnight": "[XX-Midnight-XX]",
       "highcontrast": "[XX-High contrast-XX]",
       "colorblind": "[XX-Colour-blind safe-XX]"

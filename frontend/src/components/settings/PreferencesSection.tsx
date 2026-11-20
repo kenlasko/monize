@@ -299,9 +299,14 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           <div className="space-y-4">
             <ThemeSelector value={theme} onChange={setTheme} />
 
-            <UiStyleSelector value={uiStyle} onChange={setUiStyle} />
+            <UiStyleSelector
+              value={uiStyle}
+              onChange={setUiStyle}
+              colorTheme={colorTheme}
+              onColorThemeChange={setColorTheme}
+            />
 
-            <ColorThemeSelector value={colorTheme} onChange={setColorTheme} />
+            <ColorThemeSelector value={colorTheme} onChange={setColorTheme} uiStyle={uiStyle} />
           </div>
         </div>
 

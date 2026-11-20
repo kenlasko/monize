@@ -965,3 +965,160 @@ html.dark[data-theme='colorblind'] {
   --chart-9: #919191;
   --chart-10: #298742;
 }
+
+/* ===== Ledger -- green-bar ledger paper, deep green ink; gold by night =====
+   Companion of the Classic UI style. Hand-seated from the design mockup, not
+   generated: the gray ramp serves both modes, so gray-900 is the dark page
+   (#0e1513) and also the light-mode ink, and gray-100 is the banded-row tint
+   in light and the text colour in dark. */
+html[data-theme='ledger'] {
+  --color-white: #fbfcf9;
+  --color-gray-50: #f4f6f1;
+  --color-gray-100: #e9f0e6;
+  --color-gray-200: #cbd5cc;
+  --color-gray-300: #b4c1b7;
+  --color-gray-400: #93a29a;
+  --color-gray-500: #55635b;
+  --color-gray-600: #46544d;
+  --color-gray-700: #2e3c37;
+  --color-gray-800: #1a2621;
+  --color-gray-900: #0e1513;
+  --color-gray-950: #080d0b;
+  --color-table-stripe-dark: #141f1b;
+
+  --color-blue-50: #eef5f0;
+  --color-blue-100: #dcebe1;
+  --color-blue-200: #bcd7c7;
+  --color-blue-300: #8dbba2;
+  --color-blue-400: #4e9171;
+  --color-blue-500: #2b7355;
+  --color-blue-600: #1f5a44;
+  --color-blue-700: #123a2b;
+  --color-blue-800: #0f3023;
+  --color-blue-900: #0c261c;
+  --color-blue-950: #07150f;
+
+  --color-sky-500: #2b7355;
+  --color-sky-600: #1f5a44;
+
+  --chart-income: #1f6b4a;
+  --chart-expense: #b84a2e;
+  --chart-warning: #946b0c;
+  --chart-1: #1f5a44;
+  --chart-2: #1f6b4a;
+  --chart-3: #946b0c;
+  --chart-4: #b84a2e;
+  --chart-5: #5b6f8a;
+  --chart-6: #3f7f78;
+  --chart-7: #8a5a2b;
+  --chart-8: #6b7f2a;
+  --chart-9: #7a6a42;
+  --chart-10: #5f6e66;
+}
+
+/* Ledger dark: a green-black statement with gold. The accent hue changes
+   with the mode, so the whole blue ramp is replaced by a gold ramp. 500 is a
+   deep bronze because Button primary draws white text on dark blue-500; the
+   gold itself (400) is the link, focus and chart-primary colour. */
+html.dark[data-theme='ledger'] {
+  --color-blue-50: #fbf6e9;
+  --color-blue-100: #f4ead0;
+  --color-blue-200: #ecddb0;
+  --color-blue-300: #e3c482;
+  --color-blue-400: #c9a45c;
+  --color-blue-500: #947225;
+  --color-blue-600: #7a5f1c;
+  --color-blue-700: #614a16;
+  --color-blue-800: #4a3911;
+  --color-blue-900: #36290d;
+  --color-blue-950: #1e1707;
+
+  --color-sky-500: #947225;
+  --color-sky-600: #7a5f1c;
+
+  --chart-income: #5fc79a;
+  --chart-expense: #f08a6c;
+  --chart-warning: #e3c482;
+  --chart-1: #c9a45c;
+  --chart-2: #5fc79a;
+  --chart-3: #e3c482;
+  --chart-4: #f08a6c;
+  --chart-5: #8fa9c4;
+  --chart-6: #6fc3b6;
+  --chart-7: #d49a6a;
+  --chart-8: #a3bf6a;
+  --chart-9: #b8a98a;
+  --chart-10: #93a29a;
+}
+
+/* ===== Studio -- off-white and ink colour blocks, lime accent =====
+   Companion of the Modern UI style. Hand-seated from the design mockup. The
+   signature lime (#d6f84c) is a FILL behind dark text (blue-300 in light,
+   blue-400 in dark), never text on white; the light-mode link/button steps
+   (500-700) are a deep olive. */
+html[data-theme='studio'] {
+  --color-white: #ffffff;
+  --color-gray-50: #efefea;
+  --color-gray-100: #e9e9e3;
+  --color-gray-200: #e2e2db;
+  --color-gray-300: #ccccc3;
+  --color-gray-400: #a3a6ad;
+  --color-gray-500: #5c5f66;
+  --color-gray-600: #474a51;
+  --color-gray-700: #353840;
+  --color-gray-800: #1d1e23;
+  --color-gray-900: #0c0d0f;
+  --color-gray-950: #060708;
+  --color-table-stripe-dark: #131418;
+
+  --color-blue-50: #f8fde3;
+  --color-blue-100: #effbb8;
+  --color-blue-200: #e4fa7e;
+  --color-blue-300: #d6f84c;
+  --color-blue-400: #bfe02f;
+  --color-blue-500: #667f00;
+  --color-blue-600: #566b00;
+  --color-blue-700: #455600;
+  --color-blue-800: #364300;
+  --color-blue-900: #2a3400;
+  --color-blue-950: #171c00;
+
+  --color-sky-500: #667f00;
+  --color-sky-600: #566b00;
+
+  --chart-income: #1e8a4f;
+  --chart-expense: #b93015;
+  --chart-warning: #a66a00;
+  --chart-1: #667f00;
+  --chart-2: #1e8a4f;
+  --chart-3: #a66a00;
+  --chart-4: #b93015;
+  --chart-5: #6a4fd0;
+  --chart-6: #0f7f95;
+  --chart-7: #c2501f;
+  --chart-8: #2f5fd0;
+  --chart-9: #c0407a;
+  --chart-10: #5c5f66;
+}
+
+/* Studio dark: lime reads well on the near-black card, so 300/400 are the
+   lime itself (text on a lime fill is #111214). 500 stays the light olive
+   because Button primary draws white text on dark blue-500. */
+html.dark[data-theme='studio'] {
+  --color-blue-300: #e6ff7a;
+  --color-blue-400: #d6f84c;
+
+  --chart-income: #56d08f;
+  --chart-expense: #ff8a70;
+  --chart-warning: #f2b84b;
+  --chart-1: #d6f84c;
+  --chart-2: #56d08f;
+  --chart-3: #f2b84b;
+  --chart-4: #ff8a70;
+  --chart-5: #a99bff;
+  --chart-6: #5fd3e6;
+  --chart-7: #ffa45c;
+  --chart-8: #8fb8ff;
+  --chart-9: #ff8fc0;
+  --chart-10: #a3a6ad;
+}

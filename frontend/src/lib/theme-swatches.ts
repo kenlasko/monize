@@ -75,6 +75,14 @@ export const THEME_SWATCHES: Record<ColorTheme, { light: ThemeSwatch; dark: Them
     light: { page: '#f6d8ed', card: '#f9e9f4', accent: '#286983', chart2: '#d7827e', chart4: '#b4637a' },
     dark: { page: '#1c182a', card: '#2d283e', accent: '#639ca6', chart2: '#ebbcba', chart4: '#eb6f92' },
   },
+  ledger: {
+    light: { page: '#f4f6f1', card: '#fbfcf9', accent: '#1f5a44', chart2: '#1f6b4a', chart4: '#b84a2e' },
+    dark: { page: '#0e1513', card: '#1a2621', accent: '#c9a45c', chart2: '#5fc79a', chart4: '#f08a6c' },
+  },
+  studio: {
+    light: { page: '#efefea', card: '#ffffff', accent: '#566b00', chart2: '#1e8a4f', chart4: '#b93015' },
+    dark: { page: '#0c0d0f', card: '#1d1e23', accent: '#d6f84c', chart2: '#56d08f', chart4: '#ff8a70' },
+  },
   midnight: {
     light: { page: '#fafafa', card: '#ffffff', accent: '#155dfc', chart2: '#10b981', chart4: '#ef4444' },
     dark: { page: '#000000', card: '#0c0c0c', accent: '#51a2ff', chart2: '#34d399', chart4: '#f87171' },

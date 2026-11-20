@@ -7,11 +7,15 @@ import { userSettingsApi } from '@/lib/user-settings';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getErrorMessage } from '@/lib/errors';
-import { UI_STYLES, UiStyle } from '@/lib/ui-styles';
+import { paletteAfterStyleChange, UI_STYLES, UiStyle } from '@/lib/ui-styles';
+import type { ColorTheme } from '@/lib/color-themes';
 
 interface UiStyleSelectorProps {
   value: UiStyle;
   onChange: (uiStyle: UiStyle) => void;
+  /** The palette in use: a style that does not offer it switches to its companion. */
+  colorTheme: ColorTheme;
+  onColorThemeChange: (colorTheme: ColorTheme) => void;
 }
 
 /**
@@ -26,20 +30,36 @@ interface UiStyleSelectorProps {
  *
  * A radiogroup with roving tabindex, like `ColorThemeSelector`.
  */
-export function UiStyleSelector({ value, onChange }: UiStyleSelectorProps) {
+export function UiStyleSelector({
+  value,
+  onChange,
+  colorTheme,
+  onColorThemeChange,
+}: UiStyleSelectorProps) {
   const t = useTranslations('settings.preferences');
   const [isSaving, startTransition] = useTransition();
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
-  const { setUiStyle: setAppUiStyle } = useTheme();
+  const { setUiStyle: setAppUiStyle, setColorTheme: setAppColorTheme } = useTheme();
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const handleChange = (next: UiStyle) => {
+    // A style offers only its own palettes (`UI_STYLE_PALETTES`); one the new
+    // style does not offer gives way to its companion, saved in the same
+    // request so the two never land half-applied.
+    const palette = paletteAfterStyleChange(next, colorTheme);
+    const paletteChanged = palette !== colorTheme;
     onChange(next);
     setAppUiStyle(next);
+    if (paletteChanged) {
+      onColorThemeChange(palette);
+      setAppColorTheme(palette);
+    }
 
     startTransition(async () => {
       try {
-        const updated = await userSettingsApi.updatePreferences({ uiStyle: next });
+        const updated = await userSettingsApi.updatePreferences(
+          paletteChanged ? { uiStyle: next, colorTheme: palette } : { uiStyle: next },
+        );
         updatePreferencesStore(updated);
         toast.success(t('toasts.saved'));
       } catch (error) {
