@@ -2053,7 +2053,11 @@ function TransactionsContent() {
         ) : (
           <>
         {/* Transactions List */}
-        <div className={`${CARD_CLASS} overflow-hidden`}>
+        {/* `clip`, not `hidden`: both crop to the rounded card, but `hidden`
+            makes the card a scroll container, and the Modern register's
+            inspector is `sticky` against the window, which a scrolling
+            ancestor would capture (the same reason SwipeShell clips). */}
+        <div className={`${CARD_CLASS} overflow-clip`}>
           <div ref={swipeRef} {...(paginates ? { [SWIPE_PAGINATE_ATTR]: 'true' } : {})}>
           {isLoading && transactions.length === 0 ? (
             <LoadingSpinner text={t('page.loading')} />

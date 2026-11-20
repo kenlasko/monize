@@ -122,6 +122,20 @@ describe('Classic register', () => {
     expect(screen.queryByText('2024-01-15')).toBeNull();
   });
 
+  it.each([
+    ['one account', true],
+    ['every account', false],
+  ])('draws a header cell for every row cell, so no column shifts (%s)', (_label, single) => {
+    // Classic draws no Description cell; a header that still drew one pushed
+    // every later column one to the left.
+    const { container } = renderList({ isSingleAccountView: single });
+    const headerCells = container.querySelectorAll('thead tr:last-child > th').length;
+    const rowsDrawn = container.querySelectorAll('tbody tr.ui-register-row');
+    expect(rowsDrawn.length).toBeGreaterThan(0);
+    rowsDrawn.forEach((row) => expect(row.children).toHaveLength(headerCells));
+    expect(container.querySelector('thead')?.textContent).not.toMatch(/Description/i);
+  });
+
   it('splits the signed amount into Payment and Deposit', () => {
     const { container } = renderList();
     const body = container.querySelectorAll('tbody tr.ui-register-row');

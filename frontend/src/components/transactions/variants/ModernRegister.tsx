@@ -255,9 +255,15 @@ function Inspector({ tx, p }: { tx: Transaction; p: ModernRegisterProps }) {
   const showSchedule = !linked && !!p.onScheduleRecurring;
   const showDelete = !linked && p.canDelete(tx);
   return (
+    // Sticky against the window, so it follows the list. It only sticks once
+    // the page title has scrolled away, which is when the floating page bar
+    // has slid in under the header, so the offset clears both: the header's
+    // still-visible part (4rem less --app-header-offset as it slides away) and
+    // the bar (~4rem), plus a gap. Its own height is capped to what is left,
+    // scrolling inside when the details run longer.
     <aside
       aria-label={t('list.modern.inspectorLabel')}
-      className="ui-modern-inspector hidden lg:flex lg:w-[22rem] xl:w-[24rem] shrink-0 self-start sticky top-4 flex-col gap-4 rounded-[28px] bg-white p-7 text-gray-900 shadow-card dark:bg-gray-900 dark:text-gray-100 dark:shadow-card-dark"
+      className="ui-modern-inspector hidden lg:flex lg:w-[22rem] xl:w-[24rem] shrink-0 self-start sticky top-[calc(8.5rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] max-h-[calc(100dvh-9.5rem-env(safe-area-inset-top)+var(--app-header-offset,0px))] overflow-y-auto flex-col gap-4 rounded-[28px] bg-white p-7 text-gray-900 shadow-card dark:bg-gray-900 dark:text-gray-100 dark:shadow-card-dark"
     >
       <div className="flex items-center gap-3.5">
         <Avatar tx={tx} label={label} color={color} size="lg" />

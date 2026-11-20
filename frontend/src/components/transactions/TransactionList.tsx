@@ -585,7 +585,7 @@ export function TransactionList({
   // DOM at every width, never hidden by a class; the tiers decide the rest.
   const {
     hidden: hiddenColumns,
-    isVisible,
+    isVisible: isChosenVisible,
     hide: hideColumn,
     show: showColumn,
     showAll: showAllColumns,
@@ -630,7 +630,7 @@ export function TransactionList({
   const sortChipFields = TRANSACTION_SORT_FIELDS.filter(
     (field) =>
       (field !== 'account' || !isSingleAccountView) &&
-      isVisible(field) &&
+      isChosenVisible(field) &&
       !PHONE_CARD_OMITTED_SORT_FIELDS.has(field),
   );
 
@@ -651,6 +651,11 @@ export function TransactionList({
     () => (splitAmount ? new Set([...hiddenColumns, 'description']) : hiddenColumns),
     [splitAmount, hiddenColumns],
   );
+  // Whether the TABLE draws a column: the rows' set, so a header cell and
+  // every colSpan agree with the cells the rows render. Classic leaves out
+  // Description; a header that still drew it pushed every later column one
+  // to the left. The chooser and the sort chips read the reader's own set.
+  const isVisible = (id: string): boolean => !tableHidden.has(id);
   // Row-invariant, so computed once rather than per row: ten unconditional
   // columns (register-columns.ts order, minus Account/FX/Balance, which are
   // conditional) plus the ones this render actually drew, minus the ones the
