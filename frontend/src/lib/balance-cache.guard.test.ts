@@ -44,9 +44,11 @@ const BALANCE_WRITING_ROUTES = [
 
 /**
  * Sub-routes that hang off a balance-affecting path but write no money. A
- * receipt attached to a transaction changes nothing any balance sums.
+ * receipt attached to a transaction changes nothing any balance sums. Quick
+ * Add's interpret call is a POST only to keep the typed line out of URLs; it
+ * reads and writes nothing, and its save goes through the policed create calls.
  */
-const NO_MONEY_ROUTES = [/\/attachments/];
+const NO_MONEY_ROUTES = [/\/attachments/, /\/quick-add\/interpret/];
 
 /**
  * Writes on a balance-affecting route that move no money, so they are allowed
