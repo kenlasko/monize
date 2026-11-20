@@ -11,6 +11,7 @@ import {
   maskAccountNumber,
 } from './account-utils';
 import { Account } from '@/types/account';
+import { formatAccountOptionLabel } from './logical-accounts';
 
 function makeAccount(overrides: Partial<Account> & { id: string; name: string }): Account {
   return {
@@ -127,6 +128,9 @@ describe('orderForPicker', () => {
 });
 
 describe('buildAccountDropdownOptions', () => {
+  /** The shared formatter with no default currency, so every code shows. */
+  const label = (account: Account) => formatAccountOptionLabel(account, (name) => name);
+
   const accounts: Account[] = [
     makeAccount({ id: '1', name: 'Zebra Account', currencyCode: 'USD' }),
     makeAccount({ id: '2', name: 'Alpha Account', currencyCode: 'CAD' }),
@@ -134,7 +138,7 @@ describe('buildAccountDropdownOptions', () => {
   ];
 
   it('sorts non-favourite accounts alphabetically', () => {
-    const options = buildAccountDropdownOptions(accounts, () => true);
+    const options = buildAccountDropdownOptions(accounts, () => true, label);
 
     expect(options.map(({ value, label }) => ({ value, label }))).toEqual([
       { value: '2', label: 'Alpha Account (CAD)' },
@@ -145,7 +149,7 @@ describe('buildAccountDropdownOptions', () => {
 
   it('carries what each account row draws its mark from', () => {
     const banked = makeAccount({ id: '9', name: 'Banked', accountType: 'SAVINGS', institutionId: 'inst-1' });
-    expect(buildAccountDropdownOptions([banked], () => true)).toEqual([
+    expect(buildAccountDropdownOptions([banked], () => true, label)).toEqual([
       { value: '9', label: 'Banked (CAD)', accountType: 'SAVINGS', institutionId: 'inst-1' },
     ]);
   });
@@ -158,7 +162,7 @@ describe('buildAccountDropdownOptions', () => {
       makeAccount({ id: '4', name: 'Beta Account', isFavourite: true, favouriteSortOrder: 1 }),
     ];
 
-    const options = buildAccountDropdownOptions(withFavourites, () => true);
+    const options = buildAccountDropdownOptions(withFavourites, () => true, label);
 
     expect(options[0]).toMatchObject({ value: '2', label: 'Alpha Account (CAD)' });
     expect(options[1]).toMatchObject({ value: '4', label: 'Beta Account (CAD)' });
@@ -179,7 +183,7 @@ describe('buildAccountDropdownOptions', () => {
       makeAccount({ id: '2', name: 'Normal' }),
     ];
 
-    const options = buildAccountDropdownOptions(withFavourites, () => true);
+    const options = buildAccountDropdownOptions(withFavourites, () => true, label);
 
     expect(options).toHaveLength(3);
     expect(options[1].value).toBe('__separator__');
@@ -192,7 +196,7 @@ describe('buildAccountDropdownOptions', () => {
       makeAccount({ id: '2', name: 'Second', isFavourite: true, favouriteSortOrder: 0 }),
     ];
 
-    const options = buildAccountDropdownOptions(allFavourites, () => true);
+    const options = buildAccountDropdownOptions(allFavourites, () => true, label);
 
     expect(options).toHaveLength(2);
     expect(options.find(o => o.value === '__separator__')).toBeUndefined();
@@ -201,7 +205,7 @@ describe('buildAccountDropdownOptions', () => {
   });
 
   it('omits separator when no accounts are favourites', () => {
-    const options = buildAccountDropdownOptions(accounts, () => true);
+    const options = buildAccountDropdownOptions(accounts, () => true, label);
 
     expect(options).toHaveLength(3);
     expect(options.find(o => o.value === '__separator__')).toBeUndefined();
@@ -214,7 +218,7 @@ describe('buildAccountDropdownOptions', () => {
       makeAccount({ id: '3', name: 'Also Open', isClosed: false }),
     ];
 
-    const options = buildAccountDropdownOptions(mixed, (a) => !a.isClosed);
+    const options = buildAccountDropdownOptions(mixed, (a) => !a.isClosed, label);
 
     expect(options).toHaveLength(2);
     expect(options.map(o => o.value)).toEqual(['3', '1']);
@@ -228,7 +232,7 @@ describe('buildAccountDropdownOptions', () => {
       makeAccount({ id: '4', name: 'Closed Normal', isClosed: true }),
     ];
 
-    const options = buildAccountDropdownOptions(mixed, (a) => !a.isClosed);
+    const options = buildAccountDropdownOptions(mixed, (a) => !a.isClosed, label);
 
     expect(options).toHaveLength(3); // 1 fav + separator + 1 normal
     expect(options[0].value).toBe('1');
@@ -236,12 +240,12 @@ describe('buildAccountDropdownOptions', () => {
     expect(options[2].value).toBe('3');
   });
 
-  it('uses the default label function with currency and closed indicator', () => {
+  it('labels through the function it is given', () => {
     const closedAccount = makeAccount({
       id: '1', name: 'Old Account', currencyCode: 'GBP', isClosed: true,
     });
 
-    const options = buildAccountDropdownOptions([closedAccount], () => true);
+    const options = buildAccountDropdownOptions([closedAccount], () => true, label);
 
     expect(options[0].label).toBe('Old Account (GBP) (Closed)');
   });
@@ -257,13 +261,13 @@ describe('buildAccountDropdownOptions', () => {
   });
 
   it('returns an empty array when all accounts are filtered out', () => {
-    const options = buildAccountDropdownOptions(accounts, () => false);
+    const options = buildAccountDropdownOptions(accounts, () => false, label);
 
     expect(options).toEqual([]);
   });
 
   it('returns an empty array for empty accounts list', () => {
-    const options = buildAccountDropdownOptions([], () => true);
+    const options = buildAccountDropdownOptions([], () => true, label);
 
     expect(options).toEqual([]);
   });
@@ -276,7 +280,7 @@ describe('buildAccountDropdownOptions', () => {
       makeAccount({ id: '4', name: 'Alpha' }),
     ];
 
-    const options = buildAccountDropdownOptions(mixed, () => true);
+    const options = buildAccountDropdownOptions(mixed, () => true, label);
 
     // Favourite first
     expect(options[0].value).toBe('1');

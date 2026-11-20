@@ -901,7 +901,7 @@ describe('BankSyncConnectionCard', () => {
       expect(optionLabels()).toEqual([
         'Not linked',
         'Create a new account',
-        'Dollars (USD)',
+        'Dollars',
         'Euros (EUR)',
       ]);
     });

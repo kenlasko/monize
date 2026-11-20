@@ -157,7 +157,8 @@ test insisted:
 7. **The currency shows only outside the default currency** (2026-11-20). `useAccountOptionLabel`
    passes the user's `preferredCurrency` to `formatAccountOptionLabel`, which drops the code for an
    account in that currency: "Chequing (CAD)" on every row of a CAD user's picker told them nothing
-   and buried the one USD account. A user with no preference compares against the fallback.
+   and buried the one USD account. A user with no preference compares against the fallback. The
+   same rule holds for every account and security picker, through `labelWithForeignCurrency`.
 
 ## Per-surface truth table
 

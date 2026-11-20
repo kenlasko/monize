@@ -72,6 +72,7 @@ import {
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { accountSelectOption } from '@/lib/account-utils';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { useForeignCurrencyLabel } from '@/hooks/useMainAccountName';
 
 const logger = createLogger('InvestmentTxForm');
 
@@ -173,9 +174,14 @@ interface InvestmentTransactionFormFieldsProps
   defaultAction?: InvestmentFormAction;
 }
 
-/** How a security reads in the Security field and its list. */
-const securityOptionLabel = (s: Pick<Security, 'symbol' | 'name' | 'currencyCode'>): string =>
-  `${s.symbol} - ${s.name} (${s.currencyCode})`;
+/**
+ * How a security reads in the Security field and its list: symbol and name,
+ * with its currency when that is not the reader's default.
+ */
+const securityOptionLabel = (
+  s: Pick<Security, 'symbol' | 'name' | 'currencyCode'>,
+  foreignCurrencyLabel: (label: string, currencyCode: string) => string,
+): string => foreignCurrencyLabel(`${s.symbol} - ${s.name}`, s.currencyCode);
 
 /**
  * What a "+ Create" typed into the Security field prefills the new security
@@ -273,6 +279,7 @@ function InvestmentTransactionFormFields({
   defaultAction,
 }: InvestmentTransactionFormFieldsProps) {
   const t = useTranslations('investments');
+  const foreignCurrencyLabel = useForeignCurrencyLabel();
   // Status strings are shared with the cash register's form.
   const tStatus = useTranslations('transactions');
   // Embedded inside a split transaction: the parent owns account, date and
@@ -1054,9 +1061,9 @@ function InvestmentTransactionFormFields({
         .filter((h) => Number(h.quantity) >= 0.0001 && h.security)
         .map((h) => ({
           value: h.securityId,
-          label: securityOptionLabel(h.security),
+          label: securityOptionLabel(h.security, foreignCurrencyLabel),
         })),
-    [transferSourceHoldings],
+    [transferSourceHoldings, foreignCurrencyLabel],
   );
 
   // Re-sync form values when editing and securities are loaded
@@ -1439,7 +1446,9 @@ function InvestmentTransactionFormFields({
         value={watchedAccountId || ''}
         options={[
           { value: '', label: t('transactionForm.selectAccount') },
-          ...brokerageAccounts.map((a) => accountSelectOption(a, `${a.name} (${a.currencyCode})`)),
+          ...brokerageAccounts.map((a) =>
+            accountSelectOption(a, foreignCurrencyLabel(a.name, a.currencyCode)),
+          ),
         ]}
         {...register('accountId')}
       />
@@ -1484,7 +1493,7 @@ function InvestmentTransactionFormFields({
           options={[
             { value: '', label: t('transactionForm.linkedCashDefault') },
             ...cashDestinationAccountsList.map((a) =>
-              accountSelectOption(a, `${a.name} (${a.currencyCode})`),
+              accountSelectOption(a, foreignCurrencyLabel(a.name, a.currencyCode)),
             ),
           ]}
           {...register('fundingAccountId')}
@@ -1511,7 +1520,7 @@ function InvestmentTransactionFormFields({
           options={[
             { value: '', label: t('transactionForm.selectAccount') },
             ...destinationAccounts.map((a) =>
-              accountSelectOption(a, `${a.name} (${a.currencyCode})`),
+              accountSelectOption(a, foreignCurrencyLabel(a.name, a.currencyCode)),
             ),
           ]}
         />
@@ -1543,11 +1552,11 @@ function InvestmentTransactionFormFields({
               ? transferSecurityOptions
               : securities.map((s) => ({
                   value: s.id,
-                  label: securityOptionLabel(s),
+                  label: securityOptionLabel(s, foreignCurrencyLabel),
                 }))
           }
           value={watchedSecurityId || ''}
-          initialDisplayValue={transaction?.security ? securityOptionLabel(transaction.security) : ''}
+          initialDisplayValue={transaction?.security ? securityOptionLabel(transaction.security, foreignCurrencyLabel) : ''}
           onChange={(securityId) =>
             setValue('securityId', securityId, { shouldDirty: true, shouldValidate: true })
           }

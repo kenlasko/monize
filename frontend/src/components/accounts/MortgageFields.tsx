@@ -30,6 +30,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { getCurrencySymbol } from '@/lib/format';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { useForeignCurrencyLabel } from '@/hooks/useMainAccountName';
 
 const logger = createLogger('MortgageFields');
 
@@ -117,6 +118,7 @@ export function MortgageFields({
   onCreateLoanFeeCategory,
 }: MortgageFieldsProps) {
   const t = useTranslations('accounts');
+  const foreignCurrencyLabel = useForeignCurrencyLabel();
   const { formatDate } = useDateFormat();
   // Money arrives as a prop; the preview's rate does not, and it is just as
   // user-facing -- so it takes the same number locale rather than `toFixed`.
@@ -494,7 +496,7 @@ export function MortgageFields({
             ...buildAccountDropdownOptions(
               accounts,
               () => true,
-              (a) => `${a.name} (${a.currencyCode})`,
+              (a) => foreignCurrencyLabel(a.name, a.currencyCode),
             ),
           ]}
           error={errors.sourceAccountId?.message as string | undefined}

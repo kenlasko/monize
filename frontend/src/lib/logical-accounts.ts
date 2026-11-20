@@ -1,6 +1,7 @@
 import { Account } from '@/types/account';
 import { isInvestmentCashHalf } from '@/lib/account-utils';
 import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
+import { labelWithForeignCurrency } from '@/lib/default-currency';
 
 /**
  * One account as the user thinks of it.
@@ -358,10 +359,9 @@ export function formatAccountOptionLabel(
   options: { withCurrency?: boolean; defaultCurrency?: string } = {},
 ): string {
   const { withCurrency = true, defaultCurrency } = options;
-  const showCurrency =
-    withCurrency && account.currencyCode !== defaultCurrency;
-  const currency = showCurrency ? ` (${account.currencyCode})` : '';
-  return `${stripName(account.name)}${currency}${
-    account.isClosed ? ` (${closedLabel})` : ''
-  }`;
+  const name = stripName(account.name);
+  const withCode = withCurrency
+    ? labelWithForeignCurrency(name, account.currencyCode, defaultCurrency)
+    : name;
+  return `${withCode}${account.isClosed ? ` (${closedLabel})` : ''}`;
 }

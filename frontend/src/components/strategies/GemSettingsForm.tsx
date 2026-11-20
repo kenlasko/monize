@@ -51,6 +51,7 @@ import {
 import { GemCard, GemStatRow, GemUnknown } from "./GemPrimitives";
 import { GemInstrumentSelect } from "./GemInstrumentSelect";
 import { useGemLabels } from "./useGemLabels";
+import { useForeignCurrencyLabel } from "@/hooks/useMainAccountName";
 
 const logger = createLogger("GemSettingsForm");
 
@@ -148,6 +149,7 @@ export function GemSettingsForm({
   onInvalidSubmit,
 }: GemSettingsFormProps) {
   const t = useTranslations("strategies");
+  const foreignCurrencyLabel = useForeignCurrencyLabel();
   const { roleLabel, roleDescription } = useGemLabels();
   const { formatDate } = useDateFormat();
   const [isSaving, setIsSaving] = useState(false);
@@ -222,9 +224,9 @@ export function GemSettingsForm({
     );
     return investmentAccounts.map((account) => ({
       value: account.id,
-      label: `${account.name} (${account.currencyCode})`,
+      label: foreignCurrencyLabel(account.name, account.currencyCode),
     }));
-  }, [data?.accounts]);
+  }, [data?.accounts, foreignCurrencyLabel]);
 
   // MultiSelect and the numeric inputs are controlled, so their values are read
   // back through the form state rather than from a DOM value.

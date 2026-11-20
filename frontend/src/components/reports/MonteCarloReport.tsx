@@ -57,11 +57,13 @@ import { useMonteCarloScenarios, MAX_COMPARE_SCENARIOS } from './useMonteCarloSc
 import { useTranslations } from 'next-intl';
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { useForeignCurrencyLabel } from '@/hooks/useMainAccountName';
 
 const logger = createLogger('MonteCarloReport');
 
 export function MonteCarloReport() {
   const t = useTranslations('reports');
+  const foreignCurrencyLabel = useForeignCurrencyLabel();
   const { formatCurrency, formatCurrencyLabel, formatNumber, formatPercent, defaultCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
   // One bundle for the pure helpers below (the summary table, the holdings
@@ -216,9 +218,9 @@ export function MonteCarloReport() {
     () =>
       accounts.map((a) => ({
         value: a.id,
-        label: `${a.name} (${a.currencyCode})`,
+        label: foreignCurrencyLabel(a.name, a.currencyCode),
       })),
-    [accounts],
+    [accounts, foreignCurrencyLabel],
   );
 
   const chartData = useMemo(() => {

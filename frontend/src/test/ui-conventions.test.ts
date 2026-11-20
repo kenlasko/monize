@@ -1035,6 +1035,29 @@ describe("an account picker labels its options through the shared hook", () => {
   });
 });
 
+describe("a picker shows a currency code only outside the default currency", () => {
+  /**
+   * Account and security pickers appended the currency to every option, so a
+   * CAD reader saw "Chequing (CAD)" on every row and the one USD account did
+   * not stand out. `labelWithForeignCurrency` (through `useAccountOptionLabel`
+   * or `useForeignCurrencyLabel`) appends it only for another currency.
+   */
+  const ALWAYS_CODED_LABEL =
+    /\$\{\s*(\w+)\.(?:name|symbol)\s*\}[^`]*\(\$\{\s*\1\.currencyCode\s*\}\)/;
+
+  it("builds no option label that brackets the currency unconditionally", () => {
+    const offenders = productionSources()
+      .filter(([, content]) => ALWAYS_CODED_LABEL.test(content))
+      .map(([path]) => path);
+
+    expect(
+      offenders,
+      "Label the option with useForeignCurrencyLabel() or useAccountOptionLabel() " +
+        "so the currency shows only when it is not the reader's default.",
+    ).toEqual([]);
+  });
+});
+
 describe("a CSV file is written by the shared exporter", () => {
   /** The one file allowed to build a CSV -- it *is* the writer. */
   const WRITER = "/src/lib/csv-export.ts";

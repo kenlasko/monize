@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { getMainAccountName } from '@/lib/account-utils';
 import { formatAccountOptionLabel } from '@/lib/logical-accounts';
-import { preferredCurrency } from '@/lib/default-currency';
+import { labelWithForeignCurrency, preferredCurrency } from '@/lib/default-currency';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { Account } from '@/types/account';
 
@@ -25,6 +25,30 @@ export function useMainAccountName(): (name: string) => string {
   return useCallback(
     (name: string) => getMainAccountName(name, [brokerageSuffix, cashSuffix]),
     [brokerageSuffix, cashSuffix],
+  );
+}
+
+/** The reader's default currency, falling back the way every surface does. */
+function useDefaultCurrency(): string {
+  return preferredCurrency(
+    usePreferencesStore((state) => state.preferences?.defaultCurrency),
+  );
+}
+
+/**
+ * Appends a currency code to a picker label only when it is not the reader's
+ * default currency (`labelWithForeignCurrency`). For a picker whose label is
+ * not an account option -- a security, or a list that keeps the stored name.
+ */
+export function useForeignCurrencyLabel(): (
+  label: string,
+  currencyCode: string,
+) => string {
+  const defaultCurrency = useDefaultCurrency();
+  return useCallback(
+    (label: string, currencyCode: string) =>
+      labelWithForeignCurrency(label, currencyCode, defaultCurrency),
+    [defaultCurrency],
   );
 }
 
@@ -49,9 +73,7 @@ export function useAccountOptionLabel(options: {
   const t = useTranslations('accounts');
   const closedLabel = t('row.statusClosed');
   const withCurrency = options.withCurrency ?? true;
-  const defaultCurrency = preferredCurrency(
-    usePreferencesStore((state) => state.preferences?.defaultCurrency),
-  );
+  const defaultCurrency = useDefaultCurrency();
   return useCallback(
     (account: Account) =>
       formatAccountOptionLabel(account, stripName, closedLabel, {

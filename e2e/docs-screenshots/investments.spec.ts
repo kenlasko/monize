@@ -121,7 +121,7 @@ test("investment-transaction-form", async () => {
   });
   await expect(dialog).toBeVisible();
   await chooseIconSelectOption(dialog.getByLabel("Brokerage Account"), {
-    label: "TFSA - Tax Free - Brokerage (CAD)",
+    label: "TFSA - Tax Free - Brokerage",
   });
   // Security is a combobox; its list renders at the page root. The fourth
   // listed security, as the native select's index 4 (after its placeholder).
