@@ -37,6 +37,8 @@ export interface AggregatedDataPoint {
   memo?: string;
   category?: string;
   account?: string;
+  /** The row's own tags (and, for a split line, its own plus the parent's), joined for display. */
+  tags?: string;
   /**
    * The row's own amount in its account's currency, unconverted, signed as
    * `value` is; `accountCurrency` names its currency. A column of these holds

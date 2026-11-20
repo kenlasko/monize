@@ -90,7 +90,7 @@ function getColumnMap(
         signed ? '' : (item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0)),
     },
     [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
-    [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.label || '' },
+    [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.tags || '' },
   };
 }
 
@@ -420,6 +420,11 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                     Count
                   </th>
                 )}
+                {columns.includes(TableColumn.TAG) && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Tag
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -507,6 +512,11 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                       {item.count || '-'}
                     </td>
                   )}
+                  {columns.includes(TableColumn.TAG) && (
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                      {item.tags || '-'}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -560,6 +570,9 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
                     {totalCount || '-'}
                   </td>
+                )}
+                {columns.includes(TableColumn.TAG) && (
+                  <td className="px-4 py-3"></td>
                 )}
               </tr>
             </tfoot>

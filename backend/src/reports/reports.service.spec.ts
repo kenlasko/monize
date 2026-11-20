@@ -1142,6 +1142,48 @@ describe("ReportsService", () => {
         expect(result.data[2].category).toBe("Food: Fast Food");
       });
 
+      it("lists each row's tags, merging a split line's own tags with its parent's", async () => {
+        const vacation = { id: "tag-1", name: "Vacation", color: "#111111" };
+        const dining = { id: "tag-2", name: "Dining", color: "#222222" };
+        const transactions = [
+          createMockTransaction({
+            id: "tx-1",
+            amount: -25,
+            tags: [vacation],
+          } as never),
+          createMockTransaction({ id: "tx-2", amount: -10 }),
+          createMockTransaction({
+            id: "tx-3",
+            amount: -100,
+            tags: [vacation],
+            isSplit: true,
+            splits: [
+              {
+                id: "split-1",
+                transactionId: "tx-3",
+                amount: -60,
+                memo: "Dinner",
+                tags: [dining],
+              } as never,
+            ],
+          } as never),
+        ];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.NONE,
+            config: { ...defaultConfig, metric: MetricType.NONE },
+          },
+          transactions,
+        );
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data).toHaveLength(3);
+        expect(result.data[0].tags).toBe("Vacation");
+        expect(result.data[1].tags).toBeUndefined();
+        expect(result.data[2].tags).toBe("Vacation, Dining");
+      });
+
       it("handles split transactions with TOTAL_AMOUNT metric by summing split amounts", async () => {
         const transactions = [
           createMockTransaction({

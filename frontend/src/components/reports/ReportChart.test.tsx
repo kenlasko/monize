@@ -689,6 +689,41 @@ describe('ReportChart', () => {
       expect(tableData.totalRow).toEqual(['Total', '$180.00', '']);
     });
   });
+  describe('tag column', () => {
+    const rows = [
+      { label: 'Hotel', value: 135, count: 1, id: 'tx-1', tags: 'Vacation' },
+      { label: 'Dinner', value: 40, count: 1, id: 'tx-2', tags: 'Vacation, Dining' },
+      { label: 'No tags', value: 5, count: 1, id: 'tx-3' },
+    ];
+    const columns = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.TAG];
+
+    it('prints the row\'s own tags, joined, and nothing for an untagged row', () => {
+      const { container } = render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+
+      expect(screen.getByRole('columnheader', { name: 'Tag' })).toBeInTheDocument();
+      const bodyRows = container.querySelectorAll('tbody tr');
+      expect(bodyRows[0].lastElementChild?.textContent).toBe('Vacation');
+      expect(bodyRows[1].lastElementChild?.textContent).toBe('Vacation, Dining');
+      expect(bodyRows[2].lastElementChild?.textContent).toBe('-');
+    });
+
+    it('exports csv and pdf with the joined tags', async () => {
+      const { exportToCsv } = await import('@/lib/csv-export');
+      (exportToCsv as any).mockClear();
+      render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+
+      const [, headers, csvRows] = (exportToCsv as any).mock.calls[0];
+      expect(headers).toEqual(['Item', 'Amount', 'Tag']);
+      expect(csvRows[0]).toEqual(['Hotel', 135, 'Vacation']);
+      expect(csvRows[2]).toEqual(['No tags', 5, '']);
+    });
+  });
   describe('original-currency amount column', () => {
     const rows = [
       { label: 'Hotel', value: 150, count: 1, id: 'tx-1', originalAmount: 100, originalCurrency: 'EUR' },
