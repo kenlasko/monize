@@ -8,7 +8,12 @@ The task list is `docs/future-plans/quick-add-tasks.md`.
 
 These were agreed with the maintainer before the plan was written.
 
-- **Transactions page only.** The dialog opens from a secondary "Quick Add" button beside New Transaction in the page header, and from the phone's + button while the Transactions page is showing. The command palette, the dashboard and every other page are unchanged in this version.
+- **The dialog lives on the Transactions page.** It opens from three places:
+  - a secondary "Quick Add" button beside New Transaction in the page header;
+  - the phone's + button while the Transactions page is showing;
+  - the command palette, from any page. Typing a line with an amount in it offers a "Quick add" row that reads the line the way the dialog will; choosing it goes to the Transactions page and opens Quick Add with the line already typed.
+
+  The dashboard and every other page's + button are unchanged in this version.
 - **On a phone the + button opens Quick Add**, and the dialog's "Full Form" button opens the New Transaction form. So Quick Add costs no extra tap and the full form costs one.
 - **Payments, deposits and transfers.** A split, an investment transaction, an entry in a foreign currency, a cross-currency transfer and a transfer to another owner's account are made in the full form; Quick Add reads the line, says why it cannot save it, and hands it to the full form.
 - **Every supported language.** The reader can type in the language of their Monize locale; English words are always understood as well.
@@ -180,14 +185,26 @@ The reader's locale is the one `tr()` reads for the request; its words come firs
 - **Keyboard.** Enter saves when there are no blockers. Shift+Enter saves and clears the line for the next entry. Tab moves through the chips. Escape closes.
 - **Saving.** Save calls `transactionsApi.create` or `transactionsApi.createTransfer` with the body the full form builds for the same fields, then `invalidateBalanceCaches()`, refreshes the register and shows the success toast the form shows.
 - **Full Form.** It closes Quick Add and opens New Transaction through the page's existing `openCreate` with a new `draft` prop on `TransactionForm`, which seeds a new entry's mode, accounts, amount (signed), date, payee, category and description. A blocked entry is handed over too: that is how a split or a foreign amount gets finished.
-- **Entry points.** A `Button variant="outline"` in `PageHeader`'s `actions` slot. Below `xl`, `useMobileAddAction` on the Transactions page runs Quick Add instead of New Transaction. Both are hidden while acting as a delegate.
+- **Entry points.** A `Button variant="outline"` in `PageHeader`'s `actions` slot. Below `xl`, `useMobileAddAction` on the Transactions page runs Quick Add instead of New Transaction. All entry points, the palette row included, are hidden while acting as a delegate.
+
+### The command palette row
+
+- **When it asks.** `useCommandPaletteSearch` (`components/command-palette/useCommandPaletteData.ts`) adds the interpret call to the search it already debounces, but only when the rested query holds a digit, the reader can reach `/transactions`, and is not acting as a delegate. The call carries the query as `text`, `today` from `useFinancialToday()`, and no `contextAccountId` and no pins. Its answer is kept with the query that produced it, like the transaction results.
+- **When the row shows.** `useCommandItems` adds the row only when the answer for the current query has an amount. A query with no amount in it ("2024 report") gets no row.
+- **What the row says.**
+  - A payment or deposit reads "Quick add: {amount} {payee}, {category}", omitting a part that is null.
+  - A transfer reads "Quick add: {amount} {from} to {to}".
+  - The amount is formatted with `useNumberFormat()` in the account's currency.
+- **Where it sits.** The row is the first item in the actions group, so Enter in the palette runs it.
+- **What choosing it does.** Running it calls `startQuickAdd(text, pathname, push)` in `store/commandPaletteStore.ts`, beside `startNewTransaction`. That stores a one-shot `quickAddRequest: { text }` and goes to `/transactions` when not already there. The Transactions page consumes the request the way it consumes `newTransactionRequest` and opens Quick Add with the text in the box. The dialog then reads the line again in the page's own context (the filtered account) and carries no pins from the palette.
+- **Failure.** A failed interpret call adds no row and does not mark the palette's search as failed. The plain "New transaction" action is still there.
 
 Strings live in `frontend/src/i18n/messages/{locale}/transactions.json` under `quickAdd`, English first and then every locale.
 
 ## What to run
 
 - `backend/`: `npm run lint && npx tsc --noEmit && npm run typecheck`, `npm run test:unit -- quick-add`, then `npm run test:changed`.
-- `frontend/`: `npm run lint && npm run type-check && npm run i18n:check`, `npm run test -- quick-add`, `npm run test -- TransactionForm`, `npm run test -- app/transactions`, then `npm run test:changed` and `npm run build`.
+- `frontend/`: `npm run lint && npm run type-check && npm run i18n:check`, `npm run test -- quick-add`, `npm run test -- TransactionForm`, `npm run test -- app/transactions`, `npm run test -- command-palette`, then `npm run test:changed` and `npm run build`.
 - Root: `node scripts/check-docs-manifests.mjs`.
 
 ## What should be observed
@@ -202,6 +219,7 @@ Strings live in `frontend/src/i18n/messages/{locale}/transactions.json` under `q
 - **Blocked entry.** Typing `20 € cafe` against a CAD account refuses Save, says the amount is in another currency, and Full Form opens New Transaction with the entry filled in.
 - **Another language.** A German reader typing `12,50 bäckerei gestern` gets 12.50 dated yesterday.
 - **Phone.** On a phone the + button on the Transactions page opens Quick Add.
+- **Command palette.** On the dashboard, typing `84.37 loblaws` in the palette shows "Quick add: $84.37 Loblaws, Food: Groceries" as the first action. Enter goes to Transactions with Quick Add open on that line.
 
 ## Invariants touched
 
