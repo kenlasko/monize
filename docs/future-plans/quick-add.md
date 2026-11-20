@@ -49,6 +49,8 @@ class QuickAddPinsDto {         // every field optional; @ValidateIf for null/""
   payeeId?: string;             // @IsUUID
   payeeName?: string;           // @MaxLength like CreateTransactionDto.payeeName; a new payee
   categoryId?: string;          // @IsUUID
+  /** Fields the reader cleared on a chip: answered as none and never guessed again. */
+  clear?: ('payee' | 'category')[];   // @IsIn each, @ArrayMaxSize(2)
 }
 ```
 
@@ -95,6 +97,11 @@ interface QuickAddInterpretation {
     /** The date the balance moves when `after` is null. */
     movesOn: string | null;
   } | null;
+  /**
+   * The figure as typed in another currency, set exactly when `foreignCurrency` blocks.
+   * `currencyCode` is the ISO code when the typed symbol or code names one currency, else null.
+   */
+  foreignAmount: { currencyCode: string | null; amount: number } | null;
   /** What the reader's transaction rules will change on save (the planner the commit runs). */
   ruleEffects?: RuleEffectsPreview;
 }
@@ -102,6 +109,7 @@ type QuickAddBlocker =
   | 'missingAmount' | 'zeroAmount' | 'amountPrecision'
   | 'missingAccount' | 'ambiguousAccount'
   | 'missingToAccount' | 'sameAccount'
+  | 'amountTooLarge'           // above the create DTO's TRANSACTION_AMOUNT_MAX_MAGNITUDE
   | 'foreignCurrency'          // a currency was typed that is not the account's
   | 'crossCurrencyTransfer';   // the two accounts hold different currencies
 ```
@@ -124,10 +132,12 @@ The pure reader is `backend/src/transactions/quick-add/quick-add-parse.util.ts`.
 4. **Amount.** The first remaining number, read by the locale-aware amount parser `parseSearchTerm` already uses, under the reader's `numberFormat` (exported for this), so `12,50` is 12.5 for a German reader.
    - **Sign:** a leading `+` marks a deposit and a leading `-` a payment.
    - **Currency next to the number:** a symbol or ISO code that is the account's currency is dropped. Any other currency adds `foreignCurrency`.
-   - **Places:** more places than the account's currency carries adds `amountPrecision`, the refusal `assertAmountPrecision` would make on save.
+   - **Places:** more places than the account currency's `decimal_places` (the entry places `CurrencyInput` rounds to, so a typed value carries no hidden units) adds `amountPrecision`. More than the create DTO's maximum magnitude adds `amountTooLarge`.
+   - **The month-name date and the amount are read together.** In `20 nov 3 coffee` both the number before and the number after the month could be its day. Each side is tried on its own; when both give a real date, the reader's date order decides, and the line's other number stays the amount.
 5. **Keywords.** Words of the vocabulary set the kind (`deposit`, `payment`, `transfer`) and the direction (`to`, `from`); connector and filler words are dropped.
 6. **Leftover words.**
-   - **No payee found:** the leftover words, in the order typed and joined by single spaces, become a new payee name (`source: 'typed'`, `id: null`).
+   - **No payee found:** the leftover words, in the order typed and joined by single spaces, become a new payee name (`source: 'typed'`, `id: null`). The save creates that payee first, as the full form's `handlePayeeCreate` does (offering to reactivate an inactive payee of that name), so the next line finds it.
+   - **A pinned payee replaces the words that produced the text's payee**; those words do not become the memo.
    - **A payee was found:** the leftover words are the memo.
 
 ### Filling what was not typed
@@ -144,13 +154,23 @@ The pure reader is `backend/src/transactions/quick-add/quick-add-parse.util.ts`.
 
 Because the category and account come from the payee's own history, a correction saved today is tomorrow's answer, with no new table.
 
-- **Eligible accounts:** accounts the reader owns that are open and are not `INVESTMENT_BROKERAGE`, the set `NormalTransactionFields` offers.
+- **A payment or deposit word never outranks the accounts' directions.** `paid 500 to visa` moves money into Visa, so it is a transfer; two named accounts, a `to` account on a payment or a `from` account on a deposit make the kind a transfer unless the kind is pinned. A pinned payment or deposit with two named accounts adds `ambiguousAccount`.
+- **Eligible accounts:** accounts the reader owns that are open and are not `INVESTMENT_BROKERAGE` or a shared-expense settlement account, the set `NormalTransactionFields` offers.
 - **Payees:** payees that are active.
 - **Categories:** every category the reader owns.
 
 **The balance line** uses the predicate `create()` uses. Without `isTransactionInFuture(date)` it is `after = roundMoney(current + signedAmount, places)`. With it, `after` is null and `movesOn` is the date. For a transfer the line is the FROM account's.
 
-**Rule effects** come from `TransactionsService.previewCreate` or `previewCreateTransfer` once an account and an amount are known and there are no blockers. They are the same planner the commit runs. A preview that throws becomes no `ruleEffects`; the interpretation itself never fails because a preview did.
+**Rule effects** come from `TransactionsService.previewCreate` or `previewCreateTransfer` once an account and an amount are known and there are no blockers. They are the same planner the commit runs, over the same facts: Quick Add passes the payee id it will save (null for a new name), and the preview does not resolve the name again. A preview that throws becomes no `ruleEffects`; the interpretation itself never fails because a preview did.
+
+### Bounds
+
+One request's work is bounded whatever the reader has stored, because the reading runs on the event loop that serves every user:
+
+- **Length after normalizing.** The 200-character cap applies to the text after NFKC (one character can expand to 18), and the reader stops at a fixed number of words.
+- **Matching work.** Alias matching has a fixed budget of glob evaluations per request, and the spans each name contributes are deduplicated before the longest are chosen.
+- **The transaction is short.** Candidates are loaded in one scoped read, the text is read outside any transaction, and usage and history are a second short scoped read over a capped list of ids.
+- **Rate.** The route carries its own `@Throttle`.
 
 ### Vocabulary
 
@@ -183,7 +203,8 @@ The reader's locale is the one `tr()` reads for the request; its words come firs
 
   The tier is carried by the border style and a word as well as by colour. Colours are theme tokens, as the existing `Badge` uses them.
 - **Keyboard.** Enter saves when there are no blockers. Shift+Enter saves and clears the line for the next entry. Tab moves through the chips. Escape closes.
-- **Saving.** Save calls `transactionsApi.create` or `transactionsApi.createTransfer` with the body the full form builds for the same fields, then `invalidateBalanceCaches()`, refreshes the register and shows the success toast the form shows.
+- **Saving.** Save calls `transactionsApi.create` or `transactionsApi.createTransfer` with the body the full form builds for the same fields, then `invalidateBalanceCaches()`, remembers the date as the form does, refreshes the register and shows the success toast the form shows. Enter or Full Form pressed while a reading is pending acts on that reading when it arrives; Full Form with no reading hands the typed line over as the description, so the reader's words are never lost. A foreign amount is handed to Full Form in its own currency when `foreignAmount.currencyCode` is known, and without an amount otherwise. An ambiguous account is not preselected.
+- **A refused pin** (a 4xx because a pinned account, payee or category is gone) is reported apart from a failed request, with a way to clear the changes.
 - **Full Form.** It closes Quick Add and opens New Transaction through the page's existing `openCreate` with a new `draft` prop on `TransactionForm`, which seeds a new entry's mode, accounts, amount (signed), date, payee, category and description. A blocked entry is handed over too: that is how a split or a foreign amount gets finished.
 - **Entry points.** A `Button variant="outline"` in `PageHeader`'s `actions` slot. Below `xl`, `useMobileAddAction` on the Transactions page runs Quick Add instead of New Transaction. All entry points, the palette row included, are hidden while acting as a delegate.
 
@@ -195,7 +216,9 @@ The reader's locale is the one `tr()` reads for the request; its words come firs
   - A payment or deposit reads "Quick add: {amount} {payee}, {category}", omitting a part that is null.
   - A transfer reads "Quick add: {amount} {from} to {to}".
   - The amount is formatted with `useNumberFormat()` in the account's currency.
-- **Where it sits.** The row is the first item in the actions group, so Enter in the palette runs it.
+- **Where it sits.** The row is the first item in the actions group. Enter runs it when nothing in an earlier group matched; otherwise the arrow keys or Tab reach it.
+- **An overtaken navigation clears it.** Wherever `newTransactionRequest` is cleared because another navigation overtook it, `quickAddRequest` is cleared too.
+- **Its own request.** The interpret call runs beside the transaction and help searches, not inside their `Promise.allSettled`, so a slow reading never delays them.
 - **What choosing it does.** Running it calls `startQuickAdd(text, pathname, push)` in `store/commandPaletteStore.ts`, beside `startNewTransaction`. That stores a one-shot `quickAddRequest: { text }` and goes to `/transactions` when not already there. The Transactions page consumes the request the way it consumes `newTransactionRequest` and opens Quick Add with the text in the box. The dialog then reads the line again in the page's own context (the filtered account) and carries no pins from the palette.
 - **Failure.** A failed interpret call adds no row and does not mark the palette's search as failed. The plain "New transaction" action is still there.
 
