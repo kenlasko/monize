@@ -275,6 +275,19 @@ export function foldForComparison(value: string, locale: string): string {
   );
 }
 
+const PUNCTUATION_OR_SYMBOL = /[\p{P}\p{S}]/u;
+const PUNCTUATION_OR_SYMBOLS = /[\p{P}\p{S}]/gu;
+
+/**
+ * A folded name without its punctuation and symbols, spaces evened: the
+ * spelling a reader types when they leave the apostrophe out (`zehrs` for
+ * `Zehr's`). The same string when the name holds none.
+ */
+export function withoutPunctuation(folded: string): string {
+  if (!PUNCTUATION_OR_SYMBOL.test(folded)) return folded;
+  return evenSpaces(folded.replace(PUNCTUATION_OR_SYMBOLS, ""));
+}
+
 /** The typed line's text model, within {@link boundedQuickAddText}'s caps. */
 export function buildQuickAddText(raw: string, locale: string): QuickAddText {
   const units = unitsOf(boundedQuickAddText(raw), locale);

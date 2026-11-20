@@ -233,6 +233,40 @@ describe("readQuickAddText", () => {
     });
   });
 
+  describe("names typed without their punctuation", () => {
+    const withZehrs = {
+      payees: [...PAYEES, payee("p-zehrs", "Zehr’s Supermarket")],
+      categories: [...CATEGORIES, category("c-kids", "Kid's Stuff")],
+    };
+
+    it("reads a whole payee name typed without its apostrophe", () => {
+      const r = read("45.20 zehrs supermarket", withZehrs);
+      expect(ids(r.payee?.candidates)).toEqual(["p-zehrs"]);
+      expect(r.payee?.partial).toBe(false);
+      expect(r.amount?.value).toBe(45.2);
+      expect(r.leftover).toBeNull();
+    });
+
+    it("still reads the name typed with its apostrophe", () => {
+      const r = read("45.20 zehr's supermarket", withZehrs);
+      expect(ids(r.payee?.candidates)).toEqual(["p-zehrs"]);
+      expect(r.payee?.partial).toBe(false);
+    });
+
+    it("infers the payee from its first word typed without the apostrophe", () => {
+      const r = read("45.20 zehrs", withZehrs);
+      expect(ids(r.payee?.candidates)).toEqual(["p-zehrs"]);
+      expect(r.payee?.partial).toBe(true);
+      expect(r.leftover).toBeNull();
+    });
+
+    it("reads a hyphenated payee and a category typed without punctuation", () => {
+      const r = read("5 7eleven kids stuff", withZehrs);
+      expect(ids(r.payee?.candidates)).toEqual(["p-711"]);
+      expect(ids(r.category?.candidates)).toEqual(["c-kids"]);
+    });
+  });
+
   describe("dates", () => {
     it.each([
       ["2026-11-03", "2026-11-03"],

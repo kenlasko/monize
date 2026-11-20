@@ -26,6 +26,7 @@ import {
 import {
   FreeToken,
   buildQuickAddText,
+  withoutPunctuation,
   foldForComparison,
   freeTokens,
   markUsed,
@@ -112,12 +113,14 @@ function partialPayee(
   /** `payees`' names as the names step folded them, in the same order. */
   foldedNames: readonly string[],
   locale: string,
+  /** Applied to each folded word, as `foldedNames` were (punctuation off). */
+  refold: (folded: string) => string = (folded) => folded,
 ): {
   first: number;
   last: number;
   candidates: QuickAddCandidatePayee[];
 } | null {
-  const fold = (value: string) => foldForComparison(value, locale);
+  const fold = (value: string) => refold(foldForComparison(value, locale));
   const folded = payees.map((payee, i) => ({ payee, name: foldedNames[i] }));
   for (const [first, token] of tokens.entries()) {
     const head = fold(token.text);
@@ -206,16 +209,25 @@ export function readQuickAddText(input: QuickAddParseInput): QuickAddReading {
   const keywords = readKeywords(text, afterAmount, vocabulary);
   const leftoverTokens = wordTokens(freeTokens(text, keywords.used));
 
+  // Folded once, by the names step ("Bounds"). Without punctuation only when
+  // the names as written start nothing: `zehrs` for `Zehr's Supermarket`.
   const partial = names.payee
     ? null
-    : partialPayee(
+    : (partialPayee(
         text,
         leftoverTokens,
         input.payees,
-        // Folded once, by the names step ("Bounds").
         names.foldedPayeeNames,
         input.locale,
-      );
+      ) ??
+      partialPayee(
+        text,
+        leftoverTokens,
+        input.payees,
+        names.looseFoldedPayeeNames,
+        input.locale,
+        withoutPunctuation,
+      ));
   const remaining = partial
     ? leftoverTokens.filter((_t, i) => i < partial.first || i > partial.last)
     : leftoverTokens;

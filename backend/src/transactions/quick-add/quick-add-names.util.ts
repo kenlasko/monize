@@ -24,6 +24,7 @@ import {
   markUsed,
   selectLongest,
   spanFolded,
+  withoutPunctuation,
 } from "./quick-add-text.util";
 import type { FoldedVocabularyWord } from "./quick-add-keywords.util";
 
@@ -57,6 +58,8 @@ export interface NamesRead {
    * every name again ("Bounds").
    */
   readonly foldedPayeeNames: readonly string[];
+  /** `foldedPayeeNames` without punctuation, for the partial match's fallback. */
+  readonly looseFoldedPayeeNames: readonly string[];
 }
 
 export interface NamesInput {
@@ -270,7 +273,11 @@ function collectMatches(
   text: QuickAddText,
   used: readonly boolean[],
   input: NamesInput,
-): { matches: NameMatch[]; foldedPayeeNames: string[] } {
+): {
+  matches: NameMatch[];
+  foldedPayeeNames: string[];
+  looseFoldedPayeeNames: string[];
+} {
   const runs = wordRuns(text);
   const budget: GlobBudget = {
     remaining: input.aliasGlobBudget ?? ALIAS_GLOB_BUDGET,
@@ -288,16 +295,23 @@ function collectMatches(
     }
   }
   const foldedPayeeNames: string[] = [];
+  const looseFoldedPayeeNames: string[] = [];
   for (const item of input.payees) {
     const name = fold(item.name);
+    const loose = withoutPunctuation(name);
     foldedPayeeNames.push(name);
+    looseFoldedPayeeNames.push(loose);
     if (spans.remaining <= 0) continue;
     spans.nextItem();
-    const plain = [name];
+    // Each name and plain alias is also looked for without its punctuation,
+    // so `zehrs` finds `Zehr's Supermarket`.
+    const plain = loose === name ? [name] : [name, loose];
     const wildcard: string[] = [];
     for (const alias of item.aliases) {
-      if (!alias.includes("*")) plain.push(fold(alias));
-      else if (budget.remaining > 0) wildcard.push(fold(alias));
+      if (!alias.includes("*")) {
+        const folded = fold(alias);
+        plain.push(folded, withoutPunctuation(folded));
+      } else if (budget.remaining > 0) wildcard.push(fold(alias));
     }
     for (const phrase of plain.length === 1 ? plain : new Set(plain)) {
       for (const span of spans.occurrences(phrase)) {
@@ -314,14 +328,15 @@ function collectMatches(
     if (spans.remaining <= 0) break;
     spans.nextItem();
     const name = fold(item.name);
+    const looseName = withoutPunctuation(name);
     const path = fold(item.path);
-    for (const phrase of name === path ? [name] : [name, path]) {
+    for (const phrase of new Set([name, looseName, path])) {
       for (const span of spans.occurrences(phrase)) {
         if (spans.keep(span)) matches.push({ span, kind: "category", item });
       }
     }
   }
-  return { matches, foldedPayeeNames };
+  return { matches, foldedPayeeNames, looseFoldedPayeeNames };
 }
 
 function uniqueById<T extends { id: string }>(items: readonly T[]): T[] {
@@ -368,7 +383,11 @@ export function readNames(
   used: readonly boolean[],
   input: NamesInput,
 ): NamesRead {
-  const { matches, foldedPayeeNames } = collectMatches(text, used, input);
+  const { matches, foldedPayeeNames, looseFoldedPayeeNames } = collectMatches(
+    text,
+    used,
+    input,
+  );
   const groups = selectLongest(matches, used);
   const selectedMask = groups.reduce(
     (mask, g) => markUsed(mask, g.span),
@@ -438,5 +457,6 @@ export function readNames(
     categoryAlternatives: uniqueById(categoryAlternatives),
     used: kept.reduce((mask, span) => markUsed(mask, span), [...used]),
     foldedPayeeNames,
+    looseFoldedPayeeNames,
   };
 }
