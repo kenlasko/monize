@@ -108,6 +108,8 @@ How tables and pages first look in a browser that has no view settings of its ow
 
 The tabs on the bar at the bottom of a phone or tablet. Choose up to three (**Tab 1** to **Tab 3**, Home, Transactions and Accounts by default); set one to **None** to remove it, and the tabs after it move up to fill the gap. The **+** button and **More** are always on the bar, and everything you leave off it stays under **More**. The choice follows your account to every device.
 
+**The + button opens** chooses what the **+** button does where it starts a new transaction: **Quick Add** (the default) or the **New Transaction form**. It applies on the Transactions page, and on any page whose **+** has no action of its own, where it takes you to the Transactions page and opens your choice. A page whose **+** does something else, such as adding a bill, is unchanged. Quick Add has a **Full Form** button for the entries it cannot save. See [Quick Add](transactions.md#quick-add).
+
 #### Application
 
 | Setting | Description |
