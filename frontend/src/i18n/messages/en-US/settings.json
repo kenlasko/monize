@@ -3,6 +3,7 @@
     "toasts": {
       "colorThemeSaveFailed": "Failed to save color theme"
     },
+    "uiStyleHint": "Changes typography, shapes and table styling. Works with any color theme.",
     "colorThemeLabel": "Color theme",
     "colorThemeOptions": {
       "colorblind": "Color-blind safe"

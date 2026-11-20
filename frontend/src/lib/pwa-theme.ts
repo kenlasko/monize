@@ -13,6 +13,7 @@ import { isColorTheme, type ColorTheme } from './color-themes';
 // and the resolved value is what actually painted last.
 export const RESOLVED_THEME_COOKIE = 'monize-resolved-theme';
 export const COLOR_THEME_COOKIE = 'monize-color-theme';
+export const UI_STYLE_COOKIE = 'monize-ui-style';
 
 export type ResolvedTheme = 'light' | 'dark';
 

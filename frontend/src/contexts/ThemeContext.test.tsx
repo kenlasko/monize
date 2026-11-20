@@ -276,6 +276,44 @@ describe('ThemeContext', () => {
     });
   });
 
+  it('defaults to the standard UI style with no data-ui-style attribute', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(result.current.uiStyle).toBe('standard');
+    expect(document.documentElement.hasAttribute('data-ui-style')).toBe(false);
+  });
+
+  it('persists UI style, applies data-ui-style and mirrors the cookie', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+
+    act(() => {
+      result.current.setUiStyle('classic');
+    });
+    expect(localStorage.setItem).toHaveBeenCalledWith('monize-ui-style', 'classic');
+    expect(result.current.uiStyle).toBe('classic');
+    expect(document.documentElement.getAttribute('data-ui-style')).toBe('classic');
+    expect(Cookies.set).toHaveBeenCalledWith('monize-ui-style', 'classic', {
+      sameSite: 'lax',
+      expires: 365,
+    });
+
+    act(() => {
+      result.current.setUiStyle('standard');
+    });
+    expect(document.documentElement.hasAttribute('data-ui-style')).toBe(false);
+  });
+
+  it('reads persisted UI style on mount and ignores invalid values', () => {
+    localStorage.setItem('monize-ui-style', 'modern');
+    const first = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(first.result.current.uiStyle).toBe('modern');
+    expect(document.documentElement.getAttribute('data-ui-style')).toBe('modern');
+    first.unmount();
+
+    localStorage.setItem('monize-ui-style', 'neon-disco');
+    const second = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(second.result.current.uiStyle).toBe('standard');
+  });
+
   it('pins the theme-color metas to the active palette page colour', () => {
     const meta = document.createElement('meta');
     meta.name = 'theme-color';

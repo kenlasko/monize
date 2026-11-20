@@ -180,7 +180,8 @@
       "saved": "Preferências guardadas",
       "saveFailed": "Falha ao guardar as preferências",
       "themeSaveFailed": "Falha ao guardar o tema",
-      "colorThemeSaveFailed": "Falha ao guardar o tema de cor"
+      "colorThemeSaveFailed": "Falha ao guardar o tema de cor",
+      "uiStyleSaveFailed": "Falha ao guardar o estilo da interface"
     },
     "browserLocale": "Utilizar locale do browser (deteção automática)",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "Sistema (seguir definição do dispositivo)",
       "light": "Claro",
       "dark": "Escuro"
+    },
+    "uiStyleLabel": "Estilo da interface",
+    "uiStyleHint": "Altera a tipografia, as formas e o estilo das tabelas. Funciona com qualquer tema de cor.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Padrão",
+        "description": "O aspeto habitual do Monize."
+      },
+      "classic": {
+        "name": "Clássico",
+        "description": "Inspirado nos livros de contabilidade: títulos com serifa, tabelas com linhas e cantos quadrados."
+      },
+      "modern": {
+        "name": "Moderno",
+        "description": "Tipo de letra a negrito, blocos de cor arredondados e controlos em forma de pílula."
+      }
     },
     "colorThemeLabel": "Tema de cor",
     "colorThemeHint": "As pré-visualizações usam o seu modo claro ou escuro atual.",

@@ -180,7 +180,8 @@
       "saved": "Einstellungen gespeichert",
       "saveFailed": "Einstellungen konnten nicht gespeichert werden",
       "themeSaveFailed": "Design konnte nicht gespeichert werden",
-      "colorThemeSaveFailed": "Farbdesign konnte nicht gespeichert werden"
+      "colorThemeSaveFailed": "Farbdesign konnte nicht gespeichert werden",
+      "uiStyleSaveFailed": "UI-Stil konnte nicht gespeichert werden"
     },
     "browserLocale": "Browser-Gebietsschema verwenden (automatisch erkennen)",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "System (Geräteeinstellung übernehmen)",
       "light": "Hell",
       "dark": "Dunkel"
+    },
+    "uiStyleLabel": "UI-Stil",
+    "uiStyleHint": "Ändert Typografie, Formen und Tabellenstil. Funktioniert mit jedem Farbthema.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standard",
+        "description": "Das vertraute Monize-Aussehen."
+      },
+      "classic": {
+        "name": "Klassisch",
+        "description": "Von Kontobüchern inspiriert: Serifenüberschriften, Tabellen mit Linien, eckige Ecken."
+      },
+      "modern": {
+        "name": "Modern",
+        "description": "Kräftige Schrift, abgerundete Farbflächen und pillenförmige Bedienelemente."
+      }
     },
     "colorThemeLabel": "Farbdesign",
     "colorThemeHint": "Vorschauen verwenden Ihren aktuellen hellen oder dunklen Modus.",

@@ -22,6 +22,8 @@ import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { ThemeSelector } from '@/components/settings/ThemeSelector';
 import { ColorThemeSelector } from '@/components/settings/ColorThemeSelector';
 import { ColorTheme } from '@/lib/color-themes';
+import { UiStyleSelector } from '@/components/settings/UiStyleSelector';
+import { UiStyle } from '@/lib/ui-styles';
 import { DefaultViewsGroup } from '@/components/settings/DefaultViewsGroup';
 import { MobileTabsGroup } from '@/components/settings/MobileTabsGroup';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
@@ -217,11 +219,12 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
     commitPreference,
   );
 
-  // Theme, colour theme and language persist themselves inside their own
-  // selectors (each has work to do beyond the write -- applying the palette,
-  // switching the active locale), so these three hold display state only.
+  // Theme, colour theme, UI style and language persist themselves inside their
+  // own selectors (each has work to do beyond the write -- applying the
+  // palette, switching the active locale), so these hold display state only.
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(preferences.theme);
   const [colorTheme, setColorTheme] = useState<ColorTheme>(preferences.colorTheme ?? 'default');
+  const [uiStyle, setUiStyle] = useState<UiStyle>(preferences.uiStyle ?? 'standard');
   const [language, setLanguage] = useState(preferences.language ?? 'en');
 
   const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyInfo[]>([]);
@@ -295,6 +298,8 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           </h3>
           <div className="space-y-4">
             <ThemeSelector value={theme} onChange={setTheme} />
+
+            <UiStyleSelector value={uiStyle} onChange={setUiStyle} />
 
             <ColorThemeSelector value={colorTheme} onChange={setColorTheme} />
           </div>

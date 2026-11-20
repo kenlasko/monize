@@ -180,7 +180,8 @@
       "saved": "Preferenze salvate",
       "saveFailed": "Impossibile salvare le preferenze",
       "themeSaveFailed": "Impossibile salvare il tema",
-      "colorThemeSaveFailed": "Impossibile salvare il tema colori"
+      "colorThemeSaveFailed": "Impossibile salvare il tema colori",
+      "uiStyleSaveFailed": "Impossibile salvare lo stile dell'interfaccia"
     },
     "browserLocale": "Usa localizzazione del browser (rilevamento automatico)",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "Sistema (segui impostazione dispositivo)",
       "light": "Chiaro",
       "dark": "Scuro"
+    },
+    "uiStyleLabel": "Stile dell'interfaccia",
+    "uiStyleHint": "Modifica tipografia, forme e stile delle tabelle. Funziona con qualsiasi tema colore.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standard",
+        "description": "L'aspetto familiare di Monize."
+      },
+      "classic": {
+        "name": "Classico",
+        "description": "Ispirato ai libri contabili: titoli con grazie, tabelle rigate, angoli squadrati."
+      },
+      "modern": {
+        "name": "Moderno",
+        "description": "Caratteri in grassetto, blocchi di colore arrotondati e controlli a pillola."
+      }
     },
     "colorThemeLabel": "Tema colori",
     "colorThemeHint": "Le anteprime usano la tua modalità chiara o scura attuale.",

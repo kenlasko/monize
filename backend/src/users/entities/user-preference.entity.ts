@@ -40,6 +40,9 @@ export class UserPreference {
   @Column({ name: "color_theme", length: 20, default: "default" })
   colorTheme: string;
 
+  @Column({ name: "ui_style", length: 20, default: "standard" })
+  uiStyle: string;
+
   @Column({ default: "browser" })
   timezone: string;
 

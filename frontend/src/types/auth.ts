@@ -1,4 +1,5 @@
 import type { ColorTheme } from '@/lib/color-themes';
+import type { UiStyle } from '@/lib/ui-styles';
 import type { MapProvider } from '@/lib/contact-links';
 import type { HiddenTableColumns } from '@/lib/hidden-columns';
 import type { ViewDefaults } from '@/lib/view-defaults';
@@ -163,6 +164,7 @@ export interface UserPreferences {
   numberFormat: string; // 'browser' = use browser locale
   theme: 'light' | 'dark' | 'system';
   colorTheme: ColorTheme;
+  uiStyle: UiStyle;
   timezone: string; // 'browser' = use browser timezone
   notificationEmail: boolean;
   twoFactorEnabled: boolean;
@@ -316,6 +318,7 @@ export interface UpdatePreferencesData {
   numberFormat?: string;
   theme?: 'light' | 'dark' | 'system';
   colorTheme?: ColorTheme;
+  uiStyle?: UiStyle;
   timezone?: string;
   notificationEmail?: boolean;
   gettingStartedDismissed?: boolean;

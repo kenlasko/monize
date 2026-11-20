@@ -180,7 +180,8 @@
       "saved": "偏好設定已儲存",
       "saveFailed": "儲存偏好設定失敗",
       "themeSaveFailed": "儲存主題失敗",
-      "colorThemeSaveFailed": "儲存色彩主題失敗"
+      "colorThemeSaveFailed": "儲存色彩主題失敗",
+      "uiStyleSaveFailed": "儲存介面風格失敗"
     },
     "browserLocale": "使用瀏覽器語言設定（自動偵測）",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "系統（跟隨裝置設定）",
       "light": "淺色",
       "dark": "深色"
+    },
+    "uiStyleLabel": "介面風格",
+    "uiStyleHint": "變更字型、形狀與表格樣式。適用於任何色彩主題。",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "標準",
+        "description": "熟悉的 Monize 外觀。"
+      },
+      "classic": {
+        "name": "經典",
+        "description": "帳本風格：襯線標題、帶線條的表格、方形邊角。"
+      },
+      "modern": {
+        "name": "現代",
+        "description": "粗體字、圓角色塊與膠囊形控制項。"
+      }
     },
     "colorThemeLabel": "色彩主題",
     "colorThemeHint": "預覽會使用您目前的淺色或深色模式。",

@@ -1141,6 +1141,7 @@ describe("UsersService", () => {
       ["recentTransactionsLimit", 25],
       ["language", "fr"],
       ["colorTheme", "latte"],
+      ["uiStyle", "modern"],
     ])(
       "updates the %s field when provided",
       async (field: string, value: any) => {
@@ -1163,6 +1164,18 @@ describe("UsersService", () => {
 
       const savedData = preferencesRow.row()!;
       expect(savedData.colorTheme).toBe("nord");
+    });
+
+    it("leaves uiStyle untouched when not provided", async () => {
+      preferencesRow.seed({
+        ...mockPreferences,
+        uiStyle: "classic",
+      });
+
+      await service.updatePreferences("user-1", { theme: "dark" });
+
+      const savedData = preferencesRow.row()!;
+      expect(savedData.uiStyle).toBe("classic");
     });
 
     it("seeds language='en' when creating default preferences", async () => {

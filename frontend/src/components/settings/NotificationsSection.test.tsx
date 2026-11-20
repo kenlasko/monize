@@ -47,6 +47,7 @@ const mockPreferences: UserPreferences = {
   timezone: 'UTC',
   theme: 'system',
   colorTheme: 'default',
+  uiStyle: 'standard',
   defaultCurrency: 'CAD',
   notificationEmail: false,
   twoFactorEnabled: false,

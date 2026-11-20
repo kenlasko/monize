@@ -180,7 +180,8 @@
       "saved": "Zapisano preferencje",
       "saveFailed": "Nie udało się zapisać preferencji",
       "themeSaveFailed": "Nie udało się zapisać motywu",
-      "colorThemeSaveFailed": "Nie udało się zapisać motywu kolorystycznego"
+      "colorThemeSaveFailed": "Nie udało się zapisać motywu kolorystycznego",
+      "uiStyleSaveFailed": "Nie udało się zapisać stylu interfejsu"
     },
     "browserLocale": "Użyj ustawień regionalnych przeglądarki (automatycznie)",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "Systemowy (zgodnie z ustawieniem urządzenia)",
       "light": "Jasny",
       "dark": "Ciemny"
+    },
+    "uiStyleLabel": "Styl interfejsu",
+    "uiStyleHint": "Zmienia typografię, kształty i styl tabel. Działa z każdym motywem kolorystycznym.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standardowy",
+        "description": "Znany wygląd Monize."
+      },
+      "classic": {
+        "name": "Klasyczny",
+        "description": "Inspirowany księgą rachunkową: nagłówki z szeryfami, tabele z liniami, kwadratowe rogi."
+      },
+      "modern": {
+        "name": "Nowoczesny",
+        "description": "Pogrubiony krój pisma, zaokrąglone bloki kolorów i kontrolki w kształcie pigułki."
+      }
     },
     "colorThemeLabel": "Motyw kolorystyczny",
     "colorThemeHint": "Podglądy używają bieżącego trybu jasnego lub ciemnego.",

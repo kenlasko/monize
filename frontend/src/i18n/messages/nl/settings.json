@@ -180,7 +180,8 @@
       "saved": "Voorkeuren opgeslagen",
       "saveFailed": "Opslaan van voorkeuren mislukt",
       "themeSaveFailed": "Opslaan van thema mislukt",
-      "colorThemeSaveFailed": "Opslaan van kleurthema mislukt"
+      "colorThemeSaveFailed": "Opslaan van kleurthema mislukt",
+      "uiStyleSaveFailed": "Interfacestijl opslaan mislukt"
     },
     "browserLocale": "Browserinstelling gebruiken (automatisch detecteren)",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "Systeem (apparaatinstelling volgen)",
       "light": "Licht",
       "dark": "Donker"
+    },
+    "uiStyleLabel": "Interfacestijl",
+    "uiStyleHint": "Wijzigt typografie, vormen en tabelstijl. Werkt met elk kleurthema.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standaard",
+        "description": "De vertrouwde Monize-look."
+      },
+      "classic": {
+        "name": "Klassiek",
+        "description": "Geïnspireerd op het grootboek: koppen met schreef, tabellen met lijnen, rechte hoeken."
+      },
+      "modern": {
+        "name": "Modern",
+        "description": "Vet lettertype, afgeronde kleurvlakken en pilvormige knoppen."
+      }
     },
     "colorThemeLabel": "Kleurthema",
     "colorThemeHint": "Voorbeelden gebruiken je huidige lichte of donkere modus.",

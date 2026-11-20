@@ -180,7 +180,8 @@
       "saved": "환경설정이 저장되었습니다",
       "saveFailed": "환경설정 저장에 실패했습니다",
       "themeSaveFailed": "테마 저장에 실패했습니다",
-      "colorThemeSaveFailed": "색상 테마 저장에 실패했습니다"
+      "colorThemeSaveFailed": "색상 테마 저장에 실패했습니다",
+      "uiStyleSaveFailed": "UI 스타일을 저장하지 못했습니다"
     },
     "browserLocale": "브라우저 로케일 사용 (자동 감지)",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "시스템 (기기 설정에 따름)",
       "light": "밝은",
       "dark": "어두운"
+    },
+    "uiStyleLabel": "UI 스타일",
+    "uiStyleHint": "타이포그래피, 모양, 표 스타일을 변경합니다. 모든 색상 테마와 함께 사용할 수 있습니다.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "표준",
+        "description": "익숙한 Monize 모양입니다."
+      },
+      "classic": {
+        "name": "클래식",
+        "description": "장부에서 영감을 받은 스타일: 세리프 제목, 줄이 있는 표, 각진 모서리."
+      },
+      "modern": {
+        "name": "모던",
+        "description": "굵은 글꼴, 둥근 색상 블록, 알약 모양 컨트롤."
+      }
     },
     "colorThemeLabel": "색상 테마",
     "colorThemeHint": "미리 보기는 현재 라이트 또는 다크 모드를 사용합니다.",

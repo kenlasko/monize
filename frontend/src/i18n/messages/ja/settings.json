@@ -180,7 +180,8 @@
       "saved": "設定を保存しました",
       "saveFailed": "設定の保存に失敗しました",
       "themeSaveFailed": "テーマの保存に失敗しました",
-      "colorThemeSaveFailed": "カラーテーマの保存に失敗しました"
+      "colorThemeSaveFailed": "カラーテーマの保存に失敗しました",
+      "uiStyleSaveFailed": "UIスタイルを保存できませんでした"
     },
     "browserLocale": "ブラウザのロケールを使用（自動検出）",
     "numberFormatOptions": {
@@ -203,6 +204,22 @@
       "system": "システム（デバイスの設定に従う）",
       "light": "ライト",
       "dark": "ダーク"
+    },
+    "uiStyleLabel": "UIスタイル",
+    "uiStyleHint": "フォント、形、表のスタイルを変更します。どのカラーテーマとも組み合わせられます。",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "標準",
+        "description": "おなじみのMonizeの外観。"
+      },
+      "classic": {
+        "name": "クラシック",
+        "description": "帳簿風：セリフ体の見出し、罫線入りの表、角ばったコーナー。"
+      },
+      "modern": {
+        "name": "モダン",
+        "description": "太い書体、角丸のカラーブロック、ピル型のコントロール。"
+      }
     },
     "colorThemeLabel": "カラーテーマ",
     "colorThemeHint": "プレビューには現在のライトまたはダークモードが使用されます。",
