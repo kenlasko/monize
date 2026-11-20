@@ -81,6 +81,7 @@ import { useCustomRecurrenceField } from './useCustomRecurrenceField';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { searchIncludes } from '@/lib/helpers/search-match';
 
 const logger = createLogger('ScheduledTxForm');
 
@@ -1116,10 +1117,7 @@ export function ScheduledTransactionForm({
       setPayees(allPayees);
       return;
     }
-    const lowerQuery = query.toLowerCase();
-    const filtered = allPayees.filter((payee) =>
-      payee.name.toLowerCase().includes(lowerQuery)
-    );
+    const filtered = allPayees.filter((payee) => searchIncludes(payee.name, query));
     setPayees(filtered);
   };
 

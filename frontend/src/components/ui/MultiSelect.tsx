@@ -6,6 +6,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { searchIncludes } from '@/lib/helpers/search-match';
 
 export interface MultiSelectOption {
   value: string;
@@ -198,10 +199,7 @@ export function MultiSelect({
   // Filter options by search
   const filteredOptions = useMemo(() => {
     if (!searchText) return flatOptions;
-    const searchLower = searchText.toLowerCase();
-    return flatOptions.filter(opt =>
-      opt.label.toLowerCase().includes(searchLower)
-    );
+    return flatOptions.filter(opt => searchIncludes(opt.label, searchText));
   }, [flatOptions, searchText]);
 
   // Select all / clear all - only affects visible (filtered) options

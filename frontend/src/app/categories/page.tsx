@@ -27,6 +27,7 @@ import { useFormModal } from '@/hooks/useFormModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { searchIncludes } from '@/lib/helpers/search-match';
 
 const logger = createLogger('Categories');
 
@@ -149,7 +150,7 @@ function CategoriesContent() {
     const byId = new Map(typeFilteredCategories.map((c) => [c.id, c]));
     const matchedIds = new Set(
       typeFilteredCategories
-        .filter((c) => c.name.toLowerCase().includes(query))
+        .filter((c) => searchIncludes(c.name, query))
         .map((c) => c.id),
     );
     for (const id of Array.from(matchedIds)) {

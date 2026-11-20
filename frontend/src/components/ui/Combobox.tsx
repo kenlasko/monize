@@ -6,6 +6,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { placePopover } from './InfoTooltip';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
+import { searchIncludes, searchStartsWith } from '@/lib/helpers/search-match';
 
 interface ComboboxOption {
   value: string;
@@ -306,14 +307,13 @@ export function Combobox({
   const filteredOptions = (isTyping && filterText)
     ? options
         .filter(option =>
-          option.label.toLowerCase().includes(filterText.toLowerCase()) ||
-          (option.subtitle && option.subtitle.toLowerCase().includes(filterText.toLowerCase())) ||
-          (option.keywords && option.keywords.some(kw => kw.toLowerCase().includes(filterText.toLowerCase())))
+          searchIncludes(option.label, filterText) ||
+          searchIncludes(option.subtitle, filterText) ||
+          (option.keywords && option.keywords.some(kw => searchIncludes(kw, filterText)))
         )
         .sort((a, b) => {
-          const lowerFilter = filterText.toLowerCase();
-          const aPrefix = a.label.toLowerCase().startsWith(lowerFilter);
-          const bPrefix = b.label.toLowerCase().startsWith(lowerFilter);
+          const aPrefix = searchStartsWith(a.label, filterText);
+          const bPrefix = searchStartsWith(b.label, filterText);
           if (aPrefix && !bPrefix) return -1;
           if (!aPrefix && bPrefix) return 1;
           return a.label.localeCompare(b.label);
@@ -568,10 +568,9 @@ export function Combobox({
                   </span>
                 )}
                 {isTyping && filterText && option.keywords && (() => {
-                  const lowerFilter = filterText.toLowerCase();
-                  const labelMatches = option.label.toLowerCase().includes(lowerFilter);
+                  const labelMatches = searchIncludes(option.label, filterText);
                   if (labelMatches) return null;
-                  const matchedKeyword = option.keywords.find(kw => kw.toLowerCase().includes(lowerFilter));
+                  const matchedKeyword = option.keywords.find(kw => searchIncludes(kw, filterText));
                   if (!matchedKeyword) return null;
                   return (
                     <span className="text-purple-500 dark:text-purple-400 text-xs truncate">

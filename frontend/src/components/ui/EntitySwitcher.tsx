@@ -13,6 +13,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { isTouchDevice } from '@/lib/touch-device';
+import { searchIncludes } from '@/lib/helpers/search-match';
 
 export interface EntitySwitcherItem {
   id: string;
@@ -270,11 +271,9 @@ export function EntitySwitcher({
   const showFilter = listed.length > FILTER_THRESHOLD;
 
   const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = query.trim();
     if (!needle) return listed;
-    return listed.filter((item) =>
-      (item.searchText ?? item.primary).toLowerCase().includes(needle),
-    );
+    return listed.filter((item) => searchIncludes(item.searchText ?? item.primary, needle));
   }, [listed, query]);
 
   /**

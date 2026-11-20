@@ -37,6 +37,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { PAGE_SIZE } from '@/lib/constants';
 import { useHighlightParam } from '@/hooks/useHighlightTarget';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
+import { searchIncludes } from '@/lib/helpers/search-match';
 
 const logger = createLogger('Payees');
 
@@ -226,7 +227,7 @@ function PayeesContent() {
   const filteredPayees = useMemo(() => {
     if (!searchQuery) return categoryFilteredPayees;
     return categoryFilteredPayees.filter((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      searchIncludes(p.name, searchQuery)
     );
   }, [categoryFilteredPayees, searchQuery]);
 

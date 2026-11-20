@@ -26,6 +26,7 @@ import { useFormModal } from '@/hooks/useFormModal';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import { searchIncludes } from '@/lib/helpers/search-match';
 
 const logger = createLogger('Tags');
 
@@ -138,7 +139,7 @@ function TagsContent() {
   const filteredTags = useMemo(() => {
     if (!searchQuery) return tags;
     return tags.filter((t) =>
-      t.name.toLowerCase().includes(searchQuery.toLowerCase())
+      searchIncludes(t.name, searchQuery)
     );
   }, [tags, searchQuery]);
 

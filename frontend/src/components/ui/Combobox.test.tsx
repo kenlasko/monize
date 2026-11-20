@@ -144,6 +144,28 @@ describe('Combobox', () => {
     });
   });
 
+  it('matches a label while ignoring its punctuation', async () => {
+    render(
+      <Combobox
+        options={[
+          { value: '1', label: "Zehr's Supermarket" },
+          { value: '2', label: 'Zellers' },
+        ]}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+    await new Promise(r => setTimeout(r, 150));
+
+    fireEvent.change(input, { target: { value: 'zehrs' } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Zehr's Supermarket")).toBeInTheDocument();
+      expect(screen.queryByText('Zellers')).not.toBeInTheDocument();
+    });
+  });
+
   it('selects option on click', () => {
     render(<Combobox options={options} onChange={onChange} />);
 
