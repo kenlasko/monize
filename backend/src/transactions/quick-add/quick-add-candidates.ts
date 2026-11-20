@@ -107,10 +107,14 @@ export async function loadQuickAddCandidates(
     where: { userId },
     select: { payeeId: true, alias: true },
   });
-  const aliasesByPayee = aliasRows.reduce((map, row) => {
-    map.set(row.payeeId, [...(map.get(row.payeeId) ?? []), row.alias]);
-    return map;
-  }, new Map<string, string[]>());
+  // Each alias is appended in place: copying the payee's list for every alias
+  // would cost the square of its alias count inside the scoped read.
+  const aliasesByPayee = new Map<string, string[]>();
+  for (const row of aliasRows) {
+    const list = aliasesByPayee.get(row.payeeId);
+    if (list) list.push(row.alias);
+    else aliasesByPayee.set(row.payeeId, [row.alias]);
+  }
   const payees = payeeRows.map((p) => ({
     id: p.id,
     name: p.name,

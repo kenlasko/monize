@@ -7,8 +7,9 @@
  * become their ordinary forms), then case in the reader's locale, then the
  * diacritics of Latin, Greek and Cyrillic letters (`cafe` finds `Café`).
  * Combining marks are never stripped from kana, Hangul, Han or any other
- * script, so `が` stays `が`. Candidate names go through the same per-unit
- * fold, so a name and the text it appears in always fold alike.
+ * script, so `が` stays `が`. The typed line is folded unit by unit, for its
+ * offsets; a candidate name is folded whole (`foldForComparison`) by the same
+ * rule, so a name and the text it appears in always fold alike.
  */
 
 export interface TextUnit {
@@ -47,6 +48,10 @@ const FOLDABLE_SCRIPT =
 const COMBINING_MARK = /\p{M}/u;
 const COMBINING_MARKS = /\p{M}/gu;
 const APOSTROPHES = new Set(["’", "‘", "ʼ"]);
+const TYPOGRAPHIC_APOSTROPHES = /[’‘ʼ]/gu;
+const FINAL_SIGMA = /ς/gu;
+/** Whitespace other than the space character. */
+const OTHER_WHITESPACE = /[^\S ]/u;
 
 /**
  * The longest line Quick Add reads, in code points after
@@ -65,9 +70,24 @@ export const QUICK_ADD_TEXT_MAX_LENGTH = 200;
  */
 export const QUICK_ADD_MAX_WORDS = 40;
 
+/** Whether `value` holds whitespace other than single spaces between words. */
+function hasUnevenSpace(value: string): boolean {
+  return (
+    value.startsWith(" ") ||
+    value.endsWith(" ") ||
+    value.includes("  ") ||
+    OTHER_WHITESPACE.test(value)
+  );
+}
+
+/** Every run of whitespace as one space, trimmed. */
+function evenSpaces(value: string): string {
+  return hasUnevenSpace(value) ? value.replace(/\s+/gu, " ").trim() : value;
+}
+
 /** NFKC, every run of whitespace as one space, trimmed. */
 export function normalizeQuickAddText(raw: string): string {
-  return raw.normalize("NFKC").replace(/\s+/gu, " ").trim();
+  return evenSpaces(raw.normalize("NFKC"));
 }
 
 /** The line as the reader reads it: normalized, cut to the word and length caps. */
@@ -81,11 +101,36 @@ export function isCjkChar(ch: string): boolean {
   return CJK_CHAR.test(ch);
 }
 
-function lowerInLocale(ch: string, locale: string): string {
+/**
+ * The languages whose lower case differs from the root's: ECMA-402 lower-cases
+ * by Unicode's SpecialCasing, whose only language rules for lower case are
+ * Lithuanian's, Turkish's and Azeri's. Every other locale lower-cases exactly
+ * as `toLowerCase` does, which is the cheaper call on a long string.
+ */
+const LOCALE_LOWER_CASE_LANGUAGES = new Set(["az", "lt", "tr"]);
+/** Per locale (the request locales, a fixed set): whether it has its own lower case. */
+const HAS_OWN_LOWER_CASE = new Map<string, boolean>();
+
+function hasOwnLowerCase(locale: string): boolean {
+  const known = HAS_OWN_LOWER_CASE.get(locale);
+  if (known !== undefined) return known;
+  let own: boolean;
   try {
-    return ch.toLocaleLowerCase(locale);
+    own = LOCALE_LOWER_CASE_LANGUAGES.has(new Intl.Locale(locale).language);
   } catch {
-    return ch.toLowerCase();
+    // `toLocaleLowerCase` refuses the tag too: `lowerInLocale` falls back.
+    own = false;
+  }
+  HAS_OWN_LOWER_CASE.set(locale, own);
+  return own;
+}
+
+function lowerInLocale(value: string, locale: string): string {
+  if (!hasOwnLowerCase(locale)) return value.toLowerCase();
+  try {
+    return value.toLocaleLowerCase(locale);
+  } catch {
+    return value.toLowerCase();
   }
 }
 
@@ -122,23 +167,112 @@ function unitsOf(normalized: string, locale: string): TextUnit[] {
 
 const PRINTABLE_ASCII = /^[\x20-\x7e\t\n\v\f\r]*$/u;
 
+/** What a code point is to the diacritic fold (`foldUnit`'s cases). */
+const OTHER = 1;
+const MARK = 2;
+/** A Latin, Greek or Cyrillic letter with no diacritic of its own. */
+const FOLDABLE = 3;
+/** A Latin, Greek or Cyrillic letter carrying one (`é`): NFD differs. */
+const FOLDABLE_WITH_DIACRITIC = 4;
+
 /**
- * The comparison fold of a whole string (a candidate name, a vocabulary word).
+ * Each code point's class, decided the first time the process meets it by
+ * the regular expressions `foldUnit` uses; 0 is not yet decided. A fixed
+ * table over every code point, so no name can make it grow.
+ */
+const CLASSES = new Uint8Array(0x110000);
+/**
+ * A letter of {@link FOLDABLE_WITH_DIACRITIC} without its diacritics: at most
+ * one entry per such letter Unicode has.
+ */
+const WITHOUT_DIACRITICS = new Map<number, string>();
+
+function classify(codePoint: number): number {
+  const ch = String.fromCodePoint(codePoint);
+  if (COMBINING_MARK.test(ch)) return MARK;
+  if (!FOLDABLE_SCRIPT.test(ch)) return OTHER;
+  return ch.normalize("NFD") === ch ? FOLDABLE : FOLDABLE_WITH_DIACRITIC;
+}
+
+function classOf(codePoint: number): number {
+  const known = CLASSES[codePoint];
+  if (known !== 0) return known;
+  const decided = classify(codePoint);
+  CLASSES[codePoint] = decided;
+  return decided;
+}
+
+function withoutDiacritics(codePoint: number): string {
+  const known = WITHOUT_DIACRITICS.get(codePoint);
+  if (known !== undefined) return known;
+  const bare = String.fromCodePoint(codePoint)
+    .normalize("NFD")
+    .replace(COMBINING_MARKS, "")
+    .normalize("NFC");
+  WITHOUT_DIACRITICS.set(codePoint, bare);
+  return bare;
+}
+
+/**
+ * `lower` without the diacritics of its Latin, Greek and Cyrillic letters and
+ * without a combining mark that follows one: `unitsOf`'s rule, in one pass
+ * over the string with each code point's class looked up, never a regular
+ * expression or a normalization per character.
+ */
+function stripFoldableDiacritics(lower: string): string {
+  let out = "";
+  let from = 0;
+  let foldableBase = false;
+  for (let i = 0; i < lower.length;) {
+    const codePoint = lower.codePointAt(i)!;
+    const size = codePoint > 0xffff ? 2 : 1;
+    const kind = classOf(codePoint);
+    if (kind === MARK) {
+      if (foldableBase) {
+        out += lower.slice(from, i);
+        from = i + size;
+      }
+    } else {
+      foldableBase = kind === FOLDABLE || kind === FOLDABLE_WITH_DIACRITIC;
+      if (kind === FOLDABLE_WITH_DIACRITIC) {
+        out += lower.slice(from, i) + withoutDiacritics(codePoint);
+        from = i + size;
+      }
+    }
+    i += size;
+  }
+  return from === 0 ? lower : out + lower.slice(from);
+}
+
+/**
+ * The comparison fold of a whole string (a candidate name, a vocabulary word):
+ * the answer the typed line's units give for the same text, by whole-string
+ * operations (`docs/future-plans/quick-add.md`, "Bounds"). NFKC, the
+ * typographic apostrophes and the case are folded over the whole string, and
+ * the diacritics in one pass ({@link stripFoldableDiacritics}).
  *
- * Printable ASCII takes a short path with the same answer: NFKC leaves it
+ * Lower-casing the whole string agrees with lower-casing each character
+ * because the only mappings that look at a neighbour are the final sigma,
+ * folded to `σ` either way, and the Lithuanian, Turkish and Azeri dotted `i`,
+ * whose dot is a combining mark after a Latin letter and dropped either way
+ * (`quick-add-bounds.spec.ts` holds the two folds equal).
+ *
+ * Printable ASCII takes a shorter path with the same answer: NFKC leaves it
  * unchanged, it holds no combining mark, diacritic or typographic apostrophe,
  * and lower-casing it whole in the locale is lower-casing each character
- * (Turkish `I` becomes `ı` either way). The reader folds every candidate name
- * on every request, so this is most of its work for a reader with thousands
- * of payees.
+ * (Turkish `I` becomes `ı` either way).
  */
 export function foldForComparison(value: string, locale: string): string {
   if (PRINTABLE_ASCII.test(value)) {
-    return lowerInLocale(value.replace(/\s+/gu, " ").trim(), locale);
+    return lowerInLocale(evenSpaces(value), locale);
   }
-  return unitsOf(normalizeQuickAddText(value), locale)
-    .map((unit) => unit.folded)
-    .join("");
+  const lower = lowerInLocale(
+    normalizeQuickAddText(value).replace(TYPOGRAPHIC_APOSTROPHES, "'"),
+    locale,
+  );
+  return stripFoldableDiacritics(
+    lower.includes("ς") ? lower.replace(FINAL_SIGMA, "σ") : lower,
+  );
 }
 
 /** The typed line's text model, within {@link boundedQuickAddText}'s caps. */

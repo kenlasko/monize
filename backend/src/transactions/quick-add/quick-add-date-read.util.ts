@@ -45,9 +45,10 @@ export interface DateRead {
   readonly date: string;
   readonly spans: readonly UnitSpan[];
   /**
-   * A month name with its day, where the day was the only number beside the
-   * name: if the line holds no other number, the reader takes that number
-   * as the amount instead (`20 may flowers`).
+   * A month name with its day and no year, where the day was the only number
+   * beside the name: if the line holds no other number, the reader takes that
+   * number as the amount instead (`20 may flowers`). Never set when a year was
+   * taken: a day beside a month and a year is a date (`nov 3, 2025`).
    */
   readonly dayMayBeAmount?: boolean;
 }
@@ -170,6 +171,8 @@ function spanRest(
 interface MonthNameSide {
   readonly date: string;
   readonly spans: readonly UnitSpan[];
+  /** A year followed the day and month, and was taken with them. */
+  readonly withYear: boolean;
 }
 
 /** The date `dayToken` gives beside the month name at `span`, if it is a real one. */
@@ -196,7 +199,7 @@ function sideDate(
   const spans: UnitSpan[] = [span, dayToken];
   if (joiner) spans.push(joiner);
   if (year && yearToken) spans.push(yearToken);
-  return { date, spans };
+  return { date, spans, withYear: year !== null };
 }
 
 /**
@@ -229,8 +232,9 @@ export function dayBeforeMonth(ctx: DateContext): boolean {
  * The number before the name and the number after it are each tried as its
  * day, on their own. When only one gives a real date it is the date; when both
  * do (`20 nov 3 coffee`), the reader's own order of day and month decides and
- * the other number is left for the amount (`docs/future-plans/quick-add.md`,
- * "Reading the text", step 4).
+ * the other number is left for the amount. A day beside a month and a year is
+ * a date, never the amount (`loblaws nov 3, 2025`, `20 may 2026 flowers`)
+ * (`docs/future-plans/quick-add.md`, "Reading the text", step 4).
  */
 function monthNameDate(
   text: QuickAddText,
@@ -275,8 +279,9 @@ function monthNameDate(
         : (fromBefore ?? fromAfter);
     if (!chosen) continue;
     return {
-      ...chosen,
-      dayMayBeAmount: !(dayBefore && dayAfter),
+      date: chosen.date,
+      spans: chosen.spans,
+      dayMayBeAmount: !(dayBefore && dayAfter) && !chosen.withYear,
     };
   }
   return null;

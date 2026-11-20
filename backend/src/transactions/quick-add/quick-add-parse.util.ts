@@ -109,18 +109,18 @@ function partialPayee(
   text: ReturnType<typeof buildQuickAddText>,
   tokens: readonly FreeToken[],
   payees: readonly QuickAddCandidatePayee[],
+  /** `payees`' names as the names step folded them, in the same order. */
+  foldedNames: readonly string[],
   locale: string,
 ): {
   first: number;
   last: number;
   candidates: QuickAddCandidatePayee[];
 } | null {
-  const folded = payees.map((payee) => ({
-    payee,
-    name: foldForComparison(payee.name, locale),
-  }));
+  const fold = (value: string) => foldForComparison(value, locale);
+  const folded = payees.map((payee, i) => ({ payee, name: foldedNames[i] }));
   for (const [first, token] of tokens.entries()) {
-    const head = foldForComparison(token.text, locale);
+    const head = fold(token.text);
     if ([...head].length < PARTIAL_MATCH_MIN_LENGTH) continue;
     let best: { last: number; candidates: typeof folded } | null = null;
     let run = "";
@@ -131,10 +131,7 @@ function partialPayee(
       ) {
         break;
       }
-      const piece =
-        last === first
-          ? head
-          : ` ${foldForComparison(tokens[last].text, locale)}`;
+      const piece = last === first ? head : ` ${fold(tokens[last].text)}`;
       const at = run.length;
       run += piece;
       // A longer run starts only names the shorter one did, so only the
@@ -194,7 +191,8 @@ export function readQuickAddText(input: QuickAddParseInput): QuickAddReading {
     return { dated, afterDate, amountRead };
   };
   // A month name's only neighbouring number is the amount when the line
-  // holds no other: `20 may flowers` is 20, not the twentieth of May.
+  // holds no other: `20 may flowers` is 20, not the twentieth of May. A
+  // month-name date that took a year is a date, and is never read again.
   const first = dateThenAmount(false);
   const retried =
     !first.amountRead && first.dated?.dayMayBeAmount
@@ -210,7 +208,14 @@ export function readQuickAddText(input: QuickAddParseInput): QuickAddReading {
 
   const partial = names.payee
     ? null
-    : partialPayee(text, leftoverTokens, input.payees, input.locale);
+    : partialPayee(
+        text,
+        leftoverTokens,
+        input.payees,
+        // Folded once, by the names step ("Bounds").
+        names.foldedPayeeNames,
+        input.locale,
+      );
   const remaining = partial
     ? leftoverTokens.filter((_t, i) => i < partial.first || i > partial.last)
     : leftoverTokens;

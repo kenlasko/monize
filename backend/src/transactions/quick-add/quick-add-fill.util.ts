@@ -10,9 +10,11 @@
  *   deposit; else deposit for an income category or a payee whose last 10
  *   rows are mostly deposits (inferred); otherwise payment (default).
  * - account and toAccount: `quick-add-fill-accounts.util.ts`.
- * - category (not for a transfer): pinned or cleared; else the payee's most
- *   frequent category over its last 10 unsplit rows, the most recent winning
- *   a tie; otherwise its default category (inferred).
+ * - category (not for a transfer): pinned; else, cleared by the reader, the
+ *   payee's default category when it has one (default: the save adopts it),
+ *   otherwise none; else the payee's most frequent category over its last 10
+ *   unsplit rows, the most recent winning a tie; otherwise its default
+ *   category (inferred).
  * - date: today (default).
  *
  * Then the blockers, and the balance line under the predicate
@@ -90,10 +92,34 @@ function historyCategories(
     .map(([id]) => input.categories.get(id)!);
 }
 
-function resolveCategory(input: QuickAddFillInput): {
+/** The linked payee's default category, when the reader owns it. */
+function payeeDefaultCategory(
+  input: QuickAddFillInput,
+): QuickAddCandidateCategory | null {
+  const defaultId = input.payee.payee?.defaultCategoryId ?? null;
+  return defaultId ? (input.categories.get(defaultId) ?? null) : null;
+}
+
+interface CategoryResolution {
   field: QuickAddField<QuickAddCategoryRef>;
   category: QuickAddCandidateCategory | null;
-} {
+}
+
+/**
+ * A category the reader cleared. The save sends none, and `create()` then
+ * adopts the linked payee's default category, so that default is the answer
+ * (`default`): the chip shows what the save will write. Without a linked
+ * payee or a default it is none, as a pin. Never read again from the text or
+ * the payee's history.
+ */
+function clearedCategory(input: QuickAddFillInput): CategoryResolution {
+  const adopted = payeeDefaultCategory(input);
+  return adopted
+    ? { field: field(categoryRef(adopted), "default"), category: adopted }
+    : { field: clearedField<QuickAddCategoryRef>(), category: null };
+}
+
+function resolveCategory(input: QuickAddFillInput): CategoryResolution {
   const { reading, pins, categoryUsage } = input;
   const collisions = rankByUsage(
     reading.categoryAlternatives.map((c) => ({ ...c, name: c.path })),
@@ -105,9 +131,7 @@ function resolveCategory(input: QuickAddFillInput): {
       category: pins.category,
     };
   }
-  if (pins.clearCategory) {
-    return { field: clearedField<QuickAddCategoryRef>(), category: null };
-  }
+  if (pins.clearCategory) return clearedCategory(input);
   if (reading.category) {
     const ranked = rankByUsage(
       reading.category.candidates.map((c) => ({ ...c, name: c.path })),
@@ -125,10 +149,7 @@ function resolveCategory(input: QuickAddFillInput): {
       category: top,
     };
   }
-  const defaultId = input.payee.payee?.defaultCategoryId ?? null;
-  const defaultCategory = defaultId
-    ? (input.categories.get(defaultId) ?? null)
-    : null;
+  const defaultCategory = payeeDefaultCategory(input);
   const inferred = withoutIds(
     [
       ...historyCategories(input),
@@ -181,14 +202,21 @@ function statedKind(
   return reading.kind ? { value: reading.kind, source: "typed" } : null;
 }
 
-/** The typed figure in another currency, or null when it is the account's. */
+/**
+ * The figure as typed in a currency: one that is not the account's (where
+ * `foreignCurrency` blocks), or any currency while no account is known to
+ * compare it with, so the reader's currency is not lost before one is chosen.
+ * Null when the typed currency is the account's, or none was typed.
+ */
 function foreignAmountOf(
   typed: TypedCurrency | null,
   amount: number | null,
   account: QuickAddCandidateAccount | null,
 ): QuickAddForeignAmount | null {
-  if (!typed || !account || amount === null) return null;
-  if (typed.codes.includes(account.currencyCode.toUpperCase())) return null;
+  if (!typed || amount === null) return null;
+  if (account && typed.codes.includes(account.currencyCode.toUpperCase())) {
+    return null;
+  }
   return {
     currencyCode: typed.codes.length === 1 ? typed.codes[0] : null,
     amount,
@@ -322,7 +350,9 @@ export function fillQuickAdd(input: QuickAddFillInput): QuickAddInterpretation {
       accounts.account.ambiguous ||
       (isTransfer && accounts.toAccount.ambiguous),
     isTransfer,
-    foreignCurrency: foreignAmount !== null,
+    // Without an account there is nothing to call the figure foreign to:
+    // `missingAccount` blocks, and the figure is kept in `foreignAmount`.
+    foreignCurrency: account !== null && foreignAmount !== null,
   });
 
   const balance =

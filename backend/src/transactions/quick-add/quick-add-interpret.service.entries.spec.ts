@@ -238,7 +238,16 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
       expect(result.memo).toBeNull();
     });
 
-    it("answer a cleared category as none, never from history or the payee's default", async () => {
+    // The save sends no category and `create()` adopts the linked payee's
+    // default, so a cleared category answers with what the save will write.
+    const ADOPTED_FOOD = {
+      value: { id: "c-food", name: "Food" },
+      source: "default",
+      ambiguous: false,
+      alternatives: [],
+    };
+
+    it("answer a cleared category with the payee's default the save adopts, never from history or the text", async () => {
       loaders.loadPayeeHistory.mockResolvedValue({
         recent: [],
         categoryIds: ["c-groc", "c-groc"],
@@ -247,26 +256,41 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
         USER,
         dto("84.37 loblaws", { pins: { clear: ["category"] } }),
       );
-      expect(fromHistory.category).toEqual(CLEARED);
+      expect(fromHistory.category).toEqual(ADOPTED_FOOD);
       expect(fromHistory.payee.value?.id).toBe(LOBLAWS.id);
-      loaders.loadPayeeHistory.mockResolvedValue({
-        recent: [],
-        categoryIds: [],
-      });
-      const fromDefault = await service.interpret(
-        USER,
-        dto("84.37 loblaws", { pins: { clear: ["category"] } }),
-      );
-      expect(fromDefault.category).toEqual(CLEARED);
       const typed = await service.interpret(
         USER,
         dto("84.37 loblaws groceries", { pins: { clear: ["category"] } }),
       );
-      expect(typed.category).toEqual(CLEARED);
+      expect(typed.category).toEqual(ADOPTED_FOOD);
+      // The rule preview runs over the category the chip shows.
       expect(transactionsService.previewCreate).toHaveBeenLastCalledWith(
         USER,
-        expect.objectContaining({ categoryId: undefined }),
+        expect.objectContaining({ payeeId: LOBLAWS.id, categoryId: "c-food" }),
       );
+      const pinnedPayee = await service.interpret(
+        USER,
+        dto("84.37 coffee", {
+          pins: { payeeId: LOBLAWS.id, clear: ["category"] },
+        }),
+      );
+      expect(pinnedPayee.category).toEqual(ADOPTED_FOOD);
+    });
+
+    it("answer a cleared category as none when the save adopts nothing", async () => {
+      // Tim Hortons has no default category; a new payee has none yet.
+      for (const text of ["12 tim hortons", "12 corner store"]) {
+        transactionsService.previewCreate.mockClear();
+        const result = await service.interpret(
+          USER,
+          dto(text, { pins: { clear: ["category"] } }),
+        );
+        expect(result.category).toEqual(CLEARED);
+        expect(transactionsService.previewCreate).toHaveBeenCalledWith(
+          USER,
+          expect.objectContaining({ categoryId: undefined }),
+        );
+      }
     });
 
     it("never make an income category's deposit of a cleared one", async () => {

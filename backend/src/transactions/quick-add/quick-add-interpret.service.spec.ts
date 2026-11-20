@@ -364,6 +364,33 @@ describe("QuickAddInterpretService", () => {
       expect(dollar.foreignAmount).toEqual({ currencyCode: null, amount: 20 });
     });
 
+    it("keeps a typed currency's figure while no account is known to compare it with", async () => {
+      // No context, no payee history, no prior row: no account at all.
+      loaders.loadMostRecentAccountId.mockResolvedValue(null);
+      const euro = await service.interpret(USER, dto("20 € cafe"));
+      expect(euro.account.value).toBeNull();
+      expect(euro.amount).toMatchObject({ value: 20, source: "typed" });
+      expect(euro.foreignAmount).toEqual({ currencyCode: "EUR", amount: 20 });
+      // Nothing to call it foreign to yet: only the account is missing.
+      expect(euro.blockers).toEqual(["missingAccount"]);
+      expect(euro.balance).toBeNull();
+      const places = await service.interpret(USER, dto("12.345 EUR cafe"));
+      expect(places.foreignAmount).toEqual({
+        currencyCode: "EUR",
+        amount: 12.345,
+      });
+      expect(places.blockers).toEqual(["missingAccount"]);
+      const dollar = await service.interpret(USER, dto("$20 cafe"));
+      expect(dollar.foreignAmount).toEqual({ currencyCode: null, amount: 20 });
+      const plain = await service.interpret(USER, dto("20 cafe"));
+      expect(plain.foreignAmount).toBeNull();
+      const pinned = await service.interpret(
+        USER,
+        dto("20 € cafe", { pins: { amount: 30 } }),
+      );
+      expect(pinned.foreignAmount).toBeNull();
+    });
+
     it("has no foreign figure without the foreignCurrency blocker", async () => {
       for (const text of ["$20 loblaws", "20 loblaws", "20 CAD loblaws"]) {
         const result = await service.interpret(USER, dto(text));

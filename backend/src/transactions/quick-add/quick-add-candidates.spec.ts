@@ -164,6 +164,40 @@ describe("loadQuickAddCandidates", () => {
     ]);
   });
 
+  it("groups a payee's aliases in one pass, however many it has", async () => {
+    const s = setup();
+    s.accounts.find.mockResolvedValue([]);
+    s.categories.find.mockResolvedValue([]);
+    s.payees.find.mockResolvedValue([
+      { id: "p1", name: "Starbucks", defaultCategoryId: null },
+      { id: "p2", name: "Loblaws", defaultCategoryId: null },
+    ]);
+    const many = Array.from({ length: 5_000 }, (_v, i) => `SBUX ${i}*`);
+    s.aliases.find.mockResolvedValue([
+      ...many.map((alias) => ({ payeeId: "p1", alias })),
+      { payeeId: "p2", alias: "LOBLAWS*" },
+    ]);
+    s.preferences.findOne.mockResolvedValue(null);
+    // One map entry per payee, each alias appended to it in place: setting
+    // the payee's entry again for every alias (a copy of its list each time)
+    // costs the square of the alias count inside the scoped read.
+    const sets = jest.spyOn(Map.prototype, "set");
+    let loaded: Awaited<ReturnType<typeof loadQuickAddCandidates>>;
+    let setCalls: number;
+    try {
+      loaded = await loadQuickAddCandidates(s.m, USER);
+    } finally {
+      setCalls = sets.mock.calls.length;
+      sets.mockRestore();
+    }
+    expect(setCalls).toBeLessThan(10);
+    expect(loaded.payees.map((p) => [p.id, p.aliases.length])).toEqual([
+      ["p1", 5_000],
+      ["p2", 1],
+    ]);
+    expect(loaded.payees[0].aliases).toEqual(many);
+  });
+
   it("falls back to the default formats and reads no currency without accounts", async () => {
     const s = setup();
     for (const repo of [s.accounts, s.payees, s.aliases, s.categories]) {

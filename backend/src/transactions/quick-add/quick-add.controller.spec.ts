@@ -89,7 +89,10 @@ describe("QuickAddController", () => {
     ).toBe(200);
   });
 
-  it("carries its own ceiling of 120 readings a minute", () => {
+  it("sets its route's throttler limit to 120 readings a minute", () => {
+    // @nestjs/throttler already keys every route's bucket on its controller
+    // and handler: the decorator replaces the global limit for this route's
+    // bucket rather than adding a second one.
     const handler = QuickAddController.prototype.interpret;
     expect(Reflect.getMetadata(`${THROTTLER_LIMIT}default`, handler)).toBe(120);
     expect(Reflect.getMetadata(`${THROTTLER_TTL}default`, handler)).toBe(

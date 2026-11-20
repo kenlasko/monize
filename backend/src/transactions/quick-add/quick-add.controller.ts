@@ -36,15 +36,22 @@ import type { QuickAddInterpretation } from "./quick-add.types";
  * that), and it is registered before that controller in the module.
  */
 /**
- * The interpret route's own ceiling. The client asks on every pause in typing
- * (200 ms after the last key) and again on every chip change, so a reader
- * typing slowly on a phone, a pause after most keys, asks about once per
- * character: some 25 times for a line, and Save & New starts the next line at
- * once. 120 a minute keeps four or five such lines a minute free of refusals;
- * a desktop typist, who pauses between words rather than keys, asks far
- * less. Each reading is CPU work on the shared event loop, bounded per
- * request (`docs/future-plans/quick-add.md`, "Bounds"), so the ceiling also
- * bounds what one client can spend of it in a minute.
+ * The interpret route's ceiling, per client address. The global `default`
+ * throttler already gives every route a bucket of its own (@nestjs/throttler
+ * keys a bucket on the controller, the handler and the tracker) of 100 a
+ * minute, so this does not add a second limit: it raises this route's to 120.
+ *
+ * The client asks on every pause in typing (200 ms after the last key) and
+ * again on every chip change, so a reader typing slowly on a phone, a pause
+ * after most keys, asks about once per character: some 25 times for a line,
+ * and Save & New starts the next line at once. 120 a minute keeps four or
+ * five such lines a minute free of refusals; a desktop typist, who pauses
+ * between words rather than keys, asks far less.
+ *
+ * The ceiling is not what keeps the event loop free: one reading's CPU work
+ * is bounded whatever the reader has stored (`docs/future-plans/quick-add.md`,
+ * "Bounds"), and the ceiling only bounds how many such readings one client
+ * asks for in a minute.
  */
 export const QUICK_ADD_INTERPRET_THROTTLE = {
   default: { ttl: 60_000, limit: rateLimit(120) },

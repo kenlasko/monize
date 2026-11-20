@@ -69,7 +69,7 @@ export interface QuickAddBalance {
   movesOn: string | null;
 }
 
-/** The figure as typed in another currency (`foreignCurrency`). */
+/** The figure as typed in a currency (`QuickAddInterpretation.foreignAmount`). */
 export interface QuickAddForeignAmount {
   /** The ISO code when the typed symbol or code names one currency, else null. */
   currencyCode: string | null;
@@ -96,7 +96,10 @@ export interface QuickAddInterpretation {
   blockers: QuickAddBlocker[];
   /** The account's balance before and after the save, or null without an account and amount. */
   balance: QuickAddBalance | null;
-  /** Set exactly when `foreignCurrency` blocks. */
+  /**
+   * The figure as typed in a currency: set when `foreignCurrency` blocks, and
+   * when a currency was typed but no account is known yet to compare it with.
+   */
   foreignAmount: QuickAddForeignAmount | null;
   /** What the reader's transaction rules will change on save (the planner the commit runs). */
   ruleEffects?: RuleEffectsPreview;

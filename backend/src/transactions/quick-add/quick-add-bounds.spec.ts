@@ -80,13 +80,99 @@ describe("Quick Add reading bounds", () => {
           "7-ELEVEN",
         ];
         for (const name of names) {
-          // A non-ASCII character on the end forces the unit-by-unit fold.
-          const slow = foldForComparison(
-            `${name.trimEnd()}\u00e9`,
-            locale,
-          ).slice(0, -1);
-          expect(foldForComparison(name, locale)).toBe(slow);
+          // The typed line's fold, one unit at a time.
+          const unitByUnit = buildQuickAddText(name, locale).folded;
+          expect(foldForComparison(name, locale)).toBe(unitByUnit);
+          // A non-ASCII character on the end forces the whole-string fold.
+          const whole = foldForComparison(`${name.trimEnd()}\u00e9`, locale);
+          expect(whole.slice(0, -1)).toBe(unitByUnit);
         }
+      },
+    );
+
+    /** Code points around every rule of the fold, astral ones included. */
+    const FOLD_RANGES: ReadonlyArray<readonly [number, number]> = [
+      [0x00a0, 0x058f], // Latin-1 to Armenian: diacritics, Greek, Cyrillic, IPA
+      [0x1ab0, 0x1aff], // combining marks, extended
+      [0x1d00, 0x1fff], // phonetic, Latin and Greek extended, more marks
+      [0x2000, 0x206f], // spaces and typographic apostrophes
+      [0x2c60, 0x2c7f], // Latin extended-C
+      [0x2de0, 0x2dff], // Cyrillic combining letters (marks of a foldable script)
+      [0x3040, 0x30ff], // kana, with the combining voiced marks
+      [0xa640, 0xa69f], // Cyrillic extended-B, more Cyrillic marks
+      [0xa720, 0xa7ff], // Latin extended-D
+      [0xac00, 0xac40], // Hangul syllables (NFD splits them)
+      [0xfb00, 0xfb4f], // ligatures NFKC expands
+      [0xfe20, 0xfe2f], // half marks, two of them Cyrillic
+      [0xff00, 0xffef], // full-width forms
+      [0x1d400, 0x1d4ff], // mathematical letters NFKC makes Latin and Greek
+      [0x1e000, 0x1e08f], // Glagolitic and Cyrillic combining letters
+    ];
+
+    it.each(["en", "tr", "lt", "ru", "ja"])(
+      "folds a whole name exactly as the typed line folds it unit by unit (%s)",
+      (locale) => {
+        const mismatches: string[] = [];
+        for (const [from, to] of FOLD_RANGES) {
+          for (let point = from; point <= to; point++) {
+            const ch = String.fromCodePoint(point);
+            for (const sample of [
+              ch,
+              `A${ch}\u0301`,
+              `\u30a2${ch}\u0301`,
+              `I${ch}\u0307`,
+              `ΣΑ${ch}Σ ΟΣ`,
+              `\uac00${ch}\u0483\u0301`,
+            ]) {
+              const whole = foldForComparison(sample, locale);
+              if (whole !== buildQuickAddText(sample, locale).folded) {
+                mismatches.push(`U+${point.toString(16)} in ${sample}`);
+              }
+            }
+          }
+        }
+        expect(mismatches).toEqual([]);
+      },
+    );
+
+    it.each([
+      ["en", "Café Crème "],
+      ["ru", "Ёлка Йогурт "],
+      ["tr", "İstanbul Işık "],
+      ["ja", "ファミリーマート店 "],
+    ])(
+      "folds each candidate name once per reading, whole, whatever its length (%s)",
+      (locale, word) => {
+        const payees = (repeat: number) =>
+          Array.from({ length: 50 }, (_v, i) =>
+            payee(`p${i}`, `${word.repeat(repeat)}${i}`),
+          );
+        /** Lower-casing calls one reading makes; a fold lower-cases once. */
+        const lowerCasings = (list: QuickAddCandidatePayee[]) => {
+          const over = {
+            payees: list,
+            locale,
+            vocabulary: resolveQuickAddVocabulary(locale),
+          };
+          read("12 zzzq unmatched", over);
+          const lower = jest.spyOn(String.prototype, "toLowerCase");
+          const localeLower = jest.spyOn(String.prototype, "toLocaleLowerCase");
+          try {
+            // `zzzq` starts no name, so the partial match reads every one.
+            read("12 zzzq unmatched", over);
+            return lower.mock.calls.length + localeLower.mock.calls.length;
+          } finally {
+            lower.mockRestore();
+            localeLower.mockRestore();
+          }
+        };
+        const withoutPayees = lowerCasings([]);
+        const short = lowerCasings(payees(1)) - withoutPayees;
+        const long = lowerCasings(payees(8)) - withoutPayees;
+        // Once per name for the whole reading, the names step and the partial
+        // match sharing it, never once per character.
+        expect(short).toBeLessThanOrEqual(50);
+        expect(long).toBe(short);
       },
     );
   });

@@ -50,6 +50,12 @@ export interface NamesRead {
   } | null;
   readonly categoryAlternatives: readonly QuickAddCandidateCategory[];
   readonly used: boolean[];
+  /**
+   * Each payee's name as folded for comparison, in the order of
+   * `NamesInput.payees`: the partial match reads these rather than folding
+   * every name again ("Bounds").
+   */
+  readonly foldedPayeeNames: readonly string[];
 }
 
 export interface NamesInput {
@@ -90,14 +96,18 @@ export interface GlobBudget {
   remaining: number;
 }
 
+/** Where each distinct name of `folded` (already folded) occurs in the line. */
 function phraseMatches(
   text: QuickAddText,
   used: readonly boolean[],
-  names: readonly string[],
-  locale: string,
+  folded: readonly string[],
 ): UnitSpan[] {
-  const folded = [...new Set(names.map((n) => foldForComparison(n, locale)))];
-  return folded.flatMap((name) => findPhrase(text, name, used));
+  if (folded.length === 1) return findPhrase(text, folded[0], used);
+  const spans: UnitSpan[] = [];
+  for (const name of new Set(folded)) {
+    spans.push(...findPhrase(text, name, used));
+  }
+  return spans;
 }
 
 /** The words of the line, as unit spans. */
@@ -206,42 +216,55 @@ function distinctMatches(matches: readonly NameMatch[]): NameMatch[] {
   });
 }
 
+/**
+ * Every name's spans in the line, each candidate name folded once
+ * (`docs/future-plans/quick-add.md`, "Bounds"), and the payees' folded names
+ * for the partial match.
+ */
 function collectMatches(
   text: QuickAddText,
   used: readonly boolean[],
   input: NamesInput,
-): NameMatch[] {
+): { matches: NameMatch[]; foldedPayeeNames: string[] } {
   const runs = wordRuns(text);
   const budget: GlobBudget = {
     remaining: input.aliasGlobBudget ?? ALIAS_GLOB_BUDGET,
   };
-  const accounts = input.accounts.flatMap((item) =>
-    phraseMatches(text, used, [item.name], input.locale).map(
-      (span): NameMatch => ({ span, kind: "account", item }),
-    ),
-  );
-  const payees = input.payees.flatMap((item) => {
-    const plain = [
-      item.name,
-      ...item.aliases.filter((alias) => !alias.includes("*")),
-    ];
-    const wildcard =
-      budget.remaining > 0
-        ? item.aliases
-            .filter((alias) => alias.includes("*"))
-            .map((alias) => foldForComparison(alias, input.locale))
-        : [];
-    return [
-      ...phraseMatches(text, used, plain, input.locale),
-      ...wildcard.flatMap((pattern) => aliasSpans(runs, pattern, budget)),
-    ].map((span): NameMatch => ({ span, kind: "payee", item }));
-  });
-  const categories = input.categories.flatMap((item) =>
-    phraseMatches(text, used, [item.name, item.path], input.locale).map(
-      (span): NameMatch => ({ span, kind: "category", item }),
-    ),
-  );
-  return distinctMatches([...accounts, ...payees, ...categories]);
+  const fold = (value: string) => foldForComparison(value, input.locale);
+  // One list, appended to in place: a reader may hold thousands of names,
+  // nearly all of which match nothing.
+  const matches: NameMatch[] = [];
+  for (const item of input.accounts) {
+    for (const span of phraseMatches(text, used, [fold(item.name)])) {
+      matches.push({ span, kind: "account", item });
+    }
+  }
+  const foldedPayeeNames: string[] = [];
+  for (const item of input.payees) {
+    const name = fold(item.name);
+    foldedPayeeNames.push(name);
+    const plain = [name];
+    const wildcard: string[] = [];
+    for (const alias of item.aliases) {
+      if (!alias.includes("*")) plain.push(fold(alias));
+      else if (budget.remaining > 0) wildcard.push(fold(alias));
+    }
+    for (const span of phraseMatches(text, used, plain)) {
+      matches.push({ span, kind: "payee", item });
+    }
+    for (const pattern of wildcard) {
+      for (const span of aliasSpans(runs, pattern, budget)) {
+        matches.push({ span, kind: "payee", item });
+      }
+    }
+  }
+  for (const item of input.categories) {
+    const names = [fold(item.name), fold(item.path)];
+    for (const span of phraseMatches(text, used, names)) {
+      matches.push({ span, kind: "category", item });
+    }
+  }
+  return { matches: distinctMatches(matches), foldedPayeeNames };
 }
 
 function uniqueById<T extends { id: string }>(items: readonly T[]): T[] {
@@ -288,7 +311,8 @@ export function readNames(
   used: readonly boolean[],
   input: NamesInput,
 ): NamesRead {
-  const groups = selectLongest(collectMatches(text, used, input), used);
+  const { matches, foldedPayeeNames } = collectMatches(text, used, input);
+  const groups = selectLongest(matches, used);
   const selectedMask = groups.reduce(
     (mask, g) => markUsed(mask, g.span),
     [...used],
@@ -356,5 +380,6 @@ export function readNames(
         : null,
     categoryAlternatives: uniqueById(categoryAlternatives),
     used: kept.reduce((mask, span) => markUsed(mask, span), [...used]),
+    foldedPayeeNames,
   };
 }

@@ -297,6 +297,25 @@ describe("readQuickAddText", () => {
         },
       );
 
+      it.each([
+        // A day beside a month and a year is a date, never the amount, whichever
+        // side of the month the day is on.
+        ["loblaws nov 3, 2025", "2025-11-03", null, null],
+        ["coffee 3 nov 2024", "2024-11-03", null, "coffee"],
+        ["20 may 2026 flowers", "2026-05-20", null, "flowers"],
+        // The line's other number is the amount.
+        ["loblaws nov 3, 2025 45", "2025-11-03", 45, null],
+        ["12 coffee 3 nov 2024", "2024-11-03", 12, "coffee"],
+      ])(
+        "reads %s as dated %s, amount %p: a month-name date with a year",
+        (text, date, amount, rest) => {
+          const r = read(text);
+          expect(r.date).toBe(date);
+          expect(r.amount?.value ?? null).toBe(amount);
+          expect(r.leftover).toBe(rest);
+        },
+      );
+
       it("keeps the date when its only number cannot be an amount", () => {
         const r = read("coffee 3rd nov");
         expect(r.date).toBe("2026-11-03");
