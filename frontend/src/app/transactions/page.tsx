@@ -15,6 +15,7 @@ import { ListBottomPager } from '@/components/ui/ListBottomPager';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import dynamic from 'next/dynamic';
 import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
+import { QuickAddDialogPlaceholder } from '@/components/transactions/quick-add/QuickAddDialogPlaceholder';
 
 const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false, loading: TransactionFormPlaceholder });
 const ScheduledTransactionForm = dynamic(() => import('@/components/scheduled-transactions/ScheduledTransactionForm').then(m => m.ScheduledTransactionForm), { ssr: false });
@@ -22,7 +23,7 @@ const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m =
 const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });
 const BulkUpdateModal = dynamic(() => import('@/components/transactions/BulkUpdateModal').then(m => m.BulkUpdateModal), { ssr: false });
 // Loaded the first time Quick Add opens, so the register keeps the bundle it had.
-const QuickAddDialog = dynamic(() => import('@/components/transactions/quick-add/QuickAddDialog').then(m => m.QuickAddDialog), { ssr: false });
+const QuickAddDialog = dynamic(() => import('@/components/transactions/quick-add/QuickAddDialog').then(m => m.QuickAddDialog), { ssr: false, loading: QuickAddDialogPlaceholder });
 // Reserve the chart card's height while the chunk loads so the rest of the
 // page (filter row, table) doesn't jump down when the chart hydrates.
 const ChartLoadingPlaceholder = () => (
@@ -208,6 +209,18 @@ function TransactionsContent() {
   const quickAddModal = useFormModal<never>();
   const [quickAddOpening, setQuickAddOpening] = useState({ seq: 0, text: '' });
   const [formDraft, setFormDraft] = useState<{ seq: number; draft: TransactionFormDraft } | null>(null);
+  // Warm Quick Add's chunk once the page is idle, so an opening rarely waits on
+  // it: the dialog owns its Modal, and swapping in the real one after
+  // QuickAddDialogPlaceholder replays the Modal's entry animation.
+  useEffect(() => {
+    const warm = () => { void import('@/components/transactions/quick-add/QuickAddDialog'); };
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warm, { timeout: 5000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(warm, 2000);
+    return () => window.clearTimeout(id);
+  }, []);
   // Separate modal instances for editing the account/category behind a
   // single-entity filter, reusing the same forms as their own pages.
   const accountModal = useFormModal<Account>();

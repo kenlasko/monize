@@ -46,4 +46,23 @@ describe('a lazily loaded TransactionForm reserves its height', () => {
     expect(hosts).toBeGreaterThan(0);
     expect(offenders).toEqual([]);
   });
+
+  it('every dynamic() import of QuickAddDialog passes loading: QuickAddDialogPlaceholder', () => {
+    const offenders: string[] = [];
+    let hosts = 0;
+    for (const [path, content] of Object.entries(sources)) {
+      if (/\.test\.tsx$/.test(path)) continue;
+      for (const match of content.matchAll(/\bdynamic\(/g)) {
+        const call = dynamicCall(content, match.index + 'dynamic'.length);
+        if (!call.includes("'@/components/transactions/quick-add/QuickAddDialog'")) continue;
+        hosts += 1;
+        if (!/loading:\s*QuickAddDialogPlaceholder\b/.test(call)) {
+          const line = content.slice(0, match.index).split('\n').length;
+          offenders.push(`${path}:${line}`);
+        }
+      }
+    }
+    expect(hosts).toBeGreaterThan(0);
+    expect(offenders).toEqual([]);
+  });
 });
