@@ -24,6 +24,8 @@ interface NormalTransactionFieldsProps {
   setValue: UseFormSetValue<any>;
   errors: FieldErrors;
   watchedAccountId: string;
+  /** The reader picked another account. */
+  onAccountChange?: (accountId: string) => void;
   watchedAmount: number;
   watchedCurrencyCode: string;
   watchedPayeeName?: string;
@@ -74,6 +76,7 @@ export function NormalTransactionFields({
   setValue,
   errors,
   watchedAccountId,
+  onAccountChange,
   watchedAmount,
   watchedCurrencyCode,
   watchedPayeeName,
@@ -129,7 +132,7 @@ export function NormalTransactionFields({
               accountOptionLabel,
             ),
           ]}
-          {...register('accountId')}
+          {...register('accountId', { onChange: (event) => onAccountChange?.(event.target.value) })}
         />
         <DateInput
           label={t('form.fields.date')}

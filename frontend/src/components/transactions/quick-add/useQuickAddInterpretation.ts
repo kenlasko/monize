@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { quickAddApi } from '@/lib/quick-add';
+import { isQuickAddTextTooLong, quickAddApi } from '@/lib/quick-add';
 import { createLogger } from '@/lib/logger';
 import type { QuickAddInterpretation, QuickAddPins } from '@/types/quick-add';
 import { hasPins } from './quick-add-chips';
@@ -107,6 +107,8 @@ export function useQuickAddInterpretation(
   const key = `${requestKey(input)}#${attempt}`;
   const context = `${contextKey(input)}#${attempt}`;
   const isEmpty = input.text.trim() === '' && !hasPins(input.pins);
+  // A line the server would refuse (its bound counts after NFKC) is never sent.
+  const inactive = isEmpty || isQuickAddTextTooLong(input.text);
 
   // A cleared line (Save & New, or the reader deleting it) starts the next
   // entry from nothing: the last entry's reading is not drawn under it while
@@ -131,7 +133,7 @@ export function useQuickAddInterpretation(
   useEffect(() => {
     const previousContext = lastContext.current;
     lastContext.current = context;
-    if (isEmpty) return;
+    if (inactive) return;
     // Typing waits for a pause; the first ask (a line handed in already typed),
     // a changed pin, day or account, and Try Again ask at once.
     const delay =
@@ -168,12 +170,12 @@ export function useQuickAddInterpretation(
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [key, context, isEmpty]);
+  }, [key, context, inactive]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const current = !isEmpty && answer?.key === key ? answer.settled : null;
-  const status: QuickAddReadingStatus = isEmpty ? 'idle' : current === null ? 'pending' : current.outcome;
+  const current = !inactive && answer?.key === key ? answer.settled : null;
+  const status: QuickAddReadingStatus = inactive ? 'idle' : current === null ? 'pending' : current.outcome;
   const interpretation = current?.outcome === 'ready' ? current.interpretation : null;
 
   return {

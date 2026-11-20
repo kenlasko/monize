@@ -110,7 +110,9 @@ export function useQuickAddSave(callbacks: QuickAddSaveCallbacks) {
     let askingReader = false;
     try {
       const payee = reading.payee.value;
-      if (payee !== null && payee.id === null && payee.name.trim()) {
+      // A transfer keeps the name as text on its legs, as the full form does;
+      // only a payment or a deposit makes (or brings back) a payee record.
+      if (request.kind === 'transaction' && payee !== null && payee.id === null && payee.name.trim()) {
         let outcome;
         try {
           outcome = await createPayeeFromName(payee.name);

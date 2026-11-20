@@ -710,6 +710,7 @@
     "memoLabel": "Description :",
     "reading": "Lecture de la saisie...",
     "readFailed": "Échec de la lecture de la saisie",
+    "tooLong": "Cette ligne est trop longue pour être lue. Raccourcissez-la pour continuer.",
     "tryAgain": "Réessayer",
     "pinRefused": {
       "title": "Un élément que vous avez choisi n’est plus disponible",

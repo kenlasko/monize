@@ -710,6 +710,7 @@
     "memoLabel": "Opis:",
     "reading": "Odczytywanie wpisu...",
     "readFailed": "Nie udało się odczytać wpisu",
+    "tooLong": "Ten wiersz jest zbyt długi, aby go odczytać. Skróć go, aby kontynuować.",
     "tryAgain": "Spróbuj ponownie",
     "pinRefused": {
       "title": "Coś, co wybrano, nie jest już dostępne",

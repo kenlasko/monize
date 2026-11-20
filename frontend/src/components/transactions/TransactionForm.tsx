@@ -1262,6 +1262,28 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     // The rate-fetch effect fires on the entryCurrency change.
   };
 
+  // An account whose currency is the one the amount was typed in (a draft that
+  // arrived with a foreign figure and no account yet) makes it an ordinary
+  // entry: the typed figure becomes the amount, not a foreign entry that
+  // would leave the amount empty.
+  const handleAccountChange = (accountId: string) => {
+    const account = accounts.find((a) => a.id === accountId);
+    if (
+      !account ||
+      !entryCurrency ||
+      foreignAmount === undefined ||
+      account.currencyCode.toUpperCase() !== entryCurrency.toUpperCase()
+    ) {
+      return;
+    }
+    rateOverriddenRef.current = false;
+    setEntryCurrency('');
+    setFxRate(null);
+    setFxRateLookupFailed(false);
+    setValue('amount', foreignAmount, { shouldDirty: true, shouldValidate: true });
+    setForeignAmount(undefined);
+  };
+
   // Fetch the rate for (entryCurrency -> account currency) on the transaction
   // date, debounced. Skipped while the rate is user-overridden so a date tweak
   // does not discard the bank's stored rate.
@@ -1981,6 +2003,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           setValue={setValue}
           errors={errors}
           watchedAccountId={watchedAccountId}
+          onAccountChange={handleAccountChange}
           watchedAmount={watchedAmount}
           watchedCurrencyCode={watchedCurrencyCode}
           watchedPayeeName={watchedPayeeName}

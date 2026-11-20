@@ -142,7 +142,14 @@ export function buildQuickAddDraft(
   const account = reading.account.ambiguous ? null : reading.account.value;
   const toAccount = reading.toAccount.ambiguous ? null : reading.toAccount.value;
   const amount = reading.amount.value;
-  const foreign = reading.foreignAmount;
+  // A figure typed in the chosen account's own currency is a plain entry
+  // there, never a foreign one (the form would drop its amount).
+  const typed = reading.foreignAmount;
+  const sameCurrency =
+    !!typed?.currencyCode &&
+    !!account &&
+    account.currencyCode.toUpperCase() === typed.currencyCode.toUpperCase();
+  const foreign = sameCurrency ? null : typed;
   const foreignEntry = !transfer && foreign?.currencyCode ? foreign : null;
   const payee = reading.payee.value;
   return {
@@ -150,10 +157,17 @@ export function buildQuickAddDraft(
     accountId: account?.id,
     toAccountId: transfer ? toAccount?.id : undefined,
     amount:
-      foreign || amount === null
+      foreign
         ? undefined
-        : // At the currency the reading read it in, chosen or not.
-          roundToEntryPlaces(signedQuickAddAmount(kind, amount), reading.account.value?.currencyCode),
+        : sameCurrency && typed
+          ? roundToEntryPlaces(signedQuickAddAmount(kind, typed.amount), account?.currencyCode)
+          : amount === null
+            ? undefined
+            : // At the currency the reading read it in, chosen or not.
+              roundToEntryPlaces(
+                signedQuickAddAmount(kind, amount),
+                reading.account.value?.currencyCode,
+              ),
     ...(foreignEntry?.currencyCode
       ? {
           // `foreignAmount` is set exactly when the reading's `amount` is not

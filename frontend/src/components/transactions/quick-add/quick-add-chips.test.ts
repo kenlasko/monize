@@ -123,6 +123,16 @@ describe('quickAddFigure', () => {
     expect(quickAddFigure(reading, 20, format)).toBe('EUR:20.00 EUR');
   });
 
+  it('reads a typed currency with its code while no account is known, never as the default currency', () => {
+    const reading = qaPaymentReading({
+      amount: qaField(20),
+      account: qaMissing(),
+      blockers: ['missingAccount'],
+      foreignAmount: { currencyCode: 'EUR', amount: 20 },
+    });
+    expect(quickAddFigure(reading, 20, format)).toBe('EUR:20.00 EUR');
+  });
+
   it('reads one in a currency it cannot name as a bare figure, never the account\'s', () => {
     const reading = qaPaymentReading({
       amount: qaField(20),

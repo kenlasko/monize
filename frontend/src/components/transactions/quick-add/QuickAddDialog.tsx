@@ -17,7 +17,7 @@ import {
   useTransactionSubmitMode,
   type TransactionSubmitMode,
 } from '@/hooks/useTransactionSubmitMode';
-import { QUICK_ADD_TEXT_MAX_LENGTH } from '@/lib/quick-add';
+import { isQuickAddTextTooLong, QUICK_ADD_TEXT_MAX_LENGTH } from '@/lib/quick-add';
 import type { Account } from '@/types/account';
 import type { Category } from '@/types/category';
 import type { Payee } from '@/types/payee';
@@ -203,6 +203,7 @@ export function QuickAddDialog({
   };
 
   const shown = reading.shown;
+  const tooLong = isQuickAddTextTooLong(text);
 
   return (
     <>
@@ -223,6 +224,7 @@ export function QuickAddDialog({
             placeholder={t('quickAdd.placeholder')}
             value={text}
             maxLength={QUICK_ADD_TEXT_MAX_LENGTH}
+            error={tooLong ? t('quickAdd.tooLong') : undefined}
             autoComplete="off"
             enterKeyHint="done"
             onChange={(event) => setText(event.target.value)}

@@ -710,6 +710,7 @@
     "memoLabel": "Keterangan:",
     "reading": "Membaca entri...",
     "readFailed": "Gagal membaca entri",
+    "tooLong": "Baris ini terlalu panjang untuk dibaca. Persingkat untuk melanjutkan.",
     "tryAgain": "Coba Lagi",
     "pinRefused": {
       "title": "Sesuatu yang Anda pilih sudah tidak tersedia",

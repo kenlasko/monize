@@ -710,6 +710,7 @@
     "memoLabel": "Descrizione:",
     "reading": "Lettura della voce...",
     "readFailed": "Impossibile leggere la voce",
+    "tooLong": "Questa riga è troppo lunga per essere letta. Accorciala per continuare.",
     "tryAgain": "Riprova",
     "pinRefused": {
       "title": "Qualcosa che hai scelto non è più disponibile",

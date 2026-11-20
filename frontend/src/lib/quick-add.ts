@@ -8,10 +8,19 @@ import type {
 /**
  * The longest line the server reads (`QUICK_ADD_TEXT_MAX_LENGTH` in
  * `backend/src/transactions/quick-add/dto/quick-add-interpret.dto.ts`); a
- * longer one is refused with 400, so the box stops there and the palette does
- * not ask.
+ * longer one (counted after NFKC, `isQuickAddTextTooLong`) is refused with
+ * 400, so the dialog and the palette do not ask.
  */
 export const QUICK_ADD_TEXT_MAX_LENGTH = 200;
+
+/**
+ * Whether the server would refuse `text` as too long. It counts after NFKC
+ * normalizing, which can expand one character into many (an ellipsis, U+FDFA),
+ * so the box's raw `maxLength` alone cannot keep a line inside the bound.
+ */
+export function isQuickAddTextTooLong(text: string): boolean {
+  return text.normalize('NFKC').length > QUICK_ADD_TEXT_MAX_LENGTH;
+}
 
 /** `NUMERIC` can cross the wire as a decimal string; the readers branch on a number. */
 function numericField(field: QuickAddField<number | string>): QuickAddField<number> {

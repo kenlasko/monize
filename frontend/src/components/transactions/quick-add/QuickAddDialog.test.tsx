@@ -225,6 +225,39 @@ describe('QuickAddDialog', () => {
     expect(createPayee).not.toHaveBeenCalled();
   });
 
+  it('keeps a transfer\'s payee name as text, creating no payee record, as the full form does', async () => {
+    const { input } = await renderDialog();
+    await typeLine(
+      input,
+      '500 chequing to savings monthly top up',
+      qaTransferReading({ payee: qaField({ id: null, name: 'monthly top up' }) }),
+    );
+    await pressEnter(input);
+    await waitFor(() => expect(createTransfer).toHaveBeenCalledTimes(1));
+    expect(findInactiveByName).not.toHaveBeenCalled();
+    expect(createPayee).not.toHaveBeenCalled();
+    expect(createTransfer).toHaveBeenCalledWith(
+      expect.objectContaining({ payeeId: null, payeeName: 'monthly top up' }),
+    );
+  });
+
+  it('does not send a line the server counts as too long after NFKC, and says so', async () => {
+    const { input } = await renderDialog();
+    // 199 characters typed; the ellipsis becomes three after NFKC: 201.
+    const line = `5 ${'x'.repeat(196)}\u2026`;
+    expect(line).toHaveLength(199);
+    await act(async () => {
+      fireEvent.change(input, { target: { value: line } });
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+    expect(interpret).not.toHaveBeenCalled();
+    expect(screen.getByText('This line is too long to read. Shorten it to continue.')).toBeInTheDocument();
+    await pressEnter(input);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('remembers the date the way New Transaction does, for a transaction and a transfer', async () => {
     const { input } = await renderDialog();
     await typeLine(input, '84.37 loblaws', qaPaymentReading({ date: qaField('2026-11-17') }));
@@ -460,6 +493,29 @@ describe('QuickAddDialog', () => {
         originalAmount: -20,
         payeeId: 'payee-cafe',
       });
+      expect(draft.amount).toBeUndefined();
+    });
+
+    it('reads in the typed currency and goes over as that currency alone while no account is known', async () => {
+      const { input, onFullForm } = await renderDialog();
+      await typeLine(
+        input,
+        '20 € cafe',
+        qaPaymentReading({
+          amount: qaField(20),
+          account: qaMissing(),
+          blockers: ['missingAccount'],
+          balance: null,
+          foreignAmount: { currencyCode: 'EUR', amount: 20 },
+        }),
+      );
+      expect(screen.getByRole('button', { name: 'Amount: €20.00 EUR' })).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(fullFormButton());
+      });
+      const draft = onFullForm.mock.calls[0][0];
+      expect(draft).toMatchObject({ originalCurrencyCode: 'EUR', originalAmount: -20 });
+      expect(draft.accountId).toBeUndefined();
       expect(draft.amount).toBeUndefined();
     });
 

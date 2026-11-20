@@ -710,6 +710,7 @@
     "memoLabel": "Descrição:",
     "reading": "A ler a entrada...",
     "readFailed": "Falha ao ler a entrada",
+    "tooLong": "Esta linha é demasiado longa para ser lida. Encurte-a para continuar.",
     "tryAgain": "Tentar novamente",
     "pinRefused": {
       "title": "Algo que escolheu já não está disponível",

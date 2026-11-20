@@ -6330,6 +6330,39 @@ describe('TransactionForm', () => {
       );
     });
 
+    it('turns a typed-currency draft into a plain entry once an account in that currency is chosen', async () => {
+      mockAccountsGetAll.mockResolvedValue([
+        ...mockAccounts,
+        { ...mockAccounts[1], id: 'acc-eur', name: 'Euro Account', currencyCode: 'EUR' },
+      ]);
+      render(
+        <TransactionForm
+          draft={{ mode: 'normal', originalCurrencyCode: 'EUR', originalAmount: -20, date: '2026-11-19', payeeName: 'Cafe' }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Total in EUR')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(getSelectByLabel('Account').querySelector('option[value="acc-eur"]')).not.toBeNull(),
+      );
+      await act(async () => {
+        fireEvent.change(getSelectByLabel('Account'), { target: { value: 'acc-eur' } });
+      });
+      await waitFor(() => expect(screen.queryByText('Total in EUR')).not.toBeInTheDocument());
+      expect((screen.getAllByPlaceholderText('0.00')[0] as HTMLInputElement).value).toBe('-20.00');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+      const sent = mockCreate.mock.calls[0][0];
+      expect(sent).toEqual(
+        expect.objectContaining({ accountId: 'acc-eur', amount: -20, currencyCode: 'EUR' }),
+      );
+      expect(sent.originalCurrencyCode).toBeUndefined();
+    });
+
     it('keeps an account-currency draft in the account currency, whatever was entered last', async () => {
       rememberTransactionCurrency('EUR');
       try {

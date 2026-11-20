@@ -135,6 +135,36 @@ describe('buildQuickAddDraft', () => {
     expect(draft.amount).toBeUndefined();
   });
 
+  it('hands a figure typed in a currency over alone while no account is known', () => {
+    const draft = buildQuickAddDraft(
+      qaPaymentReading({
+        amount: qaField(20),
+        account: qaMissing(),
+        blockers: ['missingAccount'],
+        balance: null,
+        foreignAmount: { currencyCode: 'EUR', amount: 20 },
+      }),
+      NO_LINE,
+    );
+    expect(draft).toMatchObject({ originalCurrencyCode: 'EUR', originalAmount: -20 });
+    expect(draft.accountId).toBeUndefined();
+    expect(draft.amount).toBeUndefined();
+  });
+
+  it('hands a figure typed in the account\'s own currency over as a plain amount', () => {
+    const draft = buildQuickAddDraft(
+      qaPaymentReading({
+        amount: qaField(20),
+        blockers: ['foreignCurrency'],
+        foreignAmount: { currencyCode: 'usd', amount: 20 },
+      }),
+      NO_LINE,
+    );
+    expect(draft.amount).toBe(-20);
+    expect(draft.originalCurrencyCode).toBeUndefined();
+    expect(draft.originalAmount).toBeUndefined();
+  });
+
   it('hands no amount at all when the typed currency is not known', () => {
     const draft = buildQuickAddDraft(
       qaPaymentReading({

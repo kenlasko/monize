@@ -710,6 +710,7 @@
     "memoLabel": "Omschrijving:",
     "reading": "Invoer lezen...",
     "readFailed": "De invoer kon niet worden gelezen",
+    "tooLong": "Deze regel is te lang om te lezen. Kort hem in om verder te gaan.",
     "tryAgain": "Opnieuw proberen",
     "pinRefused": {
       "title": "Iets wat je hebt gekozen is niet meer beschikbaar",

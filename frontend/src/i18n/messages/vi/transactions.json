@@ -710,6 +710,7 @@
     "memoLabel": "Mô tả:",
     "reading": "Đang đọc nội dung nhập...",
     "readFailed": "Không đọc được nội dung nhập",
+    "tooLong": "Dòng này quá dài để đọc. Hãy rút ngắn để tiếp tục.",
     "tryAgain": "Thử lại",
     "pinRefused": {
       "title": "Mục bạn đã chọn không còn khả dụng",

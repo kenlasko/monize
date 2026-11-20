@@ -12,7 +12,7 @@ import { investmentReportsApi } from '@/lib/investment-reports';
 import { investmentsApi } from '@/lib/investments';
 import { createLogger } from '@/lib/logger';
 import { payeesApi } from '@/lib/payees';
-import { QUICK_ADD_TEXT_MAX_LENGTH, quickAddApi } from '@/lib/quick-add';
+import { isQuickAddTextTooLong, quickAddApi } from '@/lib/quick-add';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { transactionsApi } from '@/lib/transactions';
 import { useHelpStore } from '@/store/helpStore';
@@ -120,7 +120,7 @@ const HAS_DIGIT = /\p{Nd}/u;
 
 /** Whether the palette asks Quick Add to read `query`: a line the server would read, with a digit in it. */
 function worthReading(query: string): boolean {
-  return query.length <= QUICK_ADD_TEXT_MAX_LENGTH && HAS_DIGIT.test(query);
+  return !isQuickAddTextTooLong(query) && HAS_DIGIT.test(query);
 }
 
 /** Quick Add's reading of one query; null is a failed request. */

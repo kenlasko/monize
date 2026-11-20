@@ -710,6 +710,7 @@
     "memoLabel": "Açıklama:",
     "reading": "Giriş okunuyor...",
     "readFailed": "Giriş okunamadı",
+    "tooLong": "Bu satır okunamayacak kadar uzun. Devam etmek için kısaltın.",
     "tryAgain": "Tekrar Dene",
     "pinRefused": {
       "title": "Seçtiğiniz bir öğe artık kullanılamıyor",

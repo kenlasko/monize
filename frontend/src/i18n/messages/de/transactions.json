@@ -710,6 +710,7 @@
     "memoLabel": "Beschreibung:",
     "reading": "Eingabe wird gelesen...",
     "readFailed": "Die Eingabe konnte nicht gelesen werden",
+    "tooLong": "Diese Zeile ist zu lang zum Lesen. Kürzen Sie sie, um fortzufahren.",
     "tryAgain": "Erneut versuchen",
     "pinRefused": {
       "title": "Etwas, das Sie gewählt haben, ist nicht mehr verfügbar",

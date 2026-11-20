@@ -710,6 +710,7 @@
     "memoLabel": "[XX-Description:-XX]",
     "reading": "[XX-Reading the entry...-XX]",
     "readFailed": "[XX-Failed to read the entry-XX]",
+    "tooLong": "[XX-This line is too long to read. Shorten it to continue.-XX]",
     "tryAgain": "[XX-Try Again-XX]",
     "pinRefused": {
       "title": "[XX-Something you chose is no longer available-XX]",

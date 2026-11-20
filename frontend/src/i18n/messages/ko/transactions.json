@@ -710,6 +710,7 @@
     "memoLabel": "설명:",
     "reading": "항목을 읽는 중...",
     "readFailed": "항목을 읽지 못했습니다",
+    "tooLong": "이 줄이 너무 길어 읽을 수 없습니다. 줄여서 계속하세요.",
     "tryAgain": "다시 시도",
     "pinRefused": {
       "title": "선택한 항목을 더 이상 사용할 수 없습니다",

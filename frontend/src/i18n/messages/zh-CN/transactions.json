@@ -710,6 +710,7 @@
     "memoLabel": "描述：",
     "reading": "正在识别输入...",
     "readFailed": "识别输入失败",
+    "tooLong": "这一行太长，无法识别。请缩短后继续。",
     "tryAgain": "重试",
     "pinRefused": {
       "title": "你选择的某项已不可用",

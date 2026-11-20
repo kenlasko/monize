@@ -487,6 +487,19 @@ describe('CommandPalette', () => {
       expect(interpret).not.toHaveBeenCalled();
     });
 
+    it('asks nothing about a line the server counts as too long after NFKC', async () => {
+      const box = await openPalette();
+      // 199 characters typed; the ellipsis becomes three after NFKC: 201.
+      const line = `5 ${'x'.repeat(196)}\u2026`;
+      expect(line).toHaveLength(199);
+      await type(box, line);
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      });
+      expect(interpret).not.toHaveBeenCalled();
+      expect(quickAddRow()).not.toBeInTheDocument();
+    });
+
     it('adds no row and reports nothing when the reading fails', async () => {
       interpret.mockRejectedValue(new Error('down'));
       const box = await openPalette();
