@@ -36,6 +36,15 @@ describe('IconSelect', () => {
     expect(screen.getByTestId('icon-a-2')).toBeInTheDocument();
   });
 
+  it('keeps a line of text in the closed field while its value is not among the options yet', () => {
+    // An edited row's account before the account list has loaded, or a new
+    // entry before a picker is filled: an empty label span collapsed the
+    // field to its padding until the options arrived.
+    render(<IconSelect label="Account" options={[]} value="a-9" onChange={vi.fn()} />);
+    const trigger = screen.getByRole('combobox', { name: 'Account' });
+    expect(trigger.textContent).toBe(' ');
+  });
+
   it('lists every row with its icon, draws the separator as a rule, and reports a pick as a change event', () => {
     const onChange = vi.fn((event: React.ChangeEvent<HTMLSelectElement>) => event.target.value);
     render(<IconSelect label="Account" options={options} value="" onChange={onChange} />);

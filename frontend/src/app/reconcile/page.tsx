@@ -49,10 +49,11 @@ import {
 import { getErrorMessage } from '@/lib/errors';
 import { notifyReconciliationChanged } from '@/lib/reconciliationSignal';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
 
 const TransactionForm = dynamic(
   () => import('@/components/transactions/TransactionForm').then((m) => m.TransactionForm),
-  { ssr: false },
+  { ssr: false, loading: TransactionFormPlaceholder },
 );
 
 const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);

@@ -409,7 +409,10 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
               {selected.icon}
             </span>
           )}
-          <span className="min-w-0 flex-1 truncate">{selected?.label ?? ''}</span>
+          {/* A non-breaking space holds a line of text while nothing is
+              picked -- options still loading, or a value not among them -- so
+              the field keeps its height instead of collapsing to its padding. */}
+          <span className="min-w-0 flex-1 truncate">{selected?.label || ' '}</span>
           <ChevronUpDownIcon
             aria-hidden="true"
             className="pointer-events-none absolute right-2 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
