@@ -4,6 +4,7 @@ import { SplitTransactionFields } from './SplitTransactionFields';
 import { Account } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { getSelectByLabel } from '@/test/icon-select';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 vi.mock('@/lib/format', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/format')>()),
@@ -153,6 +154,8 @@ describe('SplitTransactionFields', () => {
   };
 
   beforeEach(() => {
+    // One test sets a CAD default currency; every other test starts without one.
+    usePreferencesStore.setState({ preferences: null });
     vi.clearAllMocks();
   });
 
@@ -419,13 +422,15 @@ describe('SplitTransactionFields', () => {
     expect(payeeSelect).toHaveValue('p1');
   });
 
-  it('includes currency code in account labels', () => {
+  it('includes the currency code only for accounts outside the default currency', () => {
+    // A CAD user: their CAD accounts need no code, the USD one does.
+    usePreferencesStore.setState({ preferences: { defaultCurrency: 'CAD' } as never });
     const usdAccount = createAccount({ id: 'acc-usd', name: 'US Savings', currencyCode: 'USD' });
 
     render(
       <SplitTransactionFields
         {...defaultProps}
-        accounts={[usdAccount]}
+        accounts={[usdAccount, createAccount({ id: 'acc-cad', name: 'Chequing', currencyCode: 'CAD' })]}
       />
     );
 
@@ -434,6 +439,7 @@ describe('SplitTransactionFields', () => {
     const labels = options.map(o => o.label);
 
     expect(labels).toContain('US Savings (USD)');
+    expect(labels).toContain('Chequing');
   });
 
   it('shows "Select account..." as the first option placeholder', () => {

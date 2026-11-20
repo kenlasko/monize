@@ -4,6 +4,8 @@ import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { getMainAccountName } from '@/lib/account-utils';
 import { formatAccountOptionLabel } from '@/lib/logical-accounts';
+import { preferredCurrency } from '@/lib/default-currency';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { Account } from '@/types/account';
 
 /**
@@ -28,7 +30,8 @@ export function useMainAccountName(): (name: string) => string {
 
 /**
  * The one way an account picker labels its options: the account's name with any
- * investment pair suffix stripped, its currency, and a closed marker.
+ * investment pair suffix stripped, its currency when that is not the user's
+ * default currency, and a closed marker.
  *
  * Every picker uses this rather than building a label from `account.name`, so a
  * linked cash half reads as the account the user knows ("TFSA") instead of
@@ -36,18 +39,25 @@ export function useMainAccountName(): (name: string) => string {
  * `buildAccountDropdownOptions` as the `labelFn`.
  */
 export function useAccountOptionLabel(options: {
-  /** Narrow rows (a split line) drop the currency; everything else shows it. */
+  /**
+   * Narrow rows (a split line) drop the currency; everything else shows it for
+   * an account outside the user's default currency.
+   */
   withCurrency?: boolean;
 } = {}): (account: Account) => string {
   const stripName = useMainAccountName();
   const t = useTranslations('accounts');
   const closedLabel = t('row.statusClosed');
   const withCurrency = options.withCurrency ?? true;
+  const defaultCurrency = preferredCurrency(
+    usePreferencesStore((state) => state.preferences?.defaultCurrency),
+  );
   return useCallback(
     (account: Account) =>
       formatAccountOptionLabel(account, stripName, closedLabel, {
         withCurrency,
+        defaultCurrency,
       }),
-    [stripName, closedLabel, withCurrency],
+    [stripName, closedLabel, withCurrency, defaultCurrency],
   );
 }

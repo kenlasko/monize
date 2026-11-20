@@ -499,4 +499,16 @@ describe('formatAccountOptionLabel', () => {
       'Chequing (CAD) (Fermé)',
     );
   });
+
+  it('shows the currency only for an account outside the default currency', () => {
+    const cad = account('chq', { name: 'Chequing' });
+    const usd = account('usd', { name: 'US Chequing', currencyCode: 'USD' });
+
+    expect(
+      formatAccountOptionLabel(cad, strip, 'Closed', { defaultCurrency: 'CAD' }),
+    ).toBe('Chequing');
+    expect(
+      formatAccountOptionLabel(usd, strip, 'Closed', { defaultCurrency: 'CAD' }),
+    ).toBe('US Chequing (USD)');
+  });
 });

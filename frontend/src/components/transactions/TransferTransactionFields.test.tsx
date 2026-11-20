@@ -5,6 +5,7 @@ import { Account, TransferCandidate } from '@/types/account';
 import { Payee } from '@/types/payee';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import { getSelectByLabel } from '@/test/icon-select';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 let mockActingAsUserId: string | null = null;
 vi.mock('@/store/authStore', () => ({
@@ -158,6 +159,8 @@ describe('TransferTransactionFields', () => {
   };
 
   beforeEach(() => {
+    // One test sets a CAD default currency; every other test starts without one.
+    usePreferencesStore.setState({ preferences: null });
     vi.clearAllMocks();
     mockActingAsUserId = null;
   });
@@ -639,7 +642,9 @@ describe('TransferTransactionFields', () => {
     );
   });
 
-  it('includes currency code in account labels', () => {
+  it('includes the currency code only for accounts outside the default currency', () => {
+    // A CAD user: their CAD accounts need no code, the USD one does.
+    usePreferencesStore.setState({ preferences: { defaultCurrency: 'CAD' } as never });
     const usdAccount = createAccount({ id: 'acc-usd', name: 'US Account', currencyCode: 'USD' });
     const cadAccount = createAccount({ id: 'acc-cad', name: 'CAD Account', currencyCode: 'CAD' });
 
@@ -654,7 +659,7 @@ describe('TransferTransactionFields', () => {
     const options = Array.from(fromSelect.querySelectorAll('option'));
     const labels = options.map(o => o.label);
 
-    expect(labels).toContain('CAD Account (CAD)');
+    expect(labels).toContain('CAD Account');
     expect(labels).toContain('US Account (USD)');
   });
 

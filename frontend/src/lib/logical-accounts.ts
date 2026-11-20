@@ -346,15 +346,21 @@ export function toLogicalAccountPortfolio(
  * The label every account picker uses: the entity's name, its currency, and a
  * closed marker. Matches the long-standing default in
  * `buildAccountDropdownOptions`, except that a pair reads as one account.
+ *
+ * Given `defaultCurrency`, the currency is shown only for an account in another
+ * currency: "Chequing (CAD)" on every row of a CAD user's picker said nothing,
+ * and hid the one row that is in USD.
  */
 export function formatAccountOptionLabel(
   account: Account,
   stripName: (name: string) => string,
   closedLabel = 'Closed',
-  options: { withCurrency?: boolean } = {},
+  options: { withCurrency?: boolean; defaultCurrency?: string } = {},
 ): string {
-  const { withCurrency = true } = options;
-  const currency = withCurrency ? ` (${account.currencyCode})` : '';
+  const { withCurrency = true, defaultCurrency } = options;
+  const showCurrency =
+    withCurrency && account.currencyCode !== defaultCurrency;
+  const currency = showCurrency ? ` (${account.currencyCode})` : '';
   return `${stripName(account.name)}${currency}${
     account.isClosed ? ` (${closedLabel})` : ''
   }`;
