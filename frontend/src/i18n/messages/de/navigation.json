@@ -86,7 +86,9 @@
       "category": "Schnellerfassung: {amount} {category}",
       "payeeCategory": "Schnellerfassung: {amount} {payee}, {category}",
       "transfer": "Schnellerfassung: {amount} von {from} nach {to}"
-    }
+    },
+    "trigger": "Suchen oder springen zu"
   },
-  "quickAdd": "Schnellerfassung"
+  "quickAdd": "Schnellerfassung",
+  "accountButton": "{name}, Einstellungen"
 }

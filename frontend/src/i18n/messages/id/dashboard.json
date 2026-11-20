@@ -36,7 +36,19 @@
     "showSet": "Tampilkan {name}",
     "cycleControls": "Pilih apa yang ditampilkan di bagian utama",
     "cagrUnavailable": "CAGR memerlukan setidaknya satu tahun riwayat investasi di akun-akun ini, dengan setoran lebih besar dari penarikan.",
-    "intradayUnavailable": "Beberapa kepemilikan ini tidak memiliki harga intrahari, jadi grafik satu hari tidak dapat dibuat. Pilih jangka waktu lebih panjang di Sesuaikan."
+    "intradayUnavailable": "Beberapa kepemilikan ini tidak memiliki harga intrahari, jadi grafik satu hari tidak dapat dibuat. Pilih jangka waktu lebih panjang di Sesuaikan.",
+    "assetsLabel": "Aset",
+    "liabilitiesLabel": "Liabilitas",
+    "investedLabel": "Diinvestasikan",
+    "high": "Tertinggi {value}",
+    "low": "Terendah {value}",
+    "historyLabel": "Kekayaan bersih per bulan: {high} saat tertinggi, {low} saat terendah, {latest} sekarang",
+    "nextUp": {
+      "heading": "{when, select, overdue {Terlambat} today {Berikutnya, hari ini} tomorrow {Berikutnya, besok} other {Berikutnya, {date}}}",
+      "meta": "{manual, select, true {Dibayar manual} other {Dicatat otomatis}}",
+      "metaWithPayee": "{payee} · {manual, select, true {dibayar manual} other {dicatat otomatis}}",
+      "record": "{kind, select, deposit {Catat setoran} transfer {Catat transfer} reminder {Catat} other {Catat pembayaran}}"
+    }
   },
   "trivia": {
     "title": "Trivia",
@@ -355,7 +367,9 @@
     "due": "Jatuh tempo: {ordinal}",
     "dueTooltip": "Hari setiap bulan ketika pembayaran kartu kredit Anda jatuh tempo",
     "settlement": "Penyelesaian: {ordinal}",
-    "settlementTooltip": "Hari terakhir siklus tagihan. Transaksi yang diposting pada atau sebelum hari ini muncul pada laporan saat ini."
+    "settlementTooltip": "Hari terakhir siklus tagihan. Transaksi yang diposting pada atau sebelum hari ini muncul pada laporan saat ini.",
+    "dueShort": "jatuh tempo {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Tagihan & Setoran Mendatang",
@@ -386,7 +400,11 @@
     "previousMonth": "Bulan sebelumnya",
     "nextMonth": "Bulan berikutnya",
     "emptyAll": "Tidak ada tagihan, setoran, atau transfer aktif yang dijadwalkan.",
-    "estimated": "Perkiraan"
+    "estimated": "Perkiraan",
+    "stripLabel": "Dua minggu ke depan, hari demi hari: setoran naik di atas garis, tagihan turun di bawahnya",
+    "metaPayee": "· {payee}",
+    "metaManual": "· dibayar manual",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Prakiraan Arus Kas",

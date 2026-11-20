@@ -36,7 +36,19 @@
     "showSet": "Mostrar {name}",
     "cycleControls": "Escolher o que o destaque mostra",
     "cagrUnavailable": "A CAGR precisa de pelo menos um ano de histórico de investimento nestas contas, com mais entradas do que saídas.",
-    "intradayUnavailable": "Algumas destas posições não têm preços intradiários, por isso não é possível desenhar um gráfico de um dia. Escolha um período mais longo em Personalizar."
+    "intradayUnavailable": "Algumas destas posições não têm preços intradiários, por isso não é possível desenhar um gráfico de um dia. Escolha um período mais longo em Personalizar.",
+    "assetsLabel": "Ativos",
+    "liabilitiesLabel": "Passivos",
+    "investedLabel": "Investido",
+    "high": "Máx. {value}",
+    "low": "Mín. {value}",
+    "historyLabel": "Património líquido por mês: {high} no ponto mais alto, {low} no mais baixo, {latest} agora",
+    "nextUp": {
+      "heading": "{when, select, overdue {Em atraso} today {A seguir, hoje} tomorrow {A seguir, amanhã} other {A seguir, {date}}}",
+      "meta": "{manual, select, true {Pago manualmente} other {Lançado automaticamente}}",
+      "metaWithPayee": "{payee} · {manual, select, true {pago manualmente} other {lançado automaticamente}}",
+      "record": "{kind, select, deposit {Registar depósito} transfer {Registar transferência} reminder {Registá-lo} other {Registar pagamento}}"
+    }
   },
   "trivia": {
     "title": "Curiosidades",
@@ -355,7 +367,9 @@
     "due": "Vencimento: {ordinal}",
     "dueTooltip": "O dia de cada mês em que o pagamento do cartão de crédito é devido",
     "settlement": "Liquidação: {ordinal}",
-    "settlementTooltip": "O último dia do ciclo de faturação. As transações lançadas até este dia (inclusive) aparecem na fatura atual."
+    "settlementTooltip": "O último dia do ciclo de faturação. As transações lançadas até este dia (inclusive) aparecem na fatura atual.",
+    "dueShort": "vence {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Faturas e Depósitos Próximos",
@@ -386,7 +400,11 @@
     "previousMonth": "Mês anterior",
     "nextMonth": "Mês seguinte",
     "emptyAll": "Não há faturas, depósitos ou transferências ativas agendadas.",
-    "estimated": "Estimado"
+    "estimated": "Estimado",
+    "stripLabel": "As próximas duas semanas, dia a dia: os depósitos sobem acima da linha e as contas descem abaixo dela",
+    "metaPayee": "· {payee}",
+    "metaManual": "· pago manualmente",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Previsão de fluxo de caixa",

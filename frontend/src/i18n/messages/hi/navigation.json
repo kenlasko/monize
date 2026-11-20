@@ -86,7 +86,9 @@
       "category": "त्वरित जोड़ें: {amount} {category}",
       "payeeCategory": "त्वरित जोड़ें: {amount} {payee}, {category}",
       "transfer": "त्वरित जोड़ें: {amount} {from} से {to} में"
-    }
+    },
+    "trigger": "खोजें या कहीं जाएँ"
   },
-  "quickAdd": "त्वरित जोड़ें"
+  "quickAdd": "त्वरित जोड़ें",
+  "accountButton": "{name}, सेटिंग्स"
 }

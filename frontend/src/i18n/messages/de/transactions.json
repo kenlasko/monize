@@ -125,7 +125,9 @@
       "attachments": "Anhänge",
       "status": "Status",
       "statusHelp": "Nicht abgeglichen, Bestätigt oder Abgeglichen sind Schritte zum Abgleich mit einem Kontoauszug. Ungültig storniert eine Buchung, behält aber ihren Datensatz; sie bewegt den Kontostand nicht mehr.",
-      "actions": "Aktionen"
+      "actions": "Aktionen",
+      "payment": "Zahlung",
+      "deposit": "Einzahlung"
     },
     "sort": {
       "balanceHiddenHint": "Nach Datum sortieren, um den laufenden Saldo zu sehen",
@@ -191,7 +193,20 @@
       "editButton": "Bearbeiten",
       "deleteButton": "Löschen"
     },
-    "itemNamePlural": "Buchungen"
+    "itemNamePlural": "Buchungen",
+    "classic": {
+      "entriesShown": "{count, plural, one {# Eintrag angezeigt} other {# Einträge angezeigt}}",
+      "legendCleared": "bestätigt",
+      "legendReconciled": "abgeglichen",
+      "legendRule": "Der Strich unter jedem Saldo zeigt diesen Saldo im Vergleich zum höchsten auf dieser Seite.",
+      "markCleared": "b",
+      "markReconciled": "A"
+    },
+    "modern": {
+      "inspectorLabel": "Ausgewählte Transaktion",
+      "balanceAfter": "Saldo danach",
+      "yesterday": "Gestern"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Die Garantien zu dieser Buchung konnten nicht geladen werden.",
       "empty": "Noch keine Garantien"
     },
-    "conversionLockedNote": "Diese Überweisung gehört zu einer aufgeteilten Transaktion oder zum Konto eines anderen Eigentümers und kann hier nur eine Überweisung bleiben. Ändern Sie sie über die Aufteilung oder löschen Sie sie und erstellen Sie den gewünschten Eintrag."
+    "conversionLockedNote": "Diese Überweisung gehört zu einer aufgeteilten Transaktion oder zum Konto eines anderen Eigentümers und kann hier nur eine Überweisung bleiben. Ändern Sie sie über die Aufteilung oder löschen Sie sie und erstellen Sie den gewünschten Eintrag.",
+    "modeGroupLabel": "Art der Transaktion",
+    "entryHint": "Mit Tab wechseln Sie zwischen den Feldern. Esc schließt."
   },
   "splitEditor": {
     "header": "Details der Buchungsteile",
@@ -772,6 +789,13 @@
       "foreignCurrency": "Der Betrag ist in einer anderen Währung als der des Kontos. Geben Sie ihn im vollständigen Formular ein.",
       "crossCurrencyTransfer": "Die beiden Konten führen unterschiedliche Währungen. Nutzen Sie für diese Überweisung das vollständige Formular.",
       "unknown": "Diese Eingabe kann hier nicht gespeichert werden. Schließen Sie sie mit dem vollständigen Formular ab."
+    },
+    "assumedNote": "Das gestrichelte Feld wurde nicht eingegeben. Es wurde für Sie ausgefüllt, bitte prüfen Sie es.",
+    "hints": {
+      "enter": "Enter speichert",
+      "shiftEnter": "Umschalt Enter speichert und beginnt eine neue Erfassung",
+      "tab": "Tab wechselt zwischen den Feldern",
+      "esc": "Esc schließt"
     }
   }
 }

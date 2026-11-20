@@ -223,6 +223,7 @@
     },
     "colorThemeLabel": "色彩主題",
     "colorThemeHint": "預覽會使用您目前的淺色或深色模式。",
+    "colorThemeStyleHint": "正在顯示為{style}風格設計的色彩主題。",
     "colorThemeOptions": {
       "default": "預設",
       "latte": "拿鐵",
@@ -236,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "帳簿",
+      "studio": "工作室",
       "midnight": "午夜",
       "highcontrast": "高對比",
       "colorblind": "色盲安全"

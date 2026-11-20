@@ -125,7 +125,9 @@
       "attachments": "Anexos",
       "status": "Estado",
       "statusHelp": "Não reconciliada, Confirmada ou Reconciliada são etapas até corresponder a um extrato bancário. Anulada cancela uma transação mas mantém o seu registo; deixa de alterar o saldo da conta.",
-      "actions": "Ações"
+      "actions": "Ações",
+      "payment": "Pagamento",
+      "deposit": "Depósito"
     },
     "sort": {
       "balanceHiddenHint": "Ordene por data para ver o saldo corrente",
@@ -191,7 +193,20 @@
       "editButton": "Editar",
       "deleteButton": "Eliminar"
     },
-    "itemNamePlural": "transações"
+    "itemNamePlural": "transações",
+    "classic": {
+      "entriesShown": "{count, plural, one {# registo mostrado} other {# registos mostrados}}",
+      "legendCleared": "confirmada",
+      "legendReconciled": "reconciliada",
+      "legendRule": "A linha sob cada saldo compara esse saldo com o mais alto desta página.",
+      "markCleared": "c",
+      "markReconciled": "R"
+    },
+    "modern": {
+      "inspectorLabel": "Transação selecionada",
+      "balanceAfter": "Saldo depois",
+      "yesterday": "Ontem"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Não foi possível carregar as garantias desta transação.",
       "empty": "Ainda não há garantias"
     },
-    "conversionLockedNote": "Esta transferência pertence a uma transação dividida ou à conta de outro proprietário, por isso aqui só pode continuar a ser uma transferência. Altere-a a partir da divisão ou elimine-a e crie a entrada pretendida."
+    "conversionLockedNote": "Esta transferência pertence a uma transação dividida ou à conta de outro proprietário, por isso aqui só pode continuar a ser uma transferência. Altere-a a partir da divisão ou elimine-a e crie a entrada pretendida.",
+    "modeGroupLabel": "Tipo de transação",
+    "entryHint": "Tab passa de um campo para o seguinte. Esc fecha."
   },
   "splitEditor": {
     "header": "Detalhes das Parcelas",
@@ -772,6 +789,13 @@
       "foreignCurrency": "O montante está numa moeda diferente da da conta. Use Formulário completo para o introduzir.",
       "crossCurrencyTransfer": "As duas contas têm moedas diferentes. Use Formulário completo para esta transferência.",
       "unknown": "Esta entrada não pode ser guardada aqui. Use Formulário completo para a concluir."
+    },
+    "assumedNote": "O campo tracejado não foi escrito por si. Foi preenchido por si, por isso confirme-o.",
+    "hints": {
+      "enter": "Enter guarda",
+      "shiftEnter": "Shift Enter guarda e começa outra",
+      "tab": "Tab passa de um campo para o seguinte",
+      "esc": "Esc fecha"
     }
   }
 }

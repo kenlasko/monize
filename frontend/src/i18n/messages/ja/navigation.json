@@ -86,7 +86,9 @@
       "category": "クイック追加: {amount} {category}",
       "payeeCategory": "クイック追加: {amount} {payee}、{category}",
       "transfer": "クイック追加: {amount} {from}から{to}へ"
-    }
+    },
+    "trigger": "検索または移動"
   },
-  "quickAdd": "クイック追加"
+  "quickAdd": "クイック追加",
+  "accountButton": "{name}、設定"
 }

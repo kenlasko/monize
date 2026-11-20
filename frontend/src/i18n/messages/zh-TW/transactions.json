@@ -125,7 +125,9 @@
       "attachments": "附件",
       "status": "狀態",
       "statusHelp": "未對帳、已結清或已對帳是與銀行對帳單核對的幾個階段。作廢會取消一筆交易，但保留其記錄；它不再影響帳戶餘額。",
-      "actions": "動作"
+      "actions": "動作",
+      "payment": "付款",
+      "deposit": "存款"
     },
     "sort": {
       "balanceHiddenHint": "依日期排序即可查看餘額",
@@ -191,7 +193,20 @@
       "editButton": "編輯",
       "deleteButton": "刪除"
     },
-    "itemNamePlural": "筆交易"
+    "itemNamePlural": "筆交易",
+    "classic": {
+      "entriesShown": "{count, plural, other {顯示 # 筆記錄}}",
+      "legendCleared": "已結清",
+      "legendReconciled": "已對帳",
+      "legendRule": "每個結餘下方的線條表示該結餘與本頁最高結餘的比較。",
+      "markCleared": "結",
+      "markReconciled": "對"
+    },
+    "modern": {
+      "inspectorLabel": "所選交易",
+      "balanceAfter": "交易後結餘",
+      "yesterday": "昨天"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "無法載入此交易的保固。",
       "empty": "尚無保固"
     },
-    "conversionLockedNote": "此轉帳屬於拆分交易或其他擁有者的帳戶，因此在此只能保留為轉帳。請從拆分中變更，或刪除後新建所需的項目。"
+    "conversionLockedNote": "此轉帳屬於拆分交易或其他擁有者的帳戶，因此在此只能保留為轉帳。請從拆分中變更，或刪除後新建所需的項目。",
+    "modeGroupLabel": "交易類型",
+    "entryHint": "按 Tab 在欄位間切換，按 Esc 關閉。"
   },
   "splitEditor": {
     "header": "分割詳情",
@@ -772,6 +789,13 @@
       "foreignCurrency": "金額的幣別與科目不同。請使用「完整表單」輸入。",
       "crossCurrencyTransfer": "兩個科目的幣別不同。請使用「完整表單」辦理此筆轉帳。",
       "unknown": "此項目無法在此儲存。請使用「完整表單」完成。"
+    },
+    "assumedNote": "虛線欄位不是您輸入的，而是自動填寫的，請檢查。",
+    "hints": {
+      "enter": "Enter 儲存",
+      "shiftEnter": "Shift Enter 儲存並繼續新增",
+      "tab": "Tab 在欄位間切換",
+      "esc": "Esc 關閉"
     }
   }
 }

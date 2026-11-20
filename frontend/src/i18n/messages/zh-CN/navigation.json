@@ -86,7 +86,9 @@
       "category": "快速添加：{amount} {category}",
       "payeeCategory": "快速添加：{amount} {payee}，{category}",
       "transfer": "快速添加：{amount} 从 {from} 到 {to}"
-    }
+    },
+    "trigger": "搜索或跳转到"
   },
-  "quickAdd": "快速添加"
+  "quickAdd": "快速添加",
+  "accountButton": "{name}，设置"
 }

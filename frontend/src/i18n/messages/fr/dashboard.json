@@ -36,7 +36,19 @@
     "showSet": "Afficher {name}",
     "cycleControls": "Choisir ce qu'affiche l'en-tête",
     "cagrUnavailable": "Le TCAC nécessite au moins un an d’historique de placement dans ces comptes, avec plus d’apports que de retraits.",
-    "intradayUnavailable": "Certaines de ces positions n’ont pas de cours intrajournaliers : un graphique sur un jour ne peut donc pas être tracé. Choisissez une période plus longue dans Personnaliser."
+    "intradayUnavailable": "Certaines de ces positions n’ont pas de cours intrajournaliers : un graphique sur un jour ne peut donc pas être tracé. Choisissez une période plus longue dans Personnaliser.",
+    "assetsLabel": "Actifs",
+    "liabilitiesLabel": "Passifs",
+    "investedLabel": "Investi",
+    "high": "Haut {value}",
+    "low": "Bas {value}",
+    "historyLabel": "Valeur nette par mois : {high} au plus haut, {low} au plus bas, {latest} actuellement",
+    "nextUp": {
+      "heading": "{when, select, overdue {En retard} today {À venir, aujourd’hui} tomorrow {À venir, demain} other {À venir, {date}}}",
+      "meta": "{manual, select, true {Payé à la main} other {Enregistré automatiquement}}",
+      "metaWithPayee": "{payee} · {manual, select, true {payé à la main} other {enregistré automatiquement}}",
+      "record": "{kind, select, deposit {Enregistrer le dépôt} transfer {Enregistrer le virement} reminder {L’enregistrer} other {Enregistrer le paiement}}"
+    }
   },
   "trivia": {
     "title": "Anecdotes",
@@ -355,7 +367,9 @@
     "due": "Échéance : {ordinal}",
     "dueTooltip": "Le jour de chaque mois où votre paiement de carte de crédit est dû",
     "settlement": "Règlement : {ordinal}",
-    "settlementTooltip": "Le dernier jour du cycle de facturation. Les transactions enregistrées ce jour ou avant apparaissent sur le relevé en cours."
+    "settlementTooltip": "Le dernier jour du cycle de facturation. Les transactions enregistrées ce jour ou avant apparaissent sur le relevé en cours.",
+    "dueShort": "échéance {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Factures et dépôts à venir",
@@ -386,7 +400,11 @@
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "emptyAll": "Aucune facture, aucun dépôt ni virement actif planifié.",
-    "estimated": "Estimé"
+    "estimated": "Estimé",
+    "stripLabel": "Les deux prochaines semaines, jour par jour : les dépôts montent au-dessus de la ligne, les factures descendent en dessous",
+    "metaPayee": "· {payee}",
+    "metaManual": "· payé à la main",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Prévision de trésorerie",

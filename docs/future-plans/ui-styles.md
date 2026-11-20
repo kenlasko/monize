@@ -2,7 +2,7 @@
 
 > Companion task list: [`ui-styles-tasks.md`](./ui-styles-tasks.md).
 
-Status: **phase 1 built** on branch `feat/ui-styles-classic-modern` (2026-11-20). Phase 2 is a proposal. The source designs are the "Monize UI directions" canvas: its *Ledger* page became **Classic**, its *Contemporary* page became **Modern**.
+Status: **phase 1 built**, **phase 2 in progress** on branch `feat/ui-styles-classic-modern` (2026-11-20). The source designs are the "Monize UI directions" canvas: its *Ledger* page became **Classic**, its *Contemporary* page became **Modern**.
 
 ## 1. Goal
 
@@ -32,19 +32,35 @@ Classic: serif display headings, Plex body with tabular figures, 2-4px corners, 
 
 Modern: grotesque display headings with tight tracking, 24px cards with no visible edge and a soft drop, pill buttons and badges, sentence-case table headers, the main menu as one segmented pill.
 
-## 4. Phase 2: structure, not skin (proposal)
+## 4. Phase 2: the mockup layouts
 
-Parts of the designs are layouts, not styles, and CSS cannot honestly produce them. Each is a component branch on `useTheme().uiStyle`, added only where it earns its keep, one PR each:
+Decided with Ken on 2026-11-20: the styles must look like the mockups, not only re-type and re-round the Standard layout. Each style gets a **companion palette** (`ledger` for Classic, `studio` for Modern) that the style picker offers to switch to; every other palette still works with either style. All four areas are in scope: app shell and dashboard, the transactions register, the entry forms, and phone layouts. Each screen is checked against its mockup with screenshots in every style before it is called done.
 
-- Classic register: separate Payment and Deposit columns and a balance rule under each running balance (`Register.dc.html`).
-- Classic dashboard: net worth set as a statement figure with a stepped history line (`Main.dc.html`).
-- Modern dashboard: the inverted hero block and the "next up" accent card (`ModernDashboard.dc.html`).
-- Modern transactions: a side inspector for the selected row (`ModernTransactions.dc.html`).
-- Modern quick add: type-to-enter with parsed chips (`ModernQuickAdd.dc.html`); this one is a feature in its own right and needs its own discussion.
+### 4.1 The variant pattern
 
-Coverage to widen as screens are touched: tables that do not use `TABLE_CLASS` / `TH_CLASS` (about 140 `<table>` elements, against roughly 475 uses of the shared table constants) miss the Classic ruling, and `SortableHeader` deliberately does not take `TH_CLASS`.
+A screen whose structure differs by style keeps ONE owner component that computes its data, and renders through `renderForStyle(useUiStyle(), VARIANTS, props)` (`frontend/src/hooks/useUiStyle.ts`):
+
+- The data (fetches, store reads, derived figures, handlers) stays where it is today: in the owner, or in a `use<Thing>Model()` hook extracted from it when a variant needs the same values. **A variant renders; it never fetches or derives a figure.** A fix to the data then reaches every style at once, and a fourth style is markup only.
+- The Standard markup moves, unchanged, into `<Thing>Standard`; `Classic<Thing>` and `Modern<Thing>` sit beside it (`components/<feature>/variants/`). `VARIANTS` is a module constant; a style without its own variant falls back to Standard.
+- Shared money typesetting is `MoneyFigure` (`components/ui/MoneyFigure.tsx`, `display` for a headline figure), styled per style in `ui-styles.css`. Colours in a variant are ramp utilities only (`bg-gray-900`, `text-blue-600`), so a variant still follows the palette.
+- Prefer CSS (section 2) when the difference is a skin; a variant is for a different arrangement. Each variant gets a render test per style.
+
+### 4.2 Areas and the mockups they follow
+
+| Area | Classic mockup | Modern mockup | Main components |
+|---|---|---|---|
+| Shell | header and nav of `Main.dc.html` / `Register.dc.html` | header of `ModernDashboard.dc.html` | `AppHeader`, `PageHeader`, `WidgetCard` |
+| Dashboard | `Main.dc.html`: statement net worth, stepped history line, ruled sections for favourites and the next fourteen days | `ModernDashboard.dc.html`: inverted hero block, next-up accent card, white blocks | `DashboardHero`, `NetWorthHero`, `FavouriteAccounts`, `UpcomingBills`, `WidgetCard` |
+| Register | `Register.dc.html`: Payment / Deposit columns, date group rows, green-bar bands, balance rule; `Mobile.dc.html` | `ModernTransactions.dc.html`: list with a selected-row inspector; `ModernMobile.dc.html` | `TransactionList`, `TransactionRow`, the account page |
+| Entry | `EntrySlip.dc.html`: the transaction form as a ruled slip | `ModernQuickAdd.dc.html`: the existing quick add, restyled | `TransactionForm` dialog, `quick-add/*` |
+| Vocabulary | `Vocabulary.dc.html`: figures, marks and meters | (the same pieces in Modern dress) | `Badge`, status marks, progress meters |
+
+The mockups live in the "Monize UI directions" canvas (`project/*.dc.html`).
+
+### 4.3 Coverage still to widen
+
+About 140 `<table>` elements do not use `TABLE_CLASS` / `TH_CLASS` and miss the Classic ruling; `SortableHeader` deliberately does not take `TH_CLASS`. Move them as their screens are touched.
 
 ## 5. Open questions
 
-1. Should each style offer a companion palette (the ledger's green-and-gold, the contemporary lime)? They would be ordinary entries in `themes.css`, not part of the style.
-2. Should the boot splash and the PWA manifest follow the style? Today they follow only the palette, which is correct because they are colour.
+1. Should the boot splash and the PWA manifest follow the style? Today they follow only the palette, which is correct because they are colour.

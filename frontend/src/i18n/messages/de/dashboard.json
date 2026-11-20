@@ -36,7 +36,19 @@
     "showSet": "{name} anzeigen",
     "cycleControls": "Auswählen, was der Hero-Bereich zeigt",
     "cagrUnavailable": "Die CAGR braucht mindestens ein Jahr Anlagehistorie in diesen Konten, mit mehr Einzahlungen als Entnahmen.",
-    "intradayUnavailable": "Für einige dieser Positionen gibt es keine Intraday-Kurse, daher kann kein Tagesdiagramm gezeichnet werden. Wählen Sie unter „Anpassen“ einen längeren Zeitraum."
+    "intradayUnavailable": "Für einige dieser Positionen gibt es keine Intraday-Kurse, daher kann kein Tagesdiagramm gezeichnet werden. Wählen Sie unter „Anpassen“ einen längeren Zeitraum.",
+    "assetsLabel": "Vermögen",
+    "liabilitiesLabel": "Verbindlichkeiten",
+    "investedLabel": "Investiert",
+    "high": "Hoch {value}",
+    "low": "Tief {value}",
+    "historyLabel": "Reinvermögen nach Monat: {high} am höchsten, {low} am niedrigsten, aktuell {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {Überfällig} today {Als Nächstes, heute} tomorrow {Als Nächstes, morgen} other {Als Nächstes, {date}}}",
+      "meta": "{manual, select, true {Von Hand bezahlt} other {Wird automatisch gebucht}}",
+      "metaWithPayee": "{payee} · {manual, select, true {von Hand bezahlt} other {wird automatisch gebucht}}",
+      "record": "{kind, select, deposit {Einzahlung erfassen} transfer {Überweisung erfassen} reminder {Erfassen} other {Zahlung erfassen}}"
+    }
   },
   "trivia": {
     "title": "Wissenswertes",
@@ -355,7 +367,9 @@
     "due": "Fällig: {ordinal}",
     "dueTooltip": "Der Tag des Monats, an dem Ihre Kreditkartenzahlung fällig ist",
     "settlement": "Abrechnung: {ordinal}",
-    "settlementTooltip": "Der letzte Tag des Abrechnungszeitraums. Buchungen, die an oder vor diesem Tag erfasst werden, erscheinen auf der aktuellen Abrechnung."
+    "settlementTooltip": "Der letzte Tag des Abrechnungszeitraums. Buchungen, die an oder vor diesem Tag erfasst werden, erscheinen auf der aktuellen Abrechnung.",
+    "dueShort": "fällig {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Bevorstehende Rechnungen und Einzahlungen",
@@ -386,7 +400,11 @@
     "previousMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat",
     "emptyAll": "Keine aktiven Rechnungen, Einzahlungen oder Überweisungen geplant.",
-    "estimated": "Geschätzt"
+    "estimated": "Geschätzt",
+    "stripLabel": "Die nächsten zwei Wochen, Tag für Tag: Einzahlungen steigen über die Linie, Rechnungen fallen darunter",
+    "metaPayee": "· {payee}",
+    "metaManual": "· von Hand bezahlt",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Cashflow-Prognose",

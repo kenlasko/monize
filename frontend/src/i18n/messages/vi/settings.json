@@ -223,6 +223,7 @@
     },
     "colorThemeLabel": "Giao diện màu sắc",
     "colorThemeHint": "Bản xem trước sử dụng chế độ sáng hoặc tối hiện tại của bạn.",
+    "colorThemeStyleHint": "Đang hiển thị các giao diện màu được thiết kế cho kiểu {style}.",
     "colorThemeOptions": {
       "default": "Mặc định",
       "latte": "Latte",
@@ -236,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Sổ cái",
+      "studio": "Studio",
       "midnight": "Midnight",
       "highcontrast": "Độ tương phản cao",
       "colorblind": "An toàn cho người mù màu"

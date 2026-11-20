@@ -223,6 +223,7 @@
     },
     "colorThemeLabel": "Renk teması",
     "colorThemeHint": "Önizlemeler geçerli açık veya koyu modunuzu kullanır.",
+    "colorThemeStyleHint": "{style} stili için hazırlanan renk temaları gösteriliyor.",
     "colorThemeOptions": {
       "default": "Varsayılan",
       "latte": "Latte",
@@ -236,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Defter",
+      "studio": "Stüdyo",
       "midnight": "Midnight",
       "highcontrast": "Yüksek kontrast",
       "colorblind": "Renk körü uyumlu"

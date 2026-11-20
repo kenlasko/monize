@@ -86,7 +86,9 @@
       "category": "Añadir rápido: {amount} {category}",
       "payeeCategory": "Añadir rápido: {amount} {payee}, {category}",
       "transfer": "Añadir rápido: {amount} de {from} a {to}"
-    }
+    },
+    "trigger": "Buscar o ir a"
   },
-  "quickAdd": "Añadir rápido"
+  "quickAdd": "Añadir rápido",
+  "accountButton": "{name}, ajustes"
 }

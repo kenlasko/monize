@@ -86,7 +86,9 @@
       "category": "Snel toevoegen: {amount} {category}",
       "payeeCategory": "Snel toevoegen: {amount} {payee}, {category}",
       "transfer": "Snel toevoegen: {amount} van {from} naar {to}"
-    }
+    },
+    "trigger": "Zoeken of ga naar"
   },
-  "quickAdd": "Snel toevoegen"
+  "quickAdd": "Snel toevoegen",
+  "accountButton": "{name}, instellingen"
 }

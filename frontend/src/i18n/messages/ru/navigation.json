@@ -86,7 +86,9 @@
       "category": "Быстрое добавление: {amount} {category}",
       "payeeCategory": "Быстрое добавление: {amount} {payee}, {category}",
       "transfer": "Быстрое добавление: {amount} со счёта {from} на счёт {to}"
-    }
+    },
+    "trigger": "Поиск или переход"
   },
-  "quickAdd": "Быстрое добавление"
+  "quickAdd": "Быстрое добавление",
+  "accountButton": "{name}, настройки"
 }

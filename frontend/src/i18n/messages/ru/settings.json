@@ -223,6 +223,7 @@
     },
     "colorThemeLabel": "Цветовая тема",
     "colorThemeHint": "Предпросмотр использует текущую светлую или тёмную тему.",
+    "colorThemeStyleHint": "Показаны цветовые темы, созданные для стиля «{style}».",
     "colorThemeOptions": {
       "default": "По умолчанию",
       "latte": "Latte",
@@ -236,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Бухгалтерская книга",
+      "studio": "Студия",
       "midnight": "Midnight",
       "highcontrast": "Высокий контраст",
       "colorblind": "Для слабовидящих"

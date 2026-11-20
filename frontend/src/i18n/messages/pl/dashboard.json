@@ -36,7 +36,19 @@
     "showSet": "Pokaż: {name}",
     "cycleControls": "Wybierz, co pokazuje sekcja główna",
     "cagrUnavailable": "CAGR wymaga co najmniej roku historii inwestycji na tych kontach, z wpłatami większymi niż wypłaty.",
-    "intradayUnavailable": "Część pozycji nie ma cen śróddziennych, więc nie można narysować wykresu jednodniowego. Wybierz dłuższy okres w Dostosuj."
+    "intradayUnavailable": "Część pozycji nie ma cen śróddziennych, więc nie można narysować wykresu jednodniowego. Wybierz dłuższy okres w Dostosuj.",
+    "assetsLabel": "Aktywa",
+    "liabilitiesLabel": "Zobowiązania",
+    "investedLabel": "Zainwestowane",
+    "high": "Najwyżej {value}",
+    "low": "Najniżej {value}",
+    "historyLabel": "Wartość netto według miesięcy: {high} w szczycie, {low} w najniższym punkcie, teraz {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {Zaległe} today {Następne, dzisiaj} tomorrow {Następne, jutro} other {Następne, {date}}}",
+      "meta": "{manual, select, true {Płacone ręcznie} other {Księgowane automatycznie}}",
+      "metaWithPayee": "{payee} · {manual, select, true {płacone ręcznie} other {księgowane automatycznie}}",
+      "record": "{kind, select, deposit {Zapisz wpłatę} transfer {Zapisz przelew} reminder {Zapisz} other {Zapisz płatność}}"
+    }
   },
   "trivia": {
     "title": "Ciekawostki",
@@ -355,7 +367,9 @@
     "due": "Termin: {ordinal}",
     "dueTooltip": "Dzień każdego miesiąca, w którym przypada termin spłaty karty kredytowej",
     "settlement": "Rozliczenie: {ordinal}",
-    "settlementTooltip": "Ostatni dzień cyklu rozliczeniowego. Transakcje zaksięgowane w tym dniu lub wcześniej pojawiają się na bieżącym wyciągu."
+    "settlementTooltip": "Ostatni dzień cyklu rozliczeniowego. Transakcje zaksięgowane w tym dniu lub wcześniej pojawiają się na bieżącym wyciągu.",
+    "dueShort": "termin {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Nadchodzące rachunki i wpłaty",
@@ -386,7 +400,11 @@
     "previousMonth": "Poprzedni miesiąc",
     "nextMonth": "Następny miesiąc",
     "emptyAll": "Brak zaplanowanych aktywnych rachunków, wpłat lub przelewów.",
-    "estimated": "Szacowane"
+    "estimated": "Szacowane",
+    "stripLabel": "Najbliższe dwa tygodnie, dzień po dniu: wpłaty rosną nad linią, rachunki spadają pod nią",
+    "metaPayee": "· {payee}",
+    "metaManual": "· płacone ręcznie",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Prognoza przepływów pieniężnych",

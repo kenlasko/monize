@@ -125,7 +125,9 @@
       "attachments": "添付ファイル",
       "status": "状態",
       "statusHelp": "未照合、決済済み、照合済みは銀行の取引明細書と一致させるための段階です。無効は取引を取り消しますが記録は残り、口座残高には影響しなくなります。",
-      "actions": "操作"
+      "actions": "操作",
+      "payment": "支払い",
+      "deposit": "入金"
     },
     "sort": {
       "balanceHiddenHint": "残高を表示するには日付で並べ替えてください",
@@ -191,7 +193,20 @@
       "editButton": "編集",
       "deleteButton": "削除"
     },
-    "itemNamePlural": "件の取引"
+    "itemNamePlural": "件の取引",
+    "classic": {
+      "entriesShown": "{count, plural, other {#件を表示中}}",
+      "legendCleared": "決済済み",
+      "legendReconciled": "照合済み",
+      "legendRule": "各残高の下の線は、その残高をこのページの最高残高と比べたものです。",
+      "markCleared": "決",
+      "markReconciled": "照"
+    },
+    "modern": {
+      "inspectorLabel": "選択中の取引",
+      "balanceAfter": "取引後の残高",
+      "yesterday": "昨日"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "この取引の保証を読み込めませんでした。",
       "empty": "保証はまだありません"
     },
-    "conversionLockedNote": "この振替は分割取引または他の所有者の口座に属しているため、ここでは振替のままにしかできません。分割から変更するか、削除して必要な項目を作成してください。"
+    "conversionLockedNote": "この振替は分割取引または他の所有者の口座に属しているため、ここでは振替のままにしかできません。分割から変更するか、削除して必要な項目を作成してください。",
+    "modeGroupLabel": "取引の種類",
+    "entryHint": "Tabでフィールドを移動します。Escで閉じます。"
   },
   "splitEditor": {
     "header": "分割の詳細",
@@ -772,6 +789,13 @@
       "foreignCurrency": "金額が口座と異なる通貨です。入力するには「詳細フォーム」を使ってください。",
       "crossCurrencyTransfer": "2つの口座の通貨が異なります。この振替には「詳細フォーム」を使ってください。",
       "unknown": "この入力はここでは保存できません。「詳細フォーム」で完成させてください。"
+    },
+    "assumedNote": "破線のフィールドは入力されていません。自動で入力されたので、内容を確認してください。",
+    "hints": {
+      "enter": "Enterで保存",
+      "shiftEnter": "Shift Enterで保存して続けて入力",
+      "tab": "Tabでフィールドを移動",
+      "esc": "Escで閉じる"
     }
   }
 }

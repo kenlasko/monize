@@ -15,8 +15,10 @@
 | UIS-1 | Preference plumbing across database, backend and frontend; `UiStyleSelector` | built |
 | UIS-2 | `ui-styles.css`, `ui-style-fonts.ts`, tokens and markers on the shared primitives | built |
 | UIS-3 | Regenerate the Settings screenshots in `website/docs/settings-and-security.md` | open |
-| UIS-4 | Classic register: Payment / Deposit columns and the balance rule | proposal |
-| UIS-5 | Classic dashboard: net worth as a statement figure | proposal |
-| UIS-6 | Modern dashboard: inverted hero and next-up card | proposal |
-| UIS-7 | Modern transactions: selected-row inspector | proposal |
-| UIS-8 | Move remaining hand-rolled tables onto `TABLE_CLASS` / `TH_CLASS` as their screens are touched | ongoing |
+| UIS-4 | Foundation: `useUiStyle` / `renderForStyle`, `MoneyFigure`, the variant pattern (design 4.1) | built |
+| UIS-5 | Companion palettes `ledger` and `studio`; each style offers only its own palettes (`UI_STYLE_PALETTES`) | built |
+| UIS-6 | Shell and dashboard variants, checked against `Main` / `ModernDashboard` | built |
+| UIS-7 | Register variants (desktop and phone), checked against `Register` / `Mobile` / `ModernTransactions` / `ModernMobile` | built |
+| UIS-8 | Entry variants, checked against `EntrySlip` / `ModernQuickAdd` | built |
+| UIS-9 | Vocabulary: badges, marks and meters in each style | open |
+| UIS-10 | Move remaining hand-rolled tables onto `TABLE_CLASS` / `TH_CLASS` as their screens are touched | ongoing |

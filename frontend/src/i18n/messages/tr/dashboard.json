@@ -36,7 +36,19 @@
     "showSet": "{name} göster",
     "cycleControls": "Ana bölümün neyi göstereceğini seçin",
     "cagrUnavailable": "CAGR için bu hesaplarda en az bir yıllık yatırım geçmişi ve çekilenden fazla yatırılan tutar gerekir.",
-    "intradayUnavailable": "Bu varlıkların bazılarının gün içi fiyatı yok, bu nedenle bir günlük grafik çizilemiyor. Özelleştir bölümünden daha uzun bir dönem seçin."
+    "intradayUnavailable": "Bu varlıkların bazılarının gün içi fiyatı yok, bu nedenle bir günlük grafik çizilemiyor. Özelleştir bölümünden daha uzun bir dönem seçin.",
+    "assetsLabel": "Varlıklar",
+    "liabilitiesLabel": "Borçlar",
+    "investedLabel": "Yatırım",
+    "high": "En yüksek {value}",
+    "low": "En düşük {value}",
+    "historyLabel": "Aylık net değer: en yüksek {high}, en düşük {low}, şu an {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {Gecikmiş} today {Sıradaki, bugün} tomorrow {Sıradaki, yarın} other {Sıradaki, {date}}}",
+      "meta": "{manual, select, true {Elle ödenir} other {Otomatik işlenir}}",
+      "metaWithPayee": "{payee} · {manual, select, true {elle ödenir} other {otomatik işlenir}}",
+      "record": "{kind, select, deposit {Para girişini kaydet} transfer {Transferi kaydet} reminder {Kaydet} other {Ödemeyi kaydet}}"
+    }
   },
   "trivia": {
     "title": "Bilgi notları",
@@ -355,7 +367,9 @@
     "due": "Son ödeme: {ordinal}",
     "dueTooltip": "Kredi kartı ödemenizin her ay vadesi gelen gün",
     "settlement": "Hesap kesimi: {ordinal}",
-    "settlementTooltip": "Fatura döneminin son günü. Bu tarihte veya öncesinde gerçekleştirilen işlemler mevcut ekstrede görünür."
+    "settlementTooltip": "Fatura döneminin son günü. Bu tarihte veya öncesinde gerçekleştirilen işlemler mevcut ekstrede görünür.",
+    "dueShort": "son ödeme {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Yaklaşan Faturalar ve Ödemeler",
@@ -386,7 +400,11 @@
     "previousMonth": "Önceki ay",
     "nextMonth": "Sonraki ay",
     "emptyAll": "Planlanmış etkin fatura, para yatırma veya transfer yok.",
-    "estimated": "Tahmini"
+    "estimated": "Tahmini",
+    "stripLabel": "Önümüzdeki iki hafta, gün gün: para girişleri çizginin üstüne çıkar, faturalar altına iner",
+    "metaPayee": "· {payee}",
+    "metaManual": "· elle ödenir",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Nakit Akışı Tahmini",

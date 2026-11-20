@@ -125,7 +125,9 @@
       "attachments": "Ekler",
       "status": "Durum",
       "statusHelp": "Mutabakatsız, Temizlendi veya Mutabakat Sağlandı, banka hesap özetiyle eşleştirme yolundaki adımlardır. Geçersiz bir işlemi iptal eder ama kaydını saklar; artık hesap bakiyesini hareket ettirmez.",
-      "actions": "İşlemler"
+      "actions": "İşlemler",
+      "payment": "Ödeme",
+      "deposit": "Para Girişi"
     },
     "sort": {
       "balanceHiddenHint": "Yürüyen bakiyeyi görmek için tarihe göre sıralayın",
@@ -191,7 +193,20 @@
       "editButton": "Düzenle",
       "deleteButton": "Sil"
     },
-    "itemNamePlural": "işlemler"
+    "itemNamePlural": "işlemler",
+    "classic": {
+      "entriesShown": "{count, plural, one {# kayıt gösteriliyor} other {# kayıt gösteriliyor}}",
+      "legendCleared": "temizlendi",
+      "legendReconciled": "mutabakat sağlandı",
+      "legendRule": "Her bakiyenin altındaki çizgi, o bakiyeyi bu sayfadaki en yüksek bakiyeyle karşılaştırır.",
+      "markCleared": "t",
+      "markReconciled": "M"
+    },
+    "modern": {
+      "inspectorLabel": "Seçili işlem",
+      "balanceAfter": "Sonraki bakiye",
+      "yesterday": "Dün"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Bu işlemin garantileri yüklenemedi.",
       "empty": "Henüz garanti yok"
     },
-    "conversionLockedNote": "Bu transfer bölünmüş bir işleme veya başka bir sahibin hesabına ait olduğundan burada yalnızca transfer olarak kalabilir. Bölmeden değiştirin veya silip istediğiniz kaydı oluşturun."
+    "conversionLockedNote": "Bu transfer bölünmüş bir işleme veya başka bir sahibin hesabına ait olduğundan burada yalnızca transfer olarak kalabilir. Bölmeden değiştirin veya silip istediğiniz kaydı oluşturun.",
+    "modeGroupLabel": "İşlem türü",
+    "entryHint": "Tab alanlar arasında geçiş yapar. Esc kapatır."
   },
   "splitEditor": {
     "header": "Bölüm Ayrıntıları",
@@ -772,6 +789,13 @@
       "foreignCurrency": "Tutar, hesabın para biriminden farklı bir para biriminde. Girmek için Tam Form'u kullanın.",
       "crossCurrencyTransfer": "İki hesabın para birimi farklı. Bu transfer için Tam Form'u kullanın.",
       "unknown": "Bu giriş burada kaydedilemez. Tamamlamak için Tam Form'u kullanın."
+    },
+    "assumedNote": "Kesik çizgili alanı siz yazmadınız. Sizin için dolduruldu, bu yüzden kontrol edin.",
+    "hints": {
+      "enter": "Enter kaydeder",
+      "shiftEnter": "Shift Enter kaydeder ve yenisini başlatır",
+      "tab": "Tab alanlar arasında geçiş yapar",
+      "esc": "Esc kapatır"
     }
   }
 }

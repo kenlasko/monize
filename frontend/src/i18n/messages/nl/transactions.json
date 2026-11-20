@@ -125,7 +125,9 @@
       "attachments": "Bijlagen",
       "status": "Status",
       "statusHelp": "Niet afgestemd, Bevestigd of Afgestemd zijn stappen op weg naar overeenstemming met een bankafschrift. Ongeldig annuleert een transactie maar behoudt de registratie; deze beïnvloedt het rekeningsaldo niet meer.",
-      "actions": "Acties"
+      "actions": "Acties",
+      "payment": "Betaling",
+      "deposit": "Storting"
     },
     "sort": {
       "balanceHiddenHint": "Sorteer op datum om het lopende saldo te zien",
@@ -191,7 +193,20 @@
       "editButton": "Bewerken",
       "deleteButton": "Verwijderen"
     },
-    "itemNamePlural": "transacties"
+    "itemNamePlural": "transacties",
+    "classic": {
+      "entriesShown": "{count, plural, one {# regel getoond} other {# regels getoond}}",
+      "legendCleared": "bevestigd",
+      "legendReconciled": "afgestemd",
+      "legendRule": "De lijn onder elk saldo vergelijkt dat saldo met het hoogste op deze pagina.",
+      "markCleared": "b",
+      "markReconciled": "A"
+    },
+    "modern": {
+      "inspectorLabel": "Geselecteerde transactie",
+      "balanceAfter": "Saldo erna",
+      "yesterday": "Gisteren"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "De garanties bij deze transactie konden niet worden geladen.",
       "empty": "Nog geen garanties"
     },
-    "conversionLockedNote": "Deze overboeking hoort bij een gesplitste transactie of bij de rekening van een andere eigenaar en kan hier alleen een overboeking blijven. Wijzig hem via de splitsing of verwijder hem en maak de gewenste boeking aan."
+    "conversionLockedNote": "Deze overboeking hoort bij een gesplitste transactie of bij de rekening van een andere eigenaar en kan hier alleen een overboeking blijven. Wijzig hem via de splitsing of verwijder hem en maak de gewenste boeking aan.",
+    "modeGroupLabel": "Soort transactie",
+    "entryHint": "Tab gaat door de velden. Esc sluit."
   },
   "splitEditor": {
     "header": "Splitsingsdetails",
@@ -772,6 +789,13 @@
       "foreignCurrency": "Het bedrag is in een andere valuta dan die van de rekening. Gebruik Volledig formulier om het in te voeren.",
       "crossCurrencyTransfer": "De twee rekeningen hebben verschillende valuta. Gebruik Volledig formulier voor deze overboeking.",
       "unknown": "Deze invoer kan hier niet worden opgeslagen. Gebruik Volledig formulier om hem af te maken."
+    },
+    "assumedNote": "Het gestippelde veld is niet getypt. Het is voor u ingevuld, controleer het dus.",
+    "hints": {
+      "enter": "Enter slaat op",
+      "shiftEnter": "Shift Enter slaat op en begint een nieuwe",
+      "tab": "Tab gaat door de velden",
+      "esc": "Esc sluit"
     }
   }
 }

@@ -86,7 +86,9 @@
       "category": "Швидке додавання: {amount} {category}",
       "payeeCategory": "Швидке додавання: {amount} {payee}, {category}",
       "transfer": "Швидке додавання: {amount} з рахунку {from} на рахунок {to}"
-    }
+    },
+    "trigger": "Пошук або перехід"
   },
-  "quickAdd": "Швидке додавання"
+  "quickAdd": "Швидке додавання",
+  "accountButton": "{name}, налаштування"
 }

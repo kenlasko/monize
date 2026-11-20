@@ -223,6 +223,7 @@
     },
     "colorThemeLabel": "색상 테마",
     "colorThemeHint": "미리 보기는 현재 라이트 또는 다크 모드를 사용합니다.",
+    "colorThemeStyleHint": "{style} 스타일용으로 만든 색상 테마를 표시하고 있습니다.",
     "colorThemeOptions": {
       "default": "기본",
       "latte": "Latte",
@@ -236,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "장부",
+      "studio": "스튜디오",
       "midnight": "Midnight",
       "highcontrast": "고대비",
       "colorblind": "색맹 안전"

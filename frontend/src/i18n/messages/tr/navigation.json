@@ -86,7 +86,9 @@
       "category": "Hızlı Ekle: {amount} {category}",
       "payeeCategory": "Hızlı Ekle: {amount} {payee}, {category}",
       "transfer": "Hızlı Ekle: {amount} {from} hesabından {to} hesabına"
-    }
+    },
+    "trigger": "Ara veya git"
   },
-  "quickAdd": "Hızlı Ekle"
+  "quickAdd": "Hızlı Ekle",
+  "accountButton": "{name}, ayarlar"
 }
