@@ -48,7 +48,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
-import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 const logger = createLogger('OverrideEditorDialog');
 interface OverrideEditorDialogProps {
@@ -587,7 +587,7 @@ export function OverrideEditorDialog({
       return {
         value: category.id,
         label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
-        icon: <CategoryPickerIcon category={category} />,
+        icon: categoryPickerIcon(category),
       };
     });
   }, [categories]);

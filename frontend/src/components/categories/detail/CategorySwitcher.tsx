@@ -7,7 +7,7 @@ import type { EntitySwitcherItem } from '@/components/ui/EntitySwitcher';
 import type { CollapsedHeaderSwitcher } from '@/store/mobileChromeStore';
 import { buildCategoryTree } from '@/lib/categoryUtils';
 import type { Category } from '@/types/category';
-import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 /**
  * The caret beside the category's name that jumps straight to another one,
@@ -46,7 +46,7 @@ export function useCategorySwitcher(
         id: category.id,
         primary: label,
         searchText: label,
-        icon: <CategoryPickerIcon category={category} />,
+        icon: categoryPickerIcon(category),
       };
     });
   }, [categories]);

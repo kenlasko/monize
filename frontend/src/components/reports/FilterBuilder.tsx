@@ -10,7 +10,7 @@ import { Tag } from '@/types/tag';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
-import { CategoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
 
 interface FilterBuilderProps {
@@ -57,7 +57,7 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees, t
           return [{
             value: cat.id,
             label: cat.name,
-            icon: <CategoryPickerIcon category={cat} />,
+            icon: categoryPickerIcon(cat),
             parentId: cat.parentId,
             children: children.length > 0 ? children : undefined,
           }];
