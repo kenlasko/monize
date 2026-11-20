@@ -15,6 +15,7 @@ const KNOWN_BLOCKERS: ReadonlySet<QuickAddBlocker> = new Set<QuickAddBlocker>([
   'ambiguousAccount',
   'missingToAccount',
   'sameAccount',
+  'amountTooLarge',
   'foreignCurrency',
   'crossCurrencyTransfer',
 ]);

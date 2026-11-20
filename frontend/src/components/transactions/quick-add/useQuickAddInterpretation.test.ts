@@ -22,11 +22,14 @@ function deferred<T>() {
 
 const NO_PINS: QuickAddPins = {};
 
-function renderReading(initial: Partial<QuickAddReadingInput> = {}) {
-  return renderHook((props: QuickAddReadingInput) => useQuickAddInterpretation(props), {
+function renderReading(initial: Partial<QuickAddReadingInput> = {}, onSettled?: (key: string, settled: unknown) => void) {
+  return renderHook((props: QuickAddReadingInput) => useQuickAddInterpretation(props, { onSettled }), {
     initialProps: { text: '', pins: NO_PINS, today: '2026-11-20', ...initial },
   });
 }
+
+/** An HTTP refusal as axios rejects it. */
+const httpError = (status: number) => Object.assign(new Error(`Request failed with status code ${status}`), { response: { status } });
 
 async function advance(ms: number) {
   await act(async () => {
@@ -155,5 +158,59 @@ describe('useQuickAddInterpretation', () => {
     await advance(0);
     expect(interpret).toHaveBeenCalledTimes(2);
     expect(result.current.status).toBe('ready');
+  });
+
+  it('reports a pin the server refuses apart from a failed request', async () => {
+    interpret.mockRejectedValue(httpError(404));
+    const { result } = renderReading({ text: '84.37 loblaws', pins: { accountId: 'acc-closed' } });
+    await advance(0);
+    expect(result.current.status).toBe('refused');
+    expect(result.current.interpretation).toBeNull();
+    expect(result.current.shown).toBeNull();
+  });
+
+  it('reads a refusal with no pins, or a throttled request, as a failure to try again', async () => {
+    interpret.mockRejectedValueOnce(httpError(404));
+    const unpinned = renderReading({ text: '84.37 loblaws' });
+    await advance(0);
+    expect(unpinned.result.current.status).toBe('failed');
+
+    interpret.mockRejectedValueOnce(httpError(429));
+    const throttled = renderReading({ text: '84.37 loblaws', pins: { kind: 'deposit' } });
+    await advance(0);
+    expect(throttled.result.current.status).toBe('failed');
+  });
+
+  it('tells the caller when the request it waited on settles, under that request\'s key', async () => {
+    const onSettled = vi.fn();
+    const answer = deferred<QuickAddInterpretation>();
+    interpret.mockReturnValueOnce(answer.promise);
+    const { result } = renderReading({ text: '84.37 loblaws' }, onSettled);
+    const pendingKey = result.current.key;
+    await advance(0);
+    expect(result.current.status).toBe('pending');
+    expect(onSettled).not.toHaveBeenCalled();
+    const reading = qaPaymentReading();
+    await act(async () => answer.resolve(reading));
+    expect(onSettled).toHaveBeenCalledWith(pendingKey, { outcome: 'ready', interpretation: reading });
+
+    interpret.mockRejectedValueOnce(httpError(404));
+    const { result: refused } = renderReading({ text: 'x', pins: { payeeId: 'gone' } }, onSettled);
+    const refusedKey = refused.current.key;
+    await advance(0);
+    expect(onSettled).toHaveBeenLastCalledWith(refusedKey, { outcome: 'refused' });
+  });
+
+  it('never reports an answer to a line that was changed before it arrived', async () => {
+    const onSettled = vi.fn();
+    const first = deferred<QuickAddInterpretation>();
+    interpret.mockReturnValueOnce(first.promise).mockResolvedValueOnce(qaPaymentReading());
+    const { rerender } = renderReading({ text: '84' }, onSettled);
+    await advance(0);
+    rerender({ text: '84 tim', pins: NO_PINS, today: '2026-11-20' });
+    await act(async () => first.resolve(qaPaymentReading()));
+    expect(onSettled).not.toHaveBeenCalled();
+    await advance(QUICK_ADD_DEBOUNCE_MS);
+    expect(onSettled).toHaveBeenCalledTimes(1);
   });
 });

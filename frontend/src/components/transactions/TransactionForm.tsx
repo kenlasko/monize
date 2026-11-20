@@ -49,6 +49,7 @@ import {
   rememberTransactionDate,
 } from '@/lib/lastTransactionDate';
 import { payeesApi } from '@/lib/payees';
+import { createPayeeFromName } from '@/lib/payee-create';
 import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
 import { accountsApi } from '@/lib/accounts';
@@ -467,14 +468,23 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   // (account-currency units per 1 unit of entryCurrency). On a new transaction
   // the entry currency is seeded from the sticky remembered currency; when
   // editing/duplicating a foreign transaction it comes from the source.
-  // A draft's amount is in the account's currency, so it starts there rather
-  // than in the remembered entry currency.
+  // A draft starts in its own entry currency: a figure typed in another
+  // currency comes in as that currency and amount, exactly as a duplicate of a
+  // foreign-entry row does, and anything else in the account's currency rather
+  // than the remembered one. With no stored rate, the rate is fetched for the
+  // date below, as on any new foreign entry.
+  const draftForeign =
+    newEntryDraft?.mode === 'normal' &&
+    newEntryDraft.originalCurrencyCode &&
+    newEntryDraft.originalAmount !== undefined
+      ? { currencyCode: newEntryDraft.originalCurrencyCode, amount: newEntryDraft.originalAmount }
+      : undefined;
   const [entryCurrency, setEntryCurrency] = useState<string>(
     initSource?.originalCurrencyCode ||
-      (initSource || newEntryDraft ? '' : getRememberedTransactionCurrency()),
+      (initSource ? '' : newEntryDraft ? draftForeign?.currencyCode ?? '' : getRememberedTransactionCurrency()),
   );
   const [foreignAmount, setForeignAmount] = useState<number | undefined>(
-    initSource?.originalAmount != null ? Number(initSource.originalAmount) : undefined,
+    initSource?.originalAmount != null ? Number(initSource.originalAmount) : draftForeign?.amount,
   );
   const [fxRate, setFxRate] = useState<number | null>(
     initSource?.originalCurrencyCode ? Number(initSource.exchangeRate) : null,
@@ -531,7 +541,9 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
             categoryId: draftCategoryId || '',
             transactionDate:
               newEntryDraft.date || defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
-            ...(newEntryDraft.amount !== undefined ? { amount: newEntryDraft.amount } : {}),
+            // A foreign figure's account-currency amount is derived from it once
+            // the rate arrives, so the draft's own is not seeded beside it.
+            ...(newEntryDraft.amount !== undefined && !draftForeign ? { amount: newEntryDraft.amount } : {}),
             currencyCode: defaultCurrency,
             description: newEntryDraft.description || '',
             status: TransactionStatus.UNRECONCILED,
@@ -961,19 +973,17 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     if (!name.trim()) return;
 
     try {
-      // Check if this name matches an inactive payee
-      const inactiveMatch = await payeesApi.findInactiveByName(name.trim());
-      if (inactiveMatch) {
-        setInactivePayeeMatch(inactiveMatch);
+      const outcome = await createPayeeFromName(name, { deferContactLookup: offerContactLookup });
+      if (!outcome) return;
+      // The name matches an inactive payee: offer it back.
+      if (outcome.kind === 'inactive') {
+        setInactivePayeeMatch(outcome.payee);
         setPendingPayeeName(name.trim());
         setShowReactivateDialog(true);
         return;
       }
 
-      const newPayee = await payeesApi.create({
-        name: name.trim(),
-        ...(offerContactLookup ? { deferContactLookup: true } : {}),
-      });
+      const newPayee = outcome.payee;
       // Add to payees list
       setPayees(prev => [...prev, newPayee]);
       // Select the new payee

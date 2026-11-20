@@ -35,6 +35,24 @@ vi.mock('@/lib/apiCache', async (importOriginal) => ({
   invalidateBalanceCaches: () => invalidateBalanceCaches(),
 }));
 
+const findInactiveByName = vi.fn();
+const createPayee = vi.fn();
+const reactivatePayee = vi.fn();
+vi.mock('@/lib/payees', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/payees')>()),
+  payeesApi: {
+    findInactiveByName: (...args: unknown[]) => findInactiveByName(...args),
+    create: (...args: unknown[]) => createPayee(...args),
+    reactivatePayee: (...args: unknown[]) => reactivatePayee(...args),
+  },
+}));
+
+const rememberTransactionDate = vi.fn();
+vi.mock('@/lib/lastTransactionDate', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/lastTransactionDate')>()),
+  rememberTransactionDate: (...args: unknown[]) => rememberTransactionDate(...args),
+}));
+
 // The account picker draws institution logos; none here.
 vi.mock('@/lib/institutions', () => ({ institutionsApi: { getAll: async () => [] } }));
 
@@ -92,6 +110,22 @@ async function pressEnter(input: HTMLElement, shiftKey = false) {
   });
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+/** An HTTP refusal as axios rejects it. */
+const httpError = (status: number) =>
+  Object.assign(new Error(`Request failed with status code ${status}`), { response: { status } });
+
+const fullFormButton = () => screen.getByRole('button', { name: 'Full Form' });
+
 describe('QuickAddDialog', () => {
   beforeEach(() => {
     __resetModalStateForTesting();
@@ -99,6 +133,10 @@ describe('QuickAddDialog', () => {
     create.mockReset().mockResolvedValue({ id: 'tx-new' });
     createTransfer.mockReset().mockResolvedValue({ fromTransaction: { id: 'f' }, toTransaction: { id: 't' } });
     invalidateBalanceCaches.mockReset();
+    findInactiveByName.mockReset().mockResolvedValue(null);
+    createPayee.mockReset().mockImplementation(async ({ name }: { name: string }) => ({ id: 'payee-new', name }));
+    reactivatePayee.mockReset();
+    rememberTransactionDate.mockReset();
     vi.mocked(toast.success).mockReset();
     vi.mocked(toast.error).mockReset();
   });
@@ -183,6 +221,19 @@ describe('QuickAddDialog', () => {
     expect(onSaved).toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalledWith('Transaction created');
     expect(formModal.close).toHaveBeenCalled();
+    // A payee the reader has is linked, never made again.
+    expect(createPayee).not.toHaveBeenCalled();
+  });
+
+  it('remembers the date the way New Transaction does, for a transaction and a transfer', async () => {
+    const { input } = await renderDialog();
+    await typeLine(input, '84.37 loblaws', qaPaymentReading({ date: qaField('2026-11-17') }));
+    await pressEnter(input, true);
+    expect(rememberTransactionDate).toHaveBeenCalledWith('monize-last-transaction-date', '2026-11-17');
+
+    await typeLine(input, '500 chequing to savings', qaTransferReading({ date: qaField('2026-11-18') }));
+    await pressEnter(input, true);
+    expect(rememberTransactionDate).toHaveBeenLastCalledWith('monize-last-transaction-date', '2026-11-18');
   });
 
   it('saves a deposit as positive', async () => {
@@ -373,13 +424,411 @@ describe('QuickAddDialog', () => {
 
   it('hands a blocked entry to the full form', async () => {
     const { input, onFullForm } = await renderDialog();
-    await typeLine(input, '20 € cafe', qaPaymentReading({ blockers: ['foreignCurrency'] }));
+    await typeLine(input, 'visa 84.37 loblaws', qaPaymentReading({ blockers: ['missingToAccount'] }));
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Full Form' }));
+      fireEvent.click(fullFormButton());
     });
     expect(onFullForm).toHaveBeenCalledWith(
       expect.objectContaining({ mode: 'normal', accountId: 'acc-chq', amount: -84.37, payeeId: 'payee-lob' }),
     );
+  });
+
+  describe('a figure typed in another currency', () => {
+    const euroReading = (currencyCode: string | null) =>
+      qaPaymentReading({
+        amount: qaField(20),
+        payee: qaField({ id: 'payee-cafe', name: 'Cafe' }),
+        category: qaMissing(),
+        blockers: ['foreignCurrency'],
+        balance: null,
+        foreignAmount: { currencyCode, amount: 20 },
+      });
+
+    it('reads on its chip in its own currency and goes to the full form in it, never as the account\'s', async () => {
+      const { input, onFullForm } = await renderDialog();
+      await typeLine(input, '20 € cafe', euroReading('EUR'));
+      expect(screen.getByRole('button', { name: 'Amount: €20.00 EUR' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /\$20\.00/ })).not.toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(fullFormButton());
+      });
+      const draft = onFullForm.mock.calls[0][0];
+      expect(draft).toMatchObject({
+        mode: 'normal',
+        accountId: 'acc-chq',
+        originalCurrencyCode: 'EUR',
+        originalAmount: -20,
+        payeeId: 'payee-cafe',
+      });
+      expect(draft.amount).toBeUndefined();
+    });
+
+    it('goes over without an amount when the typed symbol names no one currency', async () => {
+      const { input, onFullForm } = await renderDialog();
+      await typeLine(input, '20 kr cafe', euroReading(null));
+      expect(screen.getByRole('button', { name: 'Amount: 20.00' })).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(fullFormButton());
+      });
+      const draft = onFullForm.mock.calls[0][0];
+      expect(draft.amount).toBeUndefined();
+      expect(draft.originalAmount).toBeUndefined();
+      expect(draft).toMatchObject({ accountId: 'acc-chq', payeeId: 'payee-cafe' });
+    });
+  });
+
+  it('does not preselect an account that matched others equally in the full form', async () => {
+    const { input, onFullForm } = await renderDialog();
+    await typeLine(
+      input,
+      'visa 84.37 loblaws',
+      qaPaymentReading({
+        account: qaField({ id: 'v1', name: 'Visa', currencyCode: 'USD' }, 'typed', {
+          ambiguous: true,
+          alternatives: [{ id: 'v2', name: 'Visa Gold', currencyCode: 'USD' }],
+        }),
+        blockers: ['ambiguousAccount'],
+      }),
+    );
+    await act(async () => {
+      fireEvent.click(fullFormButton());
+    });
+    expect(onFullForm.mock.calls[0][0].accountId).toBeUndefined();
+  });
+
+  describe('a payee the line named that nobody has yet', () => {
+    const newPayeeReading = () => qaPaymentReading({ payee: qaField({ id: null, name: 'Corner Cafe' }) });
+
+    it('is created first, and the row is saved linked to it', async () => {
+      const { input, formModal } = await renderDialog();
+      await typeLine(input, '4.50 corner cafe', newPayeeReading());
+      await pressEnter(input);
+      await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+      expect(findInactiveByName).toHaveBeenCalledWith('Corner Cafe');
+      // The server runs its own background contact lookup on a payee made like this.
+      expect(createPayee).toHaveBeenCalledWith({ name: 'Corner Cafe' });
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ payeeId: 'payee-new', payeeName: 'Corner Cafe' }));
+      expect(toast.success).toHaveBeenCalledWith('Payee "Corner Cafe" created');
+      expect(formModal.close).toHaveBeenCalled();
+    });
+
+    it('saves nothing when the payee cannot be created', async () => {
+      createPayee.mockRejectedValue(new Error('boom'));
+      const { input, formModal } = await renderDialog();
+      await typeLine(input, '4.50 corner cafe', newPayeeReading());
+      await pressEnter(input);
+      await waitFor(() => expect(toast.error).toHaveBeenCalled());
+      expect(create).not.toHaveBeenCalled();
+      expect(formModal.close).not.toHaveBeenCalled();
+    });
+
+    it('keeps the payee it made when the row is refused, so a second Save links it', async () => {
+      create.mockRejectedValueOnce(new Error('boom'));
+      const { input } = await renderDialog();
+      await typeLine(input, '4.50 corner cafe', newPayeeReading());
+      interpret.mockResolvedValue(qaPaymentReading({ payee: qaField({ id: 'payee-new', name: 'Corner Cafe' }, 'pinned') }));
+      await pressEnter(input);
+      await waitFor(() =>
+        expect(interpret).toHaveBeenLastCalledWith(expect.objectContaining({ pins: { payeeId: 'payee-new' } })),
+      );
+      await screen.findByRole('button', { name: 'Payee: Corner Cafe' });
+      await pressEnter(input);
+      await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+      expect(createPayee).toHaveBeenCalledTimes(1);
+      expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ payeeId: 'payee-new' }));
+    });
+
+    describe('when an inactive payee has the name', () => {
+      const inactive = { id: 'payee-old', name: 'Corner Cafe', isActive: false };
+      beforeEach(() => {
+        findInactiveByName.mockResolvedValue(inactive);
+      });
+
+      async function saveAndAsk() {
+        const rendered = await renderDialog();
+        await typeLine(rendered.input, '4.50 corner cafe', newPayeeReading());
+        await pressEnter(rendered.input);
+        expect(await screen.findByRole('dialog', { name: 'Reactivate Payee' })).toBeInTheDocument();
+        expect(createPayee).not.toHaveBeenCalled();
+        expect(create).not.toHaveBeenCalled();
+        return rendered;
+      }
+
+      it('offers it back, and saves the row linked to it once reactivated', async () => {
+        reactivatePayee.mockResolvedValue({ ...inactive, isActive: true });
+        const { formModal } = await saveAndAsk();
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }));
+        });
+        await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+        expect(reactivatePayee).toHaveBeenCalledWith('payee-old');
+        expect(create).toHaveBeenCalledWith(expect.objectContaining({ payeeId: 'payee-old', payeeName: 'Corner Cafe' }));
+        expect(formModal.close).toHaveBeenCalled();
+      });
+
+      it('saves the name as text with no payee on Keep Inactive, as the full form does', async () => {
+        await saveAndAsk();
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'No, Keep Inactive' }));
+        });
+        await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+        expect(create).toHaveBeenCalledWith(expect.objectContaining({ payeeId: null, payeeName: 'Corner Cafe' }));
+        expect(reactivatePayee).not.toHaveBeenCalled();
+      });
+
+      it('saves nothing when the question is closed unanswered', async () => {
+        const { formModal } = await saveAndAsk();
+        const question = screen.getByRole('dialog', { name: 'Reactivate Payee' });
+        const reactivateButton = within(question).getByRole('button', { name: 'Reactivate' });
+        await act(async () => {
+          reactivateButton.focus();
+        });
+        await act(async () => {
+          fireEvent.keyDown(reactivateButton, { key: 'Escape' });
+        });
+        await waitFor(() =>
+          expect(screen.queryByRole('dialog', { name: 'Reactivate Payee' })).not.toBeInTheDocument(),
+        );
+        expect(create).not.toHaveBeenCalled();
+        expect(formModal.close).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+      });
+    });
+  });
+
+  describe('an action taken while the line is still being read', () => {
+    it('saves on Enter once the reading arrives, when nothing blocks it', async () => {
+      const { input } = await renderDialog();
+      const answer = deferred<QuickAddInterpretation>();
+      interpret.mockReturnValueOnce(answer.promise);
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '84.37 loblaws groceries' } });
+      });
+      await pressEnter(input);
+      expect(create).not.toHaveBeenCalled();
+      await waitFor(() => expect(interpret).toHaveBeenCalledTimes(1));
+      await act(async () => answer.resolve(qaPaymentReading()));
+      await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ amount: -84.37 })));
+    });
+
+    it('shows the blockers instead when the arriving reading has some', async () => {
+      const { input, formModal } = await renderDialog();
+      const answer = deferred<QuickAddInterpretation>();
+      interpret.mockReturnValueOnce(answer.promise);
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '84.37' } });
+      });
+      await pressEnter(input, true);
+      await waitFor(() => expect(interpret).toHaveBeenCalledTimes(1));
+      await act(async () => answer.resolve(qaPaymentReading({ account: qaMissing(), blockers: ['missingAccount'] })));
+      expect(await screen.findByTestId('quick-add-blockers')).toHaveTextContent('Choose an account.');
+      expect(create).not.toHaveBeenCalled();
+      expect(formModal.close).not.toHaveBeenCalled();
+    });
+
+    it('drops an Enter made before the reader changed the line again', async () => {
+      const { input } = await renderDialog();
+      const first = deferred<QuickAddInterpretation>();
+      interpret.mockReturnValueOnce(first.promise);
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '84.37 loblaws' } });
+      });
+      await pressEnter(input);
+      await waitFor(() => expect(interpret).toHaveBeenCalledTimes(1));
+      await typeLine(input, '84.37 loblaws coffee', qaPaymentReading());
+      await act(async () => first.resolve(qaPaymentReading()));
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it('hands the line to Full Form after an amount editor blurs, with what the reading settled', async () => {
+      // In a browser the press on Full Form blurs the open amount editor
+      // first, which pins its figure and sends the line to be read again.
+      const { input, onFullForm } = await renderDialog();
+      await typeLine(input, '84.37 loblaws groceries', qaPaymentReading());
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Amount: $84.37' }));
+      });
+      const field = within(screen.getByRole('group', { name: 'Amount' })).getByLabelText('Amount');
+      await act(async () => {
+        fireEvent.change(field, { target: { value: '90' } });
+      });
+      const answer = deferred<QuickAddInterpretation>();
+      interpret.mockReturnValueOnce(answer.promise);
+      await act(async () => {
+        fireEvent.blur(field);
+      });
+      await waitFor(() =>
+        expect(interpret).toHaveBeenLastCalledWith(expect.objectContaining({ pins: { amount: 90 } })),
+      );
+      await act(async () => {
+        fireEvent.click(fullFormButton());
+      });
+      expect(onFullForm).not.toHaveBeenCalled();
+      await act(async () => answer.resolve(qaPaymentReading({ amount: qaField(90, 'pinned') })));
+      await waitFor(() => expect(onFullForm).toHaveBeenCalledTimes(1));
+      expect(onFullForm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'normal',
+          accountId: 'acc-chq',
+          amount: -90,
+          payeeId: 'payee-lob',
+          categoryId: 'cat-groc',
+          date: '2026-11-20',
+        }),
+      );
+    });
+
+    it('hands the typed line over as the description when the reading fails', async () => {
+      const { input, onFullForm } = await renderDialog();
+      const answer = deferred<QuickAddInterpretation>();
+      interpret.mockReturnValueOnce(answer.promise);
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '84.37 loblaws groceries' } });
+      });
+      await act(async () => {
+        fireEvent.click(fullFormButton());
+      });
+      await waitFor(() => expect(interpret).toHaveBeenCalledTimes(1));
+      expect(onFullForm).not.toHaveBeenCalled();
+      await act(async () => answer.reject(new Error('down')));
+      await waitFor(() => expect(onFullForm).toHaveBeenCalledTimes(1));
+      expect(onFullForm).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: 'normal', description: '84.37 loblaws groceries' }),
+      );
+    });
+  });
+
+  it('hands the typed line over as the description from a failed reading', async () => {
+    const { input, onFullForm } = await renderDialog();
+    interpret.mockRejectedValueOnce(new Error('down'));
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '84.37 loblaws' } });
+    });
+    await screen.findByRole('alert');
+    await act(async () => {
+      fireEvent.click(fullFormButton());
+    });
+    expect(onFullForm).toHaveBeenCalledWith({ mode: 'normal', description: '84.37 loblaws' });
+  });
+
+  it('keeps an open amount editor on the reading as the line is retyped, and pins nothing untouched', async () => {
+    const { input } = await renderDialog();
+    await typeLine(input, '84.37 loblaws', qaPaymentReading());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Amount: $84.37' }));
+    });
+    const field = within(screen.getByRole('group', { name: 'Amount' })).getByLabelText('Amount');
+    // Back to the line, leaving the editor open and untouched.
+    await act(async () => {
+      fireEvent.blur(field);
+    });
+    interpret.mockResolvedValue(qaPaymentReading({ amount: qaField(50) }));
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '50 loblaws' } });
+    });
+    expect(await screen.findByRole('button', { name: 'Amount: $50.00' })).toBeInTheDocument();
+    // CurrencyInput re-syncs its text in an effect after the new figure commits.
+    await waitFor(() => expect(field).toHaveValue('50.00'));
+    // Through the editor and out again, typing nothing.
+    await act(async () => {
+      fireEvent.focus(field);
+    });
+    await act(async () => {
+      fireEvent.blur(field);
+    });
+    expect(interpret).not.toHaveBeenCalledWith(expect.objectContaining({ pins: expect.anything() }));
+  });
+
+  describe('a pin the server refuses', () => {
+    async function refusePin() {
+      const rendered = await renderDialog();
+      await typeLine(
+        rendered.input,
+        '84.37 tim',
+        qaPaymentReading({
+          payee: qaField({ id: 'payee-timber', name: 'Timberland' }, 'inferred', {
+            alternatives: [{ id: 'payee-tim', name: 'Tim Hortons' }],
+          }),
+        }),
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Payee: Timberland, guessed' }));
+      });
+      // Tim Hortons was deleted elsewhere since the reading listed it.
+      interpret.mockRejectedValue(httpError(404));
+      await act(async () => {
+        fireEvent.click(within(screen.getByRole('group', { name: 'Payee' })).getByRole('button', { name: 'Tim Hortons' }));
+      });
+      expect(await screen.findByRole('alert')).toHaveTextContent('Something you chose is no longer available');
+      return rendered;
+    }
+
+    it('is reported apart from a failed request, and Clear Changes reads the line without it', async () => {
+      await refusePin();
+      expect(screen.queryByText('Failed to read the entry')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Try Again' })).not.toBeInTheDocument();
+      interpret.mockReset().mockResolvedValue(qaPaymentReading());
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear Changes' }));
+      });
+      await waitFor(() => expect(interpret).toHaveBeenCalledWith({ text: '84.37 tim', today: '2026-11-20' }));
+      expect(await screen.findByRole('button', { name: 'Payee: Loblaws' })).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('is not handed to the full form', async () => {
+      const { onFullForm } = await refusePin();
+      await act(async () => {
+        fireEvent.click(fullFormButton());
+      });
+      expect(onFullForm).toHaveBeenCalledWith({ mode: 'normal', description: '84.37 tim' });
+    });
+  });
+
+  describe('a payee or category the reader clears', () => {
+    it('reads as their own choice of none, is never guessed again, and saves as none', async () => {
+      const { input } = await renderDialog();
+      await typeLine(input, '84.37 loblaws', qaPaymentReading({ payee: qaField({ id: 'payee-lob', name: 'Loblaws' }, 'inferred') }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Payee: Loblaws, guessed' }));
+      });
+      const editor = screen.getByRole('group', { name: 'Payee' });
+      // An older server's empty answer: the reader's own pins say it is theirs.
+      interpret.mockResolvedValue(qaPaymentReading({ payee: qaMissing() }));
+      await act(async () => {
+        fireEvent.mouseDown(editor.querySelector('button[tabindex="-1"]')!);
+      });
+      await waitFor(() =>
+        expect(interpret).toHaveBeenLastCalledWith(expect.objectContaining({ pins: { clear: ['payee'] } })),
+      );
+      const chip = await screen.findByRole('button', { name: 'Payee: No payee' });
+      expect(chip).toHaveAttribute('data-tier', 'typed');
+      expect(chip).not.toHaveTextContent('Missing');
+
+      await typeLine(input, '84.37 loblaws coffee', qaPaymentReading({ payee: qaMissing('pinned') }));
+      expect(interpret).toHaveBeenLastCalledWith(expect.objectContaining({ pins: { clear: ['payee'] } }));
+      await pressEnter(input);
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ payeeId: null, payeeName: null }));
+    });
+
+    it('clears a category the same way', async () => {
+      const { input } = await renderDialog();
+      await typeLine(input, '84.37 loblaws', qaPaymentReading({ category: qaField({ id: 'cat-groc', name: 'Food: Groceries' }, 'inferred') }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Category: Food: Groceries, guessed' }));
+      });
+      const editor = screen.getByRole('group', { name: 'Category' });
+      interpret.mockResolvedValue(qaPaymentReading({ category: qaMissing('pinned') }));
+      await act(async () => {
+        fireEvent.mouseDown(editor.querySelector('button[tabindex="-1"]')!);
+      });
+      await waitFor(() =>
+        expect(interpret).toHaveBeenLastCalledWith(expect.objectContaining({ pins: { clear: ['category'] } })),
+      );
+      expect(await screen.findByRole('button', { name: 'Category: No category' })).toHaveAttribute('data-tier', 'typed');
+      await pressEnter(input);
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ categoryId: null }));
+    });
   });
 
   it('reads a line it was opened with, in the register account', async () => {

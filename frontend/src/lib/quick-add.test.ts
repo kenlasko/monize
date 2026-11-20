@@ -26,6 +26,7 @@ function wireReading(): QuickAddInterpretation {
       after: '1115.6300' as unknown as number,
       movesOn: null,
     },
+    foreignAmount: null,
   };
 }
 
@@ -49,6 +50,24 @@ describe('quickAddApi.interpret', () => {
     expect(reading.amount.value).toBe(84.37);
     expect(reading.amount.alternatives).toEqual([12.5]);
     expect(reading.balance).toMatchObject({ current: 1200, after: 1115.63 });
+  });
+
+  it('reads a figure typed in another currency as a number, and its absence as none', async () => {
+    const raw = wireReading();
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      data: {
+        ...raw,
+        blockers: ['foreignCurrency'],
+        foreignAmount: { currencyCode: 'EUR', amount: '20.0000' as unknown as number },
+      },
+    });
+    const foreign = await quickAddApi.interpret({ text: '20 € cafe', today: '2026-11-20' });
+    expect(foreign.foreignAmount).toEqual({ currencyCode: 'EUR', amount: 20 });
+
+    // An older answer without the field at all.
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ data: { ...raw, foreignAmount: undefined } });
+    const plain = await quickAddApi.interpret({ text: '84.37 loblaws', today: '2026-11-20' });
+    expect(plain.foreignAmount).toBeNull();
   });
 
   it('keeps an unknown amount and a deferred balance unknown', async () => {

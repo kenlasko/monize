@@ -711,6 +711,11 @@
     "reading": "[XX-Reading the entry...-XX]",
     "readFailed": "[XX-Failed to read the entry-XX]",
     "tryAgain": "[XX-Try Again-XX]",
+    "pinRefused": {
+      "title": "[XX-Something you chose is no longer available-XX]",
+      "description": "[XX-An account, payee or category picked on a chip has been closed or deleted since. Clear your changes to read the entry again.-XX]",
+      "clearChanges": "[XX-Clear Changes-XX]"
+    },
     "fullForm": "[XX-Full Form-XX]",
     "save": "[XX-Save-XX]",
     "saveAndNew": "[XX-Save & New-XX]",
@@ -737,6 +742,10 @@
       "matches": "[XX-{count, plural, other {# matches}}-XX]",
       "new": "[XX-New-XX]"
     },
+    "cleared": {
+      "payee": "[XX-No payee-XX]",
+      "category": "[XX-No category-XX]"
+    },
     "editor": {
       "alternatives": "[XX-Other Matches-XX]",
       "done": "[XX-Done-XX]",
@@ -750,11 +759,12 @@
     "blockers": {
       "missingAmount": "[XX-Type an amount.-XX]",
       "zeroAmount": "[XX-The amount cannot be zero.-XX]",
-      "amountPrecision": "[XX-The amount has more decimal places than the account's currency holds.-XX]",
+      "amountPrecision": "[XX-The amount has more decimal places than the account's currency is entered in.-XX]",
       "missingAccount": "[XX-Choose an account.-XX]",
       "ambiguousAccount": "[XX-More than one account matches. Choose one.-XX]",
       "missingToAccount": "[XX-Choose the account the money goes to.-XX]",
       "sameAccount": "[XX-A transfer needs two different accounts.-XX]",
+      "amountTooLarge": "[XX-The amount is larger than a transaction can hold.-XX]",
       "foreignCurrency": "[XX-The amount is in a currency other than the account's. Use Full Form to enter it.-XX]",
       "crossCurrencyTransfer": "[XX-The two accounts hold different currencies. Use Full Form for this transfer.-XX]",
       "unknown": "[XX-This entry cannot be saved here. Use Full Form to finish it.-XX]"

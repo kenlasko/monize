@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import toast from 'react-hot-toast';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -18,23 +17,30 @@ import {
   useTransactionSubmitMode,
   type TransactionSubmitMode,
 } from '@/hooks/useTransactionSubmitMode';
-import { invalidateBalanceCaches } from '@/lib/apiCache';
-import { getErrorMessage } from '@/lib/errors';
-import { createLogger } from '@/lib/logger';
 import { QUICK_ADD_TEXT_MAX_LENGTH } from '@/lib/quick-add';
-import { transactionsApi } from '@/lib/transactions';
 import type { Account } from '@/types/account';
 import type { Category } from '@/types/category';
 import type { Payee } from '@/types/payee';
-import type { QuickAddPins } from '@/types/quick-add';
+import type { QuickAddInterpretation, QuickAddPins } from '@/types/quick-add';
+import { ReactivatePayeeDialog } from '@/components/payees/ReactivatePayeeDialog';
 import type { TransactionFormDraft } from '../transaction-form-draft';
 import { QuickAddChips } from './QuickAddChips';
 import { QuickAddSummary } from './QuickAddSummary';
-import { hasPins, mergePins, type QuickAddChipField } from './quick-add-chips';
-import { buildQuickAddDraft, buildQuickAddSave } from './quick-add-entry';
-import { useQuickAddInterpretation } from './useQuickAddInterpretation';
+import { hasPins, mergePins, pinsWithoutIds, type QuickAddChipField } from './quick-add-chips';
+import { buildQuickAddDraft } from './quick-add-entry';
+import { useQuickAddInterpretation, type QuickAddSettled } from './useQuickAddInterpretation';
+import { useQuickAddSave } from './useQuickAddSave';
 
-const logger = createLogger('QuickAddDialog');
+/**
+ * What the reader asked for while the reading of the line was still on its
+ * way, kept with the request it waits for and the line as it stood.
+ */
+interface WaitingAction {
+  key: string;
+  text: string;
+  pins: QuickAddPins;
+  action: { kind: 'save'; mode: TransactionSubmitMode } | { kind: 'fullForm' };
+}
 
 type QuickAddFormModal = Pick<
   UseFormModalReturn<unknown>,
@@ -62,7 +68,8 @@ export interface QuickAddDialogProps {
  * the server as a payment, deposit or transfer, shown as chips the reader can
  * change, and saved through the same create calls, with the same body, as New
  * Transaction. Enter saves when nothing blocks it; Shift+Enter saves and
- * clears the line for the next one.
+ * clears the line for the next one. Either, or Full Form, pressed while the
+ * line is still being read acts on its reading once it arrives.
  */
 export function QuickAddDialog({
   formModal,
@@ -81,35 +88,12 @@ export function QuickAddDialog({
   const [text, setText] = useState(initialText);
   const [pins, setPins] = useState<QuickAddPins>({});
   const [editing, setEditing] = useState<QuickAddChipField | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  // Set on the key or click, before the request: `isSaving` lands a render
-  // later and cannot stop a second Enter from writing the row twice.
-  const saveInFlight = useRef(false);
   const [submitMode, setSubmitMode] = useTransactionSubmitMode(TRANSACTION_SUBMIT_MODE_KEY);
+  // Enter or Full Form pressed before the line's reading arrived.
+  const waiting = useRef<WaitingAction | null>(null);
 
-  const reading = useQuickAddInterpretation({ text, pins, today, contextAccountId });
-  const current = reading.interpretation;
-  const canSave = !!current && current.blockers.length === 0 && !isSaving;
-
-  useFormDirtyNotify(text.trim() !== '' || hasPins(pins), formModal.setFormDirty);
-
-  const save = async (mode: TransactionSubmitMode) => {
-    if (!current || saveInFlight.current) return;
-    const request = buildQuickAddSave(current);
-    if (!request) return;
-    saveInFlight.current = true;
-    setIsSaving(true);
-    try {
-      if (request.kind === 'transfer') {
-        await transactionsApi.createTransfer(request.body);
-        toast.success(t('form.toasts.transferCreated'));
-      } else {
-        await transactionsApi.create(request.body);
-        toast.success(t('form.toasts.transactionCreated'));
-      }
-      // The client modules drop these too; said here as well, because a save
-      // that moves money is not finished until the balances are dropped.
-      invalidateBalanceCaches();
+  const saver = useQuickAddSave({
+    onSaved: (mode) => {
       onSaved();
       if (mode === 'new') {
         setText('');
@@ -120,40 +104,103 @@ export function QuickAddDialog({
         formModal.setFormDirty(false);
         formModal.close();
       }
-    } catch (error) {
-      logger.error('Quick Add save failed:', error);
-      toast.error(getErrorMessage(error, t('form.toasts.saveFailed')));
-    } finally {
-      saveInFlight.current = false;
-      setIsSaving(false);
+    },
+    // The payee exists now: a second Save links it rather than making it again.
+    onPayeeKept: (payee) => setPins((prev) => mergePins(prev, { payeeId: payee.id, payeeName: undefined })),
+  });
+
+  /**
+   * The entry for New Transaction: the reading when there is one; otherwise
+   * the typed line as the description beside the pins, less any pin the
+   * server refused, so the reader's words are never lost.
+   */
+  const draftFor = (
+    interpretation: QuickAddInterpretation | null,
+    line: { text: string; pins: QuickAddPins },
+    refused: boolean,
+  ): TransactionFormDraft =>
+    buildQuickAddDraft(interpretation, {
+      text: line.text,
+      pins: refused ? pinsWithoutIds(line.pins) : line.pins,
+    });
+
+  // An action taken while the reading was pending acts on THAT reading: Full
+  // Form hands it over, and Enter saves it only if nothing blocks it (the
+  // blockers are on screen otherwise). A line changed since is a new entry,
+  // and the reader's next key decides it.
+  const onReadingSettled = (key: string, settled: QuickAddSettled) => {
+    const waited = waiting.current;
+    if (waited === null) return;
+    waiting.current = null;
+    if (waited.key !== key) return;
+    if (waited.action.kind === 'fullForm') {
+      onFullForm(
+        draftFor(settled.outcome === 'ready' ? settled.interpretation : null, waited, settled.outcome === 'refused'),
+      );
+    } else if (settled.outcome === 'ready' && settled.interpretation.blockers.length === 0) {
+      void saver.save(settled.interpretation, waited.action.mode);
     }
   };
 
+  const reading = useQuickAddInterpretation(
+    { text, pins, today, contextAccountId },
+    { onSettled: onReadingSettled },
+  );
+  const current = reading.interpretation;
+  const canSave = !!current && current.blockers.length === 0 && !saver.isSaving;
+
+  useFormDirtyNotify(text.trim() !== '' || hasPins(pins), formModal.setFormDirty);
+
   // Save from the unsaved-changes dialog saves and closes, as New Transaction's does.
-  const saveRef = useRef(save);
+  const saveRef = useRef(() => {});
   useEffect(() => {
-    saveRef.current = save;
+    saveRef.current = () => {
+      if (current) void saver.save(current, 'close');
+    };
   });
   useEffect(() => {
     const submitRef = formModal.formSubmitRef;
-    submitRef.current = () => void saveRef.current('close');
+    submitRef.current = () => saveRef.current();
     return () => {
       submitRef.current = null;
     };
   }, [formModal.formSubmitRef]);
 
+  const requestSave = (mode: TransactionSubmitMode) => {
+    if (canSave && current) {
+      void saver.save(current, mode);
+    } else if (reading.status === 'pending' && !saver.isSaving) {
+      waiting.current = { key: reading.key, text, pins, action: { kind: 'save', mode } };
+    }
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
     event.preventDefault();
-    if (canSave) void save(event.shiftKey ? 'new' : submitMode);
+    requestSave(event.shiftKey ? 'new' : submitMode);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (canSave) void save(submitMode);
+    requestSave(submitMode);
   };
 
-  const handleFullForm = () => onFullForm(buildQuickAddDraft(current, pins));
+  // In a browser the press on Full Form first blurs an open amount editor,
+  // which pins its figure and sends the line to be read again: so Full Form
+  // waits for that reading rather than handing over the one it replaces.
+  const handleFullForm = () => {
+    if (reading.status === 'pending') {
+      waiting.current = { key: reading.key, text, pins, action: { kind: 'fullForm' } };
+      return;
+    }
+    onFullForm(draftFor(current, { text, pins }, reading.status === 'refused'));
+  };
+
+  // The server refused a pin: the reader's chip choices start over.
+  const clearChanges = () => {
+    setPins({});
+    setEditing(null);
+  };
 
   const shown = reading.shown;
 
@@ -200,9 +247,28 @@ export function QuickAddDialog({
             </div>
           )}
 
+          {/* A refused pin is not a failed request: asking again cannot help,
+              clearing the chip choices can. */}
+          {reading.status === 'refused' && (
+            <div role="alert">
+              <EmptyState
+                className="py-4"
+                icon={<ExclamationTriangleIcon />}
+                title={t('quickAdd.pinRefused.title')}
+                description={t('quickAdd.pinRefused.description')}
+                action={
+                  <Button type="button" size="sm" variant="outline" onClick={clearChanges}>
+                    {t('quickAdd.pinRefused.clearChanges')}
+                  </Button>
+                }
+              />
+            </div>
+          )}
+
           {shown && (
             <QuickAddChips
               reading={shown}
+              pins={pins}
               stale={reading.status === 'pending'}
               editing={editing}
               onEditingChange={setEditing}
@@ -228,10 +294,10 @@ export function QuickAddDialog({
 
           <FormActions
             onCancel={formModal.close}
-            isSubmitting={isSaving}
+            isSubmitting={saver.isSaving}
             submitDisabled={!canSave}
             secondaryActions={
-              <Button type="button" variant="outline" onClick={handleFullForm} disabled={isSaving}>
+              <Button type="button" variant="outline" onClick={handleFullForm} disabled={saver.isSaving}>
                 {t('quickAdd.fullForm')}
               </Button>
             }
@@ -249,6 +315,7 @@ export function QuickAddDialog({
         {...formModal.unsavedChangesDialog}
         saveDisabledReason={canSave ? undefined : t('quickAdd.cannotSave')}
       />
+      <ReactivatePayeeDialog {...saver.reactivationDialog} />
     </>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from '@/hooks/useTransactionSubmitMode';
 import toast from 'react-hot-toast';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
+import { rememberTransactionCurrency } from '@/lib/lastTransactionCurrency';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useAuthStore } from '@/store/authStore';
 import { getSelectByLabel } from '@/test/icon-select';
@@ -6273,7 +6274,7 @@ describe('TransactionForm', () => {
       );
     });
 
-    it('seeds a new payee by name alone, for the server to create', async () => {
+    it('seeds a payee name with no payee behind it, and saves it as that text', async () => {
       render(
         <TransactionForm
           draft={{ mode: 'normal', accountId: 'acc-1', amount: -4.5, payeeName: 'Corner Cafe' }}
@@ -6289,6 +6290,62 @@ describe('TransactionForm', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({ payeeId: null, payeeName: 'Corner Cafe', amount: -4.5 }),
       );
+    });
+
+    it('seeds a figure typed in another currency as a foreign entry, as a duplicate of one does', async () => {
+      // 20 EUR on the CAD account at the day's 1.5: the amount the account
+      // moves by is derived from the foreign figure, never taken as 20 CAD.
+      render(
+        <TransactionForm
+          draft={{
+            mode: 'normal',
+            accountId: 'acc-1',
+            originalCurrencyCode: 'EUR',
+            originalAmount: -20,
+            date: '2026-11-19',
+            payeeName: 'Cafe',
+          }}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      );
+      await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalledWith('EUR', 'CAD', '2026-11-19'));
+      expect(screen.getByText('Total in EUR')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText(/1 EUR = 1\.500000 CAD/)).toBeInTheDocument());
+      expect((screen.getAllByPlaceholderText('0.00')[0] as HTMLInputElement).value).toBe('-20.00');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Create Transaction/i }));
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+      expect(mockCreate.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          accountId: 'acc-1',
+          originalAmount: -20,
+          originalCurrencyCode: 'EUR',
+          exchangeRate: 1.5,
+          amount: -30,
+          currencyCode: 'CAD',
+        }),
+      );
+    });
+
+    it('keeps an account-currency draft in the account currency, whatever was entered last', async () => {
+      rememberTransactionCurrency('EUR');
+      try {
+        render(
+          <TransactionForm
+            draft={{ mode: 'normal', accountId: 'acc-1', amount: -4.5, payeeName: 'Cafe' }}
+            onSuccess={mockOnSuccess}
+            onCancel={mockOnCancel}
+          />,
+        );
+        await waitFor(() => expect(getSelectByLabel('Account').value).toBe('acc-1'));
+        expect(screen.queryByText('Total in EUR')).not.toBeInTheDocument();
+        expect(mockGetRateForDate).not.toHaveBeenCalled();
+      } finally {
+        rememberTransactionCurrency('');
+      }
     });
 
     it('opens a transfer draft in Transfer mode with both accounts and the magnitude', async () => {

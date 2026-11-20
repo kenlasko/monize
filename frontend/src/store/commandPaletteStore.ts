@@ -58,9 +58,10 @@ export function startNewTransaction(
 
 /**
  * Opens Quick Add with `text` in its box, from anywhere: the palette's "Quick
- * add" row. The dialog reads the line again in the register's own context, so
- * nothing but the text travels. Already on the register, the page answers the
- * request itself, as it does `startNewTransaction`'s.
+ * add" row, or the phone's + with an empty line where the reader chose Quick
+ * Add for it. The dialog reads the line again in the register's own context,
+ * so nothing but the text travels. Already on the register, the page answers
+ * the request itself, as it does `startNewTransaction`'s.
  */
 export function startQuickAdd(
   text: string,

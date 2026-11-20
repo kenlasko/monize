@@ -61,6 +61,7 @@ describe('readViewDefault', () => {
 
   it('drops a value this client does not know rather than adopting it', () => {
     expect(readViewDefault({ density: 'gigantic' }, 'density')).toBeUndefined();
+    expect(readViewDefault({ mobileAddOpens: 'aiAssistant' }, 'mobileAddOpens')).toBeUndefined();
     expect(readViewDefault({ accountOpenTarget: 'investments' }, 'accountOpenTarget')).toBeUndefined();
   });
 
@@ -121,6 +122,8 @@ describe('BUILT_IN_VIEW_DEFAULTS', () => {
       chartCollapsed: false,
       accountOpenTarget: 'register',
       mobileTabs: ['dashboard', 'transactions', 'accounts'],
+      // The agreed default for the + (docs/future-plans/quick-add.md).
+      mobileAddOpens: 'quickAdd',
     });
   });
 });

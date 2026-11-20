@@ -562,8 +562,9 @@ vi.mock('@/components/layout/PageHeader', () => ({
     <div data-testid="page-header">
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
-      {actions}
-      {primaryAction}
+      {actions && <div data-testid="page-header-actions">{actions}</div>}
+      {/* The slot PageHeader draws only from `xl` up. */}
+      {primaryAction && <div data-testid="page-header-primary-action">{primaryAction}</div>}
       {/* What the title hands the app header once it scrolls away. */}
       {collapsedContext && <span data-testid="collapsed-context">{collapsedContext}</span>}
       {collapsedSwitcher && (
@@ -3996,6 +3997,16 @@ describe('TransactionsPage Quick Add', () => {
     expect(screen.queryByTestId('dynamic-transaction-form')).not.toBeInTheDocument();
   });
 
+  it('draws the header Quick Add only where New Transaction is drawn, from xl up', async () => {
+    // Below xl the tab bar's + opens Quick Add, and PageHeader draws `actions`
+    // full width at every width: the button belongs in the slot it hides there.
+    await renderPage();
+    const desktopOnly = screen.getByTestId('page-header-primary-action');
+    expect(within(desktopOnly).getByRole('button', { name: 'Quick Add' })).toBeInTheDocument();
+    expect(within(desktopOnly).getByText('+ New Transaction')).toBeInTheDocument();
+    expect(screen.queryByTestId('page-header-actions')).not.toBeInTheDocument();
+  });
+
   it('runs Quick Add from the + below xl', async () => {
     const restore = withTabBar();
     try {
@@ -4009,6 +4020,45 @@ describe('TransactionsPage Quick Add', () => {
     } finally {
       restore();
     }
+  });
+
+  it('runs New Transaction from the + below xl when the reader chose the form for it', async () => {
+    mockPreferences.value = { ...DEFAULT_MOCK_PREFERENCES, viewDefaults: { mobileAddOpens: 'fullForm' } };
+    const restore = withTabBar();
+    try {
+      await renderPage();
+      const action = useMobileAddActionStore.getState().action;
+      expect(action?.label).toBe('New Transaction');
+      await act(async () => {
+        action?.run();
+      });
+      expect(screen.queryByTestId('dynamic-quick-add')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dynamic-transaction-form')).toBeInTheDocument();
+    } finally {
+      restore();
+      mockPreferences.value = undefined;
+    }
+  });
+
+  it('runs Quick Add from the + below xl when the reader chose it outright', async () => {
+    mockPreferences.value = { ...DEFAULT_MOCK_PREFERENCES, viewDefaults: { mobileAddOpens: 'quickAdd' } };
+    const restore = withTabBar();
+    try {
+      await renderPage();
+      expect(useMobileAddActionStore.getState().action?.label).toBe('Quick Add');
+    } finally {
+      restore();
+      mockPreferences.value = undefined;
+    }
+  });
+
+  it('opens Quick Add on an empty line for the + of a page with nothing of its own to add', async () => {
+    // MobileTabBar's fallback: `startQuickAdd('')` on the way here.
+    useCommandPaletteStore.getState().requestQuickAdd('');
+    await renderPage();
+    expect(screen.getByTestId('dynamic-quick-add')).toHaveAttribute('data-initial-text', '');
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+    expect(screen.queryByTestId('dynamic-transaction-form')).not.toBeInTheDocument();
   });
 
   it('keeps New Transaction on a desktop pinned +', async () => {

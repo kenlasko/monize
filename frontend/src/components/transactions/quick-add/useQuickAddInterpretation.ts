@@ -13,9 +13,17 @@ export const QUICK_ADD_DEBOUNCE_MS = 200;
 
 /**
  * `idle`: nothing to read. `pending`: the reading for what is on screen has not
- * arrived. `failed`: it was asked for and the request failed. `ready`: it is in.
+ * arrived. `failed`: it was asked for and the request failed (offline, a 5xx,
+ * throttled): asking again may answer. `refused`: the server refused a pin,
+ * an account, payee or category chosen on a chip that has since been closed
+ * or deleted, so asking again with the same pins never will. `ready`: it is in.
  */
-export type QuickAddReadingStatus = 'idle' | 'pending' | 'failed' | 'ready';
+export type QuickAddReadingStatus = 'idle' | 'pending' | 'failed' | 'refused' | 'ready';
+
+/** A settled request: its reading, or why there is none. */
+export type QuickAddSettled =
+  | { outcome: 'ready'; interpretation: QuickAddInterpretation }
+  | { outcome: 'failed' | 'refused' };
 
 export interface QuickAddReadingInput {
   text: string;
@@ -25,10 +33,30 @@ export interface QuickAddReadingInput {
   contextAccountId?: string;
 }
 
-/** One answer, kept with the request that produced it; null is a failed request. */
+/** One answer, kept with the request that produced it. */
 interface Answer {
   key: string;
-  interpretation: QuickAddInterpretation | null;
+  settled: QuickAddSettled;
+}
+
+/**
+ * The statuses with which the server refuses the request itself: a pinned id
+ * the reader does not own (404), or a pin the DTO rejects (400, 422). Anything
+ * else, a 429 included, is a request that may answer when asked again.
+ */
+const REFUSAL_STATUSES: ReadonlySet<number> = new Set([400, 404, 422]);
+
+function httpStatus(error: unknown): number | undefined {
+  const status = (error as { response?: { status?: unknown } } | null)?.response?.status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+/** A refusal of the pins, told apart from a request that failed on its way. */
+function settledFailure(error: unknown, pinned: boolean): QuickAddSettled {
+  const status = httpStatus(error);
+  return pinned && status !== undefined && REFUSAL_STATUSES.has(status)
+    ? { outcome: 'refused' }
+    : { outcome: 'failed' };
 }
 
 /** Everything that changes what the server would answer, pins in a fixed order. */
@@ -44,6 +72,16 @@ function contextKey(input: QuickAddReadingInput): string {
   return requestKey({ ...input, text: '' });
 }
 
+export interface QuickAddReadingOptions {
+  /**
+   * Called once a request settles and is still current, with its key (the
+   * `key` this hook returned while it was pending), after its answer is kept.
+   * An action the reader took while the reading was pending (Enter, Full Form)
+   * waits for this rather than acting on the stale reading on screen.
+   */
+  onSettled?: (key: string, settled: QuickAddSettled) => void;
+}
+
 /**
  * The server's reading of the line (`docs/future-plans/quick-add.md`, "When the
  * server is asked"). Typing asks once it pauses for `QUICK_ADD_DEBOUNCE_MS`; a
@@ -56,9 +94,12 @@ function contextKey(input: QuickAddReadingInput): string {
  * what Save and Full Form may act on. `shown` is the last reading that
  * arrived, which may stay on screen marked stale while a newer one is on its
  * way; it is never actionable. A failed request is `failed`, never an empty
- * reading.
+ * reading, and a refused pin is `refused`, apart from it.
  */
-export function useQuickAddInterpretation(input: QuickAddReadingInput) {
+export function useQuickAddInterpretation(
+  input: QuickAddReadingInput,
+  { onSettled }: QuickAddReadingOptions = {},
+) {
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [lastReading, setLastReading] = useState<QuickAddInterpretation | null>(null);
   // Bumped by Try Again, so the same request is asked once more.
@@ -81,8 +122,10 @@ export function useQuickAddInterpretation(input: QuickAddReadingInput) {
   const lastContext = useRef<string | null>(null);
   // The request body as of this render, read when the timer fires.
   const latest = useRef(input);
+  const settledHandler = useRef(onSettled);
   useEffect(() => {
     latest.current = input;
+    settledHandler.current = onSettled;
   });
 
   useEffect(() => {
@@ -96,23 +139,28 @@ export function useQuickAddInterpretation(input: QuickAddReadingInput) {
     let cancelled = false;
     const handle = setTimeout(() => {
       const { text, pins, today, contextAccountId } = latest.current;
+      const pinned = hasPins(pins);
+      const settle = (settled: QuickAddSettled) => {
+        setAnswer({ key, settled });
+        if (settled.outcome === 'ready') setLastReading(settled.interpretation);
+        settledHandler.current?.(key, settled);
+      };
       quickAddApi
         .interpret({
           text,
           today,
           ...(contextAccountId ? { contextAccountId } : {}),
-          ...(hasPins(pins) ? { pins } : {}),
+          ...(pinned ? { pins } : {}),
         })
         .then(
           (interpretation) => {
             if (cancelled) return;
-            setAnswer({ key, interpretation });
-            setLastReading(interpretation);
+            settle({ outcome: 'ready', interpretation });
           },
           (error: unknown) => {
             if (cancelled) return;
             logger.error(error);
-            setAnswer({ key, interpretation: null });
+            settle(settledFailure(error, pinned));
           },
         );
     }, delay);
@@ -124,21 +172,18 @@ export function useQuickAddInterpretation(input: QuickAddReadingInput) {
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const current = !isEmpty && answer?.key === key ? answer : null;
-  const status: QuickAddReadingStatus = isEmpty
-    ? 'idle'
-    : current === null
-      ? 'pending'
-      : current.interpretation === null
-        ? 'failed'
-        : 'ready';
+  const current = !isEmpty && answer?.key === key ? answer.settled : null;
+  const status: QuickAddReadingStatus = isEmpty ? 'idle' : current === null ? 'pending' : current.outcome;
+  const interpretation = current?.outcome === 'ready' ? current.interpretation : null;
 
   return {
     status,
+    /** The request on screen; `onSettled` reports its answer under this key. */
+    key,
     /** The reading for what is on screen; null unless `ready`. */
-    interpretation: status === 'ready' ? (current?.interpretation ?? null) : null,
+    interpretation,
     /** What to draw: the current reading, or the last one while a newer is pending. */
-    shown: status === 'ready' ? (current?.interpretation ?? null) : status === 'pending' ? lastReading : null,
+    shown: status === 'ready' ? interpretation : status === 'pending' ? lastReading : null,
     retry,
   };
 }

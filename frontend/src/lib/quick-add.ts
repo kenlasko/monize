@@ -27,6 +27,7 @@ export function normalizeQuickAddInterpretation(
   raw: QuickAddInterpretation,
 ): QuickAddInterpretation {
   const balance = raw.balance;
+  const foreign = raw.foreignAmount;
   return {
     ...raw,
     amount: numericField(raw.amount as QuickAddField<number | string>),
@@ -36,6 +37,10 @@ export function normalizeQuickAddInterpretation(
           current: Number(balance.current),
           after: balance.after === null || balance.after === undefined ? null : Number(balance.after),
         }
+      : null,
+    // Absent reads as none: a figure in another currency is never guessed.
+    foreignAmount: foreign
+      ? { currencyCode: foreign.currencyCode ?? null, amount: Number(foreign.amount) }
       : null,
   };
 }

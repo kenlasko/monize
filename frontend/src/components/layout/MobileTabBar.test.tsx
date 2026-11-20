@@ -10,6 +10,7 @@ import {
 } from '@/store/mobileAddActionStore';
 import { TOUR_ANCHORS } from '@/lib/tours/anchors';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { useTourStore } from '@/store/tourStore';
 import type { UserPreferences } from '@/types/auth';
 
 const mockPush = vi.fn();
@@ -39,6 +40,13 @@ function setTabs(mobileTabs: unknown) {
   });
 }
 
+/** What the reader chose for the + (`mobileAddOpens`). */
+function setAddOpens(mobileAddOpens: 'quickAdd' | 'fullForm') {
+  usePreferencesStore.setState({
+    preferences: { viewDefaults: { mobileAddOpens } } as unknown as UserPreferences,
+  });
+}
+
 function bar() {
   return within(screen.getByTestId('mobile-tab-bar'));
 }
@@ -52,8 +60,9 @@ describe('MobileTabBar', () => {
     mockDelegateSections = null;
     usePreferencesStore.setState({ preferences: null });
     useMobileChromeStore.setState({ drawerOpen: false, collapsedTitle: null });
-    useCommandPaletteStore.setState({ newTransactionRequest: null });
+    useCommandPaletteStore.setState({ newTransactionRequest: null, quickAddRequest: null });
     useMobileAddActionStore.setState({ action: null });
+    useTourStore.setState({ active: null });
   });
 
   it('defaults to Home, Transactions, Accounts and More around the add button', () => {
@@ -61,7 +70,7 @@ describe('MobileTabBar', () => {
     expect(bar().getAllByRole('button').map((b) => b.textContent || b.getAttribute('aria-label'))).toEqual([
       'Home',
       'Transactions',
-      'New transaction',
+      'Quick Add',
       'Accounts',
       'More',
     ]);
@@ -73,7 +82,7 @@ describe('MobileTabBar', () => {
     expect(bar().getAllByRole('button').map((b) => b.textContent || b.getAttribute('aria-label'))).toEqual([
       'Budgets',
       'Reports',
-      'New transaction',
+      'Quick Add',
       'Bills & Deposits',
       'More',
     ]);
@@ -106,11 +115,38 @@ describe('MobileTabBar', () => {
     expect(bar().getByRole('button', { name: 'More' }).className).toContain('text-blue-600');
   });
 
-  it('asks for a new transaction from the add button', () => {
+  it('opens Quick Add on an empty line on the register from the add button, by default', () => {
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'Quick Add' }));
+    expect(useCommandPaletteStore.getState().quickAddRequest).toEqual({ text: '' });
+    expect(useCommandPaletteStore.getState().newTransactionRequest).toBeNull();
+    expect(mockPush).toHaveBeenCalledWith('/transactions');
+  });
+
+  it('asks for a new transaction from the add button when the reader chose the form for it', () => {
+    setAddOpens('fullForm');
     render(<MobileTabBar />);
     fireEvent.click(bar().getByRole('button', { name: 'New transaction' }));
     expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({ payee: null });
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
     expect(mockPush).toHaveBeenCalledWith('/transactions');
+  });
+
+  it('gives an acting delegate the form, since Quick Add is not theirs', () => {
+    mockActingAsUserId = 'owner';
+    mockDelegateSections = { transactions: true };
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'New transaction' }));
+    expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({ payee: null });
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+  });
+
+  it('gives a running tour the form it walks', () => {
+    useTourStore.setState({ active: {} as never });
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'New transaction' }));
+    expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({ payee: null });
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
   });
 
   it("runs the page's own new action instead of a new transaction", () => {
@@ -129,7 +165,7 @@ describe('MobileTabBar', () => {
     render(<MobileTabBar />);
     expect(bar().getByRole('button', { name: 'New Account' })).toBeInTheDocument();
     act(() => page.unmount());
-    expect(bar().getByRole('button', { name: 'New transaction' })).toBeInTheDocument();
+    expect(bar().getByRole('button', { name: 'Quick Add' })).toBeInTheDocument();
   });
 
   it("does not let a leaving page clear the next page's action", () => {
@@ -259,13 +295,50 @@ describe('MobileTabBar', () => {
   });
 
   it('drops a pending new transaction when a tab overtakes it', () => {
+    setAddOpens('fullForm');
     render(<MobileTabBar />);
     fireEvent.click(bar().getByRole('button', { name: 'New transaction' }));
     fireEvent.click(bar().getByRole('button', { name: 'Accounts' }));
     expect(useCommandPaletteStore.getState().newTransactionRequest).toBeNull();
   });
 
+  it('drops a pending Quick Add when a tab overtakes it', () => {
+    useCommandPaletteStore.getState().requestQuickAdd('84.37 loblaws');
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'Accounts' }));
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+  });
+
+  it("drops the add button's own pending Quick Add when a tab overtakes it", () => {
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'Quick Add' }));
+    expect(useCommandPaletteStore.getState().quickAddRequest).toEqual({ text: '' });
+    fireEvent.click(bar().getByRole('button', { name: 'Accounts' }));
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+    expect(useCommandPaletteStore.getState().newTransactionRequest).toBeNull();
+  });
+
+  it("drops a pending Quick Add when the page's own new action overtakes it", () => {
+    mockPathname = '/accounts';
+    useCommandPaletteStore.getState().requestQuickAdd('84.37 loblaws');
+    const run = vi.fn();
+    renderHook(() => useMobileAddAction('New Account', run));
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'New Account' }));
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+  });
+
+  it('does not push for Quick Add when already on the register', () => {
+    mockPathname = '/transactions';
+    render(<MobileTabBar />);
+    fireEvent.click(bar().getByRole('button', { name: 'Quick Add' }));
+    expect(useCommandPaletteStore.getState().quickAddRequest).toEqual({ text: '' });
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it('does not push when already on the register, so its filters survive', () => {
+    setAddOpens('fullForm');
     mockPathname = '/transactions';
     render(<MobileTabBar />);
     fireEvent.click(bar().getByRole('button', { name: 'New transaction' }));
@@ -291,6 +364,7 @@ describe('MobileTabBar', () => {
     render(<MobileTabBar />);
     expect(bar().queryByRole('button', { name: 'Transactions' })).not.toBeInTheDocument();
     expect(bar().queryByRole('button', { name: 'New transaction' })).not.toBeInTheDocument();
+    expect(bar().queryByRole('button', { name: 'Quick Add' })).not.toBeInTheDocument();
     expect(bar().getByRole('button', { name: 'Accounts' })).toBeInTheDocument();
     expect(bar().getByRole('button', { name: 'More' })).toBeInTheDocument();
   });

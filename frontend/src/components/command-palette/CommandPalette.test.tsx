@@ -45,6 +45,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import { useHelpStore } from '@/store/helpStore';
 import { qaField, qaMissing, qaPaymentReading, qaTransferReading } from '@/test/quick-add-fixtures';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import type { UserPreferences } from '@/types/auth';
 import type { QuickAddInterpretation } from '@/types/quick-add';
 
 const hydro = {
@@ -383,6 +385,23 @@ describe('CommandPalette', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('opens the form from "New transaction" whatever the + is set to open', async () => {
+    // Quick Add is the built-in default for the phone's + (`mobileAddOpens`);
+    // the palette's own action is not the + and keeps opening the form.
+    usePreferencesStore.setState({
+      preferences: { viewDefaults: { mobileAddOpens: 'quickAdd' } } as unknown as UserPreferences,
+    });
+    try {
+      await openPalette();
+      fireEvent.click(screen.getByRole('option', { name: /^New transaction/ }));
+      expect(useCommandPaletteStore.getState().newTransactionRequest).toEqual({ payee: null });
+      expect(useCommandPaletteStore.getState().quickAddRequest).toBeNull();
+      expect(push).toHaveBeenCalledWith('/transactions');
+    } finally {
+      act(() => usePreferencesStore.setState({ preferences: null }));
+    }
+  });
+
   it('is named for assistive technology without drawing a heading', async () => {
     await openPalette();
     expect(screen.getByRole('dialog', { name: 'Command palette' })).toBeInTheDocument();
@@ -498,6 +517,36 @@ describe('CommandPalette', () => {
       });
       expect(screen.queryByRole('option', { name: /Loblaws/ })).not.toBeInTheDocument();
       expect(screen.getByRole('option', { name: /Quick add: \$12\.00 Tim Hortons/ })).toBeInTheDocument();
+    });
+
+    it('never holds the transaction and guide results back while the line is read', async () => {
+      // A reading that has not answered: the two searches beside it still draw.
+      interpret.mockImplementation(() => new Promise<QuickAddInterpretation>(() => {}));
+      getTransactions.mockResolvedValue({
+        data: [{ id: 't1', payeeName: 'Hydro One', transactionDate: '2026-10-12', amount: -118.4, currencyCode: 'CAD', account: { name: 'Chequing' } }],
+      });
+      searchHelp.mockResolvedValue({ results: [{ page: 'bills', section: 'hydro', heading: 'Hydro bills', pageTitle: 'Bills' }] });
+      const box = await openPalette();
+      await type(box, 'hydro 118');
+      await waitFor(() => expect(interpret).toHaveBeenCalledWith({ text: 'hydro 118', today: '2026-11-20' }));
+      expect(await screen.findByRole('option', { name: /Hydro bills/ })).toBeInTheDocument();
+      expect(screen.getAllByRole('option').some((o) => /Chequing/.test(o.textContent ?? ''))).toBe(true);
+      expect(quickAddRow()).not.toBeInTheDocument();
+    });
+
+    it('reads a figure typed in another currency in that one, never the account\'s', async () => {
+      interpret.mockResolvedValue(
+        qaPaymentReading({
+          amount: qaField(20),
+          payee: qaField({ id: 'c', name: 'Cafe' }),
+          category: qaMissing(),
+          blockers: ['foreignCurrency'],
+          foreignAmount: { currencyCode: 'EUR', amount: 20 },
+        }),
+      );
+      const box = await openPalette();
+      await type(box, '20 € cafe');
+      expect(await screen.findByRole('option', { name: /^Quick add: €20\.00 EUR Cafe/ })).toBeInTheDocument();
     });
 
     it('opens Quick Add on the register with the line', async () => {

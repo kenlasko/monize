@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "[XX-Choose up to three tabs for the bar at the bottom of a phone or tablet. The add button and More are always there.-XX]",
       "slotLabel": "[XX-Tab {number}-XX]",
-      "none": "[XX-None-XX]"
+      "none": "[XX-None-XX]",
+      "addOpensLabel": "[XX-The + button opens-XX]",
+      "addOpensOptions": {
+        "quickAdd": "[XX-Quick Add-XX]",
+        "fullForm": "[XX-New Transaction form-XX]"
+      },
+      "addOpensHelp": "[XX-Applies where the + button starts a new transaction: on the Transactions page, and on a page with nothing of its own to add. Quick Add has a Full Form button for the rest.-XX]"
     }
   },
   "notifications": {

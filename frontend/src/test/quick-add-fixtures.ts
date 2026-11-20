@@ -45,6 +45,7 @@ export function qaPaymentReading(overrides: Partial<QuickAddInterpretation> = {}
       after: 1115.63,
       movesOn: null,
     },
+    foreignAmount: null,
     ...overrides,
   };
 }

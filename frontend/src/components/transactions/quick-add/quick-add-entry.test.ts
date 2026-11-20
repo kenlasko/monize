@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { TransactionStatus } from '@/types/transaction';
-import { qaField, qaMissing, qaPaymentReading, qaTransferReading } from '@/test/quick-add-fixtures';
-import { buildQuickAddDraft, buildQuickAddSave } from './quick-add-entry';
+import { QA_CHEQUING, qaField, qaMissing, qaPaymentReading, qaTransferReading } from '@/test/quick-add-fixtures';
+import { buildQuickAddDraft, buildQuickAddSave, withSavedPayee } from './quick-add-entry';
+
+const NO_LINE = { text: '', pins: {} };
 
 describe('buildQuickAddSave', () => {
   it('sends a payment negative, in the account currency, with the form body', () => {
@@ -30,9 +32,21 @@ describe('buildQuickAddSave', () => {
     expect(request?.body).toMatchObject({ amount: 84.37 });
   });
 
-  it('sends a new payee by name with no id, for the server to create', () => {
+  it('builds a payee nobody has yet by name, for the save to create and swap in', () => {
     const request = buildQuickAddSave(qaPaymentReading({ payee: qaField({ id: null, name: 'Corner Cafe' }) }));
     expect(request?.body).toMatchObject({ payeeId: null, payeeName: 'Corner Cafe' });
+    expect(withSavedPayee(request!, { id: 'p-new', name: 'Corner Cafe' }).body).toMatchObject({
+      payeeId: 'p-new',
+      payeeName: 'Corner Cafe',
+      amount: -84.37,
+    });
+  });
+
+  it('saves a payee or category the reader cleared as none', () => {
+    const request = buildQuickAddSave(
+      qaPaymentReading({ payee: qaMissing('pinned'), category: qaMissing('pinned') }),
+    );
+    expect(request?.body).toMatchObject({ payeeId: null, payeeName: null, categoryId: null });
   });
 
   it('sends a transfer as its magnitude from the account to the to-account', () => {
@@ -71,8 +85,8 @@ describe('buildQuickAddSave', () => {
 
 describe('buildQuickAddDraft', () => {
   it('hands a blocked payment over signed, with what the line settled', () => {
-    const reading = qaPaymentReading({ blockers: ['foreignCurrency'], memo: 'latte' });
-    expect(buildQuickAddDraft(reading, {})).toEqual({
+    const reading = qaPaymentReading({ blockers: ['ambiguousAccount'], memo: 'latte' });
+    expect(buildQuickAddDraft(reading, NO_LINE)).toEqual({
       mode: 'normal',
       accountId: 'acc-chq',
       toAccountId: undefined,
@@ -86,7 +100,7 @@ describe('buildQuickAddDraft', () => {
   });
 
   it('hands a transfer over as a transfer, with no category', () => {
-    expect(buildQuickAddDraft(qaTransferReading(), {})).toMatchObject({
+    expect(buildQuickAddDraft(qaTransferReading(), NO_LINE)).toMatchObject({
       mode: 'transfer',
       accountId: 'acc-chq',
       toAccountId: 'acc-sav',
@@ -95,11 +109,67 @@ describe('buildQuickAddDraft', () => {
     });
   });
 
-  it('falls back to the pins when there is no reading', () => {
-    expect(buildQuickAddDraft(null, { kind: 'deposit', amount: 20, accountId: 'acc-chq' })).toMatchObject({
+  it('hands the typed line over as the description beside the pins when there is no reading', () => {
+    expect(
+      buildQuickAddDraft(null, {
+        text: '  20 corner cafe ',
+        pins: { kind: 'deposit', amount: 20, accountId: 'acc-chq' },
+      }),
+    ).toMatchObject({
       mode: 'normal',
       accountId: 'acc-chq',
       amount: 20,
+      description: '20 corner cafe',
     });
+  });
+
+  it('hands a figure typed in another currency over in that currency, never as the account\'s', () => {
+    const reading = qaPaymentReading({
+      // 20 € against a USD account.
+      amount: qaField(20),
+      blockers: ['foreignCurrency'],
+      foreignAmount: { currencyCode: 'EUR', amount: 20 },
+    });
+    const draft = buildQuickAddDraft(reading, NO_LINE);
+    expect(draft).toMatchObject({ mode: 'normal', accountId: 'acc-chq', originalCurrencyCode: 'EUR', originalAmount: -20 });
+    expect(draft.amount).toBeUndefined();
+  });
+
+  it('hands no amount at all when the typed currency is not known', () => {
+    const draft = buildQuickAddDraft(
+      qaPaymentReading({
+        amount: qaField(20),
+        blockers: ['foreignCurrency'],
+        foreignAmount: { currencyCode: null, amount: 20 },
+      }),
+      NO_LINE,
+    );
+    expect(draft.amount).toBeUndefined();
+    expect(draft.originalCurrencyCode).toBeUndefined();
+    expect(draft.originalAmount).toBeUndefined();
+    expect(draft).toMatchObject({ accountId: 'acc-chq', payeeId: 'payee-lob' });
+  });
+
+  it('does not preselect an account that matched others equally', () => {
+    const draft = buildQuickAddDraft(
+      qaPaymentReading({
+        account: qaField(QA_CHEQUING, 'typed', {
+          ambiguous: true,
+          alternatives: [{ id: 'acc-chq2', name: 'Chequing 2', currencyCode: 'USD' }],
+        }),
+        blockers: ['ambiguousAccount'],
+      }),
+      NO_LINE,
+    );
+    expect(draft.accountId).toBeUndefined();
+    expect(draft).toMatchObject({ amount: -84.37, payeeId: 'payee-lob', categoryId: 'cat-groc' });
+  });
+
+  it('hands an amount over at its currency\'s entry places, the figure the form will submit', () => {
+    const draft = buildQuickAddDraft(
+      qaPaymentReading({ amount: qaField(84.375), blockers: ['amountPrecision'] }),
+      NO_LINE,
+    );
+    expect(draft.amount).toBe(-84.38);
   });
 });

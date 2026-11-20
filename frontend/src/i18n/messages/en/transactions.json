@@ -711,6 +711,11 @@
     "reading": "Reading the entry...",
     "readFailed": "Failed to read the entry",
     "tryAgain": "Try Again",
+    "pinRefused": {
+      "title": "Something you chose is no longer available",
+      "description": "An account, payee or category picked on a chip has been closed or deleted since. Clear your changes to read the entry again.",
+      "clearChanges": "Clear Changes"
+    },
     "fullForm": "Full Form",
     "save": "Save",
     "saveAndNew": "Save & New",
@@ -737,6 +742,10 @@
       "matches": "{count, plural, other {# matches}}",
       "new": "New"
     },
+    "cleared": {
+      "payee": "No payee",
+      "category": "No category"
+    },
     "editor": {
       "alternatives": "Other Matches",
       "done": "Done",
@@ -750,11 +759,12 @@
     "blockers": {
       "missingAmount": "Type an amount.",
       "zeroAmount": "The amount cannot be zero.",
-      "amountPrecision": "The amount has more decimal places than the account's currency holds.",
+      "amountPrecision": "The amount has more decimal places than the account's currency is entered in.",
       "missingAccount": "Choose an account.",
       "ambiguousAccount": "More than one account matches. Choose one.",
       "missingToAccount": "Choose the account the money goes to.",
       "sameAccount": "A transfer needs two different accounts.",
+      "amountTooLarge": "The amount is larger than a transaction can hold.",
       "foreignCurrency": "The amount is in a currency other than the account's. Use Full Form to enter it.",
       "crossCurrencyTransfer": "The two accounts hold different currencies. Use Full Form for this transfer.",
       "unknown": "This entry cannot be saved here. Use Full Form to finish it."

@@ -72,4 +72,42 @@ describe('MobileTabsGroup', () => {
     act(() => commit.mock.calls[0][1]());
     expect(slot(3).value).toBe('accounts');
   });
+
+  describe('what the + button opens', () => {
+    const addOpens = () => screen.getByLabelText('The + button opens') as HTMLSelectElement;
+
+    it('shows Quick Add when nothing is stored, and the stored choice otherwise', () => {
+      const { unmount } = render(<MobileTabsGroup initial={undefined} commit={commit} />);
+      expect(addOpens().value).toBe('quickAdd');
+      expect(Array.from(addOpens().options).map((o) => o.textContent)).toEqual([
+        'Quick Add',
+        'New Transaction form',
+      ]);
+      unmount();
+      render(<MobileTabsGroup initial={{ mobileAddOpens: 'fullForm' }} commit={commit} />);
+      expect(addOpens().value).toBe('fullForm');
+    });
+
+    it('saves the choice alone, leaving the tabs as they are', () => {
+      render(<MobileTabsGroup initial={{ mobileTabs: ['bills'] }} commit={commit} />);
+      fireEvent.change(addOpens(), { target: { value: 'fullForm' } });
+      expect(commit).toHaveBeenCalledTimes(1);
+      expect(commit.mock.calls[0][0]).toEqual({ viewDefaults: { mobileAddOpens: 'fullForm' } });
+      expect(addOpens().value).toBe('fullForm');
+    });
+
+    it('writes nothing when the choice is unchanged', () => {
+      render(<MobileTabsGroup initial={undefined} commit={commit} />);
+      fireEvent.change(addOpens(), { target: { value: 'quickAdd' } });
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('puts the previous choice back when the save fails', () => {
+      render(<MobileTabsGroup initial={{ mobileAddOpens: 'fullForm' }} commit={commit} />);
+      fireEvent.change(addOpens(), { target: { value: 'quickAdd' } });
+      expect(addOpens().value).toBe('quickAdd');
+      act(() => commit.mock.calls[0][1]());
+      expect(addOpens().value).toBe('fullForm');
+    });
+  });
 });

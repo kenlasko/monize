@@ -87,5 +87,6 @@
       "payeeCategory": "Quick add: {amount} {payee}, {category}",
       "transfer": "Quick add: {amount} {from} to {to}"
     }
-  }
+  },
+  "quickAdd": "Quick Add"
 }

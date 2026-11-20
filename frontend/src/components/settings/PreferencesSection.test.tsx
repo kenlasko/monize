@@ -158,6 +158,21 @@ describe('PreferencesSection', () => {
     await waitFor(() => expect(weekStart.value).toBe('1'));
   });
 
+  it('saves what the + button opens as a view default, and puts it back when refused', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('fail'));
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    const addOpens = screen.getByLabelText('The + button opens') as HTMLSelectElement;
+    expect(addOpens.value).toBe('quickAdd');
+    await act(async () => {
+      fireEvent.change(addOpens, { target: { value: 'fullForm' } });
+    });
+    await act(async () => {}); // drain the rejection handler
+    expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ viewDefaults: { mobileAddOpens: 'fullForm' } });
+    await waitFor(() => expect(addOpens.value).toBe('quickAdd'));
+  });
+
   it('sends updated recent-transactions limit when changed and saved', async () => {
     (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
 

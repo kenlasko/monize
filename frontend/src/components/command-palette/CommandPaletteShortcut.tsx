@@ -28,12 +28,14 @@ export function CommandPaletteShortcut() {
   const open = useCommandPaletteStore((s) => s.open);
   const pathname = usePathname();
 
-  // A new-transaction request is for the navigation that made it. Landing
-  // anywhere but the register means it was overtaken, and it must not wait to
-  // open a form on the next visit there.
+  // A new-transaction or Quick Add request is for the navigation that made
+  // it. Landing anywhere but the register means it was overtaken, and it must
+  // not wait to open a form, or Quick Add on an old line, on the next visit there.
   useEffect(() => {
     if (pathname !== '/transactions') {
-      useCommandPaletteStore.getState().clearNewTransactionRequest();
+      const palette = useCommandPaletteStore.getState();
+      palette.clearNewTransactionRequest();
+      palette.clearQuickAddRequest();
     }
   }, [pathname]);
 

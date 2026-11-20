@@ -113,8 +113,6 @@ interface RemoteAnswer {
   key: string;
   transactions: Transaction[] | null;
   help: HelpSearchAnswer['results'] | null;
-  /** Quick Add's reading of the query; null when not asked or when it failed. */
-  quickAdd: QuickAddInterpretation | null;
 }
 
 /** A line with an amount in it, in any script's digits; only that is worth a reading. */
@@ -123,6 +121,12 @@ const HAS_DIGIT = /\p{Nd}/u;
 /** Whether the palette asks Quick Add to read `query`: a line the server would read, with a digit in it. */
 function worthReading(query: string): boolean {
   return query.length <= QUICK_ADD_TEXT_MAX_LENGTH && HAS_DIGIT.test(query);
+}
+
+/** Quick Add's reading of one query; null is a failed request. */
+interface QuickAddAnswer {
+  key: string;
+  reading: QuickAddInterpretation | null;
 }
 
 /**
@@ -135,8 +139,11 @@ function worthReading(query: string): boolean {
  *
  * Quick Add's reading (`docs/future-plans/quick-add.md`, "The command palette
  * row") is asked for only when `canQuickAdd` and the query holds a digit (and
- * fits the server's bound). It is an offer, not a search: a failed reading adds
- * no row and is not reported, so it never marks the palette's search failed.
+ * fits the server's bound). It is its own request with its own answer, beside
+ * the two searches rather than inside their `Promise.allSettled`, so a slow
+ * reading never holds back their results. It is an offer, not a search: a
+ * failed reading adds no row and is not reported, so it never marks the
+ * palette's search failed.
  */
 export function useCommandPaletteSearch(
   query: string,
@@ -149,6 +156,7 @@ export function useCommandPaletteSearch(
   const today = useFinancialToday();
   const rested = useDebouncedValue(query, COMMAND_SEARCH_DEBOUNCE_MS);
   const [answer, setAnswer] = useState<RemoteAnswer | null>(null);
+  const [quickAddAnswer, setQuickAddAnswer] = useState<QuickAddAnswer | null>(null);
 
   useEffect(() => {
     if (rested.length < MIN_REMOTE_QUERY_LENGTH) return;
@@ -158,31 +166,44 @@ export function useCommandPaletteSearch(
         ? transactionsApi.getAll({ search: rested, limit: REMOTE_RESULT_LIMIT }).then((page) => page.data)
         : Promise.resolve<Transaction[]>([]),
       helpApi.search(rested, { context: contextPage ?? undefined, limit: REMOTE_RESULT_LIMIT }),
-      // No account context and no pins: the page reads the line again in its own.
-      canQuickAdd && worthReading(rested)
-        ? quickAddApi.interpret({ text: rested, today })
-        : Promise.resolve(null),
-    ]).then(([transactions, help, quickAdd]) => {
+    ]).then(([transactions, help]) => {
       if (cancelled) return;
       if (transactions.status === 'rejected') logger.error(transactions.reason);
-      if (quickAdd.status === 'rejected') logger.error(quickAdd.reason);
       setAnswer({
         key: rested,
         transactions: transactions.status === 'fulfilled' ? transactions.value : null,
         help: help.status === 'fulfilled' ? help.value.results : null,
-        quickAdd: quickAdd.status === 'fulfilled' ? quickAdd.value : null,
       });
     });
     return () => {
       cancelled = true;
     };
-  }, [rested, canSearchTransactions, canQuickAdd, contextPage, today]);
+  }, [rested, canSearchTransactions, contextPage]);
+
+  useEffect(() => {
+    if (rested.length < MIN_REMOTE_QUERY_LENGTH || !canQuickAdd || !worthReading(rested)) return;
+    let cancelled = false;
+    // No account context and no pins: the page reads the line again in its own.
+    quickAddApi.interpret({ text: rested, today }).then(
+      (reading) => {
+        if (!cancelled) setQuickAddAnswer({ key: rested, reading });
+      },
+      (error: unknown) => {
+        if (cancelled) return;
+        logger.error(error);
+        setQuickAddAnswer({ key: rested, reading: null });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [rested, canQuickAdd, today]);
 
   const current = answer?.key === query ? answer : null;
   return {
     transactions: current?.transactions ?? [],
     help: current?.help ?? [],
-    quickAdd: current?.quickAdd ?? null,
+    quickAdd: quickAddAnswer?.key === query ? quickAddAnswer.reading : null,
     pending: query.length >= MIN_REMOTE_QUERY_LENGTH && current === null,
     failed:
       current !== null &&

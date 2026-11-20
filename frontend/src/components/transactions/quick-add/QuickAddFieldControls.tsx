@@ -125,11 +125,24 @@ function KindControl({ current, onPin }: { current: QuickAddKind | null; onPin: 
   );
 }
 
+/** What the reader typed into the amount editor, and over which reading. */
+interface AmountEdit {
+  /** The reading's figure the edit was made over. */
+  over: number | null;
+  value: number | undefined;
+}
+
 /**
  * The amount at the account currency's places. Applied when the field is left
  * or Enter is pressed: `CurrencyInput` reports every keystroke, and a pin is
  * asked about at once, so pinning each prefix of the number would ask the
  * server once a key. Enter on a calculator expression only evaluates it.
+ *
+ * Until the reader types here the field shows the reading's figure, and
+ * follows it while the editor stays open (the line retyped beneath it), so
+ * leaving the field untouched pins nothing, least of all an earlier figure. A
+ * figure typed in another currency is not an amount in the account's, so the
+ * field starts empty for one.
  */
 function AmountControl({
   id,
@@ -144,11 +157,19 @@ function AmountControl({
 }) {
   const { defaultCurrency } = useNumberFormat();
   const currency = reading.account.value?.currencyCode ?? defaultCurrency;
-  const [value, setValue] = useState<number | undefined>(reading.amount.value ?? undefined);
-  const latest = useRef(value);
+  const readAmount = reading.foreignAmount ? null : reading.amount.value;
+  const [typed, setTyped] = useState<AmountEdit | null>(null);
+  // A new reading replaces what was typed over the previous one; reset during
+  // render (the "info from previous render" pattern), not in an effect.
+  if (typed !== null && typed.over !== readAmount) setTyped(null);
+  // Read by the blur and Enter that may follow a change before it renders.
+  const edit = useRef<AmountEdit | null>(null);
   const apply = () => {
-    const next = latest.current;
-    if (next !== undefined && next > 0 && next !== reading.amount.value) {
+    const current = edit.current;
+    // Nothing typed over the reading on screen: nothing to pin.
+    if (current === null || current.over !== readAmount) return;
+    const next = current.value;
+    if (next !== undefined && next > 0 && next !== readAmount) {
       onPin({ amount: next }, false);
     }
   };
@@ -163,11 +184,12 @@ function AmountControl({
         label={label}
         prefix={getCurrencySymbol(currency)}
         decimalPlaces={entryDecimalPlaces(currency)}
-        value={value}
+        value={typed !== null && typed.over === readAmount ? typed.value : (readAmount ?? undefined)}
         allowNegative={false}
         onChange={(next) => {
-          latest.current = next;
-          setValue(next);
+          const change = { over: readAmount, value: next };
+          edit.current = change;
+          setTyped(change);
         }}
         onBlur={apply}
       />
@@ -218,7 +240,10 @@ function AccountControl({
   );
 }
 
-/** The payee combobox; a name no payee has is a new payee the save creates. */
+/**
+ * The payee combobox; a name no payee has is a payee the save creates first.
+ * Clearing it is the reader's choice of no payee.
+ */
 function PayeeControl({
   label,
   reading,
@@ -259,7 +284,8 @@ function PayeeControl({
       onChange={(payeeId, name) => {
         if (payeeId) onPin({ payeeId, payeeName: undefined }, true);
         else if (name.trim()) onPin({ payeeId: undefined, payeeName: name.trim() }, true);
-        else onPin({ payeeId: undefined, payeeName: undefined }, false);
+        // Cleared: no payee, and none guessed in its place.
+        else onPin({ payeeId: undefined, payeeName: undefined, clear: ['payee'] }, false);
       }}
       allowCustomValue
       valueIsId
@@ -268,7 +294,10 @@ function PayeeControl({
   );
 }
 
-/** Every category in tree order as "Parent: Child", as the full form lists them. */
+/**
+ * Every category in tree order as "Parent: Child", as the full form lists
+ * them. Clearing it is the reader's choice of no category.
+ */
 function CategoryControl({
   label,
   reading,
@@ -304,7 +333,8 @@ function CategoryControl({
       priorityValues={reading.category.alternatives.map((alternative) => alternative.id)}
       onChange={(categoryId) => {
         if (categoryId) onPin({ categoryId }, true);
-        else onPin({ categoryId: undefined }, false);
+        // Cleared: no category, and none guessed in its place.
+        else onPin({ categoryId: undefined, clear: ['category'] }, false);
       }}
       valueIsId
       usePortal

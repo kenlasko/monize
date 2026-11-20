@@ -83,6 +83,8 @@ import { useFormModal } from '@/hooks/useFormModal';
 import { useCommandPaletteStore, type NewTransactionPayee } from '@/store/commandPaletteStore';
 import { useMobileAddAction } from '@/store/mobileAddActionStore';
 import { useTourStore } from '@/store/tourStore';
+import { useViewDefault } from '@/hooks/useViewDefault';
+import { BUILT_IN_VIEW_DEFAULTS } from '@/lib/view-defaults';
 import type { TransactionFormDraft } from '@/components/transactions/transaction-form-draft';
 import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 import { useSwipeToPaginate } from '@/hooks/useSwipeToPaginate';
@@ -812,13 +814,16 @@ function TransactionsContent() {
     afterModalHistoryPop(() => openCreate());
   };
 
-  // Below `xl` the tab bar's + opens Quick Add (the header button is not
-  // drawn there), and the full form is one tap further, behind Full Form. A
-  // delegate has no Quick Add, and a running tour walks the New Transaction
+  // Below `xl` the tab bar's + opens Quick Add by default (the header button
+  // is not drawn there), and the full form is one tap further, behind Full
+  // Form; the reader can choose the form for the + instead (`mobileAddOpens`).
+  // A delegate has no Quick Add, and a running tour walks the New Transaction
   // form from the +, so both keep it; a desktop's pinned + does too.
   const hasMobileTabBar = useHasMobileTabBar();
   const tourRunning = useTourStore((s) => s.active !== null);
-  const plusOpensQuickAdd = hasMobileTabBar && !actingAsDelegate && !tourRunning;
+  const addOpens = useViewDefault('mobileAddOpens') ?? BUILT_IN_VIEW_DEFAULTS.mobileAddOpens;
+  const plusOpensQuickAdd =
+    hasMobileTabBar && !actingAsDelegate && !tourRunning && addOpens === 'quickAdd';
   useMobileAddAction(
     t(plusOpensQuickAdd ? 'quickAdd.button' : 'page.newButton'),
     plusOpensQuickAdd ? () => openQuickAdd() : handleCreateNew,
@@ -1552,21 +1557,24 @@ function TransactionsContent() {
           floatingBar={!accountBandActive}
           collapsedContext={singleFilteredAccount?.name}
           collapsedSwitcher={collapsedSwitcher}
-          // Quick Add is not offered to an acting delegate.
-          actions={
-            actingAsDelegate ? undefined : (
-              <Button variant="outline" onClick={() => openQuickAdd()}>
-                {t('quickAdd.button')}
-              </Button>
-            )
-          }
+          // Quick Add sits beside New Transaction in the slot drawn only from
+          // `xl` up: below it the tab bar's + already opens Quick Add, and a
+          // phone keeps no full-width row for either. Not offered to an
+          // acting delegate.
           primaryAction={
-            <Button
-              {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}
-              onClick={handleCreateNew}
-            >
-              {t('page.newButton')}
-            </Button>
+            <>
+              {!actingAsDelegate && (
+                <Button variant="outline" onClick={() => openQuickAdd()}>
+                  {t('quickAdd.button')}
+                </Button>
+              )}
+              <Button
+                {...tourAnchor(TOUR_ANCHORS.transactionsNewButton)}
+                onClick={handleCreateNew}
+              >
+                {t('page.newButton')}
+              </Button>
+            </>
           }
         />
         {(() => {

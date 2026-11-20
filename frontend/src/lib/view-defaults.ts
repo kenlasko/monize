@@ -12,12 +12,13 @@ type ViewDefaultField = readonly string[] | 'boolean' | ViewDefaultListField;
  * stored as the cross-device `viewDefaults` preference
  * (`user_preferences.view_defaults`).
  *
- * Every one except `accountOpenTarget` is a fallback for a setting the browser
- * keeps itself (row density, the register's year display, the Transactions
- * page's widgets and chart): the browser's own saved choice wins, the account
- * default applies where the browser has saved nothing, and the built-in
- * default applies where neither exists. `accountOpenTarget` and `mobileTabs`
- * have no browser copy; they are read from here alone.
+ * Every one except `accountOpenTarget`, `mobileTabs` and `mobileAddOpens` is a
+ * fallback for a setting the browser keeps itself (row density, the
+ * register's year display, the Transactions page's widgets and chart): the
+ * browser's own saved choice wins, the account default applies where the
+ * browser has saved nothing, and the built-in default applies where neither
+ * exists. `accountOpenTarget`, `mobileTabs` and `mobileAddOpens` have no
+ * browser copy; they are read from here alone.
  *
  * A string array lists an enum's values; `'boolean'` marks a flag; `{ list, max }`
  * holds up to `max` distinct values of `list`, in order. The backend
@@ -58,12 +59,19 @@ export const VIEW_DEFAULT_FIELDS = {
     ],
     max: 3,
   },
+  mobileAddOpens: ['quickAdd', 'fullForm'],
 } as const satisfies Record<string, ViewDefaultField> & {
   density: readonly DensityLevel[];
 };
 
 /** Where clicking an account opens it: its register, or its dashboard page. */
 export type AccountOpenTarget = (typeof VIEW_DEFAULT_FIELDS.accountOpenTarget)[number];
+
+/**
+ * What the phone's + opens where it starts a new transaction: Quick Add, or the
+ * New Transaction form (`docs/future-plans/quick-add.md`, "The + button setting").
+ */
+export type MobileAddOpens = (typeof VIEW_DEFAULT_FIELDS.mobileAddOpens)[number];
 
 /** A destination the mobile tab bar can carry: its link's `labelKey`. */
 export type MobileTabId = (typeof VIEW_DEFAULT_FIELDS.mobileTabs.list)[number];
@@ -105,6 +113,7 @@ export const BUILT_IN_VIEW_DEFAULTS: { readonly [K in ViewDefaultKey]: ValueOf<K
   chartCollapsed: false,
   accountOpenTarget: 'register',
   mobileTabs: ['dashboard', 'transactions', 'accounts'],
+  mobileAddOpens: 'quickAdd',
 };
 
 function isListField(field: ViewDefaultField): field is ViewDefaultListField {

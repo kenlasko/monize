@@ -29,7 +29,6 @@ import {
   topMatches,
   type CommandGroup,
 } from '@/lib/command-palette';
-import { entryDecimalPlaces } from '@/lib/format';
 import { ownBalance } from '@/lib/logical-accounts';
 import { ADMIN_LINKS, NAV_ICONS } from '@/lib/nav-links';
 import { nextOccurrenceDueDate, nextOccurrenceEffectiveAmount } from '@/lib/scheduled-effective-amount';
@@ -42,6 +41,7 @@ import { useHelpSearchStore } from '@/store/helpSearchStore';
 import { useHelpShortcutsStore } from '@/store/helpShortcutsStore';
 import { useHelpStore } from '@/store/helpStore';
 import type { QuickAddInterpretation } from '@/types/quick-add';
+import { quickAddFigure } from '@/components/transactions/quick-add/quick-add-chips';
 import { useCommandPaletteData, useCommandPaletteSearch } from './useCommandPaletteData';
 
 const GROUP_LIMIT = 5;
@@ -259,11 +259,9 @@ export function useCommandItems(query: string) {
     /** "Quick add: $84.37 Loblaws, Food: Groceries", leaving out what the line did not settle. */
     const quickAddLabel = (reading: QuickAddInterpretation, amount: number): string => {
       const from = reading.account.value;
-      // Without an account the currency is not known yet: a bare figure, not
-      // one in the reader's default currency.
-      const figure = from
-        ? formatCurrency(amount, from.currencyCode)
-        : formatNumber(amount, entryDecimalPlaces(defaultCurrency));
+      // As the dialog's amount chip reads it: a figure typed in another
+      // currency in that one, and a bare figure with no account yet.
+      const figure = quickAddFigure(reading, amount, { formatCurrency, formatNumber, defaultCurrency });
       if (reading.kind.value === 'transfer') {
         const to = reading.toAccount.value;
         return from && to
@@ -280,12 +278,14 @@ export function useCommandItems(query: string) {
 
     // The line read as an entry: first among the actions, so Tab then Enter
     // runs it. Only a reading with an amount is an entry worth offering.
+    // A figure typed in another currency is an amount too.
     const quickAdd = remote.quickAdd;
-    if (quickAdd && quickAdd.amount.value !== null) {
+    const quickAddAmount = quickAdd ? (quickAdd.amount.value ?? quickAdd.foreignAmount?.amount ?? null) : null;
+    if (quickAdd && quickAddAmount !== null) {
       results.push({
         id: 'action:quick-add',
         group: 'actions',
-        label: quickAddLabel(quickAdd, quickAdd.amount.value),
+        label: quickAddLabel(quickAdd, quickAddAmount),
         visual: <Tile icon={BoltIcon} tone="blue" />,
         run: () => startQuickAdd(query, pathname, router.push),
       });

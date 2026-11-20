@@ -14,14 +14,25 @@ export interface TransactionFormDraft {
   /** A transfer's TO account. */
   toAccountId?: string;
   /**
-   * In the account's currency. Signed for a transaction (a payment negative,
-   * a deposit positive); a transfer's magnitude, which the form keeps positive.
+   * In the account's currency, at its entry places. Signed for a transaction
+   * (a payment negative, a deposit positive); a transfer's magnitude, which
+   * the form keeps positive. Absent when the figure was typed in another
+   * currency: that one is `originalAmount`.
    */
   amount?: number;
+  /**
+   * A transaction typed in another currency: the entry currency and the
+   * figure in it, signed like `amount`. Seeded exactly as a duplicate of a
+   * foreign-entry row seeds them (`entryCurrency`, `foreignAmount`), with the
+   * rate fetched for the date, since a draft has no stored rate. Both or
+   * neither; ignored in Transfer mode.
+   */
+  originalCurrencyCode?: string;
+  originalAmount?: number;
   /** YYYY-MM-DD. */
   date?: string;
   payeeId?: string;
-  /** The payee's name; alone (no `payeeId`) it is a payee the save creates. */
+  /** The payee's name; alone (no `payeeId`) it is a name with no payee yet. */
   payeeName?: string;
   categoryId?: string;
   description?: string;

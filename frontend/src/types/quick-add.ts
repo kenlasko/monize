@@ -31,7 +31,10 @@ export interface QuickAddAccountRef {
   currencyCode: string;
 }
 
-/** `id` null: a new payee, created by the save. */
+/**
+ * `id` null: a payee no one has yet. The save creates it first (or offers an
+ * inactive payee of that name back), as the full form's payee field does.
+ */
 export interface QuickAddPayeeRef {
   id: string | null;
   name: string;
@@ -52,10 +55,22 @@ export type QuickAddBlocker =
   | 'ambiguousAccount'
   | 'missingToAccount'
   | 'sameAccount'
+  /** Above the create DTO's `TRANSACTION_AMOUNT_MAX_MAGNITUDE`. */
+  | 'amountTooLarge'
   /** A currency was typed that is not the account's. */
   | 'foreignCurrency'
   /** The two accounts hold different currencies. */
   | 'crossCurrencyTransfer';
+
+/**
+ * The figure as typed in another currency, set exactly when the
+ * `foreignCurrency` blocker is. `currencyCode` is the ISO code when the typed
+ * symbol or code names one currency, else null.
+ */
+export interface QuickAddForeignAmount {
+  currencyCode: string | null;
+  amount: number;
+}
 
 /** The FROM account's balance before and after the save. */
 export interface QuickAddBalance {
@@ -94,8 +109,16 @@ export interface QuickAddInterpretation {
   blockers: QuickAddBlocker[];
   /** Null without an account and an amount. */
   balance: QuickAddBalance | null;
+  /** Set exactly when `blockers` holds `foreignCurrency`. */
+  foreignAmount: QuickAddForeignAmount | null;
   ruleEffects?: QuickAddRuleEffects;
 }
+
+/** A field the reader can clear on its chip. */
+export type QuickAddClearable = 'payee' | 'category';
+
+/** In the order a request sends them, so one choice is always one request key. */
+export const QUICK_ADD_CLEARABLE: readonly QuickAddClearable[] = ['payee', 'category'];
 
 /** Fields the reader set by hand on a chip; every one is optional. */
 export interface QuickAddPins {
@@ -110,6 +133,11 @@ export interface QuickAddPins {
   /** A new payee's name. */
   payeeName?: string;
   categoryId?: string;
+  /**
+   * Fields the reader cleared on a chip: the server answers each as none and
+   * never guesses it again, and the save sends it as null.
+   */
+  clear?: QuickAddClearable[];
 }
 
 export interface QuickAddInterpretRequest {

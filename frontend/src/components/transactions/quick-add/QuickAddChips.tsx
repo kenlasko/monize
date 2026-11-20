@@ -20,10 +20,19 @@ import type {
 } from '@/types/quick-add';
 import { QuickAddChip } from './QuickAddChip';
 import { QuickAddFieldEditor } from './QuickAddFieldEditor';
-import { chipFields, chipState, fieldOf, type QuickAddChipField } from './quick-add-chips';
+import {
+  chipFields,
+  chipState,
+  fieldOf,
+  isClearedChip,
+  quickAddFigure,
+  type QuickAddChipField,
+} from './quick-add-chips';
 
 interface QuickAddChipsProps {
   reading: QuickAddInterpretation;
+  /** The reader's pins: a field they cleared reads as their own choice of none. */
+  pins: QuickAddPins;
   /** A newer reading is on its way: shown, marked busy, and not actionable. */
   stale: boolean;
   editing: QuickAddChipField | null;
@@ -41,6 +50,7 @@ interface QuickAddChipsProps {
  */
 export function QuickAddChips({
   reading,
+  pins,
   stale,
   editing,
   onEditingChange,
@@ -79,6 +89,7 @@ export function QuickAddChips({
   };
 
   const currency = reading.account.value?.currencyCode;
+  // The editor's other candidates; the chip's own figure is `chipText`'s.
   const formatValue = (field: QuickAddChipField, value: unknown): string => {
     switch (field) {
       case 'kind':
@@ -99,6 +110,20 @@ export function QuickAddChips({
       case 'category':
         return (value as QuickAddCategoryRef).name;
     }
+  };
+
+  /** What a chip reads: its value, the reader's own "none", or null for a missing one. */
+  const chipText = (field: QuickAddChipField): string | null => {
+    if (isClearedChip(reading, field, pins)) {
+      return field === 'payee' ? t('quickAdd.cleared.payee') : t('quickAdd.cleared.category');
+    }
+    const value = fieldOf(reading, field).value;
+    if (value === null) return null;
+    // A figure typed in another currency reads in that one, never the account's.
+    if (field === 'amount') {
+      return quickAddFigure(reading, value as number, { formatCurrency, formatNumber, defaultCurrency });
+    }
+    return formatValue(field, value);
   };
 
   const close = useCallback(() => {
@@ -129,7 +154,6 @@ export function QuickAddChips({
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {fields.map((field) => {
-            const value = fieldOf(reading, field).value;
             return (
               <QuickAddChip
                 key={field}
@@ -137,8 +161,8 @@ export function QuickAddChips({
                   chipRefs.current.set(field, element);
                 }}
                 fieldLabel={labelOf(field)}
-                valueText={value === null ? null : formatValue(field, value)}
-                state={chipState(reading, field)}
+                valueText={chipText(field)}
+                state={chipState(reading, field, pins)}
                 expanded={editing === field}
                 editorId={editorId}
                 stale={stale}
