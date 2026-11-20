@@ -72,6 +72,21 @@ describe('Combobox', () => {
     await waitFor(() => expect(screen.queryByTestId('combobox-picked-icon')).toBeNull());
   });
 
+  it('forces the padding that clears the picked icon and the clear button past the global text-input rule', () => {
+    render(
+      <Combobox
+        options={[{ value: '1', label: 'Apple', icon: <span>A</span> }]}
+        value="1"
+        onChange={onChange}
+      />,
+    );
+    const classes = screen.getByRole('textbox').className.split(' ');
+    expect(classes).toContain('pl-9!');
+    expect(classes).toContain('pr-8!');
+    expect(classes).not.toContain('pl-9');
+    expect(classes).not.toContain('pr-8');
+  });
+
   it('shows no picked icon for an option without one', () => {
     render(<Combobox options={options} value="2" onChange={onChange} />);
     expect(screen.queryByTestId('combobox-picked-icon')).toBeNull();

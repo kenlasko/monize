@@ -670,11 +670,14 @@ export function Combobox({
           placeholder={placeholder}
           aria-label={ariaLabel}
           disabled={disabled}
+          // `!`: the unlayered `[type='text']` rule in globals.css sets the
+          // padding and outranks a plain utility, so `pl-9` alone would leave
+          // the label under the picked icon and `pr-8` under the clear button.
           className={cn(
             inputBaseClasses,
             error && inputErrorClasses,
-            inputValue && !disabled && 'pr-8',
-            pickedIcon != null && 'pl-9'
+            inputValue && !disabled && 'pr-8!',
+            pickedIcon != null && 'pl-9!'
           )}
         />
         {inputValue && !disabled && (
