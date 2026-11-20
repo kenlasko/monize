@@ -699,5 +699,75 @@
         "tag": "Heeft een tag"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Snel toevoegen",
+    "title": "Snel toevoegen",
+    "description": "Typ wat je hebt uitgegeven, ontvangen of verplaatst, bijvoorbeeld 84.37 Loblaws boodschappen. Kies een willekeurig deel van de interpretatie om het te wijzigen.",
+    "inputLabel": "Invoer",
+    "placeholder": "bijv. 84.37 Loblaws boodschappen",
+    "readAs": "Gelezen als",
+    "memoLabel": "Omschrijving:",
+    "reading": "Invoer lezen...",
+    "readFailed": "De invoer kon niet worden gelezen",
+    "tryAgain": "Opnieuw proberen",
+    "pinRefused": {
+      "title": "Iets wat je hebt gekozen is niet meer beschikbaar",
+      "description": "Een rekening, begunstigde of categorie die je op een chip hebt gekozen, is inmiddels gesloten of verwijderd. Wis je wijzigingen om de invoer opnieuw te lezen.",
+      "clearChanges": "Wijzigingen wissen"
+    },
+    "fullForm": "Volledig formulier",
+    "save": "Opslaan",
+    "saveAndNew": "Opslaan & nieuw",
+    "saveAndNewDescription": "Sla het op en maak de regel leeg voor de volgende.",
+    "cannotSave": "Deze invoer kan zo niet worden opgeslagen. Gebruik Volledig formulier om hem af te maken.",
+    "kinds": {
+      "payment": "Betaling",
+      "deposit": "Storting",
+      "transfer": "Overboeking"
+    },
+    "fields": {
+      "kind": "Type"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, geraden",
+      "assumed": "{field}: {value}, niet getypt",
+      "missing": "{field}: ontbreekt",
+      "matches": "{field}: {value}, {count, plural, one {# overeenkomst} other {# overeenkomsten}}",
+      "new": "{field}: {value}, nieuwe begunstigde"
+    },
+    "need": {
+      "missing": "Ontbreekt",
+      "matches": "{count, plural, one {# overeenkomst} other {# overeenkomsten}}",
+      "new": "Nieuw"
+    },
+    "cleared": {
+      "payee": "Geen begunstigde",
+      "category": "Geen categorie"
+    },
+    "editor": {
+      "alternatives": "Andere overeenkomsten",
+      "done": "Klaar",
+      "categoryPlaceholder": "Categorie selecteren..."
+    },
+    "balance": {
+      "after": "{account}: nu {current}, na opslaan {after}",
+      "movesOn": "{account}: nu {current}. Het saldo verandert op {date}.",
+      "current": "{account}: nu {current}"
+    },
+    "blockers": {
+      "missingAmount": "Typ een bedrag.",
+      "zeroAmount": "Het bedrag mag niet nul zijn.",
+      "amountPrecision": "Het bedrag heeft meer decimalen dan de valuta van de rekening toestaat.",
+      "missingAccount": "Kies een rekening.",
+      "ambiguousAccount": "Meer dan één rekening komt overeen. Kies er een.",
+      "missingToAccount": "Kies de rekening waar het geld naartoe gaat.",
+      "sameAccount": "Een overboeking heeft twee verschillende rekeningen nodig.",
+      "amountTooLarge": "Het bedrag is groter dan een transactie kan bevatten.",
+      "foreignCurrency": "Het bedrag is in een andere valuta dan die van de rekening. Gebruik Volledig formulier om het in te voeren.",
+      "crossCurrencyTransfer": "De twee rekeningen hebben verschillende valuta. Gebruik Volledig formulier voor deze overboeking.",
+      "unknown": "Deze invoer kan hier niet worden opgeslagen. Gebruik Volledig formulier om hem af te maken."
+    }
   }
 }

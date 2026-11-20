@@ -79,6 +79,14 @@
     "transactionsFor": "Alle transacties voor {name}",
     "searchTransactions": "Transacties zoeken voor \"{query}\"",
     "searchHelp": "Help doorzoeken",
-    "keyboardShortcuts": "Toetsencombinaties"
-  }
+    "keyboardShortcuts": "Toetsencombinaties",
+    "quickAdd": {
+      "amount": "Snel toevoegen: {amount}",
+      "payee": "Snel toevoegen: {amount} {payee}",
+      "category": "Snel toevoegen: {amount} {category}",
+      "payeeCategory": "Snel toevoegen: {amount} {payee}, {category}",
+      "transfer": "Snel toevoegen: {amount} van {from} naar {to}"
+    }
+  },
+  "quickAdd": "Snel toevoegen"
 }

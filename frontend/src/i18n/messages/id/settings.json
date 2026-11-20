@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Pilih hingga tiga tab untuk bilah di bagian bawah ponsel atau tablet. Tombol tambah dan Lainnya selalu ada.",
       "slotLabel": "Tab {number}",
-      "none": "Tidak ada"
+      "none": "Tidak ada",
+      "addOpensLabel": "Tombol + membuka",
+      "addOpensOptions": {
+        "quickAdd": "Tambah Cepat",
+        "fullForm": "Formulir Transaksi Baru"
+      },
+      "addOpensHelp": "Berlaku di tempat tombol + memulai transaksi baru: di halaman Transaksi, dan di halaman yang tidak punya sesuatu sendiri untuk ditambahkan. Tambah Cepat memiliki tombol Formulir Lengkap untuk sisanya."
     }
   },
   "notifications": {

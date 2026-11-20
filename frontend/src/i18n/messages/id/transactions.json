@@ -699,5 +699,75 @@
         "tag": "Memiliki tag"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Tambah Cepat",
+    "title": "Tambah Cepat",
+    "description": "Ketik apa yang Anda belanjakan, terima, atau pindahkan, misalnya 84.37 Loblaws belanja. Pilih bagian mana pun dari hasil bacaan untuk mengubahnya.",
+    "inputLabel": "Entri",
+    "placeholder": "mis. 84.37 Loblaws belanja",
+    "readAs": "Dibaca Sebagai",
+    "memoLabel": "Keterangan:",
+    "reading": "Membaca entri...",
+    "readFailed": "Gagal membaca entri",
+    "tryAgain": "Coba Lagi",
+    "pinRefused": {
+      "title": "Sesuatu yang Anda pilih sudah tidak tersedia",
+      "description": "Akun, penerima, atau kategori yang dipilih pada chip telah ditutup atau dihapus. Hapus perubahan Anda untuk membaca entri lagi.",
+      "clearChanges": "Hapus Perubahan"
+    },
+    "fullForm": "Formulir Lengkap",
+    "save": "Simpan",
+    "saveAndNew": "Simpan & Baru",
+    "saveAndNewDescription": "Simpan lalu kosongkan baris untuk entri berikutnya.",
+    "cannotSave": "Entri ini tidak dapat disimpan apa adanya. Gunakan Formulir Lengkap untuk menyelesaikannya.",
+    "kinds": {
+      "payment": "Pembayaran",
+      "deposit": "Setoran",
+      "transfer": "Transfer"
+    },
+    "fields": {
+      "kind": "Tipe"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, ditebak",
+      "assumed": "{field}: {value}, tidak diketik",
+      "missing": "{field}: kosong",
+      "matches": "{field}: {value}, {count, plural, other {# kecocokan}}",
+      "new": "{field}: {value}, penerima baru"
+    },
+    "need": {
+      "missing": "Kosong",
+      "matches": "{count, plural, other {# kecocokan}}",
+      "new": "Baru"
+    },
+    "cleared": {
+      "payee": "Tanpa penerima",
+      "category": "Tanpa kategori"
+    },
+    "editor": {
+      "alternatives": "Kecocokan Lain",
+      "done": "Selesai",
+      "categoryPlaceholder": "Pilih kategori..."
+    },
+    "balance": {
+      "after": "{account}: saat ini {current}, setelah disimpan {after}",
+      "movesOn": "{account}: saat ini {current}. Saldo berubah pada {date}.",
+      "current": "{account}: saat ini {current}"
+    },
+    "blockers": {
+      "missingAmount": "Ketik jumlah.",
+      "zeroAmount": "Jumlah tidak boleh nol.",
+      "amountPrecision": "Jumlah memiliki lebih banyak desimal daripada yang diizinkan mata uang akun.",
+      "missingAccount": "Pilih akun.",
+      "ambiguousAccount": "Lebih dari satu akun cocok. Pilih salah satu.",
+      "missingToAccount": "Pilih akun tujuan uang.",
+      "sameAccount": "Transfer memerlukan dua akun yang berbeda.",
+      "amountTooLarge": "Jumlah lebih besar dari yang dapat ditampung satu transaksi.",
+      "foreignCurrency": "Jumlah dalam mata uang selain mata uang akun. Gunakan Formulir Lengkap untuk memasukkannya.",
+      "crossCurrencyTransfer": "Kedua akun memiliki mata uang berbeda. Gunakan Formulir Lengkap untuk transfer ini.",
+      "unknown": "Entri ini tidak dapat disimpan di sini. Gunakan Formulir Lengkap untuk menyelesaikannya."
+    }
   }
 }

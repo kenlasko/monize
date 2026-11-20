@@ -699,5 +699,75 @@
         "tag": "Ma tag"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Szybkie dodawanie",
+    "title": "Szybkie dodawanie",
+    "description": "Wpisz, ile wydałeś, otrzymałeś lub przeniosłeś, na przykład 84.37 Loblaws zakupy. Wybierz dowolną część odczytu, aby ją zmienić.",
+    "inputLabel": "Wpis",
+    "placeholder": "np. 84.37 Loblaws zakupy",
+    "readAs": "Odczytano jako",
+    "memoLabel": "Opis:",
+    "reading": "Odczytywanie wpisu...",
+    "readFailed": "Nie udało się odczytać wpisu",
+    "tryAgain": "Spróbuj ponownie",
+    "pinRefused": {
+      "title": "Coś, co wybrano, nie jest już dostępne",
+      "description": "Konto, odbiorca lub kategoria wybrane na znaczniku zostały od tego czasu zamknięte lub usunięte. Wyczyść zmiany, aby odczytać wpis ponownie.",
+      "clearChanges": "Wyczyść zmiany"
+    },
+    "fullForm": "Pełny formularz",
+    "save": "Zapisz",
+    "saveAndNew": "Zapisz i dodaj nowy",
+    "saveAndNewDescription": "Zapisz go i wyczyść wiersz na następny.",
+    "cannotSave": "Tego wpisu nie można zapisać w obecnej postaci. Użyj Pełnego formularza, aby go dokończyć.",
+    "kinds": {
+      "payment": "Płatność",
+      "deposit": "Wpłata",
+      "transfer": "Przelew"
+    },
+    "fields": {
+      "kind": "Typ"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, zgadnięto",
+      "assumed": "{field}: {value}, nie wpisano",
+      "missing": "{field}: brak",
+      "matches": "{field}: {value}, {count, plural, one {# dopasowanie} few {# dopasowania} many {# dopasowań} other {# dopasowania}}",
+      "new": "{field}: {value}, nowy odbiorca"
+    },
+    "need": {
+      "missing": "Brak",
+      "matches": "{count, plural, one {# dopasowanie} few {# dopasowania} many {# dopasowań} other {# dopasowania}}",
+      "new": "Nowe"
+    },
+    "cleared": {
+      "payee": "Brak odbiorcy",
+      "category": "Brak kategorii"
+    },
+    "editor": {
+      "alternatives": "Inne dopasowania",
+      "done": "Gotowe",
+      "categoryPlaceholder": "Wybierz kategorię..."
+    },
+    "balance": {
+      "after": "{account}: teraz {current}, po zapisaniu {after}",
+      "movesOn": "{account}: teraz {current}. Saldo zmieni się {date}.",
+      "current": "{account}: teraz {current}"
+    },
+    "blockers": {
+      "missingAmount": "Wpisz kwotę.",
+      "zeroAmount": "Kwota nie może wynosić zero.",
+      "amountPrecision": "Kwota ma więcej miejsc po przecinku, niż pozwala waluta konta.",
+      "missingAccount": "Wybierz konto.",
+      "ambiguousAccount": "Pasuje więcej niż jedno konto. Wybierz jedno.",
+      "missingToAccount": "Wybierz konto, na które trafiają pieniądze.",
+      "sameAccount": "Przelew wymaga dwóch różnych kont.",
+      "amountTooLarge": "Kwota jest większa, niż może pomieścić transakcja.",
+      "foreignCurrency": "Kwota jest w innej walucie niż konto. Użyj Pełnego formularza, aby ją wprowadzić.",
+      "crossCurrencyTransfer": "Te dwa konta mają różne waluty. Użyj Pełnego formularza dla tego przelewu.",
+      "unknown": "Tego wpisu nie można tutaj zapisać. Użyj Pełnego formularza, aby go dokończyć."
+    }
   }
 }

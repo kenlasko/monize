@@ -79,6 +79,14 @@
     "transactionsFor": "Усі транзакції для {name}",
     "searchTransactions": "Шукати транзакції за запитом «{query}»",
     "searchHelp": "Пошук у довідці",
-    "keyboardShortcuts": "Комбінації клавіш"
-  }
+    "keyboardShortcuts": "Комбінації клавіш",
+    "quickAdd": {
+      "amount": "Швидке додавання: {amount}",
+      "payee": "Швидке додавання: {amount} {payee}",
+      "category": "Швидке додавання: {amount} {category}",
+      "payeeCategory": "Швидке додавання: {amount} {payee}, {category}",
+      "transfer": "Швидке додавання: {amount} з рахунку {from} на рахунок {to}"
+    }
+  },
+  "quickAdd": "Швидке додавання"
 }

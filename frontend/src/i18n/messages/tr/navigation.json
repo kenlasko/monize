@@ -79,6 +79,14 @@
     "transactionsFor": "{name} için tüm işlemler",
     "searchTransactions": "\"{query}\" için işlemleri ara",
     "searchHelp": "Yardımda ara",
-    "keyboardShortcuts": "Klavye kısayolları"
-  }
+    "keyboardShortcuts": "Klavye kısayolları",
+    "quickAdd": {
+      "amount": "Hızlı Ekle: {amount}",
+      "payee": "Hızlı Ekle: {amount} {payee}",
+      "category": "Hızlı Ekle: {amount} {category}",
+      "payeeCategory": "Hızlı Ekle: {amount} {payee}, {category}",
+      "transfer": "Hızlı Ekle: {amount} {from} hesabından {to} hesabına"
+    }
+  },
+  "quickAdd": "Hızlı Ekle"
 }

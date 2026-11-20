@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Wählen Sie bis zu drei Tabs für die Leiste am unteren Rand von Smartphone oder Tablet. Die Schaltfläche zum Hinzufügen und „Mehr“ sind immer vorhanden.",
       "slotLabel": "Tab {number}",
-      "none": "Keiner"
+      "none": "Keiner",
+      "addOpensLabel": "Die Schaltfläche + öffnet",
+      "addOpensOptions": {
+        "quickAdd": "Schnellerfassung",
+        "fullForm": "Formular „Neue Buchung“"
+      },
+      "addOpensHelp": "Gilt dort, wo die Schaltfläche + eine neue Buchung beginnt: auf der Seite „Buchungen“ und auf Seiten, die selbst nichts hinzuzufügen haben. Die Schnellerfassung hat eine Schaltfläche „Vollständiges Formular“ für alles Weitere."
     }
   },
   "notifications": {

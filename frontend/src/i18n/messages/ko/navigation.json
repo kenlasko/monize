@@ -79,6 +79,14 @@
     "transactionsFor": "{name}의 모든 거래",
     "searchTransactions": "\"{query}\" 거래 검색",
     "searchHelp": "도움말 검색",
-    "keyboardShortcuts": "키보드 단축키"
-  }
+    "keyboardShortcuts": "키보드 단축키",
+    "quickAdd": {
+      "amount": "빠른 추가: {amount}",
+      "payee": "빠른 추가: {amount} {payee}",
+      "category": "빠른 추가: {amount} {category}",
+      "payeeCategory": "빠른 추가: {amount} {payee}, {category}",
+      "transfer": "빠른 추가: {amount} {from}에서 {to}(으)로"
+    }
+  },
+  "quickAdd": "빠른 추가"
 }

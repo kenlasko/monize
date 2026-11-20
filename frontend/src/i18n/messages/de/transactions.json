@@ -699,5 +699,75 @@
         "tag": "Hat einen Tag"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Schnellerfassung",
+    "title": "Schnellerfassung",
+    "description": "Geben Sie ein, was Sie ausgegeben, erhalten oder verschoben haben, zum Beispiel 84.37 Loblaws Lebensmittel. Wählen Sie einen beliebigen Teil der Auswertung, um ihn zu ändern.",
+    "inputLabel": "Eingabe",
+    "placeholder": "z. B. 84.37 Loblaws Lebensmittel",
+    "readAs": "Erkannt als",
+    "memoLabel": "Beschreibung:",
+    "reading": "Eingabe wird gelesen...",
+    "readFailed": "Die Eingabe konnte nicht gelesen werden",
+    "tryAgain": "Erneut versuchen",
+    "pinRefused": {
+      "title": "Etwas, das Sie gewählt haben, ist nicht mehr verfügbar",
+      "description": "Ein Konto, ein Zahlungsempfänger oder eine Kategorie, die Sie auf einem Chip gewählt haben, wurde inzwischen geschlossen oder gelöscht. Setzen Sie Ihre Änderungen zurück, um die Eingabe erneut auszuwerten.",
+      "clearChanges": "Änderungen zurücksetzen"
+    },
+    "fullForm": "Vollständiges Formular",
+    "save": "Speichern",
+    "saveAndNew": "Speichern & Neu",
+    "saveAndNewDescription": "Speichern und die Zeile für die nächste Eingabe leeren.",
+    "cannotSave": "Diese Eingabe kann so nicht gespeichert werden. Schließen Sie sie mit dem vollständigen Formular ab.",
+    "kinds": {
+      "payment": "Zahlung",
+      "deposit": "Einzahlung",
+      "transfer": "Überweisung"
+    },
+    "fields": {
+      "kind": "Typ"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, vermutet",
+      "assumed": "{field}: {value}, nicht eingegeben",
+      "missing": "{field}: fehlt",
+      "matches": "{field}: {value}, {count, plural, one {# Treffer} other {# Treffer}}",
+      "new": "{field}: {value}, neuer Zahlungsempfänger"
+    },
+    "need": {
+      "missing": "Fehlt",
+      "matches": "{count, plural, one {# Treffer} other {# Treffer}}",
+      "new": "Neu"
+    },
+    "cleared": {
+      "payee": "Kein Zahlungsempfänger",
+      "category": "Keine Kategorie"
+    },
+    "editor": {
+      "alternatives": "Weitere Treffer",
+      "done": "Fertig",
+      "categoryPlaceholder": "Kategorie auswählen..."
+    },
+    "balance": {
+      "after": "{account}: jetzt {current}, nach dem Speichern {after}",
+      "movesOn": "{account}: jetzt {current}. Der Kontostand ändert sich am {date}.",
+      "current": "{account}: jetzt {current}"
+    },
+    "blockers": {
+      "missingAmount": "Geben Sie einen Betrag ein.",
+      "zeroAmount": "Der Betrag darf nicht null sein.",
+      "amountPrecision": "Der Betrag hat mehr Nachkommastellen, als die Währung des Kontos zulässt.",
+      "missingAccount": "Wählen Sie ein Konto.",
+      "ambiguousAccount": "Mehrere Konten passen. Wählen Sie eines aus.",
+      "missingToAccount": "Wählen Sie das Konto, auf das das Geld geht.",
+      "sameAccount": "Eine Überweisung braucht zwei verschiedene Konten.",
+      "amountTooLarge": "Der Betrag ist größer, als eine Buchung aufnehmen kann.",
+      "foreignCurrency": "Der Betrag ist in einer anderen Währung als der des Kontos. Geben Sie ihn im vollständigen Formular ein.",
+      "crossCurrencyTransfer": "Die beiden Konten führen unterschiedliche Währungen. Nutzen Sie für diese Überweisung das vollständige Formular.",
+      "unknown": "Diese Eingabe kann hier nicht gespeichert werden. Schließen Sie sie mit dem vollständigen Formular ab."
+    }
   }
 }

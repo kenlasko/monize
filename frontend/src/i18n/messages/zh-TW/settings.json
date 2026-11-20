@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "為手機或平板底部的標籤列選擇最多三個標籤。新增按鈕和「更多」一律顯示。",
       "slotLabel": "標籤 {number}",
-      "none": "無"
+      "none": "無",
+      "addOpensLabel": "+ 按鈕開啟",
+      "addOpensOptions": {
+        "quickAdd": "快速新增",
+        "fullForm": "新增交易表單"
+      },
+      "addOpensHelp": "適用於 + 按鈕開始新增交易的位置：交易頁面，以及沒有自己可新增內容的頁面。快速新增提供「完整表單」按鈕，用於處理其餘情況。"
     }
   },
   "notifications": {

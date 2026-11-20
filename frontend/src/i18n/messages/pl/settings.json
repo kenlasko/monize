@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Wybierz do trzech kart na pasek u dołu telefonu lub tabletu. Przycisk dodawania i Więcej są zawsze widoczne.",
       "slotLabel": "Karta {number}",
-      "none": "Brak"
+      "none": "Brak",
+      "addOpensLabel": "Przycisk + otwiera",
+      "addOpensOptions": {
+        "quickAdd": "Szybkie dodawanie",
+        "fullForm": "Formularz nowej transakcji"
+      },
+      "addOpensHelp": "Dotyczy miejsc, w których przycisk + rozpoczyna nową transakcję: strony Transakcje oraz strony, która nie ma własnych elementów do dodania. Szybkie dodawanie ma przycisk Pełny formularz na całą resztę."
     }
   },
   "notifications": {

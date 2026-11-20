@@ -699,5 +699,75 @@
         "tag": "有標籤"
       }
     }
+  },
+  "quickAdd": {
+    "button": "快速新增",
+    "title": "快速新增",
+    "description": "輸入你花費、收到或轉移的內容，例如 84.37 Loblaws 雜貨。選擇辨識結果的任一部分即可修改。",
+    "inputLabel": "輸入",
+    "placeholder": "例如 84.37 Loblaws 雜貨",
+    "readAs": "辨識為",
+    "memoLabel": "描述：",
+    "reading": "正在辨識輸入...",
+    "readFailed": "辨識輸入失敗",
+    "tryAgain": "重試",
+    "pinRefused": {
+      "title": "你選擇的某項已無法使用",
+      "description": "在標籤上選擇的科目、收款人或類別此後已被關閉或刪除。清除變更以重新辨識輸入。",
+      "clearChanges": "清除變更"
+    },
+    "fullForm": "完整表單",
+    "save": "儲存",
+    "saveAndNew": "儲存並新增",
+    "saveAndNewDescription": "儲存後清空輸入列，準備下一筆。",
+    "cannotSave": "此項目無法依現狀儲存。請使用「完整表單」完成。",
+    "kinds": {
+      "payment": "付款",
+      "deposit": "存款",
+      "transfer": "轉帳"
+    },
+    "fields": {
+      "kind": "類型"
+    },
+    "chipName": {
+      "typed": "{field}：{value}",
+      "guessed": "{field}：{value}，推測",
+      "assumed": "{field}：{value}，未輸入",
+      "missing": "{field}：缺少",
+      "matches": "{field}：{value}，{count, plural, other {# 個符合}}",
+      "new": "{field}：{value}，新收款人"
+    },
+    "need": {
+      "missing": "缺少",
+      "matches": "{count, plural, other {# 個符合}}",
+      "new": "新增"
+    },
+    "cleared": {
+      "payee": "無收款人",
+      "category": "無類別"
+    },
+    "editor": {
+      "alternatives": "其他符合項目",
+      "done": "完成",
+      "categoryPlaceholder": "選擇類別..."
+    },
+    "balance": {
+      "after": "{account}：目前 {current}，儲存後 {after}",
+      "movesOn": "{account}：目前 {current}。餘額將於 {date} 變動。",
+      "current": "{account}：目前 {current}"
+    },
+    "blockers": {
+      "missingAmount": "請輸入金額。",
+      "zeroAmount": "金額不能為零。",
+      "amountPrecision": "金額的小數位數超過了科目幣別可輸入的位數。",
+      "missingAccount": "請選擇科目。",
+      "ambiguousAccount": "有多個科目符合。請選擇一個。",
+      "missingToAccount": "請選擇收款科目。",
+      "sameAccount": "轉帳需要兩個不同的科目。",
+      "amountTooLarge": "金額超出了單筆交易可容納的範圍。",
+      "foreignCurrency": "金額的幣別與科目不同。請使用「完整表單」輸入。",
+      "crossCurrencyTransfer": "兩個科目的幣別不同。請使用「完整表單」辦理此筆轉帳。",
+      "unknown": "此項目無法在此儲存。請使用「完整表單」完成。"
+    }
   }
 }

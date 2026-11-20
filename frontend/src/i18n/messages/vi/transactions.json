@@ -699,5 +699,75 @@
         "tag": "Có thẻ"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Thêm nhanh",
+    "title": "Thêm nhanh",
+    "description": "Nhập khoản bạn đã chi, đã nhận hoặc đã chuyển, chẳng hạn 84.37 Loblaws tạp hóa. Chọn bất kỳ phần nào của kết quả đọc để thay đổi.",
+    "inputLabel": "Nội dung nhập",
+    "placeholder": "vd. 84.37 Loblaws tạp hóa",
+    "readAs": "Được hiểu là",
+    "memoLabel": "Mô tả:",
+    "reading": "Đang đọc nội dung nhập...",
+    "readFailed": "Không đọc được nội dung nhập",
+    "tryAgain": "Thử lại",
+    "pinRefused": {
+      "title": "Mục bạn đã chọn không còn khả dụng",
+      "description": "Tài khoản, người nhận hoặc danh mục đã chọn trên thẻ nhỏ đã bị đóng hoặc xóa kể từ đó. Hãy xóa các thay đổi để đọc lại nội dung nhập.",
+      "clearChanges": "Xóa thay đổi"
+    },
+    "fullForm": "Biểu mẫu đầy đủ",
+    "save": "Lưu",
+    "saveAndNew": "Lưu & Mới",
+    "saveAndNewDescription": "Lưu lại và xóa dòng để nhập khoản tiếp theo.",
+    "cannotSave": "Không thể lưu mục này như hiện tại. Hãy dùng Biểu mẫu đầy đủ để hoàn tất.",
+    "kinds": {
+      "payment": "Thanh toán",
+      "deposit": "Tiền vào",
+      "transfer": "Chuyển khoản"
+    },
+    "fields": {
+      "kind": "Loại"
+    },
+    "chipName": {
+      "typed": "{field}: {value}",
+      "guessed": "{field}: {value}, đoán",
+      "assumed": "{field}: {value}, không nhập",
+      "missing": "{field}: thiếu",
+      "matches": "{field}: {value}, {count, plural, other {# kết quả khớp}}",
+      "new": "{field}: {value}, người nhận mới"
+    },
+    "need": {
+      "missing": "Thiếu",
+      "matches": "{count, plural, other {# kết quả khớp}}",
+      "new": "Mới"
+    },
+    "cleared": {
+      "payee": "Không có người nhận",
+      "category": "Không có danh mục"
+    },
+    "editor": {
+      "alternatives": "Kết quả khớp khác",
+      "done": "Xong",
+      "categoryPlaceholder": "Chọn danh mục..."
+    },
+    "balance": {
+      "after": "{account}: hiện {current}, sau khi lưu là {after}",
+      "movesOn": "{account}: hiện {current}. Số dư thay đổi vào {date}.",
+      "current": "{account}: hiện {current}"
+    },
+    "blockers": {
+      "missingAmount": "Hãy nhập số tiền.",
+      "zeroAmount": "Số tiền không được bằng không.",
+      "amountPrecision": "Số tiền có nhiều chữ số thập phân hơn mức tiền tệ của tài khoản cho phép.",
+      "missingAccount": "Hãy chọn một tài khoản.",
+      "ambiguousAccount": "Có nhiều tài khoản khớp. Hãy chọn một.",
+      "missingToAccount": "Hãy chọn tài khoản nhận tiền.",
+      "sameAccount": "Chuyển khoản cần hai tài khoản khác nhau.",
+      "amountTooLarge": "Số tiền lớn hơn mức một giao dịch có thể chứa.",
+      "foreignCurrency": "Số tiền thuộc loại tiền tệ khác với tài khoản. Hãy dùng Biểu mẫu đầy đủ để nhập.",
+      "crossCurrencyTransfer": "Hai tài khoản dùng tiền tệ khác nhau. Hãy dùng Biểu mẫu đầy đủ cho lần chuyển khoản này.",
+      "unknown": "Không thể lưu mục này tại đây. Hãy dùng Biểu mẫu đầy đủ để hoàn tất."
+    }
   }
 }

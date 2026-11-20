@@ -699,5 +699,75 @@
         "tag": "Possède une étiquette"
       }
     }
+  },
+  "quickAdd": {
+    "button": "Ajout rapide",
+    "title": "Ajout rapide",
+    "description": "Saisissez ce que vous avez dépensé, reçu ou déplacé, par exemple 84.37 Loblaws courses. Choisissez n’importe quelle partie de l’interprétation pour la modifier.",
+    "inputLabel": "Saisie",
+    "placeholder": "p. ex. 84.37 Loblaws courses",
+    "readAs": "Interprété comme",
+    "memoLabel": "Description :",
+    "reading": "Lecture de la saisie...",
+    "readFailed": "Échec de la lecture de la saisie",
+    "tryAgain": "Réessayer",
+    "pinRefused": {
+      "title": "Un élément que vous avez choisi n’est plus disponible",
+      "description": "Un compte, un bénéficiaire ou une catégorie choisi sur une pastille a été clôturé ou supprimé depuis. Effacez vos modifications pour relire la saisie.",
+      "clearChanges": "Effacer les modifications"
+    },
+    "fullForm": "Formulaire complet",
+    "save": "Enregistrer",
+    "saveAndNew": "Enregistrer et nouveau",
+    "saveAndNewDescription": "Enregistrez-la et videz la ligne pour la suivante.",
+    "cannotSave": "Cette saisie ne peut pas être enregistrée telle quelle. Utilisez Formulaire complet pour la terminer.",
+    "kinds": {
+      "payment": "Paiement",
+      "deposit": "Dépôt",
+      "transfer": "Virement"
+    },
+    "fields": {
+      "kind": "Type"
+    },
+    "chipName": {
+      "typed": "{field} : {value}",
+      "guessed": "{field} : {value}, deviné",
+      "assumed": "{field} : {value}, non saisi",
+      "missing": "{field} : manquant",
+      "matches": "{field} : {value}, {count, plural, one {# correspondance} other {# correspondances}}",
+      "new": "{field} : {value}, nouveau bénéficiaire"
+    },
+    "need": {
+      "missing": "Manquant",
+      "matches": "{count, plural, one {# correspondance} other {# correspondances}}",
+      "new": "Nouveau"
+    },
+    "cleared": {
+      "payee": "Aucun bénéficiaire",
+      "category": "Aucune catégorie"
+    },
+    "editor": {
+      "alternatives": "Autres correspondances",
+      "done": "Terminé",
+      "categoryPlaceholder": "Sélectionner une catégorie..."
+    },
+    "balance": {
+      "after": "{account} : {current} actuellement, {after} après l’enregistrement",
+      "movesOn": "{account} : {current} actuellement. Le solde change le {date}.",
+      "current": "{account} : {current} actuellement"
+    },
+    "blockers": {
+      "missingAmount": "Saisissez un montant.",
+      "zeroAmount": "Le montant ne peut pas être nul.",
+      "amountPrecision": "Le montant comporte plus de décimales que n’en accepte la devise du compte.",
+      "missingAccount": "Choisissez un compte.",
+      "ambiguousAccount": "Plusieurs comptes correspondent. Choisissez-en un.",
+      "missingToAccount": "Choisissez le compte qui reçoit l’argent.",
+      "sameAccount": "Un virement nécessite deux comptes différents.",
+      "amountTooLarge": "Le montant dépasse ce qu’une transaction peut contenir.",
+      "foreignCurrency": "Le montant est dans une devise autre que celle du compte. Utilisez Formulaire complet pour le saisir.",
+      "crossCurrencyTransfer": "Les deux comptes ont des devises différentes. Utilisez Formulaire complet pour ce virement.",
+      "unknown": "Cette saisie ne peut pas être enregistrée ici. Utilisez Formulaire complet pour la terminer."
+    }
   }
 }

@@ -79,6 +79,14 @@
     "transactionsFor": "Toutes les transactions de {name}",
     "searchTransactions": "Rechercher des transactions pour « {query} »",
     "searchHelp": "Rechercher dans l'aide",
-    "keyboardShortcuts": "Raccourcis clavier"
-  }
+    "keyboardShortcuts": "Raccourcis clavier",
+    "quickAdd": {
+      "amount": "Ajout rapide : {amount}",
+      "payee": "Ajout rapide : {amount} {payee}",
+      "category": "Ajout rapide : {amount} {category}",
+      "payeeCategory": "Ajout rapide : {amount} {payee}, {category}",
+      "transfer": "Ajout rapide : {amount} de {from} vers {to}"
+    }
+  },
+  "quickAdd": "Ajout rapide"
 }

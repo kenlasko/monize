@@ -250,7 +250,13 @@
     "mobileTabs": {
       "intro": "Elige hasta tres pestañas para la barra inferior del teléfono o la tableta. El botón de añadir y Más siempre están presentes.",
       "slotLabel": "Pestaña {number}",
-      "none": "Ninguna"
+      "none": "Ninguna",
+      "addOpensLabel": "El botón + abre",
+      "addOpensOptions": {
+        "quickAdd": "Añadir rápido",
+        "fullForm": "Formulario de nueva transacción"
+      },
+      "addOpensHelp": "Se aplica donde el botón + inicia una nueva transacción: en la página Transacciones y en una página que no tiene nada propio que añadir. Añadir rápido tiene un botón Formulario completo para todo lo demás."
     }
   },
   "notifications": {

@@ -79,6 +79,14 @@
     "transactionsFor": "Все проводки для {name}",
     "searchTransactions": "Искать проводки по запросу «{query}»",
     "searchHelp": "Поиск по справке",
-    "keyboardShortcuts": "Сочетания клавиш"
-  }
+    "keyboardShortcuts": "Сочетания клавиш",
+    "quickAdd": {
+      "amount": "Быстрое добавление: {amount}",
+      "payee": "Быстрое добавление: {amount} {payee}",
+      "category": "Быстрое добавление: {amount} {category}",
+      "payeeCategory": "Быстрое добавление: {amount} {payee}, {category}",
+      "transfer": "Быстрое добавление: {amount} со счёта {from} на счёт {to}"
+    }
+  },
+  "quickAdd": "Быстрое добавление"
 }

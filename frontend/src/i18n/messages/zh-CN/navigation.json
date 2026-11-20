@@ -79,6 +79,14 @@
     "transactionsFor": "{name} 的所有交易",
     "searchTransactions": "搜索 \"{query}\" 的交易",
     "searchHelp": "搜索帮助",
-    "keyboardShortcuts": "键盘快捷键"
-  }
+    "keyboardShortcuts": "键盘快捷键",
+    "quickAdd": {
+      "amount": "快速添加：{amount}",
+      "payee": "快速添加：{amount} {payee}",
+      "category": "快速添加：{amount} {category}",
+      "payeeCategory": "快速添加：{amount} {payee}，{category}",
+      "transfer": "快速添加：{amount} 从 {from} 到 {to}"
+    }
+  },
+  "quickAdd": "快速添加"
 }
