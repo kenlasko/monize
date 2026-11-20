@@ -65,11 +65,12 @@ import { PAGE_SIZE } from '@/lib/constants';
 import { useMobileAddChoices } from '@/store/mobileAddActionStore';
 import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
 
 /** The header switcher's row for "every investment account"; never an account id. */
 const ALL_INVESTMENT_ACCOUNTS = '__all-investment-accounts__';
 
-const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
+const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false, loading: TransactionFormPlaceholder });
 
 // Calendar mode's whole tree, loaded only once a reader switches to it, so the
 // register's first paint carries none of it.

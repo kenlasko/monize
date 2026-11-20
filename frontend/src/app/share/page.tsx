@@ -30,13 +30,14 @@ import { isShareBundleId } from '@/lib/share-target';
 import { assistantAcceptsFiles } from '@/lib/ai-attachments';
 import { useAiConfigured } from '@/hooks/useAiConfigured';
 import { createLogger } from '@/lib/logger';
+import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
 
 const TransactionForm = dynamic(
   () =>
     import('@/components/transactions/TransactionForm').then(
       (m) => m.TransactionForm,
     ),
-  { ssr: false },
+  { ssr: false, loading: TransactionFormPlaceholder },
 );
 
 const logger = createLogger('Share');

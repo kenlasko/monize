@@ -14,8 +14,9 @@ import { TagKeyBreakdownChart } from '@/components/transactions/TagKeyBreakdownC
 import { ListBottomPager } from '@/components/ui/ListBottomPager';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import dynamic from 'next/dynamic';
+import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
 
-const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false });
+const TransactionForm = dynamic(() => import('@/components/transactions/TransactionForm').then(m => m.TransactionForm), { ssr: false, loading: TransactionFormPlaceholder });
 const ScheduledTransactionForm = dynamic(() => import('@/components/scheduled-transactions/ScheduledTransactionForm').then(m => m.ScheduledTransactionForm), { ssr: false });
 const PayeeForm = dynamic(() => import('@/components/payees/PayeeForm').then(m => m.PayeeForm), { ssr: false });
 const CategoryForm = dynamic(() => import('@/components/categories/CategoryForm').then(m => m.CategoryForm), { ssr: false });

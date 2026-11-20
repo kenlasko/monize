@@ -35,6 +35,7 @@ import { warrantiesApi } from '@/lib/warranties';
 import { useAuthStore } from '@/store/authStore';
 import type { Transaction } from '@/types/transaction';
 import type { CreateWarrantyData, Warranty } from '@/types/warranty';
+import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
 
 const WarrantyForm = dynamic(
   () => import('@/components/warranties/WarrantyForm').then((m) => m.WarrantyForm),
@@ -44,7 +45,7 @@ const WarrantyForm = dynamic(
 // The register's own edit window, opened here for the linked purchase.
 const TransactionForm = dynamic(
   () => import('@/components/transactions/TransactionForm').then((m) => m.TransactionForm),
-  { ssr: false },
+  { ssr: false, loading: TransactionFormPlaceholder },
 );
 
 const logger = createLogger('WarrantyDetail');

@@ -13,6 +13,7 @@ import { transactionsApi } from '@/lib/transactions';
 import { createLogger } from '@/lib/logger';
 import { PAGE_SIZE } from '@/lib/constants';
 import type { PaginationInfo, Transaction } from '@/types/transaction';
+import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
 
 const logger = createLogger('PayeeTransactionsTab');
 
@@ -21,7 +22,7 @@ const TransactionForm = dynamic(
     import('@/components/transactions/TransactionForm').then(
       (m) => m.TransactionForm,
     ),
-  { ssr: false },
+  { ssr: false, loading: TransactionFormPlaceholder },
 );
 
 interface PayeeTransactionsTabProps {
