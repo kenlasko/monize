@@ -755,7 +755,10 @@
     "balance": {
       "after": "{account}: зараз {current}, після збереження {after}",
       "movesOn": "{account}: зараз {current}. Баланс зміниться {date}.",
-      "current": "{account}: зараз {current}"
+      "current": "{account}: зараз {current}",
+      "nowTitle": "{account} зараз",
+      "afterTitle": "{account} після збереження",
+      "movesOnNote": "Зміниться {date}"
     },
     "blockers": {
       "missingAmount": "Введіть суму.",

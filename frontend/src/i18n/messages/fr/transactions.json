@@ -755,7 +755,10 @@
     "balance": {
       "after": "{account} : {current} actuellement, {after} après l’enregistrement",
       "movesOn": "{account} : {current} actuellement. Le solde change le {date}.",
-      "current": "{account} : {current} actuellement"
+      "current": "{account} : {current} actuellement",
+      "nowTitle": "{account} actuellement",
+      "afterTitle": "{account} après l’enregistrement",
+      "movesOnNote": "Change le {date}"
     },
     "blockers": {
       "missingAmount": "Saisissez un montant.",

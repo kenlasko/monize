@@ -755,7 +755,10 @@
     "balance": {
       "after": "{account}: {current} now, {after} after saving",
       "movesOn": "{account}: {current} now. The balance moves on {date}.",
-      "current": "{account}: {current} now"
+      "current": "{account}: {current} now",
+      "nowTitle": "{account} now",
+      "afterTitle": "{account} after saving",
+      "movesOnNote": "Moves on {date}"
     },
     "blockers": {
       "missingAmount": "Type an amount.",

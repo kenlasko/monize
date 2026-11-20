@@ -755,7 +755,10 @@
     "balance": {
       "after": "{account}: {current} agora, {after} após salvar",
       "movesOn": "{account}: {current} agora. O saldo muda em {date}.",
-      "current": "{account}: {current} agora"
+      "current": "{account}: {current} agora",
+      "nowTitle": "{account} agora",
+      "afterTitle": "{account} após salvar",
+      "movesOnNote": "Muda em {date}"
     },
     "blockers": {
       "missingAmount": "Digite um valor.",

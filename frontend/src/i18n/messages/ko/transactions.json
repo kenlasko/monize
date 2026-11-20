@@ -755,7 +755,10 @@
     "balance": {
       "after": "{account}: 현재 {current}, 저장 후 {after}",
       "movesOn": "{account}: 현재 {current}. 잔액은 {date}에 변경됩니다.",
-      "current": "{account}: 현재 {current}"
+      "current": "{account}: 현재 {current}",
+      "nowTitle": "{account} 현재",
+      "afterTitle": "{account} 저장 후",
+      "movesOnNote": "{date}에 변동"
     },
     "blockers": {
       "missingAmount": "금액을 입력하세요.",

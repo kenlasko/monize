@@ -755,7 +755,10 @@
     "balance": {
       "after": "{account}: ora {current}, dopo il salvataggio {after}",
       "movesOn": "{account}: ora {current}. Il saldo cambia il {date}.",
-      "current": "{account}: ora {current}"
+      "current": "{account}: ora {current}",
+      "nowTitle": "{account} ora",
+      "afterTitle": "{account} dopo il salvataggio",
+      "movesOnNote": "Cambia il {date}"
     },
     "blockers": {
       "missingAmount": "Digita un importo.",

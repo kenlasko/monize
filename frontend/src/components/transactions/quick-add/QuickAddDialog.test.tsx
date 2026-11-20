@@ -330,6 +330,26 @@ describe('QuickAddDialog', () => {
     );
   });
 
+  it('draws the balance as a card: now -> after, or now with the day it moves', async () => {
+    const { input } = await renderDialog();
+    await typeLine(input, '84.37 loblaws groceries', qaPaymentReading());
+    const card = screen.getByTestId('quick-add-balance');
+    const visual = card.querySelector('[aria-hidden="true"]');
+    expect(visual).toHaveTextContent('Chequing after saving$1,200.00→$1,115.63');
+    await typeLine(
+      input,
+      '84.37 loblaws dec 1',
+      qaPaymentReading({
+        balance: { accountId: 'acc-chq', currencyCode: 'USD', current: 1200, after: null, movesOn: '2026-12-01' },
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('quick-add-balance').querySelector('[aria-hidden="true"]')).toHaveTextContent(
+        /^Chequing now\$1,200\.00Moves on /,
+      ),
+    );
+  });
+
   it("says what the reader's rules will change, as the assistant's cards do", async () => {
     const { input } = await renderDialog();
     await typeLine(
