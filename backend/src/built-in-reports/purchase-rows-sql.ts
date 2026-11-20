@@ -15,19 +15,31 @@ export const PURCHASE_AMOUNT_SQL = reportableTransactionAmountSql("t");
  * reportable amount is an outflow, not a transfer, not VOID, outside the
  * investment machinery and not the booking of an asset account's category.
  * Aliases `t` (transactions) and `a` (accounts, joined on `t.account_id`);
- * no bound parameters. Spending by Payee and the trivia row reads share it.
+ * no bound parameters.
+ *
+ * The caller passes the amount derivation and the investment exclusion it
+ * applies, so a report's own query still names both where
+ * `investment-filter.guard.spec.ts` reads it.
  */
-export const PURCHASE_ROW_CONDITIONS_SQL = `${PURCHASE_AMOUNT_SQL} < 0
+export function purchaseRowConditionsSql(
+  reportableAmountSql: string,
+  investmentExclusion: string,
+): string {
+  return `${reportableAmountSql} < 0
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
-        AND ${investmentExclusionSql({
-          accountAlias: "a",
-          transactionAlias: "t",
-        })}
+        AND ${investmentExclusion}
         AND NOT EXISTS (
           SELECT 1 FROM accounts ax
           WHERE ax.user_id = t.user_id
             AND ax.asset_category_id IS NOT NULL
             AND ax.asset_category_id = t.category_id
         )`;
+}
+
+/** The same predicate for a read outside the report services: the trivia rows. */
+export const PURCHASE_ROW_CONDITIONS_SQL = purchaseRowConditionsSql(
+  PURCHASE_AMOUNT_SQL,
+  investmentExclusionSql({ accountAlias: "a", transactionAlias: "t" }),
+);

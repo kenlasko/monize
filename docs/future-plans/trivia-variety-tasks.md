@@ -22,7 +22,7 @@ Rules for every phase:
 | F | Catalog variants in English, widget pick | E | Done |
 | G1 | Translations: de, es, fr, it, nl, pl, pt, pt-BR, en-GB | F | Done |
 | G2 | Translations: hi, id, ja, ko, ru, tr, uk, vi, zh-CN, zh-TW | G1 | Done |
-| H | Docs and final gate | G2 | Open (one guard red: investment-filter.guard.spec.ts) |
+| H | Docs and final gate | G2 | Done |
 
 ---
 

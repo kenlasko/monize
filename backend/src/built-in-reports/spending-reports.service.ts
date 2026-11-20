@@ -29,12 +29,12 @@ import {
   MonthlySpendingItem,
   MonthlyCategorySpending,
 } from "./dto";
-import { investmentExclusionSql } from "../common/investment-filter.util";
-import { tagValuesArrayExpr } from "./tag-values-sql";
 import {
-  PURCHASE_AMOUNT_SQL,
-  PURCHASE_ROW_CONDITIONS_SQL,
-} from "./purchase-rows-sql";
+  investmentExclusionSql,
+  reportableTransactionAmountSql,
+} from "../common/investment-filter.util";
+import { tagValuesArrayExpr } from "./tag-values-sql";
+import { purchaseRowConditionsSql } from "./purchase-rows-sql";
 
 /**
  * Investment scope is LINKAGE, never account type (INV-REPORT-001, issue #1257):
@@ -48,6 +48,17 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
   transactionAlias: "t",
   splitAlias: "ts",
 });
+const INVESTMENT_EXCLUSION_NO_SPLITS = investmentExclusionSql({
+  accountAlias: "a",
+  transactionAlias: "t",
+});
+
+/**
+ * The ordinary cash the parent row represents. A payee total reads only the
+ * parent, so a split's embedded investment or transfer line has to come out of
+ * the amount rather than out of the row (branch audit F-RPT-001).
+ */
+const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
 
 /**
  * Spending in a category is the DEBITS NET OF THE CREDITS filed against it: a
@@ -314,12 +325,12 @@ export class SpendingReportsService {
         t.payee_name,
         t.currency_code,
         ${rateBasisColumnsSql("$3")},
-        SUM(ABS(${PURCHASE_AMOUNT_SQL})) as total
+        SUM(ABS(${REPORTABLE_TX_AMOUNT})) as total
       FROM transactions t
       LEFT JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
-        AND ${PURCHASE_ROW_CONDITIONS_SQL}
+        AND ${purchaseRowConditionsSql(REPORTABLE_TX_AMOUNT, INVESTMENT_EXCLUSION_NO_SPLITS)}
       `;
 
     const params: (string | undefined)[] = [userId, endDate, defaultCurrency];
