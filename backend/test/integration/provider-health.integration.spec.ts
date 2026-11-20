@@ -230,6 +230,25 @@ describe("provider health against a real database", () => {
       expect((await row())?.outage_notified_at).toBeNull();
     });
 
+    it("ignores a burst that was never re-tested, however old", async () => {
+      // Waking from sleep: the failures all land in the first second, then the
+      // row sits at down with nothing calling the provider.
+      await dataSource.query(
+        `INSERT INTO provider_health (
+           provider, state, recent_failures, outage_started_at,
+           last_failure_at, last_failure_reason
+         ) VALUES ($1, 'down', 5, CURRENT_TIMESTAMP - INTERVAL '20 minutes',
+                   CURRENT_TIMESTAMP - INTERVAL '20 minutes' + INTERVAL '1 second',
+                   'getaddrinfo ENOTFOUND [code=ENOTFOUND]')`,
+        [PROVIDER],
+      );
+
+      await alertReplica().sweepProviderHealth();
+
+      expect(sent).toHaveLength(0);
+      expect((await row())?.outage_notified_at).toBeNull();
+    });
+
     it("sends one all-clear, and clears the episode marker with it", async () => {
       await dataSource.query(
         `INSERT INTO provider_health (

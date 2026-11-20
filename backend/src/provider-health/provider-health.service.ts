@@ -19,7 +19,7 @@ import {
   ProviderUnavailableError,
   isProviderUnavailable,
 } from "./provider-unavailable.error";
-import { providerLabel } from "./providers";
+import { MIN_OUTAGE_MS, providerLabel } from "./providers";
 
 /**
  * How often a still-failing provider's row is refreshed while it is down.
@@ -305,6 +305,12 @@ export class ProviderHealthService {
    * not reach its threshold anyway), so the caller that knows the data has been
    * bad for long enough says so, and the row goes `down` for the same alert
    * sweep to report. The episode keeps its first start (see `writeHealth`).
+   *
+   * The start is backdated by `MIN_OUTAGE_MS`. The sweep only reports an
+   * episode with a failure seen that long after it began, which a transport
+   * outage proves by failing probe after probe; this caller has already proven
+   * days of failure before it calls at all, and its next call is a weekday
+   * away. Backdating still understates how long the data has been bad.
    */
   recordDataFailure(provider: string, reason: string): void {
     const now = this.now();
@@ -313,7 +319,7 @@ export class ProviderHealthService {
       {
         state: "closed",
         recentFailures: 1,
-        failingSince: now,
+        failingSince: now - MIN_OUTAGE_MS,
         lastFailureAt: now,
         lastFailureReason: reason.slice(0, MAX_FETCH_FAILURE_LENGTH),
         lastSuccessAt: null,

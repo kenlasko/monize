@@ -27,6 +27,7 @@ function healthRow(overrides: Record<string, unknown> = {}) {
     state: "down",
     recent_failures: 137,
     outage_started_at: new Date("2026-08-26T19:03:00Z"),
+    last_failure_at: new Date("2026-08-26T21:00:00Z"),
     last_failure_reason:
       "TypeError: fetch failed <- getaddrinfo EAI_AGAIN query1.finance.yahoo.com [code=EAI_AGAIN]",
     last_success_at: new Date("2026-08-26T17:10:00Z"),
@@ -168,6 +169,7 @@ describe("ProviderOutageAlertService", () => {
       expect(claim).toContain("AND state = 'down'");
       expect(claim).toContain("AND outage_notified_at IS NULL");
       expect(claim).toContain("outage_started_at <= CURRENT_TIMESTAMP");
+      expect(claim).toContain("last_failure_at >= outage_started_at +");
       expect(claim).toContain("last_notified_at IS NULL");
       const params = manager.query.mock.calls.find((call) =>
         String(call[0]).includes("SET outage_notified_at = CURRENT_TIMESTAMP"),
@@ -246,6 +248,27 @@ describe("ProviderOutageAlertService", () => {
         pending: [healthRow({ outage_started_at: new Date() })],
       });
       await service.sweepProviderHealth();
+      expect(
+        statements().filter((sql) => sql.includes("FROM users u")),
+      ).toHaveLength(0);
+    });
+
+    it("does not report a single burst that nothing has re-tested", async () => {
+      // A PC waking from sleep: every lookup fails with ENOTFOUND in the same
+      // second the network returns, then nothing calls the provider again. The
+      // row still says down twenty minutes later, but no failure was seen past
+      // the first second, so there is no evidence of a fifteen-minute outage.
+      const startedAt = new Date(Date.now() - 20 * 60_000);
+      route({
+        pending: [
+          healthRow({
+            outage_started_at: startedAt,
+            last_failure_at: new Date(startedAt.getTime() + 500),
+          }),
+        ],
+      });
+      await service.sweepProviderHealth();
+      expect(emailService.sendMail).not.toHaveBeenCalled();
       expect(
         statements().filter((sql) => sql.includes("FROM users u")),
       ).toHaveLength(0);

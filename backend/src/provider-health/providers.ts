@@ -47,3 +47,26 @@ export function providerLabel(provider: string): string {
     provider
   );
 }
+
+/**
+ * How long a provider must have been failing before the outage alert
+ * (`ProviderOutageAlertService`) emails anybody.
+ *
+ * The breaker opens after five consecutive transport failures, which a five
+ * second blip can produce; nobody wants mail about that. Fifteen minutes is
+ * "this is not going to fix itself before you notice", and it is measured from
+ * the durable `outage_started_at`, so a container restarting inside the outage
+ * does not reset the clock (issue #1265: the restart loop was a symptom).
+ *
+ * "Failing for fifteen minutes" has to be *observed*, not inferred from the
+ * row still saying `down`: the state only changes when a call is made, so a
+ * burst that fails once and is followed by silence stays `down` forever. That
+ * is exactly what a PC waking from sleep produces -- the overdue price and FX
+ * jobs fire in the same second the network comes back, every lookup fails with
+ * `ENOTFOUND`, and nothing calls the provider again until somebody opens the
+ * app. So the claim also requires a failure recorded at least this long after
+ * the episode began (`last_failure_at >= outage_started_at + MIN_OUTAGE_MS`).
+ * A provider that is genuinely down keeps failing every probe, so it still
+ * qualifies -- at the first failure fifteen minutes in.
+ */
+export const MIN_OUTAGE_MS = 15 * 60_000;

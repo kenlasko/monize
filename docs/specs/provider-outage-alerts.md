@@ -64,11 +64,12 @@ attempt cooldown; the daily cron still does not, because a schedule is the
 request.
 
 **An email, at most one pair per episode.** `provider_health` holds one row per
-provider. Three independent gates:
+provider. Four independent gates:
 
 | Gate | Mechanism | Stops |
 |---|---|---|
 | 15-minute minimum outage | `outage_started_at <= now() - 15min` in the claim's `WHERE`, and the upsert preserves that start while the stored state is `down` | mail about a blip -- and, because the start is durable, a restart loop cannot keep resetting the clock |
+| Failure observed 15 minutes in | `last_failure_at >= outage_started_at + 15min` in the same `WHERE` | a single burst nothing re-tested: the row stays `down` until a call is made, so a PC waking from sleep (every lookup `ENOTFOUND` in the second the network returns, then silence) read as a 15-minute outage. A real outage keeps failing probes and qualifies at the first one 15 minutes in; `recordDataFailure` backdates its start by 15 minutes, since its caller has already seen days of stale data |
 | One notice per episode | `UPDATE ... SET outage_notified_at = now() WHERE outage_notified_at IS NULL RETURNING ...` -- the claim *is* the serialization point | every replica mailing the same outage |
 | 6-hour floor | `last_notified_at`, which a recovery advances and nothing clears | a provider that flaps every 20 minutes mailing a pair each time |
 

@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import { ProviderHealthService } from "./provider-health.service";
 import { FAILURE_THRESHOLD, OPEN_WINDOW_MS } from "./provider-circuit";
 import { ProviderUnavailableError } from "./provider-unavailable.error";
+import { MIN_OUTAGE_MS } from "./providers";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -232,6 +233,16 @@ describe("ProviderHealthService", () => {
       expect(params[1]).toBe("down");
       expect(String(params[5])).toBe("newest observation is stale");
       expect(service.wouldRefuse(PROVIDER)).toBe(false);
+    });
+
+    it("backdates the episode so the alert's evidence gate is already met", async () => {
+      // The caller has seen days of stale data and calls once a weekday, so
+      // the sweep must not wait for a second failure fifteen minutes later.
+      service.recordDataFailure(PROVIDER, "newest observation is stale");
+      await flushWrites();
+      const [params] = writes();
+      expect((params[3] as Date).getTime()).toBe(now - MIN_OUTAGE_MS);
+      expect((params[4] as Date).getTime()).toBe(now);
     });
 
     it("writes an up row on recovery, whichever process recorded the failure", async () => {

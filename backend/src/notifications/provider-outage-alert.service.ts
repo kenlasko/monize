@@ -21,7 +21,7 @@ import {
   queryAdminRecipients,
 } from "../users/admin-recipients.util";
 import { resolveUserEmailLocale } from "../i18n/resolve-user-email-locale";
-import { providerLabel } from "../provider-health/providers";
+import { MIN_OUTAGE_MS, providerLabel } from "../provider-health/providers";
 import { EmailService } from "./email.service";
 import {
   providerOutageTemplate,
@@ -29,15 +29,11 @@ import {
 } from "./email-templates";
 
 /**
- * How long a provider must have been failing before anybody is emailed.
- *
- * The breaker opens after five consecutive transport failures, which a five
- * second blip can produce; nobody wants mail about that. Fifteen minutes is
- * "this is not going to fix itself before you notice", and it is measured from
- * the durable `outage_started_at`, so a container restarting inside the outage
- * does not reset the clock (issue #1265: the restart loop was a symptom).
+ * How long a provider must have been failing before anybody is emailed. Lives
+ * beside the providers because `ProviderHealthService.recordDataFailure` has to
+ * meet the same gate; re-exported here, where the claim reads it.
  */
-export const MIN_OUTAGE_MS = 15 * 60_000;
+export { MIN_OUTAGE_MS } from "../provider-health/providers";
 
 /**
  * Floor between two alerts about the same provider, whatever happened in
@@ -56,6 +52,7 @@ interface HealthRow {
   state: string;
   recent_failures: number | string;
   outage_started_at: Date | null;
+  last_failure_at: Date | null;
   last_failure_reason: string | null;
   last_success_at: Date | null;
   outage_notified_at: Date | null;
@@ -186,7 +183,8 @@ export class ProviderOutageAlertService {
     return withScopedDb(this.dataSource, (manager) =>
       manager.query(
         `SELECT provider, state, recent_failures, outage_started_at,
-                last_failure_reason, last_success_at, outage_notified_at
+                last_failure_at, last_failure_reason, last_success_at,
+                outage_notified_at
            FROM provider_health
           WHERE state = 'down' OR outage_notified_at IS NOT NULL`,
       ),
@@ -238,6 +236,8 @@ export class ProviderOutageAlertService {
             AND outage_notified_at IS NULL
             AND outage_started_at IS NOT NULL
             AND outage_started_at <= CURRENT_TIMESTAMP - ($2::text || ' milliseconds')::interval
+            AND last_failure_at IS NOT NULL
+            AND last_failure_at >= outage_started_at + ($2::text || ' milliseconds')::interval
             AND (last_notified_at IS NULL
                  OR last_notified_at <= CURRENT_TIMESTAMP - ($3::text || ' milliseconds')::interval)
         RETURNING provider, state, recent_failures, outage_started_at,
@@ -420,8 +420,11 @@ export class ProviderOutageAlertService {
     if (row.state !== "down") return false;
     if (row.outage_notified_at !== null) return false;
     if (row.outage_started_at === null) return false;
+    if (row.last_failure_at === null) return false;
+    const startedMs = new Date(row.outage_started_at).getTime();
     return (
-      Date.now() - new Date(row.outage_started_at).getTime() >= MIN_OUTAGE_MS
+      Date.now() - startedMs >= MIN_OUTAGE_MS &&
+      new Date(row.last_failure_at).getTime() - startedMs >= MIN_OUTAGE_MS
     );
   }
 
