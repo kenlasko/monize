@@ -756,8 +756,8 @@
       "after": "{account}: 現在 {current}、保存後 {after}",
       "movesOn": "{account}: 現在 {current}。残高は{date}に変わります。",
       "current": "{account}: 現在 {current}",
-      "nowTitle": "{account} 現在",
-      "afterTitle": "{account} 保存後",
+      "nowLabel": "現在",
+      "afterLabel": "保存後",
       "movesOnNote": "{date} に変動"
     },
     "blockers": {

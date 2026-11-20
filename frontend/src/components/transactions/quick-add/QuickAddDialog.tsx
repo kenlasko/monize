@@ -281,18 +281,21 @@ export function QuickAddDialog({
             />
           )}
 
-          <p role="status" className="min-h-5 text-xs text-gray-500 dark:text-gray-400">
-            {reading.status === 'pending' ? t('quickAdd.reading') : ''}
-          </p>
+          {/* One tight group: the status line keeps its height so the card does not jump. */}
+          <div className="-mt-2 space-y-1">
+            <p role="status" className="min-h-4 text-xs text-gray-500 dark:text-gray-400">
+              {reading.status === 'pending' ? t('quickAdd.reading') : ''}
+            </p>
 
-          {shown && (
-            <div
-              aria-busy={reading.status === 'pending'}
-              className={reading.status === 'pending' ? 'opacity-60' : undefined}
-            >
-              <QuickAddSummary reading={shown} />
-            </div>
-          )}
+            {shown && (
+              <div
+                aria-busy={reading.status === 'pending'}
+                className={reading.status === 'pending' ? 'opacity-60' : undefined}
+              >
+                <QuickAddSummary reading={shown} accounts={accounts} />
+              </div>
+            )}
+          </div>
 
           <FormActions
             onCancel={formModal.close}

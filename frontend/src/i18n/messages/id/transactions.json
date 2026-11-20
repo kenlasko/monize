@@ -756,8 +756,8 @@
       "after": "{account}: saat ini {current}, setelah disimpan {after}",
       "movesOn": "{account}: saat ini {current}. Saldo berubah pada {date}.",
       "current": "{account}: saat ini {current}",
-      "nowTitle": "{account} saat ini",
-      "afterTitle": "{account} setelah disimpan",
+      "nowLabel": "Saat ini",
+      "afterLabel": "Setelah disimpan",
       "movesOnNote": "Berubah pada {date}"
     },
     "blockers": {

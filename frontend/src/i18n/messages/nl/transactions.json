@@ -756,8 +756,8 @@
       "after": "{account}: nu {current}, na opslaan {after}",
       "movesOn": "{account}: nu {current}. Het saldo verandert op {date}.",
       "current": "{account}: nu {current}",
-      "nowTitle": "{account} nu",
-      "afterTitle": "{account} na opslaan",
+      "nowLabel": "Nu",
+      "afterLabel": "Na opslaan",
       "movesOnNote": "Verandert op {date}"
     },
     "blockers": {

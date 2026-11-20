@@ -756,8 +756,8 @@
       "after": "[XX-{account}: {current} now, {after} after saving-XX]",
       "movesOn": "[XX-{account}: {current} now. The balance moves on {date}.-XX]",
       "current": "[XX-{account}: {current} now-XX]",
-      "nowTitle": "[XX-{account} now-XX]",
-      "afterTitle": "[XX-{account} after saving-XX]",
+      "nowLabel": "[XX-Now-XX]",
+      "afterLabel": "[XX-After saving-XX]",
       "movesOnNote": "[XX-Moves on {date}-XX]"
     },
     "blockers": {

@@ -756,8 +756,8 @@
       "after": "{account}: अभी {current}, सहेजने के बाद {after}",
       "movesOn": "{account}: अभी {current}। शेष राशि {date} को बदलती है।",
       "current": "{account}: अभी {current}",
-      "nowTitle": "{account} अभी",
-      "afterTitle": "सहेजने के बाद {account}",
+      "nowLabel": "अभी",
+      "afterLabel": "सहेजने के बाद",
       "movesOnNote": "{date} को बदलेगा"
     },
     "blockers": {

@@ -335,7 +335,7 @@ describe('QuickAddDialog', () => {
     await typeLine(input, '84.37 loblaws groceries', qaPaymentReading());
     const card = screen.getByTestId('quick-add-balance');
     const visual = card.querySelector('[aria-hidden="true"]');
-    expect(visual).toHaveTextContent('Chequing after saving$1,200.00→$1,115.63');
+    expect(visual).toHaveTextContent('ChequingAfter saving$1,200.00→$1,115.63');
     await typeLine(
       input,
       '84.37 loblaws dec 1',
@@ -345,7 +345,7 @@ describe('QuickAddDialog', () => {
     );
     await waitFor(() =>
       expect(screen.getByTestId('quick-add-balance').querySelector('[aria-hidden="true"]')).toHaveTextContent(
-        /^Chequing now\$1,200\.00Moves on /,
+        /^ChequingNow\$1,200\.00Moves on /,
       ),
     );
   });

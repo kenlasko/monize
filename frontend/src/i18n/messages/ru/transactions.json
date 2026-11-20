@@ -756,8 +756,8 @@
       "after": "{account}: сейчас {current}, после сохранения {after}",
       "movesOn": "{account}: сейчас {current}. Баланс изменится {date}.",
       "current": "{account}: сейчас {current}",
-      "nowTitle": "{account} сейчас",
-      "afterTitle": "{account} после сохранения",
+      "nowLabel": "Сейчас",
+      "afterLabel": "После сохранения",
       "movesOnNote": "Изменится {date}"
     },
     "blockers": {

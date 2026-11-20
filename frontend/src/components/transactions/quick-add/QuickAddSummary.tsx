@@ -1,9 +1,12 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 import { RuleEffectsLines } from '@/components/ai/RuleEffectsLines';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import type { Account } from '@/types/account';
 import type { QuickAddBlocker, QuickAddInterpretation } from '@/types/quick-add';
 
 /** The blockers this client has a sentence for; anything newer reads as `unknown`. */
@@ -28,11 +31,14 @@ const KNOWN_BLOCKERS: ReadonlySet<QuickAddBlocker> = new Set<QuickAddBlocker>([
  */
 function BalanceCard({
   accountName,
+  icon,
   current,
   after,
   movesOn,
 }: {
   accountName: string;
+  /** The account's institution or type mark, when the account is in the list. */
+  icon: ReactNode;
   current: string;
   after: string | null;
   movesOn: string | null;
@@ -52,10 +58,14 @@ function BalanceCard({
     >
       <p className="sr-only">{sentence}</p>
       <div aria-hidden="true">
-        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-          {t(after !== null ? 'balance.afterTitle' : 'balance.nowTitle', { account: accountName })}
-        </p>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 tabular-nums">
+        <div className="flex items-center gap-2">
+          {icon && <span className="flex shrink-0 items-center">{icon}</span>}
+          <span className="min-w-0 truncate font-semibold text-gray-900 dark:text-gray-100">{accountName}</span>
+          <span className="ml-auto shrink-0 text-xs text-gray-500 dark:text-gray-400">
+            {t(after !== null ? 'balance.afterLabel' : 'balance.nowLabel')}
+          </span>
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 tabular-nums">
           {after !== null ? (
             <>
               <span className="text-base text-gray-400 dark:text-gray-500">{current}</span>
@@ -82,10 +92,18 @@ function BalanceCard({
  * sentence per blocker, and what the reader's rules will change, drawn by the
  * same `RuleEffectsLines` the assistant's confirmation cards use.
  */
-export function QuickAddSummary({ reading }: { reading: QuickAddInterpretation }) {
+export function QuickAddSummary({
+  reading,
+  accounts,
+}: {
+  reading: QuickAddInterpretation;
+  /** The full accounts, for the balance card's institution or type icon. */
+  accounts: Account[];
+}) {
   const t = useTranslations('transactions.quickAdd');
   const { formatCurrency } = useNumberFormat();
   const { formatDate } = useDateFormat();
+  const accountIcon = useAccountPickerIcon();
 
   const balance = reading.balance;
   const accountName =
@@ -98,6 +116,10 @@ export function QuickAddSummary({ reading }: { reading: QuickAddInterpretation }
       {balance && accountName && (
         <BalanceCard
           accountName={accountName}
+          icon={(() => {
+            const account = accounts.find((a) => a.id === balance.accountId);
+            return account ? accountIcon(account) : null;
+          })()}
           current={formatCurrency(balance.current, balance.currencyCode)}
           after={balance.after !== null ? formatCurrency(balance.after, balance.currencyCode) : null}
           movesOn={balance.after === null && balance.movesOn ? formatDate(balance.movesOn) : null}

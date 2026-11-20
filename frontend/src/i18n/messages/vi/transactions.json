@@ -756,8 +756,8 @@
       "after": "{account}: hiện {current}, sau khi lưu là {after}",
       "movesOn": "{account}: hiện {current}. Số dư thay đổi vào {date}.",
       "current": "{account}: hiện {current}",
-      "nowTitle": "{account} hiện tại",
-      "afterTitle": "{account} sau khi lưu",
+      "nowLabel": "Hiện tại",
+      "afterLabel": "Sau khi lưu",
       "movesOnNote": "Thay đổi vào {date}"
     },
     "blockers": {

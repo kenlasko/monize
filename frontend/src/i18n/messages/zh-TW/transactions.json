@@ -756,8 +756,8 @@
       "after": "{account}：目前 {current}，儲存後 {after}",
       "movesOn": "{account}：目前 {current}。餘額將於 {date} 變動。",
       "current": "{account}：目前 {current}",
-      "nowTitle": "{account} 目前",
-      "afterTitle": "{account} 儲存後",
+      "nowLabel": "目前",
+      "afterLabel": "儲存後",
       "movesOnNote": "{date} 變動"
     },
     "blockers": {

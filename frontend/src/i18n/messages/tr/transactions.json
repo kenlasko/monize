@@ -756,8 +756,8 @@
       "after": "{account}: şimdi {current}, kaydedince {after}",
       "movesOn": "{account}: şimdi {current}. Bakiye {date} tarihinde değişir.",
       "current": "{account}: şimdi {current}",
-      "nowTitle": "{account} şimdi",
-      "afterTitle": "{account} kaydedince",
+      "nowLabel": "Şimdi",
+      "afterLabel": "Kaydedince",
       "movesOnNote": "{date} tarihinde değişir"
     },
     "blockers": {

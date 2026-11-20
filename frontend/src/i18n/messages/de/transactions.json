@@ -756,8 +756,8 @@
       "after": "{account}: jetzt {current}, nach dem Speichern {after}",
       "movesOn": "{account}: jetzt {current}. Der Kontostand ändert sich am {date}.",
       "current": "{account}: jetzt {current}",
-      "nowTitle": "{account} jetzt",
-      "afterTitle": "{account} nach dem Speichern",
+      "nowLabel": "Jetzt",
+      "afterLabel": "Nach dem Speichern",
       "movesOnNote": "Ändert sich am {date}"
     },
     "blockers": {

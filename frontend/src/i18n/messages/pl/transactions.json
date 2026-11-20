@@ -756,8 +756,8 @@
       "after": "{account}: teraz {current}, po zapisaniu {after}",
       "movesOn": "{account}: teraz {current}. Saldo zmieni się {date}.",
       "current": "{account}: teraz {current}",
-      "nowTitle": "{account} teraz",
-      "afterTitle": "{account} po zapisaniu",
+      "nowLabel": "Teraz",
+      "afterLabel": "Po zapisaniu",
       "movesOnNote": "Zmieni się {date}"
     },
     "blockers": {
