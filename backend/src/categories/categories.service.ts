@@ -27,6 +27,7 @@ import { isSupportedLocale } from "../i18n/config";
 import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { withScopedDb } from "../common/db/scoped-db";
 import { qualifiedCategoryName } from "./category-name.util";
+import { searchIncludes } from "../common/helpers/search-match";
 
 @Injectable()
 export class CategoriesService {
@@ -287,9 +288,9 @@ export class CategoriesService {
    *
    * - `type` narrows to expense or income categories; 'all' (default)
    *   returns both.
-   * - `search` is a case-insensitive substring match on category name. If the
-   *   matching category is a subcategory, its parent is included so the LLM
-   *   sees the hierarchy context.
+   * - `search` is a case- and punctuation-insensitive substring match on
+   *   category name. If the matching category is a subcategory, its parent is
+   *   included so the LLM sees the hierarchy context.
    */
   async getLlmCategories(
     userId: string,
@@ -316,7 +317,7 @@ export class CategoriesService {
     totalCount: number;
   }> {
     const type = options.type ?? "all";
-    const search = options.search?.trim().toLowerCase();
+    const search = options.search?.trim();
 
     const all = await this.findAll(userId, false);
     const byId = new Map(all.map((c) => [c.id, c]));
@@ -329,9 +330,7 @@ export class CategoriesService {
 
     if (search) {
       const matchIds = new Set(
-        filtered
-          .filter((c) => c.name.toLowerCase().includes(search))
-          .map((c) => c.id),
+        filtered.filter((c) => searchIncludes(c.name, search)).map((c) => c.id),
       );
       // Include parents of matched subcategories so hierarchy stays intact.
       for (const id of Array.from(matchIds)) {

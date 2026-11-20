@@ -25,6 +25,7 @@ import {
   LLM_TAGS_MAX_LIMIT,
   LlmTagsResult,
 } from "./tag-llm-shape";
+import { searchIncludes } from "../common/helpers/search-match";
 
 /** Upper bounds for one additive/removal call (design 6.2). */
 export const MAX_TAGS_PER_CALL = 100;
@@ -350,10 +351,10 @@ export class TagsService {
       Math.max(1, Math.trunc(options.limit ?? LLM_TAGS_DEFAULT_LIMIT)),
       LLM_TAGS_MAX_LIMIT,
     );
-    const needle = options.search?.trim().toLowerCase() ?? "";
+    const needle = options.search?.trim() ?? "";
     const all = await this.findAll(userId);
     const matched = needle
-      ? all.filter((tag) => tag.name.toLowerCase().includes(needle))
+      ? all.filter((tag) => searchIncludes(tag.name, needle))
       : all;
     const usage = await this.getUsage(userId);
     return {

@@ -1013,6 +1013,16 @@ describe("CategoriesService", () => {
       expect(names).not.toContain("Rent");
     });
 
+    it("search ignores punctuation in the query", async () => {
+      stubFindAll();
+
+      const result = await service.getLlmCategories("user-1", {
+        search: "r.e.n.t",
+      });
+
+      expect(result.categories.map((c) => c.name)).toEqual(["Rent"]);
+    });
+
     it("search is case-insensitive", async () => {
       stubFindAll();
 

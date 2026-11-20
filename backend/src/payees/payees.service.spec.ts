@@ -699,6 +699,11 @@ describe("PayeesService", () => {
       expect(names(upper)).toEqual(names(lower));
     });
 
+    it("ignores punctuation in the query", async () => {
+      const result = await service.getLlmPayees(userId, { search: "Amazon!" });
+      expect(names(result)).toEqual(["Amazon", "Old Amazonian Books"]);
+    });
+
     it("matches inside the name, not only at its start", async () => {
       const result = await service.getLlmPayees(userId, { search: "shop" });
       expect(names(result)).toEqual(["corner shop"]);
@@ -935,32 +940,36 @@ describe("PayeesService", () => {
   // ─── search ──────────────────────────────────────────────────────────
 
   describe("search", () => {
-    it("should search payees with ILIKE pattern", async () => {
-      payeesRepository.find.mockResolvedValue([mockPayee]);
+    const zehrs = { ...mockPayee, id: "payee-2", name: "Zehr's Supermarket" };
 
-      const result = await service.search(userId, "star");
+    it("matches a substring, ignoring case and punctuation", async () => {
+      payeesRepository.find.mockResolvedValue([mockPayee, zehrs]);
 
-      expect(result).toEqual([mockPayee]);
+      expect(await service.search(userId, "STAR")).toEqual([mockPayee]);
+      expect(await service.search(userId, "zehrs")).toEqual([zehrs]);
+      expect(await service.search(userId, "supermarket")).toEqual([zehrs]);
       expect(payeesRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ userId }),
-          take: 10,
+          where: { userId, isActive: true },
+          relations: ["defaultCategory"],
+          order: { name: "ASC" },
         }),
       );
     });
 
     it("should respect custom limit", async () => {
-      payeesRepository.find.mockResolvedValue([]);
+      payeesRepository.find.mockResolvedValue([
+        mockPayee,
+        { ...mockPayee, id: "payee-3", name: "Starlight" },
+      ]);
 
-      await service.search(userId, "test", 5);
+      const result = await service.search(userId, "star", 1);
 
-      expect(payeesRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 5 }),
-      );
+      expect(result).toEqual([mockPayee]);
     });
 
     it("should return empty array when no matches found", async () => {
-      payeesRepository.find.mockResolvedValue([]);
+      payeesRepository.find.mockResolvedValue([mockPayee]);
 
       const result = await service.search(userId, "zzz");
 
@@ -971,19 +980,31 @@ describe("PayeesService", () => {
   // ─── autocomplete ────────────────────────────────────────────────────
 
   describe("autocomplete", () => {
-    it("should return payees matching prefix", async () => {
-      payeesRepository.find.mockResolvedValue([mockPayee]);
+    it("should return payees matching prefix, ignoring case and punctuation", async () => {
+      const zehrs = { ...mockPayee, id: "payee-2", name: "Zehr's Supermarket" };
+      payeesRepository.find.mockResolvedValue([mockPayee, zehrs]);
 
-      const result = await service.autocomplete(userId, "Star");
-
-      expect(result).toEqual([mockPayee]);
+      expect(await service.autocomplete(userId, "star")).toEqual([mockPayee]);
+      expect(await service.autocomplete(userId, "zehrs")).toEqual([zehrs]);
+      expect(await service.autocomplete(userId, "market")).toEqual([]);
       expect(payeesRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
-          take: 10,
           relations: ["defaultCategory"],
           order: { name: "ASC" },
         }),
       );
+    });
+
+    it("caps the result at ten payees", async () => {
+      payeesRepository.find.mockResolvedValue(
+        Array.from({ length: 12 }, (_, i) => ({
+          ...mockPayee,
+          id: `payee-${i}`,
+          name: `Star ${i}`,
+        })),
+      );
+
+      expect(await service.autocomplete(userId, "star")).toHaveLength(10);
     });
 
     it("should return empty array when no prefix matches", async () => {

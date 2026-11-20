@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 import { isEmail } from "class-validator";
 import { tr } from "../i18n/translate";
-import { DataSource, Like, In, Not, IsNull } from "typeorm";
+import { DataSource, In, Not, IsNull } from "typeorm";
 import { Payee } from "./entities/payee.entity";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
@@ -50,6 +50,10 @@ import { ContactLookupOutcome } from "./lookup/payee-contact-lookup.types";
 import { buildLookupContext } from "./lookup/lookup-context";
 import { PayeeContactEnrichmentService } from "./lookup/payee-contact-enrichment.service";
 import { ContactLookupSource } from "./lookup/payee-contact-lookup.types";
+import {
+  searchIncludes,
+  searchStartsWith,
+} from "../common/helpers/search-match";
 
 /**
  * What a preview established about a contact lookup, carried to the commit
@@ -140,13 +144,6 @@ export interface UpdatePayeePreview {
 export interface DeletePayeePreview {
   payeeId: string;
   name: string;
-}
-
-function escapeLikeWildcards(value: string): string {
-  // Escape backslash first, then the LIKE wildcards. Escaping only the
-  // wildcards would leave backslashes unescaped, letting an attacker submit
-  // '\%' and neutralise the escaping (CWE-20).
-  return value.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
 }
 
 /**
@@ -781,7 +778,8 @@ export class PayeesService {
    * Two things it will not do. The search is a case-insensitive SUBSTRING match
    * -- `search` used SQL `LIKE`, which Postgres evaluates case-sensitively, so
    * "amazon" matched nothing while "Amazon" did, and the tool looked like it
-   * only accepted exact names. And a truncated list says so: `totalCount` is
+   * only accepted exact names. Punctuation is ignored too ("zehrs" finds
+   * "Zehr's Supermarket"). And a truncated list says so: `totalCount` is
    * what matched, `payees.length` is what came back, and `truncated` is the
    * difference, because a capped list presented as the whole one is the same
    * defect as a subtotal presented as a total.
@@ -792,7 +790,7 @@ export class PayeesService {
   ): Promise<LlmPayeeList> {
     const rows = await this.findAll(userId, options.status ?? "all");
 
-    const search = options.search?.trim().toLowerCase();
+    const search = options.search?.trim();
     const wanted = (
       required: boolean | undefined,
       value: string | null | undefined,
@@ -800,7 +798,7 @@ export class PayeesService {
 
     const matched = rows.filter(
       (payee) =>
-        (!search || payee.name.toLowerCase().includes(search)) &&
+        (!search || searchIncludes(payee.name, search)) &&
         wanted(options.hasWebsite, payee.website) &&
         wanted(options.hasAddress, payee.address) &&
         wanted(options.hasEmail, payee.email) &&
@@ -949,32 +947,28 @@ export class PayeesService {
     query: string,
     limit: number = 10,
   ): Promise<Payee[]> {
-    return withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Payee).find({
-        where: {
-          userId,
-          isActive: true,
-          name: Like(`%${escapeLikeWildcards(query)}%`),
-        },
-        relations: ["defaultCategory"],
-        order: { name: "ASC" },
-        take: limit,
-      }),
-    );
+    // Matched in memory, not with SQL LIKE, so case and punctuation are
+    // ignored the same way the frontend pickers ignore them.
+    const active = await this.findActiveWithCategory(userId);
+    return active
+      .filter((payee) => searchIncludes(payee.name, query))
+      .slice(0, limit);
   }
 
   async autocomplete(userId: string, query: string): Promise<Payee[]> {
     // Return active payees that start with the query (for autocomplete)
+    const active = await this.findActiveWithCategory(userId);
+    return active
+      .filter((payee) => searchStartsWith(payee.name, query))
+      .slice(0, 10);
+  }
+
+  private findActiveWithCategory(userId: string): Promise<Payee[]> {
     return withScopedDb(this.dataSource, (m) =>
       m.getRepository(Payee).find({
-        where: {
-          userId,
-          isActive: true,
-          name: Like(`${escapeLikeWildcards(query)}%`),
-        },
+        where: { userId, isActive: true },
         relations: ["defaultCategory"],
         order: { name: "ASC" },
-        take: 10,
       }),
     );
   }
