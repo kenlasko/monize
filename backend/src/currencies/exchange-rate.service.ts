@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, Optional } from "@nestjs/common";
 import {
   DataSource,
   EntityManager,
@@ -27,6 +27,10 @@ import {
   FetchSyncJob,
   FetchSyncService,
 } from "../common/jobs/fetch-sync.service";
+import {
+  afterWakeSettles,
+  WakeSettleService,
+} from "../common/jobs/wake-settle.service";
 import {
   EmptyWindowMemory,
   monthFetchWindow,
@@ -203,6 +207,7 @@ export class ExchangeRateService implements OnModuleInit {
      */
     private readonly fxProviders: FxProviderChain,
     private readonly fetchSync: FetchSyncService,
+    @Optional() private readonly wakeSettle?: WakeSettleService,
   ) {}
 
   /**
@@ -1653,6 +1658,14 @@ export class ExchangeRateService implements OnModuleInit {
    */
   @Cron("5 17 * * 1-5", { timeZone: "America/New_York" })
   async scheduledRateRefresh(): Promise<void> {
+    await afterWakeSettles(
+      this.wakeSettle,
+      "Scheduled exchange rate refresh",
+      () => this.runScheduledRateRefresh(),
+    );
+  }
+
+  private async runScheduledRateRefresh(): Promise<void> {
     this.logger.log("Running scheduled exchange rate refresh");
     try {
       // RLS (task C2): the currency-detection read spans all users' accounts,
@@ -1691,6 +1704,14 @@ export class ExchangeRateService implements OnModuleInit {
    */
   @Cron("10 17 * * 0,6", { timeZone: "America/New_York" })
   async scheduledCryptoRateRefresh(): Promise<void> {
+    await afterWakeSettles(
+      this.wakeSettle,
+      "Scheduled cryptocurrency exchange rate refresh",
+      () => this.runScheduledCryptoRateRefresh(),
+    );
+  }
+
+  private async runScheduledCryptoRateRefresh(): Promise<void> {
     this.logger.log("Running scheduled cryptocurrency exchange rate refresh");
     try {
       await withSystemContext(() =>

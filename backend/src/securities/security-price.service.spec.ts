@@ -25,6 +25,10 @@ import {
   type FetchSyncMock,
 } from "../test-helpers/job-claim-testing";
 import { FetchSyncJob } from "../common/jobs/fetch-sync.service";
+import {
+  WAKE_SETTLE_MS,
+  WakeSettleService,
+} from "../common/jobs/wake-settle.service";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -39,6 +43,7 @@ describe("SecurityPriceService", () => {
   let securitiesRepository: Record<string, jest.Mock>;
   let userPreferenceRepository: Record<string, jest.Mock>;
   let dataSourceMock: Record<string, jest.Mock>;
+  let scopedDataSource: unknown;
   /** The `html_table` provider double, so a spec can see what it was asked. */
   let htmlTableProvider: { fetchQuote: jest.Mock };
   /** The SQL of the last single-price upsert the service issued. */
@@ -411,6 +416,7 @@ describe("SecurityPriceService", () => {
     );
 
     fetchSync = createFetchSyncMock();
+    scopedDataSource = dataSource;
     service = new SecurityPriceService(
       dataSource as never,
       netWorthService as never,
@@ -2472,6 +2478,44 @@ describe("SecurityPriceService", () => {
   });
 
   describe("scheduledPriceRefresh", () => {
+    /** A detector whose clock has just jumped an overnight sleep. */
+    const justWoke = () => {
+      let now = 1_700_000_000_000;
+      const wake = new WakeSettleService(() => now);
+      now += 8 * 60 * 60_000;
+      return wake;
+    };
+
+    it("waits for the network to settle after a wake before taking the lease", async () => {
+      // A PC waking runs the overdue 17:00 cron in the same second the
+      // network adapter returns; every lookup failed with ENOTFOUND.
+      jest.useFakeTimers();
+      try {
+        securitiesRepository.find.mockResolvedValue([]);
+        const woken = new SecurityPriceService(
+          scopedDataSource as never,
+          netWorthService as never,
+          {} as never,
+          fetchSync as never,
+          justWoke(),
+        );
+
+        const run = woken.scheduledPriceRefresh();
+        await jest.advanceTimersByTimeAsync(WAKE_SETTLE_MS - 1);
+        expect(fetchSync.withLease).not.toHaveBeenCalled();
+
+        await jest.advanceTimersByTimeAsync(1);
+        await run;
+        expect(fetchSync.withLease).toHaveBeenCalledWith(
+          FetchSyncJob.SecurityPrices,
+          expect.any(Number),
+          expect.any(Function),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("calls refreshAllPrices", async () => {
       securitiesRepository.find.mockResolvedValue([]);
 

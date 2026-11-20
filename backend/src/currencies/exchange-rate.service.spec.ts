@@ -21,6 +21,10 @@ import {
 } from "../test-helpers/job-claim-testing";
 import { FetchSyncJob } from "../common/jobs/fetch-sync.service";
 import {
+  WAKE_SETTLE_MS,
+  WakeSettleService,
+} from "../common/jobs/wake-settle.service";
+import {
   FxChainObservation,
   FxDailySeriesResult,
   FxLatestResult,
@@ -2294,6 +2298,41 @@ describe("ExchangeRateService", () => {
   });
 
   describe("scheduledRateRefresh", () => {
+    /** A detector whose clock has just jumped an overnight sleep. */
+    const justWoke = () => {
+      let now = 1_700_000_000_000;
+      const wake = new WakeSettleService(() => now);
+      now += 8 * 60 * 60_000;
+      return wake;
+    };
+
+    it("waits for the network to settle after a wake before taking the lease", async () => {
+      jest.useFakeTimers();
+      try {
+        dataSource.query.mockResolvedValue([{ code: "USD" }]);
+        const woken = new ExchangeRateService(
+          dataSource as never,
+          chain as never,
+          fetchSync as never,
+          justWoke(),
+        );
+
+        const run = woken.scheduledRateRefresh();
+        await jest.advanceTimersByTimeAsync(WAKE_SETTLE_MS - 1);
+        expect(fetchSync.withLease).not.toHaveBeenCalled();
+
+        await jest.advanceTimersByTimeAsync(1);
+        await run;
+        expect(fetchSync.withLease).toHaveBeenCalledWith(
+          FetchSyncJob.ExchangeRates,
+          expect.any(Number),
+          expect.any(Function),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("calls refreshAllRates", async () => {
       // Mock refreshAllRates dependencies
       dataSource.query.mockResolvedValue([{ code: "USD" }]);

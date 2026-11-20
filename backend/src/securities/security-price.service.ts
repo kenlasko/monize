@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from "@nestjs/common";
 import { tr } from "../i18n/translate";
 import { In, DataSource, EntityManager, Not } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -13,6 +18,10 @@ import {
   FetchSyncJob,
   FetchSyncService,
 } from "../common/jobs/fetch-sync.service";
+import {
+  afterWakeSettles,
+  WakeSettleService,
+} from "../common/jobs/wake-settle.service";
 import { markHoldingAccountsDirty } from "./holding-accounts-dirty.util";
 import { isPricedByQuoteProvider } from "./provider-priced.util";
 import {
@@ -336,6 +345,7 @@ export class SecurityPriceService {
     private netWorthService: NetWorthService,
     private providers: QuoteProviderRegistry,
     private readonly fetchSync: FetchSyncService,
+    @Optional() private readonly wakeSettle?: WakeSettleService,
   ) {}
 
   /**
@@ -1834,7 +1844,9 @@ export class SecurityPriceService {
    */
   @Cron("0 17 * * 1-5", { timeZone: "America/New_York" })
   async scheduledPriceRefresh(): Promise<void> {
-    await this.runScheduledPriceRefresh({});
+    await afterWakeSettles(this.wakeSettle, "Scheduled price refresh", () =>
+      this.runScheduledPriceRefresh({}),
+    );
   }
 
   /**
@@ -1849,7 +1861,11 @@ export class SecurityPriceService {
    */
   @Cron("0 17 * * 0,6", { timeZone: "America/New_York" })
   async scheduledWeekendCryptoRefresh(): Promise<void> {
-    await this.runScheduledPriceRefresh({ securityType: "CRYPTO" });
+    await afterWakeSettles(
+      this.wakeSettle,
+      "Scheduled cryptocurrency price refresh",
+      () => this.runScheduledPriceRefresh({ securityType: "CRYPTO" }),
+    );
   }
 
   /** The body both closing crons share, over the securities `scope` selects. */

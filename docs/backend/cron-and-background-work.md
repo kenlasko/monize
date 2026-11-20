@@ -18,6 +18,10 @@ Every `@Cron` handler is an out-of-request entry point, so its body must seed it
 
 A unit spec that substitutes a `FetchSyncService` double cannot see this -- the double never touches the database -- which is why the per-module `rls-context-smoke.spec.ts` runs the *real* `withScopedDb` over a mock `DataSource`. `src/attachments/rls-context-smoke.spec.ts` is the one that holds this path: a missing wrapper anywhere on it surfaces there as the same message the boot log carried.
 
+## A provider cron waits out a wake from sleep, outside its lease
+
+A cron that fell due while the machine slept fires the moment the process resumes, in the same second the network adapter comes back: Monize for Windows ran the 17:00 price refresh and the 17:05 FX refresh together at 19:54 on wake, and every lookup failed with `getaddrinfo ENOTFOUND`. The price and FX crons therefore go through `afterWakeSettles` (`src/common/jobs/wake-settle.service.ts`), which waits `WAKE_SETTLE_MS` after `WakeSettleService` sees the clock jump. The wait goes outside `withLease`, so a deferred replica holds nothing. The service is an `@Optional()` last constructor parameter so hand-built specs need no double; `JobClaimModule` is global, so the app always supplies it.
+
 ## A boot-time diagnostic reports; it does not repair
 
 `HoldingsDriftReportService` (`securities/holdings-drift-report.service.ts`) runs
