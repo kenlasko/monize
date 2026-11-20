@@ -111,8 +111,11 @@ export function orderAccountsForPicker(accounts: readonly Account[]): {
 export function buildAccountDropdownOptions(
   accounts: Account[],
   filter: (account: Account) => boolean,
-  labelFn: (account: Account) => string = (a) =>
-    `${a.name} (${a.currencyCode})${a.isClosed ? ' (Closed)' : ''}`,
+  /**
+   * Required: `useAccountOptionLabel()` in a component. A default here could
+   * not know the reader's currency, and appended a code to every row.
+   */
+  labelFn: (account: Account) => string,
 ): AccountSelectOption[] {
   const { favourites, rest } = orderAccountsForPicker(accounts.filter(filter));
 

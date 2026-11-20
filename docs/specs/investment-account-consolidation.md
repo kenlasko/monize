@@ -154,6 +154,11 @@ test insisted:
    owns every account write.
 6. **`useAccountOptionLabel` takes `withCurrency`.** Split rows are narrow and never showed a
    currency; one labeller with an option beats two labellers.
+7. **The currency shows only outside the default currency** (2026-11-20). `useAccountOptionLabel`
+   passes the user's `preferredCurrency` to `formatAccountOptionLabel`, which drops the code for an
+   account in that currency: "Chequing (CAD)" on every row of a CAD user's picker told them nothing
+   and buried the one USD account. A user with no preference compares against the fallback. The
+   same rule holds for every account and security picker, through `labelWithForeignCurrency`.
 
 ## Per-surface truth table
 

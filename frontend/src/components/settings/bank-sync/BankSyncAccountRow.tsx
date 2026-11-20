@@ -32,6 +32,7 @@ import { useAccountTypeMismatchMessage } from "./useAccountTypeMismatchMessage";
 import { useBankAccountTypeLabel } from "./useBankAccountTypeLabel";
 import { useBankSyncToast } from "./useBankSyncToast";
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { useForeignCurrencyLabel } from "@/hooks/useMainAccountName";
 
 /** The picker's "Create a new account" entry; no account id can equal it. */
 const CREATE_NEW_VALUE = "__create_new__";
@@ -94,6 +95,7 @@ export function BankSyncAccountRow({
   const t = useTranslations("settings.bankSync.account");
   const tLink = useTranslations("settings.bankSync.link");
   const tSync = useTranslations("settings.bankSync.sync");
+  const foreignCurrencyLabel = useForeignCurrencyLabel();
   const { formatCurrency, formatNumber } = useNumberFormat();
   const { formatDate, formatDateTime } = useDateFormat();
   const relativeTime = useRelativeTime();
@@ -125,7 +127,7 @@ export function BankSyncAccountRow({
   const accountOptions = buildAccountDropdownOptions(
     accounts,
     isEligible,
-    (account) => `${account.name} (${account.currencyCode})`,
+    (account) => foreignCurrencyLabel(account.name, account.currencyCode),
   );
   const hasChoice = accountOptions.length > 0;
 

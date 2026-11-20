@@ -342,7 +342,7 @@ test("rules-split-action", async () => {
   await principal.getByLabel("Amount").selectOption({ label: "{principal}" });
   await principal.getByLabel("Type").selectOption({ label: "Transfer" });
   await chooseIconSelectOption(principal.getByLabel("Account"), {
-    label: "Home Mortgage (CAD)",
+    label: "Home Mortgage",
   });
   const interest = action.getByRole("group", { name: "Split 2", exact: true });
   await interest.getByLabel("Amount").selectOption({ label: "{interest}" });

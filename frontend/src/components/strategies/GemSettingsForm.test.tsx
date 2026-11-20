@@ -247,7 +247,7 @@ describe("GemSettingsForm", () => {
     await renderForm();
 
     expect(screen.getByLabelText("Strategy accounts")).toHaveTextContent(
-      "Broker IRA (USD)",
+      "Broker IRA",
     );
     expect(screen.getByLabelText("Evaluation frequency")).toHaveValue(
       "MONTHLY",
@@ -274,7 +274,7 @@ describe("GemSettingsForm", () => {
       screen
         .getAllByRole("checkbox")
         .map((box) => box.closest("label")?.textContent),
-    ).toEqual(["Broker IRA (USD)", "Broker Taxable (USD)"]);
+    ).toEqual(["Broker IRA", "Broker Taxable"]);
 
     // Suggestions for this role first, one per region, then what is held.
     expect(await instrumentOptions("Emerging markets")).toEqual([
@@ -456,7 +456,7 @@ describe("GemSettingsForm", () => {
     });
     await act(async () => {
       fireEvent.click(
-        screen.getByRole("checkbox", { name: "Broker Taxable (USD)" }),
+        screen.getByRole("checkbox", { name: "Broker Taxable" }),
       );
     });
     // Both accounts now feed the strategy, so the trigger shows a count.

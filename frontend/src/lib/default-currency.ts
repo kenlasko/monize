@@ -30,3 +30,21 @@ export function preferredCurrency(
 ): string {
   return defaultCurrency || FALLBACK_DEFAULT_CURRENCY;
 }
+
+/**
+ * A picker option's label with its currency in brackets, unless that currency
+ * is the reader's default: "Chequing" and "US Savings (USD)" for a CAD reader.
+ *
+ * The one rule every account and security picker follows. A code on every row
+ * said nothing and hid the rows that are in another currency. Components reach
+ * it through `useForeignCurrencyLabel`, which supplies the default.
+ */
+export function labelWithForeignCurrency(
+  label: string,
+  currencyCode: string,
+  defaultCurrency: string | undefined,
+): string {
+  return !currencyCode || currencyCode === defaultCurrency
+    ? label
+    : `${label} (${currencyCode})`;
+}

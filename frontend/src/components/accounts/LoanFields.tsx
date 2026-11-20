@@ -20,6 +20,7 @@ import { createLogger } from '@/lib/logger';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { OverpaymentRecognitionFields } from './OverpaymentRecognitionFields';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { useForeignCurrencyLabel } from '@/hooks/useMainAccountName';
 
 const logger = createLogger('LoanFields');
 
@@ -88,6 +89,7 @@ export function LoanFields({
   handleOverpaymentPayeeChange,
 }: LoanFieldsProps) {
   const t = useTranslations('accounts');
+  const foreignCurrencyLabel = useForeignCurrencyLabel();
   const { formatDate } = useDateFormat();
 
   // Every cadence `PAYMENT_FREQUENCIES` admits, in its order -- built from the
@@ -189,7 +191,7 @@ export function LoanFields({
             ...buildAccountDropdownOptions(
               accounts,
               () => true,
-              (a) => `${a.name} (${a.currencyCode})`,
+              (a) => foreignCurrencyLabel(a.name, a.currencyCode),
             ),
           ]}
           error={errors.sourceAccountId?.message as string | undefined}

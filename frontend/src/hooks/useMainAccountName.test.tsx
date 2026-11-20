@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook } from '@/test/render';
 import { useMainAccountName, useAccountOptionLabel } from './useMainAccountName';
 import { Account } from '@/types/account';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 const cashHalf = {
   id: 'cash',
@@ -33,6 +34,27 @@ describe('useMainAccountName', () => {
 });
 
 describe('useAccountOptionLabel', () => {
+  beforeEach(() => {
+    // A USD user, so the CAD fixture is a foreign-currency account.
+    usePreferencesStore.setState({
+      preferences: { defaultCurrency: 'USD' } as never,
+      isLoaded: true,
+    });
+  });
+
+  it('leaves the currency off an account in the default currency', () => {
+    usePreferencesStore.setState({
+      preferences: { defaultCurrency: 'CAD' } as never,
+      isLoaded: true,
+    });
+    const { result } = renderHook(() => useAccountOptionLabel());
+
+    expect(result.current(cashHalf)).toBe('TFSA');
+    expect(
+      result.current({ ...cashHalf, id: 'usd', name: 'US Chequing', currencyCode: 'USD' }),
+    ).toBe('US Chequing (USD)');
+  });
+
   it('labels an option with the entity name and currency, suffix stripped', () => {
     const { result } = renderHook(() => useAccountOptionLabel());
 

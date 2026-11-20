@@ -6,6 +6,7 @@ import { Payee } from '@/types/payee';
 import { useTourStore } from '@/store/tourStore';
 import { clearCurrencyDecimals, registerCurrencyDecimals } from '@/lib/currency-decimals';
 import { getSelectByLabel } from '@/test/icon-select';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 vi.mock('@/lib/format', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/format')>()),
@@ -156,6 +157,8 @@ describe('NormalTransactionFields', () => {
   };
 
   beforeEach(() => {
+    // One test sets a CAD default currency; every other test starts without one.
+    usePreferencesStore.setState({ preferences: null });
     vi.clearAllMocks();
     // No tour running by default, so a tour started in one test cannot leak
     // its form constraints into the next.
@@ -500,13 +503,15 @@ describe('NormalTransactionFields', () => {
     expect(screen.getAllByText('Split Transaction')[0]).toBeEnabled();
   });
 
-  it('includes currency code in account labels', () => {
+  it('includes the currency code only for accounts outside the default currency', () => {
+    // A CAD user: their CAD accounts need no code, the USD one does.
+    usePreferencesStore.setState({ preferences: { defaultCurrency: 'CAD' } as never });
     const usdAccount = createAccount({ id: 'acc-usd', name: 'US Savings', currencyCode: 'USD' });
 
     render(
       <NormalTransactionFields
         {...defaultProps}
-        accounts={[usdAccount]}
+        accounts={[usdAccount, createAccount({ id: 'acc-cad', name: 'Chequing', currencyCode: 'CAD' })]}
       />
     );
 
@@ -515,6 +520,7 @@ describe('NormalTransactionFields', () => {
     const labels = options.map(o => o.label);
 
     expect(labels).toContain('US Savings (USD)');
+    expect(labels).toContain('Chequing');
   });
 
   it('shows the first option as "Select account..." placeholder', () => {

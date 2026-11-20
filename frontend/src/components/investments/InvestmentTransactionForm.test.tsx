@@ -996,7 +996,7 @@ describe('InvestmentTransactionForm', () => {
         fireEvent.click(screen.getByLabelText('Security'));
       });
       await waitFor(() => {
-        expect(screen.getByText('AAPL - Apple Inc. (USD)')).toBeInTheDocument();
+        expect(screen.getByText('AAPL - Apple Inc.')).toBeInTheDocument();
       });
       expect(screen.queryByText(/^GONE - /)).not.toBeInTheDocument();
       expect(screen.queryByText(/^DUST - /)).not.toBeInTheDocument();
@@ -2292,7 +2292,7 @@ describe('InvestmentTransactionForm', () => {
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Security'));
     });
-    expect(screen.getByText('AAPL - Apple Inc. (USD)')).toBeInTheDocument();
+    expect(screen.getByText('AAPL - Apple Inc.')).toBeInTheDocument();
     expect(screen.getAllByText('OLD - Old Corp (CAD)').length).toBeGreaterThan(0);
   });
 
