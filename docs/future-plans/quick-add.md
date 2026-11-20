@@ -99,7 +99,8 @@ interface QuickAddInterpretation {
     movesOn: string | null;
   } | null;
   /**
-   * The figure as typed in another currency, set exactly when `foreignCurrency` blocks.
+   * The figure as typed in a currency: set when `foreignCurrency` blocks, and when a currency
+   * was typed but no account is known yet to compare it with.
    * `currencyCode` is the ISO code when the typed symbol or code names one currency, else null.
    */
   foreignAmount: { currencyCode: string | null; amount: number } | null;
@@ -134,10 +135,11 @@ The pure reader is `backend/src/transactions/quick-add/quick-add-parse.util.ts`.
    - **Sign:** a leading `+` marks a deposit and a leading `-` a payment.
    - **Currency next to the number:** a symbol or ISO code that is the account's currency is dropped. Any other currency adds `foreignCurrency`.
    - **Places:** more places than the account currency's `decimal_places` (the entry places `CurrencyInput` rounds to, so a typed value carries no hidden units) adds `amountPrecision`. More than the create DTO's maximum magnitude adds `amountTooLarge`.
+   - **A month-name date with a year is a date.** `loblaws nov 3, 2025` is dated 2025-11-03 with no amount; the day beside a month and a year is never taken as the amount.
    - **The month-name date and the amount are read together.** In `20 nov 3 coffee` both the number before and the number after the month could be its day. Each side is tried on its own; when both give a real date, the reader's date order decides, and the line's other number stays the amount.
 5. **Keywords.** Words of the vocabulary set the kind (`deposit`, `payment`, `transfer`) and the direction (`to`, `from`); connector and filler words are dropped.
 6. **Leftover words.**
-   - **No payee found:** the leftover words, in the order typed and joined by single spaces, become a new payee name (`source: 'typed'`, `id: null`). The save creates that payee first, as the full form's `handlePayeeCreate` does (offering to reactivate an inactive payee of that name), so the next line finds it.
+   - **No payee found:** the leftover words, in the order typed and joined by single spaces, become a new payee name (`source: 'typed'`, `id: null`). For a payment or deposit the save creates that payee first (a transfer keeps the name as text, as the full form does), as the full form's `handlePayeeCreate` does (offering to reactivate an inactive payee of that name), so the next line finds it.
    - **A pinned payee replaces the words that produced the text's payee**; those words do not become the memo.
    - **A payee was found:** the leftover words are the memo.
 
@@ -152,6 +154,7 @@ The pure reader is `backend/src/transactions/quick-add/quick-add-parse.util.ts`.
 | toAccount, for a transfer with one account named | That named account is the side `to` or `from` says. The other side is the default account above. | `default` |
 | category | Not filled for a transfer. Otherwise the payee's most frequent category over its last 10 non-void, unsplit, non-transfer transactions, the most recent winning a tie. Otherwise the payee's default category. | `inferred` |
 | date | `today` | `default` |
+| category, cleared by the reader | The payee's default category when the payee has one, because the save adopts it (`create()` fills a missing category from the payee); otherwise none | `default`, or `pinned` with no value |
 
 Because the category and account come from the payee's own history, a correction saved today is tomorrow's answer, with no new table.
 
@@ -168,7 +171,8 @@ Because the category and account come from the payee's own history, a correction
 
 One request's work is bounded whatever the reader has stored, because the reading runs on the event loop that serves every user:
 
-- **Length after normalizing.** The 200-character cap applies to the text after NFKC (one character can expand to 18), and the reader stops at a fixed number of words.
+- **Length after normalizing.** The 200-character cap applies to the text after NFKC (one character can expand to 18), and the reader stops at a fixed number of words. The dialog counts the same way and does not send a longer line.
+- **Folding names.** Each candidate name is folded once per request, by whole-string operations, whatever its script.
 - **Matching work.** Alias matching has a fixed budget of glob evaluations per request, and the spans each name contributes are deduplicated before the longest are chosen.
 - **The transaction is short.** Candidates are loaded in one scoped read, the text is read outside any transaction, and usage and history are a second short scoped read over a capped list of ids.
 - **Rate.** The route carries its own `@Throttle`.
