@@ -47,7 +47,7 @@ export class IsViewDefaultsConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(): string {
-    return "viewDefaults must be an object whose keys are density (normal, compact or dense), hideRegisterYear, widgetsCollapsed, chartCollapsed (booleans), accountOpenTarget (register or dashboard) and mobileTabs (up to three distinct tab names)";
+    return "viewDefaults must be an object whose keys are density (normal, compact or dense), hideRegisterYear, widgetsCollapsed, chartCollapsed (booleans), accountOpenTarget (register or dashboard), mobileTabs (up to three distinct tab names) and mobileAddOpens (quickAdd or fullForm)";
   }
 }
 

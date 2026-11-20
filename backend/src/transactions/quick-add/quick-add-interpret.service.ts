@@ -37,10 +37,14 @@ function given<T>(value: T | null | undefined | ""): T | undefined {
 }
 
 /**
- * Reads a Quick Add line (`docs/future-plans/quick-add.md`). Read-only: it
- * loads the candidates through `withScopedDb`, reads the text with the pure
- * reader, fills what was not typed and previews the reader's rules. The save
- * is the ordinary `POST /transactions` or `POST /transactions/transfer`.
+ * Reads a Quick Add line (`docs/future-plans/quick-add.md`). Read-only, and
+ * bounded ("Bounds"): one short scoped read loads the candidates and checks
+ * the pins, the text is read by the pure reader outside any transaction (it
+ * is CPU work, and a pooled connection held open across it is one nobody
+ * else can use), and a second short scoped read loads the usage counts and
+ * the payee's history for the ids the reading named. Then the fill and the
+ * reader's rules are previewed. The save is the ordinary `POST /transactions`
+ * or `POST /transactions/transfer`.
  */
 @Injectable()
 export class QuickAddInterpretService {
@@ -57,29 +61,40 @@ export class QuickAddInterpretService {
     dto: QuickAddInterpretDto,
   ): Promise<QuickAddInterpretation> {
     const locale = currentRequestLocale();
-    const interpretation = await withScopedDb(this.dataSource, async (m) => {
-      const candidates = await loadQuickAddCandidates(m, userId);
-      const pins = await this.resolvePins(m, userId, dto.pins, candidates);
-      const accountsById = new Map(candidates.accounts.map((a) => [a.id, a]));
+    const { candidates, pins } = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        const loaded = await loadQuickAddCandidates(m, userId);
+        return {
+          candidates: loaded,
+          pins: await this.resolvePins(m, userId, dto.pins, loaded),
+        };
+      },
+    );
+    const accountsById = new Map(candidates.accounts.map((a) => [a.id, a]));
 
-      const reading = readQuickAddText({
-        text: dto.text,
-        today: dto.today,
-        locale,
-        numberFormat: candidates.numberFormat,
-        dateFormat: candidates.dateFormat,
-        vocabulary: resolveQuickAddVocabulary(locale),
-        accounts: candidates.accounts,
-        payees: candidates.payees,
-        categories: candidates.categories,
-        heldCurrencies: candidates.currencies,
-        payeePinned: !!(pins.payee || pins.payeeName),
-      });
+    const reading = readQuickAddText({
+      text: dto.text,
+      today: dto.today,
+      locale,
+      numberFormat: candidates.numberFormat,
+      dateFormat: candidates.dateFormat,
+      vocabulary: resolveQuickAddVocabulary(locale),
+      accounts: candidates.accounts,
+      payees: candidates.payees,
+      categories: candidates.categories,
+      heldCurrencies: candidates.currencies,
+    });
+    // A pinned or cleared payee takes no ranking: its field offers nothing else.
+    const payeeDecided = !!(pins.payee || pins.payeeName || pins.clearPayee);
 
-      const payeeUsage = await loadUsage(m, userId, "payee_id", [
-        ...(reading.payee?.candidates ?? []).map((p) => p.id),
-        ...reading.payeeAlternatives.map((p) => p.id),
-      ]);
+    const facts = await withScopedDb(this.dataSource, async (m) => {
+      const payeeUsage = payeeDecided
+        ? new Map<string, number>()
+        : await loadUsage(m, userId, "payee_id", [
+            ...(reading.payee?.candidates ?? []).map((p) => p.id),
+            ...reading.payeeAlternatives.map((p) => p.id),
+          ]);
       const categoryUsage = await loadUsage(m, userId, "category_id", [
         ...(reading.category?.candidates ?? []).map((c) => c.id),
         ...reading.categoryAlternatives.map((c) => c.id),
@@ -90,7 +105,6 @@ export class QuickAddInterpretService {
         "account_id",
         mentionedAccountIds(reading),
       );
-
       const payee = resolveQuickAddPayee(reading, pins, payeeUsage);
       const history = payee.payee
         ? await loadPayeeHistory(m, userId, payee.payee.id)
@@ -100,26 +114,29 @@ export class QuickAddInterpretService {
         userId,
         candidates.accounts.map((a) => a.id),
       );
-      const contextAccountId = given(dto.contextAccountId);
-
-      return fillQuickAdd({
-        reading,
-        pins,
+      return {
         payee,
-        today: dto.today,
-        accounts: accountsById,
-        categories: new Map(candidates.categories.map((c) => [c.id, c])),
-        contextAccountId:
-          contextAccountId && accountsById.has(contextAccountId)
-            ? contextAccountId
-            : null,
         history,
         mostRecentAccountId,
         accountUsage,
         categoryUsage,
-        currencyPlaces: candidates.currencyPlaces,
-        isFuture: isTransactionInFuture,
-      });
+      };
+    });
+    const contextAccountId = given(dto.contextAccountId);
+
+    const interpretation = fillQuickAdd({
+      ...facts,
+      reading,
+      pins,
+      today: dto.today,
+      accounts: accountsById,
+      categories: new Map(candidates.categories.map((c) => [c.id, c])),
+      contextAccountId:
+        contextAccountId && accountsById.has(contextAccountId)
+          ? contextAccountId
+          : null,
+      currencyPlaces: candidates.currencyPlaces,
+      isFuture: isTransactionInFuture,
     });
     const ruleEffects = await this.previewRuleEffects(userId, interpretation);
     return ruleEffects ? { ...interpretation, ruleEffects } : interpretation;
@@ -167,6 +184,7 @@ export class QuickAddInterpretService {
       );
     }
     const payeeName = given(dto?.payeeName?.trim());
+    const cleared = new Set(dto?.clear ?? []);
     return {
       kind: given<QuickAddKind>(dto?.kind),
       amount: given(dto?.amount),
@@ -176,14 +194,20 @@ export class QuickAddInterpretService {
       payee: payee ?? undefined,
       payeeName: payee ? undefined : payeeName,
       category,
+      // A value pinned beside a clear is the reader's latest word: it wins.
+      clearPayee: cleared.has("payee") && !payee && !payeeName,
+      clearCategory: cleared.has("category") && !category,
     };
   }
 
   /**
    * What the reader's rules will do on save, from the planner the commit
    * runs (`previewCreate` / `previewCreateTransfer`), once the entry could be
-   * saved as shown. A preview that throws is no `ruleEffects`: the reading
-   * itself never fails because a preview did.
+   * saved as shown, over the facts the save will send: the payee id the
+   * reading chose (null for a new name, which the client creates first), so
+   * the preview never resolves the name to some other payee. A preview that
+   * throws is no `ruleEffects`: the reading itself never fails because a
+   * preview did.
    */
   private async previewRuleEffects(
     userId: string,
@@ -196,6 +220,7 @@ export class QuickAddInterpretService {
       return undefined;
     }
     const payeeName = reading.payee.value?.name;
+    const payeeId = reading.payee.value?.id ?? null;
     const description = reading.memo ?? undefined;
     try {
       if (reading.kind.value === "transfer") {
@@ -208,6 +233,7 @@ export class QuickAddInterpretService {
             toAccountId: toAccount.id,
             amount,
             transactionDate: date,
+            payeeId,
             payeeName,
             description,
           },
@@ -218,6 +244,7 @@ export class QuickAddInterpretService {
         accountId: account.id,
         amount: reading.kind.value === "deposit" ? amount : -amount,
         transactionDate: date,
+        payeeId,
         payeeName,
         categoryId: reading.category.value?.id,
         description,

@@ -110,6 +110,17 @@ describe("POST /transactions/quick-add/interpret over HTTP", () => {
     expect(quickAdd.interpret).toHaveBeenCalledTimes(1);
   });
 
+  it("hands the service the fields a reader cleared", async () => {
+    await request(app.getHttpServer())
+      .post(PATH)
+      .send({ ...valid, pins: { clear: ["payee", "category"] } })
+      .expect(200);
+    expect(quickAdd.interpret.mock.calls[0][1].pins?.clear).toEqual([
+      "payee",
+      "category",
+    ]);
+  });
+
   it("hands the service the line with angle brackets stripped", async () => {
     await request(app.getHttpServer())
       .post(PATH)
@@ -120,6 +131,19 @@ describe("POST /transactions/quick-add/interpret over HTTP", () => {
 
   it.each([
     ["a line over 200 characters", { ...valid, text: "x".repeat(201) }],
+    [
+      "a line over 200 characters once normalized (U+FDFA is 18)",
+      { ...valid, text: "\uFDFA".repeat(200) },
+    ],
+    [
+      "a cleared field it does not know",
+      { ...valid, pins: { clear: ["memo"] } },
+    ],
+    ["cleared fields that are no list", { ...valid, pins: { clear: "payee" } }],
+    [
+      "more cleared fields than there are",
+      { ...valid, pins: { clear: ["payee", "category", "payee"] } },
+    ],
     ["no line", { today: valid.today }],
     ["no today", { text: valid.text }],
     ["a today that is no calendar day", { ...valid, today: "2026-02-30" }],

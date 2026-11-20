@@ -110,6 +110,7 @@ describe("QuickAddInterpretService: languages, scripts and line length", () => {
         accountId: YEN,
         amount: -500,
         transactionDate: TODAY,
+        payeeId: LAWSON.id,
         payeeName: "ローソン",
         categoryId: undefined,
         description: undefined,
@@ -235,6 +236,7 @@ describe("QuickAddInterpretService: languages, scripts and line length", () => {
         memo: null,
         blockers: ["missingAmount"],
         balance: null,
+        foreignAmount: null,
       });
       expect(loaders.loadPayeeHistory).not.toHaveBeenCalled();
       expect(transactionsService.previewCreate).not.toHaveBeenCalled();

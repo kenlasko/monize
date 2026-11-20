@@ -12,7 +12,10 @@
  *
  * A date without a year follows `resolveDayMonth`'s rule.
  */
-import { parseDate } from "../transaction-search-parse.util";
+import {
+  parseDate,
+  resolveDatePattern,
+} from "../transaction-search-parse.util";
 import { addDaysYMD } from "../../common/date-utils";
 import {
   DateWord,
@@ -41,6 +44,17 @@ export interface DateContext {
 export interface DateRead {
   readonly date: string;
   readonly spans: readonly UnitSpan[];
+  /**
+   * A month name with its day, where the day was the only number beside the
+   * name: if the line holds no other number, the reader takes that number
+   * as the amount instead (`20 may flowers`).
+   */
+  readonly dayMayBeAmount?: boolean;
+}
+
+export interface DateReadOptions {
+  /** Skip day-and-month-name dates (the second reading of a line whose day was its amount). */
+  readonly skipMonthNames?: boolean;
 }
 
 const TRAILING_SEPARATORS = /[,;]+$/u;
@@ -152,7 +166,72 @@ function spanRest(
     .join("");
 }
 
-/** `3 nov`, `nov 3`, `3 de nov`, each with an optional year after it. */
+/** A day number beside a month name, the date it gives and the tokens it took. */
+interface MonthNameSide {
+  readonly date: string;
+  readonly spans: readonly UnitSpan[];
+}
+
+/** The date `dayToken` gives beside the month name at `span`, if it is a real one. */
+function sideDate(
+  text: QuickAddText,
+  tokens: readonly FreeToken[],
+  span: FreeToken,
+  dayToken: FreeToken,
+  day: string,
+  month: number,
+  joiner: FreeToken | null,
+  ctx: DateContext,
+): MonthNameSide | null {
+  const last = dayToken.start > span.start ? dayToken : span;
+  const yearToken = tokenAfter(text, tokens, last);
+  const year = yearToken ? YEAR.exec(yearToken.text) : null;
+  const date = resolveDayMonth(
+    ctx.today,
+    month,
+    Number(day),
+    year ? Number(year[1]) : undefined,
+  );
+  if (!date) return null;
+  const spans: UnitSpan[] = [span, dayToken];
+  if (joiner) spans.push(joiner);
+  if (year && yearToken) spans.push(yearToken);
+  return { date, spans };
+}
+
+/**
+ * Whether the reader writes a day before its month: the order of the
+ * reader's `dateFormat` (the locale's own for "browser"), or of their
+ * locale's short dates when the format does not hold both.
+ */
+export function dayBeforeMonth(ctx: DateContext): boolean {
+  const pattern = resolveDatePattern(ctx.dateFormat, ctx.numberFormat);
+  const day = pattern.indexOf("D");
+  const month = pattern.indexOf("M");
+  if (day !== -1 && month !== -1) return day < month;
+  try {
+    const types = new Intl.DateTimeFormat(ctx.locale, {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    })
+      .formatToParts(new Date(Date.UTC(2024, 10, 3)))
+      .map((part) => part.type);
+    return types.indexOf("day") < types.indexOf("month");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * `3 nov`, `nov 3`, `3 de nov`, each with an optional year after it.
+ *
+ * The number before the name and the number after it are each tried as its
+ * day, on their own. When only one gives a real date it is the date; when both
+ * do (`20 nov 3 coffee`), the reader's own order of day and month decides and
+ * the other number is left for the amount (`docs/future-plans/quick-add.md`,
+ * "Reading the text", step 4).
+ */
 function monthNameDate(
   text: QuickAddText,
   used: readonly boolean[],
@@ -179,25 +258,26 @@ function monthNameDate(
     if (joiner) before = tokenBefore(text, tokens, joiner);
     const after = tokenAfter(text, tokens, span);
     const dayBefore = before ? DAY_BEFORE_MONTH.exec(before.text) : null;
-    const dayAfter =
-      !dayBefore && after ? DAY_AFTER_MONTH.exec(after.text) : null;
-    const dayToken = dayBefore ? before : dayAfter ? after : null;
-    const day = dayBefore?.[1] ?? dayAfter?.[1];
-    if (!dayToken || !day) continue;
-    const last = dayToken.start > span.start ? dayToken : span;
-    const yearToken = tokenAfter(text, tokens, last);
-    const year = yearToken ? YEAR.exec(yearToken.text) : null;
-    const date = resolveDayMonth(
-      ctx.today,
-      month,
-      Number(day),
-      year ? Number(year[1]) : undefined,
-    );
-    if (!date) continue;
-    const spans: UnitSpan[] = [span, dayToken];
-    if (joiner) spans.push(joiner);
-    if (year && yearToken) spans.push(yearToken);
-    return { date, spans };
+    const dayAfter = after ? DAY_AFTER_MONTH.exec(after.text) : null;
+    const fromBefore =
+      before && dayBefore
+        ? sideDate(text, tokens, span, before, dayBefore[1], month, joiner, ctx)
+        : null;
+    const fromAfter =
+      after && dayAfter
+        ? sideDate(text, tokens, span, after, dayAfter[1], month, null, ctx)
+        : null;
+    const chosen =
+      fromBefore && fromAfter
+        ? dayBeforeMonth(ctx)
+          ? fromBefore
+          : fromAfter
+        : (fromBefore ?? fromAfter);
+    if (!chosen) continue;
+    return {
+      ...chosen,
+      dayMayBeAmount: !(dayBefore && dayAfter),
+    };
   }
   return null;
 }
@@ -248,19 +328,22 @@ export function readDate(
   text: QuickAddText,
   used: readonly boolean[],
   ctx: DateContext,
+  options: DateReadOptions = {},
 ): DateRead | null {
   const tokens = freeTokens(text, used);
   const words = dateWordsFor(ctx.locale);
   return (
     absoluteDate(tokens, ctx) ??
     cjkDate(text, used, ctx) ??
-    monthNameDate(
-      text,
-      used,
-      tokens,
-      words.filter((w) => w.kind === "month"),
-      ctx,
-    ) ??
+    (options.skipMonthNames
+      ? null
+      : monthNameDate(
+          text,
+          used,
+          tokens,
+          words.filter((w) => w.kind === "month"),
+          ctx,
+        )) ??
     numericDayMonth(tokens, ctx) ??
     wordDate(
       text,

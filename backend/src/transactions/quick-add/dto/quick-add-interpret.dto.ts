@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  IsArray,
   IsIn,
   IsObject,
   IsOptional,
@@ -9,6 +11,9 @@ import {
   MaxLength,
   ValidateIf,
   ValidateNested,
+  ValidationArguments,
+  ValidationOptions,
+  registerDecorator,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -19,10 +24,47 @@ import {
   TRANSACTION_AMOUNT_MAX_MAGNITUDE,
   TRANSACTION_PAYEE_NAME_MAX_LENGTH,
 } from "../../dto/create-transaction.dto";
-import { QUICK_ADD_KINDS, QuickAddKind } from "../quick-add.types";
+import {
+  QUICK_ADD_CLEARABLE_FIELDS,
+  QUICK_ADD_KINDS,
+  QuickAddClearableField,
+  QuickAddKind,
+} from "../quick-add.types";
+import {
+  QUICK_ADD_TEXT_MAX_LENGTH,
+  normalizeQuickAddText,
+} from "../quick-add-text.util";
 
-/** The longest line Quick Add reads. */
-export const QUICK_ADD_TEXT_MAX_LENGTH = 200;
+export { QUICK_ADD_TEXT_MAX_LENGTH };
+
+/**
+ * At most `max` code points once normalized as the reader normalizes it
+ * (NFKC, whitespace runs as one space). `@MaxLength` counts what was sent,
+ * and NFKC can turn one character into eighteen (U+FDFA), so a line that
+ * passes it can still be far longer than the reader is sized for. A value
+ * already over `max` before normalizing is refused without normalizing it.
+ */
+function MaxNormalizedLength(max: number, options?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: "maxNormalizedLength",
+      target: object.constructor,
+      propertyName,
+      constraints: [max],
+      options,
+      validator: {
+        validate(value: unknown): boolean {
+          if (typeof value !== "string") return true;
+          if (value.length > max * 2) return false;
+          return [...normalizeQuickAddText(value)].length <= max;
+        },
+        defaultMessage(args: ValidationArguments): string {
+          return `${args.property} must be shorter than or equal to ${max} characters`;
+        },
+      },
+    });
+  };
+}
 
 /** A blank optional field (`null`, `""`) is absent; anything else is validated. */
 const present = (_o: unknown, value: unknown) => value !== null && value !== "";
@@ -90,6 +132,18 @@ export class QuickAddPinsDto {
   @ValidateIf(present)
   @IsUUID()
   categoryId?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Fields the reader cleared on a chip: answered as none and never guessed again. A value pinned for the same field wins.",
+    enum: QUICK_ADD_CLEARABLE_FIELDS,
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(QUICK_ADD_CLEARABLE_FIELDS.length)
+  @IsIn(QUICK_ADD_CLEARABLE_FIELDS, { each: true })
+  clear?: QuickAddClearableField[] | null;
 }
 
 /** `POST /transactions/quick-add/interpret`: read a typed line. Writes nothing. */
@@ -100,6 +154,7 @@ export class QuickAddInterpretDto {
   })
   @IsString()
   @MaxLength(QUICK_ADD_TEXT_MAX_LENGTH)
+  @MaxNormalizedLength(QUICK_ADD_TEXT_MAX_LENGTH)
   @SanitizeHtml()
   text: string;
 

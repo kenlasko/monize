@@ -85,7 +85,12 @@ describe("readQuickAddText", () => {
   describe("the plan's observed examples", () => {
     it("reads 84.37 loblaws groceries as amount, payee and category", () => {
       const r = read("84.37 loblaws groceries");
-      expect(r.amount).toEqual({ value: 84.37, sign: null, currency: null });
+      expect(r.amount).toEqual({
+        value: 84.37,
+        sign: null,
+        currency: null,
+        places: 2,
+      });
       expect(ids(r.payee?.candidates)).toEqual(["p-loblaws"]);
       expect(r.payee?.partial).toBe(false);
       expect(ids(r.category?.candidates)).toEqual(["c-groc"]);
@@ -219,10 +224,12 @@ describe("readQuickAddText", () => {
       expect(r.leftover).toBe("ti");
     });
 
-    it("is skipped when a payee is pinned, leaving the words for the memo", () => {
-      const r = read("12 tim", { payeePinned: true });
-      expect(r.payee).toBeNull();
-      expect(r.leftover).toBe("tim");
+    it("keeps the words it took out of the leftover, whatever the pins say", () => {
+      // A pinned payee replaces these words in the fill; the reader does not
+      // know about pins, so they never fall through to the memo.
+      const r = read("12 tim weekly");
+      expect(ids(r.payee?.candidates).sort()).toEqual(["p-tim", "p-timbuktu"]);
+      expect(r.leftover).toBe("weekly");
     });
   });
 
@@ -250,6 +257,60 @@ describe("readQuickAddText", () => {
       expect(r.date).toBe(date);
       expect(r.amount?.value).toBe(12);
       expect(r.leftover).toBe("coffee");
+    });
+
+    describe("a month name between two numbers, and a month name's only number", () => {
+      it.each([
+        // ISO and en-US formats put the month first: `nov 3` is the date.
+        ["20 nov 3 coffee", "YYYY-MM-DD", "2026-11-03", 20, "coffee"],
+        ["12 dec 25 gifts", "YYYY-MM-DD", "2025-12-25", 12, "gifts"],
+        ["20 nov 3 coffee", "MM/DD/YYYY", "2026-11-03", 20, "coffee"],
+        // A DD/MM reader writes the day first: `20 nov` is the date.
+        ["20 nov 3 coffee", "DD/MM/YYYY", "2026-11-20", 3, "coffee"],
+        ["12 dec 25 gifts", "DD.MM.YYYY", "2025-12-12", 25, "gifts"],
+        // Only one side is a real day: it is the date, the other the amount.
+        ["45 nov 3 coffee", "YYYY-MM-DD", "2026-11-03", 45, "coffee"],
+        ["35 dec 24 gifts", "YYYY-MM-DD", "2025-12-24", 35, "gifts"],
+        ["45 nov 3 coffee", "DD/MM/YYYY", "2026-11-03", 45, "coffee"],
+        ["3 nov 45 coffee", "YYYY-MM-DD", "2026-11-03", 45, "coffee"],
+      ])(
+        "reads %s (%s) as %s, amount %d",
+        (text, dateFormat, date, amount, rest) => {
+          const r = read(text, { dateFormat });
+          expect(r.date).toBe(date);
+          expect(r.amount?.value).toBe(amount);
+          expect(r.leftover).toBe(rest);
+        },
+      );
+
+      it.each([
+        ["20 may flowers", 20, "may flowers"],
+        ["12 mar bakery", 12, "mar bakery"],
+        ["nov 3 coffee", 3, "nov coffee"],
+      ])(
+        "reads %s as amount %d with no date: a month name's only number",
+        (text, amount, rest) => {
+          const r = read(text);
+          expect(r.date).toBeNull();
+          expect(r.amount?.value).toBe(amount);
+          expect(r.leftover).toBe(rest);
+        },
+      );
+
+      it("keeps the date when its only number cannot be an amount", () => {
+        const r = read("coffee 3rd nov");
+        expect(r.date).toBe("2026-11-03");
+        expect(r.amount).toBeNull();
+      });
+
+      it("falls back to the locale's order for a format without both fields", () => {
+        expect(
+          read("20 nov 3 kaffee", { locale: "de", dateFormat: "YYYY" }).date,
+        ).toBe("2026-11-20");
+        expect(read("20 nov 3 coffee", { dateFormat: "YYYY" }).date).toBe(
+          "2026-11-03",
+        );
+      });
     });
 
     it("reads a day and month in the date format's order", () => {
@@ -305,6 +366,7 @@ describe("readQuickAddText", () => {
         value: 20,
         sign: "-",
         currency: { text: "$", codes: expect.arrayContaining(["CAD", "USD"]) },
+        places: 0,
       });
     });
 
@@ -322,6 +384,20 @@ describe("readQuickAddText", () => {
 
     it("keeps every place typed, for the precision check", () => {
       expect(read("12.34567 loblaws").amount?.value).toBe(12.34567);
+      expect(read("12.34567 loblaws").amount?.places).toBe(5);
+      // Past the column scale the value is rounded, the places still told.
+      expect(read("0.000123456 loblaws").amount).toMatchObject({
+        value: 0.00012346,
+        places: 9,
+      });
+      expect(
+        read("12,55 miete", { numberFormat: "de-DE" }).amount?.places,
+      ).toBe(2);
+      expect(read("1,234 rent").amount).toMatchObject({
+        value: 1234,
+        places: 0,
+      });
+      expect(read("12.500 rent").amount?.places).toBe(1);
     });
 
     it("reports a currency written apart, before or after", () => {

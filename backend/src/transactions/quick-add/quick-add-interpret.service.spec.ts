@@ -16,6 +16,7 @@ jest.mock("./quick-add-candidates", () => ({
 
 import type { RuleEffectsPreview } from "../../transaction-rules/transaction-rules-applier.service";
 import * as candidatesModule from "./quick-add-candidates";
+import * as parseModule from "./quick-add-parse.util";
 import { QuickAddInterpretService } from "./quick-add-interpret.service";
 import {
   QuickAddServiceHarness,
@@ -29,6 +30,7 @@ import {
   USER,
   VISA_A,
   VISA_B,
+  YEN,
   account,
   candidates,
   dto,
@@ -285,10 +287,95 @@ describe("QuickAddInterpretService", () => {
       expect(result.ruleEffects).toBeUndefined();
     });
 
-    it("keeps four places for a fiat amount, the money precision", async () => {
-      const result = await service.interpret(USER, dto("12.3456 loblaws"));
-      expect(result.amount.value).toBe(12.3456);
-      expect(result.blockers).toEqual([]);
+    it("refuses more places than the account currency's decimal_places", async () => {
+      // CAD carries 2: the entry places the full form's CurrencyInput rounds
+      // to, not the 4 a fiat amount is stored at.
+      const cad = await service.interpret(USER, dto("12.345 loblaws"));
+      expect(cad.blockers).toEqual(["amountPrecision"]);
+      expect(cad.amount.value).toBe(12.345);
+      expect(cad.balance).toBeNull();
+      const fourPlaces = await service.interpret(USER, dto("12.3456 loblaws"));
+      expect(fourPlaces.blockers).toEqual(["amountPrecision"]);
+      const twoPlaces = await service.interpret(USER, dto("12.34 loblaws"));
+      expect(twoPlaces.blockers).toEqual([]);
+      expect(twoPlaces.amount.value).toBe(12.34);
+    });
+
+    it("holds a yen account to whole yen and a coin to its own places", async () => {
+      const yen = await service.interpret(
+        USER,
+        dto("12.5 loblaws", { contextAccountId: YEN }),
+      );
+      expect(yen.blockers).toEqual(["amountPrecision"]);
+      loaders.loadQuickAddCandidates.mockResolvedValue(
+        candidates({
+          accounts: [account("acc-btc", "Cold Wallet", 1, "BTC")],
+          currencies: [{ code: "BTC", symbol: "₿" }],
+          currencyPlaces: new Map([["BTC", 8]]),
+        }),
+      );
+      const eight = await service.interpret(
+        USER,
+        dto("0.00012345 loblaws", { contextAccountId: "acc-btc" }),
+      );
+      expect(eight.blockers).toEqual([]);
+      expect(eight.amount.value).toBe(0.00012345);
+      const nine = await service.interpret(
+        USER,
+        dto("0.000123456 loblaws", { contextAccountId: "acc-btc" }),
+      );
+      expect(nine.blockers).toEqual(["amountPrecision"]);
+    });
+
+    it("refuses an amount above the create DTO's maximum magnitude", async () => {
+      const result = await service.interpret(
+        USER,
+        dto("1000000000000 loblaws"),
+      );
+      expect(result.blockers).toEqual(["amountTooLarge"]);
+      expect(result.amount.value).toBe(1000000000000);
+      expect(result.balance).toBeNull();
+      expect(transactionsService.previewCreate).not.toHaveBeenCalled();
+      const atMax = await service.interpret(USER, dto("999999999999 loblaws"));
+      expect(atMax.blockers).toEqual([]);
+      const pinned = await service.interpret(
+        USER,
+        dto("1e13 loblaws", { pins: { amount: 12.5 } }),
+      );
+      expect(pinned.blockers).toEqual([]);
+    });
+
+    it("says what a foreign figure was, with its code when the spelling names one", async () => {
+      const euro = await service.interpret(USER, dto("20 € cafe"));
+      expect(euro.foreignAmount).toEqual({ currencyCode: "EUR", amount: 20 });
+      // Its places are the full form's to check, in the euro, not CAD's.
+      const places = await service.interpret(USER, dto("12.345 EUR cafe"));
+      expect(places.blockers).toEqual(["foreignCurrency"]);
+      expect(places.foreignAmount).toEqual({
+        currencyCode: "EUR",
+        amount: 12.345,
+      });
+      // `$` names a dozen dollars, none of them the yen.
+      const dollar = await service.interpret(
+        USER,
+        dto("$20 loblaws", { contextAccountId: YEN }),
+      );
+      expect(dollar.blockers).toEqual(["foreignCurrency"]);
+      expect(dollar.foreignAmount).toEqual({ currencyCode: null, amount: 20 });
+    });
+
+    it("has no foreign figure without the foreignCurrency blocker", async () => {
+      for (const text of ["$20 loblaws", "20 loblaws", "20 CAD loblaws"]) {
+        const result = await service.interpret(USER, dto(text));
+        expect(result.blockers).not.toContain("foreignCurrency");
+        expect(result.foreignAmount).toBeNull();
+      }
+      const pinned = await service.interpret(
+        USER,
+        dto("20 € cafe", { pins: { amount: 30 } }),
+      );
+      expect(pinned.blockers).toEqual([]);
+      expect(pinned.foreignAmount).toBeNull();
     });
 
     it("drops the account's own currency", async () => {
@@ -318,6 +405,7 @@ describe("QuickAddInterpretService", () => {
         accountId: CHQ,
         amount: -84.37,
         transactionDate: TODAY,
+        payeeId: LOBLAWS.id,
         payeeName: "Loblaws",
         categoryId: "c-groc",
         description: "weekly",
@@ -346,13 +434,41 @@ describe("QuickAddInterpretService", () => {
     });
   });
 
-  it("reads every query on the one scoped transaction", async () => {
+  it("loads in two short scoped reads and reads the text between them", async () => {
     const harness = buildQuickAddService(loaders);
-    await harness.service.interpret(USER, dto("84.37 loblaws"));
-    expect(harness.dataSource.transaction).toHaveBeenCalledTimes(1);
+    const open: string[] = [];
+    const run = harness.dataSource.transaction.getMockImplementation()!;
+    harness.dataSource.transaction.mockImplementation(async (...args) => {
+      open.push("open");
+      try {
+        return await run(...args);
+      } finally {
+        open.pop();
+      }
+    });
+    const readsInTransaction: boolean[] = [];
+    const read = parseModule.readQuickAddText;
+    const reader = jest
+      .spyOn(parseModule, "readQuickAddText")
+      .mockImplementation((input) => {
+        readsInTransaction.push(open.length > 0);
+        return read(input);
+      });
+    try {
+      await harness.service.interpret(USER, dto("84.37 loblaws"));
+    } finally {
+      reader.mockRestore();
+    }
+    expect(harness.dataSource.transaction).toHaveBeenCalledTimes(2);
+    expect(readsInTransaction).toEqual([false]);
     expect(loaders.loadQuickAddCandidates).toHaveBeenCalledWith(
       expect.anything(),
       USER,
+    );
+    expect(loaders.loadPayeeHistory).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      LOBLAWS.id,
     );
   });
 });

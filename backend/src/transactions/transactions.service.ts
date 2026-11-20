@@ -926,6 +926,14 @@ export class TransactionsService {
       /** The account-currency amount; may be left to a foreign entry to work out. */
       amount?: number;
       transactionDate: string;
+      /**
+       * The payee the commit will link, already decided by the caller (Quick
+       * Add's reading): an id is checked as the caller's and used as given,
+       * null is no linked payee. Either way `payeeName` is not resolved again,
+       * so the preview runs on the facts the commit will. Absent (every other
+       * caller) resolves `payeeName` as before.
+       */
+      payeeId?: string | null;
       payeeName?: string;
       categoryId?: string;
       description?: string;
@@ -1001,32 +1009,44 @@ export class TransactionsService {
     let payeeId: string | null = null;
     let payeeName: string | null = inputPayeeName;
     let payeeMatched = false;
-    if (inputPayeeName) {
-      const payee = await this.payeesService.resolveByName(
-        userId,
-        inputPayeeName,
-      );
-      if (payee) {
-        payeeId = payee.id;
-        payeeMatched = true;
-        // Use the matched payee's canonical name so the transaction links
-        // cleanly and the preview shows which payee the name resolved to
-        // (e.g. "Buon Gusto" -> "Buon Gusto Restaurant").
-        payeeName = payee.name;
-        // Mirror create(): when the caller gave no category, adopt the matched
-        // payee's default so the preview equals what create() will persist.
-        if (!categoryId && payee.defaultCategoryId) {
-          categoryId = payee.defaultCategoryId;
-          categoryName = payee.defaultCategory?.name ?? null;
-        }
+    // A decided id is the one create() links: checked as the caller's
+    // (`PayeesService.findOne`, 404 otherwise), never looked up by name.
+    const decided =
+      input.payeeId === undefined
+        ? undefined
+        : input.payeeId === null
+          ? null
+          : await this.payeesService.findOne(userId, input.payeeId);
+    const payee =
+      decided !== undefined
+        ? decided
+        : inputPayeeName
+          ? await this.payeesService.resolveByName(userId, inputPayeeName)
+          : null;
+    if (payee) {
+      payeeId = payee.id;
+      payeeMatched = true;
+      // Use the matched payee's canonical name so the transaction links
+      // cleanly and the preview shows which payee the name resolved to
+      // (e.g. "Buon Gusto" -> "Buon Gusto Restaurant").
+      payeeName = payee.name;
+      // Mirror create(): when the caller gave no category, adopt the matched
+      // payee's default so the preview equals what create() will persist.
+      if (!categoryId && payee.defaultCategoryId) {
+        categoryId = payee.defaultCategoryId;
+        categoryName = payee.defaultCategory?.name ?? null;
       }
     }
 
     // An unmatched name becomes a new payee on confirm unless the caller
     // explicitly opted out (createPayeeIfMissing === false), in which case it is
-    // recorded as a free-text name.
+    // recorded as a free-text name. A caller that decided the payee itself
+    // has nothing for the confirm to create.
     const payeeWillBeCreated =
-      !!payeeName && !payeeMatched && input.createPayeeIfMissing !== false;
+      decided === undefined &&
+      !!payeeName &&
+      !payeeMatched &&
+      input.createPayeeIfMissing !== false;
 
     // The same planner the commit runs (design I3), over the facts create()
     // would build. A payee that does not exist yet has no id to read, so a
@@ -1039,7 +1059,8 @@ export class TransactionsService {
         amount,
         isTransfer: false,
         payeeId,
-        payeeText: inputPayeeName,
+        // create()'s: the name sent, else the linked payee's own name.
+        payeeText: inputPayeeName ?? (decided ? decided.name : null),
         categoryId: input.hasSplits ? null : categoryId,
         description,
         tagIds: [],

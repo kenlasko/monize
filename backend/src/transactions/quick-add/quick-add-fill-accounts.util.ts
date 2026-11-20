@@ -7,6 +7,7 @@ import type {
   QuickAddAccountRef,
   QuickAddCandidateAccount,
   QuickAddField,
+  QuickAddKind,
   QuickAddSource,
 } from "./quick-add.types";
 import {
@@ -115,20 +116,61 @@ function transferSides(
   return { from: a, to: b };
 }
 
-/** Whether the accounts the text named make the entry a transfer. */
+/**
+ * Whether the accounts the text named make the entry a transfer, given the
+ * payment or deposit the text typed, if any. A typed kind never outranks the
+ * directions (`docs/future-plans/quick-add.md`, "Filling what was not
+ * typed"): two named accounts are a transfer; so is a `to` account on a
+ * payment (`paid 500 to visa` moves money into Visa) and a `from` account on
+ * a deposit (`received 100 from savings` moves it out of Savings). A `from`
+ * account on a payment and a `to` account on a deposit are the entry's own
+ * account (`spent 20 from savings`, `received 100 to savings`).
+ */
 export function accountsImplyTransfer(
   mentions: readonly AccountMention[],
+  typed: Exclude<QuickAddKind, "transfer"> | null = null,
 ): boolean {
-  return (
-    mentions.length >= 2 ||
-    mentions.some((m) => m.direction === "to" || m.direction === "from")
+  if (mentions.length >= 2) return true;
+  return mentions.some((m) =>
+    typed === "payment"
+      ? m.direction === "to"
+      : typed === "deposit"
+        ? m.direction === "from"
+        : m.direction === "to" || m.direction === "from",
   );
+}
+
+/**
+ * The account of a payment or deposit the text named: the first mention whose
+ * direction suits the kind (a payment is made from an account, a deposit made
+ * to one). Two named accounts on a pinned payment or deposit are ambiguous,
+ * the other offered first among the alternatives.
+ */
+function entryAccount(
+  mentions: readonly AccountMention[],
+  kind: QuickAddKind,
+  usage: QuickAddUsage,
+  collisions: readonly QuickAddCandidateAccount[],
+): Picked {
+  const contrary = (m: AccountMention) =>
+    (kind === "payment" && m.direction === "to") ||
+    (kind === "deposit" && m.direction === "from");
+  const ordered = [
+    ...mentions.filter((m) => !contrary(m)),
+    ...mentions.filter(contrary),
+  ];
+  const others = ordered
+    .slice(1)
+    .flatMap((m) => rankByUsage(m.candidates, usage));
+  const picked = fromMention(ordered[0], usage, [...others, ...collisions]);
+  return { ...picked, ambiguous: picked.ambiguous || mentions.length > 1 };
 }
 
 export function resolveAccounts(
   input: QuickAddFillInput,
-  isTransfer: boolean,
+  kind: QuickAddKind,
 ): { account: Picked; toAccount: Picked } {
+  const isTransfer = kind === "transfer";
   const { reading, pins, accountUsage } = input;
   const collisions = rankByUsage(reading.accountAlternatives, accountUsage);
   const none: Picked = {
@@ -138,11 +180,10 @@ export function resolveAccounts(
     alternatives: [],
   };
   if (!isTransfer) {
-    const mention = reading.accounts[0];
     const account = pins.account
       ? pinned(pins.account)
-      : mention
-        ? fromMention(mention, accountUsage, collisions)
+      : reading.accounts.length > 0
+        ? entryAccount(reading.accounts, kind, accountUsage, collisions)
         : defaultAccount(input, null, collisions);
     return { account, toAccount: none };
   }

@@ -273,7 +273,7 @@ export class UpdatePreferencesDto {
 
   @ApiPropertyOptional({
     description:
-      "Account-level defaults for the browser-local view settings, applied only where the browser has saved nothing: density (normal, compact, dense), hideRegisterYear, widgetsCollapsed, chartCollapsed (booleans), and accountOpenTarget (register, dashboard). Merged into the stored map, so a key not sent keeps its value. An unknown key or value, or null, is refused",
+      "Account-level defaults for the browser-local view settings, applied only where the browser has saved nothing: density (normal, compact, dense), hideRegisterYear, widgetsCollapsed, chartCollapsed (booleans), accountOpenTarget (register, dashboard), mobileTabs (up to three distinct tab names) and mobileAddOpens (quickAdd, fullForm: what the phone's + button opens). Merged into the stored map, so a key not sent keeps its value. An unknown key or value, or null, is refused",
     example: {
       density: "compact",
       hideRegisterYear: true,

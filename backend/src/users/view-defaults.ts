@@ -5,8 +5,8 @@
  * of `list`, in order.
  *
  * The browser keeps its own choice for every setting except
- * `accountOpenTarget` and `mobileTabs`, and these apply only where it has saved
- * nothing.
+ * `accountOpenTarget`, `mobileTabs` and `mobileAddOpens`, and these apply only
+ * where it has saved nothing.
  *
  * The same map is declared again in `frontend/src/lib/view-defaults.ts`
  * (`VIEW_DEFAULT_FIELDS`); `view-defaults.contract.spec.ts` pins the two
@@ -46,6 +46,8 @@ export const VIEW_DEFAULT_FIELDS = {
     ],
     max: 3,
   },
+  /** What the phone's + button opens: Quick Add (the default) or the full form. */
+  mobileAddOpens: ["quickAdd", "fullForm"],
 } as const;
 
 export type ViewDefaultKey = keyof typeof VIEW_DEFAULT_FIELDS;

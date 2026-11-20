@@ -48,9 +48,33 @@ const COMBINING_MARK = /\p{M}/u;
 const COMBINING_MARKS = /\p{M}/gu;
 const APOSTROPHES = new Set(["’", "‘", "ʼ"]);
 
+/**
+ * The longest line Quick Add reads, in code points after
+ * {@link normalizeQuickAddText}: NFKC can turn one typed character into
+ * eighteen (U+FDFA), so the cap is held on what the reader works on, not on
+ * what was sent (`docs/future-plans/quick-add.md`, "Bounds").
+ */
+export const QUICK_ADD_TEXT_MAX_LENGTH = 200;
+
+/**
+ * The most words the reader reads; the rest of the line is not read. Every
+ * step's work grows with the words (a wildcard alias is tried against each
+ * run of up to six of them), and a 200-character line of ordinary words is
+ * about 35; 40 leaves room for short ones without letting a line of
+ * one-letter words multiply the work.
+ */
+export const QUICK_ADD_MAX_WORDS = 40;
+
 /** NFKC, every run of whitespace as one space, trimmed. */
 export function normalizeQuickAddText(raw: string): string {
   return raw.normalize("NFKC").replace(/\s+/gu, " ").trim();
+}
+
+/** The line as the reader reads it: normalized, cut to the word and length caps. */
+export function boundedQuickAddText(raw: string): string {
+  const words = normalizeQuickAddText(raw).split(" ");
+  const kept = words.slice(0, QUICK_ADD_MAX_WORDS).join(" ");
+  return [...kept].slice(0, QUICK_ADD_TEXT_MAX_LENGTH).join("").trimEnd();
 }
 
 export function isCjkChar(ch: string): boolean {
@@ -96,15 +120,30 @@ function unitsOf(normalized: string, locale: string): TextUnit[] {
   return units;
 }
 
-/** The comparison fold of a whole string (a candidate name, a vocabulary word). */
+const PRINTABLE_ASCII = /^[\x20-\x7e\t\n\v\f\r]*$/u;
+
+/**
+ * The comparison fold of a whole string (a candidate name, a vocabulary word).
+ *
+ * Printable ASCII takes a short path with the same answer: NFKC leaves it
+ * unchanged, it holds no combining mark, diacritic or typographic apostrophe,
+ * and lower-casing it whole in the locale is lower-casing each character
+ * (Turkish `I` becomes `ı` either way). The reader folds every candidate name
+ * on every request, so this is most of its work for a reader with thousands
+ * of payees.
+ */
 export function foldForComparison(value: string, locale: string): string {
+  if (PRINTABLE_ASCII.test(value)) {
+    return lowerInLocale(value.replace(/\s+/gu, " ").trim(), locale);
+  }
   return unitsOf(normalizeQuickAddText(value), locale)
     .map((unit) => unit.folded)
     .join("");
 }
 
+/** The typed line's text model, within {@link boundedQuickAddText}'s caps. */
 export function buildQuickAddText(raw: string, locale: string): QuickAddText {
-  const units = unitsOf(normalizeQuickAddText(raw), locale);
+  const units = unitsOf(boundedQuickAddText(raw), locale);
   const foldedStart: number[] = [];
   const unitAt: number[] = [];
   let folded = "";

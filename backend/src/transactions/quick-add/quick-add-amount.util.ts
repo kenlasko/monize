@@ -27,6 +27,11 @@ export interface TypedCurrency {
 export interface TypedAmount {
   /** The magnitude, at the column scale. */
   readonly value: number;
+  /**
+   * The places typed, trailing zeros aside: more than `value` keeps when the
+   * line carries more than the column scale (`0.000123456`).
+   */
+  readonly places: number;
   readonly sign: "+" | "-" | null;
   readonly currency: TypedCurrency | null;
 }
@@ -183,6 +188,17 @@ function groupSeparatorIsSpace(numberFormat: string): boolean {
   }
 }
 
+/**
+ * The places `core` was typed with. A value with a fraction was read with its
+ * last `.` or `,` as the decimal separator, so the digits after it are the
+ * places; a whole value had none (that separator grouped thousands).
+ */
+function typedPlaces(core: string, value: number): number {
+  if (Number.isInteger(value)) return 0;
+  const fraction = /[.,](\d+)$/u.exec(core)?.[1] ?? "";
+  return fraction.replace(/0+$/u, "").length;
+}
+
 export interface AmountRead {
   readonly amount: TypedAmount;
   /** The units the amount, its sign and its currency took. */
@@ -224,6 +240,7 @@ export function readAmount(
     }
     const value = parseAmount(core, ctx.numberFormat);
     if (value === null) continue;
+    const places = typedPlaces(core, value);
 
     let currency = reading.currency;
     if (!currency) {
@@ -243,7 +260,7 @@ export function readAmount(
       if (fromBefore) spans.push(before);
     }
     return {
-      amount: { value: Math.abs(value), sign: reading.sign, currency },
+      amount: { value: Math.abs(value), sign: reading.sign, currency, places },
       spans,
     };
   }

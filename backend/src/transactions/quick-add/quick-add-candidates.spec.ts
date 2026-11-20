@@ -12,6 +12,7 @@ import { createScopedDbMocks } from "../../test-helpers/scoped-db-testing";
 import { Transaction, TransactionStatus } from "../entities/transaction.entity";
 import {
   PAYEE_HISTORY_ROWS,
+  USAGE_MAX_IDS,
   loadMostRecentAccountId,
   loadOwnedPayee,
   loadPayeeHistory,
@@ -64,7 +65,7 @@ function setup() {
 }
 
 describe("loadQuickAddCandidates", () => {
-  it("offers the reader's open, non-brokerage accounts, active payees and every category", async () => {
+  it("offers the reader's open accounts but brokerages and settlement accounts, active payees and every category", async () => {
     const s = setup();
     s.accounts.find.mockResolvedValue([
       {
@@ -87,6 +88,15 @@ describe("loadQuickAddCandidates", () => {
         currencyCode: "JPY",
         currentBalance: 0,
         accountSubType: AccountSubType.INVESTMENT_CASH,
+        managedPurpose: null,
+      },
+      {
+        id: "a4",
+        name: "Trip settlement",
+        currencyCode: "CAD",
+        currentBalance: 0,
+        accountSubType: null,
+        managedPurpose: "SHARED_SETTLEMENT",
       },
     ]);
     s.payees.find.mockResolvedValue([
@@ -197,6 +207,30 @@ describe("loadOwnedPayee", () => {
 });
 
 describe("loadUsage", () => {
+  it("counts no void row", async () => {
+    const s = setup();
+    s.builder.getRawMany.mockResolvedValue([]);
+    await loadUsage(s.m, USER, "category_id", ["c1"]);
+    expect(s.builder.andWhere).toHaveBeenCalledWith(
+      "(t.status IS NULL OR t.status <> :void)",
+      { void: TransactionStatus.VOID },
+    );
+  });
+
+  it("asks about at most USAGE_MAX_IDS distinct ids, the first given", async () => {
+    const s = setup();
+    s.builder.getRawMany.mockResolvedValue([]);
+    const ids = Array.from({ length: 70_000 }, (_v, i) => `p${i % 69_000}`);
+    await loadUsage(s.m, USER, "payee_id", ids);
+    const [, params] = s.builder.andWhere.mock.calls.find(([sql]) =>
+      String(sql).includes("IN (:...ids)"),
+    )!;
+    expect(params.ids).toHaveLength(USAGE_MAX_IDS);
+    expect(params.ids[0]).toBe("p0");
+    expect(params.ids[USAGE_MAX_IDS - 1]).toBe(`p${USAGE_MAX_IDS - 1}`);
+    expect(new Set(params.ids).size).toBe(USAGE_MAX_IDS);
+  });
+
   it("counts the caller's rows per id, with the ids as a parameter", async () => {
     const s = setup();
     s.builder.getRawMany.mockResolvedValue([

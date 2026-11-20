@@ -23,6 +23,11 @@ import type { QuickAddInterpretation } from "./quick-add.types";
 
 const ROUTE = ["transactions", "quick-add", "interpret"];
 
+// The metadata keys @nestjs/throttler's @Throttle writes per throttler name
+// (its THROTTLER_LIMIT / THROTTLER_TTL constants, not exported by the package).
+const THROTTLER_LIMIT = "THROTTLER:LIMIT";
+const THROTTLER_TTL = "THROTTLER:TTL";
+
 /** Every `POST` route of a controller, as path segments. */
 function postRoutes(controller: { prototype: object }): string[][] {
   const base = String(Reflect.getMetadata(PATH_METADATA, controller) ?? "");
@@ -82,6 +87,14 @@ describe("QuickAddController", () => {
         QuickAddController.prototype.interpret,
       ),
     ).toBe(200);
+  });
+
+  it("carries its own ceiling of 120 readings a minute", () => {
+    const handler = QuickAddController.prototype.interpret;
+    expect(Reflect.getMetadata(`${THROTTLER_LIMIT}default`, handler)).toBe(120);
+    expect(Reflect.getMetadata(`${THROTTLER_TTL}default`, handler)).toBe(
+      60_000,
+    );
   });
 
   it("sits behind AuthGuard('jwt') and is not open to personal access tokens", () => {

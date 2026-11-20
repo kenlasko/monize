@@ -34,6 +34,10 @@ export interface QuickAddPins {
   readonly payee?: QuickAddCandidatePayee;
   readonly payeeName?: string;
   readonly category?: QuickAddCandidateCategory;
+  /** The reader cleared the payee: none, and never guessed again. */
+  readonly clearPayee?: boolean;
+  /** The reader cleared the category: none, and never guessed again. */
+  readonly clearCategory?: boolean;
 }
 
 /** Transaction counts per id, for "the most used". */
@@ -91,6 +95,11 @@ export function field<T>(
     ambiguous,
     alternatives: alternatives.slice(0, QUICK_ADD_MAX_ALTERNATIVES),
   };
+}
+
+/** A field the reader cleared by hand: answered as none, as a pin. */
+export function clearedField<T>(): QuickAddField<T> {
+  return { value: null, source: "pinned", ambiguous: false, alternatives: [] };
 }
 
 /** Most used first, then by name, then by id, so the order is stable. */

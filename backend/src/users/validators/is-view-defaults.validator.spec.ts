@@ -91,6 +91,20 @@ describe("IsViewDefaultsConstraint", () => {
     expect(validator.validate({ density: null })).toBe(false);
   });
 
+  it("accepts either thing the + button opens, and refuses anything else", () => {
+    expect(validator.validate({ mobileAddOpens: "quickAdd" })).toBe(true);
+    expect(validator.validate({ mobileAddOpens: "fullForm" })).toBe(true);
+    expect(
+      validator.validate({ mobileTabs: ["bills"], mobileAddOpens: "fullForm" }),
+    ).toBe(true);
+    expect(validator.validate({ mobileAddOpens: "newTransaction" })).toBe(
+      false,
+    );
+    expect(validator.validate({ mobileAddOpens: "QuickAdd" })).toBe(false);
+    expect(validator.validate({ mobileAddOpens: ["quickAdd"] })).toBe(false);
+    expect(validator.validate({ mobileAddOpens: null })).toBe(false);
+  });
+
   it("rejects a non-boolean flag", () => {
     expect(validator.validate({ chartCollapsed: "true" })).toBe(false);
     expect(validator.validate({ widgetsCollapsed: 1 })).toBe(false);
@@ -103,7 +117,11 @@ describe("IsViewDefaultsConstraint", () => {
     ).toBe(false);
   });
 
-  it("names the field in its default message", () => {
+  it("names the field and every key in its default message", () => {
     expect(validator.defaultMessage()).toContain("viewDefaults");
+    for (const key of Object.keys(VIEW_DEFAULT_FIELDS)) {
+      expect(validator.defaultMessage()).toContain(key);
+    }
+    expect(validator.defaultMessage()).toContain("quickAdd or fullForm");
   });
 });

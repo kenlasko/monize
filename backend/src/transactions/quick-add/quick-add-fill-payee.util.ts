@@ -10,6 +10,7 @@ import {
   QuickAddPayeeResolution,
   QuickAddPins,
   QuickAddUsage,
+  clearedField,
   field,
   payeeRef,
   rankByUsage,
@@ -31,9 +32,22 @@ function splitAtWord(words: string, max: number): [string, string | null] {
 }
 
 /**
- * The payee: pinned, else typed (a whole name or alias), else inferred (a
- * typed word starting payee names, ranked by use; a tie is ambiguous), else
- * the leftover words as a new payee. With a payee, the leftover is the memo.
+ * The memo beside a payee the reader pinned (or cleared): the words that
+ * produced the text's own payee are replaced by the pin, so they are not the
+ * memo. A payee read from the text already left them out of the leftover;
+ * without one, the leftover was the new payee's name, and only what did not
+ * fit in a name is left.
+ */
+function memoBesidePinnedPayee(reading: QuickAddReading): string | null {
+  if (reading.payee || !reading.leftover) return reading.leftover;
+  return splitAtWord(reading.leftover, QUICK_ADD_PAYEE_NAME_MAX_LENGTH)[1];
+}
+
+/**
+ * The payee: pinned, else cleared, else typed (a whole name or alias), else
+ * inferred (a typed word starting payee names, ranked by use; a tie is
+ * ambiguous), else the leftover words as a new payee. With a payee, the
+ * leftover is the memo.
  */
 export function resolveQuickAddPayee(
   reading: QuickAddReading,
@@ -45,14 +59,21 @@ export function resolveQuickAddPayee(
     return {
       field: field(payeeRef(pins.payee), "pinned"),
       payee: pins.payee,
-      memo: reading.leftover,
+      memo: memoBesidePinnedPayee(reading),
     };
   }
   if (pins.payeeName) {
     return {
       field: field({ id: null, name: pins.payeeName }, "pinned"),
       payee: null,
-      memo: reading.leftover,
+      memo: memoBesidePinnedPayee(reading),
+    };
+  }
+  if (pins.clearPayee) {
+    return {
+      field: clearedField<QuickAddPayeeRef>(),
+      payee: null,
+      memo: memoBesidePinnedPayee(reading),
     };
   }
   if (reading.payee) {

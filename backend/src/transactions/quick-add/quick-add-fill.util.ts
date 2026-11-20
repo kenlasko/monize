@@ -4,13 +4,15 @@
  * and what `QuickAddInterpretService` loaded. A pinned field always wins and
  * is never re-read from the text.
  *
- * - kind: transfer when two accounts were named, or one with `to` or `from`;
- *   otherwise deposit for an income category or a payee whose last 10 rows
- *   are mostly deposits (inferred); otherwise payment (default).
+ * - kind: pinned; else a typed transfer; else transfer when two accounts
+ *   were named, or one with a direction the typed payment or deposit (if
+ *   any) does not own (`accountsImplyTransfer`); else the typed payment or
+ *   deposit; else deposit for an income category or a payee whose last 10
+ *   rows are mostly deposits (inferred); otherwise payment (default).
  * - account and toAccount: `quick-add-fill-accounts.util.ts`.
- * - category (not for a transfer): the payee's most frequent category over
- *   its last 10 unsplit rows, the most recent winning a tie; otherwise its
- *   default category (inferred).
+ * - category (not for a transfer): pinned or cleared; else the payee's most
+ *   frequent category over its last 10 unsplit rows, the most recent winning
+ *   a tie; otherwise its default category (inferred).
  * - date: today (default).
  *
  * Then the blockers, and the balance line under the predicate
@@ -18,7 +20,9 @@
  */
 import { decimalPlacesOf } from "../../common/amount-precision.util";
 import { moneyDecimalsForCode } from "../../common/currency-places.util";
-import { roundMoney } from "../../common/round.util";
+import { MONEY_SCALE, roundMoney } from "../../common/round.util";
+import { TRANSACTION_AMOUNT_MAX_MAGNITUDE } from "../dto/create-transaction.dto";
+import type { TypedCurrency } from "./quick-add-amount.util";
 import {
   QUICK_ADD_KINDS,
   QuickAddAccountRef,
@@ -28,6 +32,7 @@ import {
   QuickAddCandidateCategory,
   QuickAddCategoryRef,
   QuickAddField,
+  QuickAddForeignAmount,
   QuickAddInterpretation,
   QuickAddKind,
   QuickAddSource,
@@ -35,6 +40,7 @@ import {
 import {
   QuickAddFillInput,
   categoryRef,
+  clearedField,
   field,
   rankByUsage,
   withoutIds,
@@ -49,8 +55,22 @@ import {
 const AMOUNT_BLOCKERS: ReadonlySet<QuickAddBlocker> = new Set([
   "zeroAmount",
   "amountPrecision",
+  "amountTooLarge",
   "foreignCurrency",
 ]);
+
+/**
+ * The places an amount in `code` is entered at: its `currencies.decimal_places`
+ * (the column default, 2, for a code the map does not hold), the places the
+ * full form's `CurrencyInput` rounds to, never more than the column scale. A
+ * typed value with more would carry units no form can show.
+ */
+function entryDecimalsFor(
+  places: ReadonlyMap<string, number>,
+  code: string,
+): number {
+  return Math.min(MONEY_SCALE, places.get(code.toUpperCase()) ?? 2);
+}
 
 /** The payee's most frequent recent category, the most recent winning a tie. */
 function historyCategories(
@@ -84,6 +104,9 @@ function resolveCategory(input: QuickAddFillInput): {
       field: field(categoryRef(pins.category), "pinned"),
       category: pins.category,
     };
+  }
+  if (pins.clearCategory) {
+    return { field: clearedField<QuickAddCategoryRef>(), category: null };
   }
   if (reading.category) {
     const ranked = rankByUsage(
@@ -139,9 +162,43 @@ function kindField(
   );
 }
 
+/**
+ * The kind the text and the pins decide before any history is read: pinned;
+ * else a typed transfer; else a transfer the named accounts' directions make
+ * (a typed payment or deposit never outranks them); else the typed kind. Null
+ * leaves it to the category and the payee's history.
+ */
+function statedKind(
+  input: QuickAddFillInput,
+): { value: QuickAddKind; source: QuickAddSource } | null {
+  const { reading, pins } = input;
+  if (pins.kind) return { value: pins.kind, source: "pinned" };
+  if (reading.kind === "transfer")
+    return { value: "transfer", source: "typed" };
+  if (accountsImplyTransfer(reading.accounts, reading.kind)) {
+    return { value: "transfer", source: "inferred" };
+  }
+  return reading.kind ? { value: reading.kind, source: "typed" } : null;
+}
+
+/** The typed figure in another currency, or null when it is the account's. */
+function foreignAmountOf(
+  typed: TypedCurrency | null,
+  amount: number | null,
+  account: QuickAddCandidateAccount | null,
+): QuickAddForeignAmount | null {
+  if (!typed || !account || amount === null) return null;
+  if (typed.codes.includes(account.currencyCode.toUpperCase())) return null;
+  return {
+    currencyCode: typed.codes.length === 1 ? typed.codes[0] : null,
+    amount,
+  };
+}
+
 function blockersFor(facts: {
   amount: number | null;
   exceedsPrecision: boolean;
+  tooLarge: boolean;
   account: QuickAddCandidateAccount | null;
   toAccount: QuickAddCandidateAccount | null;
   ambiguousAccount: boolean;
@@ -152,6 +209,7 @@ function blockersFor(facts: {
   const blockers: QuickAddBlocker[] = [];
   if (amount === null) blockers.push("missingAmount");
   else if (amount === 0) blockers.push("zeroAmount");
+  else if (facts.tooLarge) blockers.push("amountTooLarge");
   else if (facts.exceedsPrecision) blockers.push("amountPrecision");
   if (!account) blockers.push("missingAccount");
   if (facts.ambiguousAccount) blockers.push("ambiguousAccount");
@@ -195,19 +253,8 @@ function balanceLine(
 
 export function fillQuickAdd(input: QuickAddFillInput): QuickAddInterpretation {
   const { reading, pins } = input;
-  const stated: { value: QuickAddKind; source: QuickAddSource } | null =
-    pins.kind
-      ? { value: pins.kind, source: "pinned" }
-      : reading.kind
-        ? { value: reading.kind, source: "typed" }
-        : null;
-  const isTransfer = stated
-    ? stated.value === "transfer"
-    : accountsImplyTransfer(reading.accounts);
-
-  const accounts = resolveAccounts(input, isTransfer);
-  const account = accounts.account.account;
-  const toAccount = isTransfer ? accounts.toAccount.account : null;
+  const stated = statedKind(input);
+  const isTransfer = stated?.value === "transfer";
   const category = isTransfer
     ? { field: field<QuickAddCategoryRef>(null, "none"), category: null }
     : resolveCategory(input);
@@ -218,30 +265,45 @@ export function fillQuickAdd(input: QuickAddFillInput): QuickAddInterpretation {
     recent.filter((row) => row.amount > 0).length > recent.length / 2;
   const kind = stated
     ? kindField(stated.value, stated.source)
-    : isTransfer
-      ? kindField("transfer", "inferred")
-      : category.category?.isIncome || mostlyDeposits
-        ? kindField("deposit", "inferred")
-        : kindField("payment", "default");
+    : category.category?.isIncome || mostlyDeposits
+      ? kindField("deposit", "inferred")
+      : kindField("payment", "default");
+  const kindValue = kind.value ?? "payment";
 
-  const places = moneyDecimalsForCode(
-    input.currencyPlaces,
-    account?.currencyCode,
-  );
+  const accounts = resolveAccounts(input, kindValue);
+  const account = accounts.account.account;
+  const toAccount = isTransfer ? accounts.toAccount.account : null;
+
   const rawAmount = pins.amount ?? reading.amount?.value ?? null;
-  const exceedsPrecision =
-    rawAmount !== null && !!account && decimalPlacesOf(rawAmount) > places;
-  const amount =
-    rawAmount === null || !account || exceedsPrecision
-      ? rawAmount
-      : roundMoney(rawAmount, places);
   // A pinned amount was set in the account's currency on the chip.
   const typedCurrency =
     pins.amount === undefined ? (reading.amount?.currency ?? null) : null;
-  const foreignCurrency =
-    !!typedCurrency &&
-    !!account &&
-    !typedCurrency.codes.includes(account.currencyCode.toUpperCase());
+  const foreignAmount = foreignAmountOf(typedCurrency, rawAmount, account);
+  const tooLarge =
+    rawAmount !== null &&
+    (!Number.isFinite(rawAmount) ||
+      rawAmount > TRANSACTION_AMOUNT_MAX_MAGNITUDE);
+  // A foreign figure is not in the account's currency: its places are the
+  // full form's to check, once it is converted there.
+  const entryPlaces =
+    account && !foreignAmount
+      ? entryDecimalsFor(input.currencyPlaces, account.currencyCode)
+      : null;
+  const placesTyped =
+    pins.amount === undefined && reading.amount
+      ? Math.max(reading.amount.places, decimalPlacesOf(reading.amount.value))
+      : rawAmount === null
+        ? 0
+        : decimalPlacesOf(rawAmount);
+  const exceedsPrecision =
+    rawAmount !== null &&
+    entryPlaces !== null &&
+    !tooLarge &&
+    placesTyped > entryPlaces;
+  const amount =
+    rawAmount === null || entryPlaces === null || exceedsPrecision || tooLarge
+      ? rawAmount
+      : roundMoney(rawAmount, entryPlaces);
 
   const date = pins.date ?? reading.date ?? input.today;
   const dateSource: QuickAddSource = pins.date
@@ -253,27 +315,36 @@ export function fillQuickAdd(input: QuickAddFillInput): QuickAddInterpretation {
   const blockers = blockersFor({
     amount,
     exceedsPrecision,
+    tooLarge,
     account,
     toAccount,
     ambiguousAccount:
       accounts.account.ambiguous ||
       (isTransfer && accounts.toAccount.ambiguous),
-    isTransfer: kind.value === "transfer",
-    foreignCurrency,
+    isTransfer,
+    foreignCurrency: foreignAmount !== null,
   });
 
   const balance =
     account && amount !== null && !blockers.some((b) => AMOUNT_BLOCKERS.has(b))
-      ? balanceLine(account, kind.value === "deposit" ? amount : -amount, {
+      ? balanceLine(account, kindValue === "deposit" ? amount : -amount, {
           date,
-          places,
+          places: moneyDecimalsForCode(
+            input.currencyPlaces,
+            account.currencyCode,
+          ),
           isFuture: input.isFuture,
         })
       : null;
 
   return {
     kind,
-    amount: field(amount, pins.amount !== undefined ? "pinned" : "typed"),
+    // A figure JSON cannot carry (1e309 is Infinity) is no amount to show;
+    // `amountTooLarge` still says why Save is refused.
+    amount: field(
+      amount !== null && Number.isFinite(amount) ? amount : null,
+      pins.amount !== undefined ? "pinned" : "typed",
+    ),
     date: field(date, dateSource),
     account: toField(accounts.account),
     toAccount: isTransfer
@@ -284,5 +355,6 @@ export function fillQuickAdd(input: QuickAddFillInput): QuickAddInterpretation {
     memo: input.payee.memo,
     blockers,
     balance,
+    foreignAmount,
   };
 }

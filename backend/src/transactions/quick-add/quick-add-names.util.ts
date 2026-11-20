@@ -58,6 +58,8 @@ export interface NamesInput {
   readonly payees: readonly QuickAddCandidatePayee[];
   readonly categories: readonly QuickAddCandidateCategory[];
   readonly connectors: readonly FoldedVocabularyWord[];
+  /** {@link ALIAS_GLOB_BUDGET} unless a spec needs a smaller one. */
+  readonly aliasGlobBudget?: number;
 }
 
 type NameMatch =
@@ -69,6 +71,24 @@ type NameMatch =
 const ALIAS_MAX_WORDS = 6;
 /** A wildcard alias with fewer literal characters would match nearly any word. */
 const ALIAS_MIN_LITERAL = 2;
+/**
+ * The glob evaluations (`matchesAliasPattern` calls) one reading may spend on
+ * wildcard aliases. The reading runs on the event loop that serves every
+ * user, and a reader's aliases are theirs to multiply (an import, a restored
+ * backup), so the work is bounded per request rather than per alias: once it
+ * is spent, the aliases not yet tried match nothing and the reading goes on
+ * with the names, plain aliases and spans already found. A 40-word line gives
+ * an alias at most 40 x 6 runs, so the budget always covers dozens of aliases
+ * whose literal parts all occur in the line, which is all a real line needs.
+ */
+export const ALIAS_GLOB_BUDGET = 12_000;
+/** The most spans one wildcard alias contributes to a reading. */
+export const ALIAS_MAX_SPANS = 4;
+
+/** What is left of {@link ALIAS_GLOB_BUDGET} for this reading. */
+export interface GlobBudget {
+  remaining: number;
+}
 
 function phraseMatches(
   text: QuickAddText,
@@ -114,38 +134,76 @@ function wordRuns(text: QuickAddText): WordRuns {
   return { line: text.folded, words, folded };
 }
 
+/** Whether `literals` occur in `line` in order, without overlapping. */
+function occursInOrder(line: string, literals: readonly string[]): boolean {
+  let from = 0;
+  for (const literal of literals) {
+    const at = line.indexOf(literal, from);
+    if (at === -1) return false;
+    from = at + literal.length;
+  }
+  return true;
+}
+
 /**
  * The smallest runs of whole words a wildcard alias matches
  * (`matchesAliasPattern`, the importer's glob): a run that still matches
  * without its first or last word is not taken, so `*coffee*` takes `coffee`
- * and never the amount typed before it. An alias whose literal parts are not
- * all in the line is skipped before any run is tried.
+ * and never the amount typed before it. An alias whose literal parts do not
+ * all occur in the line, in order, is skipped before any run is tried. Each
+ * run tried spends one of `budget`; when it runs out the alias stops, keeping
+ * only the spans already proven smallest, and at most {@link ALIAS_MAX_SPANS}.
  */
-function aliasSpans(runs: WordRuns, pattern: string): UnitSpan[] {
+function aliasSpans(
+  runs: WordRuns,
+  pattern: string,
+  budget: GlobBudget,
+): UnitSpan[] {
   const literals = pattern.split("*").filter((part) => part !== "");
   const literalLength = literals.join("").length;
   if (literalLength < ALIAS_MIN_LITERAL) return [];
-  if (!literals.every((part) => runs.line.includes(part))) return [];
+  if (!occursInOrder(runs.line, literals)) return [];
   const { words, folded } = runs;
-  const answers = folded.map((row) => row.map((): boolean | null => null));
-  const matches = (i: number, j: number): boolean => {
+  const answers = new Map<number, boolean>();
+  /** Whether words `i`..`j` match; null once the budget is spent. */
+  const matches = (i: number, j: number): boolean | null => {
     const run = i <= j ? folded[i]?.[j - i] : undefined;
     if (run === undefined) return false;
-    const known = answers[i][j - i];
-    if (known !== null) return known;
+    const key = i * ALIAS_MAX_WORDS + (j - i);
+    const known = answers.get(key);
+    if (known !== undefined) return known;
+    if (budget.remaining <= 0) return null;
+    budget.remaining -= 1;
     const answer = matchesAliasPattern(run, pattern);
-    answers[i][j - i] = answer;
+    answers.set(key, answer);
     return answer;
   };
   const found: UnitSpan[] = [];
   for (let i = 0; i < words.length; i++) {
     for (let j = i; j < Math.min(words.length, i + ALIAS_MAX_WORDS); j++) {
-      if (!matches(i, j)) continue;
-      if (matches(i + 1, j) || matches(i, j - 1)) continue;
+      const whole = matches(i, j);
+      if (whole === null) return found;
+      if (!whole) continue;
+      const withoutFirst = matches(i + 1, j);
+      const withoutLast = matches(i, j - 1);
+      if (withoutFirst === null || withoutLast === null) return found;
+      if (withoutFirst || withoutLast) continue;
       found.push({ start: words[i].start, end: words[j].end });
+      if (found.length >= ALIAS_MAX_SPANS) return found;
     }
   }
   return found;
+}
+
+/** `matches` with each span once per item: a name and its aliases often agree. */
+function distinctMatches(matches: readonly NameMatch[]): NameMatch[] {
+  const seen = new Set<string>();
+  return matches.filter((match) => {
+    const key = `${match.kind}:${match.item.id}:${match.span.start}:${match.span.end}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function collectMatches(
@@ -154,6 +212,9 @@ function collectMatches(
   input: NamesInput,
 ): NameMatch[] {
   const runs = wordRuns(text);
+  const budget: GlobBudget = {
+    remaining: input.aliasGlobBudget ?? ALIAS_GLOB_BUDGET,
+  };
   const accounts = input.accounts.flatMap((item) =>
     phraseMatches(text, used, [item.name], input.locale).map(
       (span): NameMatch => ({ span, kind: "account", item }),
@@ -164,12 +225,15 @@ function collectMatches(
       item.name,
       ...item.aliases.filter((alias) => !alias.includes("*")),
     ];
-    const wildcard = item.aliases
-      .filter((alias) => alias.includes("*"))
-      .map((alias) => foldForComparison(alias, input.locale));
+    const wildcard =
+      budget.remaining > 0
+        ? item.aliases
+            .filter((alias) => alias.includes("*"))
+            .map((alias) => foldForComparison(alias, input.locale))
+        : [];
     return [
       ...phraseMatches(text, used, plain, input.locale),
-      ...wildcard.flatMap((pattern) => aliasSpans(runs, pattern)),
+      ...wildcard.flatMap((pattern) => aliasSpans(runs, pattern, budget)),
     ].map((span): NameMatch => ({ span, kind: "payee", item }));
   });
   const categories = input.categories.flatMap((item) =>
@@ -177,7 +241,7 @@ function collectMatches(
       (span): NameMatch => ({ span, kind: "category", item }),
     ),
   );
-  return [...accounts, ...payees, ...categories];
+  return distinctMatches([...accounts, ...payees, ...categories]);
 }
 
 function uniqueById<T extends { id: string }>(items: readonly T[]): T[] {

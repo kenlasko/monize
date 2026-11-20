@@ -91,7 +91,8 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
         value: { id: "c-salary" },
         source: "pinned",
       });
-      // The pinned payee leaves the unread word for the memo, not a partial match.
+      // `loblaws` produced the text's payee, which the pin replaces, so it is
+      // not the memo; `tim` is a word nothing used, as beside a typed payee.
       expect(result.memo).toBe("tim");
       expect(loaders.loadPayeeHistory).toHaveBeenCalledWith(
         expect.anything(),
@@ -111,7 +112,7 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
       expect(result.payee.source).toBe("typed");
     });
 
-    it("take a new payee's name", async () => {
+    it("take a new payee's name, in place of the words that named one", async () => {
       const result = await service.interpret(
         USER,
         dto("84.37 weekly shop", { pins: { payeeName: "Farmers Market" } }),
@@ -120,7 +121,62 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
         value: { id: null, name: "Farmers Market" },
         source: "pinned",
       });
-      expect(result.memo).toBe("weekly shop");
+      // `weekly shop` was the text's new payee; the pin replaced it.
+      expect(result.memo).toBeNull();
+    });
+
+    describe("a pinned payee replaces the words that produced the text's payee", () => {
+      it.each([
+        // A new payee's name: picking Starbucks for a misspelling.
+        ["20 starbuks", null],
+        // A partial match: picking a payee over the guess `tim` made.
+        ["84.37 tim", null],
+        ["84.37 tim coffee", "coffee"],
+        // A whole name: what is left beside it stays the memo.
+        ["84.37 loblaws weekly", "weekly"],
+      ])("%s with a picked payee has the memo %j", async (text, memo) => {
+        const result = await service.interpret(
+          USER,
+          dto(text, { pins: { payeeId: LOBLAWS.id } }),
+        );
+        expect(result.payee).toMatchObject({
+          value: { id: LOBLAWS.id },
+          source: "pinned",
+        });
+        expect(result.memo).toBe(memo);
+      });
+
+      it("keeps what did not fit in a new payee's name as the memo", async () => {
+        const words = Array.from({ length: 25 }, (_v, i) => `word${i}`);
+        const unpinned = await service.interpret(
+          USER,
+          dto(`12 ${words.join(" ")}`),
+        );
+        const pinned = await service.interpret(
+          USER,
+          dto(`12 ${words.join(" ")}`, { pins: { payeeName: "Market" } }),
+        );
+        expect(unpinned.memo).not.toBeNull();
+        expect(pinned.memo).toBe(unpinned.memo);
+      });
+
+      it("previews the picked payee's id, not the text's name", async () => {
+        await service.interpret(
+          USER,
+          dto("84.37 tim", {
+            contextAccountId: CHQ,
+            pins: { payeeId: LOBLAWS.id },
+          }),
+        );
+        expect(transactionsService.previewCreate).toHaveBeenCalledWith(
+          USER,
+          expect.objectContaining({
+            payeeId: LOBLAWS.id,
+            payeeName: "Loblaws",
+            description: undefined,
+          }),
+        );
+      });
     });
 
     it.each([
@@ -133,6 +189,134 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
         service.interpret(USER, dto("84.37 loblaws", { pins })),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(transactionsService.previewCreate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("cleared fields", () => {
+    const CLEARED = {
+      value: null,
+      source: "pinned",
+      ambiguous: false,
+      alternatives: [],
+    };
+
+    it("answer a cleared payee as none and guess nothing from it", async () => {
+      loaders.loadPayeeHistory.mockResolvedValue({
+        recent: [
+          { accountId: CHQ, amount: 50 },
+          { accountId: CHQ, amount: 50 },
+        ],
+        categoryIds: ["c-groc"],
+      });
+      const result = await service.interpret(
+        USER,
+        dto("84.37 loblaws", { pins: { clear: ["payee"] } }),
+      );
+      expect(result.payee).toEqual(CLEARED);
+      expect(loaders.loadPayeeHistory).not.toHaveBeenCalled();
+      // No category from the payee's history or its default (c-food), no
+      // deposit from its history, no account from it.
+      expect(result.category).toMatchObject({ value: null, source: "none" });
+      expect(result.kind).toMatchObject({
+        value: "payment",
+        source: "default",
+      });
+      expect(result.account.value?.id).toBe(SAV);
+      expect(result.memo).toBeNull();
+      expect(transactionsService.previewCreate).toHaveBeenCalledWith(
+        USER,
+        expect.objectContaining({ payeeId: null, payeeName: undefined }),
+      );
+    });
+
+    it("answer a cleared payee as none for a line that named a new one", async () => {
+      const result = await service.interpret(
+        USER,
+        dto("12 corner store", { pins: { clear: ["payee"] } }),
+      );
+      expect(result.payee).toEqual(CLEARED);
+      expect(result.memo).toBeNull();
+    });
+
+    it("answer a cleared category as none, never from history or the payee's default", async () => {
+      loaders.loadPayeeHistory.mockResolvedValue({
+        recent: [],
+        categoryIds: ["c-groc", "c-groc"],
+      });
+      const fromHistory = await service.interpret(
+        USER,
+        dto("84.37 loblaws", { pins: { clear: ["category"] } }),
+      );
+      expect(fromHistory.category).toEqual(CLEARED);
+      expect(fromHistory.payee.value?.id).toBe(LOBLAWS.id);
+      loaders.loadPayeeHistory.mockResolvedValue({
+        recent: [],
+        categoryIds: [],
+      });
+      const fromDefault = await service.interpret(
+        USER,
+        dto("84.37 loblaws", { pins: { clear: ["category"] } }),
+      );
+      expect(fromDefault.category).toEqual(CLEARED);
+      const typed = await service.interpret(
+        USER,
+        dto("84.37 loblaws groceries", { pins: { clear: ["category"] } }),
+      );
+      expect(typed.category).toEqual(CLEARED);
+      expect(transactionsService.previewCreate).toHaveBeenLastCalledWith(
+        USER,
+        expect.objectContaining({ categoryId: undefined }),
+      );
+    });
+
+    it("never make an income category's deposit of a cleared one", async () => {
+      const result = await service.interpret(
+        USER,
+        dto("2500 salary", { pins: { clear: ["category"] } }),
+      );
+      expect(result.category).toEqual(CLEARED);
+      expect(result.kind).toMatchObject({
+        value: "payment",
+        source: "default",
+      });
+    });
+
+    it("clear both fields at once", async () => {
+      const result = await service.interpret(
+        USER,
+        dto("84.37 loblaws", { pins: { clear: ["payee", "category"] } }),
+      );
+      expect(result.payee).toEqual(CLEARED);
+      expect(result.category).toEqual(CLEARED);
+    });
+
+    it("give way to a value pinned for the same field", async () => {
+      const result = await service.interpret(
+        USER,
+        dto("84.37 loblaws", {
+          pins: {
+            payeeId: LOBLAWS.id,
+            categoryId: "c-groc",
+            clear: ["payee", "category"],
+          },
+        }),
+      );
+      expect(result.payee).toMatchObject({
+        value: { id: LOBLAWS.id },
+        source: "pinned",
+      });
+      expect(result.category).toMatchObject({
+        value: { id: "c-groc" },
+        source: "pinned",
+      });
+    });
+
+    it("leave a transfer's category not applicable", async () => {
+      const result = await service.interpret(
+        USER,
+        dto("500 chequing to savings", { pins: { clear: ["category"] } }),
+      );
+      expect(result.category).toMatchObject({ value: null, source: "none" });
     });
   });
 
@@ -167,6 +351,7 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
         toAccountId: SAV,
         amount: 500,
         transactionDate: TODAY,
+        payeeId: null,
         payeeName: undefined,
         description: undefined,
       });
@@ -268,7 +453,8 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
     });
 
     it("cuts a new payee's name at a word to what a save accepts, the rest the memo", async () => {
-      const words = Array.from({ length: 30 }, (_v, i) => `word${i}`);
+      // 167 characters: within the line's cap, past a payee name's.
+      const words = Array.from({ length: 25 }, (_v, i) => `word${i}`);
       const result = await service.interpret(
         USER,
         dto(`12 ${words.join(" ")}`),

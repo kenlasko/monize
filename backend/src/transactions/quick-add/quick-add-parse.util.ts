@@ -55,8 +55,8 @@ export interface QuickAddParseInput {
   readonly categories: readonly QuickAddCandidateCategory[];
   /** The currencies the reader's accounts are held in. */
   readonly heldCurrencies: readonly HeldCurrency[];
-  /** A payee is pinned: leftover words are the memo, never a partial match. */
-  readonly payeePinned?: boolean;
+  /** `ALIAS_GLOB_BUDGET` unless a spec needs a smaller one. */
+  readonly aliasGlobBudget?: number;
 }
 
 export interface QuickAddReading {
@@ -78,7 +78,10 @@ export interface QuickAddReading {
     readonly candidates: readonly QuickAddCandidateCategory[];
   } | null;
   readonly categoryAlternatives: readonly QuickAddCandidateCategory[];
-  /** The words nothing else used, in typed order; null when none. */
+  /**
+   * The words nothing else used, in typed order; null when none. Without a
+   * payee read from the text, these are the words a new payee is named from.
+   */
   readonly leftover: string | null;
 }
 
@@ -119,8 +122,7 @@ function partialPayee(
   for (const [first, token] of tokens.entries()) {
     const head = foldForComparison(token.text, locale);
     if ([...head].length < PARTIAL_MATCH_MIN_LENGTH) continue;
-    let best: { last: number; candidates: QuickAddCandidatePayee[] } | null =
-      null;
+    let best: { last: number; candidates: typeof folded } | null = null;
     let run = "";
     for (let last = first; last < tokens.length; last++) {
       if (
@@ -129,17 +131,27 @@ function partialPayee(
       ) {
         break;
       }
-      run =
+      const piece =
         last === first
           ? head
-          : `${run} ${foldForComparison(tokens[last].text, locale)}`;
-      const candidates = folded
-        .filter(({ name }) => name.startsWith(run))
-        .map(({ payee }) => payee);
+          : ` ${foldForComparison(tokens[last].text, locale)}`;
+      const at = run.length;
+      run += piece;
+      // A longer run starts only names the shorter one did, so only the
+      // word it adds is compared, where it falls in the name.
+      const candidates = (best?.candidates ?? folded).filter(({ name }) =>
+        name.startsWith(piece, at),
+      );
       if (candidates.length === 0) break;
       best = { last, candidates };
     }
-    if (best) return { first, ...best };
+    if (best) {
+      return {
+        first,
+        last: best.last,
+        candidates: best.candidates.map(({ payee }) => payee),
+      };
+    }
   }
   return null;
 }
@@ -166,26 +178,39 @@ export function readQuickAddText(input: QuickAddParseInput): QuickAddReading {
     payees: input.payees,
     categories: input.categories,
     connectors: connectorWords(vocabulary),
+    aliasGlobBudget: input.aliasGlobBudget,
   });
 
-  const dated = readDate(text, names.used, input);
-  const afterDate = (dated?.spans ?? []).reduce(markUsed, names.used);
-
-  const amountRead = readAmount(text, afterDate, {
+  const amountContext = {
     locale: input.locale,
     numberFormat: input.numberFormat,
     spellings: currencySpellings(input.locale, input.heldCurrencies),
     heldCodes: new Set(input.heldCurrencies.map((c) => c.code.toUpperCase())),
-  });
+  };
+  const dateThenAmount = (skipMonthNames: boolean) => {
+    const dated = readDate(text, names.used, input, { skipMonthNames });
+    const afterDate = (dated?.spans ?? []).reduce(markUsed, names.used);
+    const amountRead = readAmount(text, afterDate, amountContext);
+    return { dated, afterDate, amountRead };
+  };
+  // A month name's only neighbouring number is the amount when the line
+  // holds no other: `20 may flowers` is 20, not the twentieth of May.
+  const first = dateThenAmount(false);
+  const retried =
+    !first.amountRead && first.dated?.dayMayBeAmount
+      ? dateThenAmount(true)
+      : null;
+  const { dated, afterDate, amountRead } = retried?.amountRead
+    ? retried
+    : first;
   const afterAmount = (amountRead?.spans ?? []).reduce(markUsed, afterDate);
 
   const keywords = readKeywords(text, afterAmount, vocabulary);
   const leftoverTokens = wordTokens(freeTokens(text, keywords.used));
 
-  const partial =
-    names.payee || input.payeePinned
-      ? null
-      : partialPayee(text, leftoverTokens, input.payees, input.locale);
+  const partial = names.payee
+    ? null
+    : partialPayee(text, leftoverTokens, input.payees, input.locale);
   const remaining = partial
     ? leftoverTokens.filter((_t, i) => i < partial.first || i > partial.last)
     : leftoverTokens;

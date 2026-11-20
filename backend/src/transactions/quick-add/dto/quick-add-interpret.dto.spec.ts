@@ -46,6 +46,36 @@ describe("QuickAddInterpretDto", () => {
     expect(await errorsFor({ ...valid, text: ["a"] })).toEqual(["text"]);
   });
 
+  it("holds the cap on the line as the reader normalizes it", async () => {
+    // U+FDFA is one character sent and eighteen after NFKC.
+    expect("\uFDFA".normalize("NFKC")).toHaveLength(18);
+    expect(await errorsFor({ ...valid, text: "\uFDFA".repeat(11) })).toEqual(
+      [],
+    );
+    expect(await errorsFor({ ...valid, text: "\uFDFA".repeat(12) })).toEqual([
+      "text",
+    ]);
+    expect(
+      await errorsFor({
+        ...valid,
+        text: "\uFDFA".repeat(QUICK_ADD_TEXT_MAX_LENGTH),
+      }),
+    ).toEqual(["text"]);
+    // Full-width digits fold one for one; runs of spaces count as one.
+    expect(
+      await errorsFor({
+        ...valid,
+        text: "\uFF11".repeat(QUICK_ADD_TEXT_MAX_LENGTH),
+      }),
+    ).toEqual([]);
+    expect(
+      await errorsFor({
+        ...valid,
+        text: `12 ${" ".repeat(150)}${"x".repeat(40)}`,
+      }),
+    ).toEqual([]);
+  });
+
   it("strips angle brackets from the line, as the save does", () => {
     const dto = plainToInstance(QuickAddInterpretDto, {
       ...valid,
@@ -134,6 +164,19 @@ describe("QuickAddInterpretDto", () => {
     expect(
       await errorsFor({ ...valid, pins: { payeeName: "x".repeat(101) } }),
     ).toEqual(["pins.payeeName"]);
+  });
+
+  it("takes the fields a reader cleared, each at most once in name", async () => {
+    const clear = async (value: unknown) =>
+      errorsFor({ ...valid, pins: { clear: value } });
+    expect(await clear(["payee"])).toEqual([]);
+    expect(await clear(["payee", "category"])).toEqual([]);
+    expect(await clear([])).toEqual([]);
+    expect(await clear(null)).toEqual([]);
+    expect(await clear(["memo"])).toEqual(["pins.clear"]);
+    expect(await clear(["payee", "category", "payee"])).toEqual(["pins.clear"]);
+    expect(await clear("payee")).toEqual(["pins.clear"]);
+    expect(await clear([["payee"]])).toEqual(["pins.clear"]);
   });
 
   it("refuses pins that are not one object", async () => {

@@ -10524,6 +10524,127 @@ describe("TransactionsService", () => {
       ).rejects.toThrow();
     });
 
+    describe("a payee the caller already decided (Quick Add)", () => {
+      const timHortons = {
+        id: "payee-tim",
+        name: "Tim Hortons",
+        defaultCategoryId: "cat-coffee",
+        defaultCategory: { id: "cat-coffee", name: "Coffee" },
+      };
+
+      it("uses the id as given, never resolving the name to another payee", async () => {
+        // The name would resolve to Tim Hortons ("contains" match); the
+        // commit links the id the caller chose, so the preview does too.
+        payeesService.resolveByName.mockResolvedValue(timHortons);
+        payeesService.findOne.mockResolvedValueOnce({
+          id: "payee-hortons-bakery",
+          name: "Hortons Bakery",
+          defaultCategoryId: null,
+          defaultCategory: null,
+        });
+
+        const preview = await service.previewCreate("user-1", {
+          accountId: "account-1",
+          amount: -4.5,
+          transactionDate: "2026-01-15",
+          payeeId: "payee-hortons-bakery",
+          payeeName: "Hortons Bakery",
+        });
+
+        expect(payeesService.findOne).toHaveBeenCalledWith(
+          "user-1",
+          "payee-hortons-bakery",
+        );
+        expect(payeesService.resolveByName).not.toHaveBeenCalled();
+        expect(preview).toMatchObject({
+          payeeId: "payee-hortons-bakery",
+          payeeName: "Hortons Bakery",
+          payeeMatched: true,
+          payeeWillBeCreated: false,
+          categoryId: null,
+        });
+        expect(rulesApplier.previewForRow).toHaveBeenCalledWith(
+          expect.anything(),
+          "user-1",
+          expect.objectContaining({
+            payeeId: "payee-hortons-bakery",
+            payeeText: "Hortons Bakery",
+          }),
+        );
+      });
+
+      it("adopts the decided payee's default category only when none is given", async () => {
+        payeesService.findOne.mockResolvedValue(timHortons);
+        const adopted = await service.previewCreate("user-1", {
+          accountId: "account-1",
+          amount: -4.5,
+          transactionDate: "2026-01-15",
+          payeeId: timHortons.id,
+        });
+        expect(adopted.categoryId).toBe("cat-coffee");
+        expect(adopted.categoryName).toBe("Coffee");
+        // create()'s payeeText: the linked payee's own name when none was sent.
+        expect(rulesApplier.previewForRow).toHaveBeenLastCalledWith(
+          expect.anything(),
+          "user-1",
+          expect.objectContaining({ payeeText: "Tim Hortons" }),
+        );
+
+        categoriesRepository.findOne.mockResolvedValueOnce({
+          id: "cat-1",
+          userId: "user-1",
+          name: "Dining",
+        });
+        const kept = await service.previewCreate("user-1", {
+          accountId: "account-1",
+          amount: -4.5,
+          transactionDate: "2026-01-15",
+          payeeId: timHortons.id,
+          categoryId: "cat-1",
+        });
+        expect(kept.categoryId).toBe("cat-1");
+      });
+
+      it("reads a null id as no linked payee, the name a new one", async () => {
+        payeesService.resolveByName.mockResolvedValue(timHortons);
+        const preview = await service.previewCreate("user-1", {
+          accountId: "account-1",
+          amount: -4.5,
+          transactionDate: "2026-01-15",
+          payeeId: null,
+          payeeName: "hortons",
+        });
+        expect(payeesService.resolveByName).not.toHaveBeenCalled();
+        expect(payeesService.findOne).not.toHaveBeenCalled();
+        expect(preview).toMatchObject({
+          payeeId: null,
+          payeeName: "hortons",
+          payeeMatched: false,
+          payeeWillBeCreated: false,
+          categoryId: null,
+        });
+        expect(rulesApplier.previewForRow).toHaveBeenCalledWith(
+          expect.anything(),
+          "user-1",
+          expect.objectContaining({ payeeId: null, payeeText: "hortons" }),
+        );
+      });
+
+      it("refuses an id that is not the caller's, as create() does", async () => {
+        payeesService.findOne.mockRejectedValueOnce(
+          new NotFoundException("Payee not found"),
+        );
+        await expect(
+          service.previewCreate("user-1", {
+            accountId: "account-1",
+            amount: -4.5,
+            transactionDate: "2026-01-15",
+            payeeId: "payee-not-mine",
+          }),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      });
+    });
+
     describe("a foreign-currency entry", () => {
       it("keeps the amount charged and derives the rate from it", async () => {
         const lookupRate = jest.fn();

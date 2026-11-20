@@ -32,6 +32,14 @@ import type {
 export const PAYEE_HISTORY_ROWS = 10;
 
 /**
+ * The most ids one usage count asks about. A partial word can start
+ * thousands of payee names, and every id is a bind parameter (PostgreSQL
+ * refuses more than 65,535 in one statement); past the cap a candidate counts
+ * as unused and ranks by name after the counted ones.
+ */
+export const USAGE_MAX_IDS = 500;
+
+/**
  * Newest first. Rows written in one transaction share `created_at` (a
  * transfer's two legs, an import), so `id` breaks what the clock cannot and
  * the same ledger always reads the same way; which of the tied rows wins
@@ -45,7 +53,10 @@ const HISTORY_ORDER = {
 const CREATED_ORDER = { createdAt: "DESC", id: "DESC" } as const;
 
 export interface QuickAddCandidates {
-  /** Owned, open, not a brokerage: the set `NormalTransactionFields` offers. */
+  /**
+   * Owned, open, not a brokerage and not a shared-expense settlement account
+   * (any `managed_purpose`): the set `NormalTransactionFields` offers.
+   */
   readonly accounts: readonly QuickAddCandidateAccount[];
   /** Active payees with their aliases. */
   readonly payees: readonly QuickAddCandidatePayee[];
@@ -71,11 +82,16 @@ export async function loadQuickAddCandidates(
       currencyCode: true,
       currentBalance: true,
       accountSubType: true,
+      managedPurpose: true,
     },
     order: { name: "ASC" },
   });
   const accounts = accountRows
-    .filter((a) => a.accountSubType !== AccountSubType.INVESTMENT_BROKERAGE)
+    .filter(
+      (a) =>
+        a.accountSubType !== AccountSubType.INVESTMENT_BROKERAGE &&
+        !a.managedPurpose,
+    )
     .map((a) => ({
       id: a.id,
       name: a.name,
@@ -161,21 +177,28 @@ export async function loadOwnedPayee(
     : null;
 }
 
-/** How many of the caller's transactions name each of `ids` in `column`. */
+/**
+ * How many of the caller's non-void transactions name each of `ids` in
+ * `column`: the first {@link USAGE_MAX_IDS} distinct ids, in the order given.
+ */
 export async function loadUsage(
   m: EntityManager,
   userId: string,
   column: "payee_id" | "category_id" | "account_id",
   ids: readonly string[],
 ): Promise<QuickAddUsage> {
-  if (ids.length === 0) return new Map();
+  const asked = [...new Set(ids)].slice(0, USAGE_MAX_IDS);
+  if (asked.length === 0) return new Map();
   const rows = await m
     .getRepository(Transaction)
     .createQueryBuilder("t")
     .select(`t.${column}`, "id")
     .addSelect("COUNT(*)", "count")
     .where("t.user_id = :userId", { userId })
-    .andWhere(`t.${column} IN (:...ids)`, { ids: [...ids] })
+    .andWhere("(t.status IS NULL OR t.status <> :void)", {
+      void: TransactionStatus.VOID,
+    })
+    .andWhere(`t.${column} IN (:...ids)`, { ids: asked })
     .groupBy(`t.${column}`)
     .getRawMany<{ id: string; count: string | number }>();
   return new Map(rows.map((row) => [row.id, Number(row.count)]));

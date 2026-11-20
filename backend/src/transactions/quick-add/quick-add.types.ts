@@ -8,6 +8,11 @@ import type { RuleEffectsPreview } from "../../transaction-rules/transaction-rul
 export const QUICK_ADD_KINDS = ["payment", "deposit", "transfer"] as const;
 export type QuickAddKind = (typeof QUICK_ADD_KINDS)[number];
 
+/** Fields a reader can clear on a chip (`pins.clear`). */
+export const QUICK_ADD_CLEARABLE_FIELDS = ["payee", "category"] as const;
+export type QuickAddClearableField =
+  (typeof QUICK_ADD_CLEARABLE_FIELDS)[number];
+
 /** How a value was arrived at; decides the chip's tier. */
 export type QuickAddSource =
   "typed" | "pinned" | "inferred" | "default" | "none";
@@ -47,6 +52,8 @@ export type QuickAddBlocker =
   | "ambiguousAccount"
   | "missingToAccount"
   | "sameAccount"
+  /** Above the create DTO's `TRANSACTION_AMOUNT_MAX_MAGNITUDE`. */
+  | "amountTooLarge"
   /** A currency was typed that is not the account's. */
   | "foreignCurrency"
   /** The two accounts hold different currencies. */
@@ -60,6 +67,14 @@ export interface QuickAddBalance {
   after: number | null;
   /** The date the balance moves when `after` is null. */
   movesOn: string | null;
+}
+
+/** The figure as typed in another currency (`foreignCurrency`). */
+export interface QuickAddForeignAmount {
+  /** The ISO code when the typed symbol or code names one currency, else null. */
+  currencyCode: string | null;
+  /** The typed magnitude. */
+  amount: number;
 }
 
 export interface QuickAddInterpretation {
@@ -81,11 +96,16 @@ export interface QuickAddInterpretation {
   blockers: QuickAddBlocker[];
   /** The account's balance before and after the save, or null without an account and amount. */
   balance: QuickAddBalance | null;
+  /** Set exactly when `foreignCurrency` blocks. */
+  foreignAmount: QuickAddForeignAmount | null;
   /** What the reader's transaction rules will change on save (the planner the commit runs). */
   ruleEffects?: RuleEffectsPreview;
 }
 
-/** An account the reader may enter into: owned, open, not a brokerage. */
+/**
+ * An account the reader may enter into: owned, open, not a brokerage and not
+ * a shared-expense settlement account.
+ */
 export interface QuickAddCandidateAccount {
   readonly id: string;
   readonly name: string;
