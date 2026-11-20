@@ -17,6 +17,8 @@ import { JointRegisterService } from "./joint-register.service";
 import { TransactionBulkCreateService } from "./transaction-bulk-create.service";
 import { TransactionConversionService } from "./transaction-conversion.service";
 import { TransactionsController } from "./transactions.controller";
+import { QuickAddController } from "./quick-add/quick-add.controller";
+import { QuickAddInterpretService } from "./quick-add/quick-add-interpret.service";
 import { AccountsModule } from "../accounts/accounts.module";
 import { PayeesModule } from "../payees/payees.module";
 import { TagsModule } from "../tags/tags.module";
@@ -68,8 +70,11 @@ import { CurrenciesModule } from "../currencies/currencies.module";
     JointRegisterService,
     TransactionBulkCreateService,
     TransactionConversionService,
+    QuickAddInterpretService,
   ],
-  controllers: [TransactionsController],
+  // QuickAddController first: Nest matches routes in registration order, so
+  // its literal `transactions/quick-add/interpret` is never read as an id.
+  controllers: [QuickAddController, TransactionsController],
   exports: [
     TransactionsService,
     TransactionSplitService,
