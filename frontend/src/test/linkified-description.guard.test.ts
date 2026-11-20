@@ -42,6 +42,7 @@ function withoutComments(source: string): string {
 /** The surfaces that render a saved transaction description or split memo. */
 const LINKIFIED = [
   '/src/components/transactions/TransactionRow.tsx',
+  '/src/components/transactions/variants/ModernRegister.tsx',
   '/src/components/reports/UncategorizedTransactionsReport.tsx',
   '/src/components/reports/DuplicateGroupCard.tsx',
   '/src/components/reports/ReportChart.tsx',

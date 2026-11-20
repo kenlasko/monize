@@ -42,6 +42,11 @@ interface FormActionsProps {
    * row's one primary.
    */
   secondaryActions?: ReactNode;
+  /**
+   * Content at the start of the row, opposite the buttons (a keyboard hint).
+   * Omitted, the row is exactly the right-aligned button pair it always was.
+   */
+  leading?: ReactNode;
 }
 
 /**
@@ -59,6 +64,7 @@ export function FormActions({
   onSubmitOptionChange,
   submitOptionsLabel,
   secondaryActions,
+  leading,
 }: FormActionsProps) {
   const t = useTranslations('common');
   const resolvedSubmitLabel = submitLabel ?? t('formActions.save');
@@ -98,7 +104,8 @@ export function FormActions({
     </>
   );
   return (
-    <div className={cn('flex justify-end space-x-3 pt-4', className)}>
+    <div className={cn('ui-form-actions flex justify-end space-x-3 pt-4', className)}>
+      {leading}
       {anchorProps ? (
         <div className="flex space-x-3" {...anchorProps}>
           {buttons}

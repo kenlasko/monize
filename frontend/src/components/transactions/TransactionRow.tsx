@@ -31,6 +31,7 @@ import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { WarrantyBadge, rowHasWarranties } from '@/components/transactions/WarrantyBadge';
 import { CalendarIcon, ChevronDownIcon, DocumentDuplicateIcon, PaperClipIcon } from '@heroicons/react/24/outline';
 import { Badge } from '@/components/ui/Badge';
+import type { UiStyle } from '@/lib/ui-styles';
 
 /**
  * The default for `hidden`: nothing hidden. A module constant so a caller
@@ -258,6 +259,16 @@ export interface TransactionRowProps {
    * fits. Omitted means nothing hidden.
    */
   hidden?: ReadonlySet<string>;
+  /**
+   * The active UI style. Only 'classic' changes this row: Payment and Deposit
+   * columns in place of Amount, the memo inline after the payee, a status
+   * mark, and a rule under the balance. Anything else draws the standard row.
+   */
+  uiStyle?: UiStyle;
+  /** The list draws this row's date as a group row above it, so the Date cell is omitted. */
+  groupedByDate?: boolean;
+  /** Classic: the balance as a share (0-100) of the page's largest, the width of its rule. */
+  balanceRulePct?: number;
 }
 
 export const TransactionRow = memo(function TransactionRow({
@@ -303,7 +314,13 @@ export const TransactionRow = memo(function TransactionRow({
   isHighlighted,
   showFxColumns = false,
   hidden = NO_HIDDEN_COLUMNS,
+  uiStyle = 'standard',
+  groupedByDate = false,
+  balanceRulePct,
 }: TransactionRowProps) {
+  // Classic splits Amount into Payment / Deposit; the foreign-currency fee
+  // surface keeps its own columns, so it keeps one Amount.
+  const splitAmount = uiStyle === 'classic' && !showFxColumns;
   const compactPadding = registerDateColumnPadding(compactDates);
   // True for every column not hidden, structural ones included; the register
   // column guard reads the `isVisible('<id>') &&` gates out of this file.
@@ -366,11 +383,12 @@ export const TransactionRow = memo(function TransactionRow({
         onTouchMove={onTouchMove}
         onTouchEnd={onLongPressEnd}
         onTouchCancel={onLongPressEnd}
-        className={`group ${HOVER_ROW_ON_PAGE} select-none touch-manipulation bg-white dark:bg-gray-900 ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+        data-band={index % 2}
+        className={`ui-register-row group ${HOVER_ROW_ON_PAGE} select-none touch-manipulation bg-white dark:bg-gray-900 ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
       >
         <td className="p-0">
-          <div className="px-4 py-3 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-start">
-            <div className="flex items-center gap-2">
+          <div className={`px-4 py-3 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-start ${groupedByDate ? 'ui-register-card-grouped' : ''}`}>
+            <div className="ui-register-card-lead flex items-center gap-2">
               {selectionMode && (
                 <span onClick={(e) => e.stopPropagation()}>
                   <input
@@ -381,6 +399,7 @@ export const TransactionRow = memo(function TransactionRow({
                   />
                 </span>
               )}
+              {!groupedByDate && (
               <span
                 className={`flex items-center gap-1.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}
               >
@@ -392,6 +411,7 @@ export const TransactionRow = memo(function TransactionRow({
                   formatDate(transaction.transactionDate)
                 )}
               </span>
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
@@ -631,7 +651,8 @@ export const TransactionRow = memo(function TransactionRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onLongPressEnd}
       onTouchCancel={onLongPressEnd}
-      className={`group ${HOVER_ROW_ON_PAGE} select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+      data-band={index % 2}
+      className={`ui-register-row group ${HOVER_ROW_ON_PAGE} select-none touch-manipulation ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${onEdit ? 'cursor-pointer' : ''} ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
     >
       {selectionMode && (
         <td className={`${cellPadding} whitespace-nowrap w-10`} onClick={e => e.stopPropagation()}>
@@ -643,6 +664,7 @@ export const TransactionRow = memo(function TransactionRow({
           />
         </td>
       )}
+      {!groupedByDate && (
       <td className={`${cellPadding} ${compactPadding.date} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
         <span className={`flex items-center gap-1.5 ${isVoid ? 'line-through' : ''}`}>
           {compactDates && formatCompactDate ? (
@@ -656,6 +678,7 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </span>
       </td>
+      )}
       {/* Structural, not responsive: a single-account page omits the Account
           column entirely (see register-columns.ts). */}
       {!isSingleAccountView && (
@@ -672,7 +695,7 @@ export const TransactionRow = memo(function TransactionRow({
           a claim on the whole table settled against this column's content, so
           without a floor a filtered register hands Description the width the
           payee was using (see register-columns.ts). */}
-      <td className={`${cellPadding} ${compactPadding.payee} ${compactDates ? 'max-w-[160px]' : 'max-w-[100px]'} sm:max-w-none ${REGISTER_PAYEE_CELL_FLOOR} overflow-hidden`}>
+      <td className={`${cellPadding} ${compactPadding.payee} ${compactDates ? 'max-w-[160px]' : 'max-w-[100px]'} sm:max-w-none ${REGISTER_PAYEE_CELL_FLOOR} overflow-hidden ${splitAmount ? 'ui-register-payee' : ''}`}>
         {/* Normal wraps a long payee, Compact and Dense ellipsize it; neither
             lets it push Amount off screen (registerPayeeLayout). */}
         <div className={payeeLayout.container}>
@@ -692,18 +715,23 @@ export const TransactionRow = memo(function TransactionRow({
           {transaction.payeeId && onPayeeClick ? (
             <button
               onClick={(e) => { e.stopPropagation(); onPayeeClick(transaction.payeeId!); }}
-              className={`text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline block ${payeeLayout.name} ${REGISTER_PAYEE_NAME_CAP} text-left ${isVoid ? 'line-through' : ''}`}
+              className={`ui-register-payee-name text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline block ${payeeLayout.name} ${REGISTER_PAYEE_NAME_CAP} text-left ${isVoid ? 'line-through' : ''}`}
               title={t('list.row.viewPayeeTitle', { name: payeeLabel ?? '' })}
             >
               {payeeLabel || '-'}
             </button>
           ) : (
             <div
-              className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${payeeLayout.name} ${REGISTER_PAYEE_NAME_CAP} ${isVoid ? 'line-through' : ''}`}
+              className={`ui-register-payee-name text-sm font-medium text-gray-900 dark:text-gray-100 ${payeeLayout.name} ${REGISTER_PAYEE_NAME_CAP} ${isVoid ? 'line-through' : ''}`}
               title={payeeLabel || undefined}
             >
               {payeeLabel || '-'}
             </div>
+          )}
+          {splitAmount && transaction.description && (
+            <span className="ui-register-memo truncate text-sm" title={transaction.description}>
+              {'\u00B7 '}<LinkifiedText text={transaction.description} />
+            </span>
           )}
         </div>
       </td>
@@ -934,6 +962,34 @@ export const TransactionRow = memo(function TransactionRow({
           )}
         </td>
       )}
+      {splitAmount ? (
+        <>
+          {[false, true].map((isDeposit) => {
+            const signed = displayAmount ?? Number(transaction.amount);
+            const here = isDeposit ? signed >= 0 : signed < 0;
+            return (
+              <td
+                key={isDeposit ? 'deposit' : 'payment'}
+                className={`${cellPadding} ui-register-money ${isDeposit ? 'ui-register-deposit' : 'ui-register-payment'} whitespace-nowrap text-sm text-right ${isVoid ? 'line-through' : ''}`}
+              >
+                {here && (
+                  <>
+                    {formatCurrency(Math.abs(signed), transaction.currencyCode)}
+                    {displayAmount !== undefined && (
+                      <span
+                        className="ml-0.5 text-xs font-normal"
+                        title={t('list.row.filteredAmountTitle', { amount: formatAmountLocal(Math.abs(transaction.amount), getDecimalPlacesForCurrency(transaction.currencyCode)) })}
+                      >
+                        *
+                      </span>
+                    )}
+                  </>
+                )}
+              </td>
+            );
+          })}
+        </>
+      ) : (
       <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${isVoid ? 'line-through' : ''}`}>
         {displayAmount !== undefined ? (
           <span className="inline-flex flex-col items-end">
@@ -961,6 +1017,7 @@ export const TransactionRow = memo(function TransactionRow({
             </div>
           )}
       </td>
+      )}
       {showFxColumns && (
         <>
           <td className={`${cellPadding} whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${isVoid ? 'line-through' : ''}`}>
@@ -986,7 +1043,10 @@ export const TransactionRow = memo(function TransactionRow({
         </>
       )}
       {showRunningBalance && (
-        <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
+        <td
+          className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right ${splitAmount ? 'ui-register-balance' : ''}`}
+          style={splitAmount && runningBalance !== undefined && balanceRulePct !== undefined ? { backgroundSize: `${balanceRulePct}% 2px` } : undefined}
+        >
           {runningBalance !== undefined
             ? formatBalance(runningBalance, transaction.currencyCode)
             : '-'}
@@ -996,7 +1056,7 @@ export const TransactionRow = memo(function TransactionRow({
         <td className={`${cellPadding} whitespace-nowrap text-center ${registerColumnClass('status')}`}>
           <StatusCellButton
             status={transaction.status}
-            dense={density === 'dense'}
+            dense={density === 'dense' || splitAmount}
             onCycle={() => onCycleStatus(transaction)}
           />
         </td>

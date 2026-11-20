@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "./themes.css";
 @import "./ui-styles.css";
+@import "./ui-styles-register.css";
+@import "./ui-styles-entry.css";
+@import "./ui-styles-shell.css";
 
 /* Custom theme extensions */
 @theme {

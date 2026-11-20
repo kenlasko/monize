@@ -43,7 +43,7 @@ export function buttonClassName(
   size: ButtonSize = 'md',
   className?: string,
 ): string {
-  return cn(baseStyles, variants[variant], sizes[size], className);
+  return cn(baseStyles, `ui-btn-${variant}`, variants[variant], sizes[size], className);
 }
 
 interface ButtonLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {

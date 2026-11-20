@@ -80,7 +80,7 @@ export function InsightsWidget({ isLoading: parentLoading }: InsightsWidgetProps
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6`}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="ui-widget-head flex items-center justify-between mb-4">
         <WidgetHeading id="insights" href="/insights">
           {sectionTitle}
         </WidgetHeading>

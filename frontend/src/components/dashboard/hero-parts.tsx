@@ -126,11 +126,14 @@ export function HeroCaption({ children }: { children: ReactNode }) {
 export function HeroHeadline({
   negative,
   collapsed,
+  sizeClass = 'text-4xl sm:text-5xl font-extrabold tracking-tight',
   children,
 }: {
   negative: boolean;
   /** What the app header shows once this figure scrolls away. */
   collapsed: CollapsedHeaderTitle;
+  /** The figure's size and weight; a UI style's variant sets its own. */
+  sizeClass?: string;
   children: ReactNode;
 }) {
   const active = useContext(HeroPanelActiveContext);
@@ -139,7 +142,7 @@ export function HeroHeadline({
     <div
       ref={ref}
       data-testid="dashboard-hero-headline"
-      className={`text-4xl sm:text-5xl font-extrabold tracking-tight leading-none ${
+      className={`${sizeClass} leading-none ${
         negative ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'
       }`}
     >
@@ -169,7 +172,8 @@ export function HeroPill({ up, children }: { up: boolean; children: ReactNode })
   return (
     <span
       data-testid="dashboard-hero-pill"
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold ${
+      data-direction={up ? 'up' : 'down'}
+      className={`ui-hero-pill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold ${
         up
           ? 'bg-green-500/10 text-green-700 dark:text-green-400'
           : 'bg-red-500/10 text-red-700 dark:text-red-400'

@@ -112,12 +112,13 @@ export function NormalTransactionFields({
   const splitDisabled = useDisableTransactionSplit();
 
   return (
-    <div className="space-y-4">
+    <div className="ui-entry-normal space-y-4">
       {/* Row 1: Account, Date, and optionally Create Date */}
       <div
         {...tourAnchor(TOUR_ANCHORS.transactionAccountDate)}
-        className={`grid grid-cols-1 gap-4 ${createdAtSlot ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
+        className={`ui-entry-row grid grid-cols-1 gap-4 ${createdAtSlot ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
       >
+        <div className="ui-entry-account">
         <AccountSelect
           label={t('form.fields.account')}
           error={errors.accountId?.message as string | undefined}
@@ -134,20 +135,24 @@ export function NormalTransactionFields({
           ]}
           {...register('accountId', { onChange: (event) => onAccountChange?.(event.target.value) })}
         />
+        </div>
+        <div className="ui-entry-date">
         <DateInput
           label={t('form.fields.date')}
           error={errors.transactionDate?.message as string | undefined}
           onDateChange={(date) => setValue('transactionDate', date, { shouldDirty: true, shouldValidate: true })}
           {...register('transactionDate')}
         />
+        </div>
         {createdAtSlot}
       </div>
 
       {/* Row 2: Payee and Category */}
       <div
         {...tourAnchor(TOUR_ANCHORS.transactionFields)}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        className="ui-entry-row grid grid-cols-1 md:grid-cols-2 gap-4"
       >
+        <div className="ui-entry-payee">
         <div className="flex items-stretch space-x-2">
           <div className="flex-1 min-w-0">
             <Combobox
@@ -216,7 +221,8 @@ export function NormalTransactionFields({
             />
           )}
         </div>
-        <div>
+        </div>
+        <div className="ui-entry-category">
           <div className="flex items-stretch sm:space-x-2">
             <div className="flex-1">
               {/* usePortal: the list renders at the document root (z-[100]), so
@@ -277,6 +283,7 @@ export function NormalTransactionFields({
           />
         );
         const referenceInput = (
+          <div className="ui-entry-ref">
           <Input
             label={t('form.fields.referenceNumber')}
             type="text"
@@ -284,6 +291,7 @@ export function NormalTransactionFields({
             error={errors.referenceNumber?.message as string | undefined}
             {...register('referenceNumber')}
           />
+          </div>
         );
         // The entry-currency picker and the amount it applies to, as one
         // tour-anchored group: a step explaining "set the currency and enter the
@@ -295,7 +303,7 @@ export function NormalTransactionFields({
         const amountGroup = (
           <div
             {...tourAnchor(TOUR_ANCHORS.transactionAmountCurrency)}
-            className="flex items-stretch space-x-2"
+            className="ui-entry-amount flex items-stretch space-x-2"
           >
             {currencyPickerSlot}
             <div className="flex-1 min-w-0">{amountInput}</div>
@@ -327,7 +335,7 @@ export function NormalTransactionFields({
             {referenceInput}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="ui-entry-row grid grid-cols-1 md:grid-cols-2 gap-4">
             {amountGroup}
             {referenceInput}
           </div>

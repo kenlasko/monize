@@ -67,7 +67,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
   if (isLoading) {
     return (
       <div className={`${CARD_CLASS} p-3 sm:p-6`}>
-        <div className="flex items-center justify-between mb-4">
+        <div className="ui-widget-head flex items-center justify-between mb-4">
           <WidgetHeading id="favourite-securities">
             {t('favouriteSecurities.title')}
           </WidgetHeading>
@@ -109,7 +109,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6`}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="ui-widget-head flex items-center justify-between mb-4">
         <WidgetHeading id="favourite-securities" href="/securities">
           {t('favouriteSecurities.title')}
         </WidgetHeading>

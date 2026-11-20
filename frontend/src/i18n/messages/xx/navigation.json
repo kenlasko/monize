@@ -86,7 +86,9 @@
       "category": "[XX-Quick add: {amount} {category}-XX]",
       "payeeCategory": "[XX-Quick add: {amount} {payee}, {category}-XX]",
       "transfer": "[XX-Quick add: {amount} {from} to {to}-XX]"
-    }
+    },
+    "trigger": "[XX-Search or jump to-XX]"
   },
-  "quickAdd": "[XX-Quick Add-XX]"
+  "quickAdd": "[XX-Quick Add-XX]",
+  "accountButton": "[XX-{name}, settings-XX]"
 }

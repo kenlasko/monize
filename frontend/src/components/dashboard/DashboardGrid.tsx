@@ -86,7 +86,7 @@ export function DashboardGrid({
         ref={ref}
         {...tourAnchor(TOUR_ANCHORS.dashboardWidgets)}
         inert={editing?.saving || undefined}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+        className="ui-dash-grid grid grid-cols-1 lg:grid-cols-12 gap-6"
       >
         {layout.flatMap((item, index) => {
           const widget = DEFINITIONS.get(item.id);

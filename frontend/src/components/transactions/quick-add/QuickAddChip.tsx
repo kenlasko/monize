@@ -28,6 +28,8 @@ const TIER_BORDER: Record<QuickAddTier, string> = {
 interface QuickAddChipProps {
   /** The field's name, as the full form labels it ("Account"). */
   fieldLabel: string;
+  /** The field's key, for a style that marks one chip out (the amount). */
+  field?: string;
   /** The value as the reader reads it; null when the reading has none. */
   valueText: string | null;
   state: QuickAddChipState;
@@ -40,7 +42,7 @@ interface QuickAddChipProps {
 
 /** One field of the reading, as a button that opens the field's control. */
 export const QuickAddChip = forwardRef<HTMLButtonElement, QuickAddChipProps>(function QuickAddChip(
-  { fieldLabel, valueText, state, expanded, editorId, stale, onClick },
+  { fieldLabel, field, valueText, state, expanded, editorId, stale, onClick },
   ref,
 ) {
   const t = useTranslations('transactions.quickAdd');
@@ -77,6 +79,7 @@ export const QuickAddChip = forwardRef<HTMLButtonElement, QuickAddChipProps>(fun
       size="md"
       variant={TIER_VARIANT[tier]}
       data-tier={tier}
+      data-field={field}
       aria-label={name}
       aria-expanded={expanded}
       aria-controls={editorId}
@@ -95,6 +98,10 @@ export const QuickAddChip = forwardRef<HTMLButtonElement, QuickAddChipProps>(fun
       {tier === 'guessed' && (
         <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
       )}
+      {/* Printed by the styles that read "Kind  Payment"; the button's own name already says it. */}
+      <span aria-hidden="true" className="ui-qa-chip-label hidden">
+        {fieldLabel}
+      </span>
       <span className="truncate">{value}</span>
       {needText && (
         <Badge variant="amber" size="sm" aria-hidden="true">

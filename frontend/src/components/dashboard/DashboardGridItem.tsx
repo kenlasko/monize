@@ -54,7 +54,7 @@ export function DashboardGridItem({
       <div
         inert={editing || undefined}
         data-testid={editing ? 'widget-edit-content' : undefined}
-        className={cn(ONE_CELL, editing && (dragging ? 'opacity-30' : 'opacity-60'))}
+        className={cn('ui-widget-slot', ONE_CELL, editing && (dragging ? 'opacity-30' : 'opacity-60'))}
       >
         {children}
       </div>

@@ -81,7 +81,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6`}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="ui-widget-head flex items-center justify-between mb-3">
         <WidgetHeading id="budget-status" href={`/budgets/${summary.budgetId}`}>
           {sectionTitle}
         </WidgetHeading>

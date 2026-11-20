@@ -38,6 +38,8 @@ import toast from 'react-hot-toast';
 import { SearchSyntaxHelp } from '@/components/transactions/SearchSyntaxHelp';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { MENU_ENTER_CLASS, MENU_ORIGIN_LEFT } from '@/components/ui/menu-motion';
+import { renderForStyle, useUiStyle } from '@/hooks/useUiStyle';
+import { HEADER_SEARCH_VARIANTS, HEADER_USER_VARIANTS } from '@/components/layout/variants/header-controls';
 
 // Labels are translation keys in the `navigation` namespace, resolved at
 // render time. The href doubles as the route, the active-state match, and
@@ -82,6 +84,7 @@ const TOOLS_TOUR_ANCHORS: Record<string, { 'data-tour-id': string }> = {
 
 export function AppHeader() {
   const t = useTranslations('navigation');
+  const uiStyle = useUiStyle();
   const router = useRouter();
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
@@ -231,6 +234,114 @@ export function AppHeader() {
     }
   };
 
+  // The Standard header's inline transaction search; the other styles open
+  // the command palette from this slot instead (`header-controls.tsx`).
+  const inlineSearch = (
+    <div className="relative" ref={searchRef}>
+      <div className="flex items-center">
+        <input
+          ref={searchInputRef}
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
+          placeholder={t('search.placeholder')}
+          aria-label={t('search.label')}
+          aria-hidden={!searchOpen}
+          tabIndex={searchOpen ? 0 : -1}
+          className={`overflow-hidden transition-all duration-200 ease-out rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            searchOpen
+              ? 'w-44! sm:w-64! px-3 py-1.5 mr-1 opacity-100'
+              : 'w-0! px-0! py-1.5 border-transparent opacity-0 pointer-events-none'
+          }`}
+        />
+        {searchOpen && (
+          <SearchSyntaxHelp
+            popoverRef={searchHelpRef}
+            onExample={(example) => {
+              setSearchTerm(example);
+              searchInputRef.current?.focus();
+            }}
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (searchOpen) {
+              submitSearch();
+            } else {
+              setSearchOpen(true);
+            }
+          }}
+          aria-label={
+            searchOpen ? t('search.submit') : t('search.open')
+          }
+          title={t('search.label')}
+          className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-5 h-5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+
+  const settingsAnchor = tourAnchor(TOUR_ANCHORS.navSettings);
+  const settingsButton = (
+    <button
+      {...settingsAnchor}
+      onClick={() => router.push('/settings')}
+      className={`flex max-sm:hidden items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        pathname === '/settings'
+          ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+      }`}
+      title={t('settings')}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        className="w-5 h-5"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+        />
+      </svg>
+      {/* Hidden again from xl, where the nav links (also xl:flex) start
+          competing for the same row: at 1280px -- the default E2E
+          viewport and a common laptop width -- the row was already as
+          wide as the plan's own "watch out" warned, and the header's
+          shell clips rather than scrolls (SwipeShell's
+          overflow-x-clip), so an overflowing Logout button is
+          unclickable, not just unreachable without a scroll. */}
+      <span className="hidden sm:inline xl:hidden 2xl:inline">
+        {user?.firstName || user?.email}
+      </span>
+    </button>
+  );
+
   return (
     <header
       ref={headerRef}
@@ -247,7 +358,7 @@ export function AppHeader() {
       // about where the history and notification panels open.
       // Reaches up through the body's safe-area padding and pads itself instead,
       // so once pinned its controls clear the status bar of an installed app.
-      className={`sticky top-0 z-40 mt-[calc(env(safe-area-inset-top)*-1)] pt-[env(safe-area-inset-top)] ${HEADER_SURFACE_CLASS} ${
+      className={`ui-app-header sticky top-0 z-40 mt-[calc(env(safe-area-inset-top)*-1)] pt-[env(safe-area-inset-top)] ${HEADER_SURFACE_CLASS} ${
         anyMenuOpen ? 'transition-transform duration-200 ease-out' : ''
       }`}
     >
@@ -307,14 +418,14 @@ export function AppHeader() {
 
             <button
               onClick={() => router.push('/dashboard')}
-              className="hidden xl:flex items-center gap-2 text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              className="ui-wordmark hidden xl:flex items-center gap-2 text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
               <Image
                 src="/icons/monize-logo-transparent.svg"
                 alt="Monize"
                 width={32}
                 height={32}
-                className="rounded"
+                className="ui-wordmark-logo rounded"
                 priority
               />
               <span className="hidden xl:inline">Monize</span>
@@ -507,65 +618,7 @@ export function AppHeader() {
             )}
           </div>
           <div className="flex max-xl:flex-shrink-0 items-center space-x-1 sm:space-x-4 xl:space-x-1 2xl:space-x-4">
-            <div className="relative" ref={searchRef}>
-              <div className="flex items-center">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder={t('search.placeholder')}
-                  aria-label={t('search.label')}
-                  aria-hidden={!searchOpen}
-                  tabIndex={searchOpen ? 0 : -1}
-                  className={`overflow-hidden transition-all duration-200 ease-out rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    searchOpen
-                      ? 'w-44! sm:w-64! px-3 py-1.5 mr-1 opacity-100'
-                      : 'w-0! px-0! py-1.5 border-transparent opacity-0 pointer-events-none'
-                  }`}
-                />
-                {searchOpen && (
-                  <SearchSyntaxHelp
-                    popoverRef={searchHelpRef}
-                    onExample={(example) => {
-                      setSearchTerm(example);
-                      searchInputRef.current?.focus();
-                    }}
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (searchOpen) {
-                      submitSearch();
-                    } else {
-                      setSearchOpen(true);
-                    }
-                  }}
-                  aria-label={
-                    searchOpen ? t('search.submit') : t('search.open')
-                  }
-                  title={t('search.label')}
-                  className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-5 h-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            {renderForStyle(uiStyle, HEADER_SEARCH_VARIANTS, { standard: inlineSearch })}
             <ActionHistoryPanel />
             <NotificationBell />
             {/* Help, Settings and Log out live under More on a phone. */}
@@ -576,46 +629,13 @@ export function AppHeader() {
                 here for now: the reminder is kept off the header until
                 reconciliation is a more established habit. The component and
                 its tests stand, so putting it back is one line. */}
-            <button
-              {...tourAnchor(TOUR_ANCHORS.navSettings)}
-              onClick={() => router.push('/settings')}
-              className={`flex max-sm:hidden items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                pathname === '/settings'
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-              title={t('settings')}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                />
-              </svg>
-              {/* Hidden again from xl, where the nav links (also xl:flex) start
-                  competing for the same row: at 1280px -- the default E2E
-                  viewport and a common laptop width -- the row was already as
-                  wide as the plan's own "watch out" warned, and the header's
-                  shell clips rather than scrolls (SwipeShell's
-                  overflow-x-clip), so an overflowing Logout button is
-                  unclickable, not just unreachable without a scroll. */}
-              <span className="hidden sm:inline xl:hidden 2xl:inline">
-                {user?.firstName || user?.email}
-              </span>
-            </button>
+            {renderForStyle(uiStyle, HEADER_USER_VARIANTS, {
+              standard: settingsButton,
+              name: user?.firstName || user?.email || '',
+              active: pathname === '/settings',
+              onOpen: () => router.push('/settings'),
+              anchor: settingsAnchor,
+            })}
             <Button
               variant="outline"
               size="sm"

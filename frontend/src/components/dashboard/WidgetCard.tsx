@@ -93,7 +93,7 @@ export function WidgetCard({
           header-right carries a figure, a range and a button needs more width
           than a phone has beside a title, and a truncated title names no
           widget. Above the wrap the row is unchanged. */}
-      <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+      <div className="ui-widget-head flex flex-wrap items-start justify-between gap-2 mb-4">
         <div className="flex min-w-0 items-start gap-2.5">
           {widgetId && <WidgetIconPuck id={widgetId as DashboardWidgetId} />}
           <div className="min-w-0">

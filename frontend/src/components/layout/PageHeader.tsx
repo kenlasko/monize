@@ -119,8 +119,8 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
     : '';
 
   const titleBlock = (
-    <div>
-      <div className="flex items-center gap-2">
+    <div className="ui-page-heading">
+      <div className="ui-page-title-row flex items-center gap-2">
         <h1
           ref={headingRef}
           className={`${
@@ -155,7 +155,7 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
           )}
         </div>
       {subtitle && (
-        <p className="mt-0.5 text-sm sm:text-base text-gray-500 dark:text-gray-400">
+        <p className="ui-page-subtitle mt-0.5 text-sm sm:text-base text-gray-500 dark:text-gray-400">
           {subtitle}
         </p>
       )}
@@ -176,7 +176,7 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
   return (
     <>
     {floating}
-    <div className={`${layoutClasses} mb-6`}>
+    <div className={`ui-page-header ${layoutClasses} mb-6`}>
       {icon ? (
         <div className="flex items-center gap-3">
           {icon}

@@ -214,7 +214,12 @@ export type ChartDatePattern =
   | 'MMM d HH:mm' // Jan 5, 14:30
   | 'HH:mm' // 14:30
   | 'yyyy' // 2025
-  | 'EEEE MMMM d'; // Thursday, November 6 (order and punctuation follow the locale)
+  | 'EEEE MMMM d' // Thursday, November 6 (order and punctuation follow the locale)
+  | 'MMMMM' // J (the narrow month, for a dense month strip)
+  | 'EEEEE' // T (the narrow weekday)
+  | 'EEEE' // Thursday
+  | 'EEE d' // Thu 6
+  | 'd'; // 6
 
 const CHART_DATE_OPTIONS: Record<ChartDatePattern, Intl.DateTimeFormatOptions> = {
   MMM: { month: 'short' },
@@ -228,6 +233,11 @@ const CHART_DATE_OPTIONS: Record<ChartDatePattern, Intl.DateTimeFormatOptions> =
   'HH:mm': { hour: '2-digit', minute: '2-digit', hour12: false },
   yyyy: { year: 'numeric' },
   'EEEE MMMM d': { weekday: 'long', month: 'long', day: 'numeric' },
+  MMMMM: { month: 'narrow' },
+  EEEEE: { weekday: 'narrow' },
+  EEEE: { weekday: 'long' },
+  'EEE d': { weekday: 'short', day: 'numeric' },
+  d: { day: 'numeric' },
 };
 
 /**

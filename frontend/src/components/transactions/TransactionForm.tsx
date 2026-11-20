@@ -1927,17 +1927,18 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     <form
       {...tourAnchor(TOUR_ANCHORS.transactionForm)}
       onSubmit={(event) => guardedSubmit(undefined, event)}
-      className="space-y-4"
+      className="ui-entry space-y-4"
     >
       {/* Mode selector: every mode, for a new entry and for an edit alike. An
           edit saved in the other family converts the row in place through its
           own route (issue #1937). Only a leg whose pairing is not this form's
           to change (a split-transfer leg, a cross-owner pair) has no tabs. */}
       {!isConversionLocked && (
-        <div className="flex space-x-2 pb-2 border-b dark:border-gray-700">
+        <div role="group" aria-label={t('form.modeGroupLabel')} className="ui-entry-modes flex space-x-2 pb-2 border-b dark:border-gray-700">
           <button
             type="button"
             onClick={() => handleModeChange('normal')}
+            aria-pressed={mode === 'normal'}
             className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
               mode === 'normal'
                 ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
@@ -1951,6 +1952,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           <button
             type="button"
             onClick={() => handleModeChange('split')}
+            aria-pressed={mode === 'split'}
             disabled={splitDisabled || selectedIsJoint}
             title={
               selectedIsJoint
@@ -1970,6 +1972,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
           <button
             type="button"
             onClick={() => handleModeChange('transfer')}
+            aria-pressed={mode === 'transfer'}
             className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
               mode === 'transfer'
                 ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
@@ -2243,7 +2246,10 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
 
       {/* What the lookup found for the payee just created -- an offer, saved
           only for the fields the user ticks. */}
+      {/* The slip's rule: a faint engraved band, drawn by the Classic style only. */}
+      <div aria-hidden="true" className="ui-entry-guilloche hidden" />
       <FormActions
+        leading={<span className="ui-entry-hint hidden">{t('form.entryHint')}</span>}
         anchorProps={tourAnchor(TOUR_ANCHORS.transactionFormActions)}
         onCancel={onCancel}
         submitLabel={t(

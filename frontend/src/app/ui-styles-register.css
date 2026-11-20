@@ -1,0 +1,214 @@
+/*
+ * register area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * (read its header): ramp tokens only, marker classes in @layer components,
+ * unlayered rules only where a primitive's own utility must yield.
+ */
+
+/* ===================================================================== */
+/* Classic register: a ledger page. Rules, green bars, Payment / Deposit */
+/* columns, date group rows, a balance rule and a totals footer.         */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] {
+  --ui-register-paper: var(--color-white);
+  --ui-register-band: color-mix(in oklab, var(--color-blue-500) 8%, var(--color-white));
+}
+html.dark[data-ui-style='classic'] {
+  --ui-register-paper: var(--color-gray-900);
+  --ui-register-band: color-mix(in oklab, var(--color-blue-400) 9%, var(--color-gray-900));
+}
+
+html[data-ui-style='classic'] .ui-register {
+  border-collapse: collapse;
+  border-top: 2px solid var(--ui-rule-ink);
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-register > thead > tr > th {
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  border-bottom: 1px solid var(--ui-rule-ink);
+}
+/* A register has no hairline between entries: the bars do that work. */
+html[data-ui-style='classic'] .ui-register > tbody > tr,
+html[data-ui-style='classic'] .ui-register > tbody > tr > * {
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+
+/* Unlayered: a row's own bg utilities (and the sticky Actions cell's) yield. */
+html[data-ui-style='classic'] .ui-register-row {
+  background-color: var(--ui-register-paper);
+}
+html[data-ui-style='classic'] .ui-register-row[data-band='1'],
+html[data-ui-style='classic'] .ui-register-row[data-band='1'] > td {
+  background-color: var(--ui-register-band);
+}
+html[data-ui-style='classic'] .ui-register-row > td.sticky {
+  background-color: inherit;
+}
+
+html[data-ui-style='classic'] :is(.ui-register-money, .ui-register th.ui-register-money) {
+  border-left: 1px solid var(--color-gray-300);
+}
+html.dark[data-ui-style='classic'] .ui-register-money {
+  border-left-color: var(--color-gray-700);
+}
+html[data-ui-style='classic'] .ui-register-money {
+  font-variant-numeric: tabular-nums;
+}
+html[data-ui-style='classic'] .ui-register-deposit {
+  color: var(--color-green-700);
+  font-weight: 500;
+}
+html.dark[data-ui-style='classic'] .ui-register-deposit {
+  color: var(--color-green-400);
+}
+html[data-ui-style='classic'] .ui-register-foot .ui-register-deposit {
+  font-weight: 600;
+}
+html[data-ui-style='classic'] .ui-register-memo {
+  color: var(--color-gray-500);
+  font-weight: 400;
+  min-width: 0;
+  /* Basis 0: the memo only ever takes the room the payee leaves. */
+  flex: 1 1 0%;
+}
+
+/* A ledger line is one line: the payee name never wraps. The memo beside it
+   gives way first; only a name too long for the whole cell is cut short. */
+html[data-ui-style='classic'] .ui-register-payee-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* The rule under a balance is its share of the page's largest, drawn in the accent. */
+html[data-ui-style='classic'] .ui-register-balance {
+  font-weight: 500;
+  background-image: linear-gradient(var(--color-blue-600), var(--color-blue-600));
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0 2px;
+  border-left: 1px solid var(--color-gray-300);
+}
+html.dark[data-ui-style='classic'] .ui-register-balance {
+  background-image: linear-gradient(var(--color-blue-400), var(--color-blue-400));
+  border-left-color: var(--color-gray-700);
+}
+
+/* Date group rows. */
+html[data-ui-style='classic'] .ui-register-group {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.875rem 1rem 0.375rem;
+  background-color: var(--ui-register-paper);
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-register-group {
+  color: var(--color-gray-100);
+}
+html[data-ui-style='classic'] .ui-register-group-tools {
+  float: right;
+  font-weight: 400;
+  color: var(--color-gray-500);
+}
+html[data-ui-style='classic'] .ui-register-sort {
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html[data-ui-style='classic'] .ui-register-sort:hover {
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-register-sort:hover {
+  color: var(--color-gray-100);
+}
+
+/* Totals footer and legend. */
+html[data-ui-style='classic'] .ui-register-foot {
+  font-weight: 600;
+  background-color: var(--ui-register-paper);
+}
+html[data-ui-style='classic'] .ui-register-foot > td {
+  border-top: 1px solid var(--ui-rule-ink);
+  font-size: 0.875rem;
+}
+html[data-ui-style='classic'] .ui-register-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  padding: 0.75rem 1rem 0;
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+}
+html[data-ui-style='classic'] .ui-register-mark {
+  font-family: var(--font-mono);
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-register-mark {
+  color: var(--color-gray-100);
+}
+html:not([data-ui-style='classic']) .ui-register-legend {
+  display: none;
+}
+
+/* Phone: a group row is a small-caps eyebrow over a heavy rule, and the card
+   drops its date column since the group row names the day. */
+html[data-ui-style='classic'] table:has(.ui-register-card-grouped) .ui-register-group {
+  padding: 0.875rem 1rem 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-register-card-grouped {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+html[data-ui-style='classic'] .ui-register-card-grouped > .ui-register-card-lead:empty {
+  display: none;
+}
+html[data-ui-style='classic'] .ui-register-card-grouped > .col-span-3 {
+  grid-column: 1 / -1;
+}
+
+/* ===================================================================== */
+/* Modern register: white day blocks and the inspector.                  */
+/* ===================================================================== */
+
+html[data-ui-style='modern'] .ui-modern-sortstrip {
+  width: 100%;
+  margin: 0.25rem 0 0.25rem;
+}
+html[data-ui-style='modern'] .ui-modern-sortstrip th {
+  background: transparent;
+}
+html[data-ui-style='modern'] .ui-modern-sortstrip th[role='columnheader'][aria-sort] {
+  border-radius: 9999px;
+  border-color: transparent;
+  background-color: var(--color-white);
+  text-transform: none;
+}
+html.dark[data-ui-style='modern'] .ui-modern-sortstrip th[role='columnheader'][aria-sort] {
+  background-color: var(--color-gray-800);
+}
+html[data-ui-style='modern'] .ui-modern-inspector-amount .ui-money-display {
+  font-size: 4rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+/* Classic has no Description column, so Payee (with its inline memo) is the
+   column that takes the slack, as Description does in the standard register. */
+html[data-ui-style='classic'] .ui-register .ui-register-payee {
+  width: 100%;
+  /* Width from what the other columns leave, never from its own text: a
+     one-line payee and memo would otherwise claim their full length and
+     squeeze Status out of the row. They truncate instead. */
+  max-width: 0;
+}

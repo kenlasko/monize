@@ -149,7 +149,7 @@ export function QuickAddChips({
   return (
     <div className="space-y-3">
       <div role="group" aria-labelledby={headingId} aria-busy={stale}>
-        <p id={headingId} className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+        <p id={headingId} className="ui-qa-readas mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
           {t('quickAdd.readAs')}
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -161,6 +161,7 @@ export function QuickAddChips({
                   chipRefs.current.set(field, element);
                 }}
                 fieldLabel={labelOf(field)}
+                field={field}
                 valueText={chipText(field)}
                 state={chipState(reading, field, pins)}
                 expanded={editing === field}
@@ -187,6 +188,9 @@ export function QuickAddChips({
             </Badge>
           )}
         </div>
+        {fields.some((field) => chipState(reading, field, pins).tier === 'assumed') && (
+          <p className="ui-qa-note mt-2 hidden text-xs">{t('quickAdd.assumedNote')}</p>
+        )}
       </div>
       {editing !== null && fields.includes(editing) && (
         <QuickAddFieldEditor
