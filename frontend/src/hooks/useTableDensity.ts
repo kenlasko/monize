@@ -8,7 +8,8 @@ export type DensityLevel = 'normal' | 'compact' | 'dense';
  * `default` is every table in the app. `wide` is for a register carrying enough
  * columns that the phone inset has to give way before the data does -- it halves
  * the horizontal padding below `sm` and drops one step of vertical padding at
- * `normal`. The investment register is the only one today.
+ * `normal`. The investment register and the Folio style's transaction register
+ * (two money columns where the others have one) use it.
  *
  * The two exist as named entries rather than as a third and fourth hand-rolled
  * `switch` because that is what they were: three copies of this table lived in
