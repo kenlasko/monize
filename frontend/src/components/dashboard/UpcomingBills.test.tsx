@@ -962,7 +962,10 @@ describe('UpcomingBills', () => {
       ] as any[];
       render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
       expect(screen.getByLabelText(/The next two weeks/)).toBeInTheDocument();
-      const row = screen.getByRole('button', { name: /Netflix/ });
+      // Pebble's day-chip dot is a tooltip trigger (aria-expanded), not the row.
+      const row = screen
+        .getAllByRole('button', { name: /Netflix/ })
+        .filter((button) => !button.hasAttribute('aria-expanded'))[0];
       expect(row).toHaveTextContent('-$15.99');
       fireEvent.click(row);
       expect(mockPush).toHaveBeenCalledWith('/bills?postBillId=1');
