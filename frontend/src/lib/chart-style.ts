@@ -44,4 +44,4 @@ export const CHART_BAR_RADIUS_HORIZONTAL: [number, number, number, number] = [0,
  * (`shadow-popover-dark` in `globals.css`).
  */
 export const CHART_TOOLTIP_CLASS =
-  'bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg dark:shadow-popover-dark p-3';
+  'bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg dark:shadow-popover-dark p-3 ui-chart-tooltip';

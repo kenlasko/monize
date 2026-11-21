@@ -127,7 +127,16 @@ export function SecuritySummaryCards({
       label: t('cards.unrealizedPl'),
       icon: <ArrowTrendingUpIcon className={ICON_CLASS} />,
       value:
-        position.gainLoss === null ? unknown : signedMoney(position.gainLoss),
+        position.gainLoss === null ? (
+          unknown
+        ) : (
+          <span
+            className="ui-gain"
+            data-sign={position.gainLoss === 0 ? undefined : position.gainLoss > 0 ? 'up' : 'down'}
+          >
+            {signedMoney(position.gainLoss)}
+          </span>
+        ),
       valueClass:
         position.gainLoss === null
           ? undefined
@@ -135,7 +144,10 @@ export function SecuritySummaryCards({
       note: (
         <>
           {position.gainLossPercent !== null && (
-            <div className={gainLossColor(position.gainLossPercent)}>
+            <div
+              className={`ui-gain ${gainLossColor(position.gainLossPercent)}`}
+              data-sign={position.gainLossPercent === 0 ? undefined : position.gainLossPercent > 0 ? 'up' : 'down'}
+            >
               {formatSignedPercent(position.gainLossPercent)}
             </div>
           )}

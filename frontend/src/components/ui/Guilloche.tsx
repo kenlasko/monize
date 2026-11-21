@@ -1,7 +1,9 @@
 /**
- * The engraved rosette behind the Classic hero, the ornament of a printed
- * statement: twenty-four ellipses turned about one centre, in the accent at
- * a fifth of its strength. Decoration only, hidden from assistive technology.
+ * The engraved rosette of a printed statement, the Classic style's one
+ * ornament: twenty-four ellipses turned about one centre, drawn in
+ * `currentColor` (the caller sets the accent at a fraction of its strength).
+ * Behind the Classic dashboard hero and the Classic empty page. Decoration
+ * only, hidden from assistive technology.
  */
 const TURNS = Array.from({ length: 24 }, (_, i) => i * 7.5);
 

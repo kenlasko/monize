@@ -12,6 +12,16 @@ describe('BudgetProgressBar', () => {
     expect(bar.style.width).toBe('60%');
   });
 
+  it.each([
+    [30, 'ok'],
+    [80, 'warn'],
+    [95, 'high'],
+    [110, 'over'],
+  ])('names the level a UI style reads at %i%%', (percent, level) => {
+    render(<BudgetProgressBar percentUsed={percent} />);
+    expect(screen.getByRole('progressbar')).toHaveAttribute('data-level', level);
+  });
+
   it('applies green color for low usage', () => {
     render(<BudgetProgressBar percentUsed={30} />);
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations } from 'next-intl';
 import { AccountHoldings, HoldingWithMarketValue } from '@/types/investment';
@@ -246,7 +247,7 @@ export function GroupedHoldingsList({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('groupedHoldings.title')}
         </h3>
@@ -278,7 +279,7 @@ export function GroupedHoldingsList({
 
   if (totalHoldings === 0 && !hasCash) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('groupedHoldings.title')}
         </h3>
@@ -290,7 +291,7 @@ export function GroupedHoldingsList({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+    <div className={`${CARD_CLASS} overflow-hidden`}>
       <div className="p-3 sm:p-6 pb-3 sm:pb-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
@@ -336,9 +337,9 @@ export function GroupedHoldingsList({
               {/* Account Header */}
               <button
                 onClick={() => toggleAccount(account.accountId)}
-                className="w-full px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                className="ui-acct-head w-full px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3" data-initial={account.accountName.trim().slice(0, 2)}>
                   {isExpanded ? (
                     <ChevronDownIcon className="h-5 w-5 text-gray-400" />
                   ) : (
@@ -374,7 +375,7 @@ export function GroupedHoldingsList({
                       {'\u2248 '}{formatCurrencyBase(defaultApprox, defaultCurrency)} {defaultCurrency}
                     </div>
                   )}
-                  <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
+                  <div data-sign={signOf(account.totalGainLoss)} className={`ui-gain text-sm ${getGainLossColor(account.totalGainLoss)}`}>
                     <PartialTotal total={accountGainPartial} displayCurrency={account.currencyCode}>
                       {fmtAcct(account.totalGainLoss)} ({formatPercent(account.totalGainLossPercent)})
                     </PartialTotal>
@@ -515,7 +516,7 @@ export function GroupedHoldingsList({
                       )}
 
                       {/* Account Summary Row */}
-                      <tr role="row" className="grid grid-cols-4 items-start gap-x-3 gap-y-1.5 px-4 py-3 bg-gray-50 dark:bg-gray-700/30 font-medium sm:table-row sm:p-0">
+                      <tr role="row" className="ui-holding-total grid grid-cols-4 items-start gap-x-3 gap-y-1.5 px-4 py-3 bg-gray-50 dark:bg-gray-700/30 font-medium sm:table-row sm:p-0">
                         {/* colSpan drives the desktop table (the label spans
                             Symbol and the visible per-share columns); the grid
                             placement drives the phone card. */}
@@ -542,7 +543,7 @@ export function GroupedHoldingsList({
                         {isVisible('gainLoss') && (
                           <td role="cell" className={`${placement.total.gainLoss} ${FIGURE_CELL}`}>
                             <CellLabel className={CAPTION_CLASS}>{t('groupedHoldings.gainLossColumn')}</CellLabel>
-                            <div className={`text-sm ${getGainLossColor(account.totalGainLoss)}`}>
+                            <div data-sign={signOf(account.totalGainLoss)} className={`ui-gain text-sm ${getGainLossColor(account.totalGainLoss)}`}>
                               <PartialTotal total={accountGainPartial} displayCurrency={account.currencyCode}>
                                 {fmtAcct(account.totalGainLoss)}
                               </PartialTotal>
@@ -573,6 +574,10 @@ export function GroupedHoldingsList({
     </div>
   );
 }
+
+/** The direction a signed figure points, for the Classic style's mark. */
+const signOf = (value: number | null | undefined) =>
+  value == null || value === 0 ? undefined : value > 0 ? 'up' : 'down';
 
 interface HoldingRowProps {
   holding: HoldingWithMarketValue;
@@ -661,12 +666,13 @@ const HoldingRow = memo(function HoldingRow({
   return (
     <tr
       role="row"
-      className="grid grid-cols-4 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/20 sm:table-row sm:p-0"
+      className="ui-holding-row grid grid-cols-4 items-start gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/20 sm:table-row sm:p-0"
     >
       <td role="cell" className="col-span-2 row-start-1 p-0 sm:table-cell sm:whitespace-nowrap sm:px-6 sm:py-3">
         <button
           onClick={() => onSecurityClick(holding.securityId)}
-          className="text-left hover:underline focus:outline-none focus:underline"
+          data-initial={holding.symbol.slice(0, 3)}
+          className="ui-ticker text-left hover:underline focus:outline-none focus:underline"
           title={t('groupedHoldings.symbolClickTitle')}
         >
           <div className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
@@ -725,7 +731,7 @@ const HoldingRow = memo(function HoldingRow({
       {isVisible('gainLoss') && (
         <td role="cell" className={`${placement.gainLoss} ${FIGURE_CELL}`}>
           <CellLabel className={CAPTION_CLASS}>{t('groupedHoldings.gainLossColumn')}</CellLabel>
-          <div className={`text-sm font-medium ${getGainLossColor(holding.gainLoss)}`}>
+          <div data-sign={signOf(holding.gainLoss)} className={`ui-gain text-sm font-medium ${getGainLossColor(holding.gainLoss)}`}>
             {fmtVal(holding.gainLoss)}
           </div>
           {isForeignToAccount && (
@@ -733,7 +739,7 @@ const HoldingRow = memo(function HoldingRow({
               {fmtAcctConverted(gainLossAcct)}
             </div>
           )}
-          <div className={`text-xs ${getGainLossColor(holding.gainLossPercent)}`}>
+          <div data-sign={signOf(holding.gainLossPercent)} className={`ui-gain text-xs ${getGainLossColor(holding.gainLossPercent)}`}>
             {formatPercent(holding.gainLossPercent)}
           </div>
         </td>

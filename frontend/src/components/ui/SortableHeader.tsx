@@ -88,7 +88,7 @@ export function SortableHeader<F extends string>({
       aria-sort={isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
       {...(pressHandlers ? outsideControls(pressHandlers) : { onClick: sort })}
       onKeyDown={activateOnKey(sort)}
-      className={`cursor-pointer transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 ${INTERACTIVE_ROW_FOCUS_CLASS} select-none ${className}`}
+      className={`ui-sort-th cursor-pointer transition-colors motion-reduce:transition-none hover:bg-gray-100 dark:hover:bg-gray-700 ${INTERACTIVE_ROW_FOCUS_CLASS} select-none ${className}`}
     >
       <div className={`flex items-center ${justify}`}>
         {children}

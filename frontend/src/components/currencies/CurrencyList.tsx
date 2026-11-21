@@ -471,7 +471,7 @@ const CurrencyRow = memo(function CurrencyRow({
     >
       {/* Code */}
       <td className={`${cellPadding} whitespace-nowrap`}>
-        <span className="text-sm font-mono font-semibold text-gray-900 dark:text-gray-100">
+        <span className="ui-sym text-sm font-mono font-semibold text-gray-900 dark:text-gray-100">
           {currency.code}
         </span>
         <DefaultCurrencyBadge isDefault={isDefault} />

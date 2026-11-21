@@ -15,7 +15,8 @@ import type { SortDirection } from '@/hooks/useSortableTable';
 import { classifyStaleRow, type StaleUnreconciledReason } from '@/lib/stale-reconciliation';
 import { usePayeeDisplay } from '@/hooks/usePayeeDisplay';
 import { useCompactMobileDates } from '@/store/dateDisplayStore';
-import { Th } from '@/components/ui/Table';
+import { Th, TABLE_CLASS, TABLE_BODY_CLASS } from '@/components/ui/Table';
+import { Badge } from '@/components/ui/Badge';
 import {
   groupReconcileRows,
   sortReconcileRows,
@@ -164,7 +165,7 @@ export function ReconcileTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <table className={`${TABLE_CLASS} ui-recon-table`}>
         <thead className="bg-gray-50 dark:bg-gray-700/50">
           <tr>
             <Th className="px-2 sm:px-4 w-10">
@@ -248,13 +249,13 @@ export function ReconcileTable({
         {groups.map((group) => (
           <tbody
             key={group.flow ?? 'all'}
-            className="divide-y divide-gray-200 dark:divide-gray-700"
+            className={TABLE_BODY_CLASS}
           >
             {group.flow && (
               /* One cell per column rather than a colSpan over several: the
                  Category and Status columns collapse below `sm`, and a span
                  counted for six columns misaligns the subtotal on four. */
-              <tr className="bg-gray-100 dark:bg-gray-700/60">
+              <tr className="ui-ledger-group bg-gray-100 dark:bg-gray-700/60">
                 <th
                   colSpan={3}
                   scope="colgroup"
@@ -282,7 +283,7 @@ export function ReconcileTable({
                   key={transaction.id}
                   data-testid={`reconcile-row-${transaction.id}`}
                   data-stale={staleReason ?? undefined}
-                  className={`cursor-pointer transition-colors ${
+                  className={`ui-ledger-row cursor-pointer transition-colors ${
                     isSelected
                       ? 'bg-blue-50 dark:bg-blue-900/20'
                       : staleReason
@@ -322,8 +323,8 @@ export function ReconcileTable({
                         </span>
                       )}
                       {staleReason && (
-                        <span
-                          className="inline-flex items-center rounded-full bg-amber-200 dark:bg-amber-800 px-2 py-0.5 text-xs font-medium text-amber-900 dark:text-amber-100"
+                        <Badge
+                          variant="amber"
                           title={
                             staleReason === 'missed'
                               ? t('stale.missedTooltip')
@@ -333,7 +334,7 @@ export function ReconcileTable({
                           {staleReason === 'missed'
                             ? t('stale.missedChip')
                             : t('stale.overdueChip')}
-                        </span>
+                        </Badge>
                       )}
                     </span>
                   </td>

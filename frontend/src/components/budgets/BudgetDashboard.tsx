@@ -90,6 +90,7 @@ export function BudgetDashboard({
         totalIncome={summary.totalIncome}
         percentUsed={summary.percentUsed}
         daysRemaining={velocity.daysRemaining}
+        displayCurrency={displayCurrency}
         formatCurrency={formatCurrency}
       />
 

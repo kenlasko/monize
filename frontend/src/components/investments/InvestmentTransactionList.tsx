@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useState, useMemo, useCallback, memo, Fragment } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -525,7 +526,7 @@ export function InvestmentTransactionList({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+      <div className={`${CARD_CLASS} p-3 sm:p-4`}>
         <div className="flex items-center gap-3 mb-3">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t('transactionList.title')}
@@ -551,7 +552,7 @@ export function InvestmentTransactionList({
 
   if (transactions.length === 0 && !hasActiveFilters) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+      <div className={`${CARD_CLASS} p-3 sm:p-4`}>
         <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -589,7 +590,7 @@ export function InvestmentTransactionList({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+    <div className={`${CARD_CLASS} overflow-hidden`}>
       <div className="px-3 pt-3 sm:px-4 sm:pt-4 flex flex-wrap justify-between items-center gap-2">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

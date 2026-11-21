@@ -11,6 +11,8 @@ import { useCashFlowForecast, FORECAST_PERIODS, asForecastPeriod } from './useCa
 import { CashFlowForecastPlot } from './CashFlowForecastPlot';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChartCollapseButton, CollapsedChartStrip } from '@/components/transactions/ChartCollapseControls';
+import { CARD_CLASS } from '@/components/ui/Card';
+import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 
 interface CashFlowForecastChartProps {
   scheduledTransactions: ScheduledTransaction[];
@@ -100,7 +102,7 @@ export function CashFlowForecastChart({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 mb-6`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t('forecast.title')}
@@ -116,7 +118,7 @@ export function CashFlowForecastChart({
 
   if (forecast.missingCurrencies.length > 0 || forecast.unknownEstimates.length > 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 mb-6`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t('forecast.title')}
@@ -133,7 +135,7 @@ export function CashFlowForecastChart({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 mb-6">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 mb-6`}>
       {/* Header with controls; the fold button stays top-right at every width */}
       <div className="flex items-start sm:items-center justify-between gap-2 mb-4">
         <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -149,16 +151,14 @@ export function CashFlowForecastChart({
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {/* Period selector */}
-            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <div className={SEGMENTED_GROUP_CLASS} role="group" aria-label={t('forecast.title')}>
               {FORECAST_PERIODS.map((period) => (
                 <button
                   key={period}
+                  type="button"
                   onClick={() => setSelectedPeriod(period)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    selectedPeriod === period
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
+                  aria-pressed={selectedPeriod === period}
+                  className={segmentClass(selectedPeriod === period)}
                 >
                   {FORECAST_PERIOD_LABELS[period]}
                 </button>

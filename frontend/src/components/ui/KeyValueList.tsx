@@ -45,21 +45,21 @@ export function KeyValueList({
   if (visibleRows.length === 0) return null;
 
   return (
-    <dl className={`space-y-2 ${className}`}>
+    <dl className={`ui-kv space-y-2 ${className}`}>
       {visibleRows.map((row) => (
         <div
           key={row.key}
           className={
             variant === 'rows'
-              ? 'flex items-baseline justify-between gap-4'
-              : 'grid grid-cols-[minmax(6rem,auto)_1fr] items-baseline gap-x-4 gap-y-1'
+              ? 'ui-kv-row flex items-baseline justify-between gap-4'
+              : 'ui-kv-row grid grid-cols-[minmax(6rem,auto)_1fr] items-baseline gap-x-4 gap-y-1'
           }
         >
-          <dt className="text-sm text-gray-500 dark:text-gray-400">
+          <dt className="ui-kv-label text-sm text-gray-500 dark:text-gray-400">
             {row.label}
           </dt>
           <dd
-            className={`text-sm text-gray-900 dark:text-gray-100 ${
+            className={`ui-kv-value text-sm text-gray-900 dark:text-gray-100 ${
               variant === 'rows' ? 'text-right' : ''
             }`}
           >

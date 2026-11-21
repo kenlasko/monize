@@ -10,6 +10,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { INTERACTIVE_ROW_FOCUS_CLASS, activateOnKey } from '@/components/ui/interactive-row';
 import { TABLE_BODY_CLASS, TABLE_CLASS, TD_CLASS, Th } from '@/components/ui/Table';
 import { useLongPress } from '@/hooks/useLongPress';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
+import { BudgetListModern } from './variants/BudgetListModern';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { Budget } from '@/types/budget';
@@ -31,25 +33,38 @@ interface BudgetListProps {
  *
  * An empty list renders `EmptyState` from here, with the wizard as its action.
  */
+const TILE_VARIANTS: StyleVariants<Pick<BudgetListProps, 'budgets' | 'onOpen'>> = {
+  standard: BudgetListTable,
+  modern: BudgetListModern,
+};
+
 export function BudgetList({ budgets, onOpen, onCreate }: BudgetListProps) {
+  const uiStyle = useUiStyle();
+  if (budgets.length === 0) return <BudgetListEmpty onCreate={onCreate} />;
+  return renderForStyle(uiStyle, TILE_VARIANTS, { budgets, onOpen });
+}
+
+function BudgetListEmpty({ onCreate }: { onCreate: () => void }) {
+  const t = useTranslations('budgets');
+  return (
+    <EmptyState
+      icon={<ChartPieIcon />}
+      title={t('pages.list.empty.title')}
+      description={t('pages.list.empty.description')}
+      action={<Button onClick={onCreate}>{t('pages.list.empty.cta')}</Button>}
+      help="budgets"
+    />
+  );
+}
+
+/** Standard and Classic: the table (Classic rules it as a ledger). */
+function BudgetListTable({ budgets, onOpen }: Pick<BudgetListProps, 'budgets' | 'onOpen'>) {
   const t = useTranslations('budgets');
   const { formatDate } = useDateFormat();
   const { formatNumber } = useNumberFormat();
 
   const open = useCallback((budget: Budget) => onOpen(budget), [onOpen]);
   const { getRowHandlers } = useLongPress<Budget>({ onLongPress: open, onClick: open });
-
-  if (budgets.length === 0) {
-    return (
-      <EmptyState
-        icon={<ChartPieIcon />}
-        title={t('pages.list.empty.title')}
-        description={t('pages.list.empty.description')}
-        action={<Button onClick={onCreate}>{t('pages.list.empty.cta')}</Button>}
-        help="budgets"
-      />
-    );
-  }
 
   return (
     <div className="overflow-x-auto">
@@ -80,10 +95,10 @@ export function BudgetList({ budgets, onOpen, onCreate }: BudgetListProps) {
               <td className={`${TD_CLASS} hidden whitespace-nowrap md:table-cell`}>
                 {t(`form.typeOptions.${budget.budgetType}`)}
               </td>
-              <td className={`${TD_CLASS} whitespace-nowrap text-right`}>
+              <td className={`${TD_CLASS} ui-bud-num whitespace-nowrap text-right`}>
                 {formatNumber(budget.categories.length, 0)}
               </td>
-              <td className={`${TD_CLASS} hidden whitespace-nowrap sm:table-cell`}>
+              <td className={`${TD_CLASS} ui-bud-num hidden whitespace-nowrap sm:table-cell`}>
                 {formatDate(budget.periodStart)}
               </td>
               <td className={`${TD_CLASS} whitespace-nowrap`}>

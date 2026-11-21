@@ -4,17 +4,29 @@ import { useTranslations } from 'next-intl';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-interface BudgetSummaryCardsProps {
-  totalBudgeted: number;
-  totalSpent: number;
-  remaining: number;
-  totalIncome: number;
-  percentUsed: number;
-  daysRemaining: number;
-  formatCurrency: (amount: number) => string;
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
+import { BudgetSummaryClassic } from './variants/BudgetSummaryClassic';
+import { BudgetSummaryModern } from './variants/BudgetSummaryModern';
+import type { BudgetSummaryViewProps } from './variants/budget-summary-view';
+
+type BudgetSummaryCardsProps = BudgetSummaryViewProps;
+
+const VARIANTS: StyleVariants<BudgetSummaryViewProps> = {
+  standard: BudgetSummaryCardsStandard,
+  classic: BudgetSummaryClassic,
+  modern: BudgetSummaryModern,
+};
+
+/**
+ * The period's totals. Standard keeps the four stat tiles; Classic reads them
+ * as a statement line over a ticked gauge, Modern as an accent block for what
+ * is left beside white blocks (`variants/`).
+ */
+export function BudgetSummaryCards(props: BudgetSummaryCardsProps) {
+  return renderForStyle(useUiStyle(), VARIANTS, props);
 }
 
-export function BudgetSummaryCards({
+function BudgetSummaryCardsStandard({
   totalBudgeted,
   totalSpent,
   remaining,

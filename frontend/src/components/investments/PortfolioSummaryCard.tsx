@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { PortfolioSummary } from '@/types/investment';
@@ -20,6 +21,7 @@ import { gainLossColor } from '@/lib/format';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { partialTotalFor } from '@/lib/net-worth-completeness';
 import { portfolioHeadline } from '@/lib/portfolio-headline';
+import { PortfolioHeadline } from './variants/PortfolioHeadline';
 
 interface PortfolioSummaryCardProps {
   summary: PortfolioSummary | null;
@@ -195,6 +197,11 @@ export function PortfolioSummaryCard({
 
   const formatPercent = (value: number) => formatSignedPercent(value);
 
+  // The direction a signed figure points, for the Classic style's mark; a
+  // figure with no value (withheld) has none and carries no mark.
+  const signOf = (value: number | null | undefined) =>
+    value == null || value === 0 ? undefined : value > 0 ? 'up' : 'down';
+
   const returnColorClass = (value: number | null | undefined) => {
     if (value == null) return 'text-gray-400 dark:text-gray-500';
     return gainLossColor(value);
@@ -202,7 +209,7 @@ export function PortfolioSummaryCard({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('portfolioSummary.title')}{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
@@ -220,7 +227,7 @@ export function PortfolioSummaryCard({
 
   if (!summary) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('portfolioSummary.title')}{titleSuffix ? ` (${titleSuffix})` : ''}
         </h3>
@@ -305,7 +312,7 @@ export function PortfolioSummaryCard({
     hasIncompleteData(diagnostics.causes);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('portfolioSummary.title')}{titleSuffix ? ` (${titleSuffix})` : ''}
       </h3>
@@ -328,48 +335,57 @@ export function PortfolioSummaryCard({
 
       <div className="space-y-4">
         {/* Total Portfolio Value -- labelled a partial when it is one. */}
-        <div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {valuationIncomplete
+        <PortfolioHeadline
+          label={
+            valuationIncomplete
               ? t('portfolioSummary.knownPortfolioSubtotal')
-              : t('portfolioSummary.totalPortfolioValue')}
-          </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {fmtVal(portfolioHeadline(summary, foreignCurrency).value)}
-          </div>
-          {foreignCurrency && defaultTotal !== null && !valuationIncomplete && (
-            <div className="text-xs text-gray-400 dark:text-gray-500">
-              {'\u2248 '}{formatCurrency(defaultTotal, defaultCurrency)} {defaultCurrency}
-            </div>
-          )}
-        </div>
+              : t('portfolioSummary.totalPortfolioValue')
+          }
+          amount={portfolioHeadline(summary, foreignCurrency).value}
+          foreignCurrency={foreignCurrency}
+          valueText={fmtVal(portfolioHeadline(summary, foreignCurrency).value)}
+          approx={
+            foreignCurrency && defaultTotal !== null && !valuationIncomplete
+              ? `\u2248 ${formatCurrency(defaultTotal, defaultCurrency)} ${defaultCurrency}`
+              : null
+          }
+          gain={{
+            label: t('portfolioSummary.gainLoss'),
+            direction: gainLossVal > 0 ? 'up' : gainLossVal < 0 ? 'down' : 'flat',
+            text: (
+              <PartialTotal total={gainPartial} displayCurrency={gainDisplayCurrency}>
+                {`${gainLossVal > 0 ? '+' : ''}${fmtVal(gainLossVal)} \u00B7 ${formatPercent(gainLossPercentVal)}`}
+              </PartialTotal>
+            ),
+          }}
+        />
 
         {/* Values Section */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             {t('portfolioSummary.values')}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 ui-sum-grid">
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.holdingsValue')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.holdingsValueTooltip')} />
               </div>
-              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.holdings ?? summary.totalHoldingsValue)}
               </div>
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.cashBalance')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.cashBalanceTooltip')} />
               </div>
-              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.cash ?? summary.totalCashValue)}
               </div>
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.totalGain')}
                 <InfoTooltip
                   placement="top"
@@ -377,21 +393,21 @@ export function PortfolioSummaryCard({
                   learnMore="investmentCashVsReturns"
                 />
               </div>
-              <div className={`text-base sm:text-lg font-semibold ${returnColorClass((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}`}>
+              <div data-sign={signOf((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}`}>
                 {fmtVal((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}
               </div>
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.netInvested')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.netInvestedTooltip')} />
               </div>
-              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.netInvested ?? summary.totalNetInvested)}
               </div>
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.costBasis')}
                 <InfoTooltip
                   placement="top"
@@ -399,16 +415,16 @@ export function PortfolioSummaryCard({
                   learnMore="investmentCostBasis"
                 />
               </div>
-              <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div className="ui-sum-fig text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {fmtVal(converted?.costBasis ?? summary.totalCostBasis)}
               </div>
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.gainLoss')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.gainLossTooltip')} />
               </div>
-              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(gainLossVal)}`}>
+              <div data-sign={signOf(gainLossVal)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(gainLossVal)}`}>
                 <PartialTotal total={gainPartial} displayCurrency={gainDisplayCurrency}>
                   {fmtVal(gainLossVal)}
                 </PartialTotal>
@@ -427,13 +443,13 @@ export function PortfolioSummaryCard({
           <div className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
             {t('portfolioSummary.returns')}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 ui-sum-grid">
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.simpleReturn')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.simpleReturnTooltip')} />
               </div>
-              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(gainLossPercentVal)}`}>
+              <div data-sign={signOf(gainLossPercentVal)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(gainLossPercentVal)}`}>
                 <PartialTotal total={gainPartial} displayCurrency={gainDisplayCurrency}>
                   {formatPercent(gainLossPercentVal)}
                 </PartialTotal>
@@ -445,7 +461,7 @@ export function PortfolioSummaryCard({
               )}
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.twr')}
                 <span className="hidden sm:inline">&nbsp;{t('portfolioSummary.twrFull')}</span>
                 <InfoTooltip
@@ -454,14 +470,14 @@ export function PortfolioSummaryCard({
                   learnMore="investmentCashVsReturns"
                 />
               </div>
-              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(twr)}`}>
+              <div data-sign={signOf(twr)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(twr)}`}>
                 {twr != null ? formatPercent(twr) : (
                   <UnknownAmount reason={twrUnknownReason} className="text-sm font-normal" />
                 )}
               </div>
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.mwr')}
                 <span className="hidden sm:inline">&nbsp;{t('portfolioSummary.mwrFull')}</span>
                 <InfoTooltip
@@ -470,18 +486,18 @@ export function PortfolioSummaryCard({
                   learnMore="investmentCashVsReturns"
                 />
               </div>
-              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(mwr)}`}>
+              <div data-sign={signOf(mwr)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(mwr)}`}>
                 {mwr != null ? formatPercent(mwr) : (
                   <UnknownAmount reason={mwrUnknownReason} className="text-sm font-normal" />
                 )}
               </div>
             </div>
             <div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center ui-figure-label">
                 {t('portfolioSummary.cagr')}
                 <InfoTooltip placement="top" text={t('portfolioSummary.cagrTooltip')} />
               </div>
-              <div className={`text-base sm:text-lg font-semibold ${returnColorClass(cagrVal)}`}>
+              <div data-sign={signOf(cagrVal)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(cagrVal)}`}>
                 {cagrVal != null ? formatPercent(cagrVal) : (
                   <span className="text-gray-400 dark:text-gray-500 text-sm font-normal">{t('portfolioSummary.notAvailable')}</span>
                 )}

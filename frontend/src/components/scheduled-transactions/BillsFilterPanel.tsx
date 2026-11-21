@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { CARD_CLASS } from '@/components/ui/Card';
 import { FilterPanelHeader } from '@/components/ui/FilterPanelHeader';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import {
@@ -88,7 +89,7 @@ export function BillsFilterPanel(props: BillsFilterPanelProps) {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg">
+    <div className={CARD_CLASS}>
       {/* Filter header: the same fold toggle ("Show filters" / "Hide" with
           its chevron), count badge and Clear as the Transactions register's
           panel. The panel may fold only because the folded header still says

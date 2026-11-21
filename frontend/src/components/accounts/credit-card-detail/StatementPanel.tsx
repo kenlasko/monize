@@ -5,6 +5,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { SummaryCardGrid, SummaryCardItem } from '@/components/accounts/shared/SummaryCardGrid';
 import type { StatementCycle } from '@/types/credit-card-detail';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface StatementPanelProps {
   cycle: StatementCycle | null;
@@ -44,7 +45,7 @@ export function StatementPanel({ cycle, isLoading }: StatementPanelProps) {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
           {t('statement.title')}
         </h2>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {t('statement.unavailable')}
           </p>

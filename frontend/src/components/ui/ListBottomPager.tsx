@@ -69,7 +69,7 @@ export function ListBottomPager({
 
   if (totalPages > 1) {
     return (
-      <div className="mt-4">
+      <div className="ui-list-pager mt-4">
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -87,7 +87,7 @@ export function ListBottomPager({
   if (totalItems <= 0) return null;
 
   return (
-    <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+    <div className="ui-list-pager ui-list-total mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
       {totalLabel}
     </div>
   );

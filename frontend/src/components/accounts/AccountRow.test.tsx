@@ -155,6 +155,10 @@ function renderAccountRow(props: AccountRowProps) {
   );
 }
 
+/** A figure set in pieces (symbol, whole, cents): found by the text it reads as. */
+const figureReading = (text: string) =>
+  screen.getByText((_, el) => !!el && el.classList.contains('ui-money') && el.textContent === text);
+
 describe('AccountRow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -181,7 +185,7 @@ describe('AccountRow', () => {
       });
       renderAccountRow(props);
 
-      expect(screen.getByText('$1500.00')).toBeInTheDocument();
+      expect(figureReading('$1500.00')).toBeInTheDocument();
     });
 
     it('renders Active status badge for open accounts', () => {
@@ -330,7 +334,7 @@ describe('AccountRow', () => {
       });
       renderAccountRow(props);
 
-      const balanceEl = screen.getByText('$500.00');
+      const balanceEl = figureReading('$500.00').closest('div')!;
       expect(balanceEl.className).toContain('text-green-600');
     });
 
@@ -340,7 +344,7 @@ describe('AccountRow', () => {
       });
       renderAccountRow(props);
 
-      const balanceEl = screen.getByText('$-200.00');
+      const balanceEl = figureReading('$-200.00').closest('div')!;
       expect(balanceEl.className).toContain('text-red-600');
     });
 
@@ -976,7 +980,7 @@ describe('AccountRow', () => {
 
       expect(screen.getByText('Home Mortgage')).toBeInTheDocument();
       expect(screen.getByText('Mortgage')).toBeInTheDocument();
-      expect(screen.getByText('$-250000.00')).toBeInTheDocument();
+      expect(figureReading('$-250000.00')).toBeInTheDocument();
     });
 
     it('renders a line of credit account correctly', () => {
@@ -1089,7 +1093,7 @@ describe('AccountRow', () => {
       });
       renderAccountRow(props);
       expect(screen.queryByRole('img')).toBeNull();
-      expect(screen.queryByText('$')).toBeNull();
+      expect(screen.queryByText('$', { selector: ':not(.ui-money-prefix)' })).toBeNull();
     });
   });
 

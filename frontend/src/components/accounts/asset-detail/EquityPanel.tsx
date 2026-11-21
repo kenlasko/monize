@@ -12,6 +12,7 @@ import { createLogger } from '@/lib/logger';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { DailyBalancePoint } from '@/lib/balance-history';
 import type { Account } from '@/types/account';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('EquityPanel');
 
@@ -69,7 +70,7 @@ export function EquityPanel({
         {t('equity.title')}
       </h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('equity.subtitle')}</p>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 space-y-4">
+      <div className={`${CARD_CLASS} p-4 space-y-4`}>
         {!linkedLoan ? (
           loanOptions.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('equity.noLoans')}</p>

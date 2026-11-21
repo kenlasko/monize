@@ -24,6 +24,10 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
+import { Card, CARD_CLASS } from '@/components/ui/Card';
+import { MoneyFigure } from '@/components/ui/MoneyFigure';
+import { BillsOutlook } from '@/components/scheduled-transactions/variants/BillsOutlook';
+import { useBillsOutlook } from '@/components/scheduled-transactions/useBillsOutlook';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
@@ -136,7 +140,7 @@ function BillsContent() {
   // scroll to the row without opening the post flow that ?postBillId triggers.
   const highlightId = useHighlightParam();
   const linkedBillId = searchParams.get('highlight');
-  const { formatCurrency, formatNumber } = useNumberFormat();
+  const { formatNumber } = useNumberFormat();
   const financialToday = useFinancialToday();
   // The reader's reporting currency and the converter into it. The monthly net
   // spans one currency or none (issue #1247).
@@ -742,6 +746,8 @@ function BillsContent() {
     [calendarMonth, scheduledTransactions],
   );
 
+  const outlook = useBillsOutlook(scheduledTransactions, financialToday);
+
   useRetainScrollPosition(!isLoading);
 
   useMobileAddAction(t('page.newButton'), handleCreateNew, {
@@ -755,6 +761,7 @@ function BillsContent() {
         <PageHeader
           title={t('page.title')}
           subtitle={t('page.subtitle')}
+          eyebrow={t('page.eyebrow')}
           help='bills'
           primaryAction={
             <Button onClick={handleCreateNew} {...tourAnchor(TOUR_ANCHORS.billsNewButton)}>
@@ -768,10 +775,13 @@ function BillsContent() {
           <SummaryCard label={t('page.summaryActiveDeposits')} value={summary.totalDeposits} icon={SummaryIcons.plus} />
           <SummaryCard
             label={t('page.summaryMonthlyNet')}
+            lead
             value={
-              summary.monthlyAmountsComplete
-                ? formatCurrency(summary.monthlyNet.value, defaultCurrency)
-                : t('page.summaryAmountUnavailable')
+              summary.monthlyAmountsComplete ? (
+                <MoneyFigure amount={summary.monthlyNet.value} currencyCode={defaultCurrency} display />
+              ) : (
+                t('page.summaryAmountUnavailable')
+              )
             }
             // A withheld figure names its cause, so the reader knows whether to
             // look at a schedule or add a rate (issue #1247 re-audit).
@@ -793,12 +803,15 @@ function BillsContent() {
           />
         </div>
 
+        {/* The fourteen days ahead: Classic's in / out strip, Modern's next-up block */}
+        <BillsOutlook strip={outlook.strip} next={outlook.next} onPost={handlePost} />
+
         {/* Cash Flow Forecast Chart */}
         <div {...tourAnchor(TOUR_ANCHORS.billsCashFlowForecast)}>
           <ErrorBoundary fallback={
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 mb-6">
+            <Card padding="md" className="mb-6">
               <p className="text-gray-500 dark:text-gray-400">{t('page.chartUnavailable')}</p>
-            </div>
+            </Card>
           }>
             <CashFlowForecastChart
               scheduledTransactions={scheduledTransactions}
@@ -862,7 +875,7 @@ function BillsContent() {
                 left, Export and the density toggle on the right, directly
                 over the column headers. The list is drawn whole, so the bar
                 carries no pager. */}
-            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
+            <div className={`${CARD_CLASS} overflow-hidden`}>
               <ListTopToolbar
                 densityView="bills"
                 viewToggle={<ViewModeToggle value={viewMode} onChange={setViewMode} />}

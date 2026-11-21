@@ -16,6 +16,7 @@ import {
   FREQUENCY_LABEL_KEY,
   frequencyLabelKey,
 } from '@/components/accounts/loan-detail/loan-scenario-labels';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface ComparisonSummaryCardsProps {
   comparison: ScenarioComparison;
@@ -230,7 +231,7 @@ function Card({
   subvalue?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+    <div className={`${CARD_CLASS} p-4`}>
       <div className="text-sm text-gray-500 dark:text-gray-400">{label}</div>
       <div className={`text-lg font-bold ${valueClass}`}>{value}</div>
       {subvalue && (

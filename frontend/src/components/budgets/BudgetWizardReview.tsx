@@ -12,6 +12,7 @@ import { STRATEGY_LABELS, BUDGET_TYPE_LABELS } from './utils/budget-labels';
 import type { WizardState } from './BudgetWizard';
 import type { ApplyBudgetBucketData, ApplyBudgetCategoryData } from '@/types/budget';
 import { BudgetWizardBucketReview, liveBucketKey, withBucketKey } from './BudgetWizardBuckets';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetWizardReviewProps {
   state: WizardState;
@@ -141,7 +142,7 @@ export function BudgetWizardReview({
       </h3>
 
       {/* Budget details */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div>
             <dt className="text-sm text-gray-500 dark:text-gray-400">{t('wizardReview.fields.name')}</dt>
@@ -222,7 +223,7 @@ export function BudgetWizardReview({
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+        <div className={`${CARD_CLASS} p-4 text-center`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {t('wizardReview.summaryCards.estIncome')}
           </div>
@@ -230,7 +231,7 @@ export function BudgetWizardReview({
             {formatCurrency(totalIncome, state.currencyCode)}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+        <div className={`${CARD_CLASS} p-4 text-center`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {t('wizardReview.summaryCards.totalExpenses')}
           </div>
@@ -241,7 +242,7 @@ export function BudgetWizardReview({
             {t('wizardReview.categoryCount', { count: expenseCategories.length })}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+        <div className={`${CARD_CLASS} p-4 text-center`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {t('wizardReview.summaryCards.transfers')}
           </div>
@@ -252,7 +253,7 @@ export function BudgetWizardReview({
             {t('wizardReview.accountsCount', { count: transferEntries.length })}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+        <div className={`${CARD_CLASS} p-4 text-center`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {t('wizardReview.summaryCards.remaining')}
           </div>
@@ -269,7 +270,7 @@ export function BudgetWizardReview({
       {isBucket && <BudgetWizardBucketReview state={state} />}
 
       {/* Category list */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <table className="w-full">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">

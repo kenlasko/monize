@@ -31,13 +31,13 @@ export function CollapsibleSummary({
 }: CollapsibleSummaryProps) {
   const contentId = useId();
   return (
-    <section aria-label={title} className="mb-4 sm:mb-6">
+    <section aria-label={title} className="ui-summary-fold mb-4 sm:mb-6">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={!collapsed}
         aria-controls={contentId}
-        className="flex w-full min-h-8 items-center justify-between gap-3 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="ui-summary-toggle flex w-full min-h-8 items-center justify-between gap-3 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</span>
         <span className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400">

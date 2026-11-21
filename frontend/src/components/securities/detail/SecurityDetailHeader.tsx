@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/Badge';
 import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline';
@@ -121,11 +122,11 @@ export function SecurityDetailHeader({
       : undefined;
 
   return (
-    <div className="mb-6">
+    <div className="ui-detail-header ui-invert ui-ink-block mb-6">
       <button
         type="button"
         onClick={onBack}
-        className="mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        className="ui-detail-back mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
       >
         <ChevronLeftIcon className="h-4 w-4" aria-hidden="true" />
         {t('backToSecurities')}
@@ -144,7 +145,7 @@ export function SecurityDetailHeader({
                 mobile-table identity cells. */}
             <h1
               ref={titleRef}
-              className="break-words text-2xl font-bold text-gray-900 lg:truncate dark:text-gray-100"
+              className="ui-detail-title break-words text-2xl font-bold text-gray-900 lg:truncate dark:text-gray-100"
               title={security.name}
             >
               {security.name}
@@ -155,9 +156,7 @@ export function SecurityDetailHeader({
           </div>
 
           {!security.isActive && (
-            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-              {t('header.inactiveBadge')}
-            </span>
+            <Badge>{t('header.inactiveBadge')}</Badge>
           )}
 
           {/* The actions stay inline at every width: there are only a few, and
@@ -201,7 +200,7 @@ export function SecurityDetailHeader({
           {quote ? (
             <>
               <div className="flex flex-wrap items-baseline gap-x-3 lg:justify-end">
-                <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                <span className="ui-detail-figure text-2xl font-semibold text-gray-900 dark:text-gray-100">
                   {/* The quote is the largest figure on the page and the one a
                       reader anchors on, so it names its currency too when that
                       is not their own. */}
@@ -245,12 +244,9 @@ export function SecurityDetailHeader({
                     : t('header.priceAt', { date: formatDate(quote.priceDate) })}
                 </span>
                 {marketState !== 'unknown' && (
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
-                      marketState === 'open'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
+                  <Badge
+                    variant={marketState === 'open' ? 'green' : 'gray'}
+                    className="gap-1"
                     title={marketHoursTitle}
                   >
                     <span
@@ -262,7 +258,7 @@ export function SecurityDetailHeader({
                     {marketState === 'open'
                       ? t('header.marketOpen')
                       : t('header.marketClosed')}
-                  </span>
+                  </Badge>
                 )}
               </p>
             </>

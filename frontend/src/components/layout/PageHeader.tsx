@@ -22,6 +22,12 @@ interface PageHeaderProps {
   title: string;
   /** Optional subtitle/description */
   subtitle?: string;
+  /**
+   * A short line naming where the page sits ("TD Canada Trust · Chequing"),
+   * printed above the title by the Classic and Modern UI styles only. Standard
+   * keeps it `hidden`, so passing one changes nothing there.
+   */
+  eyebrow?: string;
   /** Action buttons to render on the right side */
   actions?: ReactNode;
   /**
@@ -72,7 +78,7 @@ interface PageHeaderProps {
  * Inline page header with title, subtitle, and action buttons.
  * Renders directly in the content area without a separate background bar.
  */
-export function PageHeader({ title, subtitle, actions, primaryAction, help, compactMobileActions, icon, titleAdornment, collapsedContext, collapsedSwitcher, floatingBar = true }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, eyebrow, actions, primaryAction, help, compactMobileActions, icon, titleAdornment, collapsedContext, collapsedSwitcher, floatingBar = true }: PageHeaderProps) {
   const t = useTranslations('layout');
   // Below `xl` the title is drawn large and handed to the app header once it
   // scrolls away, unless something on the page collapses in its place.
@@ -120,6 +126,7 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
 
   const titleBlock = (
     <div className="ui-page-heading">
+      {eyebrow && <p className="ui-page-eyebrow hidden">{eyebrow}</p>}
       <div className="ui-page-title-row flex items-center gap-2">
         <h1
           ref={headingRef}
@@ -187,7 +194,7 @@ export function PageHeader({ title, subtitle, actions, primaryAction, help, comp
       )}
       {hasActions && (
         <div
-          className={`${
+          className={`ui-page-actions ${
             // With nothing but the primary action, the whole row goes where it
             // goes, so a phone keeps no empty gap under the title.
             actions ? 'flex' : 'hidden xl:flex'

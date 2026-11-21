@@ -78,11 +78,11 @@ export function PayeeDetailHeader({
       : payee.createdAt;
 
   return (
-    <div className="mb-6">
+    <div className="ui-detail-header mb-6">
       <button
         type="button"
         onClick={onBack}
-        className="mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        className="ui-detail-back mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
       >
         <ChevronLeftIcon className="h-4 w-4" aria-hidden="true" />
         {t('backToPayees')}
@@ -92,7 +92,7 @@ export function PayeeDetailHeader({
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
           <div className="flex min-w-0 items-center gap-1">
             <PayeeLogo payee={payee} size={28} className="mr-2" />
-            <h1 ref={titleRef} className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 ref={titleRef} className="ui-detail-title truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
               {payee.name}
             </h1>
             {/* Jump straight to another payee instead of going back to the
@@ -147,7 +147,7 @@ export function PayeeDetailHeader({
         </div>
       </div>
 
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p className="ui-detail-meta mt-1 text-sm text-gray-500 dark:text-gray-400">
         {t('header.since', { date: formatDate(sinceDate) })}
       </p>
     </div>

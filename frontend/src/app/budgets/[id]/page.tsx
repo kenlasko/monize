@@ -31,6 +31,7 @@ import type {
   BudgetTrendPoint,
 } from '@/types/budget';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export default function BudgetDetailPage() {
   return (
@@ -266,7 +267,7 @@ function BudgetDetailContent() {
     return (
       <PageLayout>
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-12 text-center">
+          <div className={`${CARD_CLASS} p-12 text-center`}>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               {error || t('pages.detail.notFound')}
             </h3>

@@ -25,6 +25,7 @@ import type {
   PaginationInfo,
   Transaction,
 } from '@/types/transaction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('ForeignCurrencyFeesSection');
 
@@ -281,7 +282,7 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
       </h2>
       <div className="space-y-6">
         {showFees && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+          <div className={`${CARD_CLASS} p-3 sm:p-6`}>
             <ForeignCurrencyFeeChart
               data={monthlyFees}
               isLoading={isSummaryLoading}
@@ -293,7 +294,7 @@ export function ForeignCurrencyFeesSection({ account }: ForeignCurrencyFeesSecti
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           {showFees ? (
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 px-4 pt-4 sm:px-6 sm:pt-6 pb-2">
               {t('list.title')}

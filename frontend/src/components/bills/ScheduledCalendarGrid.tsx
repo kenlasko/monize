@@ -44,12 +44,12 @@ export function ScheduledCalendarGrid({
 }: ScheduledCalendarGridProps) {
   const t = useTranslations('bills');
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="ui-cal overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
       <div className="grid grid-cols-7">
         {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="px-1 py-2 text-center text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+            className="ui-cal-dow px-1 py-2 text-center text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
           >
             {t(`calendar.days.${day}`)}
           </div>
@@ -59,14 +59,16 @@ export function ScheduledCalendarGrid({
         {days.map((day) => (
           <div
             key={day.date.toISOString()}
-            className={`${dayMinHeightClass} p-1 border-b border-r border-gray-200 dark:border-gray-700 ${
+            data-today={day.isToday || undefined}
+            data-outside={!day.isCurrentMonth || undefined}
+            className={`ui-cal-cell ${dayMinHeightClass} p-1 border-b border-r border-gray-200 dark:border-gray-700 ${
               day.isCurrentMonth
                 ? 'bg-white dark:bg-gray-800'
                 : 'bg-gray-50 dark:bg-gray-900/50'
             }`}
           >
             <div
-              className={`text-sm font-medium mb-1 w-7 h-7 flex items-center justify-center rounded-full ${
+              className={`ui-cal-num text-sm font-medium mb-1 w-7 h-7 flex items-center justify-center rounded-full ${
                 day.isToday
                   ? 'bg-blue-600 text-white'
                   : day.isCurrentMonth
@@ -82,7 +84,8 @@ export function ScheduledCalendarGrid({
                   key={`${bill.id}-${index}`}
                   type="button"
                   onClick={() => onSelect(bill)}
-                  className={`block w-full px-1 py-0.5 text-xs rounded truncate text-left transition-opacity motion-reduce:transition-none hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  data-kind={chipKind(bill)}
+                  className={`ui-cal-chip block w-full px-1 py-0.5 text-xs rounded truncate text-left transition-opacity motion-reduce:transition-none hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     SCHEDULED_KIND_CHIP_CLASSES[chipKind(bill)]
                   }`}
                 >

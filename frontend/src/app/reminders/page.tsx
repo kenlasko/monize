@@ -9,6 +9,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -36,6 +37,7 @@ function RemindersContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('reminder.pageTitle')}
+          eyebrow={t('reminder.eyebrow')}
           help='notifications'
         />
         {actingAsUserId ? (
@@ -104,7 +106,7 @@ function ActiveReminders({ retry }: { retry: () => void }) {
   if (rows.length === 0) return <EmptyState icon={<BellAlertIcon />} title={t('reminder.empty')} />;
 
   return (
-    <ul className="space-y-3 max-h-[70dvh] overflow-y-auto scrollbar-slim">
+    <ul className="ui-reminder-list space-y-3 max-h-[70dvh] overflow-y-auto scrollbar-slim">
       {rows.map((row) => {
         const text = copy(row);
         const target = safeNotificationTarget(row.target);
@@ -117,11 +119,13 @@ function ActiveReminders({ retry }: { retry: () => void }) {
             <Card padding="md" className="space-y-3 min-w-0">
               <h2 className="font-semibold break-words">{text.title}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300 break-words">{text.message}</p>
-              <p className="text-sm">
-                {t(row.repeatMode === 'once' ? 'reminder.modeOnce' : 'reminder.modeRepeat')} ·{' '}
-                {interval}
+              <p className="ui-reminder-mode text-sm">
+                <Badge variant={row.repeatMode === 'once' ? 'gray' : 'blue'}>
+                  {t(row.repeatMode === 'once' ? 'reminder.modeOnce' : 'reminder.modeRepeat')}
+                </Badge>{' '}
+                <span aria-hidden="true">·</span> <span className="ui-reminder-interval">{interval}</span>
               </p>
-              <p className="text-sm">
+              <p className="ui-reminder-next text-sm">
                 {t('reminder.nextFire', { date: formatDateTime(row.nextFireAt) })}
               </p>
               <div className="flex flex-wrap items-center gap-3">

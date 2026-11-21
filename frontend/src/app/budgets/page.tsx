@@ -107,7 +107,7 @@ function BudgetsContent() {
             subtitle={t('pages.create.subtitle')}
             help="budgets"
           />
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <div className={`${CARD_CLASS} p-6`}>
             <BudgetWizard
               onComplete={handleWizardComplete}
               onCancel={() => setShowWizard(false)}
@@ -124,6 +124,7 @@ function BudgetsContent() {
     <PageLayout>
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
+          eyebrow={t('pages.list.eyebrow')}
           title={t('pages.list.title')}
           subtitle={t('pages.list.subtitle')}
           help='budgets'
@@ -134,7 +135,7 @@ function BudgetsContent() {
           }
         />
 
-        <div className={`${CARD_CLASS} overflow-hidden`}>
+        <div className={`${CARD_CLASS} ui-bud-list overflow-hidden`}>
           {isLoading ? (
             <LoadingSpinner text={t('pages.list.loading')} />
           ) : (

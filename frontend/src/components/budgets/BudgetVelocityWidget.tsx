@@ -5,6 +5,9 @@ import type { BudgetVelocity } from '@/types/budget';
 import { gainLossColor } from '@/lib/format';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { CARD_CLASS } from '@/components/ui/Card';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
+import { BudgetVelocityModern } from './variants/BudgetVelocityModern';
 
 interface BudgetVelocityWidgetProps {
   velocity: BudgetVelocity;
@@ -33,7 +36,20 @@ function getPaceBgColor(paceStatus: BudgetVelocity['paceStatus']): string {
   }
 }
 
-export function BudgetVelocityWidget({
+const VARIANTS: StyleVariants<BudgetVelocityWidgetProps> = {
+  standard: BudgetVelocityWidgetStandard,
+  modern: BudgetVelocityModern,
+};
+
+/**
+ * Modern leads with the safe daily spend in an accent block; Classic is the
+ * Standard layout, set in ledger figures by `ui-styles-budgets.css`.
+ */
+export function BudgetVelocityWidget(props: BudgetVelocityWidgetProps) {
+  return renderForStyle(useUiStyle(), VARIANTS, props);
+}
+
+function BudgetVelocityWidgetStandard({
   velocity,
   formatCurrency,
 }: BudgetVelocityWidgetProps) {
@@ -51,7 +67,7 @@ export function BudgetVelocityWidget({
   const paceLabel = t(`velocity.paceStatus.${velocity.paceStatus}`);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
           {t('velocity.title')}
@@ -66,7 +82,7 @@ export function BudgetVelocityWidget({
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
             {t('velocity.dailyBurnRate')}
           </div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="ui-bud-fig text-lg font-semibold text-gray-900 dark:text-gray-100">
             {formatCurrency(velocity.dailyBurnRate)}/day
           </div>
         </div>
@@ -80,7 +96,7 @@ export function BudgetVelocityWidget({
           {velocity.safeDailySpend === null ? (
             <UnknownAmount />
           ) : (
-            <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+            <div className="ui-bud-fig text-lg font-semibold text-green-600 dark:text-green-400">
               {formatCurrency(velocity.safeDailySpend)}/day
             </div>
           )}
@@ -89,7 +105,7 @@ export function BudgetVelocityWidget({
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
             {t('velocity.projectedMonthEnd')}
           </div>
-          <div className={`text-lg font-semibold ${
+          <div className={`ui-bud-fig text-lg font-semibold ${
             velocity.projectedVariance > 0
               ? 'text-red-600 dark:text-red-400'
               : 'text-gray-900 dark:text-gray-100'
@@ -101,7 +117,7 @@ export function BudgetVelocityWidget({
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
             {t('velocity.budgetTotal')}
           </div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="ui-bud-fig text-lg font-semibold text-gray-900 dark:text-gray-100">
             {formatCurrency(velocity.budgetTotal)}
           </div>
         </div>
@@ -120,7 +136,7 @@ export function BudgetVelocityWidget({
             {velocity.totalUpcomingBills === null ? (
               <UnknownAmount reason={unknownReason} />
             ) : (
-              <div className="text-lg font-semibold text-red-600 dark:text-red-400">
+              <div className="ui-bud-fig text-lg font-semibold text-red-600 dark:text-red-400">
                 {formatCurrency(velocity.totalUpcomingBills)}
               </div>
             )}
@@ -132,7 +148,7 @@ export function BudgetVelocityWidget({
             {velocity.trulyAvailable === null ? (
               <UnknownAmount reason={unknownReason} />
             ) : (
-              <div className={`text-lg font-semibold ${
+              <div className={`ui-bud-fig text-lg font-semibold ${
                 gainLossColor(velocity.trulyAvailable)
               }`}>
                 {formatCurrency(Math.abs(velocity.trulyAvailable))}

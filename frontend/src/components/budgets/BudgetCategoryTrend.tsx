@@ -18,6 +18,7 @@ import { BudgetTrendPartialNote, PartialTrendFigure } from './PartialTrendFigure
 import { useChartMonthFormat } from '@/hooks/useChartMonthFormat';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetCategoryTrendProps {
   data: CategoryTrendSeries[];
@@ -159,7 +160,7 @@ export function BudgetCategoryTrend({
 
   if (data.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+      <div className={`${CARD_CLASS} p-4 sm:p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('categoryTrend.title')}
         </h2>
@@ -171,7 +172,7 @@ export function BudgetCategoryTrend({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('categoryTrend.title')}
       </h2>

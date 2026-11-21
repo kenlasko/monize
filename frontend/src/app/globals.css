@@ -4,6 +4,14 @@
 @import "./ui-styles-register.css";
 @import "./ui-styles-entry.css";
 @import "./ui-styles-shell.css";
+@import "./ui-styles-kit.css";
+@import "./ui-styles-accounts.css";
+@import "./ui-styles-bills.css";
+@import "./ui-styles-investments.css";
+@import "./ui-styles-budgets.css";
+@import "./ui-styles-reports.css";
+@import "./ui-styles-lists.css";
+@import "./ui-styles-settings.css";
 
 /* Custom theme extensions */
 @theme {

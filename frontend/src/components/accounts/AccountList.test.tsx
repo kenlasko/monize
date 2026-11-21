@@ -371,8 +371,11 @@ describe('AccountList', () => {
       <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
     );
 
-    expect(screen.getByText('$2500.50')).toBeInTheDocument();
-    expect(screen.getByText('$-300.00')).toBeInTheDocument();
+    // The account's row and its group's total both read as the figure.
+    const figure = (text: string) =>
+      screen.getAllByText((_, el) => !!el && el.classList.contains('ui-money') && el.textContent === text);
+    expect(figure('$2500.50').length).toBeGreaterThan(0);
+    expect(figure('$-300.00').length).toBeGreaterThan(0);
   });
 
   it('displays currency code for non-default currency accounts', () => {

@@ -75,10 +75,10 @@ export function Pagination({
   // Determine which jump buttons to show based on total pages
   const showLargeJumps = totalPages > 10;
 
-  const buttonClass = "px-2 h-[26px] text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed";
+  const buttonClass = "ui-page-btn px-2 h-[26px] text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md transition-colors motion-reduce:transition-none hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
-    <div className={`flex flex-col min-[820px]:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
+    <div className={`ui-pagination flex flex-col min-[820px]:flex-row items-center justify-between gap-3 ${minimal ? 'bg-transparent' : 'bg-white dark:bg-gray-800 px-4 py-3 shadow dark:shadow-gray-700/50 rounded-lg'}`}>
       {/* Showing X-Y of Z, and whatever the caller wants read as part of that
           line rather than as part of the paging controls. */}
       {/* Once the row stacks, a leading control (the Table / Calendar

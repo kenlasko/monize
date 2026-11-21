@@ -1,0 +1,296 @@
+/*
+ * investments area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * (read its header): ramp tokens only, marker classes in @layer components,
+ * unlayered rules only where a primitive's own utility must yield.
+ */
+
+/* ===================================================================== */
+/* Shared: signed figures                                                 */
+/* ===================================================================== */
+
+/* Classic: a signed figure carries a small triangle mark before it, the
+   direction said in a shape as the sign already says it in a character
+   (colour is never the only cue). A withheld figure has no data-sign. */
+html[data-ui-style='classic'] .ui-gain[data-sign]::before {
+  display: inline-block;
+  margin-inline-end: 0.35em;
+  font-size: 0.6em;
+  vertical-align: 0.12em;
+  font-family: var(--font-sans);
+}
+html[data-ui-style='classic'] .ui-gain[data-sign='up']::before {
+  content: '\25B2';
+}
+html[data-ui-style='classic'] .ui-gain[data-sign='down']::before {
+  content: '\25BC';
+}
+
+/* ===================================================================== */
+/* /investments: the portfolio summary                                    */
+/* ===================================================================== */
+
+/* Classic: a brokerage statement. The total stands as a statement figure on
+   a hairline, and the schedule under it is ruled lines, a label at the left
+   and a mono figure at the right. */
+html[data-ui-style='classic'] .ui-sum-headline {
+  margin-bottom: 0.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-sum-grid {
+  column-gap: 2.5rem;
+  row-gap: 0;
+}
+html[data-ui-style='classic'] .ui-sum-grid > * {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 0.75rem;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-sum-grid > * > :nth-child(n + 3) {
+  flex-basis: 100%;
+  text-align: right;
+}
+html[data-ui-style='classic'] .ui-sum-fig {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Modern: the schedule is tiles, each a soft block with a big tight figure.
+   The headline is the ink block (`ui-ink-block`). */
+html[data-ui-style='modern'] .ui-ink-block {
+  padding: 1.5rem;
+  border-radius: 1.75rem;
+  background-color: var(--color-white);
+  color: var(--color-gray-900);
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-ink-block {
+    padding: 1.75rem 2rem;
+  }
+}
+html.dark[data-ui-style='modern'] .ui-ink-block {
+  background-color: var(--color-gray-800);
+  color: var(--color-gray-50);
+}
+/* On a card (already gray-800 by night) the block steps down instead. */
+html.dark[data-ui-style='modern'] .ui-card .ui-ink-block {
+  background-color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-sum-grid {
+  gap: 0.625rem;
+}
+html[data-ui-style='modern'] .ui-sum-grid > * {
+  padding: 0.875rem 1rem;
+  border-radius: 1.25rem;
+  background-color: var(--color-gray-50);
+}
+html.dark[data-ui-style='modern'] .ui-sum-grid > * {
+  background-color: color-mix(in oklab, var(--color-gray-700) 55%, transparent);
+}
+html[data-ui-style='modern'] .ui-sum-fig {
+  margin-top: 0.125rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* ===================================================================== */
+/* /investments: holdings by account                                      */
+/* ===================================================================== */
+
+/* Classic: a ruled schedule. The account is a serif line over its mono
+   figures; positions are hairlined rows; the account total sits on an ink
+   rule, as a ledger foots a column. */
+html[data-ui-style='classic'] .ui-acct-head .text-left > :first-child {
+  font-family: var(--ui-font-display);
+  font-size: 1.125rem;
+  font-weight: 500;
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 18;
+}
+html[data-ui-style='classic'] .ui-acct-head .text-right > * {
+  font-variant-numeric: tabular-nums;
+}
+html[data-ui-style='classic'] .ui-acct-head .text-right > :first-child {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+html[data-ui-style='classic'] .ui-holding-row,
+html[data-ui-style='classic'] .ui-holding-total {
+  background-color: transparent;
+}
+html[data-ui-style='classic'] .ui-holding-row > td:not(:first-child),
+html[data-ui-style='classic'] .ui-holding-total > td:not(:first-child) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+html[data-ui-style='classic'] .ui-ticker > :first-child {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+html[data-ui-style='classic'] .ui-holding-total {
+  border-top: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-holding-total > td:first-child {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+}
+
+/* Modern: a ticker is a round avatar beside its name; the account is an
+   avatar too. Gains are tinted pills, figures are heavier. */
+html[data-ui-style='modern'] .ui-ticker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: center;
+  text-decoration: none;
+}
+html[data-ui-style='modern'] .ui-ticker::before,
+html[data-ui-style='modern'] .ui-acct-head > [data-initial]::before {
+  content: attr(data-initial);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: var(--color-blue-300);
+  color: var(--color-gray-900);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+html.dark[data-ui-style='modern'] .ui-ticker::before,
+html.dark[data-ui-style='modern'] .ui-acct-head > [data-initial]::before {
+  background-color: var(--color-blue-400);
+}
+html[data-ui-style='modern'] .ui-ticker::before {
+  grid-row: 1 / span 2;
+}
+html[data-ui-style='modern'] .ui-acct-head > [data-initial]::before {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 0.8125rem;
+}
+html[data-ui-style='modern'] .ui-acct-head > [data-initial] > svg {
+  order: 2;
+}
+html[data-ui-style='modern'] .ui-acct-head .text-right > :first-child {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+html[data-ui-style='modern'] .ui-holding-row > td:not(:first-child) {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+html[data-ui-style='modern'] .ui-holding-row .ui-gain[data-sign].text-xs {
+  display: inline-block;
+  padding: 0.0625rem 0.625rem;
+  border-radius: 9999px;
+  background-color: color-mix(in oklab, currentColor 12%, transparent);
+  font-weight: 600;
+}
+html[data-ui-style='modern'] .ui-holding-total {
+  background-color: var(--color-gray-50);
+}
+html.dark[data-ui-style='modern'] .ui-holding-total {
+  background-color: var(--color-gray-900);
+}
+
+/* ===================================================================== */
+/* Security and currency detail headers                                   */
+/* ===================================================================== */
+
+/* Modern: the identity header is the ink block, the name and the quote set
+   on it. (`ui-invert` turns the ramp round inside it, `ui-ink-block` above
+   gives it its fill.) The kit's own bottom margin keeps the page rhythm. */
+html[data-ui-style='modern'] .ui-detail-header.ui-ink-block {
+  margin-bottom: 1.5rem;
+}
+html[data-ui-style='modern'] .ui-detail-header.ui-ink-block .ui-detail-back {
+  color: var(--color-gray-500);
+}
+
+/* A label that carries an inline qualifier ("TWR (Time-Weighted)") and its
+   tooltip reads as one line of text, not as flex items. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-sum-grid .ui-figure-label {
+  display: block;
+}
+
+/* ===================================================================== */
+/* Securities and currencies lists: the symbol cell                       */
+/* ===================================================================== */
+
+/* Classic: a symbol is a ledger mark, mono capitals. */
+html[data-ui-style='classic'] .ui-sym {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Modern: a security's symbol sits on a round avatar; a currency code is a
+   pill. */
+html[data-ui-style='modern'] .ui-sym[data-initial] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+html[data-ui-style='modern'] .ui-sym[data-initial]::before {
+  content: attr(data-initial);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: var(--color-blue-300);
+  color: var(--color-gray-900);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+html.dark[data-ui-style='modern'] .ui-sym[data-initial]::before {
+  background-color: var(--color-blue-400);
+}
+html[data-ui-style='modern'] .ui-sym:not([data-initial]) {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-100);
+  font-weight: 700;
+}
+html.dark[data-ui-style='modern'] .ui-sym:not([data-initial]) {
+  background-color: var(--color-gray-700);
+}
+
+/* The ink block is dark in both modes: the deep red and green meant for a
+   light card give way to the light end of each, as the dashboard hero's pill
+   does. */
+html[data-ui-style='modern'] .ui-ink-block :is(.text-red-600, .text-red-500) {
+  color: var(--color-red-400);
+}
+html[data-ui-style='modern'] .ui-ink-block :is(.text-green-600, .text-green-500) {
+  color: var(--color-green-400);
+}

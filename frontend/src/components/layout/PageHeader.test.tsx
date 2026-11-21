@@ -39,6 +39,21 @@ describe('PageHeader', () => {
     expect(screen.getByText('A helpful description')).toBeInTheDocument();
   });
 
+  it('prints an eyebrow that only the Classic and Modern styles show', () => {
+    const { container } = render(<PageHeader title="Primary Chequing" eyebrow="TD Canada Trust" />);
+    const eyebrow = screen.getByText('TD Canada Trust');
+    expect(eyebrow).toHaveClass('ui-page-eyebrow');
+    // Standard keeps it hidden; ui-styles-kit.css shows it for the two styles.
+    expect(eyebrow).toHaveClass('hidden');
+    // It sits above the title, inside the heading block.
+    expect(container.querySelector('.ui-page-heading')?.firstElementChild).toBe(eyebrow);
+  });
+
+  it('renders no eyebrow without one', () => {
+    const { container } = render(<PageHeader title="My Page" />);
+    expect(container.querySelector('.ui-page-eyebrow')).toBeNull();
+  });
+
   it('does not render subtitle when not provided', () => {
     render(<PageHeader title="My Page" />);
     expect(screen.queryByText('A helpful description')).not.toBeInTheDocument();

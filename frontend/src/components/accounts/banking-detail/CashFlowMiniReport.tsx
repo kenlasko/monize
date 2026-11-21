@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import type { MonthlyTotal } from '@/types/transaction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface CashFlowMiniReportProps {
   monthly: MonthlyTotal[];
@@ -40,7 +41,7 @@ export function CashFlowMiniReport({ monthly, currencyCode, isLoading }: CashFlo
         {t('cashFlow.title')}
       </h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('cashFlow.subtitle')}</p>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {isLoading ? (
           <div className="h-40 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : rows.length === 0 || max === 0 ? (

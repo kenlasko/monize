@@ -26,6 +26,7 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { CHART_MAX_POINTS, sampleStockSeries } from '@/lib/chart-sampling';
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export interface PayoffChartPoint {
   /** Month key (yyyy-MM), formatted for display by the chart */
@@ -256,7 +257,7 @@ export function PayoffComparisonChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
           {t('loanDetail.chart.empty')}
         </p>
@@ -265,7 +266,7 @@ export function PayoffComparisonChart({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+    <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
       <div className="flex items-start justify-between gap-2 mb-4 px-4 sm:px-0">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {chartTitle}

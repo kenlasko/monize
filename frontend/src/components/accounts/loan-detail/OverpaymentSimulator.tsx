@@ -23,6 +23,7 @@ import { getCurrencySymbol } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { createLogger } from '@/lib/logger';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('OverpaymentSimulator');
 
@@ -379,7 +380,7 @@ export function OverpaymentSimulator({
     );
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+    <div className={`${CARD_CLASS} p-6`}>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('loanDetail.simulator.title')}

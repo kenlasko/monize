@@ -17,6 +17,7 @@ import type { LongPressRowHandlers } from '@/hooks/useLongPress';
 import type { RowAction } from '@/components/ui/row-actions/rowAction';
 import { securitiesValueOf, type LogicalAccount } from '@/lib/logical-accounts';
 import { LinkIcon } from '@heroicons/react/24/outline';
+import { splitMoneyFigure } from '@/lib/money-parts';
 import { Badge } from '@/components/ui/Badge';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -194,13 +195,33 @@ function FavouriteMark({
   );
 }
 
+/**
+ * An already formatted amount, set in the pieces a UI style can typeset (the
+ * symbol, whole part and cents), as `MoneyFigure` does for an amount it
+ * formats itself. The text is the caller's own, so the figure reads the same.
+ */
+function FormattedMoney({ text }: { text: string }) {
+  const { numberSeparators } = useNumberFormat();
+  const parts = splitMoneyFigure(text, numberSeparators?.decimal ?? '.');
+  return (
+    <span className="ui-money ui-money-quiet">
+      {parts.sign && <span className="ui-money-sign">{parts.sign}</span>}
+      {parts.prefix && <span className="ui-money-prefix">{parts.prefix}</span>}
+      <span className="ui-money-whole">{parts.whole}</span>
+      {parts.fraction && <span className="ui-money-fraction">{parts.fraction}</span>}
+      {parts.suffix && <span className="ui-money-suffix">{parts.suffix}</span>}
+    </span>
+  );
+}
+
 /** The "Joint" badge beside the name, in both layouts. */
 function JointBadge({ account }: { account: Account }) {
   const t = useTranslations('accounts');
   if (!account.isJoint && account.jointGranteeCount === undefined) return null;
   return (
-    <span
-      className="ml-1.5 px-2 inline-flex flex-shrink-0 text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+    <Badge
+      variant="amber"
+      className="ml-1.5 inline-flex flex-shrink-0"
       title={
         account.isJoint
           ? t('row.jointSharedBy', { owner: account.ownerLabel ?? '' })
@@ -210,7 +231,7 @@ function JointBadge({ account }: { account: Account }) {
       }
     >
       {t('row.jointBadge')}
-    </span>
+    </Badge>
   );
 }
 
@@ -610,7 +631,11 @@ export const AccountRow = memo(function AccountRow({
       : {
           figure: (
             <div className={`text-sm font-medium ${gainLossColor(ownTotalBalance)}`}>
-              {formatInAccountCurrency(ownTotalBalance)}
+              {account.currencyCode === defaultCurrency ? (
+                <FormattedMoney text={formatInAccountCurrency(ownTotalBalance)} />
+              ) : (
+                formatInAccountCurrency(ownTotalBalance)
+              )}
             </div>
           ),
           details: (
@@ -640,7 +665,7 @@ export const AccountRow = memo(function AccountRow({
   if (wrapped) {
     return (
       <tr
-        className="group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none bg-white dark:bg-gray-900"
+        className="ui-ledger-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none bg-white dark:bg-gray-900"
         {...getRowHandlers(account)}
       >
         <td className="p-0">
@@ -737,7 +762,7 @@ export const AccountRow = memo(function AccountRow({
 
   return (
     <tr
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
+      className={`ui-ledger-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
       {...getRowHandlers(account)}
     >
       <td className={`${cellPadding} ${account.isClosed ? 'opacity-50' : ''} ${ACCOUNT_NAME_CELL_FLEX}`}>

@@ -88,15 +88,15 @@ export function ChartLegend({
     <ul
       className={
         compact
-          ? `flex flex-wrap justify-center gap-x-4 gap-y-1 ${className ?? ''}`
-          : `grid ${PHONE_COLUMNS[phoneColumns]} gap-x-3 gap-y-1 ${columnsClassName} ${className ?? ''}`
+          ? `ui-legend flex flex-wrap justify-center gap-x-4 gap-y-1 ${className ?? ''}`
+          : `ui-legend grid ${PHONE_COLUMNS[phoneColumns]} gap-x-3 gap-y-1 ${columnsClassName} ${className ?? ''}`
       }
     >
       {items.map((item) => {
         const inner = (
           <>
             <span
-              className={`${compact ? '' : 'mt-1'} h-3 w-3 flex-shrink-0 rounded-full`}
+              className={`ui-legend-swatch ${compact ? '' : 'mt-1'} h-3 w-3 flex-shrink-0 rounded-full`}
               style={{ backgroundColor: item.color }}
               aria-hidden="true"
             />

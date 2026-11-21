@@ -1,5 +1,6 @@
 "use client";
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { KeyValueList, type KeyValueRow } from "@/components/ui/KeyValueList";
@@ -152,7 +153,7 @@ export function SecurityKeyInformation({
   ];
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+    <div className={`${CARD_CLASS} p-4`}>
       <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t("keyInfo.title")}
       </h3>

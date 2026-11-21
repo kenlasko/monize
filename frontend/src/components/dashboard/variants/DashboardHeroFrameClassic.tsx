@@ -1,6 +1,6 @@
 'use client';
 
-import { Guilloche } from './Guilloche';
+import { Guilloche } from '@/components/ui/Guilloche';
 import { DashboardHeroFrameStandard } from './DashboardHeroFrameStandard';
 import type { DashboardHeroFrameProps } from './dashboard-hero-view';
 

@@ -24,6 +24,7 @@ import {
   withBucketKey,
 } from './BudgetWizardBuckets';
 import { BudgetWizardTableHead, useWizardTableSort } from './BudgetWizardTableHead';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 function BudgetAmountInput({
   categoryId,
@@ -623,7 +624,7 @@ export function BudgetWizardCategories({
       {/* Income categories */}
       {incomeCategories.length > 0 && (
         <div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className={`${CARD_CLASS} overflow-hidden`}>
             <table className="w-full table-fixed sm:table-auto">
               <BudgetWizardTableHead
                 tone="income"
@@ -641,7 +642,7 @@ export function BudgetWizardCategories({
       {/* Transfers in counted as income (issue #2141) */}
       {incomeTransferAnalysis.length > 0 && (
         <div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className={`${CARD_CLASS} overflow-hidden`}>
             <table className="w-full table-fixed sm:table-auto">
               <BudgetWizardTableHead
                 tone="income"
@@ -661,7 +662,7 @@ export function BudgetWizardCategories({
 
       {/* Expense categories */}
       <div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <table className="w-full table-fixed sm:table-auto">
             <BudgetWizardTableHead
               tone="expense"
@@ -678,7 +679,7 @@ export function BudgetWizardCategories({
       {/* Transfer categories */}
       {transferAnalysis.length > 0 && (
         <div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className={`${CARD_CLASS} overflow-hidden`}>
             <table className="w-full table-fixed sm:table-auto">
               <BudgetWizardTableHead
                 tone="transfer"
@@ -737,7 +738,7 @@ export function BudgetWizardCategories({
 
       {/* 50/30/20 allocation summary */}
       {allocation503020 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
             {t('wizardCategories.allocation503020')}
           </h4>

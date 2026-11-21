@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -199,7 +200,7 @@ export function SecurityDocumentsTab({ security, refreshVersion = 0 }: SecurityD
           refreshVersion={refreshVersion}
         />
       )}
-    <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+    <div className={`${CARD_CLASS} p-4`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('documents.title')}

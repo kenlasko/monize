@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useTranslations } from 'next-intl';
 import { HoldingWithMarketValue } from '@/types/investment';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -34,7 +35,7 @@ export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('holdingsList.title')}
         </h3>
@@ -52,7 +53,7 @@ export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
 
   if (holdings.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('holdingsList.title')}
         </h3>
@@ -64,7 +65,7 @@ export function HoldingsList({ holdings, isLoading }: HoldingsListProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+    <div className={`${CARD_CLASS} overflow-hidden`}>
       <div className="p-6 pb-0">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('holdingsList.title')}

@@ -14,7 +14,7 @@ export function BackToSettingsLink({ label }: { label: string }) {
   return (
     <Link
       href="/settings"
-      className="mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      className="ui-detail-back mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
       <ChevronLeftIcon className="h-4 w-4" aria-hidden="true" />
       {label}

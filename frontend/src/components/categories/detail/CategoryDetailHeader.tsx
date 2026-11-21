@@ -85,11 +85,11 @@ export function CategoryDetailHeader({
       : category.createdAt;
 
   return (
-    <div className="mb-6">
+    <div className="ui-detail-header mb-6">
       <button
         type="button"
         onClick={onBack}
-        className="mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        className="ui-detail-back mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
       >
         <ChevronLeftIcon className="h-4 w-4" aria-hidden="true" />
         {t('backToCategories')}
@@ -104,7 +104,7 @@ export function CategoryDetailHeader({
               inherited={!category.icon && !category.color}
               size={20}
             />
-            <h1 ref={titleRef} className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 ref={titleRef} className="ui-detail-title truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
               {title}
             </h1>
             {/* Jump straight to another category instead of going back to the
@@ -139,7 +139,7 @@ export function CategoryDetailHeader({
         </div>
       </div>
 
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p className="ui-detail-meta mt-1 text-sm text-gray-500 dark:text-gray-400">
         {t('header.since', { date: formatDate(sinceDate) })}
       </p>
     </div>

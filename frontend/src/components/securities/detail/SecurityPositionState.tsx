@@ -1,6 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -47,11 +49,9 @@ export function SecurityPositionState({ detail }: SecurityPositionStateProps) {
       : null;
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+    <Card padding="sm">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-          {t('closed.title')}
-        </span>
+        <Badge>{t('closed.title')}</Badge>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('closed.description')}
         </p>
@@ -110,6 +110,6 @@ export function SecurityPositionState({ detail }: SecurityPositionStateProps) {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

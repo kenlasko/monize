@@ -9,6 +9,25 @@ describe('SummaryCard', () => {
     expect(screen.getByText('$1,000')).toBeInTheDocument();
   });
 
+  it('carries the stat markers a UI style sets the row by', () => {
+    const { container } = render(
+      <SummaryCard label="Net worth" value="$1,000" icon={SummaryIcons.money} hint="Partial" />
+    );
+    const tile = container.firstElementChild;
+    expect(tile).toHaveClass('ui-stat');
+    expect(tile).not.toHaveClass('ui-stat-lead');
+    expect(screen.getByText('Net worth')).toHaveClass('ui-stat-label');
+    expect(screen.getByText('$1,000')).toHaveClass('ui-stat-value');
+    expect(screen.getByText('Partial')).toHaveClass('ui-stat-hint');
+  });
+
+  it('marks the lead figure of a row', () => {
+    const { container } = render(
+      <SummaryCard label="Net worth" value="$1,000" icon={SummaryIcons.money} lead />
+    );
+    expect(container.firstElementChild).toHaveClass('ui-stat', 'ui-stat-lead');
+  });
+
   it('renders as div when no onClick', () => {
     const { container } = render(
       <SummaryCard label="Total" value="5" icon={SummaryIcons.accounts} />

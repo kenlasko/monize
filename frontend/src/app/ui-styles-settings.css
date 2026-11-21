@@ -1,0 +1,5 @@
+/*
+ * settings area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * (read its header): ramp tokens only, marker classes in @layer components,
+ * unlayered rules only where a primitive's own utility must yield.
+ */

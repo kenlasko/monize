@@ -11,6 +11,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { createLogger } from '@/lib/logger';
 import type { Account } from '@/types/account';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('LineOfCreditView');
 
@@ -98,7 +99,7 @@ export function LineOfCreditView({ account }: LineOfCreditViewProps) {
           />
         )}
         {hasLimit && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               {t('loanDetail.lineOfCredit.utilization')}
             </div>
@@ -118,7 +119,7 @@ export function LineOfCreditView({ account }: LineOfCreditViewProps) {
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 px-4 sm:px-0">
           {t('loanDetail.lineOfCredit.balanceHistory')}
         </h3>
@@ -151,7 +152,7 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+    <div className={`${CARD_CLASS} p-4`}>
       <div className="text-sm text-gray-500 dark:text-gray-400">{label}</div>
       <div className={`text-lg font-bold ${valueClass}`}>{value}</div>
     </div>
