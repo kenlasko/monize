@@ -323,6 +323,8 @@ The trigger used to be `hidden md:inline-flex`, because its popover opened only 
 - **A tap opens the portal.** A tap-opened popover goes through the fixed, viewport-clamped portal whatever the call site chose: the inline `absolute w-64` box is placed for a desktop column and runs off a phone's edge. `placePopover` (tested pure) clamps both axes and flips to the side that fits, and the popover re-measures on scroll and resize rather than closing, the rule for a portalled menu above.
 - **A pinned popover takes its own tap.** It drops `pointer-events-none` so a tap on it closes it instead of landing on the row beneath, and the trigger stops `click`, `mousedown`, `touchstart` and `contextmenu`, the events `useLongPress` listens to, so a tap on the icon neither opens its row nor arms the long press.
 
+A mark already on screen that needs saying what it is (a dot on a Pebble day chip) is `InfoTooltip`'s `trigger`, not a second popover: the same hover, focus and tap, through `usePortal` where the mark sits in a scrolling strip.
+
 `ui-conventions.test.ts` fails a `role="tooltip"` outside `InfoTooltip` (two hover-only exceptions, listed with their reasons); `InfoTooltip.touch.test.tsx` holds the tap, the outside press, the keyboard path and the one-text rule.
 
 ### A tooltip, an empty screen or an inline mention that can say more

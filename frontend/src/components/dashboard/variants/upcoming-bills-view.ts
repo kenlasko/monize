@@ -35,8 +35,11 @@ export interface UpcomingStripItem {
   id: string;
   name: string;
   kind: ScheduledKind;
+  payee: string | null;
   /** The occurrence's magnitude, `null` when unknown. */
   magnitude: number | null;
+  /** The currency `magnitude` is in. */
+  currencyCode: string;
 }
 
 /** One day of the two weeks starting today. */

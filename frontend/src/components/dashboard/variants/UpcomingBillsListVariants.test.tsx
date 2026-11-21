@@ -28,8 +28,8 @@ const days = Array.from({ length: 14 }, (_, i) => ({
   isToday: i === 0,
   items: [] as UpcomingBillsListProps['strip']['days'][number]['items'],
 }));
-days[1].items = [{ id: 'a', name: 'Hydro Bill', kind: 'bill', magnitude: 120 }];
-days[2].items = [{ id: 'b', name: 'Salary', kind: 'deposit', magnitude: 2250 }];
+days[1].items = [{ id: 'a', name: 'Hydro Bill', kind: 'bill', payee: 'Hydro One', magnitude: 120, currencyCode: 'USD' }];
+days[2].items = [{ id: 'b', name: 'Salary', kind: 'deposit', payee: null, magnitude: 2250, currencyCode: 'USD' }];
 
 const base = (onOpen = vi.fn(), onShowAll = vi.fn()): UpcomingBillsListProps => ({
   rows: [
@@ -50,7 +50,10 @@ describe.each([
   it('lists every occurrence as a button that posts it, an unknown amount said as one', () => {
     const onOpen = vi.fn();
     render(<Variant {...base(onOpen)} />);
-    const buttons = screen.getAllByRole('button', { name: /Hydro Bill|Salary|Gift/ });
+    // The Pebble day chips' dots are tooltip triggers (aria-expanded), not rows.
+    const buttons = screen
+      .getAllByRole('button', { name: /Hydro Bill|Salary|Gift/ })
+      .filter((button) => !button.hasAttribute('aria-expanded'));
     expect(buttons).toHaveLength(3);
     expect(buttons[0]).toHaveTextContent('Hydro One');
     expect(buttons[0]).toHaveTextContent('-$120.00');
@@ -70,6 +73,17 @@ describe.each([
     render(<Variant {...base(vi.fn(), onShowAll)} />);
     fireEvent.click(screen.getByRole('button', { name: '+7 more' }));
     expect(onShowAll).toHaveBeenCalled();
+  });
+
+  it('says what a day-chip dot is on hover, closing when the pointer leaves', () => {
+    if (_name === 'Folio') return;
+    render(<Variant {...base()} />);
+    const dot = screen.getByRole('button', { name: 'Hydro Bill · Hydro One · Bill · -$120.00' });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    fireEvent.pointerEnter(dot, { pointerType: 'mouse' });
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Hydro Bill · Hydro One · Bill · -$120.00');
+    fireEvent.pointerLeave(dot, { pointerType: 'mouse' });
+    expect(screen.queryByRole('tooltip')).toBeNull();
   });
 
   it('draws the two weeks under one accessible name', () => {

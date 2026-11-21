@@ -57,7 +57,9 @@ describe('buildUpcomingStrip', () => {
     );
     expect(strip.days).toHaveLength(UPCOMING_STRIP_DAYS);
     expect(strip.days[0]).toMatchObject({ date: '2026-11-20', isToday: true, items: [] });
-    expect(strip.days[1].items).toEqual([{ id: 'a', name: 'Bill', kind: 'bill', magnitude: 120 }]);
+    expect(strip.days[1].items).toEqual([
+      { id: 'a', name: 'Bill', kind: 'bill', payee: null, magnitude: 120, currencyCode: 'USD' },
+    ]);
     expect(strip.days[2].items[0]).toMatchObject({ id: 'b', kind: 'deposit', magnitude: 2250 });
     expect(strip.days.flatMap((d) => d.items).map((i) => i.id)).toEqual(['a', 'b']);
     expect(strip.scaleMax).toBe(2250);
