@@ -122,7 +122,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
           </span>
         </div>
       </div>
-      <div className="space-y-2 sm:space-y-3">
+      <div className="space-y-2 sm:space-y-3 ui-boxed-rows">
         {securities.map((sec) => {
           // `null` is not a direction: a quote with no current daily move has no
           // sign to colour and no figure to print, which is a different row
@@ -140,7 +140,7 @@ export function FavouriteSecurities({ securities, isLoading, onRefresh, isRefres
               type="button"
               onClick={() => router.push(`/securities/${sec.securityId}?tab=prices`)}
               title={t('favouriteSecurities.openPriceHistory', { symbol: sec.symbol })}
-              className="flex w-full items-center justify-between p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-left transition-colors hover:border-blue-400 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:border-blue-500 dark:hover:bg-gray-700/50"
+              className="flex w-full items-center justify-between p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-left transition-colors hover:border-blue-400 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:border-blue-500 dark:hover:bg-gray-700/50 ui-boxed-row"
             >
               <div className="min-w-0">
                 {/* The row's content is its accessible name -- symbol, name,

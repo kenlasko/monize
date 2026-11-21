@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
+import { PayeeLogo } from '@/components/payees/PayeeLogo';
+import { CategoryGlyph } from '@/components/categories/CategoryGlyph';
 import { StatusCellButton } from '@/components/transactions/StatusCellButton';
 import { INTERACTIVE_ROW_FOCUS_CLASS, activateOnKey } from '@/components/ui/interactive-row';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -56,6 +58,8 @@ export interface ModernRegisterProps {
   canDelete: (transaction: Transaction) => boolean;
   categoryColorMap?: Map<string, string | null>;
   categoryLabelMap?: Map<string, string>;
+  /** Inherited-aware icon per category id; see buildCategoryIconMap. */
+  categoryIconMap?: Map<string, string | null>;
   sortStrip: React.ReactNode;
 }
 
@@ -96,6 +100,17 @@ function Avatar({
   onInk?: boolean;
 }) {
   const dim = size === 'lg' ? 'h-13 w-13 text-xl' : 'h-9 w-9 text-sm';
+  // The payee's own logo, when it has one, replaces the letter disc.
+  if (tx.payee?.hasLogo) {
+    return (
+      <PayeeLogo
+        payee={tx.payee}
+        name={label}
+        size={size === 'lg' ? 52 : 36}
+        className="shrink-0"
+      />
+    );
+  }
   const tone = onInk
     ? 'bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-50'
     : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100';
@@ -142,6 +157,9 @@ function ModernRow({
   const color = tx.category
     ? (p.categoryColorMap?.get(tx.category.id) ?? tx.category.color)
     : null;
+  const categoryIcon = tx.category
+    ? (p.categoryIconMap?.get(tx.category.id) ?? tx.category.icon)
+    : null;
   const amount = rowAmount(tx, p.displayAmounts);
   const isVoid = tx.status === TransactionStatus.VOID;
   const balance = p.runningBalances.get(tx.id);
@@ -159,7 +177,11 @@ function ModernRow({
       tabIndex={0}
       aria-current={inspected ? 'true' : undefined}
       onClick={open}
-      onKeyDown={activateOnKey(open)}
+      onKeyDown={(e) => {
+        // A key on the status button is the button's, not the row's.
+        if (e.target !== e.currentTarget) return;
+        activateOnKey(open)(e);
+      }}
       onContextMenu={(e) => p.onContextMenu(tx, e)}
       onMouseDown={(e) => p.onLongPressStart(tx, e)}
       onMouseUp={p.onLongPressEnd}
@@ -188,7 +210,7 @@ function ModernRow({
         </span>
       )}
       <Avatar tx={tx} label={label} color={color} size="md" onInk={inspected} />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1 sm:flex-[3_1_0%]">
         <span className={`block truncate font-semibold text-[15px] ${isVoid ? 'line-through' : ''}`}>
           {label || '-'}
           {tx.description && (
@@ -202,14 +224,20 @@ function ModernRow({
           {categoryLabel}{statusNote ? ` · ${statusNote}` : ''}
         </span>
       </span>
-      <span className={`hidden sm:flex items-center gap-2 min-w-0 basis-52 shrink text-sm ${inspected ? 'opacity-80' : 'text-gray-500 dark:text-gray-400'}`}>
-        <span
-          aria-hidden="true"
-          className={`h-2 w-2 shrink-0 rounded-full ${tx.isTransfer ? 'border-2 border-current box-border' : 'bg-gray-400'}`}
-          style={!tx.isTransfer && color ? { backgroundColor: color } : undefined}
-        />
+      <span className={`hidden sm:flex items-center gap-2 min-w-0 sm:flex-[2_1_0%] text-sm ${inspected ? 'opacity-80' : 'text-gray-500 dark:text-gray-400'}`}>
+        {categoryIcon && !tx.isTransfer ? (
+          <CategoryGlyph icon={categoryIcon} color={color} size={16} className="shrink-0" />
+        ) : (
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 shrink-0 rounded-full ${tx.isTransfer ? 'border-2 border-current box-border' : 'bg-gray-400'}`}
+            style={!tx.isTransfer && color ? { backgroundColor: color } : undefined}
+          />
+        )}
         <span className="truncate">{categoryLabel}</span>
-        {statusNote && <span className="shrink-0 text-xs">{'· '}{statusNote}</span>}
+      </span>
+      <span className="hidden sm:flex shrink-0 w-24 justify-start">
+        <StatusCellButton status={tx.status} dense={false} onCycle={() => p.onCycleStatus(tx)} />
       </span>
       <span className={`shrink-0 text-right font-semibold text-[15px] sm:w-28 whitespace-nowrap ${isVoid ? 'line-through' : ''} ${amountTone(amount, inspected)}`}>
         <MoneyFigure amount={amount} currencyCode={tx.currencyCode} />

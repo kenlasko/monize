@@ -23,11 +23,9 @@ html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-display-figure 
 }
 
 /* An amount whose cents are set back, as on a statement. */
+/* Opacity, not a grey, so the cents keep a negative amount's red. */
 html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-quiet .ui-money-fraction {
-  color: var(--color-gray-500);
-}
-html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-quiet .ui-money-fraction {
-  color: var(--color-gray-400);
+  opacity: 0.62;
 }
 
 /* Widgets name themselves in type; the domain icon goes. */
@@ -325,4 +323,41 @@ html.dark[data-ui-style='modern'] .ui-btn-primary {
 }
 html.dark[data-ui-style='modern'] .ui-btn-primary:not(:disabled):hover {
   background-color: var(--color-blue-300);
+}
+
+/* Rows a widget drew as separate outlined boxes (Top Movers, Favourite
+   Securities) follow the other widgets' rows: ruled lines in Classic, soft
+   rules with a rounded hover in Modern. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-boxed-row {
+  border-width: 0;
+  border-radius: 0;
+  padding-inline: 0;
+  background-color: transparent;
+}
+html[data-ui-style='classic'] .ui-boxed-row {
+  border-bottom: 1px solid var(--color-gray-200);
+}
+html.dark[data-ui-style='classic'] .ui-boxed-row {
+  border-bottom-color: var(--color-gray-700);
+}
+html[data-ui-style='classic'] .ui-boxed-row:hover {
+  background-color: color-mix(in oklab, var(--color-blue-500) 6%, transparent);
+}
+html[data-ui-style='modern'] .ui-boxed-row {
+  border-top: 1px solid var(--color-gray-100);
+  padding-inline: 0.5rem;
+}
+html.dark[data-ui-style='modern'] .ui-boxed-row {
+  border-top-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-boxed-row:hover {
+  border-radius: 0.875rem;
+  border-top-color: transparent;
+  background-color: var(--color-gray-50);
+}
+html.dark[data-ui-style='modern'] .ui-boxed-row:hover {
+  background-color: var(--color-gray-700);
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-boxed-rows > * {
+  margin-block: 0;
 }

@@ -141,7 +141,7 @@ html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) label.block {
 html.dark[data-ui-style='classic'] :is(.ui-entry, .ui-qa) label.block {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, textarea) {
+html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
   height: 2.75rem;
   padding-inline: 0;
   border-width: 0 0 1px;
@@ -157,13 +157,13 @@ html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) textarea {
   min-height: 2.75rem;
   resize: none;
 }
-html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, textarea):focus {
+html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   box-shadow: none;
   border-bottom-width: 2px;
   outline: 2px solid var(--color-blue-500);
   outline-offset: 2px;
 }
-html.dark[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, textarea):focus {
+html.dark[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   outline-color: var(--color-blue-400);
 }
 
@@ -323,20 +323,20 @@ html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) label.block {
 html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) label.block {
   color: var(--color-gray-300);
 }
-html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, textarea) {
+html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
   border-color: transparent;
   background-color: var(--color-gray-50);
   box-shadow: none;
   border-radius: 0.875rem;
 }
-html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, textarea) {
+html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, textarea):focus {
+html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   border-color: var(--color-blue-500);
   box-shadow: 0 0 0 2px var(--color-blue-500);
 }
-html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, textarea):focus {
+html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   border-color: var(--color-blue-400);
   box-shadow: 0 0 0 2px var(--color-blue-400);
 }
@@ -490,4 +490,48 @@ html[data-ui-style='modern'] .ui-qa-actions button:not([aria-haspopup]):not([typ
   html[data-ui-style='modern'] .ui-qa-actions > * {
     margin: 0;
   }
+}
+
+/* --- Tags picker (MultiSelect trigger, `.ui-ms-field`) and native selects --- */
+/* The trigger is a button, so it takes the field treatment above by marker; it
+   needs the field's fixed height centred, and its row to span the width. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) .ui-ms-field {
+  display: flex;
+  align-items: center;
+  height: 2.75rem;
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) .ui-ms-field > div {
+  flex: 1;
+  min-width: 0;
+}
+html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) .ui-ms-field {
+  font-weight: 500;
+}
+html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) .ui-ms-field {
+  padding-inline: 0.75rem;
+}
+/* A native select's list takes the select's own background, which these
+   treatments make transparent: pin the list to the same surface the custom
+   dropdowns use, so Status reads like the other dropdowns in light and dark. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) select.ui-field option {
+  background-color: var(--color-white);
+  color: var(--color-gray-900);
+}
+html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) select.ui-field option {
+  background-color: var(--color-gray-800);
+  color: var(--color-gray-100);
+}
+
+/* --- New Transaction / New Report chooser (MobileAddChooser) --- */
+/* The chooser passes no padding, so its heading sat on the panel edge; give it
+   the rows' own inset. Standard is untouched. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-dialog.ui-chooser > [data-modal-heading] {
+  padding: 1.25rem 1rem 0;
+}
+html[data-ui-style='classic'] .ui-dialog.ui-chooser > [data-modal-heading] {
+  margin-inline: 1rem;
+  padding-inline: 0;
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-dialog.ui-chooser > [data-modal-heading] ~ div {
+  padding-bottom: 0.5rem;
 }

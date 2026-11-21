@@ -811,7 +811,7 @@ export function TransactionList({
       {/* Density toggle and top pagination */}
       {showToolbar && (
         <ListTopToolbar
-          densityView={densityView}
+          densityView={modernList ? undefined : densityView}
           viewToggle={viewToggle}
           currentPage={currentPage}
           totalPages={totalPages}
@@ -823,13 +823,16 @@ export function TransactionList({
             <>
               {/* The one way to bring a hidden column back, so it is first and
                   always drawn; its trigger carries the count of hidden ones. */}
-              <ColumnChooserMenu
-                columns={hideableColumns}
-                hidden={hiddenColumns}
-                onHide={hideColumn}
-                onShow={showColumn}
-                onShowAll={showAllColumns}
-              />
+              {/* Modern's block list has no columns or row density to set. */}
+              {!modernList && (
+                <ColumnChooserMenu
+                  columns={hideableColumns}
+                  hidden={hiddenColumns}
+                  onHide={hideColumn}
+                  onShow={showColumn}
+                  onShowAll={showAllColumns}
+                />
+              )}
               {/* Withholding a figure is only honest if the reader learns why
                   and what to do: the Balance column is gone because the
                   register is not in date order, and sorting by date brings it
@@ -903,6 +906,7 @@ export function TransactionList({
           }
           categoryColorMap={categoryColorMap}
           categoryLabelMap={categoryLabelMap}
+          categoryIconMap={categoryIconMap}
           sortStrip={
             <table className="ui-modern-sortstrip">
               <thead>
@@ -1041,6 +1045,27 @@ export function TransactionList({
                 onSortChange={onSortChange}
                 className={`${headerPadding} ${compactPadding.payee} ${REGISTER_PAYEE_CELL_FLOOR} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${splitAmount ? 'ui-register-payee' : ''}`}
               >
+                {groupedByDate && sort && onSortChange && (
+                  /* Classic's date groups replace the Date column, so its sort
+                     control leads the header row, at the far left beside Payee.
+                     Marked as header controls so a press sorts by date only. */
+                  <span
+                    data-header-controls=""
+                    role="presentation"
+                    className="mr-4 inline-flex items-center"
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onSortChange('date')}
+                      className="ui-register-sort"
+                      aria-label={`${t('list.header.date')}: ${sort.direction === 'asc' ? '\u2191' : '\u2193'}`}
+                    >
+                      {t('list.header.date')} {sort.direction === 'asc' ? '\u2191' : '\u2193'}
+                    </button>
+                  </span>
+                )}
                 {t('list.header.payee')}
               </RegisterHeader>
               <RegisterHeader
@@ -1172,16 +1197,6 @@ export function TransactionList({
                             <span className="ui-register-group-net">
                               {formatCurrency(styleData.dayNet.get(transaction.transactionDate) ?? 0, transaction.currencyCode)}
                             </span>
-                          )}
-                          {index === 0 && sort && onSortChange && !wrapped && (
-                            <button
-                              type="button"
-                              onClick={() => onSortChange('date')}
-                              className="ui-register-sort"
-                              aria-label={`${t('list.header.date')}: ${sort.direction === 'asc' ? '\u2191' : '\u2193'}`}
-                            >
-                              {t('list.header.date')} {sort.direction === 'asc' ? '\u2191' : '\u2193'}
-                            </button>
                           )}
                         </span>
                       </th>

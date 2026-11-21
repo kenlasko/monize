@@ -216,17 +216,15 @@ html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display {
   font-family: var(--ui-font-display);
   line-height: 1;
 }
+/* Set back by opacity, never by a grey: the pieces keep the figure's own
+   colour, so a negative balance's red (or a gain's green) runs through its
+   cents and symbol instead of stopping at the decimal point. */
 html:is([data-ui-style='classic'], [data-ui-style='modern'])
   .ui-money-display
   :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
   font-size: 0.46em;
   margin-top: 0.1em;
-  color: var(--color-gray-500);
-}
-html.dark:is([data-ui-style='classic'], [data-ui-style='modern'])
-  .ui-money-display
-  :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
-  color: var(--color-gray-400);
+  opacity: 0.62;
 }
 html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .ui-money-prefix {
   margin-inline-end: 0.12em;

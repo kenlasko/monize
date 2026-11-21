@@ -120,6 +120,11 @@ html[data-ui-style='classic'] .ui-cal-num {
   font-family: var(--ui-font-display);
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
+  /* Bodoni's automatic optical size thins a 4's diagonal to nothing at this
+     size, so 14 and 24 read as 11 and 21. Its sturdiest cut keeps it. */
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 6;
+  font-weight: 600;
 }
 html[data-ui-style='classic'] .ui-cal-cell[data-today] .ui-cal-num {
   background-color: var(--ui-rule-ink);

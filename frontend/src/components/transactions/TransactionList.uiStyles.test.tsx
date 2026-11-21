@@ -203,4 +203,48 @@ describe('Modern register', () => {
     fireEvent.keyDown(row, { key: 'Enter' });
     expect(within(screen.getByRole('complementary')).getByText('Cafe')).toBeTruthy();
   });
+
+  it('shows the payee logo in the row avatar when the payee has one', () => {
+    const withLogo = [
+      makeTx({ id: 'l', payee: { id: 'p1', name: 'Grocery Store', hasLogo: true } as any }),
+      makeTx({ id: 'n', payeeName: 'Cafe' }),
+    ];
+    renderList({ transactions: withLogo });
+    const [logoRow, plainRow] = screen.getAllByTestId('modern-row');
+    expect(within(logoRow).getByRole('img', { name: 'Grocery Store' })).toBeTruthy();
+    expect(within(plainRow).queryByRole('img')).toBeNull();
+  });
+
+  it('draws the category icon in place of the dot when the category has one', () => {
+    const iconTx = makeTx({
+      id: 'i',
+      category: { id: 'cat-1', name: 'Groceries', color: '#22c55e', icon: null } as any,
+    });
+    const { container } = renderList({
+      transactions: [iconTx],
+      categoryIconMap: new Map([['cat-1', 'chart-bar']]),
+    });
+    const row = container.querySelector('[data-testid="modern-row"]') as HTMLElement;
+    expect(row.querySelector('span[style*="color"] > svg')).toBeTruthy();
+  });
+
+  it('cycles the status from the row without opening it, by click and keyboard', async () => {
+    const { transactionsApi } = await import('@/lib/transactions');
+    (transactionsApi.updateStatus as any).mockResolvedValue({ ...rows[1], status: TransactionStatus.CLEARED });
+    renderList();
+    const row = screen.getAllByTestId('modern-row')[1];
+    const button = within(row).getByRole('button', { name: 'Pending' });
+    fireEvent.click(button);
+    expect(transactionsApi.updateStatus).toHaveBeenCalledWith('b', TransactionStatus.CLEARED);
+    // The row stayed uninspected: the inspector still shows the first row.
+    expect(within(screen.getByRole('complementary')).getByText('Employer')).toBeTruthy();
+    fireEvent.keyDown(button, { key: 'Enter' });
+    expect(within(screen.getByRole('complementary')).getByText('Employer')).toBeTruthy();
+  });
+
+  it('offers neither the Columns chooser nor the Density toggle', () => {
+    renderList({ totalPages: 1, totalItems: 3, pageSize: 25, currentPage: 1, onPageChange: vi.fn() });
+    expect(screen.queryByRole('button', { name: /columns/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /density/i })).toBeNull();
+  });
 });

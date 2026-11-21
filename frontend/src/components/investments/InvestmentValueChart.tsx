@@ -898,7 +898,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
         <div
           className={`h-80 transition-opacity duration-200 ${
             isLoading ? 'opacity-60' : 'opacity-100'
-          }`}
+          } ui-value-chart`}
         >
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             {/* Tighter margins on mobile to reclaim wasted space. The desktop

@@ -294,3 +294,12 @@ html[data-ui-style='modern'] .ui-ink-block :is(.text-red-600, .text-red-500) {
 html[data-ui-style='modern'] .ui-ink-block :is(.text-green-600, .text-green-500) {
   color: var(--color-green-400);
 }
+
+/* Modern: the value chart was a fixed 20rem in a card the Portfolio
+   performance block beside it makes taller, leaving the chart short over
+   empty space. It takes more of the block, and more of the window. */
+@media (min-width: 1024px) {
+  html[data-ui-style='modern'] .ui-value-chart {
+    height: max(26rem, 46vh);
+  }
+}

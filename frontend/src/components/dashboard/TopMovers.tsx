@@ -331,7 +331,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
           {filter === 'gainers' ? t('topMovers.empty.noGainers') : t('topMovers.empty.noLosers')}
         </p>
       ) : (
-      <div className="space-y-2 sm:space-y-3">
+      <div className="space-y-2 sm:space-y-3 ui-boxed-rows">
         {topMovers.map(({ mover }) => {
           const isPositive = mover.dailyChange >= 0;
           const isForeign = mover.currencyCode && mover.currencyCode !== defaultCurrency;
@@ -349,7 +349,7 @@ export function TopMovers({ movers, isLoading, hasInvestmentAccounts, onRefresh,
               type="button"
               onClick={() => router.push(`/securities/${mover.securityId}?tab=prices`)}
               title={t('topMovers.openPriceHistory', { symbol: mover.symbol })}
-              className="flex w-full items-center justify-between p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-left transition-colors hover:border-blue-400 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:border-blue-500 dark:hover:bg-gray-700/50"
+              className="flex w-full items-center justify-between p-2 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-left transition-colors hover:border-blue-400 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:border-blue-500 dark:hover:bg-gray-700/50 ui-boxed-row"
             >
               <div className="min-w-0">
                 {/* The row's content is its accessible name -- symbol, name,

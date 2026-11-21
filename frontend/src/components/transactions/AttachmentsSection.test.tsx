@@ -138,10 +138,23 @@ function fileOfType(type: string, size = 100): File {
   return file;
 }
 
+// Scan document is offered on touch devices only; the suite runs as one.
+const mockIsTouch = vi.hoisted(() => vi.fn(() => true));
+vi.mock('@/lib/touch-device', () => ({ isTouchDevice: mockIsTouch }));
+
 describe('AttachmentsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsTouch.mockReturnValue(true);
     mockList.mockResolvedValue([]);
+  });
+
+  it('does not offer Scan document on a desktop pointer', async () => {
+    mockIsTouch.mockReturnValue(false);
+    await renderSection();
+    expect(screen.getByRole('button', { name: 'Add attachment' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Scan document' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Scan document')).not.toBeInTheDocument();
   });
 
   it('stacks the title over two half-width buttons on a phone, in both modes', async () => {

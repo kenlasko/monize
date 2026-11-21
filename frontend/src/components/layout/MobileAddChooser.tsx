@@ -19,7 +19,7 @@ interface MobileAddChooserProps {
  */
 export function MobileAddChooser({ title, choices, onClose }: MobileAddChooserProps) {
   return (
-    <Modal isOpen={choices !== null} onClose={onClose} maxWidth="sm" title={title}>
+    <Modal isOpen={choices !== null} onClose={onClose} maxWidth="sm" title={title} className="ui-chooser">
       <div className="py-2">
         {(choices ?? []).map((choice) => (
           <button
