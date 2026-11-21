@@ -404,6 +404,7 @@
     "emptyAll": "没有已安排的有效账单、存入或转账。",
     "estimated": "估算",
     "stripLabel": "未来两周，逐日显示：存款在线上方升起，账单在线下方落下",
+    "dayEmpty": "这一天没有安排任何账单或存款。",
     "metaPayee": "· {payee}",
     "metaManual": "· 手动支付",
     "metaWhen": "· {when}"

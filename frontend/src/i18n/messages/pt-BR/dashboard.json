@@ -404,6 +404,7 @@
     "emptyAll": "Não há contas, depósitos ou transferências ativas agendadas.",
     "estimated": "Estimado",
     "stripLabel": "As próximas duas semanas, dia a dia: os depósitos sobem acima da linha e as contas descem abaixo dela",
+    "dayEmpty": "Não há contas ou depósitos agendados para este dia.",
     "metaPayee": "· {payee}",
     "metaManual": "· pago manualmente",
     "metaWhen": "· {when}"

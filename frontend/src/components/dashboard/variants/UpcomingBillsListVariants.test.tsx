@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { render } from '@/test/render';
 import { UpcomingBillsListFolio } from './UpcomingBillsListFolio';
 import { UpcomingBillsListPebble } from './UpcomingBillsListPebble';
@@ -107,5 +107,24 @@ describe('UpcomingBillsListPebble', () => {
     const chips = screen.getByLabelText(/The next two weeks/).querySelectorAll('li');
     expect(chips).toHaveLength(14);
     expect(chips[0]).toHaveAttribute('aria-current', 'date');
+  });
+
+  it("opens a day's bills and deposits when its date is clicked", () => {
+    render(<UpcomingBillsListPebble {...base()} />);
+    const chips = screen.getByLabelText(/The next two weeks/).querySelectorAll('li');
+    fireEvent.click(chips[1].querySelector('button')!);
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Hydro Bill')).toBeInTheDocument();
+    expect(dialog.getByText('Hydro One · Bill')).toBeInTheDocument();
+    expect(dialog.getByText('-$120.00')).toBeInTheDocument();
+  });
+
+  it('says a day has nothing scheduled when it is empty', () => {
+    render(<UpcomingBillsListPebble {...base()} />);
+    const chips = screen.getByLabelText(/The next two weeks/).querySelectorAll('li');
+    fireEvent.click(chips[0].querySelector('button')!);
+    expect(
+      within(screen.getByRole('dialog')).getByText('No bills or deposits are scheduled for this day.'),
+    ).toBeInTheDocument();
   });
 });

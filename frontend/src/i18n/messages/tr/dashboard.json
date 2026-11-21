@@ -404,6 +404,7 @@
     "emptyAll": "Planlanmış etkin fatura, para yatırma veya transfer yok.",
     "estimated": "Tahmini",
     "stripLabel": "Önümüzdeki iki hafta, gün gün: para girişleri çizginin üstüne çıkar, faturalar altına iner",
+    "dayEmpty": "Bu gün için planlanmış fatura veya para yatırma yok.",
     "metaPayee": "· {payee}",
     "metaManual": "· elle ödenir",
     "metaWhen": "· {when}"

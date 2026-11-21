@@ -404,6 +404,7 @@
     "emptyAll": "Brak zaplanowanych aktywnych rachunków, wpłat lub przelewów.",
     "estimated": "Szacowane",
     "stripLabel": "Najbliższe dwa tygodnie, dzień po dniu: wpłaty rosną nad linią, rachunki spadają pod nią",
+    "dayEmpty": "Na ten dzień nie zaplanowano żadnych rachunków ani wpłat.",
     "metaPayee": "· {payee}",
     "metaManual": "· płacone ręcznie",
     "metaWhen": "· {when}"

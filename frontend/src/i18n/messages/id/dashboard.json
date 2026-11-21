@@ -404,6 +404,7 @@
     "emptyAll": "Tidak ada tagihan, setoran, atau transfer aktif yang dijadwalkan.",
     "estimated": "Perkiraan",
     "stripLabel": "Dua minggu ke depan, hari demi hari: setoran naik di atas garis, tagihan turun di bawahnya",
+    "dayEmpty": "Tidak ada tagihan atau setoran yang dijadwalkan untuk hari tersebut.",
     "metaPayee": "· {payee}",
     "metaManual": "· dibayar manual",
     "metaWhen": "· {when}"

@@ -404,6 +404,7 @@
     "emptyAll": "No hay facturas, ingresos ni transferencias activas programadas.",
     "estimated": "Estimado",
     "stripLabel": "Las próximas dos semanas, día a día: los ingresos suben por encima de la línea y las facturas caen por debajo",
+    "dayEmpty": "No hay facturas ni depósitos programados para este día.",
     "metaPayee": "· {payee}",
     "metaManual": "· se paga a mano",
     "metaWhen": "· {when}"

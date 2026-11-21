@@ -404,6 +404,7 @@
     "emptyAll": "Nessuna bolletta, entrata o trasferimento attivo pianificato.",
     "estimated": "Stimato",
     "stripLabel": "Le prossime due settimane, giorno per giorno: i depositi salgono sopra la linea, le fatture scendono sotto",
+    "dayEmpty": "Nessuna fattura o versamento è previsto per questo giorno.",
     "metaPayee": "· {payee}",
     "metaManual": "· pagato a mano",
     "metaWhen": "· {when}"
