@@ -107,6 +107,14 @@ export interface Transaction {
   attachmentCount?: number;
   /** Number of unarchived warranties linked to this transaction (populated by the list endpoint). */
   warrantyCount?: number;
+  /** The reader's reporting currency `reportingRate` converts into (populated by the list endpoint). */
+  reportingCurrencyCode?: string;
+  /**
+   * The factor taking `amount` into `reportingCurrencyCode`: the row's own
+   * settled rate, a transfer's posted amounts, else the market rate on its own
+   * date. Null when no rate reaches it -- unknown, never 1.
+   */
+  reportingRate?: number | null;
   /**
    * The key an API client created this row with (unique per account), or null.
    * Not shown in the app; it exists so a client can retry a create safely.

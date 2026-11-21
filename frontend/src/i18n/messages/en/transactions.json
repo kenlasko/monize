@@ -200,8 +200,7 @@
       "legendReconciled": "reconciled",
       "legendRule": "The rule under each balance is that balance against the highest on this page.",
       "markCleared": "c",
-      "markReconciled": "R",
-      "ratesUnavailable": "Partial total: exchange rates have not loaded, so amounts in other currencies are left out. Reload the page to try again."
+      "markReconciled": "R"
     },
     "pebble": {
       "inspectorLabel": "Selected transaction",

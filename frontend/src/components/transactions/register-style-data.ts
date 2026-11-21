@@ -11,18 +11,19 @@ import { combineTotals, sumConverted, type ConvertedTotal } from '@/lib/currency
  *
  * A figure that sums rows names the currency it is in. One account's register
  * is one currency and sums in it; an all-accounts page can hold several, so
- * each row is converted into the reader's default currency before it is added,
- * and a row with no rate is left out and reported (`ConvertedTotal`), never
- * added in its own currency.
+ * each row is converted into the reporting currency at the factor the server
+ * stamped on it (`reportingRate`: its own rate, or the market rate on its own
+ * date) before it is added. A row with no factor is left out and reported
+ * (`ConvertedTotal`), never added in its own currency and never converted
+ * here at today's rate.
  */
 
 export interface RegisterStyleRow extends RunningBalanceRow {
   transactionDate: string;
   currencyCode: string;
+  reportingCurrencyCode?: string;
+  reportingRate?: number | null;
 }
-
-/** `useExchangeRates().convert`: `null` when no rate for the pair is known. */
-export type RegisterConvert = (amount: number, fromCurrency: string, toCurrency: string) => number | null;
 
 /** A sum of rows and the currency it is in. */
 export interface RegisterFigure {
@@ -38,27 +39,45 @@ export function rowAmount(
   return displayAmounts.get(row.id) ?? Number(row.amount);
 }
 
-/** The currency rows sum in: the one they share, or the reader's default when they are mixed. */
+/** The currency rows sum in: the one they share, or the reporting currency when they are mixed. */
 export function totalsCurrency(
   rows: readonly { currencyCode: string }[],
-  defaultCurrency: string,
+  reportingCurrency: string,
 ): string {
   const first = rows[0]?.currencyCode;
-  if (!first) return defaultCurrency;
-  return rows.every((row) => row.currencyCode === first) ? first : defaultCurrency;
+  if (!first) return reportingCurrency;
+  return rows.every((row) => row.currencyCode === first) ? first : reportingCurrency;
 }
 
-/** Convert and sum `amounts` (each with its row) into `currency`. */
+/** The reporting currency the server stamped on the page, else the reader's default. */
+export function pageReportingCurrency(
+  rows: readonly { reportingCurrencyCode?: string }[],
+  defaultCurrency: string,
+): string {
+  return rows.find((row) => row.reportingCurrencyCode)?.reportingCurrencyCode ?? defaultCurrency;
+}
+
+/**
+ * A row's amount in `currency`: itself in its own currency, else at the
+ * server's factor into that currency; `null` when the row carries none.
+ */
+function rowAmountIn(row: RegisterStyleRow, amount: number, currency: string): number | null {
+  if (row.currencyCode === currency) return amount;
+  if (row.reportingCurrencyCode !== currency) return null;
+  const rate = row.reportingRate;
+  return typeof rate === 'number' && Number.isFinite(rate) ? amount * rate : null;
+}
+
+/** Convert and sum `items` into `currency`. */
 function sumInto(
   items: readonly { row: RegisterStyleRow; amount: number }[],
   currency: string,
-  convert: RegisterConvert,
 ): ConvertedTotal {
   return sumConverted(
     items,
     (item) => item.amount,
     (item) => item.row.currencyCode,
-    (amount, from) => (from === currency ? amount : convert(amount, from, currency)),
+    (amount, _from, item) => rowAmountIn(item.row, amount, currency),
     moneyDecimalsForCurrency(currency),
   );
 }
@@ -67,8 +86,7 @@ function sumInto(
 export function netByDate(
   rows: readonly RegisterStyleRow[],
   displayAmounts: ReadonlyMap<string, number>,
-  defaultCurrency: string,
-  convert: RegisterConvert,
+  reportingCurrency: string,
 ): Map<string, RegisterFigure> {
   const byDate = new Map<string, { row: RegisterStyleRow; amount: number }[]>();
   for (const row of rows) {
@@ -81,9 +99,9 @@ export function netByDate(
   for (const [date, items] of byDate) {
     const currency = totalsCurrency(
       items.map((item) => item.row),
-      defaultCurrency,
+      reportingCurrency,
     );
-    net.set(date, { total: sumInto(items, currency, convert), currency });
+    net.set(date, { total: sumInto(items, currency), currency });
   }
   return net;
 }
@@ -92,8 +110,7 @@ export function netByDate(
 export function pageTotals(
   rows: readonly RegisterStyleRow[],
   displayAmounts: ReadonlyMap<string, number>,
-  defaultCurrency: string,
-  convert: RegisterConvert,
+  reportingCurrency: string,
 ): {
   currency: string;
   payments: ConvertedTotal;
@@ -102,7 +119,7 @@ export function pageTotals(
   count: number;
 } {
   const moving = rows.filter(rowAffectsBalance);
-  const currency = totalsCurrency(moving, defaultCurrency);
+  const currency = totalsCurrency(moving, reportingCurrency);
   const out: { row: RegisterStyleRow; amount: number }[] = [];
   const into: { row: RegisterStyleRow; amount: number }[] = [];
   for (const row of moving) {
@@ -110,8 +127,8 @@ export function pageTotals(
     if (amount < 0) out.push({ row, amount: -amount });
     else into.push({ row, amount });
   }
-  const payments = sumInto(out, currency, convert);
-  const deposits = sumInto(into, currency, convert);
+  const payments = sumInto(out, currency);
+  const deposits = sumInto(into, currency);
   const decimals = moneyDecimalsForCurrency(currency);
   return {
     currency,

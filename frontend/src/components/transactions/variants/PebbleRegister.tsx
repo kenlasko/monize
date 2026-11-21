@@ -43,8 +43,6 @@ export interface PebbleRegisterProps {
   displayAmounts: ReadonlyMap<string, number>;
   /** Each day's net, in the currency it names. */
   dayNet: ReadonlyMap<string, RegisterFigure>;
-  /** Replaces a partial day net's missing-rate wording while rates are unavailable. */
-  partialNote?: string;
   inspectorVisible: boolean;
   inspectedId: string | null;
   deletingId: string | null;
@@ -405,7 +403,7 @@ export function PebbleRegister(p: PebbleRegisterProps) {
           </h3>
           <span className={net > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
             {figure ? (
-              <PartialTotal total={figure.total} displayCurrency={figure.currency} explanation={p.partialNote}>
+              <PartialTotal total={figure.total} displayCurrency={figure.currency}>
                 {net > 0 ? '+' : ''}{formatCurrency(net, currency)}
               </PartialTotal>
             ) : (

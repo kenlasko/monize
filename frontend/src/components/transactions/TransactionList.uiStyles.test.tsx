@@ -37,16 +37,6 @@ vi.mock('@/hooks/useNumberFormat', async () => {
   };
 });
 
-// 1 USD = 1.5 CAD, the reader's default; no rate for JPY.
-vi.mock('@/hooks/useExchangeRates', () => ({
-  useExchangeRates: () => ({
-    convert: (amount: number, from: string, to: string) =>
-      from === to ? amount : from === 'USD' && to === 'CAD' ? amount * 1.5 : null,
-    defaultCurrency: 'CAD',
-    ratesUnavailable: false,
-  }),
-}));
-
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: 't1',
@@ -174,8 +164,9 @@ describe('Folio register', () => {
       isSingleAccountView: false,
       startingBalance: undefined,
       transactions: [
-        makeTx({ id: 'u', amount: -100, currencyCode: 'USD' }),
-        makeTx({ id: 'k', amount: -30 }),
+        // The server's factor for the row's own date: 100 USD was 150 CAD.
+        makeTx({ id: 'u', amount: -100, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 1.5 }),
+        makeTx({ id: 'k', amount: -30, reportingCurrencyCode: 'CAD', reportingRate: 1 }),
       ],
     });
     const foot = container.querySelector('tfoot') as HTMLElement;
@@ -189,8 +180,8 @@ describe('Folio register', () => {
       isSingleAccountView: false,
       startingBalance: undefined,
       transactions: [
-        makeTx({ id: 'j', amount: -5000, currencyCode: 'JPY' }),
-        makeTx({ id: 'k', amount: -30 }),
+        makeTx({ id: 'j', amount: -5000, currencyCode: 'JPY', reportingCurrencyCode: 'CAD', reportingRate: null }),
+        makeTx({ id: 'k', amount: -30, reportingCurrencyCode: 'CAD', reportingRate: 1 }),
       ],
     });
     const foot = container.querySelector('tfoot') as HTMLElement;
