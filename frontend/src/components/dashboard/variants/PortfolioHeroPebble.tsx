@@ -69,8 +69,14 @@ export function PortfolioHeroPebble({
           </BlockFigure>
         </dl>
       </div>
-      <div className="flex min-w-0 flex-[1_1_18rem] flex-col justify-end" data-testid="dashboard-hero-chart">
-        <div className="h-60 w-full">{chart}</div>
+      {/* The column is as tall as the figures beside it (or, wrapped under them,
+          its own minimum), and the chart fills all of it: no fixed height to
+          leave a gap above or below. Absolutely placed so only the figures and
+          the minimum set the row's height. */}
+      <div className="flex min-w-0 flex-[1_1_18rem] flex-col" data-testid="dashboard-hero-chart">
+        <div className="relative min-h-64 w-full flex-1">
+          <div className="absolute inset-0">{chart}</div>
+        </div>
       </div>
     </section>
   );

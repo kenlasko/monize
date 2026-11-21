@@ -65,11 +65,16 @@ export function PortfolioHeroFolio({
           </StatementFigure>
         </dl>
       </div>
+      {/* Stacked, a fixed height. Beside the figures there is none: the box
+          stretches to the figures' height and, its top margin pulling it up past
+          the greeting row, rises to the top of the hero, so it neither stops short
+          of the figures' bottom nor leaves space above them. The chart is
+          absolutely placed so only the figures set the row's height. */}
       <div
-        className="h-56 w-full sm:h-64 lg:-mt-[var(--hero-head-h,0px)] lg:h-[17rem] lg:min-w-0 lg:flex-1"
+        className="relative h-64 w-full sm:h-72 lg:-mt-[var(--hero-head-h,0px)] lg:h-auto lg:min-w-0 lg:flex-1 lg:self-stretch"
         data-testid="dashboard-hero-chart"
       >
-        {chart}
+        <div className="absolute inset-0">{chart}</div>
       </div>
     </section>
   );
