@@ -23,7 +23,10 @@ import {
   WakeSettleService,
 } from "../common/jobs/wake-settle.service";
 import { markHoldingAccountsDirty } from "./holding-accounts-dirty.util";
-import { isPricedByQuoteProvider } from "./provider-priced.util";
+import {
+  isPricedByQuoteProvider,
+  isRefreshEligible,
+} from "./provider-priced.util";
 import {
   QuoteProvider,
   QuoteProviderName,
@@ -217,25 +220,6 @@ function orderProvidersByDefault(
   return [...providers].sort(
     (a, b) => (b.name === primary ? 1 : 0) - (a.name === primary ? 1 : 0),
   );
-}
-
-/**
- * A security linked to a bond instrument is never eligible: the bond engine is
- * its only automatic price source (`isPricedByQuoteProvider`, INV-BOND-005).
- * Otherwise a security is eligible for scheduled price refresh when
- * skipPriceUpdates is false. The flag is the user's own switch (the security
- * form's "disable automatic price updates"), and imports set it on the
- * securities whose symbol they invented. A per-security provider override or
- * MSN Instrument ID does not override it: choosing one clears the flag at
- * write time (`SecuritiesService.update`), so a security that still carries
- * the flag is one the user has asked not to be fetched.
- */
-function isRefreshEligible(s: {
-  skipPriceUpdates: boolean;
-  bondProgramId?: string | null;
-}): boolean {
-  if (!isPricedByQuoteProvider(s)) return false;
-  return !s.skipPriceUpdates;
 }
 
 export interface PriceUpdateResult {
