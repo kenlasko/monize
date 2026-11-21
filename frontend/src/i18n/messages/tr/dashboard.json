@@ -40,6 +40,8 @@
     "assetsLabel": "Varlıklar",
     "liabilitiesLabel": "Borçlar",
     "investedLabel": "Yatırım",
+    "holdingsLabel": "Varlık",
+    "cashLabel": "Nakit",
     "high": "En yüksek {value}",
     "low": "En düşük {value}",
     "historyLabel": "Aylık net değer: en yüksek {high}, en düşük {low}, şu an {latest}",

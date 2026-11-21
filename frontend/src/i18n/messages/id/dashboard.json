@@ -40,6 +40,8 @@
     "assetsLabel": "Aset",
     "liabilitiesLabel": "Liabilitas",
     "investedLabel": "Diinvestasikan",
+    "holdingsLabel": "Kepemilikan",
+    "cashLabel": "Kas",
     "high": "Tertinggi {value}",
     "low": "Terendah {value}",
     "historyLabel": "Kekayaan bersih per bulan: {high} saat tertinggi, {low} saat terendah, {latest} sekarang",

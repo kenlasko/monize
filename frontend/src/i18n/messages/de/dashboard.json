@@ -40,6 +40,8 @@
     "assetsLabel": "Vermögen",
     "liabilitiesLabel": "Verbindlichkeiten",
     "investedLabel": "Investiert",
+    "holdingsLabel": "Depot",
+    "cashLabel": "Barmittel",
     "high": "Hoch {value}",
     "low": "Tief {value}",
     "historyLabel": "Reinvermögen nach Monat: {high} am höchsten, {low} am niedrigsten, aktuell {latest}",

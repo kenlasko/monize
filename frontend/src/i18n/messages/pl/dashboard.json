@@ -40,6 +40,8 @@
     "assetsLabel": "Aktywa",
     "liabilitiesLabel": "Zobowiązania",
     "investedLabel": "Zainwestowane",
+    "holdingsLabel": "Pozycje",
+    "cashLabel": "Gotówka",
     "high": "Najwyżej {value}",
     "low": "Najniżej {value}",
     "historyLabel": "Wartość netto według miesięcy: {high} w szczycie, {low} w najniższym punkcie, teraz {latest}",

@@ -40,6 +40,8 @@
     "assetsLabel": "Ativos",
     "liabilitiesLabel": "Passivos",
     "investedLabel": "Investido",
+    "holdingsLabel": "Posições",
+    "cashLabel": "Caixa",
     "high": "Máx. {value}",
     "low": "Mín. {value}",
     "historyLabel": "Patrimônio líquido por mês: {high} no ponto mais alto, {low} no mais baixo, {latest} agora",

@@ -40,6 +40,8 @@
     "assetsLabel": "자산",
     "liabilitiesLabel": "부채",
     "investedLabel": "투자",
+    "holdingsLabel": "보유",
+    "cashLabel": "현금",
     "high": "최고 {value}",
     "low": "최저 {value}",
     "historyLabel": "월별 순자산: 최고 {high}, 최저 {low}, 현재 {latest}",

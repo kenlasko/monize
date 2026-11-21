@@ -40,6 +40,8 @@
     "assetsLabel": "资产",
     "liabilitiesLabel": "负债",
     "investedLabel": "已投资",
+    "holdingsLabel": "持仓",
+    "cashLabel": "现金",
     "high": "最高 {value}",
     "low": "最低 {value}",
     "historyLabel": "按月净资产：最高 {high}，最低 {low}，当前 {latest}",

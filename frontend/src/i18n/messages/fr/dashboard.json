@@ -40,6 +40,8 @@
     "assetsLabel": "Actifs",
     "liabilitiesLabel": "Passifs",
     "investedLabel": "Investi",
+    "holdingsLabel": "Positions",
+    "cashLabel": "Trésorerie",
     "high": "Haut {value}",
     "low": "Bas {value}",
     "historyLabel": "Valeur nette par mois : {high} au plus haut, {low} au plus bas, {latest} actuellement",

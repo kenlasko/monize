@@ -40,6 +40,8 @@
     "assetsLabel": "資産",
     "liabilitiesLabel": "負債",
     "investedLabel": "投資額",
+    "holdingsLabel": "保有",
+    "cashLabel": "現金",
     "high": "最高 {value}",
     "low": "最低 {value}",
     "historyLabel": "月別の純資産: 最高 {high}、最低 {low}、現在 {latest}",

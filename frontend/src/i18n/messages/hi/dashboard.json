@@ -40,6 +40,8 @@
     "assetsLabel": "परिसंपत्तियाँ",
     "liabilitiesLabel": "देनदारियाँ",
     "investedLabel": "निवेशित",
+    "holdingsLabel": "होल्डिंग",
+    "cashLabel": "नकद",
     "high": "उच्चतम {value}",
     "low": "न्यूनतम {value}",
     "historyLabel": "मासिक निवल संपत्ति: सबसे ऊँची {high}, सबसे नीची {low}, अभी {latest}",
