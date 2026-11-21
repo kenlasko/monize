@@ -101,6 +101,27 @@ describe('UpcomingBillsListFolio', () => {
   });
 });
 
+describe('UpcomingBillsListFolio day strip', () => {
+  it("opens a day's bills and deposits when its column is clicked", () => {
+    render(<UpcomingBillsListFolio {...base()} />);
+    const columns = screen.getByLabelText(/The next two weeks/).querySelectorAll('button');
+    expect(columns).toHaveLength(14);
+    fireEvent.click(columns[1]);
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Hydro Bill')).toBeInTheDocument();
+    expect(dialog.getByText('Hydro One · Bill')).toBeInTheDocument();
+    expect(dialog.getByText('-$120.00')).toBeInTheDocument();
+  });
+
+  it('says a day has nothing scheduled when it is empty', () => {
+    render(<UpcomingBillsListFolio {...base()} />);
+    fireEvent.click(screen.getByLabelText(/The next two weeks/).querySelectorAll('button')[0]);
+    expect(
+      within(screen.getByRole('dialog')).getByText('No bills or deposits are scheduled for this day.'),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('UpcomingBillsListPebble', () => {
   it('marks today among the fourteen day chips', () => {
     render(<UpcomingBillsListPebble {...base()} />);

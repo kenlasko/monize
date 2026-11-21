@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { chartColors } from '@/lib/chart-colors';
 import {
@@ -8,6 +9,7 @@ import {
   type UpcomingStrip,
   type UpcomingStripItem,
 } from '@/components/dashboard/variants/upcoming-bills-view';
+import { DayDetailButton } from '@/components/dashboard/variants/UpcomingBillsListPebble';
 import type { BillsOutlookProps } from './bills-outlook-view';
 
 const BAR_MAX_PX = 44;
@@ -23,13 +25,17 @@ function Strip({ strip }: { strip: UpcomingStrip }) {
   const formatChartDate = useChartDateFormat();
   const anyIn = strip.days.some((day) => day.items.some((i) => i.kind === 'deposit'));
   return (
-    <div role="img" aria-label={t('outlook.stripLabel')} className="ui-bills-strip grid grid-cols-14 gap-px">
+    <div role="group" aria-label={t('outlook.stripLabel')} className="ui-bills-strip grid grid-cols-14 gap-px">
       {strip.days.map((day) => {
         const ins = day.items.filter((i) => i.kind === 'deposit');
         const outs = day.items.filter((i) => i.kind !== 'deposit');
         return (
-          <div key={day.date} className="flex min-w-0 flex-col items-center">
-            <div className={`flex items-end gap-0.5 ${anyIn ? 'h-12' : 'h-2'}`}>
+          <DayDetailButton
+            key={day.date}
+            day={day}
+            className={`flex w-full min-w-0 flex-col items-center rounded-sm ${HOVER_ROW_ON_PAGE} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+          >
+            <span className={`flex items-end gap-0.5 ${anyIn ? 'h-12' : 'h-2'}`}>
               {ins.map((item) => (
                 <span
                   key={item.id}
@@ -37,8 +43,8 @@ function Strip({ strip }: { strip: UpcomingStrip }) {
                   style={{ height: barHeight(item, strip.scaleMax), backgroundColor: chartColors.income }}
                 />
               ))}
-            </div>
-            <div className="ui-bills-strip-axis flex h-12 w-full items-start justify-center gap-0.5">
+            </span>
+            <span className="ui-bills-strip-axis flex h-12 w-full items-start justify-center gap-0.5">
               {outs.map((item) =>
                 item.kind === 'bill' ? (
                   <span
@@ -54,7 +60,7 @@ function Strip({ strip }: { strip: UpcomingStrip }) {
                   />
                 ),
               )}
-            </div>
+            </span>
             <span
               className={`ui-bills-strip-day mt-1 text-[11px] tabular-nums ${
                 day.isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
@@ -62,7 +68,7 @@ function Strip({ strip }: { strip: UpcomingStrip }) {
             >
               {day.isToday ? t('outlook.today') : formatChartDate(day.date, 'd')}
             </span>
-          </div>
+          </DayDetailButton>
         );
       })}
     </div>
@@ -72,7 +78,8 @@ function Strip({ strip }: { strip: UpcomingStrip }) {
 /**
  * The Folio outlook band: "Next fourteen days" as a ruled section holding
  * the in / out strip, the dashboard's own drawing carried to the full page.
- * Decorative beside the ledger under it, which carries every figure.
+ * Each day opens its bills and deposits; the ledger under it still carries
+ * every figure, so the bars themselves stay decorative.
  */
 export function BillsOutlookFolio({ strip }: BillsOutlookProps) {
   const t = useTranslations('bills');

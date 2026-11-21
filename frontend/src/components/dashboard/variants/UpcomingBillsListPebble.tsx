@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
@@ -86,6 +86,37 @@ function DayOccurrencesList({ items }: { items: UpcomingStripItem[] }) {
 }
 
 /**
+ * A day's button and the popup it opens, listing every bill and deposit due
+ * that day. `children` is what the reader clicks (a chip's date, a Folio
+ * column); the label is the full date, so a screen reader names the day, not
+ * its bars. Shared by the Pebble chips and the Folio bar strips, on the
+ * dashboard widget and the Bills page outlook band alike.
+ */
+export function DayDetailButton({
+  day,
+  className,
+  children,
+}: {
+  day: UpcomingStripDay;
+  className: string;
+  children: ReactNode;
+}) {
+  const formatChartDate = useChartDateFormat();
+  const [open, setOpen] = useState(false);
+  const fullDate = formatChartDate(day.date, 'EEEE MMMM d');
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} aria-label={fullDate} className={className}>
+        {children}
+      </button>
+      <Modal isOpen={open} onClose={() => setOpen(false)} title={fullDate} padding="md">
+        <DayOccurrencesList items={day.items} />
+      </Modal>
+    </>
+  );
+}
+
+/**
  * One day chip: its weekday, day number and a dot per occurrence. Clicking
  * the date -- not a dot, too small a target to read on its own -- opens
  * every bill and deposit due that day. Shared by the dashboard widget and
@@ -93,8 +124,6 @@ function DayOccurrencesList({ items }: { items: UpcomingStripItem[] }) {
  */
 export function DayChip({ day }: { day: UpcomingStripDay }) {
   const formatChartDate = useChartDateFormat();
-  const [open, setOpen] = useState(false);
-  const fullDate = formatChartDate(day.date, 'EEEE MMMM d');
   return (
     <li
       aria-current={day.isToday ? 'date' : undefined}
@@ -104,10 +133,8 @@ export function DayChip({ day }: { day: UpcomingStripDay }) {
           : 'bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100'
       }`}
     >
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={fullDate}
+      <DayDetailButton
+        day={day}
         className="block w-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         <span
@@ -117,15 +144,12 @@ export function DayChip({ day }: { day: UpcomingStripDay }) {
           {formatChartDate(day.date, 'EEEEE')}
         </span>
         <span className="block text-[15px] font-bold">{formatChartDate(day.date, 'd')}</span>
-      </button>
+      </DayDetailButton>
       <span className="flex h-2 justify-center gap-[3px]">
         {day.items.map((item) => (
           <StripDot key={item.id} item={item} />
         ))}
       </span>
-      <Modal isOpen={open} onClose={() => setOpen(false)} title={fullDate} padding="md">
-        <DayOccurrencesList items={day.items} />
-      </Modal>
     </li>
   );
 }

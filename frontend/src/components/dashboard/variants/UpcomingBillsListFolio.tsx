@@ -7,6 +7,7 @@ import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { chartColors } from '@/lib/chart-colors';
 import { NegativeBalanceLegend } from './UpcomingBillsListStandard';
+import { DayDetailButton } from './UpcomingBillsListPebble';
 import {
   stripBarHeight,
   type UpcomingBillsListProps,
@@ -23,8 +24,9 @@ function barHeight(item: UpcomingStripItem, scaleMax: number | null): number {
 
 /**
  * The fourteen days as a bar strip: money in rises above the line, bills hang
- * below it, a transfer is an outline. Decorative beside the list under it,
- * which carries every figure, so the strip is one image with a summary name.
+ * below it, a transfer is an outline. Each day is a button that opens that
+ * day's bills and deposits; the list under the strip still carries every
+ * figure, so the bars themselves stay decorative.
  */
 function InOutStrip({ strip }: { strip: UpcomingStrip }) {
   const t = useTranslations('dashboard');
@@ -32,13 +34,17 @@ function InOutStrip({ strip }: { strip: UpcomingStrip }) {
   // Nothing coming in: the half above the line keeps only a sliver.
   const anyIn = strip.days.some((day) => day.items.some((i) => i.kind === 'deposit'));
   return (
-    <div role="img" aria-label={t('upcomingBills.stripLabel')} className="mt-3 mb-1 grid grid-cols-14 gap-px">
+    <div role="group" aria-label={t('upcomingBills.stripLabel')} className="mt-3 mb-1 grid grid-cols-14 gap-px">
       {strip.days.map((day) => {
         const ins = day.items.filter((i) => i.kind === 'deposit');
         const outs = day.items.filter((i) => i.kind !== 'deposit');
         return (
-          <div key={day.date} className="flex min-w-0 flex-col items-center">
-            <div className={`flex items-end gap-0.5 ${anyIn ? 'h-14' : 'h-2'}`}>
+          <DayDetailButton
+            key={day.date}
+            day={day}
+            className={`flex w-full min-w-0 flex-col items-center rounded-sm ${HOVER_ROW_ON_PAGE} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+          >
+            <span className={`flex items-end gap-0.5 ${anyIn ? 'h-14' : 'h-2'}`}>
               {ins.map((item) => (
                 <span
                   key={item.id}
@@ -46,8 +52,8 @@ function InOutStrip({ strip }: { strip: UpcomingStrip }) {
                   style={{ height: barHeight(item, strip.scaleMax), backgroundColor: chartColors.income }}
                 />
               ))}
-            </div>
-            <div className="flex h-14 w-full items-start justify-center gap-0.5 border-t border-gray-300 dark:border-gray-600">
+            </span>
+            <span className="flex h-14 w-full items-start justify-center gap-0.5 border-t border-gray-300 dark:border-gray-600">
               {outs.map((item) =>
                 item.kind === 'bill' ? (
                   <span
@@ -63,7 +69,7 @@ function InOutStrip({ strip }: { strip: UpcomingStrip }) {
                   />
                 ),
               )}
-            </div>
+            </span>
             <span
               className={`mt-1 text-[11px] tabular-nums ${
                 day.isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
@@ -71,7 +77,7 @@ function InOutStrip({ strip }: { strip: UpcomingStrip }) {
             >
               {day.isToday ? t('upcomingBills.today') : formatChartDate(day.date, 'd')}
             </span>
-          </div>
+          </DayDetailButton>
         );
       })}
     </div>

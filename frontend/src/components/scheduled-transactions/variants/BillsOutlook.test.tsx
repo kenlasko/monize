@@ -35,7 +35,18 @@ describe('BillsOutlookFolio', () => {
   it('prints the fourteen-day strip under its section title', () => {
     render(<BillsOutlookFolio {...props()} />);
     expect(screen.getByRole('heading', { name: 'Next fourteen days' })).toBeInTheDocument();
-    expect(screen.getByRole('img')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /next fourteen days/ })).toBeInTheDocument();
+  });
+
+  it("opens a day's bills and deposits when its column is clicked", () => {
+    render(<BillsOutlookFolio {...props()} />);
+    const columns = screen.getByRole('group', { name: /next fourteen days/ }).querySelectorAll('button');
+    expect(columns).toHaveLength(14);
+    fireEvent.click(columns[3]);
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Hydro')).toBeInTheDocument();
+    expect(dialog.getByText('Hydro One · Bill')).toBeInTheDocument();
+    expect(dialog.getByText('-$120.00')).toBeInTheDocument();
   });
 });
 
