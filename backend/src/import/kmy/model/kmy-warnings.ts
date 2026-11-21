@@ -68,6 +68,7 @@ export const KMY_WARNING_CODES: readonly MnyWarningCode[] = [
   "payeeMatchKeyOverlap",
   "payeeDefaultCategoryNotImported",
   "payeeDetailsKept",
+  "originalNameCut",
   "crossCurrencyTransferRateMissing",
   "tradeAmountsDiffer",
   "investmentTransactionUnclassified",

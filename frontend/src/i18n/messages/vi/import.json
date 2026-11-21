@@ -623,6 +623,29 @@
       "billsOfRows": "đang hoạt động trong {rows} lịch",
       "payeeAliases": "Bí danh người nhận",
       "payeeAliasesDetail": "{count, plural, other {# người nhận}} được gán danh mục mặc định"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {# tên}} quá dài đối với Monize",
+      "explainer": "Monize lưu tối đa 255 ký tự trong một tên và 100 ký tự trong một thẻ. Mỗi tên dưới đây đã được rút gọn cho vừa; hãy đổi bất kỳ tên nào trước khi nhập. Các giao dịch vẫn giữ người nhận, tài khoản và danh mục của chúng dù bạn chọn tên nào. Tên đầy đủ trong KMyMoney được giữ trong ghi chú của người nhận hoặc mô tả của tài khoản.",
+      "table": {
+        "kind": "Loại",
+        "original": "Tên trong KMyMoney",
+        "newName": "Tên trong Monize",
+        "newNameFor": "{kind}: tên trong Monize"
+      },
+      "kind": {
+        "payee": "Người nhận",
+        "account": "Tài khoản",
+        "category": "Danh mục",
+        "security": "Chứng khoán",
+        "schedule": "Giao dịch định kỳ",
+        "institution": "Tổ chức",
+        "tag": "Thẻ"
+      },
+      "originalLength": "{length} ký tự",
+      "charactersUsed": "{used} trên {max} ký tự",
+      "blank": "Hãy nhập một tên.",
+      "omitted": "Còn {count, plural, other {# tên}} quá dài và sẽ được rút gọn cho vừa."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, other {# bí danh người nhận}} có thể khớp cùng tên người nhận với bí danh của người nhận khác. KMyMoney chọn người nhận có phần khớp dài hơn; Monize có thể chọn bất kỳ người nào. Hãy kiểm tra các bí danh này trong Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, other {# người nhận}} có danh mục mặc định mà Monize không dùng được (một tài khoản thay vì danh mục, một danh mục không có trong tệp, hoặc khác với người nhận cùng tên), nên được nhập không kèm danh mục đó.",
     "payeeDetailsKept": "{count, plural, other {# người nhận}} đã tồn tại trong Monize với danh mục mặc định hoặc thông tin liên hệ riêng, những thứ đó được giữ lại; giá trị từ KMyMoney không được dùng.",
+    "originalNameCut": "{count, plural, other {# tên}} quá dài đối với Monize và quá dài để lưu nguyên vẹn trong ghi chú của người nhận hoặc mô tả của tài khoản, vốn chứa tối đa 500 ký tự; chỉ phần đầu của tên được giữ lại ở đó.",
     "unparsableNumber": "{count, plural, other {# số}} trong tệp không đọc được và được coi là không.",
     "autoCalcInPostedSplit": "{count, plural, other {# giao dịch đã ghi sổ}} mang một số tiền giữ chỗ chỉ dành cho lịch; số đó được coi là không.",
     "mappedBalanceDiffers": "{count, plural, other {# tài khoản}} sẽ có số dư khác với số dư tính từ tệp. Đừng nhập cho đến khi làm rõ được điều này.",

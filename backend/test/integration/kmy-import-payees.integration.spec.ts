@@ -249,4 +249,37 @@ describe("kmy import: payee matching and details (integration)", () => {
     expect(await aliasesOf("City Power")).toEqual(["*CITY POWER*"]);
     expect(second.result).toMatchObject({ payeeAliasesCreated: 1 });
   });
+
+  it("imports a payee whose name is longer than payees.name, under the cut or the chosen name (issue #2313)", async () => {
+    const sepa = `SEPA-LASTSCHRIFT Stadtwerke ${"Mandatsreferenz MR-0042 Glaeubiger-ID DE98ZZZ09999999999 ".repeat(6)}`;
+    const bytes = toKmyBytes(
+      payeeFile([kmyPayee({ id: "P1", name: sepa })]),
+      "gzip",
+    );
+    const payeeNames = async () =>
+      (
+        (await dataSource.query(
+          `SELECT p.name, t.payee_name FROM transactions t
+             JOIN payees p ON p.id = t.payee_id
+            WHERE t.user_id = $1`,
+          [userId],
+        )) as { name: string; payee_name: string }[]
+      ).map((row) => [row.name, row.payee_name]);
+
+    const cut = await runKmy(bytes);
+    expect(cut.status).toBe("completed");
+    const shortened = sepa.trim().slice(0, 255).trimEnd();
+    expect(await payeeNames()).toEqual([[shortened, shortened]]);
+    // The whole KMyMoney name is not lost: it is the payee's notes.
+    expect((await payeeRow(shortened)).notes).toBe(sepa.trim());
+
+    h.stubWipe();
+    const renamed = await runKmy(bytes, {
+      wipeExistingData: true,
+      renames: [{ kind: "payee", handle: 1, name: "Stadtwerke" }],
+    });
+    expect(renamed.status).toBe("completed");
+    expect(await payeeNames()).toEqual([["Stadtwerke", "Stadtwerke"]]);
+    expect((await payeeRow("Stadtwerke")).notes).toBe(sepa.trim());
+  });
 });

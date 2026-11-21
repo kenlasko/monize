@@ -623,6 +623,29 @@
       "billsOfRows": "{rows} 件のスケジュールのうち有効",
       "payeeAliases": "支払先のエイリアス",
       "payeeAliasesDetail": "{count, plural, other {# 件の支払先}}にデフォルトのカテゴリが設定されます"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {# 件の名前}}が Monize には長すぎます",
+      "explainer": "Monize が名前に保存できるのは最大 255 文字、タグは最大 100 文字です。これらの名前はそれぞれ収まるように短縮されています。インポートの前に、どれでも変更できます。どの名前を選んでも、取引の支払先、口座、カテゴリはそのまま保たれます。KMyMoney の名前の全文は、支払先のメモまたは口座の説明に保存されます。",
+      "table": {
+        "kind": "種類",
+        "original": "KMyMoney での名前",
+        "newName": "Monize での名前",
+        "newNameFor": "{kind}: Monize での名前"
+      },
+      "kind": {
+        "payee": "支払先",
+        "account": "口座",
+        "category": "カテゴリ",
+        "security": "銘柄",
+        "schedule": "定期取引",
+        "institution": "金融機関",
+        "tag": "タグ"
+      },
+      "originalLength": "{length} 文字",
+      "charactersUsed": "{used} / {max} 文字",
+      "blank": "名前を入力してください。",
+      "omitted": "ほかに {count, plural, other {# 件の名前}}が長すぎるため、収まるように短縮されます。"
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, other {# 件の支払先エイリアス}}が、別の支払先のエイリアスと同じ支払先名に一致する可能性があります。KMyMoney は一致が長いほうの支払先を選びますが、Monize はどちらを選ぶかわかりません。Monize でこれらのエイリアスを確認してください。",
     "payeeDefaultCategoryNotImported": "{count, plural, other {# 件の支払先}}に Monize で使えないデフォルトのカテゴリ (カテゴリではなく口座、ファイルにないもの、同名の別の支払先と異なるもの) があったため、カテゴリなしでインポートしました。",
     "payeeDetailsKept": "{count, plural, other {# 件の支払先}}は Monize にすでに存在し、独自のデフォルトカテゴリや連絡先情報を持っていたため、それらを保持し、KMyMoney の値は使用しませんでした。",
+    "originalNameCut": "{count, plural, other {# 件の名前}}が Monize には長すぎ、最大 500 文字の支払先のメモまたは口座の説明にも全文を保存できませんでした。そこには名前の先頭部分だけが保存されています。",
     "unparsableNumber": "ファイル内の{count, plural, other {# 件の数値}}を読み取れなかったため、ゼロとして扱いました。",
     "autoCalcInPostedSplit": "{count, plural, other {# 件の計上済み取引}}にスケジュール専用の仮の金額が含まれていたため、ゼロとして扱いました。",
     "mappedBalanceDiffers": "{count, plural, other {# 件の口座}}は、ファイルから計算した残高と異なる残高になります。原因がわかるまでインポートしないでください。",

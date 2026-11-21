@@ -623,6 +623,29 @@
       "billsOfRows": "attive su {rows} transazioni pianificate",
       "payeeAliases": "Alias dei beneficiari",
       "payeeAliasesDetail": "{count, plural, one {# beneficiario riceve} other {# beneficiari ricevono}} una categoria predefinita"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# nome è troppo lungo} other {# nomi sono troppo lunghi}} per Monize",
+      "explainer": "Monize memorizza al massimo 255 caratteri in un nome e 100 in un tag. Ognuno di questi è stato accorciato per entrarci; modificane uno qualsiasi prima dell'importazione. Le transazioni mantengono beneficiario, conto e categoria qualunque nome tu scelga. Il nome completo di KMyMoney viene conservato nelle note del beneficiario o nella descrizione del conto.",
+      "table": {
+        "kind": "Tipo",
+        "original": "Nome in KMyMoney",
+        "newName": "Nome in Monize",
+        "newNameFor": "{kind}: nome in Monize"
+      },
+      "kind": {
+        "payee": "Beneficiario",
+        "account": "Conto",
+        "category": "Categoria",
+        "security": "Titolo",
+        "schedule": "Transazione pianificata",
+        "institution": "Istituto",
+        "tag": "Tag"
+      },
+      "originalLength": "{length} caratteri",
+      "charactersUsed": "{used} di {max} caratteri",
+      "blank": "Inserisci un nome.",
+      "omitted": "{count, plural, one {# altro nome è troppo lungo e verrà accorciato} other {# altri nomi sono troppo lunghi e verranno accorciati}} per entrarci."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, one {# alias di beneficiario può corrispondere} other {# alias di beneficiari possono corrispondere}} allo stesso nome di beneficiario di un alias di un altro beneficiario. KMyMoney sceglie il beneficiario con la corrispondenza più lunga; Monize potrebbe sceglierne uno qualsiasi. Controlla {count, plural, one {questo alias} other {questi alias}} in Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, one {# beneficiario ha} other {# beneficiari hanno}} una categoria predefinita che Monize non può usare (un conto anziché una categoria, una assente dal file, oppure diversa da quella di un altro beneficiario con lo stesso nome), quindi {count, plural, one {è stato importato} other {sono stati importati}} senza.",
     "payeeDetailsKept": "{count, plural, one {# beneficiario esisteva già} other {# beneficiari esistevano già}} in Monize con una propria categoria predefinita o propri dati di contatto, che sono stati mantenuti; i valori di KMyMoney non sono stati usati.",
+    "originalNameCut": "{count, plural, one {# nome era troppo lungo} other {# nomi erano troppo lunghi}} per Monize e per essere conservati per intero nelle note del beneficiario o nella descrizione del conto, che contengono al massimo 500 caratteri; lì è stato conservato solo l'inizio del nome.",
     "unparsableNumber": "{count, plural, one {# numero del file non ha potuto essere letto} other {# numeri del file non hanno potuto essere letti}} e {count, plural, one {è stato considerato} other {sono stati considerati}} zero.",
     "autoCalcInPostedSplit": "{count, plural, one {# transazione registrata riportava} other {# transazioni registrate riportavano}} un importo segnaposto pensato solo per le transazioni pianificate; è stato considerato zero.",
     "mappedBalanceDiffers": "{count, plural, one {# conto finirebbe} other {# conti finirebbero}} con un saldo diverso da quello calcolato dal file. Non importare finché non è chiarito.",

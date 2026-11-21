@@ -623,6 +623,29 @@
       "billsOfRows": "active of {rows} scheduled transactions",
       "payeeAliases": "Payee aliases",
       "payeeAliasesDetail": "{count, plural, one {# payee gets} other {# payees get}} a default category"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# name is} other {# names are}} too long for Monize",
+      "explainer": "Monize stores at most 255 characters in a name, and 100 in a tag. Each of these has been shortened to fit; change any of them before you import. Transactions keep their payee, account and category whatever you choose. The whole KMyMoney name is kept in the payee's notes or the account's description.",
+      "table": {
+        "kind": "Type",
+        "original": "Name in KMyMoney",
+        "newName": "Name in Monize",
+        "newNameFor": "{kind}: name in Monize"
+      },
+      "kind": {
+        "payee": "Payee",
+        "account": "Account",
+        "category": "Category",
+        "security": "Security",
+        "schedule": "Scheduled transaction",
+        "institution": "Institution",
+        "tag": "Tag"
+      },
+      "originalLength": "{length} characters",
+      "charactersUsed": "{used} of {max} characters",
+      "blank": "Enter a name.",
+      "omitted": "{count, plural, one {# more name is} other {# more names are}} too long and will be shortened to fit."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, one {# payee alias can} other {# payee aliases can}} match the same payee name as an alias of another payee. KMyMoney picks the payee with the longer match; Monize may pick either. Check {count, plural, one {this alias} other {these aliases}} in Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, one {# payee has} other {# payees have}} a default category Monize cannot use (an account rather than a category, one missing from the file, or a different one from another payee of the same name), so {count, plural, one {it was} other {they were}} imported without it.",
     "payeeDetailsKept": "{count, plural, one {# payee already existed} other {# payees already existed}} in Monize with {count, plural, one {its} other {their}} own default category or contact details, which were kept; the KMyMoney values were not used.",
+    "originalNameCut": "{count, plural, one {# name was} other {# names were}} too long for Monize and too long to keep whole in the payee's notes or the account's description, which hold at most 500 characters; only the start of the name was kept there.",
     "unparsableNumber": "{count, plural, one {# number} other {# numbers}} in the file could not be read and {count, plural, one {was} other {were}} taken as zero.",
     "autoCalcInPostedSplit": "{count, plural, one {# posted transaction carried} other {# posted transactions carried}} a placeholder amount meant only for scheduled transactions; it was taken as zero.",
     "mappedBalanceDiffers": "{count, plural, one {# account would end} other {# accounts would end}} with a balance that differs from the one computed from the file. Do not import until this is explained.",

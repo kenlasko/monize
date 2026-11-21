@@ -623,6 +623,29 @@
       "billsOfRows": "aktif dari {rows} jadwal",
       "payeeAliases": "Alias penerima",
       "payeeAliasesDetail": "{count, plural, other {# penerima}} mendapat kategori default"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {# nama}} terlalu panjang untuk Monize",
+      "explainer": "Monize menyimpan paling banyak 255 karakter dalam sebuah nama, dan 100 dalam sebuah tag. Setiap nama ini telah dipendekkan agar muat; ubah mana pun sebelum mengimpor. Transaksi tetap memiliki penerima, akun, dan kategorinya apa pun nama yang Anda pilih. Nama lengkap dari KMyMoney disimpan di catatan penerima atau deskripsi akun.",
+      "table": {
+        "kind": "Jenis",
+        "original": "Nama di KMyMoney",
+        "newName": "Nama di Monize",
+        "newNameFor": "{kind}: nama di Monize"
+      },
+      "kind": {
+        "payee": "Penerima",
+        "account": "Akun",
+        "category": "Kategori",
+        "security": "Sekuritas",
+        "schedule": "Transaksi terjadwal",
+        "institution": "Institusi",
+        "tag": "Tag"
+      },
+      "originalLength": "{length} karakter",
+      "charactersUsed": "{used} dari {max} karakter",
+      "blank": "Masukkan nama.",
+      "omitted": "{count, plural, other {# nama lainnya}} terlalu panjang dan akan dipendekkan agar muat."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, other {# alias penerima}} dapat cocok dengan nama penerima yang sama dengan alias penerima lain. KMyMoney memilih penerima dengan kecocokan yang lebih panjang; Monize dapat memilih salah satunya. Periksa alias ini di Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, other {# penerima}} memiliki kategori default yang tidak dapat dipakai Monize (akun alih-alih kategori, kategori yang tidak ada di berkas, atau berbeda dari penerima lain yang bernama sama), sehingga diimpor tanpa kategori itu.",
     "payeeDetailsKept": "{count, plural, other {# penerima}} sudah ada di Monize dengan kategori default atau detail kontaknya sendiri, yang dipertahankan; nilai dari KMyMoney tidak dipakai.",
+    "originalNameCut": "{count, plural, other {# nama}} terlalu panjang untuk Monize dan terlalu panjang untuk disimpan utuh di catatan penerima atau deskripsi akun, yang memuat paling banyak 500 karakter; hanya awal nama yang disimpan di sana.",
     "unparsableNumber": "{count, plural, other {# angka}} di berkas tidak dapat dibaca dan dianggap nol.",
     "autoCalcInPostedSplit": "{count, plural, other {# transaksi yang sudah diposting}} membawa jumlah pengganti yang hanya dimaksudkan untuk jadwal; jumlah itu dianggap nol.",
     "mappedBalanceDiffers": "{count, plural, other {# akun}} akan berakhir dengan saldo yang berbeda dari yang dihitung dari berkas. Jangan impor sebelum hal ini dijelaskan.",

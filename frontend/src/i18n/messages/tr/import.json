@@ -623,6 +623,29 @@
       "billsOfRows": "{rows} zamanlamadan etkin olanlar",
       "payeeAliases": "Alıcı takma adları",
       "payeeAliasesDetail": "{count, plural, other {# alıcıya}} varsayılan bir kategori atanır"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# ad} other {# ad}} Monize için çok uzun",
+      "explainer": "Monize bir adda en fazla 255, bir etikette en fazla 100 karakter saklar. Bu adların her biri sığacak şekilde kısaltıldı; içe aktarmadan önce istediğinizi değiştirin. Hangi adı seçerseniz seçin işlemler alıcılarını, hesaplarını ve kategorilerini korur. KMyMoney'deki adın tamamı alıcının notlarında ya da hesabın açıklamasında saklanır.",
+      "table": {
+        "kind": "Tür",
+        "original": "KMyMoney'deki ad",
+        "newName": "Monize'deki ad",
+        "newNameFor": "{kind}: Monize'deki ad"
+      },
+      "kind": {
+        "payee": "Alıcı",
+        "account": "Hesap",
+        "category": "Kategori",
+        "security": "Menkul kıymet",
+        "schedule": "Planlanmış işlem",
+        "institution": "Kurum",
+        "tag": "Etiket"
+      },
+      "originalLength": "{length} karakter",
+      "charactersUsed": "{used} / {max} karakter",
+      "blank": "Bir ad girin.",
+      "omitted": "{count, plural, one {# ad daha} other {# ad daha}} çok uzun ve sığacak şekilde kısaltılacak."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, other {# alıcı takma adı}} başka bir alıcının takma adıyla aynı alıcı adıyla eşleşebilir. KMyMoney daha uzun eşleşmeye sahip alıcıyı seçer; Monize ikisinden birini seçebilir. Monize'de {count, plural, one {bu takma adı} other {bu takma adları}} kontrol edin.",
     "payeeDefaultCategoryNotImported": "{count, plural, other {# alıcının}} Monize'nin kullanamayacağı bir varsayılan kategorisi var (kategori yerine bir hesap, dosyada bulunmayan bir kategori ya da aynı adlı başka bir alıcınınkinden farklı bir kategori), bu yüzden bu kategori olmadan içe aktarıldı.",
     "payeeDetailsKept": "{count, plural, other {# alıcı}} Monize'de kendi varsayılan kategorisi veya iletişim bilgileriyle zaten vardı ve bunlar korundu; KMyMoney değerleri kullanılmadı.",
+    "originalNameCut": "{count, plural, one {# ad} other {# ad}} Monize için çok uzundu ve en fazla 500 karakter alan alıcı notlarında ya da hesap açıklamasında tamamı saklanamayacak kadar uzundu; orada adın yalnızca başı saklandı.",
     "unparsableNumber": "{count, plural, other {# sayı}} dosyada okunamadı ve sıfır olarak alındı.",
     "autoCalcInPostedSplit": "{count, plural, other {# kaydedilmiş işlem}} yalnızca zamanlamalar için tasarlanmış bir yer tutucu tutar içeriyordu; bu tutar sıfır olarak alındı.",
     "mappedBalanceDiffers": "{count, plural, other {# hesap}} dosyadan hesaplanandan farklı bir bakiyeyle sonuçlanacaktı. Bu açıklığa kavuşana kadar içe aktarmayın.",

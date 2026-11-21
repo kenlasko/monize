@@ -6,6 +6,7 @@ import { MappedPayeeContact } from "../../mny/model/mny-import-model";
 import { MnyWarning } from "../../mny/model/mny-warnings";
 import { KmyAccount, KmyPayee } from "../model/kmy-raw";
 import { KMY_TYPE, isCategoryType } from "./kmy-account-tree";
+import { appendOriginal } from "./kmy-name-fixes";
 
 /**
  * Spec 5.5.2 (default category) and 5.5.3 (contact details), both bounded by
@@ -22,6 +23,11 @@ export interface PayeeContactResult {
   readonly contact: MappedPayeeContact | null;
   /** The fields that could not be imported, in the order notes, email, phone, address. */
   readonly notImported: readonly string[];
+  /**
+   * The payee's name was too long for Monize and its whole text did not fit
+   * in the notes beside them (`originalNameCut`).
+   */
+  readonly originalNameCut: boolean;
 }
 
 /** One payee's contact details; a field that fails its bound is reported, never trimmed to fit. */
@@ -37,6 +43,18 @@ export function mapPayeeContact(
     notImported.push("notes");
   } else if (rawNotes !== "") {
     notes = rawNotes;
+  }
+  // A name replaced for being too long (issue #2313) keeps its whole text in
+  // the notes, after KMyMoney's own, within the bound the edit form accepts.
+  let originalNameCut = false;
+  const original =
+    payee.originalName === undefined
+      ? ""
+      : sanitizeHtmlString(payee.originalName).trim();
+  if (original !== "") {
+    const kept = appendOriginal(notes ?? "", original, MAX_PAYEE_NOTES);
+    notes = kept.text === "" ? null : kept.text;
+    originalNameCut = kept.cut;
   }
 
   let email: string | null = null;
@@ -79,6 +97,7 @@ export function mapPayeeContact(
   return {
     contact: any ? { notes, email, phone, address } : null,
     notImported,
+    originalNameCut,
   };
 }
 

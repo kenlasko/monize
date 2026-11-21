@@ -459,6 +459,38 @@ describe('useMnyImport', () => {
       expect(result.current.options.referencedOnlyPayees).toBe(false);
       expect(result.current.options.referencedOnlyCategories).toBe(true);
     });
+
+    it('starts from the server\'s shortened names and sends the user\'s renames (issue #2313)', async () => {
+      const base = preview();
+      mockedApi.parse.mockResolvedValue(
+        preview({
+          options: {
+            ...base.options,
+            renames: [
+              { kind: 'payee', handle: 2, name: 'Long payee cut' },
+              { kind: 'account', handle: 6, name: 'Long account cut' },
+            ],
+          },
+        }),
+      );
+      const { result } = renderHook(() => useMnyImport());
+      await act(async () => {
+        await result.current.upload(file);
+      });
+
+      act(() =>
+        result.current.setRename({ kind: 'payee', handle: 2, name: 'Stadtwerke' }),
+      );
+      await act(async () => {
+        await result.current.start();
+      });
+
+      const sent = mockedApi.start.mock.calls[0][1];
+      expect(sent?.renames).toEqual([
+        { kind: 'account', handle: 6, name: 'Long account cut' },
+        { kind: 'payee', handle: 2, name: 'Stadtwerke' },
+      ]);
+    });
   });
 
   describe('start and polling', () => {

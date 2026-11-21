@@ -183,7 +183,9 @@ export function translatePayeeMatch(
   payeeName: string,
 ): PayeeMatchTranslation {
   const { match } = payee;
-  const name = payee.name;
+  // KMyMoney matches on the name it has, not the shorter one Monize stores
+  // (issue #2313): a rename must not invent a broader alias.
+  const name = payee.originalName ?? payee.name;
   const caseSensitive = !match.ignoreCase;
   const candidates: AliasCandidate[] = [];
   const warnings: MnyWarning[] = [];

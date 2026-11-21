@@ -20,6 +20,8 @@ export interface KmyInstitution {
   ordinal: number;
   id: string;
   name: string;
+  /** The file's own name when `applyKmyNameFixes` replaced a too-long one. */
+  originalName?: string;
   accountIds: readonly string[];
 }
 
@@ -51,6 +53,8 @@ export interface KmyPayee {
   ordinal: number;
   id: string;
   name: string;
+  /** The file's own name when `applyKmyNameFixes` replaced a too-long one. */
+  originalName?: string;
   match: KmyPayeeMatch;
   /** `defaultaccountid`; null when absent or empty. */
   defaultAccountId: string | null;
@@ -68,6 +72,8 @@ export interface KmyTag {
   ordinal: number;
   id: string;
   name: string;
+  /** The file's own name when `applyKmyNameFixes` replaced a too-long one. */
+  originalName?: string;
   closed: boolean;
 }
 
@@ -89,6 +95,8 @@ export interface KmyAccount {
   isStandard: boolean;
   parentId: string | null;
   name: string;
+  /** The file's own name when `applyKmyNameFixes` replaced a too-long one. */
+  originalName?: string;
   /** A missing or invalid type reads as 0. */
   type: number;
   currency: string | null;
@@ -150,6 +158,8 @@ export interface KmySchedule {
   ordinal: number;
   id: string;
   name: string;
+  /** The file's own name when `applyKmyNameFixes` replaced a too-long one. */
+  originalName?: string;
   type: number;
   /** Raw; a multiplier below 1 is read as 1. */
   occurrence: number;
@@ -170,6 +180,8 @@ export interface KmySecurity {
   ordinal: number;
   id: string;
   name: string;
+  /** The file's own name when `applyKmyNameFixes` replaced a too-long one. */
+  originalName?: string;
   symbol: string;
   type: number;
   /** 0 or missing reads as 100n. */

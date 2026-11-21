@@ -65,6 +65,10 @@ The user guide is `website/docs/importing-from-kmymoney.md`.
   the rows keep the payee KMyMoney assigned (`kmy-import-payee-rules.integration.spec.ts`, with its
   control). It only fills empty fields of an existing payee (`payeeDetailsKept`), and issues no query for a
   payee list without a new field, which is every Money file.
+- **A name may be longer than its column.** KMyMoney names have no limit and Monize's name columns are
+  `VARCHAR(255)` (a tag's 100), so `applyKmyNameFixes` (`map/kmy-name-fixes.ts`) replaces every too-long name in the raw
+  model before mapping, with the user's `options.renames` entry or the name cut to fit (spec 5.13). A
+  mapper that appends to a name keeps the whole inside the column with `fitName`.
 - **Formatting.** The TypeScript here is prettier-formatted like the rest of `src/` (the pre-commit hook
   runs eslint and prettier on staged files); do not run prettier over the Markdown files.
 

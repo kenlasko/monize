@@ -623,6 +623,29 @@
       "billsOfRows": "ativas de {rows} transações agendadas",
       "payeeAliases": "Aliases de favorecidos",
       "payeeAliasesDetail": "{count, plural, one {# favorecido recebe} other {# favorecidos recebem}} uma categoria predefinida"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# nome é longo demais} other {# nomes são longos demais}} para o Monize",
+      "explainer": "O Monize armazena no máximo 255 caracteres em um nome e 100 em uma tag. Cada um destes foi encurtado para caber; altere qualquer um antes de importar. As transações mantêm o favorecido, a conta e a categoria, qualquer que seja o nome escolhido. O nome completo do KMyMoney fica guardado nas notas do favorecido ou na descrição da conta.",
+      "table": {
+        "kind": "Tipo",
+        "original": "Nome no KMyMoney",
+        "newName": "Nome no Monize",
+        "newNameFor": "{kind}: nome no Monize"
+      },
+      "kind": {
+        "payee": "Favorecido",
+        "account": "Conta",
+        "category": "Categoria",
+        "security": "Título",
+        "schedule": "Transação agendada",
+        "institution": "Instituição",
+        "tag": "Tag"
+      },
+      "originalLength": "{length} caracteres",
+      "charactersUsed": "{used} de {max} caracteres",
+      "blank": "Digite um nome.",
+      "omitted": "{count, plural, one {Mais # nome é longo demais e será encurtado} other {Mais # nomes são longos demais e serão encurtados}} para caber."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, one {# alias de favorecido pode corresponder} other {# aliases de favorecido podem corresponder}} ao mesmo nome de favorecido que um alias de outro favorecido. O KMyMoney escolhe o favorecido com a correspondência mais longa; o Monize pode escolher qualquer um. Confira {count, plural, one {este alias} other {estes aliases}} no Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, one {# favorecido tem} other {# favorecidos têm}} uma categoria predefinida que o Monize não pode usar (uma conta em vez de uma categoria, uma que falta no arquivo, ou uma diferente da de outro favorecido com o mesmo nome), então {count, plural, one {foi importado} other {foram importados}} sem ela.",
     "payeeDetailsKept": "{count, plural, one {# favorecido já existia} other {# favorecidos já existiam}} no Monize com {count, plural, one {a sua própria} other {a sua própria}} categoria predefinida ou dados de contato, que foram mantidos; os valores do KMyMoney não foram usados.",
+    "originalNameCut": "{count, plural, one {# nome era longo demais} other {# nomes eram longos demais}} para o Monize e para ser guardado inteiro nas notas do favorecido ou na descrição da conta, que comportam no máximo 500 caracteres; só o início do nome foi mantido lá.",
     "unparsableNumber": "{count, plural, one {# número no arquivo não pôde ser lido} other {# números no arquivo não puderam ser lidos}} e {count, plural, one {foi considerado} other {foram considerados}} zero.",
     "autoCalcInPostedSplit": "{count, plural, one {# transação lançada trazia} other {# transações lançadas traziam}} um valor provisório destinado apenas a transações agendadas; ele foi considerado zero.",
     "mappedBalanceDiffers": "{count, plural, one {# conta terminaria} other {# contas terminariam}} com um saldo diferente do calculado a partir do arquivo. Não importe até que isto seja esclarecido.",

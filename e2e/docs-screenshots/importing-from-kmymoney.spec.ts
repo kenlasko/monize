@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   test,
@@ -23,6 +24,25 @@ let page: Page;
  * category, a schedule and prices.
  */
 const KMY_SAMPLE = join(KMY_FIXTURES, "sample-synthetic.kmy");
+
+/**
+ * A payee named by the whole text of a SEPA direct debit, as a bank import
+ * into KMyMoney leaves it: longer than the 255 characters Monize stores.
+ */
+const SEPA_PAYEE =
+  "SEPA-LASTSCHRIFT Stadtwerke Musterstadt GmbH EREF: 2024-0117-000042 " +
+  "MREF: MR-0042-STW CRED: DE98ZZZ09999999999 SVWZ: Strom Abschlag Januar " +
+  "2024 Kundennummer 1234567 Vertragskonto 7654321 faellig am 15.01.2024 " +
+  "ABWA: Stadtwerke Musterstadt Energievertrieb GmbH Musterstrasse 1";
+
+/** The sample file in its plain XML form, with Corner Market renamed to `SEPA_PAYEE`. */
+function sampleWithSepaPayee(): Buffer {
+  const xml = readFileSync(join(KMY_FIXTURES, "sample-synthetic.xml"), "utf8");
+  return Buffer.from(
+    xml.replace('name="Corner Market"', `name="${SEPA_PAYEE}"`),
+    "utf8",
+  );
+}
 
 /** Reading and previewing a whole profile takes a while. */
 const PARSE_TIMEOUT = 90_000;
@@ -87,6 +107,26 @@ test.describe("the KMyMoney review step", () => {
     );
     await section.scrollIntoViewIfNeeded();
     await docShot(page, "import-kmy-notes", section);
+    await leaveWizard(page);
+  });
+});
+
+test.describe("a KMyMoney file with a name too long for Monize", () => {
+  test("import-kmy-name-fixes", async () => {
+    await openImport(page);
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "sepa-payees.xml",
+      mimeType: "application/xml",
+      buffer: sampleWithSepaPayee(),
+    });
+    const heading = page.getByRole("heading", {
+      name: /too long for Monize$/,
+    });
+    await expect(heading).toBeVisible({ timeout: PARSE_TIMEOUT });
+    await waitForReady(page);
+    const section = sectionOf(heading);
+    await section.scrollIntoViewIfNeeded();
+    await docShot(page, "import-kmy-name-fixes", section);
     await leaveWizard(page);
   });
 });

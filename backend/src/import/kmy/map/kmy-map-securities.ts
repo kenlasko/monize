@@ -11,6 +11,7 @@ import {
   placeholderSymbol,
 } from "../../mny/map/map-securities";
 import type { SecurityType } from "../../../securities/security-enums";
+import { KMY_MAX_NAME_LENGTH, clipName } from "./kmy-name-fixes";
 
 /** Spec 5.8: the securities an imported holding references. */
 
@@ -89,7 +90,11 @@ export function mapKmySecurities(
       continue;
     }
     const name = security.name.trim();
-    const label = name || security.symbol.trim() || security.id;
+    // A renamed name fits (`kmy-name-fixes.ts`); the fallbacks may not.
+    const label = clipName(
+      name || security.symbol.trim() || security.id,
+      KMY_MAX_NAME_LENGTH,
+    );
     const trading = security.tradingCurrency?.trim() ?? "";
     let currencyCode = trading;
     if (trading === "") {

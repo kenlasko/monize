@@ -4,6 +4,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -14,6 +15,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { MNY_RENAME_KINDS, MnyRenameKind } from "../model/mny-import-options";
 import {
   ImportJobStatus,
   MnyImportProgress,
@@ -69,6 +71,29 @@ export class MnyAccountOptionDto {
   )
   @IsCurrencyCode()
   currencyOverride?: string | null;
+}
+
+/**
+ * The width of every name column a rename lands in (`VARCHAR(255)`). The
+ * import holds each rename to its own element's bound as well, which is lower
+ * for an investment account's pair suffix, and cuts any that misses it.
+ */
+export const MNY_MAX_RENAME_LENGTH = 255;
+
+export class MnyRenameDto {
+  @ApiProperty({ enum: MNY_RENAME_KINDS })
+  @IsIn(MNY_RENAME_KINDS)
+  kind: MnyRenameKind;
+
+  @ApiProperty({ description: "Ordinal of the element within its section" })
+  @IsInt()
+  @Min(1)
+  handle: number;
+
+  @ApiProperty({ maxLength: MNY_MAX_RENAME_LENGTH })
+  @IsString()
+  @MaxLength(MNY_MAX_RENAME_LENGTH)
+  name: string;
 }
 
 export class MnyImportOptionsDto {
@@ -127,6 +152,19 @@ export class MnyImportOptionsDto {
   @IsInt({ each: true })
   @Min(0, { each: true })
   bills?: number[];
+
+  @ApiPropertyOptional({
+    type: [MnyRenameDto],
+    description:
+      "Names for the file's names too long for Monize (KMyMoney only); any not named here is shortened",
+    maxItems: MNY_MAX_OPTION_ITEMS,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MNY_MAX_OPTION_ITEMS)
+  @ValidateNested({ each: true })
+  @Type(() => MnyRenameDto)
+  renames?: MnyRenameDto[];
 }
 
 export class StartMnyImportDto {

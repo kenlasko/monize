@@ -142,6 +142,7 @@ export const KMY_WARNING_CODES: readonly string[] = [
   'payeeMatchKeyOverlap',
   'payeeDefaultCategoryNotImported',
   'payeeDetailsKept',
+  'originalNameCut',
   'crossCurrencyTransferRateMissing',
   'tradeAmountsDiffer',
   'investmentTransactionUnclassified',

@@ -181,7 +181,13 @@ export function mapKmyPayees(
     };
     groups.set(key, group);
     const translation = translatePayeeMatch(payee, name);
-    const { contact, notImported } = mapPayeeContact(payee, input.phoneRegion);
+    const { contact, notImported, originalNameCut } = mapPayeeContact(
+      payee,
+      input.phoneRegion,
+    );
+    if (originalNameCut) {
+      warnings.push({ code: "originalNameCut", subject: name });
+    }
     group.members.push({
       payee,
       candidates: translation.candidates,

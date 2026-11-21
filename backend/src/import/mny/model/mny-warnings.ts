@@ -203,6 +203,8 @@ export const MNY_WARNING_CODES = [
   "payeeDefaultCategoryNotImported",
   /** An existing payee already had its own default category or contact details; they were kept. */
   "payeeDetailsKept",
+  /** A KMyMoney name too long for Monize was replaced, and the whole name did not fit in the payee's notes or the account's description. */
+  "originalNameCut",
   /** A KMyMoney cross-currency transfer has no exchange rate in its amounts or the file's prices. */
   "crossCurrencyTransferRateMissing",
   /** A holding's imported trade totals do not add up to the file's stock values (spec 6.1). */

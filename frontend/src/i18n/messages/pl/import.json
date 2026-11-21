@@ -623,6 +623,29 @@
       "billsOfRows": "aktywnych z {rows} zaplanowanych transakcji",
       "payeeAliases": "Aliasy odbiorców",
       "payeeAliasesDetail": "{count, plural, one {# odbiorca otrzymuje} few {# odbiorców otrzymuje} many {# odbiorców otrzymuje} other {# odbiorców otrzymuje}} domyślną kategorię"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# nazwa jest za długa} few {# nazwy są za długie} many {# nazw jest za długich} other {# nazwy są za długie}} dla Monize",
+      "explainer": "Monize zapisuje w nazwie najwyżej 255 znaków, a w tagu 100. Każda z tych nazw została skrócona, aby się zmieściła; przed importem możesz zmienić dowolną z nich. Transakcje zachowują swojego odbiorcę, konto i kategorię niezależnie od wybranej nazwy. Pełna nazwa z KMyMoney zostaje zachowana w notatkach odbiorcy lub opisie konta.",
+      "table": {
+        "kind": "Typ",
+        "original": "Nazwa w KMyMoney",
+        "newName": "Nazwa w Monize",
+        "newNameFor": "{kind}: nazwa w Monize"
+      },
+      "kind": {
+        "payee": "Odbiorca",
+        "account": "Konto",
+        "category": "Kategoria",
+        "security": "Papier wartościowy",
+        "schedule": "Zaplanowana transakcja",
+        "institution": "Instytucja",
+        "tag": "Tag"
+      },
+      "originalLength": "Znaki: {length}",
+      "charactersUsed": "{used} z {max} znaków",
+      "blank": "Wpisz nazwę.",
+      "omitted": "{count, plural, one {Jeszcze # nazwa jest za długa i zostanie skrócona} few {Jeszcze # nazwy są za długie i zostaną skrócone} many {Jeszcze # nazw jest za długich i zostanie skróconych} other {Jeszcze # nazwy są za długie i zostaną skrócone}}, aby się zmieścić."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, one {# alias odbiorcy może pasować} few {# aliasy odbiorców mogą pasować} many {# aliasów odbiorców może pasować} other {# aliasów odbiorców może pasować}} do tej samej nazwy odbiorcy co alias innego odbiorcy. KMyMoney wybiera odbiorcę z dłuższym dopasowaniem; Monize może wybrać któregokolwiek. Sprawdź {count, plural, one {ten alias} few {te aliasy} many {te aliasy} other {te aliasy}} w Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, one {# odbiorca ma} few {# odbiorców ma} many {# odbiorców ma} other {# odbiorców ma}} kategorię domyślną, której Monize nie może użyć (konto zamiast kategorii, kategorię nieobecną w pliku lub inną niż u innego odbiorcy o tej samej nazwie), więc {count, plural, one {zaimportowano go} few {zaimportowano ich} many {zaimportowano ich} other {zaimportowano ich}} bez niej.",
     "payeeDetailsKept": "{count, plural, one {# odbiorca już istniał} few {# odbiorców już istniało} many {# odbiorców już istniało} other {# odbiorców już istniało}} w Monize z {count, plural, one {własną} few {własną} many {własną} other {własną}} kategorią domyślną lub danymi kontaktowymi, które zachowano; wartości z KMyMoney nie zostały użyte.",
+    "originalNameCut": "{count, plural, one {# nazwa była za długa} few {# nazwy były za długie} many {# nazw było za długich} other {# nazwy były za długie}} dla Monize i za długie, aby zapisać je w całości w notatkach odbiorcy lub opisie konta, które mieszczą najwyżej 500 znaków; zachowano tam tylko początek nazwy.",
     "unparsableNumber": "{count, plural, one {# liczby} few {# liczb} many {# liczb} other {# liczb}} w pliku nie udało się odczytać i {count, plural, one {potraktowano ją} few {potraktowano je} many {potraktowano je} other {potraktowano je}} jako zero.",
     "autoCalcInPostedSplit": "{count, plural, one {# zaksięgowana transakcja zawierała} few {# zaksięgowane transakcje zawierały} many {# zaksięgowanych transakcji zawierało} other {# zaksięgowanych transakcji zawierało}} kwotę zastępczą przeznaczoną tylko dla zaplanowanych transakcji; potraktowano ją jako zero.",
     "mappedBalanceDiffers": "{count, plural, one {# konto miałoby} few {# konta miałyby} many {# kont miałoby} other {# kont miałoby}} saldo różniące się od obliczonego z pliku. Nie importuj, dopóki nie zostanie to wyjaśnione.",

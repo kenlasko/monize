@@ -151,6 +151,42 @@ export interface MnyWarningSummary {
   rowsTruncated?: boolean;
 }
 
+/** What a too-long name belongs to; mirrors the backend `MnyRenameKind`. */
+export type MnyRenameKind =
+  | 'payee'
+  | 'account'
+  | 'category'
+  | 'security'
+  | 'schedule'
+  | 'institution'
+  | 'tag';
+
+/** The name the import uses for one too-long name (`options.renames`). */
+export interface MnyRename {
+  kind: MnyRenameKind;
+  /** The element's ordinal within its section of the file. */
+  handle: number;
+  name: string;
+}
+
+/** One name longer than the Monize column it is written to (KMyMoney). */
+export interface MnyNameFix {
+  kind: MnyRenameKind;
+  handle: number;
+  /** The name as the file has it, possibly cut for the preview. */
+  original: string;
+  /** The whole name's length, in characters. */
+  originalLength: number;
+  /** The most characters the new name may have. */
+  maxLength: number;
+}
+
+export interface MnyNameFixes {
+  entries: MnyNameFix[];
+  /** Too-long names past the preview's cap: shortened automatically, never listed. */
+  omitted: number;
+}
+
 export interface MnyImportOptions {
   wipeExistingData: boolean;
   referencedOnlyPayees: boolean;
@@ -164,6 +200,11 @@ export interface MnyImportOptions {
     currencyOverride: string | null;
   }>;
   bills: number[];
+  /**
+   * The names the import uses for the file's too-long names; the preview
+   * echoes the shortened ones. Absent on a Money preview from an older backend.
+   */
+  renames?: MnyRename[];
 }
 
 /** Container facts of a KMyMoney file; mirrors the backend `KmyFileSummary`. */
@@ -196,6 +237,8 @@ export interface MnyPreview {
   /** Set only for a KMyMoney file; absent means a Money file. */
   sourceFormat?: 'kmy';
   kmyFile?: KmyFileSummary;
+  /** Names too long for Monize, which the review step offers to rename; KMyMoney only. */
+  nameFixes?: MnyNameFixes;
 }
 
 export interface MnyAccountVerification {

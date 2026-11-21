@@ -103,6 +103,7 @@ describe('MnyReviewStep', () => {
     onToggleBill: vi.fn(),
     onSetAllBills: vi.fn(),
     onSetOption: vi.fn(),
+    onSetRename: vi.fn(),
     onBack: vi.fn(),
     onImport: vi.fn(),
   };
@@ -481,6 +482,7 @@ describe('MnyReviewStep with a KMyMoney import', () => {
     onToggleBill: vi.fn(),
     onSetAllBills: vi.fn(),
     onSetOption: vi.fn(),
+    onSetRename: vi.fn(),
     onBack: vi.fn(),
     onImport: vi.fn(),
     format: KMY_FORMAT,
@@ -608,5 +610,99 @@ describe('MnyReviewStep with a KMyMoney import', () => {
     expect(screen.getByRole('link', { name: 'Learn more' }).getAttribute('href')).toContain(
       'troubleshooting-the-kmymoney-import',
     );
+  });
+
+  describe('names too long for Monize (issue #2313)', () => {
+    const sepa = `SEPA-LASTSCHRIFT ${'Mandatsreferenz MR-0042 '.repeat(15)}`.trim();
+    const shortened = sepa.slice(0, 255).trimEnd();
+    const nameFixes = {
+      entries: [
+        {
+          kind: 'payee' as const,
+          handle: 2,
+          original: sepa,
+          originalLength: sepa.length,
+          maxLength: 255,
+        },
+      ],
+      omitted: 0,
+    };
+    const withFixes = (name: string, omitted = 0) => ({
+      ...props,
+      preview: kmyPreview({ nameFixes: { ...nameFixes, omitted } }),
+      options: {
+        ...preview().options,
+        renames: [{ kind: 'payee' as const, handle: 2, name }],
+      },
+    });
+
+    it('lists each one with the name the import will use, editable within its column', () => {
+      render(<MnyReviewStep {...withFixes(shortened)} />);
+
+      expect(
+        screen.getByRole('heading', { name: '1 name is too long for Monize' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Payee')).toBeInTheDocument();
+      expect(screen.getByText(sepa)).toBeInTheDocument();
+      const input = screen.getByRole('textbox', {
+        name: 'Payee: name in Monize',
+      });
+      expect(input).toHaveValue(shortened);
+      expect(input).toHaveAttribute('maxLength', '255');
+      expect(screen.getByRole('button', { name: 'Start import' })).toBeEnabled();
+    });
+
+    it('reports an edit as the rename for that element', () => {
+      render(<MnyReviewStep {...withFixes(shortened)} />);
+
+      fireEvent.change(
+        screen.getByRole('textbox', { name: 'Payee: name in Monize' }),
+        { target: { value: 'Stadtwerke' } },
+      );
+
+      expect(props.onSetRename).toHaveBeenCalledWith({
+        kind: 'payee',
+        handle: 2,
+        name: 'Stadtwerke',
+      });
+    });
+
+    it('will not start with a cleared name', () => {
+      render(<MnyReviewStep {...withFixes('   ')} />);
+
+      expect(screen.getByText('Enter a name.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Start import' })).toBeDisabled();
+    });
+
+    it('counts the names past the list that are shortened automatically', () => {
+      render(<MnyReviewStep {...withFixes(shortened, 3)} />);
+
+      expect(
+        screen.getByText('3 more names are too long and will be shortened to fit.'),
+      ).toBeInTheDocument();
+    });
+
+    it('marks a name the preview carries only the start of, with its whole length', () => {
+      render(
+        <MnyReviewStep
+          {...withFixes(shortened)}
+          preview={kmyPreview({
+            nameFixes: {
+              entries: [{ ...nameFixes.entries[0], original: 'SEPA', originalLength: 5000 }],
+              omitted: 0,
+            },
+          })}
+        />,
+      );
+
+      expect(screen.getByText(/^SEPA\u2026/)).toBeInTheDocument();
+      expect(screen.getByText('5,000 characters')).toBeInTheDocument();
+    });
+
+    it('shows nothing when every name fits', () => {
+      render(<MnyReviewStep {...props} />);
+
+      expect(screen.queryByText(/too long for Monize/)).not.toBeInTheDocument();
+    });
   });
 });

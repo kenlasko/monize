@@ -27,6 +27,28 @@ describe("buildPreview source-format fields", () => {
 
     expect(preview).not.toHaveProperty("sourceFormat");
     expect(preview).not.toHaveProperty("kmyFile");
+    expect(preview).not.toHaveProperty("nameFixes");
+  });
+
+  it("copies the too-long names the wizard offers to rename (issue #2313)", () => {
+    const nameFixes = {
+      entries: [
+        {
+          kind: "payee" as const,
+          handle: 3,
+          original: "x".repeat(300),
+          originalLength: 300,
+          maxLength: 255,
+        },
+      ],
+      omitted: 0,
+    };
+    const preview = buildPreview({
+      ...input,
+      parsed: { ...parsed, sourceFormat: "kmy", kmyFile, nameFixes },
+    });
+
+    expect(preview.nameFixes).toEqual(nameFixes);
   });
 
   it("copies sourceFormat and kmyFile when the parsed file carries them", () => {

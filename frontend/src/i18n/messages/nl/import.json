@@ -623,6 +623,29 @@
       "billsOfRows": "actief van {rows} geplande transacties",
       "payeeAliases": "Begunstigde-aliassen",
       "payeeAliasesDetail": "{count, plural, one {# begunstigde krijgt} other {# begunstigden krijgen}} een standaardcategorie"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# naam is} other {# namen zijn}} te lang voor Monize",
+      "explainer": "Monize slaat hoogstens 255 tekens op in een naam, en 100 in een tag. Elk van deze namen is ingekort zodat hij past; wijzig er gerust een paar voordat u importeert. Transacties houden hun begunstigde, rekening en categorie, welke naam u ook kiest. De volledige KMyMoney-naam blijft bewaard in de notities van de begunstigde of de beschrijving van de rekening.",
+      "table": {
+        "kind": "Soort",
+        "original": "Naam in KMyMoney",
+        "newName": "Naam in Monize",
+        "newNameFor": "{kind}: naam in Monize"
+      },
+      "kind": {
+        "payee": "Begunstigde",
+        "account": "Rekening",
+        "category": "Categorie",
+        "security": "Effect",
+        "schedule": "Geplande transactie",
+        "institution": "Instelling",
+        "tag": "Tag"
+      },
+      "originalLength": "{length} tekens",
+      "charactersUsed": "{used} van {max} tekens",
+      "blank": "Voer een naam in.",
+      "omitted": "{count, plural, one {Nog # naam is te lang en wordt} other {Nog # namen zijn te lang en worden}} ingekort zodat ze passen."
     }
   },
   "kmyBills": {
@@ -726,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, one {# alias van een begunstigde kan} other {# aliassen van begunstigden kunnen}} dezelfde begunstigdenaam herkennen als een alias van een andere begunstigde. KMyMoney kiest de begunstigde met de langere overeenkomst; Monize kiest mogelijk een van beide. Controleer {count, plural, one {deze alias} other {deze aliassen}} in Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, one {# begunstigde heeft} other {# begunstigden hebben}} een standaardcategorie die Monize niet kan gebruiken (een rekening in plaats van een categorie, een categorie die in het bestand ontbreekt, of een andere dan bij een andere begunstigde met dezelfde naam), dus {count, plural, one {is} other {zijn}} ze zonder die categorie geïmporteerd.",
     "payeeDetailsKept": "{count, plural, one {# begunstigde bestond} other {# begunstigden bestonden}} al in Monize met {count, plural, one {een eigen} other {eigen}} standaardcategorie of contactgegevens, die zijn behouden; de waarden uit KMyMoney zijn niet gebruikt.",
+    "originalNameCut": "{count, plural, one {# naam was} other {# namen waren}} te lang voor Monize en te lang om helemaal te bewaren in de notities van de begunstigde of de beschrijving van de rekening, die hoogstens 500 tekens bevatten; daar is alleen het begin van de naam bewaard.",
     "unparsableNumber": "{count, plural, one {# getal} other {# getallen}} in het bestand kon niet worden gelezen en {count, plural, one {is} other {zijn}} als nul opgevat.",
     "autoCalcInPostedSplit": "{count, plural, one {# geboekte transactie bevatte} other {# geboekte transacties bevatten}} een plaatsvervangend bedrag dat alleen bedoeld is voor geplande transacties; {count, plural, one {het is} other {die zijn}} als nul genomen.",
     "mappedBalanceDiffers": "{count, plural, one {# rekening zou eindigen} other {# rekeningen zouden eindigen}} met een saldo dat afwijkt van het saldo dat uit het bestand is berekend. Importeer niet voordat dit is verklaard.",

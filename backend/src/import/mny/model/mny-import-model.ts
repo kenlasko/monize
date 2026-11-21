@@ -8,6 +8,7 @@ import { SplitKind } from "../../../transactions/entities/split-kind.enum";
 import { InvestmentAction } from "../../../securities/entities/investment-transaction.entity";
 import { FrequencyType } from "../../../scheduled-transactions/dto/create-scheduled-transaction.dto";
 import { MnyWarning } from "./mny-warnings";
+import type { MnyRenameKind } from "./mny-import-options";
 import type { CustomRecurrence } from "../../../common/custom-recurrence";
 import type { SecurityType } from "../../../securities/security-enums";
 
@@ -699,4 +700,32 @@ export interface MnyHoldingCheck {
   /** `replayQuantity - lotQuantity`. */
   readonly delta: number;
   readonly matches: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Names too long for their column
+// ---------------------------------------------------------------------------
+
+/**
+ * One file element whose name is longer than the Monize column it is written
+ * to (issue #2313). The wizard offers a field to rename it; `options.renames`
+ * carries the name the import uses, the shortened one unless the user chose.
+ */
+export interface MnyNameFix {
+  readonly kind: MnyRenameKind;
+  /** The element's ordinal within its section; the `MnyRename.handle`. */
+  readonly handle: number;
+  /** The name as the file has it, cut at `KMY_NAME_FIX_ORIGINAL_CHARS`. */
+  readonly original: string;
+  /** The whole name's length, in characters. */
+  readonly originalLength: number;
+  /** The most characters the name may have. */
+  readonly maxLength: number;
+}
+
+export interface MnyNameFixes {
+  /** At most `KMY_MAX_NAME_FIXES`, in file order by kind. */
+  readonly entries: readonly MnyNameFix[];
+  /** Too-long names beyond the cap: shortened, never listed. */
+  readonly omitted: number;
 }

@@ -20,6 +20,39 @@ export interface MnyAccountOption {
   readonly currencyOverride: string | null;
 }
 
+/** What a too-long name belongs to; see `MnyRename`. */
+export type MnyRenameKind =
+  | "payee"
+  | "account"
+  | "category"
+  | "security"
+  | "schedule"
+  | "institution"
+  | "tag";
+
+export const MNY_RENAME_KINDS: readonly MnyRenameKind[] = [
+  "payee",
+  "account",
+  "category",
+  "security",
+  "schedule",
+  "institution",
+  "tag",
+];
+
+/**
+ * The name the user chose for one file element whose own name is longer than
+ * the Monize column it lands in (issue #2313). `handle` is the element's
+ * ordinal within its section of the file (a category is a KMyMoney account, so
+ * it shares the account ordinals). Only a name that does not fit is replaced;
+ * a rename of anything else is ignored.
+ */
+export interface MnyRename {
+  readonly kind: MnyRenameKind;
+  readonly handle: number;
+  readonly name: string;
+}
+
 export interface MnyImportOptions {
   /**
    * Run the existing selective delete-my-data operation before importing.
@@ -48,6 +81,13 @@ export interface MnyImportOptions {
    * knows the candidates).
    */
   readonly bills: readonly number[];
+  /**
+   * Replacement names for the file's too-long names (KMyMoney only; a Money
+   * file ignores it). A too-long name with no usable entry here is shortened
+   * to fit, so the import never fails on a name's length. The preview echoes
+   * the shortened names it would use, so the wizard starts from them.
+   */
+  readonly renames: readonly MnyRename[];
 }
 
 export const DEFAULT_MNY_IMPORT_OPTIONS: MnyImportOptions = {
@@ -59,6 +99,7 @@ export const DEFAULT_MNY_IMPORT_OPTIONS: MnyImportOptions = {
   importExchangeRates: true,
   accounts: [],
   bills: [],
+  renames: [],
 };
 
 /** Fills a partial option set from the defaults. */
