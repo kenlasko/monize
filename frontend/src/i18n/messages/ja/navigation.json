@@ -35,12 +35,6 @@
   "more": "その他",
   "loggedOut": "ログアウトしました",
   "logoutNotConfirmed": "このデバイスのみサインアウトしました — サーバーは確認していません。サインイン画面のお知らせをご覧ください。",
-  "search": {
-    "placeholder": "取引を検索...",
-    "label": "取引を検索",
-    "open": "検索を開く",
-    "submit": "検索"
-  },
   "backups": "バックアップ",
   "sharedExpenses": "共同支出",
   "commandPalette": {

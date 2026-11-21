@@ -35,12 +35,6 @@
   "more": "Mehr",
   "loggedOut": "Erfolgreich abgemeldet",
   "logoutNotConfirmed": "Nur auf diesem Gerät abgemeldet — der Server hat es nicht bestätigt. Beachten Sie den Hinweis auf dem Anmeldebildschirm.",
-  "search": {
-    "placeholder": "Buchungen suchen...",
-    "label": "Buchungen suchen",
-    "open": "Suche öffnen",
-    "submit": "Suchen"
-  },
   "backups": "Sicherungen",
   "sharedExpenses": "Gemeinsame Ausgaben",
   "commandPalette": {

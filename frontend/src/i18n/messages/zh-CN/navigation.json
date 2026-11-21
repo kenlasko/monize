@@ -35,12 +35,6 @@
   "more": "更多",
   "loggedOut": "已成功退出登录",
   "logoutNotConfirmed": "仅在此设备上退出登录——服务器未确认。请查看登录屏幕上的通知。",
-  "search": {
-    "placeholder": "搜索交易...",
-    "label": "搜索交易",
-    "open": "打开搜索",
-    "submit": "搜索"
-  },
   "backups": "备份",
   "sharedExpenses": "共同支出",
   "commandPalette": {

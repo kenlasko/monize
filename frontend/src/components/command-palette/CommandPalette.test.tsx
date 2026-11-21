@@ -100,6 +100,12 @@ describe('CommandPalette', () => {
     expect(screen.getByRole('option', { name: /New transaction/ })).toBeInTheDocument();
   });
 
+  it('reminds the reader of the Ctrl/Cmd+K shortcut that opens it', async () => {
+    await openPalette();
+    expect(screen.getByText('Ctrl/Cmd+K')).toBeInTheDocument();
+    expect(screen.getByText('Command palette', { selector: 'span' })).toBeInTheDocument();
+  });
+
   it('finds a payee and shows its count and category', async () => {
     const box = await openPalette();
     await type(box, 'hydro');

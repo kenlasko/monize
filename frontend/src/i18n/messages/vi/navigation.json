@@ -35,12 +35,6 @@
   "more": "Thêm",
   "loggedOut": "Đã đăng xuất thành công",
   "logoutNotConfirmed": "Chỉ đăng xuất trên thiết bị này — máy chủ chưa xác nhận. Xem thông báo trên màn hình đăng nhập.",
-  "search": {
-    "placeholder": "Tìm kiếm giao dịch...",
-    "label": "Tìm kiếm giao dịch",
-    "open": "Mở tìm kiếm",
-    "submit": "Tìm kiếm"
-  },
   "backups": "Sao lưu",
   "sharedExpenses": "Chi phí chung",
   "commandPalette": {

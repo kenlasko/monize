@@ -2038,7 +2038,6 @@ describe("a keyboard focus ring is focus-visible, never focus", () => {
     "/src/components/dashboard/WidgetCard.tsx",
     "/src/components/import/CategoryMappingRow.tsx",
     "/src/components/investments/InvestmentTransactionList.tsx",
-    "/src/components/layout/AppHeader.tsx",
     "/src/components/layout/DelegationBanner.tsx",
     "/src/components/payees/AutoMergePayeesDialog.tsx",
     "/src/components/payees/MergePayeeDialog.tsx",

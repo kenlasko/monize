@@ -31,9 +31,9 @@ function Highlighted({ text, terms }: { text: string; terms: readonly string[] }
   );
 }
 
-function Hint({ keys, label }: { keys: ReactNode; label: string }) {
+function Hint({ keys, label, className = '' }: { keys: ReactNode; label: string; className?: string }) {
   return (
-    <span className="flex items-center gap-1">
+    <span className={`flex items-center gap-1 ${className}`}>
       {keys}
       <span>{label}</span>
     </span>
@@ -48,6 +48,7 @@ function Hint({ keys, label }: { keys: ReactNode; label: string }) {
  */
 export function CommandPalette() {
   const t = useTranslations('navigation.commandPalette');
+  const tHelp = useTranslations('help');
   const listId = useId();
   const [draft, setDraft] = useState('');
   const query = draft.trim();
@@ -246,6 +247,12 @@ export function CommandPalette() {
         />
         <Hint keys={<kbd className={KBD_CLASS}>&crarr;</kbd>} label={t('hint.open')} />
         <Hint keys={<kbd className={KBD_CLASS}>tab</kbd>} label={t('hint.actions')} />
+        {/* A keyboard shortcut means nothing on a phone. */}
+        <Hint
+          className="max-sm:hidden"
+          keys={<kbd className={KBD_CLASS}>{tHelp('shortcuts.paletteKeys')}</kbd>}
+          label={tHelp('shortcuts.palette')}
+        />
         {failed ? (
           <span role="alert" className="ml-auto text-red-600 dark:text-red-400">
             {t('loadFailed')}

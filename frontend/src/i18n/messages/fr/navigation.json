@@ -35,12 +35,6 @@
   "more": "Plus",
   "loggedOut": "Déconnecté avec succès",
   "logoutNotConfirmed": "Déconnecté sur cet appareil uniquement — le serveur n'a pas confirmé. Voir l'avis sur l'écran de connexion.",
-  "search": {
-    "placeholder": "Rechercher des transactions...",
-    "label": "Rechercher des transactions",
-    "open": "Ouvrir la recherche",
-    "submit": "Rechercher"
-  },
   "backups": "Sauvegardes",
   "sharedExpenses": "Dépenses partagées",
   "commandPalette": {

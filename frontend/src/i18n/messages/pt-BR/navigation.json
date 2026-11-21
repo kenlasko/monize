@@ -35,12 +35,6 @@
   "more": "Mais",
   "loggedOut": "Sessão encerrada com sucesso",
   "logoutNotConfirmed": "Desconectado apenas neste dispositivo — o servidor não confirmou. Veja o aviso na tela de login.",
-  "search": {
-    "placeholder": "Pesquisar transações...",
-    "label": "Pesquisar transações",
-    "open": "Abrir pesquisa",
-    "submit": "Pesquisar"
-  },
   "backups": "Backups",
   "sharedExpenses": "Despesas compartilhadas",
   "commandPalette": {
