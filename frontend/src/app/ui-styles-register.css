@@ -84,6 +84,33 @@ html[data-ui-style='folio'] .ui-register-payee-name {
   min-width: 0;
 }
 
+/* The category, as ledger text: a square marker in the category's colour and
+   the name in ink, in place of the app's filled capsule. */
+html[data-ui-style='folio'] .ui-register-cat {
+  color: var(--color-gray-700);
+  font-weight: 400;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+}
+html.dark[data-ui-style='folio'] .ui-register-cat {
+  color: var(--color-gray-300);
+}
+html[data-ui-style='folio'] .ui-register-cat-mark {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: var(--color-gray-400);
+}
+html[data-ui-style='folio'] .ui-register-cat-link:hover {
+  color: var(--color-gray-900);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+html.dark[data-ui-style='folio'] .ui-register-cat-link:hover {
+  color: var(--color-gray-100);
+}
+
 /* The rule under a balance is its share of the page's largest, drawn in the accent. */
 html[data-ui-style='folio'] .ui-register-balance {
   font-weight: 500;
@@ -120,6 +147,11 @@ html[data-ui-style='folio'] .ui-register-sort {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-gray-500);
+}
+/* The other headers are gray-400 in dark mode (TH_CLASS); a gray-500 Date
+   control beside them reads as disabled. */
+html.dark[data-ui-style='folio'] .ui-register-sort {
+  color: var(--color-gray-400);
 }
 html[data-ui-style='folio'] .ui-register-sort:hover {
   color: var(--color-gray-900);

@@ -910,6 +910,7 @@ export function TransactionList({
           categoryColorMap={categoryColorMap}
           categoryLabelMap={categoryLabelMap}
           categoryIconMap={categoryIconMap}
+          hidden={hiddenColumns}
           sortStrip={
             <table className="ui-pebble-sortstrip">
               <thead>
@@ -1269,6 +1270,7 @@ export function TransactionList({
                     isHighlighted={!!highlightTransactionId && transaction.id === highlightTransactionId}
                     showFxColumns={showFxColumns}
                     hidden={tableHidden}
+                    hideMemo={hiddenColumns.has('description')}
                     uiStyle={uiStyle}
                     groupedByDate={groupedByDate}
                     balanceRulePct={styleData?.rulePct.get(transaction.id)}
