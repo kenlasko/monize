@@ -14,7 +14,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 export class CreatePayeeDto {
   @ApiProperty({ example: "Starbucks", description: "Name of the payee" })
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   name: string;
 

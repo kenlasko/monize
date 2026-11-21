@@ -62,7 +62,7 @@ export class UpdatePreferencesDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(50)
+  @MaxLength(20)
   dateFormat?: string;
 
   @ApiPropertyOptional({
@@ -71,7 +71,7 @@ export class UpdatePreferencesDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(50)
+  @MaxLength(20)
   @IsNumberLocale()
   numberFormat?: string;
 
@@ -145,7 +145,7 @@ export class UpdatePreferencesDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(50)
   timezone?: string;
 
   @ApiPropertyOptional({ description: "Receive email notifications" })

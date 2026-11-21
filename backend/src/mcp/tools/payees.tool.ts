@@ -183,18 +183,18 @@ export class McpPayeesTools {
             z.object({
               name: z
                 .string()
-                .max(100)
+                .max(255)
                 .describe(
                   "create: the new name. update/delete: the payee's current name.",
                 ),
               newName: z
                 .string()
-                .max(100)
+                .max(255)
                 .optional()
                 .describe("update: rename to this."),
               categoryName: z
                 .string()
-                .max(100)
+                .max(255)
                 .optional()
                 .describe("The payee's default category."),
               website: z

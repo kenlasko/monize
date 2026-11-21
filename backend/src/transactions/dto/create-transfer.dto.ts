@@ -16,6 +16,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
 import { EXTERNAL_ID_MAX_LENGTH } from "../transaction-external-id";
+import { TRANSACTION_PAYEE_NAME_MAX_LENGTH } from "./create-transaction.dto";
 import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
 import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
@@ -92,7 +93,7 @@ export class CreateTransferDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(TRANSACTION_PAYEE_NAME_MAX_LENGTH)
   @SanitizeHtml()
   payeeName?: string;
 

@@ -4,6 +4,7 @@ import {
   QUICK_ADD_TEXT_MAX_LENGTH,
   QuickAddInterpretDto,
 } from "./quick-add-interpret.dto";
+import { TRANSACTION_PAYEE_NAME_MAX_LENGTH } from "../../dto/create-transaction.dto";
 
 const UUID = "3f2b8c1e-5a7d-4e2f-9b6c-1d2e3f4a5b6c";
 
@@ -159,10 +160,16 @@ describe("QuickAddInterpretDto", () => {
 
   it("bounds a pinned payee name like a transaction's", async () => {
     expect(
-      await errorsFor({ ...valid, pins: { payeeName: "x".repeat(100) } }),
+      await errorsFor({
+        ...valid,
+        pins: { payeeName: "x".repeat(TRANSACTION_PAYEE_NAME_MAX_LENGTH) },
+      }),
     ).toEqual([]);
     expect(
-      await errorsFor({ ...valid, pins: { payeeName: "x".repeat(101) } }),
+      await errorsFor({
+        ...valid,
+        pins: { payeeName: "x".repeat(TRANSACTION_PAYEE_NAME_MAX_LENGTH + 1) },
+      }),
     ).toEqual(["pins.payeeName"]);
   });
 
