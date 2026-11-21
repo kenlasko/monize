@@ -42,7 +42,7 @@ function withoutComments(source: string): string {
 /** The surfaces that render a saved transaction description or split memo. */
 const LINKIFIED = [
   '/src/components/transactions/TransactionRow.tsx',
-  '/src/components/transactions/variants/ModernRegister.tsx',
+  '/src/components/transactions/variants/PebbleRegister.tsx',
   '/src/components/reports/UncategorizedTransactionsReport.tsx',
   '/src/components/reports/DuplicateGroupCard.tsx',
   '/src/components/reports/ReportChart.tsx',
@@ -62,9 +62,9 @@ const LINKIFIED = [
  *    nesting anything interactive in a `<button>` settles it.
  */
 const PLAIN: Record<string, string> = {
-  '/src/components/reports/variants/ReportsCatalogueClassic.tsx':
+  '/src/components/reports/variants/ReportsCatalogueFolio.tsx':
     "a built-in report's own description in the reports index, not a transaction's",
-  '/src/components/reports/variants/ReportsCatalogueModern.tsx':
+  '/src/components/reports/variants/ReportsCataloguePebble.tsx':
     "a built-in report's own description in the reports index, not a transaction's",
   '/src/components/accounts/AccountRow.tsx':
     "an account's own description, not a transaction's",

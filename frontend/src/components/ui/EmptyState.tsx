@@ -71,15 +71,15 @@ function EmptyStateStandard({ icon, title, description, action, help, helpLabel,
 }
 
 /**
- * The Classic empty page (`Vocabulary.dc.html`): a serif line set flush left
+ * The Folio empty page (`Vocabulary.dc.html`): a serif line set flush left
  * on the ruled page, the description under it, and the engraved rosette in the
  * corner in place of the glyph. The ornament is decoration, hidden from
  * assistive technology, and clipped in a box of its own so a popover in the
  * action is not.
  */
-function EmptyStateClassic({ title, description, action, help, helpLabel, className }: EmptyStateViewProps) {
+function EmptyStateFolio({ title, description, action, help, helpLabel, className }: EmptyStateViewProps) {
   return (
-    <div className={cn('ui-empty ui-empty-classic relative py-10 text-left', className)}>
+    <div className={cn('ui-empty ui-empty-folio relative py-10 text-left', className)}>
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <Guilloche className="ui-empty-ornament absolute -bottom-20 -right-10 h-64 w-64 text-blue-600/30 dark:text-blue-400/35" />
       </div>
@@ -101,7 +101,7 @@ function EmptyStateClassic({ title, description, action, help, helpLabel, classN
 
 const VARIANTS: StyleVariants<EmptyStateViewProps> = {
   standard: EmptyStateStandard,
-  classic: EmptyStateClassic,
+  folio: EmptyStateFolio,
 };
 
 /**
@@ -111,7 +111,7 @@ const VARIANTS: StyleVariants<EmptyStateViewProps> = {
  * files, each drifting on its own; `ui-conventions.test.ts` keeps the
  * inline copies shrink-only.
  *
- * Classic sets it as an empty ledger page (its own variant, above); Modern
+ * Folio sets it as an empty ledger page (its own variant, above); Pebble
  * re-skins the Standard markup through the `ui-empty*` markers
  * (`ui-styles-kit.css`).
  */

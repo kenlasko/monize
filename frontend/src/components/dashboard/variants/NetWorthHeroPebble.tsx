@@ -23,12 +23,12 @@ function BlockFigure({ label, children }: { label: string; children: ReactNode }
 }
 
 /**
- * The net worth set in the Modern style, drawn inside the hero's inverted
+ * The net worth set in the Pebble style, drawn inside the hero's inverted
  * block (`DashboardHero`): net worth set huge in the grotesque, the month's
  * move as a pill, the three figures under it, and a bar per month beside it
  * with the current month in the accent.
  */
-export function NetWorthHeroModern({
+export function NetWorthHeroPebble({
   label,
   currency,
   netWorth,

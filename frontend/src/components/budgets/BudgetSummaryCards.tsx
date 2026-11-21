@@ -5,21 +5,21 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
-import { BudgetSummaryClassic } from './variants/BudgetSummaryClassic';
-import { BudgetSummaryModern } from './variants/BudgetSummaryModern';
+import { BudgetSummaryFolio } from './variants/BudgetSummaryFolio';
+import { BudgetSummaryPebble } from './variants/BudgetSummaryPebble';
 import type { BudgetSummaryViewProps } from './variants/budget-summary-view';
 
 type BudgetSummaryCardsProps = BudgetSummaryViewProps;
 
 const VARIANTS: StyleVariants<BudgetSummaryViewProps> = {
   standard: BudgetSummaryCardsStandard,
-  classic: BudgetSummaryClassic,
-  modern: BudgetSummaryModern,
+  folio: BudgetSummaryFolio,
+  pebble: BudgetSummaryPebble,
 };
 
 /**
- * The period's totals. Standard keeps the four stat tiles; Classic reads them
- * as a statement line over a ticked gauge, Modern as an accent block for what
+ * The period's totals. Standard keeps the four stat tiles; Folio reads them
+ * as a statement line over a ticked gauge, Pebble as an accent block for what
  * is left beside white blocks (`variants/`).
  */
 export function BudgetSummaryCards(props: BudgetSummaryCardsProps) {

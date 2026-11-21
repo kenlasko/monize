@@ -194,7 +194,7 @@
       "deleteButton": "Xóa"
     },
     "itemNamePlural": "giao tác",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, other {Đang hiển thị # mục}}",
       "legendCleared": "đã xong",
       "legendReconciled": "đã điều hoà",
@@ -202,7 +202,7 @@
       "markCleared": "x",
       "markReconciled": "H"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Giao dịch đã chọn",
       "balanceAfter": "Số dư sau đó",
       "yesterday": "Hôm qua"

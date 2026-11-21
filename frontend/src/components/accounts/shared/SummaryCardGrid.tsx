@@ -28,8 +28,8 @@ export interface SummaryCardItem {
   /** Extra classes for this card, e.g. a wider `col-span` on desktop. */
   className?: string;
   /**
-   * The row's headline figure: the accent block in Modern, a heavier rule in
-   * Classic, unchanged in Standard (`ui-stat-lead`). One per row at most.
+   * The row's headline figure: the accent block in Pebble, a heavier rule in
+   * Folio, unchanged in Standard (`ui-stat-lead`). One per row at most.
    */
   lead?: boolean;
 }

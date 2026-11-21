@@ -2,7 +2,7 @@ import { rowAffectsBalance, type RunningBalanceRow } from '@/lib/running-balance
 import { sumMoney, roundMoney } from '@/lib/format';
 
 /**
- * Figures the Classic and Modern register layouts draw around the rows. The
+ * Figures the Folio and Pebble register layouts draw around the rows. The
  * list computes them once and hands them to whichever renderer the UI style
  * picks; a renderer never derives a figure of its own. Nothing here is a
  * balance: running balances come from `walkRunningBalances` alone, and these
@@ -39,7 +39,7 @@ export function netByDate(
   return net;
 }
 
-/** What the page paid out and took in, and the difference, for the Classic footer. */
+/** What the page paid out and took in, and the difference, for the Folio footer. */
 export function pageTotals(
   rows: readonly RegisterStyleRow[],
   displayAmounts: ReadonlyMap<string, number>,
@@ -65,7 +65,7 @@ export function pageTotals(
 
 /**
  * Each row's balance as a share (0-100) of the largest balance magnitude on the
- * page: the width of the rule under a Classic register's balance.
+ * page: the width of the rule under a Folio register's balance.
  */
 export function balanceRulePercents(balances: ReadonlyMap<string, number>): Map<string, number> {
   let max = 0;

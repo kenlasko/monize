@@ -194,7 +194,7 @@
       "deleteButton": "삭제"
     },
     "itemNamePlural": "거래",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, other {#개 항목 표시 중}}",
       "legendCleared": "정리됨",
       "legendReconciled": "조정됨",
@@ -202,7 +202,7 @@
       "markCleared": "정",
       "markReconciled": "조"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "선택한 거래",
       "balanceAfter": "거래 후 잔액",
       "yesterday": "어제"

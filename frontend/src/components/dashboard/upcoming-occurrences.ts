@@ -44,7 +44,7 @@ export const UPCOMING_STRIP_DAYS = 14;
 
 /**
  * The two weeks from `today` with the occurrences that fall on each day, for
- * the strip the Classic and Modern styles draw above the list. An overdue
+ * the strip the Folio and Pebble styles draw above the list. An overdue
  * occurrence is on the list but not on the strip, which starts today. Bars are
  * to scale only while every known amount on the strip is in one currency
  * (`scaleMax`); otherwise they say direction alone, since two currencies are

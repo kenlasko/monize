@@ -5,16 +5,16 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
-import { KindDot } from '@/components/dashboard/variants/UpcomingBillsListModern';
+import { KindDot } from '@/components/dashboard/variants/UpcomingBillsListPebble';
 import type { BillsOutlookProps } from './bills-outlook-view';
 
 
 /**
- * The Modern outlook band: an accent "next up" block for the nearest
+ * The Pebble outlook band: an accent "next up" block for the nearest
  * occurrence (its amount set large, a pill to post it) beside fourteen day
  * chips, today inverted, a dot per occurrence.
  */
-export function BillsOutlookModern({ strip, next, onPost }: BillsOutlookProps) {
+export function BillsOutlookPebble({ strip, next, onPost }: BillsOutlookProps) {
   const t = useTranslations('bills');
   const tSched = useTranslations('scheduledTransactions');
   const formatChartDate = useChartDateFormat();

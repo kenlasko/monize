@@ -194,7 +194,7 @@
       "deleteButton": "Видалити"
     },
     "itemNamePlural": "транзакцій",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {Показано # запис} few {Показано # записи} many {Показано # записів} other {Показано # запису}}",
       "legendCleared": "проведено",
       "legendReconciled": "звірено",
@@ -202,7 +202,7 @@
       "markCleared": "п",
       "markReconciled": "З"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Вибрана транзакція",
       "balanceAfter": "Баланс після",
       "yesterday": "Учора"

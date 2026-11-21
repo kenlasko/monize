@@ -194,7 +194,7 @@
       "deleteButton": "हटाएं"
     },
     "itemNamePlural": "लेन-देन",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {# प्रविष्टि दिखाई गई} other {# प्रविष्टियाँ दिखाई गईं}}",
       "legendCleared": "समाशोधित",
       "legendReconciled": "समाधानित",
@@ -202,7 +202,7 @@
       "markCleared": "स",
       "markReconciled": "सा"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "चयनित लेनदेन",
       "balanceAfter": "इसके बाद शेष",
       "yesterday": "कल"

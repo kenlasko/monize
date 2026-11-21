@@ -212,12 +212,12 @@
         "name": "Padrão",
         "description": "O visual familiar do Monize."
       },
-      "classic": {
-        "name": "Clássico",
+      "folio": {
+        "name": "Fólio",
         "description": "Inspirado nos livros contábeis: títulos com serifa, tabelas com linhas e cantos quadrados."
       },
-      "modern": {
-        "name": "Moderno",
+      "pebble": {
+        "name": "Seixo",
         "description": "Fonte em negrito, blocos de cor arredondados e controles em formato de pílula."
       }
     },

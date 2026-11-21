@@ -1,5 +1,5 @@
 /*
- * entry area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * entry area of the Folio and Pebble UI styles. Same rules as ui-styles.css
  * (read its header): ramp tokens only, marker classes in @layer components,
  * unlayered rules only where a primitive's own utility must yield.
  */
@@ -8,7 +8,7 @@
 /* Shared: parts only the two styles print (Standard keeps them `hidden`). */
 /* ===================================================================== */
 
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-hints {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-qa-hints {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem 1.5rem;
@@ -18,41 +18,41 @@ html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-hints {
   font-size: 0.8125rem;
   color: var(--color-gray-500);
 }
-html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-hints {
+html.dark:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-qa-hints {
   color: var(--color-gray-400);
 }
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-note {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-qa-note {
   display: block;
   font-size: 0.8125rem;
   color: var(--color-gray-500);
 }
-html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-note {
+html.dark:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-qa-note {
   color: var(--color-gray-400);
 }
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-chip-label {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-qa-chip-label {
   display: inline;
   color: var(--color-gray-500);
   margin-inline-end: 0.5rem;
   font-weight: 400;
 }
-html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-chip-label {
+html.dark:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-qa-chip-label {
   color: var(--color-gray-400);
 }
 
 /* ===================================================================== */
-/* Classic -- the entry slip: ruled paper, underline-only fields.         */
+/* Folio -- the entry slip: ruled paper, underline-only fields.         */
 /* Applies to the transaction form (.ui-entry) and Quick Add (.ui-qa).    */
 /* ===================================================================== */
 
 /* The slip itself: a 1px ink frame with a crisp drop, tabs flush on top. */
-html[data-ui-style='classic'] .ui-dialog:has(:is(.ui-entry, .ui-qa)) {
+html[data-ui-style='folio'] .ui-dialog:has(:is(.ui-entry, .ui-qa)) {
   border: 1px solid var(--ui-rule-ink);
   box-shadow:
     0 1px 0 var(--ui-rule-ink),
     0 18px 40px -18px color-mix(in oklab, var(--ui-rule-ink) 45%, transparent);
 }
 /* The slip prints no heading of its own; the dialog stays named for assistive tech. */
-html[data-ui-style='classic'] .ui-dialog:has(.ui-entry) [data-modal-heading] {
+html[data-ui-style='folio'] .ui-dialog:has(.ui-entry) [data-modal-heading] {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -61,18 +61,18 @@ html[data-ui-style='classic'] .ui-dialog:has(.ui-entry) [data-modal-heading] {
   white-space: nowrap;
 }
 
-html[data-ui-style='classic'] .ui-entry {
+html[data-ui-style='folio'] .ui-entry {
   position: relative;
 }
 
-html[data-ui-style='classic'] .ui-entry-modes {
+html[data-ui-style='folio'] .ui-entry-modes {
   display: flex;
   gap: 0;
   margin: -1.5rem -1.5rem 1.25rem;
   padding: 0;
   border-bottom: 1px solid var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-entry-modes > button {
+html[data-ui-style='folio'] .ui-entry-modes > button {
   height: 3rem;
   margin: 0;
   padding: 0 1.375rem;
@@ -82,31 +82,31 @@ html[data-ui-style='classic'] .ui-entry-modes > button {
   color: var(--ui-rule-ink);
   font-weight: 400;
 }
-html.dark[data-ui-style='classic'] .ui-entry-modes > button {
+html.dark[data-ui-style='folio'] .ui-entry-modes > button {
   border-right-color: var(--color-gray-600);
 }
-html[data-ui-style='classic'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
+html[data-ui-style='folio'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
   background-color: var(--color-gray-100);
 }
-html.dark[data-ui-style='classic'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
+html.dark[data-ui-style='folio'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
   background-color: var(--color-gray-700);
 }
-html[data-ui-style='classic'] .ui-entry-modes > button[aria-pressed='true'] {
+html[data-ui-style='folio'] .ui-entry-modes > button[aria-pressed='true'] {
   background-color: var(--ui-rule-ink);
   color: var(--color-white);
   font-weight: 600;
 }
-html.dark[data-ui-style='classic'] .ui-entry-modes > button[aria-pressed='true'] {
+html.dark[data-ui-style='folio'] .ui-entry-modes > button[aria-pressed='true'] {
   color: var(--color-gray-900);
 }
-html[data-ui-style='classic'] .ui-entry-modes > button:focus-visible {
+html[data-ui-style='folio'] .ui-entry-modes > button:focus-visible {
   outline: 2px solid var(--color-blue-500);
   outline-offset: -4px;
 }
 
 /* Date: an underlined field in the tab bar's far corner (wide dialogs). */
 @media (min-width: 640px) {
-  html[data-ui-style='classic'] .ui-entry-date {
+  html[data-ui-style='folio'] .ui-entry-date {
     position: absolute;
     top: 0;
     right: 0;
@@ -115,33 +115,33 @@ html[data-ui-style='classic'] .ui-entry-modes > button:focus-visible {
     align-items: center;
     width: 15rem;
   }
-  html[data-ui-style='classic'] .ui-entry-date > div {
+  html[data-ui-style='folio'] .ui-entry-date > div {
     display: flex;
     align-items: center;
     gap: 0.625rem;
     width: 100%;
   }
-  html[data-ui-style='classic'] .ui-entry-date > div > div:first-child {
+  html[data-ui-style='folio'] .ui-entry-date > div > div:first-child {
     margin: 0;
     flex-shrink: 0;
   }
-  html[data-ui-style='classic'] .ui-entry-date .ui-field {
+  html[data-ui-style='folio'] .ui-entry-date .ui-field {
     height: 2.75rem;
   }
 }
 
 /* Small-caps labels over underline-only fields. */
-html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) label.block {
+html[data-ui-style='folio'] :is(.ui-entry, .ui-qa) label.block {
   font-size: 0.6875rem;
   font-weight: 400;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='classic'] :is(.ui-entry, .ui-qa) label.block {
+html.dark[data-ui-style='folio'] :is(.ui-entry, .ui-qa) label.block {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
+html[data-ui-style='folio'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
   height: 2.75rem;
   padding-inline: 0;
   border-width: 0 0 1px;
@@ -152,31 +152,31 @@ html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field
   box-shadow: none;
   font-weight: 500;
 }
-html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) textarea {
+html[data-ui-style='folio'] :is(.ui-entry, .ui-qa) textarea {
   height: auto;
   min-height: 2.75rem;
   resize: none;
 }
-html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
+html[data-ui-style='folio'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   box-shadow: none;
   border-bottom-width: 2px;
   outline: 2px solid var(--color-blue-500);
   outline-offset: 2px;
 }
-html.dark[data-ui-style='classic'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
+html.dark[data-ui-style='folio'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   outline-color: var(--color-blue-400);
 }
 
 /* "Pay to": large serif on its underline. */
-html[data-ui-style='classic'] .ui-entry-payee .ui-field,
-html[data-ui-style='classic'] .ui-qa-input {
+html[data-ui-style='folio'] .ui-entry-payee .ui-field,
+html[data-ui-style='folio'] .ui-qa-input {
   height: 3.25rem;
   font-family: var(--ui-font-display);
   font-size: 1.875rem;
   font-weight: 500;
 }
 /* Amount: a 2px ink box with serif figures. */
-html[data-ui-style='classic'] .ui-entry-amount .ui-field {
+html[data-ui-style='folio'] .ui-entry-amount .ui-field {
   height: 3.25rem;
   padding-inline: 0.75rem;
   border: 2px solid var(--ui-rule-ink);
@@ -185,52 +185,52 @@ html[data-ui-style='classic'] .ui-entry-amount .ui-field {
   font-size: 1.625rem;
   font-weight: 500;
 }
-html.dark[data-ui-style='classic'] .ui-entry-amount .ui-field {
+html.dark[data-ui-style='folio'] .ui-entry-amount .ui-field {
   background-color: var(--color-gray-900);
 }
 
 /* Rows: payee first, then the account, then the amount, as on the slip. */
-html[data-ui-style='classic'] .ui-entry-normal {
+html[data-ui-style='folio'] .ui-entry-normal {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
-html[data-ui-style='classic'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-payee) {
+html[data-ui-style='folio'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-payee) {
   order: 1;
 }
-html[data-ui-style='classic'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-account) {
+html[data-ui-style='folio'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-account) {
   order: 2;
 }
-html[data-ui-style='classic'] .ui-entry-normal > :not(.ui-entry-row:has(.ui-entry-payee, .ui-entry-account)) {
+html[data-ui-style='folio'] .ui-entry-normal > :not(.ui-entry-row:has(.ui-entry-payee, .ui-entry-account)) {
   order: 3;
 }
 @media (min-width: 768px) {
-  html[data-ui-style='classic'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-payee) {
+  html[data-ui-style='folio'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-payee) {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     column-gap: 2rem;
   }
-  html[data-ui-style='classic'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-account) {
+  html[data-ui-style='folio'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-account) {
     grid-template-columns: minmax(0, 1fr);
   }
-  html[data-ui-style='classic'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-amount) {
+  html[data-ui-style='folio'] .ui-entry-normal > .ui-entry-row:has(.ui-entry-amount) {
     column-gap: 2rem;
   }
 }
 
 /* The Split action reads as the slip's quiet link, not a boxed button. */
-html[data-ui-style='classic'] .ui-entry-category button {
+html[data-ui-style='folio'] .ui-entry-category button {
   border: 0;
   background-color: transparent;
   color: var(--color-blue-600);
   text-decoration: underline;
   box-shadow: none;
 }
-html.dark[data-ui-style='classic'] .ui-entry-category button {
+html.dark[data-ui-style='folio'] .ui-entry-category button {
   color: var(--color-blue-400);
 }
 
 /* Footer: a faint guilloche band above a ruled row, the hint in mono. */
-html[data-ui-style='classic'] .ui-entry-guilloche {
+html[data-ui-style='folio'] .ui-entry-guilloche {
   display: block;
   height: 1.875rem;
   margin-inline: -1.5rem;
@@ -240,14 +240,14 @@ html[data-ui-style='classic'] .ui-entry-guilloche {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 30' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='black' stroke-width='0.8'%3E%3Cpath d='M0 15q10-22 20 0t20 0t20 0t20 0'/%3E%3Cpath d='M10 15q10-22 20 0t20 0t20 0t20 0'/%3E%3Cpath d='M20 15q10-22 20 0t20 0t20 0t20 0'/%3E%3Cpath d='M30 15q10-22 20 0t20 0t20 0t20 0'/%3E%3C/g%3E%3C/svg%3E")
     center / 80px 100% repeat-x;
 }
-html[data-ui-style='classic'] .ui-entry .ui-form-actions {
+html[data-ui-style='folio'] .ui-entry .ui-form-actions {
   align-items: center;
   justify-content: space-between;
   margin: 0 -1.5rem -1.5rem;
   padding: 0.875rem 1.5rem;
   border-top: 1px solid var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-entry-hint {
+html[data-ui-style='folio'] .ui-entry-hint {
   display: inline;
   margin-inline-end: auto;
   font-family: var(--font-mono);
@@ -255,31 +255,31 @@ html[data-ui-style='classic'] .ui-entry-hint {
   letter-spacing: 0.08em;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='classic'] .ui-entry-hint {
+html.dark[data-ui-style='folio'] .ui-entry-hint {
   color: var(--color-gray-400);
 }
 
 /* Quick Add on the slip: square ink-ruled chips, mono keys. */
-html[data-ui-style='classic'] .ui-qa [data-tier] {
+html[data-ui-style='folio'] .ui-qa [data-tier] {
   border-radius: 0.125rem;
   border-color: var(--ui-rule-ink);
   background-color: transparent;
   color: var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-qa [data-tier='assumed'] {
+html[data-ui-style='folio'] .ui-qa [data-tier='assumed'] {
   border-style: dashed;
 }
-html[data-ui-style='classic'] .ui-qa-hints {
+html[data-ui-style='folio'] .ui-qa-hints {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
 }
 
 /* ===================================================================== */
-/* Modern -- pill controls, radius-14 fields, grotesque heading.          */
+/* Pebble -- pill controls, radius-14 fields, grotesque heading.          */
 /* ===================================================================== */
 
-html[data-ui-style='modern'] .ui-entry-modes {
+html[data-ui-style='pebble'] .ui-entry-modes {
   display: inline-flex;
   gap: 2px;
   padding: 4px;
@@ -287,10 +287,10 @@ html[data-ui-style='modern'] .ui-entry-modes {
   border-radius: 9999px;
   background-color: var(--color-gray-100);
 }
-html.dark[data-ui-style='modern'] .ui-entry-modes {
+html.dark[data-ui-style='pebble'] .ui-entry-modes {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] .ui-entry-modes > button {
+html[data-ui-style='pebble'] .ui-entry-modes > button {
   margin: 0;
   border-radius: 9999px;
   padding: 0.5rem 1.125rem;
@@ -298,64 +298,64 @@ html[data-ui-style='modern'] .ui-entry-modes > button {
   background-color: transparent;
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='modern'] .ui-entry-modes > button {
+html.dark[data-ui-style='pebble'] .ui-entry-modes > button {
   color: var(--color-gray-300);
 }
-html[data-ui-style='modern'] .ui-entry-modes > button[aria-pressed='true'] {
+html[data-ui-style='pebble'] .ui-entry-modes > button[aria-pressed='true'] {
   background-color: var(--color-gray-900);
   color: var(--color-white);
 }
-html.dark[data-ui-style='modern'] .ui-entry-modes > button[aria-pressed='true'] {
+html.dark[data-ui-style='pebble'] .ui-entry-modes > button[aria-pressed='true'] {
   background-color: var(--color-blue-400);
   color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
+html[data-ui-style='pebble'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
   background-color: var(--color-gray-200);
 }
-html.dark[data-ui-style='modern'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
+html.dark[data-ui-style='pebble'] .ui-entry-modes > button:hover:not(:disabled, [aria-pressed='true']) {
   background-color: var(--color-gray-700);
 }
 
-html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) label.block {
+html[data-ui-style='pebble'] :is(.ui-entry, .ui-qa) label.block {
   font-weight: 600;
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) label.block {
+html.dark[data-ui-style='pebble'] :is(.ui-entry, .ui-qa) label.block {
   color: var(--color-gray-300);
 }
-html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
+html[data-ui-style='pebble'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
   border-color: transparent;
   background-color: var(--color-gray-50);
   box-shadow: none;
   border-radius: 0.875rem;
 }
-html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
+html.dark[data-ui-style='pebble'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea) {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
+html[data-ui-style='pebble'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   border-color: var(--color-blue-500);
   box-shadow: 0 0 0 2px var(--color-blue-500);
 }
-html.dark[data-ui-style='modern'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
+html.dark[data-ui-style='pebble'] :is(.ui-entry, .ui-qa) :is(.ui-field, .ui-ms-field, textarea):focus {
   border-color: var(--color-blue-400);
   box-shadow: 0 0 0 2px var(--color-blue-400);
 }
-html[data-ui-style='modern'] .ui-entry-payee .ui-field,
-html[data-ui-style='modern'] .ui-entry-amount .ui-field {
+html[data-ui-style='pebble'] .ui-entry-payee .ui-field,
+html[data-ui-style='pebble'] .ui-entry-amount .ui-field {
   font-family: var(--ui-font-display);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
-html[data-ui-style='modern'] .ui-entry-amount .ui-field {
+html[data-ui-style='pebble'] .ui-entry-amount .ui-field {
   font-size: 1.25rem;
   font-weight: 700;
 }
 
-/* --- Modern Quick Add: the lime-ringed field, Read-as pills, dark panel --- */
-html[data-ui-style='modern'] .ui-dialog:has(.ui-qa) {
+/* --- Pebble Quick Add: the lime-ringed field, Read-as pills, dark panel --- */
+html[data-ui-style='pebble'] .ui-dialog:has(.ui-qa) {
   padding: 1.75rem;
 }
-html[data-ui-style='modern'] .ui-qa .ui-qa-input {
+html[data-ui-style='pebble'] .ui-qa .ui-qa-input {
   /* The primitive's `text-lg!` / `py-3!` are important utilities; they read
      these tokens, so the big grotesque input redefines them here. */
   --text-lg: 2.125rem;
@@ -369,18 +369,18 @@ html[data-ui-style='modern'] .ui-qa .ui-qa-input {
   font-weight: 600;
   letter-spacing: -0.02em;
 }
-html.dark[data-ui-style='modern'] .ui-qa .ui-qa-input {
+html.dark[data-ui-style='pebble'] .ui-qa .ui-qa-input {
   border-color: var(--color-blue-400);
 }
-html[data-ui-style='modern'] .ui-qa-readas {
+html[data-ui-style='pebble'] .ui-qa-readas {
   font-size: 0.875rem;
   font-weight: 400;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='modern'] .ui-qa-readas {
+html.dark[data-ui-style='pebble'] .ui-qa-readas {
   color: var(--color-gray-400);
 }
-html[data-ui-style='modern'] .ui-qa [data-tier] {
+html[data-ui-style='pebble'] .ui-qa [data-tier] {
   height: 2.75rem;
   padding-inline: 1rem;
   border: 0;
@@ -390,33 +390,33 @@ html[data-ui-style='modern'] .ui-qa [data-tier] {
   font-size: 0.875rem;
   font-weight: 600;
 }
-html.dark[data-ui-style='modern'] .ui-qa [data-tier] {
+html.dark[data-ui-style='pebble'] .ui-qa [data-tier] {
   background-color: var(--color-gray-700);
   color: var(--color-gray-100);
 }
-html[data-ui-style='modern'] .ui-qa [data-tier='assumed'] {
+html[data-ui-style='pebble'] .ui-qa [data-tier='assumed'] {
   border: 2px dashed var(--color-gray-400);
   background-color: transparent;
 }
-html.dark[data-ui-style='modern'] .ui-qa [data-tier='assumed'] {
+html.dark[data-ui-style='pebble'] .ui-qa [data-tier='assumed'] {
   border-color: var(--color-gray-500);
   background-color: transparent;
 }
-html[data-ui-style='modern'] .ui-qa [data-tier='needs'] {
+html[data-ui-style='pebble'] .ui-qa [data-tier='needs'] {
   border: 2px solid var(--color-amber-500);
   background-color: transparent;
 }
-html[data-ui-style='modern'] .ui-qa :is([data-tier='typed'], [data-tier='guessed'])[data-field='amount'] {
+html[data-ui-style='pebble'] .ui-qa :is([data-tier='typed'], [data-tier='guessed'])[data-field='amount'] {
   background-color: var(--color-blue-400);
   color: var(--color-gray-900);
   font-weight: 700;
 }
-html[data-ui-style='modern'] .ui-qa [data-field='amount'] .ui-qa-chip-label {
+html[data-ui-style='pebble'] .ui-qa [data-field='amount'] .ui-qa-chip-label {
   color: inherit;
 }
 
 /* The bottom panel: the balance on the left, Full form and Save on the right. */
-html[data-ui-style='modern'] .ui-qa-foot {
+html[data-ui-style='pebble'] .ui-qa-foot {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -425,24 +425,24 @@ html[data-ui-style='modern'] .ui-qa-foot {
   border-radius: 1.125rem;
   background-color: var(--color-gray-50);
 }
-html.dark[data-ui-style='modern'] .ui-qa-foot {
+html.dark[data-ui-style='pebble'] .ui-qa-foot {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] .ui-qa-foot > * {
+html[data-ui-style='pebble'] .ui-qa-foot > * {
   margin: 0;
 }
-html[data-ui-style='modern'] .ui-qa-actions {
+html[data-ui-style='pebble'] .ui-qa-actions {
   grid-column: 2;
   padding-top: 0;
 }
-html[data-ui-style='modern'] .ui-qa-summary {
+html[data-ui-style='pebble'] .ui-qa-summary {
   grid-column: 1;
   grid-row: 1;
 }
-html[data-ui-style='modern'] .ui-qa-actions {
+html[data-ui-style='pebble'] .ui-qa-actions {
   grid-row: 1;
 }
-html[data-ui-style='modern'] .ui-qa-summary [data-testid='quick-add-balance'] {
+html[data-ui-style='pebble'] .ui-qa-summary [data-testid='quick-add-balance'] {
   padding: 0;
   border: 0;
   background-color: transparent;
@@ -450,44 +450,44 @@ html[data-ui-style='modern'] .ui-qa-summary [data-testid='quick-add-balance'] {
 /* "After saving" captions the account name, as the mockup's "Primary
    Chequing after this" does. Pushed to the far edge it floated mid-panel,
    tied to neither the name nor the figures. */
-html[data-ui-style='modern'] .ui-qa-summary .ui-qa-balance-label {
+html[data-ui-style='pebble'] .ui-qa-summary .ui-qa-balance-label {
   margin-inline-start: 0;
 }
-html[data-ui-style='modern'] .ui-qa-summary [data-testid='quick-add-balance'] .text-xl {
+html[data-ui-style='pebble'] .ui-qa-summary [data-testid='quick-add-balance'] .text-xl {
   font-family: var(--ui-font-display);
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
-html[data-ui-style='modern'] .ui-qa-actions button:not([aria-haspopup]):not([type='submit']) {
+html[data-ui-style='pebble'] .ui-qa-actions button:not([aria-haspopup]):not([type='submit']) {
   font-weight: 600;
 }
 
 /* Phones: the large serif and grotesque figures step down so a placeholder
    and a typed line fit the width. */
 @media (max-width: 639px) {
-  html[data-ui-style='classic'] .ui-entry-payee .ui-field,
-  html[data-ui-style='classic'] .ui-qa-input {
+  html[data-ui-style='folio'] .ui-entry-payee .ui-field,
+  html[data-ui-style='folio'] .ui-qa-input {
     font-size: 1.375rem;
   }
-  html[data-ui-style='modern'] .ui-qa .ui-qa-input {
+  html[data-ui-style='pebble'] .ui-qa .ui-qa-input {
     --text-lg: 1.5rem;
     height: 3.75rem;
   }
-  html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-qa-actions button {
+  html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-qa-actions button {
     white-space: nowrap;
   }
-  html[data-ui-style='modern'] .ui-qa-foot {
+  html[data-ui-style='pebble'] .ui-qa-foot {
     grid-template-columns: minmax(0, 1fr);
   }
-  html[data-ui-style='modern'] .ui-qa-actions {
+  html[data-ui-style='pebble'] .ui-qa-actions {
     grid-column: 1;
     grid-row: auto;
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: 0.5rem;
   }
-  html[data-ui-style='modern'] .ui-qa-actions > * {
+  html[data-ui-style='pebble'] .ui-qa-actions > * {
     margin: 0;
   }
 }
@@ -495,29 +495,29 @@ html[data-ui-style='modern'] .ui-qa-actions button:not([aria-haspopup]):not([typ
 /* --- Tags picker (MultiSelect trigger, `.ui-ms-field`) and native selects --- */
 /* The trigger is a button, so it takes the field treatment above by marker; it
    needs the field's fixed height centred, and its row to span the width. */
-html:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) .ui-ms-field {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) :is(.ui-entry, .ui-qa) .ui-ms-field {
   display: flex;
   align-items: center;
   height: 2.75rem;
 }
-html:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) .ui-ms-field > div {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) :is(.ui-entry, .ui-qa) .ui-ms-field > div {
   flex: 1;
   min-width: 0;
 }
-html[data-ui-style='classic'] :is(.ui-entry, .ui-qa) .ui-ms-field {
+html[data-ui-style='folio'] :is(.ui-entry, .ui-qa) .ui-ms-field {
   font-weight: 500;
 }
-html[data-ui-style='modern'] :is(.ui-entry, .ui-qa) .ui-ms-field {
+html[data-ui-style='pebble'] :is(.ui-entry, .ui-qa) .ui-ms-field {
   padding-inline: 0.75rem;
 }
 /* A native select's list takes the select's own background, which these
    treatments make transparent: pin the list to the same surface the custom
    dropdowns use, so Status reads like the other dropdowns in light and dark. */
-html:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) select.ui-field option {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) :is(.ui-entry, .ui-qa) select.ui-field option {
   background-color: var(--color-white);
   color: var(--color-gray-900);
 }
-html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry, .ui-qa) select.ui-field option {
+html.dark:is([data-ui-style='folio'], [data-ui-style='pebble']) :is(.ui-entry, .ui-qa) select.ui-field option {
   background-color: var(--color-gray-800);
   color: var(--color-gray-100);
 }
@@ -525,13 +525,13 @@ html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) :is(.ui-entry,
 /* --- New Transaction / New Report chooser (MobileAddChooser) --- */
 /* The chooser passes no padding, so its heading sat on the panel edge; give it
    the rows' own inset. Standard is untouched. */
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-dialog.ui-chooser > [data-modal-heading] {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-dialog.ui-chooser > [data-modal-heading] {
   padding: 1.25rem 1rem 0;
 }
-html[data-ui-style='classic'] .ui-dialog.ui-chooser > [data-modal-heading] {
+html[data-ui-style='folio'] .ui-dialog.ui-chooser > [data-modal-heading] {
   margin-inline: 1rem;
   padding-inline: 0;
 }
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-dialog.ui-chooser > [data-modal-heading] ~ div {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-dialog.ui-chooser > [data-modal-heading] ~ div {
   padding-bottom: 0.5rem;
 }

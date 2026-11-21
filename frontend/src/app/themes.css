@@ -967,7 +967,7 @@ html.dark[data-theme='colorblind'] {
 }
 
 /* ===== Ledger -- green-bar ledger paper, deep green ink; gold by night =====
-   Companion of the Classic UI style. Hand-seated from the design mockup, not
+   Companion of the Folio UI style. Hand-seated from the design mockup, not
    generated: the gray ramp serves both modes, so gray-900 is the dark page
    (#0e1513) and also the light-mode ink, and gray-100 is the banded-row tint
    in light and the text colour in dark. */
@@ -1052,7 +1052,7 @@ html.dark[data-theme='ledger'] {
 }
 
 /* ===== Studio -- off-white and ink colour blocks, lime accent =====
-   Companion of the Modern UI style. Hand-seated from the design mockup. The
+   Companion of the Pebble UI style. Hand-seated from the design mockup. The
    signature lime (#d6f84c) is a FILL behind dark text (blue-300 in light,
    blue-400 in dark), never text on white; the light-mode link/button steps
    (500-700) are a deep olive. */

@@ -194,7 +194,7 @@
       "deleteButton": "Hapus"
     },
     "itemNamePlural": "transaksi",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, other {# entri ditampilkan}}",
       "legendCleared": "kliring",
       "legendReconciled": "rekonsiliasi",
@@ -202,7 +202,7 @@
       "markCleared": "k",
       "markReconciled": "R"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Transaksi yang dipilih",
       "balanceAfter": "Saldo setelahnya",
       "yesterday": "Kemarin"

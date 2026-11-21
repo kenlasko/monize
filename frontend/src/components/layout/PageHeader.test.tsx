@@ -39,7 +39,7 @@ describe('PageHeader', () => {
     expect(screen.getByText('A helpful description')).toBeInTheDocument();
   });
 
-  it('prints an eyebrow that only the Classic and Modern styles show', () => {
+  it('prints an eyebrow that only the Folio and Pebble styles show', () => {
     const { container } = render(<PageHeader title="Primary Chequing" eyebrow="TD Canada Trust" />);
     const eyebrow = screen.getByText('TD Canada Trust');
     expect(eyebrow).toHaveClass('ui-page-eyebrow');

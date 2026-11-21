@@ -11,7 +11,7 @@ const PILL =
   'inline-flex h-12 items-center rounded-full px-5 font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-300 dark:focus-visible:ring-offset-blue-400';
 
 /**
- * The Modern hero's accent card: the next scheduled occurrence, its amount
+ * The Pebble hero's accent card: the next scheduled occurrence, its amount
  * set large, and the way to record it. The accent is a fill under dark ink in
  * both modes (the companion palette's lime; any palette's light accent step).
  */

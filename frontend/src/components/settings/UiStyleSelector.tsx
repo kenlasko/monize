@@ -19,7 +19,7 @@ interface UiStyleSelectorProps {
 }
 
 /**
- * UI style picker (standard / classic / modern) that applies and persists the
+ * UI style picker (standard / folio / pebble) that applies and persists the
  * choice immediately, the way `ColorThemeSelector` does: the live style is set
  * through the theme context and saved to the server by this component, so
  * `PreferencesSection` holds display state only.
@@ -152,12 +152,12 @@ export function UiStyleSelector({
  *
  * Every radius and typeface here is a literal, never `rounded-lg` or
  * `font-sans`: those are the very tokens a UI style redefines, so under
- * Classic a token-based Modern preview would render square and lie about
+ * Folio a token-based Pebble preview would render square and lie about
  * what picking it does. The specimen is "Aa" because the swapped faces are
  * Latin-script display faces, whatever the interface language.
  */
 function UiStylePreview({ name }: { name: UiStyle }) {
-  if (name === 'classic') {
+  if (name === 'folio') {
     return (
       <span
         aria-hidden="true"
@@ -166,7 +166,7 @@ function UiStylePreview({ name }: { name: UiStyle }) {
         <span className="block w-full border border-gray-400 bg-white p-2 dark:border-gray-500 dark:bg-gray-800">
           <span
             className="block text-xs font-bold text-gray-900 dark:text-gray-100"
-            style={{ fontFamily: 'var(--font-ui-classic-display, Georgia, serif)' }}
+            style={{ fontFamily: 'var(--font-ui-folio-display, Georgia, serif)' }}
           >
             Aa
           </span>
@@ -176,7 +176,7 @@ function UiStylePreview({ name }: { name: UiStyle }) {
       </span>
     );
   }
-  if (name === 'modern') {
+  if (name === 'pebble') {
     return (
       <span
         aria-hidden="true"
@@ -185,7 +185,7 @@ function UiStylePreview({ name }: { name: UiStyle }) {
         <span className="block w-full rounded-[1rem] bg-blue-100 p-2 dark:bg-blue-900/60">
           <span
             className="block text-xs font-extrabold text-gray-900 dark:text-gray-100"
-            style={{ fontFamily: 'var(--font-ui-modern-display, system-ui)' }}
+            style={{ fontFamily: 'var(--font-ui-pebble-display, system-ui)' }}
           >
             Aa
           </span>

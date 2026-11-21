@@ -70,11 +70,11 @@ function Strip({ strip }: { strip: UpcomingStrip }) {
 }
 
 /**
- * The Classic outlook band: "Next fourteen days" as a ruled section holding
+ * The Folio outlook band: "Next fourteen days" as a ruled section holding
  * the in / out strip, the dashboard's own drawing carried to the full page.
  * Decorative beside the ledger under it, which carries every figure.
  */
-export function BillsOutlookClassic({ strip }: BillsOutlookProps) {
+export function BillsOutlookFolio({ strip }: BillsOutlookProps) {
   const t = useTranslations('bills');
   return (
     <section aria-labelledby="bills-outlook-title" className="ui-bills-outlook mb-6">

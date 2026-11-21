@@ -11,7 +11,7 @@ const PLOT_BOTTOM = 200;
 const HEIGHT = 232;
 
 /**
- * The Modern hero's history: a rounded bar per month from zero, the current
+ * The Pebble hero's history: a rounded bar per month from zero, the current
  * month in the accent, the highest, lowest and latest named above their bars.
  * Drawn for a dark block (the hero inverts), so its fills are the ramp steps
  * a light card would use, which the inversion turns around.

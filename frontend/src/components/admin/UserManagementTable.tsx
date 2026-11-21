@@ -314,7 +314,7 @@ function UserIdentity({ user, isSelf, name }: { user: AdminUser; isSelf: boolean
   const t = useTranslations('admin');
   return (
     <div className="ui-user-identity flex min-w-0 items-center gap-3">
-      {/* Modern prints a round initial puck; Standard and Classic hide it. */}
+      {/* Pebble prints a round initial puck; Standard and Folio hide it. */}
       <span aria-hidden="true" className="ui-user-avatar hidden">
         {(name.trim().charAt(0) || '?').toUpperCase()}
       </span>

@@ -41,7 +41,7 @@ export function PortfolioHeadlineStandard({ label, valueText, approx }: Portfoli
 }
 
 /** The statement figure: small capitals over a serif total with a raised symbol. */
-export function PortfolioHeadlineClassic({
+export function PortfolioHeadlineFolio({
   label,
   amount,
   foreignCurrency,
@@ -64,7 +64,7 @@ export function PortfolioHeadlineClassic({
 }
 
 /** The ink block: the value set huge, the gain over the holdings as a pill. */
-export function PortfolioHeadlineModern({
+export function PortfolioHeadlinePebble({
   label,
   amount,
   foreignCurrency,
@@ -111,8 +111,8 @@ export function PortfolioHeadlineModern({
 
 const VARIANTS: StyleVariants<PortfolioHeadlineViewProps> = {
   standard: PortfolioHeadlineStandard,
-  classic: PortfolioHeadlineClassic,
-  modern: PortfolioHeadlineModern,
+  folio: PortfolioHeadlineFolio,
+  pebble: PortfolioHeadlinePebble,
 };
 
 export function PortfolioHeadline(props: PortfolioHeadlineViewProps) {

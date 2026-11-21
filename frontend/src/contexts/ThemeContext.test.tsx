@@ -286,12 +286,12 @@ describe('ThemeContext', () => {
     const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
 
     act(() => {
-      result.current.setUiStyle('classic');
+      result.current.setUiStyle('folio');
     });
-    expect(localStorage.setItem).toHaveBeenCalledWith('monize-ui-style', 'classic');
-    expect(result.current.uiStyle).toBe('classic');
-    expect(document.documentElement.getAttribute('data-ui-style')).toBe('classic');
-    expect(Cookies.set).toHaveBeenCalledWith('monize-ui-style', 'classic', {
+    expect(localStorage.setItem).toHaveBeenCalledWith('monize-ui-style', 'folio');
+    expect(result.current.uiStyle).toBe('folio');
+    expect(document.documentElement.getAttribute('data-ui-style')).toBe('folio');
+    expect(Cookies.set).toHaveBeenCalledWith('monize-ui-style', 'folio', {
       sameSite: 'lax',
       expires: 365,
     });
@@ -303,10 +303,10 @@ describe('ThemeContext', () => {
   });
 
   it('reads persisted UI style on mount and ignores invalid values', () => {
-    localStorage.setItem('monize-ui-style', 'modern');
+    localStorage.setItem('monize-ui-style', 'pebble');
     const first = renderHook(() => useTheme(), { wrapper: ThemeProvider });
-    expect(first.result.current.uiStyle).toBe('modern');
-    expect(document.documentElement.getAttribute('data-ui-style')).toBe('modern');
+    expect(first.result.current.uiStyle).toBe('pebble');
+    expect(document.documentElement.getAttribute('data-ui-style')).toBe('pebble');
     first.unmount();
 
     localStorage.setItem('monize-ui-style', 'neon-disco');

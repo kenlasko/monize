@@ -38,8 +38,8 @@ interface SummaryCardProps {
   /** Optional click handler */
   onClick?: () => void;
   /**
-   * The row's headline figure. Standard draws it like the others; Modern sets
-   * it as the accent block and Classic under a heavier rule
+   * The row's headline figure. Standard draws it like the others; Pebble sets
+   * it as the accent block and Folio under a heavier rule
    * (`ui-stat-lead`, `ui-styles-kit.css`). One per row at most.
    */
   lead?: boolean;
@@ -58,8 +58,8 @@ const valueColorClasses = {
  * Provides consistent styling for summary statistics at the top of pages.
  *
  * The `ui-stat*` markers let the UI styles re-set a row of these
- * (`ui-styles-kit.css`): Classic prints the row as a ruled statement line,
- * Modern as white blocks with a large figure. A money value set as
+ * (`ui-styles-kit.css`): Folio prints the row as a ruled statement line,
+ * Pebble as white blocks with a large figure. A money value set as
  * `<MoneyFigure display>` is typeset by both.
  */
 export function SummaryCard({

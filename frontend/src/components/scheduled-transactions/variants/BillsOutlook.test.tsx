@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import { render } from '@/test/render';
-import { BillsOutlookClassic } from './BillsOutlookClassic';
-import { BillsOutlookModern } from './BillsOutlookModern';
+import { BillsOutlookFolio } from './BillsOutlookFolio';
+import { BillsOutlookPebble } from './BillsOutlookPebble';
 import type { BillsOutlookProps } from './bills-outlook-view';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 
@@ -31,18 +31,18 @@ const props = (over: Partial<BillsOutlookProps> = {}): BillsOutlookProps => ({
   ...over,
 });
 
-describe('BillsOutlookClassic', () => {
+describe('BillsOutlookFolio', () => {
   it('prints the fourteen-day strip under its section title', () => {
-    render(<BillsOutlookClassic {...props()} />);
+    render(<BillsOutlookFolio {...props()} />);
     expect(screen.getByRole('heading', { name: 'Next fourteen days' })).toBeInTheDocument();
     expect(screen.getByRole('img')).toBeInTheDocument();
   });
 });
 
-describe('BillsOutlookModern', () => {
+describe('BillsOutlookPebble', () => {
   it('shows the next occurrence and posts it from the pill', () => {
     const p = props();
-    render(<BillsOutlookModern {...p} />);
+    render(<BillsOutlookPebble {...p} />);
     expect(screen.getByText('Hydro')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(14);
     fireEvent.click(screen.getByRole('button'));
@@ -50,7 +50,7 @@ describe('BillsOutlookModern', () => {
   });
 
   it('draws only the day chips when nothing is ahead', () => {
-    render(<BillsOutlookModern {...props({ next: null })} />);
+    render(<BillsOutlookPebble {...props({ next: null })} />);
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getAllByRole('listitem')).toHaveLength(14);
   });

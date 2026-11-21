@@ -25,7 +25,7 @@ vi.mock('@/contexts/ThemeContext', () => ({
 
 vi.mock('@/lib/user-settings', () => ({
   userSettingsApi: {
-    updatePreferences: vi.fn().mockResolvedValue({ uiStyle: 'modern', defaultCurrency: 'USD' }),
+    updatePreferences: vi.fn().mockResolvedValue({ uiStyle: 'pebble', defaultCurrency: 'USD' }),
   },
 }));
 
@@ -62,7 +62,7 @@ describe('UiStyleSelector', () => {
   });
 
   it('marks only the selected style as checked, and gives it the one tab stop', () => {
-    render(<UiStyleSelector value="classic" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
+    render(<UiStyleSelector value="folio" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
     const radios = screen.getAllByRole('radio');
     const checked = radios.filter((r) => r.getAttribute('aria-checked') === 'true');
     expect(checked).toHaveLength(1);
@@ -75,13 +75,13 @@ describe('UiStyleSelector', () => {
     render(<UiStyleSelector value="standard" onChange={onChange} colorTheme="default" onColorThemeChange={() => {}} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('radio', { name: /modern/i }));
+      fireEvent.click(screen.getByRole('radio', { name: /pebble/i }));
     });
 
-    expect(onChange).toHaveBeenCalledWith('modern');
-    expect(mockSetAppUiStyle).toHaveBeenCalledWith('modern');
+    expect(onChange).toHaveBeenCalledWith('pebble');
+    expect(mockSetAppUiStyle).toHaveBeenCalledWith('pebble');
     await waitFor(() =>
-      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'modern' }),
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'pebble' }),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
@@ -108,10 +108,10 @@ describe('UiStyleSelector', () => {
     render(<UiStyleSelector value="standard" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('radio', { name: /classic/i }));
+      fireEvent.click(screen.getByRole('radio', { name: /folio/i }));
     });
 
-    expect(mockSetAppUiStyle).toHaveBeenCalledWith('classic');
+    expect(mockSetAppUiStyle).toHaveBeenCalledWith('folio');
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to save UI style'));
   });
 
@@ -128,7 +128,7 @@ describe('UiStyleSelector', () => {
       );
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('radio', { name: /classic/i }));
+        fireEvent.click(screen.getByRole('radio', { name: /folio/i }));
       });
 
       expect(onColorThemeChange).toHaveBeenCalledWith('ledger');
@@ -136,7 +136,7 @@ describe('UiStyleSelector', () => {
       // One request, so the style and its palette never land half-applied.
       await waitFor(() =>
         expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({
-          uiStyle: 'classic',
+          uiStyle: 'folio',
           colorTheme: 'ledger',
         }),
       );
@@ -154,13 +154,13 @@ describe('UiStyleSelector', () => {
       );
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('radio', { name: /modern/i }));
+        fireEvent.click(screen.getByRole('radio', { name: /pebble/i }));
       });
 
       expect(onColorThemeChange).not.toHaveBeenCalled();
       expect(mockSetAppColorTheme).not.toHaveBeenCalled();
       await waitFor(() =>
-        expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'modern' }),
+        expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'pebble' }),
       );
     });
   });

@@ -17,13 +17,13 @@ import { heroMonthChange, heroSnapshot } from './dashboard-hero-figures';
 import { HeroMessage, HeroSkeleton } from './hero-parts';
 import type { NetWorthHeroViewProps } from './variants/net-worth-hero-view';
 import { NetWorthHeroStandard } from './variants/NetWorthHeroStandard';
-import { NetWorthHeroClassic } from './variants/NetWorthHeroClassic';
-import { NetWorthHeroModern } from './variants/NetWorthHeroModern';
+import { NetWorthHeroFolio } from './variants/NetWorthHeroFolio';
+import { NetWorthHeroPebble } from './variants/NetWorthHeroPebble';
 
 const NET_WORTH_HERO_VARIANTS: StyleVariants<NetWorthHeroViewProps> = {
   standard: NetWorthHeroStandard,
-  classic: NetWorthHeroClassic,
-  modern: NetWorthHeroModern,
+  folio: NetWorthHeroFolio,
+  pebble: NetWorthHeroPebble,
 };
 
 interface NetWorthHeroProps {

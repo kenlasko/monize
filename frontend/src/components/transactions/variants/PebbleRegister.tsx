@@ -17,7 +17,7 @@ import { HIGHLIGHT_FLASH } from '@/hooks/useHighlightTarget';
 import { registerGroupLabel, rowAmount, previousDay } from '../register-style-data';
 
 /**
- * The transactions register in the Modern UI style: rows grouped by day in
+ * The transactions register in the Pebble UI style: rows grouped by day in
  * white blocks, round payee avatars, large amounts, and (from `lg`) an
  * inspector for the selected row.
  *
@@ -27,7 +27,7 @@ import { registerGroupLabel, rowAmount, previousDay } from '../register-style-da
  * (edit, copy, schedule, delete, cycle status) and shows fields the row
  * already carries; it adds none.
  */
-export interface ModernRegisterProps {
+export interface PebbleRegisterProps {
   transactions: Transaction[];
   today: string;
   locale: string;
@@ -136,7 +136,7 @@ function amountTone(amount: number, onDark: boolean): string {
   return '';
 }
 
-function ModernRow({
+function PebbleRow({
   tx,
   p,
   selected,
@@ -144,7 +144,7 @@ function ModernRow({
   isFuture,
 }: {
   tx: Transaction;
-  p: ModernRegisterProps;
+  p: PebbleRegisterProps;
   selected: boolean;
   inspected: boolean;
   isFuture: boolean;
@@ -166,7 +166,7 @@ function ModernRow({
   const open = () => p.onRowClick(tx);
   return (
     <li
-      data-testid="modern-row"
+      data-testid="pebble-row"
       tabIndex={0}
       aria-current={inspected ? 'true' : undefined}
       onClick={open}
@@ -183,7 +183,7 @@ function ModernRow({
       onTouchMove={p.onTouchMove}
       onTouchEnd={p.onLongPressEnd}
       onTouchCancel={p.onLongPressEnd}
-      className={`ui-modern-row flex items-center gap-3 sm:gap-3.5 min-h-[60px] px-3 sm:px-3.5 rounded-2xl cursor-pointer select-none touch-manipulation border-t border-gray-100 first:border-t-0 dark:border-gray-800 ${INTERACTIVE_ROW_FOCUS_CLASS} ${
+      className={`ui-pebble-row flex items-center gap-3 sm:gap-3.5 min-h-[60px] px-3 sm:px-3.5 rounded-2xl cursor-pointer select-none touch-manipulation border-t border-gray-100 first:border-t-0 dark:border-gray-800 ${INTERACTIVE_ROW_FOCUS_CLASS} ${
         inspected
           ? 'bg-gray-900 text-gray-50 dark:bg-gray-100 dark:text-gray-900'
           : selected
@@ -262,7 +262,7 @@ function InspectorRow({ label, children }: { label: string; children: React.Reac
 const PILL =
   'rounded-full h-11 px-5 font-semibold bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700';
 
-function Inspector({ tx, p }: { tx: Transaction; p: ModernRegisterProps }) {
+function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
   const { formatDate } = useDateFormat();
@@ -288,8 +288,8 @@ function Inspector({ tx, p }: { tx: Transaction; p: ModernRegisterProps }) {
     // the bar (~4rem), plus a gap. Its own height is capped to what is left,
     // scrolling inside when the details run longer.
     <aside
-      aria-label={t('list.modern.inspectorLabel')}
-      className="ui-modern-inspector hidden lg:flex lg:w-[22rem] xl:w-[24rem] shrink-0 self-start sticky top-[calc(8.5rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] max-h-[calc(100dvh-9.5rem-env(safe-area-inset-top)+var(--app-header-offset,0px))] overflow-y-auto flex-col gap-4 rounded-[28px] bg-white p-7 text-gray-900 shadow-card dark:bg-gray-900 dark:text-gray-100 dark:shadow-card-dark"
+      aria-label={t('list.pebble.inspectorLabel')}
+      className="ui-pebble-inspector hidden lg:flex lg:w-[22rem] xl:w-[24rem] shrink-0 self-start sticky top-[calc(8.5rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] max-h-[calc(100dvh-9.5rem-env(safe-area-inset-top)+var(--app-header-offset,0px))] overflow-y-auto flex-col gap-4 rounded-[28px] bg-white p-7 text-gray-900 shadow-card dark:bg-gray-900 dark:text-gray-100 dark:shadow-card-dark"
     >
       <div className="flex items-center gap-3.5">
         <Avatar tx={tx} label={label} color={color} size="lg" />
@@ -302,7 +302,7 @@ function Inspector({ tx, p }: { tx: Transaction; p: ModernRegisterProps }) {
           </div>
         </div>
       </div>
-      <div className="ui-page-title ui-modern-inspector-amount">
+      <div className="ui-page-title ui-pebble-inspector-amount">
         <MoneyFigure amount={amount} currencyCode={tx.currencyCode} display />
       </div>
       <dl className="flex flex-col">
@@ -317,7 +317,7 @@ function Inspector({ tx, p }: { tx: Transaction; p: ModernRegisterProps }) {
           />
         </InspectorRow>
         {p.showRunningBalance && balance !== undefined && (
-          <InspectorRow label={t('list.modern.balanceAfter')}>
+          <InspectorRow label={t('list.pebble.balanceAfter')}>
             {formatCurrency(balance, tx.currencyCode)}
           </InspectorRow>
         )}
@@ -366,7 +366,7 @@ function Inspector({ tx, p }: { tx: Transaction; p: ModernRegisterProps }) {
   );
 }
 
-export function ModernRegister(p: ModernRegisterProps) {
+export function PebbleRegister(p: PebbleRegisterProps) {
   const t = useTranslations('transactions');
   const { formatCurrency } = useNumberFormat();
   const inspected =
@@ -376,7 +376,7 @@ export function ModernRegister(p: ModernRegisterProps) {
     date === p.today
       ? t('list.today')
       : date === previousDay(p.today)
-        ? t('list.modern.yesterday')
+        ? t('list.pebble.yesterday')
         : registerGroupLabel(date, p.locale, p.today);
 
   const nodes: React.ReactNode[] = [];
@@ -419,7 +419,7 @@ export function ModernRegister(p: ModernRegisterProps) {
     }
     if (!cur.open) cur.open = { date: tx.transactionDate, rows: [] };
     cur.open.rows.push(
-      <ModernRow
+      <PebbleRow
         key={tx.id}
         tx={tx}
         p={p}
@@ -432,7 +432,7 @@ export function ModernRegister(p: ModernRegisterProps) {
   flush();
 
   return (
-    <div className="ui-modern-register flex items-start gap-6 px-4 pb-4">
+    <div className="ui-pebble-register flex items-start gap-6 px-4 pb-4">
       <div className="min-w-0 flex-1">
         {p.sortStrip}
         {nodes}

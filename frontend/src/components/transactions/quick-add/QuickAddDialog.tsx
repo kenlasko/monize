@@ -281,7 +281,7 @@ export function QuickAddDialog({
             />
           )}
 
-          {/* Modern sets the balance and the buttons in one panel. Elsewhere the
+          {/* Pebble sets the balance and the buttons in one panel. Elsewhere the
               wrapper adds nothing: its children space themselves as they did
               as the form's own. */}
           <div className="ui-qa-foot space-y-4">

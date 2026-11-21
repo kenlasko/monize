@@ -51,7 +51,7 @@ function Section({
  * an ink rule with its count, each report a numbered, hairline-ruled entry
  * (name over a line of description) with the favourite star at the margin.
  */
-export function ReportsCatalogueClassic({
+export function ReportsCatalogueFolio({
   entries,
   categories,
   groupBySection,

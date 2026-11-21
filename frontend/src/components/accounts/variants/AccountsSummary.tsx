@@ -8,11 +8,11 @@ export function AccountsSummaryStandard({ children }: AccountsSummaryViewProps) 
 }
 
 /**
- * Classic: a statement head. Net worth is the headline figure on the left,
+ * Folio: a statement head. Net worth is the headline figure on the left,
  * the assets, liabilities and account count are ruled lines on the right, as
  * the foot of a statement of accounts.
  */
-export function AccountsSummaryClassic({
+export function AccountsSummaryFolio({
   accountCount,
   netWorth,
   assets,
@@ -51,10 +51,10 @@ export function AccountsSummaryClassic({
 }
 
 /**
- * Modern: net worth set huge in an ink block, the assets and the liabilities
+ * Pebble: net worth set huge in an ink block, the assets and the liabilities
  * as two white blocks beside it, the account count a pill in the ink block.
  */
-export function AccountsSummaryModern({
+export function AccountsSummaryPebble({
   accountCount,
   netWorth,
   assets,
@@ -90,8 +90,8 @@ export function AccountsSummaryModern({
 
 const VARIANTS = {
   standard: AccountsSummaryStandard,
-  classic: AccountsSummaryClassic,
-  modern: AccountsSummaryModern,
+  folio: AccountsSummaryFolio,
+  pebble: AccountsSummaryPebble,
 };
 
 export function AccountsSummary(props: AccountsSummaryViewProps) {

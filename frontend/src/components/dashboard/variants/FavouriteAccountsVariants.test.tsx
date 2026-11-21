@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import { render } from '@/test/render';
-import { FavouriteAccountsClassic } from './FavouriteAccountsClassic';
-import { FavouriteAccountsModern } from './FavouriteAccountsModern';
+import { FavouriteAccountsFolio } from './FavouriteAccountsFolio';
+import { FavouriteAccountsPebble } from './FavouriteAccountsPebble';
 import type { FavouriteAccountRow, FavouriteAccountsViewProps } from './favourite-accounts-view';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => '/dashboard' }));
@@ -38,8 +38,8 @@ const props = (over: Partial<FavouriteAccountsViewProps> = {}): FavouriteAccount
 });
 
 describe.each([
-  ['Classic', FavouriteAccountsClassic],
-  ['Modern', FavouriteAccountsModern],
+  ['Folio', FavouriteAccountsFolio],
+  ['Pebble', FavouriteAccountsPebble],
 ])('FavouriteAccounts%s', (_name, Variant) => {
   it('draws each account as one button that opens it, with its institution and due day', () => {
     const p = props();

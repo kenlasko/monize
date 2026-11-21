@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/render';
 import userEvent from '@testing-library/user-event';
-import { ReportStatementClassic } from './ReportStatementClassic';
-import { ReportStatementModern } from './ReportStatementModern';
+import { ReportStatementFolio } from './ReportStatementFolio';
+import { ReportStatementPebble } from './ReportStatementPebble';
 import type { ReportStatementViewProps } from './report-statement-view';
 
 function props(over: Partial<ReportStatementViewProps> = {}): ReportStatementViewProps {
@@ -20,8 +20,8 @@ function props(over: Partial<ReportStatementViewProps> = {}): ReportStatementVie
 }
 
 describe.each([
-  ['Classic', ReportStatementClassic],
-  ['Modern', ReportStatementModern],
+  ['Folio', ReportStatementFolio],
+  ['Pebble', ReportStatementPebble],
 ])('ReportStatement%s', (_n, Variant) => {
   it('shows every line, the total and the memo with their signs intact', () => {
     render(<Variant {...props()} />);

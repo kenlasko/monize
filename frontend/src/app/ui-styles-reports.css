@@ -1,5 +1,5 @@
 /*
- * reports area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * reports area of the Folio and Pebble UI styles. Same rules as ui-styles.css
  * (read its header): ramp tokens only, marker classes in @layer components,
  * unlayered rules only where a primitive's own utility must yield.
  */
@@ -12,32 +12,32 @@
 /* Reports index                                                          */
 /* ===================================================================== */
 
-/* Classic: a table of contents. Sections in two columns on a wide page, each a
+/* Folio: a table of contents. Sections in two columns on a wide page, each a
    serif heading on an ink rule (ui-section-head) with its count; entries are
    numbered, ruled by hairlines, name over description. */
-html[data-ui-style='classic'] .ui-rep-catalogue {
+html[data-ui-style='folio'] .ui-rep-catalogue {
   display: grid;
   gap: 2.5rem 3.5rem;
   align-items: start;
 }
 @media (min-width: 1024px) {
-  html[data-ui-style='classic'] .ui-rep-catalogue {
+  html[data-ui-style='folio'] .ui-rep-catalogue {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-html[data-ui-style='classic'] .ui-rep-list {
+html[data-ui-style='folio'] .ui-rep-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-html[data-ui-style='classic'] .ui-rep-row {
+html[data-ui-style='folio'] .ui-rep-row {
   position: relative;
   border-bottom: 1px solid var(--ui-rule-hair);
 }
-html[data-ui-style='classic'] .ui-rep-row:last-child {
+html[data-ui-style='folio'] .ui-rep-row:last-child {
   border-bottom-color: var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-rep-row-open {
+html[data-ui-style='folio'] .ui-rep-row-open {
   display: flex;
   width: 100%;
   gap: 1rem;
@@ -46,15 +46,15 @@ html[data-ui-style='classic'] .ui-rep-row-open {
   text-align: left;
   background: transparent;
 }
-html[data-ui-style='classic'] .ui-rep-row-open:hover .ui-rep-row-name {
+html[data-ui-style='folio'] .ui-rep-row-open:hover .ui-rep-row-name {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-html[data-ui-style='classic'] .ui-rep-row-open:focus-visible {
+html[data-ui-style='folio'] .ui-rep-row-open:focus-visible {
   outline: 2px solid var(--color-blue-500);
   outline-offset: -2px;
 }
-html[data-ui-style='classic'] .ui-rep-no {
+html[data-ui-style='folio'] .ui-rep-no {
   flex: none;
   width: 1.75rem;
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -62,49 +62,49 @@ html[data-ui-style='classic'] .ui-rep-no {
   font-variant-numeric: tabular-nums;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='classic'] .ui-rep-no {
+html.dark[data-ui-style='folio'] .ui-rep-no {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] .ui-rep-row-text {
+html[data-ui-style='folio'] .ui-rep-row-text {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 0.125rem;
 }
-html[data-ui-style='classic'] .ui-rep-row-name {
+html[data-ui-style='folio'] .ui-rep-row-name {
   font-family: var(--ui-font-display);
   font-size: 1.1875rem;
   line-height: 1.25;
   font-weight: 500;
   color: var(--color-gray-900);
 }
-html.dark[data-ui-style='classic'] .ui-rep-row-name {
+html.dark[data-ui-style='folio'] .ui-rep-row-name {
   color: var(--color-gray-100);
 }
-html[data-ui-style='classic'] .ui-rep-row-desc {
+html[data-ui-style='folio'] .ui-rep-row-desc {
   font-size: 0.8125rem;
   line-height: 1.4;
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='classic'] .ui-rep-row-desc {
+html.dark[data-ui-style='folio'] .ui-rep-row-desc {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] .ui-rep-row-fav {
+html[data-ui-style='folio'] .ui-rep-row-fav {
   position: absolute;
   right: 0;
   top: 0.625rem;
   border-radius: 0;
 }
-html[data-ui-style='classic'] .ui-rep-row-fav:hover {
+html[data-ui-style='folio'] .ui-rep-row-fav:hover {
   background-color: var(--color-gray-100);
 }
-html.dark[data-ui-style='classic'] .ui-rep-row-fav:hover {
+html.dark[data-ui-style='folio'] .ui-rep-row-fav:hover {
   background-color: var(--color-gray-700);
 }
 
-/* Modern: colour blocks. The favourites are one accent block holding white
+/* Pebble: colour blocks. The favourites are one accent block holding white
    tiles; every other report a white block with a round puck for its icon. */
-html[data-ui-style='modern'] .ui-rep-grid {
+html[data-ui-style='pebble'] .ui-rep-grid {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 1rem;
@@ -112,27 +112,27 @@ html[data-ui-style='modern'] .ui-rep-grid {
   padding: 0;
 }
 @media (min-width: 640px) {
-  html[data-ui-style='modern'] .ui-rep-grid {
+  html[data-ui-style='pebble'] .ui-rep-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1024px) {
-  html[data-ui-style='modern'] .ui-rep-grid {
+  html[data-ui-style='pebble'] .ui-rep-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @media (min-width: 1280px) {
-  html[data-ui-style='modern'] .ui-rep-grid {
+  html[data-ui-style='pebble'] .ui-rep-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-html[data-ui-style='modern'] .ui-rep-favs-title {
+html[data-ui-style='pebble'] .ui-rep-favs-title {
   font-size: 1.75rem;
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
-html[data-ui-style='modern'] .ui-rep-puck {
+html[data-ui-style='pebble'] .ui-rep-puck {
   display: flex;
   width: 2.75rem;
   height: 2.75rem;
@@ -142,50 +142,50 @@ html[data-ui-style='modern'] .ui-rep-puck {
   background-color: var(--color-gray-100);
   color: var(--color-gray-800);
 }
-html.dark[data-ui-style='modern'] .ui-rep-puck {
+html.dark[data-ui-style='pebble'] .ui-rep-puck {
   background-color: var(--color-gray-700);
   color: var(--color-gray-100);
 }
-html[data-ui-style='modern'] .ui-rep-puck > svg {
+html[data-ui-style='pebble'] .ui-rep-puck > svg {
   width: 1.375rem;
   height: 1.375rem;
 }
-html[data-ui-style='modern'] .ui-rep-card-name {
+html[data-ui-style='pebble'] .ui-rep-card-name {
   font-size: 1.125rem;
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-gray-900);
 }
-html.dark[data-ui-style='modern'] .ui-rep-card-name {
+html.dark[data-ui-style='pebble'] .ui-rep-card-name {
   color: var(--color-gray-50);
 }
-html[data-ui-style='modern'] .ui-rep-card-desc {
+html[data-ui-style='pebble'] .ui-rep-card-desc {
   font-size: 0.8125rem;
   line-height: 1.45;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='modern'] .ui-rep-card-desc {
+html.dark[data-ui-style='pebble'] .ui-rep-card-desc {
   color: var(--color-gray-400);
 }
-html[data-ui-style='modern'] .ui-rep-card {
+html[data-ui-style='pebble'] .ui-rep-card {
   transition: transform 0.15s ease;
 }
-html[data-ui-style='modern'] .ui-rep-card:hover {
+html[data-ui-style='pebble'] .ui-rep-card:hover {
   transform: translateY(-2px);
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-ui-style='modern'] .ui-rep-card {
+  html[data-ui-style='pebble'] .ui-rep-card {
     transition: none;
   }
-  html[data-ui-style='modern'] .ui-rep-card:hover {
+  html[data-ui-style='pebble'] .ui-rep-card:hover {
     transform: none;
   }
 }
-html[data-ui-style='modern'] .ui-rep-fav:hover {
+html[data-ui-style='pebble'] .ui-rep-fav:hover {
   background-color: var(--color-gray-100);
 }
-html.dark[data-ui-style='modern'] .ui-rep-fav:hover {
+html.dark[data-ui-style='pebble'] .ui-rep-fav:hover {
   background-color: var(--color-gray-700);
 }
 
@@ -194,33 +194,33 @@ html.dark[data-ui-style='modern'] .ui-rep-fav:hover {
 /* ===================================================================== */
 
 /* A report's summary tile is a small label over a figure (a Card marked
-   ui-rep-tile). Classic prints a row of them as a statement line: ruled in ink
+   ui-rep-tile). Folio prints a row of them as a statement line: ruled in ink
    above, entries divided by hairlines, the label in small capitals and the
-   figure as a ledger mark. Modern keeps each a white block with a big tight
+   figure as a ledger mark. Pebble keeps each a white block with a big tight
    figure. The label is the tile's first plain-text child. */
-html[data-ui-style='classic'] .ui-rep-tile {
+html[data-ui-style='folio'] .ui-rep-tile {
   border-top: 2px solid var(--ui-rule-ink);
   padding-block: 0.875rem;
   padding-inline: 0;
 }
-html[data-ui-style='classic'] :has(> .ui-rep-tile) {
+html[data-ui-style='folio'] :has(> .ui-rep-tile) {
   column-gap: 0;
 }
-html[data-ui-style='classic'] .ui-rep-tile:not(:first-child) {
+html[data-ui-style='folio'] .ui-rep-tile:not(:first-child) {
   padding-left: 1rem;
   border-left: 1px solid var(--ui-rule-hair);
 }
-html[data-ui-style='classic'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
+html[data-ui-style='folio'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: var(--ui-label-tracking);
   text-transform: uppercase;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='classic'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
+html.dark[data-ui-style='folio'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] .ui-rep-tile > :is(div, p):nth-child(2) {
+html[data-ui-style='folio'] .ui-rep-tile > :is(div, p):nth-child(2) {
   margin-top: 0.25rem;
   /* Not the display serif: its figures are old-style and a plain hyphen reads
      as no sign at all, which would turn a loss into a gain on sight. */
@@ -229,18 +229,18 @@ html[data-ui-style='classic'] .ui-rep-tile > :is(div, p):nth-child(2) {
   font-weight: 600;
   font-variant-numeric: lining-nums tabular-nums;
 }
-html[data-ui-style='modern'] .ui-rep-tile {
+html[data-ui-style='pebble'] .ui-rep-tile {
   padding: 1.25rem;
 }
-html[data-ui-style='modern'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
+html[data-ui-style='pebble'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='modern'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
+html.dark[data-ui-style='pebble'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
   color: var(--color-gray-400);
 }
-html[data-ui-style='modern'] .ui-rep-tile > :is(div, p):nth-child(2) {
+html[data-ui-style='pebble'] .ui-rep-tile > :is(div, p):nth-child(2) {
   margin-top: 0.25rem;
   font-size: 1.875rem;
   line-height: 1.1;
@@ -248,20 +248,20 @@ html[data-ui-style='modern'] .ui-rep-tile > :is(div, p):nth-child(2) {
   letter-spacing: -0.03em;
 }
 
-/* A tinted tile (a hand-coloured box, not a Card): Classic drops the tint and
+/* A tinted tile (a hand-coloured box, not a Card): Folio drops the tint and
    the box, so the row reads as one statement line; the figure keeps its
-   semantic colour. Modern keeps the tint as a colour block on the card radius. */
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-rep-tile {
+   semantic colour. Pebble keeps the tint as a colour block on the card radius. */
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-rep-tile {
   text-align: left;
 }
-html[data-ui-style='classic'] .ui-rep-tile:not(.ui-card) {
+html[data-ui-style='folio'] .ui-rep-tile:not(.ui-card) {
   background-color: transparent;
   border-radius: 0;
 }
-html[data-ui-style='classic'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
+html[data-ui-style='folio'] .ui-rep-tile > :is(div, p):first-child:not(:has(*)) {
   color: var(--color-gray-500);
 }
-html[data-ui-style='modern'] .ui-rep-tile:not(.ui-card) {
+html[data-ui-style='pebble'] .ui-rep-tile:not(.ui-card) {
   border-radius: var(--ui-radius-card);
   padding: 1.25rem;
 }
@@ -270,10 +270,10 @@ html[data-ui-style='modern'] .ui-rep-tile:not(.ui-card) {
 /* Insights                                                               */
 /* ===================================================================== */
 
-/* Classic: an insight is an annotated ledger entry, not a tinted alert box:
+/* Folio: an insight is an annotated ledger entry, not a tinted alert box:
    ruled by a hairline, a heavy rule in the severity's tone down its margin,
    the title in the serif, the mark and the type as square stamps. */
-html[data-ui-style='classic'] .ui-ins-card {
+html[data-ui-style='folio'] .ui-ins-card {
   background-color: transparent;
   border-width: 0 0 1px 3px;
   border-style: solid;
@@ -282,19 +282,19 @@ html[data-ui-style='classic'] .ui-ins-card {
   border-radius: 0;
   padding: 0.875rem 0 0.875rem 1rem;
 }
-html[data-ui-style='classic'] .ui-ins-card[data-severity='alert'] {
+html[data-ui-style='folio'] .ui-ins-card[data-severity='alert'] {
   border-left-color: var(--color-red-600);
 }
-html[data-ui-style='classic'] .ui-ins-card[data-severity='warning'] {
+html[data-ui-style='folio'] .ui-ins-card[data-severity='warning'] {
   border-left-color: var(--color-amber-500);
 }
-html[data-ui-style='classic'] .ui-ins-card[data-severity='info'] {
+html[data-ui-style='folio'] .ui-ins-card[data-severity='info'] {
   border-left-color: var(--color-gray-800);
 }
-html.dark[data-ui-style='classic'] .ui-ins-card[data-severity='info'] {
+html.dark[data-ui-style='folio'] .ui-ins-card[data-severity='info'] {
   border-left-color: var(--color-gray-300);
 }
-html[data-ui-style='classic'] .ui-ins-mark {
+html[data-ui-style='folio'] .ui-ins-mark {
   border-radius: 0;
   background-color: transparent;
   border: 1px solid currentColor;
@@ -303,12 +303,12 @@ html[data-ui-style='classic'] .ui-ins-mark {
   height: 1.5rem;
   font-size: 0.75rem;
 }
-html[data-ui-style='classic'] .ui-ins-title {
+html[data-ui-style='folio'] .ui-ins-title {
   font-family: var(--ui-font-display);
   font-size: 1.125rem;
   font-weight: 500;
 }
-html[data-ui-style='classic'] .ui-ins-type {
+html[data-ui-style='folio'] .ui-ins-type {
   border-radius: 0;
   background-color: transparent;
   border: 1px solid currentColor;
@@ -317,24 +317,24 @@ html[data-ui-style='classic'] .ui-ins-type {
   text-transform: uppercase;
 }
 
-/* Modern: each insight is a colour block on the card radius, the mark a bigger
+/* Pebble: each insight is a colour block on the card radius, the mark a bigger
    puck, the title heavy and tight, the type a pill. */
-html[data-ui-style='modern'] .ui-ins-card {
+html[data-ui-style='pebble'] .ui-ins-card {
   border-color: transparent;
   border-radius: var(--ui-radius-card);
   padding: 1.25rem;
 }
-html[data-ui-style='modern'] .ui-ins-mark {
+html[data-ui-style='pebble'] .ui-ins-mark {
   width: 2.5rem;
   height: 2.5rem;
   font-size: 1rem;
 }
-html[data-ui-style='modern'] .ui-ins-title {
+html[data-ui-style='pebble'] .ui-ins-title {
   font-size: 1.0625rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
-html[data-ui-style='modern'] .ui-ins-type {
+html[data-ui-style='pebble'] .ui-ins-type {
   border-radius: 9999px;
   padding-inline: 0.625rem;
 }
@@ -344,14 +344,14 @@ html[data-ui-style='modern'] .ui-ins-type {
 /* cash flow): the report's own figures as a statement / colour blocks    */
 /* ===================================================================== */
 
-/* Classic: a ruled schedule. Small-capital heads on an ink rule, hairlines
+/* Folio: a ruled schedule. Small-capital heads on an ink rule, hairlines
    between lines, figures right-aligned in a mono face, the total under a
    double rule, memo figures beneath. */
-html[data-ui-style='classic'] .ui-rep-statement table {
+html[data-ui-style='folio'] .ui-rep-statement table {
   width: 100%;
   border-collapse: collapse;
 }
-html[data-ui-style='classic'] .ui-rep-statement thead th {
+html[data-ui-style='folio'] .ui-rep-statement thead th {
   padding: 0 0 0.5rem;
   border-bottom: 2px solid var(--ui-rule-ink);
   font-size: 0.6875rem;
@@ -361,39 +361,39 @@ html[data-ui-style='classic'] .ui-rep-statement thead th {
   text-align: left;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='classic'] .ui-rep-statement thead th {
+html.dark[data-ui-style='folio'] .ui-rep-statement thead th {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] .ui-rep-statement :is(th, td).ui-rep-st-num {
+html[data-ui-style='folio'] .ui-rep-statement :is(th, td).ui-rep-st-num {
   text-align: right;
 }
-html[data-ui-style='classic'] .ui-rep-statement tbody td {
+html[data-ui-style='folio'] .ui-rep-statement tbody td {
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--ui-rule-hair);
   font-size: 0.9375rem;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-num {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-num {
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums lining-nums;
   padding-left: 1.5rem;
   white-space: nowrap;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-swatch {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-swatch {
   display: inline-block;
   width: 0.625rem;
   height: 0.625rem;
   margin-right: 0.625rem;
   vertical-align: baseline;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-link {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-link {
   background: transparent;
   text-align: left;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-link:hover:not(:disabled) {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-link:hover:not(:disabled) {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-total > :is(th, td) {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-total > :is(th, td) {
   padding: 0.625rem 0;
   border-top: 3px double var(--ui-rule-ink);
   text-align: left;
@@ -401,42 +401,42 @@ html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-total > :is(th, td) {
   font-size: 1.125rem;
   font-weight: 500;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-total > td.ui-rep-st-num {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-total > td.ui-rep-st-num {
   text-align: right;
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   font-size: 1.25rem;
   font-weight: 600;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-memo > :is(th, td) {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-memo > :is(th, td) {
   padding: 0.25rem 0;
   font-size: 0.8125rem;
   font-weight: 400;
   text-align: left;
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-memo > th {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-memo > th {
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-memo > th {
+html.dark[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-memo > th {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] .ui-rep-statement .ui-rep-st-memo > td.ui-rep-st-num {
+html[data-ui-style='folio'] .ui-rep-statement .ui-rep-st-memo > td.ui-rep-st-num {
   text-align: right;
 }
 
-/* Modern: the total in an ink block (with the memo figures as pills), a white
+/* Pebble: the total in an ink block (with the memo figures as pills), a white
    block of rows beside it, each with a round avatar, a heavy name and a big
    tight figure. */
-html[data-ui-style='modern'] .ui-rep-st-hero {
+html[data-ui-style='pebble'] .ui-rep-st-hero {
   align-self: start;
 }
-html[data-ui-style='modern'] .ui-rep-st-hero-fig {
+html[data-ui-style='pebble'] .ui-rep-st-hero-fig {
   font-size: 2.75rem;
   line-height: 1.05;
   font-weight: 800;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
-html[data-ui-style='modern'] .ui-rep-st-pill {
+html[data-ui-style='pebble'] .ui-rep-st-pill {
   display: inline-flex;
   gap: 0.5rem;
   align-items: baseline;
@@ -445,11 +445,11 @@ html[data-ui-style='modern'] .ui-rep-st-pill {
   background-color: color-mix(in oklab, currentColor 12%, transparent);
   font-size: 0.8125rem;
 }
-html[data-ui-style='modern'] .ui-rep-st-rows {
+html[data-ui-style='pebble'] .ui-rep-st-rows {
   list-style: none;
   margin: 0;
 }
-html[data-ui-style='modern'] .ui-rep-st-row {
+html[data-ui-style='pebble'] .ui-rep-st-row {
   display: flex;
   width: 100%;
   align-items: center;
@@ -459,13 +459,13 @@ html[data-ui-style='modern'] .ui-rep-st-row {
   text-align: left;
   background: transparent;
 }
-html[data-ui-style='modern'] button.ui-rep-st-row:hover:not(:disabled) {
+html[data-ui-style='pebble'] button.ui-rep-st-row:hover:not(:disabled) {
   background-color: var(--color-gray-100);
 }
-html.dark[data-ui-style='modern'] button.ui-rep-st-row:hover:not(:disabled) {
+html.dark[data-ui-style='pebble'] button.ui-rep-st-row:hover:not(:disabled) {
   background-color: var(--color-gray-700);
 }
-html[data-ui-style='modern'] .ui-rep-st-avatar {
+html[data-ui-style='pebble'] .ui-rep-st-avatar {
   display: inline-flex;
   flex: none;
   width: 2.25rem;
@@ -478,23 +478,23 @@ html[data-ui-style='modern'] .ui-rep-st-avatar {
   font-weight: 700;
   color: var(--color-gray-700);
 }
-html[data-ui-style='modern'] .ui-rep-st-avatar[data-tone='gain'] {
+html[data-ui-style='pebble'] .ui-rep-st-avatar[data-tone='gain'] {
   background-color: var(--color-green-500);
 }
-html[data-ui-style='modern'] .ui-rep-st-avatar[data-tone='loss'] {
+html[data-ui-style='pebble'] .ui-rep-st-avatar[data-tone='loss'] {
   background-color: var(--color-red-500);
 }
-html.dark[data-ui-style='modern'] .ui-rep-st-avatar {
+html.dark[data-ui-style='pebble'] .ui-rep-st-avatar {
   background-color: var(--color-gray-600);
   color: var(--color-gray-100);
 }
-html.dark[data-ui-style='modern'] .ui-rep-st-avatar[data-tone='gain'] {
+html.dark[data-ui-style='pebble'] .ui-rep-st-avatar[data-tone='gain'] {
   background-color: var(--color-green-500);
 }
-html.dark[data-ui-style='modern'] .ui-rep-st-avatar[data-tone='loss'] {
+html.dark[data-ui-style='pebble'] .ui-rep-st-avatar[data-tone='loss'] {
   background-color: var(--color-red-500);
 }
-html[data-ui-style='modern'] .ui-rep-st-name {
+html[data-ui-style='pebble'] .ui-rep-st-name {
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -504,15 +504,15 @@ html[data-ui-style='modern'] .ui-rep-st-name {
   letter-spacing: -0.01em;
   color: var(--color-gray-900);
 }
-html.dark[data-ui-style='modern'] .ui-rep-st-name {
+html.dark[data-ui-style='pebble'] .ui-rep-st-name {
   color: var(--color-gray-50);
 }
-html[data-ui-style='modern'] .ui-rep-st-share {
+html[data-ui-style='pebble'] .ui-rep-st-share {
   font-size: 0.8125rem;
   color: var(--color-gray-500);
   font-variant-numeric: tabular-nums;
 }
-html[data-ui-style='modern'] .ui-rep-st-amount {
+html[data-ui-style='pebble'] .ui-rep-st-amount {
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.03em;

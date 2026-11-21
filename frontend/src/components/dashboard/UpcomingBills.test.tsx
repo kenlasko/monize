@@ -35,7 +35,7 @@ const { widgetConfig, mockUpdateConfig } = vi.hoisted(() => ({
   },
   mockUpdateConfig: vi.fn(),
 }));
-const uiStyle = vi.hoisted(() => ({ current: 'standard' as 'standard' | 'classic' | 'modern' }));
+const uiStyle = vi.hoisted(() => ({ current: 'standard' as 'standard' | 'folio' | 'pebble' }));
 vi.mock('@/hooks/useUiStyle', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/hooks/useUiStyle')>()),
   useUiStyle: () => uiStyle.current,
@@ -950,7 +950,7 @@ describe('UpcomingBills', () => {
     expect(manualIdx).toBeLessThan(autoIdx);
   });
 
-  it.each(['classic', 'modern'] as const)(
+  it.each(['folio', 'pebble'] as const)(
     'lists the same occurrence, with its two-week strip, in the %s style',
     (style) => {
       uiStyle.current = style;

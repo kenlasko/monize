@@ -7,7 +7,7 @@ import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
-import { BudgetVelocityModern } from './variants/BudgetVelocityModern';
+import { BudgetVelocityPebble } from './variants/BudgetVelocityPebble';
 
 interface BudgetVelocityWidgetProps {
   velocity: BudgetVelocity;
@@ -38,11 +38,11 @@ function getPaceBgColor(paceStatus: BudgetVelocity['paceStatus']): string {
 
 const VARIANTS: StyleVariants<BudgetVelocityWidgetProps> = {
   standard: BudgetVelocityWidgetStandard,
-  modern: BudgetVelocityModern,
+  pebble: BudgetVelocityPebble,
 };
 
 /**
- * Modern leads with the safe daily spend in an accent block; Classic is the
+ * Pebble leads with the safe daily spend in an accent block; Folio is the
  * Standard layout, set in ledger figures by `ui-styles-budgets.css`.
  */
 export function BudgetVelocityWidget(props: BudgetVelocityWidgetProps) {

@@ -194,7 +194,7 @@
       "deleteButton": "[XX-Delete-XX]"
     },
     "itemNamePlural": "[XX-transactions-XX]",
-    "classic": {
+    "folio": {
       "entriesShown": "[XX-{count, plural, one {# entry shown} other {# entries shown}}-XX]",
       "legendCleared": "[XX-cleared-XX]",
       "legendReconciled": "[XX-reconciled-XX]",
@@ -202,7 +202,7 @@
       "markCleared": "[XX-c-XX]",
       "markReconciled": "[XX-R-XX]"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "[XX-Selected transaction-XX]",
       "balanceAfter": "[XX-Balance after-XX]",
       "yesterday": "[XX-Yesterday-XX]"

@@ -8,7 +8,7 @@
  *
  * The two axes compose because nothing here names a colour. Every colour
  * below is a gray/blue ramp token (or a color-mix of one), which the active
- * palette has already redefined -- so Classic on Nord and Modern on Latte
+ * palette has already redefined -- so Folio on Nord and Pebble on Latte
  * need no entries of their own, and a new palette works with every style
  * on the day it lands. Never put a hex literal in this file.
  *
@@ -37,13 +37,13 @@
  */
 
 /* ===================================================================== */
-/* Classic -- the ledger: serif headings, ruled tables, square corners.   */
+/* Folio -- the ledger: serif headings, ruled tables, square corners.   */
 /* ===================================================================== */
 
-html[data-ui-style='classic'] {
-  --font-sans: var(--font-ui-classic-body), 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: var(--font-ui-classic-mono), 'IBM Plex Mono', ui-monospace, monospace;
-  --ui-font-display: var(--font-ui-classic-display), 'Bodoni Moda', Georgia, serif;
+html[data-ui-style='folio'] {
+  --font-sans: var(--font-ui-folio-body), 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: var(--font-ui-folio-mono), 'IBM Plex Mono', ui-monospace, monospace;
+  --ui-font-display: var(--font-ui-folio-display), 'Bodoni Moda', Georgia, serif;
 
   --radius-sm: 0.125rem;
   --radius-md: 0.1875rem;
@@ -67,7 +67,7 @@ html[data-ui-style='classic'] {
   --ui-ledger-bar: color-mix(in oklab, var(--color-blue-500) 7%, transparent);
 }
 
-html.dark[data-ui-style='classic'] {
+html.dark[data-ui-style='folio'] {
   --ui-card-border: var(--color-gray-600);
   --shadow-card-dark: none;
   --ui-rule-ink: var(--color-gray-300);
@@ -75,57 +75,57 @@ html.dark[data-ui-style='classic'] {
 }
 
 /* next/font sets Inter on <body> by class; out-rank it. */
-html[data-ui-style='classic'] body {
+html[data-ui-style='folio'] body {
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
 @layer components {
-  html[data-ui-style='classic'] :is(h1, h2, h3, .ui-page-title) {
+  html[data-ui-style='folio'] :is(h1, h2, h3, .ui-page-title) {
     font-family: var(--ui-font-display);
     font-weight: 600;
     letter-spacing: 0;
   }
 
   /* A register is ruled top and bottom in ink, its header underlined. */
-  html[data-ui-style='classic'] .ui-table {
+  html[data-ui-style='folio'] .ui-table {
     border-top: 2px solid var(--ui-rule-ink);
     border-bottom: 2px solid var(--ui-rule-ink);
   }
-  html[data-ui-style='classic'] .ui-table > thead > tr > th {
+  html[data-ui-style='folio'] .ui-table > thead > tr > th {
     border-bottom: 1px solid var(--ui-rule-ink);
   }
-  html[data-ui-style='classic'] .ui-table > tbody > tr:nth-child(even) {
+  html[data-ui-style='folio'] .ui-table > tbody > tr:nth-child(even) {
     background-color: var(--ui-ledger-bar);
   }
 
-  html[data-ui-style='classic'] .ui-th {
+  html[data-ui-style='folio'] .ui-th {
     letter-spacing: 0.14em;
   }
 }
 
 /* The active section is underlined in the accent, the way a ledger tab is
    marked, rather than filled. */
-html[data-ui-style='classic'] .ui-nav-link {
+html[data-ui-style='folio'] .ui-nav-link {
   border-radius: 0;
 }
-html[data-ui-style='classic'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+html[data-ui-style='folio'] .ui-nav-link:is([aria-current='page'], [data-active]) {
   background-color: transparent;
   color: var(--color-gray-900);
   box-shadow: inset 0 -2px 0 var(--color-blue-600);
 }
-html.dark[data-ui-style='classic'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+html.dark[data-ui-style='folio'] .ui-nav-link:is([aria-current='page'], [data-active]) {
   color: var(--color-gray-100);
   box-shadow: inset 0 -2px 0 var(--color-blue-400);
 }
 
 /* ===================================================================== */
-/* Modern -- bold grotesque type, rounded colour blocks, pill controls.   */
+/* Pebble -- bold grotesque type, rounded colour blocks, pill controls.   */
 /* ===================================================================== */
 
-html[data-ui-style='modern'] {
-  --font-sans: var(--font-ui-modern-body), 'Instrument Sans', system-ui, sans-serif;
-  --ui-font-display: var(--font-ui-modern-display), 'Bricolage Grotesque', system-ui, sans-serif;
+html[data-ui-style='pebble'] {
+  --font-sans: var(--font-ui-pebble-body), 'Instrument Sans', system-ui, sans-serif;
+  --ui-font-display: var(--font-ui-pebble-display), 'Bricolage Grotesque', system-ui, sans-serif;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
@@ -145,60 +145,60 @@ html[data-ui-style='modern'] {
   --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.14);
 }
 
-html.dark[data-ui-style='modern'] {
+html.dark[data-ui-style='pebble'] {
   --ui-card-border: color-mix(in oklab, var(--color-gray-700) 60%, transparent);
 }
 
-html[data-ui-style='modern'] body {
+html[data-ui-style='pebble'] body {
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
 @layer components {
-  html[data-ui-style='modern'] :is(h1, h2, h3, .ui-page-title) {
+  html[data-ui-style='pebble'] :is(h1, h2, h3, .ui-page-title) {
     font-family: var(--ui-font-display);
     font-weight: 700;
     letter-spacing: -0.02em;
   }
-  html[data-ui-style='modern'] :is(h1, .ui-page-title) {
+  html[data-ui-style='pebble'] :is(h1, .ui-page-title) {
     letter-spacing: -0.03em;
   }
 }
 
 /* Buttons are pills and carry a heavier label. */
-html[data-ui-style='modern'] .ui-btn {
+html[data-ui-style='pebble'] .ui-btn {
   font-weight: 600;
 }
 
 /* Header cells speak in sentence case, not shouted small caps. */
-html[data-ui-style='modern'] .ui-th {
+html[data-ui-style='pebble'] .ui-th {
   text-transform: none;
   letter-spacing: normal;
 }
 
 /* The main navigation is one segmented pill; the current section is the
    raised segment. */
-html[data-ui-style='modern'] .ui-nav {
+html[data-ui-style='pebble'] .ui-nav {
   gap: 2px;
   padding: 4px;
   border-radius: 9999px;
   background-color: var(--color-gray-100);
 }
-html.dark[data-ui-style='modern'] .ui-nav {
+html.dark[data-ui-style='pebble'] .ui-nav {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] .ui-nav > * {
+html[data-ui-style='pebble'] .ui-nav > * {
   margin-inline: 0;
 }
-html[data-ui-style='modern'] .ui-nav-link {
+html[data-ui-style='pebble'] .ui-nav-link {
   border-radius: 9999px;
 }
-html[data-ui-style='modern'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+html[data-ui-style='pebble'] .ui-nav-link:is([aria-current='page'], [data-active]) {
   background-color: var(--color-white);
   color: var(--color-gray-900);
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.08);
 }
-html.dark[data-ui-style='modern'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+html.dark[data-ui-style='pebble'] .ui-nav-link:is([aria-current='page'], [data-active]) {
   background-color: var(--color-gray-700);
   color: var(--color-gray-100);
 }
@@ -209,7 +209,7 @@ html.dark[data-ui-style='modern'] .ui-nav-link:is([aria-current='page'], [data-a
 
 /* A statement figure: large whole units, the symbol and cents set small,
    raised to the cap line and muted. Standard renders the plain string. */
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-money-display {
   display: inline-flex;
   align-items: flex-start;
   flex-wrap: wrap;
@@ -219,36 +219,36 @@ html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display {
 /* Set back by opacity, never by a grey: the pieces keep the figure's own
    colour, so a negative balance's red (or a gain's green) runs through its
    cents and symbol instead of stopping at the decimal point. */
-html:is([data-ui-style='classic'], [data-ui-style='modern'])
+html:is([data-ui-style='folio'], [data-ui-style='pebble'])
   .ui-money-display
   :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
   font-size: 0.46em;
   margin-top: 0.1em;
   opacity: 0.62;
 }
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .ui-money-prefix {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-money-display .ui-money-prefix {
   margin-inline-end: 0.12em;
 }
 /* The sign is set small and raised with the symbol it precedes. At the
    figure's full size a minus is a long dash hanging at mid-height, apart from
    the raised symbol after it. It keeps the figure's colour, never muted: the
    sign is meaning, not ornament. */
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .ui-money-sign {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-money-display .ui-money-sign {
   font-size: 0.46em;
   margin-top: 0.1em;
   margin-inline-end: 0.06em;
 }
 /* Bodoni's hyphen is a hairline: small and raised it all but vanished, and a
    negative headline read as a positive one. A sign must never be illegible,
-   so Classic sets it in the body face, heavier and a little larger, still
+   so Folio sets it in the body face, heavier and a little larger, still
    beside the raised symbol. */
-html[data-ui-style='classic'] .ui-money-display .ui-money-sign {
+html[data-ui-style='folio'] .ui-money-display .ui-money-sign {
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 0.56em;
   margin-top: 0.02em;
 }
-html[data-ui-style='classic'] .ui-money-display {
+html[data-ui-style='folio'] .ui-money-display {
   font-weight: 500;
   letter-spacing: -0.01em;
   /* Bodoni's automatic optical size at headline sizes is its display cut,
@@ -257,10 +257,10 @@ html[data-ui-style='classic'] .ui-money-display {
   font-optical-sizing: none;
   font-variation-settings: 'opsz' 28;
 }
-html[data-ui-style='modern'] .ui-money-display {
+html[data-ui-style='pebble'] .ui-money-display {
   font-weight: 700;
   letter-spacing: -0.05em;
 }
-html[data-ui-style='modern'] .ui-money-display :is(.ui-money-prefix, .ui-money-fraction) {
+html[data-ui-style='pebble'] .ui-money-display :is(.ui-money-prefix, .ui-money-fraction) {
   letter-spacing: -0.02em;
 }

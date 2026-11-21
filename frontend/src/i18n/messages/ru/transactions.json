@@ -194,7 +194,7 @@
       "deleteButton": "Удалить"
     },
     "itemNamePlural": "проводки",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {Показана # запись} few {Показано # записи} many {Показано # записей} other {Показано # записи}}",
       "legendCleared": "очищена",
       "legendReconciled": "согласована",
@@ -202,7 +202,7 @@
       "markCleared": "О",
       "markReconciled": "С"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Выбранная транзакция",
       "balanceAfter": "Остаток после",
       "yesterday": "Вчера"

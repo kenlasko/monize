@@ -212,12 +212,12 @@
         "name": "标准",
         "description": "熟悉的 Monize 外观。"
       },
-      "classic": {
-        "name": "经典",
+      "folio": {
+        "name": "对开本",
         "description": "账本风格：衬线标题、带线条的表格、方形边角。"
       },
-      "modern": {
-        "name": "现代",
+      "pebble": {
+        "name": "卵石",
         "description": "粗体字、圆角色块和胶囊形控件。"
       }
     },

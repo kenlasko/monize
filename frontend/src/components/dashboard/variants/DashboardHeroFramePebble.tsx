@@ -5,11 +5,11 @@ import { HeroNextUpCard } from './HeroNextUpCard';
 import type { DashboardHeroFrameProps } from './dashboard-hero-view';
 
 /**
- * The hero in the Modern style: the greeting across the page, then the sets
+ * The hero in the Pebble style: the greeting across the page, then the sets
  * in one inverted block (`ui-invert` turns the gray ramp around inside it, so
  * either set draws there unchanged) beside the next-up card.
  */
-export function DashboardHeroFrameModern({ header, cycleControls, track, nextUp }: DashboardHeroFrameProps) {
+export function DashboardHeroFramePebble({ header, cycleControls, track, nextUp }: DashboardHeroFrameProps) {
   return (
     <div className="mb-4" data-testid="dashboard-hero-root">
       <div className="ui-dash-greeting flex items-end gap-2 px-1 pt-3 pb-5">

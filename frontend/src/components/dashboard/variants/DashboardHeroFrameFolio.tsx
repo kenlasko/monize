@@ -5,11 +5,11 @@ import { DashboardHeroFrameStandard } from './DashboardHeroFrameStandard';
 import type { DashboardHeroFrameProps } from './dashboard-hero-view';
 
 /**
- * The hero in the Classic style: the Standard arrangement set as a statement,
+ * The hero in the Folio style: the Standard arrangement set as a statement,
  * the greeting as its date line, a guilloche behind it and a rule under it.
  * The ornament is clipped in a box of its own, so the figures' popovers are not.
  */
-export function DashboardHeroFrameClassic(props: DashboardHeroFrameProps) {
+export function DashboardHeroFrameFolio(props: DashboardHeroFrameProps) {
   return (
     <DashboardHeroFrameStandard
       {...props}

@@ -546,11 +546,11 @@ describe('PreferencesSection', () => {
     expect(uiIndex).toBeLessThan(colourIndex);
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('radio', { name: /modern/i }));
+      fireEvent.click(screen.getByRole('radio', { name: /pebble/i }));
     });
 
     await waitFor(() => {
-      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'modern' });
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'pebble' });
     });
   });
 

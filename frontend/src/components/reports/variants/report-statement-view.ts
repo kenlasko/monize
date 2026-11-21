@@ -21,8 +21,8 @@ export interface StatementLine {
 
 /**
  * What a style's renderer of a report's statement is handed: the figures the
- * report already computed, laid out as a statement (Classic) or colour blocks
- * (Modern). Nothing is derived here; an unknown figure arrives as whatever the
+ * report already computed, laid out as a statement (Folio) or colour blocks
+ * (Pebble). Nothing is derived here; an unknown figure arrives as whatever the
  * report renders for it.
  */
 export interface ReportStatementViewProps {

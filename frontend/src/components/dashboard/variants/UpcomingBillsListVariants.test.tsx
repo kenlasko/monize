@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import { render } from '@/test/render';
-import { UpcomingBillsListClassic } from './UpcomingBillsListClassic';
-import { UpcomingBillsListModern } from './UpcomingBillsListModern';
+import { UpcomingBillsListFolio } from './UpcomingBillsListFolio';
+import { UpcomingBillsListPebble } from './UpcomingBillsListPebble';
 import type { UpcomingBillRow, UpcomingBillsListProps } from './upcoming-bills-view';
 
 const row = (over: Partial<UpcomingBillRow>): UpcomingBillRow => ({
@@ -44,8 +44,8 @@ const base = (onOpen = vi.fn(), onShowAll = vi.fn()): UpcomingBillsListProps => 
 });
 
 describe.each([
-  ['Classic', UpcomingBillsListClassic],
-  ['Modern', UpcomingBillsListModern],
+  ['Folio', UpcomingBillsListFolio],
+  ['Pebble', UpcomingBillsListPebble],
 ])('UpcomingBillsList%s', (_name, Variant) => {
   it('lists every occurrence as a button that posts it, an unknown amount said as one', () => {
     const onOpen = vi.fn();
@@ -78,18 +78,18 @@ describe.each([
   });
 });
 
-describe('UpcomingBillsListClassic', () => {
+describe('UpcomingBillsListFolio', () => {
   it('prints a day once, at the head of its occurrences', () => {
-    render(<UpcomingBillsListClassic {...base()} />);
+    render(<UpcomingBillsListFolio {...base()} />);
     const items = screen.getAllByRole('listitem');
     expect(items[1].querySelector('span')?.textContent).not.toBe('');
     expect(items[2].querySelector('span')?.textContent).toBe('');
   });
 });
 
-describe('UpcomingBillsListModern', () => {
+describe('UpcomingBillsListPebble', () => {
   it('marks today among the fourteen day chips', () => {
-    render(<UpcomingBillsListModern {...base()} />);
+    render(<UpcomingBillsListPebble {...base()} />);
     const chips = screen.getByLabelText(/The next two weeks/).querySelectorAll('li');
     expect(chips).toHaveLength(14);
     expect(chips[0]).toHaveAttribute('aria-current', 'date');

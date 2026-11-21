@@ -58,12 +58,12 @@ function ChangeMark({ up }: { up: boolean }) {
 }
 
 /**
- * The net worth set in the Classic style, the dashboard as a statement: the
+ * The net worth set in the Folio style, the dashboard as a statement: the
  * net worth set large in the serif with its cents set back, the month's move
  * under it, the three figures in ruled cells, and the history as a stepped
  * line rising beside the greeting.
  */
-export function NetWorthHeroClassic({
+export function NetWorthHeroFolio({
   label,
   currency,
   netWorth,

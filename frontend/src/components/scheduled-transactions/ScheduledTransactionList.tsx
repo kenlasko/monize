@@ -387,7 +387,7 @@ interface ScheduledTransactionRowProps {
   cellPadding: string;
   /** Row position, for the striping that carries a row across a dense table. */
   index: number;
-  /** The row above falls due the same day: Classic prints the day once. */
+  /** The row above falls due the same day: Folio prints the day once. */
   sameDay?: boolean;
   formatDate: (date: string) => string;
   formatAmount: (amount: number | null | undefined, currencyCode?: string) => JSX.Element;

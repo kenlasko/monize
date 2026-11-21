@@ -132,11 +132,11 @@ export class UpdatePreferencesDto {
     description:
       "UI style: typography, shapes and table styling, independent of the colour theme",
     example: "standard",
-    enum: ["standard", "classic", "modern"],
+    enum: ["standard", "folio", "pebble"],
   })
   @IsOptional()
   @IsString()
-  @IsIn(["standard", "classic", "modern"])
+  @IsIn(["standard", "folio", "pebble"])
   uiStyle?: string;
 
   @ApiPropertyOptional({

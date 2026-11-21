@@ -4,12 +4,12 @@ import { COLOR_THEMES, type ColorTheme } from './color-themes';
  * UI style identifiers: a second appearance axis beside the colour theme
  * (palette) and the light/dark mode. A style changes typography, shapes and
  * table styling, never colours. 'standard' applies no attribute and uses the
- * stock look; 'classic' and 'modern' are applied as `data-ui-style` on
+ * stock look; 'folio' and 'pebble' are applied as `data-ui-style` on
  * `<html>`, with their CSS in `src/app/ui-styles.css`. Styles are independent
  * of, and composable with, every colour theme. The backend validates the same
  * list in `backend/src/users/dto/update-preferences.dto.ts`.
  */
-export const UI_STYLES = ['standard', 'classic', 'modern'] as const;
+export const UI_STYLES = ['standard', 'folio', 'pebble'] as const;
 
 export type UiStyle = (typeof UI_STYLES)[number];
 
@@ -18,14 +18,14 @@ export function isUiStyle(value: unknown): value is UiStyle {
 }
 
 /**
- * The palette each style was designed in: Classic on the green-bar `ledger`,
- * Modern on `studio`. Picking the style switches to it when the palette in
+ * The palette each style was designed in: Folio on the green-bar `ledger`,
+ * Pebble on `studio`. Picking the style switches to it when the palette in
  * use is not one of the style's own.
  */
 export const UI_STYLE_COMPANION_PALETTE: Readonly<Record<UiStyle, ColorTheme | null>> = {
   standard: null,
-  classic: 'ledger',
-  modern: 'studio',
+  folio: 'ledger',
+  pebble: 'studio',
 };
 
 /**
@@ -37,14 +37,14 @@ const ACCESSIBILITY_PALETTES: readonly ColorTheme[] = ['highcontrast', 'colorbli
 
 /**
  * The palettes the colour theme picker offers under each style, companion
- * first. Standard offers every palette. Classic keeps the paper and print
- * palettes its ledger look was drawn for; Modern the clean and dark-first
+ * first. Standard offers every palette. Folio keeps the paper and print
+ * palettes its ledger look was drawn for; Pebble the clean and dark-first
  * ones. A palette absent here still renders correctly under the style (a
  * style names no colour); the list is about which pairs were meant.
  */
 export const UI_STYLE_PALETTES: Readonly<Record<UiStyle, readonly ColorTheme[]>> = {
   standard: COLOR_THEMES,
-  classic: [
+  folio: [
     'ledger',
     'msmoney',
     'newspaper',
@@ -55,7 +55,7 @@ export const UI_STYLE_PALETTES: Readonly<Record<UiStyle, readonly ColorTheme[]>>
     'gruvbox',
     ...ACCESSIBILITY_PALETTES,
   ],
-  modern: [
+  pebble: [
     'studio',
     'default',
     'nord',

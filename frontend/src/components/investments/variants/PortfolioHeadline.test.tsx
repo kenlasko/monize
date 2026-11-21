@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import { render } from '@/test/render';
 import {
-  PortfolioHeadlineClassic,
-  PortfolioHeadlineModern,
+  PortfolioHeadlineFolio,
+  PortfolioHeadlinePebble,
   PortfolioHeadlineStandard,
   type PortfolioHeadlineViewProps,
 } from './PortfolioHeadline';
@@ -24,14 +24,14 @@ describe('PortfolioHeadline', () => {
     expect(screen.getByText('$160,433.56')).toBeInTheDocument();
   });
 
-  it('Classic sets the total as a statement figure with a label', () => {
-    render(<PortfolioHeadlineClassic {...props} />);
+  it('Folio sets the total as a statement figure with a label', () => {
+    render(<PortfolioHeadlineFolio {...props} />);
     expect(screen.getByText('Total Portfolio Value')).toHaveClass('ui-figure-label');
     expect(screen.getByTestId('portfolio-headline')).toHaveTextContent('$160,433.56');
   });
 
-  it('Modern sets the total on the ink block with the gain as a pill', () => {
-    render(<PortfolioHeadlineModern {...props} />);
+  it('Pebble sets the total on the ink block with the gain as a pill', () => {
+    render(<PortfolioHeadlinePebble {...props} />);
     expect(screen.getByTestId('portfolio-headline')).toHaveClass('ui-invert', 'ui-ink-block');
     expect(screen.getByTestId('portfolio-headline')).toHaveTextContent('$160,433.56');
     expect(screen.getByTestId('portfolio-headline-pill')).toHaveTextContent('+$15,528.02');
@@ -40,7 +40,7 @@ describe('PortfolioHeadline', () => {
 
   it('names a foreign currency beside the figure and keeps the approximation', () => {
     render(
-      <PortfolioHeadlineModern {...props} foreignCurrency="EUR" approx={'≈ $1.00 USD'} />,
+      <PortfolioHeadlinePebble {...props} foreignCurrency="EUR" approx={'≈ $1.00 USD'} />,
     );
     expect(screen.getByText('EUR')).toBeInTheDocument();
     expect(screen.getByText('≈ $1.00 USD')).toBeInTheDocument();

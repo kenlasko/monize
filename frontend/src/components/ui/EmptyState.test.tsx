@@ -62,7 +62,7 @@ describe('EmptyState', () => {
   });
 });
 
-describe.each(['classic', 'modern'] as const)('EmptyState in the %s style', (uiStyle) => {
+describe.each(['folio', 'pebble'] as const)('EmptyState in the %s style', (uiStyle) => {
   beforeEach(() => {
     style.current = uiStyle;
   });
@@ -84,9 +84,9 @@ describe.each(['classic', 'modern'] as const)('EmptyState in the %s style', (uiS
   });
 });
 
-describe('EmptyState in the Classic style', () => {
+describe('EmptyState in the Folio style', () => {
   beforeEach(() => {
-    style.current = 'classic';
+    style.current = 'folio';
   });
 
   it('sets the page flush left with the rosette in place of the glyph, hidden from assistive tech', () => {
@@ -94,7 +94,7 @@ describe('EmptyState in the Classic style', () => {
       <EmptyState icon={<svg data-testid="glyph" />} title="Nothing here" />,
     );
     const root = container.firstElementChild;
-    expect(root).toHaveClass('ui-empty', 'ui-empty-classic', 'text-left');
+    expect(root).toHaveClass('ui-empty', 'ui-empty-folio', 'text-left');
     expect(screen.queryByTestId('glyph')).not.toBeInTheDocument();
     const ornament = container.querySelector('.ui-empty-ornament');
     expect(ornament).toBeTruthy();
@@ -108,9 +108,9 @@ describe('EmptyState in the Classic style', () => {
   });
 });
 
-describe('EmptyState in the Modern style', () => {
+describe('EmptyState in the Pebble style', () => {
   it('keeps the Standard arrangement, which the kit sheet re-skins', () => {
-    style.current = 'modern';
+    style.current = 'pebble';
     const { container } = render(
       <EmptyState icon={<svg data-testid="glyph" />} title="Nothing here" />,
     );

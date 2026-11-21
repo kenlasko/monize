@@ -387,7 +387,7 @@ describe('SettingsNav', () => {
   });
 
 describe('SettingsNav style markers', () => {
-  it('marks the open section and the danger section for the Classic and Modern nav', () => {
+  it('marks the open section and the danger section for the Folio and Pebble nav', () => {
     render(
       <SettingsNav
         sections={defaultSections}

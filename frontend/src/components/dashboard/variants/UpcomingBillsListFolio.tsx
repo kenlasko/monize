@@ -79,10 +79,10 @@ function InOutStrip({ strip }: { strip: UpcomingStrip }) {
 }
 
 /**
- * Upcoming Bills in the Classic style: the in/out strip over a ruled list,
+ * Upcoming Bills in the Folio style: the in/out strip over a ruled list,
  * one line per occurrence, its day printed once at the head of the day.
  */
-export function UpcomingBillsListClassic({ rows, hiddenCount, strip, onOpen, onShowAll }: UpcomingBillsListProps) {
+export function UpcomingBillsListFolio({ rows, hiddenCount, strip, onOpen, onShowAll }: UpcomingBillsListProps) {
   const t = useTranslations('dashboard');
   const formatChartDate = useChartDateFormat();
   return (

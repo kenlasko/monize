@@ -16,8 +16,8 @@ import { useDragReorder } from '@/hooks/useDragReorder';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
 import type { FavouriteAccountRow, FavouriteAccountsViewProps } from './variants/favourite-accounts-view';
 import { FavouriteAccountsStandard } from './variants/FavouriteAccountsStandard';
-import { FavouriteAccountsClassic } from './variants/FavouriteAccountsClassic';
-import { FavouriteAccountsModern } from './variants/FavouriteAccountsModern';
+import { FavouriteAccountsFolio } from './variants/FavouriteAccountsFolio';
+import { FavouriteAccountsPebble } from './variants/FavouriteAccountsPebble';
 import { WidgetHeading } from './widget-meta';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { preferredCurrency } from '@/lib/default-currency';
@@ -40,8 +40,8 @@ interface FavouriteAccountsProps {
 
 const FAVOURITE_ACCOUNTS_VARIANTS: StyleVariants<FavouriteAccountsViewProps> = {
   standard: FavouriteAccountsStandard,
-  classic: FavouriteAccountsClassic,
-  modern: FavouriteAccountsModern,
+  folio: FavouriteAccountsFolio,
+  pebble: FavouriteAccountsPebble,
 };
 
 export function FavouriteAccounts({ accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, institutions, isLoading, onAccountsChanged: _onAccountsChanged }: FavouriteAccountsProps) {

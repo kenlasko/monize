@@ -20,7 +20,7 @@ describe('UI style palettes', () => {
     );
   });
 
-  it.each(['classic', 'modern'] as const)('%s lists its companion first', (style) => {
+  it.each(['folio', 'pebble'] as const)('%s lists its companion first', (style) => {
     expect(UI_STYLE_PALETTES[style][0]).toBe(UI_STYLE_COMPANION_PALETTE[style]);
   });
 
@@ -31,13 +31,13 @@ describe('UI style palettes', () => {
 
 describe('paletteAfterStyleChange', () => {
   it('keeps a palette the style offers', () => {
-    expect(paletteAfterStyleChange('modern', 'nord')).toBe('nord');
-    expect(paletteAfterStyleChange('classic', 'highcontrast')).toBe('highcontrast');
+    expect(paletteAfterStyleChange('pebble', 'nord')).toBe('nord');
+    expect(paletteAfterStyleChange('folio', 'highcontrast')).toBe('highcontrast');
   });
 
   it('moves to the companion otherwise', () => {
-    expect(paletteAfterStyleChange('classic', 'nord')).toBe('ledger');
-    expect(paletteAfterStyleChange('modern', 'latte')).toBe('studio');
+    expect(paletteAfterStyleChange('folio', 'nord')).toBe('ledger');
+    expect(paletteAfterStyleChange('pebble', 'latte')).toBe('studio');
   });
 
   it('never changes the palette for Standard', () => {

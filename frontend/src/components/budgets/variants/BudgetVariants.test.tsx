@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/render';
 import userEvent from '@testing-library/user-event';
-import { BudgetSummaryClassic } from './BudgetSummaryClassic';
-import { BudgetSummaryModern } from './BudgetSummaryModern';
-import { BudgetCategoryListClassic } from './BudgetCategoryListClassic';
-import { BudgetCategoryListModern } from './BudgetCategoryListModern';
-import { BudgetVelocityModern } from './BudgetVelocityModern';
-import { BudgetListModern } from './BudgetListModern';
+import { BudgetSummaryFolio } from './BudgetSummaryFolio';
+import { BudgetSummaryPebble } from './BudgetSummaryPebble';
+import { BudgetCategoryListFolio } from './BudgetCategoryListFolio';
+import { BudgetCategoryListPebble } from './BudgetCategoryListPebble';
+import { BudgetVelocityPebble } from './BudgetVelocityPebble';
+import { BudgetListPebble } from './BudgetListPebble';
 import type { BudgetSummaryViewProps } from './budget-summary-view';
 import type { BudgetCategoryListViewProps } from './budget-category-list-view';
 import type { Budget, BudgetVelocity } from '@/types/budget';
@@ -25,8 +25,8 @@ const summary: BudgetSummaryViewProps = {
 };
 
 describe.each([
-  ['Classic', BudgetSummaryClassic],
-  ['Modern', BudgetSummaryModern],
+  ['Folio', BudgetSummaryFolio],
+  ['Pebble', BudgetSummaryPebble],
 ])('BudgetSummary%s', (_n, Variant) => {
   it('labels the four totals and exposes the spend gauge', () => {
     render(<Variant {...summary} />);
@@ -72,8 +72,8 @@ const list: BudgetCategoryListViewProps = {
 };
 
 describe.each([
-  ['Classic', BudgetCategoryListClassic],
-  ['Modern', BudgetCategoryListModern],
+  ['Folio', BudgetCategoryListFolio],
+  ['Pebble', BudgetCategoryListPebble],
 ])('BudgetCategoryList%s', (_n, Variant) => {
   it('shows the line and opens it from a real button', async () => {
     const onCategoryClick = vi.fn();
@@ -84,9 +84,9 @@ describe.each([
   });
 });
 
-describe('BudgetCategoryListClassic columns', () => {
+describe('BudgetCategoryListFolio columns', () => {
   it('sets Budgeted, Spent and Remaining in their own columns', () => {
-    render(<BudgetCategoryListClassic {...list} />);
+    render(<BudgetCategoryListFolio {...list} />);
     expect(screen.getByRole('columnheader', { name: 'Budgeted' })).toBeInTheDocument();
     expect(screen.getByText('$600.00')).toBeInTheDocument();
     expect(screen.getByText('$700.00')).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe('BudgetCategoryListClassic columns', () => {
   });
 });
 
-describe('BudgetVelocityModern', () => {
+describe('BudgetVelocityPebble', () => {
   const velocity: BudgetVelocity = {
     dailyBurnRate: 155,
     projectedTotal: 4650,
@@ -115,13 +115,13 @@ describe('BudgetVelocityModern', () => {
   };
 
   it('keeps an unknown safe-to-spend unknown, not zero', () => {
-    render(<BudgetVelocityModern velocity={velocity} formatCurrency={fmt} />);
+    render(<BudgetVelocityPebble velocity={velocity} formatCurrency={fmt} />);
     expect(screen.getByText('Safe to spend')).toBeInTheDocument();
     expect(screen.queryByText('$0.00/day')).not.toBeInTheDocument();
   });
 });
 
-describe('BudgetListModern', () => {
+describe('BudgetListPebble', () => {
   const budget = {
     id: 'b1',
     name: 'November Budget',
@@ -134,7 +134,7 @@ describe('BudgetListModern', () => {
 
   it('opens a budget from its block', async () => {
     const onOpen = vi.fn();
-    render(<BudgetListModern budgets={[budget]} onOpen={onOpen} />);
+    render(<BudgetListPebble budgets={[budget]} onOpen={onOpen} />);
     await userEvent.click(screen.getByRole('button', { name: /November Budget/ }));
     expect(onOpen).toHaveBeenCalledWith(budget);
     expect(screen.getByText('Active')).toBeInTheDocument();
