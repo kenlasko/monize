@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@/test/render';
 import { TransactionList } from './TransactionList';
+import { useDensityStore } from '@/store/densityStore';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 
 /**
@@ -157,6 +158,46 @@ describe('Folio register', () => {
     const foot = container.querySelector('tfoot') as HTMLElement;
     expect(within(foot).getByText('$75.00')).toBeTruthy();
     expect(within(foot).getByText('$200.00')).toBeTruthy();
+  });
+
+  it.each([
+    ['one account', { isSingleAccountView: true }],
+    ['every account', { isSingleAccountView: false }],
+    ['selecting', { selectionMode: true, selectedIds: new Set<string>() }],
+  ])('lays the footer out cell for cell under the rows, tier classes and all (%s)', (_label, extra) => {
+    // The container tiers hide columns with a class, so a footer that spanned
+    // colCount columns put the totals under Status and Actions at mid widths
+    // and past the table's edge on a phone (#2305).
+    const { container } = renderList(extra);
+    const tiers = (cell: Element) =>
+      Array.from(cell.classList).filter((c) => c === 'hidden' || c.startsWith('@min-')).join(' ');
+    const row = Array.from(container.querySelector('tbody tr.ui-register-row')!.children);
+    const foot = Array.from(container.querySelector('tfoot tr')!.children);
+    expect(foot.map(tiers)).toEqual(row.map(tiers));
+    foot.forEach((cell) => expect((cell as HTMLTableCellElement).colSpan).toBe(1));
+    const paymentAt = row.findIndex((cell) => cell.classList.contains('ui-register-payment'));
+    expect(foot[paymentAt].textContent).toBe('$75.00');
+    expect(foot[paymentAt + 1].textContent).toBe('$200.00');
+  });
+
+  it('takes the wide inset, which halves the padding on a phone, where Standard keeps the default', () => {
+    // Folio's second money column is what a phone's register has no room for
+    // at the default inset; the payee was squeezed to nothing (#2305).
+    useDensityStore.setState({ densities: { transactions: 'dense' } });
+    try {
+      const { container, unmount } = renderList();
+      const cell = container.querySelector('tbody tr.ui-register-row > td') as HTMLElement;
+      expect(cell.className).toMatch(/(^|\s)px-1\.5 sm:px-3(\s|$)/);
+      unmount();
+      style.value = 'standard';
+      const standard = renderList();
+      const standardCell = standard.container.querySelector('tbody tr.ui-register-row > td') as HTMLElement;
+      expect(standardCell.className).not.toMatch(/px-1\.5/);
+      expect(standardCell.className).toMatch(/(^|\s)px-3(\s|$)/);
+      standard.unmount();
+    } finally {
+      useDensityStore.setState({ densities: {} });
+    }
   });
 
   it('keeps the Date column when the register is not in date order', () => {

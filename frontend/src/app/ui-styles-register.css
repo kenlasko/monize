@@ -177,6 +177,22 @@ html[data-ui-style='folio'] .ui-register-card-grouped > .col-span-3 {
   grid-column: 1 / -1;
 }
 
+/* A phone-width register (the tier table at Compact and Dense). The header's
+   tracking made each money column wider than its figures, and the payee
+   header, which also carries the date sort, ran under Payment; it wraps
+   instead. Measured on the register's own container, as the tiers are. */
+@container (width < 40rem) {
+  html[data-ui-style='folio'] .ui-register > thead > tr > th {
+    letter-spacing: 0.04em;
+  }
+  /* A one-word label longer than the column (German "Zahlungsempfänger")
+     breaks too. */
+  html[data-ui-style='folio'] .ui-register > thead th.ui-register-payee > div {
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+  }
+}
+
 /* ===================================================================== */
 /* Pebble register: white day blocks and the inspector.                  */
 /* ===================================================================== */
