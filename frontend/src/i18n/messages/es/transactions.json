@@ -194,7 +194,7 @@
       "deleteButton": "Eliminar"
     },
     "itemNamePlural": "transacciones",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {# movimiento mostrado} other {# movimientos mostrados}}",
       "legendCleared": "compensada",
       "legendReconciled": "conciliada",
@@ -202,7 +202,7 @@
       "markCleared": "c",
       "markReconciled": "C"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Transacción seleccionada",
       "balanceAfter": "Saldo después",
       "yesterday": "Ayer"

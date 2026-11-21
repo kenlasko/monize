@@ -50,11 +50,11 @@ export function FavouriteAccountMeta({ row }: { row: FavouriteAccountRow }) {
 }
 
 /**
- * Favourite Accounts in the Classic style: a ruled list under the section
+ * Favourite Accounts in the Folio style: a ruled list under the section
  * rule, the balance right-aligned with its cents set back. Reordering keeps
  * the Standard tiles, which carry the drag handles.
  */
-export function FavouriteAccountsClassic(props: FavouriteAccountsViewProps) {
+export function FavouriteAccountsFolio(props: FavouriteAccountsViewProps) {
   const t = useTranslations('dashboard');
   const { rows, reordering, onToggleReorder } = props;
   if (reordering) return <FavouriteAccountsStandard {...props} />;

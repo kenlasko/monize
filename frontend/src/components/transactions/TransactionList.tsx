@@ -63,7 +63,7 @@ import {
   pageTotals,
   registerGroupLabel,
 } from './register-style-data';
-import { ModernRegister } from './variants/ModernRegister';
+import { PebbleRegister } from './variants/PebbleRegister';
 import { useIsLgUp } from '@/hooks/useIsMobile';
 
 interface TransactionListProps {
@@ -423,13 +423,13 @@ export function TransactionList({
 
   const { cellPadding, headerPadding } = useTableDensity(density);
 
-  // Modern draws the register as a list of rows with a selected-row inspector
+  // Pebble draws the register as a list of rows with a selected-row inspector
   // beside it (from `lg`). Below that a tap opens the editor, exactly as the
   // standard row does. The foreign-currency fee surface keeps its columns.
-  const modernList = uiStyle === 'modern' && !showFxColumns;
+  const pebbleList = uiStyle === 'pebble' && !showFxColumns;
   const inspectorVisible = useIsLgUp();
   const [inspectedId, setInspectedId] = useState<string | null>(null);
-  const handleModernRowClick = useCallback(
+  const handlePebbleRowClick = useCallback(
     (transaction: Transaction) => {
       if (longPressTriggered.current) {
         longPressTriggered.current = false;
@@ -640,19 +640,19 @@ export function TransactionList({
   const sortedByDate = isSortedByDate(dataSort);
   const showRunningBalance =
     (isSingleAccountView || startingBalance !== undefined) && sortedByDate;
-  // The Classic register: Payment / Deposit columns and the date as a group
+  // The Folio register: Payment / Deposit columns and the date as a group
   // row. The foreign-currency fee surface keeps its own columns and its Date
   // column. Group rows only mean something while the rows run in date order.
-  const splitAmount = uiStyle === 'classic' && !showFxColumns;
+  const splitAmount = uiStyle === 'folio' && !showFxColumns;
   const groupedByDate = splitAmount && sortedByDate;
-  // Classic prints the memo inline after the payee, so its Description column
+  // Folio prints the memo inline after the payee, so its Description column
   // is not drawn. The chooser still reads the reader's own set.
   const tableHidden = useMemo<ReadonlySet<string>>(
     () => (splitAmount ? new Set([...hiddenColumns, 'description']) : hiddenColumns),
     [splitAmount, hiddenColumns],
   );
   // Whether the TABLE draws a column: the rows' set, so a header cell and
-  // every colSpan agree with the cells the rows render. Classic leaves out
+  // every colSpan agree with the cells the rows render. Folio leaves out
   // Description; a header that still drew it pushed every later column one
   // to the left. The chooser and the sort chips read the reader's own set.
   const isVisible = (id: string): boolean => !tableHidden.has(id);
@@ -724,7 +724,7 @@ export function TransactionList({
     [transactions, startingBalance, dataSort?.direction, displayAmounts, runningBalanceDecimals],
   );
 
-  // Figures the Classic and Modern layouts draw around the rows.
+  // Figures the Folio and Pebble layouts draw around the rows.
   const styleData = useMemo(
     () =>
       uiStyle === 'standard'
@@ -811,7 +811,7 @@ export function TransactionList({
       {/* Density toggle and top pagination */}
       {showToolbar && (
         <ListTopToolbar
-          densityView={modernList ? undefined : densityView}
+          densityView={pebbleList ? undefined : densityView}
           viewToggle={viewToggle}
           currentPage={currentPage}
           totalPages={totalPages}
@@ -823,8 +823,8 @@ export function TransactionList({
             <>
               {/* The one way to bring a hidden column back, so it is first and
                   always drawn; its trigger carries the count of hidden ones. */}
-              {/* Modern's block list has no columns or row density to set. */}
-              {!modernList && (
+              {/* Pebble's block list has no columns or row density to set. */}
+              {!pebbleList && (
                 <ColumnChooserMenu
                   columns={hideableColumns}
                   hidden={hiddenColumns}
@@ -868,8 +868,8 @@ export function TransactionList({
       {/* The container the column tiers measure: a column appears when the
           REGISTER itself is wide enough, not when the viewport is -- the
           viewport overstates this width by the page padding around it. */}
-      {modernList ? (
-        <ModernRegister
+      {pebbleList ? (
+        <PebbleRegister
           transactions={transactions}
           today={today}
           locale={locale}
@@ -887,7 +887,7 @@ export function TransactionList({
           }
           onToggleSelection={onToggleSelection}
           highlightTransactionId={highlightTransactionId}
-          onRowClick={handleModernRowClick}
+          onRowClick={handlePebbleRowClick}
           onLongPressStart={handleLongPressStart}
           onLongPressStartTouch={handleLongPressStartTouch}
           onLongPressEnd={handleLongPressEnd}
@@ -908,7 +908,7 @@ export function TransactionList({
           categoryLabelMap={categoryLabelMap}
           categoryIconMap={categoryIconMap}
           sortStrip={
-            <table className="ui-modern-sortstrip">
+            <table className="ui-pebble-sortstrip">
               <thead>
                 {sort && onSortChange ? (
                   <tr role="row" aria-label={t('list.sort.stripLabel')} className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -1046,7 +1046,7 @@ export function TransactionList({
                 className={`${headerPadding} ${compactPadding.payee} ${REGISTER_PAYEE_CELL_FLOOR} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${splitAmount ? 'ui-register-payee' : ''}`}
               >
                 {groupedByDate && sort && onSortChange && (
-                  /* Classic's date groups replace the Date column, so its sort
+                  /* Folio's date groups replace the Date column, so its sort
                      control leads the header row, at the far left beside Payee.
                      Marked as header controls so a press sorts by date only. */
                   <span
@@ -1118,7 +1118,7 @@ export function TransactionList({
                 </th>
               )}
               {splitAmount ? (
-                // Classic: one signed amount drawn as two columns. The sort
+                // Folio: one signed amount drawn as two columns. The sort
                 // belongs to the amount, so both headers sort it.
                 (['payment', 'deposit'] as const).map((kind) => (
                   <RegisterHeader
@@ -1281,7 +1281,7 @@ export function TransactionList({
                   colSpan={Math.max(1, colCount - 3 - (showRunningBalance ? 1 : 0) - (isVisible('status') ? 1 : 0))}
                   className={cellPadding}
                 >
-                  {t('list.classic.entriesShown', { count: styleData.totals.count })}
+                  {t('list.folio.entriesShown', { count: styleData.totals.count })}
                 </td>
                 <td className={`${cellPadding} ui-register-money text-right`}>
                   {formatCurrency(styleData.totals.payments, transactions[0]?.currencyCode)}
@@ -1304,9 +1304,9 @@ export function TransactionList({
       )}
       {groupedByDate && !wrapped && (
         <p className="ui-register-legend">
-          <span><span className="ui-register-mark">{t('list.classic.markCleared')}</span> {t('list.classic.legendCleared')}</span>
-          <span><span className="ui-register-mark">{t('list.classic.markReconciled')}</span> {t('list.classic.legendReconciled')}</span>
-          {showRunningBalance && <span>{t('list.classic.legendRule')}</span>}
+          <span><span className="ui-register-mark">{t('list.folio.markCleared')}</span> {t('list.folio.legendCleared')}</span>
+          <span><span className="ui-register-mark">{t('list.folio.markReconciled')}</span> {t('list.folio.legendReconciled')}</span>
+          {showRunningBalance && <span>{t('list.folio.legendRule')}</span>}
         </p>
       )}
 

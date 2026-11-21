@@ -130,7 +130,7 @@ describe('AuthShell', () => {
     expect(document.querySelector('select')).toBeFalsy();
   });
 
-  it('carries the style markers: a wordmark and rosette only the Classic and Modern title pages print', () => {
+  it('carries the style markers: a wordmark and rosette only the Folio and Pebble title pages print', () => {
     const { container, getByText } = renderShell(<AuthShell title="Sign in">x</AuthShell>);
     const wordmark = container.querySelector('.ui-auth-wordmark');
     expect(wordmark).toHaveTextContent('Monize');

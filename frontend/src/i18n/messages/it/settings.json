@@ -212,12 +212,12 @@
         "name": "Standard",
         "description": "L'aspetto familiare di Monize."
       },
-      "classic": {
-        "name": "Classico",
+      "folio": {
+        "name": "Folio",
         "description": "Ispirato ai libri contabili: titoli con grazie, tabelle rigate, angoli squadrati."
       },
-      "modern": {
-        "name": "Moderno",
+      "pebble": {
+        "name": "Ciottolo",
         "description": "Caratteri in grassetto, blocchi di colore arrotondati e controlli a pillola."
       }
     },

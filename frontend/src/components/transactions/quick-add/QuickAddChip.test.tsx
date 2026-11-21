@@ -3,7 +3,7 @@ import { render, screen } from '@/test/render';
 import { QuickAddChip } from './QuickAddChip';
 
 describe('QuickAddChip style hooks', () => {
-  it('carries the field key and a label span only the Classic and Modern styles print', () => {
+  it('carries the field key and a label span only the Folio and Pebble styles print', () => {
     render(
       <QuickAddChip
         fieldLabel="Amount"

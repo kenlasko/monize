@@ -13,7 +13,7 @@ const LOSS = 'text-red-600 dark:text-red-400';
  * ledger figures down their own columns, and the ticked gauge for how far
  * through the line the period is. Only an overspend takes the loss colour.
  */
-export function BudgetCategoryListClassic({
+export function BudgetCategoryListFolio({
   rows,
   formatCurrency,
   pacePercent,

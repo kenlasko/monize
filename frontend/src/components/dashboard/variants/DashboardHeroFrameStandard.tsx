@@ -6,7 +6,7 @@ import type { DashboardHeroFrameProps } from './dashboard-hero-view';
 
 /**
  * The hero in the Standard style: the greeting row above the sets, the chart
- * rising beside it. `ornament` and `className` are the Classic style's, which
+ * rising beside it. `ornament` and `className` are the Folio style's, which
  * keeps this arrangement and engraves it.
  */
 export function DashboardHeroFrameStandard({

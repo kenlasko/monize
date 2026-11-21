@@ -20,13 +20,13 @@ import { useHeroCycle } from './useHeroCycle';
 import { upcomingOccurrences } from './upcoming-occurrences';
 import type { DashboardHeroFrameProps, HeroNextUp } from './variants/dashboard-hero-view';
 import { DashboardHeroFrameStandard } from './variants/DashboardHeroFrameStandard';
-import { DashboardHeroFrameClassic } from './variants/DashboardHeroFrameClassic';
-import { DashboardHeroFrameModern } from './variants/DashboardHeroFrameModern';
+import { DashboardHeroFrameFolio } from './variants/DashboardHeroFrameFolio';
+import { DashboardHeroFramePebble } from './variants/DashboardHeroFramePebble';
 
 const HERO_FRAME_VARIANTS: StyleVariants<DashboardHeroFrameProps> = {
   standard: DashboardHeroFrameStandard,
-  classic: DashboardHeroFrameClassic,
-  modern: DashboardHeroFrameModern,
+  folio: DashboardHeroFrameFolio,
+  pebble: DashboardHeroFramePebble,
 };
 
 interface DashboardHeroProps {
@@ -52,7 +52,7 @@ interface DashboardHeroProps {
   header: ReactNode;
   /**
    * The dashboard's scheduled transactions, the same list the Upcoming Bills
-   * widget reads. The Modern style shows the next occurrence beside the sets.
+   * widget reads. The Pebble style shows the next occurrence beside the sets.
    */
   scheduledTransactions?: ScheduledTransaction[];
 }

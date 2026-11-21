@@ -24,7 +24,7 @@ interface PageHeaderProps {
   subtitle?: string;
   /**
    * A short line naming where the page sits ("TD Canada Trust · Chequing"),
-   * printed above the title by the Classic and Modern UI styles only. Standard
+   * printed above the title by the Folio and Pebble UI styles only. Standard
    * keeps it `hidden`, so passing one changes nothing there.
    */
   eyebrow?: string;

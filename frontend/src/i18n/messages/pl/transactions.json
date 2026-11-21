@@ -194,7 +194,7 @@
       "deleteButton": "Usuń"
     },
     "itemNamePlural": "transakcji",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {Pokazano # wpis} few {Pokazano # wpisy} many {Pokazano # wpisów} other {Pokazano # wpisu}}",
       "legendCleared": "rozliczona",
       "legendReconciled": "uzgodniona",
@@ -202,7 +202,7 @@
       "markCleared": "r",
       "markReconciled": "U"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Wybrana transakcja",
       "balanceAfter": "Saldo po",
       "yesterday": "Wczoraj"

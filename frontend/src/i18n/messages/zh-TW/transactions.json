@@ -194,7 +194,7 @@
       "deleteButton": "刪除"
     },
     "itemNamePlural": "筆交易",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, other {顯示 # 筆記錄}}",
       "legendCleared": "已結清",
       "legendReconciled": "已對帳",
@@ -202,7 +202,7 @@
       "markCleared": "結",
       "markReconciled": "對"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "所選交易",
       "balanceAfter": "交易後結餘",
       "yesterday": "昨天"

@@ -11,7 +11,7 @@ import type { BudgetCategoryListViewProps } from './budget-category-list-view';
  * tight figure, a fat pill gauge, and the state as a pill. Each block is one
  * button that opens the category's transactions.
  */
-export function BudgetCategoryListModern({
+export function BudgetCategoryListPebble({
   rows,
   formatCurrency,
   pacePercent,

@@ -15,8 +15,8 @@ describe('useUiStyle', () => {
   });
 
   it('reads the active style', () => {
-    theme.value = { uiStyle: 'classic' };
-    expect(renderHook(() => useUiStyle()).result.current).toBe('classic');
+    theme.value = { uiStyle: 'folio' };
+    expect(renderHook(() => useUiStyle()).result.current).toBe('folio');
   });
 
   it('falls back to standard when the context carries no style', () => {
@@ -26,16 +26,16 @@ describe('useUiStyle', () => {
 
 describe('renderForStyle', () => {
   const Standard = ({ label }: { label: string }) => <span>standard {label}</span>;
-  const Classic = ({ label }: { label: string }) => <span>classic {label}</span>;
-  const VARIANTS: StyleVariants<{ label: string }> = { standard: Standard, classic: Classic };
+  const Folio = ({ label }: { label: string }) => <span>folio {label}</span>;
+  const VARIANTS: StyleVariants<{ label: string }> = { standard: Standard, folio: Folio };
 
   it('renders the variant for the style, with the same props', () => {
-    const el = renderForStyle('classic', VARIANTS, { label: 'x' });
-    expect(el.type).toBe(Classic);
+    const el = renderForStyle('folio', VARIANTS, { label: 'x' });
+    expect(el.type).toBe(Folio);
     expect(el.props).toEqual({ label: 'x' });
   });
 
   it('falls back to standard for a style without its own variant', () => {
-    expect(renderForStyle('modern', VARIANTS, { label: 'x' }).type).toBe(Standard);
+    expect(renderForStyle('pebble', VARIANTS, { label: 'x' }).type).toBe(Standard);
   });
 });

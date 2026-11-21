@@ -2,7 +2,7 @@ import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import type { ScheduledKind } from '@/lib/scheduled-kind';
 import type { UpcomingStrip } from '@/components/dashboard/variants/upcoming-bills-view';
 
-/** The nearest scheduled occurrence, as the Modern "next up" block shows it. */
+/** The nearest scheduled occurrence, as the Pebble "next up" block shows it. */
 export interface BillsOutlookNext {
   transaction: ScheduledTransaction;
   name: string;
@@ -17,7 +17,7 @@ export interface BillsOutlookNext {
 }
 
 /**
- * What the Bills page hands the Classic and Modern outlook band. The page's
+ * What the Bills page hands the Folio and Pebble outlook band. The page's
  * `useBillsOutlook` derives it from the schedules it already holds; a variant
  * only lays it out.
  */

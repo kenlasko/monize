@@ -21,7 +21,7 @@ describe('header search slot', () => {
     expect(screen.getByLabelText('inline search')).toBeInTheDocument();
   });
 
-  it.each(['classic', 'modern'] as const)('opens the command palette in the %s style', (style) => {
+  it.each(['folio', 'pebble'] as const)('opens the command palette in the %s style', (style) => {
     render(createElement(HEADER_SEARCH_VARIANTS[style]!, { standard: null }));
     const trigger = screen.getByRole('button', { name: /Search or jump to/ });
     expect(trigger).toHaveAttribute('aria-keyshortcuts', 'Control+K Meta+K');
@@ -36,7 +36,7 @@ describe('header user slot', () => {
     expect(screen.getByRole('button', { name: 'standard settings' })).toBeInTheDocument();
   });
 
-  it.each(['classic', 'modern'] as const)(
+  it.each(['folio', 'pebble'] as const)(
     'names the reader and opens settings in the %s style, carrying the tour anchor',
     (style) => {
       const onOpen = vi.fn();

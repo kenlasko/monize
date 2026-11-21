@@ -8,7 +8,7 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 
-interface BudgetVelocityModernProps {
+interface BudgetVelocityPebbleProps {
   velocity: BudgetVelocity;
   formatCurrency: (amount: number) => string;
 }
@@ -20,13 +20,13 @@ const PACE_BADGE: Record<BudgetVelocity['paceStatus'], BadgeVariant> = {
 };
 
 /**
- * The spending pace in Modern: what is safe to spend each day is the figure,
+ * The spending pace in Pebble: what is safe to spend each day is the figure,
  * in an accent block; the pace is a pill; the rest sit under it as plain
  * figures. The same figures and the same unknowns as the Standard widget
  * (`BudgetVelocityWidget`): an amount the server could not complete stays an
  * `UnknownAmount`, never a zero.
  */
-export function BudgetVelocityModern({ velocity, formatCurrency }: BudgetVelocityModernProps) {
+export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocityPebbleProps) {
   const t = useTranslations('budgets');
   const unknownReason =
     (velocity.upcomingBillsMissingRates?.length ?? 0) > 0 ? 'displayFx' : 'scheduledFx';

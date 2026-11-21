@@ -417,7 +417,7 @@ describe('UserManagementTable', () => {
     expect(screen.getAllByRole('combobox', { name: 'Role' })).toHaveLength(2);
   });
 
-  it('prints each person an initial puck that stays hidden until the Modern style shows it', () => {
+  it('prints each person an initial puck that stays hidden until the Pebble style shows it', () => {
     const { container } = render(<UserManagementTable {...defaultProps} />);
     const pucks = Array.from(container.querySelectorAll('.ui-user-avatar'));
     expect(pucks.map((p) => p.textContent)).toEqual(['A', 'J', 'J']);

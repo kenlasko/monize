@@ -260,14 +260,14 @@ export interface TransactionRowProps {
    */
   hidden?: ReadonlySet<string>;
   /**
-   * The active UI style. Only 'classic' changes this row: Payment and Deposit
+   * The active UI style. Only 'folio' changes this row: Payment and Deposit
    * columns in place of Amount, the memo inline after the payee, a status
    * mark, and a rule under the balance. Anything else draws the standard row.
    */
   uiStyle?: UiStyle;
   /** The list draws this row's date as a group row above it, so the Date cell is omitted. */
   groupedByDate?: boolean;
-  /** Classic: the balance as a share (0-100) of the page's largest, the width of its rule. */
+  /** Folio: the balance as a share (0-100) of the page's largest, the width of its rule. */
   balanceRulePct?: number;
 }
 
@@ -318,9 +318,9 @@ export const TransactionRow = memo(function TransactionRow({
   groupedByDate = false,
   balanceRulePct,
 }: TransactionRowProps) {
-  // Classic splits Amount into Payment / Deposit; the foreign-currency fee
+  // Folio splits Amount into Payment / Deposit; the foreign-currency fee
   // surface keeps its own columns, so it keeps one Amount.
-  const splitAmount = uiStyle === 'classic' && !showFxColumns;
+  const splitAmount = uiStyle === 'folio' && !showFxColumns;
   const compactPadding = registerDateColumnPadding(compactDates);
   // True for every column not hidden, structural ones included; the register
   // column guard reads the `isVisible('<id>') &&` gates out of this file.

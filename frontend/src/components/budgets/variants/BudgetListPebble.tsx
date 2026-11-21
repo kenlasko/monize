@@ -6,7 +6,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { Budget } from '@/types/budget';
 
-interface BudgetListModernProps {
+interface BudgetListPebbleProps {
   budgets: readonly Budget[];
   onOpen: (budget: Budget) => void;
 }
@@ -16,7 +16,7 @@ interface BudgetListModernProps {
  * it is, and its state as a pill. Each block is one button that opens the
  * budget's dashboard. (An empty list is `EmptyState`, drawn by `BudgetList`.)
  */
-export function BudgetListModern({ budgets, onOpen }: BudgetListModernProps) {
+export function BudgetListPebble({ budgets, onOpen }: BudgetListPebbleProps) {
   const t = useTranslations('budgets');
   const { formatDate } = useDateFormat();
   const { formatNumber } = useNumberFormat();

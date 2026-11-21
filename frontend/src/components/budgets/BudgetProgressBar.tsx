@@ -10,7 +10,7 @@ interface BudgetProgressBarProps {
 
 /**
  * How far through its budget the bar is, as the `data-level` a UI style reads
- * (`ui-styles-kit.css`): Classic draws the bar in ink and only an overspend in
+ * (`ui-styles-kit.css`): Folio draws the bar in ink and only an overspend in
  * the loss colour, so it needs the level, not the colour class.
  */
 function getLevel(percent: number): 'over' | 'high' | 'warn' | 'ok' {

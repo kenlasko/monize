@@ -9,7 +9,7 @@ import type { StyleVariants } from '@/hooks/useUiStyle';
 /**
  * The app header's search slot and user button, per UI style. The Standard
  * style keeps its inline transaction search and its settings button, which
- * `AppHeader` builds and hands over unchanged; Classic and Modern draw the
+ * `AppHeader` builds and hands over unchanged; Folio and Pebble draw the
  * mockups' "search or jump to" field, which opens the command palette (the
  * same Ctrl/Cmd+K box, whose results include a transaction search), and the
  * reader's name or initial in place of the gear.
@@ -20,17 +20,17 @@ export interface HeaderSearchSlotProps {
   standard: ReactNode;
 }
 
-function PaletteTrigger({ variant }: { variant: 'classic' | 'modern' }) {
+function PaletteTrigger({ variant }: { variant: 'folio' | 'pebble' }) {
   const t = useTranslations('navigation');
   const tHelp = useTranslations('help');
-  const modern = variant === 'modern';
+  const pebble = variant === 'pebble';
   return (
     <button
       type="button"
       onClick={() => useCommandPaletteStore.getState().openPalette()}
       aria-keyshortcuts="Control+K Meta+K"
       className={
-        modern
+        pebble
           ? 'ui-search-trigger flex h-11 items-center gap-6 rounded-full bg-white pr-1.5 pl-4 text-sm text-gray-500 transition-colors hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 motion-reduce:transition-none max-2xl:pr-4 dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-100'
           : 'ui-search-trigger flex h-10 items-center gap-6 rounded-(--ui-radius-control) border border-gray-200 bg-white px-3 text-sm text-gray-500 transition-colors hover:border-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 motion-reduce:transition-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500'
       }
@@ -42,7 +42,7 @@ function PaletteTrigger({ variant }: { variant: 'classic' | 'modern' }) {
       <kbd
         aria-hidden="true"
         className={
-          modern
+          pebble
             ? 'hidden rounded-full bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-900 2xl:inline dark:bg-gray-900 dark:text-gray-100'
             : 'hidden rounded-[3px] border border-gray-300 px-1.5 font-mono text-xs 2xl:inline dark:border-gray-600'
         }
@@ -55,8 +55,8 @@ function PaletteTrigger({ variant }: { variant: 'classic' | 'modern' }) {
 
 export const HEADER_SEARCH_VARIANTS: StyleVariants<HeaderSearchSlotProps> = {
   standard: ({ standard }) => <>{standard}</>,
-  classic: () => <PaletteTrigger variant="classic" />,
-  modern: () => <PaletteTrigger variant="modern" />,
+  folio: () => <PaletteTrigger variant="folio" />,
+  pebble: () => <PaletteTrigger variant="pebble" />,
 };
 
 export interface HeaderUserSlotProps {
@@ -107,6 +107,6 @@ function AvatarButton({ name, active, onOpen, anchor }: HeaderUserSlotProps) {
 
 export const HEADER_USER_VARIANTS: StyleVariants<HeaderUserSlotProps> = {
   standard: ({ standard }) => <>{standard}</>,
-  classic: NameButton,
-  modern: AvatarButton,
+  folio: NameButton,
+  pebble: AvatarButton,
 };

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/render';
 import userEvent from '@testing-library/user-event';
-import { ReportsCatalogueClassic } from './ReportsCatalogueClassic';
-import { ReportsCatalogueModern } from './ReportsCatalogueModern';
+import { ReportsCatalogueFolio } from './ReportsCatalogueFolio';
+import { ReportsCataloguePebble } from './ReportsCataloguePebble';
 import type { ReportsCatalogueViewProps } from './reports-catalogue-view';
 
 const entry = (id: string, name: string, category: 'spending' | 'income', favourite = false) => ({
@@ -30,9 +30,9 @@ function props(over: Partial<ReportsCatalogueViewProps> = {}): ReportsCatalogueV
   };
 }
 
-describe('ReportsCatalogueClassic', () => {
+describe('ReportsCatalogueFolio', () => {
   it('groups the reports under a heading per section, numbered', () => {
-    render(<ReportsCatalogueClassic {...props()} />);
+    render(<ReportsCatalogueFolio {...props()} />);
     expect(screen.getByRole('heading', { name: 'Spending' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Income' })).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
@@ -40,7 +40,7 @@ describe('ReportsCatalogueClassic', () => {
 
   it('opens a report and toggles its favourite separately', async () => {
     const p = props();
-    render(<ReportsCatalogueClassic {...p} />);
+    render(<ReportsCatalogueFolio {...p} />);
     await userEvent.click(screen.getByRole('button', { name: /Spending by Payee/ }));
     expect(p.onOpen).toHaveBeenCalledWith('b');
     await userEvent.click(screen.getAllByRole('button', { name: 'Add to favourites' })[0]);
@@ -48,27 +48,27 @@ describe('ReportsCatalogueClassic', () => {
   });
 
   it('shows one section when a single section is filtered', () => {
-    render(<ReportsCatalogueClassic {...props({ groupBySection: false, entries: [entry('a', 'A', 'spending')] })} />);
+    render(<ReportsCatalogueFolio {...props({ groupBySection: false, entries: [entry('a', 'A', 'spending')] })} />);
     expect(screen.getAllByRole('heading')).toHaveLength(1);
   });
 });
 
-describe('ReportsCatalogueModern', () => {
+describe('ReportsCataloguePebble', () => {
   it('puts the favourites in their own block and the rest below', () => {
-    render(<ReportsCatalogueModern {...props()} />);
+    render(<ReportsCataloguePebble {...props()} />);
     expect(screen.getByRole('heading', { name: 'Favourites' })).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
     expect(screen.getByRole('button', { name: 'Remove from favourites' })).toBeInTheDocument();
   });
 
   it('draws no favourites block when there are none', () => {
-    render(<ReportsCatalogueModern {...props({ entries: [entry('b', 'B', 'spending')] })} />);
+    render(<ReportsCataloguePebble {...props({ entries: [entry('b', 'B', 'spending')] })} />);
     expect(screen.queryByRole('heading', { name: 'Favourites' })).not.toBeInTheDocument();
   });
 
   it('opens a report from its tile', async () => {
     const p = props();
-    render(<ReportsCatalogueModern {...p} />);
+    render(<ReportsCataloguePebble {...p} />);
     await userEvent.click(screen.getByRole('button', { name: /Income vs Expenses/ }));
     expect(p.onOpen).toHaveBeenCalledWith('c');
   });

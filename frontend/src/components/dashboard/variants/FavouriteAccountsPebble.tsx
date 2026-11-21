@@ -5,7 +5,7 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { TINT_CLASS } from '@/lib/tint-class';
 import { WidgetHeading } from '../widget-meta';
 import { FavouriteAccountsStandard, ReorderToggle } from './FavouriteAccountsStandard';
-import { FavouriteAccountFigure, FavouriteAccountMeta } from './FavouriteAccountsClassic';
+import { FavouriteAccountFigure, FavouriteAccountMeta } from './FavouriteAccountsFolio';
 import type { FavouriteAccountsViewProps } from './favourite-accounts-view';
 
 /** A wash per row from the palette's categorical slots, so every palette tints them. */
@@ -19,11 +19,11 @@ const AVATAR_TINTS = [
 ];
 
 /**
- * Favourite Accounts in the Modern style: a round letter mark, the name over
+ * Favourite Accounts in the Pebble style: a round letter mark, the name over
  * its institution, and the balance set large. Reordering keeps the Standard
  * tiles, which carry the drag handles.
  */
-export function FavouriteAccountsModern(props: FavouriteAccountsViewProps) {
+export function FavouriteAccountsPebble(props: FavouriteAccountsViewProps) {
   const t = useTranslations('dashboard');
   const { rows, reordering, onToggleReorder } = props;
   if (reordering) return <FavouriteAccountsStandard {...props} />;

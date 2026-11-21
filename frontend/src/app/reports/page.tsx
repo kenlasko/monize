@@ -29,8 +29,8 @@ import {
 
 import { useDensityPreference } from '@/store/densityStore';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
-import { ReportsCatalogueClassic } from '@/components/reports/variants/ReportsCatalogueClassic';
-import { ReportsCatalogueModern } from '@/components/reports/variants/ReportsCatalogueModern';
+import { ReportsCatalogueFolio } from '@/components/reports/variants/ReportsCatalogueFolio';
+import { ReportsCataloguePebble } from '@/components/reports/variants/ReportsCataloguePebble';
 import type { ReportsCatalogueViewProps } from '@/components/reports/variants/reports-catalogue-view';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
@@ -42,14 +42,14 @@ import { CARD_CLASS } from '@/components/ui/Card';
 const logger = createLogger('Reports');
 
 /**
- * Classic and Modern lay the whole catalogue out themselves (a table of
+ * Folio and Pebble lay the whole catalogue out themselves (a table of
  * contents, colour blocks); Standard keeps the three density layouts below, so
  * its entry draws nothing here.
  */
 const CATALOGUE_VARIANTS: StyleVariants<ReportsCatalogueViewProps> = {
   standard: () => null,
-  classic: ReportsCatalogueClassic,
-  modern: ReportsCatalogueModern,
+  folio: ReportsCatalogueFolio,
+  pebble: ReportsCataloguePebble,
 };
 
 /** The saved reports the page last drew, so a return draws them at once (`page-snapshot.ts`). */

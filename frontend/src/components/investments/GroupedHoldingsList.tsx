@@ -575,7 +575,7 @@ export function GroupedHoldingsList({
   );
 }
 
-/** The direction a signed figure points, for the Classic style's mark. */
+/** The direction a signed figure points, for the Folio style's mark. */
 const signOf = (value: number | null | undefined) =>
   value == null || value === 0 ? undefined : value > 0 ? 'up' : 'down';
 

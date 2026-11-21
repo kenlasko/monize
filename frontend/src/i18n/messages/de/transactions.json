@@ -194,7 +194,7 @@
       "deleteButton": "Löschen"
     },
     "itemNamePlural": "Buchungen",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {# Eintrag angezeigt} other {# Einträge angezeigt}}",
       "legendCleared": "bestätigt",
       "legendReconciled": "abgeglichen",
@@ -202,7 +202,7 @@
       "markCleared": "b",
       "markReconciled": "A"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Ausgewählte Transaktion",
       "balanceAfter": "Saldo danach",
       "yesterday": "Gestern"

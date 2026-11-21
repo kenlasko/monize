@@ -26,7 +26,7 @@ function Block({ label, aside, children }: { label: string; aside?: ReactNode; c
  * (the figure a person opens the page for), then Budgeted, Spent and Savings
  * as white blocks, with the spend as a fat pill gauge.
  */
-export function BudgetSummaryModern({
+export function BudgetSummaryPebble({
   totalBudgeted,
   totalSpent,
   remaining,

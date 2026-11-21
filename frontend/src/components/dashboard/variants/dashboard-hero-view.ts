@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { ScheduledKind } from '@/lib/scheduled-kind';
 
 /**
- * The next scheduled occurrence, for the Modern hero's "next up" card: the
+ * The next scheduled occurrence, for the Pebble hero's "next up" card: the
  * first of `upcomingOccurrences` over every active schedule, so it is always
  * the occurrence the Upcoming Bills widget lists first under "All upcoming".
  */

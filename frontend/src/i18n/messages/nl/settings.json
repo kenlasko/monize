@@ -212,12 +212,12 @@
         "name": "Standaard",
         "description": "De vertrouwde Monize-look."
       },
-      "classic": {
-        "name": "Klassiek",
+      "folio": {
+        "name": "Folio",
         "description": "Geïnspireerd op het grootboek: koppen met schreef, tabellen met lijnen, rechte hoeken."
       },
-      "modern": {
-        "name": "Modern",
+      "pebble": {
+        "name": "Kiezel",
         "description": "Vet lettertype, afgeronde kleurvlakken en pilvormige knoppen."
       }
     },

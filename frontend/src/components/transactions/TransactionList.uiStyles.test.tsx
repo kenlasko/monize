@@ -4,13 +4,13 @@ import { TransactionList } from './TransactionList';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 
 /**
- * The register under the Classic and Modern UI styles. Standard is covered by
- * the rest of the register's suite; these pin what each style adds: Classic's
- * date group rows, Payment / Deposit split and totals footer; Modern's day
+ * The register under the Folio and Pebble UI styles. Standard is covered by
+ * the rest of the register's suite; these pin what each style adds: Folio's
+ * date group rows, Payment / Deposit split and totals footer; Pebble's day
  * blocks and the selected-row inspector with the actions a row already has.
  */
 
-const style = vi.hoisted(() => ({ value: 'standard' as 'standard' | 'classic' | 'modern' }));
+const style = vi.hoisted(() => ({ value: 'standard' as 'standard' | 'folio' | 'pebble' }));
 vi.mock('@/hooks/useUiStyle', () => ({ useUiStyle: () => style.value }));
 vi.mock('@/hooks/useIsMobile', async (orig) => ({
   ...(await orig<typeof import('@/hooks/useIsMobile')>()),
@@ -109,9 +109,9 @@ describe('Standard', () => {
   });
 });
 
-describe('Classic register', () => {
+describe('Folio register', () => {
   beforeEach(() => {
-    style.value = 'classic';
+    style.value = 'folio';
   });
 
   it('groups entries under a date row instead of a Date column', () => {
@@ -126,7 +126,7 @@ describe('Classic register', () => {
     ['one account', true],
     ['every account', false],
   ])('draws a header cell for every row cell, so no column shifts (%s)', (_label, single) => {
-    // Classic draws no Description cell; a header that still drew one pushed
+    // Folio draws no Description cell; a header that still drew one pushed
     // every later column one to the left.
     const { container } = renderList({ isSingleAccountView: single });
     const headerCells = container.querySelectorAll('thead tr:last-child > th').length;
@@ -167,14 +167,14 @@ describe('Classic register', () => {
   });
 });
 
-describe('Modern register', () => {
+describe('Pebble register', () => {
   beforeEach(() => {
-    style.value = 'modern';
+    style.value = 'pebble';
   });
 
   it('draws day blocks of rows instead of a table body', () => {
     const { container } = renderList();
-    expect(container.querySelectorAll('[data-testid="modern-row"]')).toHaveLength(3);
+    expect(container.querySelectorAll('[data-testid="pebble-row"]')).toHaveLength(3);
     expect(container.querySelector('tbody')).toBeNull();
   });
 
@@ -182,7 +182,7 @@ describe('Modern register', () => {
     renderList();
     const inspector = screen.getByRole('complementary', { name: 'Selected transaction' });
     expect(within(inspector).getByText('Employer')).toBeTruthy();
-    fireEvent.click(screen.getAllByTestId('modern-row')[1]);
+    fireEvent.click(screen.getAllByTestId('pebble-row')[1]);
     expect(within(screen.getByRole('complementary')).getByText('Grocery Store')).toBeTruthy();
   });
 
@@ -198,7 +198,7 @@ describe('Modern register', () => {
 
   it('is reachable from the keyboard', () => {
     renderList();
-    const row = screen.getAllByTestId('modern-row')[2];
+    const row = screen.getAllByTestId('pebble-row')[2];
     expect(row.getAttribute('tabindex')).toBe('0');
     fireEvent.keyDown(row, { key: 'Enter' });
     expect(within(screen.getByRole('complementary')).getByText('Cafe')).toBeTruthy();
@@ -210,7 +210,7 @@ describe('Modern register', () => {
       makeTx({ id: 'n', payeeName: 'Cafe' }),
     ];
     renderList({ transactions: withLogo });
-    const [logoRow, plainRow] = screen.getAllByTestId('modern-row');
+    const [logoRow, plainRow] = screen.getAllByTestId('pebble-row');
     expect(within(logoRow).getByRole('img', { name: 'Grocery Store' })).toBeTruthy();
     expect(within(plainRow).queryByRole('img')).toBeNull();
   });
@@ -224,7 +224,7 @@ describe('Modern register', () => {
       transactions: [iconTx],
       categoryIconMap: new Map([['cat-1', 'chart-bar']]),
     });
-    const row = container.querySelector('[data-testid="modern-row"]') as HTMLElement;
+    const row = container.querySelector('[data-testid="pebble-row"]') as HTMLElement;
     expect(row.querySelector('span[style*="color"] > svg')).toBeTruthy();
   });
 
@@ -232,7 +232,7 @@ describe('Modern register', () => {
     const { transactionsApi } = await import('@/lib/transactions');
     (transactionsApi.updateStatus as any).mockResolvedValue({ ...rows[1], status: TransactionStatus.CLEARED });
     renderList();
-    const row = screen.getAllByTestId('modern-row')[1];
+    const row = screen.getAllByTestId('pebble-row')[1];
     // Two controls, one per layout (the phone line and the wider row; CSS
     // shows one), both the same status button on the same handler.
     const buttons = within(row).getAllByRole('button', { name: 'Pending' });

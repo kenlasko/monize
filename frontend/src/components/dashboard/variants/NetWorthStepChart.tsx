@@ -20,7 +20,7 @@ interface StepDotProps {
 }
 
 /**
- * The Classic hero's history: net worth as a stepped ink line, a month held
+ * The Folio hero's history: net worth as a stepped ink line, a month held
  * flat until the next, its highest and lowest months named in words beside
  * their step and the latest month marked in the accent.
  */

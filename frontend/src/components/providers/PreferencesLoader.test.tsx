@@ -80,7 +80,7 @@ describe('PreferencesLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
-    mockPreferences = { theme: 'dark', colorTheme: 'latte', uiStyle: 'classic' };
+    mockPreferences = { theme: 'dark', colorTheme: 'latte', uiStyle: 'folio' };
   });
 
   it('renders children', () => {
@@ -125,7 +125,7 @@ describe('PreferencesLoader', () => {
         <div>Child</div>
       </PreferencesLoader>,
     );
-    expect(mockSetUiStyle).toHaveBeenCalledWith('classic');
+    expect(mockSetUiStyle).toHaveBeenCalledWith('folio');
   });
 
   it('ignores an invalid uiStyle value', () => {

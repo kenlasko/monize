@@ -803,7 +803,7 @@ function BillsContent() {
           />
         </div>
 
-        {/* The fourteen days ahead: Classic's in / out strip, Modern's next-up block */}
+        {/* The fourteen days ahead: Folio's in / out strip, Pebble's next-up block */}
         <BillsOutlook strip={outlook.strip} next={outlook.next} onPost={handlePost} />
 
         {/* Cash Flow Forecast Chart */}

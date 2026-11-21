@@ -41,7 +41,7 @@ function Tile({
  * block, then every other report as a white block with a round icon puck, a
  * heavy tight name and its section as a pill.
  */
-export function ReportsCatalogueModern({ entries, onOpen, onToggleFavourite }: ReportsCatalogueViewProps) {
+export function ReportsCataloguePebble({ entries, onOpen, onToggleFavourite }: ReportsCatalogueViewProps) {
   const t = useTranslations('reports');
   const favourites = entries.filter((e) => e.favourite);
   const others = entries.filter((e) => !e.favourite);

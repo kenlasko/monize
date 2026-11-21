@@ -9,7 +9,7 @@ import { isUiStyle, type UiStyle } from '@/lib/ui-styles';
  * know about it. Reach for this only where a style rearranges a screen -- a
  * register with split Payment / Deposit columns, a hero that becomes a
  * statement figure -- and then through `renderForStyle`, never as scattered
- * `uiStyle === 'classic'` checks in markup.
+ * `uiStyle === 'folio'` checks in markup.
  *
  * Falls back to 'standard' when no style is known, as under a test that
  * mocks `useTheme` without `uiStyle`.

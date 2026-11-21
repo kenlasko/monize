@@ -8,7 +8,7 @@ import { STATEMENT_TONE_CLASS, type ReportStatementViewProps } from './report-st
  * memo figures as pills under it, beside a white block of rows, each with a
  * round avatar (the series colour, else the line's gain or loss tone) and a big tight figure.
  */
-export function ReportStatementModern({ ariaLabel, lines, total, memo, showShare }: ReportStatementViewProps) {
+export function ReportStatementPebble({ ariaLabel, lines, total, memo, showShare }: ReportStatementViewProps) {
   return (
     <section
       aria-label={ariaLabel}

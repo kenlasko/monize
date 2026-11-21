@@ -212,12 +212,12 @@
         "name": "Standart",
         "description": "Tanıdık Monize görünümü."
       },
-      "classic": {
-        "name": "Klasik",
+      "folio": {
+        "name": "Folyo",
         "description": "Defter kayıtlarından esinlenmiştir: tırnaklı başlıklar, çizgili tablolar, köşeli kenarlar."
       },
-      "modern": {
-        "name": "Modern",
+      "pebble": {
+        "name": "Çakıl",
         "description": "Kalın yazı tipi, yuvarlatılmış renk blokları ve hap biçimli denetimler."
       }
     },

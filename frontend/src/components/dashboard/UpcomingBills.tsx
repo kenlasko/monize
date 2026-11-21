@@ -43,15 +43,15 @@ import { buildUpcomingStrip, upcomingOccurrences } from './upcoming-occurrences'
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
 import type { UpcomingBillRow, UpcomingBillsListProps } from './variants/upcoming-bills-view';
 import { UpcomingBillsListStandard } from './variants/UpcomingBillsListStandard';
-import { UpcomingBillsListClassic } from './variants/UpcomingBillsListClassic';
-import { UpcomingBillsListModern } from './variants/UpcomingBillsListModern';
+import { UpcomingBillsListFolio } from './variants/UpcomingBillsListFolio';
+import { UpcomingBillsListPebble } from './variants/UpcomingBillsListPebble';
 
 const WIDGET_ID = 'upcoming-bills';
 
 const UPCOMING_LIST_VARIANTS: StyleVariants<UpcomingBillsListProps> = {
   standard: UpcomingBillsListStandard,
-  classic: UpcomingBillsListClassic,
-  modern: UpcomingBillsListModern,
+  folio: UpcomingBillsListFolio,
+  pebble: UpcomingBillsListPebble,
 };
 
 const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
@@ -164,7 +164,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
     return result;
   }, [upcomingItems, accountMap]);
 
-  // The two weeks from today as the Classic and Modern styles draw them: the
+  // The two weeks from today as the Folio and Pebble styles draw them: the
   // same scoped occurrences as the list, placed on their own due dates.
   const strip = useMemo(() => buildUpcomingStrip(upcomingItems, today), [upcomingItems, today]);
 

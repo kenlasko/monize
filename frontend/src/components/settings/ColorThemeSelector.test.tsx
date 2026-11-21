@@ -141,16 +141,16 @@ describe('ColorThemeSelector', () => {
 
   describe('under a UI style', () => {
     it('offers only the palettes made for the style, companion first', () => {
-      render(<ColorThemeSelector value="ledger" onChange={() => {}} uiStyle="classic" />);
+      render(<ColorThemeSelector value="ledger" onChange={() => {}} uiStyle="folio" />);
       const radios = screen.getAllByRole('radio');
-      expect(radios).toHaveLength(UI_STYLE_PALETTES.classic.length);
+      expect(radios).toHaveLength(UI_STYLE_PALETTES.folio.length);
       expect(radios[0]).toHaveAccessibleName(/ledger/i);
       expect(screen.queryByRole('radio', { name: /nord/i })).not.toBeInTheDocument();
-      expect(screen.getByText('Showing the colour themes made for the Classic style.')).toBeInTheDocument();
+      expect(screen.getByText('Showing the colour themes made for the Folio style.')).toBeInTheDocument();
     });
 
     it('keeps the accessibility palettes under every style', () => {
-      for (const style of ['classic', 'modern'] as const) {
+      for (const style of ['folio', 'pebble'] as const) {
         const { unmount } = render(
           <ColorThemeSelector value={UI_STYLE_PALETTES[style][0]} onChange={() => {}} uiStyle={style} />,
         );
@@ -161,7 +161,7 @@ describe('ColorThemeSelector', () => {
     });
 
     it('still lists a stored palette the style no longer offers, so something stays chosen', () => {
-      render(<ColorThemeSelector value="nord" onChange={() => {}} uiStyle="classic" />);
+      render(<ColorThemeSelector value="nord" onChange={() => {}} uiStyle="folio" />);
       expect(screen.getByRole('radio', { name: /nord/i })).toHaveAttribute('aria-checked', 'true');
     });
 

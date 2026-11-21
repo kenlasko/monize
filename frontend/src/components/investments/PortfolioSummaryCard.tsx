@@ -197,7 +197,7 @@ export function PortfolioSummaryCard({
 
   const formatPercent = (value: number) => formatSignedPercent(value);
 
-  // The direction a signed figure points, for the Classic style's mark; a
+  // The direction a signed figure points, for the Folio style's mark; a
   // figure with no value (withheld) has none and carries no mark.
   const signOf = (value: number | null | undefined) =>
     value == null || value === 0 ? undefined : value > 0 ? 'up' : 'down';

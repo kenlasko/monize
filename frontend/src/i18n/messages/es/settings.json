@@ -212,12 +212,12 @@
         "name": "Estándar",
         "description": "El aspecto habitual de Monize."
       },
-      "classic": {
-        "name": "Clásico",
+      "folio": {
+        "name": "Folio",
         "description": "Inspirado en los libros contables: títulos con serifa, tablas con líneas y esquinas cuadradas."
       },
-      "modern": {
-        "name": "Moderno",
+      "pebble": {
+        "name": "Guijarro",
         "description": "Tipografía en negrita, bloques de color redondeados y controles en forma de píldora."
       }
     },

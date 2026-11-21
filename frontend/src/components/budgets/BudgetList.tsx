@@ -11,7 +11,7 @@ import { INTERACTIVE_ROW_FOCUS_CLASS, activateOnKey } from '@/components/ui/inte
 import { TABLE_BODY_CLASS, TABLE_CLASS, TD_CLASS, Th } from '@/components/ui/Table';
 import { useLongPress } from '@/hooks/useLongPress';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
-import { BudgetListModern } from './variants/BudgetListModern';
+import { BudgetListPebble } from './variants/BudgetListPebble';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { Budget } from '@/types/budget';
@@ -35,7 +35,7 @@ interface BudgetListProps {
  */
 const TILE_VARIANTS: StyleVariants<Pick<BudgetListProps, 'budgets' | 'onOpen'>> = {
   standard: BudgetListTable,
-  modern: BudgetListModern,
+  pebble: BudgetListPebble,
 };
 
 export function BudgetList({ budgets, onOpen, onCreate }: BudgetListProps) {
@@ -57,7 +57,7 @@ function BudgetListEmpty({ onCreate }: { onCreate: () => void }) {
   );
 }
 
-/** Standard and Classic: the table (Classic rules it as a ledger). */
+/** Standard and Folio: the table (Folio rules it as a ledger). */
 function BudgetListTable({ budgets, onOpen }: Pick<BudgetListProps, 'budgets' | 'onOpen'>) {
   const t = useTranslations('budgets');
   const { formatDate } = useDateFormat();

@@ -1,8 +1,8 @@
 /**
- * The engraved rosette of a printed statement, the Classic style's one
+ * The engraved rosette of a printed statement, the Folio style's one
  * ornament: twenty-four ellipses turned about one centre, drawn in
  * `currentColor` (the caller sets the accent at a fraction of its strength).
- * Behind the Classic dashboard hero and the Classic empty page. Decoration
+ * Behind the Folio dashboard hero and the Folio empty page. Decoration
  * only, hidden from assistive technology.
  */
 const TURNS = Array.from({ length: 24 }, (_, i) => i * 7.5);

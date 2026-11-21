@@ -194,7 +194,7 @@
       "deleteButton": "删除"
     },
     "itemNamePlural": "笔交易",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, other {显示 # 条记录}}",
       "legendCleared": "已结算",
       "legendReconciled": "已对账",
@@ -202,7 +202,7 @@
       "markCleared": "结",
       "markReconciled": "对"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "所选交易",
       "balanceAfter": "交易后余额",
       "yesterday": "昨天"

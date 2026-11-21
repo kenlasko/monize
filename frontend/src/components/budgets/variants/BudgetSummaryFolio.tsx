@@ -24,7 +24,7 @@ function Entry({ label, hint, children }: { label: string; hint?: ReactNode; chi
  * Savings as four ruled entries in ledger figures, and the ticked gauge under
  * them. Only an overspend takes the loss colour.
  */
-export function BudgetSummaryClassic({
+export function BudgetSummaryFolio({
   totalBudgeted,
   totalSpent,
   remaining,

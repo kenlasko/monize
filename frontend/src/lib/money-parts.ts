@@ -1,7 +1,7 @@
 /**
  * Split an already-formatted money figure into the pieces a display figure
  * typesets differently: the sign, the currency symbol, the whole units and
- * the fraction. The Classic and Modern UI styles set a headline balance as
+ * the fraction. The Folio and Pebble UI styles set a headline balance as
  * "$ 453,227 .01" -- a small raised symbol, large units, small muted cents.
  *
  * It takes the STRING `formatCurrency` produced rather than formatting again,

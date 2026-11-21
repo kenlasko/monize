@@ -57,10 +57,10 @@ function DayChips({ strip }: { strip: UpcomingStrip }) {
 }
 
 /**
- * Upcoming Bills in the Modern style: the next two weeks as day chips, then a
+ * Upcoming Bills in the Pebble style: the next two weeks as day chips, then a
  * plain list, each occurrence marked with its kind's dot.
  */
-export function UpcomingBillsListModern({ rows, hiddenCount, strip, onOpen, onShowAll }: UpcomingBillsListProps) {
+export function UpcomingBillsListPebble({ rows, hiddenCount, strip, onOpen, onShowAll }: UpcomingBillsListProps) {
   const t = useTranslations('dashboard');
   const formatChartDate = useChartDateFormat();
   return (

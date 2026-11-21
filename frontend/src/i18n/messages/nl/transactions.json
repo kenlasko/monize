@@ -194,7 +194,7 @@
       "deleteButton": "Verwijderen"
     },
     "itemNamePlural": "transacties",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {# regel getoond} other {# regels getoond}}",
       "legendCleared": "bevestigd",
       "legendReconciled": "afgestemd",
@@ -202,7 +202,7 @@
       "markCleared": "b",
       "markReconciled": "A"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Geselecteerde transactie",
       "balanceAfter": "Saldo erna",
       "yesterday": "Gisteren"

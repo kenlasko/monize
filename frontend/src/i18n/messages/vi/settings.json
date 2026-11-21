@@ -212,12 +212,12 @@
         "name": "Tiêu chuẩn",
         "description": "Diện mạo quen thuộc của Monize."
       },
-      "classic": {
-        "name": "Cổ điển",
+      "folio": {
+        "name": "Folio",
         "description": "Lấy cảm hứng từ sổ cái: tiêu đề có chân, bảng kẻ dòng, góc vuông."
       },
-      "modern": {
-        "name": "Hiện đại",
+      "pebble": {
+        "name": "Sỏi",
         "description": "Chữ đậm, khối màu bo tròn và nút điều khiển hình viên thuốc."
       }
     },

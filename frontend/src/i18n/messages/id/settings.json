@@ -212,12 +212,12 @@
         "name": "Standar",
         "description": "Tampilan Monize yang sudah dikenal."
       },
-      "classic": {
-        "name": "Klasik",
+      "folio": {
+        "name": "Folio",
         "description": "Terinspirasi buku besar: judul serif, tabel bergaris, sudut persegi."
       },
-      "modern": {
-        "name": "Modern",
+      "pebble": {
+        "name": "Kerikil",
         "description": "Huruf tebal, blok warna membulat, dan kontrol berbentuk pil."
       }
     },

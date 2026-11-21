@@ -194,7 +194,7 @@
       "deleteButton": "Sil"
     },
     "itemNamePlural": "işlemler",
-    "classic": {
+    "folio": {
       "entriesShown": "{count, plural, one {# kayıt gösteriliyor} other {# kayıt gösteriliyor}}",
       "legendCleared": "temizlendi",
       "legendReconciled": "mutabakat sağlandı",
@@ -202,7 +202,7 @@
       "markCleared": "t",
       "markReconciled": "M"
     },
-    "modern": {
+    "pebble": {
       "inspectorLabel": "Seçili işlem",
       "balanceAfter": "Sonraki bakiye",
       "yesterday": "Dün"

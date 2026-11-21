@@ -2053,10 +2053,10 @@ function TransactionsContent() {
         ) : (
           <>
         {/* Transactions List */}
-        {/* `ui-register-card`: Modern clips this card rather than hiding its
+        {/* `ui-register-card`: Pebble clips this card rather than hiding its
             overflow (ui-styles-register.css), because `hidden` makes it a
-            scroll container and the Modern inspector is `sticky` against the
-            window. Standard and Classic keep `hidden`. */}
+            scroll container and the Pebble inspector is `sticky` against the
+            window. Standard and Folio keep `hidden`. */}
         <div className={`${CARD_CLASS} overflow-hidden ui-register-card`}>
           <div ref={swipeRef} {...(paginates ? { [SWIPE_PAGINATE_ATTR]: 'true' } : {})}>
           {isLoading && transactions.length === 0 ? (

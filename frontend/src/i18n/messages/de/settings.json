@@ -212,12 +212,12 @@
         "name": "Standard",
         "description": "Das vertraute Monize-Aussehen."
       },
-      "classic": {
-        "name": "Klassisch",
+      "folio": {
+        "name": "Folio",
         "description": "Von Kontobüchern inspiriert: Serifenüberschriften, Tabellen mit Linien, eckige Ecken."
       },
-      "modern": {
-        "name": "Modern",
+      "pebble": {
+        "name": "Kiesel",
         "description": "Kräftige Schrift, abgerundete Farbflächen und pillenförmige Bedienelemente."
       }
     },

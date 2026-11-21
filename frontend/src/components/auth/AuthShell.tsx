@@ -79,7 +79,7 @@ export function AuthShell({
       )}
     >
       <div className="ui-auth-main relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        {/* Classic only: the engraved rosette behind the sign-in page. */}
+        {/* Folio only: the engraved rosette behind the sign-in page. */}
         <Guilloche className="ui-auth-guilloche pointer-events-none absolute hidden" />
         <div className={cn('ui-auth-column relative w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
           <div className="ui-auth-head text-center">
@@ -91,7 +91,7 @@ export function AuthShell({
               className="ui-auth-logo mx-auto"
               priority
             />
-            {/* The Classic and Modern title page prints the name as type. */}
+            {/* The Folio and Pebble title page prints the name as type. */}
             <p aria-hidden="true" className="ui-auth-wordmark hidden">
               Monize
             </p>

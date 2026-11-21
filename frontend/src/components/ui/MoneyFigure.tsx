@@ -8,8 +8,8 @@ interface MoneyFigureProps {
   amount: number;
   currencyCode?: string;
   /**
-   * A headline figure (a hero balance, a statement total). The Classic and
-   * Modern UI styles set it with a small raised symbol and small cents; the
+   * A headline figure (a hero balance, a statement total). The Folio and
+   * Pebble UI styles set it with a small raised symbol and small cents; the
    * Standard style renders it exactly as a plain formatted string.
    */
   display?: boolean;

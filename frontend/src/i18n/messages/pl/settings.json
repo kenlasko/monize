@@ -212,12 +212,12 @@
         "name": "Standardowy",
         "description": "Znany wygląd Monize."
       },
-      "classic": {
-        "name": "Klasyczny",
+      "folio": {
+        "name": "Folio",
         "description": "Inspirowany księgą rachunkową: nagłówki z szeryfami, tabele z liniami, kwadratowe rogi."
       },
-      "modern": {
-        "name": "Nowoczesny",
+      "pebble": {
+        "name": "Kamyk",
         "description": "Pogrubiony krój pisma, zaokrąglone bloki kolorów i kontrolki w kształcie pigułki."
       }
     },

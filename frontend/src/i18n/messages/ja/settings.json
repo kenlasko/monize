@@ -212,12 +212,12 @@
         "name": "標準",
         "description": "おなじみのMonizeの外観。"
       },
-      "classic": {
-        "name": "クラシック",
+      "folio": {
+        "name": "フォリオ",
         "description": "帳簿風：セリフ体の見出し、罫線入りの表、角ばったコーナー。"
       },
-      "modern": {
-        "name": "モダン",
+      "pebble": {
+        "name": "ペブル",
         "description": "太い書体、角丸のカラーブロック、ピル型のコントロール。"
       }
     },

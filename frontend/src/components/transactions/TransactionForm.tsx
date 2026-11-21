@@ -2246,7 +2246,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
 
       {/* What the lookup found for the payee just created -- an offer, saved
           only for the fields the user ticks. */}
-      {/* The slip's rule: a faint engraved band, drawn by the Classic style only. */}
+      {/* The slip's rule: a faint engraved band, drawn by the Folio style only. */}
       <div aria-hidden="true" className="ui-entry-guilloche hidden" />
       <FormActions
         leading={<span className="ui-entry-hint hidden">{t('form.entryHint')}</span>}

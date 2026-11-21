@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import { render } from '@/test/render';
-import { NetWorthHeroClassic } from './NetWorthHeroClassic';
-import { NetWorthHeroModern } from './NetWorthHeroModern';
+import { NetWorthHeroFolio } from './NetWorthHeroFolio';
+import { NetWorthHeroPebble } from './NetWorthHeroPebble';
 import type { NetWorthHeroViewProps } from './net-worth-hero-view';
 
 vi.mock('@/hooks/useCollapsingHeaderTitle', async (importOriginal) => ({
@@ -34,8 +34,8 @@ const props: NetWorthHeroViewProps = {
 };
 
 describe.each([
-  ['Classic', NetWorthHeroClassic],
-  ['Modern', NetWorthHeroModern],
+  ['Folio', NetWorthHeroFolio],
+  ['Pebble', NetWorthHeroPebble],
 ])('NetWorthHero%s', (_name, Variant) => {
   it('lays out the same figures: net worth, the change, and the three labelled totals', () => {
     render(<Variant {...props} />);
@@ -67,9 +67,9 @@ describe.each([
   });
 });
 
-describe('NetWorthHeroModern', () => {
+describe('NetWorthHeroPebble', () => {
   it('names the highest, lowest and latest months of its bars, a gap drawing no bar', () => {
-    const { container } = render(<NetWorthHeroModern {...props} />);
+    const { container } = render(<NetWorthHeroPebble {...props} />);
     const chart = screen.getByRole('img');
     expect(chart).toHaveAccessibleName(/at its highest.*at its lowest.*now/);
     expect(container.querySelectorAll('svg[role="img"] rect')).toHaveLength(3);

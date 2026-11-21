@@ -212,12 +212,12 @@
         "name": "Standard",
         "description": "The familiar Monize look."
       },
-      "classic": {
-        "name": "Classic",
+      "folio": {
+        "name": "Folio",
         "description": "Ledger-inspired: serif headings, ruled tables, square corners."
       },
-      "modern": {
-        "name": "Modern",
+      "pebble": {
+        "name": "Pebble",
         "description": "Bold type, rounded colour blocks and pill-shaped controls."
       }
     },

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import { render } from '@/test/render';
-import { AccountsSummaryClassic, AccountsSummaryModern, AccountsSummaryStandard } from './AccountsSummary';
+import { AccountsSummaryFolio, AccountsSummaryPebble, AccountsSummaryStandard } from './AccountsSummary';
 import type { AccountsSummaryViewProps } from './accounts-summary-view';
 
 const props = (over: Partial<AccountsSummaryViewProps> = {}): AccountsSummaryViewProps => ({
@@ -22,8 +22,8 @@ describe('AccountsSummary variants', () => {
     expect(screen.queryByText('NW-FIGURE')).not.toBeInTheDocument();
   });
 
-  it('Classic sets a statement: net worth over ruled assets, liabilities and count', () => {
-    render(<AccountsSummaryClassic {...props()} />);
+  it('Folio sets a statement: net worth over ruled assets, liabilities and count', () => {
+    render(<AccountsSummaryFolio {...props()} />);
     const block = screen.getByTestId('accounts-summary-statement');
     expect(block).toHaveTextContent('NW-FIGURE');
     expect(block).toHaveTextContent('Assets');
@@ -33,8 +33,8 @@ describe('AccountsSummary variants', () => {
     expect(screen.queryByText('standard grid')).not.toBeInTheDocument();
   });
 
-  it('Modern sets net worth in the ink block and the sides as blocks', () => {
-    render(<AccountsSummaryModern {...props()} />);
+  it('Pebble sets net worth in the ink block and the sides as blocks', () => {
+    render(<AccountsSummaryPebble {...props()} />);
     const block = screen.getByTestId('accounts-summary-blocks');
     expect(block.querySelector('.ui-invert')).toHaveTextContent('NW-FIGURE');
     expect(block.querySelector('.ui-block-accent')).toHaveTextContent('ASSETS-FIGURE');

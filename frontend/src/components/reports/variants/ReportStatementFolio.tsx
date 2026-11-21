@@ -8,7 +8,7 @@ import { STATEMENT_TONE_CLASS, type ReportStatementViewProps } from './report-st
  * an ink rule, one ruled line per item with the figure right-aligned in a
  * mono face, the total under a double rule, memo figures beneath.
  */
-export function ReportStatementClassic({ ariaLabel, lines, total, memo, showShare }: ReportStatementViewProps) {
+export function ReportStatementFolio({ ariaLabel, lines, total, memo, showShare }: ReportStatementViewProps) {
   const t = useTranslations('reports');
   return (
     <section aria-label={ariaLabel} className="ui-rep-statement">

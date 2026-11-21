@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { BudgetCategoryRow } from './BudgetCategoryRow';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
-import { BudgetCategoryListClassic } from './variants/BudgetCategoryListClassic';
-import { BudgetCategoryListModern } from './variants/BudgetCategoryListModern';
+import { BudgetCategoryListFolio } from './variants/BudgetCategoryListFolio';
+import { BudgetCategoryListPebble } from './variants/BudgetCategoryListPebble';
 import type { BudgetCategoryListViewProps } from './variants/budget-category-list-view';
 import type { CategoryBreakdown, BudgetCategory } from '@/types/budget';
 import { CARD_CLASS } from '@/components/ui/Card';
@@ -44,8 +44,8 @@ function BudgetCategoryListStandard({
 
 const VARIANTS: StyleVariants<BudgetCategoryListViewProps> = {
   standard: BudgetCategoryListStandard,
-  classic: BudgetCategoryListClassic,
-  modern: BudgetCategoryListModern,
+  folio: BudgetCategoryListFolio,
+  pebble: BudgetCategoryListPebble,
 };
 
 interface BudgetCategoryListProps {

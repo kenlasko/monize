@@ -1,29 +1,29 @@
 /*
- * settings area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * settings area of the Folio and Pebble UI styles. Same rules as ui-styles.css
  * (read its header): ramp tokens only, marker classes in @layer components,
  * unlayered rules only where a primitive's own utility must yield.
  */
 
 /* ===================================================================== */
 /* Settings navigation                                                    */
-/* Classic: a ruled table of contents, small capitals, the open section   */
-/* marked by a rule in the accent. Modern: a block of round pills, the    */
+/* Folio: a ruled table of contents, small capitals, the open section   */
+/* marked by a rule in the accent. Pebble: a block of round pills, the    */
 /* open one ink.                                                          */
 /* ===================================================================== */
 
 /* The nav is a card by token only; it is not a section of the page. */
-html[data-ui-style='classic'] nav.ui-settings-nav.ui-card {
+html[data-ui-style='folio'] nav.ui-settings-nav.ui-card {
   padding: 0;
   border-top: 2px solid var(--ui-rule-ink);
   border-bottom: 1px solid var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-settings-nav > ul {
+html[data-ui-style='folio'] .ui-settings-nav > ul {
   display: block;
 }
-html[data-ui-style='classic'] .ui-settings-nav > ul > li + li {
+html[data-ui-style='folio'] .ui-settings-nav > ul > li + li {
   border-top: 1px solid var(--ui-rule-hair);
 }
-html[data-ui-style='classic'] .ui-settings-nav-item {
+html[data-ui-style='folio'] .ui-settings-nav-item {
   padding: 0.625rem 0.75rem;
   border-radius: 0;
   border-left: 3px solid transparent;
@@ -34,34 +34,34 @@ html[data-ui-style='classic'] .ui-settings-nav-item {
   text-transform: uppercase;
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='classic'] .ui-settings-nav-item {
+html.dark[data-ui-style='folio'] .ui-settings-nav-item {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] .ui-settings-nav-item:hover {
+html[data-ui-style='folio'] .ui-settings-nav-item:hover {
   background-color: var(--color-gray-100);
   color: var(--color-gray-900);
 }
-html.dark[data-ui-style='classic'] .ui-settings-nav-item:hover {
+html.dark[data-ui-style='folio'] .ui-settings-nav-item:hover {
   background-color: var(--color-gray-800);
   color: var(--color-gray-50);
 }
-html[data-ui-style='classic'] .ui-settings-nav-item[data-active] {
+html[data-ui-style='folio'] .ui-settings-nav-item[data-active] {
   border-left-color: var(--color-blue-700);
   background-color: transparent;
   color: var(--color-gray-900);
   font-weight: 700;
 }
-html.dark[data-ui-style='classic'] .ui-settings-nav-item[data-active] {
+html.dark[data-ui-style='folio'] .ui-settings-nav-item[data-active] {
   border-left-color: var(--color-blue-400);
   color: var(--color-gray-50);
 }
-html[data-ui-style='classic'] .ui-settings-nav-item[data-danger] {
+html[data-ui-style='folio'] .ui-settings-nav-item[data-danger] {
   color: var(--color-red-700);
 }
-html.dark[data-ui-style='classic'] .ui-settings-nav-item[data-danger] {
+html.dark[data-ui-style='folio'] .ui-settings-nav-item[data-danger] {
   color: var(--color-red-400);
 }
-html[data-ui-style='classic'] .ui-settings-nav-trigger {
+html[data-ui-style='folio'] .ui-settings-nav-trigger {
   border-radius: 0;
   border-color: var(--ui-rule-ink);
   box-shadow: none;
@@ -70,44 +70,44 @@ html[data-ui-style='classic'] .ui-settings-nav-trigger {
   text-transform: uppercase;
 }
 
-html[data-ui-style='modern'] .ui-settings-nav > ul {
+html[data-ui-style='pebble'] .ui-settings-nav > ul {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
-html[data-ui-style='modern'] .ui-settings-nav-item {
+html[data-ui-style='pebble'] .ui-settings-nav-item {
   border-radius: 9999px;
   padding: 0.5rem 1rem;
   font-weight: 600;
   background-color: transparent;
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='modern'] .ui-settings-nav-item {
+html.dark[data-ui-style='pebble'] .ui-settings-nav-item {
   color: var(--color-gray-300);
 }
-html[data-ui-style='modern'] .ui-settings-nav-item:hover {
+html[data-ui-style='pebble'] .ui-settings-nav-item:hover {
   background-color: var(--color-gray-100);
   color: var(--color-gray-900);
 }
-html.dark[data-ui-style='modern'] .ui-settings-nav-item:hover {
+html.dark[data-ui-style='pebble'] .ui-settings-nav-item:hover {
   background-color: var(--color-gray-700);
   color: var(--color-gray-50);
 }
-html[data-ui-style='modern'] .ui-settings-nav-item[data-active] {
+html[data-ui-style='pebble'] .ui-settings-nav-item[data-active] {
   background-color: var(--color-gray-900);
   color: var(--color-gray-50);
 }
-html.dark[data-ui-style='modern'] .ui-settings-nav-item[data-active] {
+html.dark[data-ui-style='pebble'] .ui-settings-nav-item[data-active] {
   background-color: var(--color-gray-100);
   color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] .ui-settings-nav-item[data-danger]:not([data-active]) {
+html[data-ui-style='pebble'] .ui-settings-nav-item[data-danger]:not([data-active]) {
   color: var(--color-red-600);
 }
-html.dark[data-ui-style='modern'] .ui-settings-nav-item[data-danger]:not([data-active]) {
+html.dark[data-ui-style='pebble'] .ui-settings-nav-item[data-danger]:not([data-active]) {
   color: var(--color-red-400);
 }
-html[data-ui-style='modern'] .ui-settings-nav-trigger {
+html[data-ui-style='pebble'] .ui-settings-nav-trigger {
   border-radius: 9999px;
   border-color: transparent;
   box-shadow: none;
@@ -117,24 +117,24 @@ html[data-ui-style='modern'] .ui-settings-nav-trigger {
 /* ===================================================================== */
 /* Settings sections: the fields inside them take each style's entry      */
 /* treatment (ui-styles-entry.css): underline-only fields on ruled paper   */
-/* in Classic, tinted round fields in Modern. Classic sections sit apart   */
+/* in Folio, tinted round fields in Pebble. Folio sections sit apart   */
 /* on a larger rhythm.                                                    */
 /* ===================================================================== */
 
-html[data-ui-style='classic'] .ui-settings-main .ui-card {
+html[data-ui-style='folio'] .ui-settings-main .ui-card {
   margin-bottom: 2.25rem;
 }
-html[data-ui-style='classic'] .ui-settings-main .ui-card label.block {
+html[data-ui-style='folio'] .ui-settings-main .ui-card label.block {
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: var(--ui-label-tracking);
   text-transform: uppercase;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='classic'] .ui-settings-main .ui-card label.block {
+html.dark[data-ui-style='folio'] .ui-settings-main .ui-card label.block {
   color: var(--color-gray-400);
 }
-html[data-ui-style='classic'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field) {
+html[data-ui-style='folio'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field) {
   padding-inline: 0;
   border-width: 0 0 1px;
   border-style: solid;
@@ -143,48 +143,48 @@ html[data-ui-style='classic'] .ui-settings-main .ui-card :is(input.ui-field, sel
   background-color: transparent;
   box-shadow: none;
 }
-html[data-ui-style='classic'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
+html[data-ui-style='folio'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
   box-shadow: none;
   border-bottom-width: 2px;
   outline: 2px solid var(--color-blue-500);
   outline-offset: 2px;
 }
-html.dark[data-ui-style='classic'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
+html.dark[data-ui-style='folio'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
   outline-color: var(--color-blue-400);
 }
 
-html[data-ui-style='modern'] .ui-settings-main .ui-card label.block {
+html[data-ui-style='pebble'] .ui-settings-main .ui-card label.block {
   font-weight: 600;
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='modern'] .ui-settings-main .ui-card label.block {
+html.dark[data-ui-style='pebble'] .ui-settings-main .ui-card label.block {
   color: var(--color-gray-300);
 }
-html[data-ui-style='modern'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field) {
+html[data-ui-style='pebble'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field) {
   border-color: transparent;
   background-color: var(--color-gray-50);
   box-shadow: none;
   border-radius: 0.875rem;
 }
-html.dark[data-ui-style='modern'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field) {
+html.dark[data-ui-style='pebble'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field) {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
+html[data-ui-style='pebble'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
   border-color: var(--color-blue-500);
   box-shadow: 0 0 0 2px var(--color-blue-500);
 }
-html.dark[data-ui-style='modern'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
+html.dark[data-ui-style='pebble'] .ui-settings-main .ui-card :is(input.ui-field, select.ui-field, textarea.ui-field):focus {
   border-color: var(--color-blue-400);
   box-shadow: 0 0 0 2px var(--color-blue-400);
 }
 
-/* The danger section keeps its red frame: a Classic ruled section would
+/* The danger section keeps its red frame: a Folio ruled section would
    otherwise lose the only cue that its actions cannot be undone. */
-html[data-ui-style='classic'] .ui-settings-main .ui-card.border-red-200 {
+html[data-ui-style='folio'] .ui-settings-main .ui-card.border-red-200 {
   padding-inline: 1rem;
   border: 2px solid var(--color-red-700);
 }
-html.dark[data-ui-style='classic'] .ui-settings-main .ui-card.border-red-200 {
+html.dark[data-ui-style='folio'] .ui-settings-main .ui-card.border-red-200 {
   border-color: var(--color-red-400);
 }
 
@@ -192,15 +192,15 @@ html.dark[data-ui-style='classic'] .ui-settings-main .ui-card.border-red-200 {
 /* Admin users: the ledger of people                                      */
 /* ===================================================================== */
 
-html[data-ui-style='classic'] .ui-user-row > td:first-child .ui-user-identity > div > div:first-child {
+html[data-ui-style='folio'] .ui-user-row > td:first-child .ui-user-identity > div > div:first-child {
   font-family: var(--ui-font-display);
   font-size: 1rem;
   font-weight: 500;
 }
-html[data-ui-style='classic'] .ui-user-row > td {
+html[data-ui-style='folio'] .ui-user-row > td {
   vertical-align: top;
 }
-html[data-ui-style='modern'] .ui-user-avatar {
+html[data-ui-style='pebble'] .ui-user-avatar {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -213,44 +213,44 @@ html[data-ui-style='modern'] .ui-user-avatar {
   font-weight: 700;
   font-size: 0.875rem;
 }
-html.dark[data-ui-style='modern'] .ui-user-avatar {
+html.dark[data-ui-style='pebble'] .ui-user-avatar {
   background-color: var(--color-blue-400);
 }
-html[data-ui-style='modern'] .ui-user-row select {
+html[data-ui-style='pebble'] .ui-user-row select {
   border-radius: 9999px;
 }
 
 /* ===================================================================== */
 /* Sign-in pages                                                          */
-/* Classic: a ledger title page. A serif wordmark over a two-point ink    */
+/* Folio: a ledger title page. A serif wordmark over a two-point ink    */
 /* rule, the form ruled on paper, the engraved rosette behind it, and a   */
-/* paper panel in place of the gradient. Modern: a heavy grotesque        */
+/* paper panel in place of the gradient. Pebble: a heavy grotesque        */
 /* wordmark and a flat accent brand block.                                */
 /* ===================================================================== */
 
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-auth-wordmark {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-auth-wordmark {
   display: block;
   margin: 0;
   font-family: var(--ui-font-display);
   line-height: 1;
   color: var(--color-gray-900);
 }
-html.dark:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-auth-wordmark {
+html.dark:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-auth-wordmark {
   color: var(--color-gray-50);
 }
-html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-auth-logo {
+html:is([data-ui-style='folio'], [data-ui-style='pebble']) .ui-auth-logo {
   display: none;
 }
 
-/* Classic form side */
-html[data-ui-style='classic'] .ui-auth-main {
+/* Folio form side */
+html[data-ui-style='folio'] .ui-auth-main {
   overflow: hidden;
   background-color: var(--color-gray-50);
 }
-html.dark[data-ui-style='classic'] .ui-auth-main {
+html.dark[data-ui-style='folio'] .ui-auth-main {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='classic'] .ui-auth-guilloche {
+html[data-ui-style='folio'] .ui-auth-guilloche {
   display: block;
   width: 46rem;
   max-width: none;
@@ -258,20 +258,20 @@ html[data-ui-style='classic'] .ui-auth-guilloche {
   bottom: -14rem;
   color: color-mix(in oklab, var(--color-blue-700) 16%, transparent);
 }
-html.dark[data-ui-style='classic'] .ui-auth-guilloche {
+html.dark[data-ui-style='folio'] .ui-auth-guilloche {
   color: color-mix(in oklab, var(--color-blue-400) 18%, transparent);
 }
-html[data-ui-style='classic'] .ui-auth-head {
+html[data-ui-style='folio'] .ui-auth-head {
   text-align: left;
   padding-bottom: 0.875rem;
   border-bottom: 2px solid var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-auth-wordmark {
+html[data-ui-style='folio'] .ui-auth-wordmark {
   font-size: 3.25rem;
   font-weight: 500;
   letter-spacing: -0.01em;
 }
-html[data-ui-style='classic'] .ui-auth-title {
+html[data-ui-style='folio'] .ui-auth-title {
   margin-top: 0.75rem;
   font-family: var(--ui-font-display);
   font-size: 1.125rem;
@@ -279,21 +279,21 @@ html[data-ui-style='classic'] .ui-auth-title {
   font-style: italic;
   letter-spacing: 0;
 }
-html[data-ui-style='classic'] .ui-auth-subtitle {
+html[data-ui-style='folio'] .ui-auth-subtitle {
   font-size: 0.6875rem;
   letter-spacing: var(--ui-label-tracking);
   text-transform: uppercase;
 }
-html[data-ui-style='classic'] .ui-auth-card.ui-card.ui-card {
+html[data-ui-style='folio'] .ui-auth-card.ui-card.ui-card {
   padding-inline: 1.5rem;
   background-color: var(--color-white);
   border: 1px solid var(--ui-rule-ink);
   box-shadow: 0 1px 0 var(--ui-rule-ink);
 }
-html.dark[data-ui-style='classic'] .ui-auth-card.ui-card.ui-card {
+html.dark[data-ui-style='folio'] .ui-auth-card.ui-card.ui-card {
   background-color: var(--color-gray-800);
 }
-html[data-ui-style='classic'] .ui-auth-column :is(input.ui-field, select.ui-field) {
+html[data-ui-style='folio'] .ui-auth-column :is(input.ui-field, select.ui-field) {
   padding-inline: 0;
   border-width: 0 0 1px;
   border-style: solid;
@@ -302,38 +302,38 @@ html[data-ui-style='classic'] .ui-auth-column :is(input.ui-field, select.ui-fiel
   background-color: transparent;
   box-shadow: none;
 }
-html[data-ui-style='classic'] .ui-auth-column :is(input.ui-field, select.ui-field):focus {
+html[data-ui-style='folio'] .ui-auth-column :is(input.ui-field, select.ui-field):focus {
   box-shadow: none;
   border-bottom-width: 2px;
   outline: 2px solid var(--color-blue-500);
   outline-offset: 2px;
 }
-html[data-ui-style='classic'] .ui-auth-column label.block {
+html[data-ui-style='folio'] .ui-auth-column label.block {
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: var(--ui-label-tracking);
   text-transform: uppercase;
   color: var(--color-gray-500);
 }
-html.dark[data-ui-style='classic'] .ui-auth-column label.block {
+html.dark[data-ui-style='folio'] .ui-auth-column label.block {
   color: var(--color-gray-400);
 }
 
-/* Classic brand panel: paper, ink rule, the rosette large and faint. */
-html[data-ui-style='classic'] .ui-auth-brand {
+/* Folio brand panel: paper, ink rule, the rosette large and faint. */
+html[data-ui-style='folio'] .ui-auth-brand {
   background-image: none;
   background-color: var(--color-gray-100);
   color: var(--color-gray-900);
   border-left: 2px solid var(--ui-rule-ink);
 }
-html.dark[data-ui-style='classic'] .ui-auth-brand {
+html.dark[data-ui-style='folio'] .ui-auth-brand {
   background-color: var(--color-gray-800);
   color: var(--color-gray-50);
 }
-html[data-ui-style='classic'] .ui-auth-brand-glow {
+html[data-ui-style='folio'] .ui-auth-brand-glow {
   display: none;
 }
-html[data-ui-style='classic'] .ui-auth-brand .ui-auth-guilloche {
+html[data-ui-style='folio'] .ui-auth-brand .ui-auth-guilloche {
   display: block;
   width: 44rem;
   max-width: none;
@@ -342,33 +342,33 @@ html[data-ui-style='classic'] .ui-auth-brand .ui-auth-guilloche {
   top: auto;
   bottom: -14rem;
 }
-html[data-ui-style='classic'] .ui-auth-brand-puck {
+html[data-ui-style='folio'] .ui-auth-brand-puck {
   border-radius: 0;
   border: 1px solid var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-auth-brand-mark > span:last-child {
+html[data-ui-style='folio'] .ui-auth-brand-mark > span:last-child {
   font-family: var(--ui-font-display);
   font-size: 1.5rem;
   font-weight: 500;
 }
-html[data-ui-style='classic'] .ui-auth-brand-title {
+html[data-ui-style='folio'] .ui-auth-brand-title {
   font-family: var(--ui-font-display);
   font-weight: 500;
   padding-top: 0.875rem;
   border-top: 2px solid var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-auth-brand-body {
+html[data-ui-style='folio'] .ui-auth-brand-body {
   color: var(--color-gray-600);
 }
-html.dark[data-ui-style='classic'] .ui-auth-brand-body {
+html.dark[data-ui-style='folio'] .ui-auth-brand-body {
   color: var(--color-gray-300);
 }
-html[data-ui-style='classic'] .ui-auth-brand-shot img {
+html[data-ui-style='folio'] .ui-auth-brand-shot img {
   border-radius: 0;
   box-shadow: 0 1px 0 var(--ui-rule-ink);
   --tw-ring-color: var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-auth-brand-shot > span {
+html[data-ui-style='folio'] .ui-auth-brand-shot > span {
   border-radius: 0;
   background-color: var(--color-gray-900);
   letter-spacing: 0.12em;
@@ -376,43 +376,43 @@ html[data-ui-style='classic'] .ui-auth-brand-shot > span {
   font-size: 0.6875rem;
 }
 
-/* Modern form side: a big grotesque wordmark over a white block. */
-html[data-ui-style='modern'] .ui-auth-head {
+/* Pebble form side: a big grotesque wordmark over a white block. */
+html[data-ui-style='pebble'] .ui-auth-head {
   text-align: left;
 }
-html[data-ui-style='modern'] .ui-auth-wordmark {
+html[data-ui-style='pebble'] .ui-auth-wordmark {
   font-size: 4rem;
   font-weight: 800;
   letter-spacing: -0.05em;
 }
-html[data-ui-style='modern'] .ui-auth-title {
+html[data-ui-style='pebble'] .ui-auth-title {
   margin-top: 0.75rem;
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
-html[data-ui-style='modern'] .ui-auth-card.ui-card {
+html[data-ui-style='pebble'] .ui-auth-card.ui-card {
   border-radius: 1.75rem;
 }
-html[data-ui-style='modern'] .ui-auth-column :is(input.ui-field, select.ui-field) {
+html[data-ui-style='pebble'] .ui-auth-column :is(input.ui-field, select.ui-field) {
   border-color: transparent;
   background-color: var(--color-gray-50);
   box-shadow: none;
   border-radius: 0.875rem;
 }
-html.dark[data-ui-style='modern'] .ui-auth-column :is(input.ui-field, select.ui-field) {
+html.dark[data-ui-style='pebble'] .ui-auth-column :is(input.ui-field, select.ui-field) {
   background-color: var(--color-gray-900);
 }
-html[data-ui-style='modern'] .ui-auth-column :is(input.ui-field, select.ui-field):focus {
+html[data-ui-style='pebble'] .ui-auth-column :is(input.ui-field, select.ui-field):focus {
   border-color: var(--color-blue-500);
   box-shadow: 0 0 0 2px var(--color-blue-500);
 }
-html[data-ui-style='modern'] .ui-auth-column label.block {
+html[data-ui-style='pebble'] .ui-auth-column label.block {
   font-weight: 600;
 }
 
-/* Modern brand panel: a flat accent block, the headline huge and tight. */
-html[data-ui-style='modern'] .ui-auth-brand {
+/* Pebble brand panel: a flat accent block, the headline huge and tight. */
+html[data-ui-style='pebble'] .ui-auth-brand {
   background-image: none;
   background-color: var(--color-blue-300);
   color: var(--color-gray-900);
@@ -420,86 +420,86 @@ html[data-ui-style='modern'] .ui-auth-brand {
   height: calc(100vh - 1.5rem);
   border-radius: 2rem;
 }
-html.dark[data-ui-style='modern'] .ui-auth-brand {
+html.dark[data-ui-style='pebble'] .ui-auth-brand {
   background-color: var(--color-blue-400);
 }
-html[data-ui-style='modern'] .ui-auth-brand-glow {
+html[data-ui-style='pebble'] .ui-auth-brand-glow {
   display: none;
 }
-html[data-ui-style='modern'] .ui-auth-brand-mark > span:last-child {
+html[data-ui-style='pebble'] .ui-auth-brand-mark > span:last-child {
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.04em;
 }
-html[data-ui-style='modern'] .ui-auth-brand-title {
+html[data-ui-style='pebble'] .ui-auth-brand-title {
   font-weight: 800;
   font-size: 2.75rem;
   line-height: 1.02;
   letter-spacing: -0.04em;
 }
-html[data-ui-style='modern'] .ui-auth-brand-body {
+html[data-ui-style='pebble'] .ui-auth-brand-body {
   color: var(--color-gray-800);
 }
-html[data-ui-style='modern'] .ui-auth-brand-shot img {
+html[data-ui-style='pebble'] .ui-auth-brand-shot img {
   border-radius: 1.25rem;
   box-shadow: none;
   --tw-ring-color: transparent;
 }
-html[data-ui-style='modern'] .ui-auth-brand-shot > span {
+html[data-ui-style='pebble'] .ui-auth-brand-shot > span {
   background-color: var(--color-gray-900);
   font-weight: 600;
 }
 
 /* ===================================================================== */
 /* Help panel, tour tooltips, notification panel                          */
-/* Classic: a ruled paper sheet, serif titles, square corners.            */
-/* Modern: round blocks, a heavy tight title.                             */
+/* Folio: a ruled paper sheet, serif titles, square corners.            */
+/* Pebble: round blocks, a heavy tight title.                             */
 /* ===================================================================== */
 
-html[data-ui-style='classic'] :is(.ui-tour-tip, .ui-notif-panel, .ui-help-sheet) {
+html[data-ui-style='folio'] :is(.ui-tour-tip, .ui-notif-panel, .ui-help-sheet) {
   border-radius: 0;
   border-color: var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-tour-tip {
+html[data-ui-style='folio'] .ui-tour-tip {
   border-top: 2px solid var(--ui-rule-ink);
 }
-html[data-ui-style='classic'] .ui-tour-eyebrow {
+html[data-ui-style='folio'] .ui-tour-eyebrow {
   font-size: 0.6875rem;
   letter-spacing: var(--ui-label-tracking);
   text-transform: uppercase;
 }
-html[data-ui-style='classic'] :is(.ui-tour-title, .ui-notif-title, .ui-help-title) {
+html[data-ui-style='folio'] :is(.ui-tour-title, .ui-notif-title, .ui-help-title) {
   font-family: var(--ui-font-display);
   font-weight: 500;
 }
-html[data-ui-style='classic'] .ui-tour-title {
+html[data-ui-style='folio'] .ui-tour-title {
   font-size: 1.25rem;
 }
-html[data-ui-style='classic'] .ui-notif-panel > div:has(> .ui-notif-title) {
+html[data-ui-style='folio'] .ui-notif-panel > div:has(> .ui-notif-title) {
   border-bottom: 2px solid var(--ui-rule-ink);
 }
 
-html[data-ui-style='modern'] .ui-tour-tip {
+html[data-ui-style='pebble'] .ui-tour-tip {
   border-color: transparent;
   border-radius: 1.5rem;
 }
-html[data-ui-style='modern'] .ui-notif-panel {
+html[data-ui-style='pebble'] .ui-notif-panel {
   border-radius: 1.5rem;
   border-color: transparent;
 }
-html[data-ui-style='modern'] .ui-help-sheet:not(.inset-0) {
+html[data-ui-style='pebble'] .ui-help-sheet:not(.inset-0) {
   border-radius: 1.5rem 0 0 1.5rem;
 }
-html[data-ui-style='modern'] .ui-help-sheet.rounded-t-2xl {
+html[data-ui-style='pebble'] .ui-help-sheet.rounded-t-2xl {
   border-radius: 1.5rem 1.5rem 0 0;
 }
-html[data-ui-style='modern'] :is(.ui-tour-title, .ui-notif-title) {
+html[data-ui-style='pebble'] :is(.ui-tour-title, .ui-notif-title) {
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 /* The role select reads as a ruled field: its own text stays visible. */
-html[data-ui-style='classic'] .ui-user-row select {
+html[data-ui-style='folio'] .ui-user-row select {
   min-width: 5.5rem;
   padding: 0.25rem 2rem 0.25rem 0.5rem;
   border-radius: 0;
@@ -507,23 +507,23 @@ html[data-ui-style='classic'] .ui-user-row select {
   background-color: transparent;
   color: var(--color-gray-900);
 }
-html.dark[data-ui-style='classic'] .ui-user-row select {
+html.dark[data-ui-style='folio'] .ui-user-row select {
   color: var(--color-gray-50);
 }
-html[data-ui-style='modern'] .ui-user-row select {
+html[data-ui-style='pebble'] .ui-user-row select {
   min-width: 6rem;
   padding-inline: 0.75rem 2rem;
   color: var(--color-gray-900);
 }
-html.dark[data-ui-style='modern'] .ui-user-row select {
+html.dark[data-ui-style='pebble'] .ui-user-row select {
   color: var(--color-gray-50);
 }
 
 /* The language field sits on the page, not in the white form block: it takes
    the block's white so it stays visible against the page. */
-html[data-ui-style='modern'] .ui-auth-column > div:not(.ui-auth-card) select.ui-field {
+html[data-ui-style='pebble'] .ui-auth-column > div:not(.ui-auth-card) select.ui-field {
   background-color: var(--color-white);
 }
-html.dark[data-ui-style='modern'] .ui-auth-column > div:not(.ui-auth-card) select.ui-field {
+html.dark[data-ui-style='pebble'] .ui-auth-column > div:not(.ui-auth-card) select.ui-field {
   background-color: var(--color-gray-800);
 }

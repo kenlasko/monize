@@ -212,12 +212,12 @@
         "name": "표준",
         "description": "익숙한 Monize 모양입니다."
       },
-      "classic": {
-        "name": "클래식",
+      "folio": {
+        "name": "폴리오",
         "description": "장부에서 영감을 받은 스타일: 세리프 제목, 줄이 있는 표, 각진 모서리."
       },
-      "modern": {
-        "name": "모던",
+      "pebble": {
+        "name": "페블",
         "description": "굵은 글꼴, 둥근 색상 블록, 알약 모양 컨트롤."
       }
     },
