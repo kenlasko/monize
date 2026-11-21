@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, other {# 个名称}}对 Monize 来说太长",
-      "explainer": "Monize 的名称最多保存 255 个字符。下列名称都已缩短以便容纳；导入前可以修改其中任意一个。无论选择什么名称，交易都会保留其收款人、账户和类别。",
+      "explainer": "Monize 的名称最多保存 255 个字符，标签最多 100 个字符。下列名称都已缩短以便容纳；导入前可以修改其中任意一个。无论选择什么名称，交易都会保留其收款人、账户和类别。",
       "table": {
         "kind": "类型",
         "original": "KMyMoney 中的名称",
@@ -639,7 +639,8 @@
         "category": "类别",
         "security": "证券",
         "schedule": "计划交易",
-        "institution": "机构"
+        "institution": "机构",
+        "tag": "标签"
       },
       "originalLength": "{length} 个字符",
       "remaining": "{used} / {max} 个字符",

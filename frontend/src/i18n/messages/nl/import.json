@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, one {# naam is} other {# namen zijn}} te lang voor Monize",
-      "explainer": "Monize slaat hoogstens 255 tekens op in een naam. Elk van deze namen is ingekort zodat hij past; wijzig er gerust een paar voordat u importeert. Transacties houden hun begunstigde, rekening en categorie, welke naam u ook kiest.",
+      "explainer": "Monize slaat hoogstens 255 tekens op in een naam, en 100 in een tag. Elk van deze namen is ingekort zodat hij past; wijzig er gerust een paar voordat u importeert. Transacties houden hun begunstigde, rekening en categorie, welke naam u ook kiest.",
       "table": {
         "kind": "Soort",
         "original": "Naam in KMyMoney",
@@ -639,7 +639,8 @@
         "category": "Categorie",
         "security": "Effect",
         "schedule": "Geplande transactie",
-        "institution": "Instelling"
+        "institution": "Instelling",
+        "tag": "Tag"
       },
       "originalLength": "{length} tekens",
       "remaining": "{used} van {max} tekens",

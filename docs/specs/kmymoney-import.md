@@ -1325,8 +1325,8 @@ WP4 writes; they avoid `--` (frontend rule).
 Issue #2313. A KMyMoney name has no length limit (a payee created from a SEPA direct debit carries the
 whole remittance text); the Monize columns a name is written to are `VARCHAR(255)`: `payees.name` (and
 `transactions.payee_name`, `scheduled_transactions.payee_name`), `accounts.name`, `categories.name`,
-`securities.name`, `scheduled_transactions.name` and `accounts.institution`. An INSERT of a longer name
-failed the whole import.
+`securities.name`, `scheduled_transactions.name` and `accounts.institution`, and `tags.name` is
+`VARCHAR(100)`. An INSERT of a longer name failed the whole import.
 
 `applyKmyNameFixes` (`backend/src/import/kmy/map/kmy-name-fixes.ts`) runs on the raw model before
 anything else is mapped, so every place a name is copied to reads the same replacement:
@@ -1340,6 +1340,7 @@ anything else is mapped, so every place a name is copied to reads the same repla
 | security | `security` | security ordinal | 255 |
 | schedule | `schedule` | schedule ordinal | 255 |
 | institution | `institution` | institution ordinal | 255 |
+| tag | `tag` | tag ordinal | 100 (`tags.name VARCHAR(100)`; before #2313 a longer tag was cut without a word, so two could merge) |
 
 - Length is counted in code points, as PostgreSQL counts a `VARCHAR`'s, and a cut never splits a
   surrogate pair. Standard and stock accounts are never listed: neither is written under its own name.
@@ -1356,7 +1357,7 @@ anything else is mapped, so every place a name is copied to reads the same repla
   duplicate's " (n)" cut the base rather than overflow. A security named by its symbol or id when it has
   no name is cut to 255.
 - Renamed payees are grouped like any other: two given the same name (ignoring case) become one payee.
-- `StartMnyImportDto.options.renames` is `MnyRenameDto[]`: `kind` one of the six values, `handle` an
+- `StartMnyImportDto.options.renames` is `MnyRenameDto[]`: `kind` one of the seven values, `handle` an
   integer of at least 1, `name` a string of at most 255; at most `MNY_MAX_OPTION_ITEMS` entries. A Money
   file ignores the field; Money's Jet text columns hold at most 255 characters already.
 

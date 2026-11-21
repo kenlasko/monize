@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "[XX-{count, plural, one {# name is} other {# names are}} too long for Monize-XX]",
-      "explainer": "[XX-Monize stores at most 255 characters in a name. Each of these has been shortened to fit; change any of them before you import. Transactions keep their payee, account and category whatever you choose.-XX]",
+      "explainer": "[XX-Monize stores at most 255 characters in a name, and 100 in a tag. Each of these has been shortened to fit; change any of them before you import. Transactions keep their payee, account and category whatever you choose.-XX]",
       "table": {
         "kind": "[XX-Type-XX]",
         "original": "[XX-Name in KMyMoney-XX]",
@@ -639,7 +639,8 @@
         "category": "[XX-Category-XX]",
         "security": "[XX-Security-XX]",
         "schedule": "[XX-Scheduled transaction-XX]",
-        "institution": "[XX-Institution-XX]"
+        "institution": "[XX-Institution-XX]",
+        "tag": "[XX-Tag-XX]"
       },
       "originalLength": "[XX-{length} characters-XX]",
       "remaining": "[XX-{used} of {max} characters-XX]",

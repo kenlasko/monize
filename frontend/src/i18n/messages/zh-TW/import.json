@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, other {# 個名稱}}對 Monize 來說太長",
-      "explainer": "Monize 的名稱最多儲存 255 個字元。下列名稱都已縮短以便容納；匯入前可以修改其中任何一個。無論選擇什麼名稱，交易都會保留其收款人、帳戶和類別。",
+      "explainer": "Monize 的名稱最多儲存 255 個字元，標籤最多 100 個字元。下列名稱都已縮短以便容納；匯入前可以修改其中任何一個。無論選擇什麼名稱，交易都會保留其收款人、帳戶和類別。",
       "table": {
         "kind": "類型",
         "original": "KMyMoney 中的名稱",
@@ -639,7 +639,8 @@
         "category": "類別",
         "security": "證券",
         "schedule": "排程交易",
-        "institution": "機構"
+        "institution": "機構",
+        "tag": "標籤"
       },
       "originalLength": "{length} 個字元",
       "remaining": "{used} / {max} 個字元",

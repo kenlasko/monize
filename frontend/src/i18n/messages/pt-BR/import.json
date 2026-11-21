@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, one {# nome é longo demais} other {# nomes são longos demais}} para o Monize",
-      "explainer": "O Monize armazena no máximo 255 caracteres em um nome. Cada um destes foi encurtado para caber; altere qualquer um antes de importar. As transações mantêm o favorecido, a conta e a categoria, qualquer que seja o nome escolhido.",
+      "explainer": "O Monize armazena no máximo 255 caracteres em um nome e 100 em uma tag. Cada um destes foi encurtado para caber; altere qualquer um antes de importar. As transações mantêm o favorecido, a conta e a categoria, qualquer que seja o nome escolhido.",
       "table": {
         "kind": "Tipo",
         "original": "Nome no KMyMoney",
@@ -639,7 +639,8 @@
         "category": "Categoria",
         "security": "Título",
         "schedule": "Transação agendada",
-        "institution": "Instituição"
+        "institution": "Instituição",
+        "tag": "Tag"
       },
       "originalLength": "{length} caracteres",
       "remaining": "{used} de {max} caracteres",

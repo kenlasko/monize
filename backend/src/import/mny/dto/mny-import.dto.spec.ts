@@ -74,7 +74,7 @@ describe("MnyRenameDto (issue #2313)", () => {
   });
 
   it("refuses an unknown kind, a handle below 1 and a name past the column", async () => {
-    expect(await errorsFor({ kind: "tag", handle: 1, name: "x" })).toEqual([
+    expect(await errorsFor({ kind: "budget", handle: 1, name: "x" })).toEqual([
       "kind",
     ]);
     expect(await errorsFor({ kind: "payee", handle: 0, name: "x" })).toEqual([

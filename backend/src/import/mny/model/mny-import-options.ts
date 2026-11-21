@@ -22,7 +22,13 @@ export interface MnyAccountOption {
 
 /** What a too-long name belongs to; see `MnyRename`. */
 export type MnyRenameKind =
-  "payee" | "account" | "category" | "security" | "schedule" | "institution";
+  | "payee"
+  | "account"
+  | "category"
+  | "security"
+  | "schedule"
+  | "institution"
+  | "tag";
 
 export const MNY_RENAME_KINDS: readonly MnyRenameKind[] = [
   "payee",
@@ -31,6 +37,7 @@ export const MNY_RENAME_KINDS: readonly MnyRenameKind[] = [
   "security",
   "schedule",
   "institution",
+  "tag",
 ];
 
 /**

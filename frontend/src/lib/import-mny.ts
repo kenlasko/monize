@@ -158,7 +158,8 @@ export type MnyRenameKind =
   | 'category'
   | 'security'
   | 'schedule'
-  | 'institution';
+  | 'institution'
+  | 'tag';
 
 /** The name the import uses for one too-long name (`options.renames`). */
 export interface MnyRename {

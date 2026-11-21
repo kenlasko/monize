@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, one {# nom est trop long} other {# noms sont trop longs}} pour Monize",
-      "explainer": "Monize enregistre au plus 255 caractères dans un nom. Chacun de ces noms a été raccourci pour tenir ; modifiez ceux que vous voulez avant l'importation. Les transactions gardent leur bénéficiaire, leur compte et leur catégorie, quel que soit le nom choisi.",
+      "explainer": "Monize enregistre au plus 255 caractères dans un nom, et 100 dans une étiquette. Chacun de ces noms a été raccourci pour tenir ; modifiez ceux que vous voulez avant l'importation. Les transactions gardent leur bénéficiaire, leur compte et leur catégorie, quel que soit le nom choisi.",
       "table": {
         "kind": "Type",
         "original": "Nom dans KMyMoney",
@@ -639,7 +639,8 @@
         "category": "Catégorie",
         "security": "Titre",
         "schedule": "Transaction planifiée",
-        "institution": "Établissement"
+        "institution": "Établissement",
+        "tag": "Étiquette"
       },
       "originalLength": "{length} caractères",
       "remaining": "{used} sur {max} caractères",

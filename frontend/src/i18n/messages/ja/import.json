@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, other {# 件の名前}}が Monize には長すぎます",
-      "explainer": "Monize が名前に保存できるのは最大 255 文字です。これらの名前はそれぞれ収まるように短縮されています。インポートの前に、どれでも変更できます。どの名前を選んでも、取引の支払先、口座、カテゴリはそのまま保たれます。",
+      "explainer": "Monize が名前に保存できるのは最大 255 文字、タグは最大 100 文字です。これらの名前はそれぞれ収まるように短縮されています。インポートの前に、どれでも変更できます。どの名前を選んでも、取引の支払先、口座、カテゴリはそのまま保たれます。",
       "table": {
         "kind": "種類",
         "original": "KMyMoney での名前",
@@ -639,7 +639,8 @@
         "category": "カテゴリ",
         "security": "銘柄",
         "schedule": "定期取引",
-        "institution": "金融機関"
+        "institution": "金融機関",
+        "tag": "タグ"
       },
       "originalLength": "{length} 文字",
       "remaining": "{used} / {max} 文字",

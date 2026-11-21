@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, one {# ad} other {# ad}} Monize için çok uzun",
-      "explainer": "Monize bir adda en fazla 255 karakter saklar. Bu adların her biri sığacak şekilde kısaltıldı; içe aktarmadan önce istediğinizi değiştirin. Hangi adı seçerseniz seçin işlemler alıcılarını, hesaplarını ve kategorilerini korur.",
+      "explainer": "Monize bir adda en fazla 255, bir etikette en fazla 100 karakter saklar. Bu adların her biri sığacak şekilde kısaltıldı; içe aktarmadan önce istediğinizi değiştirin. Hangi adı seçerseniz seçin işlemler alıcılarını, hesaplarını ve kategorilerini korur.",
       "table": {
         "kind": "Tür",
         "original": "KMyMoney'deki ad",
@@ -639,7 +639,8 @@
         "category": "Kategori",
         "security": "Menkul kıymet",
         "schedule": "Planlanmış işlem",
-        "institution": "Kurum"
+        "institution": "Kurum",
+        "tag": "Etiket"
       },
       "originalLength": "{length} karakter",
       "remaining": "{used} / {max} karakter",

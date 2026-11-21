@@ -5,6 +5,7 @@ import {
   rawPayee,
   rawSchedule,
   rawSecurity,
+  rawTag,
 } from "../__fixtures__/kmy-raw-builders";
 import {
   KMY_MAX_NAME_FIXES,
@@ -52,6 +53,7 @@ describe("applyKmyNameFixes (issue #2313)", () => {
     securities: [rawSecurity({ id: "E1", name: long("Fund") })],
     schedules: [rawSchedule({ name: long("Rent") })],
     institutions: [rawInstitution("I1", long("Bank"))],
+    tags: [rawTag("G1", "Holiday"), rawTag("G2", "t".repeat(101))],
   });
 
   it("lists every too-long name with its bound, and nothing that fits", () => {
@@ -72,6 +74,7 @@ describe("applyKmyNameFixes (issue #2313)", () => {
       { kind: "security", handle: 1, maxLength: 255 },
       { kind: "schedule", handle: 1, maxLength: 255 },
       { kind: "institution", handle: 1, maxLength: 255 },
+      { kind: "tag", handle: 2, maxLength: 100 },
     ]);
     expect(fixes.entries[0]).toMatchObject({
       original: SEPA.trim(),
@@ -92,6 +95,7 @@ describe("applyKmyNameFixes (issue #2313)", () => {
     ]) {
       expect(nameLength(named.name)).toBeLessThanOrEqual(255);
     }
+    expect(fixed.raw.tags[1].name).toBe("t".repeat(100));
     const investment = fixed.raw.accounts.find((a) => a.id === "INV");
     expect(investment?.name.length).toBe(255 - " - Brokerage".length);
     // A stock account is a holding, never written under its own name.

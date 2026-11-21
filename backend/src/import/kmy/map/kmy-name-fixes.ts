@@ -12,13 +12,15 @@ import type {
 } from "../../mny/model/mny-import-options";
 import { KmyAccount, KmyRawFile } from "../model/kmy-raw";
 import { KMY_TYPE, MONIZE_TYPE, isCategoryType } from "./kmy-account-tree";
+import { MAX_TAG_NAME_LENGTH } from "./kmy-map-payees-tags";
 
 /**
  * Issue #2313: a KMyMoney name can be any length (a payee created from a SEPA
  * direct debit carries the whole remittance text), while the Monize columns
  * it is written to (`payees.name`, `accounts.name`, `categories.name`,
  * `securities.name`, `scheduled_transactions.name`, `accounts.institution`)
- * are `VARCHAR(255)`. An INSERT of a longer one failed the whole import.
+ * are `VARCHAR(255)`. An INSERT of a longer one failed the whole import; a
+ * tag (`tags.name VARCHAR(100)`) was cut without a word, so two could merge.
  *
  * Each too-long name is listed in the preview so the user can choose a
  * shorter one (`options.renames`), and is replaced in the raw model before
@@ -28,7 +30,7 @@ import { KMY_TYPE, MONIZE_TYPE, isCategoryType } from "./kmy-account-tree";
  * fit: the import never fails on a name's length.
  */
 
-/** Width of every name column a KMyMoney name is written to. */
+/** Width of every name column a KMyMoney name is written to, tags aside. */
 export const KMY_MAX_NAME_LENGTH = 255;
 
 /**
@@ -150,6 +152,14 @@ function* namedElements(raw: KmyRawFile): Generator<NamedElement> {
       maxLength: KMY_MAX_NAME_LENGTH,
     };
   }
+  for (const tag of raw.tags) {
+    yield {
+      kind: "tag",
+      handle: tag.ordinal,
+      name: tag.name.trim(),
+      maxLength: MAX_TAG_NAME_LENGTH,
+    };
+  }
 }
 
 function renameKey(kind: MnyRenameKind, handle: number): string {
@@ -234,6 +244,7 @@ export function applyKmyNameFixes(
       institutions: raw.institutions.map((institution) =>
         rename("institution", institution),
       ),
+      tags: raw.tags.map((tag) => rename("tag", tag)),
     },
     fixes: { entries, omitted },
     renames,

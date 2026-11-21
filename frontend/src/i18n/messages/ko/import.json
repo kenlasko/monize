@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, other {이름 #개}}가 Monize에 비해 너무 깁니다",
-      "explainer": "Monize는 이름에 최대 255자까지 저장합니다. 이 이름들은 각각 맞도록 줄였습니다. 가져오기 전에 원하는 이름을 바꾸세요. 어떤 이름을 선택하든 거래는 수취인, 계좌, 카테고리를 그대로 유지합니다.",
+      "explainer": "Monize는 이름에 최대 255자, 태그에 최대 100자까지 저장합니다. 이 이름들은 각각 맞도록 줄였습니다. 가져오기 전에 원하는 이름을 바꾸세요. 어떤 이름을 선택하든 거래는 수취인, 계좌, 카테고리를 그대로 유지합니다.",
       "table": {
         "kind": "유형",
         "original": "KMyMoney의 이름",
@@ -639,7 +639,8 @@
         "category": "카테고리",
         "security": "증권",
         "schedule": "예약 거래",
-        "institution": "금융기관"
+        "institution": "금융기관",
+        "tag": "태그"
       },
       "originalLength": "{length}자",
       "remaining": "{max}자 중 {used}자",
