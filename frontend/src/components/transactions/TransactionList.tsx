@@ -64,6 +64,8 @@ import {
   registerGroupLabel,
 } from './register-style-data';
 import { PebbleRegister } from './variants/PebbleRegister';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { PartialTotal } from '@/components/ui/PartialTotal';
 import { useIsLgUp } from '@/hooks/useIsMobile';
 
 interface TransactionListProps {
@@ -325,6 +327,7 @@ export function TransactionList({
   const tc = useTranslations('common');
   const { formatDate, formatDateWithoutYear } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
+  const { convert, defaultCurrency, ratesUnavailable } = useExchangeRates();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { density } = useDensityPreference(densityView);
   const uiStyle = useUiStyle();
@@ -724,17 +727,22 @@ export function TransactionList({
     [transactions, startingBalance, dataSort?.direction, displayAmounts, runningBalanceDecimals],
   );
 
-  // Figures the Folio and Pebble layouts draw around the rows.
+  // Figures the Folio and Pebble layouts draw around the rows. A page holding
+  // more than one currency sums in the reader's default one, converting each
+  // row first; `partialNote` replaces the missing-rate wording while the rate
+  // table itself is not there to consult.
   const styleData = useMemo(
     () =>
       uiStyle === 'standard'
         ? null
         : {
-            dayNet: netByDate(transactions, displayAmounts, runningBalanceDecimals),
-            totals: pageTotals(transactions, displayAmounts, runningBalanceDecimals),
+            dayNet: netByDate(transactions, displayAmounts, defaultCurrency, convert),
+            totals: pageTotals(transactions, displayAmounts, defaultCurrency, convert),
             rulePct: balanceRulePercents(runningBalances),
+            partialNote: ratesUnavailable ? t('list.folio.ratesUnavailable') : undefined,
           },
-    [uiStyle, transactions, displayAmounts, runningBalanceDecimals, runningBalances],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-reads each currency's precision
+    [uiStyle, transactions, displayAmounts, defaultCurrency, convert, ratesUnavailable, runningBalances, registryVersion, t],
   );
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {
@@ -878,6 +886,7 @@ export function TransactionList({
           runningBalances={runningBalances}
           displayAmounts={displayAmounts}
           dayNet={styleData?.dayNet ?? new Map()}
+          partialNote={styleData?.partialNote}
           inspectorVisible={inspectorVisible}
           inspectedId={inspectedId}
           deletingId={deletingId}
@@ -1193,11 +1202,20 @@ export function TransactionList({
                       >
                         <span>{registerGroupLabel(transaction.transactionDate, locale, today)}</span>
                         <span className="ui-register-group-tools">
-                          {wrapped && styleData && (
-                            <span className="ui-register-group-net">
-                              {formatCurrency(styleData.dayNet.get(transaction.transactionDate) ?? 0, transaction.currencyCode)}
-                            </span>
-                          )}
+                          {wrapped && styleData && (() => {
+                            const dayNet = styleData.dayNet.get(transaction.transactionDate);
+                            return (
+                              <span className="ui-register-group-net">
+                                {dayNet ? (
+                                  <PartialTotal total={dayNet.total} displayCurrency={dayNet.currency} explanation={styleData.partialNote}>
+                                    {formatCurrency(dayNet.total.value, dayNet.currency)}
+                                  </PartialTotal>
+                                ) : (
+                                  formatCurrency(0, transaction.currencyCode)
+                                )}
+                              </span>
+                            );
+                          })()}
                         </span>
                       </th>
                     </tr>
@@ -1284,15 +1302,21 @@ export function TransactionList({
                   {t('list.folio.entriesShown', { count: styleData.totals.count })}
                 </td>
                 <td className={`${cellPadding} ui-register-money text-right`}>
-                  {formatCurrency(styleData.totals.payments, transactions[0]?.currencyCode)}
+                  <PartialTotal total={styleData.totals.payments} displayCurrency={styleData.totals.currency} explanation={styleData.partialNote}>
+                    {formatCurrency(styleData.totals.payments.value, styleData.totals.currency)}
+                  </PartialTotal>
                 </td>
                 <td className={`${cellPadding} ui-register-money ui-register-deposit text-right`}>
-                  {formatCurrency(styleData.totals.deposits, transactions[0]?.currencyCode)}
+                  <PartialTotal total={styleData.totals.deposits} displayCurrency={styleData.totals.currency} explanation={styleData.partialNote}>
+                    {formatCurrency(styleData.totals.deposits.value, styleData.totals.currency)}
+                  </PartialTotal>
                 </td>
                 {showRunningBalance && (
                   <td className={`${cellPadding} ui-register-money text-right`}>
-                    {styleData.totals.net > 0 ? '+' : styleData.totals.net < 0 ? '-' : ''}
-                    {formatCurrency(Math.abs(styleData.totals.net), transactions[0]?.currencyCode)}
+                    <PartialTotal total={styleData.totals.net} displayCurrency={styleData.totals.currency} explanation={styleData.partialNote}>
+                      {styleData.totals.net.value > 0 ? '+' : styleData.totals.net.value < 0 ? '-' : ''}
+                      {formatCurrency(Math.abs(styleData.totals.net.value), styleData.totals.currency)}
+                    </PartialTotal>
                   </td>
                 )}
                 <td colSpan={1 + (isVisible('status') ? 1 : 0)} />

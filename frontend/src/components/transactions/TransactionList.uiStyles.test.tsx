@@ -37,6 +37,16 @@ vi.mock('@/hooks/useNumberFormat', async () => {
   };
 });
 
+// 1 USD = 1.5 CAD, the reader's default; no rate for JPY.
+vi.mock('@/hooks/useExchangeRates', () => ({
+  useExchangeRates: () => ({
+    convert: (amount: number, from: string, to: string) =>
+      from === to ? amount : from === 'USD' && to === 'CAD' ? amount * 1.5 : null,
+    defaultCurrency: 'CAD',
+    ratesUnavailable: false,
+  }),
+}));
+
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: 't1',
@@ -159,6 +169,35 @@ describe('Folio register', () => {
     expect(within(foot).getByText('$200.00')).toBeTruthy();
   });
 
+  it('converts an all-accounts page into the default currency before totalling it', () => {
+    const { container } = renderList({
+      isSingleAccountView: false,
+      startingBalance: undefined,
+      transactions: [
+        makeTx({ id: 'u', amount: -100, currencyCode: 'USD' }),
+        makeTx({ id: 'k', amount: -30 }),
+      ],
+    });
+    const foot = container.querySelector('tfoot') as HTMLElement;
+    // 100 USD is 150 CAD; adding the two face values would say 130.
+    expect(within(foot).getByText('$180.00')).toBeTruthy();
+    expect(within(foot).queryByTestId('partial-total-marker')).toBeNull();
+  });
+
+  it('marks the footer partial when a currency on the page has no rate', () => {
+    const { container } = renderList({
+      isSingleAccountView: false,
+      startingBalance: undefined,
+      transactions: [
+        makeTx({ id: 'j', amount: -5000, currencyCode: 'JPY' }),
+        makeTx({ id: 'k', amount: -30 }),
+      ],
+    });
+    const foot = container.querySelector('tfoot') as HTMLElement;
+    expect(within(foot).getByText('$30.00')).toBeTruthy();
+    expect(within(foot).getAllByTestId('partial-total-marker').length).toBeGreaterThan(0);
+  });
+
   it('keeps the Date column when the register is not in date order', () => {
     const payeeSort = { field: 'payee', direction: 'asc' } as const;
     const { container } = renderList({ sort: payeeSort, rowsSort: payeeSort });
@@ -221,6 +260,8 @@ describe('Pebble register', () => {
       category: { id: 'cat-1', name: 'Groceries', color: '#22c55e', icon: null } as any,
     });
     const { container } = renderList({
+      isSingleAccountView: false,
+      startingBalance: undefined,
       transactions: [iconTx],
       categoryIconMap: new Map([['cat-1', 'chart-bar']]),
     });
