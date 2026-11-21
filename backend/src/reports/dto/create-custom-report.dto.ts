@@ -177,7 +177,7 @@ export class ReportConfigDto {
 export class CreateCustomReportDto {
   @ApiProperty({ description: "Report name" })
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   name: string;
 
