@@ -22,6 +22,7 @@ import { buildAccountTree } from "./kmy-account-tree";
 import { QUANTITY_PLACES, amountPlaces } from "./kmy-amounts";
 import { computeFileExpectationsSteps } from "./kmy-file-expectations";
 import { applyKmyFileFixes } from "./kmy-file-fixes";
+import { applyKmyNameFixes } from "./kmy-name-fixes";
 import {
   countByAccount,
   explainDifferences,
@@ -97,8 +98,10 @@ function* mapKmyFileSteps(
   const options = resolveImportOptions(input.options);
   const asOf = input.asOf ?? todayIsoDate();
   const baseCurrency = file.baseCurrency?.trim() || input.userDefaultCurrency;
+  // Names too long for their column, renamed before anything copies them.
+  const named = applyKmyNameFixes(file, options.renames);
   // What KMyMoney shows once it has opened the file (spec 5.1).
-  const raw = applyKmyFileFixes(file, baseCurrency);
+  const raw = applyKmyFileFixes(named.raw, baseCurrency);
   const tree = buildAccountTree(raw.accounts);
 
   const drafted = mapKmyAccounts({
@@ -296,7 +299,7 @@ function* mapKmyFileSteps(
   return {
     era: "unknown",
     passwordProtected: false,
-    options: { ...options, bills: selectedHandles },
+    options: { ...options, bills: selectedHandles, renames: named.renames },
     baseCurrency: accounts.baseCurrency,
     currencyCodes: [
       ...new Set([
@@ -348,6 +351,7 @@ function* mapKmyFileSteps(
       ...comparisons,
     ],
     sourceFormat: "kmy",
+    nameFixes: named.fixes,
     fileBalances: expectations.fileBalances,
     balancePrecision: expectations.balancePrecision,
     moneyPlaces: new Map(

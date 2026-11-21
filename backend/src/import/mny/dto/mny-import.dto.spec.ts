@@ -4,6 +4,7 @@ import {
   MNY_MAX_OPTION_ITEMS,
   MnyAccountOptionDto,
   MnyImportOptionsDto,
+  MnyRenameDto,
 } from "./mny-import.dto";
 
 async function overrideResult(currencyOverride: unknown) {
@@ -57,5 +58,43 @@ describe("MnyImportOptionsDto array bounds (MIN-4)", () => {
   it("refuses an array past the bound", async () => {
     expect(await errorsFor(MNY_MAX_OPTION_ITEMS + 1, 0)).toEqual(["accounts"]);
     expect(await errorsFor(0, MNY_MAX_OPTION_ITEMS + 1)).toEqual(["bills"]);
+  });
+});
+
+describe("MnyRenameDto (issue #2313)", () => {
+  const errorsFor = async (rename: Record<string, unknown>) =>
+    (await validate(plainToInstance(MnyRenameDto, rename))).map(
+      (error) => error.property,
+    );
+
+  it("accepts a rename of a known kind within the column", async () => {
+    expect(
+      await errorsFor({ kind: "payee", handle: 2, name: "x".repeat(255) }),
+    ).toEqual([]);
+  });
+
+  it("refuses an unknown kind, a handle below 1 and a name past the column", async () => {
+    expect(await errorsFor({ kind: "tag", handle: 1, name: "x" })).toEqual([
+      "kind",
+    ]);
+    expect(await errorsFor({ kind: "payee", handle: 0, name: "x" })).toEqual([
+      "handle",
+    ]);
+    expect(
+      await errorsFor({ kind: "payee", handle: 1, name: "x".repeat(256) }),
+    ).toEqual(["name"]);
+  });
+
+  it("bounds the list like the other option arrays", async () => {
+    const dto = plainToInstance(MnyImportOptionsDto, {
+      renames: Array.from({ length: MNY_MAX_OPTION_ITEMS + 1 }, () => ({
+        kind: "payee",
+        handle: 1,
+        name: "x",
+      })),
+    });
+    expect((await validate(dto)).map((error) => error.property)).toEqual([
+      "renames",
+    ]);
   });
 });

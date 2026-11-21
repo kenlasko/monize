@@ -4,6 +4,7 @@ import {
 } from "../../accounts/entities/account.entity";
 import { FrequencyType } from "../../scheduled-transactions/dto/create-scheduled-transaction.dto";
 import { MnyImportOptions } from "./model/mny-import-options";
+import type { MnyNameFixes } from "./model/mny-import-model";
 import type { KmyFileSummary } from "./model/import-source";
 import {
   MnyWarningSummary,
@@ -131,6 +132,12 @@ export interface MnyPreview {
   readonly sourceFormat?: "kmy";
   /** Set only for a KMyMoney file. */
   readonly kmyFile?: KmyFileSummary;
+  /**
+   * Names too long for their column, which the wizard offers to rename; the
+   * names the import would use are in `options.renames`. Set only for a
+   * KMyMoney file.
+   */
+  readonly nameFixes?: MnyNameFixes;
 }
 
 export interface BuildPreviewInput {
@@ -240,5 +247,6 @@ export function buildPreview(input: BuildPreviewInput): MnyPreview {
     options: parsed.options,
     ...(parsed.sourceFormat === "kmy" ? { sourceFormat: "kmy" as const } : {}),
     ...(parsed.kmyFile !== undefined ? { kmyFile: parsed.kmyFile } : {}),
+    ...(parsed.nameFixes !== undefined ? { nameFixes: parsed.nameFixes } : {}),
   };
 }

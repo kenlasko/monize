@@ -47,6 +47,7 @@ import {
   MappedTransactions,
   MnyHoldingCheck,
   MnyMarketRates,
+  MnyNameFixes,
 } from "./model/mny-import-model";
 import {
   MnyImportOptions,
@@ -183,6 +184,8 @@ export interface MnyParsedFile {
   readonly moneyPlaces?: ReadonlyMap<string, number>;
   /** KMyMoney container facts; absent for a Money file. */
   readonly kmyFile?: KmyFileSummary;
+  /** Names too long for their column (KMyMoney); absent for a Money file. */
+  readonly nameFixes?: MnyNameFixes;
 }
 
 export interface MnyBalancePrecision {

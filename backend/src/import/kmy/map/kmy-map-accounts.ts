@@ -27,6 +27,7 @@ import {
 import { amountNumber } from "./kmy-amounts";
 import { accountWarnings } from "./kmy-account-warnings";
 import { findBrokerageAccount } from "./kmy-brokerage";
+import { fitName } from "./kmy-name-fixes";
 
 /**
  * Spec 5.2: KMyMoney accounts to Monize accounts and investment pairs.
@@ -77,13 +78,14 @@ function isYes(value: string | undefined): boolean {
   return value !== undefined && value.trim().toLowerCase() === "yes";
 }
 
+/** `base`, or `base (n)` for the first free n, always within `accounts.name`. */
 function uniqueName(base: string, taken: Set<string>): string {
   if (!taken.has(base.toLowerCase())) {
     taken.add(base.toLowerCase());
     return base;
   }
   for (let suffix = 2; ; suffix += 1) {
-    const candidate = `${base} (${suffix})`;
+    const candidate = fitName(base, ` (${suffix})`);
     if (!taken.has(candidate.toLowerCase())) {
       taken.add(candidate.toLowerCase());
       return candidate;
@@ -253,7 +255,7 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
           ...shared,
           key: cashKey,
           handle: cash ? cash.ordinal : null,
-          name: uniqueName(`${base} - ${cashSuffix()}`, taken),
+          name: uniqueName(fitName(base, ` - ${cashSuffix()}`), taken),
           moneyName: cash ? cash.name : moneyName,
           accountSubType: AccountSubType.INVESTMENT_CASH,
           linkedKey: brokerageKey,
@@ -262,7 +264,7 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
           ...shared,
           key: brokerageKey,
           handle: account.ordinal,
-          name: uniqueName(`${base} - ${brokerageSuffix()}`, taken),
+          name: uniqueName(fitName(base, ` - ${brokerageSuffix()}`), taken),
           moneyName,
           accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
           linkedKey: cashKey,

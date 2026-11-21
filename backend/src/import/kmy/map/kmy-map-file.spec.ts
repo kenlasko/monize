@@ -337,6 +337,69 @@ describe("mapKmyFile: options and the model's other inputs", () => {
     ).toEqual(["Used", "Unused"]);
   });
 
+  it("imports a payee, account and investment pair whose names are too long for their columns (issue #2313)", () => {
+    const sepa = `SEPA-LASTSCHRIFT ${"Mandatsreferenz MR-0042 ".repeat(15)}`;
+    const raw = rawFile({
+      payees: [rawPayee("P1", sepa)],
+      accounts: [
+        rawAccount({ id: "CHK", name: "c".repeat(300), type: 1 }),
+        rawAccount({ id: "DUP", name: "c".repeat(300), type: 1 }),
+        rawAccount({ id: "INV", name: "i".repeat(300), type: 7 }),
+        rawAccount({ id: "FOOD", name: "Food", type: 13 }),
+      ],
+      transactions: [
+        rawTransaction({
+          splits: [
+            { account: "CHK", value: "-10", payee: "P1" },
+            { account: "FOOD", value: "10", payee: "P1" },
+          ],
+        }),
+      ],
+    });
+
+    const cut = mapKmyFile(raw, INPUT);
+    for (const account of cut.accounts.accounts) {
+      expect(account.name.length).toBeLessThanOrEqual(255);
+    }
+    // Two names cut to the same text stay two accounts, both within the column.
+    expect(cut.accounts.accounts.map((a) => a.name)).toEqual(
+      expect.arrayContaining(["c".repeat(255), `${"c".repeat(251)} (2)`]),
+    );
+    const payee = cut.payees.payees[0];
+    expect(payee.name).toBe(sepa.slice(0, 255).trimEnd());
+    expect(cut.payees.nameByHandle.get(1)).toBe(payee.name);
+    expect(cut.nameFixes?.entries.map((fix) => fix.kind)).toEqual([
+      "payee",
+      "account",
+      "account",
+      "account",
+    ]);
+    expect(cut.options.renames).toContainEqual({
+      kind: "payee",
+      handle: 1,
+      name: payee.name,
+    });
+
+    const renamed = mapKmyFile(raw, {
+      ...INPUT,
+      options: {
+        renames: [
+          { kind: "payee", handle: 1, name: "Stadtwerke" },
+          { kind: "account", handle: 8, name: "Broker" },
+        ],
+      },
+    });
+    expect(renamed.payees.payees.map((p) => p.name)).toEqual(["Stadtwerke"]);
+    expect(renamed.payees.nameByHandle.get(1)).toBe("Stadtwerke");
+    expect(
+      renamed.accounts.accounts
+        .filter((a) => a.linkedKey !== null)
+        .map((a) => a.name),
+    ).toEqual(["Broker - Cash", "Broker - Brokerage"]);
+    // The preview's list does not depend on the renames sent.
+    expect(renamed.nameFixes).toEqual(cut.nameFixes);
+  });
+
   it("falls back to the user's currency when the file names no base currency", () => {
     const parsed = mapKmyFile(
       rawFile({
