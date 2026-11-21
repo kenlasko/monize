@@ -2,11 +2,12 @@
 
 import { useTranslations } from 'next-intl';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { InstitutionLogo } from '@/components/institutions/InstitutionLogo';
 import { TINT_CLASS } from '@/lib/tint-class';
 import { WidgetHeading } from '../widget-meta';
 import { FavouriteAccountsStandard, ReorderToggle } from './FavouriteAccountsStandard';
 import { FavouriteAccountFigure, FavouriteAccountMeta } from './FavouriteAccountsFolio';
-import type { FavouriteAccountsViewProps } from './favourite-accounts-view';
+import type { FavouriteAccountRow, FavouriteAccountsViewProps } from './favourite-accounts-view';
 
 /** A wash per row from the palette's categorical slots, so every palette tints them. */
 const AVATAR_TINTS = [
@@ -17,6 +18,23 @@ const AVATAR_TINTS = [
   '[--widget-tint:var(--chart-5)]',
   '[--widget-tint:var(--chart-6)]',
 ];
+
+/** The round mark at a row's left: the institution's logo, when it has one, replaces the letter disc. */
+function AccountAvatar({ row, index }: { row: FavouriteAccountRow; index: number }) {
+  if (row.institutionLogo?.hasLogo) {
+    return <InstitutionLogo institution={row.institutionLogo} size={40} className="h-10 w-10 flex-shrink-0" />;
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold ${
+        AVATAR_TINTS[index % AVATAR_TINTS.length]
+      } ${TINT_CLASS}`}
+    >
+      {Array.from(row.name)[0]?.toUpperCase()}
+    </span>
+  );
+}
 
 /**
  * Favourite Accounts in the Pebble style: a round letter mark, the name over
@@ -53,14 +71,7 @@ export function FavouriteAccountsPebble(props: FavouriteAccountsViewProps) {
               onClick={row.open}
               className="flex min-h-[68px] w-full items-center gap-3.5 rounded-2xl py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
-              <span
-                aria-hidden="true"
-                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold ${
-                  AVATAR_TINTS[index % AVATAR_TINTS.length]
-                } ${TINT_CLASS}`}
-              >
-                {Array.from(row.name)[0]?.toUpperCase()}
-              </span>
+              <AccountAvatar row={row} index={index} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-semibold text-gray-900 dark:text-gray-100">
                   {row.name}

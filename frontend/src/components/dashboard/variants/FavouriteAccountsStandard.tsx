@@ -11,7 +11,7 @@ import { WidgetHeading } from '../widget-meta';
 import type { FavouriteAccountsViewProps } from './favourite-accounts-view';
 
 /** The mark beside an account's name: its institution's logo, or else the star. */
-function AccountMark({ institution }: { institution?: InstitutionLogoData }) {
+export function AccountMark({ institution }: { institution?: InstitutionLogoData }) {
   if (institution?.hasLogo) return <InstitutionLogo institution={institution} size={20} />;
   return (
     <span className="flex h-5 w-5 shrink-0 items-center justify-center">
