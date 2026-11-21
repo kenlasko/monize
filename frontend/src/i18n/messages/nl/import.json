@@ -623,6 +623,28 @@
       "billsOfRows": "actief van {rows} geplande transacties",
       "payeeAliases": "Begunstigde-aliassen",
       "payeeAliasesDetail": "{count, plural, one {# begunstigde krijgt} other {# begunstigden krijgen}} een standaardcategorie"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# naam is} other {# namen zijn}} te lang voor Monize",
+      "explainer": "Monize slaat hoogstens 255 tekens op in een naam. Elk van deze namen is ingekort zodat hij past; wijzig er gerust een paar voordat u importeert. Transacties houden hun begunstigde, rekening en categorie, welke naam u ook kiest.",
+      "table": {
+        "kind": "Soort",
+        "original": "Naam in KMyMoney",
+        "newName": "Naam in Monize",
+        "newNameFor": "{kind}: naam in Monize"
+      },
+      "kind": {
+        "payee": "Begunstigde",
+        "account": "Rekening",
+        "category": "Categorie",
+        "security": "Effect",
+        "schedule": "Geplande transactie",
+        "institution": "Instelling"
+      },
+      "originalLength": "{length} tekens",
+      "remaining": "{used} van {max} tekens",
+      "blank": "Voer een naam in.",
+      "omitted": "{count, plural, one {Nog # naam is te lang en wordt} other {Nog # namen zijn te lang en worden}} ingekort zodat ze passen."
     }
   },
   "kmyBills": {

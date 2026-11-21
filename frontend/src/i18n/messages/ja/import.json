@@ -623,6 +623,28 @@
       "billsOfRows": "{rows} 件のスケジュールのうち有効",
       "payeeAliases": "支払先のエイリアス",
       "payeeAliasesDetail": "{count, plural, other {# 件の支払先}}にデフォルトのカテゴリが設定されます"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {# 件の名前}}が Monize には長すぎます",
+      "explainer": "Monize が名前に保存できるのは最大 255 文字です。これらの名前はそれぞれ収まるように短縮されています。インポートの前に、どれでも変更できます。どの名前を選んでも、取引の支払先、口座、カテゴリはそのまま保たれます。",
+      "table": {
+        "kind": "種類",
+        "original": "KMyMoney での名前",
+        "newName": "Monize での名前",
+        "newNameFor": "{kind}: Monize での名前"
+      },
+      "kind": {
+        "payee": "支払先",
+        "account": "口座",
+        "category": "カテゴリ",
+        "security": "銘柄",
+        "schedule": "定期取引",
+        "institution": "金融機関"
+      },
+      "originalLength": "{length} 文字",
+      "remaining": "{used} / {max} 文字",
+      "blank": "名前を入力してください。",
+      "omitted": "ほかに {count, plural, other {# 件の名前}}が長すぎるため、収まるように短縮されます。"
     }
   },
   "kmyBills": {

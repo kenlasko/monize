@@ -623,6 +623,28 @@
       "billsOfRows": "aktywnych z {rows} zaplanowanych transakcji",
       "payeeAliases": "Aliasy odbiorców",
       "payeeAliasesDetail": "{count, plural, one {# odbiorca otrzymuje} few {# odbiorców otrzymuje} many {# odbiorców otrzymuje} other {# odbiorców otrzymuje}} domyślną kategorię"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# nazwa jest za długa} few {# nazwy są za długie} many {# nazw jest za długich} other {# nazwy są za długie}} dla Monize",
+      "explainer": "Monize zapisuje w nazwie najwyżej 255 znaków. Każda z tych nazw została skrócona, aby się zmieściła; przed importem możesz zmienić dowolną z nich. Transakcje zachowują swojego odbiorcę, konto i kategorię niezależnie od wybranej nazwy.",
+      "table": {
+        "kind": "Typ",
+        "original": "Nazwa w KMyMoney",
+        "newName": "Nazwa w Monize",
+        "newNameFor": "{kind}: nazwa w Monize"
+      },
+      "kind": {
+        "payee": "Odbiorca",
+        "account": "Konto",
+        "category": "Kategoria",
+        "security": "Papier wartościowy",
+        "schedule": "Zaplanowana transakcja",
+        "institution": "Instytucja"
+      },
+      "originalLength": "Znaki: {length}",
+      "remaining": "{used} z {max} znaków",
+      "blank": "Wpisz nazwę.",
+      "omitted": "{count, plural, one {Jeszcze # nazwa jest za długa i zostanie skrócona} few {Jeszcze # nazwy są za długie i zostaną skrócone} many {Jeszcze # nazw jest za długich i zostanie skróconych} other {Jeszcze # nazwy są za długie i zostaną skrócone}}, aby się zmieścić."
     }
   },
   "kmyBills": {

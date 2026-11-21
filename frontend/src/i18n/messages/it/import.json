@@ -623,6 +623,28 @@
       "billsOfRows": "attive su {rows} transazioni pianificate",
       "payeeAliases": "Alias dei beneficiari",
       "payeeAliasesDetail": "{count, plural, one {# beneficiario riceve} other {# beneficiari ricevono}} una categoria predefinita"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# nome è troppo lungo} other {# nomi sono troppo lunghi}} per Monize",
+      "explainer": "Monize memorizza al massimo 255 caratteri in un nome. Ognuno di questi è stato accorciato per entrarci; modificane uno qualsiasi prima dell'importazione. Le transazioni mantengono beneficiario, conto e categoria qualunque nome tu scelga.",
+      "table": {
+        "kind": "Tipo",
+        "original": "Nome in KMyMoney",
+        "newName": "Nome in Monize",
+        "newNameFor": "{kind}: nome in Monize"
+      },
+      "kind": {
+        "payee": "Beneficiario",
+        "account": "Conto",
+        "category": "Categoria",
+        "security": "Titolo",
+        "schedule": "Transazione pianificata",
+        "institution": "Istituto"
+      },
+      "originalLength": "{length} caratteri",
+      "remaining": "{used} di {max} caratteri",
+      "blank": "Inserisci un nome.",
+      "omitted": "{count, plural, one {# altro nome è troppo lungo e verrà accorciato} other {# altri nomi sono troppo lunghi e verranno accorciati}} per entrarci."
     }
   },
   "kmyBills": {

@@ -623,6 +623,28 @@
       "billsOfRows": "{rows} शेड्यूल में से सक्रिय",
       "payeeAliases": "प्राप्तकर्ता उपनाम",
       "payeeAliasesDetail": "{count, plural, one {# प्राप्तकर्ता को} other {# प्राप्तकर्ताओं को}} एक डिफ़ॉल्ट श्रेणी मिलती है"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# नाम} other {# नाम}} Monize के लिए बहुत लंबे हैं",
+      "explainer": "Monize किसी नाम में अधिकतम 255 अक्षर रखता है। इनमें से हर नाम को फिट होने के लिए छोटा किया गया है; आयात से पहले इनमें से कोई भी बदलें। आप जो भी नाम चुनें, लेनदेन अपना प्राप्तकर्ता, खाता और श्रेणी बनाए रखते हैं।",
+      "table": {
+        "kind": "प्रकार",
+        "original": "KMyMoney में नाम",
+        "newName": "Monize में नाम",
+        "newNameFor": "{kind}: Monize में नाम"
+      },
+      "kind": {
+        "payee": "प्राप्तकर्ता",
+        "account": "खाता",
+        "category": "श्रेणी",
+        "security": "प्रतिभूति",
+        "schedule": "निर्धारित लेनदेन",
+        "institution": "संस्थान"
+      },
+      "originalLength": "{length} अक्षर",
+      "remaining": "{max} में से {used} अक्षर",
+      "blank": "एक नाम दर्ज करें।",
+      "omitted": "{count, plural, one {# और नाम} other {# और नाम}} बहुत लंबे हैं और फिट होने के लिए छोटे कर दिए जाएंगे।"
     }
   },
   "kmyBills": {

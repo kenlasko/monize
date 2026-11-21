@@ -623,6 +623,28 @@
       "billsOfRows": "đang hoạt động trong {rows} lịch",
       "payeeAliases": "Bí danh người nhận",
       "payeeAliasesDetail": "{count, plural, other {# người nhận}} được gán danh mục mặc định"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {# tên}} quá dài đối với Monize",
+      "explainer": "Monize lưu tối đa 255 ký tự trong một tên. Mỗi tên dưới đây đã được rút gọn cho vừa; hãy đổi bất kỳ tên nào trước khi nhập. Các giao dịch vẫn giữ người nhận, tài khoản và danh mục của chúng dù bạn chọn tên nào.",
+      "table": {
+        "kind": "Loại",
+        "original": "Tên trong KMyMoney",
+        "newName": "Tên trong Monize",
+        "newNameFor": "{kind}: tên trong Monize"
+      },
+      "kind": {
+        "payee": "Người nhận",
+        "account": "Tài khoản",
+        "category": "Danh mục",
+        "security": "Chứng khoán",
+        "schedule": "Giao dịch định kỳ",
+        "institution": "Tổ chức"
+      },
+      "originalLength": "{length} ký tự",
+      "remaining": "{used} trên {max} ký tự",
+      "blank": "Hãy nhập một tên.",
+      "omitted": "Còn {count, plural, other {# tên}} quá dài và sẽ được rút gọn cho vừa."
     }
   },
   "kmyBills": {

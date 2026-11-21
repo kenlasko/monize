@@ -623,6 +623,28 @@
       "billsOfRows": "有效，共 {rows} 个计划",
       "payeeAliases": "收款人别名",
       "payeeAliasesDetail": "{count, plural, other {# 位收款人}}将获得默认类别"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {# 个名称}}对 Monize 来说太长",
+      "explainer": "Monize 的名称最多保存 255 个字符。下列名称都已缩短以便容纳；导入前可以修改其中任意一个。无论选择什么名称，交易都会保留其收款人、账户和类别。",
+      "table": {
+        "kind": "类型",
+        "original": "KMyMoney 中的名称",
+        "newName": "Monize 中的名称",
+        "newNameFor": "{kind}：Monize 中的名称"
+      },
+      "kind": {
+        "payee": "收款人",
+        "account": "账户",
+        "category": "类别",
+        "security": "证券",
+        "schedule": "计划交易",
+        "institution": "机构"
+      },
+      "originalLength": "{length} 个字符",
+      "remaining": "{used} / {max} 个字符",
+      "blank": "请输入名称。",
+      "omitted": "另有 {count, plural, other {# 个名称}}太长，将自动缩短以便容纳。"
     }
   },
   "kmyBills": {

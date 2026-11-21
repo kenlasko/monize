@@ -623,6 +623,28 @@
       "billsOfRows": "aktif dari {rows} jadwal",
       "payeeAliases": "Alias penerima",
       "payeeAliasesDetail": "{count, plural, other {# penerima}} mendapat kategori default"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {# nama}} terlalu panjang untuk Monize",
+      "explainer": "Monize menyimpan paling banyak 255 karakter dalam sebuah nama. Setiap nama ini telah dipendekkan agar muat; ubah mana pun sebelum mengimpor. Transaksi tetap memiliki penerima, akun, dan kategorinya apa pun nama yang Anda pilih.",
+      "table": {
+        "kind": "Jenis",
+        "original": "Nama di KMyMoney",
+        "newName": "Nama di Monize",
+        "newNameFor": "{kind}: nama di Monize"
+      },
+      "kind": {
+        "payee": "Penerima",
+        "account": "Akun",
+        "category": "Kategori",
+        "security": "Sekuritas",
+        "schedule": "Transaksi terjadwal",
+        "institution": "Institusi"
+      },
+      "originalLength": "{length} karakter",
+      "remaining": "{used} dari {max} karakter",
+      "blank": "Masukkan nama.",
+      "omitted": "{count, plural, other {# nama lainnya}} terlalu panjang dan akan dipendekkan agar muat."
     }
   },
   "kmyBills": {

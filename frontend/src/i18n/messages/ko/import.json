@@ -623,6 +623,28 @@
       "billsOfRows": "{rows}개 일정 중 활성",
       "payeeAliases": "거래처 별칭",
       "payeeAliasesDetail": "{count, plural, other {거래처 #개}}에 기본 범주가 지정됩니다"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, other {이름 #개}}가 Monize에 비해 너무 깁니다",
+      "explainer": "Monize는 이름에 최대 255자까지 저장합니다. 이 이름들은 각각 맞도록 줄였습니다. 가져오기 전에 원하는 이름을 바꾸세요. 어떤 이름을 선택하든 거래는 수취인, 계좌, 카테고리를 그대로 유지합니다.",
+      "table": {
+        "kind": "유형",
+        "original": "KMyMoney의 이름",
+        "newName": "Monize의 이름",
+        "newNameFor": "{kind}: Monize의 이름"
+      },
+      "kind": {
+        "payee": "수취인",
+        "account": "계좌",
+        "category": "카테고리",
+        "security": "증권",
+        "schedule": "예약 거래",
+        "institution": "금융기관"
+      },
+      "originalLength": "{length}자",
+      "remaining": "{max}자 중 {used}자",
+      "blank": "이름을 입력하세요.",
+      "omitted": "{count, plural, other {이름 #개}}가 더 있으며 너무 길어서 맞도록 줄입니다."
     }
   },
   "kmyBills": {

@@ -623,6 +623,28 @@
       "billsOfRows": "ativas de {rows} transações agendadas",
       "payeeAliases": "Aliases de favorecidos",
       "payeeAliasesDetail": "{count, plural, one {# favorecido recebe} other {# favorecidos recebem}} uma categoria predefinida"
+    },
+    "nameFixes": {
+      "heading": "{count, plural, one {# nome é longo demais} other {# nomes são longos demais}} para o Monize",
+      "explainer": "O Monize armazena no máximo 255 caracteres em um nome. Cada um destes foi encurtado para caber; altere qualquer um antes de importar. As transações mantêm o favorecido, a conta e a categoria, qualquer que seja o nome escolhido.",
+      "table": {
+        "kind": "Tipo",
+        "original": "Nome no KMyMoney",
+        "newName": "Nome no Monize",
+        "newNameFor": "{kind}: nome no Monize"
+      },
+      "kind": {
+        "payee": "Favorecido",
+        "account": "Conta",
+        "category": "Categoria",
+        "security": "Título",
+        "schedule": "Transação agendada",
+        "institution": "Instituição"
+      },
+      "originalLength": "{length} caracteres",
+      "remaining": "{used} de {max} caracteres",
+      "blank": "Digite um nome.",
+      "omitted": "{count, plural, one {Mais # nome é longo demais e será encurtado} other {Mais # nomes são longos demais e serão encurtados}} para caber."
     }
   },
   "kmyBills": {
