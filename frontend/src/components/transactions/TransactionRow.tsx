@@ -37,6 +37,9 @@ import type { UiStyle } from '@/lib/ui-styles';
  * The default for `hidden`: nothing hidden. A module constant so a caller
  * that omits the prop hands the memoised row the same reference every render.
  */
+/** Folio's category is plain text with the room to name the whole "Parent: Child". */
+const LEDGER_CATEGORY_MAX_WIDTH = 'max-w-[24rem]';
+
 const NO_HIDDEN_COLUMNS: ReadonlySet<string> = new Set();
 
 const INVESTMENT_ACTION_LABELS: Record<string, string> = {
@@ -243,6 +246,12 @@ export interface TransactionRowProps {
   categoryColorMap?: Map<string, string | null>;
   /** Inherited-aware icon per category id; see buildCategoryIconMap. */
   categoryIconMap?: Map<string, string | null>;
+  /**
+   * "Parent: Child" per category id (`buildCategoryLabelMap`): the joined row
+   * carries only the category's own name. Folio's ledger form names the full
+   * path, as the Pebble register does; the filled pill keeps the short name.
+   */
+  categoryLabelMap?: Map<string, string>;
   budgetStatusMap?: Record<string, CategoryBudgetStatus>;
   isFuture?: boolean;
   /** Flash and scroll to this row (e.g. when arriving from a deep link). */
@@ -315,6 +324,7 @@ export const TransactionRow = memo(function TransactionRow({
   onToggleSelection,
   categoryColorMap,
   categoryIconMap,
+  categoryLabelMap,
   budgetStatusMap,
   isFuture,
   isHighlighted,
@@ -367,6 +377,13 @@ export const TransactionRow = memo(function TransactionRow({
   const categoryIcon = transaction.category
     ? (categoryIconMap?.get(transaction.category.id) ?? transaction.category.icon)
     : null;
+  // Folio's ledger text has the room for the whole path; the capsule does not.
+  const categoryPillName = transaction.category
+    ? splitAmount
+      ? (categoryLabelMap?.get(transaction.category.id) ?? transaction.category.name)
+      : transaction.category.name
+    : '';
+  const ledgerMaxWidth = splitAmount ? LEDGER_CATEGORY_MAX_WIDTH : undefined;
 
   // Phone + Normal density: one wrapped card per row instead of the tier
   // table's cells (see the `wrapped` prop). It is a LAYOUT mode, not a
@@ -506,14 +523,14 @@ export const TransactionRow = memo(function TransactionRow({
                   {transaction.category && (
                     <CategoryPill
                       ledger={splitAmount}
-                      name={transaction.category.name}
+                      name={categoryPillName}
                       color={categoryColor}
                       icon={categoryIcon}
                       density={density}
-                      maxWidthClass="max-w-[160px]"
+                      maxWidthClass={ledgerMaxWidth ?? 'max-w-[160px]'}
                       title={
                         onCategoryClick
-                          ? t('list.row.filterByCategory', { name: transaction.category.name })
+                          ? t('list.row.filterByCategory', { name: categoryPillName })
                           : undefined
                       }
                       onClick={
@@ -558,13 +575,14 @@ export const TransactionRow = memo(function TransactionRow({
               ) : transaction.category ? (
                 <CategoryPill
                   ledger={splitAmount}
-                  name={transaction.category.name}
+                  name={categoryPillName}
                   color={categoryColor}
                   icon={categoryIcon}
                   density={density}
+                  maxWidthClass={ledgerMaxWidth}
                   title={
                     onCategoryClick
-                      ? t('list.row.filterByCategory', { name: transaction.category.name })
+                      ? t('list.row.filterByCategory', { name: categoryPillName })
                       : undefined
                   }
                   onClick={
@@ -757,14 +775,14 @@ export const TransactionRow = memo(function TransactionRow({
             {transaction.category && (
               <CategoryPill
                 ledger={splitAmount}
-                name={transaction.category.name}
+                name={categoryPillName}
                 color={categoryColor}
                 icon={categoryIcon}
                 density={density}
-                maxWidthClass="max-w-[140px]"
+                maxWidthClass={ledgerMaxWidth ?? 'max-w-[140px]'}
                 title={
                   onCategoryClick
-                    ? t('list.row.filterByCategory', { name: transaction.category.name })
+                    ? t('list.row.filterByCategory', { name: categoryPillName })
                     : undefined
                 }
                 onClick={
@@ -861,13 +879,14 @@ export const TransactionRow = memo(function TransactionRow({
               <span className="inline-flex items-center">
                 <CategoryPill
                   ledger={splitAmount}
-                  name={transaction.category!.name}
+                  name={categoryPillName}
                   color={categoryColor}
                   icon={categoryIcon}
                   density={density}
+                  maxWidthClass={ledgerMaxWidth}
                   title={
                     onCategoryClick
-                      ? t('list.row.filterByCategory', { name: transaction.category!.name })
+                      ? t('list.row.filterByCategory', { name: categoryPillName })
                       : undefined
                   }
                   onClick={
