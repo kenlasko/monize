@@ -1,26 +1,14 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { HeroFigureSkeleton, HeroHeadline } from '../hero-parts';
+import { BlockFigure, PebbleChangePill } from './hero-statement-parts';
 import { MonthBars } from './MonthBars';
 import type { NetWorthHeroViewProps } from './net-worth-hero-view';
-
-function BlockFigure({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
-      <dd className="ui-display-figure text-[22px] font-semibold tracking-tight text-gray-900 dark:text-gray-50">
-        {children}
-      </dd>
-    </div>
-  );
-}
 
 /**
  * The net worth set in the Pebble style, drawn inside the hero's inverted
@@ -58,30 +46,14 @@ export function NetWorthHeroPebble({
             </PartialTotal>
           </HeroHeadline>
         </div>
-        {change !== null && (
-          <div className="mt-3.5 flex">
-            {change.known ? (
-              // On the block, which is dark in both modes: the light end of red and green.
-              <span
-                data-testid="dashboard-hero-pill"
-                className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-semibold ${
-                  change.up ? 'bg-green-400/15 text-green-400' : 'bg-red-400/15 text-red-400'
-                }`}
-              >
-                {change.up ? (
-                  <ArrowUpIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                ) : (
-                  <ArrowDownIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                )}
-                {change.text}
-              </span>
-            ) : (
-              <span data-testid="dashboard-hero-pill" className="text-sm text-gray-500 dark:text-gray-400">
-                <UnknownAmount reason="displayFx" />
-              </span>
-            )}
-          </div>
-        )}
+        {change !== null &&
+          (change.known ? (
+            <PebbleChangePill up={change.up}>{change.text}</PebbleChangePill>
+          ) : (
+            <PebbleChangePill up={null}>
+              <UnknownAmount reason="displayFx" />
+            </PebbleChangePill>
+          ))}
         <dl className="mt-auto flex flex-wrap gap-x-9 gap-y-3 pt-7">
           <BlockFigure label={t('hero.assetsLabel')}>
             <PartialTotal total={assets} displayCurrency={currency}>
