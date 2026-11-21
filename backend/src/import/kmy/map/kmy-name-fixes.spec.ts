@@ -11,6 +11,7 @@ import {
   KMY_MAX_NAME_FIXES,
   KMY_MAX_NAME_LENGTH,
   KMY_NAME_FIX_ORIGINAL_CHARS,
+  appendOriginal,
   applyKmyNameFixes,
   clipName,
   fitName,
@@ -174,5 +175,82 @@ describe("applyKmyNameFixes (issue #2313)", () => {
     expect(fixed.fixes.entries[0].originalLength).toBe(5_002);
     const last = fixed.raw.payees[KMY_MAX_NAME_FIXES + 1];
     expect(nameLength(last.name)).toBe(255);
+  });
+
+  it("keeps the whole name of every replaced element as originalName", () => {
+    const fixed = applyKmyNameFixes(raw, [
+      { kind: "payee", handle: 2, name: "Stadtwerke" },
+    ]);
+    expect(fixed.raw.payees[1].originalName).toBe(SEPA.trim());
+    expect(fixed.raw.payees[0].originalName).toBeUndefined();
+    expect(fixed.raw.accounts.find((a) => a.id === "CHK")?.originalName).toBe(
+      long("Checking"),
+    );
+  });
+
+  it("never cuts two names of one kind to the same text, unless the user chose it", () => {
+    const shared = "s".repeat(260);
+    const tagShared = "t".repeat(110);
+    const twins = rawFile({
+      payees: [
+        rawPayee("P1", `${shared} first`),
+        rawPayee("P2", `${shared} second`),
+        rawPayee("P3", "s".repeat(255)),
+      ],
+      tags: [rawTag("G1", `${tagShared} a`), rawTag("G2", `${tagShared} b`)],
+    });
+
+    const cut = applyKmyNameFixes(twins, []);
+    // P3 fits and holds the plain cut, so both long ones are numbered.
+    expect(cut.raw.payees.map((p) => p.name)).toEqual([
+      `${"s".repeat(251)} (2)`,
+      `${"s".repeat(251)} (3)`,
+      "s".repeat(255),
+    ]);
+    expect(cut.raw.tags.map((t) => t.name)).toEqual([
+      "t".repeat(100),
+      `${"t".repeat(96)} (2)`,
+    ]);
+
+    const merged = applyKmyNameFixes(twins, [
+      { kind: "payee", handle: 1, name: "Stadtwerke" },
+      { kind: "payee", handle: 2, name: "stadtwerke" },
+    ]);
+    expect(merged.raw.payees.map((p) => p.name).slice(0, 2)).toEqual([
+      "Stadtwerke",
+      "stadtwerke",
+    ]);
+
+    const avoided = applyKmyNameFixes(twins, [
+      { kind: "tag", handle: 2, name: "t".repeat(100) },
+    ]);
+    expect(avoided.raw.tags.map((t) => t.name)).toEqual([
+      `${"t".repeat(96)} (2)`,
+      "t".repeat(100),
+    ]);
+  });
+});
+
+describe("appendOriginal", () => {
+  it("adds the original after a blank line when it fits, or stands alone", () => {
+    expect(appendOriginal("My notes", "Original", 500)).toEqual({
+      text: "My notes\n\nOriginal",
+      cut: false,
+    });
+    expect(appendOriginal("", "Original", 500)).toEqual({
+      text: "Original",
+      cut: false,
+    });
+  });
+
+  it("cuts the original to the room left and says so, never the text before it", () => {
+    expect(appendOriginal("ab", "cdefgh", 7)).toEqual({
+      text: "ab\n\ncde",
+      cut: true,
+    });
+    expect(appendOriginal("abcdefg", "xyz", 7)).toEqual({
+      text: "abcdefg",
+      cut: true,
+    });
   });
 });

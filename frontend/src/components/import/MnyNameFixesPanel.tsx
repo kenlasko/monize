@@ -113,7 +113,7 @@ export function MnyNameFixesPanel({
                         error={blank ? t('kmyReview.nameFixes.blank') : undefined}
                       />
                       <span className="block mt-1 text-xs text-muted-foreground">
-                        {t('kmyReview.nameFixes.remaining', {
+                        {t('kmyReview.nameFixes.charactersUsed', {
                           used: formatNumber(value.length, 0),
                           max: formatNumber(fix.maxLength, 0),
                         })}

@@ -2,8 +2,8 @@ import { MNY_WARNING_CODES } from "../../mny/model/mny-warnings";
 import { KMY_WARNING_CODES } from "./kmy-warnings";
 
 describe("KMY_WARNING_CODES", () => {
-  it("lists 70 codes, each a known warning code, without repeats", () => {
-    expect(KMY_WARNING_CODES).toHaveLength(70);
+  it("lists 71 codes, each a known warning code, without repeats", () => {
+    expect(KMY_WARNING_CODES).toHaveLength(71);
     expect(new Set(KMY_WARNING_CODES).size).toBe(KMY_WARNING_CODES.length);
     for (const code of KMY_WARNING_CODES) {
       expect(MNY_WARNING_CODES).toContain(code);

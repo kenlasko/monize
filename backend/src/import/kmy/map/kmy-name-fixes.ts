@@ -12,7 +12,7 @@ import type {
 } from "../../mny/model/mny-import-options";
 import { KmyAccount, KmyRawFile } from "../model/kmy-raw";
 import { KMY_TYPE, MONIZE_TYPE, isCategoryType } from "./kmy-account-tree";
-import { MAX_TAG_NAME_LENGTH } from "./kmy-map-payees-tags";
+import { MAX_TAG_NAME_LENGTH } from "../../mny/map/map-classifications";
 
 /**
  * Issue #2313: a KMyMoney name can be any length (a payee created from a SEPA
@@ -63,10 +63,13 @@ export function clipName(text: string, max: number): string {
  * column. Used where the mapper appends to a name (an investment pair's
  * " - Cash", a duplicate's " (2)").
  */
-export function fitName(base: string, suffix: string): string {
+export function fitName(
+  base: string,
+  suffix: string,
+  max: number = KMY_MAX_NAME_LENGTH,
+): string {
   return (
-    clipName(base, Math.max(0, KMY_MAX_NAME_LENGTH - nameLength(suffix))) +
-    suffix
+    clipName(base, Math.max(0, max - nameLength(suffix))).trimEnd() + suffix
   );
 }
 
@@ -178,6 +181,15 @@ export interface KmyNameFixResult {
  * Replaces every too-long name in `raw` with the user's rename when it is
  * usable (not blank and within the column once trimmed), else with the name
  * cut to fit. A rename of a name that already fits is ignored.
+ *
+ * A cut never lands on a name another element of its kind already has: two
+ * SEPA payees that differ only past the 255th character would otherwise become
+ * one payee, two long tags one tag. The second gets " (2)", like a duplicate
+ * account name. A rename the user chose is taken as given, so two elements the
+ * user names alike are merged on purpose.
+ *
+ * A replaced element keeps its whole name as `originalName`, which the payee
+ * and account mappers write to the notes and description (`appendOriginal`).
  */
 export function applyKmyNameFixes(
   raw: KmyRawFile,
@@ -188,22 +200,47 @@ export function applyKmyNameFixes(
     wanted.set(renameKey(rename.kind, rename.handle), rename.name.trim());
   }
 
-  const chosen = new Map<string, string>();
+  const tooLong: NamedElement[] = [];
+  // Lower-cased names each kind already holds: the names that fit, then the
+  // renames the user chose, before any cut is made.
+  const taken = new Map<MnyRenameKind, Set<string>>();
+  const takenOf = (kind: MnyRenameKind): Set<string> => {
+    const found = taken.get(kind) ?? new Set<string>();
+    taken.set(kind, found);
+    return found;
+  };
+  const usable = (element: NamedElement): string | null => {
+    const own = wanted.get(renameKey(element.kind, element.handle));
+    return own !== undefined &&
+      own !== "" &&
+      nameLength(own) <= element.maxLength
+      ? own
+      : null;
+  };
+  for (const element of namedElements(raw)) {
+    if (nameLength(element.name) <= element.maxLength) {
+      takenOf(element.kind).add(element.name.toLowerCase());
+      continue;
+    }
+    tooLong.push(element);
+    const own = usable(element);
+    if (own !== null) {
+      takenOf(element.kind).add(own.toLowerCase());
+    }
+  }
+
+  const chosen = new Map<string, { name: string; original: string }>();
   const entries: MnyNameFix[] = [];
   const renames: MnyRename[] = [];
   let omitted = 0;
-  for (const element of namedElements(raw)) {
-    const length = nameLength(element.name);
-    if (length <= element.maxLength) {
-      continue;
-    }
-    const key = renameKey(element.kind, element.handle);
-    const own = wanted.get(key);
+  for (const element of tooLong) {
     const name =
-      own !== undefined && own !== "" && nameLength(own) <= element.maxLength
-        ? own
-        : clipName(element.name, element.maxLength).trimEnd();
-    chosen.set(key, name);
+      usable(element) ??
+      distinctCut(element.name, element.maxLength, takenOf(element.kind));
+    chosen.set(renameKey(element.kind, element.handle), {
+      name,
+      original: element.name,
+    });
     if (entries.length >= KMY_MAX_NAME_FIXES) {
       omitted += 1;
       continue;
@@ -212,7 +249,7 @@ export function applyKmyNameFixes(
       kind: element.kind,
       handle: element.handle,
       original: clipName(element.name, KMY_NAME_FIX_ORIGINAL_CHARS),
-      originalLength: length,
+      originalLength: nameLength(element.name),
       maxLength: element.maxLength,
     });
     renames.push({ kind: element.kind, handle: element.handle, name });
@@ -222,13 +259,17 @@ export function applyKmyNameFixes(
     return { raw, fixes: { entries, omitted }, renames };
   }
 
-  const rename = <T extends { ordinal: number; name: string }>(
+  const rename = <
+    T extends { ordinal: number; name: string; originalName?: string },
+  >(
     kind: MnyRenameKind | null,
     item: T,
   ): T => {
-    const name =
+    const found =
       kind === null ? undefined : chosen.get(renameKey(kind, item.ordinal));
-    return name === undefined ? item : { ...item, name };
+    return found === undefined
+      ? item
+      : { ...item, name: found.name, originalName: found.original };
   };
   return {
     raw: {
@@ -248,5 +289,40 @@ export function applyKmyNameFixes(
     },
     fixes: { entries, omitted },
     renames,
+  };
+}
+
+/** `name` cut to `max`, with " (n)" for the first n no name of its kind holds. */
+function distinctCut(name: string, max: number, taken: Set<string>): string {
+  let candidate = clipName(name, max).trimEnd();
+  for (let n = 2; taken.has(candidate.toLowerCase()); n += 1) {
+    candidate = fitName(name, ` (${n})`, max);
+  }
+  taken.add(candidate.toLowerCase());
+  return candidate;
+}
+
+/**
+ * `base` with the whole `original` name after it, separated by a blank line,
+ * within `max` characters. `base` is kept as it is; the original is cut to the
+ * room left, and `cut` says it was. Used for a payee's notes and an account's
+ * description, so a replaced name is not lost (issue #2313).
+ */
+export function appendOriginal(
+  base: string,
+  original: string,
+  max: number,
+): { readonly text: string; readonly cut: boolean } {
+  const separator = base === "" ? "" : "\n\n";
+  const room = max - nameLength(base) - separator.length;
+  if (nameLength(original) <= room) {
+    return { text: base + separator + original, cut: false };
+  }
+  if (room <= 0) {
+    return { text: base, cut: true };
+  }
+  return {
+    text: base + separator + clipName(original, room).trimEnd(),
+    cut: true,
   };
 }

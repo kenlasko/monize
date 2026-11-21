@@ -270,6 +270,8 @@ describe("kmy import: payee matching and details (integration)", () => {
     expect(cut.status).toBe("completed");
     const shortened = sepa.trim().slice(0, 255).trimEnd();
     expect(await payeeNames()).toEqual([[shortened, shortened]]);
+    // The whole KMyMoney name is not lost: it is the payee's notes.
+    expect((await payeeRow(shortened)).notes).toBe(sepa.trim());
 
     h.stubWipe();
     const renamed = await runKmy(bytes, {
@@ -278,5 +280,6 @@ describe("kmy import: payee matching and details (integration)", () => {
     });
     expect(renamed.status).toBe("completed");
     expect(await payeeNames()).toEqual([["Stadtwerke", "Stadtwerke"]]);
+    expect((await payeeRow("Stadtwerke")).notes).toBe(sepa.trim());
   });
 });

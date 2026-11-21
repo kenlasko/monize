@@ -643,7 +643,7 @@
         "tag": "Tag"
       },
       "originalLength": "{length} Zeichen",
-      "remaining": "{used} von {max} Zeichen",
+      "charactersUsed": "{used} von {max} Zeichen",
       "blank": "Geben Sie einen Namen ein.",
       "omitted": "{count, plural, one {# weiterer Name ist} other {# weitere Namen sind}} zu lang und {count, plural, one {wird} other {werden}} passend gekürzt."
     }
@@ -749,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, one {# Zahlungsempfänger-Alias kann} other {# Zahlungsempfänger-Aliase können}} denselben Zahlungsempfängernamen treffen wie ein Alias eines anderen Zahlungsempfängers. KMyMoney wählt den Zahlungsempfänger mit der längeren Übereinstimmung; Monize wählt womöglich einen beliebigen. Prüfen Sie {count, plural, one {diesen Alias} other {diese Aliase}} in Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, one {# Zahlungsempfänger hat} other {# Zahlungsempfänger haben}} eine Standardkategorie, die Monize nicht verwenden kann (ein Konto statt einer Kategorie, eine in der Datei fehlende oder eine andere als bei einem gleichnamigen Zahlungsempfänger), daher {count, plural, one {wurde er} other {wurden sie}} ohne importiert.",
     "payeeDetailsKept": "{count, plural, one {# Zahlungsempfänger existierte} other {# Zahlungsempfänger existierten}} in Monize bereits mit {count, plural, one {eigener} other {eigenen}} Standardkategorie oder Kontaktdaten, die beibehalten wurden; die KMyMoney-Werte wurden nicht verwendet.",
+    "originalNameCut": "{count, plural, one {# Name war} other {# Namen waren}} zu lang für Monize und zu lang, um vollständig in den Notizen des Zahlungsempfängers oder der Beschreibung des Kontos gespeichert zu werden, die höchstens 500 Zeichen fassen; dort wurde nur der Anfang des Namens behalten.",
     "unparsableNumber": "{count, plural, one {# Zahl in der Datei konnte} other {# Zahlen in der Datei konnten}} nicht gelesen werden und {count, plural, one {wurde} other {wurden}} als null gewertet.",
     "autoCalcInPostedSplit": "{count, plural, one {# gebuchte Transaktion trug} other {# gebuchte Transaktionen trugen}} einen Platzhalterbetrag, der nur für terminierte Buchungen gedacht ist; er wurde als null gewertet.",
     "mappedBalanceDiffers": "{count, plural, one {# Konto würde} other {# Konten würden}} mit einem Saldo enden, der vom aus der Datei berechneten abweicht. Importieren Sie erst, wenn das geklärt ist.",

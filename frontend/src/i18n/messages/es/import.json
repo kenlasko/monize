@@ -643,7 +643,7 @@
         "tag": "Etiqueta"
       },
       "originalLength": "{length} caracteres",
-      "remaining": "{used} de {max} caracteres",
+      "charactersUsed": "{used} de {max} caracteres",
       "blank": "Introduce un nombre.",
       "omitted": "{count, plural, one {# nombre más es demasiado largo y se acortará} other {# nombres más son demasiado largos y se acortarán}} para que quepan."
     }
@@ -749,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, one {# alias de beneficiario puede coincidir} other {# alias de beneficiarios pueden coincidir}} con el mismo nombre de beneficiario que un alias de otro beneficiario. KMyMoney elige el beneficiario con la coincidencia más larga; Monize puede elegir cualquiera. Revise {count, plural, one {este alias} other {estos alias}} en Monize.",
     "payeeDefaultCategoryNotImported": "{count, plural, one {# beneficiario tiene} other {# beneficiarios tienen}} una categoría predeterminada que Monize no puede usar (una cuenta en lugar de una categoría, una que falta en el archivo o una distinta de la de otro beneficiario con el mismo nombre), así que {count, plural, one {se importó} other {se importaron}} sin ella.",
     "payeeDetailsKept": "{count, plural, one {# beneficiario ya existía} other {# beneficiarios ya existían}} en Monize con su propia categoría predeterminada o datos de contacto, que se conservaron; no se usaron los valores de KMyMoney.",
+    "originalNameCut": "{count, plural, one {# nombre era demasiado largo} other {# nombres eran demasiado largos}} para Monize y para guardarse entero en las notas del beneficiario o en la descripción de la cuenta, que admiten como máximo 500 caracteres; allí solo se guardó el principio del nombre.",
     "unparsableNumber": "{count, plural, one {# número del archivo no se pudo leer} other {# números del archivo no se pudieron leer}} y {count, plural, one {se tomó} other {se tomaron}} como cero.",
     "autoCalcInPostedSplit": "{count, plural, one {# transacción registrada llevaba} other {# transacciones registradas llevaban}} un importe provisional pensado solo para transacciones planificadas; se tomó como cero.",
     "mappedBalanceDiffers": "{count, plural, one {# cuenta terminaría} other {# cuentas terminarían}} con un saldo distinto del calculado a partir del archivo. No importe hasta que se explique.",

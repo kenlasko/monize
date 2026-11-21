@@ -94,6 +94,7 @@ describe('binary import format descriptors', () => {
       'payeeMatchKeyOverlap',
       'payeeDefaultCategoryNotImported',
       'payeeDetailsKept',
+      'originalNameCut',
       'crossCurrencyTransferRateMissing',
       'tradeAmountsDiffer',
       'investmentTransactionUnclassified',

@@ -643,7 +643,7 @@
         "tag": "標籤"
       },
       "originalLength": "{length} 個字元",
-      "remaining": "{used} / {max} 個字元",
+      "charactersUsed": "{used} / {max} 個字元",
       "blank": "請輸入名稱。",
       "omitted": "另有 {count, plural, other {# 個名稱}}太長，將自動縮短以便容納。"
     }
@@ -749,6 +749,7 @@
     "payeeMatchKeyOverlap": "{count, plural, other {# 個收款人別名}}可能與另一位收款人的別名比對到同一個收款人名稱。KMyMoney 會選擇比對更長的收款人；Monize 可能選擇其中任何一位。請在 Monize 中檢查這些別名。",
     "payeeDefaultCategoryNotImported": "{count, plural, other {# 位收款人}}的預設類別 Monize 無法使用（是帳戶而不是類別、檔案中不存在該類別，或與同名的另一位收款人不同），因此在沒有該類別的情況下匯入。",
     "payeeDetailsKept": "{count, plural, other {# 位收款人}}在 Monize 中已存在，並帶有自己的預設類別或聯絡方式，這些已保留；未使用 KMyMoney 中的值。",
+    "originalNameCut": "{count, plural, other {# 個名稱}}對 Monize 來說太長，也無法完整保存在最多 500 個字元的收款人備註或帳戶說明中；那裡只保留了名稱的開頭部分。",
     "unparsableNumber": "{count, plural, other {# 個數字}}在檔案中無法讀取，已視為零。",
     "autoCalcInPostedSplit": "{count, plural, other {# 筆已過帳的交易}}帶有僅用於排程的預留金額；該金額已視為零。",
     "mappedBalanceDiffers": "{count, plural, other {# 個帳戶}}最終的餘額將與依檔案計算的餘額不同。在查明原因之前請不要匯入。",

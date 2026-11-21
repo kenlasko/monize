@@ -400,6 +400,95 @@ describe("mapKmyFile: options and the model's other inputs", () => {
     expect(renamed.nameFixes).toEqual(cut.nameFixes);
   });
 
+  it("keeps a replaced name's whole text in the payee's notes and the account's description (issue #2313)", () => {
+    const sepa =
+      `SEPA-LASTSCHRIFT ${"Mandatsreferenz MR-0042 ".repeat(15)}`.trim();
+    const raw = rawFile({
+      payees: [
+        rawPayee("P1", sepa, { notes: "Paid monthly" }),
+        rawPayee("P2", `${sepa} ${"x".repeat(600)}`),
+      ],
+      accounts: [
+        rawAccount({
+          id: "CHK",
+          name: `Girokonto ${"g".repeat(300)}`,
+          type: 1,
+          description: "Main",
+        }),
+        rawAccount({ id: "FOOD", name: "Food", type: 13 }),
+      ],
+      transactions: ["P1", "P2"].map((payee, index) =>
+        rawTransaction({
+          id: `T${index}`,
+          splits: [
+            { account: "CHK", value: "-10", payee },
+            { account: "FOOD", value: "10", payee },
+          ],
+        }),
+      ),
+    });
+    const parsed = mapKmyFile(raw, {
+      ...INPUT,
+      options: { renames: [{ kind: "payee", handle: 1, name: "Stadtwerke" }] },
+    });
+
+    const stadtwerke = parsed.payees.payees.find(
+      (p) => p.name === "Stadtwerke",
+    );
+    expect(stadtwerke?.contact?.notes).toBe(`Paid monthly\n\n${sepa}`);
+    // Too long for the 500 the payee form accepts: cut there, and said so.
+    const second = parsed.payees.payees.find((p) => p.handle === 2);
+    expect(second?.contact?.notes).toHaveLength(500);
+    expect(parsed.warnings).toContainEqual({
+      code: "originalNameCut",
+      subject: second?.name,
+    });
+
+    const account = parsed.accounts.accounts.find((a) => a.key === "acct-6");
+    expect(account?.description).toBe(`Main\n\nGirokonto ${"g".repeat(300)}`);
+    // The review table's "named X in KMyMoney" names the file's own name.
+    expect(account?.moneyName).toBe(`Girokonto ${"g".repeat(300)}`);
+  });
+
+  it("builds a match-on-name rule from the file's name, not the rename (issue #2313)", () => {
+    const sepa =
+      `SEPA-LASTSCHRIFT ${"Mandatsreferenz MR-0042 ".repeat(15)}`.trim();
+    const raw = rawFile({
+      payees: [
+        rawPayee("P1", sepa, {
+          match: { kind: "name", ignoreCase: true, keys: [] },
+        }),
+      ],
+      accounts: [
+        rawAccount({ id: "CHK", name: "Checking", type: 1 }),
+        rawAccount({ id: "FOOD", name: "Food", type: 13 }),
+      ],
+      transactions: [
+        rawTransaction({
+          splits: [
+            { account: "CHK", value: "-10", payee: "P1" },
+            { account: "FOOD", value: "10", payee: "P1" },
+          ],
+        }),
+      ],
+    });
+    const parsed = mapKmyFile(raw, {
+      ...INPUT,
+      options: { renames: [{ kind: "payee", handle: 1, name: "Stadtwerke" }] },
+    });
+
+    // `*<the whole SEPA text>*` is past the alias column, as it was before the
+    // rename; the rename never widens it to `*Stadtwerke*`.
+    expect(parsed.payees.payees[0].aliases).toBeUndefined();
+    expect(parsed.warnings).toContainEqual(
+      expect.objectContaining({
+        code: "payeeMatchKeyNotImported",
+        subject: `Stadtwerke: ${sepa}`,
+        detail: "tooLong",
+      }),
+    );
+  });
+
   it("falls back to the user's currency when the file names no base currency", () => {
     const parsed = mapKmyFile(
       rawFile({

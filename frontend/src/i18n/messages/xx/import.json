@@ -643,7 +643,7 @@
         "tag": "[XX-Tag-XX]"
       },
       "originalLength": "[XX-{length} characters-XX]",
-      "remaining": "[XX-{used} of {max} characters-XX]",
+      "charactersUsed": "[XX-{used} of {max} characters-XX]",
       "blank": "[XX-Enter a name.-XX]",
       "omitted": "[XX-{count, plural, one {# more name is} other {# more names are}} too long and will be shortened to fit.-XX]"
     }
@@ -749,6 +749,7 @@
     "payeeMatchKeyOverlap": "[XX-{count, plural, one {# payee alias can} other {# payee aliases can}} match the same payee name as an alias of another payee. KMyMoney picks the payee with the longer match; Monize may pick either. Check {count, plural, one {this alias} other {these aliases}} in Monize.-XX]",
     "payeeDefaultCategoryNotImported": "[XX-{count, plural, one {# payee has} other {# payees have}} a default category Monize cannot use (an account rather than a category, one missing from the file, or a different one from another payee of the same name), so {count, plural, one {it was} other {they were}} imported without it.-XX]",
     "payeeDetailsKept": "[XX-{count, plural, one {# payee already existed} other {# payees already existed}} in Monize with {count, plural, one {its} other {their}} own default category or contact details, which were kept; the KMyMoney values were not used.-XX]",
+    "originalNameCut": "[XX-{count, plural, one {# name was} other {# names were}} too long for Monize and too long to keep whole in the payee's notes or the account's description, which hold at most 500 characters; only the start of the name was kept there.-XX]",
     "unparsableNumber": "[XX-{count, plural, one {# number} other {# numbers}} in the file could not be read and {count, plural, one {was} other {were}} taken as zero.-XX]",
     "autoCalcInPostedSplit": "[XX-{count, plural, one {# posted transaction carried} other {# posted transactions carried}} a placeholder amount meant only for scheduled transactions; it was taken as zero.-XX]",
     "mappedBalanceDiffers": "[XX-{count, plural, one {# account would end} other {# accounts would end}} with a balance that differs from the one computed from the file. Do not import until this is explained.-XX]",

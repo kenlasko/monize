@@ -27,7 +27,12 @@ import {
 import { amountNumber } from "./kmy-amounts";
 import { accountWarnings } from "./kmy-account-warnings";
 import { findBrokerageAccount } from "./kmy-brokerage";
-import { fitName } from "./kmy-name-fixes";
+import {
+  KMY_NAME_FIX_ORIGINAL_CHARS,
+  appendOriginal,
+  clipName,
+  fitName,
+} from "./kmy-name-fixes";
 
 /**
  * Spec 5.2: KMyMoney accounts to Monize accounts and investment pairs.
@@ -76,6 +81,17 @@ export interface MapKmyAccountsInput {
 
 function isYes(value: string | undefined): boolean {
   return value !== undefined && value.trim().toLowerCase() === "yes";
+}
+
+/** The account DTO's bound on a description, so the account saves again unchanged. */
+export const MAX_ACCOUNT_DESCRIPTION = 500;
+
+/** The account's name as KMyMoney has it, before any rename, cut for display. */
+function fileName(account: KmyAccount): string {
+  return clipName(
+    account.originalName ?? account.name,
+    KMY_NAME_FIX_ORIGINAL_CHARS,
+  );
 }
 
 /** `base`, or `base (n)` for the first free n, always within `accounts.name`. */
@@ -196,6 +212,23 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
   const currencyByHandle = new Map<number, string>();
   const imported: KmyAccount[] = [];
 
+  // A renamed account keeps its whole KMyMoney name in its description
+  // (issue #2313), after the file's own.
+  const describe = (account: KmyAccount): string | null => {
+    if (account.originalName === undefined) {
+      return account.description || null;
+    }
+    const kept = appendOriginal(
+      account.description.trim(),
+      account.originalName,
+      MAX_ACCOUNT_DESCRIPTION,
+    );
+    if (kept.cut) {
+      warnings.push({ code: "originalNameCut", subject: account.name });
+    }
+    return kept.text || null;
+  };
+
   const institutionName = (account: KmyAccount | null): string | null =>
     account?.institutionId
       ? (raw.institutions.find((entry) => entry.id === account.institutionId)
@@ -217,7 +250,7 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
     const currencyCode = (
       selection.currencyOverride ?? rawCurrencyOf(account, baseCurrency)
     ).toUpperCase();
-    const moneyName = account.name;
+    const moneyName = fileName(account);
     const isCrypto = coinDecimals.has(currencyCode);
 
     if (account.type === KMY_TYPE.INVESTMENT && !isCrypto) {
@@ -246,7 +279,7 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
           isYes(account.kvp.get("PreferredAccount")) ||
           (cash ? isYes(cash.kvp.get("PreferredAccount")) : false),
         excludeFromNetWorth: false,
-        description: account.description || null,
+        description: describe(account),
         institutionName: institutionName(account) ?? institutionName(cash),
         openingBalance: 0,
       };
@@ -256,7 +289,7 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
           key: cashKey,
           handle: cash ? cash.ordinal : null,
           name: uniqueName(fitName(base, ` - ${cashSuffix()}`), taken),
-          moneyName: cash ? cash.name : moneyName,
+          moneyName: cash ? fileName(cash) : moneyName,
           accountSubType: AccountSubType.INVESTMENT_CASH,
           linkedKey: brokerageKey,
         },
@@ -324,7 +357,7 @@ export function mapKmyAccounts(input: MapKmyAccountsInput): KmyAccountMapping {
       closedDate: closed ? account.kvp.get("mm-closed-date") || null : null,
       favourite: isYes(account.kvp.get("PreferredAccount")),
       excludeFromNetWorth: false,
-      description: account.description || null,
+      description: describe(account),
       linkedKey: null,
     });
     keyById.set(account.id, key);
