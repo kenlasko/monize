@@ -1265,6 +1265,7 @@ export function TransactionList({
                     onToggleSelection={selectionMode ? () => onToggleSelection?.(transaction.id) : undefined}
                     categoryColorMap={categoryColorMap}
                     categoryIconMap={categoryIconMap}
+                    categoryLabelMap={categoryLabelMap}
                     budgetStatusMap={budgetStatusMap}
                     isFuture={isFuture}
                     isHighlighted={!!highlightTransactionId && transaction.id === highlightTransactionId}

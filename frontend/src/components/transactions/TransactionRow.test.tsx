@@ -789,6 +789,34 @@ describe('TransactionRow', () => {
     expect(span).not.toBeNull();
   });
 
+  describe('category name per UI style', () => {
+    const labels = new Map([['c1', 'Food: Groceries']]);
+    const child = { category: { id: 'c1', name: 'Groceries', color: '#ff0000' } as any };
+
+    it('names the whole "Parent: Child" path in the Folio ledger, with room to show it', () => {
+      renderRow({ uiStyle: 'folio', categoryLabelMap: labels }, child);
+      const pill = screen.getByTitle('Food: Groceries');
+      expect(pill).toHaveTextContent('Food: Groceries');
+      expect(pill.className).toContain('max-w-[24rem]');
+    });
+
+    it('filters by the full path in the Folio button title', () => {
+      renderRow({ uiStyle: 'folio', categoryLabelMap: labels, onCategoryClick: vi.fn() }, child);
+      expect(screen.getByRole('button', { name: /Food: Groceries/ })).toBeInTheDocument();
+    });
+
+    it('falls back to the category own name when the map has no entry', () => {
+      renderRow({ uiStyle: 'folio', categoryLabelMap: new Map() }, child);
+      expect(screen.getByTitle('Groceries')).toHaveTextContent('Groceries');
+    });
+
+    it('keeps the short name in the other styles capsule', () => {
+      renderRow({ uiStyle: 'standard', categoryLabelMap: labels }, child);
+      expect(screen.getByTitle('Groceries')).toHaveTextContent('Groceries');
+      expect(screen.queryByText('Food: Groceries')).not.toBeInTheDocument();
+    });
+  });
+
   it('renders showRunningBalance=false hides balance column', () => {
     renderRow({ showRunningBalance: false, isSingleAccountView: false });
     expect(screen.queryByText('100.00')).not.toBeInTheDocument();
