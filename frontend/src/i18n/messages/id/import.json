@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, other {# nama}} terlalu panjang untuk Monize",
-      "explainer": "Monize menyimpan paling banyak 255 karakter dalam sebuah nama, dan 100 dalam sebuah tag. Setiap nama ini telah dipendekkan agar muat; ubah mana pun sebelum mengimpor. Transaksi tetap memiliki penerima, akun, dan kategorinya apa pun nama yang Anda pilih.",
+      "explainer": "Monize menyimpan paling banyak 255 karakter dalam sebuah nama, dan 100 dalam sebuah tag. Setiap nama ini telah dipendekkan agar muat; ubah mana pun sebelum mengimpor. Transaksi tetap memiliki penerima, akun, dan kategorinya apa pun nama yang Anda pilih. Nama lengkap dari KMyMoney disimpan di catatan penerima atau deskripsi akun.",
       "table": {
         "kind": "Jenis",
         "original": "Nama di KMyMoney",

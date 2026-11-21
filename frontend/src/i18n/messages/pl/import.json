@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, one {# nazwa jest za długa} few {# nazwy są za długie} many {# nazw jest za długich} other {# nazwy są za długie}} dla Monize",
-      "explainer": "Monize zapisuje w nazwie najwyżej 255 znaków, a w tagu 100. Każda z tych nazw została skrócona, aby się zmieściła; przed importem możesz zmienić dowolną z nich. Transakcje zachowują swojego odbiorcę, konto i kategorię niezależnie od wybranej nazwy.",
+      "explainer": "Monize zapisuje w nazwie najwyżej 255 znaków, a w tagu 100. Każda z tych nazw została skrócona, aby się zmieściła; przed importem możesz zmienić dowolną z nich. Transakcje zachowują swojego odbiorcę, konto i kategorię niezależnie od wybranej nazwy. Pełna nazwa z KMyMoney zostaje zachowana w notatkach odbiorcy lub opisie konta.",
       "table": {
         "kind": "Typ",
         "original": "Nazwa w KMyMoney",

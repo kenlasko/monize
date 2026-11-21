@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, one {# nombre es demasiado largo} other {# nombres son demasiado largos}} para Monize",
-      "explainer": "Monize guarda como máximo 255 caracteres en un nombre y 100 en una etiqueta. Cada uno de estos se ha acortado para que quepa; cambia los que quieras antes de importar. Las transacciones conservan su beneficiario, su cuenta y su categoría sea cual sea el nombre que elijas.",
+      "explainer": "Monize guarda como máximo 255 caracteres en un nombre y 100 en una etiqueta. Cada uno de estos se ha acortado para que quepa; cambia los que quieras antes de importar. Las transacciones conservan su beneficiario, su cuenta y su categoría sea cual sea el nombre que elijas. El nombre completo de KMyMoney se guarda en las notas del beneficiario o en la descripción de la cuenta.",
       "table": {
         "kind": "Tipo",
         "original": "Nombre en KMyMoney",

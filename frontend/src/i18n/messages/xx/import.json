@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "[XX-{count, plural, one {# name is} other {# names are}} too long for Monize-XX]",
-      "explainer": "[XX-Monize stores at most 255 characters in a name, and 100 in a tag. Each of these has been shortened to fit; change any of them before you import. Transactions keep their payee, account and category whatever you choose.-XX]",
+      "explainer": "[XX-Monize stores at most 255 characters in a name, and 100 in a tag. Each of these has been shortened to fit; change any of them before you import. Transactions keep their payee, account and category whatever you choose. The whole KMyMoney name is kept in the payee's notes or the account's description.-XX]",
       "table": {
         "kind": "[XX-Type-XX]",
         "original": "[XX-Name in KMyMoney-XX]",

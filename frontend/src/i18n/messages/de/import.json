@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, one {# Name ist} other {# Namen sind}} zu lang für Monize",
-      "explainer": "Monize speichert höchstens 255 Zeichen in einem Namen und 100 in einem Tag. Jeder dieser Namen wurde passend gekürzt; ändern Sie beliebige davon vor dem Import. Buchungen behalten ihren Zahlungsempfänger, ihr Konto und ihre Kategorie, egal welchen Namen Sie wählen.",
+      "explainer": "Monize speichert höchstens 255 Zeichen in einem Namen und 100 in einem Tag. Jeder dieser Namen wurde passend gekürzt; ändern Sie beliebige davon vor dem Import. Buchungen behalten ihren Zahlungsempfänger, ihr Konto und ihre Kategorie, egal welchen Namen Sie wählen. Der vollständige KMyMoney-Name bleibt in den Notizen des Zahlungsempfängers oder der Beschreibung des Kontos erhalten.",
       "table": {
         "kind": "Typ",
         "original": "Name in KMyMoney",

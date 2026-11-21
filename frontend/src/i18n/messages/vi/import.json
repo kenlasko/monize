@@ -626,7 +626,7 @@
     },
     "nameFixes": {
       "heading": "{count, plural, other {# tên}} quá dài đối với Monize",
-      "explainer": "Monize lưu tối đa 255 ký tự trong một tên và 100 ký tự trong một thẻ. Mỗi tên dưới đây đã được rút gọn cho vừa; hãy đổi bất kỳ tên nào trước khi nhập. Các giao dịch vẫn giữ người nhận, tài khoản và danh mục của chúng dù bạn chọn tên nào.",
+      "explainer": "Monize lưu tối đa 255 ký tự trong một tên và 100 ký tự trong một thẻ. Mỗi tên dưới đây đã được rút gọn cho vừa; hãy đổi bất kỳ tên nào trước khi nhập. Các giao dịch vẫn giữ người nhận, tài khoản và danh mục của chúng dù bạn chọn tên nào. Tên đầy đủ trong KMyMoney được giữ trong ghi chú của người nhận hoặc mô tả của tài khoản.",
       "table": {
         "kind": "Loại",
         "original": "Tên trong KMyMoney",
