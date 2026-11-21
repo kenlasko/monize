@@ -149,7 +149,6 @@ function ModernRow({
   inspected: boolean;
   isFuture: boolean;
 }) {
-  const t = useTranslations('transactions');
   const { formatCurrency } = useNumberFormat();
   const payeeDisplay = usePayeeDisplay();
   const label = payeeDisplay(tx);
@@ -165,12 +164,6 @@ function ModernRow({
   const balance = p.runningBalances.get(tx.id);
   const highlighted = !!p.highlightTransactionId && p.highlightTransactionId === tx.id;
   const open = () => p.onRowClick(tx);
-  const statusNote =
-    tx.status === TransactionStatus.RECONCILED
-      ? t('list.status.reconciled')
-      : tx.status === TransactionStatus.CLEARED
-        ? t('list.status.cleared')
-        : null;
   return (
     <li
       data-testid="modern-row"
@@ -219,9 +212,14 @@ function ModernRow({
             </span>
           )}
         </span>
-        {/* Phones put the category under the name, as the mockup's phone does. */}
-        <span className={`sm:hidden block truncate text-xs ${inspected ? 'opacity-70' : 'text-gray-500 dark:text-gray-400'}`}>
-          {categoryLabel}{statusNote ? ` · ${statusNote}` : ''}
+        {/* Phones put the category under the name, as the mockup's phone
+            does, and the status beside it as the same tappable control the
+            wider row has (a tap cycles it; it never opens the row). */}
+        <span className={`sm:hidden flex items-center gap-1 min-w-0 text-xs ${inspected ? 'opacity-70' : 'text-gray-500 dark:text-gray-400'}`}>
+          <span className="truncate">{categoryLabel}</span>
+          <span className="shrink-0 -ml-1 [&>button]:text-xs [&>button]:px-2">
+            <StatusCellButton status={tx.status} dense={false} onCycle={() => p.onCycleStatus(tx)} />
+          </span>
         </span>
       </span>
       <span className={`hidden sm:flex items-center gap-2 min-w-0 sm:flex-[2_1_0%] text-sm ${inspected ? 'opacity-80' : 'text-gray-500 dark:text-gray-400'}`}>

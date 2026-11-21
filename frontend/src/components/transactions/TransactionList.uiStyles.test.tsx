@@ -233,13 +233,19 @@ describe('Modern register', () => {
     (transactionsApi.updateStatus as any).mockResolvedValue({ ...rows[1], status: TransactionStatus.CLEARED });
     renderList();
     const row = screen.getAllByTestId('modern-row')[1];
-    const button = within(row).getByRole('button', { name: 'Pending' });
-    fireEvent.click(button);
-    expect(transactionsApi.updateStatus).toHaveBeenCalledWith('b', TransactionStatus.CLEARED);
-    // The row stayed uninspected: the inspector still shows the first row.
-    expect(within(screen.getByRole('complementary')).getByText('Employer')).toBeTruthy();
-    fireEvent.keyDown(button, { key: 'Enter' });
-    expect(within(screen.getByRole('complementary')).getByText('Employer')).toBeTruthy();
+    // Two controls, one per layout (the phone line and the wider row; CSS
+    // shows one), both the same status button on the same handler.
+    const buttons = within(row).getAllByRole('button', { name: 'Pending' });
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) {
+      (transactionsApi.updateStatus as any).mockClear();
+      fireEvent.click(button);
+      expect(transactionsApi.updateStatus).toHaveBeenCalledWith('b', TransactionStatus.CLEARED);
+      // The row stayed uninspected: the inspector still shows the first row.
+      expect(within(screen.getByRole('complementary')).getByText('Employer')).toBeTruthy();
+      fireEvent.keyDown(button, { key: 'Enter' });
+      expect(within(screen.getByRole('complementary')).getByText('Employer')).toBeTruthy();
+    }
   });
 
   it('offers neither the Columns chooser nor the Density toggle', () => {
