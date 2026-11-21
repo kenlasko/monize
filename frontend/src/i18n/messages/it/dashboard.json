@@ -40,6 +40,8 @@
     "assetsLabel": "Attività",
     "liabilitiesLabel": "Passività",
     "investedLabel": "Investito",
+    "holdingsLabel": "Posizioni",
+    "cashLabel": "Liquidità",
     "high": "Max {value}",
     "low": "Min {value}",
     "historyLabel": "Patrimonio netto per mese: {high} al massimo, {low} al minimo, {latest} adesso",

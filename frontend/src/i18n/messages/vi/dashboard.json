@@ -40,6 +40,8 @@
     "assetsLabel": "Tài sản",
     "liabilitiesLabel": "Nợ phải trả",
     "investedLabel": "Đã đầu tư",
+    "holdingsLabel": "Nắm giữ",
+    "cashLabel": "Tiền mặt",
     "high": "Cao nhất {value}",
     "low": "Thấp nhất {value}",
     "historyLabel": "Giá trị ròng theo tháng: {high} ở mức cao nhất, {low} ở mức thấp nhất, hiện tại {latest}",

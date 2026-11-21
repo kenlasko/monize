@@ -40,6 +40,8 @@
     "assetsLabel": "Активы",
     "liabilitiesLabel": "Обязательства",
     "investedLabel": "Инвестировано",
+    "holdingsLabel": "Позиции",
+    "cashLabel": "Денежные средства",
     "high": "Максимум {value}",
     "low": "Минимум {value}",
     "historyLabel": "Чистая стоимость по месяцам: {high} на пике, {low} в самой низкой точке, сейчас {latest}",

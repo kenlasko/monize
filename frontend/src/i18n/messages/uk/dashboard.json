@@ -40,6 +40,8 @@
     "assetsLabel": "Активи",
     "liabilitiesLabel": "Зобов’язання",
     "investedLabel": "Інвестовано",
+    "holdingsLabel": "Позиції",
+    "cashLabel": "Грошові кошти",
     "high": "Максимум {value}",
     "low": "Мінімум {value}",
     "historyLabel": "Чиста вартість за місяцями: {high} на піку, {low} у найнижчій точці, зараз {latest}",

@@ -40,6 +40,8 @@
     "assetsLabel": "Bezittingen",
     "liabilitiesLabel": "Schulden",
     "investedLabel": "Belegd",
+    "holdingsLabel": "Posities",
+    "cashLabel": "Contanten",
     "high": "Hoog {value}",
     "low": "Laag {value}",
     "historyLabel": "Vermogen per maand: {high} op het hoogst, {low} op het laagst, nu {latest}",

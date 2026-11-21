@@ -40,6 +40,8 @@
     "assetsLabel": "Activos",
     "liabilitiesLabel": "Pasivos",
     "investedLabel": "Invertido",
+    "holdingsLabel": "Posiciones",
+    "cashLabel": "Efectivo",
     "high": "Máx. {value}",
     "low": "Mín. {value}",
     "historyLabel": "Patrimonio neto por mes: {high} en el punto más alto, {low} en el más bajo, {latest} ahora",

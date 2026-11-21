@@ -40,6 +40,8 @@
     "assetsLabel": "[XX-Assets-XX]",
     "liabilitiesLabel": "[XX-Liabilities-XX]",
     "investedLabel": "[XX-Invested-XX]",
+    "holdingsLabel": "[XX-Holdings-XX]",
+    "cashLabel": "[XX-Cash-XX]",
     "high": "[XX-High {value}-XX]",
     "low": "[XX-Low {value}-XX]",
     "historyLabel": "[XX-Net worth by month: {high} at its highest, {low} at its lowest, {latest} now-XX]",

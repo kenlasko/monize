@@ -9,6 +9,7 @@ import { partialTotalFor, portfolioPartialTotal } from '@/lib/net-worth-complete
 import { isComplete } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
 import { useReportData } from '@/hooks/useReportData';
 import { usePortfolioRangeWindow } from '@/hooks/usePortfolioRangeWindow';
 import { usePortfolioPeriodResult } from '@/hooks/usePortfolioPeriodResult';
@@ -25,18 +26,21 @@ import { buildAccountFilterLabel } from '@/lib/account-utils';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import {
   HeroAreaChart,
-  HeroCaption,
   HeroChartSkeleton,
   HeroFigureSkeleton,
-  HeroHeadline,
-  HeroLayout,
   HeroMessage,
-  HeroPill,
-  HeroPillUnknown,
   HeroSkeleton,
-  HeroSubFigures,
-  heroStrong,
 } from './hero-parts';
+import type { PortfolioHeroChange, PortfolioHeroViewProps } from './variants/portfolio-hero-view';
+import { PortfolioHeroStandard } from './variants/PortfolioHeroStandard';
+import { PortfolioHeroFolio } from './variants/PortfolioHeroFolio';
+import { PortfolioHeroPebble } from './variants/PortfolioHeroPebble';
+
+const PORTFOLIO_HERO_VARIANTS: StyleVariants<PortfolioHeroViewProps> = {
+  standard: PortfolioHeroStandard,
+  folio: PortfolioHeroFolio,
+  pebble: PortfolioHeroPebble,
+};
 
 interface PortfolioHeroProps {
   config: DashboardHeroConfig;
@@ -62,6 +66,7 @@ interface PortfolioHeroProps {
 export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLoading }: PortfolioHeroProps) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+  const uiStyle = useUiStyle();
   const mainAccountName = useMainAccountName();
   const { formatCurrency, formatSignedPercent, defaultCurrency } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
@@ -161,26 +166,24 @@ export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLo
   // A request that has not answered holds the pill's place, or nothing once
   // there is no series for it to measure; a withheld figure names its cause.
   const totalChange = periodResult?.valueChange ?? null;
-  const pill = !periodResult ? (
-    periodFailed ? (
-      <HeroPillUnknown>{t('hero.portfolioChangeFailed')}</HeroPillUnknown>
-    ) : seriesPending || points.length > 0 ? (
-      <HeroFigureSkeleton width="w-40" />
-    ) : null
-  ) : totalChange === null ? (
-    <HeroPillUnknown>
-      <UnknownAmount reason={periodResultUnknownReason(periodResult.reasons)} />
-    </HeroPillUnknown>
-  ) : (
-    <HeroPill up={totalChange >= 0}>
-      {t.rich('hero.changeOverWindow', {
-        direction: totalChange >= 0 ? 'up' : 'down',
-        amount: formatCurrency(Math.abs(totalChange), defaultCurrency),
-        window: windowLabel,
-        dir,
-      })}
-    </HeroPill>
-  );
+  const change: PortfolioHeroChange | null = !periodResult
+    ? periodFailed
+      ? { kind: 'unknown', text: t('hero.portfolioChangeFailed') }
+      : seriesPending || points.length > 0
+        ? { kind: 'pending' }
+        : null
+    : totalChange === null
+      ? { kind: 'unknown', text: <UnknownAmount reason={periodResultUnknownReason(periodResult.reasons)} /> }
+      : {
+          kind: 'known',
+          up: totalChange >= 0,
+          text: t.rich('hero.changeOverWindow', {
+            direction: totalChange >= 0 ? 'up' : 'down',
+            amount: formatCurrency(Math.abs(totalChange), defaultCurrency),
+            window: windowLabel,
+            dir,
+          }),
+        };
 
   const metricValue = (): ReactNode => {
     if (config.portfolioMetric === 'simpleReturn') {
@@ -225,110 +228,67 @@ export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLo
 
   const cashTotal = partialTotalFor(summary.totalCashValue, summary.fxComplete, summary.missingRatePairs);
 
-  return (
-    <HeroLayout
-      label={label}
-      figures={
-        <>
-          <HeroCaption>
-            {t.rich('hero.portfolioValueFor', {
-              accounts: accountsLabel,
-              // Account names keep their own case under the small caps.
-              names: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
-            })}
-          </HeroCaption>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-            <HeroHeadline
-              negative={summary.totalPortfolioValue < 0}
-              collapsed={{
-                title: t('customize.hero.sets.portfolio'),
-                figure: formatCurrency(summary.totalPortfolioValue, defaultCurrency),
-                figurePartial: !isComplete(
-                  portfolioPartialTotal(summary.totalPortfolioValue, summary),
-                ),
-                change:
-                  totalChange === null
-                    ? undefined
-                    : {
-                        up: totalChange >= 0,
-                        text: formatCurrency(Math.abs(totalChange), defaultCurrency),
-                      },
-              }}
-            >
-              <PartialTotal
-                total={portfolioPartialTotal(summary.totalPortfolioValue, summary)}
-                displayCurrency={defaultCurrency}
-              >
-                {formatCurrency(summary.totalPortfolioValue, defaultCurrency)}
-              </PartialTotal>
-            </HeroHeadline>
-            {pill}
-          </div>
-          <HeroSubFigures>
-            <span>
-              {t.rich('hero.holdings', {
-                value: () => (
-                  <PartialTotal
-                    total={portfolioPartialTotal(summary.totalHoldingsValue, summary)}
-                    displayCurrency={defaultCurrency}
-                  >
-                    {formatCurrency(summary.totalHoldingsValue, defaultCurrency)}
-                  </PartialTotal>
-                ),
-                strong: heroStrong,
-              })}
-            </span>
-            <span>
-              {t.rich('hero.cash', {
-                value: () => (
-                  <PartialTotal total={cashTotal} displayCurrency={defaultCurrency}>
-                    {formatCurrency(summary.totalCashValue, defaultCurrency)}
-                  </PartialTotal>
-                ),
-                strong: heroStrong,
-              })}
-            </span>
-            <span data-testid="dashboard-hero-metric">
-              {t.rich('hero.metricLine', {
-                value: () => <>{metricValue()}</>,
-                metric: metricName,
-                strong: heroStrong,
-              })}
-            </span>
-          </HeroSubFigures>
-        </>
+  const chartNode = seriesError ? (
+    <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+      {t('hero.portfolioLoadFailed')}
+    </p>
+  ) : seriesPending ? (
+    <HeroChartSkeleton />
+  ) : series?.intradayUnavailable ? (
+    <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+      {t('hero.intradayUnavailable')}
+    </p>
+  ) : (
+    <HeroAreaChart
+      points={points}
+      currency={defaultCurrency}
+      gradientId="dashboardHeroPortfolio"
+      formatTick={(key) =>
+        intraday
+          ? formatChartDate(new Date(key), range === '1d' ? 'HH:mm' : 'MMM d')
+          : // A daily window labels its days; a sampled one, one point a
+            // month, its months (a daily year by month repeated them).
+            formatChartDate(parseISO(key), sampled ? 'MMM yy' : 'MMM d')
       }
-      chart={
-        seriesError ? (
-          <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-            {t('hero.portfolioLoadFailed')}
-          </p>
-        ) : seriesPending ? (
-          <HeroChartSkeleton />
-        ) : series?.intradayUnavailable ? (
-          <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-            {t('hero.intradayUnavailable')}
-          </p>
-        ) : (
-          <HeroAreaChart
-            points={points}
-            currency={defaultCurrency}
-            gradientId="dashboardHeroPortfolio"
-            formatTick={(key) =>
-              intraday
-                ? formatChartDate(new Date(key), range === '1d' ? 'HH:mm' : 'MMM d')
-                : // A daily window labels its days; a sampled one, one point a
-                  // month, its months (a daily year by month repeated them).
-                  formatChartDate(parseISO(key), sampled ? 'MMM yy' : 'MMM d')
-            }
-            formatTooltipKey={(key) =>
-              intraday
-                ? formatChartDate(new Date(key), 'MMM d HH:mm')
-                : formatChartDate(parseISO(key), 'MMM d, yyyy')
-            }
-          />
-        )
+      formatTooltipKey={(key) =>
+        intraday
+          ? formatChartDate(new Date(key), 'MMM d HH:mm')
+          : formatChartDate(parseISO(key), 'MMM d, yyyy')
       }
     />
   );
+
+  const total = portfolioPartialTotal(summary.totalPortfolioValue, summary);
+
+  return renderForStyle(uiStyle, PORTFOLIO_HERO_VARIANTS, {
+    label,
+    currency: defaultCurrency,
+    caption: t.rich('hero.portfolioValueFor', {
+      accounts: accountsLabel,
+      // Account names keep their own case under the small caps.
+      names: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+    }),
+    total,
+    collapsed: {
+      title: t('customize.hero.sets.portfolio'),
+      figure: formatCurrency(summary.totalPortfolioValue, defaultCurrency),
+      figurePartial: !isComplete(total),
+      change:
+        totalChange === null
+          ? undefined
+          : {
+              up: totalChange >= 0,
+              text: formatCurrency(Math.abs(totalChange), defaultCurrency),
+            },
+    },
+    change,
+    holdings: portfolioPartialTotal(summary.totalHoldingsValue, summary),
+    cash: cashTotal,
+    metric: {
+      name: metricName,
+      label: t(`customize.hero.metrics.${config.portfolioMetric}`),
+      value: metricValue(),
+    },
+    chart: chartNode,
+  });
 }

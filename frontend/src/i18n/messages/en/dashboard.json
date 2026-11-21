@@ -40,6 +40,8 @@
     "assetsLabel": "Assets",
     "liabilitiesLabel": "Liabilities",
     "investedLabel": "Invested",
+    "holdingsLabel": "Holdings",
+    "cashLabel": "Cash",
     "high": "High {value}",
     "low": "Low {value}",
     "historyLabel": "Net worth by month: {high} at its highest, {low} at its lowest, {latest} now",
