@@ -1307,6 +1307,7 @@ WP4 writes; they avoid `--` (frontend rule).
 | payeeMatchKeyOverlap | 5.5.1 collisions; also post-import (5.5.4) | | {count} payee aliases can match the same payee name as an alias of another payee. KMyMoney picks the payee with the longer match; Monize may pick either. Check these aliases in Monize. |
 | payeeDefaultCategoryNotImported | 5.5.2 | | {count} payees have a default category Monize cannot use (an account rather than a category, one missing from the file, or a different one from another payee of the same name), so they were imported without it. |
 | payeeDetailsKept (post-import) | 5.5.4 | | {count} payees already existed in Monize with their own default category or contact details, which were kept; the KMyMoney values were not used. |
+| originalNameCut | 5.13 | | {count} names were too long for Monize and too long to keep whole in the payee's notes or the account's description, which hold at most 500 characters; only the start of the name was kept there. |
 | unparsableNumber | reader | | {count} numbers in the file could not be read and were taken as zero. |
 | autoCalcInPostedSplit | reader | yes | {count} posted transactions carried a placeholder amount meant only for schedules; it was taken as zero. |
 | mappedBalanceDiffers | 6.3, preview time | | {count} accounts would end with a balance that differs from the one computed from the file. Do not import until this is explained. |
@@ -1345,7 +1346,11 @@ anything else is mapped, so every place a name is copied to reads the same repla
 - Length is counted in code points, as PostgreSQL counts a `VARCHAR`'s, and a cut never splits a
   surrogate pair. Standard and stock accounts are never listed: neither is written under its own name.
 - A name over its bound takes the user's rename from `options.renames` when it is usable (not blank and
-  within the bound once trimmed); otherwise it is cut to the bound and trimmed. A rename of a name that
+  within the bound once trimmed); otherwise it is cut to the bound and trimmed. A cut never lands on a
+  name its kind already holds (a name that fits, a rename the user chose, an earlier cut, ignoring
+  case): the second becomes "<cut> (2)", then " (3)", within the bound, so two SEPA payees or two tags
+  that share a prefix stay two. A rename the user chose is taken as given, so two elements named alike
+  on purpose merge as any same-named payees do. A rename of a name that
   fits, or of another kind, is ignored: this is not a general rename feature. The import therefore never
   fails on a name's length, with or without a client that sends renames.
 - The preview carries `nameFixes`: at most `KMY_MAX_NAME_FIXES` (1,000) entries in file order by kind,
@@ -1357,6 +1362,19 @@ anything else is mapped, so every place a name is copied to reads the same repla
   duplicate's " (n)" cut the base rather than overflow. A security named by its symbol or id when it has
   no name is cut to 255.
 - Renamed payees are grouped like any other: two given the same name (ignoring case) become one payee.
+- **The file's name is not lost.** A replaced element carries its whole name as `originalName` on the
+  raw model. A payee writes it to its notes and an account (or investment pair) to its description,
+  after the file's own text and a blank line, within the 500 characters the payee and account DTOs
+  accept, so the row still saves from its edit form unchanged. The file's own text is never cut; when
+  the name does not fit beside it, its start is kept and `originalNameCut` names the payee or account.
+  An existing Monize payee keeps its own notes (`payeeDetailsKept`). Categories, securities, schedules,
+  institutions and tags have no imported notes field, so their whole name appears only in the preview.
+  The review table's "named X in KMyMoney" (`moneyName`) is the file's name, cut at
+  `KMY_NAME_FIX_ORIGINAL_CHARS`.
+- **Matching follows the file's name.** A KMyMoney "match on name" or "exact name" rule is translated
+  from `originalName` (`translatePayeeMatch`), as KMyMoney would match it, never from the rename: a
+  rename to "Stadtwerke" must not invent `*Stadtwerke*`. A whole name past the alias column is refused
+  as `tooLong`, as it was before the rename.
 - `StartMnyImportDto.options.renames` is `MnyRenameDto[]`: `kind` one of the seven values, `handle` an
   integer of at least 1, `name` a string of at most 255; at most `MNY_MAX_OPTION_ITEMS` entries. A Money
   file ignores the field; Money's Jet text columns hold at most 255 characters already.
