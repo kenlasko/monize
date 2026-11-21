@@ -7,6 +7,7 @@ import {
   MnyImportJob,
   MnyImportOptionsInput,
   MnyPreview,
+  MnyRename,
   BinaryImportClient,
   mnyImportApi,
 } from '@/lib/import-mny';
@@ -79,6 +80,8 @@ export interface UseMnyImportResult {
     key: K,
     value: MnyImportOptionsInput[K],
   ) => void;
+  /** Sets the name one too-long name is imported under (`options.renames`). */
+  setRename: (rename: MnyRename) => void;
   start: (wipePassword?: string) => Promise<boolean>;
   retry: () => Promise<boolean>;
   cancelPasswordPrompt: () => void;
@@ -297,6 +300,19 @@ export function useMnyImport(
     [],
   );
 
+  const setRename = useCallback((rename: MnyRename) => {
+    setOptions((current) => ({
+      ...current,
+      renames: [
+        ...(current.renames ?? []).filter(
+          (entry) =>
+            entry.kind !== rename.kind || entry.handle !== rename.handle,
+        ),
+        rename,
+      ],
+    }));
+  }, []);
+
   /**
    * Sends only the accounts the user actually changed. An account absent from
    * the list takes the server's defaults, so a 56-account file with no edits
@@ -423,6 +439,7 @@ export function useMnyImport(
     toggleBill,
     setAllBills,
     setOption,
+    setRename,
     start,
     retry,
     cancelPasswordPrompt,

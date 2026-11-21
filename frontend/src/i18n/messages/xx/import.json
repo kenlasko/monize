@@ -623,6 +623,28 @@
       "billsOfRows": "[XX-active of {rows} scheduled transactions-XX]",
       "payeeAliases": "[XX-Payee aliases-XX]",
       "payeeAliasesDetail": "[XX-{count, plural, one {# payee gets} other {# payees get}} a default category-XX]"
+    },
+    "nameFixes": {
+      "heading": "[XX-{count, plural, one {# name is} other {# names are}} too long for Monize-XX]",
+      "explainer": "[XX-Monize stores at most 255 characters in a name. Each of these has been shortened to fit; change any of them before you import. Transactions keep their payee, account and category whatever you choose.-XX]",
+      "table": {
+        "kind": "[XX-Type-XX]",
+        "original": "[XX-Name in KMyMoney-XX]",
+        "newName": "[XX-Name in Monize-XX]",
+        "newNameFor": "[XX-{kind}: name in Monize-XX]"
+      },
+      "kind": {
+        "payee": "[XX-Payee-XX]",
+        "account": "[XX-Account-XX]",
+        "category": "[XX-Category-XX]",
+        "security": "[XX-Security-XX]",
+        "schedule": "[XX-Scheduled transaction-XX]",
+        "institution": "[XX-Institution-XX]"
+      },
+      "originalLength": "[XX-{length} characters-XX]",
+      "remaining": "[XX-{used} of {max} characters-XX]",
+      "blank": "[XX-Enter a name.-XX]",
+      "omitted": "[XX-{count, plural, one {# more name is} other {# more names are}} too long and will be shortened to fit.-XX]"
     }
   },
   "kmyBills": {

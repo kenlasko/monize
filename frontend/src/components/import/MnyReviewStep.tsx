@@ -7,13 +7,14 @@ import { HelpLink } from '@/components/help/HelpLink';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { formatAccountType } from '@/lib/account-utils';
-import { MnyImportOptionsInput, MnyPreview } from '@/lib/import-mny';
+import { MnyImportOptionsInput, MnyPreview, MnyRename } from '@/lib/import-mny';
 import {
   BinaryImportFormat,
   MNY_FORMAT,
   isStagedFileMissing,
 } from '@/lib/binary-import-format';
 import { MnyBillsPanel } from './MnyBillsPanel';
+import { MnyNameFixesPanel, hasBlankRename } from './MnyNameFixesPanel';
 import { MnyWarningsPanel } from './MnyWarningsPanel';
 import { Th } from '@/components/ui/Table';
 
@@ -37,6 +38,8 @@ interface MnyReviewStepProps {
     key: K,
     value: MnyImportOptionsInput[K],
   ) => void;
+  /** Sets the name a too-long name is imported under. */
+  onSetRename: (rename: MnyRename) => void;
   onBack: () => void;
   onImport: () => void;
   /** Which file format this is; Money when omitted. */
@@ -67,6 +70,7 @@ export function MnyReviewStep({
   onToggleBill,
   onSetAllBills,
   onSetOption,
+  onSetRename,
   onBack,
   onImport,
   format = MNY_FORMAT,
@@ -80,6 +84,7 @@ export function MnyReviewStep({
   const includedCount = preview.accounts.filter(
     (account) => account.handle === null || !excludedHandles.has(account.handle),
   ).length;
+  const blankRename = hasBlankRename(preview.nameFixes, options.renames);
 
   return (
     // Wider than the rest of the wizard on purpose: this step carries the
@@ -369,6 +374,13 @@ export function MnyReviewStep({
         </div>
       </div>
 
+      {/* Names longer than Monize stores, each renamed before the import */}
+      <MnyNameFixesPanel
+        nameFixes={preview.nameFixes}
+        renames={options.renames}
+        onSetRename={onSetRename}
+      />
+
       {/* Bills the import will create, ticked individually */}
       <MnyBillsPanel
         bills={preview.bills}
@@ -501,7 +513,7 @@ export function MnyReviewStep({
         <Button
           onClick={onImport}
           isLoading={isLoading}
-          disabled={includedCount === 0}
+          disabled={includedCount === 0 || blankRename}
         >
           {t('mnyReview.startImport')}
         </Button>

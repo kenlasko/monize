@@ -293,6 +293,7 @@ function ImportContent() {
             onToggleBill={wizard.binary.toggleBill}
             onSetAllBills={wizard.binary.setAllBills}
             onSetOption={wizard.binary.setOption}
+            onSetRename={wizard.binary.setRename}
             onBack={wizard.handleMnyDone}
             onImport={wizard.handleMnyImportClick}
           />
