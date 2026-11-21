@@ -5,9 +5,11 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import type { ScheduledKind } from '@/lib/scheduled-kind';
 import { NegativeBalanceLegend } from './UpcomingBillsListStandard';
-import type { UpcomingBillsListProps, UpcomingStrip } from './upcoming-bills-view';
+import type { UpcomingBillsListProps, UpcomingStrip, UpcomingStripItem } from './upcoming-bills-view';
 
 /** The dot a kind is marked with: filled red out, filled green in, a ring for a transfer. */
 export function KindDot({ kind }: { kind: ScheduledKind }) {
@@ -18,6 +20,33 @@ export function KindDot({ kind }: { kind: ScheduledKind }) {
         ? 'bg-green-600 dark:bg-green-400'
         : 'border-2 border-gray-500 dark:border-gray-400';
   return <span aria-hidden="true" className={`block h-2 w-2 flex-shrink-0 rounded-full ${tone}`} />;
+}
+
+/**
+ * A strip occurrence's dot, saying on hover, focus or tap what it is: name,
+ * payee, kind and amount. It is an `InfoTooltip` with the dot as its trigger,
+ * through the portal because the chips scroll sideways on a narrow screen and
+ * would clip a popover drawn inside them.
+ */
+export function StripDot({ item }: { item: UpcomingStripItem }) {
+  const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
+  const { formatCurrency } = useNumberFormat();
+  // A reminder has no direction, so its amount carries no sign.
+  const sign = item.kind === 'bill' ? '-' : item.kind === 'deposit' ? '+' : '';
+  const amount =
+    item.magnitude === null
+      ? tCommon('unknownAmount.srLabel')
+      : `${sign}${formatCurrency(item.magnitude, item.currencyCode)}`;
+  const text = [
+    item.name,
+    item.payee && t('upcomingBills.metaPayee', { payee: item.payee }),
+    t('upcomingBills.metaWhen', { when: t(`upcomingBills.typeBadge.${item.kind}`) }),
+    t('upcomingBills.metaWhen', { when: amount }),
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return <InfoTooltip text={text} placement="top" usePortal trigger={<KindDot kind={item.kind} />} />;
 }
 
 /** Fourteen day chips, today inverted, a dot per occurrence. */
@@ -46,7 +75,7 @@ function DayChips({ strip }: { strip: UpcomingStrip }) {
             <span className="block text-[15px] font-bold">{formatChartDate(day.date, 'd')}</span>
             <span className="flex h-2 justify-center gap-[3px]">
               {day.items.map((item) => (
-                <KindDot key={item.id} kind={item.kind} />
+                <StripDot key={item.id} item={item} />
               ))}
             </span>
           </li>

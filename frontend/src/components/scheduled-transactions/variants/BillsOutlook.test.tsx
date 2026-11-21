@@ -11,7 +11,7 @@ const days = Array.from({ length: 14 }, (_, i) => ({
   isToday: i === 0,
   items: [] as BillsOutlookProps['strip']['days'][number]['items'],
 }));
-days[3].items = [{ id: 'a', name: 'Hydro', kind: 'bill', magnitude: 120 }];
+days[3].items = [{ id: 'a', name: 'Hydro', kind: 'bill', payee: 'Hydro One', magnitude: 120, currencyCode: 'USD' }];
 
 const transaction = { id: 'a', name: 'Hydro' } as ScheduledTransaction;
 
@@ -45,13 +45,20 @@ describe('BillsOutlookPebble', () => {
     render(<BillsOutlookPebble {...p} />);
     expect(screen.getByText('Hydro')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(14);
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: /post/i }));
     expect(p.onPost).toHaveBeenCalledWith(transaction);
+  });
+
+  it('shows the occurrence behind a dot on hover', () => {
+    render(<BillsOutlookPebble {...props()} />);
+    const dot = screen.getByRole('button', { name: 'Hydro · Hydro One · Bill · -$120.00' });
+    fireEvent.pointerEnter(dot, { pointerType: 'mouse' });
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Hydro · Hydro One · Bill · -$120.00');
   });
 
   it('draws only the day chips when nothing is ahead', () => {
     render(<BillsOutlookPebble {...props({ next: null })} />);
-    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByRole('button', { name: /post/i })).toBeNull();
     expect(screen.getAllByRole('listitem')).toHaveLength(14);
   });
 });

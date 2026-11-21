@@ -71,7 +71,14 @@ export function buildUpcomingStrip(
       currencies.add(effective.currencyCode);
       scaleMax = Math.max(scaleMax, magnitude);
     }
-    day.items.push({ id: st.id, name: st.name, kind: occurrenceKind(effective, st), magnitude });
+    day.items.push({
+      id: st.id,
+      name: st.name,
+      kind: occurrenceKind(effective, st),
+      payee: st.payeeName || st.payee?.name || null,
+      magnitude,
+      currencyCode: effective.currencyCode,
+    });
   }
   return { days, scaleMax: currencies.size === 1 ? scaleMax : null };
 }

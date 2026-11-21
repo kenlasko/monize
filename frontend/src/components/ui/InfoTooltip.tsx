@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  type ReactNode,
   useState,
   useRef,
   useCallback,
@@ -46,6 +47,14 @@ interface InfoTooltipProps {
    * and the parser would truncate the trigger's own content model.
    */
   learnMore?: DocsLink;
+  /**
+   * What the reader hovers, focuses or taps, in place of the question-mark
+   * icon: a mark that is already on screen and needs saying what it is (a dot
+   * on a day chip). The popover, the tap, the keyboard path and the label are
+   * all unchanged; `text` is still the one string. Pair it with `usePortal`
+   * when the mark sits in something that scrolls.
+   */
+  trigger?: ReactNode;
 }
 
 const POPOVER_WIDTH = 256; // matches w-64
@@ -126,6 +135,7 @@ export function InfoTooltip({
   iconClassName = 'h-4 w-4',
   usePortal = false,
   learnMore,
+  trigger,
 }: InfoTooltipProps) {
   const t = useTranslations('help');
   const iconRef = useRef<HTMLButtonElement>(null);
@@ -368,7 +378,10 @@ export function InfoTooltip({
     // `group-hover`/`group-focus-within` bubble from whichever of the two is
     // actually under the pointer or holds focus, so hovering or tabbing into
     // the popover itself keeps it open.
-    <span className="group/tip relative inline-flex items-center align-middle ml-1" onClick={onClick}>
+    <span
+      className={`group/tip relative inline-flex items-center align-middle ${trigger ? '' : 'ml-1'}`}
+      onClick={onClick}
+    >
       <button
         type="button"
         ref={iconRef}
@@ -385,9 +398,13 @@ export function InfoTooltip({
         onMouseDown={stop}
         onTouchStart={stop}
         onContextMenu={stop}
-        className="relative inline-flex items-center text-gray-400 hover:text-blue-500 focus-visible:text-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded transition-colors motion-reduce:transition-none cursor-help before:absolute before:-inset-2.5"
+        className={
+          trigger
+            ? 'relative inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-full cursor-help before:absolute before:-inset-0.5'
+            : 'relative inline-flex items-center text-gray-400 hover:text-blue-500 focus-visible:text-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded transition-colors motion-reduce:transition-none cursor-help before:absolute before:-inset-2.5'
+        }
       >
-        <QuestionMarkCircleIcon className={iconClassName} aria-hidden="true" />
+        {trigger ?? <QuestionMarkCircleIcon className={iconClassName} aria-hidden="true" />}
       </button>
       {!usePortal && (
         <span

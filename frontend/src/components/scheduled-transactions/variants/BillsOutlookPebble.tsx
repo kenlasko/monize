@@ -5,7 +5,7 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
-import { KindDot } from '@/components/dashboard/variants/UpcomingBillsListPebble';
+import { StripDot } from '@/components/dashboard/variants/UpcomingBillsListPebble';
 import type { BillsOutlookProps } from './bills-outlook-view';
 
 
@@ -73,7 +73,7 @@ export function BillsOutlookPebble({ strip, next, onPost }: BillsOutlookProps) {
                 <span className="block text-[15px] font-bold">{formatChartDate(day.date, 'd')}</span>
                 <span className="flex h-2 justify-center gap-[3px]">
                   {day.items.map((item) => (
-                    <KindDot key={item.id} kind={item.kind} />
+                    <StripDot key={item.id} item={item} />
                   ))}
                 </span>
               </li>
