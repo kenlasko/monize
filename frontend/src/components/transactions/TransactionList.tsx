@@ -60,10 +60,12 @@ import { useUiStyle } from '@/hooks/useUiStyle';
 import {
   balanceRulePercents,
   netByDate,
+  pageReportingCurrency,
   pageTotals,
   registerGroupLabel,
 } from './register-style-data';
 import { PebbleRegister } from './variants/PebbleRegister';
+import { PartialTotal } from '@/components/ui/PartialTotal';
 import { FolioRegisterFoot } from './variants/FolioRegisterFoot';
 import { useIsLgUp } from '@/hooks/useIsMobile';
 
@@ -325,7 +327,7 @@ export function TransactionList({
   const t = useTranslations('transactions');
   const tc = useTranslations('common');
   const { formatDate, formatDateWithoutYear } = useDateFormat();
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, defaultCurrency } = useNumberFormat();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { density } = useDensityPreference(densityView);
   const uiStyle = useUiStyle();
@@ -727,17 +729,22 @@ export function TransactionList({
     [transactions, startingBalance, dataSort?.direction, displayAmounts, runningBalanceDecimals],
   );
 
-  // Figures the Folio and Pebble layouts draw around the rows.
+  // Figures the Folio and Pebble layouts draw around the rows. A page holding
+  // more than one currency sums in the reporting currency, each row at the
+  // factor the server stamped on it (`reportingRate`), never at a rate the
+  // client looked up.
   const styleData = useMemo(
-    () =>
-      uiStyle === 'standard'
-        ? null
-        : {
-            dayNet: netByDate(transactions, displayAmounts, runningBalanceDecimals),
-            totals: pageTotals(transactions, displayAmounts, runningBalanceDecimals),
-            rulePct: balanceRulePercents(runningBalances),
-          },
-    [uiStyle, transactions, displayAmounts, runningBalanceDecimals, runningBalances],
+    () => {
+      if (uiStyle === 'standard') return null;
+      const reporting = pageReportingCurrency(transactions, defaultCurrency);
+      return {
+        dayNet: netByDate(transactions, displayAmounts, reporting),
+        totals: pageTotals(transactions, displayAmounts, reporting),
+        rulePct: balanceRulePercents(runningBalances),
+      };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-reads each currency's precision
+    [uiStyle, transactions, displayAmounts, defaultCurrency, runningBalances, registryVersion],
   );
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {
@@ -1197,11 +1204,20 @@ export function TransactionList({
                       >
                         <span>{registerGroupLabel(transaction.transactionDate, locale, today)}</span>
                         <span className="ui-register-group-tools">
-                          {wrapped && styleData && (
-                            <span className="ui-register-group-net">
-                              {formatCurrency(styleData.dayNet.get(transaction.transactionDate) ?? 0, transaction.currencyCode)}
-                            </span>
-                          )}
+                          {wrapped && styleData && (() => {
+                            const dayNet = styleData.dayNet.get(transaction.transactionDate);
+                            return (
+                              <span className="ui-register-group-net">
+                                {dayNet ? (
+                                  <PartialTotal total={dayNet.total} displayCurrency={dayNet.currency}>
+                                    {formatCurrency(dayNet.total.value, dayNet.currency)}
+                                  </PartialTotal>
+                                ) : (
+                                  formatCurrency(0, transaction.currencyCode)
+                                )}
+                              </span>
+                            );
+                          })()}
                         </span>
                       </th>
                     </tr>
@@ -1283,7 +1299,6 @@ export function TransactionList({
           {groupedByDate && !wrapped && styleData && (
             <FolioRegisterFoot
               totals={styleData.totals}
-              currencyCode={transactions[0]?.currencyCode}
               cellPadding={cellPadding}
               selectionMode={selectionMode}
               isSingleAccountView={isSingleAccountView}

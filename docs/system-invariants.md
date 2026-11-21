@@ -1682,6 +1682,15 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     client's convertRowAmount multiplies by them, so the
                     Dividend Income, Dividend Yield and account YTD figures
                     read a row's own rate as the summary does.
+                    GET /transactions (and the rule editor's rows by id) stamps
+                    every register row with its factor into the reporting
+                    currency (reportingRate, transactions/
+                    register-reporting-rates.ts) by transactionRateBasis, the
+                    reader's own transfer legs through transferRateSql, and the
+                    market rate on the row's own date otherwise; the Folio
+                    footer and the Folio and Pebble day nets total a page that
+                    mixes currencies by those factors and mark a row with none
+                    as left out (issue #2308).
                     The built-in reports and the custom report engine read
                     transactions.exchange_rate the way the Cash Flow Sankey
                     does: a foreign entry whose original currency is the

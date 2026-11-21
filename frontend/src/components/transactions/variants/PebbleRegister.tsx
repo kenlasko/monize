@@ -14,7 +14,13 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePayeeDisplay } from '@/hooks/usePayeeDisplay';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { HIGHLIGHT_FLASH } from '@/hooks/useHighlightTarget';
-import { registerGroupLabel, rowAmount, previousDay } from '../register-style-data';
+import { PartialTotal } from '@/components/ui/PartialTotal';
+import {
+  registerGroupLabel,
+  rowAmount,
+  previousDay,
+  type RegisterFigure,
+} from '../register-style-data';
 
 /**
  * The transactions register in the Pebble UI style: rows grouped by day in
@@ -35,7 +41,8 @@ export interface PebbleRegisterProps {
   showRunningBalance: boolean;
   runningBalances: ReadonlyMap<string, number>;
   displayAmounts: ReadonlyMap<string, number>;
-  dayNet: ReadonlyMap<string, number>;
+  /** Each day's net, in the currency it names. */
+  dayNet: ReadonlyMap<string, RegisterFigure>;
   inspectorVisible: boolean;
   inspectedId: string | null;
   deletingId: string | null;
@@ -386,8 +393,10 @@ export function PebbleRegister(p: PebbleRegisterProps) {
   const flush = () => {
     const open = cur.open;
     if (!open) return;
-    const net = p.dayNet.get(open.date) ?? 0;
-    const currency = p.transactions.find((x) => x.transactionDate === open.date)?.currencyCode;
+    const figure = p.dayNet.get(open.date);
+    const net = figure?.total.value ?? 0;
+    const currency =
+      figure?.currency ?? p.transactions.find((x) => x.transactionDate === open.date)?.currencyCode;
     nodes.push(
       <section key={open.date} aria-label={groupTitle(open.date)}>
         <div className="flex items-baseline justify-between px-1.5 pt-4 pb-2">
@@ -395,7 +404,13 @@ export function PebbleRegister(p: PebbleRegisterProps) {
             {groupTitle(open.date)}
           </h3>
           <span className={net > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-            {net > 0 ? '+' : ''}{formatCurrency(net, currency)}
+            {figure ? (
+              <PartialTotal total={figure.total} displayCurrency={figure.currency}>
+                {net > 0 ? '+' : ''}{formatCurrency(net, currency)}
+              </PartialTotal>
+            ) : (
+              formatCurrency(net, currency)
+            )}
           </span>
         </div>
         <ul className="rounded-2xl bg-white p-1 shadow-card dark:bg-gray-900 dark:shadow-card-dark">

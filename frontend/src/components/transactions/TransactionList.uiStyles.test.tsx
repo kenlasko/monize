@@ -161,6 +161,36 @@ describe('Folio register', () => {
     expect(within(foot).getByText('$200.00')).toBeTruthy();
   });
 
+  it('converts an all-accounts page into the default currency before totalling it', () => {
+    const { container } = renderList({
+      isSingleAccountView: false,
+      startingBalance: undefined,
+      transactions: [
+        // The server's factor for the row's own date: 100 USD was 150 CAD.
+        makeTx({ id: 'u', amount: -100, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 1.5 }),
+        makeTx({ id: 'k', amount: -30, reportingCurrencyCode: 'CAD', reportingRate: 1 }),
+      ],
+    });
+    const foot = container.querySelector('tfoot') as HTMLElement;
+    // 100 USD is 150 CAD; adding the two face values would say 130.
+    expect(within(foot).getByText('$180.00')).toBeTruthy();
+    expect(within(foot).queryByTestId('partial-total-marker')).toBeNull();
+  });
+
+  it('marks the footer partial when a currency on the page has no rate', () => {
+    const { container } = renderList({
+      isSingleAccountView: false,
+      startingBalance: undefined,
+      transactions: [
+        makeTx({ id: 'j', amount: -5000, currencyCode: 'JPY', reportingCurrencyCode: 'CAD', reportingRate: null }),
+        makeTx({ id: 'k', amount: -30, reportingCurrencyCode: 'CAD', reportingRate: 1 }),
+      ],
+    });
+    const foot = container.querySelector('tfoot') as HTMLElement;
+    expect(within(foot).getByText('$30.00')).toBeTruthy();
+    expect(within(foot).getAllByTestId('partial-total-marker').length).toBeGreaterThan(0);
+  });
+
   it.each([
     ['one account', { isSingleAccountView: true }],
     ['every account', { isSingleAccountView: false }],
@@ -312,6 +342,8 @@ describe('Pebble register', () => {
       category: { id: 'cat-1', name: 'Groceries', color: '#22c55e', icon: null } as any,
     });
     const { container } = renderList({
+      isSingleAccountView: false,
+      startingBalance: undefined,
       transactions: [iconTx],
       categoryIconMap: new Map([['cat-1', 'chart-bar']]),
     });

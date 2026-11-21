@@ -3,14 +3,16 @@
 import React from 'react';
 import { useTranslations } from 'next-intl';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { PartialTotal } from '@/components/ui/PartialTotal';
+import type { pageTotals } from '../register-style-data';
 import { HIDEABLE_COLUMNS } from '@/lib/hidden-columns';
 import { REGISTER_COLUMN_ORDER, registerColumnClass, type RegisterColumnId } from '../register-columns';
 
 const HIDEABLE: readonly string[] = HIDEABLE_COLUMNS.transactions;
 
 export interface FolioRegisterFootProps {
-  totals: { count: number; payments: number; deposits: number; net: number };
-  currencyCode: string | undefined;
+  /** The page's totals, in the currency they name (`pageTotals`). */
+  totals: ReturnType<typeof pageTotals>;
   cellPadding: string;
   selectionMode: boolean | undefined;
   isSingleAccountView: boolean;
@@ -29,7 +31,6 @@ export interface FolioRegisterFootProps {
  */
 export function FolioRegisterFoot({
   totals,
-  currencyCode,
   cellPadding,
   selectionMode,
   isSingleAccountView,
@@ -60,18 +61,24 @@ export function FolioRegisterFoot({
         return (
           <React.Fragment key={id}>
             <td className={`${cellPadding} ui-register-money text-right`}>
-              {formatCurrency(totals.payments, currencyCode)}
+              <PartialTotal total={totals.payments} displayCurrency={totals.currency}>
+                {formatCurrency(totals.payments.value, totals.currency)}
+              </PartialTotal>
             </td>
             <td className={`${cellPadding} ui-register-money ui-register-deposit text-right`}>
-              {formatCurrency(totals.deposits, currencyCode)}
+              <PartialTotal total={totals.deposits} displayCurrency={totals.currency}>
+                {formatCurrency(totals.deposits.value, totals.currency)}
+              </PartialTotal>
             </td>
           </React.Fragment>
         );
       case 'balance':
         return (
           <td key={id} className={`${cellPadding} ui-register-money text-right`}>
-            {totals.net > 0 ? '+' : totals.net < 0 ? '-' : ''}
-            {formatCurrency(Math.abs(totals.net), currencyCode)}
+            <PartialTotal total={totals.net} displayCurrency={totals.currency}>
+              {totals.net.value > 0 ? '+' : totals.net.value < 0 ? '-' : ''}
+              {formatCurrency(Math.abs(totals.net.value), totals.currency)}
+            </PartialTotal>
           </td>
         );
       default:

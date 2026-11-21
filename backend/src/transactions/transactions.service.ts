@@ -1,4 +1,8 @@
 import { createBondWriteGuard } from "../bonds/bond-write-guard";
+import {
+  attachRegisterReportingRates,
+  RegisterRowReportingRate,
+} from "./register-reporting-rates";
 import { readEmbeddedSeriesCarry } from "../bonds/embedded-series-carry";
 import {
   Injectable,
@@ -207,7 +211,8 @@ export interface CreateTransactionOutcome {
   created: boolean;
 }
 
-export interface TransactionWithInvestmentLink extends Transaction {
+export interface TransactionWithInvestmentLink
+  extends Transaction, Partial<RegisterRowReportingRate> {
   linkedInvestmentTransactionId?: string | null;
   attachmentCount?: number;
   /** Unarchived warranties linked to the row. */
@@ -2267,6 +2272,9 @@ export class TransactionsService {
         userId,
         await this.enrichWithInvestmentLinks(m, data),
       );
+      // A page holding several currencies is totalled at each row's own
+      // rate into the reporting currency, never at the client's latest one.
+      await attachRegisterReportingRates(m, userId, enrichedData);
 
       return {
         data: enrichedData,
@@ -2303,7 +2311,9 @@ export class TransactionsService {
       const ordered = ids
         .map((id) => byId.get(id))
         .filter((row): row is Transaction => row !== undefined);
-      return this.enrichWithInvestmentLinks(m, ordered);
+      const enriched = await this.enrichWithInvestmentLinks(m, ordered);
+      await attachRegisterReportingRates(m, userId, enriched);
+      return enriched;
     });
   }
 

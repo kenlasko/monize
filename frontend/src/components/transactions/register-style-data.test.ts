@@ -5,33 +5,87 @@ import {
   pageTotals,
   previousDay,
   registerGroupLabel,
+  pageReportingCurrency,
+  totalsCurrency,
 } from './register-style-data';
 
 const rows = [
-  { id: 'a', transactionDate: '2024-01-16', amount: 200 },
-  { id: 'b', transactionDate: '2024-01-15', amount: -50 },
-  { id: 'c', transactionDate: '2024-01-15', amount: -25.1 },
-  { id: 'v', transactionDate: '2024-01-15', amount: -999, status: 'VOID' as never },
+  { id: 'a', transactionDate: '2024-01-16', amount: 200, currencyCode: 'CAD' },
+  { id: 'b', transactionDate: '2024-01-15', amount: -50, currencyCode: 'CAD' },
+  { id: 'c', transactionDate: '2024-01-15', amount: -25.1, currencyCode: 'CAD' },
+  { id: 'v', transactionDate: '2024-01-15', amount: -999, status: 'VOID' as never, currencyCode: 'EUR' },
 ];
 
 describe('register style data', () => {
   it('nets each date and skips rows that move no money', () => {
-    const net = netByDate(rows, new Map(), 2);
-    expect(net.get('2024-01-15')).toBe(-75.1);
-    expect(net.get('2024-01-16')).toBe(200);
+    const net = netByDate(rows, new Map(), 'USD');
+    expect(net.get('2024-01-15')?.total.value).toBe(-75.1);
+    expect(net.get('2024-01-15')?.currency).toBe('CAD');
+    expect(net.get('2024-01-16')?.total.value).toBe(200);
   });
 
-  it('totals payments, deposits and the difference', () => {
-    expect(pageTotals(rows, new Map(), 2)).toEqual({
-      payments: 75.1,
-      deposits: 200,
-      net: 124.9,
-      count: 4,
-    });
+  it('totals payments, deposits and the difference in the page currency', () => {
+    const totals = pageTotals(rows, new Map(), 'USD');
+    expect(totals.currency).toBe('CAD');
+    expect(totals.payments).toEqual({ value: 75.1, missingCurrencies: [], excludedCount: 0 });
+    expect(totals.deposits).toEqual({ value: 200, missingCurrencies: [], excludedCount: 0 });
+    expect(totals.net).toEqual({ value: 124.9, missingCurrencies: [], excludedCount: 0 });
+    expect(totals.count).toBe(4);
   });
 
   it('uses a filtered split total where the list supplies one', () => {
-    expect(pageTotals([rows[1]], new Map([['b', -10]]), 2).payments).toBe(10);
+    expect(pageTotals([rows[1]], new Map([['b', -10]]), 'USD').payments.value).toBe(10);
+  });
+
+  it('converts a mixed-currency page at the factor each row carries before summing', () => {
+    const mixed = [
+      // Two USD rows struck on days the dollar stood at different rates.
+      { id: 'u', transactionDate: '2024-01-15', amount: -100, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 1.5 },
+      { id: 'k', transactionDate: '2024-01-15', amount: -30, currencyCode: 'CAD', reportingCurrencyCode: 'CAD', reportingRate: 1 },
+      { id: 'd', transactionDate: '2024-01-15', amount: 10, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 1.25 },
+    ];
+    const totals = pageTotals(mixed, new Map(), 'CAD');
+    expect(totals.currency).toBe('CAD');
+    // 150 + 30, never 100 + 30 in two currencies.
+    expect(totals.payments.value).toBe(180);
+    expect(totals.deposits.value).toBe(12.5);
+    expect(totals.net.value).toBe(-167.5);
+    expect(netByDate(mixed, new Map(), 'CAD').get('2024-01-15')).toEqual({
+      total: { value: -167.5, missingCurrencies: [], excludedCount: 0 },
+      currency: 'CAD',
+    });
+  });
+
+  it('leaves out and names a currency with no rate rather than adding it unconverted', () => {
+    const mixed = [
+      { id: 'k', transactionDate: '2024-01-15', amount: -30, currencyCode: 'CAD' },
+      // The server found no rate; a row the server never stamped is as unknown.
+      { id: 'j', transactionDate: '2024-01-15', amount: -5000, currencyCode: 'JPY', reportingCurrencyCode: 'CAD', reportingRate: null },
+      { id: 'e', transactionDate: '2024-01-15', amount: -10, currencyCode: 'EUR' },
+    ];
+    const totals = pageTotals(mixed, new Map(), 'CAD');
+    expect(totals.payments).toEqual({ value: 30, missingCurrencies: ['JPY', 'EUR'], excludedCount: 2 });
+    expect(totals.net.missingCurrencies).toEqual(['JPY', 'EUR']);
+    expect(netByDate(mixed, new Map(), 'CAD').get('2024-01-15')?.total.excludedCount).toBe(2);
+  });
+
+  it('never applies a factor stamped for another currency', () => {
+    const mixed = [
+      { id: 'k', transactionDate: '2024-01-15', amount: -30, currencyCode: 'CAD' },
+      { id: 'u', transactionDate: '2024-01-15', amount: -100, currencyCode: 'USD', reportingCurrencyCode: 'EUR', reportingRate: 0.9 },
+    ];
+    expect(pageTotals(mixed, new Map(), 'CAD').payments.missingCurrencies).toEqual(['USD']);
+  });
+
+  it('sums in the reporting currency the server stamped, else the reader default', () => {
+    expect(pageReportingCurrency([{}, { reportingCurrencyCode: 'EUR' }], 'CAD')).toBe('EUR');
+    expect(pageReportingCurrency([{}], 'CAD')).toBe('CAD');
+  });
+
+  it('sums in the shared currency, or the default when rows are mixed', () => {
+    expect(totalsCurrency([{ currencyCode: 'EUR' }, { currencyCode: 'EUR' }], 'CAD')).toBe('EUR');
+    expect(totalsCurrency([{ currencyCode: 'EUR' }, { currencyCode: 'USD' }], 'CAD')).toBe('CAD');
+    expect(totalsCurrency([], 'CAD')).toBe('CAD');
   });
 
   it('sizes a rule against the largest balance on the page', () => {

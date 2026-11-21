@@ -46,13 +46,17 @@ export function isComplete(total: ConvertedTotal): boolean {
  * Convert and sum `items`, collecting the currencies that could not be converted.
  *
  * `convert` is `useExchangeRates().convertToDefault` or a bound `convert`: any
- * function returning `null` when the rate is unknown.
+ * function returning `null` when the rate is unknown. It is handed the item
+ * too, for a caller whose rate travels on the item (a server-stamped factor)
+ * rather than in a table keyed by currency. `decimals` is the target
+ * currency's money precision; a fiat's four unless the caller says otherwise.
  */
 export function sumConverted<T>(
   items: readonly T[],
   amountOf: (item: T) => number,
   currencyOf: (item: T) => string,
-  convert: (amount: number, fromCurrency: string) => number | null,
+  convert: (amount: number, fromCurrency: string, item: T) => number | null,
+  decimals?: number,
 ): ConvertedTotal {
   const converted: number[] = [];
   const missing = new Set<string>();
@@ -67,7 +71,7 @@ export function sumConverted<T>(
       excludedCount += 1;
       continue;
     }
-    const value = convert(amount, currencyOf(item));
+    const value = convert(amount, currencyOf(item), item);
     // No rate for this pair: name the currency so the caller can say which.
     if (value === null) {
       missing.add(currencyOf(item));
@@ -84,7 +88,7 @@ export function sumConverted<T>(
   }
 
   return {
-    value: sumMoney(converted),
+    value: sumMoney(converted, decimals),
     missingCurrencies: [...missing],
     excludedCount,
   };
