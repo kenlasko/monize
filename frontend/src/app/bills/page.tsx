@@ -31,7 +31,7 @@ import { useBillsOutlook } from '@/components/scheduled-transactions/useBillsOut
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
-import { buildCategoryColorMap } from '@/lib/categoryUtils';
+import { buildCategoryColorMap, buildCategoryLabelMap } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
 import { SelectedLoanOccurrence, ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
 import { Category } from '@/types/category';
@@ -600,6 +600,7 @@ function BillsContent() {
   }, [filteredTransactions, t]);
 
   const categoryColorMap = useMemo(() => buildCategoryColorMap(categories), [categories]);
+  const categoryLabelMap = useMemo(() => buildCategoryLabelMap(categories), [categories]);
 
   // Calculate summary stats in a single pass (exclude transfers from bills/deposits)
   const summary = useMemo(() => {
@@ -911,6 +912,7 @@ function BillsContent() {
                   onPost={handlePost}
                   onRefresh={refreshData}
                   categoryColorMap={categoryColorMap}
+                  categoryLabelMap={categoryLabelMap}
                   highlightId={highlightId}
                 />
               )}

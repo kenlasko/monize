@@ -28,6 +28,7 @@ import { useDensityPreference } from '@/store/densityStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { CellLabel, TABLE_BODY_CLASS, TABLE_CLASS } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
+import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import {
   buildScheduledActions,
@@ -72,6 +73,9 @@ function scheduledOccurrenceAmount(
  */
 const SCHEDULED_TRANSFER_DIRECTION = 'to';
 
+/** The account's mark, as `useAccountPickerIcon` hands it out. */
+type AccountIconFn = ReturnType<typeof useAccountPickerIcon>;
+
 /**
  * What the Category column shows, in BOTH of this row's layouts: a five-way
  * decision -- an investment chip naming the action and the security, a transfer
@@ -91,11 +95,14 @@ function ScheduledCategoryMarker({
   transaction,
   badgePadding,
   categoryColor,
+  categoryLabel,
   bounded = false,
 }: {
   transaction: ScheduledTransaction;
   badgePadding: string;
   categoryColor: string | null;
+  /** The category's whole "Parent: Child" path; its own name when none is known. */
+  categoryLabel: string | null;
   bounded?: boolean;
 }) {
   const t = useTranslations('scheduledTransactions');
@@ -158,7 +165,7 @@ function ScheduledCategoryMarker({
       // `truncate` with a `title`, and copying the truncation without the
       // recovery leaves the one surface that shows a category unable to
       // read it. The tier chip is uncut, so it keeps no attribute at all.
-      title={bounded ? transaction.category.name : undefined}
+      title={bounded ? (categoryLabel ?? transaction.category.name) : undefined}
       style={{
         backgroundColor: categoryColor
           ? `color-mix(in srgb, ${categoryColor} 15%, var(--category-bg-base, #e5e7eb))`
@@ -168,10 +175,35 @@ function ScheduledCategoryMarker({
           : 'var(--category-text-base, #6b7280)',
       }}
     >
-      {bound(transaction.category.name)}
+      {bound(categoryLabel ?? transaction.category.name)}
     </Badge>
   ) : (
     <span className="text-xs text-gray-400 dark:text-gray-500">{'\u2014'}</span>
+  );
+}
+
+/**
+ * The Account column, in BOTH layouts: the account's mark (its institution's
+ * favicon, else the account-type icon, as the pickers and the accounts list
+ * draw it) ahead of its name. The name is the one thing that may truncate, and
+ * keeps a `title` so a cut name stays readable.
+ */
+function ScheduledAccountMarker({
+  account,
+  accountIcon,
+  className,
+}: {
+  account: ScheduledTransaction['account'];
+  accountIcon: AccountIconFn;
+  className: string;
+}) {
+  return (
+    <div className={`flex min-w-0 items-center gap-2 ${className}`}>
+      {account && <span className="flex flex-shrink-0 items-center">{accountIcon(account)}</span>}
+      <span className="min-w-0 truncate" title={account?.name}>
+        {account?.name}
+      </span>
+    </div>
   );
 }
 
@@ -398,6 +430,10 @@ interface ScheduledTransactionRowProps {
   onEdit?: (transaction: ScheduledTransaction) => void;
   onEditOccurrence?: (transaction: ScheduledTransaction) => void;
   categoryColorMap?: Map<string, string | null>;
+  /** "Parent: Child" per category id (`buildCategoryLabelMap`), the whole path the chip names. */
+  categoryLabelMap?: Map<string, string>;
+  /** The account's mark, drawn once by the list (`useAccountPickerIcon`). */
+  accountIcon: AccountIconFn;
   isHighlighted?: boolean;
   /**
    * Render the row as a wrapped card instead of the tier table's cells. The
@@ -452,6 +488,8 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
   onEdit,
   onEditOccurrence,
   categoryColorMap,
+  categoryLabelMap,
+  accountIcon,
   isHighlighted,
   wrapped = false,
 }: ScheduledTransactionRowProps) {
@@ -460,6 +498,9 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
   const frequencyLabel = useFrequencyLabel();
   const categoryColor = transaction.category
     ? (categoryColorMap?.get(transaction.category.id) ?? transaction.category.color)
+    : null;
+  const categoryLabel = transaction.category
+    ? (categoryLabelMap?.get(transaction.category.id) ?? null)
     : null;
   const effectiveDueDate = transaction.nextOverride?.overrideDate || transaction.nextDueDate || '';
   const dueDateStatus = effectiveDueDate ? getDueDateStatus(effectiveDueDate) : null;
@@ -575,12 +616,11 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
                 </div>
                 <div className="min-w-0">
                   <CellLabel>{t('list.columns.account')}</CellLabel>
-                  <div
-                    className="text-sm text-gray-900 dark:text-gray-100 truncate"
-                    title={transaction.account?.name}
-                  >
-                    {transaction.account?.name}
-                  </div>
+                  <ScheduledAccountMarker
+                    account={transaction.account}
+                    accountIcon={accountIcon}
+                    className="text-sm text-gray-900 dark:text-gray-100"
+                  />
                 </div>
               </div>
               {/* Line 3: the category chip in a zero-minimum track, the
@@ -606,6 +646,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
                     transaction={transaction}
                     badgePadding={badgePadding}
                     categoryColor={categoryColor}
+                    categoryLabel={categoryLabel}
                     bounded
                   />
                 </div>
@@ -668,7 +709,11 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
 
       {/* Account */}
       <td className={`${cellPadding} hidden sm:table-cell`}>
-        <div className="text-sm text-gray-900 dark:text-gray-100">{transaction.account?.name}</div>
+        <ScheduledAccountMarker
+          account={transaction.account}
+          accountIcon={accountIcon}
+          className="text-sm text-gray-900 dark:text-gray-100"
+        />
       </td>
 
       {/* Category */}
@@ -677,6 +722,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
           transaction={transaction}
           badgePadding={badgePadding}
           categoryColor={categoryColor}
+          categoryLabel={categoryLabel}
         />
       </td>
 
@@ -717,6 +763,8 @@ interface ScheduledTransactionListProps {
   onPost?: (transaction: ScheduledTransaction) => void;
   onRefresh?: () => void;
   categoryColorMap?: Map<string, string | null>;
+  /** "Parent: Child" per category id (`buildCategoryLabelMap`), the whole path the chip names. */
+  categoryLabelMap?: Map<string, string>;
   /** Scheduled-transaction id to flash/scroll to (deep-link target). */
   highlightId?: string | null;
 }
@@ -728,10 +776,12 @@ export function ScheduledTransactionList({
   onPost,
   onRefresh,
   categoryColorMap,
+  categoryLabelMap,
   highlightId,
 }: ScheduledTransactionListProps) {
   const t = useTranslations('scheduledTransactions');
   const frequencyLabel = useFrequencyLabel();
+  const accountIcon = useAccountPickerIcon();
   const { formatDate } = useDateFormat();
   const formatAmount = useScheduledAmountFormatter();
   const getDueDateStatus = useDueDateStatus();
@@ -848,6 +898,8 @@ export function ScheduledTransactionList({
               onEdit={onEdit}
               onEditOccurrence={onEditOccurrence}
               categoryColorMap={categoryColorMap}
+              categoryLabelMap={categoryLabelMap}
+              accountIcon={accountIcon}
               isHighlighted={!!highlightId && transaction.id === highlightId}
               wrapped={wrapped}
             />

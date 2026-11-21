@@ -359,6 +359,37 @@ describe('ScheduledTransactionList', () => {
     expect(screen.getByText('Entertainment')).toBeInTheDocument();
   });
 
+  it('names the whole "Parent: Child" path when the page supplies the label map', () => {
+    const transactions = [createTransaction({
+      category: { id: 'c1', name: 'Groceries', color: '#ff0000' },
+    })];
+    render(
+      <ScheduledTransactionList
+        transactions={transactions}
+        categoryLabelMap={new Map([['c1', 'Food: Groceries']])}
+      />,
+    );
+    expect(screen.getByText('Food: Groceries')).toBeInTheDocument();
+    expect(screen.queryByText('Groceries')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the category own name when the map has no entry for it', () => {
+    const transactions = [createTransaction({
+      category: { id: 'c1', name: 'Groceries', color: '#ff0000' },
+    })];
+    render(<ScheduledTransactionList transactions={transactions} categoryLabelMap={new Map()} />);
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+  });
+
+  it('draws the account mark ahead of the account name', () => {
+    const transactions = [createTransaction({
+      account: { id: 'a1', name: 'Main Checking', accountType: 'CHEQUING' } as any,
+    })];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    const name = screen.getByText('Main Checking');
+    expect(name.previousElementSibling?.querySelector('svg')).not.toBeNull();
+  });
+
   it('displays Transfer badge for transfer transactions', () => {
     const transactions = [createTransaction({
       isTransfer: true,
