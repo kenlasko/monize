@@ -12,7 +12,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 export class CreateCategoryDto {
   @ApiProperty({ description: "Category name" })
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   name: string;
 

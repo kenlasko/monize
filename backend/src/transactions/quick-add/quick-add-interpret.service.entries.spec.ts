@@ -146,7 +146,10 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
         expect(result.memo).toBe(memo);
       });
 
-      it("keeps what did not fit in a new payee's name as the memo", async () => {
+      it("has no leftover memo once a payee name's cap exceeds the line's own", async () => {
+        // A new payee's name is cut to what a transaction create accepts
+        // (255), which is now longer than a Quick Add line can ever be (200),
+        // so the leftover always fits whole and nothing is left for the memo.
         const words = Array.from({ length: 25 }, (_v, i) => `word${i}`);
         const unpinned = await service.interpret(
           USER,
@@ -156,7 +159,7 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
           USER,
           dto(`12 ${words.join(" ")}`, { pins: { payeeName: "Market" } }),
         );
-        expect(unpinned.memo).not.toBeNull();
+        expect(unpinned.memo).toBeNull();
         expect(pinned.memo).toBe(unpinned.memo);
       });
 
@@ -476,18 +479,18 @@ describe("QuickAddInterpretService: pins, transfers and the payee", () => {
       expect(loaders.loadPayeeHistory).not.toHaveBeenCalled();
     });
 
-    it("cuts a new payee's name at a word to what a save accepts, the rest the memo", async () => {
-      // 167 characters: within the line's cap, past a payee name's.
+    it("keeps a long typed name whole, within both the line's cap and a payee name's", async () => {
+      // 167 characters: within the line's cap (200) and, since a payee
+      // name's own cap (255) is now the larger of the two, within that as
+      // well -- so nothing is cut to a memo.
       const words = Array.from({ length: 25 }, (_v, i) => `word${i}`);
       const result = await service.interpret(
         USER,
         dto(`12 ${words.join(" ")}`),
       );
       const name = result.payee.value?.name ?? "";
-      expect(name.length).toBeLessThanOrEqual(100);
-      expect(name.length).toBeGreaterThan(90);
-      expect(name.endsWith(" ")).toBe(false);
-      expect(`${name} ${result.memo}`).toBe(words.join(" "));
+      expect(name).toBe(words.join(" "));
+      expect(result.memo).toBeNull();
     });
 
     it("leaves the leftover words as the memo when a payee matched", async () => {

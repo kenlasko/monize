@@ -24,8 +24,8 @@ import { EXTERNAL_ID_MAX_LENGTH } from "../transaction-external-id";
 import { IsFxRate } from "../../common/validators/is-fx-rate.validator";
 import { IsMoneyAmount } from "../../common/validators/is-money-amount.validator";
 
-/** The longest free-text payee name a transaction create accepts. */
-export const TRANSACTION_PAYEE_NAME_MAX_LENGTH = 100;
+/** The longest free-text payee name a transaction create accepts, matching `transactions.payee_name VARCHAR(255)`. */
+export const TRANSACTION_PAYEE_NAME_MAX_LENGTH = 255;
 
 /** The largest magnitude a transaction amount may have. */
 export const TRANSACTION_AMOUNT_MAX_MAGNITUDE = 999999999999;

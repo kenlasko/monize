@@ -17,6 +17,7 @@ import {
   SECURITY_TYPES,
 } from "../../securities/security-enums";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import { TRANSACTION_PAYEE_NAME_MAX_LENGTH } from "../../transactions/dto/create-transaction.dto";
 import {
   AI_REVIEW_OPERATIONS,
   MAX_AI_REVIEW_TOOL_LIST_LIMIT,
@@ -433,9 +434,9 @@ export const managePayeesSchema = z.object({
   items: z
     .array(
       z.object({
-        name: z.string().min(1).max(100),
-        newName: z.string().min(1).max(100).optional(),
-        categoryName: z.string().max(100).optional(),
+        name: z.string().min(1).max(255),
+        newName: z.string().min(1).max(255).optional(),
+        categoryName: z.string().max(255).optional(),
         // No .min(1): an empty string is how an update clears the address,
         // mirroring categoryName. Zod strips unknown keys, so a field absent
         // here is silently dropped rather than rejected.
@@ -668,7 +669,7 @@ const manageTransactionItemSchema = z
     // shared
     amount: amountSchema.optional(),
     date: isoDateSchema.optional(),
-    payeeName: z.string().max(100).optional(),
+    payeeName: z.string().max(TRANSACTION_PAYEE_NAME_MAX_LENGTH).optional(),
     categoryName: z.string().max(100).optional(),
     description: z.string().max(TRANSACTION_NOTE_MAX_LENGTH).optional(),
     createPayeeIfMissing: booleanArg().optional(),
@@ -951,7 +952,11 @@ export const aiReviewRequestsFields = z.object({
     .max(100)
     .optional()
     .describe("submit: one category instead of splits."),
-  payeeName: z.string().max(100).optional().describe("submit: the payee."),
+  payeeName: z
+    .string()
+    .max(TRANSACTION_PAYEE_NAME_MAX_LENGTH)
+    .optional()
+    .describe("submit: the payee."),
   description: z
     .string()
     .max(TRANSACTION_NOTE_MAX_LENGTH)

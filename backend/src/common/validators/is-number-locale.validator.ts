@@ -9,7 +9,7 @@ import {
 /**
  * A value `Intl` can build a number formatter from, or the `browser` sentinel.
  *
- * `@IsString() @MaxLength(50)` is a shape check, not a locale check: it accepts
+ * `@IsString() @MaxLength(n)` is a shape check, not a locale check: it accepts
  * `en_US` -- the underscore form half the world writes -- which
  * `Intl.NumberFormat` rejects with `RangeError`. Stored, that value reached
  * every formatter at once: the Monthly Comparison report answered 500, and the

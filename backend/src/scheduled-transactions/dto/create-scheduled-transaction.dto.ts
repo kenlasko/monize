@@ -50,7 +50,7 @@ export class CreateScheduledTransactionDto {
   accountId: string;
 
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   name: string;
 
@@ -60,7 +60,7 @@ export class CreateScheduledTransactionDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   payeeName?: string;
 

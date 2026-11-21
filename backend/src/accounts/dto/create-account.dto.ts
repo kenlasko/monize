@@ -82,7 +82,7 @@ export class CreateAccountDto {
     description: "Display name for the account",
   })
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   name: string;
 
@@ -120,7 +120,7 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   institution?: string;
 

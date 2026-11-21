@@ -12,6 +12,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 export class RegisterDto {
   @ApiProperty({ example: "user@example.com" })
   @IsEmail()
+  @MaxLength(255)
   email: string;
 
   @ApiProperty({

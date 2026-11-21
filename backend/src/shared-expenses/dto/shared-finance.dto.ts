@@ -16,7 +16,7 @@ import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { SharedCommandDto } from "./shared-command.dto";
 
 export class EnableSharedFinanceDto extends SharedCommandDto {
-  @IsString() @Length(1, 120) @SanitizeHtml() accountName: string;
+  @IsString() @Length(1, 255) @SanitizeHtml() accountName: string;
 }
 
 export class SharedBankSplitDto {

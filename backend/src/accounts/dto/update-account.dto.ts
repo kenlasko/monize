@@ -37,7 +37,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   name?: string;
 
@@ -95,7 +95,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(255)
   @SanitizeHtml()
   institution?: string;
 

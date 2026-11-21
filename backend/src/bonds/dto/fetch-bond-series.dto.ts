@@ -13,6 +13,10 @@ export class FetchBondSeriesDto {
   })
   countryCode: string;
 
+  // 16 is a deliberate bound on the official code formats the supported
+  // adapters issue (PL's "EDO1036"-style codes, the US's 9-character CUSIP),
+  // not a copy of bond_instruments.series_code's generic VARCHAR(40) ceiling,
+  // which is sized for whatever a future country's format needs.
   @ApiProperty({ example: "EDO1036", maxLength: 16 })
   @IsString()
   @MaxLength(16)

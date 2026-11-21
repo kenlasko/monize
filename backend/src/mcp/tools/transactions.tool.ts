@@ -88,6 +88,7 @@ import {
   itemsArray,
 } from "./schema-fragments";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import { TRANSACTION_PAYEE_NAME_MAX_LENGTH } from "../../transactions/dto/create-transaction.dto";
 import {
   ForeignEntryRateSource,
   pickForeignEntryRequest,
@@ -488,7 +489,7 @@ export class McpTransactionsTools {
               date: z.string().max(10).optional().describe("Transaction date."),
               payeeName: z
                 .string()
-                .max(100)
+                .max(TRANSACTION_PAYEE_NAME_MAX_LENGTH)
                 .optional()
                 .describe(
                   "Matched to an existing payee, else handled per createPayeeIfMissing. On a transfer it is a custom label; omitted, the transfer reads as 'Transfer to/from <account>'.",

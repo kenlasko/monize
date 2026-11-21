@@ -18,6 +18,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TransactionStatus } from "../entities/transaction.entity";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
+import { TRANSACTION_PAYEE_NAME_MAX_LENGTH } from "./create-transaction.dto";
 
 export class BulkUpdateFilterDto {
   @ApiPropertyOptional({ description: "Filter by account IDs" })
@@ -122,7 +123,7 @@ export class BulkUpdateDto {
   @ApiPropertyOptional({ description: "Set payee name (null to clear)" })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(TRANSACTION_PAYEE_NAME_MAX_LENGTH)
   @SanitizeHtml()
   payeeName?: string | null;
 

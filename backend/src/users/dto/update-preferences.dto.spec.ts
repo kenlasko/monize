@@ -25,6 +25,39 @@ describe("UpdatePreferencesDto language validation", () => {
   );
 });
 
+async function lengthError(field: string, value: string) {
+  const dto = plainToInstance(UpdatePreferencesDto, { [field]: value });
+  const errors = await validate(dto);
+  return errors.find((e) => e.property === field);
+}
+
+describe("UpdatePreferencesDto length caps match user_preferences columns", () => {
+  // dateFormat/numberFormat are VARCHAR(20), timezone is VARCHAR(50)
+  // (database/schema.sql): a value past the column's own width must be
+  // refused here, not accepted and then truncated or rejected by Postgres.
+  // numberFormat also carries @IsNumberLocale, so its boundary values are
+  // syntactically valid BCP 47 tags (private-use subtags padding the
+  // length), not an arbitrary "x" run that would fail for an unrelated
+  // reason at every length.
+  it.each([
+    ["dateFormat", "x".repeat(20)],
+    ["numberFormat", "en-US-x-aaaaaaaa-bbb"], // 20 chars
+    ["timezone", "x".repeat(50)],
+  ])("accepts %s at its length cap", async (field, value) => {
+    expect(value).toHaveLength(field === "timezone" ? 50 : 20);
+    expect(await lengthError(field, value)).toBeUndefined();
+  });
+
+  it.each([
+    ["dateFormat", "x".repeat(21)],
+    ["numberFormat", "en-US-x-aaaaaaaa-bbbb"], // 21 chars
+    ["timezone", "x".repeat(51)],
+  ])("rejects %s one character past its length cap", async (field, value) => {
+    expect(value).toHaveLength(field === "timezone" ? 51 : 21);
+    expect(await lengthError(field, value)).toBeDefined();
+  });
+});
+
 async function aiBubbleError(aiBubbleEnabled: unknown) {
   const dto = plainToInstance(UpdatePreferencesDto, { aiBubbleEnabled });
   const errors = await validate(dto);

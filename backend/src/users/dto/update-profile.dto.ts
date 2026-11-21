@@ -20,6 +20,7 @@ export class UpdateProfileDto {
   @ApiPropertyOptional({ description: "Email address" })
   @IsOptional()
   @IsEmail()
+  @MaxLength(255)
   email?: string;
 
   @ApiPropertyOptional({
