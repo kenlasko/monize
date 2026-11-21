@@ -62,7 +62,9 @@
     "onPace": "Dans le rythme",
     "rollover": "Report : {type}",
     "remaining": "{amount} restant",
-    "over": "{amount} de dépassement"
+    "over": "{amount} de dépassement",
+    "leftWord": "restant",
+    "overWord": "dépassé"
   },
   "categoryTrend": {
     "title": "Tendances par catégorie",
@@ -164,6 +166,7 @@
     "original": "Origine : {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Totaux du budget",
     "totalBudget": "Budget total",
     "spent": "Dépensé",
     "remaining": "Restant",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Livre des budgets",
       "title": "Budgets",
       "subtitle": "Gérez vos budgets et suivez vos dépenses",
       "newBudget": "+ Nouveau budget",

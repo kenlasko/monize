@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Een of meer schema's konden niet worden gewaardeerd",
     "summaryDueNow": "Nu verschuldigd",
     "loadingText": "Geplande transacties laden...",
-    "chartUnavailable": "Grafiek tijdelijk niet beschikbaar"
+    "chartUnavailable": "Grafiek tijdelijk niet beschikbaar",
+    "eyebrow": "Terugkerend"
   },
   "viewTabs": {
     "filterLabel": "Schematype",
@@ -83,5 +84,12 @@
     "exportButton": "Exporteren",
     "exportTitle": "Facturen en stortingen exporteren naar CSV",
     "exported": "{count, plural, one {# schema geëxporteerd} other {# schema's geëxporteerd}}"
+  },
+  "outlook": {
+    "title": "De komende veertien dagen",
+    "stripLabel": "Geplande rekeningen en stortingen in de komende veertien dagen: inkomend geld boven de lijn, uitgaand geld eronder",
+    "today": "Vandaag",
+    "nextUpOn": "Eerstvolgende, {date}",
+    "daysLabel": "De komende veertien dagen, één chip per dag"
   }
 }

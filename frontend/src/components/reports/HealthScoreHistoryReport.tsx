@@ -27,6 +27,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { gainLossColor } from '@/lib/format';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 /**
  * The `month` member names the COLUMN (and the key its stored sort preference
@@ -176,7 +177,7 @@ export function HealthScoreHistoryReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -187,7 +188,7 @@ export function HealthScoreHistoryReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('healthScoreHistory.noBudgets')}
         </p>
@@ -207,7 +208,7 @@ export function HealthScoreHistoryReport() {
   return (
     <div ref={chartRef} className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedBudgetId}
@@ -233,24 +234,24 @@ export function HealthScoreHistoryReport() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScoreHistory.currentScore')}</p>
           <p className={`text-2xl font-bold ${currentGrade.color}`}>{currentScore}</p>
           <p className={`text-xs ${currentGrade.color}`}>{currentGrade.label}</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScoreHistory.average')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{avgScore}</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScoreHistory.best')}</p>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{bestScore}</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScoreHistory.worst')}</p>
           <p className="text-2xl font-bold text-red-600 dark:text-red-400">{worstScore}</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScoreHistory.trajectory')}</p>
           <p className={`text-2xl font-bold ${gainLossColor(improving ? 1 : -1)}`}>
             {improving ? t('healthScoreHistory.trajectoryUp') : data.length >= 2 ? t('healthScoreHistory.trajectoryDown') : '--'}
@@ -259,7 +260,7 @@ export function HealthScoreHistoryReport() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         {data.length === 0 ? (
           <EmptyState title={t('healthScoreHistory.noHistory')} />
         ) : (
@@ -322,7 +323,7 @@ export function HealthScoreHistoryReport() {
 
       {/* History table */}
       {data.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+        <div className={`${CARD_CLASS} p-4 sm:p-6`}>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('healthScoreHistory.scoreHistory')}</h3>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">

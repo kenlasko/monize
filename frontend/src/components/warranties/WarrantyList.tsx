@@ -138,7 +138,7 @@ const WarrantyRow = memo(function WarrantyRow({
   const rowProps = {
     role: 'row',
     tabIndex: 0,
-    className: `group cursor-pointer select-none ${INTERACTIVE_ROW_FOCUS_CLASS} ${HOVER_ROW_ON_CARD}`,
+    className: `ui-list-row group cursor-pointer select-none ${INTERACTIVE_ROW_FOCUS_CLASS} ${HOVER_ROW_ON_CARD}`,
     ...getRowHandlers(warranty),
     onKeyDown: (event: React.KeyboardEvent<HTMLTableRowElement>) => {
       // Enter on an action button is the button's, not the row's.
@@ -370,7 +370,7 @@ export function WarrantyList({
     <div>
       {toolbar}
       <div className={`overflow-x-auto ${stale ? 'opacity-60' : ''}`} aria-busy={stale}>
-        <table className={TABLE_CLASS}>
+        <table className={`${TABLE_CLASS} ui-list-ledger ui-list-warranties`}>
           <thead className="bg-gray-50 dark:bg-gray-800">
             {wrapped ? (
               <tr>

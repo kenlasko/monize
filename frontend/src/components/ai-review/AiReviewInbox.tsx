@@ -161,7 +161,7 @@ export function AiReviewInbox() {
       <div>
         <DensityToggleBar view="aiReviews" />
         <div className="overflow-x-auto">
-          <table className={TABLE_CLASS}>
+          <table className={`${TABLE_CLASS} ui-docket`}>
             <thead>
               <tr>
                 {selectable && <Th className={`${headerPadding} w-10`}>{selectAllBox}</Th>}

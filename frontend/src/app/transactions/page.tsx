@@ -2053,7 +2053,11 @@ function TransactionsContent() {
         ) : (
           <>
         {/* Transactions List */}
-        <div className={`${CARD_CLASS} overflow-hidden`}>
+        {/* `ui-register-card`: Modern clips this card rather than hiding its
+            overflow (ui-styles-register.css), because `hidden` makes it a
+            scroll container and the Modern inspector is `sticky` against the
+            window. Standard and Classic keep `hidden`. */}
+        <div className={`${CARD_CLASS} overflow-hidden ui-register-card`}>
           <div ref={swipeRef} {...(paginates ? { [SWIPE_PAGINATE_ATTR]: 'true' } : {})}>
           {isLoading && transactions.length === 0 ? (
             <LoadingSpinner text={t('page.loading')} />

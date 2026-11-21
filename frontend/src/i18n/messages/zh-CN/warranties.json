@@ -73,7 +73,8 @@
       "prefillFailed": "无法加载该交易，因此保修将从空白开始",
       "exported": "{count, plural, other {已导出 {shown} 项保修}}",
       "exportFailed": "无法导出保修"
-    }
+    },
+    "eyebrow": "保修登记簿"
   },
   "status": {
     "lifetime": "终身",

@@ -38,7 +38,8 @@
   "page": {
     "title": "Импорт проводок",
     "subtitle": "Импорт операций из файлов QIF/QMTF, OFX/QFX или CSV либо перенос целого файла Microsoft Money (.mny) или KMyMoney (.kmy, .xml)",
-    "stepOf": "Шаг {current} из {total}"
+    "stepOf": "Шаг {current} из {total}",
+    "eyebrow": "Загрузка операций"
   },
   "upload": {
     "heading": "Загрузить файлы с проводками",

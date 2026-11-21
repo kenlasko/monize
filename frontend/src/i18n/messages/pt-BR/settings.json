@@ -180,7 +180,8 @@
       "saved": "Preferências salvas",
       "saveFailed": "Falha ao salvar as preferências",
       "themeSaveFailed": "Falha ao salvar o tema",
-      "colorThemeSaveFailed": "Falha ao salvar o tema de cor"
+      "colorThemeSaveFailed": "Falha ao salvar o tema de cor",
+      "uiStyleSaveFailed": "Falha ao salvar o estilo da interface"
     },
     "browserLocale": "Usar locale do navegador (detecção automática)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "Claro",
       "dark": "Escuro"
     },
+    "uiStyleLabel": "Estilo da interface",
+    "uiStyleHint": "Altera a tipografia, as formas e o estilo das tabelas. Funciona com qualquer tema de cor.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Padrão",
+        "description": "O visual familiar do Monize."
+      },
+      "classic": {
+        "name": "Clássico",
+        "description": "Inspirado nos livros contábeis: títulos com serifa, tabelas com linhas e cantos quadrados."
+      },
+      "modern": {
+        "name": "Moderno",
+        "description": "Fonte em negrito, blocos de cor arredondados e controles em formato de pílula."
+      }
+    },
     "colorThemeLabel": "Tema de cor",
     "colorThemeHint": "As prévias usam seu modo claro ou escuro atual.",
+    "colorThemeStyleHint": "Mostrando os temas de cor feitos para o estilo {style}.",
     "colorThemeOptions": {
       "default": "Padrão",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Livro-razão",
+      "studio": "Estúdio",
       "midnight": "Midnight",
       "highcontrast": "Alto contraste",
       "colorblind": "Seguro para daltônicos"

@@ -16,7 +16,8 @@
     "summaryTotal": "類別總計",
     "summaryIncome": "收入類別",
     "summaryExpense": "支出類別",
-    "summaryTopLevel": "頂層類別"
+    "summaryTopLevel": "頂層類別",
+    "eyebrow": "類別總表"
   },
   "empty": {
     "heading": "尚無類別",

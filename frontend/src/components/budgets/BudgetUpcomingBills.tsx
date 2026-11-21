@@ -18,6 +18,7 @@ import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { isComplete } from '@/lib/currency-total';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { OVERDUE_CARRY_DAYS } from '@/lib/forecast';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetUpcomingBillsProps {
   scheduledTransactions: ScheduledTransaction[];
@@ -118,7 +119,7 @@ export function BudgetUpcomingBills({
     : null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('upcomingBills.title')}
       </h2>

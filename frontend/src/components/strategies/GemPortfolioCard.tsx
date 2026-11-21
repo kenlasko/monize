@@ -125,14 +125,14 @@ export function GemPortfolioCard({
           className={
             percent === null
               ? "h-2 w-full rounded-full border border-dashed border-gray-300 dark:border-gray-600"
-              : "h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+              : "ui-meter h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
           }
         >
           {/* One neutral fill: the percentage above and the "change required"
               badge below already say whether this is good or bad. */}
           {percent !== null && (
             <div
-              className="h-full rounded-full bg-gray-400 dark:bg-gray-500"
+              className="ui-meter-fill h-full rounded-full bg-gray-400 dark:bg-gray-500"
               style={{ width: `${percent}%` }}
             />
           )}

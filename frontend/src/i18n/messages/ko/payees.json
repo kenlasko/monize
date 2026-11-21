@@ -37,7 +37,8 @@
       "withoutCategory": "카테고리 없음"
     },
     "applyDefaultCategories": "기본 카테고리 적용",
-    "lookupSettings": "거래처 조회 설정"
+    "lookupSettings": "거래처 조회 설정",
+    "eyebrow": "수취인 색인"
   },
   "list": {
     "columns": {

@@ -180,7 +180,8 @@
       "saved": "Préférences enregistrées",
       "saveFailed": "Échec de l'enregistrement des préférences",
       "themeSaveFailed": "Échec de l'enregistrement du thème",
-      "colorThemeSaveFailed": "Échec de l'enregistrement du thème de couleur"
+      "colorThemeSaveFailed": "Échec de l'enregistrement du thème de couleur",
+      "uiStyleSaveFailed": "Échec de l'enregistrement du style d'interface"
     },
     "browserLocale": "Utiliser les paramètres régionaux du navigateur (détection automatique)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "Clair",
       "dark": "Sombre"
     },
+    "uiStyleLabel": "Style d'interface",
+    "uiStyleHint": "Modifie la typographie, les formes et le style des tableaux. Compatible avec tous les thèmes de couleur.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standard",
+        "description": "L'apparence habituelle de Monize."
+      },
+      "classic": {
+        "name": "Classique",
+        "description": "Inspiré des livres comptables : titres à empattements, tableaux lignés, coins carrés."
+      },
+      "modern": {
+        "name": "Moderne",
+        "description": "Typographie en gras, blocs de couleur arrondis et contrôles en forme de pilule."
+      }
+    },
     "colorThemeLabel": "Thème de couleur",
     "colorThemeHint": "Les aperçus utilisent votre mode clair ou sombre actuel.",
+    "colorThemeStyleHint": "Affichage des thèmes de couleur conçus pour le style {style}.",
     "colorThemeOptions": {
       "default": "Défaut",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Registre",
+      "studio": "Studio",
       "midnight": "Midnight",
       "highcontrast": "Contraste élevé",
       "colorblind": "Adapté aux daltoniens"

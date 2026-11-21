@@ -25,6 +25,7 @@ import {
 import { BalanceForecastUnavailable } from '@/components/accounts/shared/BalanceForecastUnavailable';
 import { useOverdueForecastMarkers } from '@/components/accounts/shared/useOverdueForecastMarkers';
 import type { GroupedTotal, MonthlyTotal } from '@/types/transaction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('BankingDetailView');
 
@@ -226,7 +227,7 @@ export function BankingDetailView({ account }: BankingDetailViewProps) {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('chart.title')}
         </h2>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6 space-y-4">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6 space-y-4`}>
           {/* The history still draws; only the forward line is withheld, so the
               panel sits above it and says which schedule stopped the projection
               and how to fix it (issue #1247). */}

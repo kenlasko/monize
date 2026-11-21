@@ -51,23 +51,24 @@ export function InsightCard({ insight, onDismiss, isDismissing }: InsightCardPro
 
   return (
     <div
-      className={`rounded-lg border ${style.border} ${style.bg} p-4 transition-opacity ${
+      data-severity={insight.severity}
+      className={`ui-ins-card rounded-lg border ${style.border} ${style.bg} p-4 transition-opacity ${
         insight.isDismissed ? 'opacity-50' : ''
       }`}
     >
       <div className="flex items-start gap-3">
         <div
-          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${style.iconColor}`}
+          className={`ui-ins-mark flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${style.iconColor}`}
         >
           {style.icon}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+            <h3 className="ui-ins-title font-semibold text-gray-900 dark:text-gray-100 text-sm">
               {insight.title}
             </h3>
             <span
-              className={`px-1.5 py-0.5 text-xs font-medium rounded ${typeStyle}`}
+              className={`ui-ins-type px-1.5 py-0.5 text-xs font-medium rounded ${typeStyle}`}
             >
               {typeLabel}
             </span>

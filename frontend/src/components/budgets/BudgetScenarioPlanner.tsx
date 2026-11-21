@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import type { CategoryBreakdown } from '@/types/budget';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetScenarioPlannerProps {
   categories: CategoryBreakdown[];
@@ -113,7 +114,7 @@ export function BudgetScenarioPlanner({
 
   if (expenseCategories.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+      <div className={`${CARD_CLASS} p-4 sm:p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('scenarioPlanner.title')}
         </h2>
@@ -125,7 +126,7 @@ export function BudgetScenarioPlanner({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('scenarioPlanner.title')}

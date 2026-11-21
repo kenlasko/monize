@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export interface SummaryCardItem {
   /** Card label (e.g. "Current Balance"). */
@@ -26,6 +27,11 @@ export interface SummaryCardItem {
   body?: ReactNode;
   /** Extra classes for this card, e.g. a wider `col-span` on desktop. */
   className?: string;
+  /**
+   * The row's headline figure: the accent block in Modern, a heavier rule in
+   * Classic, unchanged in Standard (`ui-stat-lead`). One per row at most.
+   */
+  lead?: boolean;
 }
 
 interface SummaryCardGridProps {
@@ -84,9 +90,9 @@ export function SummaryCardGrid({ cards, className = DEFAULT_SUMMARY_GRID }: Sum
     <div className={className}>
       {cards.map((card, index) => {
         const label = (
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div className="ui-stat-label flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             {card.icon && (
-              <span aria-hidden="true" className="shrink-0">
+              <span aria-hidden="true" className="ui-stat-icon shrink-0">
                 {card.icon}
               </span>
             )}
@@ -101,15 +107,15 @@ export function SummaryCardGrid({ cards, className = DEFAULT_SUMMARY_GRID }: Sum
         ) : (
           <>
             {label}
-            <div className={`text-lg font-bold ${card.valueClass ?? 'text-gray-900 dark:text-gray-100'}`}>
+            <div className={`ui-stat-value text-lg font-bold ${card.valueClass ?? 'text-gray-900 dark:text-gray-100'}`}>
               {card.value}
             </div>
             {card.note != null && card.note !== '' && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.note}</div>
+              <div className="ui-stat-hint text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.note}</div>
             )}
           </>
         );
-        const base = `bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 ${card.className ?? ''}`;
+        const base = `ui-stat${card.lead ? ' ui-stat-lead' : ''} ${CARD_CLASS} p-4 ${card.className ?? ''}`;
         return card.onClick ? (
           <button
             key={`${card.label}-${index}`}

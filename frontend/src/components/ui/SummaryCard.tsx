@@ -37,6 +37,12 @@ interface SummaryCardProps {
   hint?: ReactNode;
   /** Optional click handler */
   onClick?: () => void;
+  /**
+   * The row's headline figure. Standard draws it like the others; Modern sets
+   * it as the accent block and Classic under a heavier rule
+   * (`ui-stat-lead`, `ui-styles-kit.css`). One per row at most.
+   */
+  lead?: boolean;
 }
 
 const valueColorClasses = {
@@ -50,6 +56,11 @@ const valueColorClasses = {
 /**
  * Summary card component used across pages for displaying key metrics.
  * Provides consistent styling for summary statistics at the top of pages.
+ *
+ * The `ui-stat*` markers let the UI styles re-set a row of these
+ * (`ui-styles-kit.css`): Classic prints the row as a ruled statement line,
+ * Modern as white blocks with a large figure. A money value set as
+ * `<MoneyFigure display>` is typeset by both.
  */
 export function SummaryCard({
   label,
@@ -58,23 +69,24 @@ export function SummaryCard({
   valueColor = 'default',
   hint,
   onClick,
+  lead = false,
 }: SummaryCardProps) {
   const content = (
-    <div className="p-3 sm:p-5">
+    <div className="ui-stat-body p-3 sm:p-5">
       <div className="flex items-center">
-        <div className="flex-shrink-0 hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-700/50">
+        <div className="ui-stat-icon flex-shrink-0 hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-700/50">
           {icon}
         </div>
         <div className="sm:ml-4 w-0 flex-1">
           <dl>
-            <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+            <dt className="ui-stat-label text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
               {label}
             </dt>
-            <dd className={`text-base sm:text-lg font-semibold ${valueColorClasses[valueColor]}`}>
+            <dd className={`ui-stat-value text-base sm:text-lg font-semibold ${valueColorClasses[valueColor]}`}>
               {value}
             </dd>
             {hint && (
-              <dd className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <dd className="ui-stat-hint mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {hint}
               </dd>
             )}
@@ -84,7 +96,7 @@ export function SummaryCard({
     </div>
   );
 
-  const baseClasses = `${CARD_CLASS} overflow-hidden`;
+  const baseClasses = `ui-stat${lead ? ' ui-stat-lead' : ''} ${CARD_CLASS} overflow-hidden`;
 
   if (onClick) {
     return (

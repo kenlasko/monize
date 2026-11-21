@@ -43,6 +43,7 @@ import { parseLocalDate } from '@/lib/utils';
 import type { InvestmentAccountPerformance } from '@/types/monthly-comparison';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type ComparisonSortField = 'category' | 'current' | 'previous' | 'change' | 'changePercent';
 type TopMoversSortField = 'symbol' | 'name' | 'price' | 'change' | 'changePercent';
@@ -211,14 +212,14 @@ export function MonthlyComparisonReport() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <div className="animate-pulse skeleton-shimmer flex items-center justify-center gap-4">
             <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
             <div className="h-8 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
             <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -230,7 +231,7 @@ export function MonthlyComparisonReport() {
 
   if (!data) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+      <div className={`${CARD_CLASS} p-8 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">{t('monthlyComparison.loadError')}</p>
       </div>
     );
@@ -430,7 +431,7 @@ export function MonthlyComparisonReport() {
   return (
     <div ref={chartRef} className="space-y-6">
       {/* Month Picker */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {/* Wraps, so the actions row lands under the month stepper on a phone
             instead of being squeezed beside it. */}
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -466,11 +467,11 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Income vs Expenses Summary */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('monthlyComparison.incomeVsExpenses')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Income */}
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+          <div className="ui-rep-tile bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
             <div className="text-sm text-green-600 dark:text-green-400 mb-1">{t('monthlyComparison.income')}</div>
             <div className="text-2xl font-bold text-green-700 dark:text-green-300">
               {formatCurrencyCompact(ie.currentIncome, currency)}
@@ -483,7 +484,7 @@ export function MonthlyComparisonReport() {
             </div>
           </div>
           {/* Expenses */}
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+          <div className="ui-rep-tile bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
             <div className="text-sm text-red-600 dark:text-red-400 mb-1">{t('monthlyComparison.expenses')}</div>
             <div className="text-2xl font-bold text-red-700 dark:text-red-300">
               {formatCurrencyCompact(ie.currentExpenses, currency)}
@@ -514,7 +515,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Summary Notes */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">{t('monthlyComparison.summary')}</h2>
         <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
           <p>{savingsNote}</p>
@@ -523,7 +524,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Monthly Expenses Compared */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('monthlyComparison.monthlyExpenses')}</h2>
         {/* Pie Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -640,7 +641,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Top 5 Expense Categories */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('monthlyComparison.topExpenseCategories')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TopCategoriesTable
@@ -667,7 +668,7 @@ export function MonthlyComparisonReport() {
       </div>
 
       {/* Net Worth */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('monthlyComparison.netWorth')}</h2>
         {nw.monthlyHistory.length > 0 ? (
           <>
@@ -731,7 +732,7 @@ export function MonthlyComparisonReport() {
 
       {/* Investment Performance */}
       {(investments.accountPerformance.length > 0 || investments.topMovers.length > 0) && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('monthlyComparison.investmentPerformance')}</h2>
 
           {investments.accountPerformance.length > 0 && (

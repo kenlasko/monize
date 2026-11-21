@@ -268,7 +268,7 @@ export function UserManagementTable({
               }
 
               return (
-                <tr key={user.id} className={`group hover:bg-gray-100 dark:hover:bg-gray-800 ${rowBg}`}>
+                <tr key={user.id} className={`ui-user-row group hover:bg-gray-100 dark:hover:bg-gray-800 ${rowBg}`}>
                   <td className={`${cellPadding} whitespace-nowrap`}>
                     <UserIdentity user={user} isSelf={isSelf} name={getUserDisplayName(user)} />
                   </td>
@@ -313,7 +313,12 @@ export function UserManagementTable({
 function UserIdentity({ user, isSelf, name }: { user: AdminUser; isSelf: boolean; name: string }) {
   const t = useTranslations('admin');
   return (
-    <div className="min-w-0">
+    <div className="ui-user-identity flex min-w-0 items-center gap-3">
+      {/* Modern prints a round initial puck; Standard and Classic hide it. */}
+      <span aria-hidden="true" className="ui-user-avatar hidden">
+        {(name.trim().charAt(0) || '?').toUpperCase()}
+      </span>
+      <div className="min-w-0">
       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
         {name}
         {isSelf && (
@@ -322,6 +327,7 @@ function UserIdentity({ user, isSelf, name }: { user: AdminUser; isSelf: boolean
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400 break-all">
         {user.email || t('userTable.noEmail')}
+      </div>
       </div>
     </div>
   );

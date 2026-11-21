@@ -15,6 +15,32 @@ import { minimalPdf } from '../helpers/pdf-fixture';
  * every other suite and fail here.
  */
 test.describe('Transaction attachments', () => {
+  /**
+   * The scanner is a touch-device control (`isTouchDevice`, a coarse-pointer
+   * query): a desktop has only Add attachment, which opens the same file
+   * picker. These runs are desktop browsers, so the page is told it points
+   * with a finger. An init script rather than Playwright's `isMobile`, which
+   * Firefox does not support; it must run before the page loads.
+   */
+  async function asTouchDevice(page: import('@playwright/test').Page) {
+    await page.addInitScript(() => {
+      const original = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) =>
+        query.replace(/\s+/g, '') === '(pointer:coarse)'
+          ? ({
+              matches: true,
+              media: query,
+              onchange: null,
+              addEventListener: () => {},
+              removeEventListener: () => {},
+              addListener: () => {},
+              removeListener: () => {},
+              dispatchEvent: () => false,
+            } as MediaQueryList)
+          : original(query);
+    });
+  }
+
   /** Open the edit dialog for a transaction by its payee name. */
   async function openTransaction(page: import('@playwright/test').Page, payeeName: string) {
     const dialog = page.getByRole('dialog');
@@ -81,6 +107,7 @@ test.describe('Transaction attachments', () => {
     const payeeName = `Attach Scan ${uniqueId()}`;
     await createTransaction(api, { accountId: account.id, payeeName });
 
+    await asTouchDevice(page);
     await page.goto('/transactions');
     const dialog = await openTransaction(page, payeeName);
 
@@ -160,6 +187,7 @@ test.describe('Transaction attachments', () => {
     const payeeName = `Attach Decline ${uniqueId()}`;
     await createTransaction(api, { accountId: account.id, payeeName });
 
+    await asTouchDevice(page);
     await page.goto('/transactions');
     const dialog = await openTransaction(page, payeeName);
 

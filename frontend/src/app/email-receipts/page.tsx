@@ -23,6 +23,7 @@ function EmailReceiptsContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('title')}
+          eyebrow={t('eyebrow')}
           subtitle={t('subtitle')}
           help='emailReceipts'
         />

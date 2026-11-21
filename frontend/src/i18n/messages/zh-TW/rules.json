@@ -4,7 +4,8 @@
     "subtitle": "在交易建立或匯入時，自動填入標籤、分類與收款對象",
     "createButton": "建立規則",
     "loading": "正在載入規則...",
-    "totalCount": "{count, plural, other {# 條規則}}"
+    "totalCount": "{count, plural, other {# 條規則}}",
+    "eyebrow": "自動化"
   },
   "empty": {
     "title": "尚無規則",

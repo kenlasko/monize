@@ -1,0 +1,980 @@
+/*
+ * The page kit of the Classic and Modern UI styles: the shared blocks every
+ * page is built from (page header, stat tiles, cards, list shells and their
+ * tables, segmented controls, tabs, filter headers, empty states, badges,
+ * meters, legends and chart chrome, key/value lists, detail headers, dialog
+ * chrome). A page restyled for a style builds on these; a page that has not
+ * been touched still changes, because it is made of them.
+ *
+ * Same rules as ui-styles.css (read its header): ramp tokens only, never a
+ * hex; every rule scoped to a marker class; Standard sets no attribute, so
+ * nothing here reaches it. Most rules here are unlayered because a primitive
+ * carries its Standard look as utilities, which a layered rule cannot beat;
+ * each stays scoped to the primitive's own marker, so a page's own markup
+ * (which carries no marker) is untouched.
+ *
+ * Classic is the ledger book (`Main`, `Register`, `Vocabulary.dc.html`):
+ * unboxed sections under a serif title on a two-point ink rule, hairlines
+ * between items, small letter-spaced capitals for labels, serif headline
+ * figures, square marks instead of pills, meters as thin ruled gauges.
+ *
+ * Modern is colour blocks (`ModernDashboard`, `ModernTransactions.dc.html`):
+ * white blocks with no edge on an off-white page, a heavy grotesque heading,
+ * pills for controls and states, big tight figures, round pucks.
+ *
+ * Kit API (markers a page uses; most come with the primitive already):
+ *   ui-page-header / -heading / -eyebrow / -title / -subtitle / -actions
+ *                         PageHeader; `eyebrow` prop prints the eyebrow
+ *   ui-stat, ui-stat-body / -icon / -label / -value / -hint, ui-stat-lead
+ *                         SummaryCard / SummaryCardGrid (`lead` prop); a row
+ *                         is any element whose children are ui-stat
+ *   ui-card               Card / CARD_CLASS; its first heading (or a child
+ *                         marked ui-section-head) is the section title
+ *   ui-section-head       a section title row anywhere, ruled in Classic
+ *   ui-list-toolbar, ui-list-pager, ui-pagination, ui-page-btn
+ *   ui-table / ui-th      TABLE_CLASS / TH_CLASS; ui-sort-th (SortableHeader)
+ *                         rules a report table the same way
+ *   ui-seg / ui-seg-btn / ui-seg-on   segmented-control.ts
+ *   ui-tabs / ui-tab      Tabs
+ *   ui-filter-head        FilterPanelHeader
+ *   ui-empty*             EmptyState (Classic has its own variant)
+ *   ui-badge              Badge
+ *   ui-meter / ui-meter-fill[data-level] / ui-meter-pace   BudgetProgressBar;
+ *                         put them on any other progress bar to match
+ *   ui-legend / ui-legend-swatch      ChartLegend
+ *   ui-chart-tooltip      CHART_TOOLTIP_CLASS
+ *   ui-kv / -row / -label / -value    KeyValueList
+ *   ui-detail-header / -back / -title / -meta / -figure    the detail pages'
+ *                         identity headers
+ *   ui-figure-label       a small label over a headline MoneyFigure
+ *   ui-block-accent       Modern: an accent-filled highlight block
+ *   ui-invert             Modern: the ink block (ui-styles-shell.css)
+ */
+
+/* ===================================================================== */
+/* Tokens                                                                 */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] {
+  /* The hairline between items, a step lighter than the card edge. */
+  --ui-rule-hair: var(--color-gray-200);
+  --ui-label-tracking: 0.14em;
+}
+html.dark[data-ui-style='classic'] {
+  --ui-rule-hair: var(--color-gray-700);
+}
+
+html[data-ui-style='modern'] {
+  /* The faint line between rows inside a block. */
+  --ui-rule-soft: var(--color-gray-100);
+  /* A block is colour, not an outlined panel: no drop under it. The faint
+     edge token stays, so a palette whose page and card are one step apart
+     still shows where a block ends. */
+  --shadow-card: none;
+}
+html.dark[data-ui-style='modern'] {
+  --ui-rule-soft: var(--color-gray-700);
+  --shadow-card-dark: none;
+}
+
+/* ===================================================================== */
+/* Shared: small capitals and headline figures                            */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-figure-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-figure-label {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='modern'] .ui-figure-label {
+  font-weight: 600;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='modern'] .ui-figure-label {
+  color: var(--color-gray-400);
+}
+
+/* ===================================================================== */
+/* Page header                                                            */
+/* The dashboard greeting is a PageHeader too, set by ui-styles-shell.css; */
+/* everything here leaves it alone.                                        */
+/* ===================================================================== */
+
+html:is([data-ui-style='classic'], [data-ui-style='modern'])
+  .ui-page-header:not(.ui-dash-greeting .ui-page-header)
+  .ui-page-eyebrow {
+  display: block;
+  margin: 0;
+}
+
+/* Classic: an eyebrow in small capitals, a serif title, and the page ruled
+   off under them in ink; the actions stand on the rule. */
+html[data-ui-style='classic'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) {
+  margin-bottom: 1.75rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+@media (min-width: 640px) {
+  html[data-ui-style='classic'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) {
+    align-items: flex-end;
+  }
+}
+html[data-ui-style='classic'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-eyebrow {
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-eyebrow {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-title {
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+/* Bodoni's automatic optical size at title sizes is its display cut, whose
+   hairlines drop out at 1x ("Air" reads "\ir"); a text-ish optical size keeps
+   every stroke, as the headline money figure does (ui-styles.css). */
+html[data-ui-style='classic']
+  :is(.ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-title, .ui-detail-title, .ui-empty-classic .ui-empty-title) {
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 18;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='classic'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-title {
+    font-size: 2.5rem;
+  }
+}
+html[data-ui-style='classic'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-subtitle {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Modern: a large heavy heading with its context over it, the actions pills
+   at the far end of the line. No rule: the blocks below separate it. */
+html[data-ui-style='modern'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) {
+  margin-bottom: 1.5rem;
+  padding-top: 0.5rem;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) {
+    align-items: flex-end;
+  }
+}
+html[data-ui-style='modern'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-eyebrow {
+  margin-bottom: 0.125rem;
+  font-size: 0.9375rem;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='modern'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-eyebrow {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='modern'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-title {
+  font-size: 2rem;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-title {
+    font-size: 2.5rem;
+  }
+}
+html[data-ui-style='modern'] .ui-page-header:not(.ui-dash-greeting .ui-page-header) .ui-page-subtitle {
+  margin-top: 0.375rem;
+  font-size: 0.9375rem;
+}
+
+/* Header actions stand at a touch-sized height in both styles. */
+@media (min-width: 640px) {
+  html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-page-actions .ui-btn {
+    min-height: 2.75rem;
+    padding-inline: 1.125rem;
+  }
+}
+
+/* ===================================================================== */
+/* Stat tiles (SummaryCard, SummaryCardGrid) and their rows               */
+/* ===================================================================== */
+
+/* Classic: no boxes. Each figure stands under its own ink rule, labelled in
+   small capitals, set in the serif; the row is a statement line. */
+html[data-ui-style='classic'] :has(> .ui-stat) {
+  column-gap: 2rem;
+  row-gap: 1.5rem;
+}
+html[data-ui-style='classic'] .ui-stat {
+  overflow: visible;
+  padding: 0.625rem 0 0;
+  background-color: transparent;
+  border-width: 0;
+  border-top: 1px solid var(--ui-rule-ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-ui-style='classic'] .ui-stat:is(button):not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--color-gray-200) 35%, transparent);
+}
+html.dark[data-ui-style='classic'] .ui-stat:is(button):not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--color-gray-700) 45%, transparent);
+}
+html[data-ui-style='classic'] .ui-stat-lead {
+  border-top-width: 2px;
+}
+html[data-ui-style='classic'] .ui-stat .ui-stat-body {
+  padding: 0;
+}
+html[data-ui-style='classic'] .ui-stat .ui-stat-icon {
+  display: none;
+}
+html[data-ui-style='classic'] .ui-stat .ui-stat-label {
+  margin-left: 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-stat .ui-stat-label {
+  color: var(--color-gray-400);
+}
+/* SummaryCard's label column carries the icon's gutter. */
+html[data-ui-style='classic'] .ui-stat .ui-stat-body > div > div {
+  margin-left: 0;
+}
+/* A figure in the body face, as on the statement's totals line; a money
+   value set as `<MoneyFigure display>` takes the serif headline cut. Bodoni
+   is never given a bare string: its hairline hyphen and diagonals drop out at
+   this size, and a date or a count reads wrong. */
+html[data-ui-style='classic'] .ui-stat .ui-stat-value {
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 500;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='classic'] .ui-stat .ui-stat-value {
+    font-size: 1.5rem;
+  }
+}
+html[data-ui-style='classic'] .ui-stat .ui-stat-value .ui-money-display {
+  font-size: 1.375em;
+}
+html[data-ui-style='classic'] .ui-stat .ui-stat-hint {
+  margin-top: 0.25rem;
+}
+
+/* Modern: white blocks without an edge, a round puck, a big tight figure. */
+html[data-ui-style='modern'] :has(> .ui-stat) {
+  gap: 1rem;
+}
+html[data-ui-style='modern'] .ui-stat {
+  border-color: transparent;
+  border-radius: 1.5rem;
+  box-shadow: none;
+}
+html[data-ui-style='modern'] .ui-stat:is(article, button) {
+  padding: 1.25rem 1.375rem;
+}
+html[data-ui-style='modern'] .ui-stat .ui-stat-body {
+  padding: 1.25rem 1.375rem;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-stat .ui-stat-body {
+    padding: 1.5rem;
+  }
+}
+html[data-ui-style='modern'] .ui-stat .ui-stat-body > div {
+  align-items: flex-start;
+}
+html[data-ui-style='modern'] .ui-stat .ui-stat-body .ui-stat-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-stat .ui-stat-body .ui-stat-icon {
+  background-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-stat .ui-stat-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='modern'] .ui-stat .ui-stat-label {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='modern'] .ui-stat .ui-stat-value {
+  margin-top: 0.25rem;
+  font-family: var(--ui-font-display);
+  font-size: 1.25rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-stat .ui-stat-value {
+    font-size: 1.875rem;
+  }
+}
+/* The lead tile is the accent block; its figure keeps the ink. */
+html[data-ui-style='modern'] .ui-stat-lead,
+html[data-ui-style='modern'] .ui-block-accent {
+  background-color: var(--color-blue-300);
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-stat-lead,
+html.dark[data-ui-style='modern'] .ui-block-accent {
+  background-color: var(--color-blue-400);
+  color: var(--color-gray-900);
+}
+/* The dark selector matters: the dark-mode label rule above
+   (`html.dark[...] .ui-stat .ui-stat-label`) out-ranks the plain one, and
+   left the label pale on the pale accent in dark mode. */
+html[data-ui-style='modern'] .ui-stat-lead :is(.ui-stat-label, .ui-stat-value, .ui-stat-hint),
+html.dark[data-ui-style='modern'] .ui-stat .ui-stat-lead :is(.ui-stat-label, .ui-stat-value, .ui-stat-hint),
+html.dark[data-ui-style='modern'] .ui-stat.ui-stat-lead :is(.ui-stat-label, .ui-stat-value, .ui-stat-hint),
+html[data-ui-style='modern'] .ui-stat-lead .ui-money-display :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
+  color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-stat-lead .ui-stat-body .ui-stat-icon {
+  background-color: color-mix(in oklab, var(--color-gray-900) 10%, transparent);
+}
+
+/* The fold above a row of tiles. */
+html[data-ui-style='classic'] .ui-summary-toggle > span:first-child {
+  font-size: 0.6875rem;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html[data-ui-style='modern'] .ui-summary-toggle > span:first-child {
+  font-weight: 600;
+}
+
+/* ===================================================================== */
+/* Cards and sections                                                     */
+/* ===================================================================== */
+
+/* Classic: a card is a section of the page, not a panel on it. It drops its
+   box and its inline padding so its contents align with the page header;
+   its title stands over a two-point ink rule, as on the dashboard. The
+   dashboard's own widget cards (ui-styles-shell.css), a sticky bar, and a
+   stat tile keep their own treatments. */
+html[data-ui-style='classic'] .ui-card:not(.ui-stat, .sticky, .ui-widget-slot > .ui-card) {
+  padding-inline: 0;
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* A section holding a table keeps the register's paper under it, as the
+   ledger page does (Register.dc.html); still no edge at the sides. */
+html[data-ui-style='classic'] .ui-card:not(.ui-stat, .sticky, .ui-widget-slot > .ui-card):has(table) {
+  background-color: var(--color-white);
+}
+html.dark[data-ui-style='classic'] .ui-card:not(.ui-stat, .sticky, .ui-widget-slot > .ui-card):has(table) {
+  background-color: var(--color-gray-800);
+}
+/* A section with no title of its own opens on a hairline. */
+html[data-ui-style='classic']
+  .ui-card:not(.ui-stat, .sticky, .ui-widget-slot > .ui-card):not(
+    :has(> :is(h2, h3):first-child, > :first-child > :is(h2, h3):first-child, > .ui-section-head:first-child)
+  ) {
+  border-top-color: var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-card:not(.ui-widget-slot > .ui-card) > :is(h2, h3):first-child,
+html[data-ui-style='classic'] .ui-card:not(.ui-widget-slot > .ui-card) > :first-child:has(> :is(h2, h3):first-child),
+html[data-ui-style='classic'] .ui-section-head {
+  margin-bottom: 1rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-card:not(.ui-widget-slot > .ui-card) > :is(h2, h3):first-child,
+html[data-ui-style='classic'] .ui-card:not(.ui-widget-slot > .ui-card) > :first-child > :is(h2, h3):first-child,
+html[data-ui-style='classic'] .ui-section-head :is(h2, h3):first-child {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+/* Modern: a block. The edge and drop are gone (tokens above); its title is
+   the heavy grotesque at block size. */
+html[data-ui-style='modern'] .ui-card:not(.ui-widget-slot > .ui-card) > :is(h2, h3):first-child,
+html[data-ui-style='modern'] .ui-card:not(.ui-widget-slot > .ui-card) > :first-child > :is(h2, h3):first-child,
+html[data-ui-style='modern'] .ui-section-head :is(h2, h3):first-child {
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ===================================================================== */
+/* List shells: the strip above a table, the table, the pager below       */
+/* ===================================================================== */
+
+/* Classic: the strip is a line of small type over the register's ink rule. */
+html[data-ui-style='classic'] .ui-list-toolbar {
+  padding-inline: 0;
+  background-color: transparent;
+  border-bottom-color: transparent;
+}
+html[data-ui-style='modern'] .ui-list-toolbar {
+  background-color: transparent;
+  border-bottom-color: var(--ui-rule-soft);
+}
+
+/* Pagination: Classic square ruled buttons, Modern pills. */
+html[data-ui-style='classic'] .ui-pagination {
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding-inline: 0;
+}
+html[data-ui-style='classic'] .ui-page-btn {
+  border-radius: 0.125rem;
+  background-color: transparent;
+}
+html[data-ui-style='modern'] .ui-pagination {
+  border-radius: 1.5rem;
+  box-shadow: none;
+}
+html[data-ui-style='modern'] .ui-page-btn {
+  height: 2rem;
+  min-width: 2rem;
+  padding-inline: 0.625rem;
+  border-color: transparent;
+  border-radius: 9999px;
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-page-btn {
+  background-color: var(--color-gray-700);
+}
+
+/* Classic: a report table built from SortableHeader is ruled like a
+   register: ink above and below, a rule under the header, small capitals. */
+html[data-ui-style='classic'] table:has(> thead .ui-sort-th) {
+  border-top: 2px solid var(--ui-rule-ink);
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] table:has(> thead .ui-sort-th) > thead > tr > th {
+  border-bottom: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] :is(.ui-sort-th, .ui-table > thead > tr > th) {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] :is(.ui-sort-th, .ui-table > thead > tr > th) {
+  color: var(--color-gray-400);
+}
+/* The header sits on the page, as the rows do. */
+html[data-ui-style='classic'] :is(.ui-table, table:has(> thead .ui-sort-th)) > thead {
+  background-color: transparent;
+}
+
+/* Modern: the header is a quiet sentence-case line, rows split by faint
+   rules inside the block. */
+html[data-ui-style='modern'] :is(.ui-table, table:has(> thead .ui-sort-th)) > thead {
+  background-color: transparent;
+}
+html[data-ui-style='modern'] :is(.ui-sort-th, .ui-th, .ui-th > button) {
+  text-transform: none;
+  letter-spacing: normal;
+}
+html[data-ui-style='modern'] :is(.ui-table, .ui-table > tbody) {
+  border-color: var(--ui-rule-soft);
+}
+html[data-ui-style='modern'] :is(.ui-table, .ui-table > tbody) > :not(:last-child) {
+  border-color: var(--ui-rule-soft);
+}
+
+/* ===================================================================== */
+/* Segmented controls                                                     */
+/* ===================================================================== */
+
+/* Classic: the slip's kind switch. Square segments in a ruled frame, the
+   pressed one inked. */
+html[data-ui-style='classic'] .ui-seg {
+  gap: 0;
+  padding: 0;
+  background-color: transparent;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0.125rem;
+}
+html.dark[data-ui-style='classic'] .ui-seg {
+  border-color: var(--color-gray-600);
+}
+html[data-ui-style='classic'] .ui-seg-btn {
+  border-radius: 0;
+  font-weight: 400;
+}
+html[data-ui-style='classic'] .ui-seg-btn + .ui-seg-btn {
+  border-left: 1px solid var(--color-gray-300);
+}
+html.dark[data-ui-style='classic'] .ui-seg-btn + .ui-seg-btn {
+  border-left-color: var(--color-gray-600);
+}
+html[data-ui-style='classic'] .ui-seg-btn.ui-seg-on {
+  font-weight: 600;
+  color: var(--color-gray-50);
+  background-color: var(--color-gray-900);
+  box-shadow: none;
+}
+html.dark[data-ui-style='classic'] .ui-seg-btn.ui-seg-on {
+  color: var(--color-gray-900);
+  background-color: var(--color-gray-100);
+}
+
+/* Modern: separate pills, the pressed one ink. White on the page, a grey
+   step inside a block, so a pill never vanishes into its ground. */
+html[data-ui-style='modern'] .ui-seg {
+  gap: 0.375rem;
+  padding: 0;
+  background-color: transparent;
+}
+html[data-ui-style='modern'] .ui-seg-btn {
+  padding: 0.4375rem 0.9375rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  background-color: var(--color-white);
+  box-shadow: none;
+}
+html[data-ui-style='modern'] :is(.ui-card, .ui-dialog) .ui-seg-btn {
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-seg-btn {
+  color: var(--color-gray-300);
+  background-color: var(--color-gray-800);
+}
+html.dark[data-ui-style='modern'] :is(.ui-card, .ui-dialog) .ui-seg-btn {
+  background-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-seg-btn:not(.ui-seg-on):hover {
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-seg-btn:not(.ui-seg-on):hover {
+  color: var(--color-gray-50);
+}
+html[data-ui-style='modern'] .ui-seg-btn.ui-seg-on,
+html[data-ui-style='modern'] :is(.ui-card, .ui-dialog) .ui-seg-btn.ui-seg-on {
+  font-weight: 600;
+  color: var(--color-gray-50);
+  background-color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-seg-btn.ui-seg-on,
+html.dark[data-ui-style='modern'] :is(.ui-card, .ui-dialog) .ui-seg-btn.ui-seg-on {
+  color: var(--color-gray-900);
+  background-color: var(--color-gray-100);
+}
+
+/* ===================================================================== */
+/* Tabs                                                                   */
+/* ===================================================================== */
+
+/* Classic: small capitals on a ruled line; the open tab underlined in the
+   accent, as the menu marks its section. */
+html[data-ui-style='classic'] .ui-tabs {
+  gap: 0.25rem;
+  border-bottom-color: var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-tab {
+  border-radius: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+}
+html[data-ui-style='classic'] .ui-tab[aria-selected='true'] {
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-tab[aria-selected='true'] {
+  color: var(--color-gray-100);
+}
+
+/* Modern: the tabs are one segmented pill, like the main menu. */
+html[data-ui-style='modern'] .ui-tabs {
+  gap: 2px;
+  padding: 4px;
+  border-bottom-width: 0;
+  border-radius: 1.375rem;
+  background-color: var(--color-gray-200);
+}
+/* A row that scrolls hugs its tabs; one that wraps keeps the width. */
+html[data-ui-style='modern'] .ui-tabs:not(.flex-wrap) {
+  width: max-content;
+}
+html.dark[data-ui-style='modern'] .ui-tabs {
+  background-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-tab {
+  margin-bottom: 0;
+  padding: 0.5rem 1rem;
+  border-bottom-width: 0;
+  border-radius: 9999px;
+  color: var(--color-gray-600);
+}
+html.dark[data-ui-style='modern'] .ui-tab {
+  color: var(--color-gray-300);
+}
+html[data-ui-style='modern'] .ui-tab[aria-selected='true'] {
+  font-weight: 600;
+  color: var(--color-gray-900);
+  background-color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-tab[aria-selected='true'] {
+  color: var(--color-gray-50);
+  background-color: var(--color-gray-900);
+}
+
+/* ===================================================================== */
+/* Filter panel header                                                    */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-filter-head .ui-filter-icon {
+  display: none;
+}
+html[data-ui-style='classic'] .ui-filter-head .ui-filter-title {
+  font-size: 0.75rem;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-filter-head .ui-filter-title {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-filter-head .ui-filter-toggle {
+  font-weight: 400;
+}
+html[data-ui-style='modern'] .ui-filter-head .ui-filter-title {
+  font-family: var(--ui-font-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+html[data-ui-style='modern'] .ui-filter-head .ui-filter-toggle {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  color: var(--color-gray-900);
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-filter-head .ui-filter-toggle {
+  color: var(--color-gray-100);
+  background-color: var(--color-gray-700);
+}
+
+/* ===================================================================== */
+/* Empty states                                                           */
+/* Classic has its own variant (EmptyState.tsx); Modern re-skins Standard. */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-empty-classic .ui-empty-title {
+  font-family: var(--ui-font-display);
+  font-weight: 500;
+  line-height: 1.15;
+}
+html[data-ui-style='modern'] .ui-empty .ui-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='modern'] .ui-empty .ui-empty-icon {
+  background-color: var(--color-gray-700);
+  color: var(--color-gray-300);
+}
+html[data-ui-style='modern'] .ui-empty .ui-empty-icon > svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+html[data-ui-style='modern'] .ui-empty .ui-empty-title {
+  margin-top: 0.875rem;
+  font-family: var(--ui-font-display);
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+html[data-ui-style='modern'] .ui-empty .ui-empty-desc {
+  margin-top: 0.375rem;
+}
+
+/* ===================================================================== */
+/* Badges and status marks                                                */
+/* ===================================================================== */
+
+/* Classic: marks in place of pills. No fill; small capitals in the
+   variant's ink, a square mark before a coloured one. */
+html[data-ui-style='classic'] .ui-badge {
+  padding-inline: 0;
+  background-color: transparent;
+  border-radius: 0;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+html[data-ui-style='classic'] .ui-badge:not([class*='bg-gray-'])::before {
+  content: '';
+  flex: none;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  background-color: currentColor;
+}
+
+/* Modern: a heavier pill. */
+html[data-ui-style='modern'] .ui-badge {
+  padding-block: 0.1875rem;
+  padding-inline: 0.625rem;
+  font-weight: 600;
+}
+
+/* ===================================================================== */
+/* Meters (BudgetProgressBar, and any bar carrying the markers)           */
+/* ===================================================================== */
+
+/* Classic: a ruled gauge. An outlined bar ticked at the quarters, filled in
+   ink; only what passes the budget takes the loss colour. Today (the pace)
+   is a brass mark standing over it. */
+html[data-ui-style='classic'] .ui-meter {
+  height: 0.625rem;
+  overflow: visible;
+  border: 1px solid var(--color-gray-400);
+  border-radius: 0;
+  background-color: transparent;
+  background-image: linear-gradient(90deg, var(--color-gray-300) 1px, transparent 1px);
+  background-size: 25% 100%;
+  background-position: -1px 0;
+}
+html.dark[data-ui-style='classic'] .ui-meter {
+  border-color: var(--color-gray-500);
+  background-image: linear-gradient(90deg, var(--color-gray-700) 1px, transparent 1px);
+}
+html[data-ui-style='classic'] .ui-meter .ui-meter-fill {
+  border-radius: 0;
+  background-color: var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-meter .ui-meter-fill[data-level='over'] {
+  background-color: var(--color-red-600);
+}
+html.dark[data-ui-style='classic'] .ui-meter .ui-meter-fill[data-level='over'] {
+  background-color: var(--color-red-400);
+}
+html[data-ui-style='classic'] .ui-meter .ui-meter-pace {
+  top: -0.25rem;
+  height: calc(100% + 0.5rem);
+  width: 2px;
+  margin-left: -1px;
+  background-color: var(--color-blue-600);
+}
+html.dark[data-ui-style='classic'] .ui-meter .ui-meter-pace {
+  background-color: var(--color-blue-400);
+}
+/* The mark's head, a small triangle standing on the bar. */
+html[data-ui-style='classic'] .ui-meter .ui-meter-pace::before {
+  content: '';
+  position: absolute;
+  top: -0.3125rem;
+  left: 50%;
+  transform: translateX(-50%);
+  border-inline: 0.25rem solid transparent;
+  border-top: 0.3125rem solid var(--color-blue-600);
+}
+html.dark[data-ui-style='classic'] .ui-meter .ui-meter-pace::before {
+  border-top-color: var(--color-blue-400);
+}
+
+/* Modern: a fat pill, filled in ink by day and the accent by night; the
+   warning levels keep their colours. */
+html[data-ui-style='modern'] .ui-meter {
+  height: 0.875rem;
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-meter {
+  background-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-meter .ui-meter-fill[data-level='ok'] {
+  background-color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-meter .ui-meter-fill[data-level='ok'] {
+  background-color: var(--color-blue-400);
+}
+html[data-ui-style='modern'] .ui-meter .ui-meter-pace {
+  width: 3px;
+  margin-left: -1px;
+  border-radius: 9999px;
+  background-color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-meter .ui-meter-pace {
+  background-color: var(--color-gray-900);
+}
+
+/* ===================================================================== */
+/* Charts: grid, tooltip, legend                                          */
+/* ===================================================================== */
+
+/* Classic: the value lines are drawn rules, not dashes. */
+html[data-ui-style='classic'] .recharts-cartesian-grid line {
+  stroke-dasharray: none;
+}
+html[data-ui-style='classic'] .recharts-cartesian-axis-tick-value {
+  letter-spacing: 0.02em;
+}
+html[data-ui-style='classic'] .ui-chart-tooltip {
+  background-color: var(--color-white);
+  backdrop-filter: none;
+  border-color: var(--ui-rule-ink);
+  border-radius: 0.125rem;
+  box-shadow:
+    0 1px 0 var(--ui-rule-ink),
+    0 12px 28px -16px color-mix(in oklab, var(--ui-rule-ink) 45%, transparent);
+}
+html.dark[data-ui-style='classic'] .ui-chart-tooltip {
+  background-color: var(--color-gray-800);
+}
+html[data-ui-style='classic'] .ui-legend-swatch {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 0;
+}
+html[data-ui-style='classic'] .ui-legend:not(.flex) > li {
+  border-top: 1px solid var(--ui-rule-hair);
+}
+
+/* Modern: quiet solid value lines; a rounded white tooltip without an edge. */
+html[data-ui-style='modern'] .recharts-cartesian-grid line {
+  stroke-dasharray: none;
+  stroke-opacity: 0.7;
+}
+html[data-ui-style='modern'] .ui-chart-tooltip {
+  border-color: transparent;
+  border-radius: 1rem;
+  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.25);
+}
+html[data-ui-style='modern'] .ui-legend-swatch {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+/* ===================================================================== */
+/* Key/value lists                                                        */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-kv > .ui-kv-row {
+  margin: 0;
+  padding-block: 0.5rem;
+  border-top: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-kv .ui-kv-label {
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-kv .ui-kv-label {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='modern'] .ui-kv > .ui-kv-row {
+  margin: 0;
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--ui-rule-soft);
+}
+html[data-ui-style='modern'] .ui-kv > .ui-kv-row:first-child {
+  border-top-width: 0;
+}
+html[data-ui-style='modern'] .ui-kv .ui-kv-value {
+  font-weight: 600;
+}
+
+/* ===================================================================== */
+/* Detail-page identity headers                                           */
+/* ===================================================================== */
+
+/* Classic: the back link is the eyebrow, the name is set in the serif, and
+   the header is ruled off in ink like a page header. */
+html[data-ui-style='classic'] .ui-detail-header {
+  margin-bottom: 1.75rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-detail-back {
+  font-size: 0.6875rem;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+}
+html[data-ui-style='classic'] .ui-detail-title {
+  font-size: 1.875rem;
+  line-height: 1.15;
+  font-weight: 500;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='classic'] .ui-detail-title {
+    font-size: 2.25rem;
+  }
+}
+html[data-ui-style='classic'] .ui-detail-figure {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+/* Modern: a big heavy name, a big tight figure. */
+html[data-ui-style='modern'] .ui-detail-header {
+  margin-bottom: 1.5rem;
+}
+html[data-ui-style='modern'] .ui-detail-title {
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-detail-title {
+    font-size: 2.5rem;
+  }
+}
+html[data-ui-style='modern'] .ui-detail-figure {
+  font-family: var(--ui-font-display);
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* ===================================================================== */
+/* Dialog chrome (the entry slip and Quick Add have their own, entry.css) */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-dialog:not(:has(.ui-entry, .ui-qa)) {
+  border: 1px solid var(--ui-rule-ink);
+  box-shadow:
+    0 1px 0 var(--ui-rule-ink),
+    0 18px 40px -18px color-mix(in oklab, var(--ui-rule-ink) 45%, transparent);
+}
+html[data-ui-style='classic'] .ui-dialog:not(:has(.ui-entry, .ui-qa)) > [data-modal-heading] {
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-dialog:not(:has(.ui-entry, .ui-qa)) > [data-modal-heading] > h2 {
+  font-size: 1.625rem;
+  line-height: 1.2;
+  font-weight: 500;
+}
+html[data-ui-style='modern'] .ui-dialog:not(:has(.ui-entry, .ui-qa)) > [data-modal-heading] > h2 {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}

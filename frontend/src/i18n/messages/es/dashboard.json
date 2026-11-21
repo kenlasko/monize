@@ -36,7 +36,19 @@
     "showSet": "Mostrar {name}",
     "cycleControls": "Elegir qué muestra el panel principal",
     "cagrUnavailable": "La CAGR necesita al menos un año de historial de inversión en estas cuentas, con más aportado que retirado.",
-    "intradayUnavailable": "Algunas de estas posiciones no tienen precios intradía, así que no se puede dibujar un gráfico de un día. Elige un periodo más largo en Personalizar."
+    "intradayUnavailable": "Algunas de estas posiciones no tienen precios intradía, así que no se puede dibujar un gráfico de un día. Elige un periodo más largo en Personalizar.",
+    "assetsLabel": "Activos",
+    "liabilitiesLabel": "Pasivos",
+    "investedLabel": "Invertido",
+    "high": "Máx. {value}",
+    "low": "Mín. {value}",
+    "historyLabel": "Patrimonio neto por mes: {high} en el punto más alto, {low} en el más bajo, {latest} ahora",
+    "nextUp": {
+      "heading": "{when, select, overdue {Vencido} today {A continuación, hoy} tomorrow {A continuación, mañana} other {A continuación, {date}}}",
+      "meta": "{manual, select, true {Se paga a mano} other {Se registra automáticamente}}",
+      "metaWithPayee": "{payee} · {manual, select, true {se paga a mano} other {se registra automáticamente}}",
+      "record": "{kind, select, deposit {Registrar ingreso} transfer {Registrar transferencia} reminder {Registrarlo} other {Registrar pago}}"
+    }
   },
   "trivia": {
     "title": "Datos curiosos",
@@ -355,7 +367,9 @@
     "due": "Vence: {ordinal}",
     "dueTooltip": "El día de cada mes en que vence el pago de tu tarjeta de crédito",
     "settlement": "Liquidación: {ordinal}",
-    "settlementTooltip": "El último día del ciclo de facturación. Las transacciones registradas ese día o antes aparecen en el estado de cuenta actual."
+    "settlementTooltip": "El último día del ciclo de facturación. Las transacciones registradas ese día o antes aparecen en el estado de cuenta actual.",
+    "dueShort": "vence {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Facturas y depósitos próximos",
@@ -386,7 +400,11 @@
     "previousMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
     "emptyAll": "No hay facturas, ingresos ni transferencias activas programadas.",
-    "estimated": "Estimado"
+    "estimated": "Estimado",
+    "stripLabel": "Las próximas dos semanas, día a día: los ingresos suben por encima de la línea y las facturas caen por debajo",
+    "metaPayee": "· {payee}",
+    "metaManual": "· se paga a mano",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Pronóstico de flujo de caja",

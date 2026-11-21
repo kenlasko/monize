@@ -13,7 +13,7 @@ import {
   startOfMonth,
   subMonths,
 } from 'date-fns';
-import { CalendarDaysIcon, ExclamationTriangleIcon, ListBulletIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
@@ -24,7 +24,6 @@ import {
   occurrenceKind,
   type ScheduledKind,
 } from '@/lib/scheduled-kind';
-import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import {
   nextOccurrenceDueDate,
   nextOccurrenceEffectiveAmount,
@@ -40,8 +39,20 @@ import { WidgetHeading } from './widget-meta';
 import { WidgetSegmentedControl } from './WidgetSegmentedControl';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { UPCOMING_BILLS_DEFAULT, UpcomingBillsConfig } from './widget-config';
+import { buildUpcomingStrip, upcomingOccurrences } from './upcoming-occurrences';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
+import type { UpcomingBillRow, UpcomingBillsListProps } from './variants/upcoming-bills-view';
+import { UpcomingBillsListStandard } from './variants/UpcomingBillsListStandard';
+import { UpcomingBillsListClassic } from './variants/UpcomingBillsListClassic';
+import { UpcomingBillsListModern } from './variants/UpcomingBillsListModern';
 
 const WIDGET_ID = 'upcoming-bills';
+
+const UPCOMING_LIST_VARIANTS: StyleVariants<UpcomingBillsListProps> = {
+  standard: UpcomingBillsListStandard,
+  classic: UpcomingBillsListClassic,
+  modern: UpcomingBillsListModern,
+};
 
 const LIABILITY_TYPES = new Set(['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'LINE_OF_CREDIT']);
 
@@ -54,6 +65,7 @@ interface UpcomingBillsProps {
 
 export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxItems }: UpcomingBillsProps) {
   const t = useTranslations('dashboard');
+  const uiStyle = useUiStyle();
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
@@ -72,25 +84,10 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
   // it is every active schedule's next occurrence, however far off.
   const today = useMemo(() => startOfDay(new Date()), []);
   const showAll = config.scope === 'all';
-  const upcomingItems = useMemo(() => scheduledTransactions
-    .filter((st) => {
-      if (!st.isActive) return false;
-      if (showAll) return true;
-      const dueDate = parseLocalDate(nextOccurrenceDueDate(st));
-      const daysUntil = differenceInDays(dueDate, today);
-      // Include overdue items (daysUntil < 0) and items within their reminder window
-      return daysUntil < 0 || (daysUntil >= 0 && daysUntil <= (st.reminderDaysBefore ?? 3));
-    })
-    .sort((a, b) => {
-      const dateDiff =
-        parseLocalDate(nextOccurrenceDueDate(a)).getTime() -
-        parseLocalDate(nextOccurrenceDueDate(b)).getTime();
-      if (dateDiff !== 0) return dateDiff;
-      // On the same day, show manual items first so they're visible before truncation
-      if (!a.autoPost && b.autoPost) return -1;
-      if (a.autoPost && !b.autoPost) return 1;
-      return 0;
-    }), [scheduledTransactions, today, showAll]);
+  const upcomingItems = useMemo(
+    () => upcomingOccurrences(scheduledTransactions, today, showAll),
+    [scheduledTransactions, today, showAll],
+  );
 
   // Build a map of account ID -> Account for quick lookups
   const accountMap = useMemo(() => {
@@ -166,6 +163,10 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
     }
     return result;
   }, [upcomingItems, accountMap]);
+
+  // The two weeks from today as the Classic and Modern styles draw them: the
+  // same scoped occurrences as the list, placed on their own due dates.
+  const strip = useMemo(() => buildUpcomingStrip(upcomingItems, today), [upcomingItems, today]);
 
   const isOverdue = (dateStr: string) => {
     const date = parseLocalDate(dateStr);
@@ -305,7 +306,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
       <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         {/* The controls stay on screen: a scope that emptied the list is the
             most likely reason it is empty, and the way back out of it. */}
-        <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+        <div className="ui-widget-head flex flex-wrap items-start justify-between gap-2 mb-4">
           <WidgetHeading id="upcoming-bills" href="/bills">
             {sectionTitle}
           </WidgetHeading>
@@ -326,10 +327,31 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
   // exchange rates at all.
   const visibleItems = upcomingItems.slice(0, maxItems);
   const hiddenCount = upcomingItems.length - visibleItems.length;
+  const visibleRows: UpcomingBillRow[] = visibleItems.map((item) => {
+    const dueDate = nextOccurrenceDueDate(item);
+    const amountDisplay = getAmountDisplay(item);
+    const type = getItemType(item);
+    return {
+      id: item.id,
+      name: item.name,
+      payee: item.payeeName || item.payee?.name || null,
+      dueDate,
+      overdue: isOverdue(dueDate),
+      dueLabel: getDueDateLabel(dueDate),
+      dueClass: getDueDateColour(dueDate),
+      kind: type,
+      typeBadge: getTypeBadge(type),
+      amountText: amountDisplay.text,
+      amountClass: amountDisplay.className,
+      manual: !item.autoPost,
+      estimated: occurrenceFollowsEstimate(item, item.nextOverride),
+      overdraws: negativeBalanceItems.has(item.id),
+    };
+  });
 
   return (
     <div className={`${CARD_CLASS} p-3 sm:p-6`}>
-      <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+      <div className="ui-widget-head flex flex-wrap items-start justify-between gap-2 mb-4">
         <WidgetHeading id="upcoming-bills" href="/bills">
           {sectionTitle}
         </WidgetHeading>
@@ -366,100 +388,13 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
           />
         </div>
       ) : (
-      <>
-      <div className="space-y-2 sm:space-y-3">
-        {visibleItems.map((item) => {
-          const amountDisplay = getAmountDisplay(item);
-          const type = getItemType(item);
-          return (
-            <div
-              key={item.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => goToPost(item.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  goToPost(item.id);
-                }
-              }}
-              title={t('upcomingBills.postTransaction')}
-              className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors hover:border-blue-400 hover:bg-gray-50 dark:hover:border-blue-500 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isOverdue(nextOccurrenceDueDate(item))
-                  ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10'
-                  : 'border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span
-                  className={`px-2 py-1 text-xs font-medium rounded ${getDueDateColour(
-                    nextOccurrenceDueDate(item)
-                  )}`}
-                >
-                  {getDueDateLabel(nextOccurrenceDueDate(item))}
-                </span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {item.name}
-                    </span>
-                    <span className="hidden sm:inline">{getTypeBadge(type)}</span>
-                    {!item.autoPost && (
-                      <span className="hidden sm:inline px-1.5 py-0.5 bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 text-xs rounded">
-                        {t('upcomingBills.manual')}
-                      </span>
-                    )}
-                  </div>
-                  {(item.payeeName || item.payee?.name) && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {item.payeeName || item.payee?.name}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1 ml-2">
-                {negativeBalanceItems.has(item.id) && (
-                  // Named for a screen reader; the legend under the list says
-                  // what the mark means, where a phone can read it too.
-                  <ExclamationTriangleIcon
-                    role="img"
-                    aria-label={t('upcomingBills.negativeBalanceWarning')}
-                    aria-hidden={false}
-                    className="w-4 h-4 flex-shrink-0 text-amber-500 dark:text-amber-400"
-                  />
-                )}
-                <div className={`font-semibold ${amountDisplay.className} whitespace-nowrap text-right`}>
-                  {amountDisplay.text ?? <UnknownAmount />}
-                  {/* The history estimate, said as one (issue #2096). */}
-                  {occurrenceFollowsEstimate(item, item.nextOverride) && (
-                    <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                      {t('upcomingBills.estimated')}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {visibleItems.some((item) => negativeBalanceItems.has(item.id)) && (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-          <ExclamationTriangleIcon
-            aria-hidden="true"
-            className="w-4 h-4 flex-shrink-0 text-amber-500 dark:text-amber-400"
-          />
-          {t('upcomingBills.negativeBalanceLegend')}
-        </p>
-      )}
-      {hiddenCount > 0 && (
-        <button
-          onClick={() => router.push('/bills')}
-          className="mt-2 w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-300"
-        >
-          {t('upcomingBills.moreItems', { count: hiddenCount })}
-        </button>
-      )}
-      </>
+        renderForStyle(uiStyle, UPCOMING_LIST_VARIANTS, {
+          rows: visibleRows,
+          hiddenCount,
+          strip,
+          onOpen: goToPost,
+          onShowAll: () => router.push('/bills'),
+        })
       )}
     </div>
   );

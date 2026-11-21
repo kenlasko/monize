@@ -35,7 +35,8 @@
       "createFailed": "Không thể tạo thẻ",
       "updateFailed": "Không thể cập nhật thẻ",
       "deleteFailed": "Không thể xóa thẻ"
-    }
+    },
+    "eyebrow": "Nhãn"
   },
   "list": {
     "empty": {

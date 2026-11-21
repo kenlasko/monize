@@ -125,7 +125,9 @@
       "attachments": "Tệp đính kèm",
       "status": "Trạng thái",
       "statusHelp": "Chưa điều hoà, Đã xong hoặc Đã điều hoà là các bước để khớp với sao kê ngân hàng. Hủy bỏ huỷ một giao dịch nhưng vẫn giữ lại bản ghi của nó; giao dịch không còn làm thay đổi số dư tài khoản.",
-      "actions": "Hành động"
+      "actions": "Hành động",
+      "payment": "Thanh toán",
+      "deposit": "Tiền vào"
     },
     "sort": {
       "balanceHiddenHint": "Sắp xếp theo ngày để xem số dư luỹ kế",
@@ -191,7 +193,20 @@
       "editButton": "Chỉnh sửa",
       "deleteButton": "Xóa"
     },
-    "itemNamePlural": "giao tác"
+    "itemNamePlural": "giao tác",
+    "classic": {
+      "entriesShown": "{count, plural, other {Đang hiển thị # mục}}",
+      "legendCleared": "đã xong",
+      "legendReconciled": "đã điều hoà",
+      "legendRule": "Đường kẻ dưới mỗi số dư so sánh số dư đó với số dư cao nhất trên trang này.",
+      "markCleared": "x",
+      "markReconciled": "H"
+    },
+    "modern": {
+      "inspectorLabel": "Giao dịch đã chọn",
+      "balanceAfter": "Số dư sau đó",
+      "yesterday": "Hôm qua"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Không thể tải các bảo hành của giao tác này.",
       "empty": "Chưa có bảo hành nào"
     },
-    "conversionLockedNote": "Giao dịch chuyển khoản này thuộc một giao dịch tách hoặc tài khoản của chủ sở hữu khác, nên ở đây chỉ có thể giữ là chuyển khoản. Hãy thay đổi từ phần tách hoặc xóa và tạo mục bạn muốn."
+    "conversionLockedNote": "Giao dịch chuyển khoản này thuộc một giao dịch tách hoặc tài khoản của chủ sở hữu khác, nên ở đây chỉ có thể giữ là chuyển khoản. Hãy thay đổi từ phần tách hoặc xóa và tạo mục bạn muốn.",
+    "modeGroupLabel": "Loại giao dịch",
+    "entryHint": "Tab chuyển qua các trường. Esc để đóng."
   },
   "splitEditor": {
     "header": "Chi tiết phần chia",
@@ -772,6 +789,13 @@
       "foreignCurrency": "Số tiền thuộc loại tiền tệ khác với tài khoản. Hãy dùng Biểu mẫu đầy đủ để nhập.",
       "crossCurrencyTransfer": "Hai tài khoản dùng tiền tệ khác nhau. Hãy dùng Biểu mẫu đầy đủ cho lần chuyển khoản này.",
       "unknown": "Không thể lưu mục này tại đây. Hãy dùng Biểu mẫu đầy đủ để hoàn tất."
+    },
+    "assumedNote": "Trường nét đứt không do bạn nhập. Trường này đã được điền sẵn, vì vậy hãy kiểm tra lại.",
+    "hints": {
+      "enter": "Enter để lưu",
+      "shiftEnter": "Shift Enter để lưu và bắt đầu mục khác",
+      "tab": "Tab chuyển qua các trường",
+      "esc": "Esc để đóng"
     }
   }
 }

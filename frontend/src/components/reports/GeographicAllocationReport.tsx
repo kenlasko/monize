@@ -45,6 +45,7 @@ import { useTranslations } from 'next-intl';
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('GeographicAllocationReport');
 
@@ -524,7 +525,7 @@ export function GeographicAllocationReport() {
   if (isLoading && response === null) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -536,7 +537,7 @@ export function GeographicAllocationReport() {
 
   if (holdings.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+      <div className={`${CARD_CLASS} p-8 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('geographicAllocation.empty')}
         </p>
@@ -547,7 +548,7 @@ export function GeographicAllocationReport() {
   return (
     <div className="space-y-6">
       {/* Filters & View Toggle */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center justify-between">
           {/* Full width on a phone, the toolbar's fixed width from `sm` up. */}
           <div className="flex w-full flex-wrap gap-3 items-center sm:w-auto">
@@ -604,7 +605,7 @@ export function GeographicAllocationReport() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('geographicAllocation.totalPortfolio')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {/* An unpriced or unconvertible holding is left out of this total, so
@@ -618,19 +619,19 @@ export function GeographicAllocationReport() {
             </PartialTotal>
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('geographicAllocation.regions')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {regionData.length}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('geographicAllocation.exchanges')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {exchangeData.length}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('geographicAllocation.topRegion')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {regionData[0]?.region || '-'}
@@ -643,7 +644,7 @@ export function GeographicAllocationReport() {
         countryError ? (
           <ReportError onRetry={reloadCountry} />
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+          <div className={`${CARD_CLASS} p-6`}>
             <div className="space-y-4">
               <Skeleton className="h-8 w-1/3" />
               <Skeleton className="h-64 w-full" />
@@ -651,7 +652,7 @@ export function GeographicAllocationReport() {
           </div>
         )
       ) : viewType === 'region' ? (
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('geographicAllocation.regionalAllocation')}
           </h3>
@@ -679,7 +680,7 @@ export function GeographicAllocationReport() {
           </div>
         </div>
       ) : viewType === 'exchange' ? (
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('geographicAllocation.exchangeAllocation')}
           </h3>
@@ -712,7 +713,7 @@ export function GeographicAllocationReport() {
           </div>
         </div>
       ) : (
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('geographicAllocation.countryAllocation')}
           </h3>
@@ -762,7 +763,7 @@ export function GeographicAllocationReport() {
           (the WCAG 1.3.2 tension mechanism A carries); the `CellLabel` captions
           limit the cost, since every value names its own column. */}
       {countryUnavailable ? null : viewType === 'country' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-4 pt-3 empty:hidden">
             <WeightingPartialNote result={countryResp} />
           </div>
@@ -837,7 +838,7 @@ export function GeographicAllocationReport() {
           </div>
         </div>
       ) : viewType === 'region' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="overflow-x-auto">
             <table role="table" className="block min-w-full divide-y divide-gray-200 dark:divide-gray-700 sm:table">
               <thead role="rowgroup" className="block bg-gray-50 dark:bg-gray-900/50 sm:table-header-group">
@@ -916,7 +917,7 @@ export function GeographicAllocationReport() {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="overflow-x-auto">
             <table role="table" className="block min-w-full divide-y divide-gray-200 dark:divide-gray-700 sm:table">
               <thead role="rowgroup" className="block bg-gray-50 dark:bg-gray-900/50 sm:table-header-group">

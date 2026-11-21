@@ -62,7 +62,7 @@ function BalanceCard({
         <div className="flex items-center gap-2">
           {icon && <span className="flex shrink-0 items-center">{icon}</span>}
           <span className="min-w-0 truncate font-semibold text-gray-900 dark:text-gray-100">{accountName}</span>
-          <span className="ml-auto shrink-0 text-xs text-gray-500 dark:text-gray-400">
+          <span className="ui-qa-balance-label ml-auto shrink-0 text-xs text-gray-500 dark:text-gray-400">
             {t(after !== null ? 'balance.afterLabel' : 'balance.nowLabel')}
           </span>
         </div>

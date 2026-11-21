@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "科目",
+    "eyebrow": "帳戶對帳單",
     "subtitle": "管理您的銀行科目、信用卡及投資",
     "newAccount": "+ 新增科目",
     "newAccountModal": "新增科目",

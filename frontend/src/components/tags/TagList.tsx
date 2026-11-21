@@ -82,7 +82,7 @@ const TagRow = memo(function TagRow({
 
   return (
     <tr
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
+      className={`ui-list-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'}`}
       {...getRowHandlers(tag)}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
@@ -237,7 +237,7 @@ export function TagList({
       {/* Density toggle */}
       <DensityToggleBar view="tags" />
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="ui-table ui-list-ledger ui-list-tags min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               <SortableTh {...sortProps} field="name" className={headerPadding}>

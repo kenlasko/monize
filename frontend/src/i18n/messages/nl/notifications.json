@@ -50,7 +50,8 @@
     "retry": "Opnieuw proberen",
     "nextFire": "Volgende herinnering: {date}",
     "openTarget": "Gerelateerde pagina openen",
-    "delegateUnavailable": "Schakel terug naar je eigen account om herinneringen te beheren."
+    "delegateUnavailable": "Schakel terug naar je eigen account om herinneringen te beheren.",
+    "eyebrow": "Meldingen"
   },
   "billDue": {
     "titleOverdue": "{payee} achterstallig",

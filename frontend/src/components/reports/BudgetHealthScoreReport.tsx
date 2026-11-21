@@ -18,6 +18,7 @@ import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import type { HealthScoreCategoryDetail } from '@/types/budget';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { CARD_CLASS } from '@/components/ui/Card';
 function getImpactColor(impact: number): string {
   if (impact > 0) return 'text-green-600 dark:text-green-400';
   if (impact < 0) return 'text-red-600 dark:text-red-400';
@@ -331,7 +332,7 @@ export function BudgetHealthScoreReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <div className="h-40 w-40 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto" />
@@ -343,7 +344,7 @@ export function BudgetHealthScoreReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('budgetHealthScore.noBudgets')}
         </p>
@@ -354,7 +355,7 @@ export function BudgetHealthScoreReport() {
   return (
     <div className="space-y-6">
       {/* Budget selector */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <select
             value={selectedBudgetId}
@@ -378,7 +379,7 @@ export function BudgetHealthScoreReport() {
             <BudgetHealthGauge score={healthScore.score} />
 
             {/* Score Breakdown */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+            <div className={`${CARD_CLASS} p-4 sm:p-6`}>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 {t('budgetHealthScore.scoreBreakdown')}
               </h2>
@@ -422,7 +423,7 @@ export function BudgetHealthScoreReport() {
           </div>
 
           {/* Per-Category Impact */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+          <div className={`${CARD_CLASS} p-4 sm:p-6`}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('budgetHealthScore.categoryImpact')}
             </h2>

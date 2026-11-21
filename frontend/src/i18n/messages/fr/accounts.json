@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Comptes",
+    "eyebrow": "Relevé des comptes",
     "subtitle": "Gérez vos comptes bancaires, cartes de crédit et investissements",
     "newAccount": "+ Nouveau compte",
     "newAccountModal": "Nouveau compte",

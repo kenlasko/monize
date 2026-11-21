@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "Ta przeglądarka nie może odbierać udostępnionych plików",
   "unsupportedBrowserMessage": "Udostępnianie do zainstalowanej aplikacji nie jest tutaj dostępne. Nadal możesz dodawać pliki z wnętrza Monize.",
   "goToTransactions": "Dodaj w Transakcjach",
-  "goToImport": "Przejdź do importu"
+  "goToImport": "Przejdź do importu",
+  "eyebrow": "Plik przychodzący"
 }

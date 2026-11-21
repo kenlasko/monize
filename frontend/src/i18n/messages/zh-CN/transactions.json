@@ -125,7 +125,9 @@
       "attachments": "附件",
       "status": "状态",
       "statusHelp": "未对账、已结算或已对账是与银行对账单匹配的几个阶段。作废会取消一笔交易，但保留其记录；它不再影响账户余额。",
-      "actions": "操作"
+      "actions": "操作",
+      "payment": "付款",
+      "deposit": "存款"
     },
     "sort": {
       "balanceHiddenHint": "按日期排序即可查看余额",
@@ -191,7 +193,20 @@
       "editButton": "编辑",
       "deleteButton": "删除"
     },
-    "itemNamePlural": "笔交易"
+    "itemNamePlural": "笔交易",
+    "classic": {
+      "entriesShown": "{count, plural, other {显示 # 条记录}}",
+      "legendCleared": "已结算",
+      "legendReconciled": "已对账",
+      "legendRule": "每个余额下方的线条表示该余额与本页最高余额的比较。",
+      "markCleared": "结",
+      "markReconciled": "对"
+    },
+    "modern": {
+      "inspectorLabel": "所选交易",
+      "balanceAfter": "交易后余额",
+      "yesterday": "昨天"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "无法加载此交易的保修。",
       "empty": "还没有保修"
     },
-    "conversionLockedNote": "此转账属于拆分交易或其他所有者的账户，因此在此只能保留为转账。请从拆分中更改，或删除后新建所需的条目。"
+    "conversionLockedNote": "此转账属于拆分交易或其他所有者的账户，因此在此只能保留为转账。请从拆分中更改，或删除后新建所需的条目。",
+    "modeGroupLabel": "交易类型",
+    "entryHint": "按 Tab 在字段间切换，按 Esc 关闭。"
   },
   "splitEditor": {
     "header": "拆分详情",
@@ -772,6 +789,13 @@
       "foreignCurrency": "金额的币种与账户不同。请使用“完整表单”输入。",
       "crossCurrencyTransfer": "两个账户的币种不同。请使用“完整表单”办理此笔转账。",
       "unknown": "此条目无法在此保存。请使用“完整表单”完成。"
+    },
+    "assumedNote": "虚线字段不是您输入的，而是自动填写的，请检查。",
+    "hints": {
+      "enter": "Enter 保存",
+      "shiftEnter": "Shift Enter 保存并继续新增",
+      "tab": "Tab 在字段间切换",
+      "esc": "Esc 关闭"
     }
   }
 }

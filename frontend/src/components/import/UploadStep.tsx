@@ -8,6 +8,7 @@ import { formatAccountType } from '@/lib/account-utils';
 import { HelpLink } from '@/components/help/HelpLink';
 import type { DocsLink } from '@/lib/docs-links';
 import { BinaryImportFormat, MNY_FORMAT } from '@/lib/binary-import-format';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface UploadStepProps {
   preselectedAccount: Account | undefined;
@@ -146,7 +147,7 @@ export function UploadStep({
           </div>
         </div>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('upload.heading')}
         </h2>

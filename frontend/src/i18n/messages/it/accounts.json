@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Conti",
+    "eyebrow": "Estratto dei conti",
     "subtitle": "Gestisci i tuoi conti bancari, carte di credito e investimenti",
     "newAccount": "+ Nuovo conto",
     "newAccountModal": "Nuovo conto",

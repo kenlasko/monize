@@ -86,7 +86,9 @@
       "category": "Aggiunta rapida: {amount} {category}",
       "payeeCategory": "Aggiunta rapida: {amount} {payee}, {category}",
       "transfer": "Aggiunta rapida: {amount} da {from} a {to}"
-    }
+    },
+    "trigger": "Cerca o vai a"
   },
-  "quickAdd": "Aggiunta rapida"
+  "quickAdd": "Aggiunta rapida",
+  "accountButton": "{name}, impostazioni"
 }

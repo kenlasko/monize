@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Accounts",
+    "eyebrow": "Statement of accounts",
     "subtitle": "Manage your bank accounts, credit cards, and investments",
     "newAccount": "+ New Account",
     "newAccountModal": "New Account",

@@ -86,7 +86,9 @@
       "category": "Thêm nhanh: {amount} {category}",
       "payeeCategory": "Thêm nhanh: {amount} {payee}, {category}",
       "transfer": "Thêm nhanh: {amount} từ {from} sang {to}"
-    }
+    },
+    "trigger": "Tìm kiếm hoặc chuyển đến"
   },
-  "quickAdd": "Thêm nhanh"
+  "quickAdd": "Thêm nhanh",
+  "accountButton": "{name}, cài đặt"
 }

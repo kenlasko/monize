@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "Este navegador no puede recibir archivos compartidos",
   "unsupportedBrowserMessage": "Compartir con una aplicación instalada no está disponible aquí. Aún puede añadir archivos desde Monize.",
   "goToTransactions": "Añadir desde Transacciones",
-  "goToImport": "Ir a Importar"
+  "goToImport": "Ir a Importar",
+  "eyebrow": "Archivo entrante"
 }

@@ -1,0 +1,363 @@
+/*
+ * App shell and dashboard area of the Classic and Modern UI styles: the app
+ * header, the dashboard greeting and hero, the widget cards, primary buttons.
+ * Same rules as ui-styles.css (read its header): ramp tokens only, never a
+ * hex; marker classes; unlayered rules only where a primitive's own utility
+ * must yield, always scoped to a marker. Standard sets no attribute, so
+ * nothing here reaches it.
+ *
+ * Markers: `ui-app-header`, `ui-wordmark(-logo)`, `ui-nav(-link)` (AppHeader);
+ * `ui-page-header`, `ui-page-heading`, `ui-page-subtitle` (PageHeader);
+ * `ui-dash-greeting`, `ui-hero-statement`, `ui-invert`, `ui-nextup`,
+ * `ui-hero-pill` (the dashboard hero); `ui-dash-grid`, `ui-widget-slot`,
+ * `ui-widget-head`, `ui-widget-title`, `ui-widget-puck` (widgets);
+ * `ui-display-figure`, `ui-money-quiet` (figures); `ui-btn-primary` (Button).
+ */
+
+/* ===================================================================== */
+/* Shared                                                                 */
+/* ===================================================================== */
+
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-display-figure {
+  font-family: var(--ui-font-display);
+}
+
+/* An amount whose cents are set back, as on a statement. */
+/* Opacity, not a grey, so the cents keep a negative amount's red. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-quiet .ui-money-fraction {
+  opacity: 0.62;
+}
+
+/* Widgets name themselves in type; the domain icon goes. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-widget-puck {
+  display: none;
+}
+
+/* ===================================================================== */
+/* Classic -- the statement                                               */
+/* ===================================================================== */
+
+/* The header sits on the page itself, ruled off by a hairline. */
+html[data-ui-style='classic'] .ui-app-header {
+  background-color: var(--color-gray-50);
+  backdrop-filter: none;
+  border-bottom-color: var(--color-gray-200);
+}
+html.dark[data-ui-style='classic'] .ui-app-header {
+  background-color: var(--color-gray-900);
+  border-bottom-color: var(--color-gray-700);
+}
+
+/* A serif wordmark in ink, without the logo. */
+html[data-ui-style='classic'] .ui-wordmark {
+  font-family: var(--ui-font-display);
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-wordmark {
+  color: var(--color-gray-100);
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-wordmark-logo {
+  display: none;
+}
+
+/* The menu's tabs run the header's full height, so the active one's
+   underline lands on the header's rule. */
+html[data-ui-style='classic'] .ui-nav {
+  align-self: stretch;
+  align-items: stretch;
+  column-gap: 0.25rem;
+}
+html[data-ui-style='classic'] .ui-nav > * {
+  margin-inline: 0;
+  display: flex;
+}
+html[data-ui-style='classic'] .ui-nav .ui-nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding-block: 0;
+  padding-inline: 0.75rem;
+  font-weight: 400;
+  color: var(--color-gray-500);
+  background-color: transparent;
+}
+html.dark[data-ui-style='classic'] .ui-nav .ui-nav-link {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-nav .ui-nav-link:hover {
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-nav .ui-nav-link:hover {
+  color: var(--color-gray-100);
+}
+html[data-ui-style='classic'] .ui-nav .ui-nav-link:is([aria-current='page'], [data-active]) {
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-nav .ui-nav-link:is([aria-current='page'], [data-active]) {
+  color: var(--color-gray-100);
+}
+
+/* The greeting is the statement's date line: small capitals, the date first. */
+html[data-ui-style='classic'] .ui-hero-statement .ui-page-header {
+  margin-bottom: 0;
+}
+html[data-ui-style='classic'] .ui-hero-statement .ui-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.5em;
+}
+html[data-ui-style='classic'] .ui-hero-statement :is(.ui-page-title, .ui-page-subtitle) {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-hero-statement :is(.ui-page-title, .ui-page-subtitle) {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-hero-statement .ui-page-subtitle {
+  order: -1;
+}
+html[data-ui-style='classic'] .ui-hero-statement .ui-page-subtitle::after {
+  content: '\00B7';
+  margin-inline-start: 0.5em;
+}
+
+/* Widgets are unboxed sections: a serif title over a two-point ink rule. */
+html[data-ui-style='classic'] .ui-dash-grid {
+  column-gap: 3.5rem;
+  row-gap: 2.5rem;
+}
+html[data-ui-style='classic'] .ui-widget-slot > .ui-card {
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+html[data-ui-style='classic'] .ui-widget-slot .ui-widget-head:not(.ui-widget-head .ui-widget-head) {
+  padding-bottom: 0.625rem;
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-widget-slot .ui-widget-title {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+/* ===================================================================== */
+/* Modern -- colour blocks                                                */
+/* ===================================================================== */
+
+/* The header sits on the page, unruled. */
+html[data-ui-style='modern'] .ui-app-header {
+  background-color: var(--color-gray-50);
+  backdrop-filter: none;
+  border-bottom-color: transparent;
+}
+html.dark[data-ui-style='modern'] .ui-app-header {
+  background-color: var(--color-gray-900);
+}
+
+/* A lowercase, heavy grotesque wordmark in ink. */
+html[data-ui-style='modern'] .ui-wordmark {
+  font-family: var(--ui-font-display);
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: lowercase;
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-wordmark {
+  color: var(--color-gray-50);
+}
+
+/* The menu pill (ui-styles.css) is a step darker than the page, its
+   segments full height, the raised one flat white. */
+html[data-ui-style='modern'] .ui-nav {
+  background-color: var(--color-gray-200);
+}
+html.dark[data-ui-style='modern'] .ui-nav {
+  background-color: var(--color-gray-800);
+}
+html[data-ui-style='modern'] .ui-nav .ui-nav-link {
+  padding-block: 0.625rem;
+  padding-inline: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-500);
+  background-color: transparent;
+}
+html.dark[data-ui-style='modern'] .ui-nav .ui-nav-link {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='modern'] .ui-nav .ui-nav-link:hover {
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-nav .ui-nav-link:hover {
+  color: var(--color-gray-100);
+}
+html[data-ui-style='modern'] .ui-nav .ui-nav-link:is([aria-current='page'], [data-active]) {
+  font-weight: 600;
+  color: var(--color-gray-900);
+  box-shadow: none;
+}
+html.dark[data-ui-style='modern'] .ui-nav .ui-nav-link:is([aria-current='page'], [data-active]) {
+  color: var(--color-gray-50);
+}
+
+/* The greeting runs across the page, the date at its far end. */
+html[data-ui-style='modern'] .ui-dash-greeting .ui-page-header {
+  margin-bottom: 0;
+}
+html[data-ui-style='modern'] .ui-dash-greeting .ui-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+html[data-ui-style='modern'] .ui-dash-greeting .ui-page-title {
+  font-size: 1.75rem;
+  line-height: 1.05;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-dash-greeting .ui-page-title {
+    font-size: 2.5rem;
+  }
+}
+html[data-ui-style='modern'] .ui-dash-greeting .ui-page-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* The inverted block: inside it the gray ramp runs the other way, so
+   whatever draws there with the ordinary light-mode steps (either hero set,
+   unchanged) comes out light on ink. Dark mode needs no inversion. The ramp
+   is captured on <html>, where it resolves to the palette's own values. */
+html[data-ui-style='modern'] {
+  --ui-ramp-white: var(--color-white);
+  --ui-ramp-50: var(--color-gray-50);
+  --ui-ramp-100: var(--color-gray-100);
+  --ui-ramp-200: var(--color-gray-200);
+  --ui-ramp-300: var(--color-gray-300);
+  --ui-ramp-400: var(--color-gray-400);
+  --ui-ramp-500: var(--color-gray-500);
+  --ui-ramp-600: var(--color-gray-600);
+  --ui-ramp-700: var(--color-gray-700);
+  --ui-ramp-800: var(--color-gray-800);
+  --ui-ramp-900: var(--color-gray-900);
+}
+html[data-ui-style='modern']:not(.dark) .ui-invert {
+  --color-white: var(--ui-ramp-900);
+  --color-gray-50: var(--ui-ramp-800);
+  --color-gray-100: var(--ui-ramp-800);
+  --color-gray-200: var(--ui-ramp-700);
+  --color-gray-300: var(--ui-ramp-600);
+  --color-gray-400: var(--ui-ramp-500);
+  --color-gray-500: var(--ui-ramp-400);
+  --color-gray-600: var(--ui-ramp-300);
+  --color-gray-700: var(--ui-ramp-200);
+  --color-gray-800: var(--ui-ramp-100);
+  --color-gray-900: var(--ui-ramp-50);
+  --color-gray-950: var(--ui-ramp-white);
+  --chart-primary: var(--color-blue-400);
+  --chart-grid: var(--ui-ramp-700);
+  --chart-axis: var(--ui-ramp-400);
+  --chart-surface: var(--ui-ramp-900);
+}
+/* The Standard pill's deep green and red are for a light card. */
+html[data-ui-style='modern']:not(.dark) .ui-invert .ui-hero-pill[data-direction='up'] {
+  color: var(--color-green-400);
+  background-color: color-mix(in oklab, var(--color-green-400) 15%, transparent);
+}
+html[data-ui-style='modern']:not(.dark) .ui-invert .ui-hero-pill[data-direction='down'] {
+  color: var(--color-red-400);
+  background-color: color-mix(in oklab, var(--color-red-400) 15%, transparent);
+}
+
+/* The next-up card's figure keeps its ink: the symbol and cents are set
+   small, not grey, on the accent. */
+html[data-ui-style='modern'] .ui-nextup .ui-money-display :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
+  color: inherit;
+}
+
+/* Widgets are white blocks with no edge, a bold grotesque title. */
+html[data-ui-style='modern'] .ui-dash-grid {
+  gap: 1rem;
+}
+html[data-ui-style='modern'] .ui-widget-slot > .ui-card {
+  border-color: transparent;
+  border-radius: 1.75rem;
+  box-shadow: none;
+}
+@media (min-width: 640px) {
+  html[data-ui-style='modern'] .ui-widget-slot > .ui-card {
+    padding: 1.75rem;
+  }
+}
+html[data-ui-style='modern'] .ui-widget-slot .ui-widget-title {
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+/* Primary buttons are ink on paper, and the accent under ink by night: the
+   companion palette's lime is a fill, never a background for white text. */
+html[data-ui-style='modern'] .ui-btn-primary {
+  background-color: var(--color-gray-900);
+  color: var(--color-gray-50);
+}
+html[data-ui-style='modern'] .ui-btn-primary:not(:disabled):hover {
+  background-color: var(--color-gray-700);
+}
+html.dark[data-ui-style='modern'] .ui-btn-primary {
+  background-color: var(--color-blue-400);
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-btn-primary:not(:disabled):hover {
+  background-color: var(--color-blue-300);
+}
+
+/* Rows a widget drew as separate outlined boxes (Top Movers, Favourite
+   Securities) follow the other widgets' rows: ruled lines in Classic, soft
+   rules with a rounded hover in Modern. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-boxed-row {
+  border-width: 0;
+  border-radius: 0;
+  padding-inline: 0;
+  background-color: transparent;
+}
+html[data-ui-style='classic'] .ui-boxed-row {
+  border-bottom: 1px solid var(--color-gray-200);
+}
+html.dark[data-ui-style='classic'] .ui-boxed-row {
+  border-bottom-color: var(--color-gray-700);
+}
+html[data-ui-style='classic'] .ui-boxed-row:hover {
+  background-color: color-mix(in oklab, var(--color-blue-500) 6%, transparent);
+}
+html[data-ui-style='modern'] .ui-boxed-row {
+  border-top: 1px solid var(--color-gray-100);
+  padding-inline: 0.5rem;
+}
+html.dark[data-ui-style='modern'] .ui-boxed-row {
+  border-top-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-boxed-row:hover {
+  border-radius: 0.875rem;
+  border-top-color: transparent;
+  background-color: var(--color-gray-50);
+}
+html.dark[data-ui-style='modern'] .ui-boxed-row:hover {
+  background-color: var(--color-gray-700);
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-boxed-rows > * {
+  margin-block: 0;
+}

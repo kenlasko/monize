@@ -35,7 +35,8 @@
       "createFailed": "建立標籤失敗",
       "updateFailed": "更新標籤失敗",
       "deleteFailed": "刪除標籤失敗"
-    }
+    },
+    "eyebrow": "標籤"
   },
   "list": {
     "empty": {

@@ -22,9 +22,12 @@ import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { ThemeSelector } from '@/components/settings/ThemeSelector';
 import { ColorThemeSelector } from '@/components/settings/ColorThemeSelector';
 import { ColorTheme } from '@/lib/color-themes';
+import { UiStyleSelector } from '@/components/settings/UiStyleSelector';
+import { UiStyle } from '@/lib/ui-styles';
 import { DefaultViewsGroup } from '@/components/settings/DefaultViewsGroup';
 import { MobileTabsGroup } from '@/components/settings/MobileTabsGroup';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 // CRYPTO is a listing label, not a Yahoo exchange: lookup ranking compares Yahoo
 // suffixes and `exchDisp`, so a preference for it could never match a result.
@@ -217,11 +220,12 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
     commitPreference,
   );
 
-  // Theme, colour theme and language persist themselves inside their own
-  // selectors (each has work to do beyond the write -- applying the palette,
-  // switching the active locale), so these three hold display state only.
+  // Theme, colour theme, UI style and language persist themselves inside their
+  // own selectors (each has work to do beyond the write -- applying the
+  // palette, switching the active locale), so these hold display state only.
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(preferences.theme);
   const [colorTheme, setColorTheme] = useState<ColorTheme>(preferences.colorTheme ?? 'default');
+  const [uiStyle, setUiStyle] = useState<UiStyle>(preferences.uiStyle ?? 'standard');
   const [language, setLanguage] = useState(preferences.language ?? 'en');
 
   const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyInfo[]>([]);
@@ -256,7 +260,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
   const dateFormatOptions = getDateFormatOptions(tc, browserLocale);
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('heading')}</h2>
 
       <div className="space-y-6">
@@ -296,7 +300,14 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
           <div className="space-y-4">
             <ThemeSelector value={theme} onChange={setTheme} />
 
-            <ColorThemeSelector value={colorTheme} onChange={setColorTheme} />
+            <UiStyleSelector
+              value={uiStyle}
+              onChange={setUiStyle}
+              colorTheme={colorTheme}
+              onColorThemeChange={setColorTheme}
+            />
+
+            <ColorThemeSelector value={colorTheme} onChange={setColorTheme} uiStyle={uiStyle} />
           </div>
         </div>
 

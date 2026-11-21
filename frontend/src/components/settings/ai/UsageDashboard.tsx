@@ -14,6 +14,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { preferredCurrency } from '@/lib/default-currency';
 import { Th } from '@/components/ui/Table';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface UsageDashboardProps {
   usage: AiUsageSummary;
@@ -158,7 +159,7 @@ export function UsageDashboard({ usage, configs, onPeriodChange }: UsageDashboar
   const totalHasCost = hasAnyCost(usage.totalEstimatedCostByCurrency);
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('heading')}</h2>
         <div className="flex gap-1">

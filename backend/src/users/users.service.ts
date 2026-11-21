@@ -269,6 +269,9 @@ export class UsersService {
     if (dto.colorTheme !== undefined) {
       patch.colorTheme = dto.colorTheme;
     }
+    if (dto.uiStyle !== undefined) {
+      patch.uiStyle = dto.uiStyle;
+    }
     if (dto.timezone !== undefined) {
       patch.timezone = dto.timezone;
     }

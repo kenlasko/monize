@@ -1,5 +1,6 @@
 {
   "title": "Rekonsiliasi Akun",
+  "eyebrow": "Lembar rekonsiliasi",
   "subtitle": "Cocokkan catatan Anda dengan laporan bank",
   "subtitleActive": "Merekonsiliasi: {name}",
   "setup": {

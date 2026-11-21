@@ -379,5 +379,6 @@
   "groupCount": "{count, plural, one {# группа} few {# группы} many {# групп} other {# группы}}",
   "entryCount": "{count, plural, one {# запись} few {# записи} many {# записей} other {# записи}}",
   "saveChanges": "Сохранить изменения",
-  "searchGroups": "Поиск групп"
+  "searchGroups": "Поиск групп",
+  "eyebrow": "Групповые счета"
 }

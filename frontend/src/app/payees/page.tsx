@@ -319,6 +319,7 @@ function PayeesContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='payees'
           actions={
@@ -367,6 +368,7 @@ function PayeesContent() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <SummaryCard
+            lead
             label={t('page.summary.totalPayees')}
             value={payees.length}
             icon={SummaryIcons.users}

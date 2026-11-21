@@ -37,7 +37,8 @@
       "withoutCategory": "Без категорії"
     },
     "applyDefaultCategories": "Застосувати категорії за замовчуванням",
-    "lookupSettings": "Налаштування пошуку отримувачів"
+    "lookupSettings": "Налаштування пошуку отримувачів",
+    "eyebrow": "Покажчик одержувачів платежів"
   },
   "list": {
     "columns": {

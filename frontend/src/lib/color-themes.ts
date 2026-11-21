@@ -19,6 +19,8 @@ export const COLOR_THEMES = [
   'dracula',
   'tokyonight',
   'rosepine',
+  'ledger',
+  'studio',
   'midnight',
   'highcontrast',
   'colorblind',

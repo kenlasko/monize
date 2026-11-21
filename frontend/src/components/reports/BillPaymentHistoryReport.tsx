@@ -41,6 +41,7 @@ import { chartColors } from '@/lib/chart-colors';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type BillSortField = 'bill' | 'count' | 'average' | 'total' | 'lastPayment';
 
@@ -327,7 +328,7 @@ export function BillPaymentHistoryReport() {
       ) : billData && (
       <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('billPaymentHistory.totalPaid')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             <PartialTotal total={paidTotal} displayCurrency={reportingCurrency}>
@@ -335,7 +336,7 @@ export function BillPaymentHistoryReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('billPaymentHistory.monthlyAverage')}</div>
           <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
             <PartialTotal total={averageTotal} displayCurrency={reportingCurrency}>
@@ -343,14 +344,14 @@ export function BillPaymentHistoryReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('billPaymentHistory.billsPaid')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {billData.summary.uniqueBills}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">{t('billPaymentHistory.uniqueBills')}</div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('billPaymentHistory.totalPayments')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {billData.summary.totalPayments}
@@ -366,7 +367,7 @@ export function BillPaymentHistoryReport() {
       )}
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <DateRangeSelector
             ranges={['6m', '1y', '2y']}
@@ -397,7 +398,7 @@ export function BillPaymentHistoryReport() {
       {error ? (
         <ReportError onRetry={reload} />
       ) : isLoading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -406,12 +407,12 @@ export function BillPaymentHistoryReport() {
       ) : !billData ? (
         <ReportError message={t('billPaymentHistory.loadError')} onRetry={reload} />
       ) : billData.billPayments.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('billPaymentHistory.empty')} />
         </div>
       ) : viewType === 'overview' ? (
         /* Monthly Overview Chart */
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('billPaymentHistory.monthlyBillPayments')}
           </h3>
@@ -429,7 +430,7 @@ export function BillPaymentHistoryReport() {
         </div>
       ) : (
         /* By Bill Table */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('billPaymentHistory.paymentHistoryByBill')}

@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Card } from '@/components/ui/Card';
+import { Guilloche } from '@/components/ui/Guilloche';
 import { AuthBrandPanel } from '@/components/auth/AuthBrandPanel';
 import { AuthLanguagePicker } from '@/components/auth/AuthLanguagePicker';
 import { AppVersion } from '@/components/ui/AppVersion';
@@ -73,35 +74,43 @@ export function AuthShell({
   return (
     <div
       className={cn(
-        'min-h-screen bg-gray-50 dark:bg-gray-900',
+        'ui-auth-shell min-h-screen bg-gray-50 dark:bg-gray-900',
         showPanel && 'lg:grid lg:grid-cols-2',
       )}
     >
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className={cn('w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
-          <div className="text-center">
+      <div className="ui-auth-main relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        {/* Classic only: the engraved rosette behind the sign-in page. */}
+        <Guilloche className="ui-auth-guilloche pointer-events-none absolute hidden" />
+        <div className={cn('ui-auth-column relative w-full space-y-6', wide ? 'max-w-lg' : 'max-w-md')}>
+          <div className="ui-auth-head text-center">
             <Image
               src="/icons/monize-logo-transparent.svg"
               alt="Monize"
               width={88}
               height={88}
-              className="mx-auto"
+              className="ui-auth-logo mx-auto"
               priority
             />
+            {/* The Classic and Modern title page prints the name as type. */}
+            <p aria-hidden="true" className="ui-auth-wordmark hidden">
+              Monize
+            </p>
             {title && (
-              <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+              <h2 className="ui-auth-title mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
                 {title}
               </h2>
             )}
             {subtitle && (
-              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{subtitle}</div>
+              <div className="ui-auth-subtitle mt-2 text-sm text-gray-600 dark:text-gray-400">
+                {subtitle}
+              </div>
             )}
           </div>
           {notices}
           {plain ? (
             children
           ) : (
-            <Card padding="md" className="sm:p-8">
+            <Card padding="md" className="ui-auth-card sm:p-8">
               {children}
             </Card>
           )}

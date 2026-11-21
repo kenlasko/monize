@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { sumConverted, type ConvertedTotal } from '@/lib/currency-total';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { MoneyFigure } from '@/components/ui/MoneyFigure';
+import { TABLE_CLASS, TABLE_BODY_CLASS } from '@/components/ui/Table';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Account, AccountType } from '@/types/account';
@@ -208,11 +210,9 @@ function GroupHeaderLabel({
 function GroupHeaderTotal({
   total,
   displayCurrency,
-  format,
 }: {
   total: ConvertedTotal;
   displayCurrency: string;
-  format: (value: number, currencyCode?: string) => string;
 }) {
   return (
     <span
@@ -223,7 +223,7 @@ function GroupHeaderTotal({
       }`}
     >
       <PartialTotal total={total} displayCurrency={displayCurrency}>
-        {format(total.value, displayCurrency)}
+        <MoneyFigure amount={total.value} currencyCode={displayCurrency} className="ui-money-quiet" />
       </PartialTotal>
     </span>
   );
@@ -896,7 +896,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
               names itself with the label of the field it sorts by. */}
         <DensityToggleBar view="accounts" />
         <div ref={setTableWrapper} className={`overflow-x-auto ${ACCOUNT_TABLE_CONTAINER}`}>
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className={TABLE_CLASS}>
           {/* The one column is always sorted by something, and `aria-sort`
                   is the only place that direction is announced -- the arrow in
                   each button's label is a glyph, not a state. */}
@@ -1005,12 +1005,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
             </tr>
             )}
           </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className={`bg-white dark:bg-gray-900 ${TABLE_BODY_CLASS}`}>
             {renderItems.map((item) =>
               item.kind === 'header' ? (
                 <tr
                   key={`group-${item.type}`}
-                  className="group bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer select-none"
+                  className="ui-ledger-group group bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer select-none"
                   onClick={() => toggleGroup(item.type)}
                   aria-expanded={!item.isCollapsed}
                 >
@@ -1045,7 +1045,6 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                           <GroupHeaderTotal
                             total={item.total}
                             displayCurrency={defaultCurrency}
-                            format={formatCurrencyBase}
                           />
                         </span>
                       </div>
@@ -1069,7 +1068,6 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                     <GroupHeaderTotal
                       total={item.total}
                       displayCurrency={defaultCurrency}
-                      format={formatCurrencyBase}
                     />
                   </td>
                   <td

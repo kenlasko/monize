@@ -4,7 +4,8 @@
     "subtitle": "Isi tag, kategori, dan penerima secara otomatis saat transaksi dibuat atau diimpor",
     "createButton": "Buat aturan",
     "loading": "Memuat aturan...",
-    "totalCount": "{count, plural, other {# aturan}}"
+    "totalCount": "{count, plural, other {# aturan}}",
+    "eyebrow": "Otomatisasi"
   },
   "empty": {
     "title": "Belum ada aturan",

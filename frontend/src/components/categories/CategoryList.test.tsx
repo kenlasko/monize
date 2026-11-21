@@ -123,6 +123,21 @@ describe('CategoryList', () => {
     expect(screen.getByText('Salary')).toBeInTheDocument();
   });
 
+  it('marks the table and each row for the UI styles, rows carrying their tree depth', () => {
+    const categories = [
+      makeCategory({ id: 'p', name: 'Food' }),
+      makeCategory({ id: 'c', name: 'Groceries', parentId: 'p' }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    expect(screen.getByRole('table')).toHaveClass('ui-list-ledger', 'ui-list-categories');
+    const levels = screen
+      .getAllByRole('row')
+      .filter((row) => row.classList.contains('ui-list-row'))
+      .map((row) => row.getAttribute('data-level'));
+    expect(levels).toEqual(['0', '1']);
+  });
+
   it('shows income/expense badge for each category', () => {
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', isIncome: false }),

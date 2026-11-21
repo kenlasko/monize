@@ -50,7 +50,8 @@
     "retry": "再試行",
     "nextFire": "次のリマインダー: {date}",
     "openTarget": "関連ページを開く",
-    "delegateUnavailable": "リマインダーを管理するには、自分のアカウントに戻ってください。"
+    "delegateUnavailable": "リマインダーを管理するには、自分のアカウントに戻ってください。",
+    "eyebrow": "通知"
   },
   "billDue": {
     "titleOverdue": "{payee} は支払期日超過",

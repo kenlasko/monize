@@ -17,6 +17,7 @@ import {
   classifyCsvActionValue,
 } from '@/lib/import';
 import { Account } from '@/types/account';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface CsvColumnMappingStepProps {
   headers: string[];
@@ -184,7 +185,7 @@ export function CsvColumnMappingStep({
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('csvMapping.heading')}
         </h2>

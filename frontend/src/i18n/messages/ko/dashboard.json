@@ -36,7 +36,19 @@
     "showSet": "{name} 표시",
     "cycleControls": "히어로에 표시할 내용 선택",
     "cagrUnavailable": "CAGR을 계산하려면 이 계좌들에 1년 이상의 투자 기록이 있고 입금액이 출금액보다 많아야 합니다.",
-    "intradayUnavailable": "일부 보유 종목에 장중 가격이 없어 1일 차트를 그릴 수 없습니다. 사용자 지정에서 더 긴 기간을 선택하세요."
+    "intradayUnavailable": "일부 보유 종목에 장중 가격이 없어 1일 차트를 그릴 수 없습니다. 사용자 지정에서 더 긴 기간을 선택하세요.",
+    "assetsLabel": "자산",
+    "liabilitiesLabel": "부채",
+    "investedLabel": "투자",
+    "high": "최고 {value}",
+    "low": "최저 {value}",
+    "historyLabel": "월별 순자산: 최고 {high}, 최저 {low}, 현재 {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {연체} today {다음 예정, 오늘} tomorrow {다음 예정, 내일} other {다음 예정, {date}}}",
+      "meta": "{manual, select, true {직접 납부} other {자동 기록}}",
+      "metaWithPayee": "{payee} · {manual, select, true {직접 납부} other {자동 기록}}",
+      "record": "{kind, select, deposit {입금 기록} transfer {이체 기록} reminder {기록하기} other {지출 기록}}"
+    }
   },
   "trivia": {
     "title": "트리비아",
@@ -355,7 +367,9 @@
     "due": "납부일: {ordinal}",
     "dueTooltip": "매월 신용카드 납부일",
     "settlement": "결제일: {ordinal}",
-    "settlementTooltip": "청구 주기의 마지막 날. 이 날 또는 이전에 등록된 거래가 현재 명세서에 표시됩니다."
+    "settlementTooltip": "청구 주기의 마지막 날. 이 날 또는 이전에 등록된 거래가 현재 명세서에 표시됩니다.",
+    "dueShort": "납부일 {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "예정된 청구서 및 입금",
@@ -386,7 +400,11 @@
     "previousMonth": "이전 달",
     "nextMonth": "다음 달",
     "emptyAll": "예약된 활성 청구, 입금 또는 이체가 없습니다.",
-    "estimated": "예상"
+    "estimated": "예상",
+    "stripLabel": "앞으로 2주를 하루씩 표시합니다. 입금은 선 위로 올라가고 청구서는 선 아래로 내려갑니다",
+    "metaPayee": "· {payee}",
+    "metaManual": "· 직접 납부",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "현금 흐름 예측",

@@ -33,6 +33,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('InvestmentReportViewer');
 
@@ -318,7 +319,7 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
       />
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+      <div className={`${CARD_CLASS} p-4 sm:p-6`}>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-wrap items-end gap-4">
             <div className="w-56">
@@ -421,14 +422,14 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
 
       {/* Results */}
       {isExecuting && !result ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12">
+        <div className={`${CARD_CLASS} p-12`}>
           <div className="flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-500 dark:text-gray-400">{t('investmentReportViewer.generating')}</p>
           </div>
         </div>
       ) : result ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+        <div className={`${CARD_CLASS} p-4 sm:p-6`}>
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {t('investmentReportViewer.asOf', { date: formatDate(result.asOfDate) })} · {t('investmentReportViewer.holdingCount', { count: result.rowCount })}

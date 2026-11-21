@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "생성: {timestamp}"
+  },
+  "statement": {
+    "item": "항목",
+    "amount": "금액",
+    "share": "비율"
   }
 }

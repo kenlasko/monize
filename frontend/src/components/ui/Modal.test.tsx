@@ -933,7 +933,7 @@ describe('Modal header, footer and body', () => {
         expect(dialog.className).toContain(cls);
       }
       expect(dialog.className).toContain('max-h-[calc(100dvh-2rem)]');
-      expect(dialog.className).toContain('rounded-lg');
+      expect(dialog.className).toContain('rounded-(--ui-radius-dialog)');
       // Never the bare utility: it would sort before `rounded-lg` and lose.
       expect(dialog.className).not.toMatch(/(^|\s)h-dvh(\s|$)/);
     });

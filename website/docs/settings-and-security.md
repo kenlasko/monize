@@ -62,6 +62,7 @@ Preferences are grouped into seven blocks. **They save as you change them** -- t
 | Setting | Description |
 |---------|-------------|
 | **Theme** | System (follow device setting), Light, or Dark |
+| **UI style** | The shape of the interface: Standard, Classic or Modern (see [Theme and Colour Theme](#theme-and-colour-theme)) |
 | **Colour theme** | The palette used within your light/dark mode (see [Theme and Colour Theme](#theme-and-colour-theme)) |
 
 #### Dates & Numbers
@@ -138,9 +139,19 @@ Monize is built for multiple languages. Choose your preferred display language f
 
 ### Theme and Colour Theme
 
-Appearance is two independent settings.
+Appearance is three independent settings.
 
 **Theme** decides light or dark: **System** follows your device setting and switches with it, or you can pin **Light** or **Dark**.
+
+**UI style** decides the shape of the interface: its typefaces, the way the dashboard, the transactions register and the entry forms are laid out, and the navigation. It works in both light and dark mode.
+
+| Style | |
+|-------|---|
+| **Standard** | The familiar Monize look |
+| **Classic** | A ledger book: serif headings and figures, the dashboard set out as a statement under ruled headings, the register with Payment and Deposit columns grouped by day and banded on every other row, and the transaction form drawn as a ruled slip |
+| **Modern** | Colour blocks: bold headings, a dark net-worth block beside a "next up" card for the coming bill, rounded panels and pill buttons, and a register that shows the selected transaction in a side panel |
+
+Each style offers the colour themes made for it. Standard offers all of them; Classic starts with **Ledger** and keeps the paper and print palettes; Modern starts with **Studio** and keeps the clean and dark ones. **High contrast** and **Colour-blind safe** are offered with every style. Choosing a style that does not offer your current colour theme switches you to the style's own.
 
 **Colour theme** decides the palette used *within* that light or dark mode. The picker shows a swatch preview of each palette rendered in your current mode rather than only naming it.
 
@@ -150,6 +161,8 @@ Appearance is two independent settings.
 | **Latte**, **Burgundy**, **Forest**, **Nord**, **Midnight** | Warm and cool alternatives |
 | **MS Money**, **Newspaper** | Familiar looks for people arriving from Microsoft Money, and a high-legibility print-like palette |
 | **Solarized**, **Gruvbox**, **Dracula**, **Tokyo Night**, **Rosé Pine** | Well-known developer palettes |
+| **Ledger** | Green-bar ledger paper with deep green ink, turning to gold on a dark green-black page at night; the companion of the Classic style |
+| **Studio** | Off-white and ink colour blocks with a lime accent; the companion of the Modern style |
 | **High contrast** | Maximum separation between foreground and background for low-vision use |
 | **Colour-blind safe** | Tinted so that the red/green pairs Monize uses for gains and losses remain distinguishable |
 

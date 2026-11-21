@@ -36,7 +36,19 @@
     "showSet": "Hiển thị {name}",
     "cycleControls": "Chọn nội dung hiển thị ở phần chính",
     "cagrUnavailable": "CAGR cần ít nhất một năm lịch sử đầu tư trong các tài khoản này, với số tiền nạp nhiều hơn số rút.",
-    "intradayUnavailable": "Một số khoản nắm giữ không có giá trong ngày nên không thể vẽ biểu đồ một ngày. Hãy chọn khoảng thời gian dài hơn trong Tùy chỉnh."
+    "intradayUnavailable": "Một số khoản nắm giữ không có giá trong ngày nên không thể vẽ biểu đồ một ngày. Hãy chọn khoảng thời gian dài hơn trong Tùy chỉnh.",
+    "assetsLabel": "Tài sản",
+    "liabilitiesLabel": "Nợ phải trả",
+    "investedLabel": "Đã đầu tư",
+    "high": "Cao nhất {value}",
+    "low": "Thấp nhất {value}",
+    "historyLabel": "Giá trị ròng theo tháng: {high} ở mức cao nhất, {low} ở mức thấp nhất, hiện tại {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {Quá hạn} today {Sắp tới, hôm nay} tomorrow {Sắp tới, ngày mai} other {Sắp tới, {date}}}",
+      "meta": "{manual, select, true {Thanh toán thủ công} other {Tự động ghi sổ}}",
+      "metaWithPayee": "{payee} · {manual, select, true {thanh toán thủ công} other {tự động ghi sổ}}",
+      "record": "{kind, select, deposit {Ghi khoản tiền vào} transfer {Ghi khoản chuyển} reminder {Ghi lại} other {Ghi khoản thanh toán}}"
+    }
   },
   "trivia": {
     "title": "Thông tin thú vị",
@@ -355,7 +367,9 @@
     "due": "Đến hạn: {ordinal}",
     "dueTooltip": "Ngày mỗi tháng khi đến hạn thanh toán thẻ tín dụng",
     "settlement": "Thanh toán: {ordinal}",
-    "settlementTooltip": "Ngày cuối cùng của chu kỳ thanh toán. Các giao dịch được ghi vào hoặc trước ngày này xuất hiện trong sao kê hiện tại."
+    "settlementTooltip": "Ngày cuối cùng của chu kỳ thanh toán. Các giao dịch được ghi vào hoặc trước ngày này xuất hiện trong sao kê hiện tại.",
+    "dueShort": "đến hạn {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Hóa đơn & Tiền gửi sắp tới",
@@ -386,7 +400,11 @@
     "previousMonth": "Tháng trước",
     "nextMonth": "Tháng sau",
     "emptyAll": "Không có hóa đơn, khoản nạp hoặc chuyển khoản đang hoạt động nào được lên lịch.",
-    "estimated": "Ước tính"
+    "estimated": "Ước tính",
+    "stripLabel": "Hai tuần tới, từng ngày: khoản tiền vào nhô lên trên đường kẻ, hóa đơn rơi xuống dưới",
+    "metaPayee": "· {payee}",
+    "metaManual": "· thanh toán thủ công",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Dự báo dòng tiền",

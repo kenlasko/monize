@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Struk Surel",
-    "subtitle": "Baca konfirmasi pesanan dari kotak surel dan ubah menjadi transaksi dengan rincian item: apa yang terhubung, apa yang terjadi pada setiap surel, dan apa yang menunggu Anda"
+    "subtitle": "Baca konfirmasi pesanan dari kotak surel dan ubah menjadi transaksi dengan rincian item: apa yang terhubung, apa yang terjadi pada setiap surel, dan apa yang menunggu Anda",
+    "eyebrow": "Kotak masuk tanda terima"
   },
   "mailbox": {
     "heading": "Kotak surel",

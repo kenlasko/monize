@@ -125,7 +125,9 @@
       "attachments": "Lampiran",
       "status": "Status",
       "statusHelp": "Belum Direkonsiliasi, Kliring, atau Rekonsiliasi adalah langkah menuju pencocokan dengan laporan bank. Batal membatalkan transaksi tetapi menyimpan catatannya; transaksi tidak lagi memengaruhi saldo akun.",
-      "actions": "Aksi"
+      "actions": "Aksi",
+      "payment": "Pembayaran",
+      "deposit": "Setoran"
     },
     "sort": {
       "balanceHiddenHint": "Urutkan berdasarkan tanggal untuk melihat saldo berjalan",
@@ -191,7 +193,20 @@
       "editButton": "Edit",
       "deleteButton": "Hapus"
     },
-    "itemNamePlural": "transaksi"
+    "itemNamePlural": "transaksi",
+    "classic": {
+      "entriesShown": "{count, plural, other {# entri ditampilkan}}",
+      "legendCleared": "kliring",
+      "legendReconciled": "rekonsiliasi",
+      "legendRule": "Garis di bawah setiap saldo membandingkan saldo itu dengan yang tertinggi di halaman ini.",
+      "markCleared": "k",
+      "markReconciled": "R"
+    },
+    "modern": {
+      "inspectorLabel": "Transaksi yang dipilih",
+      "balanceAfter": "Saldo setelahnya",
+      "yesterday": "Kemarin"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Garansi untuk transaksi ini tidak dapat dimuat.",
       "empty": "Belum ada garansi"
     },
-    "conversionLockedNote": "Transfer ini milik transaksi terpisah atau akun pemilik lain, sehingga di sini hanya dapat tetap menjadi transfer. Ubah dari pemisahan atau hapus dan buat entri yang Anda inginkan."
+    "conversionLockedNote": "Transfer ini milik transaksi terpisah atau akun pemilik lain, sehingga di sini hanya dapat tetap menjadi transfer. Ubah dari pemisahan atau hapus dan buat entri yang Anda inginkan.",
+    "modeGroupLabel": "Jenis transaksi",
+    "entryHint": "Tab berpindah antar kolom. Esc menutup."
   },
   "splitEditor": {
     "header": "Detail Pembagian",
@@ -772,6 +789,13 @@
       "foreignCurrency": "Jumlah dalam mata uang selain mata uang akun. Gunakan Formulir Lengkap untuk memasukkannya.",
       "crossCurrencyTransfer": "Kedua akun memiliki mata uang berbeda. Gunakan Formulir Lengkap untuk transfer ini.",
       "unknown": "Entri ini tidak dapat disimpan di sini. Gunakan Formulir Lengkap untuk menyelesaikannya."
+    },
+    "assumedNote": "Kolom bergaris putus-putus tidak Anda ketik. Kolom itu diisi otomatis, jadi periksa kembali.",
+    "hints": {
+      "enter": "Enter menyimpan",
+      "shiftEnter": "Shift Enter menyimpan dan memulai yang baru",
+      "tab": "Tab berpindah antar kolom",
+      "esc": "Esc menutup"
     }
   }
 }

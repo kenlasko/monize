@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Une ou plusieurs planifications n'ont pas pu être évaluées",
     "summaryDueNow": "À payer maintenant",
     "loadingText": "Chargement des transactions récurrentes...",
-    "chartUnavailable": "Graphique temporairement indisponible"
+    "chartUnavailable": "Graphique temporairement indisponible",
+    "eyebrow": "Récurrents"
   },
   "viewTabs": {
     "filterLabel": "Type de planification",
@@ -83,5 +84,12 @@
     "exportButton": "Exporter",
     "exportTitle": "Exporter les factures et dépôts vers CSV",
     "exported": "{count, plural, one {# planification exportée} other {# planifications exportées}}"
+  },
+  "outlook": {
+    "title": "Les quatorze prochains jours",
+    "stripLabel": "Factures et dépôts planifiés sur les quatorze prochains jours : entrées d'argent au-dessus de la ligne, sorties en dessous",
+    "today": "Aujourd'hui",
+    "nextUpOn": "Prochaine échéance, {date}",
+    "daysLabel": "Les quatorze prochains jours, une pastille par jour"
   }
 }

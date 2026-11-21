@@ -379,5 +379,6 @@
   "groupCount": "{count, plural, other {#グループ}}",
   "entryCount": "{count, plural, other {#件}}",
   "saveChanges": "変更を保存",
-  "searchGroups": "グループを検索"
+  "searchGroups": "グループを検索",
+  "eyebrow": "グループ口座"
 }

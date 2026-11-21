@@ -4,7 +4,8 @@
     "subtitle": "Tự động điền thẻ, danh mục và người nhận khi một giao dịch được tạo hoặc nhập",
     "createButton": "Tạo quy tắc",
     "loading": "Đang tải quy tắc...",
-    "totalCount": "{count, plural, other {# quy tắc}}"
+    "totalCount": "{count, plural, other {# quy tắc}}",
+    "eyebrow": "Tự động hóa"
   },
   "empty": {
     "title": "Chưa có quy tắc nào",

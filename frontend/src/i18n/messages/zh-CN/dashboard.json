@@ -36,7 +36,19 @@
     "showSet": "显示{name}",
     "cycleControls": "选择主视图显示的内容",
     "cagrUnavailable": "CAGR 需要这些账户至少一年的投资历史，且投入多于取出。",
-    "intradayUnavailable": "部分持仓没有日内价格，因此无法绘制一天的图表。请在“自定义”中选择更长的时间范围。"
+    "intradayUnavailable": "部分持仓没有日内价格，因此无法绘制一天的图表。请在“自定义”中选择更长的时间范围。",
+    "assetsLabel": "资产",
+    "liabilitiesLabel": "负债",
+    "investedLabel": "已投资",
+    "high": "最高 {value}",
+    "low": "最低 {value}",
+    "historyLabel": "按月净资产：最高 {high}，最低 {low}，当前 {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {已逾期} today {下一笔，今天} tomorrow {下一笔，明天} other {下一笔，{date}}}",
+      "meta": "{manual, select, true {手动支付} other {自动入账}}",
+      "metaWithPayee": "{payee} · {manual, select, true {手动支付} other {自动入账}}",
+      "record": "{kind, select, deposit {记录存款} transfer {记录转账} reminder {记录} other {记录付款}}"
+    }
   },
   "trivia": {
     "title": "趣闻",
@@ -355,7 +367,9 @@
     "due": "到期：{ordinal}",
     "dueTooltip": "每月信用卡还款到期的日期",
     "settlement": "结算：{ordinal}",
-    "settlementTooltip": "账单周期的最后一天。在此日期当天或之前入账的交易将显示在当期账单上。"
+    "settlementTooltip": "账单周期的最后一天。在此日期当天或之前入账的交易将显示在当期账单上。",
+    "dueShort": "到期 {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "即将到来的账单与存款",
@@ -386,7 +400,11 @@
     "previousMonth": "上个月",
     "nextMonth": "下个月",
     "emptyAll": "没有已安排的有效账单、存入或转账。",
-    "estimated": "估算"
+    "estimated": "估算",
+    "stripLabel": "未来两周，逐日显示：存款在线上方升起，账单在线下方落下",
+    "metaPayee": "· {payee}",
+    "metaManual": "· 手动支付",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "现金流预测",

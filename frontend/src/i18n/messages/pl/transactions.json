@@ -125,7 +125,9 @@
       "attachments": "Załączniki",
       "status": "Status",
       "statusHelp": "Nieuzgodniona, Rozliczona lub Uzgodniona to etapy dopasowywania do wyciągu bankowego. Anulowana odwołuje transakcję, ale zachowuje jej zapis; nie zmienia już salda konta.",
-      "actions": "Akcje"
+      "actions": "Akcje",
+      "payment": "Płatność",
+      "deposit": "Wpłata"
     },
     "sort": {
       "balanceHiddenHint": "Posortuj według daty, aby zobaczyć saldo bieżące",
@@ -191,7 +193,20 @@
       "editButton": "Edytuj",
       "deleteButton": "Usuń"
     },
-    "itemNamePlural": "transakcji"
+    "itemNamePlural": "transakcji",
+    "classic": {
+      "entriesShown": "{count, plural, one {Pokazano # wpis} few {Pokazano # wpisy} many {Pokazano # wpisów} other {Pokazano # wpisu}}",
+      "legendCleared": "rozliczona",
+      "legendReconciled": "uzgodniona",
+      "legendRule": "Linia pod każdym saldem porównuje to saldo z najwyższym na tej stronie.",
+      "markCleared": "r",
+      "markReconciled": "U"
+    },
+    "modern": {
+      "inspectorLabel": "Wybrana transakcja",
+      "balanceAfter": "Saldo po",
+      "yesterday": "Wczoraj"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Nie udało się wczytać gwarancji tej transakcji.",
       "empty": "Nie ma jeszcze gwarancji"
     },
-    "conversionLockedNote": "Ten przelew należy do transakcji podzielonej lub do konta innego właściciela, więc tutaj może pozostać tylko przelewem. Zmień go w podziale albo usuń i utwórz żądany wpis."
+    "conversionLockedNote": "Ten przelew należy do transakcji podzielonej lub do konta innego właściciela, więc tutaj może pozostać tylko przelewem. Zmień go w podziale albo usuń i utwórz żądany wpis.",
+    "modeGroupLabel": "Rodzaj transakcji",
+    "entryHint": "Tab przechodzi między polami. Esc zamyka."
   },
   "splitEditor": {
     "header": "Szczegóły podziału",
@@ -772,6 +789,13 @@
       "foreignCurrency": "Kwota jest w innej walucie niż konto. Użyj Pełnego formularza, aby ją wprowadzić.",
       "crossCurrencyTransfer": "Te dwa konta mają różne waluty. Użyj Pełnego formularza dla tego przelewu.",
       "unknown": "Tego wpisu nie można tutaj zapisać. Użyj Pełnego formularza, aby go dokończyć."
+    },
+    "assumedNote": "Pole z przerywaną linią nie zostało wpisane. Wypełniono je za Ciebie, więc sprawdź je.",
+    "hints": {
+      "enter": "Enter zapisuje",
+      "shiftEnter": "Shift Enter zapisuje i zaczyna kolejną",
+      "tab": "Tab przechodzi między polami",
+      "esc": "Esc zamyka"
     }
   }
 }

@@ -16,6 +16,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { WizardState } from './BudgetWizard';
 import type { RolloverType } from '@/types/budget';
 import type { Account } from '@/types/account';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetWizardStrategyProps {
   state: WizardState;
@@ -158,7 +159,7 @@ export function BudgetWizardStrategy({
       </h3>
 
       {/* Budget Details */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+      <div className={`${CARD_CLASS} p-6 space-y-4`}>
         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           {t('wizardStrategy.sections.budgetDetails')}
         </h4>
@@ -210,7 +211,7 @@ export function BudgetWizardStrategy({
       </div>
 
       {/* Income Linking */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+      <div className={`${CARD_CLASS} p-6 space-y-4`}>
         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           {t('wizardStrategy.sections.income')}
         </h4>
@@ -251,7 +252,7 @@ export function BudgetWizardStrategy({
       </div>
 
       {/* Rollover Rules */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+      <div className={`${CARD_CLASS} p-6 space-y-4`}>
         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center">
           {t('wizardStrategy.sections.rolloverRules')}
           <InfoTooltip text={t('wizardStrategy.rolloverTooltip')} learnMore="budgetRollover" />
@@ -270,7 +271,7 @@ export function BudgetWizardStrategy({
       </div>
 
       {/* Alert Thresholds */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+      <div className={`${CARD_CLASS} p-6 space-y-4`}>
         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           {t('wizardStrategy.sections.alertThresholds')}
         </h4>
@@ -324,7 +325,7 @@ export function BudgetWizardStrategy({
 
       {/* Flex Groups */}
       {expenseCategories.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+        <div className={`${CARD_CLASS} p-6 space-y-4`}>
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
               {t('wizardStrategy.sections.flexGroups')}
@@ -387,7 +388,7 @@ export function BudgetWizardStrategy({
 
       {/* Excluded Accounts */}
       {activeAccounts.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+        <div className={`${CARD_CLASS} p-6 space-y-4`}>
           <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center">
             {t('wizardStrategy.sections.excludedAccounts')}
             <InfoTooltip text={t('wizardStrategy.excludedAccountsTooltip')} learnMore="budgetExcludedAccounts" />

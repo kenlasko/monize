@@ -4,10 +4,49 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { BudgetCategoryRow } from './BudgetCategoryRow';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
+import { BudgetCategoryListClassic } from './variants/BudgetCategoryListClassic';
+import { BudgetCategoryListModern } from './variants/BudgetCategoryListModern';
+import type { BudgetCategoryListViewProps } from './variants/budget-category-list-view';
 import type { CategoryBreakdown, BudgetCategory } from '@/types/budget';
+import { CARD_CLASS } from '@/components/ui/Card';
 
-type SortField = 'name' | 'spent' | 'remaining' | 'percentUsed';
+type SortField = BudgetCategoryListViewProps['sortField'];
 type SortDirection = 'asc' | 'desc';
+
+/** Standard: one bordered row per category, as ever. */
+function BudgetCategoryListStandard({
+  rows,
+  formatCurrency,
+  pacePercent,
+  onCategoryClick,
+}: BudgetCategoryListViewProps) {
+  return (
+    <div className="space-y-2">
+      {rows.map(({ category, rolloverType, flexGroup }) => (
+        <BudgetCategoryRow
+          key={category.budgetCategoryId}
+          category={category}
+          formatCurrency={formatCurrency}
+          pacePercent={pacePercent}
+          rolloverType={rolloverType}
+          flexGroup={flexGroup}
+          onClick={
+            onCategoryClick
+              ? () => onCategoryClick(category.budgetCategoryId)
+              : undefined
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
+const VARIANTS: StyleVariants<BudgetCategoryListViewProps> = {
+  standard: BudgetCategoryListStandard,
+  classic: BudgetCategoryListClassic,
+  modern: BudgetCategoryListModern,
+};
 
 interface BudgetCategoryListProps {
   categories: CategoryBreakdown[];
@@ -25,6 +64,7 @@ export function BudgetCategoryList({
   onCategoryClick,
 }: BudgetCategoryListProps) {
   const t = useTranslations('budgets');
+  const uiStyle = useUiStyle();
   const [sortField, setSortField] = useState<SortField>('percentUsed');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -82,7 +122,7 @@ export function BudgetCategoryList({
 
   if (sortedCategories.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('categoryList.title')}
         </h2>
@@ -94,7 +134,7 @@ export function BudgetCategoryList({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} ui-bud-list p-4 sm:p-6`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('categoryList.title')}
@@ -129,26 +169,18 @@ export function BudgetCategoryList({
           </button>
         </div>
       </div>
-      <div className="space-y-2">
-        {sortedCategories.map((category) => {
+      {renderForStyle(uiStyle, VARIANTS, {
+        rows: sortedCategories.map((category) => {
           const bc = budgetCategoryMap.get(category.budgetCategoryId);
-          return (
-            <BudgetCategoryRow
-              key={category.budgetCategoryId}
-              category={category}
-              formatCurrency={formatCurrency}
-              pacePercent={pacePercent}
-              rolloverType={bc?.rolloverType}
-              flexGroup={bc?.flexGroup}
-              onClick={
-                onCategoryClick
-                  ? () => onCategoryClick(category.budgetCategoryId)
-                  : undefined
-              }
-            />
-          );
-        })}
-      </div>
+          return { category, rolloverType: bc?.rolloverType, flexGroup: bc?.flexGroup };
+        }),
+        formatCurrency,
+        pacePercent,
+        onCategoryClick,
+        sortField,
+        sortDirection,
+        onSort: handleSort,
+      })}
     </div>
   );
 }

@@ -103,7 +103,7 @@ export function ListTopToolbar({
     onPageChange !== undefined;
 
   return (
-    <div className="flex items-center justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+    <div className="ui-list-toolbar flex items-center justify-end p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
       {showPagination ? (
         <div className="flex-1">
           <Pagination

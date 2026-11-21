@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "이 브라우저는 공유된 파일을 받을 수 없습니다",
   "unsupportedBrowserMessage": "설치된 앱으로 공유하는 기능은 여기서 사용할 수 없습니다. Monize 안에서 파일을 추가하는 것은 계속 가능합니다.",
   "goToTransactions": "거래에서 추가",
-  "goToImport": "가져오기로 이동"
+  "goToImport": "가져오기로 이동",
+  "eyebrow": "수신 파일"
 }

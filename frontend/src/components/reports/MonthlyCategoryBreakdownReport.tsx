@@ -47,6 +47,7 @@ import {
   yearlyWindowStart,
   type BreakdownPeriod,
 } from '@/lib/breakdown-period';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 // The storage keys keep the report's original id so a reader's choices survive
 // the rename to Monthly & Yearly Breakdown.
@@ -1438,7 +1439,7 @@ export function MonthlyCategoryBreakdownReport() {
   return (
     <div className="space-y-6">
       {/* Controls -- always rendered so focus inside DateInput survives reloads */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <FundingReportControls controls={funds} />
           <div
@@ -1530,7 +1531,7 @@ export function MonthlyCategoryBreakdownReport() {
       )}
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {error ? (
           <ReportError onRetry={reload} />
         ) : isLoading ? (

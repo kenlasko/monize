@@ -35,6 +35,11 @@ const { widgetConfig, mockUpdateConfig } = vi.hoisted(() => ({
   },
   mockUpdateConfig: vi.fn(),
 }));
+const uiStyle = vi.hoisted(() => ({ current: 'standard' as 'standard' | 'classic' | 'modern' }));
+vi.mock('@/hooks/useUiStyle', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/useUiStyle')>()),
+  useUiStyle: () => uiStyle.current,
+}));
 vi.mock('@/hooks/useWidgetConfig', () => ({
   useWidgetConfig: () => ({ config: widgetConfig.current, updateConfig: mockUpdateConfig }),
 }));
@@ -64,6 +69,7 @@ describe('UpcomingBills', () => {
     mockPush.mockClear();
     mockUpdateConfig.mockClear();
     widgetConfig.current = { scope: 'dueSoon', view: 'list' };
+    uiStyle.current = 'standard';
   });
 
   afterEach(() => {
@@ -943,4 +949,23 @@ describe('UpcomingBills', () => {
     const autoIdx = billElements.findIndex(el => el.textContent === 'Auto Bill');
     expect(manualIdx).toBeLessThan(autoIdx);
   });
+
+  it.each(['classic', 'modern'] as const)(
+    'lists the same occurrence, with its two-week strip, in the %s style',
+    (style) => {
+      uiStyle.current = style;
+      const transactions = [
+        {
+          id: '1', name: 'Netflix', amount: -15.99, currencyCode: 'CAD',
+          nextDueDate: futureDateStr(1), isActive: true, autoPost: false,
+        },
+      ] as any[];
+      render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+      expect(screen.getByLabelText(/The next two weeks/)).toBeInTheDocument();
+      const row = screen.getByRole('button', { name: /Netflix/ });
+      expect(row).toHaveTextContent('-$15.99');
+      fireEvent.click(row);
+      expect(mockPush).toHaveBeenCalledWith('/bills?postBillId=1');
+    },
+  );
 });

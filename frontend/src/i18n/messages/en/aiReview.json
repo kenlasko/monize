@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "AI review inbox",
-    "subtitle": "Transactions a rule asked an AI to review, profiles an assistant was asked to draft, and the edits an assistant proposed for you to approve."
+    "subtitle": "Transactions a rule asked an AI to review, profiles an assistant was asked to draft, and the edits an assistant proposed for you to approve.",
+    "eyebrow": "Awaiting your review"
   },
   "filter": {
     "label": "Filter by status",

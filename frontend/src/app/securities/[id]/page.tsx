@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -369,7 +370,7 @@ function SecurityDetailContent() {
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <div
             role="alert"
-            className="rounded-lg bg-white p-12 text-center shadow dark:bg-gray-800"
+            className={`${CARD_CLASS} p-12 text-center`}
           >
             <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">
               {error || t('notFound')}
@@ -546,7 +547,7 @@ function SecurityDetailContent() {
                 keepMounted
                 className="mt-6"
               >
-                <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+                <div className={`${CARD_CLASS} p-4`}>
                   <SecurityTransactionHistory security={security} onChanged={loadData} />
                 </div>
               </TabPanel>
@@ -569,7 +570,7 @@ function SecurityDetailContent() {
                     <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
                       {t('bondPrices.title')}
                     </h2>
-                    <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+                    <div className={`${CARD_CLASS} p-4`}>
                       <SecurityPriceHistory
                         security={security}
                         onPricesChanged={reloadAfterPriceRefresh}
@@ -585,7 +586,7 @@ function SecurityDetailContent() {
                   keepMounted
                   className="mt-6"
                 >
-                  <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+                  <div className={`${CARD_CLASS} p-4`}>
                     <SecurityPriceHistory
                       security={security}
                       onPricesChanged={reloadAfterPriceRefresh}

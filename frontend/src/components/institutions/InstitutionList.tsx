@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { TABLE_CLASS, TABLE_BODY_CLASS } from '@/components/ui/Table';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -142,7 +143,7 @@ function InstitutionAccountsButton({
       onClick={() => onManageAccounts(institution)}
       aria-label={t('list.accountCount', { count: institution.accountCount })}
       title={t('list.actions.manageAccounts')}
-      className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+      className="ui-inst-count text-sm text-blue-600 dark:text-blue-400 hover:underline"
     >
       {institution.accountCount}
     </button>
@@ -205,7 +206,7 @@ function InstitutionRow({
   if (wrapped) {
     return (
       <tr
-        className="hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
+        className="ui-ledger-row hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
         {...getRowHandlers(institution)}
       >
         <td className="p-0">
@@ -232,7 +233,7 @@ function InstitutionRow({
                   table has no badge on the row -- so it truncates in its own
                   track rather than needing a wrapping flex row to keep its
                   width from a sibling. */}
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              <span className="ui-inst-name text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                 {institution.name}
               </span>
               {/* A bare number with no column header to name it, so it carries
@@ -271,13 +272,15 @@ function InstitutionRow({
 
   return (
     <tr
-      className="hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
+      className="ui-ledger-row hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
       {...getRowHandlers(institution)}
     >
       <td className={cellPadding}>
         <div className="flex items-center gap-3 min-w-0">
-          <InstitutionLogo institution={institution} size={24} fallbackGlyph="$" />
-          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          <span className="ui-inst-avatar inline-flex flex-shrink-0">
+            <InstitutionLogo institution={institution} size={24} fallbackGlyph="$" />
+          </span>
+          <span className="ui-inst-name text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
             {institution.name}
           </span>
         </div>
@@ -288,7 +291,7 @@ function InstitutionRow({
       <td className={`${cellPadding} hidden sm:table-cell text-sm text-gray-500 dark:text-gray-400`}>
         {institutionCountryText(institution)}
       </td>
-      <td className={cellPadding}>
+      <td className={`${cellPadding} ui-inst-count-cell`}>
         <InstitutionAccountsButton
           institution={institution}
           onManageAccounts={onManageAccounts}
@@ -374,7 +377,7 @@ export function InstitutionList({
     <div>
       <DensityToggleBar view="institutions" />
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className={TABLE_CLASS}>
         <thead className={`bg-gray-50 dark:bg-gray-800${wrapped && !onSort ? ' hidden' : ''}`}>
           {wrapped ? (
           /* On a phone the wrapped card labels its own values, so the column
@@ -432,7 +435,7 @@ export function InstitutionList({
           </tr>
           )}
         </thead>
-        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className={`bg-white dark:bg-gray-900 ${TABLE_BODY_CLASS}`}>
           {institutions.map((institution) => (
             <InstitutionRow
               key={institution.id}

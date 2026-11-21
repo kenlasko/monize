@@ -204,19 +204,19 @@ export function DuplicateTransactionReport() {
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">{t('duplicateTransactions.groupsFound')}</div>
         </Card>
-        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
           <div className="text-sm text-purple-600 dark:text-purple-400">{t('duplicateTransactions.veryHighConfidence')}</div>
           <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
             {summary.veryHighCount}
           </div>
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
           <div className="text-sm text-red-600 dark:text-red-400">{t('duplicateTransactions.highConfidence')}</div>
           <div className="text-xl font-bold text-red-700 dark:text-red-300">
             {summary.highCount}
           </div>
         </div>
-        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
           <div className="text-sm text-orange-600 dark:text-orange-400">{t('duplicateTransactions.mediumConfidence')}</div>
           <div className="text-xl font-bold text-orange-700 dark:text-orange-300">
             {summary.mediumCount}
@@ -349,7 +349,7 @@ export function DuplicateTransactionReport() {
       />
 
       {/* Info */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+      <div className="ui-rep-tile bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
         <div className="flex gap-3">
           <svg className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

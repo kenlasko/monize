@@ -1,0 +1,308 @@
+/*
+ * budgets area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * (read its header): ramp tokens only, marker classes in @layer components,
+ * unlayered rules only where a primitive's own utility must yield.
+ */
+
+/* ===================================================================== */
+/* Shared                                                                 */
+/* ===================================================================== */
+
+/* Unlayered throughout: the primitives these sit on (Card, Input, the meter's
+   own utilities) carry their Standard look as utilities, which a layered rule
+   cannot beat. Every rule is scoped to a `ui-bud-*` marker. */
+
+/* ===================================================================== */
+/* Classic: the budget ledger                                             */
+/* ===================================================================== */
+
+/* The period's totals as a statement line: ruled in ink above, a hairline
+   below, four entries divided by hairlines. */
+html[data-ui-style='classic'] .ui-bud-statement {
+  padding: 1rem 0 1.125rem;
+  border-top: 2px solid var(--ui-rule-ink);
+  border-bottom: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-bud-statement-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: 1rem;
+}
+@media (min-width: 1024px) {
+  html[data-ui-style='classic'] .ui-bud-statement-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+html[data-ui-style='classic'] .ui-bud-entry {
+  padding-inline: 1rem;
+  border-left: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-bud-entry:nth-child(odd) {
+  padding-left: 0;
+  border-left: 0;
+}
+@media (min-width: 1024px) {
+  html[data-ui-style='classic'] .ui-bud-entry:nth-child(odd) {
+    padding-left: 1rem;
+    border-left: 1px solid var(--ui-rule-hair);
+  }
+  html[data-ui-style='classic'] .ui-bud-entry:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+html[data-ui-style='classic'] .ui-bud-entry-figure {
+  margin-top: 0.375rem;
+}
+html[data-ui-style='classic'] .ui-bud-entry-figure .ui-money-display {
+  font-size: 1.875rem;
+}
+html[data-ui-style='classic'] .ui-bud-entry-hint {
+  margin-top: 0.25rem;
+  letter-spacing: 0.04em;
+}
+
+/* The schedule: figures in their own ruled columns, set as ledger marks. */
+html[data-ui-style='classic'] .ui-bud-num,
+html[data-ui-style='classic'] .ui-bud-fig {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+html[data-ui-style='classic'] .ui-bud-schedule table {
+  border-top: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-bud-schedule tbody tr > td {
+  border-bottom: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-bud-schedule tbody tr:nth-child(5n) > td {
+  border-bottom-color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-bud-schedule .ui-meter {
+  height: 0.5rem;
+}
+
+/* The health score: a thin ruled ring, the score in the serif. */
+html[data-ui-style='classic'] .ui-bud-ring circle {
+  stroke-width: 3;
+  stroke-linecap: butt;
+}
+html[data-ui-style='classic'] .ui-bud-ring .ui-bud-ring-arc {
+  stroke-width: 6;
+}
+html[data-ui-style='classic'] .ui-bud-score {
+  font-family: var(--ui-font-display);
+  font-weight: 500;
+  font-size: 2.5rem;
+}
+html[data-ui-style='classic'] .ui-bud-score-label {
+  border-radius: 0;
+  border: 1px solid currentColor;
+  background-color: transparent;
+  font-size: 0.6875rem;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+}
+
+/* Wizard steps: a numbered, ruled strip, not pills. */
+html[data-ui-style='classic'] .ui-bud-step {
+  border-radius: 0;
+  padding-inline: 0.25rem;
+  background-color: transparent;
+  border-bottom: 2px solid transparent;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-bud-step {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-bud-step[data-state='current'] {
+  border-bottom-color: var(--ui-rule-ink);
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-bud-step[data-state='current'] {
+  color: var(--color-gray-100);
+}
+html[data-ui-style='classic'] .ui-bud-step[data-state='done'] {
+  color: var(--color-gray-700);
+}
+html.dark[data-ui-style='classic'] .ui-bud-step[data-state='done'] {
+  color: var(--color-gray-300);
+}
+html[data-ui-style='classic'] .ui-bud-step-num {
+  border-radius: 0;
+  border: 1px solid var(--ui-rule-ink);
+  background-color: transparent;
+  color: inherit;
+  font-family: var(--ui-font-display);
+}
+html[data-ui-style='classic'] .ui-bud-step[data-state='current'] .ui-bud-step-num {
+  background-color: var(--ui-rule-ink);
+  color: var(--color-white);
+}
+html.dark[data-ui-style='classic'] .ui-bud-step[data-state='current'] .ui-bud-step-num {
+  color: var(--color-gray-900);
+}
+html[data-ui-style='classic'] .ui-bud-step-link {
+  height: 1px;
+  background-color: var(--ui-rule-ink);
+}
+
+/* Wizard and edit fields: the entry slip's ruled fields. */
+html[data-ui-style='classic'] .ui-bud-wizard label.block {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-bud-wizard label.block {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-bud-wizard .ui-field {
+  padding-inline: 0;
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: var(--ui-rule-ink);
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+  font-weight: 500;
+}
+html[data-ui-style='classic'] .ui-bud-wizard .ui-field:focus {
+  box-shadow: none;
+  border-bottom-width: 2px;
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: 2px;
+}
+html.dark[data-ui-style='classic'] .ui-bud-wizard .ui-field:focus {
+  outline-color: var(--color-blue-400);
+}
+
+/* ===================================================================== */
+/* Modern: colour blocks                                                  */
+/* ===================================================================== */
+
+html[data-ui-style='modern'] .ui-bud-lead {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+html[data-ui-style='modern'] .ui-bud-lead-figure,
+html[data-ui-style='modern'] .ui-bud-block-figure,
+html[data-ui-style='modern'] .ui-bud-tile-figure {
+  font-family: var(--ui-font-display);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+html[data-ui-style='modern'] .ui-bud-lead .ui-figure-label {
+  color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-bud-lead-pill {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background-color: color-mix(in oklab, var(--color-gray-900) 12%, transparent);
+}
+
+/* The category list: its card dissolves so each category is a block of its
+   own on the page. */
+html[data-ui-style='modern'] .ui-bud-list.ui-card:has(.ui-bud-tiles) {
+  padding: 0;
+  border-color: transparent;
+  background-color: transparent;
+  box-shadow: none;
+}
+html[data-ui-style='modern'] .ui-bud-tile {
+  padding: 1.25rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-radius-card);
+  background-color: var(--color-white);
+  transition: transform 160ms ease;
+}
+html.dark[data-ui-style='modern'] .ui-bud-tile {
+  background-color: var(--color-gray-800);
+}
+html[data-ui-style='modern'] button.ui-bud-tile:hover {
+  transform: translateY(-2px);
+}
+html[data-ui-style='modern'] button.ui-bud-tile:focus-visible {
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-style='modern'] button.ui-bud-tile:hover {
+    transform: none;
+  }
+}
+
+/* Health ring: a fat ring, the score big and tight. */
+html[data-ui-style='modern'] .ui-bud-ring circle {
+  stroke-width: 14;
+}
+html[data-ui-style='modern'] .ui-bud-score {
+  font-family: var(--ui-font-display);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  font-size: 2.5rem;
+}
+
+/* Wizard steps: pills, the current one in ink. */
+html[data-ui-style='modern'] .ui-bud-step[data-state='current'] {
+  background-color: var(--color-gray-900);
+  color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-bud-step[data-state='current'] {
+  background-color: var(--color-blue-400);
+  color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-bud-step[data-state='current'] .ui-bud-step-num {
+  background-color: var(--color-white);
+  color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-bud-step[data-state='done'] {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-800);
+}
+html.dark[data-ui-style='modern'] .ui-bud-step[data-state='done'] {
+  background-color: var(--color-gray-700);
+  color: var(--color-gray-100);
+}
+html[data-ui-style='modern'] .ui-bud-step[data-state='done'] .ui-bud-step-num {
+  background-color: var(--color-gray-900);
+  color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-bud-step[data-state='done'] .ui-bud-step-num {
+  background-color: var(--color-blue-400);
+  color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-bud-step-link {
+  height: 2px;
+  border-radius: 9999px;
+}
+
+/* Wizard and edit fields: the quick-add's pill fields. */
+html[data-ui-style='modern'] .ui-bud-wizard label.block {
+  font-weight: 600;
+  color: var(--color-gray-600);
+}
+html.dark[data-ui-style='modern'] .ui-bud-wizard label.block {
+  color: var(--color-gray-300);
+}
+html[data-ui-style='modern'] .ui-bud-wizard .ui-field {
+  border-color: transparent;
+  background-color: var(--color-gray-50);
+  box-shadow: none;
+  border-radius: 0.875rem;
+}
+html.dark[data-ui-style='modern'] .ui-bud-wizard .ui-field {
+  background-color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-bud-wizard .ui-field:focus {
+  border-color: var(--color-blue-500);
+  box-shadow: 0 0 0 2px var(--color-blue-500);
+}
+html.dark[data-ui-style='modern'] .ui-bud-wizard .ui-field:focus {
+  border-color: var(--color-blue-400);
+  box-shadow: 0 0 0 2px var(--color-blue-400);
+}

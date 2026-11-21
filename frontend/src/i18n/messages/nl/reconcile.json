@@ -1,5 +1,6 @@
 {
   "title": "Rekening afstemmen",
+  "eyebrow": "Afstemmingsblad",
   "subtitle": "Vergelijk je records met je bankafschrift",
   "subtitleActive": "Afstemmen: {name}",
   "setup": {

@@ -144,6 +144,7 @@ function AiChatPage({
       <main className="flex flex-1 min-h-0 flex-col px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='aiAssistant'
         />

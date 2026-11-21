@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -353,7 +354,7 @@ export function InvestmentRegisterPanel({
         </>
       ) : (
         <>
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-3 pt-3 sm:px-4 sm:pt-4 flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-center gap-3">
               {/* Both registers are "Recent Transactions": the toggle beside it

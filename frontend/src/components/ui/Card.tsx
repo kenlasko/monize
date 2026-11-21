@@ -11,7 +11,9 @@ import { cn } from '@/lib/utils';
  *
  * Everything here stays on the gray ramp so all colour themes in
  * `themes.css` re-skin it by overriding `--color-gray-*` / `--color-white`;
- * never add a literal hex or an off-ramp hue.
+ * never add a literal hex or an off-ramp hue. The radius and border colour
+ * are `--ui-*` tokens (Standard values in `globals.css`) so the UI styles in
+ * `ui-styles.css` can reshape every card; `ui-card` is their marker class.
  *
  * In dark mode the card is lit from above (`shadow-card-dark` in
  * `globals.css`: a 1px top-edge highlight over a dark drop) rather than
@@ -23,8 +25,8 @@ import { cn } from '@/lib/utils';
  * inline string shrink-only.
  */
 export const CARD_CLASS =
-  'bg-white dark:bg-gray-800 rounded-lg shadow-card dark:shadow-card-dark ' +
-  'border border-gray-200 dark:border-gray-700';
+  'ui-card bg-white dark:bg-gray-800 rounded-(--ui-radius-card) shadow-card dark:shadow-card-dark ' +
+  'border border-(color:--ui-card-border)';
 
 /**
  * Row hover, in the two places a row sits.

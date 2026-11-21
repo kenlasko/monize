@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Généré : {timestamp}"
+  },
+  "statement": {
+    "item": "Poste",
+    "amount": "Montant",
+    "share": "Part"
   }
 }

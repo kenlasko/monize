@@ -1,5 +1,7 @@
 'use client';
 
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { useTranslations } from 'next-intl';
 import { KeyValueList, type KeyValueRow } from '@/components/ui/KeyValueList';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
@@ -163,25 +165,19 @@ export function SecurityPositionInfoCard({
       key: 'status',
       label: t('positionInfo.status'),
       value: (
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-            status.tone === 'open'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-          }`}
-        >
+        <Badge variant={status.tone === 'open' ? 'green' : 'gray'}>
           {status.label}
-        </span>
+        </Badge>
       ),
     },
   ];
 
   return (
-    <div className="flex h-full flex-col rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+    <Card padding="sm" className="flex h-full flex-col">
       <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t('positionInfo.title')}
       </h3>
       <KeyValueList rows={rows} />
-    </div>
+    </Card>
   );
 }

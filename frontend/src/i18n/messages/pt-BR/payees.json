@@ -37,7 +37,8 @@
       "withoutCategory": "Sem Categoria"
     },
     "applyDefaultCategories": "Aplicar categorias padrão",
-    "lookupSettings": "Configurações de busca de favorecidos"
+    "lookupSettings": "Configurações de busca de favorecidos",
+    "eyebrow": "Índice de beneficiários"
   },
   "list": {
     "columns": {

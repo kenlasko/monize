@@ -26,7 +26,8 @@ import {
 import { useTableDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { useDensityPreference } from '@/store/densityStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { CellLabel } from '@/components/ui/Table';
+import { CellLabel, TABLE_BODY_CLASS, TABLE_CLASS } from '@/components/ui/Table';
+import { Badge } from '@/components/ui/Badge';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import {
   buildScheduledActions,
@@ -110,8 +111,8 @@ function ScheduledCategoryMarker({
   const investmentLabel = t('form.tabs.investment');
   const transferAccountName = transaction.transferAccount?.name;
   return transaction.isInvestment ? (
-    <span
-      className={`inline-flex text-xs font-medium rounded-full ${badgePadding}${cap} bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200`}
+    <Badge
+      className={`${badgePadding}${cap} bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200`}
       title={
         transaction.investmentSecurity
           ? `${transaction.investmentAction || ''} ${transaction.investmentSecurity.symbol || transaction.investmentSecurity.name}`.trim()
@@ -121,10 +122,11 @@ function ScheduledCategoryMarker({
       {bound(transaction.investmentSecurity?.symbol
         ? `${transaction.investmentAction || investmentLabel}: ${transaction.investmentSecurity.symbol}`
         : transaction.investmentAction || investmentLabel)}
-    </span>
+    </Badge>
   ) : transaction.isTransfer ? (
-    <span
-      className={`inline-flex text-xs font-medium rounded-full ${badgePadding}${cap} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`}
+    <Badge
+      variant="blue"
+      className={`${badgePadding}${cap}`}
       // No counterpart name means no label, exactly as `transferPayeeParams`
       // decides it for the register: the filler word it used to interpolate
       // ("Transfer to account") named nothing the reader could act on.
@@ -138,19 +140,20 @@ function ScheduledCategoryMarker({
       }
     >
       {bound(t('form.tabs.transfer'))}
-    </span>
+    </Badge>
   ) : transaction.isSplit ? (
-    <span
-      className={`inline-flex text-xs font-medium rounded-full ${badgePadding}${cap} bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200`}
+    <Badge
+      variant="purple"
+      className={`${badgePadding}${cap}`}
       title={transaction.splits
         ?.map((s) => s.category?.name || tTransactions('list.row.uncategorized'))
         .join(', ')}
     >
       {bound(t('list.splitBadge', { count: transaction.splits?.length || 0 }))}
-    </span>
+    </Badge>
   ) : transaction.category ? (
-    <span
-      className={`inline-flex text-xs font-medium rounded-full ${badgePadding}${cap}`}
+    <Badge
+      className={`${badgePadding}${cap}`}
       // Only where the label can be cut: `CategoryPill` pairs its inner
       // `truncate` with a `title`, and copying the truncation without the
       // recovery leaves the one surface that shows a category unable to
@@ -166,7 +169,7 @@ function ScheduledCategoryMarker({
       }}
     >
       {bound(transaction.category.name)}
-    </span>
+    </Badge>
   ) : (
     <span className="text-xs text-gray-400 dark:text-gray-500">{'\u2014'}</span>
   );
@@ -187,11 +190,9 @@ function ScheduledAutoMarker({
 }) {
   const t = useTranslations('scheduledTransactions');
   return transaction.autoPost ? (
-    <span
-      className={`inline-flex items-center text-xs font-medium rounded-full ${badgePadding} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`}
-    >
+    <Badge variant="green" className={badgePadding}>
       {t('list.autoPostBadge')}
-    </span>
+    </Badge>
   ) : (
     <span className="text-xs text-gray-400 dark:text-gray-500">{'\u2014'}</span>
   );
@@ -223,6 +224,7 @@ function ScheduledScheduleDetails({
   return (
     <div className={stackedLines}>
       <div className="text-sm text-gray-900 dark:text-gray-100">
+        <span className="ui-sched-date">
         {/* Show override date if it differs from the original next due date */}
         {transaction.nextOverride?.overrideDate &&
          transaction.nextDueDate &&
@@ -245,24 +247,21 @@ function ScheduledScheduleDetails({
         ) : (
           transaction.nextDueDate ? formatDate(transaction.nextDueDate) : '\u2014'
         )}
+        </span>
         {dueDateStatus && (
-          <span
-            className={`ml-1.5 inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 ${dueDateStatus.className}`}
-          >
-            {dueDateStatus.label}
-          </span>
+          <Badge className={`ml-1.5 px-1.5 ${dueDateStatus.className}`}>{dueDateStatus.label}</Badge>
         )}
       </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">
+      <div className="ui-sched-freq text-xs text-gray-500 dark:text-gray-400">
         {frequencyLabel(transaction)}
         {transaction.occurrencesRemaining !== null && (
           <span className="ml-1">{'\u00b7'} {t('list.occurrencesRemaining', { count: transaction.occurrencesRemaining })}</span>
         )}
         {transaction.overrideCount !== undefined && transaction.overrideCount > 0 && (
           <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
-            <span className="inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+            <Badge variant="purple" className="px-1.5">
               {t('list.modifiedBadge', { count: transaction.overrideCount })}
-            </span>
+            </Badge>
             <InfoTooltip
               text={t('list.modifiedTitle', { count: transaction.overrideCount })}
               iconClassName="h-3.5 w-3.5"
@@ -376,6 +375,11 @@ function ScheduledAmountValue({
   );
 }
 
+/** The day a schedule's next occurrence falls due, after any override. */
+function dueDayOf(transaction: ScheduledTransaction): string {
+  return transaction.nextOverride?.overrideDate || String(transaction.nextDueDate ?? '').split('T')[0];
+}
+
 interface ScheduledTransactionRowProps {
   transaction: ScheduledTransaction;
   isProcessing: boolean;
@@ -383,6 +387,8 @@ interface ScheduledTransactionRowProps {
   cellPadding: string;
   /** Row position, for the striping that carries a row across a dense table. */
   index: number;
+  /** The row above falls due the same day: Classic prints the day once. */
+  sameDay?: boolean;
   formatDate: (date: string) => string;
   formatAmount: (amount: number | null | undefined, currencyCode?: string) => JSX.Element;
   getDueDateStatus: (nextDueDate: string | undefined | null) => DueDateStatus | null;
@@ -436,6 +442,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
   density,
   cellPadding,
   index,
+  sameDay = false,
   formatDate,
   formatAmount,
   getDueDateStatus,
@@ -483,7 +490,8 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
     return (
       <tr
         ref={rowRef}
-        className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${rowBackground} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+        className={`ui-sched-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${rowBackground} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+        data-same-day={sameDay || undefined}
         {...getRowHandlers(transaction)}
       >
         <td className="p-0">
@@ -520,9 +528,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
                     {transaction.name}
                   </div>
                   {dueDateStatus && (
-                    <span className={`inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 ${dueDateStatus.className}`}>
-                      {dueDateStatus.label}
-                    </span>
+                    <Badge className={`px-1.5 ${dueDateStatus.className}`}>{dueDateStatus.label}</Badge>
                   )}
                 </div>
                 {payee && payee !== transaction.name && (
@@ -636,7 +642,8 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
   return (
     <tr
       ref={rowRef}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${rowBackground} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+      className={`ui-sched-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${!transaction.isActive ? 'opacity-50' : ''} ${rowBackground} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+      data-same-day={sameDay || undefined}
       {...getRowHandlers(transaction)}
     >
       {/* Name / Payee */}
@@ -654,9 +661,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
             {' \u00b7 '}{frequencyLabel(transaction)}
           </div>
           {dueDateStatus && (
-            <span className={`inline-flex text-xs font-medium rounded-full px-1.5 py-0.5 mt-0.5 ${dueDateStatus.className}`}>
-              {dueDateStatus.label}
-            </span>
+            <Badge className={`mt-0.5 px-1.5 ${dueDateStatus.className}`}>{dueDateStatus.label}</Badge>
           )}
         </div>
       </td>
@@ -676,12 +681,12 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
       </td>
 
       {/* Amount */}
-      <td className={`${cellPadding} whitespace-nowrap text-sm font-medium text-right`}>
+      <td className={`${cellPadding} ui-sched-amount whitespace-nowrap text-sm font-medium text-right`}>
         <ScheduledAmountValue transaction={transaction} formatAmount={formatAmount} />
       </td>
 
       {/* Schedule (Frequency + Next Due + Remaining) */}
-      <td className={`${cellPadding} hidden sm:table-cell`}>
+      <td className={`${cellPadding} ui-sched-when hidden sm:table-cell`}>
         <ScheduledScheduleDetails
           transaction={transaction}
           formatDate={formatDate}
@@ -691,7 +696,7 @@ const ScheduledTransactionRow = memo(function ScheduledTransactionRow({
       </td>
 
       {/* Auto-post */}
-      <td className={`${cellPadding} text-center hidden md:table-cell`}>
+      <td className={`${cellPadding} ui-sched-auto text-center hidden md:table-cell`}>
         <ScheduledAutoMarker transaction={transaction} badgePadding={badgePadding} />
       </td>
 
@@ -788,7 +793,7 @@ export function ScheduledTransactionList({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <table className={TABLE_CLASS}>
         {/* On a phone at Normal density the card labels its own values, so the
             column header is dropped outright rather than replaced by a slim
             one. This header holds NOTHING interactive: these `<th>`s are plain
@@ -800,31 +805,31 @@ export function ScheduledTransactionList({
         {!wrapped && (
         <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
-            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ui-th`}>
               {t('list.columns.namePayee')}
             </th>
-            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
+            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ui-th hidden sm:table-cell`}>
               {t('list.columns.account')}
             </th>
-            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell`}>
+            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ui-th hidden md:table-cell`}>
               {t('list.columns.category')}
             </th>
-            <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+            <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ui-th`}>
               {t('list.columns.amount')}
             </th>
-            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell`}>
+            <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ui-th hidden sm:table-cell`}>
               {t('list.columns.schedule')}
             </th>
-            <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell`}>
+            <th className={`${headerPadding} text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ui-th hidden md:table-cell`}>
               {t('list.columns.auto')}
             </th>
-            <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>
+            <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ui-th hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>
               {t('list.columns.actions')}
             </th>
           </tr>
         </thead>
         )}
-        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className={`bg-white dark:bg-gray-900 ${TABLE_BODY_CLASS}`}>
           {transactions.map((transaction, index) => (
             <ScheduledTransactionRow
               key={transaction.id}
@@ -833,6 +838,7 @@ export function ScheduledTransactionList({
               density={density}
               cellPadding={cellPadding}
               index={index}
+              sameDay={index > 0 && dueDayOf(transactions[index - 1]) === dueDayOf(transaction)}
               formatDate={formatDate}
               formatAmount={formatAmount}
               getDueDateStatus={getDueDateStatus}

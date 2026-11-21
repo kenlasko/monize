@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Asystent AI",
-    "subtitle": "Zadawaj pytania o swoje finanse w naturalnym języku"
+    "subtitle": "Zadawaj pytania o swoje finanse w naturalnym języku",
+    "eyebrow": "Asystent"
   },
   "bubble": {
     "launcherAriaLabel": "Otwórz asystenta AI",

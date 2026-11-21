@@ -3,8 +3,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import Cookies from 'js-cookie';
 import { ColorTheme, isColorTheme } from '@/lib/color-themes';
+import { UiStyle, isUiStyle } from '@/lib/ui-styles';
 import {
   COLOR_THEME_COOKIE,
+  UI_STYLE_COOKIE,
   RESOLVED_THEME_COOKIE,
   bootPageColor,
 } from '@/lib/pwa-theme';
@@ -18,16 +20,20 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
   colorTheme: ColorTheme;
   setColorTheme: (colorTheme: ColorTheme) => void;
+  uiStyle: UiStyle;
+  setUiStyle: (uiStyle: UiStyle) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_KEY = 'monize-theme';
 const COLOR_THEME_KEY = 'monize-color-theme';
+const UI_STYLE_KEY = 'monize-ui-style';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('system');
   const [colorTheme, setColorThemeState] = useState<ColorTheme>('default');
+  const [uiStyle, setUiStyleState] = useState<UiStyle>('standard');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
   const [mounted, setMounted] = useState(false);
 
@@ -49,6 +55,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const storedColorTheme = localStorage.getItem(COLOR_THEME_KEY);
     if (isColorTheme(storedColorTheme)) {
       setColorThemeState(storedColorTheme);
+    }
+    const storedUiStyle = localStorage.getItem(UI_STYLE_KEY);
+    if (isUiStyle(storedUiStyle)) {
+      setUiStyleState(storedUiStyle);
     }
     setMounted(true);
   }, []);
@@ -109,6 +119,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     Cookies.set(COLOR_THEME_COOKIE, colorTheme, preferenceCookieAttributes());
   }, [colorTheme, mounted]);
 
+  // Apply data-ui-style attribute to html element ('standard' = no attribute),
+  // and mirror it into a cookie so layout.tsx can stamp it server-side.
+  useEffect(() => {
+    if (!mounted) return;
+
+    const root = document.documentElement;
+    if (uiStyle === 'standard') {
+      root.removeAttribute('data-ui-style');
+    } else {
+      root.setAttribute('data-ui-style', uiStyle);
+    }
+    Cookies.set(UI_STYLE_COOKIE, uiStyle, preferenceCookieAttributes());
+  }, [uiStyle, mounted]);
+
   // Keep the theme-color meta on the active palette's page colour so the
   // browser / installed-PWA chrome follows both the mode and the palette.
   // The SSR metas are media-split on the system preference, which is wrong
@@ -139,13 +163,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(COLOR_THEME_KEY, newColorTheme);
   };
 
+  const setUiStyle = (newUiStyle: UiStyle) => {
+    setUiStyleState(newUiStyle);
+    localStorage.setItem(UI_STYLE_KEY, newUiStyle);
+  };
+
   // Prevent flash of incorrect theme
   if (!mounted) {
     return null;
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, colorTheme, setColorTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, colorTheme, setColorTheme, uiStyle, setUiStyle }}>
       {children}
     </ThemeContext.Provider>
   );

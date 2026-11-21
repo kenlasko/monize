@@ -15,6 +15,7 @@ import { Account } from '@/types/account';
 import { ImportFileData, ImportStep } from '@/app/import/import-utils';
 import { UnreadableDatesNotice } from './UnreadableDatesNotice';
 import { UnreadableAmountsNotice } from './UnreadableAmountsNotice';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 /** Merge the per-file investment summaries of a (possibly bulk) CSV parse. */
 function combineInvestmentSummaries(files: ImportFileData[]): CsvInvestmentSummary | null {
@@ -94,7 +95,7 @@ export function ReviewStep({
 
   return (
     <div className="max-w-xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('review.heading')}
         </h2>

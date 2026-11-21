@@ -38,7 +38,8 @@
   "page": {
     "title": "İşlem İçe Aktar",
     "subtitle": "QIF/QMTF, OFX/QFX veya CSV dosyalarından işlem içe aktarın ya da bütün bir Microsoft Money (.mny) veya KMyMoney (.kmy, .xml) dosyasını aktarın",
-    "stepOf": "Adım {current} / {total}"
+    "stepOf": "Adım {current} / {total}",
+    "eyebrow": "İşlemleri içeri al"
   },
   "upload": {
     "heading": "İşlem Dosyaları Yükle",

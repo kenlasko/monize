@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/Badge';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -14,6 +15,7 @@ import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { quoteSearchValue } from '@/lib/search-query';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export function SpendingAnomaliesReport() {
   const t = useTranslations('reports');
@@ -129,7 +131,7 @@ export function SpendingAnomaliesReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -145,19 +147,19 @@ export function SpendingAnomaliesReport() {
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
           <div className="text-sm text-red-600 dark:text-red-400">{t('spendingAnomalies.highPriority')}</div>
           <div className="text-2xl font-bold text-red-700 dark:text-red-300">
             {counts.high}
           </div>
         </div>
-        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
           <div className="text-sm text-orange-600 dark:text-orange-400">{t('spendingAnomalies.mediumPriority')}</div>
           <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
             {counts.medium}
           </div>
         </div>
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
           <div className="text-sm text-yellow-600 dark:text-yellow-400">{t('spendingAnomalies.lowPriority')}</div>
           <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
             {counts.low}
@@ -174,7 +176,7 @@ export function SpendingAnomaliesReport() {
       />
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {/* The export is the height of the sensitivity picker beside it, not
             of its own text: `self-stretch` on the box it sits in and `h-full`
             on the button, so the two read as one row of controls. On a phone
@@ -199,7 +201,7 @@ export function SpendingAnomaliesReport() {
 
       {/* Anomalies List */}
       {anomalies.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState icon={<CheckCircleIcon />} title={t('spendingAnomalies.noAnomalies')} />
         </div>
       ) : (
@@ -227,9 +229,9 @@ export function SpendingAnomaliesReport() {
                     <h4 className="font-medium text-gray-900 dark:text-gray-100">
                       {anomaly.title}
                     </h4>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSeverityBadge(anomaly.severity)}`}>
+                    <Badge className={getSeverityBadge(anomaly.severity)}>
                       {anomaly.severity}
-                    </span>
+                    </Badge>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     {anomaly.description}

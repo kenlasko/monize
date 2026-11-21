@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetHealthGaugeProps {
   score: number;
@@ -53,20 +54,20 @@ export function BudgetHealthGauge({ score }: BudgetHealthGaugeProps) {
   const strokeDashoffset = circumference - (clampedScore / 100) * circumference;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('healthGauge.title')}
       </h2>
       <div className="flex flex-col items-center">
         <div className="relative w-36 h-36">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 128 128">
+          <svg className="ui-bud-ring w-full h-full transform -rotate-90" viewBox="0 0 128 128">
             <circle
               cx="64"
               cy="64"
               r={radius}
               fill="none"
               strokeWidth="10"
-              className="stroke-gray-200 dark:stroke-gray-700"
+              className="ui-bud-ring-track stroke-gray-200 dark:stroke-gray-700"
             />
             <circle
               cx="64"
@@ -75,20 +76,20 @@ export function BudgetHealthGauge({ score }: BudgetHealthGaugeProps) {
               fill="none"
               strokeWidth="10"
               strokeLinecap="round"
-              className={`transition-all duration-500 ${colors.stroke}`}
+              className={`ui-bud-ring-arc transition-all duration-500 ${colors.stroke}`}
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
               data-testid="score-ring"
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={`text-3xl font-bold ${colors.text}`} data-testid="score-value">
+            <span className={`ui-bud-score text-3xl font-bold ${colors.text}`} data-testid="score-value">
               {clampedScore}
             </span>
           </div>
         </div>
         <span
-          className={`mt-2 px-3 py-1 text-sm font-medium rounded-full ${colors.text} ${colors.bg}`}
+          className={`ui-bud-score-label mt-2 px-3 py-1 text-sm font-medium rounded-full ${colors.text} ${colors.bg}`}
           data-testid="score-label"
         >
           {label}

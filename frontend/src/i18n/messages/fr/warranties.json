@@ -73,7 +73,8 @@
       "prefillFailed": "Cette transaction n'a pas pu être chargée, la garantie commence donc vide",
       "exported": "{count, plural, one {{shown} garantie exportée} other {{shown} garanties exportées}}",
       "exportFailed": "Les garanties n'ont pas pu être exportées"
-    }
+    },
+    "eyebrow": "Registre des garanties"
   },
   "status": {
     "lifetime": "À vie",

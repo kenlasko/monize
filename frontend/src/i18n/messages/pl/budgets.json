@@ -62,7 +62,9 @@
     "onPace": "Zgodnie z tempem",
     "rollover": "Przenoszenie: {type}",
     "remaining": "{amount} pozostało",
-    "over": "{amount} przekroczenia"
+    "over": "{amount} przekroczenia",
+    "leftWord": "pozostało",
+    "overWord": "ponad"
   },
   "categoryTrend": {
     "title": "Trendy kategorii",
@@ -164,6 +166,7 @@
     "original": "Oryginalnie: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Sumy budżetu",
     "totalBudget": "Budżet całkowity",
     "spent": "Wydane",
     "remaining": "Pozostało",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Księga budżetów",
       "title": "Budżety",
       "subtitle": "Zarządzaj budżetami i śledź wydatki",
       "newBudget": "+ Nowy budżet",

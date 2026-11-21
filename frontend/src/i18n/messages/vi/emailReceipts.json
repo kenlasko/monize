@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Hóa đơn qua email",
-    "subtitle": "Đọc email xác nhận đơn hàng từ một hộp thư và biến chúng thành các giao dịch có từng mục hàng: những gì đã kết nối, kết quả xử lý của từng email và những gì đang chờ bạn"
+    "subtitle": "Đọc email xác nhận đơn hàng từ một hộp thư và biến chúng thành các giao dịch có từng mục hàng: những gì đã kết nối, kết quả xử lý của từng email và những gì đang chờ bạn",
+    "eyebrow": "Hộp thư biên lai"
   },
   "mailbox": {
     "heading": "Hộp thư",

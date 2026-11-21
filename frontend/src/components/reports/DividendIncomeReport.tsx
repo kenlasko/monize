@@ -50,6 +50,7 @@ import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-c
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type SeriesKey = 'dividends' | 'interest' | 'capitalGains';
 type MonthlyIncomeSortField = 'month' | 'startValue' | 'endValue' | 'dividends' | 'interest' | 'capitalGains' | 'total';
@@ -1083,7 +1084,7 @@ export function DividendIncomeReport() {
 
   if (isLoading && !response) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -1099,13 +1100,13 @@ export function DividendIncomeReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
           <div className="text-sm text-green-600 dark:text-green-400">{t('dividendIncome.summaryDividends')}</div>
           <div className="text-xl font-bold text-green-700 dark:text-green-300">
             {fmtValue(totals.dividends)}
           </div>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div className="text-sm text-blue-600 dark:text-blue-400">{t('dividendIncome.summaryInterest')}</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
             {fmtValue(totals.interest)}
@@ -1126,7 +1127,7 @@ export function DividendIncomeReport() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="w-48">
             <MultiSelect
@@ -1286,12 +1287,12 @@ export function DividendIncomeReport() {
       </div>
 
       {filteredTransactions.length === 0 && filteredCapitalGains.length === 0 && filteredDailyCapitalGains.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('dividendIncome.empty')} />
         </div>
       ) : viewType === 'monthly' && monthlyDisplay === 'chart' ? (
         /* Monthly Chart */
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('dividendIncome.monthlyChartTitle')}
           </h3>
@@ -1356,7 +1357,7 @@ export function DividendIncomeReport() {
            placements per combination. Neither is a conversion; both are a
            different component. Until then the phone gets the horizontal scroll,
            which is honest. Same for the daily table below. */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('dividendIncome.monthlyTableTitle')}
@@ -1496,7 +1497,7 @@ export function DividendIncomeReport() {
         </div>
       ) : viewType === 'daily' && monthlyDisplay === 'chart' ? (
         /* Daily Chart */
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('dividendIncome.dailyChartTitle')}
           </h3>
@@ -1556,7 +1557,7 @@ export function DividendIncomeReport() {
         /* Daily Table */
         /* Not phone-wrapped either, for the same runtime-variable column count
            as the monthly table above. */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('dividendIncome.dailyTableTitle')}
@@ -1700,7 +1701,7 @@ export function DividendIncomeReport() {
         </div>
       ) : (
         /* By Security Table */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('dividendIncome.incomeBySecurityTitle')}

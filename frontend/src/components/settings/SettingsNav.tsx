@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowTopRightOnSquareIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export interface SettingsSection {
   readonly id: string;
@@ -73,7 +74,7 @@ export function SettingsNav({
           onClick={() => setOpen((prev) => !prev)}
           aria-haspopup="true"
           aria-expanded={open}
-          className="flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="ui-settings-nav-trigger flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           <span className="truncate">{current?.label}</span>
           <ChevronDownIcon
@@ -134,7 +135,7 @@ export function SettingsNav({
   // Vertical sidebar variant
   return (
     <nav
-      className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-2"
+      className={`${CARD_CLASS} ui-settings-nav p-2`}
       aria-label={t('sectionsAriaLabel')}
     >
       <ul className="space-y-0.5">
@@ -146,7 +147,8 @@ export function SettingsNav({
               <li key={section.id}>
                 <Link
                   href={section.href}
-                  className={`flex items-center justify-between w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${navLinkColors(isActive)}`}
+                  data-active={isActive || undefined}
+                  className={`ui-settings-nav-item flex items-center justify-between w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${navLinkColors(isActive)}`}
                 >
                   <span className="inline-flex items-center">
                     {section.label}
@@ -161,7 +163,10 @@ export function SettingsNav({
             <li key={section.id}>
               <button
                 onClick={() => onSectionClick(section.id)}
-                className={`w-full text-left rounded-md px-3 py-2 text-sm font-medium transition-colors ${navItemColors(isActive, section.variant === 'danger')}`}
+                aria-current={isActive ? 'true' : undefined}
+                data-active={isActive || undefined}
+                data-danger={section.variant === 'danger' || undefined}
+                className={`ui-settings-nav-item w-full text-left rounded-md px-3 py-2 text-sm font-medium transition-colors ${navItemColors(isActive, section.variant === 'danger')}`}
               >
                 {section.label}
               </button>

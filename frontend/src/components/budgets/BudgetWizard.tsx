@@ -230,14 +230,15 @@ export function BudgetWizard({
   );
 
   return (
-    <div>
+    <div className="ui-bud-wizard">
       {/* Step indicators */}
-      <nav aria-label={t('wizard.ariaLabel')} className="mb-8">
+      <nav aria-label={t('wizard.ariaLabel')} className="ui-bud-steps mb-8">
         <ol className="flex items-center justify-center gap-1 sm:gap-2">
           {STEPS.map((stepKey, index) => (
             <li key={stepKey} className="flex items-center">
               <div
-                className={`flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium ${
+                data-state={index === currentStep ? 'current' : index < currentStep ? 'done' : 'todo'}
+                className={`ui-bud-step flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium ${
                   index === currentStep
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
                     : index < currentStep
@@ -246,7 +247,7 @@ export function BudgetWizard({
                 }`}
               >
                 <span
-                  className={`flex items-center justify-center w-5 h-5 text-[10px] sm:w-6 sm:h-6 sm:text-xs rounded-full font-bold ${
+                  className={`ui-bud-step-num flex items-center justify-center w-5 h-5 text-[10px] sm:w-6 sm:h-6 sm:text-xs rounded-full font-bold ${
                     index === currentStep
                       ? 'bg-blue-600 text-white'
                       : index < currentStep
@@ -260,7 +261,7 @@ export function BudgetWizard({
               </div>
               {index < STEPS.length - 1 && (
                 <div
-                  className={`w-4 sm:w-8 h-0.5 mx-0.5 sm:mx-1 ${
+                  className={`ui-bud-step-link w-4 sm:w-8 h-0.5 mx-0.5 sm:mx-1 ${
                     index < currentStep
                       ? 'bg-green-400 dark:bg-green-600'
                       : 'bg-gray-200 dark:bg-gray-600'

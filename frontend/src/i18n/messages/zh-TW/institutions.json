@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "金融機構",
+    "eyebrow": "機構登記簿",
     "subtitle": "您帳戶所屬的銀行與券商",
     "newInstitution": "新增機構",
     "loading": "載入金融機構中...",

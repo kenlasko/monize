@@ -62,7 +62,9 @@
     "onPace": "Đúng tiến độ",
     "rollover": "Chuyển tiếp: {type}",
     "remaining": "Còn {amount}",
-    "over": "Vượt {amount}"
+    "over": "Vượt {amount}",
+    "leftWord": "còn lại",
+    "overWord": "vượt"
   },
   "categoryTrend": {
     "title": "Xu hướng danh mục",
@@ -164,6 +166,7 @@
     "original": "Gốc: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Tổng ngân sách",
     "totalBudget": "Tổng ngân sách",
     "spent": "Đã chi",
     "remaining": "Còn lại",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Sổ ngân sách",
       "title": "Ngân sách",
       "subtitle": "Quản lý ngân sách và theo dõi chi tiêu",
       "newBudget": "+ Ngân sách mới",

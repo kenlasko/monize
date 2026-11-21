@@ -1560,158 +1560,23 @@ describe("a panel card is the shared Card surface", () => {
    * New code takes the primitive from the start.
    */
   const CARD = "/src/components/ui/Card.tsx";
+  // The shared surface's radius is the UI style token (`ui-styles.css`), so
+  // a copy of CARD_CLASS pasted inline is the same offence as the old trio.
   const CARD_FINGERPRINT = (line: string) =>
     line.includes("bg-white dark:bg-gray-800") &&
-    line.includes("rounded-lg") &&
+    (line.includes("rounded-lg") || line.includes("rounded-(--ui-radius-card)")) &&
     line.includes("shadow");
 
   const BASELINE: ReadonlyArray<string> = [
-    "/src/app/accounts/[id]/page.tsx",
-    "/src/app/bills/page.tsx",
-    "/src/app/budgets/[id]/edit/page.tsx",
-    "/src/app/budgets/[id]/page.tsx",
-    "/src/app/budgets/create/page.tsx",
-    "/src/app/budgets/page.tsx",
     "/src/app/dashboard/loading.tsx",
-    "/src/app/investments/page.tsx",
-    "/src/app/reconcile/page.tsx",
-    "/src/app/reports/[reportId]/page.tsx",
-    "/src/app/reports/loading.tsx",
-    "/src/app/reports/page.tsx",
-    "/src/app/settings/emergency-access/page.tsx",
-    "/src/app/settings/loading.tsx",
-    "/src/app/settings/page.tsx",
-    "/src/components/accounts/asset-detail/AssetDetailView.tsx",
-    "/src/components/accounts/asset-detail/EquityPanel.tsx",
-    "/src/components/accounts/banking-detail/BankingDetailView.tsx",
-    "/src/components/accounts/banking-detail/CashFlowMiniReport.tsx",
-    "/src/components/accounts/credit-card-detail/CreditCardDetailView.tsx",
-    "/src/components/accounts/credit-card-detail/InterestAndFeesPanel.tsx",
-    "/src/components/accounts/credit-card-detail/PayoffCalculator.tsx",
-    "/src/components/accounts/credit-card-detail/SpendingBreakdown.tsx",
-    "/src/components/accounts/credit-card-detail/StatementPanel.tsx",
-    "/src/components/accounts/investment-detail/InvestmentIncomePanel.tsx",
-    "/src/components/accounts/loan-detail/AmortizationScheduleTable.tsx",
-    "/src/components/accounts/loan-detail/ComparisonSummaryCards.tsx",
-    "/src/components/accounts/loan-detail/LineOfCreditView.tsx",
-    "/src/components/accounts/loan-detail/OverpaymentSimulator.tsx",
-    "/src/components/accounts/loan-detail/PayoffComparisonChart.tsx",
-    "/src/components/accounts/loan-detail/RateHistorySidebar.tsx",
-    "/src/components/accounts/shared/ForeignCurrencyFeesSection.tsx",
-    "/src/components/accounts/shared/RecurringChargesPanel.tsx",
-    "/src/components/accounts/shared/SummaryCardGrid.tsx",
-    "/src/components/accounts/shared/TopGroupsPanel.tsx",
-    "/src/components/bills/CashFlowForecastChart.tsx",
-    "/src/components/budgets/Budget503020Summary.tsx",
     "/src/components/notifications/NotificationList.tsx",
-    "/src/components/budgets/BudgetCategoryList.tsx",
-    "/src/components/budgets/BudgetCategoryTrend.tsx",
-    "/src/components/budgets/BudgetFlexGroupCard.tsx",
-    "/src/components/budgets/BudgetHealthGauge.tsx",
-    "/src/components/budgets/BudgetHeatmap.tsx",
-    "/src/components/budgets/BudgetPeriodDetail.tsx",
-    "/src/components/budgets/BudgetScenarioPlanner.tsx",
-    "/src/components/budgets/BudgetTrendChart.tsx",
-    "/src/components/budgets/BudgetUpcomingBills.tsx",
-    "/src/components/budgets/BudgetVelocityWidget.tsx",
-    "/src/components/budgets/BudgetWizardCategories.tsx",
-    "/src/components/budgets/BudgetWizardReview.tsx",
-    "/src/components/budgets/BudgetWizardStrategy.tsx",
-    "/src/components/budgets/BudgetZeroBasedBar.tsx",
-            "/src/components/import/CompleteStep.tsx",
-    "/src/components/import/CsvColumnMappingStep.tsx",
-    "/src/components/import/MapAccountsStep.tsx",
-    "/src/components/import/MapCategoriesStep.tsx",
-    "/src/components/import/MapSecuritiesStep.tsx",
-    "/src/components/import/ReviewStep.tsx",
-    "/src/components/import/SelectAccountStep.tsx",
-    "/src/components/import/UploadStep.tsx",
-    "/src/components/investments/AssetAllocationChart.tsx",
-    "/src/components/investments/GroupedHoldingsList.tsx",
-    "/src/components/investments/HoldingsList.tsx",
-    "/src/components/investments/InvestmentRegisterPanel.tsx",
-    "/src/components/investments/InvestmentTransactionList.tsx",
-    "/src/components/investments/InvestmentValueChart.tsx",
-    "/src/components/investments/PortfolioSummaryCard.tsx",
     "/src/components/layout/ActionHistoryPanel.tsx",
-    "/src/components/payees/detail/PayeeRecurringPanel.tsx",
     "/src/components/reconcile/ReconciliationReminderBadge.tsx",
     // Keeps an inline surface for its chart TOOLTIP -- a floating panel with
     // its own stronger shadow, not the widget card. Its widget surface now
     // comes from CARD_CLASS; the tooltip shape is hand-rolled in ~44 files
     // and is a separate drift from this one.
-    "/src/components/reports/AccountBalancesReport.tsx",
-    "/src/components/reports/BillPaymentHistoryReport.tsx",
-    "/src/components/reports/BudgetHealthScoreReport.tsx",
-    "/src/components/reports/BudgetSeasonalPatternsReport.tsx",
-    "/src/components/reports/BudgetTrendReport.tsx",
-    "/src/components/reports/BudgetVsActualReport.tsx",
-    "/src/components/reports/CashFlowReport.tsx",
-    "/src/components/reports/CategoryPerformanceReport.tsx",
     "/src/components/reports/ChartTooltip.tsx",
-    "/src/components/reports/CreditUtilizationReport.tsx",
-    "/src/components/reports/CurrencyExposureReport.tsx",
-    "/src/components/reports/CustomReportForm.tsx",
-    "/src/components/reports/CustomReportViewer.tsx",
-    "/src/components/reports/DebtPayoffTimelineReport.tsx",
-    "/src/components/reports/DividendIncomeReport.tsx",
-    "/src/components/reports/DividendYieldGrowthReport.tsx",
-    "/src/components/reports/FlexGroupAnalysisReport.tsx",
-    "/src/components/reports/ForeignCurrencyFeesReport.tsx",
-    "/src/components/reports/GeographicAllocationReport.tsx",
-    "/src/components/reports/HealthScoreHistoryReport.tsx",
-    "/src/components/reports/IncomeBySourceReport.tsx",
-    "/src/components/reports/IncomeVsExpensesReport.tsx",
-    "/src/components/reports/InvestmentPerformanceReport.tsx",
-    "/src/components/reports/InvestmentReportForm.tsx",
-    "/src/components/reports/InvestmentReportViewer.tsx",
-    "/src/components/reports/InvestmentTransactionHistoryReport.tsx",
-    "/src/components/reports/LoanAmortizationReport.tsx",
-    "/src/components/reports/LoanOverpaymentSimulatorReport.tsx",
-    "/src/components/reports/MonteCarloReport.tsx",
-    "/src/components/reports/MonteCarloResultsTable.tsx",
-    "/src/components/reports/MonthlyCategoryBreakdownReport.tsx",
-    "/src/components/reports/MonthlyComparisonReport.tsx",
-    "/src/components/reports/MonthlySpendingTrendReport.tsx",
-    "/src/components/reports/NetWorthReport.tsx",
-    "/src/components/reports/PortfolioValueReport.tsx",
-    "/src/components/reports/RealizedGainsReport.tsx",
-    "/src/components/reports/RecurringExpensesReport.tsx",
-    "/src/components/reports/ReportError.tsx",
-    "/src/components/reports/SavingsRateReport.tsx",
-    "/src/components/reports/SeasonalSpendingMapReport.tsx",
-    "/src/components/reports/SectorWeightingsReport.tsx",
-    "/src/components/reports/SecurityComparisonChart.tsx",
-    "/src/components/reports/SecurityPerformanceReport.tsx",
-    "/src/components/reports/SecurityTypeAllocationReport.tsx",
-    "/src/components/reports/SpendingAnomaliesReport.tsx",
-    "/src/components/reports/SpendingByCategoryReport.tsx",
-    "/src/components/reports/SpendingByPayeeReport.tsx",
-    "/src/components/reports/TaxSummaryReport.tsx",
-    "/src/components/reports/UncategorizedTransactionsReport.tsx",
-    "/src/components/reports/UpcomingBillsReport.tsx",
-    "/src/components/reports/WeekendVsWeekdayReport.tsx",
-    "/src/components/reports/YearOverYearReport.tsx",
-    "/src/components/reports/account-balances/AccountBalancesControls.tsx",
-    "/src/components/reports/monte-carlo/CompareMetricTable.tsx",
-    "/src/components/reports/monte-carlo/CompareScenariosView.tsx",
-    "/src/components/scheduled-transactions/BillsFilterPanel.tsx",
-    "/src/components/settings/AboutSection.tsx",
-    "/src/components/settings/ApiAccessSection.tsx",
-    "/src/components/settings/AutoBackupSection.tsx",
-    "/src/components/settings/BackupRestoreSection.tsx",
-    "/src/components/settings/DangerZoneSection.tsx",
-    "/src/components/settings/HelpSection.tsx",
-    "/src/components/settings/NotificationsSection.tsx",
-    "/src/components/settings/PreferencesSection.tsx",
-    "/src/components/settings/ProfileSection.tsx",
-    "/src/components/settings/SecuritySection.tsx",
-    "/src/components/settings/SettingsNav.tsx",
-    "/src/components/settings/SharedAccessSection.tsx",
-    "/src/components/settings/TourCatalog.tsx",
-    "/src/components/settings/ai/AiBubbleToggle.tsx",
-    "/src/components/settings/ai/ProviderList.tsx",
-    "/src/components/settings/ai/UsageDashboard.tsx",
     "/src/components/transactions/AccountBalancesBarChart.tsx",
     "/src/components/transactions/AccountInfoWidget.tsx",
     "/src/components/transactions/BalanceHistoryChart.tsx",
@@ -1721,7 +1586,6 @@ describe("a panel card is the shared Card surface", () => {
     "/src/components/transactions/TagKeyBreakdownChart.tsx",
     "/src/components/transactions/TransactionFilterPanel.tsx",
     "/src/components/ui/CalendarPopover.tsx",
-    "/src/components/ui/Modal.tsx",
     "/src/components/ui/Pagination.tsx",
   ];
 
@@ -2171,14 +2035,12 @@ describe("a keyboard focus ring is focus-visible, never focus", () => {
     "/src/components/categories/CategoryForm.tsx",
     "/src/components/categories/DeleteCategoryDialog.tsx",
     "/src/components/dashboard/TourBanner.tsx",
-    "/src/components/dashboard/UpcomingBills.tsx",
     "/src/components/dashboard/WidgetCard.tsx",
     "/src/components/import/CategoryMappingRow.tsx",
     "/src/components/investments/InvestmentTransactionList.tsx",
     "/src/components/layout/AppHeader.tsx",
     "/src/components/layout/DelegationBanner.tsx",
     "/src/components/payees/AutoMergePayeesDialog.tsx",
-    "/src/components/payees/CategoryAutoAssignDialog.tsx",
     "/src/components/payees/MergePayeeDialog.tsx",
     "/src/components/reconcile/ReconcileTable.tsx",
     "/src/components/reports/CustomReportForm.tsx",
@@ -2286,7 +2148,6 @@ describe("row hover comes from the shared pair, not a hand-picked grey", () => {
     "/src/app/error.tsx",
     "/src/app/not-found.tsx",
     "/src/app/reports/page.tsx",
-    "/src/app/settings/page.tsx",
     "/src/components/accounts/AccountForm.tsx",
     "/src/components/accounts/AccountList.tsx",
     "/src/components/accounts/AccountRow.tsx",
@@ -2309,7 +2170,6 @@ describe("row hover comes from the shared pair, not a hand-picked grey", () => {
     "/src/components/categories/CategoryList.tsx",
     "/src/components/categories/detail/CategorySubcategoriesTab.tsx",
     "/src/components/currencies/CurrencyList.tsx",
-    "/src/components/dashboard/FavouriteAccounts.tsx",
     "/src/components/dashboard/FavouriteReportsWidget.tsx",
     "/src/components/dashboard/FavouriteSecurities.tsx",
     "/src/components/dashboard/GettingStarted.tsx",
@@ -2567,27 +2427,15 @@ describe("a status pill is Badge, not a hand-rolled rounded-full", () => {
     "/src/lib/account-type-meta.tsx",
     "/src/lib/scheduled-kind.ts",
   ]);
+  // `rounded-(--ui-radius-pill)` is Badge's own spelling of the pill (the UI
+  // style token), so a hand-copied Badge class string is caught too.
   const PILL_FINGERPRINT =
-    /rounded-full[^"'`]*(?:text-xs|text-\[10px\])[^"'`]*font-medium|(?:text-xs|text-\[10px\])[^"'`]*font-medium[^"'`]*rounded-full|rounded-full[^"'`]*font-medium[^"'`]*(?:text-xs|text-\[10px\])/;
+    /(?:rounded-full|rounded-\(--ui-radius-pill\))[^"'`]*(?:text-xs|text-\[10px\])[^"'`]*font-medium|(?:text-xs|text-\[10px\])[^"'`]*font-medium[^"'`]*(?:rounded-full|rounded-\(--ui-radius-pill\))|(?:rounded-full|rounded-\(--ui-radius-pill\))[^"'`]*font-medium[^"'`]*(?:text-xs|text-\[10px\])/;
 
   const BASELINE: ReadonlyArray<string> = [
     "/src/components/budgets/BudgetCategoryTrend.tsx",
     "/src/components/budgets/BudgetPeriodDetail.tsx",
     "/src/components/budgets/BudgetWizard.tsx",
-    "/src/components/categories/detail/CategoryDetailHeader.tsx",
-    "/src/components/payees/AutoMergePayeesDialog.tsx",
-    "/src/components/payees/CategoryAutoAssignDialog.tsx",
-    "/src/components/payees/detail/PayeeDetailHeader.tsx",
-    "/src/components/reconcile/ReconcileTable.tsx",
-    "/src/components/reports/FilterBuilder.tsx",
-    "/src/components/reports/RecurringExpensesReport.tsx",
-    "/src/components/reports/SpendingAnomaliesReport.tsx",
-    "/src/components/scheduled-transactions/ScheduledTransactionList.tsx",
-    "/src/components/securities/detail/SecurityDetailHeader.tsx",
-    "/src/components/securities/detail/SecurityPositionInfoCard.tsx",
-    "/src/components/securities/detail/SecurityPositionState.tsx",
-    "/src/components/settings/BackupRestoreSection.tsx",
-    "/src/components/settings/SecuritySection.tsx",
     "/src/components/transactions/CategoryInfoWidget.tsx",
     "/src/components/transactions/PayeeInfoWidget.tsx",
     "/src/components/transactions/TransactionFilterPanel.tsx",
@@ -2615,7 +2463,7 @@ describe("a status pill is Badge, not a hand-rolled rounded-full", () => {
   it("still finds the primitive, so the rule cannot pass by accident", () => {
     const badge = sources[BADGE];
     expect(badge, `${BADGE} not found -- update BADGE in this test`).toBeTruthy();
-    expect(badge).toContain("rounded-full");
+    expect(badge).toContain("rounded-(--ui-radius-pill)");
     expect(badge).toContain("font-medium");
   });
 
@@ -2650,7 +2498,6 @@ describe("table chrome comes from Table.tsx, not a repeated divide string", () =
 
   const BASELINE: ReadonlyArray<string> = [
     "/src/app/reports/page.tsx",
-    "/src/components/accounts/AccountList.tsx",
     "/src/components/accounts/loan-detail/AmortizationScheduleTable.tsx",
     "/src/components/accounts/loan-detail/SavedScenariosPanel.tsx",
     "/src/components/budgets/BudgetPeriodDetail.tsx",
@@ -2658,14 +2505,12 @@ describe("table chrome comes from Table.tsx, not a repeated divide string", () =
     "/src/components/categories/detail/CategorySubcategoriesTab.tsx",
     "/src/components/currencies/CurrencyList.tsx",
     "/src/components/institutions/InstitutionAccountsManager.tsx",
-    "/src/components/institutions/InstitutionList.tsx",
     "/src/components/investments/GroupedHoldingsList.tsx",
     "/src/components/investments/HoldingsList.tsx",
     "/src/components/investments/InvestmentTransactionList.tsx",
     "/src/components/payees/CategoryAutoAssignDialog.tsx",
     "/src/components/payees/DeactivateUnusedPayeesDialog.tsx",
     "/src/components/payees/PayeeList.tsx",
-    "/src/components/reconcile/ReconcileTable.tsx",
     "/src/components/reconcile/ReconciliationReminderBadge.tsx",
     "/src/components/reports/AccountBalancesReport.tsx",
     "/src/components/reports/BillPaymentHistoryReport.tsx",
@@ -2700,7 +2545,6 @@ describe("table chrome comes from Table.tsx, not a repeated divide string", () =
     "/src/components/reports/UpcomingBillsReport.tsx",
     "/src/components/reports/YearOverYearReport.tsx",
     "/src/components/reports/monte-carlo/CompareMetricTable.tsx",
-    "/src/components/scheduled-transactions/ScheduledTransactionList.tsx",
     "/src/components/securities/SecurityList.tsx",
     "/src/components/securities/SecurityLookupPicker.tsx",
     "/src/components/securities/SecurityPriceHistory.tsx",
@@ -3387,13 +3231,7 @@ describe("a segmented control wears the chrome in segmented-control.ts", () => {
    * fixing one means DELETING its line, and the third test fails while a listed
    * file no longer offends, so the register cannot outlive its subjects.
    */
-  const INLINE_ACTIVE_BASELINE: ReadonlyArray<{ file: string; reason: string }> = [
-    {
-      file: "/src/components/bills/CashFlowForecastChart.tsx",
-      reason:
-        "predates the shared chrome: a range switcher built before segmented-control.ts existed.",
-    },
-  ];
+  const INLINE_ACTIVE_BASELINE: ReadonlyArray<{ file: string; reason: string }> = [];
 
   const inliningFiles = () => {
     const found = new Set<string>();

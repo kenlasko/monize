@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useTranslations } from 'next-intl';
 import { KeyValueList, type KeyValueRow } from '@/components/ui/KeyValueList';
 import { externalUrlLabel, toSafeExternalUrl } from '@/lib/external-url';
@@ -82,7 +83,7 @@ export function SecurityAboutCard({ security }: SecurityAboutCardProps) {
   ];
 
   return (
-    <div className="flex h-full flex-col rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+    <div className={`${CARD_CLASS} flex h-full flex-col p-4`}>
       <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t('about.title')}
       </h3>

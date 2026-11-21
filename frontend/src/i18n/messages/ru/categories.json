@@ -16,7 +16,8 @@
     "summaryTotal": "Всего категорий",
     "summaryIncome": "Категории доходов",
     "summaryExpense": "Категории расходов",
-    "summaryTopLevel": "Верхнего уровня"
+    "summaryTopLevel": "Верхнего уровня",
+    "eyebrow": "План категорий"
   },
   "empty": {
     "heading": "Категорий ещё нет",

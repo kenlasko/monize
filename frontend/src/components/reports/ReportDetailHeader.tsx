@@ -44,7 +44,7 @@ export function ReportDetailHeader({
   );
 
   return (
-    <div className="mb-6">
+    <div className="ui-detail-header mb-6">
       <BackToReportsLink />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -54,13 +54,13 @@ export function ReportDetailHeader({
                 rather than being cut with an ellipsis; the desktop keeps the
                 single-line truncation (`sm:truncate`). The caret stays beside
                 it -- the mobile-table identity treatment. */}
-            <h1 ref={titleRef} className="break-words text-2xl font-bold text-gray-900 sm:truncate dark:text-gray-100">
+            <h1 ref={titleRef} className="ui-detail-title break-words text-2xl font-bold text-gray-900 sm:truncate dark:text-gray-100">
               {title}
             </h1>
             <EntitySwitcher {...switcher} />
           </div>
           {subtitle && (
-            <p className="text-gray-500 dark:text-gray-400">{subtitle}</p>
+            <p className="ui-detail-meta text-gray-500 dark:text-gray-400">{subtitle}</p>
           )}
         </div>
 

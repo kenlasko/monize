@@ -52,6 +52,7 @@ const mockPreferences: UserPreferences = {
   timezone: 'UTC',
   theme: 'system',
   colorTheme: 'default',
+  uiStyle: 'standard',
   defaultCurrency: 'CAD',
   notificationEmail: false,
   twoFactorEnabled: false,
@@ -530,6 +531,26 @@ describe('PreferencesSection', () => {
 
     await waitFor(() => {
       expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ colorTheme: 'latte' });
+    });
+  });
+
+  it('persists the UI style immediately on change, above the colour theme', async () => {
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>).mockResolvedValue(mockPreferences);
+
+    render(<PreferencesSection preferences={mockPreferences} onPreferencesUpdated={mockOnPreferencesUpdated} />);
+
+    const groups = screen.getAllByRole('radiogroup');
+    const uiIndex = groups.findIndex((g) => g.getAttribute('aria-labelledby') === 'ui-style-label');
+    const colourIndex = groups.findIndex((g) => g.getAttribute('aria-labelledby') === 'color-theme-label');
+    expect(uiIndex).toBeGreaterThanOrEqual(0);
+    expect(uiIndex).toBeLessThan(colourIndex);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', { name: /modern/i }));
+    });
+
+    await waitFor(() => {
+      expect(userSettingsApi.updatePreferences).toHaveBeenCalledWith({ uiStyle: 'modern' });
     });
   });
 

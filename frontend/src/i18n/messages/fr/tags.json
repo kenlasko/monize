@@ -35,7 +35,8 @@
       "createFailed": "Échec de la création de l'étiquette",
       "updateFailed": "Échec de la mise à jour de l'étiquette",
       "deleteFailed": "Échec de la suppression de l'étiquette"
-    }
+    },
+    "eyebrow": "Étiquettes"
   },
   "list": {
     "empty": {

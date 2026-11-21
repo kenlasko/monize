@@ -30,6 +30,7 @@ import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
 import { customReportMeasure, isSignedTransactionList } from '@/lib/custom-report-measure';
 import { customReportDrillDownHref } from '@/lib/custom-report-links';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('CustomReportViewer');
 
@@ -237,7 +238,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
       />
 
       {/* Timeframe Override */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="flex flex-wrap items-end gap-4">
             <div className="w-64">
               <Select
@@ -274,14 +275,14 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
 
       {/* Results */}
       {isExecuting ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12">
+        <div className={`${CARD_CLASS} p-12`}>
           <div className="flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-500 dark:text-gray-400">{t('customReportViewer.generating')}</p>
           </div>
         </div>
       ) : result ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           {/* Summary */}
           <div className="flex items-center justify-between mb-6">
             <div>

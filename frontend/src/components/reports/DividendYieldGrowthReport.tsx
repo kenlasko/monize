@@ -40,6 +40,7 @@ import { useTranslations } from 'next-intl';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('DividendYieldGrowthReport');
 
@@ -539,7 +540,7 @@ export function DividendYieldGrowthReport() {
 
   if (isLoading && !response) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -552,7 +553,7 @@ export function DividendYieldGrowthReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
           <div className="text-sm text-green-600 dark:text-green-400">{t('dividendYieldGrowth.portfolioYield')}</div>
           <div className="text-xl font-bold text-green-700 dark:text-green-300">
             {/* The yield is the ratio of the two subtotals beside it, so it is
@@ -565,7 +566,7 @@ export function DividendYieldGrowthReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div className="text-sm text-blue-600 dark:text-blue-400">{t('dividendYieldGrowth.trailing12mDividends')}</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
             <PartialTotal total={{ value: trailing12mTotal, ...valuationGaps }} displayCurrency={displayCurrency}>
@@ -573,7 +574,7 @@ export function DividendYieldGrowthReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
           <div className="text-sm text-purple-600 dark:text-purple-400">{t('dividendYieldGrowth.portfolioValue')}</div>
           <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
             <PartialTotal total={{ value: totalPortfolioValue, ...valuationGaps }} displayCurrency={displayCurrency}>
@@ -590,7 +591,7 @@ export function DividendYieldGrowthReport() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <ReportAccountMultiSelect
             accounts={accounts}
@@ -636,12 +637,12 @@ export function DividendYieldGrowthReport() {
       </div>
 
       {transactions.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('dividendYieldGrowth.empty')} />
         </div>
       ) : viewType === 'yield' ? (
         /* Per-Security Yield Table */
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div ref={chartRef} className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('dividendYieldGrowth.perSecurityTitle')}
@@ -736,7 +737,7 @@ export function DividendYieldGrowthReport() {
         </div>
       ) : viewType === 'growth' ? (
         /* Year-over-Year Growth */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('dividendYieldGrowth.annualIncomeTitle')}
           </h3>
@@ -827,7 +828,7 @@ export function DividendYieldGrowthReport() {
         </div>
       ) : (
         /* Frequency Analysis */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('dividendYieldGrowth.frequencyTitle')}
           </h3>

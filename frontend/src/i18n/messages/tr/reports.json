@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Oluşturulma: {timestamp}"
+  },
+  "statement": {
+    "item": "Kalem",
+    "amount": "Tutar",
+    "share": "Pay"
   }
 }

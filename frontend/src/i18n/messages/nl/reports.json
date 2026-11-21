@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Gemaakt: {timestamp}"
+  },
+  "statement": {
+    "item": "Post",
+    "amount": "Bedrag",
+    "share": "Aandeel"
   }
 }

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Cookies from 'js-cookie';
 import { useTranslations } from 'next-intl';
 import { preferenceCookieAttributes } from '@/lib/preference-cookie';
+import { Guilloche } from '@/components/ui/Guilloche';
 
 /** What the panel can show, in the order successive visits step through it. */
 export const AUTH_BRAND_SLIDES = [
@@ -66,27 +67,28 @@ export function AuthBrandPanel({ showScreenshot = false }: AuthBrandPanelProps) 
   return (
     <aside
       data-testid="auth-brand-panel"
-      className="relative hidden h-screen flex-col overflow-hidden bg-linear-to-br from-blue-700 via-blue-800 to-blue-950 p-12 text-white lg:sticky lg:top-0 lg:flex xl:p-16"
+      className="ui-auth-brand relative hidden h-screen flex-col overflow-hidden bg-linear-to-br from-blue-700 via-blue-800 to-blue-950 p-12 text-white lg:sticky lg:top-0 lg:flex xl:p-16"
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-white/10 blur-3xl"
+        className="ui-auth-brand-glow pointer-events-none absolute -right-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-white/10 blur-3xl"
       />
-      <div className="relative flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1">
+      <Guilloche className="ui-auth-guilloche pointer-events-none absolute hidden" />
+      <div className="ui-auth-brand-mark relative flex items-center gap-3">
+        <span className="ui-auth-brand-puck flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1">
           <Image src="/icons/monize-logo-transparent.svg" alt="" width={32} height={32} priority />
         </span>
         <span className="text-xl font-bold tracking-tight">Monize</span>
       </div>
       <div className="relative mt-12 max-w-xl xl:mt-16">
-        <p className="text-3xl font-extrabold leading-tight tracking-tight xl:text-4xl">
+        <p className="ui-auth-brand-title text-3xl font-extrabold leading-tight tracking-tight xl:text-4xl">
           {t(`slides.${slide.id}.title`)}
         </p>
-        <p className="mt-4 text-base text-white/80 xl:text-lg">{t(`slides.${slide.id}.body`)}</p>
+        <p className="ui-auth-brand-body mt-4 text-base text-white/80 xl:text-lg">{t(`slides.${slide.id}.body`)}</p>
       </div>
       <div className="auth-brand-rise relative mt-10 min-h-0 flex-1 xl:mt-14">
         {showScreenshot && (
-          <div className="relative h-full w-fit max-w-full">
+          <div className="ui-auth-brand-shot relative h-full w-fit max-w-full">
             {(['.light', ''] as const).map((variant) => (
               <Image
                 key={variant}

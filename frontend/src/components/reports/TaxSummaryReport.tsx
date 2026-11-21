@@ -11,6 +11,7 @@ import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isComplete, reportTotal } from '@/lib/currency-total';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export function TaxSummaryReport() {
   const t = useTranslations('reports');
@@ -34,7 +35,7 @@ export function TaxSummaryReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -109,7 +110,7 @@ export function TaxSummaryReport() {
   return (
     <div className="space-y-6">
       {/* Year Selector */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -131,19 +132,19 @@ export function TaxSummaryReport() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} ui-rep-tile p-6`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('taxSummary.totalIncome')}</div>
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
             <PartialTotal total={income} displayCurrency={reportingCurrency}>{formatCurrency(income.value)}</PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} ui-rep-tile p-6`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('taxSummary.totalExpenses')}</div>
           <div className="text-2xl font-bold text-red-600 dark:text-red-400">
             <PartialTotal total={expenses} displayCurrency={reportingCurrency}>{formatCurrency(expenses.value)}</PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} ui-rep-tile p-6`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('taxSummary.potentialDeductions')}</div>
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             <PartialTotal total={deductible} displayCurrency={reportingCurrency}>{formatCurrency(deductible.value)}</PartialTotal>
@@ -152,7 +153,7 @@ export function TaxSummaryReport() {
       </div>
 
       {/* Notice */}
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+      <div className="ui-rep-tile bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
         <div className="flex gap-3">
           <svg className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -167,7 +168,7 @@ export function TaxSummaryReport() {
       </div>
 
       {/* Income Breakdown */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <div className="px-6 py-4 bg-green-50 dark:bg-green-900/20 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-green-700 dark:text-green-300">
             {t('taxSummary.incomeBySource')}
@@ -198,7 +199,7 @@ export function TaxSummaryReport() {
       </div>
 
       {/* Potential Deductions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <div className="px-6 py-4 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300">
             {t('taxSummary.potentiallyDeductible')}
@@ -231,7 +232,7 @@ export function TaxSummaryReport() {
       </div>
 
       {/* All Expenses by Category */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
             {t('taxSummary.allExpensesByCategory')}

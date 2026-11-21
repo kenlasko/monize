@@ -78,6 +78,7 @@ export const RULES: Record<string, TableRules> = {
     number_format: keep,
     theme: keep,
     color_theme: keep,
+    ui_style: keep,
     timezone: konst("UTC"),
     notification_email: keep,
     two_factor_enabled: keep,

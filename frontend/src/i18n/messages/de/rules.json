@@ -4,7 +4,8 @@
     "subtitle": "Tags, Kategorien und Zahlungsempfänger automatisch ergänzen, wenn eine Transaktion angelegt oder importiert wird",
     "createButton": "Regel erstellen",
     "loading": "Regeln werden geladen...",
-    "totalCount": "{count, plural, one {# Regel} other {# Regeln}}"
+    "totalCount": "{count, plural, one {# Regel} other {# Regeln}}",
+    "eyebrow": "Automatisierung"
   },
   "empty": {
     "title": "Noch keine Regeln",

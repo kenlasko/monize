@@ -427,7 +427,7 @@ export function Modal({
   // a phone browser's collapsing toolbar, which `vh` does not.
   const panelClassName = isDrawer
     ? `bg-white dark:bg-gray-800 shadow-xl dark:shadow-gray-700/50 h-full w-[85%] max-w-sm ${overflowClass} outline-none transition-transform duration-200 ease-out translate-x-0 starting:-translate-x-full motion-reduce:transition-none ${className}`
-    : `bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full ${
+    : `ui-dialog bg-white dark:bg-gray-800 rounded-(--ui-radius-dialog) shadow-xl dark:shadow-gray-700/50 ${maxWidthClasses[maxWidth]} w-full ${
         fixed
           ? `h-[min(90vh,56rem)] flex flex-col ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`
           : `max-h-[calc(100dvh-2rem)] ${overflowClass}`

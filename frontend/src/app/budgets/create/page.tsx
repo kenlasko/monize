@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { CARD_CLASS } from '@/components/ui/Card';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BudgetWizard } from '@/components/budgets/BudgetWizard';
@@ -39,7 +40,7 @@ function BudgetCreateContent() {
             help="budgets"
           />
         </div>
-        <div className="bg-white dark:bg-gray-800 sm:shadow sm:rounded-lg p-0 sm:p-6">
+        <div className={`${CARD_CLASS} p-0 sm:p-6 max-sm:rounded-none max-sm:border-0 max-sm:shadow-none`}>
           <BudgetWizard
             onComplete={() => router.push('/budgets')}
             onCancel={() => router.push('/budgets')}

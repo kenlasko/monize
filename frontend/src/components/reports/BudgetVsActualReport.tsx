@@ -48,6 +48,7 @@ import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-c
 import { gainLossColor } from '@/lib/format';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-budget-vs-actual-include-transfers';
 // The budget's own actual is not account-scoped, so the funding fetch is not
@@ -375,7 +376,7 @@ export function BudgetVsActualReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -386,7 +387,7 @@ export function BudgetVsActualReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('budgetVsActual.noBudgets')}
         </p>
@@ -422,7 +423,7 @@ export function BudgetVsActualReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex items-center gap-3">
             <select
@@ -482,7 +483,7 @@ export function BudgetVsActualReport() {
 
       {/* Chart */}
       {viewMode === 'overview' ? (
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           {trendData.length === 0 ? (
             <EmptyState title={t('budgetVsActual.noData')} />
           ) : (

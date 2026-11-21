@@ -143,3 +143,11 @@ describe('FormActions', () => {
     expect(labels).toEqual(['Cancel', 'Full Form', 'Save']);
   });
 });
+
+describe('FormActions leading content', () => {
+  it('renders it at the start of the row beside the buttons', () => {
+    render(<FormActions onCancel={() => {}} leading={<span data-testid="lead">hint</span>} />);
+    expect(screen.getByTestId('lead')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+  });
+});

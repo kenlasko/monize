@@ -246,7 +246,7 @@ export function InsightsList() {
 
       {/* Summary row */}
       <div className={summaryGridClass(3)}>
-        <SummaryCard label={t('list.summary.active')} value={active.length} icon={SummaryIcons.list} />
+        <SummaryCard label={t('list.summary.active')} value={active.length} icon={SummaryIcons.list} lead />
         <SummaryCard
           label={t('list.summary.alerts')}
           value={alertCount}

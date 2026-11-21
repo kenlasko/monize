@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "E-Mail-Belege",
-    "subtitle": "Lies Bestellbestätigungen aus einem Postfach und wandle sie in aufgeschlüsselte Buchungen um: was verbunden ist, was aus jeder E-Mail geworden ist und was auf dich wartet"
+    "subtitle": "Lies Bestellbestätigungen aus einem Postfach und wandle sie in aufgeschlüsselte Buchungen um: was verbunden ist, was aus jeder E-Mail geworden ist und was auf dich wartet",
+    "eyebrow": "Belegeingang"
   },
   "mailbox": {
     "heading": "Postfach",

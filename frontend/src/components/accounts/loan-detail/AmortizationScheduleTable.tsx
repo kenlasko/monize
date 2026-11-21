@@ -14,6 +14,7 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { LoanRateEditing } from './useLoanRateEditing';
 import { CAPTION_CLASS, CellLabel, Th } from '@/components/ui/Table';
 import { ScheduleTableRow } from './ScheduleTableRow';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const COLLAPSED_PAST_ROWS = 5;
 const COLLAPSED_FUTURE_ROWS = 5;
@@ -289,7 +290,7 @@ export function AmortizationScheduleTable({
   const operatorClass = 'text-gray-300 dark:text-gray-600 font-normal';
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden scroll-mt-4">
+    <div className={`${CARD_CLASS} overflow-hidden scroll-mt-4`}>
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between gap-2">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

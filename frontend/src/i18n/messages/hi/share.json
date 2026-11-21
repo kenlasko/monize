@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "यह ब्राउज़र साझा की गई फ़ाइलें प्राप्त नहीं कर सकता",
   "unsupportedBrowserMessage": "इंस्टॉल किए गए ऐप में साझा करना यहाँ उपलब्ध नहीं है। आप फ़ाइलें Monize के भीतर से जोड़ सकते हैं।",
   "goToTransactions": "लेन-देन से जोड़ें",
-  "goToImport": "आयात पर जाएँ"
+  "goToImport": "आयात पर जाएँ",
+  "eyebrow": "आने वाली फ़ाइल"
 }

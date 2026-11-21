@@ -10,24 +10,21 @@ import { moneyDecimalsForCurrency } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useReportData } from '@/hooks/useReportData';
-import { PartialTotal } from '@/components/ui/PartialTotal';
-import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
 import type { PortfolioValuation } from '@/types/investment';
 import type { DashboardHeroConfig } from './widget-config';
 import { heroMonthChange, heroSnapshot } from './dashboard-hero-figures';
-import {
-  HeroAreaChart,
-  HeroCaption,
-  HeroFigureSkeleton,
-  HeroHeadline,
-  HeroLayout,
-  HeroMessage,
-  HeroPill,
-  HeroPillUnknown,
-  HeroSkeleton,
-  HeroSubFigures,
-  heroStrong,
-} from './hero-parts';
+import { HeroMessage, HeroSkeleton } from './hero-parts';
+import type { NetWorthHeroViewProps } from './variants/net-worth-hero-view';
+import { NetWorthHeroStandard } from './variants/NetWorthHeroStandard';
+import { NetWorthHeroClassic } from './variants/NetWorthHeroClassic';
+import { NetWorthHeroModern } from './variants/NetWorthHeroModern';
+
+const NET_WORTH_HERO_VARIANTS: StyleVariants<NetWorthHeroViewProps> = {
+  standard: NetWorthHeroStandard,
+  classic: NetWorthHeroClassic,
+  modern: NetWorthHeroModern,
+};
 
 interface NetWorthHeroProps {
   config: DashboardHeroConfig;
@@ -53,6 +50,7 @@ export function NetWorthHero({
   investmentSummaryLoading,
 }: NetWorthHeroProps) {
   const t = useTranslations('dashboard');
+  const uiStyle = useUiStyle();
   const { formatCurrency, formatPercent, defaultCurrency } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
 
@@ -118,111 +116,52 @@ export function NetWorthHero({
 
   const changeUp = change !== null && change.amount >= 0;
   const dir = (chunks: ReactNode) => <span className="sr-only">{chunks}</span>;
-  const pill =
-    change === null ? null : change.known ? (
-      <HeroPill up={changeUp}>
-        {/* The arrow is decoration; the direction is said in words to a
-            screen reader, inside the catalog's own sentence. */}
-        {change.percent === null
-          ? t.rich('hero.changeThisMonth', {
-              direction: changeUp ? 'up' : 'down',
-              amount: formatCurrency(Math.abs(change.amount)),
-              dir,
-            })
-          : t.rich('hero.changeThisMonthWithPercent', {
-              direction: changeUp ? 'up' : 'down',
-              amount: formatCurrency(Math.abs(change.amount)),
-              percent: formatPercent(Math.abs(change.percent), 1),
-              dir,
-            })}
-      </HeroPill>
-    ) : (
-      <HeroPillUnknown>
-        <UnknownAmount reason="displayFx" />
-      </HeroPillUnknown>
-    );
+  // The arrow a style draws is decoration; the direction is said in words to
+  // a screen reader, inside the catalog's own sentence.
+  const changeText =
+    change === null || !change.known
+      ? null
+      : change.percent === null
+        ? t.rich('hero.changeThisMonth', {
+            direction: changeUp ? 'up' : 'down',
+            amount: formatCurrency(Math.abs(change.amount)),
+            dir,
+          })
+        : t.rich('hero.changeThisMonthWithPercent', {
+            direction: changeUp ? 'up' : 'down',
+            amount: formatCurrency(Math.abs(change.amount)),
+            percent: formatPercent(Math.abs(change.percent), 1),
+            dir,
+          });
 
-  return (
-    <HeroLayout
-      label={label}
-      figures={
-        <>
-          <HeroCaption>{t('hero.netWorth')}</HeroCaption>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-            <HeroHeadline
-              negative={snapshot.netWorth.value < 0}
-              collapsed={{
-                title: t('hero.netWorth'),
-                figure: formatCurrency(snapshot.netWorth.value),
-                figurePartial: !isComplete(snapshot.netWorth),
-                change:
-                  change !== null && change.known
-                    ? {
-                        up: changeUp,
-                        text:
-                          change.percent === null
-                            ? formatCurrency(Math.abs(change.amount))
-                            : formatPercent(Math.abs(change.percent), 1),
-                      }
-                    : undefined,
-              }}
-            >
-              <PartialTotal total={snapshot.netWorth} displayCurrency={defaultCurrency}>
-                {formatCurrency(snapshot.netWorth.value)}
-              </PartialTotal>
-            </HeroHeadline>
-            {pill}
-          </div>
-          <HeroSubFigures>
-            <span>
-              {t.rich('hero.assets', {
-                value: () => (
-                  <PartialTotal total={snapshot.assets} displayCurrency={defaultCurrency}>
-                    {formatCurrency(snapshot.assets.value)}
-                  </PartialTotal>
-                ),
-                strong: heroStrong,
-              })}
-            </span>
-            <span>
-              {t.rich('hero.liabilities', {
-                value: () => (
-                  <PartialTotal total={snapshot.liabilities} displayCurrency={defaultCurrency}>
-                    {formatCurrency(snapshot.liabilities.value)}
-                  </PartialTotal>
-                ),
-                strong: heroStrong,
-              })}
-            </span>
-            {hasInvestments && investmentSummaryLoading && <HeroFigureSkeleton />}
-            {!investmentSummaryLoading && invested && (
-              <span>
-                {t.rich('hero.invested', {
-                  value: () => (
-                    <PartialTotal
-                      total={invested.total}
-                      displayCurrency={defaultCurrency}
-                      explanation={invested.explanation}
-                    >
-                      {formatCurrency(invested.value)}
-                    </PartialTotal>
-                  ),
-                  strong: heroStrong,
-                })}
-              </span>
-            )}
-          </HeroSubFigures>
-        </>
-      }
-      chart={
-        <HeroAreaChart
-          points={points}
-          currency={defaultCurrency}
-          gradientId="dashboardHeroNetWorth"
-          formatTick={(m) => formatChartDate(`${m}-01`, points.length > 18 ? 'MMM yy' : 'MMM')}
-          formatTooltipKey={(m) => formatChartDate(`${m}-01`, 'MMMM yyyy')}
-        />
-      }
-    />
-  );
+  return renderForStyle(uiStyle, NET_WORTH_HERO_VARIANTS, {
+    label,
+    currency: defaultCurrency,
+    netWorth: snapshot.netWorth,
+    assets: snapshot.assets,
+    liabilities: snapshot.liabilities,
+    // Held back while the valuation is loading: the skeleton stands in its place.
+    invested: investmentSummaryLoading ? null : invested,
+    investedLoading: hasInvestments && investmentSummaryLoading,
+    collapsed: {
+      title: t('hero.netWorth'),
+      figure: formatCurrency(snapshot.netWorth.value),
+      figurePartial: !isComplete(snapshot.netWorth),
+      change:
+        change !== null && change.known
+          ? {
+              up: changeUp,
+              text:
+                change.percent === null
+                  ? formatCurrency(Math.abs(change.amount))
+                  : formatPercent(Math.abs(change.percent), 1),
+            }
+          : undefined,
+    },
+    change: change === null ? null : changeText === null ? { known: false } : { known: true, up: changeUp, text: changeText },
+    points,
+    formatTick: (m) => formatChartDate(`${m}-01`, points.length > 18 ? 'MMM yy' : 'MMM'),
+    formatTooltipKey: (m) => formatChartDate(`${m}-01`, 'MMMM yyyy'),
+    formatNarrowMonth: (m) => formatChartDate(`${m}-01`, 'MMMMM'),
+  });
 }

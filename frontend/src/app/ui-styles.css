@@ -1,0 +1,266 @@
+/*
+ * UI styles: the second theming axis, beside the colour palettes in
+ * themes.css. A palette decides WHAT COLOUR every surface is; a UI style
+ * decides its SHAPE -- typefaces, corner radii, card treatment, table chrome,
+ * navigation. Selected in Settings -> Preferences and applied by
+ * ThemeContext as `data-ui-style` on <html> ('standard' applies no
+ * attribute, so everything below is inert for it).
+ *
+ * The two axes compose because nothing here names a colour. Every colour
+ * below is a gray/blue ramp token (or a color-mix of one), which the active
+ * palette has already redefined -- so Classic on Nord and Modern on Latte
+ * need no entries of their own, and a new palette works with every style
+ * on the day it lands. Never put a hex literal in this file.
+ *
+ * How a style reaches the components, in order of preference:
+ *
+ *   1. Tailwind tokens. `rounded-md/lg/xl`, `font-sans`, `font-mono` and
+ *      `shadow-card` compile to var() references, so redefining the token
+ *      re-shapes every call site at once. (Trap: bare `rounded` and
+ *      `rounded-full` compile to literals and are out of reach.)
+ *   2. `--ui-*` tokens, read by the shared primitives through
+ *      `rounded-(--ui-radius-card)` and friends. Their Standard values live
+ *      in globals.css. Because they are ordinary utilities, a call site's
+ *      own `rounded-none` / `border-red-300` still wins through cn().
+ *   3. Marker classes the primitives carry (`ui-card`, `ui-btn`, `ui-field`,
+ *      `ui-table`, `ui-th`, `ui-dialog`, `ui-page-title`, `ui-nav`,
+ *      `ui-nav-link`). Rules on them sit in `@layer components`, BELOW
+ *      Tailwind's utilities, so a page's own classes keep winning.
+ *   4. Unlayered rules, which beat every utility. Reserved for the few
+ *      places a style must override a primitive's own utilities (the body
+ *      font next/font sets by class, the active nav link, header cell case).
+ *      Keep them scoped to a marker class.
+ *
+ * Adding a third style is a new block of tokens under its own attribute
+ * value, plus its name in src/lib/ui-styles.ts and the backend DTO list.
+ * The typefaces are loaded (unpreloaded) in src/app/ui-style-fonts.ts.
+ */
+
+/* ===================================================================== */
+/* Classic -- the ledger: serif headings, ruled tables, square corners.   */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] {
+  --font-sans: var(--font-ui-classic-body), 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: var(--font-ui-classic-mono), 'IBM Plex Mono', ui-monospace, monospace;
+  --ui-font-display: var(--font-ui-classic-display), 'Bodoni Moda', Georgia, serif;
+
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.25rem;
+  --radius-2xl: 0.375rem;
+
+  --ui-radius-card: 0.125rem;
+  --ui-radius-control: 0.1875rem;
+  --ui-radius-field: 0.125rem;
+  --ui-radius-dialog: 0.125rem;
+  --ui-radius-pill: 0.125rem;
+
+  /* Ruled paper, not a floating panel: a firmer hairline and no lift. */
+  --ui-card-border: var(--color-gray-300);
+  --shadow-card: none;
+
+  /* The ledger's ink: the heavy rules above and below a register. */
+  --ui-rule-ink: var(--color-gray-900);
+  /* Green-bar: every other row carries a wash of the palette's accent. */
+  --ui-ledger-bar: color-mix(in oklab, var(--color-blue-500) 7%, transparent);
+}
+
+html.dark[data-ui-style='classic'] {
+  --ui-card-border: var(--color-gray-600);
+  --shadow-card-dark: none;
+  --ui-rule-ink: var(--color-gray-300);
+  --ui-ledger-bar: color-mix(in oklab, var(--color-blue-400) 9%, transparent);
+}
+
+/* next/font sets Inter on <body> by class; out-rank it. */
+html[data-ui-style='classic'] body {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  html[data-ui-style='classic'] :is(h1, h2, h3, .ui-page-title) {
+    font-family: var(--ui-font-display);
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  /* A register is ruled top and bottom in ink, its header underlined. */
+  html[data-ui-style='classic'] .ui-table {
+    border-top: 2px solid var(--ui-rule-ink);
+    border-bottom: 2px solid var(--ui-rule-ink);
+  }
+  html[data-ui-style='classic'] .ui-table > thead > tr > th {
+    border-bottom: 1px solid var(--ui-rule-ink);
+  }
+  html[data-ui-style='classic'] .ui-table > tbody > tr:nth-child(even) {
+    background-color: var(--ui-ledger-bar);
+  }
+
+  html[data-ui-style='classic'] .ui-th {
+    letter-spacing: 0.14em;
+  }
+}
+
+/* The active section is underlined in the accent, the way a ledger tab is
+   marked, rather than filled. */
+html[data-ui-style='classic'] .ui-nav-link {
+  border-radius: 0;
+}
+html[data-ui-style='classic'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+  background-color: transparent;
+  color: var(--color-gray-900);
+  box-shadow: inset 0 -2px 0 var(--color-blue-600);
+}
+html.dark[data-ui-style='classic'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+  color: var(--color-gray-100);
+  box-shadow: inset 0 -2px 0 var(--color-blue-400);
+}
+
+/* ===================================================================== */
+/* Modern -- bold grotesque type, rounded colour blocks, pill controls.   */
+/* ===================================================================== */
+
+html[data-ui-style='modern'] {
+  --font-sans: var(--font-ui-modern-body), 'Instrument Sans', system-ui, sans-serif;
+  --ui-font-display: var(--font-ui-modern-display), 'Bricolage Grotesque', system-ui, sans-serif;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.5rem;
+
+  --ui-radius-card: 1.5rem;
+  --ui-radius-control: 9999px;
+  --ui-radius-field: 0.875rem;
+  --ui-radius-dialog: 1.75rem;
+  --ui-radius-pill: 9999px;
+
+  /* A block of colour rather than an outlined panel: the edge nearly goes,
+     and a wider, softer drop carries the separation instead. */
+  --ui-card-border: color-mix(in oklab, var(--color-gray-200) 45%, transparent);
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.14);
+}
+
+html.dark[data-ui-style='modern'] {
+  --ui-card-border: color-mix(in oklab, var(--color-gray-700) 60%, transparent);
+}
+
+html[data-ui-style='modern'] body {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  html[data-ui-style='modern'] :is(h1, h2, h3, .ui-page-title) {
+    font-family: var(--ui-font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  html[data-ui-style='modern'] :is(h1, .ui-page-title) {
+    letter-spacing: -0.03em;
+  }
+}
+
+/* Buttons are pills and carry a heavier label. */
+html[data-ui-style='modern'] .ui-btn {
+  font-weight: 600;
+}
+
+/* Header cells speak in sentence case, not shouted small caps. */
+html[data-ui-style='modern'] .ui-th {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* The main navigation is one segmented pill; the current section is the
+   raised segment. */
+html[data-ui-style='modern'] .ui-nav {
+  gap: 2px;
+  padding: 4px;
+  border-radius: 9999px;
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-nav {
+  background-color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-nav > * {
+  margin-inline: 0;
+}
+html[data-ui-style='modern'] .ui-nav-link {
+  border-radius: 9999px;
+}
+html[data-ui-style='modern'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+  background-color: var(--color-white);
+  color: var(--color-gray-900);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.08);
+}
+html.dark[data-ui-style='modern'] .ui-nav-link:is([aria-current='page'], [data-active]) {
+  background-color: var(--color-gray-700);
+  color: var(--color-gray-100);
+}
+
+/* ===================================================================== */
+/* Headline money figures (`MoneyFigure display`), both styles.           */
+/* ===================================================================== */
+
+/* A statement figure: large whole units, the symbol and cents set small,
+   raised to the cap line and muted. Standard renders the plain string. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display {
+  display: inline-flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  font-family: var(--ui-font-display);
+  line-height: 1;
+}
+/* Set back by opacity, never by a grey: the pieces keep the figure's own
+   colour, so a negative balance's red (or a gain's green) runs through its
+   cents and symbol instead of stopping at the decimal point. */
+html:is([data-ui-style='classic'], [data-ui-style='modern'])
+  .ui-money-display
+  :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
+  font-size: 0.46em;
+  margin-top: 0.1em;
+  opacity: 0.62;
+}
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .ui-money-prefix {
+  margin-inline-end: 0.12em;
+}
+/* The sign is set small and raised with the symbol it precedes. At the
+   figure's full size a minus is a long dash hanging at mid-height, apart from
+   the raised symbol after it. It keeps the figure's colour, never muted: the
+   sign is meaning, not ornament. */
+html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .ui-money-sign {
+  font-size: 0.46em;
+  margin-top: 0.1em;
+  margin-inline-end: 0.06em;
+}
+/* Bodoni's hyphen is a hairline: small and raised it all but vanished, and a
+   negative headline read as a positive one. A sign must never be illegible,
+   so Classic sets it in the body face, heavier and a little larger, still
+   beside the raised symbol. */
+html[data-ui-style='classic'] .ui-money-display .ui-money-sign {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.56em;
+  margin-top: 0.02em;
+}
+html[data-ui-style='classic'] .ui-money-display {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  /* Bodoni's automatic optical size at headline sizes is its display cut,
+     whose hairlines vanish on a dark page: the diagonal of a 4 disappears and
+     "461" reads "/161". A text-ish optical size keeps every stroke visible. */
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 28;
+}
+html[data-ui-style='modern'] .ui-money-display {
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+html[data-ui-style='modern'] .ui-money-display :is(.ui-money-prefix, .ui-money-fraction) {
+  letter-spacing: -0.02em;
+}

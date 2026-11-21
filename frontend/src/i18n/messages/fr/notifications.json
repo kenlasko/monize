@@ -50,7 +50,8 @@
     "retry": "Réessayer",
     "nextFire": "Prochain rappel : {date}",
     "openTarget": "Ouvrir la page associée",
-    "delegateUnavailable": "Revenez à votre propre compte pour gérer les rappels."
+    "delegateUnavailable": "Revenez à votre propre compte pour gérer les rappels.",
+    "eyebrow": "Notifications"
   },
   "billDue": {
     "titleOverdue": "{payee} en retard",

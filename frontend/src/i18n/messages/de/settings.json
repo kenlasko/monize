@@ -180,7 +180,8 @@
       "saved": "Einstellungen gespeichert",
       "saveFailed": "Einstellungen konnten nicht gespeichert werden",
       "themeSaveFailed": "Design konnte nicht gespeichert werden",
-      "colorThemeSaveFailed": "Farbdesign konnte nicht gespeichert werden"
+      "colorThemeSaveFailed": "Farbdesign konnte nicht gespeichert werden",
+      "uiStyleSaveFailed": "UI-Stil konnte nicht gespeichert werden"
     },
     "browserLocale": "Browser-Gebietsschema verwenden (automatisch erkennen)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "Hell",
       "dark": "Dunkel"
     },
+    "uiStyleLabel": "UI-Stil",
+    "uiStyleHint": "Ändert Typografie, Formen und Tabellenstil. Funktioniert mit jedem Farbthema.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standard",
+        "description": "Das vertraute Monize-Aussehen."
+      },
+      "classic": {
+        "name": "Klassisch",
+        "description": "Von Kontobüchern inspiriert: Serifenüberschriften, Tabellen mit Linien, eckige Ecken."
+      },
+      "modern": {
+        "name": "Modern",
+        "description": "Kräftige Schrift, abgerundete Farbflächen und pillenförmige Bedienelemente."
+      }
+    },
     "colorThemeLabel": "Farbdesign",
     "colorThemeHint": "Vorschauen verwenden Ihren aktuellen hellen oder dunklen Modus.",
+    "colorThemeStyleHint": "Es werden die Farbdesigns für den Stil {style} angezeigt.",
     "colorThemeOptions": {
       "default": "Standard",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Hauptbuch",
+      "studio": "Studio",
       "midnight": "Midnight",
       "highcontrast": "Hoher Kontrast",
       "colorblind": "Farbenblind-sicher"

@@ -37,7 +37,8 @@
       "withoutCategory": "カテゴリなし"
     },
     "applyDefaultCategories": "デフォルトカテゴリを適用",
-    "lookupSettings": "支払先検索の設定"
+    "lookupSettings": "支払先検索の設定",
+    "eyebrow": "支払先の索引"
   },
   "list": {
     "columns": {

@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "E-mailbonnen",
-    "subtitle": "Lees bestelbevestigingen uit een mailbox en zet ze om in gespecificeerde transacties: wat is gekoppeld, wat er met elke e-mail is gebeurd en wat op jou wacht"
+    "subtitle": "Lees bestelbevestigingen uit een mailbox en zet ze om in gespecificeerde transacties: wat is gekoppeld, wat er met elke e-mail is gebeurd en wat op jou wacht",
+    "eyebrow": "Bonnetjesinbox"
   },
   "mailbox": {
     "heading": "Mailbox",

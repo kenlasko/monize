@@ -18,6 +18,7 @@ import {
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const FREQUENCY_OPTIONS = [
   { value: 'every6hours', labelKey: 'frequencyOptions.every6hours' },
@@ -284,7 +285,7 @@ export function AutoBackupSection() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+      <div className={`${CARD_CLASS} p-6 mb-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('heading')}
         </h2>
@@ -294,7 +295,7 @@ export function AutoBackupSection() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
         {t('heading')}
       </h2>

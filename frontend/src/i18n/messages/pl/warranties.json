@@ -73,7 +73,8 @@
       "prefillFailed": "Nie udało się wczytać tej transakcji, więc gwarancja zaczyna się od pustego formularza",
       "exported": "{count, plural, one {Wyeksportowano {shown} gwarancję} few {Wyeksportowano {shown} gwarancje} many {Wyeksportowano {shown} gwarancji} other {Wyeksportowano {shown} gwarancji}}",
       "exportFailed": "Nie udało się wyeksportować gwarancji"
-    }
+    },
+    "eyebrow": "Rejestr gwarancji"
   },
   "status": {
     "lifetime": "Dożywotnia",

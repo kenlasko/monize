@@ -7,6 +7,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { getCurrencySymbol } from '@/lib/format';
 import { computePayoffScenario } from '@/lib/credit-card-payoff';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface PayoffCalculatorProps {
   /** Amount owed as a positive magnitude. */
@@ -50,7 +51,7 @@ export function PayoffCalculator({ balance, interestRate, currencyCode }: Payoff
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('payoff.title')}
         </h2>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('payoff.noBalance')}</p>
         </div>
       </section>
@@ -63,7 +64,7 @@ export function PayoffCalculator({ balance, interestRate, currencyCode }: Payoff
         {t('payoff.title')}
       </h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('payoff.description')}</p>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 space-y-4">
+      <div className={`${CARD_CLASS} p-4 space-y-4`}>
         <div className="w-48">
           <CurrencyInput
             id="payoff-monthly-payment"

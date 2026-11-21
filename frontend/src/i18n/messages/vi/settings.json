@@ -180,7 +180,8 @@
       "saved": "Đã lưu sở thích",
       "saveFailed": "Không thể lưu sở thích",
       "themeSaveFailed": "Không thể lưu giao diện",
-      "colorThemeSaveFailed": "Không thể lưu giao diện màu sắc"
+      "colorThemeSaveFailed": "Không thể lưu giao diện màu sắc",
+      "uiStyleSaveFailed": "Không thể lưu kiểu giao diện"
     },
     "browserLocale": "Sử dụng ngôn ngữ trình duyệt (tự động phát hiện)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "Sáng",
       "dark": "Tối"
     },
+    "uiStyleLabel": "Kiểu giao diện",
+    "uiStyleHint": "Thay đổi kiểu chữ, hình dạng và kiểu bảng. Dùng được với mọi giao diện màu.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Tiêu chuẩn",
+        "description": "Diện mạo quen thuộc của Monize."
+      },
+      "classic": {
+        "name": "Cổ điển",
+        "description": "Lấy cảm hứng từ sổ cái: tiêu đề có chân, bảng kẻ dòng, góc vuông."
+      },
+      "modern": {
+        "name": "Hiện đại",
+        "description": "Chữ đậm, khối màu bo tròn và nút điều khiển hình viên thuốc."
+      }
+    },
     "colorThemeLabel": "Giao diện màu sắc",
     "colorThemeHint": "Bản xem trước sử dụng chế độ sáng hoặc tối hiện tại của bạn.",
+    "colorThemeStyleHint": "Đang hiển thị các giao diện màu được thiết kế cho kiểu {style}.",
     "colorThemeOptions": {
       "default": "Mặc định",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Sổ cái",
+      "studio": "Studio",
       "midnight": "Midnight",
       "highcontrast": "Độ tương phản cao",
       "colorblind": "An toàn cho người mù màu"

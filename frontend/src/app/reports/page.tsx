@@ -28,13 +28,29 @@ import {
 } from '@/components/reports/report-definitions';
 
 import { useDensityPreference } from '@/store/densityStore';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
+import { ReportsCatalogueClassic } from '@/components/reports/variants/ReportsCatalogueClassic';
+import { ReportsCatalogueModern } from '@/components/reports/variants/ReportsCatalogueModern';
+import type { ReportsCatalogueViewProps } from '@/components/reports/variants/reports-catalogue-view';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { useMobileAddChoices } from '@/store/mobileAddActionStore';
 import { useRetainScrollPosition } from '@/hooks/useRetainScrollPosition';
 import { readPageSnapshot, writePageSnapshot } from '@/lib/page-snapshot';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('Reports');
+
+/**
+ * Classic and Modern lay the whole catalogue out themselves (a table of
+ * contents, colour blocks); Standard keeps the three density layouts below, so
+ * its entry draws nothing here.
+ */
+const CATALOGUE_VARIANTS: StyleVariants<ReportsCatalogueViewProps> = {
+  standard: () => null,
+  classic: ReportsCatalogueClassic,
+  modern: ReportsCatalogueModern,
+};
 
 /** The saved reports the page last drew, so a return draws them at once (`page-snapshot.ts`). */
 const CUSTOM_REPORTS_SNAPSHOT_KEY = 'reports:custom';
@@ -60,6 +76,8 @@ function ReportsContent() {
   // its `wrapped` card rows. Only one branch mounts, so each tour anchor still
   // lives in exactly one element.
   const isMobile = useIsMobile();
+  const uiStyle = useUiStyle();
+  const standardLayout = uiStyle === 'standard';
   const [categoryFilter, setCategoryFilter] = useLocalStorage<ReportCategory | 'all'>('monize-reports-category', 'all');
   // `?category=` overrides the remembered filter for this visit, so a link can
   // guarantee a given report is on screen whatever the user last filtered by
@@ -435,17 +453,34 @@ function ReportsContent() {
               entirely, so the toggle is hidden there rather than silently
               mutating the persisted desktop density from a control that does
               nothing on screen. Gated the same way the tile grid is. */}
-          {!isMobile && (
+          {!isMobile && standardLayout && (
             <DensityToggle view="reports" size="chip" className="ml-auto justify-center" />
           )}
         </div>
+
+        {!standardLayout &&
+          renderForStyle(uiStyle, CATALOGUE_VARIANTS, {
+            entries: filteredReports.map((report) => ({
+              report,
+              name: getReportName(report),
+              description: getReportDescription(report),
+              categoryLabel: t(`page.categories.${report.category}` as Parameters<typeof t>[0]),
+              favourite: isReportFavourite(report),
+              tourAnchor: reportTourAnchor(report),
+            })),
+            categories: REPORT_CATEGORIES,
+            groupBySection: effectiveCategory === 'all',
+            categoryLabel: (cat) => t(`page.categories.${cat}` as Parameters<typeof t>[0]),
+            onOpen: handleReportClick,
+            onToggleFavourite: handleToggleFavourite,
+          })}
 
         {/* Reports Grid */}
         {/* Mobile: a compact 2-column tile grid (icon, name, category chip). The
             long description is dropped so several reports fit a phone screen at
             once. The favourite toggle is a SIBLING of the tile button, never a
             descendant, so no interactive element nests inside a <button>. */}
-        {isMobile && (
+        {standardLayout && isMobile && (
           <div className="grid grid-cols-2 gap-3">
             {filteredReports.map((report) => {
               const bgColor = managedBackgroundColor(report);
@@ -459,7 +494,7 @@ function ReportsContent() {
                 >
                   <button
                     onClick={() => handleReportClick(report.id)}
-                    className="w-full h-full bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 border border-gray-200 dark:border-gray-700 p-3 text-left flex flex-col gap-2 hover:shadow-md dark:hover:shadow-gray-700/70 transition-shadow motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className={`${CARD_CLASS} w-full h-full p-3 text-left flex flex-col gap-2 hover:shadow-md dark:hover:shadow-gray-700/70 transition-shadow motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
                   >
                     <div
                       className={`${!bgColor ? `${colorClass} bg-opacity-20 dark:bg-opacity-30` : ''} rounded-lg p-2 w-fit flex-shrink-0`}
@@ -499,7 +534,7 @@ function ReportsContent() {
           </div>
         )}
 
-        {!isMobile && density === 'normal' && (
+        {standardLayout && !isMobile && density === 'normal' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredReports.map((report) => {
               const bgColor = managedBackgroundColor(report);
@@ -510,7 +545,7 @@ function ReportsContent() {
                   key={report.id}
                   {...reportTourAnchor(report)}
                   onClick={() => handleReportClick(report.id)}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/70 transition-shadow text-left group flex flex-col h-full"
+                  className={`${CARD_CLASS} overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/70 transition-shadow text-left group flex flex-col h-full`}
                 >
                   {/* Preview Area */}
                   <div
@@ -561,7 +596,7 @@ function ReportsContent() {
           </div>
         )}
 
-        {!isMobile && density === 'compact' && (
+        {standardLayout && !isMobile && density === 'compact' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredReports.map((report) => {
               const bgColor = managedBackgroundColor(report);
@@ -572,7 +607,7 @@ function ReportsContent() {
                   key={report.id}
                   {...reportTourAnchor(report)}
                   onClick={() => handleReportClick(report.id)}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 hover:shadow-md dark:hover:shadow-gray-700/70 transition-shadow text-left flex items-center gap-4 group"
+                  className={`${CARD_CLASS} p-4 hover:shadow-md dark:hover:shadow-gray-700/70 transition-shadow text-left flex items-center gap-4 group`}
                 >
                   <div
                     className={`${!bgColor ? `${colorClass} bg-opacity-20 dark:bg-opacity-30` : ''} rounded-lg p-3 flex-shrink-0`}
@@ -618,8 +653,8 @@ function ReportsContent() {
           </div>
         )}
 
-        {!isMobile && density === 'dense' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        {standardLayout && !isMobile && density === 'dense' && (
+          <div className={`${CARD_CLASS} overflow-hidden`}>
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900/50">
                 <tr>

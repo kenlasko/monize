@@ -180,7 +180,8 @@
       "saved": "Tercihler kaydedildi",
       "saveFailed": "Tercihler kaydedilemedi",
       "themeSaveFailed": "Tema kaydedilemedi",
-      "colorThemeSaveFailed": "Renk teması kaydedilemedi"
+      "colorThemeSaveFailed": "Renk teması kaydedilemedi",
+      "uiStyleSaveFailed": "Arayüz stili kaydedilemedi"
     },
     "browserLocale": "Tarayıcı yerel ayarını kullan (otomatik algıla)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "Açık",
       "dark": "Koyu"
     },
+    "uiStyleLabel": "Arayüz stili",
+    "uiStyleHint": "Tipografiyi, şekilleri ve tablo stilini değiştirir. Her renk temasıyla çalışır.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standart",
+        "description": "Tanıdık Monize görünümü."
+      },
+      "classic": {
+        "name": "Klasik",
+        "description": "Defter kayıtlarından esinlenmiştir: tırnaklı başlıklar, çizgili tablolar, köşeli kenarlar."
+      },
+      "modern": {
+        "name": "Modern",
+        "description": "Kalın yazı tipi, yuvarlatılmış renk blokları ve hap biçimli denetimler."
+      }
+    },
     "colorThemeLabel": "Renk teması",
     "colorThemeHint": "Önizlemeler geçerli açık veya koyu modunuzu kullanır.",
+    "colorThemeStyleHint": "{style} stili için hazırlanan renk temaları gösteriliyor.",
     "colorThemeOptions": {
       "default": "Varsayılan",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Defter",
+      "studio": "Stüdyo",
       "midnight": "Midnight",
       "highcontrast": "Yüksek kontrast",
       "colorblind": "Renk körü uyumlu"

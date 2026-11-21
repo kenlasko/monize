@@ -13,6 +13,7 @@ import { releasePushForSignOut } from '@/lib/push';
 import { beginSignOut, endSignOut } from '@/lib/logout-state';
 import { User } from '@/types/auth';
 import { takeOidcReauthArtifact } from '@/lib/stepUpToken';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface DowngradeNoticeProps {
   isDelegate: boolean;
@@ -164,7 +165,7 @@ export function DangerZoneSection({ user }: DangerZoneSectionProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 border-2 border-red-200 dark:border-red-800">
+    <div className={`${CARD_CLASS} p-6 border-2 border-red-200 dark:border-red-800`}>
       <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-6">
         {t('heading')}
       </h2>

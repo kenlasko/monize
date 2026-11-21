@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "KI-Assistent",
-    "subtitle": "Stellen Sie Fragen zu Ihren Finanzen in natürlicher Sprache"
+    "subtitle": "Stellen Sie Fragen zu Ihren Finanzen in natürlicher Sprache",
+    "eyebrow": "Assistent"
   },
   "bubble": {
     "launcherAriaLabel": "KI-Assistent öffnen",

@@ -26,6 +26,7 @@ import {
   CompareMetricTable,
 } from './CompareMetricTable';
 import { ROW_GROUPS, formatCellValue } from './compareMetricRows';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('MonteCarloCompare');
 
@@ -325,7 +326,7 @@ export function CompareScenariosView({ ids }: CompareScenariosViewProps) {
 function EmptyState() {
   const t = useTranslations('reports');
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center space-y-3">
+    <div className={`${CARD_CLASS} p-8 text-center space-y-3`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t('monteCarloComparePage.emptyHeading')}
       </h2>
@@ -344,7 +345,7 @@ function EmptyState() {
 function NeedsMoreState({ id }: { id: string }) {
   const t = useTranslations('reports');
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center space-y-3">
+    <div className={`${CARD_CLASS} p-8 text-center space-y-3`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t('monteCarloComparePage.needsMoreHeading')}
       </h2>

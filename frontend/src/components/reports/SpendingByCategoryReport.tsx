@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportStatement, useReportStatement } from '@/components/reports/variants/ReportStatement';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -52,6 +53,7 @@ import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_BAR_RADIUS_HORIZONTAL, CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type SpendingCategorySortField = 'name' | 'value' | 'percentage';
 
@@ -144,6 +146,7 @@ export function SpendingByCategoryReport() {
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatPercent } = useNumberFormat();
+  const asStatement = useReportStatement();
   const { defaultCurrency } = useExchangeRates();
   const [viewType, setViewType] = useState<'pie' | 'bar' | 'table'>('pie');
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } =
@@ -330,7 +333,7 @@ export function SpendingByCategoryReport() {
   return (
     <div className="space-y-6">
       {/* Controls -- always rendered so focus inside DateInput survives reloads */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <ReportAccountMultiSelect
             accounts={scope.offeredAccounts}
@@ -381,7 +384,7 @@ export function SpendingByCategoryReport() {
       {/* Chart -- loading and error render here rather than in place of the
           whole report, so the controls above (and the date field being typed
           into) stay mounted across a reload. */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {error ? (
           <ReportError onRetry={reload} />
         ) : isLoading ? (
@@ -589,6 +592,31 @@ export function SpendingByCategoryReport() {
             {/* Legend -- two columns on a phone (category names are short and
                 a full-width column of them is a long scroll past the chart),
                 denser still from `sm` up. */}
+            {asStatement ? (
+              <div className="mt-6">
+                <ReportStatement
+                  ariaLabel={t('spendingByCategory.totalExpenses')}
+                  showShare
+                  lines={chartData.map((item, index) => ({
+                    key: String(index),
+                    label: item.name,
+                    value: formatCurrency(item.value),
+                    share: formatPercent(totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0, 1),
+                    swatch: item.colour,
+                    onSelect: () => handleCategoryClick(item.id),
+                    disabled: !item.id,
+                  }))}
+                  total={{
+                    label: t('spendingByCategory.totalExpenses'),
+                    value: (
+                      <PartialTotal total={spendingTotal} displayCurrency={reportingCurrency}>
+                        {formatCurrency(totalExpenses)}
+                      </PartialTotal>
+                    ),
+                  }}
+                />
+              </div>
+            ) : (
             <ChartLegend
               className="mt-6"
               phoneColumns={2}
@@ -605,10 +633,11 @@ export function SpendingByCategoryReport() {
                 };
               })}
             />
+            )}
 
             {/* The bar view has no hole to carry the total, so it keeps a total
                 line beneath the legend; the pie view shows it in the donut centre. */}
-            {viewType === 'bar' && (
+            {viewType === 'bar' && !asStatement && (
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
                 <div className="text-sm text-gray-500 dark:text-gray-400">{t('spendingByCategory.totalExpenses')}</div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">

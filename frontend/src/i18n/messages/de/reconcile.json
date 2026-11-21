@@ -1,5 +1,6 @@
 {
   "title": "Konto abgleichen",
+  "eyebrow": "Abstimmungsblatt",
   "subtitle": "Gleichen Sie Ihre Aufzeichnungen mit Ihrem Kontoauszug ab",
   "subtitleActive": "Abgleich: {name}",
   "setup": {

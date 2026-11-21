@@ -37,7 +37,8 @@
       "withoutCategory": "Kategorisiz"
     },
     "applyDefaultCategories": "Varsayılan Kategorileri Uygula",
-    "lookupSettings": "Alacaklı arama ayarları"
+    "lookupSettings": "Alacaklı arama ayarları",
+    "eyebrow": "Alacaklı dizini"
   },
   "list": {
     "columns": {

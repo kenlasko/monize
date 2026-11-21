@@ -6,7 +6,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { BudgetProgressBar } from './BudgetProgressBar';
 import { budgetLineName } from './utils/budget-line-name';
-import { Card } from '@/components/ui/Card';
+import { Card, CARD_CLASS } from '@/components/ui/Card';
 import { TABLE_CLASS, TABLE_BODY_CLASS, Th, Td } from '@/components/ui/Table';
 import type { BudgetPeriod, BudgetPeriodCategory } from '@/types/budget';
 
@@ -88,7 +88,7 @@ export function BudgetPeriodDetail({
   return (
     <div className="space-y-6">
       {/* Period Header */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {periodLabel}
@@ -157,7 +157,7 @@ export function BudgetPeriodDetail({
       )}
 
       {/* Overall Progress */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {t('periodDetail.overallUsage')}
@@ -226,7 +226,7 @@ export function BudgetPeriodDetail({
 
       {/* Expense Categories */}
       {expenseCategories.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
               {t('periodDetail.expenseCategories')}
@@ -256,7 +256,7 @@ export function BudgetPeriodDetail({
 
       {/* Income Categories */}
       {(incomeCategories.length > 0 || outsideTransferIncome > 0) && (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
               {t('periodDetail.incomeCategories')}
@@ -300,7 +300,7 @@ function SummaryCard({
   valueColor?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+    <div className={`${CARD_CLASS} p-4`}>
       <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
       <p className={`text-xl font-semibold mt-1 ${valueColor ?? 'text-gray-900 dark:text-gray-100'}`}>
         {value}

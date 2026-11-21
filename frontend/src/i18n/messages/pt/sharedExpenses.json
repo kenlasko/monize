@@ -379,5 +379,6 @@
   "groupCount": "{count, plural, one {# grupo} other {# grupos}}",
   "entryCount": "{count, plural, one {# registo} other {# registos}}",
   "saveChanges": "Guardar alterações",
-  "searchGroups": "Pesquisar grupos"
+  "searchGroups": "Pesquisar grupos",
+  "eyebrow": "Contas de grupo"
 }

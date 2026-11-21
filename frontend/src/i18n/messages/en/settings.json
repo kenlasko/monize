@@ -180,7 +180,8 @@
       "saved": "Preferences saved",
       "saveFailed": "Failed to save preferences",
       "themeSaveFailed": "Failed to save theme",
-      "colorThemeSaveFailed": "Failed to save colour theme"
+      "colorThemeSaveFailed": "Failed to save colour theme",
+      "uiStyleSaveFailed": "Failed to save UI style"
     },
     "browserLocale": "Use browser locale (auto-detect)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "Light",
       "dark": "Dark"
     },
+    "uiStyleLabel": "UI style",
+    "uiStyleHint": "Changes typography, shapes and table styling. Works with any colour theme.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standard",
+        "description": "The familiar Monize look."
+      },
+      "classic": {
+        "name": "Classic",
+        "description": "Ledger-inspired: serif headings, ruled tables, square corners."
+      },
+      "modern": {
+        "name": "Modern",
+        "description": "Bold type, rounded colour blocks and pill-shaped controls."
+      }
+    },
     "colorThemeLabel": "Colour theme",
     "colorThemeHint": "Previews use your current light or dark mode.",
+    "colorThemeStyleHint": "Showing the colour themes made for the {style} style.",
     "colorThemeOptions": {
       "default": "Default",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Ledger",
+      "studio": "Studio",
       "midnight": "Midnight",
       "highcontrast": "High contrast",
       "colorblind": "Colour-blind safe"

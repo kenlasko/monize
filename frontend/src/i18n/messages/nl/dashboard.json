@@ -36,7 +36,19 @@
     "showSet": "{name} tonen",
     "cycleControls": "Kies wat de hoofdsectie toont",
     "cagrUnavailable": "CAGR vereist ten minste een jaar beleggingsgeschiedenis in deze rekeningen, met meer ingelegd dan opgenomen.",
-    "intradayUnavailable": "Voor sommige posities zijn geen intraday-koersen, dus er kan geen dagrafiek worden getekend. Kies een langere periode in Aanpassen."
+    "intradayUnavailable": "Voor sommige posities zijn geen intraday-koersen, dus er kan geen dagrafiek worden getekend. Kies een langere periode in Aanpassen.",
+    "assetsLabel": "Bezittingen",
+    "liabilitiesLabel": "Schulden",
+    "investedLabel": "Belegd",
+    "high": "Hoog {value}",
+    "low": "Laag {value}",
+    "historyLabel": "Vermogen per maand: {high} op het hoogst, {low} op het laagst, nu {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {Achterstallig} today {Eerstvolgende, vandaag} tomorrow {Eerstvolgende, morgen} other {Eerstvolgende, {date}}}",
+      "meta": "{manual, select, true {Handmatig betaald} other {Wordt automatisch geboekt}}",
+      "metaWithPayee": "{payee} · {manual, select, true {handmatig betaald} other {wordt automatisch geboekt}}",
+      "record": "{kind, select, deposit {Storting vastleggen} transfer {Overboeking vastleggen} reminder {Vastleggen} other {Betaling vastleggen}}"
+    }
   },
   "trivia": {
     "title": "Weetjes",
@@ -355,7 +367,9 @@
     "due": "Vervalt: {ordinal}",
     "dueTooltip": "De dag van elke maand waarop je creditcardbetaling vervalt",
     "settlement": "Afrekening: {ordinal}",
-    "settlementTooltip": "De laatste dag van de factuurperiode. Transacties geboekt op of vóór deze dag verschijnen op het huidige overzicht."
+    "settlementTooltip": "De laatste dag van de factuurperiode. Transacties geboekt op of vóór deze dag verschijnen op het huidige overzicht.",
+    "dueShort": "vervalt {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Aankomende facturen en stortingen",
@@ -386,7 +400,11 @@
     "previousMonth": "Vorige maand",
     "nextMonth": "Volgende maand",
     "emptyAll": "Geen actieve rekeningen, stortingen of overboekingen gepland.",
-    "estimated": "Geschat"
+    "estimated": "Geschat",
+    "stripLabel": "De komende twee weken, dag voor dag: stortingen stijgen boven de lijn, rekeningen zakken eronder",
+    "metaPayee": "· {payee}",
+    "metaManual": "· handmatig betaald",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Kasstroomprognose",

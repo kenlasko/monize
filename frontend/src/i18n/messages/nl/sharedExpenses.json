@@ -379,5 +379,6 @@
   "groupCount": "{count, plural, one {# groep} other {# groepen}}",
   "entryCount": "{count, plural, one {# boeking} other {# boekingen}}",
   "saveChanges": "Wijzigingen opslaan",
-  "searchGroups": "Groepen zoeken"
+  "searchGroups": "Groepen zoeken",
+  "eyebrow": "Groepsrekeningen"
 }

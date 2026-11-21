@@ -125,7 +125,9 @@
       "attachments": "첨부 파일",
       "status": "상태",
       "statusHelp": "미조정, 정리됨, 조정됨은 은행 명세서와 일치시키는 단계입니다. 무효는 거래를 취소하지만 기록은 유지되며, 더 이상 계정 잔액에 영향을 주지 않습니다.",
-      "actions": "작업"
+      "actions": "작업",
+      "payment": "지출",
+      "deposit": "입금"
     },
     "sort": {
       "balanceHiddenHint": "잔액을 보려면 날짜순으로 정렬하세요",
@@ -191,7 +193,20 @@
       "editButton": "편집",
       "deleteButton": "삭제"
     },
-    "itemNamePlural": "거래"
+    "itemNamePlural": "거래",
+    "classic": {
+      "entriesShown": "{count, plural, other {#개 항목 표시 중}}",
+      "legendCleared": "정리됨",
+      "legendReconciled": "조정됨",
+      "legendRule": "각 잔액 아래의 선은 그 잔액을 이 페이지의 최고 잔액과 비교한 것입니다.",
+      "markCleared": "정",
+      "markReconciled": "조"
+    },
+    "modern": {
+      "inspectorLabel": "선택한 거래",
+      "balanceAfter": "거래 후 잔액",
+      "yesterday": "어제"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "이 거래의 보증을 불러올 수 없습니다.",
       "empty": "아직 보증이 없습니다"
     },
-    "conversionLockedNote": "이 이체는 분할 거래 또는 다른 소유자의 계좌에 속하므로 여기서는 이체로만 유지할 수 있습니다. 분할에서 변경하거나 삭제한 뒤 원하는 항목을 새로 만드세요."
+    "conversionLockedNote": "이 이체는 분할 거래 또는 다른 소유자의 계좌에 속하므로 여기서는 이체로만 유지할 수 있습니다. 분할에서 변경하거나 삭제한 뒤 원하는 항목을 새로 만드세요.",
+    "modeGroupLabel": "거래 유형",
+    "entryHint": "Tab으로 필드 사이를 이동합니다. Esc로 닫습니다."
   },
   "splitEditor": {
     "header": "분할 세부 정보",
@@ -772,6 +789,13 @@
       "foreignCurrency": "금액이 계정과 다른 통화입니다. 입력하려면 전체 양식을 사용하세요.",
       "crossCurrencyTransfer": "두 계정의 통화가 다릅니다. 이 이체에는 전체 양식을 사용하세요.",
       "unknown": "이 항목은 여기서 저장할 수 없습니다. 전체 양식으로 마무리하세요."
+    },
+    "assumedNote": "점선 필드는 직접 입력하지 않았습니다. 자동으로 채워졌으니 확인해 주세요.",
+    "hints": {
+      "enter": "Enter로 저장",
+      "shiftEnter": "Shift Enter로 저장하고 새로 시작",
+      "tab": "Tab으로 필드 이동",
+      "esc": "Esc로 닫기"
     }
   }
 }

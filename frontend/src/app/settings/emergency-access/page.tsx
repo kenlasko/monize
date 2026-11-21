@@ -45,6 +45,7 @@ import type {
   EmergencyAccessContact,
   EmergencyAccessView,
 } from '@/types/emergency-access';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('EmergencyAccess');
 const STEP_UP_PURPOSE = 'emergency-access';
@@ -128,7 +129,7 @@ function EmergencyAccessContent() {
   if (isDelegateView || isDemoMode) {
     return (
       <PageLayout>
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+        <main className="ui-settings-main max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <BackToSettingsLink label={t('backLink')} />
           <PageHeader title={t('title')} help="emergencyAccess" />
           <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 mb-6">
@@ -610,7 +611,7 @@ function EmergencyAccessSection() {
 
         <form
           onSubmit={settingsForm.handleSubmit(onSettingsSubmit)}
-          className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6"
+          className={`${CARD_CLASS} p-6 mb-6`}
         >
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('settings.heading')}
@@ -683,7 +684,7 @@ function EmergencyAccessSection() {
           </div>
         </form>
 
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+        <div className={`${CARD_CLASS} p-6 mb-6`}>
           <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -798,7 +799,7 @@ function EmergencyAccessSection() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+        <div className={`${CARD_CLASS} p-6 mb-6`}>
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -852,7 +853,7 @@ function EmergencyAccessSection() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+        <div className={`${CARD_CLASS} p-6 mb-6`}>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {tStatus('heading')}
           </h2>

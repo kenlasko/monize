@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Akun",
+    "eyebrow": "Laporan rekening",
     "subtitle": "Kelola rekening bank, kartu kredit, dan investasi Anda",
     "newAccount": "+ Akun Baru",
     "newAccountModal": "Akun Baru",

@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "Istituti finanziari",
+    "eyebrow": "Registro degli istituti",
     "subtitle": "Banche e intermediari finanziari a cui appartengono i tuoi conti",
     "newInstitution": "Nuovo istituto",
     "loading": "Caricamento istituti...",

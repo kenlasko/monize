@@ -50,7 +50,8 @@
     "retry": "Tentar novamente",
     "nextFire": "Próximo lembrete: {date}",
     "openTarget": "Abrir página relacionada",
-    "delegateUnavailable": "Volte à sua própria conta para gerir os lembretes."
+    "delegateUnavailable": "Volte à sua própria conta para gerir os lembretes.",
+    "eyebrow": "Notificações"
   },
   "billDue": {
     "titleOverdue": "{payee} em atraso",

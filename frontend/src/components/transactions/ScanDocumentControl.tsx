@@ -14,7 +14,8 @@ import { isTouchDevice } from '@/lib/touch-device';
  * file chosen here goes through the scanner. Nothing detects a document on the
  * ordinary path, so an ordinary attachment is never modified by surprise.
  *
- * On a touch device the input carries `capture="environment"`, which hands off
+ * It is offered on touch devices only: on a desktop it would open the same file
+ * picker as Add attachment. On a touch device the input carries `capture="environment"`, which hands off
  * to the OS camera and opens the rear lens. That attribute is not governed by
  * the `Permissions-Policy: camera=()` header this app sends -- that policy
  * covers `getUserMedia`, an in-page viewfinder, which the scanner deliberately
@@ -46,6 +47,9 @@ export function ScanDocumentControl({
   onReady?: (open: () => void) => void;
 }) {
   const t = useTranslations('attachments');
+  // Only where the camera hands off: on a desktop the picker would be the same
+  // as Add attachment, so the control is not offered at all.
+  const touch = isTouchDevice();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -58,6 +62,8 @@ export function ScanDocumentControl({
     event.target.value = '';
     if (file) onFileSelected(file);
   };
+
+  if (!touch) return null;
 
   return (
     <>

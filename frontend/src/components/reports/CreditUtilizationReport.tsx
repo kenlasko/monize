@@ -42,6 +42,7 @@ import { ReportError } from '@/components/reports/ReportError';
 import { useTranslations } from 'next-intl';
 import { chartColors } from '@/lib/chart-colors';
 import { CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type CreditUtilizationSortField =
   | 'name'
@@ -296,7 +297,7 @@ export function CreditUtilizationReport() {
   if (isLoading && accountsData === null) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -308,7 +309,7 @@ export function CreditUtilizationReport() {
 
   if (creditAccounts.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+      <div className={`${CARD_CLASS} p-8 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('creditUtilization.empty')}
         </p>
@@ -345,7 +346,7 @@ export function CreditUtilizationReport() {
   return (
     <div className="space-y-6">
       {/* Account Filter */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-stretch justify-between">
           <ReportAccountMultiSelect
             accounts={creditAccounts}
@@ -361,7 +362,7 @@ export function CreditUtilizationReport() {
           and the utilisation ratio, so the figures are marked partial rather
           than reporting an improved ratio the excluded card would have worsened. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('creditUtilization.totalLimit')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             <PartialTotal total={{ value: totals.limit, ...totalsMarker }} displayCurrency={displayCurrency}>
@@ -369,7 +370,7 @@ export function CreditUtilizationReport() {
             </PartialTotal>
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('creditUtilization.totalUsed')}</p>
           <p className="text-lg sm:text-xl font-bold text-red-600 dark:text-red-400">
             <PartialTotal total={{ value: totals.used, ...totalsMarker }} displayCurrency={displayCurrency}>
@@ -377,7 +378,7 @@ export function CreditUtilizationReport() {
             </PartialTotal>
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('creditUtilization.totalAvailable')}</p>
           <p className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
             <PartialTotal total={{ value: totals.available, ...totalsMarker }} displayCurrency={displayCurrency}>
@@ -385,7 +386,7 @@ export function CreditUtilizationReport() {
             </PartialTotal>
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('creditUtilization.overallUtilization')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {/* The ratio of two subtotals is a subtotal, so it wears the same
@@ -421,7 +422,7 @@ export function CreditUtilizationReport() {
       )}
 
       {/* Utilization Charts */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="min-w-0 lg:col-span-2 flex flex-col">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -583,7 +584,7 @@ export function CreditUtilizationReport() {
           carries. What limits the cost is the captions: every value names its
           own column, so each one is self-describing in whatever order it is
           heard. Both are properties of the mechanism, not of this table. */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <div className="overflow-x-auto">
           {/* Explicit roles: restyling `display` below `sm` strips the implicit
               table semantics, and these put them back (inert from `sm` up). */}

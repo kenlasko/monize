@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { InterestPaid } from '@/types/credit-card-detail';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface InterestAndFeesPanelProps {
   interest: InterestPaid | null;
@@ -20,7 +21,7 @@ export function InterestAndFeesPanel({ interest, currencyCode, isLoading }: Inte
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('interestAndFees.title')}
       </h2>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {isLoading ? (
           <div className="h-12 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : !interest || interest.count === 0 ? (

@@ -27,6 +27,8 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { CollapsibleSummary } from '@/components/ui/CollapsibleSummary';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { MoneyFigure } from '@/components/ui/MoneyFigure';
+import { AccountsSummary } from '@/components/accounts/variants/AccountsSummary';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
 import { sumMoney } from '@/lib/format';
 import { accountCarriesBalance } from '@/lib/account-carries-balance';
@@ -339,6 +341,7 @@ function AccountsContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='accounts'
           primaryAction={
@@ -358,52 +361,78 @@ function AccountsContent() {
           collapsed={summaryCollapsed}
           onToggle={() => setSummaryCollapsed(!summaryCollapsed)}
         >
+          <AccountsSummary
+            accountCount={summary.accountCount}
+            netWorthNegative={summary.totalBalance.excludedCount === 0 && summary.totalBalance.value < 0}
+            labels={{
+              accounts: t('page.summary.totalActiveAccounts'),
+              netWorth: t('page.summary.netWorth'),
+              assets: t('page.summary.totalAssets'),
+              liabilities: t('page.summary.totalLiabilities'),
+            }}
+            netWorth={
+              <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency}>
+                <MoneyFigure amount={summary.totalBalance.value} currencyCode={defaultCurrency} display />
+              </PartialTotal>
+            }
+            assets={
+              <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency}>
+                <MoneyFigure amount={summary.totalAssets.value} currencyCode={defaultCurrency} display />
+              </PartialTotal>
+            }
+            liabilities={
+              <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency}>
+                <MoneyFigure amount={summary.totalLiabilities.value} currencyCode={defaultCurrency} display />
+              </PartialTotal>
+            }
+          >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            <SummaryCard
-              label={t('page.summary.totalActiveAccounts')}
-              value={summary.accountCount}
-              icon={SummaryIcons.accounts}
-            />
-            <SummaryCard
-              label={t('page.summary.netWorth')}
-              value={
-                <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency}>
-                  {formatCurrency(summary.totalBalance.value, defaultCurrency)}
-                </PartialTotal>
-              }
-              icon={SummaryIcons.money}
-              valueColor={
-                // A partial net worth has an uncertain sign -- an excluded account
-                // could flip it -- so it is left neutral rather than asserting a
-                // red/blue the subtotal cannot vouch for.
-                summary.totalBalance.excludedCount > 0
-                  ? 'default'
-                  : summary.totalBalance.value >= 0
-                    ? 'blue'
-                    : 'red'
-              }
-            />
-            <SummaryCard
-              label={t('page.summary.totalAssets')}
-              value={
-                <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency}>
-                  {formatCurrency(summary.totalAssets.value, defaultCurrency)}
-                </PartialTotal>
-              }
-              icon={SummaryIcons.checkmark}
-              valueColor="green"
-            />
-            <SummaryCard
-              label={t('page.summary.totalLiabilities')}
-              value={
-                <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency}>
-                  {formatCurrency(summary.totalLiabilities.value, defaultCurrency)}
-                </PartialTotal>
-              }
-              icon={SummaryIcons.cross}
-              valueColor="red"
-            />
-          </div>
+              <SummaryCard
+                label={t('page.summary.totalActiveAccounts')}
+                value={summary.accountCount}
+                icon={SummaryIcons.accounts}
+              />
+              <SummaryCard
+                label={t('page.summary.netWorth')}
+                value={
+                  <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency}>
+                    {formatCurrency(summary.totalBalance.value, defaultCurrency)}
+                  </PartialTotal>
+                }
+                icon={SummaryIcons.money}
+                valueColor={
+                  // A partial net worth has an uncertain sign -- an excluded account
+                  // could flip it -- so it is left neutral rather than asserting a
+                  // red/blue the subtotal cannot vouch for.
+                  summary.totalBalance.excludedCount > 0
+                    ? 'default'
+                    : summary.totalBalance.value >= 0
+                      ? 'blue'
+                      : 'red'
+                }
+              />
+              <SummaryCard
+                label={t('page.summary.totalAssets')}
+                value={
+                  <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency}>
+                    {formatCurrency(summary.totalAssets.value, defaultCurrency)}
+                  </PartialTotal>
+                }
+                icon={SummaryIcons.checkmark}
+                valueColor="green"
+              />
+              <SummaryCard
+                label={t('page.summary.totalLiabilities')}
+                value={
+                  <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency}>
+                    {formatCurrency(summary.totalLiabilities.value, defaultCurrency)}
+                  </PartialTotal>
+                }
+                icon={SummaryIcons.cross}
+                valueColor="red"
+              />
+            </div>
+          </AccountsSummary>
         </CollapsibleSummary>
 
         {/* Form Modal */}

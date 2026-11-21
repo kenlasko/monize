@@ -17,6 +17,7 @@ import { useTourRequirements } from '@/hooks/useTourRequirements';
 import { createLogger } from '@/lib/logger';
 import type { TourDefinition } from '@/lib/tours/types';
 import type { TourRequirementMap } from '@/lib/tours/requirements';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('Tours');
 
@@ -65,7 +66,7 @@ export function TourCatalog() {
       {GROUPS.map((group) => (
         <section
           key={group.area}
-          className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6"
+          className={`${CARD_CLASS} p-6 mb-6`}
         >
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t(`areas.${group.area}`)}
@@ -84,7 +85,7 @@ export function TourCatalog() {
         </section>
       ))}
 
-      <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+      <div className={`${CARD_CLASS} p-6 mb-6`}>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
           {t('settings.resetHeading')}
         </h2>

@@ -16,7 +16,8 @@
     "summaryTotal": "分类总数",
     "summaryIncome": "收入分类",
     "summaryExpense": "支出分类",
-    "summaryTopLevel": "顶级分类"
+    "summaryTopLevel": "顶级分类",
+    "eyebrow": "分类总表"
   },
   "empty": {
     "heading": "尚无分类",

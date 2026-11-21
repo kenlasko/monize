@@ -180,7 +180,8 @@
       "saved": "Preferensi disimpan",
       "saveFailed": "Gagal menyimpan preferensi",
       "themeSaveFailed": "Gagal menyimpan tema",
-      "colorThemeSaveFailed": "Gagal menyimpan tema warna"
+      "colorThemeSaveFailed": "Gagal menyimpan tema warna",
+      "uiStyleSaveFailed": "Gagal menyimpan gaya antarmuka"
     },
     "browserLocale": "Gunakan lokal browser (deteksi otomatis)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "Terang",
       "dark": "Gelap"
     },
+    "uiStyleLabel": "Gaya antarmuka",
+    "uiStyleHint": "Mengubah tipografi, bentuk, dan gaya tabel. Berfungsi dengan tema warna apa pun.",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "Standar",
+        "description": "Tampilan Monize yang sudah dikenal."
+      },
+      "classic": {
+        "name": "Klasik",
+        "description": "Terinspirasi buku besar: judul serif, tabel bergaris, sudut persegi."
+      },
+      "modern": {
+        "name": "Modern",
+        "description": "Huruf tebal, blok warna membulat, dan kontrol berbentuk pil."
+      }
+    },
     "colorThemeLabel": "Tema warna",
     "colorThemeHint": "Pratinjau menggunakan mode terang atau gelap Anda saat ini.",
+    "colorThemeStyleHint": "Menampilkan tema warna yang dibuat untuk gaya {style}.",
     "colorThemeOptions": {
       "default": "Bawaan",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "Buku besar",
+      "studio": "Studio",
       "midnight": "Tengah Malam",
       "highcontrast": "Kontras tinggi",
       "colorblind": "Aman untuk buta warna"

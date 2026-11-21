@@ -199,7 +199,7 @@ describe('BudgetsPage', () => {
     expect(cells[3].className).toContain('text-right');
     expect(screen.getAllByRole('columnheader')[3].className).toContain('text-right');
     // The status is the shared Badge.
-    expect(within(cells[5]).getByText('Active').className).toContain('rounded-full');
+    expect(within(cells[5]).getByText('Active').className).toContain('rounded-(--ui-radius-pill)');
   });
 
   it('shows the start date in the reader\'s date format', async () => {

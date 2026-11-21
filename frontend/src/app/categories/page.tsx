@@ -183,6 +183,7 @@ function CategoriesContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='categories'
           actions={<Button onClick={openCreate}>{t('page.newButton')}</Button>}
@@ -190,6 +191,7 @@ function CategoriesContent() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
           <SummaryCard
+            lead
             label={t('page.summaryTotal')}
             value={categories.length}
             icon={SummaryIcons.tag}

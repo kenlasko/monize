@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Nie udało się wyznaczyć kwoty jednego lub więcej harmonogramów",
     "summaryDueNow": "Do zapłaty teraz",
     "loadingText": "Wczytywanie zaplanowanych transakcji...",
-    "chartUnavailable": "Wykres chwilowo niedostępny"
+    "chartUnavailable": "Wykres chwilowo niedostępny",
+    "eyebrow": "Cykliczne"
   },
   "viewTabs": {
     "filterLabel": "Typ harmonogramu",
@@ -83,5 +84,12 @@
     "exportButton": "Eksportuj",
     "exportTitle": "Eksportuj rachunki i wpłaty do CSV",
     "exported": "{count, plural, one {Wyeksportowano # harmonogram} few {Wyeksportowano # harmonogramy} many {Wyeksportowano # harmonogramów} other {Wyeksportowano # harmonogramu}}"
+  },
+  "outlook": {
+    "title": "Najbliższe czternaście dni",
+    "stripLabel": "Zaplanowane rachunki i wpłaty w ciągu najbliższych czternastu dni: wpływy nad linią, wydatki pod nią",
+    "today": "Dziś",
+    "nextUpOn": "Następne, {date}",
+    "daysLabel": "Najbliższe czternaście dni, jeden znacznik na dzień"
   }
 }

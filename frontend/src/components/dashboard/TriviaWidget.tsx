@@ -252,7 +252,7 @@ export function TriviaWidget({ isLoading: parentLoading }: { isLoading: boolean 
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="ui-widget-head mb-4 flex items-center justify-between gap-3">
         <WidgetHeading id="trivia">{t('trivia.title')}</WidgetHeading>
         <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
           {t('trivia.position', { index: index + 1, total: count })}

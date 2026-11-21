@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Tài khoản",
+    "eyebrow": "Bảng sao kê tài khoản",
     "subtitle": "Quản lý tài khoản ngân hàng, thẻ tín dụng và đầu tư của bạn",
     "newAccount": "+ Tài khoản mới",
     "newAccountModal": "Tài khoản mới",

@@ -244,10 +244,10 @@ export function HelpPanel() {
     ? onlineHref({ page: page?.slug ?? target.page, section: target.section })
     : onlineHref({ page: 'index' });
   const sheetClass = expanded
-    ? 'fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-800'
+    ? 'ui-help-sheet fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-800'
     : isMobile
-      ? 'fixed inset-x-0 bottom-0 z-40 flex h-[75dvh] flex-col rounded-t-2xl border-t border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800'
-      : 'fixed inset-y-0 right-0 z-40 flex max-w-full flex-col border-l border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800';
+      ? 'ui-help-sheet fixed inset-x-0 bottom-0 z-40 flex h-[75dvh] flex-col rounded-t-2xl border-t border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800'
+      : 'ui-help-sheet fixed inset-y-0 right-0 z-40 flex max-w-full flex-col border-l border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800';
 
   return (
     <>
@@ -312,7 +312,7 @@ export function HelpPanel() {
           <h2
             ref={titleRef}
             tabIndex={-1}
-            className="min-w-0 flex-1 truncate rounded-sm px-1 text-sm font-semibold text-gray-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-gray-100"
+            className="ui-help-title min-w-0 flex-1 truncate rounded-sm px-1 text-sm font-semibold text-gray-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-gray-100"
           >
             {page?.title ?? t('title')}
           </h2>

@@ -62,7 +62,9 @@
     "onPace": "进度正常",
     "rollover": "滚存：{type}",
     "remaining": "剩余 {amount}",
-    "over": "超出 {amount}"
+    "over": "超出 {amount}",
+    "leftWord": "剩余",
+    "overWord": "超支"
   },
   "categoryTrend": {
     "title": "分类趋势",
@@ -164,6 +166,7 @@
     "original": "原始：{amount}"
   },
   "summaryCards": {
+    "ariaLabel": "预算合计",
     "totalBudget": "总预算",
     "spent": "已支出",
     "remaining": "剩余",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "预算簿",
       "title": "预算",
       "subtitle": "管理您的预算并追踪支出",
       "newBudget": "+ 新建预算",

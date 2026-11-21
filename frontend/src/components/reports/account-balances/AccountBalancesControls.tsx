@@ -18,6 +18,7 @@ import {
   type SortDirection,
   type StatusFilter,
 } from './grouping';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export type ViewMode = 'table' | 'chart';
 
@@ -79,7 +80,7 @@ export function AccountBalancesControls({
   }));
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 space-y-4">
+    <div className={`${CARD_CLASS} p-4 space-y-4`}>
       {/* Every control is as wide as the row lets it be. A `<select>` clips its
           text rather than ellipsing it, so a fixed width is a promise about the
           longest option's length in every language -- one the translations

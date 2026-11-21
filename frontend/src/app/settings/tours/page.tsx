@@ -20,7 +20,7 @@ function ToursSettingsContent() {
 
   return (
     <PageLayout>
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+      <main className="ui-settings-main max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <BackToSettingsLink label={t('settings.backLink')} />
 
         <PageHeader

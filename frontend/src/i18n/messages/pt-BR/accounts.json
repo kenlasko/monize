@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Contas",
+    "eyebrow": "Extrato de contas",
     "subtitle": "Gerencie suas contas bancárias, cartões de crédito e investimentos",
     "newAccount": "+ Nova Conta",
     "newAccountModal": "Nova Conta",

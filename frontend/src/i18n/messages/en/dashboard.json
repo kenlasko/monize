@@ -36,7 +36,19 @@
     "showSet": "Show {name}",
     "cycleControls": "Choose what the hero shows",
     "cagrUnavailable": "CAGR needs at least a year of investment history in these accounts, with more paid in than taken out.",
-    "intradayUnavailable": "Some of these holdings have no intraday prices, so a one-day chart can't be drawn. Choose a longer timeframe in Customize."
+    "intradayUnavailable": "Some of these holdings have no intraday prices, so a one-day chart can't be drawn. Choose a longer timeframe in Customize.",
+    "assetsLabel": "Assets",
+    "liabilitiesLabel": "Liabilities",
+    "investedLabel": "Invested",
+    "high": "High {value}",
+    "low": "Low {value}",
+    "historyLabel": "Net worth by month: {high} at its highest, {low} at its lowest, {latest} now",
+    "nextUp": {
+      "heading": "{when, select, overdue {Overdue} today {Next up, today} tomorrow {Next up, tomorrow} other {Next up, {date}}}",
+      "meta": "{manual, select, true {Paid by hand} other {Posts automatically}}",
+      "metaWithPayee": "{payee} · {manual, select, true {paid by hand} other {posts automatically}}",
+      "record": "{kind, select, deposit {Record deposit} transfer {Record transfer} reminder {Record it} other {Record payment}}"
+    }
   },
   "trivia": {
     "title": "Trivia",
@@ -355,7 +367,9 @@
     "due": "Due: {ordinal}",
     "dueTooltip": "The day of each month when your credit card payment is due",
     "settlement": "Settlement: {ordinal}",
-    "settlementTooltip": "The last day of the billing cycle. Transactions posted on or before this day appear on the current statement."
+    "settlementTooltip": "The last day of the billing cycle. Transactions posted on or before this day appear on the current statement.",
+    "dueShort": "due {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "Upcoming Bills & Deposits",
@@ -386,7 +400,11 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "emptyAll": "No active bills, deposits, or transfers scheduled.",
-    "estimated": "Estimated"
+    "estimated": "Estimated",
+    "stripLabel": "The next two weeks, day by day: deposits rise above the line, bills fall below it",
+    "metaPayee": "· {payee}",
+    "metaManual": "· paid by hand",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "Cash Flow Forecast",

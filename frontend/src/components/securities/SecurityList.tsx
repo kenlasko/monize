@@ -392,7 +392,10 @@ const SecurityRow = memo(function SecurityRow({
         <FavouriteStar security={security} onToggleFavourite={onToggleFavourite} />
       </td>
       <td className={`${cellPadding} whitespace-nowrap`}>
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <span
+          data-initial={security.symbol.slice(0, 3)}
+          className="ui-sym text-sm font-medium text-gray-900 dark:text-gray-100"
+        >
           {security.symbol}
         </span>
       </td>

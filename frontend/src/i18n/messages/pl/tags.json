@@ -35,7 +35,8 @@
       "createFailed": "Nie udało się utworzyć tagu",
       "updateFailed": "Nie udało się zaktualizować tagu",
       "deleteFailed": "Nie udało się usunąć tagu"
-    }
+    },
+    "eyebrow": "Etykiety"
   },
   "list": {
     "empty": {

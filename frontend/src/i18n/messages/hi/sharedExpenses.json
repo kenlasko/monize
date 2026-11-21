@@ -379,5 +379,6 @@
   "groupCount": "{count, plural, one {# समूह} other {# समूह}}",
   "entryCount": "{count, plural, one {# प्रविष्टि} other {# प्रविष्टियाँ}}",
   "saveChanges": "बदलाव सहेजें",
-  "searchGroups": "समूह खोजें"
+  "searchGroups": "समूह खोजें",
+  "eyebrow": "समूह खाते"
 }

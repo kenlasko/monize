@@ -35,7 +35,8 @@
       "createFailed": "Etiket oluşturulamadı",
       "updateFailed": "Etiket güncellenemedi",
       "deleteFailed": "Etiket silinemedi"
-    }
+    },
+    "eyebrow": "Etiketler"
   },
   "list": {
     "empty": {

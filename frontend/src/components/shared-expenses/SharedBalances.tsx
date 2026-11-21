@@ -45,7 +45,7 @@ export function SharedBalances({
             {group.balances.suggestions.map((row) => (
               <li
                 key={`${row.fromParticipantId}:${row.toParticipantId}`}
-                className="py-4 space-y-2"
+                className="ui-shared-settle py-4 space-y-2"
               >
                 <p className="break-words">
                   {name(row.fromParticipantId)} → {name(row.toParticipantId)}
@@ -63,7 +63,7 @@ export function SharedBalances({
                   )}
                 <div className="flex flex-wrap justify-between gap-3 items-center">
                   <SharedAmount
-                    className="text-xl font-semibold"
+                    className="ui-shared-amount text-xl font-semibold"
                     amount={row.amount}
                     currency={group.currencyCode}
                   />
@@ -93,7 +93,7 @@ export function SharedBalances({
           {group.balances.positions.map((position) => (
             <li
               key={position.participantId}
-              className="border-b border-gray-100 dark:border-gray-700 pb-4"
+              className="ui-shared-position border-b border-gray-100 dark:border-gray-700 pb-4"
             >
               <div className="flex flex-wrap justify-between gap-2 font-medium">
                 <span className="break-words">

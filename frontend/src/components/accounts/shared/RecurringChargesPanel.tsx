@@ -23,6 +23,7 @@ import {
   nextOccurrenceEffectiveAmount,
 } from '@/lib/scheduled-effective-amount';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 // The scheduled-transaction form is heavy and only needed once the user opens
 // the "create bill" modal, so load it lazily.
@@ -204,7 +205,7 @@ export function RecurringChargesPanel({ accountId, currencyCode }: RecurringChar
         {t('recurring.title')}
       </h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('recurring.subtitle')}</p>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 space-y-6">
+      <div className={`${CARD_CLASS} p-4 space-y-6`}>
         {isLoading ? (
           <div className="h-20 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : isEmpty ? (

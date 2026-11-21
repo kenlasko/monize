@@ -346,7 +346,8 @@ export function MultiSelect({
           'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100',
           'dark:focus:border-blue-400 dark:focus:ring-blue-400',
           'dark:disabled:bg-gray-700 dark:disabled:text-gray-400',
-          error && 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
+          error && 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500',
+          'ui-ms-field'
         )}
       >
         <div className="flex items-center justify-between">

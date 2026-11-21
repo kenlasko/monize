@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { chartColors } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { GroupedTotal } from '@/types/transaction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface TopGroupsPanelProps {
   title: string;
@@ -73,7 +74,7 @@ export function TopGroupsPanel({
         </div>
         {headerAction && <div className="shrink-0">{headerAction}</div>}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {isLoading ? (
           <div className="h-24 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : rows.ranked.length === 0 ? (

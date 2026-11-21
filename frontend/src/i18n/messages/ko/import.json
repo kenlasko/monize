@@ -38,7 +38,8 @@
   "page": {
     "title": "거래 가져오기",
     "subtitle": "QIF/QMTF, OFX/QFX 또는 CSV 파일에서 거래를 가져오거나 Microsoft Money (.mny) 또는 KMyMoney (.kmy, .xml) 파일 전체를 가져옵니다",
-    "stepOf": "{total}단계 중 {current}단계"
+    "stepOf": "{total}단계 중 {current}단계",
+    "eyebrow": "거래 가져오기"
   },
   "upload": {
     "heading": "거래 파일 업로드",

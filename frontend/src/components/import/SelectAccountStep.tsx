@@ -9,6 +9,7 @@ import { Account, AccountType } from '@/types/account';
 import { formatAccountType, isInvestmentBrokerageAccount, buildAccountDropdownOptions } from '@/lib/account-utils';
 import { ImportFileData, ImportStep } from '@/app/import/import-utils';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface SelectAccountStepProps {
   accounts: Account[];
@@ -85,7 +86,7 @@ export function SelectAccountStep({
 
     return (
       <div className="max-w-xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('selectAccount.headingSingle')}
           </h2>
@@ -203,7 +204,7 @@ export function SelectAccountStep({
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('selectAccount.headingBulk')}
         </h2>

@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Tabs, TabPanel } from '@/components/ui/Tabs';
@@ -53,7 +54,7 @@ export function SecurityBreakdownCard({ security }: SecurityBreakdownCardProps) 
   const slices = slicesFor(security, dimension);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+    <div className={`${CARD_CLASS} flex min-h-0 flex-1 flex-col p-4`}>
       <h3 className="mb-3 shrink-0 text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t('weightings.title')}
       </h3>

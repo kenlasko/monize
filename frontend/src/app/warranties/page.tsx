@@ -439,6 +439,7 @@ function WarrantiesContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='warranties'
           actions={
@@ -458,6 +459,7 @@ function WarrantiesContent() {
           {...tourAnchor(TOUR_ANCHORS.warrantiesSummary)}
         >
           <SummaryCard
+            lead
             label={t('page.summary.expiring')}
             value={summaryValue(summary?.counts.expiring)}
             hint={summary && !summaryFailed ? t('page.summary.expiringHint', { days: formatNumber(summary.windowDays, 0) }) : undefined}

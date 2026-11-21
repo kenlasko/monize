@@ -180,7 +180,8 @@
       "saved": "प्राथमिकताएं सहेजी गईं",
       "saveFailed": "प्राथमिकताएं सहेजने में विफल",
       "themeSaveFailed": "थीम सहेजने में विफल",
-      "colorThemeSaveFailed": "रंग थीम सहेजने में विफल"
+      "colorThemeSaveFailed": "रंग थीम सहेजने में विफल",
+      "uiStyleSaveFailed": "यूआई शैली सहेजने में विफल"
     },
     "browserLocale": "ब्राउज़र लोकेल उपयोग करें (स्वत: पहचान)",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "लाइट",
       "dark": "डार्क"
     },
+    "uiStyleLabel": "यूआई शैली",
+    "uiStyleHint": "टाइपोग्राफ़ी, आकार और तालिका की शैली बदलता है। किसी भी रंग थीम के साथ काम करता है।",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "मानक",
+        "description": "Monize का जाना-पहचाना रूप।"
+      },
+      "classic": {
+        "name": "क्लासिक",
+        "description": "बही-खाते से प्रेरित: सेरिफ़ शीर्षक, रेखाओं वाली तालिकाएँ, चौकोर कोने।"
+      },
+      "modern": {
+        "name": "आधुनिक",
+        "description": "बोल्ड टाइप, गोल रंगीन ब्लॉक और गोली के आकार के नियंत्रण।"
+      }
+    },
     "colorThemeLabel": "रंग थीम",
     "colorThemeHint": "पूर्वावलोकन आपके वर्तमान लाइट या डार्क मोड का उपयोग करते हैं।",
+    "colorThemeStyleHint": "{style} शैली के लिए बनी रंग थीम दिखाई जा रही हैं।",
     "colorThemeOptions": {
       "default": "डिफ़ॉल्ट",
       "latte": "Latte",
@@ -219,6 +237,8 @@
       "dracula": "Dracula",
       "tokyonight": "Tokyo Night",
       "rosepine": "Rosé Pine",
+      "ledger": "बही-खाता",
+      "studio": "स्टूडियो",
       "midnight": "Midnight",
       "highcontrast": "उच्च कंट्रास्ट",
       "colorblind": "वर्णान्ध-सुरक्षित"

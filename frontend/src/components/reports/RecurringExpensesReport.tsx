@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/Badge';
 import { useCallback, useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
@@ -40,6 +41,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type RecurringSortField = 'payee' | 'category' | 'frequency' | 'count' | 'average' | 'total' | 'lastPaid';
 
@@ -443,7 +445,7 @@ export function RecurringExpensesReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -460,14 +462,14 @@ export function RecurringExpensesReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('recurringExpenses.recurringExpenses')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {recurringData.summary.uniquePayees}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">{t('recurringExpenses.identifiedPayees')}</div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('recurringExpenses.sixMonthTotal')}</div>
           <div className="text-xl font-bold text-red-600 dark:text-red-400">
             <PartialTotal total={recurringTotal} displayCurrency={reportingCurrency}>
@@ -475,7 +477,7 @@ export function RecurringExpensesReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('recurringExpenses.monthlyEstimate')}</div>
           <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
             <PartialTotal total={monthlyEstimate} displayCurrency={reportingCurrency}>
@@ -491,7 +493,7 @@ export function RecurringExpensesReport() {
       />
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {/* The threshold sentence and the export were one unwrapped row: on a
             phone the two labels either side of the picker squeezed it and the
             export was pushed past the right edge of the card. The sentence
@@ -524,13 +526,13 @@ export function RecurringExpensesReport() {
       </div>
 
       {recurringData.data.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('recurringExpenses.noRecurring', { count: minOccurrences })} />
         </div>
       ) : (
         <>
           {/* Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+          <div className={`${CARD_CLASS} p-6`}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('recurringExpenses.top10ChartTitle')}
             </h3>
@@ -569,7 +571,7 @@ export function RecurringExpensesReport() {
           </div>
 
           {/* Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+          <div className={`${CARD_CLASS} overflow-hidden`}>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {t('recurringExpenses.allRecurringTitle')}
@@ -752,9 +754,9 @@ export function RecurringExpensesReport() {
                         role="cell"
                         className="col-start-1 row-start-3 min-w-0 p-0 text-sm sm:table-cell sm:px-4 sm:py-3 sm:text-center"
                       >
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium max-sm:inline-block max-sm:max-w-full ${frequencyBadgeClass(expense.frequency)}`}>
+                        <Badge className={`max-sm:inline-block max-sm:max-w-full ${frequencyBadgeClass(expense.frequency)}`}>
                           {frequencyLabel(expense.frequency)}
-                        </span>
+                        </Badge>
                       </td>
                       {/* The count is centred from `sm` up, as it is today; on a
                           phone it is right-aligned like every other value. */}

@@ -4,7 +4,8 @@
     "subtitle": "Preencha tags, categorias e favorecidos automaticamente quando uma transação é criada ou importada",
     "createButton": "Criar regra",
     "loading": "Carregando regras...",
-    "totalCount": "{count, plural, one {# regra} other {# regras}}"
+    "totalCount": "{count, plural, one {# regra} other {# regras}}",
+    "eyebrow": "Automação"
   },
   "empty": {
     "title": "Ainda não há regras",

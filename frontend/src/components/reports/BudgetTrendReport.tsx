@@ -25,6 +25,7 @@ import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 
 export function BudgetTrendReport() {
@@ -105,7 +106,7 @@ export function BudgetTrendReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -116,7 +117,7 @@ export function BudgetTrendReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('budgetTrend.noBudgets')}
         </p>
@@ -127,7 +128,7 @@ export function BudgetTrendReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedBudgetId}
@@ -152,7 +153,7 @@ export function BudgetTrendReport() {
       </div>
 
       {/* Chart */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {trendData.length === 0 ? (
           <EmptyState title={t('budgetTrend.noData')} />
         ) : (

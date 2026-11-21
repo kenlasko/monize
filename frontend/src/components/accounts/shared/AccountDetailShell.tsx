@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { InstitutionLogo, InstitutionLogoData } from '@/components/institutions/InstitutionLogo';
 import { formatAccountType } from '@/lib/account-utils';
@@ -103,12 +104,12 @@ export function AccountDetailShell({
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="ui-detail-header mb-6">
         {onBack && (
           <button
             type="button"
             onClick={onBack}
-            className="mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="ui-detail-back mb-2 -ml-1 inline-flex items-center gap-1 rounded text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <ChevronLeftIcon className="h-4 w-4" aria-hidden="true" />
             {t('header.back')}
@@ -120,13 +121,13 @@ export function AccountDetailShell({
             {institution && <InstitutionLogo institution={institution} size={28} />}
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-1">
-                <h1 className="truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <h1 className="ui-detail-title truncate text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {displayName}
                 </h1>
                 {(account.isJoint || account.jointGranteeCount !== undefined) && (
-                  <span className="ml-1 px-2 inline-flex flex-shrink-0 text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                  <Badge variant="amber" className="ml-1 inline-flex flex-shrink-0">
                     {t('header.jointBadge')}
-                  </span>
+                  </Badge>
                 )}
                 {/* Jump straight to another account instead of going back to
                     the list and clicking again. */}
@@ -138,7 +139,7 @@ export function AccountDetailShell({
                   />
                 )}
               </div>
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="ui-detail-meta text-gray-500 dark:text-gray-400">
                 {`${formatAccountType(account.accountType, tc)} - ${account.currencyCode}`}
               </p>
               {account.isJoint && (

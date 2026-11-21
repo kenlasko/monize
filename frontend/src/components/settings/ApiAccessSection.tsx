@@ -26,6 +26,7 @@ import { PersonalAccessToken, SelfUserProfile } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useRelativeTime } from '@/hooks/useRelativeTime';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const MCP_PATH = '/api/v1/mcp';
 
@@ -286,7 +287,7 @@ export function ApiAccessSection() {
   const activeTokens = tokens.filter((tok) => !tok.isRevoked);
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

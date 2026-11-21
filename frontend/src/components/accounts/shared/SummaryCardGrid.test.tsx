@@ -97,4 +97,19 @@ describe('SummaryCardGrid', () => {
     fireEvent.click(button);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it('marks each card as a stat tile, and the lead card as the lead', () => {
+    render(
+      <SummaryCardGrid
+        cards={[
+          { label: 'Balance', value: '$1,200.00', lead: true },
+          { label: 'Limit', value: '$5,000.00' },
+        ]}
+      />,
+    );
+    const lead = screen.getByRole('article', { name: 'Balance' });
+    expect(lead).toHaveClass('ui-stat', 'ui-stat-lead');
+    expect(screen.getByRole('article', { name: 'Limit' })).not.toHaveClass('ui-stat-lead');
+    expect(screen.getByText('$1,200.00')).toHaveClass('ui-stat-value');
+  });
 });

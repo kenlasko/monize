@@ -20,6 +20,7 @@ import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { useFormModal } from '@/hooks/useFormModal';
 import { buildPasswordSchema } from '@/lib/zod-helpers';
 import { DelegateAccessModal } from './DelegateAccessModal';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('SharedAccess');
 
@@ -302,7 +303,7 @@ export function SharedAccessSection() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
           {t('description')}

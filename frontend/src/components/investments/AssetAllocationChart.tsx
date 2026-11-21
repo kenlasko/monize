@@ -1,5 +1,7 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
+import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -432,19 +434,12 @@ export function AssetAllocationChart({
 
   const showToggle =
     tagsAvailable || keysAvailable || countryAvailable || assetClassAvailable;
-  const toggleButtonClass = (selected: boolean) =>
-    `px-2 py-1 ${
-      selected
-        ? 'bg-blue-600 text-white'
-        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
-    }`;
-
   const groupToggle = showToggle ? (
-    <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
+    <div role="group" aria-label={t('assetAllocation.title')} className={SEGMENTED_GROUP_CLASS}>
       <button
         type="button"
         onClick={() => setGroupBy('security')}
-        className={toggleButtonClass(effectiveGroupBy === 'security')}
+        className={`${segmentClass(effectiveGroupBy === 'security')} !px-2 !py-1 !text-xs`}
         aria-pressed={effectiveGroupBy === 'security'}
       >
         {t('assetAllocation.groupBy.security')}
@@ -453,7 +448,7 @@ export function AssetAllocationChart({
         <button
           type="button"
           onClick={() => setGroupBy('tag')}
-          className={toggleButtonClass(isTagView)}
+          className={`${segmentClass(isTagView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isTagView}
         >
           {t('assetAllocation.groupBy.tag')}
@@ -463,7 +458,7 @@ export function AssetAllocationChart({
         <button
           type="button"
           onClick={() => setGroupBy('tagKey')}
-          className={toggleButtonClass(isTagKeyView)}
+          className={`${segmentClass(isTagKeyView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isTagKeyView}
         >
           {t('assetAllocation.groupBy.tagKey')}
@@ -473,7 +468,7 @@ export function AssetAllocationChart({
         <button
           type="button"
           onClick={() => setGroupBy('country')}
-          className={toggleButtonClass(isCountryView)}
+          className={`${segmentClass(isCountryView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isCountryView}
         >
           {t('assetAllocation.groupBy.country')}
@@ -483,7 +478,7 @@ export function AssetAllocationChart({
         <button
           type="button"
           onClick={() => setGroupBy('assetClass')}
-          className={toggleButtonClass(isAssetClassView)}
+          className={`${segmentClass(isAssetClassView)} !px-2 !py-1 !text-xs`}
           aria-pressed={isAssetClassView}
         >
           {t('assetAllocation.groupBy.assetClass')}
@@ -523,7 +518,7 @@ export function AssetAllocationChart({
 
   if (activeLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
         {heading}
         <div className="h-64 flex items-center justify-center">
           <div className="animate-pulse skeleton-shimmer w-48 h-48 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -534,7 +529,7 @@ export function AssetAllocationChart({
 
   if (!activeAllocation || activeAllocation.allocation.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
+      <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
         {heading}
         <p className="text-gray-500 dark:text-gray-400">
           {isTagView
@@ -569,7 +564,7 @@ export function AssetAllocationChart({
     (valuationComplete === false || foreignAggregateIncomplete);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6 lg:min-h-[420px]">
+    <div className={`${CARD_CLASS} p-3 sm:p-6 lg:min-h-[420px]`}>
       {heading}
       {knownValueOnly && (
         <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">

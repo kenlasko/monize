@@ -35,7 +35,8 @@
       "createFailed": "タグの作成に失敗しました",
       "updateFailed": "タグの更新に失敗しました",
       "deleteFailed": "タグの削除に失敗しました"
-    }
+    },
+    "eyebrow": "ラベル"
   },
   "list": {
     "empty": {

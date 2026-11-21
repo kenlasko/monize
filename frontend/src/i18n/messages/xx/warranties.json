@@ -73,7 +73,8 @@
       "prefillFailed": "[XX-That transaction could not be loaded, so the warranty starts blank-XX]",
       "exported": "[XX-{count, plural, one {{shown} warranty exported} other {{shown} warranties exported}}-XX]",
       "exportFailed": "[XX-The warranties could not be exported-XX]"
-    }
+    },
+    "eyebrow": "[XX-Register of warranties-XX]"
   },
   "status": {
     "lifetime": "[XX-Lifetime-XX]",

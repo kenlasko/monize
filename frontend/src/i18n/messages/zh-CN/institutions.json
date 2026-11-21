@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "金融机构",
+    "eyebrow": "机构登记簿",
     "subtitle": "您账户所属的银行和经纪商",
     "newInstitution": "新建机构",
     "loading": "正在加载机构...",

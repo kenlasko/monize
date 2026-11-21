@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -69,7 +70,7 @@ export function SecurityNewsTab({ security }: SecurityNewsTabProps) {
   }, [load]);
 
   const card = (children: React.ReactNode) => (
-    <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800 dark:shadow-gray-700/50">
+    <div className={`${CARD_CLASS} p-4`}>
       <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
         {t('news.title', { symbol: security.symbol })}
       </h3>

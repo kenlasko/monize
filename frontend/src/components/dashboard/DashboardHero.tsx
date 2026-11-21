@@ -1,8 +1,13 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { CollapsingTitleContext } from '@/hooks/useCollapsingHeaderTitle';
+import { differenceInDays, startOfDay } from 'date-fns';
+import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
+import { parseLocalDate } from '@/lib/utils';
+import { nextOccurrenceDueDate, nextOccurrenceEffectiveAmount } from '@/lib/scheduled-effective-amount';
+import { occurrenceKind } from '@/lib/scheduled-kind';
+import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { PortfolioValuation } from '@/types/investment';
 import type { Account } from '@/types/account';
@@ -12,6 +17,17 @@ import { NetWorthHero } from './NetWorthHero';
 import { PortfolioHero } from './PortfolioHero';
 import { useElementSize } from './useElementSize';
 import { useHeroCycle } from './useHeroCycle';
+import { upcomingOccurrences } from './upcoming-occurrences';
+import type { DashboardHeroFrameProps, HeroNextUp } from './variants/dashboard-hero-view';
+import { DashboardHeroFrameStandard } from './variants/DashboardHeroFrameStandard';
+import { DashboardHeroFrameClassic } from './variants/DashboardHeroFrameClassic';
+import { DashboardHeroFrameModern } from './variants/DashboardHeroFrameModern';
+
+const HERO_FRAME_VARIANTS: StyleVariants<DashboardHeroFrameProps> = {
+  standard: DashboardHeroFrameStandard,
+  classic: DashboardHeroFrameClassic,
+  modern: DashboardHeroFrameModern,
+};
 
 interface DashboardHeroProps {
   /** The dashboard's portfolio valuation; `null` until loaded or when it failed. */
@@ -34,6 +50,11 @@ interface DashboardHeroProps {
    * hero renders the header alone, so the page never loses its heading.
    */
   header: ReactNode;
+  /**
+   * The dashboard's scheduled transactions, the same list the Upcoming Bills
+   * widget reads. The Modern style shows the next occurrence beside the sets.
+   */
+  scheduledTransactions?: ScheduledTransaction[];
 }
 
 /**
@@ -50,8 +71,10 @@ export function DashboardHero({
   investmentSummaryLoading,
   investmentAccounts,
   header,
+  scheduledTransactions,
 }: DashboardHeroProps) {
   const t = useTranslations('dashboard');
+  const uiStyle = useUiStyle();
   const stored = usePreferencesStore((s) => s.preferences?.dashboardWidgetConfig?.[DASHBOARD_HERO_WIDGET_ID]);
   const config = resolveDashboardHeroConfig(stored);
   // The greeting row, measured: the chart rises beside it, and the figures are
@@ -62,81 +85,105 @@ export function DashboardHero({
     hasInvestments,
     settled: !isLoading && !investmentSummaryLoading,
   });
+  const nextUp = useMemo(
+    () => (scheduledTransactions ? heroNextUp(scheduledTransactions, startOfDay(new Date())) : null),
+    [scheduledTransactions],
+  );
 
   if (!config.enabled) return <>{header}</>;
 
   const setName = (set: DashboardHeroSet) => t(`customize.hero.sets.${set}`);
   const activeIndex = sets.indexOf(active);
 
-  return (
-    <div
-      className="mb-6"
-      data-testid="dashboard-hero-root"
-      style={{ '--hero-head-h': `${head.height}px`, '--hero-figures-min': `${head.width}px` } as CSSProperties}
-    >
-      <div ref={headRef} className="flex w-max max-w-full items-start gap-2">
-        {/* Beside the figures the headline is what collapses into the app
-            header, so the greeting does not. */}
-        <div className="min-w-0">
-          <CollapsingTitleContext.Provider value={false}>{header}</CollapsingTitleContext.Provider>
-        </div>
-        {/* After the gear and the help mark, on the greeting's line. */}
-        {sets.length > 1 && (
-          <div role="group" aria-label={t('hero.cycleControls')} className="mt-1 flex flex-shrink-0 sm:mt-1.5">
-            {sets.map((set) => (
-              <button
-                key={set}
-                type="button"
-                aria-pressed={set === active}
-                aria-label={t('hero.showSet', { name: setName(set) })}
-                title={setName(set)}
-                onClick={() => goTo(set)}
-                className="flex h-6 w-6 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <span
-                  aria-hidden="true"
-                  className={`h-2 w-2 rounded-full transition-colors motion-reduce:transition-none ${
-                    set === active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                />
-              </button>
-            ))}
-          </div>
-        )}
+  const cycleControls =
+    sets.length > 1 ? (
+      <div role="group" aria-label={t('hero.cycleControls')} className="mt-1 flex flex-shrink-0 sm:mt-1.5">
+        {sets.map((set) => (
+          <button
+            key={set}
+            type="button"
+            aria-pressed={set === active}
+            aria-label={t('hero.showSet', { name: setName(set) })}
+            title={setName(set)}
+            onClick={() => goTo(set)}
+            className="flex h-6 w-6 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <span
+              aria-hidden="true"
+              className={`h-2 w-2 rounded-full transition-colors motion-reduce:transition-none ${
+                set === active ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            />
+          </button>
+        ))}
       </div>
-      {/* Clipped sideways only: a clip on both axes would cut off the figures'
-          popovers below the track. */}
-      <div className="overflow-x-clip">
-        <div
-          data-testid="dashboard-hero-track"
-          className={`flex ${animate ? 'transition-transform duration-500 ease-in-out motion-reduce:transition-none' : ''}`}
-          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-        >
-          {sets.map((set) => (
-            <div key={set} className="w-full min-w-0 flex-shrink-0" inert={set !== active}>
-              <HeroPanelActiveContext.Provider value={set === active}>
-                {mounted.has(set) &&
-                  (set === 'portfolio' ? (
-                    <PortfolioHero
-                      config={config}
-                      investmentAccounts={investmentAccounts}
-                      hasInvestments={hasInvestments}
-                      isLoading={isLoading}
-                    />
-                  ) : (
-                    <NetWorthHero
-                      config={config}
-                      portfolioValuation={portfolioValuation}
-                      hasInvestments={hasInvestments}
-                      isLoading={isLoading}
-                      investmentSummaryLoading={investmentSummaryLoading}
-                    />
-                  ))}
-              </HeroPanelActiveContext.Provider>
-            </div>
-          ))}
-        </div>
+    ) : null;
+
+  const track = (
+    // Clipped sideways only: a clip on both axes would cut off the figures'
+    // popovers below the track.
+    <div className="overflow-x-clip">
+      <div
+        data-testid="dashboard-hero-track"
+        className={`flex ${animate ? 'transition-transform duration-500 ease-in-out motion-reduce:transition-none' : ''}`}
+        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+      >
+        {sets.map((set) => (
+          <div key={set} className="w-full min-w-0 flex-shrink-0" inert={set !== active}>
+            <HeroPanelActiveContext.Provider value={set === active}>
+              {mounted.has(set) &&
+                (set === 'portfolio' ? (
+                  <PortfolioHero
+                    config={config}
+                    investmentAccounts={investmentAccounts}
+                    hasInvestments={hasInvestments}
+                    isLoading={isLoading}
+                  />
+                ) : (
+                  <NetWorthHero
+                    config={config}
+                    portfolioValuation={portfolioValuation}
+                    hasInvestments={hasInvestments}
+                    isLoading={isLoading}
+                    investmentSummaryLoading={investmentSummaryLoading}
+                  />
+                ))}
+            </HeroPanelActiveContext.Provider>
+          </div>
+        ))}
       </div>
     </div>
   );
+
+  return renderForStyle(uiStyle, HERO_FRAME_VARIANTS, {
+    header,
+    headRef,
+    headSize: head,
+    cycleControls,
+    track,
+    nextUp,
+  });
+}
+
+/**
+ * The next scheduled occurrence across every active schedule, as the Upcoming
+ * Bills widget orders them (`upcomingOccurrences`), with when it falls.
+ */
+function heroNextUp(scheduledTransactions: readonly ScheduledTransaction[], today: Date): HeroNextUp | null {
+  const [next] = upcomingOccurrences(scheduledTransactions, today, true);
+  if (!next) return null;
+  const dueDate = nextOccurrenceDueDate(next);
+  const days = differenceInDays(parseLocalDate(dueDate), today);
+  const effective = nextOccurrenceEffectiveAmount(next);
+  return {
+    id: next.id,
+    name: next.name,
+    payee: next.payeeName || next.payee?.name || null,
+    manual: !next.autoPost,
+    kind: occurrenceKind(effective, next),
+    amount: effective.amount,
+    currencyCode: effective.currencyCode,
+    when: days < 0 ? 'overdue' : days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'later',
+    dueDate,
+  };
 }

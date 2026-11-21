@@ -7,12 +7,15 @@ import { userSettingsApi } from '@/lib/user-settings';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getErrorMessage } from '@/lib/errors';
-import { COLOR_THEMES, ColorTheme } from '@/lib/color-themes';
+import { ColorTheme } from '@/lib/color-themes';
+import { UI_STYLE_PALETTES, type UiStyle } from '@/lib/ui-styles';
 import { THEME_SWATCHES } from '@/lib/theme-swatches';
 
 interface ColorThemeSelectorProps {
   value: ColorTheme;
   onChange: (colorTheme: ColorTheme) => void;
+  /** Offer only this UI style's palettes (`UI_STYLE_PALETTES`). */
+  uiStyle?: UiStyle;
 }
 
 /**
@@ -32,13 +35,19 @@ interface ColorThemeSelectorProps {
  *
  * A radiogroup with roving tabindex, the way `Tabs` moves between tabs: one
  * tab stop for the set, arrows to move within it.
+ *
+ * Only the palettes the UI style offers are listed, companion first. A
+ * stored palette the style does not offer (one dropped from its list since)
+ * stays listed while it is in use, so the picker never shows nothing chosen.
  */
-export function ColorThemeSelector({ value, onChange }: ColorThemeSelectorProps) {
+export function ColorThemeSelector({ value, onChange, uiStyle = 'standard' }: ColorThemeSelectorProps) {
   const t = useTranslations('settings.preferences');
   const [isSaving, startTransition] = useTransition();
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { setColorTheme: setAppColorTheme, resolvedTheme } = useTheme();
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const offered = UI_STYLE_PALETTES[uiStyle];
+  const palettes = offered.includes(value) ? offered : [value, ...offered];
 
   const handleChange = (next: ColorTheme) => {
     onChange(next);
@@ -57,9 +66,9 @@ export function ColorThemeSelector({ value, onChange }: ColorThemeSelectorProps)
 
   /** Move selection and focus together, so the arrow keys read as one control. */
   const selectAt = (index: number) => {
-    const wrapped = (index + COLOR_THEMES.length) % COLOR_THEMES.length;
+    const wrapped = (index + palettes.length) % palettes.length;
     optionRefs.current[wrapped]?.focus();
-    handleChange(COLOR_THEMES[wrapped]);
+    handleChange(palettes[wrapped]);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
@@ -80,7 +89,7 @@ export function ColorThemeSelector({ value, onChange }: ColorThemeSelectorProps)
         break;
       case 'End':
         event.preventDefault();
-        selectAt(COLOR_THEMES.length - 1);
+        selectAt(palettes.length - 1);
         break;
       default:
         break;
@@ -95,12 +104,17 @@ export function ColorThemeSelector({ value, onChange }: ColorThemeSelectorProps)
         {t('colorThemeLabel')}
       </span>
       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('colorThemeHint')}</p>
+      {uiStyle !== 'standard' && (
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {t('colorThemeStyleHint', { style: t(`uiStyleOptions.${uiStyle}.name`) })}
+        </p>
+      )}
       <div
         role="radiogroup"
         aria-labelledby="color-theme-label"
         className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
       >
-        {COLOR_THEMES.map((name, index) => {
+        {palettes.map((name, index) => {
           const swatch = THEME_SWATCHES[name][mode];
           const isSelected = name === value;
           return (

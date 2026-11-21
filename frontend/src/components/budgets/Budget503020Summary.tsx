@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { BudgetCategory, CategoryBreakdown } from '@/types/budget';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { CARD_CLASS } from '@/components/ui/Card';
 interface Budget503020SummaryProps {
   budgetCategories: BudgetCategory[];
   categoryBreakdown: CategoryBreakdown[];
@@ -52,7 +53,7 @@ export function Budget503020Summary({
   if (totalIncome <= 0) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6`}>
       <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('summary503020.title')}
       </h3>

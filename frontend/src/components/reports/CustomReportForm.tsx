@@ -45,6 +45,7 @@ import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
 import { useTranslations } from 'next-intl';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('CustomReportForm');
 
@@ -304,7 +305,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Basic Info Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('customReport.basicInformation')}
         </h3>
@@ -350,7 +351,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
       </div>
 
       {/* Visualization Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('customReport.visualization')}
         </h3>
@@ -372,7 +373,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
 
       {/* Table Configuration Section - only shown when view type is TABLE */}
       {watchViewType === ReportViewType.TABLE && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
             {t('customReport.tableConfiguration')}
           </h3>
@@ -407,7 +408,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
       )}
 
       {/* Time Period Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('customReport.timePeriod')}
         </h3>
@@ -438,7 +439,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('customReport.filtersOptional')}
         </h3>
@@ -453,7 +454,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
       </div>
 
       {/* Aggregation Options Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('customReport.aggregationOptions')}
         </h3>

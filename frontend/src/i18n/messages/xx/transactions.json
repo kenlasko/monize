@@ -125,7 +125,9 @@
       "attachments": "[XX-Attachments-XX]",
       "status": "[XX-Status-XX]",
       "statusHelp": "[XX-Unreconciled, Cleared or Reconciled are steps toward matching a bank statement. Void cancels a transaction but keeps its record; it no longer moves the account balance.-XX]",
-      "actions": "[XX-Actions-XX]"
+      "actions": "[XX-Actions-XX]",
+      "payment": "[XX-Payment-XX]",
+      "deposit": "[XX-Deposit-XX]"
     },
     "sort": {
       "balanceHiddenHint": "[XX-Sort by date to see the running balance-XX]",
@@ -191,7 +193,20 @@
       "editButton": "[XX-Edit-XX]",
       "deleteButton": "[XX-Delete-XX]"
     },
-    "itemNamePlural": "[XX-transactions-XX]"
+    "itemNamePlural": "[XX-transactions-XX]",
+    "classic": {
+      "entriesShown": "[XX-{count, plural, one {# entry shown} other {# entries shown}}-XX]",
+      "legendCleared": "[XX-cleared-XX]",
+      "legendReconciled": "[XX-reconciled-XX]",
+      "legendRule": "[XX-The rule under each balance is that balance against the highest on this page.-XX]",
+      "markCleared": "[XX-c-XX]",
+      "markReconciled": "[XX-R-XX]"
+    },
+    "modern": {
+      "inspectorLabel": "[XX-Selected transaction-XX]",
+      "balanceAfter": "[XX-Balance after-XX]",
+      "yesterday": "[XX-Yesterday-XX]"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "[XX-The warranties for this transaction could not be loaded.-XX]",
       "empty": "[XX-No warranties yet-XX]"
     },
-    "conversionLockedNote": "[XX-This transfer belongs to a split transaction or to another owner's account, so it can only stay a transfer here. Change it from the split or delete it and create the entry you want.-XX]"
+    "conversionLockedNote": "[XX-This transfer belongs to a split transaction or to another owner's account, so it can only stay a transfer here. Change it from the split or delete it and create the entry you want.-XX]",
+    "modeGroupLabel": "[XX-Kind of transaction-XX]",
+    "entryHint": "[XX-Tab steps through the fields. Esc closes.-XX]"
   },
   "splitEditor": {
     "header": "[XX-Split Details-XX]",
@@ -772,6 +789,13 @@
       "foreignCurrency": "[XX-The amount is in a currency other than the account's. Use Full Form to enter it.-XX]",
       "crossCurrencyTransfer": "[XX-The two accounts hold different currencies. Use Full Form for this transfer.-XX]",
       "unknown": "[XX-This entry cannot be saved here. Use Full Form to finish it.-XX]"
+    },
+    "assumedNote": "[XX-The dashed field was not typed. It was filled in for you, so check it.-XX]",
+    "hints": {
+      "enter": "[XX-Enter saves-XX]",
+      "shiftEnter": "[XX-Shift Enter saves and starts another-XX]",
+      "tab": "[XX-Tab steps through the fields-XX]",
+      "esc": "[XX-Esc closes-XX]"
     }
   }
 }

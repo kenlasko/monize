@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "Instytucje finansowe",
+    "eyebrow": "Rejestr instytucji",
     "subtitle": "Banki i biura maklerskie, do których należą Twoje konta",
     "newInstitution": "Nowa instytucja",
     "loading": "Ładowanie instytucji...",

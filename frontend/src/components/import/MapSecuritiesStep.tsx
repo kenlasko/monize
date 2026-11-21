@@ -9,6 +9,7 @@ import { SecurityMapping } from '@/lib/import';
 import { EXCHANGE_OPTIONS } from '@/lib/constants';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { SecurityLookupPicker, LookupCandidate } from '@/components/securities/SecurityLookupPicker';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type ImportStep = 'upload' | 'selectAccount' | 'mapCategories' | 'mapSecurities' | 'mapAccounts' | 'review' | 'multiAccountReview' | 'complete';
 
@@ -68,7 +69,7 @@ export function MapSecuritiesStep({
       onCancel={() => handleLookupPickerCancel?.()}
     />
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('mapSecurities.heading')}
         </h2>

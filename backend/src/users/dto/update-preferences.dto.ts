@@ -98,6 +98,8 @@ export class UpdatePreferencesDto {
       "dracula",
       "tokyonight",
       "rosepine",
+      "ledger",
+      "studio",
       "midnight",
       "highcontrast",
       "colorblind",
@@ -118,11 +120,24 @@ export class UpdatePreferencesDto {
     "dracula",
     "tokyonight",
     "rosepine",
+    "ledger",
+    "studio",
     "midnight",
     "highcontrast",
     "colorblind",
   ])
   colorTheme?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "UI style: typography, shapes and table styling, independent of the colour theme",
+    example: "standard",
+    enum: ["standard", "classic", "modern"],
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(["standard", "classic", "modern"])
+  uiStyle?: string;
 
   @ApiPropertyOptional({
     description: "Timezone (browser = use browser timezone)",

@@ -1,0 +1,114 @@
+'use client';
+
+import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
+import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid';
+import { PartialTotal } from '@/components/ui/PartialTotal';
+import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { MoneyFigure } from '@/components/ui/MoneyFigure';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { HeroFigureSkeleton, HeroHeadline } from '../hero-parts';
+import { MonthBars } from './MonthBars';
+import type { NetWorthHeroViewProps } from './net-worth-hero-view';
+
+function BlockFigure({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="ui-display-figure text-[22px] font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+/**
+ * The net worth set in the Modern style, drawn inside the hero's inverted
+ * block (`DashboardHero`): net worth set huge in the grotesque, the month's
+ * move as a pill, the three figures under it, and a bar per month beside it
+ * with the current month in the accent.
+ */
+export function NetWorthHeroModern({
+  label,
+  currency,
+  netWorth,
+  assets,
+  liabilities,
+  invested,
+  investedLoading,
+  collapsed,
+  change,
+  points,
+  formatNarrowMonth,
+}: NetWorthHeroViewProps) {
+  const t = useTranslations('dashboard');
+  const { formatCurrency } = useNumberFormat();
+  return (
+    <section aria-label={label} data-testid="dashboard-hero" className="flex flex-wrap gap-x-10 gap-y-7">
+      <div className="flex min-w-0 flex-[1_1_22rem] flex-col">
+        <div className="font-semibold text-gray-500 dark:text-gray-400">{t('hero.netWorth')}</div>
+        <div className="mt-1.5">
+          <HeroHeadline
+            negative={false}
+            collapsed={collapsed}
+            sizeClass="text-6xl sm:text-7xl xl:text-[92px] font-bold text-gray-900 dark:text-gray-50"
+          >
+            <PartialTotal total={netWorth} displayCurrency={currency}>
+              <MoneyFigure amount={netWorth.value} display />
+            </PartialTotal>
+          </HeroHeadline>
+        </div>
+        {change !== null && (
+          <div className="mt-3.5 flex">
+            {change.known ? (
+              // On the block, which is dark in both modes: the light end of red and green.
+              <span
+                data-testid="dashboard-hero-pill"
+                className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-semibold ${
+                  change.up ? 'bg-green-400/15 text-green-400' : 'bg-red-400/15 text-red-400'
+                }`}
+              >
+                {change.up ? (
+                  <ArrowUpIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                ) : (
+                  <ArrowDownIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                {change.text}
+              </span>
+            ) : (
+              <span data-testid="dashboard-hero-pill" className="text-sm text-gray-500 dark:text-gray-400">
+                <UnknownAmount reason="displayFx" />
+              </span>
+            )}
+          </div>
+        )}
+        <dl className="mt-auto flex flex-wrap gap-x-9 gap-y-3 pt-7">
+          <BlockFigure label={t('hero.assetsLabel')}>
+            <PartialTotal total={assets} displayCurrency={currency}>
+              {formatCurrency(assets.value)}
+            </PartialTotal>
+          </BlockFigure>
+          <BlockFigure label={t('hero.liabilitiesLabel')}>
+            <PartialTotal total={liabilities} displayCurrency={currency}>
+              {formatCurrency(liabilities.value)}
+            </PartialTotal>
+          </BlockFigure>
+          {(investedLoading || invested) && (
+            <BlockFigure label={t('hero.investedLabel')}>
+              {invested ? (
+                <PartialTotal total={invested.total} displayCurrency={currency} explanation={invested.explanation}>
+                  {formatCurrency(invested.value)}
+                </PartialTotal>
+              ) : (
+                <HeroFigureSkeleton />
+              )}
+            </BlockFigure>
+          )}
+        </dl>
+      </div>
+      <div className="flex min-w-0 flex-[1_1_18rem] flex-col justify-end" data-testid="dashboard-hero-chart">
+        <MonthBars points={points} currency={currency} formatNarrowMonth={formatNarrowMonth} />
+      </div>
+    </section>
+  );
+}

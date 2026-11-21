@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Caixa de revisão de IA",
-    "subtitle": "Transações que uma regra pediu a uma IA para revisar, perfis que um assistente foi solicitado a rascunhar, e as edições que um assistente propôs para você aprovar."
+    "subtitle": "Transações que uma regra pediu a uma IA para revisar, perfis que um assistente foi solicitado a rascunhar, e as edições que um assistente propôs para você aprovar.",
+    "eyebrow": "Aguardando sua revisão"
   },
   "filter": {
     "label": "Filtrar por status",

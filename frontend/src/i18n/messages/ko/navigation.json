@@ -86,7 +86,9 @@
       "category": "빠른 추가: {amount} {category}",
       "payeeCategory": "빠른 추가: {amount} {payee}, {category}",
       "transfer": "빠른 추가: {amount} {from}에서 {to}(으)로"
-    }
+    },
+    "trigger": "검색 또는 이동"
   },
-  "quickAdd": "빠른 추가"
+  "quickAdd": "빠른 추가",
+  "accountButton": "{name}, 설정"
 }

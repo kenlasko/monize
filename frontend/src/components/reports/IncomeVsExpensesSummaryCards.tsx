@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportStatement, useReportStatement } from '@/components/reports/variants/ReportStatement';
 import { useTranslations } from 'next-intl';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -63,7 +64,7 @@ interface SummaryCardProps {
 
 function SummaryCard({ tone, label, children }: SummaryCardProps) {
   return (
-    <div className={`rounded-lg p-4 text-center ${tone.box}`}>
+    <div className={`ui-rep-tile rounded-lg p-4 text-center ${tone.box}`}>
       <div className={`text-sm ${tone.label}`}>{label}</div>
       <div className={`text-xl font-bold ${tone.value}`}>{children}</div>
     </div>
@@ -78,6 +79,7 @@ export function IncomeVsExpensesSummaryCards({
 }: IncomeVsExpensesSummaryCardsProps) {
   const t = useTranslations('reports');
   const { formatCurrencyCompact: formatCurrency, formatPercent } = useNumberFormat();
+  const asStatement = useReportStatement();
 
   const income = (
     <SummaryCard tone={GREEN} label={t('incomeVsExpenses.totalIncome')}>
@@ -127,6 +129,38 @@ export function IncomeVsExpensesSummaryCards({
         <SummaryCard tone={pctTone} label={t('tagBreakdown.balancePercent')}>
           {win.balancePercent === null ? '—' : formatPercent(win.balancePercent, 2)}
         </SummaryCard>
+      </div>
+    );
+  }
+
+  if (asStatement) {
+    const partial = (value: number) => (
+      <PartialTotal total={{ value, ...completeness }} displayCurrency={reportingCurrency}>
+        {formatCurrency(value)}
+      </PartialTotal>
+    );
+    return (
+      <div className="mt-6">
+        <ReportStatement
+          ariaLabel={t('page.names.income-vs-expenses')}
+          lines={[
+            { key: 'income', label: t('incomeVsExpenses.totalIncome'), value: partial(totals.totalIncome), tone: 'gain' },
+            { key: 'expenses', label: t('incomeVsExpenses.totalExpenses'), value: partial(totals.totalExpenses), tone: 'loss' },
+          ]}
+          total={{
+            label: t('incomeVsExpenses.totalSavings'),
+            value: partial(totals.totalSavings),
+            tone: totals.totalSavings >= 0 ? 'plain' : 'loss',
+          }}
+          memo={[
+            {
+              key: 'rate',
+              label: t('incomeVsExpenses.savingsRate'),
+              value: formatPercent(totals.savingsRate, 1),
+              tone: totals.savingsRate >= 0 ? 'plain' : 'loss',
+            },
+          ]}
+        />
       </div>
     );
   }

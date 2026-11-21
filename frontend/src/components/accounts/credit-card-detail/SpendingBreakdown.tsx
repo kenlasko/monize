@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { GroupedTotal } from '@/types/transaction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface SpendingBreakdownProps {
   totals: GroupedTotal[];
@@ -41,7 +42,7 @@ export function SpendingBreakdown({ totals, currencyCode, isLoading, limit = 8, 
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('spending.title')}
       </h2>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {isLoading ? (
           <div className="h-24 rounded bg-gray-100 dark:bg-gray-700 animate-pulse skeleton-shimmer" />
         ) : rows.spend.length === 0 ? (

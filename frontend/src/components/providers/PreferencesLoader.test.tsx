@@ -8,6 +8,7 @@ const mockClearPreferences = vi.fn();
 const mockStoreUpdate = vi.fn();
 const mockSetTheme = vi.fn();
 const mockSetColorTheme = vi.fn();
+const mockSetUiStyle = vi.fn();
 const mockApiUpdatePreferences = vi.fn();
 const mockRefresh = vi.fn();
 
@@ -20,6 +21,8 @@ vi.mock('@/contexts/ThemeContext', () => ({
     setTheme: mockSetTheme,
     colorTheme: 'default',
     setColorTheme: mockSetColorTheme,
+    uiStyle: 'standard',
+    setUiStyle: mockSetUiStyle,
   }),
 }));
 
@@ -77,7 +80,7 @@ describe('PreferencesLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
-    mockPreferences = { theme: 'dark', colorTheme: 'latte' };
+    mockPreferences = { theme: 'dark', colorTheme: 'latte', uiStyle: 'classic' };
   });
 
   it('renders children', () => {
@@ -114,6 +117,25 @@ describe('PreferencesLoader', () => {
       </PreferencesLoader>,
     );
     expect(mockSetColorTheme).toHaveBeenCalledWith('latte');
+  });
+
+  it('syncs UI style when preferences have a valid uiStyle value', () => {
+    render(
+      <PreferencesLoader>
+        <div>Child</div>
+      </PreferencesLoader>,
+    );
+    expect(mockSetUiStyle).toHaveBeenCalledWith('classic');
+  });
+
+  it('ignores an invalid uiStyle value', () => {
+    mockPreferences = { ...mockPreferences, uiStyle: 'neon' };
+    render(
+      <PreferencesLoader>
+        <div>Child</div>
+      </PreferencesLoader>,
+    );
+    expect(mockSetUiStyle).not.toHaveBeenCalled();
   });
 
   it('reverts the locale cookie to the stored preference and refreshes', () => {

@@ -55,6 +55,7 @@ import {
 } from "@/components/reports/IncomeVsExpensesTable";
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-income-vs-expenses-accounts';
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-income-vs-expenses-stack-tagged';
@@ -445,7 +446,7 @@ export function IncomeVsExpensesReport() {
   return (
     <div className="space-y-6">
       {/* Controls -- always rendered so focus inside DateInput survives reloads */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <ReportAccountMultiSelect
             accounts={offeredAccounts}
@@ -483,7 +484,7 @@ export function IncomeVsExpensesReport() {
       </div>
 
       {/* Chart */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />

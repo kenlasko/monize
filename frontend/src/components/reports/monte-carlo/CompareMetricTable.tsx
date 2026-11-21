@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { CARD_CLASS } from '@/components/ui/Card';
 import {
   MonteCarloScenario,
   SimulationResult,
@@ -40,7 +41,7 @@ export function CompareMetricTable({
   onRerun,
 }: CompareMetricTableProps) {
   return (
-    <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div className={`${CARD_CLASS} overflow-x-auto`}>
       <table className="min-w-full text-sm">
         <thead>
           <tr className="bg-gray-50 dark:bg-gray-900">

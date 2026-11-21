@@ -34,6 +34,7 @@ import type {
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { createLogger } from '@/lib/logger';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('SectorWeightingsReport');
 
@@ -321,7 +322,7 @@ export function SectorWeightingsReport() {
   if (isLoading && !data) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -333,7 +334,7 @@ export function SectorWeightingsReport() {
 
   if (!data || (data.items.length === 0 && data.unclassifiedValue === 0)) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+      <div className={`${CARD_CLASS} p-8 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('sectorWeightings.noData')}
         </p>
@@ -353,7 +354,7 @@ export function SectorWeightingsReport() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center justify-between">
           {/* Each picker takes the full width of the card on a phone -- at
               `w-48` a pair of them is wider than the screen and an account or
@@ -404,7 +405,7 @@ export function SectorWeightingsReport() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {data.valuationComplete === false ? t('partialData.knownValue') : t('sectorWeightings.totalPortfolio')}
           </p>
@@ -412,19 +413,19 @@ export function SectorWeightingsReport() {
             {formatCurrency(data.totalPortfolioValue ?? data.knownSubtotal ?? 0, defaultCurrency)}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('sectorWeightings.directExposure')}</p>
           <p className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">
             {formatCurrency(data.totalDirectValue, defaultCurrency)}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('sectorWeightings.etfExposure')}</p>
           <p className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
             {formatCurrency(data.totalEtfValue, defaultCurrency)}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('sectorWeightings.sectors')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {data.items.length}
@@ -433,7 +434,7 @@ export function SectorWeightingsReport() {
       </div>
 
       {/* Stacked Bar Chart */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('sectorWeightings.sectorAllocation')}
         </h3>
@@ -517,7 +518,7 @@ export function SectorWeightingsReport() {
           the captions: every value names its own column, so each one is
           self-describing in whatever order it is heard. Both are properties of
           the mechanism, not of this table. */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <div className="overflow-x-auto">
           {/* Explicit roles: restyling `display` below `sm` strips the implicit
               table semantics, and these put them back (inert from `sm` up). */}

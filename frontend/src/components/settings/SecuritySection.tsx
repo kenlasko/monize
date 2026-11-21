@@ -23,6 +23,8 @@ import { User, UserPreferences, TrustedDevice } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { buildPasswordSchema } from '@/lib/zod-helpers';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { Badge } from '@/components/ui/Badge';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const buildChangePasswordSchema = (t: (key: string) => string, tc: (key: string) => string) => z.object({
   currentPassword: z.string().min(1, t('validation.currentPasswordRequired')).max(128, t('validation.passwordMax')),
@@ -244,7 +246,7 @@ export function SecuritySection({ user, preferences, force2fa, oidcPasswordLogin
   if (!user.hasPassword) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('heading')}</h2>
       {user.authProvider === 'oidc' && (
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -313,9 +315,9 @@ export function SecuritySection({ user, preferences, force2fa, oidcPasswordLogin
             {twoFactorEnabled ? (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  <Badge variant="green">
                     {t('twoFactor.enabledBadge')}
-                  </span>
+                  </Badge>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {t('twoFactor.enabledDescription')}
                   </p>

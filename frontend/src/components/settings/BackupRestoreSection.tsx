@@ -26,6 +26,8 @@ import { downloadBlob } from '@/lib/download';
 import { User } from '@/types/auth';
 import { takeOidcReauthArtifact } from '@/lib/stepUpToken';
 import { StoredBackupsSubsection } from './StoredBackupsSubsection';
+import { Badge } from '@/components/ui/Badge';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 
 function isBackupPasswordRequired(error: unknown): boolean {
@@ -397,7 +399,7 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
         {t('heading')}
       </h2>
@@ -428,9 +430,9 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
             </p>
           ) : encryption.enabled ? (
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+              <Badge variant="green">
                 {t('encryption.enabledBadge')}
-              </span>
+              </Badge>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {t('encryption.enabledLocalNote')}
               </span>
@@ -438,9 +440,9 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
           ) : (
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                <Badge variant="amber">
                   {t('encryption.disabledBadge')}
-                </span>
+                </Badge>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {t('encryption.disabledLocalNote')}
                 </span>
@@ -471,9 +473,9 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
 
           {encryption.enabled ? (
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+              <Badge variant="green">
                 {t('encryption.enabledBadge')}
-              </span>
+              </Badge>
               <Button
                 variant="outline"
                 onClick={() => setShowEncryptionSetup(true)}

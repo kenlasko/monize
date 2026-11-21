@@ -62,7 +62,9 @@
     "onPace": "Op tempo",
     "rollover": "Overdracht: {type}",
     "remaining": "{amount} over",
-    "over": "{amount} te veel"
+    "over": "{amount} te veel",
+    "leftWord": "over",
+    "overWord": "over budget"
   },
   "categoryTrend": {
     "title": "Categorietrends",
@@ -164,6 +166,7 @@
     "original": "Origineel: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Budgettotalen",
     "totalBudget": "Totaal budget",
     "spent": "Uitgegeven",
     "remaining": "Resterend",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Budgetboek",
       "title": "Budgetten",
       "subtitle": "Beheer jouw budgetten en volg uitgaven bij",
       "newBudget": "+ Nieuw budget",

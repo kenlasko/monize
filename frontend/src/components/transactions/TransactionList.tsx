@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import {
@@ -56,6 +56,15 @@ import {
 } from '@/lib/format';
 import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { useUiStyle } from '@/hooks/useUiStyle';
+import {
+  balanceRulePercents,
+  netByDate,
+  pageTotals,
+  registerGroupLabel,
+} from './register-style-data';
+import { ModernRegister } from './variants/ModernRegister';
+import { useIsLgUp } from '@/hooks/useIsMobile';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -318,6 +327,8 @@ export function TransactionList({
   const { formatCurrency } = useNumberFormat();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { density } = useDensityPreference(densityView);
+  const uiStyle = useUiStyle();
+  const locale = useLocale();
   // Model B: the phone card or the tier table. Exactly one branch renders per
   // row, chosen here.
   const wrapped = useRegisterPhoneCard(densityView, showFxColumns);
@@ -411,6 +422,24 @@ export function TransactionList({
   }, [onEdit]);
 
   const { cellPadding, headerPadding } = useTableDensity(density);
+
+  // Modern draws the register as a list of rows with a selected-row inspector
+  // beside it (from `lg`). Below that a tap opens the editor, exactly as the
+  // standard row does. The foreign-currency fee surface keeps its columns.
+  const modernList = uiStyle === 'modern' && !showFxColumns;
+  const inspectorVisible = useIsLgUp();
+  const [inspectedId, setInspectedId] = useState<string | null>(null);
+  const handleModernRowClick = useCallback(
+    (transaction: Transaction) => {
+      if (longPressTriggered.current) {
+        longPressTriggered.current = false;
+        return;
+      }
+      if (inspectorVisible) setInspectedId(transaction.id);
+      else onEdit?.(transaction);
+    },
+    [inspectorVisible, onEdit],
+  );
 
   const handleActionSheetClose = useCallback(() => {
     setActionSheet({ isOpen: false, transaction: null });
@@ -556,7 +585,7 @@ export function TransactionList({
   // DOM at every width, never hidden by a class; the tiers decide the rest.
   const {
     hidden: hiddenColumns,
-    isVisible,
+    isVisible: isChosenVisible,
     hide: hideColumn,
     show: showColumn,
     showAll: showAllColumns,
@@ -601,7 +630,7 @@ export function TransactionList({
   const sortChipFields = TRANSACTION_SORT_FIELDS.filter(
     (field) =>
       (field !== 'account' || !isSingleAccountView) &&
-      isVisible(field) &&
+      isChosenVisible(field) &&
       !PHONE_CARD_OMITTED_SORT_FIELDS.has(field),
   );
 
@@ -611,6 +640,22 @@ export function TransactionList({
   const sortedByDate = isSortedByDate(dataSort);
   const showRunningBalance =
     (isSingleAccountView || startingBalance !== undefined) && sortedByDate;
+  // The Classic register: Payment / Deposit columns and the date as a group
+  // row. The foreign-currency fee surface keeps its own columns and its Date
+  // column. Group rows only mean something while the rows run in date order.
+  const splitAmount = uiStyle === 'classic' && !showFxColumns;
+  const groupedByDate = splitAmount && sortedByDate;
+  // Classic prints the memo inline after the payee, so its Description column
+  // is not drawn. The chooser still reads the reader's own set.
+  const tableHidden = useMemo<ReadonlySet<string>>(
+    () => (splitAmount ? new Set([...hiddenColumns, 'description']) : hiddenColumns),
+    [splitAmount, hiddenColumns],
+  );
+  // Whether the TABLE draws a column: the rows' set, so a header cell and
+  // every colSpan agree with the cells the rows render. Classic leaves out
+  // Description; a header that still drew it pushed every later column one
+  // to the left. The chooser and the sort chips read the reader's own set.
+  const isVisible = (id: string): boolean => !tableHidden.has(id);
   // Row-invariant, so computed once rather than per row: ten unconditional
   // columns (register-columns.ts order, minus Account/FX/Balance, which are
   // conditional) plus the ones this render actually drew, minus the ones the
@@ -620,7 +665,9 @@ export function TransactionList({
     + (selectionMode ? 1 : 0)
     + (showRunningBalance ? 1 : 0)
     + (showFxColumns ? 3 : 0)
-    - hiddenColumns.size;
+    + (splitAmount ? 1 : 0)
+    - (groupedByDate ? 1 : 0)
+    - tableHidden.size;
 
   // Compute display amounts for split transactions.  When a filter
   // causes only some splits to be returned, the sum of visible splits
@@ -675,6 +722,19 @@ export function TransactionList({
         runningBalanceDecimals,
       ),
     [transactions, startingBalance, dataSort?.direction, displayAmounts, runningBalanceDecimals],
+  );
+
+  // Figures the Classic and Modern layouts draw around the rows.
+  const styleData = useMemo(
+    () =>
+      uiStyle === 'standard'
+        ? null
+        : {
+            dayNet: netByDate(transactions, displayAmounts, runningBalanceDecimals),
+            totals: pageTotals(transactions, displayAmounts, runningBalanceDecimals),
+            rulePct: balanceRulePercents(runningBalances),
+          },
+    [uiStyle, transactions, displayAmounts, runningBalanceDecimals, runningBalances],
   );
 
   const formatAmount = useCallback((amount: number, currencyCode?: string) => {
@@ -751,7 +811,7 @@ export function TransactionList({
       {/* Density toggle and top pagination */}
       {showToolbar && (
         <ListTopToolbar
-          densityView={densityView}
+          densityView={modernList ? undefined : densityView}
           viewToggle={viewToggle}
           currentPage={currentPage}
           totalPages={totalPages}
@@ -763,13 +823,16 @@ export function TransactionList({
             <>
               {/* The one way to bring a hidden column back, so it is first and
                   always drawn; its trigger carries the count of hidden ones. */}
-              <ColumnChooserMenu
-                columns={hideableColumns}
-                hidden={hiddenColumns}
-                onHide={hideColumn}
-                onShow={showColumn}
-                onShowAll={showAllColumns}
-              />
+              {/* Modern's block list has no columns or row density to set. */}
+              {!modernList && (
+                <ColumnChooserMenu
+                  columns={hideableColumns}
+                  hidden={hiddenColumns}
+                  onHide={hideColumn}
+                  onShow={showColumn}
+                  onShowAll={showAllColumns}
+                />
+              )}
               {/* Withholding a figure is only honest if the reader learns why
                   and what to do: the Balance column is gone because the
                   register is not in date order, and sorting by date brings it
@@ -805,8 +868,80 @@ export function TransactionList({
       {/* The container the column tiers measure: a column appears when the
           REGISTER itself is wide enough, not when the viewport is -- the
           viewport overstates this width by the page padding around it. */}
+      {modernList ? (
+        <ModernRegister
+          transactions={transactions}
+          today={today}
+          locale={locale}
+          todayDividerIndex={todayDividerIndex}
+          showRunningBalance={showRunningBalance}
+          runningBalances={runningBalances}
+          displayAmounts={displayAmounts}
+          dayNet={styleData?.dayNet ?? new Map()}
+          inspectorVisible={inspectorVisible}
+          inspectedId={inspectedId}
+          deletingId={deletingId}
+          selectionMode={selectionMode}
+          isRowSelected={(id) =>
+            selectAllMatching ? !excludedIds?.has(id) : (selectedIds?.has(id) || false)
+          }
+          onToggleSelection={onToggleSelection}
+          highlightTransactionId={highlightTransactionId}
+          onRowClick={handleModernRowClick}
+          onLongPressStart={handleLongPressStart}
+          onLongPressStartTouch={handleLongPressStartTouch}
+          onLongPressEnd={handleLongPressEnd}
+          onTouchMove={handleTouchMove}
+          onContextMenu={handleContextMenu}
+          onCycleStatus={handleCycleStatus}
+          onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onScheduleRecurring={onScheduleRecurring}
+          onDeleteClick={handleDeleteClick}
+          canEdit={(tx) =>
+            !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canEdit)
+          }
+          canDelete={(tx) =>
+            !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canDelete)
+          }
+          categoryColorMap={categoryColorMap}
+          categoryLabelMap={categoryLabelMap}
+          categoryIconMap={categoryIconMap}
+          sortStrip={
+            <table className="ui-modern-sortstrip">
+              <thead>
+                {sort && onSortChange ? (
+                  <tr role="row" aria-label={t('list.sort.stripLabel')} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <th role="columnheader" className="flex items-center gap-3 pr-1">
+                      {wrappedHeaderControls}
+                    </th>
+                    {sortChipFields.map((field) => (
+                      <SortableHeader<TransactionSortField>
+                        key={field}
+                        field={field}
+                        sortField={sort.field}
+                        sortDirection={sort.direction}
+                        onSort={onSortChange}
+                        className={PHONE_HEADER_CLASS}
+                      >
+                        {sortLabels[field]}
+                      </SortableHeader>
+                    ))}
+                  </tr>
+                ) : (
+                  <tr>
+                    <th className="text-left">
+                      <div className="flex items-center gap-3">{wrappedHeaderControls}</div>
+                    </th>
+                  </tr>
+                )}
+              </thead>
+            </table>
+          }
+        />
+      ) : (
       <div className={`overflow-x-auto ${REGISTER_TABLE_CONTAINER}`}>
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className={`min-w-full divide-y divide-gray-200 dark:divide-gray-700 ${splitAmount ? 'ui-register' : ''}`}>
           {/* On a phone the wrapped card labels its own values, so the full
               column header is dropped -- but the two controls that live in the
               header row must not go with it: the day/month date toggle (the
@@ -863,6 +998,7 @@ export function TransactionList({
                   />
                 </th>
               )}
+              {!groupedByDate && (
               <RegisterHeader
                 field="date"
                 sort={sort}
@@ -885,6 +1021,7 @@ export function TransactionList({
               >
                 {t('list.header.date')}
               </RegisterHeader>
+              )}
               {/* Structural, not responsive: on a single account's page every
                   row would repeat the page's own title, so the column is
                   omitted from the DOM entirely (see register-columns.ts). */}
@@ -906,8 +1043,29 @@ export function TransactionList({
                 field="payee"
                 sort={sort}
                 onSortChange={onSortChange}
-                className={`${headerPadding} ${compactPadding.payee} ${REGISTER_PAYEE_CELL_FLOOR} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
+                className={`${headerPadding} ${compactPadding.payee} ${REGISTER_PAYEE_CELL_FLOOR} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${splitAmount ? 'ui-register-payee' : ''}`}
               >
+                {groupedByDate && sort && onSortChange && (
+                  /* Classic's date groups replace the Date column, so its sort
+                     control leads the header row, at the far left beside Payee.
+                     Marked as header controls so a press sorts by date only. */
+                  <span
+                    data-header-controls=""
+                    role="presentation"
+                    className="mr-4 inline-flex items-center"
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onSortChange('date')}
+                      className="ui-register-sort"
+                      aria-label={`${t('list.header.date')}: ${sort.direction === 'asc' ? '\u2191' : '\u2193'}`}
+                    >
+                      {t('list.header.date')} {sort.direction === 'asc' ? '\u2191' : '\u2193'}
+                    </button>
+                  </span>
+                )}
                 {t('list.header.payee')}
               </RegisterHeader>
               <RegisterHeader
@@ -959,6 +1117,22 @@ export function TransactionList({
                   </svg>
                 </th>
               )}
+              {splitAmount ? (
+                // Classic: one signed amount drawn as two columns. The sort
+                // belongs to the amount, so both headers sort it.
+                (['payment', 'deposit'] as const).map((kind) => (
+                  <RegisterHeader
+                    key={kind}
+                    field="amount"
+                    sort={sort}
+                    onSortChange={onSortChange}
+                    align="right"
+                    className={`${headerPadding} ui-register-money text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
+                  >
+                    {t(`list.header.${kind}`)}
+                  </RegisterHeader>
+                ))
+              ) : (
               <RegisterHeader
                 field="amount"
                 sort={sort}
@@ -968,6 +1142,7 @@ export function TransactionList({
               >
                 {t('list.header.amount')}
               </RegisterHeader>
+              )}
               {showFxColumns && (
                 <>
                   <th className={`${headerPadding} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>{t('list.header.currency')}</th>
@@ -1004,8 +1179,29 @@ export function TransactionList({
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {transactions.map((transaction, index) => {
               const isFuture = transaction.transactionDate > today;
+              const startsGroup =
+                groupedByDate &&
+                (index === 0 || transactions[index - 1].transactionDate !== transaction.transactionDate);
               return (
                 <React.Fragment key={transaction.id}>
+                  {startsGroup && (
+                    <tr className="ui-register-group-row">
+                      <th
+                        scope="colgroup"
+                        colSpan={wrapped ? 1 : colCount}
+                        className="ui-register-group"
+                      >
+                        <span>{registerGroupLabel(transaction.transactionDate, locale, today)}</span>
+                        <span className="ui-register-group-tools">
+                          {wrapped && styleData && (
+                            <span className="ui-register-group-net">
+                              {formatCurrency(styleData.dayNet.get(transaction.transactionDate) ?? 0, transaction.currencyCode)}
+                            </span>
+                          )}
+                        </span>
+                      </th>
+                    </tr>
+                  )}
                   {index === todayDividerIndex && (
                     <tr>
                       {/* In the wrapped phone layout every header and body row
@@ -1069,14 +1265,50 @@ export function TransactionList({
                     isFuture={isFuture}
                     isHighlighted={!!highlightTransactionId && transaction.id === highlightTransactionId}
                     showFxColumns={showFxColumns}
-                    hidden={hiddenColumns}
+                    hidden={tableHidden}
+                    uiStyle={uiStyle}
+                    groupedByDate={groupedByDate}
+                    balanceRulePct={styleData?.rulePct.get(transaction.id)}
                   />
                 </React.Fragment>
               );
             })}
           </tbody>
+          {groupedByDate && !wrapped && styleData && (
+            <tfoot>
+              <tr className="ui-register-foot">
+                <td
+                  colSpan={Math.max(1, colCount - 3 - (showRunningBalance ? 1 : 0) - (isVisible('status') ? 1 : 0))}
+                  className={cellPadding}
+                >
+                  {t('list.classic.entriesShown', { count: styleData.totals.count })}
+                </td>
+                <td className={`${cellPadding} ui-register-money text-right`}>
+                  {formatCurrency(styleData.totals.payments, transactions[0]?.currencyCode)}
+                </td>
+                <td className={`${cellPadding} ui-register-money ui-register-deposit text-right`}>
+                  {formatCurrency(styleData.totals.deposits, transactions[0]?.currencyCode)}
+                </td>
+                {showRunningBalance && (
+                  <td className={`${cellPadding} ui-register-money text-right`}>
+                    {styleData.totals.net > 0 ? '+' : styleData.totals.net < 0 ? '-' : ''}
+                    {formatCurrency(Math.abs(styleData.totals.net), transactions[0]?.currencyCode)}
+                  </td>
+                )}
+                <td colSpan={1 + (isVisible('status') ? 1 : 0)} />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
+      )}
+      {groupedByDate && !wrapped && (
+        <p className="ui-register-legend">
+          <span><span className="ui-register-mark">{t('list.classic.markCleared')}</span> {t('list.classic.legendCleared')}</span>
+          <span><span className="ui-register-mark">{t('list.classic.markReconciled')}</span> {t('list.classic.legendReconciled')}</span>
+          {showRunningBalance && <span>{t('list.classic.legendRule')}</span>}
+        </p>
+      )}
 
       {/* A hideable header's long-press / right-click sheet: "Hide column". */}
       {columnHeaderSheet}

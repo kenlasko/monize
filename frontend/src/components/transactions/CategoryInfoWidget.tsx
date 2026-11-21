@@ -325,13 +325,17 @@ export function CategoryInfoWidget({
             </p>
           </div>
           <div
-            className="mt-1 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
+            className="ui-meter mt-1 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
             role="progressbar"
             aria-valuenow={Math.round(budgetStatus.percentUsed)}
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <div className={`h-full ${budgetBarColor}`} style={{ width: `${budgetPercent}%` }} />
+            <div
+              className={`ui-meter-fill h-full ${budgetBarColor}`}
+              data-level={budgetStatus.percentUsed >= 100 ? 'over' : budgetStatus.percentUsed >= 80 ? 'warn' : 'ok'}
+              style={{ width: `${budgetPercent}%` }}
+            />
           </div>
         </div>
       )}

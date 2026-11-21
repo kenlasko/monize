@@ -416,4 +416,14 @@ describe('UserManagementTable', () => {
     expect(screen.getAllByText('Reset 2FA')).toHaveLength(2);
     expect(screen.getAllByRole('combobox', { name: 'Role' })).toHaveLength(2);
   });
+
+  it('prints each person an initial puck that stays hidden until the Modern style shows it', () => {
+    const { container } = render(<UserManagementTable {...defaultProps} />);
+    const pucks = Array.from(container.querySelectorAll('.ui-user-avatar'));
+    expect(pucks.map((p) => p.textContent)).toEqual(['A', 'J', 'J']);
+    for (const puck of pucks) {
+      expect(puck).toHaveAttribute('aria-hidden', 'true');
+      expect(puck.className).toContain('hidden');
+    }
+  });
 });

@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { Badge } from '@/components/ui/Badge';
 
 type CategoryGranularity = 'category' | 'subcategory';
 
@@ -604,10 +605,12 @@ export function AutoMergePayeesDialog({
                         </div>
                         {group.uncategorizedTransactionCount > 0 && (
                           <div>
-                            <button
+                            <Badge
+                as="button"
+                variant="amber"
                               type="button"
                               onClick={() => viewUncategorized(group)}
-                              className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              className="cursor-pointer transition-colors hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:hover:bg-amber-900/60"
                               title={t('autoMerge.viewUncategorizedTitle', {
                                 count: group.uncategorizedTransactionCount,
                                 name: group.canonicalName,
@@ -616,7 +619,7 @@ export function AutoMergePayeesDialog({
                               {t('list.uncategorizedBadge', {
                                 count: group.uncategorizedTransactionCount,
                               })}
-                            </button>
+                            </Badge>
                           </div>
                         )}
                         <div>
@@ -709,9 +712,9 @@ export function AutoMergePayeesDialog({
                             <span className="flex-1 text-gray-900 dark:text-gray-100">
                               {member.name}
                               {isCanonical && (
-                                <span className="ml-2 inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <Badge variant="green" className="ml-2">
                                   {t('autoMerge.keepBadge')}
-                                </span>
+                                </Badge>
                               )}
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">

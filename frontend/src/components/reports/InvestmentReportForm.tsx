@@ -28,6 +28,7 @@ import { accountsApi } from '@/lib/accounts';
 import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
 import { useAccountPickerIcon } from '@/components/accounts/shared/AccountPickerIcon';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('InvestmentReportForm');
 
@@ -184,7 +185,7 @@ export function InvestmentReportForm({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Basic Information */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('investmentReportForm.basicInformation')}
         </h3>
@@ -226,7 +227,7 @@ export function InvestmentReportForm({
       </div>
 
       {/* Columns */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
           {t('investmentReportForm.columns')}
         </h3>
@@ -237,7 +238,7 @@ export function InvestmentReportForm({
       </div>
 
       {/* Accounts */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('investmentReportForm.accounts')}
         </h3>
@@ -254,7 +255,7 @@ export function InvestmentReportForm({
       </div>
 
       {/* Grouping & Sorting */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('investmentReportForm.groupingAndSorting')}
         </h3>
@@ -298,7 +299,7 @@ export function InvestmentReportForm({
       </div>
 
       {/* Report Date */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
           {t('investmentReportForm.reportDate')}
         </h3>
@@ -316,7 +317,7 @@ export function InvestmentReportForm({
       </div>
 
       {/* Favourite */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="flex items-center gap-3">
           <Controller
             name="isFavourite"

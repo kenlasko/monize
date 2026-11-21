@@ -14,8 +14,12 @@ import { ServiceWorkerRegistrar } from '@/components/providers/ServiceWorkerRegi
 import { PwaLifecycleHandler } from '@/components/providers/PwaLifecycleHandler';
 import { MessageScopeGuard } from '@/components/providers/MessageScopeGuard';
 import { isColorTheme } from '@/lib/color-themes';
+import { isUiStyle } from '@/lib/ui-styles';
+import { cn } from '@/lib/utils';
+import { UI_STYLE_FONT_VARIABLES } from './ui-style-fonts';
 import {
   COLOR_THEME_COOKIE,
+  UI_STYLE_COOKIE,
   RESOLVED_THEME_COOKIE,
   bootPageColor,
   isResolvedTheme,
@@ -31,7 +35,9 @@ import {
 } from '@/i18n/client-messages';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+// `variable` exposes Inter as --font-inter so a surface can name it even
+// while a UI style has pointed --font-sans elsewhere (the style picker).
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 // theme-color is deliberately NOT part of this export. The viewport is
 // re-applied on every soft navigation, and Next removes and re-inserts its
@@ -96,6 +102,9 @@ export default async function RootLayout({
     isColorTheme(rawColorTheme) && rawColorTheme !== 'default'
       ? rawColorTheme
       : undefined;
+  const rawUiStyle = cookieStore.get(UI_STYLE_COOKIE)?.value;
+  const bootUiStyle =
+    isUiStyle(rawUiStyle) && rawUiStyle !== 'standard' ? rawUiStyle : undefined;
   const tLayout = await getTranslations('layout');
 
   // The theme rides the manifest URL as well as the cookies: an installed
@@ -114,8 +123,9 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={dir}
-      className={bootTheme === 'dark' ? 'dark' : undefined}
+      className={cn(bootTheme === 'dark' && 'dark', inter.variable, UI_STYLE_FONT_VARIABLES)}
       data-theme={bootColorTheme}
+      data-ui-style={bootUiStyle}
       suppressHydrationWarning
     >
       <body className={inter.className}>

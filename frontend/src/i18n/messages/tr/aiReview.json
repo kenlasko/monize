@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Yapay zekâ inceleme kutusu",
-    "subtitle": "Bir kuralın bir YZ'ye gözden geçirmesini istediği işlemler, bir yardımcının taslak oluşturması istenen profiller ve bir yardımcının sizin onaylamanız için önerdiği düzenlemeler."
+    "subtitle": "Bir kuralın bir YZ'ye gözden geçirmesini istediği işlemler, bir yardımcının taslak oluşturması istenen profiller ve bir yardımcının sizin onaylamanız için önerdiği düzenlemeler.",
+    "eyebrow": "İncelemenizi bekliyor"
   },
   "filter": {
     "label": "Duruma göre filtrele",

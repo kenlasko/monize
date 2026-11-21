@@ -200,6 +200,7 @@ function InstitutionsContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='institutions'
           actions={<Button onClick={openCreate}>{t('page.newInstitution')}</Button>}

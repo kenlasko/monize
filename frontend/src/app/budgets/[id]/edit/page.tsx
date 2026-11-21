@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { accountsApi } from '@/lib/accounts';
 import type { Account } from '@/types/account';
 import { BudgetBucketEditor } from '@/components/budgets/BudgetBucketEditor';
-import { Card } from '@/components/ui/Card';
+import { Card, CARD_CLASS } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { budgetsApi } from '@/lib/budgets';
@@ -239,7 +239,7 @@ function BudgetEditContent() {
 
   return (
     <PageLayout>
-      <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+      <main className="ui-bud-wizard px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <BudgetBackLink
           href={`/budgets/${budgetId}`}
           label={t('pages.edit.backToBudget', { name: budget.name })}
@@ -253,7 +253,7 @@ function BudgetEditContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
             {/* Budget Settings */}
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <div className={`${CARD_CLASS} p-6`}>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 {t('pages.edit.budgetSettings')}
               </h2>
@@ -287,7 +287,7 @@ function BudgetEditContent() {
           </div>
 
           {/* Category List */}
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <div className={`${CARD_CLASS} p-6`}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('pages.edit.categoryAllocations')}
             </h2>

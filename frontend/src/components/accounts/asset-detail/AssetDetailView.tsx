@@ -13,6 +13,7 @@ import { AssetSummaryCards } from './AssetSummaryCards';
 import { EquityPanel } from './EquityPanel';
 import { UpdateValueDialog } from './UpdateValueDialog';
 import type { Account, AccountType } from '@/types/account';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('AssetDetailView');
 
@@ -107,7 +108,7 @@ export function AssetDetailView({ account, onAccountChanged }: AssetDetailViewPr
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('chart.title')}
         </h2>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           {!isLoading && assetBalances.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">{t('chart.empty')}</p>
           ) : (

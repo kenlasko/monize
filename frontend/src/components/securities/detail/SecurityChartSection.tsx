@@ -1,12 +1,12 @@
 'use client';
 
+import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
-import { cn } from '@/lib/utils';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import {
   BalanceHistoryChart,
@@ -156,7 +156,7 @@ export function SecurityChartSection({
         <div
           role="group"
           aria-label={t('chart.seriesAriaLabel')}
-          className="flex flex-wrap gap-2"
+          className={SEGMENTED_GROUP_CLASS}
         >
           {MODES.map((option) => (
             <button
@@ -164,12 +164,7 @@ export function SecurityChartSection({
               type="button"
               onClick={() => onModeChange(option)}
               aria-pressed={mode === option}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                mode === option
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
-              )}
+              className={segmentClass(mode === option)}
             >
               {t(`chart.modes.${option}` as Parameters<typeof t>[0])}
             </button>

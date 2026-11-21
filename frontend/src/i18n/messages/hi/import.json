@@ -38,7 +38,8 @@
   "page": {
     "title": "लेनदेन आयात करें",
     "subtitle": "QIF/QMTF, OFX/QFX, या CSV फ़ाइलों से लेनदेन आयात करें, या पूरी Microsoft Money (.mny) या KMyMoney (.kmy, .xml) फ़ाइल ले आएँ",
-    "stepOf": "चरण {current} / {total}"
+    "stepOf": "चरण {current} / {total}",
+    "eyebrow": "लेन-देन लाएं"
   },
   "upload": {
     "heading": "लेनदेन फ़ाइलें अपलोड करें",

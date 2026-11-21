@@ -32,6 +32,7 @@ import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-tot
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { CHART_BAR_RADIUS, CHART_BAR_RADIUS_HORIZONTAL, CHART_GRID_PROPS, CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 // Weekend purple vs weekday blue, drawn from the categorical theme palette.
 const WEEKEND_COLOR = CHART_SERIES[4];
@@ -215,7 +216,7 @@ export function WeekendVsWeekdayReport() {
       ) : (
       <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
           <div className="text-sm text-purple-600 dark:text-purple-400">{t('weekendVsWeekday.weekendSpending')}</div>
           <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
             <PartialTotal total={weekendKnown} displayCurrency={reportingCurrency}>
@@ -226,7 +227,7 @@ export function WeekendVsWeekdayReport() {
             {t('weekendVsWeekday.weekendTransactions', { count: weekendCount })}
           </div>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div className="text-sm text-blue-600 dark:text-blue-400">{t('weekendVsWeekday.weekdaySpending')}</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
             <PartialTotal total={weekdayKnown} displayCurrency={reportingCurrency}>
@@ -237,13 +238,13 @@ export function WeekendVsWeekdayReport() {
             {t('weekendVsWeekday.weekdayTransactions', { count: weekdayCount })}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('weekendVsWeekday.avgWeekendTransaction')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {weekendAvg === null ? <UnknownAmount reason="displayFx" /> : formatCurrency(weekendAvg)}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('weekendVsWeekday.avgWeekdayTransaction')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {weekdayAvg === null ? <UnknownAmount reason="displayFx" /> : formatCurrency(weekdayAvg)}
@@ -259,7 +260,7 @@ export function WeekendVsWeekdayReport() {
       )}
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <DateRangeSelector
             ranges={['1m', '3m', '6m', '1y']}
@@ -290,18 +291,18 @@ export function WeekendVsWeekdayReport() {
       {error ? (
         <ReportError onRetry={reload} />
       ) : isLoading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-96 w-full" />
           </div>
         </div>
       ) : !hasData ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('weekendVsWeekday.noData')} />
         </div>
       ) : viewType === 'comparison' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('weekendVsWeekday.weekendVsWeekdaySplit')}
           </h3>
@@ -366,7 +367,7 @@ export function WeekendVsWeekdayReport() {
           </div>
         </div>
       ) : viewType === 'byDay' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('weekendVsWeekday.spendingByDayOfWeek')}
           </h3>
@@ -408,7 +409,7 @@ export function WeekendVsWeekdayReport() {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('weekendVsWeekday.categoryComparison')}
           </h3>

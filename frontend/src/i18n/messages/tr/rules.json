@@ -4,7 +4,8 @@
     "subtitle": "Bir işlem oluşturulduğunda veya içe aktarıldığında etiketleri, kategorileri ve alıcıları otomatik doldurun",
     "createButton": "Kural oluştur",
     "loading": "Kurallar yükleniyor...",
-    "totalCount": "{count, plural, one {# kural} other {# kural}}"
+    "totalCount": "{count, plural, one {# kural} other {# kural}}",
+    "eyebrow": "Otomasyon"
   },
   "empty": {
     "title": "Henüz kural yok",

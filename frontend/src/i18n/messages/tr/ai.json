@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Yapay Zeka Asistanı",
-    "subtitle": "Finanslarınız hakkında doğal dilde sorular sorun"
+    "subtitle": "Finanslarınız hakkında doğal dilde sorular sorun",
+    "eyebrow": "Asistan"
   },
   "bubble": {
     "launcherAriaLabel": "Yapay zeka asistanını aç",

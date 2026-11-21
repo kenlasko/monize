@@ -16,7 +16,8 @@
     "summaryTotal": "Всього категорій",
     "summaryIncome": "Категорії доходів",
     "summaryExpense": "Категорії витрат",
-    "summaryTopLevel": "Верхнього рівня"
+    "summaryTopLevel": "Верхнього рівня",
+    "eyebrow": "План категорій"
   },
   "empty": {
     "heading": "Ще немає категорій",

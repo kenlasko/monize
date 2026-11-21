@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Asisten AI",
-    "subtitle": "Ajukan pertanyaan tentang keuangan Anda dalam bahasa alami"
+    "subtitle": "Ajukan pertanyaan tentang keuangan Anda dalam bahasa alami",
+    "eyebrow": "Asisten"
   },
   "bubble": {
     "launcherAriaLabel": "Buka asisten AI",

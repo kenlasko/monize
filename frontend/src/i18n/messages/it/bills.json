@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Non è stato possibile valorizzare una o più pianificazioni",
     "summaryDueNow": "In scadenza",
     "loadingText": "Caricamento transazioni pianificate...",
-    "chartUnavailable": "Grafico temporaneamente non disponibile"
+    "chartUnavailable": "Grafico temporaneamente non disponibile",
+    "eyebrow": "Ricorrenti"
   },
   "viewTabs": {
     "filterLabel": "Tipo di pianificazione",
@@ -83,5 +84,12 @@
     "exportButton": "Esporta",
     "exportTitle": "Esporta fatture e versamenti in CSV",
     "exported": "{count, plural, one {Esportata # pianificazione} other {Esportate # pianificazioni}}"
+  },
+  "outlook": {
+    "title": "I prossimi quattordici giorni",
+    "stripLabel": "Fatture e depositi programmati nei prossimi quattordici giorni: entrate sopra la linea, uscite sotto",
+    "today": "Oggi",
+    "nextUpOn": "Prossima scadenza, {date}",
+    "daysLabel": "I prossimi quattordici giorni, un chip per giorno"
   }
 }

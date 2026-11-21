@@ -125,7 +125,9 @@
       "attachments": "Allegati",
       "status": "Stato",
       "statusHelp": "Non riconciliata, Compensata o Riconciliata sono passaggi verso la corrispondenza con un estratto conto. Annullata annulla una transazione ma ne conserva il record; non sposta più il saldo del conto.",
-      "actions": "Azioni"
+      "actions": "Azioni",
+      "payment": "Pagamento",
+      "deposit": "Deposito"
     },
     "sort": {
       "balanceHiddenHint": "Ordina per data per vedere il saldo progressivo",
@@ -191,7 +193,20 @@
       "editButton": "Modifica",
       "deleteButton": "Elimina"
     },
-    "itemNamePlural": "transazioni"
+    "itemNamePlural": "transazioni",
+    "classic": {
+      "entriesShown": "{count, plural, one {# voce mostrata} other {# voci mostrate}}",
+      "legendCleared": "compensata",
+      "legendReconciled": "riconciliata",
+      "legendRule": "La linea sotto ogni saldo confronta quel saldo con il più alto di questa pagina.",
+      "markCleared": "c",
+      "markReconciled": "R"
+    },
+    "modern": {
+      "inspectorLabel": "Transazione selezionata",
+      "balanceAfter": "Saldo dopo",
+      "yesterday": "Ieri"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Impossibile caricare le garanzie di questa transazione.",
       "empty": "Ancora nessuna garanzia"
     },
-    "conversionLockedNote": "Questo trasferimento appartiene a una transazione suddivisa o al conto di un altro proprietario, quindi qui può restare solo un trasferimento. Modificalo dalla suddivisione oppure eliminalo e crea la voce desiderata."
+    "conversionLockedNote": "Questo trasferimento appartiene a una transazione suddivisa o al conto di un altro proprietario, quindi qui può restare solo un trasferimento. Modificalo dalla suddivisione oppure eliminalo e crea la voce desiderata.",
+    "modeGroupLabel": "Tipo di transazione",
+    "entryHint": "Tab passa da un campo all’altro. Esc chiude."
   },
   "splitEditor": {
     "header": "Dettagli suddivisione",
@@ -772,6 +789,13 @@
       "foreignCurrency": "L’importo è in una valuta diversa da quella del conto. Usa Modulo completo per inserirlo.",
       "crossCurrencyTransfer": "I due conti hanno valute diverse. Usa Modulo completo per questo trasferimento.",
       "unknown": "Questa voce non può essere salvata qui. Usa Modulo completo per completarla."
+    },
+    "assumedNote": "Il campo tratteggiato non è stato digitato. È stato compilato per te, quindi controllalo.",
+    "hints": {
+      "enter": "Invio salva",
+      "shiftEnter": "Maiusc Invio salva e ne inizia un’altra",
+      "tab": "Tab passa da un campo all’altro",
+      "esc": "Esc chiude"
     }
   }
 }

@@ -229,7 +229,7 @@ export function NotificationList({
     // height grows past the containing block instead.
     <div
       {...tourAnchor(TOUR_ANCHORS.notificationPanel)}
-      className="fixed inset-x-0 top-0 h-dvh max-sm:pt-[env(safe-area-inset-top)] sm:absolute sm:inset-auto sm:right-0 sm:mt-1 sm:h-auto sm:w-[30rem] bg-white dark:bg-gray-800 sm:rounded-lg shadow-lg dark:shadow-gray-700/50 sm:border border-gray-200 dark:border-gray-700 z-50 sm:max-h-[28rem] flex flex-col"
+      className="ui-notif-panel fixed inset-x-0 top-0 h-dvh max-sm:pt-[env(safe-area-inset-top)] sm:absolute sm:inset-auto sm:right-0 sm:mt-1 sm:h-auto sm:w-[30rem] bg-white dark:bg-gray-800 sm:rounded-lg shadow-lg dark:shadow-gray-700/50 sm:border border-gray-200 dark:border-gray-700 z-50 sm:max-h-[28rem] flex flex-col"
       data-testid="notification-list"
     >
       {canManageNotifications && (
@@ -240,7 +240,7 @@ export function NotificationList({
       )}
       {/* Header */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <h3 className="ui-notif-title text-sm font-semibold text-gray-900 dark:text-gray-100">
           {t('title')}
           {unreadCount > 0 && (
             <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">

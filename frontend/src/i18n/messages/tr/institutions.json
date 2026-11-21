@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "Finansal Kurumlar",
+    "eyebrow": "Kurum kayıt defteri",
     "subtitle": "Hesaplarınızın bağlı olduğu bankalar ve aracı kurumlar",
     "newInstitution": "Yeni Kurum",
     "loading": "Kurumlar yükleniyor...",

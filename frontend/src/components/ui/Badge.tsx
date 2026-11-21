@@ -62,7 +62,7 @@ export function Badge({
     as,
     {
       className: cn(
-        'inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap',
+        'ui-badge inline-flex items-center gap-1 rounded-(--ui-radius-pill) font-medium whitespace-nowrap',
         BADGE_VARIANTS[variant],
         BADGE_SIZES[size],
         className,

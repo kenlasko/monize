@@ -18,16 +18,24 @@
  * constant outside a component safe.
  */
 
+/*
+ * Each constant ENDS with its UI-style marker (`ui-seg`, `ui-seg-btn`,
+ * `ui-seg-on`, styled in `ui-styles-kit.css`) rather than starting with it:
+ * ui-conventions.test.ts finds a hand-copied pressed segment by the opening
+ * quote before `bg-white dark:bg-gray-600`, and a leading marker would hide
+ * every copy from it.
+ */
+
 /** The pill the buttons sit in. */
-export const SEGMENTED_GROUP_CLASS = 'inline-flex rounded-md bg-gray-100 dark:bg-gray-700 p-0.5';
+export const SEGMENTED_GROUP_CLASS = 'inline-flex rounded-md bg-gray-100 dark:bg-gray-700 p-0.5 ui-seg';
 
 /** Every segment, pressed or not. */
 export const SEGMENT_BASE_CLASS =
-  'px-3 py-1 text-sm font-medium rounded transition-colors motion-reduce:transition-none';
+  'px-3 py-1 text-sm font-medium rounded transition-colors motion-reduce:transition-none ui-seg-btn';
 
 /** The one segment that is pressed. */
 export const SEGMENT_ACTIVE_CLASS =
-  'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm';
+  'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm ui-seg-on';
 
 /** Every segment that is not. */
 export const SEGMENT_INACTIVE_CLASS =

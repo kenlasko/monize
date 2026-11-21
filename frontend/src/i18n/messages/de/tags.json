@@ -35,7 +35,8 @@
       "createFailed": "Etikett konnte nicht erstellt werden",
       "updateFailed": "Etikett konnte nicht aktualisiert werden",
       "deleteFailed": "Etikett konnte nicht gelöscht werden"
-    }
+    },
+    "eyebrow": "Etiketten"
   },
   "list": {
     "empty": {

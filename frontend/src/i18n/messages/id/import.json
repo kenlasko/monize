@@ -38,7 +38,8 @@
   "page": {
     "title": "Impor Transaksi",
     "subtitle": "Impor transaksi dari file QIF/QMTF, OFX/QFX, atau CSV, atau bawa satu berkas Microsoft Money (.mny) atau KMyMoney (.kmy, .xml) utuh",
-    "stepOf": "Langkah {current} dari {total}"
+    "stepOf": "Langkah {current} dari {total}",
+    "eyebrow": "Bawa masuk transaksi"
   },
   "upload": {
     "heading": "Unggah File Transaksi",

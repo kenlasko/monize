@@ -62,7 +62,9 @@
     "onPace": "No ritmo",
     "rollover": "Transição: {type}",
     "remaining": "{amount} restante",
-    "over": "{amount} excedido"
+    "over": "{amount} excedido",
+    "leftWord": "restante",
+    "overWord": "acima"
   },
   "categoryTrend": {
     "title": "Tendências por Categoria",
@@ -164,6 +166,7 @@
     "original": "Original: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Totais do orçamento",
     "totalBudget": "Total do Orçamento",
     "spent": "Gasto",
     "remaining": "Restante",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Livro de orçamentos",
       "title": "Orçamentos",
       "subtitle": "Gerencie seus orçamentos e acompanhe as despesas",
       "newBudget": "+ Novo Orçamento",

@@ -180,7 +180,8 @@
       "saved": "[XX-Preferences saved-XX]",
       "saveFailed": "[XX-Failed to save preferences-XX]",
       "themeSaveFailed": "[XX-Failed to save theme-XX]",
-      "colorThemeSaveFailed": "[XX-Failed to save colour theme-XX]"
+      "colorThemeSaveFailed": "[XX-Failed to save colour theme-XX]",
+      "uiStyleSaveFailed": "[XX-Failed to save UI style-XX]"
     },
     "browserLocale": "[XX-Use browser locale (auto-detect)-XX]",
     "numberFormatOptions": {
@@ -204,8 +205,25 @@
       "light": "[XX-Light-XX]",
       "dark": "[XX-Dark-XX]"
     },
+    "uiStyleLabel": "[XX-UI style-XX]",
+    "uiStyleHint": "[XX-Changes typography, shapes and table styling. Works with any colour theme.-XX]",
+    "uiStyleOptions": {
+      "standard": {
+        "name": "[XX-Standard-XX]",
+        "description": "[XX-The familiar Monize look.-XX]"
+      },
+      "classic": {
+        "name": "[XX-Classic-XX]",
+        "description": "[XX-Ledger-inspired: serif headings, ruled tables, square corners.-XX]"
+      },
+      "modern": {
+        "name": "[XX-Modern-XX]",
+        "description": "[XX-Bold type, rounded colour blocks and pill-shaped controls.-XX]"
+      }
+    },
     "colorThemeLabel": "[XX-Colour theme-XX]",
     "colorThemeHint": "[XX-Previews use your current light or dark mode.-XX]",
+    "colorThemeStyleHint": "[XX-Showing the colour themes made for the {style} style.-XX]",
     "colorThemeOptions": {
       "default": "[XX-Default-XX]",
       "latte": "[XX-Latte-XX]",
@@ -219,6 +237,8 @@
       "dracula": "[XX-Dracula-XX]",
       "tokyonight": "[XX-Tokyo Night-XX]",
       "rosepine": "[XX-Rosé Pine-XX]",
+      "ledger": "[XX-Ledger-XX]",
+      "studio": "[XX-Studio-XX]",
       "midnight": "[XX-Midnight-XX]",
       "highcontrast": "[XX-High contrast-XX]",
       "colorblind": "[XX-Colour-blind safe-XX]"

@@ -33,6 +33,7 @@ import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_GRID_PROPS_HORIZONTAL_BARS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type SpendingPayeeSortField = 'name' | 'value' | 'percentage';
 
@@ -158,7 +159,7 @@ export function SpendingByPayeeReport() {
   return (
     <div className="space-y-6">
       {/* Controls -- always rendered so focus inside DateInput survives reloads */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <DateRangeSelector
             ranges={['1m', '3m', '6m', '1y', 'ytd']}
@@ -188,7 +189,7 @@ export function SpendingByPayeeReport() {
       {/* Chart -- loading and error render here rather than in place of the
           whole report, so the controls above (and the date field being typed
           into) stay mounted across a reload. */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {error ? (
           <ReportError onRetry={reload} />
         ) : isLoading ? (

@@ -102,6 +102,7 @@ export function CategorySummaryCards({
 
   const cards: SummaryCardItem[] = [
     {
+      lead: true,
       label: isIncome ? t('summary.receivedThisYear') : t('summary.spentThisYear'),
       value: thisYear !== null ? formatCurrency(thisYear, displayCurrency) : '—',
       valueClass: isIncome

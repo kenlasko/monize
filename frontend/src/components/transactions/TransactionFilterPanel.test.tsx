@@ -887,7 +887,7 @@ describe('TransactionFilterPanel', () => {
       render(<TransactionFilterPanel {...defaultProps} activeFilterCount={5} />);
 
       const badge = screen.getByText('5');
-      expect(badge.className).toContain('rounded-full');
+      expect(badge.className).toContain('rounded-(--ui-radius-pill)');
       expect(badge.className).toContain('bg-blue-100');
     });
   });

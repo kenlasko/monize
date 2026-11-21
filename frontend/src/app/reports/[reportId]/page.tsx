@@ -9,6 +9,7 @@ import { ReportDetailHeader } from '@/components/reports/ReportDetailHeader';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const reportComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'spending-by-category': lazy(() => import('@/components/reports/SpendingByCategoryReport').then(m => ({ default: m.SpendingByCategoryReport }))),
@@ -70,14 +71,14 @@ const reportComponents: Record<string, React.LazyExoticComponent<React.Component
 function ReportSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
         <div className="animate-pulse skeleton-shimmer flex gap-2">
           <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="animate-pulse skeleton-shimmer space-y-4">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
           <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -116,7 +117,7 @@ function ReportContent() {
           {/* An id that names no report is where the way back matters most:
               without it the page is a dead end reachable from any stale link. */}
           <BackToReportsLink />
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+          <div className={`${CARD_CLASS} p-8 text-center`}>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {t('reportPage.notFound')}
             </h1>

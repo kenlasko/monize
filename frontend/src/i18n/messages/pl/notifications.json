@@ -50,7 +50,8 @@
     "retry": "Spróbuj ponownie",
     "nextFire": "Następne przypomnienie: {date}",
     "openTarget": "Otwórz powiązaną stronę",
-    "delegateUnavailable": "Wróć do własnego konta, aby zarządzać przypomnieniami."
+    "delegateUnavailable": "Wróć do własnego konta, aby zarządzać przypomnieniami.",
+    "eyebrow": "Powiadomienia"
   },
   "billDue": {
     "titleOverdue": "{payee} – termin minął",

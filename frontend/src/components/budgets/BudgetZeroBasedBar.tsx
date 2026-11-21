@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface BudgetZeroBasedBarProps {
   totalIncome: number;
@@ -47,7 +48,7 @@ export function BudgetZeroBasedBar({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {t('zeroBasedBar.title')}

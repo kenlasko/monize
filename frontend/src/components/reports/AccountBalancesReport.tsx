@@ -42,6 +42,7 @@ import {
 } from '@/components/reports/account-balances/grouping';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const ACCOUNT_TYPE_KEYS = [
   'CHEQUING',
@@ -638,7 +639,7 @@ export function AccountBalancesReport() {
 
   if (isLoading && !response) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <div className="space-y-3">
@@ -657,7 +658,7 @@ export function AccountBalancesReport() {
           each is marked as a subtotal rather than presented as the complete
           figure it no longer is. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6" data-testid="summary-assets">
+        <div className={`${CARD_CLASS} p-6`} data-testid="summary-assets">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('accountBalances.totalAssets')}</div>
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
             <PartialTotal total={totals.assets} displayCurrency={displayCurrency}>
@@ -665,7 +666,7 @@ export function AccountBalancesReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6" data-testid="summary-liabilities">
+        <div className={`${CARD_CLASS} p-6`} data-testid="summary-liabilities">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('accountBalances.totalLiabilities')}</div>
           <div className="text-2xl font-bold text-red-600 dark:text-red-400">
             <PartialTotal total={totals.liabilities} displayCurrency={displayCurrency}>
@@ -673,7 +674,7 @@ export function AccountBalancesReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6" data-testid="summary-networth">
+        <div className={`${CARD_CLASS} p-6`} data-testid="summary-networth">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('accountBalances.netWorth')}</div>
           <div className={`text-2xl font-bold ${
             // A partial net worth has an uncertain sign, so it stays neutral
@@ -729,7 +730,7 @@ export function AccountBalancesReport() {
       />
 
       {viewMode === 'chart' && (
-        <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div ref={chartRef} className={`${CARD_CLASS} p-6`}>
           {chartData.length === 0 ? (
             <EmptyState title={t('accountBalances.noData')} />
           ) : (
@@ -839,7 +840,7 @@ export function AccountBalancesReport() {
             );
             const isLiabilityGroup = kinds.size === 1 && kinds.has(true);
             return (
-              <div key={group.key} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+              <div key={group.key} className={`${CARD_CLASS} overflow-hidden`}>
                 <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {groupLabel(group.key)}
@@ -949,7 +950,7 @@ export function AccountBalancesReport() {
           })}
 
           {visibleAccounts.length === 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+            <div className={`${CARD_CLASS} p-8 text-center`}>
               <p className="text-gray-500 dark:text-gray-400">
                 {accounts.length === 0
                   ? t('accountBalances.noAccounts')

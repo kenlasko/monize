@@ -1,5 +1,6 @@
 'use client';
 
+import { CARD_CLASS } from '@/components/ui/Card';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -665,7 +666,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
   // cache; this extends the same behaviour to daily/monthly ranges.
   if (isLoading && chartPoints.length === 0 && !intradayUnavailable) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <div className="animate-pulse skeleton-shimmer space-y-4">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
           <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -675,7 +676,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+    <div className={`${CARD_CLASS} p-3 sm:p-6`}>
       {/* Header with title and date range buttons */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
         <div>
@@ -897,7 +898,7 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
         <div
           className={`h-80 transition-opacity duration-200 ${
             isLoading ? 'opacity-60' : 'opacity-100'
-          }`}
+          } ui-value-chart`}
         >
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             {/* Tighter margins on mobile to reclaim wasted space. The desktop

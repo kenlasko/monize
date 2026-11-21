@@ -35,7 +35,8 @@
       "createFailed": "Label aanmaken mislukt",
       "updateFailed": "Label bijwerken mislukt",
       "deleteFailed": "Label verwijderen mislukt"
-    }
+    },
+    "eyebrow": "Labels"
   },
   "list": {
     "empty": {

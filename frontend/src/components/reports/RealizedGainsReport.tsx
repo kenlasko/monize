@@ -44,6 +44,7 @@ import { createLogger } from '@/lib/logger';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
 import { CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('RealizedGainsReport');
 
@@ -420,7 +421,7 @@ export function RealizedGainsReport() {
 
   if (isLoading && !response) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -433,19 +434,19 @@ export function RealizedGainsReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('realizedGains.totalProceeds')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {fmtValue(totals.totalProceeds)}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('realizedGains.costBasis')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {fmtValue(totals.totalCostBasis)}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('realizedGains.realizedGainLoss')}</div>
           {totals.unknownCount > 0 ? (
             <>
@@ -462,7 +463,7 @@ export function RealizedGainsReport() {
             </div>
           )}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('realizedGains.securitiesSold')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {securityGains.length}
@@ -492,7 +493,7 @@ export function RealizedGainsReport() {
       )}
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           {/* Full width on a phone, the toolbar's fixed width from `sm` up. */}
           <ReportAccountMultiSelect
@@ -525,11 +526,11 @@ export function RealizedGainsReport() {
       </div>
 
       {entries.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('realizedGains.noTransactions')} />
         </div>
       ) : viewType === 'chart' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('realizedGains.bySecurityTitle')}
           </h3>
@@ -555,7 +556,7 @@ export function RealizedGainsReport() {
           )}
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('realizedGains.detailTitle')}
@@ -676,7 +677,7 @@ export function RealizedGainsReport() {
 
       {/* Individual Transactions */}
       {entries.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('realizedGains.sellTransactions', { count: entries.length })}

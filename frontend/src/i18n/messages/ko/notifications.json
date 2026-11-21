@@ -50,7 +50,8 @@
     "retry": "다시 시도",
     "nextFire": "다음 알림: {date}",
     "openTarget": "관련 페이지 열기",
-    "delegateUnavailable": "알림을 관리하려면 본인 계정으로 돌아가세요."
+    "delegateUnavailable": "알림을 관리하려면 본인 계정으로 돌아가세요.",
+    "eyebrow": "알림"
   },
   "billDue": {
     "titleOverdue": "{payee} 결제 기한 초과",

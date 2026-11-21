@@ -125,7 +125,9 @@
       "attachments": "Attachments",
       "status": "Status",
       "statusHelp": "Unreconciled, Cleared or Reconciled are steps toward matching a bank statement. Void cancels a transaction but keeps its record; it no longer moves the account balance.",
-      "actions": "Actions"
+      "actions": "Actions",
+      "payment": "Payment",
+      "deposit": "Deposit"
     },
     "sort": {
       "balanceHiddenHint": "Sort by date to see the running balance",
@@ -191,7 +193,20 @@
       "editButton": "Edit",
       "deleteButton": "Delete"
     },
-    "itemNamePlural": "transactions"
+    "itemNamePlural": "transactions",
+    "classic": {
+      "entriesShown": "{count, plural, one {# entry shown} other {# entries shown}}",
+      "legendCleared": "cleared",
+      "legendReconciled": "reconciled",
+      "legendRule": "The rule under each balance is that balance against the highest on this page.",
+      "markCleared": "c",
+      "markReconciled": "R"
+    },
+    "modern": {
+      "inspectorLabel": "Selected transaction",
+      "balanceAfter": "Balance after",
+      "yesterday": "Yesterday"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "The warranties for this transaction could not be loaded.",
       "empty": "No warranties yet"
     },
-    "conversionLockedNote": "This transfer belongs to a split transaction or to another owner's account, so it can only stay a transfer here. Change it from the split or delete it and create the entry you want."
+    "conversionLockedNote": "This transfer belongs to a split transaction or to another owner's account, so it can only stay a transfer here. Change it from the split or delete it and create the entry you want.",
+    "modeGroupLabel": "Kind of transaction",
+    "entryHint": "Tab steps through the fields. Esc closes."
   },
   "splitEditor": {
     "header": "Split Details",
@@ -772,6 +789,13 @@
       "foreignCurrency": "The amount is in a currency other than the account's. Use Full Form to enter it.",
       "crossCurrencyTransfer": "The two accounts hold different currencies. Use Full Form for this transfer.",
       "unknown": "This entry cannot be saved here. Use Full Form to finish it."
+    },
+    "assumedNote": "The dashed field was not typed. It was filled in for you, so check it.",
+    "hints": {
+      "enter": "Enter saves",
+      "shiftEnter": "Shift Enter saves and starts another",
+      "tab": "Tab steps through the fields",
+      "esc": "Esc closes"
     }
   }
 }

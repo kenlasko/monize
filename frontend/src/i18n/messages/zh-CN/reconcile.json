@@ -1,5 +1,6 @@
 {
   "title": "账户对账",
+  "eyebrow": "对账单表",
   "subtitle": "将您的记录与银行账单核对",
   "subtitleActive": "正在对账：{name}",
   "setup": {

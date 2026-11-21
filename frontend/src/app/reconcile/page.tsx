@@ -50,6 +50,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { notifyReconciliationChanged } from '@/lib/reconciliationSignal';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 import { TransactionFormPlaceholder } from '@/components/transactions/TransactionFormPlaceholder';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const TransactionForm = dynamic(
   () => import('@/components/transactions/TransactionForm').then((m) => m.TransactionForm),
@@ -489,7 +490,7 @@ function ReconcileContent() {
 
   const renderSetupStep = () => (
     <div className="max-w-xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('setup.title')}
         </h2>
@@ -571,31 +572,34 @@ function ReconcileContent() {
             user works down a long statement. */}
         <div
           data-testid="reconcile-summary"
-          className="sticky top-[calc(4rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] z-20 bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6"
+          className={`sticky top-[calc(4rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] z-20 ${CARD_CLASS} p-4 mb-6`}
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.statementBalance')}</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="ui-recon-sheet grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="ui-recon-cell">
+              <p className="ui-recon-label text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.statementBalance')}</p>
+              <p className="ui-recon-figure text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {formatAccountAmount(statementBalance ?? 0)}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.reconciledBalance')}</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="ui-recon-cell">
+              <p className="ui-recon-label text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.reconciledBalance')}</p>
+              <p className="ui-recon-figure text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {formatAccountAmount(Number(reconciliationData.reconciledBalance))}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.selected', { count: selectedCount })}</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="ui-recon-cell">
+              <p className="ui-recon-label text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.selected', { count: selectedCount })}</p>
+              <p className="ui-recon-figure text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {formatAccountAmount(sumAmounts(selectedTransactions, reconcileMoneyDecimals))}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.difference')}</p>
+            <div
+              className="ui-recon-cell ui-recon-diff"
+              data-balanced={Math.abs(calculatedDifference) < differenceTolerance ? 'true' : 'false'}
+            >
+              <p className="ui-recon-label text-xs text-gray-500 dark:text-gray-400 uppercase">{t('summary.difference')}</p>
               <p
-                className={`text-lg font-semibold ${
+                className={`ui-recon-figure text-lg font-semibold ${
                   Math.abs(calculatedDifference) < differenceTolerance
                     ? 'text-green-600 dark:text-green-400'
                     : 'text-red-600 dark:text-red-400'
@@ -611,7 +615,7 @@ function ReconcileContent() {
             (cancelling <main>'s px-4) so the table gets the full device width;
             the corners square off there because a rounded card flush with the
             viewport reads as a clipping fault. */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg max-sm:-mx-4 max-sm:rounded-none shadow overflow-hidden">
+        <div className={`${CARD_CLASS} max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 overflow-hidden`}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('list.heading', { count: totalCount })}
@@ -692,7 +696,7 @@ function ReconcileContent() {
 
   const renderCompleteStep = () => (
     <div className="max-w-xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
           <svg
             className="h-6 w-6 text-green-600 dark:text-green-400"
@@ -771,6 +775,7 @@ function ReconcileContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('title')}
+          eyebrow={t('eyebrow')}
           subtitle={selectedAccount
             ? t('subtitleActive', { name: selectedAccount.name })
             : t('subtitle')}

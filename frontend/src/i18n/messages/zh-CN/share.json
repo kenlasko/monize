@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "此浏览器无法接收分享的文件",
   "unsupportedBrowserMessage": "此处无法分享到已安装的应用。你仍然可以在 Monize 内添加文件。",
   "goToTransactions": "从“交易”添加",
-  "goToImport": "前往导入"
+  "goToImport": "前往导入",
+  "eyebrow": "传入文件"
 }

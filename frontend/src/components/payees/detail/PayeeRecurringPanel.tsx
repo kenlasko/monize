@@ -9,6 +9,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { NextScheduledItem } from '@/lib/scheduled-utils';
 import type { RecurringChargeInfo } from '@/types/transaction';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 /** Cadences the recurring detector can report that mean an actual rhythm. */
 const CADENCE_KEYS = new Set(['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']);
@@ -65,7 +66,7 @@ export function PayeeRecurringPanel({
         </h2>
         <InfoTooltip text={t('recurringPanel.detectedTooltip')} usePortal />
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {nextBill && (
           <button
             type="button"

@@ -133,7 +133,7 @@ export function WidgetIconPuck({ id }: { id: DashboardWidgetId }) {
   return (
     <span
       aria-hidden
-      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${widgetTintClass(id)}`}
+      className={`ui-widget-puck flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${widgetTintClass(id)}`}
     >
       <Icon className="h-4 w-4" />
     </span>
@@ -162,7 +162,7 @@ export function WidgetTitle({
   className?: string;
   children: ReactNode;
 }) {
-  const headingClass = `${TITLE_CLASS} truncate ${className}`.trimEnd();
+  const headingClass = `ui-widget-title ${TITLE_CLASS} truncate ${className}`.trimEnd();
   if (!href) return <h3 className={headingClass}>{children}</h3>;
   return (
     <h3 className={headingClass}>
@@ -194,7 +194,7 @@ export function WidgetHeading({
   children: ReactNode;
 }) {
   return (
-    <div className={`flex min-w-0 items-center gap-2.5 ${className}`}>
+    <div className={`ui-widget-head flex min-w-0 items-center gap-2.5 ${className}`}>
       <WidgetIconPuck id={id} />
       <WidgetTitle href={href}>{children}</WidgetTitle>
     </div>

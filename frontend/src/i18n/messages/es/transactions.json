@@ -125,7 +125,9 @@
       "attachments": "Adjuntos",
       "status": "Estado",
       "statusHelp": "Sin conciliar, Compensada o Conciliada son pasos hacia la coincidencia con un extracto bancario. Anulada cancela una transacción pero conserva su registro; ya no mueve el saldo de la cuenta.",
-      "actions": "Acciones"
+      "actions": "Acciones",
+      "payment": "Pago",
+      "deposit": "Ingreso"
     },
     "sort": {
       "balanceHiddenHint": "Ordena por fecha para ver el saldo acumulado",
@@ -191,7 +193,20 @@
       "editButton": "Editar",
       "deleteButton": "Eliminar"
     },
-    "itemNamePlural": "transacciones"
+    "itemNamePlural": "transacciones",
+    "classic": {
+      "entriesShown": "{count, plural, one {# movimiento mostrado} other {# movimientos mostrados}}",
+      "legendCleared": "compensada",
+      "legendReconciled": "conciliada",
+      "legendRule": "La línea bajo cada saldo compara ese saldo con el más alto de esta página.",
+      "markCleared": "c",
+      "markReconciled": "C"
+    },
+    "modern": {
+      "inspectorLabel": "Transacción seleccionada",
+      "balanceAfter": "Saldo después",
+      "yesterday": "Ayer"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "No se pudieron cargar las garantías de esta transacción.",
       "empty": "Aún no hay garantías"
     },
-    "conversionLockedNote": "Esta transferencia pertenece a una transacción dividida o a la cuenta de otro propietario, por lo que aquí solo puede seguir siendo una transferencia. Modifíquela desde la división o elimínela y cree la entrada que desee."
+    "conversionLockedNote": "Esta transferencia pertenece a una transacción dividida o a la cuenta de otro propietario, por lo que aquí solo puede seguir siendo una transferencia. Modifíquela desde la división o elimínela y cree la entrada que desee.",
+    "modeGroupLabel": "Tipo de transacción",
+    "entryHint": "Tab pasa de un campo a otro. Esc cierra."
   },
   "splitEditor": {
     "header": "Detalles del desglose",
@@ -772,6 +789,13 @@
       "foreignCurrency": "El importe está en una moneda distinta a la de la cuenta. Usa Formulario completo para introducirlo.",
       "crossCurrencyTransfer": "Las dos cuentas tienen monedas distintas. Usa Formulario completo para esta transferencia.",
       "unknown": "Esta entrada no se puede guardar aquí. Usa Formulario completo para terminarla."
+    },
+    "assumedNote": "El campo con borde discontinuo no se escribió. Se rellenó por ti, así que revísalo.",
+    "hints": {
+      "enter": "Enter guarda",
+      "shiftEnter": "Mayús Enter guarda y empieza otra",
+      "tab": "Tab pasa de un campo a otro",
+      "esc": "Esc cierra"
     }
   }
 }

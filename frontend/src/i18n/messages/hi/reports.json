@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "बनाया गया: {timestamp}"
+  },
+  "statement": {
+    "item": "मद",
+    "amount": "राशि",
+    "share": "हिस्सा"
   }
 }

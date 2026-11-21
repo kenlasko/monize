@@ -37,7 +37,8 @@
       "withoutCategory": "Без категории"
     },
     "applyDefaultCategories": "Применить категории по умолчанию",
-    "lookupSettings": "Настройки поиска получателей"
+    "lookupSettings": "Настройки поиска получателей",
+    "eyebrow": "Указатель получателей"
   },
   "list": {
     "columns": {

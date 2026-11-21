@@ -62,7 +62,9 @@
     "onPace": "В рамках темпа",
     "rollover": "Перенос: {type}",
     "remaining": "Осталось {amount}",
-    "over": "Перерасход {amount}"
+    "over": "Перерасход {amount}",
+    "leftWord": "осталось",
+    "overWord": "превышено"
   },
   "categoryTrend": {
     "title": "Тренды категорий",
@@ -164,6 +166,7 @@
     "original": "Исходное: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Итоги бюджета",
     "totalBudget": "Всего бюджета",
     "spent": "Потрачено",
     "remaining": "Остаток",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Книга бюджетов",
       "title": "Бюджеты",
       "subtitle": "Управляйте бюджетами и отслеживайте расходы",
       "newBudget": "+ Новый бюджет",

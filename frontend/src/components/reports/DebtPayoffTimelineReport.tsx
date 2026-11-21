@@ -50,6 +50,7 @@ import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 import { accountSelectOption } from '@/lib/account-utils';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface PayoffScheduleItem {
   date: string;
@@ -646,7 +647,7 @@ export function DebtPayoffTimelineReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -657,7 +658,7 @@ export function DebtPayoffTimelineReport() {
 
   if (accounts.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <EmptyState title={t('debtPayoff.empty')} />
       </div>
     );
@@ -666,7 +667,7 @@ export function DebtPayoffTimelineReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div>
             <AccountSelect
@@ -724,19 +725,19 @@ export function DebtPayoffTimelineReport() {
             summary.projectedPayoffDate ? 'md:grid-cols-5' : 'md:grid-cols-4'
           } gap-4`}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('debtPayoff.currentBalance')}</div>
             <div className="text-xl font-bold text-red-600 dark:text-red-400">
               {formatCurrency(summary.currentBalance)}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('debtPayoff.principalPaid')}</div>
             <div className="text-xl font-bold text-green-600 dark:text-green-400">
               {formatCurrency(summary.totalPrincipalPaid)}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               {interestLabel(summary)}
             </div>
@@ -744,14 +745,14 @@ export function DebtPayoffTimelineReport() {
               {formatCurrency(summary.totalInterest)}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('debtPayoff.progress')}</div>
             <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
               {formatPercent(summary.percentPaid, 1)}
             </div>
           </div>
           {summary.projectedPayoffDate && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+            <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
               <div className="text-sm text-gray-500 dark:text-gray-400">{t('debtPayoff.estPayoff')}</div>
               <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
                 {summary.projectedPayoffDate}
@@ -762,7 +763,7 @@ export function DebtPayoffTimelineReport() {
       )}
 
       {/* Chart */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {payoffSchedule.length === 0 ? (
           <EmptyState title={t('debtPayoff.noPaymentHistory')} />
         ) : (
@@ -974,7 +975,7 @@ export function DebtPayoffTimelineReport() {
 
       {/* Account Details */}
       {selectedAccount && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('debtPayoff.accountDetails')}
           </h3>

@@ -125,7 +125,9 @@
       "attachments": "Pièces jointes",
       "status": "Statut",
       "statusHelp": "Non rapproché, Encaissé ou Rapproché sont des étapes vers la correspondance avec un relevé bancaire. Annulé annule une transaction mais conserve son enregistrement ; elle ne modifie plus le solde du compte.",
-      "actions": "Actions"
+      "actions": "Actions",
+      "payment": "Paiement",
+      "deposit": "Dépôt"
     },
     "sort": {
       "balanceHiddenHint": "Triez par date pour voir le solde courant",
@@ -191,7 +193,20 @@
       "editButton": "Modifier",
       "deleteButton": "Supprimer"
     },
-    "itemNamePlural": "transactions"
+    "itemNamePlural": "transactions",
+    "classic": {
+      "entriesShown": "{count, plural, one {# écriture affichée} other {# écritures affichées}}",
+      "legendCleared": "encaissé",
+      "legendReconciled": "rapproché",
+      "legendRule": "Le trait sous chaque solde compare ce solde au plus élevé de cette page.",
+      "markCleared": "e",
+      "markReconciled": "R"
+    },
+    "modern": {
+      "inspectorLabel": "Transaction sélectionnée",
+      "balanceAfter": "Solde après",
+      "yesterday": "Hier"
+    }
   },
   "row": {
     "copyOptions": {
@@ -484,7 +499,9 @@
       "loadError": "Les garanties de cette transaction n'ont pas pu être chargées.",
       "empty": "Aucune garantie pour l'instant"
     },
-    "conversionLockedNote": "Ce virement appartient à une transaction fractionnée ou au compte d'un autre propriétaire ; il ne peut donc rester ici qu'un virement. Modifiez-le depuis la répartition ou supprimez-le et créez l'écriture souhaitée."
+    "conversionLockedNote": "Ce virement appartient à une transaction fractionnée ou au compte d'un autre propriétaire ; il ne peut donc rester ici qu'un virement. Modifiez-le depuis la répartition ou supprimez-le et créez l'écriture souhaitée.",
+    "modeGroupLabel": "Type de transaction",
+    "entryHint": "Tab passe d’un champ à l’autre. Échap ferme."
   },
   "splitEditor": {
     "header": "Détails de la répartition",
@@ -772,6 +789,13 @@
       "foreignCurrency": "Le montant est dans une devise autre que celle du compte. Utilisez Formulaire complet pour le saisir.",
       "crossCurrencyTransfer": "Les deux comptes ont des devises différentes. Utilisez Formulaire complet pour ce virement.",
       "unknown": "Cette saisie ne peut pas être enregistrée ici. Utilisez Formulaire complet pour la terminer."
+    },
+    "assumedNote": "Le champ en pointillés n’a pas été saisi. Il a été rempli pour vous, vérifiez-le.",
+    "hints": {
+      "enter": "Entrée enregistre",
+      "shiftEnter": "Maj Entrée enregistre et en commence une autre",
+      "tab": "Tab passe d’un champ à l’autre",
+      "esc": "Échap ferme"
     }
   }
 }

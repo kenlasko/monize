@@ -588,6 +588,7 @@ function DashboardContent() {
               investmentSummaryLoading={investmentSummaryLoading}
               investmentAccounts={portfolioAccounts}
               header={header}
+              scheduledTransactions={scheduledTransactions}
             />
           )}
 

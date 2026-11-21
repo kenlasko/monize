@@ -58,6 +58,7 @@ import { useTranslations } from 'next-intl';
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { useForeignCurrencyLabel } from '@/hooks/useMainAccountName';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('MonteCarloReport');
 
@@ -473,7 +474,7 @@ export function MonteCarloReport() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
       {/* Left: scenarios */}
-      <aside className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-fit">
+      <aside className={`${CARD_CLASS} p-4 h-fit`}>
         <div className="flex items-center justify-between mb-3 gap-2">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('monteCarlo.scenarios')}</h3>
           <div className="flex items-center gap-1">
@@ -633,7 +634,7 @@ export function MonteCarloReport() {
 
       {/* Right: form + results */}
       <section className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className={CARD_CLASS}>
           <div className="flex items-center justify-between gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="min-w-0 flex-1">
               {inputsCollapsed ? (
@@ -1162,7 +1163,7 @@ export function MonteCarloReport() {
               />
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div className={`${CARD_CLASS} p-4`}>
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                   {t('monteCarlo.projectedPortfolioValue')}{' '}
@@ -1374,7 +1375,7 @@ export function MonteCarloReport() {
             </div>
 
             {result.performanceSummary && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div className={`${CARD_CLASS} p-4`}>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
                   {t('monteCarlo.performanceSummaryTitle')}
                 </h3>

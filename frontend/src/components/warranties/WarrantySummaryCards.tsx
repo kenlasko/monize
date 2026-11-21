@@ -29,7 +29,7 @@ export function WarrantySummaryCards({ warranty }: { warranty: Warranty }) {
       : t('detail.card.none');
 
   const cards: SummaryCardItem[] = [
-    { label: t('detail.summary.expires'), value: expires, note: daysLeftText(warranty) },
+    { lead: true, label: t('detail.summary.expires'), value: expires, note: daysLeftText(warranty) },
     { label: t('detail.summary.purchased'), value: formatDate(warranty.purchaseDate) },
     { label: t('detail.summary.price'), value: price },
     { label: t('detail.summary.openClaims'), value: formatNumber(warranty.openClaimCount, 0) },

@@ -13,6 +13,7 @@ import { userSettingsApi } from '@/lib/user-settings';
 import { useAuthStore } from '@/store/authStore';
 import { User, UpdateProfileData } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const buildProfileSchema = (t: (key: string) => string) => z.object({
   firstName: z
@@ -110,7 +111,7 @@ export function ProfileSection({ user, onUserUpdated }: ProfileSectionProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('heading')}</h2>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

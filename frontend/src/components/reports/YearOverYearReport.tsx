@@ -34,6 +34,7 @@ import { PartialTotal } from "@/components/ui/PartialTotal";
 import { UnknownAmount } from "@/components/ui/UnknownAmount";
 import { reportTotal, type ConvertedTotal } from "@/lib/currency-total";
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type YearOverYearSortField = string; // 'name' or any year as a string
 
@@ -274,7 +275,7 @@ export function YearOverYearReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-96 w-full" />
@@ -286,7 +287,7 @@ export function YearOverYearReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-6 items-center">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -356,7 +357,7 @@ export function YearOverYearReport() {
         {years.map((year, index) => (
           <div
             key={year}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4"
+            className={`${CARD_CLASS} p-4`}
             style={{
               borderLeft: `4px solid ${chartSeriesColor(index)}`,
             }}
@@ -403,7 +404,7 @@ export function YearOverYearReport() {
       </div>
 
       {/* Monthly Comparison Chart or Table */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('yearOverYear.monthlyComparisonTitle', { metric: t(`yearOverYear.${metric}`) })}
         </h3>
@@ -507,7 +508,7 @@ export function YearOverYearReport() {
 
       {/* Year-over-Year Change */}
       {years.length >= 2 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('yearOverYear.yearOverYearChange')}
           </h3>

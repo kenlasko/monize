@@ -50,7 +50,8 @@
     "retry": "Thử lại",
     "nextFire": "Lời nhắc tiếp theo: {date}",
     "openTarget": "Mở trang liên quan",
-    "delegateUnavailable": "Chuyển về tài khoản của bạn để quản lý lời nhắc."
+    "delegateUnavailable": "Chuyển về tài khoản của bạn để quản lý lời nhắc.",
+    "eyebrow": "Thông báo"
   },
   "billDue": {
     "titleOverdue": "{payee} đã quá hạn",

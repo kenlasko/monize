@@ -36,7 +36,19 @@
     "showSet": "{name}を表示",
     "cycleControls": "ヒーローに表示する内容を選択",
     "cagrUnavailable": "CAGR には、これらの口座で 1 年以上の投資履歴と、引き出しを上回る入金が必要です。",
-    "intradayUnavailable": "一部の保有銘柄に日中価格がないため、1 日のグラフを描けません。カスタマイズで長い期間を選んでください。"
+    "intradayUnavailable": "一部の保有銘柄に日中価格がないため、1 日のグラフを描けません。カスタマイズで長い期間を選んでください。",
+    "assetsLabel": "資産",
+    "liabilitiesLabel": "負債",
+    "investedLabel": "投資額",
+    "high": "最高 {value}",
+    "low": "最低 {value}",
+    "historyLabel": "月別の純資産: 最高 {high}、最低 {low}、現在 {latest}",
+    "nextUp": {
+      "heading": "{when, select, overdue {期限超過} today {次の予定、今日} tomorrow {次の予定、明日} other {次の予定、{date}}}",
+      "meta": "{manual, select, true {手動で支払い} other {自動で記帳}}",
+      "metaWithPayee": "{payee} · {manual, select, true {手動で支払い} other {自動で記帳}}",
+      "record": "{kind, select, deposit {入金を記録} transfer {振替を記録} reminder {記録する} other {支払いを記録}}"
+    }
   },
   "trivia": {
     "title": "トリビア",
@@ -355,7 +367,9 @@
     "due": "支払日: {ordinal}",
     "dueTooltip": "毎月のクレジットカード支払い期日",
     "settlement": "締め日: {ordinal}",
-    "settlementTooltip": "請求サイクルの最終日。この日以前に計上された取引が現在の明細に表示されます。"
+    "settlementTooltip": "請求サイクルの最終日。この日以前に計上された取引が現在の明細に表示されます。",
+    "dueShort": "支払日 {ordinal}",
+    "metaWithDue": "{institution} · {due}"
   },
   "upcomingBills": {
     "title": "今後の請求書・入金",
@@ -386,7 +400,11 @@
     "previousMonth": "前の月",
     "nextMonth": "次の月",
     "emptyAll": "予定されている有効な請求、入金、振替はありません。",
-    "estimated": "見積もり"
+    "estimated": "見積もり",
+    "stripLabel": "今後2週間を日ごとに表示: 入金は線の上に伸び、請求は線の下に伸びます",
+    "metaPayee": "· {payee}",
+    "metaManual": "· 手動で支払い",
+    "metaWhen": "· {when}"
   },
   "cashFlowForecast": {
     "title": "キャッシュフロー予測",

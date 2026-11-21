@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "하나 이상의 예약 항목의 금액을 계산할 수 없습니다",
     "summaryDueNow": "현재 만기",
     "loadingText": "예정된 거래를 불러오는 중...",
-    "chartUnavailable": "차트를 일시적으로 사용할 수 없습니다"
+    "chartUnavailable": "차트를 일시적으로 사용할 수 없습니다",
+    "eyebrow": "반복"
   },
   "viewTabs": {
     "filterLabel": "일정 유형",
@@ -83,5 +84,12 @@
     "exportButton": "내보내기",
     "exportTitle": "청구서 및 입금을 CSV로 내보내기",
     "exported": "{count, plural, one {# 건의 일정 내보냄} other {# 건의 일정 내보냄}}"
+  },
+  "outlook": {
+    "title": "앞으로 14일",
+    "stripLabel": "앞으로 14일간 예정된 청구서와 입금: 들어오는 돈은 선 위, 나가는 돈은 선 아래",
+    "today": "오늘",
+    "nextUpOn": "다음 예정, {date}",
+    "daysLabel": "앞으로 14일, 하루에 칩 하나"
   }
 }

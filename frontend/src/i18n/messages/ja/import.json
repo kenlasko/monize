@@ -38,7 +38,8 @@
   "page": {
     "title": "取引のインポート",
     "subtitle": "QIF/QMTF、OFX/QFX、CSV ファイルから取引をインポートするか、Microsoft Money (.mny) または KMyMoney (.kmy、.xml) ファイルをまるごと取り込みます",
-    "stepOf": "ステップ {current} / {total}"
+    "stepOf": "ステップ {current} / {total}",
+    "eyebrow": "取引の取り込み"
   },
   "upload": {
     "heading": "取引ファイルのアップロード",

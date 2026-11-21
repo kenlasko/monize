@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Skrzynka przeglądów AI",
-    "subtitle": "Transakcje, które reguła kazała sprawdzić sztucznej inteligencji, profile, które asystent miał przygotować, oraz zmiany zaproponowane przez asystenta do Twojej akceptacji."
+    "subtitle": "Transakcje, które reguła kazała sprawdzić sztucznej inteligencji, profile, które asystent miał przygotować, oraz zmiany zaproponowane przez asystenta do Twojej akceptacji.",
+    "eyebrow": "Czeka na Twoją weryfikację"
   },
   "filter": {
     "label": "Filtruj według statusu",

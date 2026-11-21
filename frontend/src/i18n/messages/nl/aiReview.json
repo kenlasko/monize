@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "AI-controlepostvak",
-    "subtitle": "Transacties die een regel door een AI wilde laten controleren, profiels die een assistent moest opstellen, en de wijzigingen die een assistent ter goedkeuring voorstelt."
+    "subtitle": "Transacties die een regel door een AI wilde laten controleren, profiels die een assistent moest opstellen, en de wijzigingen die een assistent ter goedkeuring voorstelt.",
+    "eyebrow": "Wacht op uw beoordeling"
   },
   "filter": {
     "label": "Filteren op status",

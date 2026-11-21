@@ -8,6 +8,7 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { LOCALE_COOKIE, isSupportedLocale, detectBrowserLocale } from '@/i18n/config';
 import { isColorTheme } from '@/lib/color-themes';
+import { isUiStyle } from '@/lib/ui-styles';
 import { userSettingsApi } from '@/lib/user-settings';
 import { consumePreLoginLocale } from '@/lib/pre-login-locale';
 import { createLogger } from '@/lib/logger';
@@ -29,7 +30,7 @@ export function PreferencesLoader({ children }: { children: React.ReactNode }) {
   const preferences = usePreferencesStore((state) => state.preferences);
   const isLoaded = usePreferencesStore((state) => state.isLoaded);
   const prefsHydrated = usePreferencesStore((state) => state._hasHydrated);
-  const { setTheme, setColorTheme } = useTheme();
+  const { setTheme, setColorTheme, setUiStyle } = useTheme();
 
   useEffect(() => {
     // Wait for both stores to hydrate
@@ -55,6 +56,13 @@ export function PreferencesLoader({ children }: { children: React.ReactNode }) {
       setColorTheme(preferences.colorTheme);
     }
   }, [prefsHydrated, preferences?.colorTheme, setColorTheme]);
+
+  // Sync UI style when preferences change
+  useEffect(() => {
+    if (prefsHydrated && isUiStyle(preferences?.uiStyle)) {
+      setUiStyle(preferences.uiStyle);
+    }
+  }, [prefsHydrated, preferences?.uiStyle, setUiStyle]);
 
   // Sync language cookie from DB preference. The proxy reads NEXT_LOCALE and
   // sets the x-locale header on the next request; we refresh the router so

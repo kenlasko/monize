@@ -1,4 +1,5 @@
 import { ChartSkeleton, PageHeaderSkeleton, Skeleton } from '@/components/ui/LoadingSkeleton';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export default function ReportsLoading() {
   return (
@@ -6,7 +7,7 @@ export default function ReportsLoading() {
       <div className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeaderSkeleton />
         {/* Report Type Selection */}
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+        <div className={`${CARD_CLASS} p-6 mb-6`}>
           <Skeleton className="h-6 w-32 mb-4" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Skeleton className="h-24 rounded-lg" />

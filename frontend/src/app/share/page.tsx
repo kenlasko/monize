@@ -229,7 +229,7 @@ function ShareContent() {
 
   return (
     <PageLayout>
-      <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      <PageHeader title={t('title')} eyebrow={t('eyebrow')} subtitle={t('subtitle')} />
 
       {state === 'loading' && (
         <div className="flex justify-center py-12">

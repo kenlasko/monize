@@ -86,7 +86,9 @@
       "category": "Tambah Cepat: {amount} {category}",
       "payeeCategory": "Tambah Cepat: {amount} {payee}, {category}",
       "transfer": "Tambah Cepat: {amount} dari {from} ke {to}"
-    }
+    },
+    "trigger": "Cari atau lompat ke"
   },
-  "quickAdd": "Tambah Cepat"
+  "quickAdd": "Tambah Cepat",
+  "accountButton": "{name}, pengaturan"
 }

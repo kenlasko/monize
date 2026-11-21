@@ -38,6 +38,7 @@ import type { Account, MortgageType } from '@/types/account';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
 import type { LoanRateChange } from '@/types/loan-rate-change';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export default function AccountDetailPage() {
   return (
@@ -312,7 +313,7 @@ function AccountDetailContent() {
     return (
       <PageLayout>
         <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-12 text-center">
+          <div className={`${CARD_CLASS} p-12 text-center`}>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               {error || t('loanDetail.notFound')}
             </h3>

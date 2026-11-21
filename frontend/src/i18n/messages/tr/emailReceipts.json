@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "E-posta Makbuzları",
-    "subtitle": "Sipariş onaylarını bir posta kutusundan okuyun ve kalem kalem işlemlere dönüştürün: nelerin bağlı olduğu, her e-postaya ne olduğu ve sizi nelerin beklediği"
+    "subtitle": "Sipariş onaylarını bir posta kutusundan okuyun ve kalem kalem işlemlere dönüştürün: nelerin bağlı olduğu, her e-postaya ne olduğu ve sizi nelerin beklediği",
+    "eyebrow": "Fiş gelen kutusu"
   },
   "mailbox": {
     "heading": "Posta kutusu",

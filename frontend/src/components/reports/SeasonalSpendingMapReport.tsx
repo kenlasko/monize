@@ -11,6 +11,7 @@ import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type SeasonalMapSortField = 'category' | 'typical' | `month${number}`;
 
@@ -166,7 +167,7 @@ export function SeasonalSpendingMapReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -177,7 +178,7 @@ export function SeasonalSpendingMapReport() {
 
   if (budgetList.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('seasonalSpendingMap.noBudgets')}
         </p>
@@ -188,7 +189,7 @@ export function SeasonalSpendingMapReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedBudgetId}
@@ -204,7 +205,7 @@ export function SeasonalSpendingMapReport() {
       </div>
 
       {/* Heatmap */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {gridData.length === 0 ? (
           <EmptyState title={t('seasonalSpendingMap.noData')} />
         ) : (

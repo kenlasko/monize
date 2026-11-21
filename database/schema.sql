@@ -1632,6 +1632,7 @@ CREATE TABLE user_preferences (
     number_format VARCHAR(20) DEFAULT 'en-US',
     theme VARCHAR(20) DEFAULT 'light',
     color_theme VARCHAR(20) NOT NULL DEFAULT 'default',
+    ui_style VARCHAR(20) NOT NULL DEFAULT 'standard',
     timezone VARCHAR(50) DEFAULT 'browser',
     notification_email BOOLEAN DEFAULT true,
     two_factor_enabled BOOLEAN DEFAULT false,

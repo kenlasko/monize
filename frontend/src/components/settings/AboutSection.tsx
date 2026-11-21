@@ -22,6 +22,7 @@ import { updatesApi, type UpdateStatus } from '@/lib/updatesApi';
 import { GITHUB_REPO_URL as REPO_URL } from '@/lib/github';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { createLogger } from '@/lib/logger';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('AboutSection');
 
@@ -155,7 +156,7 @@ export function AboutSection() {
   ] as const;
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
         {t('heading')}
       </h2>

@@ -73,7 +73,8 @@
       "prefillFailed": "Não foi possível carregar essa transação, por isso a garantia começa em branco",
       "exported": "{count, plural, one {{shown} garantia exportada} other {{shown} garantias exportadas}}",
       "exportFailed": "Não foi possível exportar as garantias"
-    }
+    },
+    "eyebrow": "Registro de garantias"
   },
   "status": {
     "lifetime": "Vitalícia",

@@ -1,0 +1,278 @@
+/*
+ * accounts area of the Classic and Modern UI styles. Same rules as ui-styles.css
+ * (read its header): ramp tokens only, marker classes in @layer components,
+ * unlayered rules only where a primitive's own utility must yield.
+ */
+
+/*
+ * Markers (all set by the account components):
+ *   ui-acc-statement(-lines/-line)   Classic summary: a statement head
+ *   ui-ledger-group / ui-ledger-row  a group header row and a data row of the
+ *                                    accounts, institutions and reconcile lists
+ *   ui-recon-sheet/-cell/-label/-figure/-diff   the reconcile summary bar
+ */
+
+/* ===================================================================== */
+/* Classic: the statement of accounts                                     */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-acc-statement {
+  padding-bottom: 1.25rem;
+  align-items: center;
+}
+html[data-ui-style='classic'] .ui-acc-statement-lines {
+  margin: 0;
+  border-top: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-acc-statement-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-acc-statement-line dt {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+html.dark[data-ui-style='classic'] .ui-acc-statement-line dt {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='classic'] .ui-acc-statement-line dd {
+  margin: 0;
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The ledger lists: a group is a ruled heading in small capitals, its
+   rows hairlines under it; no grey bands, no stripes. */
+html[data-ui-style='classic'] tr.ui-ledger-group {
+  background-color: transparent;
+}
+html[data-ui-style='classic'] tr.ui-ledger-group > td,
+html[data-ui-style='classic'] tr.ui-ledger-group > th {
+  background-color: transparent;
+  padding-top: 1.5rem;
+  border-bottom: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] tr.ui-ledger-group > td:first-child span.font-semibold,
+html[data-ui-style='classic'] tr.ui-ledger-group > th {
+  font-family: var(--ui-font-display);
+  font-size: 0.8125rem;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+html[data-ui-style='classic'] tr.ui-ledger-group .ui-money {
+  letter-spacing: 0;
+  font-family: var(--ui-font-display);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+html[data-ui-style='classic'] tr.ui-ledger-row {
+  background-color: transparent;
+}
+html[data-ui-style='classic'] tr.ui-ledger-row > td:not(.sticky) {
+  background-color: transparent;
+}
+html[data-ui-style='classic'] tr.ui-ledger-row .ui-money {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===================================================================== */
+/* Modern: colour blocks                                                  */
+/* ===================================================================== */
+
+/* The accent block keeps its ink on the figure's symbol and cents. */
+html[data-ui-style='modern'] .ui-block-accent .ui-money-display :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
+  color: inherit;
+}
+
+/* A group is a bold heading on the page, not a grey band. */
+html[data-ui-style='modern'] tr.ui-ledger-group {
+  background-color: transparent;
+}
+html[data-ui-style='modern'] tr.ui-ledger-group > td,
+html[data-ui-style='modern'] tr.ui-ledger-group > th {
+  background-color: transparent;
+  padding-top: 1.25rem;
+  padding-bottom: 0.5rem;
+}
+html[data-ui-style='modern'] tr.ui-ledger-group td span.font-semibold {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+html[data-ui-style='modern'] tr.ui-ledger-group .ui-money {
+  font-family: var(--ui-font-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+html[data-ui-style='modern'] tr.ui-ledger-row > td:first-child {
+  border-top-left-radius: 1rem;
+  border-bottom-left-radius: 1rem;
+}
+html[data-ui-style='modern'] tr.ui-ledger-row > td:last-child {
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+}
+/* Balances are the big tight figure of a row. */
+html[data-ui-style='modern'] tr.ui-ledger-row .ui-money {
+  font-family: var(--ui-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ===================================================================== */
+/* Reconcile: the reconciliation sheet                                    */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-recon-sheet {
+  gap: 0 1.5rem;
+}
+html[data-ui-style='classic'] .ui-recon-cell {
+  padding: 0.5rem 0;
+  border-top: 2px solid var(--ui-rule-ink);
+  border-bottom: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-recon-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+}
+html[data-ui-style='classic'] .ui-recon-figure {
+  font-family: var(--ui-font-display);
+  font-size: 1.375rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+/* The difference is the line struck under the sheet: a double rule. */
+html[data-ui-style='classic'] .ui-recon-diff {
+  border-bottom: 4px double var(--ui-rule-ink);
+}
+
+html[data-ui-style='modern'] .ui-recon-sheet {
+  gap: 0.75rem;
+}
+html[data-ui-style='modern'] .ui-recon-cell {
+  padding: 0.875rem 1rem;
+  border-radius: 1.25rem;
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-recon-cell {
+  background-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-recon-label {
+  font-weight: 600;
+  text-transform: none;
+}
+html[data-ui-style='modern'] .ui-recon-figure {
+  font-family: var(--ui-font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+/* The difference is the block that changes colour: accent once it is nil. */
+html[data-ui-style='modern'] .ui-recon-diff[data-balanced='true'] {
+  background-color: var(--color-blue-300);
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-recon-diff[data-balanced='true'] {
+  background-color: var(--color-blue-400);
+}
+html[data-ui-style='modern'] .ui-recon-diff[data-balanced='true'] :is(.ui-recon-label, .ui-recon-figure) {
+  color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-recon-diff[data-balanced='false'] {
+  background-color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-recon-diff[data-balanced='false'] {
+  background-color: var(--color-gray-950);
+}
+html[data-ui-style='modern'] .ui-recon-diff[data-balanced='false'] .ui-recon-label {
+  color: var(--color-gray-400);
+}
+html[data-ui-style='modern'] .ui-recon-diff[data-balanced='false'] .ui-recon-figure {
+  color: var(--color-red-400);
+}
+
+/* Bodoni's automatic optical size is its display cut, whose hairlines drop out
+   at these figure sizes; a text-ish size keeps every stroke (as ui-styles.css
+   does for the headline money figure). */
+html[data-ui-style='classic']
+  :is(.ui-acc-statement .ui-money, .ui-acc-statement-line dd, tr.ui-ledger-group .ui-money, .ui-recon-figure) {
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 18;
+}
+
+/* ===================================================================== */
+/* Institutions                                                           */
+/* ===================================================================== */
+
+/* Classic: a register of names. The name is set in the serif, the account
+   count is a ledger figure at the right, the country in small capitals. */
+html[data-ui-style='classic'] .ui-inst-name {
+  font-family: var(--ui-font-display);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 18;
+}
+html[data-ui-style='classic'] td.ui-inst-count-cell {
+  text-align: right;
+  width: 1%;
+  padding-right: 2rem;
+}
+html[data-ui-style='classic'] .ui-inst-count {
+  font-family: var(--ui-font-display);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-optical-sizing: none;
+  font-variation-settings: 'opsz' 18;
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-inst-count {
+  color: var(--color-gray-100);
+}
+html[data-ui-style='classic'] tr.ui-ledger-row .ui-inst-avatar {
+  filter: grayscale(1);
+  opacity: 0.85;
+}
+
+/* Modern: the logo is an avatar in a round block, the name heavy, the account
+   count a pill. */
+html[data-ui-style='modern'] .ui-inst-avatar {
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-inst-avatar {
+  background-color: var(--color-gray-700);
+}
+html[data-ui-style='modern'] .ui-inst-name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+html[data-ui-style='modern'] .ui-inst-count {
+  min-width: 2rem;
+  padding: 0.125rem 0.75rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-100);
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='modern'] .ui-inst-count {
+  background-color: var(--color-gray-700);
+  color: var(--color-gray-100);
+}

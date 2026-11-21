@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Создано: {timestamp}"
+  },
+  "statement": {
+    "item": "Статья",
+    "amount": "Сумма",
+    "share": "Доля"
   }
 }

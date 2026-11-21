@@ -216,7 +216,7 @@ export function QuickAddDialog({
         title={t('quickAdd.title')}
         description={t('quickAdd.description')}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="ui-qa space-y-4">
           <Input
             ref={inputRef}
             id={inputId}
@@ -229,7 +229,7 @@ export function QuickAddDialog({
             enterKeyHint="done"
             onChange={(event) => setText(event.target.value)}
             onKeyDown={handleKeyDown}
-            className="py-3! text-lg!"
+            className="ui-qa-input py-3! text-lg!"
           />
 
           {/* A failed reading is said to be one, never drawn as an empty
@@ -281,8 +281,12 @@ export function QuickAddDialog({
             />
           )}
 
+          {/* Modern sets the balance and the buttons in one panel. Elsewhere the
+              wrapper adds nothing: its children space themselves as they did
+              as the form's own. */}
+          <div className="ui-qa-foot space-y-4">
           {/* One tight group: the status line keeps its height so the card does not jump. */}
-          <div className="-mt-2 space-y-1">
+          <div className="ui-qa-summary -mt-2 space-y-1">
             <p role="status" className="min-h-4 text-xs text-gray-500 dark:text-gray-400">
               {reading.status === 'pending' ? t('quickAdd.reading') : ''}
             </p>
@@ -298,6 +302,7 @@ export function QuickAddDialog({
           </div>
 
           <FormActions
+            className="ui-qa-actions"
             onCancel={formModal.close}
             isSubmitting={saver.isSaving}
             submitDisabled={!canSave}
@@ -314,6 +319,15 @@ export function QuickAddDialog({
             onSubmitOptionChange={(id) => setSubmitMode(id === 'new' ? 'new' : 'close')}
             submitOptionsLabel={t('form.submitOptions')}
           />
+          </div>
+
+          {/* The keys, for the styles that print them; Standard keeps the dialog as it was. */}
+          <ul className="ui-qa-hints hidden">
+            <li>{t('quickAdd.hints.enter')}</li>
+            <li>{t('quickAdd.hints.shiftEnter')}</li>
+            <li>{t('quickAdd.hints.tab')}</li>
+            <li>{t('quickAdd.hints.esc')}</li>
+          </ul>
         </form>
       </Modal>
       <UnsavedChangesDialog

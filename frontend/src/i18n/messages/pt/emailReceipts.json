@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Recibos por e-mail",
-    "subtitle": "Leia confirmações de encomenda a partir de uma caixa de correio e transforme-as em transações detalhadas: o que está ligado, o que aconteceu a cada e-mail e o que aguarda por si"
+    "subtitle": "Leia confirmações de encomenda a partir de uma caixa de correio e transforme-as em transações detalhadas: o que está ligado, o que aconteceu a cada e-mail e o que aguarda por si",
+    "eyebrow": "Caixa de recibos"
   },
   "mailbox": {
     "heading": "Caixa de correio",

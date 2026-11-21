@@ -13,7 +13,7 @@ export function cn(...inputs: ClassValue[]) {
 
 /** Shared base classes for text inputs, selects, and comboboxes */
 export const inputBaseClasses = [
-  'block w-full rounded-md border-gray-300 shadow-sm transition-colors motion-reduce:transition-none',
+  'ui-field block w-full rounded-(--ui-radius-field) border-gray-300 shadow-sm transition-colors motion-reduce:transition-none',
   'focus:border-blue-500 focus:ring-blue-500',
   'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
   'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400',
@@ -214,7 +214,12 @@ export type ChartDatePattern =
   | 'MMM d HH:mm' // Jan 5, 14:30
   | 'HH:mm' // 14:30
   | 'yyyy' // 2025
-  | 'EEEE MMMM d'; // Thursday, November 6 (order and punctuation follow the locale)
+  | 'EEEE MMMM d' // Thursday, November 6 (order and punctuation follow the locale)
+  | 'MMMMM' // J (the narrow month, for a dense month strip)
+  | 'EEEEE' // T (the narrow weekday)
+  | 'EEEE' // Thursday
+  | 'EEE d' // Thu 6
+  | 'd'; // 6
 
 const CHART_DATE_OPTIONS: Record<ChartDatePattern, Intl.DateTimeFormatOptions> = {
   MMM: { month: 'short' },
@@ -228,6 +233,11 @@ const CHART_DATE_OPTIONS: Record<ChartDatePattern, Intl.DateTimeFormatOptions> =
   'HH:mm': { hour: '2-digit', minute: '2-digit', hour12: false },
   yyyy: { year: 'numeric' },
   'EEEE MMMM d': { weekday: 'long', month: 'long', day: 'numeric' },
+  MMMMM: { month: 'narrow' },
+  EEEEE: { weekday: 'narrow' },
+  EEEE: { weekday: 'long' },
+  'EEE d': { weekday: 'short', day: 'numeric' },
+  d: { day: 'numeric' },
 };
 
 /**

@@ -27,6 +27,7 @@ function RulesContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='rules'
           actions={<CreateRuleLink label={t('page.createButton')} anchor={tourAnchor(TOUR_ANCHORS.rulesCreateButton)} />}

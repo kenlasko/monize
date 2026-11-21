@@ -73,7 +73,8 @@
       "prefillFailed": "Bu işlem yüklenemedi, bu yüzden garanti boş başlıyor",
       "exported": "{count, plural, other {{shown} garanti dışa aktarıldı}}",
       "exportFailed": "Garantiler dışa aktarılamadı"
-    }
+    },
+    "eyebrow": "Garanti defteri"
   },
   "status": {
     "lifetime": "Ömür boyu",

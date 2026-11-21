@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Rekeningen",
+    "eyebrow": "Rekeningoverzicht",
     "subtitle": "Beheer jouw bankrekeningen, creditcards en beleggingen",
     "newAccount": "+ Nieuwe rekening",
     "newAccountModal": "Nieuwe rekening",

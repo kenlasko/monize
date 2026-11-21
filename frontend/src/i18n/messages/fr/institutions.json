@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "Établissements financiers",
+    "eyebrow": "Registre des institutions",
     "subtitle": "Banques et courtiers auxquels appartiennent vos comptes",
     "newInstitution": "Nouvel établissement",
     "loading": "Chargement des établissements...",

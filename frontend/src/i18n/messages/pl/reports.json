@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Wygenerowano: {timestamp}"
+  },
+  "statement": {
+    "item": "Pozycja",
+    "amount": "Kwota",
+    "share": "Udział"
   }
 }

@@ -10,6 +10,7 @@ import { ImportFileData, BulkImportResult } from '@/app/import/import-utils';
 import { LoanPaymentSetupDialog } from '@/components/accounts/LoanPaymentSetupDialog';
 import { mortgageTypeOf } from '@/lib/mortgage-type';
 import { SkippedRowsList } from './SkippedRowsList';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface CompleteStepProps {
   importFiles: ImportFileData[];
@@ -142,7 +143,7 @@ export function CompleteStep({
 
   return (
     <div className={isBulkImport ? "max-w-4xl mx-auto" : "max-w-xl mx-auto"}>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="text-center mb-6">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
             <svg
