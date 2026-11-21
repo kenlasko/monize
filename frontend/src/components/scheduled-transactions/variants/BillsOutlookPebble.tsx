@@ -5,7 +5,7 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
-import { StripDot } from '@/components/dashboard/variants/UpcomingBillsListPebble';
+import { DayChip } from '@/components/dashboard/variants/UpcomingBillsListPebble';
 import type { BillsOutlookProps } from './bills-outlook-view';
 
 
@@ -55,28 +55,7 @@ export function BillsOutlookPebble({ strip, next, onPost }: BillsOutlookProps) {
         <div className="-mx-1 my-auto overflow-x-auto px-1 pb-1">
           <ol aria-label={t('outlook.daysLabel')} className="grid min-w-[560px] grid-cols-14 gap-1 text-center text-xs">
             {strip.days.map((day) => (
-              <li
-                key={day.date}
-                aria-current={day.isToday ? 'date' : undefined}
-                className={`rounded-[14px] pt-2 pb-2.5 ${
-                  day.isToday
-                    ? 'bg-gray-900 text-gray-50 dark:bg-gray-100 dark:text-gray-900'
-                    : 'bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100'
-                }`}
-              >
-                <span
-                  aria-hidden="true"
-                  className={`block ${day.isToday ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}`}
-                >
-                  {formatChartDate(day.date, 'EEEEE')}
-                </span>
-                <span className="block text-[15px] font-bold">{formatChartDate(day.date, 'd')}</span>
-                <span className="flex h-2 justify-center gap-[3px]">
-                  {day.items.map((item) => (
-                    <StripDot key={item.id} item={item} />
-                  ))}
-                </span>
-              </li>
+              <DayChip key={day.date} day={day} />
             ))}
           </ol>
         </div>

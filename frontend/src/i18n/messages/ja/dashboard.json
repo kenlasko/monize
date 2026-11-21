@@ -404,6 +404,7 @@
     "emptyAll": "予定されている有効な請求、入金、振替はありません。",
     "estimated": "見積もり",
     "stripLabel": "今後2週間を日ごとに表示: 入金は線の上に伸び、請求は線の下に伸びます",
+    "dayEmpty": "この日に予定されている請求書や入金はありません。",
     "metaPayee": "· {payee}",
     "metaManual": "· 手動で支払い",
     "metaWhen": "· {when}"

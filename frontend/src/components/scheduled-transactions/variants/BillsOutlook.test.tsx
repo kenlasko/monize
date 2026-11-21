@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { render } from '@/test/render';
 import { BillsOutlookFolio } from './BillsOutlookFolio';
 import { BillsOutlookPebble } from './BillsOutlookPebble';
@@ -60,5 +60,15 @@ describe('BillsOutlookPebble', () => {
     render(<BillsOutlookPebble {...props({ next: null })} />);
     expect(screen.queryByRole('button', { name: /post/i })).toBeNull();
     expect(screen.getAllByRole('listitem')).toHaveLength(14);
+  });
+
+  it("opens a day's bills and deposits when its date is clicked", () => {
+    render(<BillsOutlookPebble {...props()} />);
+    const chips = screen.getAllByRole('listitem');
+    fireEvent.click(chips[3].querySelector('button')!);
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Hydro')).toBeInTheDocument();
+    expect(dialog.getByText('Hydro One · Bill')).toBeInTheDocument();
+    expect(dialog.getByText('-$120.00')).toBeInTheDocument();
   });
 });

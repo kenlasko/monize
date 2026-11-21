@@ -404,6 +404,7 @@
     "emptyAll": "No active bills, deposits, or transfers scheduled.",
     "estimated": "Estimated",
     "stripLabel": "The next two weeks, day by day: deposits rise above the line, bills fall below it",
+    "dayEmpty": "No bills or deposits are scheduled for this day.",
     "metaPayee": "· {payee}",
     "metaManual": "· paid by hand",
     "metaWhen": "· {when}"

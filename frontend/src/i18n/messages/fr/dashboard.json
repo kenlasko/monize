@@ -404,6 +404,7 @@
     "emptyAll": "Aucune facture, aucun dépôt ni virement actif planifié.",
     "estimated": "Estimé",
     "stripLabel": "Les deux prochaines semaines, jour par jour : les dépôts montent au-dessus de la ligne, les factures descendent en dessous",
+    "dayEmpty": "Aucune facture ni aucun dépôt n'est prévu pour ce jour.",
     "metaPayee": "· {payee}",
     "metaManual": "· payé à la main",
     "metaWhen": "· {when}"

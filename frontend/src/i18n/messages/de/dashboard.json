@@ -404,6 +404,7 @@
     "emptyAll": "Keine aktiven Rechnungen, Einzahlungen oder Überweisungen geplant.",
     "estimated": "Geschätzt",
     "stripLabel": "Die nächsten zwei Wochen, Tag für Tag: Einzahlungen steigen über die Linie, Rechnungen fallen darunter",
+    "dayEmpty": "Für diesen Tag sind keine Rechnungen oder Einzahlungen geplant.",
     "metaPayee": "· {payee}",
     "metaManual": "· von Hand bezahlt",
     "metaWhen": "· {when}"

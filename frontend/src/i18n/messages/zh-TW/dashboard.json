@@ -404,6 +404,7 @@
     "emptyAll": "沒有已排程的有效帳單、存入或轉帳。",
     "estimated": "估算",
     "stripLabel": "未來兩週，逐日顯示：存款在線上方升起，帳單在線下方落下",
+    "dayEmpty": "這一天沒有排程任何帳單或存款。",
     "metaPayee": "· {payee}",
     "metaManual": "· 手動支付",
     "metaWhen": "· {when}"

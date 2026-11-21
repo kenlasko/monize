@@ -404,6 +404,7 @@
     "emptyAll": "Không có hóa đơn, khoản nạp hoặc chuyển khoản đang hoạt động nào được lên lịch.",
     "estimated": "Ước tính",
     "stripLabel": "Hai tuần tới, từng ngày: khoản tiền vào nhô lên trên đường kẻ, hóa đơn rơi xuống dưới",
+    "dayEmpty": "Không có hóa đơn hay khoản tiền gửi nào được lên lịch cho ngày này.",
     "metaPayee": "· {payee}",
     "metaManual": "· thanh toán thủ công",
     "metaWhen": "· {when}"

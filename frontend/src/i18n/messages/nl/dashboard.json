@@ -404,6 +404,7 @@
     "emptyAll": "Geen actieve rekeningen, stortingen of overboekingen gepland.",
     "estimated": "Geschat",
     "stripLabel": "De komende twee weken, dag voor dag: stortingen stijgen boven de lijn, rekeningen zakken eronder",
+    "dayEmpty": "Voor deze dag zijn geen facturen of stortingen gepland.",
     "metaPayee": "· {payee}",
     "metaManual": "· handmatig betaald",
     "metaWhen": "· {when}"

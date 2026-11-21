@@ -404,6 +404,7 @@
     "emptyAll": "예약된 활성 청구, 입금 또는 이체가 없습니다.",
     "estimated": "예상",
     "stripLabel": "앞으로 2주를 하루씩 표시합니다. 입금은 선 위로 올라가고 청구서는 선 아래로 내려갑니다",
+    "dayEmpty": "이 날에는 예정된 청구서나 입금이 없습니다.",
     "metaPayee": "· {payee}",
     "metaManual": "· 직접 납부",
     "metaWhen": "· {when}"
