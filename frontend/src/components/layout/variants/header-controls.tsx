@@ -3,21 +3,43 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
 import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import type { StyleVariants } from '@/hooks/useUiStyle';
 
 /**
- * The app header's search slot and user button, per UI style. The Standard
- * style keeps its inline transaction search and its settings button, which
- * `AppHeader` builds and hands over unchanged; Folio and Pebble draw the
- * mockups' "search or jump to" field, which opens the command palette (the
- * same Ctrl/Cmd+K box, whose results include a transaction search), and the
- * reader's name or initial in place of the gear.
+ * The app header's search slot and user button, per UI style. Every style's
+ * search is the "search or jump to" field, which opens the command palette
+ * (the same Ctrl/Cmd+K box, whose results include a transaction search);
+ * Folio draws a bordered box, Pebble a pill, and Standard a bare magnifying
+ * glass that opens the same palette. The user
+ * button differs: Standard keeps its settings gear, which `AppHeader` builds
+ * and hands over unchanged, while Folio and Pebble show the reader's name or
+ * initial.
  */
 
-export interface HeaderSearchSlotProps {
-  /** The Standard header's own inline search. */
-  standard: ReactNode;
+/** The search slot takes no props: every style opens the same palette. */
+export type HeaderSearchSlotProps = Record<never, never>;
+
+/**
+ * Standard's search is the magnifying glass alone: its nav links run on a
+ * full-width row, and a labelled field made "Bills & Deposits" wrap onto two
+ * lines. The label stays for a screen reader, and the palette it opens shows
+ * the Ctrl/Cmd+K hint.
+ */
+function SearchIconTrigger() {
+  const t = useTranslations('navigation');
+  return (
+    <button
+      type="button"
+      onClick={() => useCommandPaletteStore.getState().openPalette()}
+      aria-keyshortcuts="Control+K Meta+K"
+      className={`ui-search-trigger rounded-md p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 ${HOVER_ROW_ON_PAGE} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+    >
+      <MagnifyingGlassIcon aria-hidden="true" className="h-5 w-5" />
+      <span className="sr-only">{t('commandPalette.trigger')}</span>
+    </button>
+  );
 }
 
 function PaletteTrigger({ variant }: { variant: 'folio' | 'pebble' }) {
@@ -54,7 +76,7 @@ function PaletteTrigger({ variant }: { variant: 'folio' | 'pebble' }) {
 }
 
 export const HEADER_SEARCH_VARIANTS: StyleVariants<HeaderSearchSlotProps> = {
-  standard: ({ standard }) => <>{standard}</>,
+  standard: SearchIconTrigger,
   folio: () => <PaletteTrigger variant="folio" />,
   pebble: () => <PaletteTrigger variant="pebble" />,
 };

@@ -35,12 +35,6 @@
   "more": "Más",
   "loggedOut": "Sesión cerrada correctamente",
   "logoutNotConfirmed": "Sesión cerrada solo en este dispositivo — el servidor no lo confirmó. Consulta el aviso en la pantalla de inicio de sesión.",
-  "search": {
-    "placeholder": "Buscar transacciones...",
-    "label": "Buscar transacciones",
-    "open": "Abrir búsqueda",
-    "submit": "Buscar"
-  },
   "backups": "Copias de seguridad",
   "sharedExpenses": "Gastos compartidos",
   "commandPalette": {

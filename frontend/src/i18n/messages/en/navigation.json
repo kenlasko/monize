@@ -36,12 +36,6 @@
   "more": "More",
   "loggedOut": "Logged out successfully",
   "logoutNotConfirmed": "Signed out on this device only — the server did not confirm. See the notice on the sign-in screen.",
-  "search": {
-    "placeholder": "Search transactions...",
-    "label": "Search transactions",
-    "open": "Open search",
-    "submit": "Search"
-  },
   "sharedExpenses": "Shared Expenses",
   "commandPalette": {
     "title": "Command palette",

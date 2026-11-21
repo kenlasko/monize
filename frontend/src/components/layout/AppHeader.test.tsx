@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@/test/render';
 import { AppHeader } from './AppHeader';
 import { useMobileChromeStore } from '@/store/mobileChromeStore';
+import { useCommandPaletteStore } from '@/store/commandPaletteStore';
 import toast from 'react-hot-toast';
 import { endSignOut, isSigningOut } from '@/lib/logout-state';
 
@@ -552,95 +553,12 @@ describe('AppHeader', () => {
   });
 
   describe('header search', () => {
-    it('renders the search icon button', () => {
+    it('shows the "Search or jump to" field, and it opens the command palette', () => {
+      useCommandPaletteStore.setState({ open: false });
       render(<AppHeader />);
-      expect(screen.getByLabelText('Open search')).toBeInTheDocument();
-    });
-
-    it('opens the search input when the icon is clicked', () => {
-      render(<AppHeader />);
-      fireEvent.click(screen.getByLabelText('Open search'));
-      const input = screen.getByLabelText('Search transactions');
-      expect(input).toBeInTheDocument();
-    });
-
-    it('navigates to /transactions with the search query, dispatches the apply event, and wipes persisted filters', () => {
-      // Pre-populate localStorage with stale filter values so we can
-      // verify they get cleared.
-      localStorage.setItem('transactions.filter.accountStatus', '"active"');
-      localStorage.setItem('transactions.filter.accountIds', JSON.stringify(['acc-1']));
-      localStorage.setItem('transactions.filter.categoryIds', JSON.stringify(['cat-1']));
-      localStorage.setItem('transactions.filter.payeeIds', JSON.stringify(['p-1']));
-      localStorage.setItem('transactions.filter.tagIds', JSON.stringify(['t-1']));
-      localStorage.setItem('transactions.filter.search', 'old');
-
-      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-      try {
-        render(<AppHeader />);
-        fireEvent.click(screen.getByLabelText('Open search'));
-        const input = screen.getByLabelText('Search transactions') as HTMLInputElement;
-        fireEvent.change(input, { target: { value: 'walmart' } });
-        fireEvent.keyDown(input, { key: 'Enter' });
-
-        expect(mockPush).toHaveBeenCalledWith('/transactions?search=walmart');
-
-        const applyEventCall = dispatchSpy.mock.calls.find(
-          (call) => call[0] instanceof CustomEvent && (call[0] as CustomEvent).type === 'transactions:applyHeaderSearch',
-        );
-        expect(applyEventCall).toBeDefined();
-        const applyEvent = applyEventCall![0] as CustomEvent<{ term: string }>;
-        expect(applyEvent.detail).toEqual({ term: 'walmart' });
-
-        // Persisted filters should be wiped before navigation.
-        expect(localStorage.getItem('transactions.filter.accountStatus')).toBeNull();
-        expect(localStorage.getItem('transactions.filter.accountIds')).toBeNull();
-        expect(localStorage.getItem('transactions.filter.categoryIds')).toBeNull();
-        expect(localStorage.getItem('transactions.filter.payeeIds')).toBeNull();
-        expect(localStorage.getItem('transactions.filter.tagIds')).toBeNull();
-        expect(localStorage.getItem('transactions.filter.search')).toBeNull();
-      } finally {
-        dispatchSpy.mockRestore();
-      }
-    });
-
-    it('URL-encodes the search term', () => {
-      render(<AppHeader />);
-      fireEvent.click(screen.getByLabelText('Open search'));
-      const input = screen.getByLabelText('Search transactions') as HTMLInputElement;
-      fireEvent.change(input, { target: { value: 'coffee & tea' } });
-      fireEvent.keyDown(input, { key: 'Enter' });
-      expect(mockPush).toHaveBeenCalledWith('/transactions?search=coffee%20%26%20tea');
-    });
-
-    it('trims whitespace and does nothing for empty submissions', () => {
-      render(<AppHeader />);
-      fireEvent.click(screen.getByLabelText('Open search'));
-      const input = screen.getByLabelText('Search transactions') as HTMLInputElement;
-      fireEvent.change(input, { target: { value: '   ' } });
-      fireEvent.keyDown(input, { key: 'Enter' });
-      expect(mockPush).not.toHaveBeenCalled();
-    });
-
-    it('closes the search box on Escape', () => {
-      render(<AppHeader />);
-      fireEvent.click(screen.getByLabelText('Open search'));
-      const input = screen.getByLabelText('Search transactions') as HTMLInputElement;
-      fireEvent.change(input, { target: { value: 'foo' } });
-      fireEvent.keyDown(input, { key: 'Escape' });
-      // Input is hidden (aria-hidden) after Escape; the open-search button label returns.
-      expect(screen.getByLabelText('Open search')).toBeInTheDocument();
-      expect(input.value).toBe('');
-      expect(mockPush).not.toHaveBeenCalled();
-    });
-
-    it('submits the search when clicking the icon a second time', () => {
-      render(<AppHeader />);
-      fireEvent.click(screen.getByLabelText('Open search'));
-      const input = screen.getByLabelText('Search transactions') as HTMLInputElement;
-      fireEvent.change(input, { target: { value: 'rent' } });
-      // Now the button label is "Search" because the box is open.
-      fireEvent.click(screen.getByLabelText('Search'));
-      expect(mockPush).toHaveBeenCalledWith('/transactions?search=rent');
+      expect(screen.queryByLabelText('Open search')).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /Search or jump to/ }));
+      expect(useCommandPaletteStore.getState().open).toBe(true);
     });
   });
 

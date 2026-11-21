@@ -35,12 +35,6 @@
   "more": "更多",
   "loggedOut": "已成功登出",
   "logoutNotConfirmed": "僅在此裝置上登出——伺服器未確認。請查看登入畫面上的通知。",
-  "search": {
-    "placeholder": "搜尋交易...",
-    "label": "搜尋交易",
-    "open": "開啟搜尋",
-    "submit": "搜尋"
-  },
   "backups": "備份",
   "sharedExpenses": "共同支出",
   "commandPalette": {

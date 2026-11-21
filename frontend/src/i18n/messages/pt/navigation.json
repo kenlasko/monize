@@ -35,12 +35,6 @@
   "more": "Mais",
   "loggedOut": "Sessão terminada com sucesso",
   "logoutNotConfirmed": "Sessão terminada apenas neste dispositivo — o servidor não confirmou. Veja o aviso no ecrã de início de sessão.",
-  "search": {
-    "placeholder": "Pesquisar transações...",
-    "label": "Pesquisar transações",
-    "open": "Abrir pesquisa",
-    "submit": "Pesquisar"
-  },
   "backups": "Cópias de segurança",
   "sharedExpenses": "Despesas partilhadas",
   "commandPalette": {

@@ -16,13 +16,12 @@ const userProps = (onOpen = vi.fn()): HeaderUserSlotProps => ({
 describe('header search slot', () => {
   beforeEach(() => useCommandPaletteStore.setState({ open: false }));
 
-  it('keeps the Standard inline search as given', () => {
-    render(createElement(HEADER_SEARCH_VARIANTS.standard, { standard: <input aria-label="inline search" /> }));
-    expect(screen.getByLabelText('inline search')).toBeInTheDocument();
-  });
-
-  it.each(['folio', 'pebble'] as const)('opens the command palette in the %s style', (style) => {
-    render(createElement(HEADER_SEARCH_VARIANTS[style]!, { standard: null }));
+  it.each(['standard', 'folio', 'pebble'] as const)('opens the command palette in the %s style', (style) => {
+    render(createElement(HEADER_SEARCH_VARIANTS[style]!, {}));
+    // Standard is the bare magnifying glass; the others carry the visible field.
+    const label = screen.getByText('Search or jump to');
+    if (style === 'standard') expect(label).toHaveClass('sr-only');
+    else expect(label).not.toHaveClass('sr-only');
     const trigger = screen.getByRole('button', { name: /Search or jump to/ });
     expect(trigger).toHaveAttribute('aria-keyshortcuts', 'Control+K Meta+K');
     fireEvent.click(trigger);

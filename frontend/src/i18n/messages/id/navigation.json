@@ -35,12 +35,6 @@
   "more": "Lainnya",
   "loggedOut": "Berhasil keluar",
   "logoutNotConfirmed": "Keluar hanya di perangkat ini — server tidak mengonfirmasi. Lihat pemberitahuan di layar masuk.",
-  "search": {
-    "placeholder": "Cari transaksi...",
-    "label": "Cari transaksi",
-    "open": "Buka pencarian",
-    "submit": "Cari"
-  },
   "backups": "Cadangan",
   "sharedExpenses": "Pengeluaran Bersama",
   "commandPalette": {

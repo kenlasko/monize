@@ -286,7 +286,7 @@ The instance administrator also sees an **Admin** menu with **User Management**,
 
 The right-hand side of the bar holds:
 
-- **Search** -- Search your transactions from anywhere
+- **Search** -- The magnifying glass (a **Search or jump to** field in the Folio and Pebble styles) opens the command palette (see [Searching the Guide](#searching-the-guide)) to find an account, payee, category, bill, security, report, setting or transaction from anywhere; the same box opens with **Ctrl+K** (**Cmd+K** on a Mac)
 - **Action History** -- Your recent changes, with **Undo** and **Redo**
 - **Notifications** -- The bell, with a count of unread notifications
 - **Help** -- The **?** icon: help for the page you're on, search the guide, keyboard shortcuts, take the tour, What's new, and links to report an issue or start a discussion on GitHub

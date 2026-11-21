@@ -35,12 +35,6 @@
   "more": "Więcej",
   "loggedOut": "Wylogowano pomyślnie",
   "logoutNotConfirmed": "Wylogowano tylko na tym urządzeniu — serwer tego nie potwierdził. Zobacz komunikat na ekranie logowania.",
-  "search": {
-    "placeholder": "Szukaj transakcji...",
-    "label": "Szukaj transakcji",
-    "open": "Otwórz wyszukiwanie",
-    "submit": "Szukaj"
-  },
   "backups": "Kopie zapasowe",
   "sharedExpenses": "Rozliczenia",
   "commandPalette": {

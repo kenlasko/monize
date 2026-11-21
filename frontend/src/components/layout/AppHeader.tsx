@@ -27,7 +27,6 @@ import { useMobileChromeStore } from '@/store/mobileChromeStore';
 import { useHelpMenuEntries } from '@/hooks/useHelpMenuEntries';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { useTourOpensToolsMenu } from '@/store/tourStore';
-import { navigateToTransactionSearch } from '@/hooks/useTransactionFilters';
 import { useVisibleNavLinks } from '@/hooks/useVisibleNavLinks';
 import {
   TOOLS_LINKS,
@@ -35,7 +34,6 @@ import {
   NAV_ICONS,
 } from '@/lib/nav-links';
 import toast from 'react-hot-toast';
-import { SearchSyntaxHelp } from '@/components/transactions/SearchSyntaxHelp';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { MENU_ENTER_CLASS, MENU_ORIGIN_LEFT } from '@/components/ui/menu-motion';
 import { renderForStyle, useUiStyle } from '@/hooks/useUiStyle';
@@ -109,51 +107,14 @@ export function AppHeader() {
   const setMobileMenuOpen = useMobileChromeStore((s) => s.setDrawerOpen);
   const collapsedTitle = useMobileChromeStore((s) => s.collapsedTitle);
   const hasTabBar = useHasMobileTabBar();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const toolsRef = useRef<HTMLDivElement>(null);
   const adminRef = useRef<HTMLDivElement>(null);
   const aiRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  // The syntax help renders through a portal, so a press inside it is not
-  // inside `searchRef`; it is named here so choosing an example keeps the
-  // search open.
-  const searchHelpRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useClickOutside(toolsRef, () => setToolsOpen(false));
   useClickOutside(aiRef, () => setAiOpen(false));
   useClickOutside(adminRef, () => setAdminOpen(false));
-  useClickOutside([searchRef, searchHelpRef], () => setSearchOpen(false));
-
-  // Focus the search input as it slides open.
-  useEffect(() => {
-    if (searchOpen) {
-      searchInputRef.current?.focus();
-    }
-  }, [searchOpen]);
-
-  const submitSearch = () => {
-    const term = searchTerm.trim();
-    if (!term) return;
-    navigateToTransactionSearch(term, router.push);
-    setSearchOpen(false);
-    setSearchTerm('');
-  };
-
-  const handleSearchKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-  ) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      submitSearch();
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      setSearchOpen(false);
-      setSearchTerm('');
-    }
-  };
 
   // Close the drawer on route change, the Back button's included.
   useEffect(() => {
@@ -174,7 +135,7 @@ export function AppHeader() {
   const { ref: headerRef, offset: scrollOffset } =
     useHideOnScroll<HTMLElement>(!hasTabBar);
   const anyMenuOpen =
-    mobileMenuOpen || searchOpen || toolsExpanded || aiOpen || adminOpen;
+    mobileMenuOpen || toolsExpanded || aiOpen || adminOpen;
   const headerOffset = anyMenuOpen ? 0 : scrollOffset;
 
   // Publish how far the header is currently slid up so sticky sub-navigation
@@ -233,70 +194,6 @@ export function AppHeader() {
       router.push('/login');
     }
   };
-
-  // The Standard header's inline transaction search; the other styles open
-  // the command palette from this slot instead (`header-controls.tsx`).
-  const inlineSearch = (
-    <div className="relative" ref={searchRef}>
-      <div className="flex items-center">
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          placeholder={t('search.placeholder')}
-          aria-label={t('search.label')}
-          aria-hidden={!searchOpen}
-          tabIndex={searchOpen ? 0 : -1}
-          className={`overflow-hidden transition-all duration-200 ease-out rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            searchOpen
-              ? 'w-44! sm:w-64! px-3 py-1.5 mr-1 opacity-100'
-              : 'w-0! px-0! py-1.5 border-transparent opacity-0 pointer-events-none'
-          }`}
-        />
-        {searchOpen && (
-          <SearchSyntaxHelp
-            popoverRef={searchHelpRef}
-            onExample={(example) => {
-              setSearchTerm(example);
-              searchInputRef.current?.focus();
-            }}
-          />
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            if (searchOpen) {
-              submitSearch();
-            } else {
-              setSearchOpen(true);
-            }
-          }}
-          aria-label={
-            searchOpen ? t('search.submit') : t('search.open')
-          }
-          title={t('search.label')}
-          className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-5 h-5"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-            />
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
 
   const settingsAnchor = tourAnchor(TOUR_ANCHORS.navSettings);
   const settingsButton = (
@@ -618,7 +515,7 @@ export function AppHeader() {
             )}
           </div>
           <div className="flex max-xl:flex-shrink-0 items-center space-x-1 sm:space-x-4 xl:space-x-1 2xl:space-x-4">
-            {renderForStyle(uiStyle, HEADER_SEARCH_VARIANTS, { standard: inlineSearch })}
+            {renderForStyle(uiStyle, HEADER_SEARCH_VARIANTS, {})}
             <ActionHistoryPanel />
             <NotificationBell />
             {/* Help, Settings and Log out live under More on a phone. */}
