@@ -5,18 +5,9 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
-import type { ScheduledKind } from '@/lib/scheduled-kind';
+import { KindDot } from '@/components/dashboard/variants/UpcomingBillsListModern';
 import type { BillsOutlookProps } from './bills-outlook-view';
 
-function KindDot({ kind }: { kind: ScheduledKind }) {
-  const tone =
-    kind === 'bill'
-      ? 'bg-red-600 dark:bg-red-400'
-      : kind === 'deposit'
-        ? 'bg-green-600 dark:bg-green-400'
-        : 'border-2 border-gray-500 dark:border-gray-400';
-  return <span aria-hidden="true" className={`block h-2 w-2 flex-shrink-0 rounded-full ${tone}`} />;
-}
 
 /**
  * The Modern outlook band: an accent "next up" block for the nearest

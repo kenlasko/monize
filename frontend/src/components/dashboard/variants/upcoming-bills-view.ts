@@ -66,3 +66,19 @@ export interface UpcomingBillsListProps {
   onOpen: (id: string) => void;
   onShowAll: () => void;
 }
+
+/**
+ * A strip bar's height in px: to scale against the largest magnitude on the
+ * strip, or a fixed height when the strip cannot be scaled (mixed currencies,
+ * an unknown amount). Each strip passes its own sizes.
+ */
+export function stripBarHeight(
+  item: UpcomingStripItem,
+  scaleMax: number | null,
+  maxPx: number,
+  unscaledPx: number,
+): number {
+  if (scaleMax === null || item.magnitude === null || scaleMax === 0) return unscaledPx;
+  return Math.max(3, Math.round((item.magnitude / scaleMax) * maxPx));
+}
+

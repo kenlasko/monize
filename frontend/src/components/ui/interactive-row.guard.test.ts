@@ -68,8 +68,6 @@ const ACTIVATION_BLOCK = [
 const UNCONVERTED: Record<string, string> = {
   '/src/components/accounts/loan-detail/SavedScenariosPanel.tsx':
     'pre-existing near-copy on a role="button" row with a `focus-visible:ring-*` ring; not owned by this change',
-  '/src/components/dashboard/UpcomingBills.tsx':
-    'pre-existing near-copy on a role="button" div with a `focus:ring-*` ring; not owned by this change',
   '/src/app/reports/page.tsx':
     'pre-existing near-copy on the favourite-star role="button" overlay, whose handler re-casts the event; not owned by this change',
 };

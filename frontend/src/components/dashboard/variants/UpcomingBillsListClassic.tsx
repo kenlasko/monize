@@ -7,14 +7,18 @@ import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { chartColors } from '@/lib/chart-colors';
 import { NegativeBalanceLegend } from './UpcomingBillsListStandard';
-import type { UpcomingBillsListProps, UpcomingStrip, UpcomingStripItem } from './upcoming-bills-view';
+import {
+  stripBarHeight,
+  type UpcomingBillsListProps,
+  type UpcomingStrip,
+  type UpcomingStripItem,
+} from './upcoming-bills-view';
 
 const BAR_MAX_PX = 52;
 const BAR_UNSCALED_PX = 20;
 
 function barHeight(item: UpcomingStripItem, scaleMax: number | null): number {
-  if (scaleMax === null || item.magnitude === null || scaleMax === 0) return BAR_UNSCALED_PX;
-  return Math.max(3, Math.round((item.magnitude / scaleMax) * BAR_MAX_PX));
+  return stripBarHeight(item, scaleMax, BAR_MAX_PX, BAR_UNSCALED_PX);
 }
 
 /**

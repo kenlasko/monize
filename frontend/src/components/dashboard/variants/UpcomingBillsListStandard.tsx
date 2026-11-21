@@ -5,6 +5,7 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import type { UpcomingBillsListProps } from './upcoming-bills-view';
+import { activateOnKey } from '@/components/ui/interactive-row';
 
 /** Upcoming Bills' list view in the Standard style: one bordered tile per occurrence. */
 export function UpcomingBillsListStandard({ rows, hiddenCount, onOpen, onShowAll }: UpcomingBillsListProps) {
@@ -18,12 +19,7 @@ export function UpcomingBillsListStandard({ rows, hiddenCount, onOpen, onShowAll
             role="button"
             tabIndex={0}
             onClick={() => onOpen(row.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onOpen(row.id);
-              }
-            }}
+            onKeyDown={activateOnKey(() => onOpen(row.id))}
             title={t('upcomingBills.postTransaction')}
             className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 ${HOVER_ROW_ON_CARD} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               row.overdue

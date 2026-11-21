@@ -3,15 +3,18 @@
 import { useTranslations } from 'next-intl';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { chartColors } from '@/lib/chart-colors';
-import type { UpcomingStrip, UpcomingStripItem } from '@/components/dashboard/variants/upcoming-bills-view';
+import {
+  stripBarHeight,
+  type UpcomingStrip,
+  type UpcomingStripItem,
+} from '@/components/dashboard/variants/upcoming-bills-view';
 import type { BillsOutlookProps } from './bills-outlook-view';
 
 const BAR_MAX_PX = 44;
 const BAR_UNSCALED_PX = 18;
 
 function barHeight(item: UpcomingStripItem, scaleMax: number | null): number {
-  if (scaleMax === null || item.magnitude === null || scaleMax === 0) return BAR_UNSCALED_PX;
-  return Math.max(3, Math.round((item.magnitude / scaleMax) * BAR_MAX_PX));
+  return stripBarHeight(item, scaleMax, BAR_MAX_PX, BAR_UNSCALED_PX);
 }
 
 /** The in / out strip: deposits rise above the rule, bills hang below it. */
