@@ -66,6 +66,7 @@ import {
 } from './register-style-data';
 import { PebbleRegister } from './variants/PebbleRegister';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { FolioRegisterFoot } from './variants/FolioRegisterFoot';
 import { useIsLgUp } from '@/hooks/useIsMobile';
 
 interface TransactionListProps {
@@ -423,7 +424,12 @@ export function TransactionList({
     onEdit?.(transaction);
   }, [onEdit]);
 
-  const { cellPadding, headerPadding } = useTableDensity(density);
+  // The Folio register: Payment / Deposit columns and the date as a group
+  // row. The foreign-currency fee surface keeps its own columns and its Date
+  // column. Its two money columns are one more than a phone's register has
+  // room for at the default inset, so it takes the `wide` scale's.
+  const splitAmount = uiStyle === 'folio' && !showFxColumns;
+  const { cellPadding, headerPadding } = useTableDensity(density, splitAmount ? 'wide' : 'default');
 
   // Pebble draws the register as a list of rows with a selected-row inspector
   // beside it (from `lg`). Below that a tap opens the editor, exactly as the
@@ -642,10 +648,7 @@ export function TransactionList({
   const sortedByDate = isSortedByDate(dataSort);
   const showRunningBalance =
     (isSingleAccountView || startingBalance !== undefined) && sortedByDate;
-  // The Folio register: Payment / Deposit columns and the date as a group
-  // row. The foreign-currency fee surface keeps its own columns and its Date
-  // column. Group rows only mean something while the rows run in date order.
-  const splitAmount = uiStyle === 'folio' && !showFxColumns;
+  // Group rows only mean something while the rows run in date order.
   const groupedByDate = splitAmount && sortedByDate;
   // Folio prints the memo inline after the payee, so its Description column
   // is not drawn. The chooser still reads the reader's own set.
@@ -914,6 +917,7 @@ export function TransactionList({
           categoryColorMap={categoryColorMap}
           categoryLabelMap={categoryLabelMap}
           categoryIconMap={categoryIconMap}
+          hidden={hiddenColumns}
           sortStrip={
             <table className="ui-pebble-sortstrip">
               <thead>
@@ -1066,7 +1070,7 @@ export function TransactionList({
                     <button
                       type="button"
                       onClick={() => onSortChange('date')}
-                      className="ui-register-sort"
+                      className="ui-register-sort whitespace-nowrap"
                       aria-label={`${t('list.header.date')}: ${sort.direction === 'asc' ? '\u2191' : '\u2193'}`}
                     >
                       {t('list.header.date')} {sort.direction === 'asc' ? '\u2191' : '\u2193'}
@@ -1282,6 +1286,7 @@ export function TransactionList({
                     isHighlighted={!!highlightTransactionId && transaction.id === highlightTransactionId}
                     showFxColumns={showFxColumns}
                     hidden={tableHidden}
+                    hideMemo={hiddenColumns.has('description')}
                     uiStyle={uiStyle}
                     groupedByDate={groupedByDate}
                     balanceRulePct={styleData?.rulePct.get(transaction.id)}
@@ -1291,35 +1296,14 @@ export function TransactionList({
             })}
           </tbody>
           {groupedByDate && !wrapped && styleData && (
-            <tfoot>
-              <tr className="ui-register-foot">
-                <td
-                  colSpan={Math.max(1, colCount - 3 - (showRunningBalance ? 1 : 0) - (isVisible('status') ? 1 : 0))}
-                  className={cellPadding}
-                >
-                  {t('list.folio.entriesShown', { count: styleData.totals.count })}
-                </td>
-                <td className={`${cellPadding} ui-register-money text-right`}>
-                  <PartialTotal total={styleData.totals.payments} displayCurrency={styleData.totals.currency}>
-                    {formatCurrency(styleData.totals.payments.value, styleData.totals.currency)}
-                  </PartialTotal>
-                </td>
-                <td className={`${cellPadding} ui-register-money ui-register-deposit text-right`}>
-                  <PartialTotal total={styleData.totals.deposits} displayCurrency={styleData.totals.currency}>
-                    {formatCurrency(styleData.totals.deposits.value, styleData.totals.currency)}
-                  </PartialTotal>
-                </td>
-                {showRunningBalance && (
-                  <td className={`${cellPadding} ui-register-money text-right`}>
-                    <PartialTotal total={styleData.totals.net} displayCurrency={styleData.totals.currency}>
-                      {styleData.totals.net.value > 0 ? '+' : styleData.totals.net.value < 0 ? '-' : ''}
-                      {formatCurrency(Math.abs(styleData.totals.net.value), styleData.totals.currency)}
-                    </PartialTotal>
-                  </td>
-                )}
-                <td colSpan={1 + (isVisible('status') ? 1 : 0)} />
-              </tr>
-            </tfoot>
+            <FolioRegisterFoot
+              totals={styleData.totals}
+              cellPadding={cellPadding}
+              selectionMode={selectionMode}
+              isSingleAccountView={isSingleAccountView}
+              showRunningBalance={showRunningBalance}
+              hidden={tableHidden}
+            />
           )}
         </table>
       </div>

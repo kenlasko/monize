@@ -67,6 +67,8 @@ export interface PebbleRegisterProps {
   categoryLabelMap?: Map<string, string>;
   /** Inherited-aware icon per category id; see buildCategoryIconMap. */
   categoryIconMap?: Map<string, string | null>;
+  /** The reader's hidden columns; a hidden Description drops the memo after the payee. */
+  hidden: ReadonlySet<string>;
   sortStrip: React.ReactNode;
 }
 
@@ -213,7 +215,7 @@ function PebbleRow({
       <span className="min-w-0 flex-1 sm:flex-[3_1_0%]">
         <span className={`block truncate font-semibold text-[15px] ${isVoid ? 'line-through' : ''}`}>
           {label || '-'}
-          {tx.description && (
+          {tx.description && !p.hidden.has('description') && (
             <span className={`font-normal ${inspected ? 'opacity-70' : 'text-gray-500 dark:text-gray-400'} max-sm:hidden`}>
               {' · '}<LinkifiedText text={tx.description} />
             </span>

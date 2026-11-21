@@ -260,6 +260,12 @@ export interface TransactionRowProps {
    */
   hidden?: ReadonlySet<string>;
   /**
+   * The reader has hidden Description. Folio always leaves the column out of
+   * `hidden` (the memo is printed inline after the payee), so the set alone
+   * cannot say the reader asked for the text gone too.
+   */
+  hideMemo?: boolean;
+  /**
    * The active UI style. Only 'folio' changes this row: Payment and Deposit
    * columns in place of Amount, the memo inline after the payee, a status
    * mark, and a rule under the balance. Anything else draws the standard row.
@@ -314,6 +320,7 @@ export const TransactionRow = memo(function TransactionRow({
   isHighlighted,
   showFxColumns = false,
   hidden = NO_HIDDEN_COLUMNS,
+  hideMemo = false,
   uiStyle = 'standard',
   groupedByDate = false,
   balanceRulePct,
@@ -498,6 +505,7 @@ export const TransactionRow = memo(function TransactionRow({
                 <>
                   {transaction.category && (
                     <CategoryPill
+                      ledger={splitAmount}
                       name={transaction.category.name}
                       color={categoryColor}
                       icon={categoryIcon}
@@ -549,6 +557,7 @@ export const TransactionRow = memo(function TransactionRow({
                 </span>
               ) : transaction.category ? (
                 <CategoryPill
+                  ledger={splitAmount}
                   name={transaction.category.name}
                   color={categoryColor}
                   icon={categoryIcon}
@@ -728,7 +737,7 @@ export const TransactionRow = memo(function TransactionRow({
               {payeeLabel || '-'}
             </div>
           )}
-          {splitAmount && transaction.description && (
+          {splitAmount && !hideMemo && transaction.description && (
             <span className="ui-register-memo truncate text-sm" title={transaction.description}>
               {'\u00B7 '}<LinkifiedText text={transaction.description} />
             </span>
@@ -747,6 +756,7 @@ export const TransactionRow = memo(function TransactionRow({
           <span className="inline-flex items-center gap-1 flex-wrap">
             {transaction.category && (
               <CategoryPill
+                ledger={splitAmount}
                 name={transaction.category.name}
                 color={categoryColor}
                 icon={categoryIcon}
@@ -850,6 +860,7 @@ export const TransactionRow = memo(function TransactionRow({
             return (
               <span className="inline-flex items-center">
                 <CategoryPill
+                  ledger={splitAmount}
                   name={transaction.category!.name}
                   color={categoryColor}
                   icon={categoryIcon}

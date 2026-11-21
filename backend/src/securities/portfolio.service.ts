@@ -34,7 +34,10 @@ import {
 import type { IncompleteDataRanges } from "../net-worth/incomplete-data-ranges.util";
 import { YahooFinanceService } from "./yahoo-finance.service";
 import { QuoteProviderRegistry } from "./providers/quote-provider.registry";
-import { isPricedByQuoteProvider } from "./provider-priced.util";
+import {
+  isPricedByQuoteProvider,
+  isRefreshEligible,
+} from "./provider-priced.util";
 import { roundMoney } from "../common/round.util";
 import { collectTagKeys } from "../tags/tag-key-value.util";
 import {
@@ -2666,8 +2669,11 @@ export class PortfolioService {
         userDefaultProvider,
       );
       // A bond-linked security has no quote feed: it is valued at its stored
-      // closes (the bond engine's), like an inactive one (INV-BOND-005).
-      const providerPriced = isPricedByQuoteProvider(security);
+      // closes (the bond engine's), like an inactive one (INV-BOND-005). A
+      // security with automatic updates disabled gets the same treatment: the
+      // user's own switch, not only the bond link, decides whether a provider
+      // is ever asked (#2302).
+      const providerEligible = isRefreshEligible(security);
       return {
         securityId: security.id,
         symbol: security.symbol,
@@ -2676,7 +2682,7 @@ export class PortfolioService {
         currencyCode: security.currencyCode,
         quantity,
         hasIntraday: typeof primaryProvider.fetchIntradaySeries === "function",
-        fetchIntraday: fetchIntraday && providerPriced,
+        fetchIntraday: fetchIntraday && providerEligible,
       };
     };
 

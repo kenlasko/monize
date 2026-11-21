@@ -35,4 +35,30 @@ describe('CategoryPill', () => {
     const pill = screen.getByText('Misc').parentElement as HTMLElement;
     expect(pill.style.backgroundColor).toContain('--category-bg-base');
   });
+
+  describe('ledger (Folio)', () => {
+    it('draws a colour marker and plain text, with no filled capsule or icon', () => {
+      const { container } = render(
+        <CategoryPill name="Groceries" color="#22c55e" icon="shopping-cart" density="normal" ledger />,
+      );
+      const root = screen.getByText('Groceries').parentElement as HTMLElement;
+      expect(root).toHaveClass('ui-register-cat');
+      expect(root).not.toHaveClass('rounded-full');
+      expect(root.style.backgroundColor).toBe('');
+      expect(container.querySelector('svg')).toBeNull();
+      const mark = container.querySelector('.ui-register-cat-mark') as HTMLElement;
+      expect(mark.style.backgroundColor).toBe('rgb(34, 197, 94)');
+    });
+
+    it('stays a filter button when clickable, and a colourless category gets the neutral marker', () => {
+      const onClick = vi.fn();
+      const { container } = render(
+        <CategoryPill name="Misc" color={null} density="dense" onClick={onClick} ledger />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /Misc/ }));
+      expect(onClick).toHaveBeenCalled();
+      expect(screen.getByRole('button')).toHaveClass('ui-register-cat-link');
+      expect((container.querySelector('.ui-register-cat-mark') as HTMLElement).style.backgroundColor).toBe('');
+    });
+  });
 });
