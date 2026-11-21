@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@/test/render';
 import { TransactionList } from './TransactionList';
 import { Transaction, TransactionStatus } from '@/types/transaction';
+import { useHiddenColumnsStore } from '@/store/hiddenColumnsStore';
 
 /**
  * The register under the Folio and Pebble UI styles. Standard is covered by
@@ -167,9 +168,58 @@ describe('Folio register', () => {
   });
 });
 
+describe('Folio register, category', () => {
+  it('prints the category as ledger text, and keeps the capsule in Standard', () => {
+    style.value = 'folio';
+    const folio = renderList();
+    expect(folio.container.querySelector('.ui-register-cat')).not.toBeNull();
+    expect(folio.container.querySelector('.ui-register-cat.rounded-full')).toBeNull();
+    expect(screen.getAllByText('Groceries').length).toBeGreaterThan(0);
+    folio.unmount();
+
+    style.value = 'standard';
+    const standard = renderList();
+    expect(standard.container.querySelector('.ui-register-cat')).toBeNull();
+  });
+});
+
+describe('Folio register, Description hidden', () => {
+  beforeEach(() => {
+    style.value = 'folio';
+    useHiddenColumnsStore.getState().setHidden('transactions', []);
+  });
+
+  it('prints the memo after the payee until the reader hides Description, then drops it', () => {
+    const { container, unmount } = renderList();
+    expect(container.querySelector('.ui-register-memo')).not.toBeNull();
+    unmount();
+
+    useHiddenColumnsStore.getState().setHidden('transactions', ['description']);
+    const hidden = renderList();
+    expect(hidden.container.querySelectorAll('tbody tr.ui-register-row').length).toBeGreaterThan(0);
+    expect(hidden.container.querySelector('.ui-register-memo')).toBeNull();
+    expect(screen.queryByText('Weekly shop')).toBeNull();
+  });
+});
+
 describe('Pebble register', () => {
   beforeEach(() => {
     style.value = 'pebble';
+    useHiddenColumnsStore.getState().setHidden('transactions', []);
+  });
+
+  it('drops the description after the payee when the reader hides Description', () => {
+    const { container, unmount } = renderList();
+    const rowsText = () =>
+      Array.from(container.querySelectorAll('[data-testid="pebble-row"]')).map((r) => r.textContent);
+    expect(rowsText().some((t) => t?.includes(' · '))).toBe(true);
+    unmount();
+
+    useHiddenColumnsStore.getState().setHidden('transactions', ['description']);
+    const hidden = renderList();
+    const rows = Array.from(hidden.container.querySelectorAll('[data-testid="pebble-row"]'));
+    expect(rows).toHaveLength(3);
+    expect(rows.some((r) => r.textContent?.includes(' · '))).toBe(false);
   });
 
   it('draws day blocks of rows instead of a table body', () => {

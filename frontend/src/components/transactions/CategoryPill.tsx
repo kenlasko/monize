@@ -14,6 +14,14 @@ interface CategoryPillProps {
   maxWidthClass?: string;
   /** Renders as a filter button when set, a plain chip otherwise. */
   onClick?: (e: React.MouseEvent) => void;
+  /**
+   * The Folio register's form: no filled capsule, a small square marker in the
+   * category's colour ahead of plain ledger text. Folio is a printed ledger
+   * (rules, small caps, no rounded chips), and a coloured pill is the one
+   * element in a row that reads as an app widget rather than a line of print.
+   * The icon is left out: the marker carries the colour, the name carries the rest.
+   */
+  ledger?: boolean;
 }
 
 /**
@@ -31,7 +39,32 @@ export function CategoryPill({
   title,
   maxWidthClass = 'max-w-[160px]',
   onClick,
+  ledger = false,
 }: CategoryPillProps) {
+  if (ledger) {
+    const ledgerClass = `ui-register-cat inline-flex items-center gap-1.5 text-sm ${maxWidthClass}${
+      onClick ? ' ui-register-cat-link' : ''
+    }`;
+    const ledgerBody = (
+      <>
+        <span
+          aria-hidden
+          className="ui-register-cat-mark"
+          style={color ? { backgroundColor: color } : undefined}
+        />
+        <span className="truncate">{name}</span>
+      </>
+    );
+    return onClick ? (
+      <button onClick={onClick} className={ledgerClass} title={title ?? name}>
+        {ledgerBody}
+      </button>
+    ) : (
+      <span className={ledgerClass} title={title ?? name}>
+        {ledgerBody}
+      </span>
+    );
+  }
   const className = `inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full ${maxWidthClass} ${
     density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'
   }${onClick ? ' hover:opacity-80 transition-opacity' : ''}`;
