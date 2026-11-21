@@ -1320,6 +1320,46 @@ WP4 writes; they avoid `--` (frontend rule).
 | balanceMismatch (existing, post-import) | | | {count} accounts ended with a balance that differs from the one computed from the KMyMoney file. |
 | holdingsMismatch (existing, post-import) | | | {count} holdings do not match the shares computed from your KMyMoney file. |
 
+### 5.13 Names longer than their column
+
+Issue #2313. A KMyMoney name has no length limit (a payee created from a SEPA direct debit carries the
+whole remittance text); the Monize columns a name is written to are `VARCHAR(255)`: `payees.name` (and
+`transactions.payee_name`, `scheduled_transactions.payee_name`), `accounts.name`, `categories.name`,
+`securities.name`, `scheduled_transactions.name` and `accounts.institution`. An INSERT of a longer name
+failed the whole import.
+
+`applyKmyNameFixes` (`backend/src/import/kmy/map/kmy-name-fixes.ts`) runs on the raw model before
+anything else is mapped, so every place a name is copied to reads the same replacement:
+
+| Element | `kind` | `handle` | Bound |
+|---|---|---|---|
+| payee | `payee` | payee ordinal | 255 |
+| asset or liability account (types in `MONIZE_TYPE`) | `account` | account ordinal | 255 |
+| investment account (type 7) | `account` | account ordinal | 255 less " - " and the longest pair suffix (this locale's and the English words) |
+| income, expense or equity account | `category` | account ordinal | 255 |
+| security | `security` | security ordinal | 255 |
+| schedule | `schedule` | schedule ordinal | 255 |
+| institution | `institution` | institution ordinal | 255 |
+
+- Length is counted in code points, as PostgreSQL counts a `VARCHAR`'s, and a cut never splits a
+  surrogate pair. Standard and stock accounts are never listed: neither is written under its own name.
+- A name over its bound takes the user's rename from `options.renames` when it is usable (not blank and
+  within the bound once trimmed); otherwise it is cut to the bound and trimmed. A rename of a name that
+  fits, or of another kind, is ignored: this is not a general rename feature. The import therefore never
+  fails on a name's length, with or without a client that sends renames.
+- The preview carries `nameFixes`: at most `KMY_MAX_NAME_FIXES` (1,000) entries in file order by kind,
+  each with the name cut at `KMY_NAME_FIX_ORIGINAL_CHARS` (1,000), its whole length and its bound, plus
+  the count `omitted` of the rest, which are cut and never listed. The list is computed from the file
+  before any rename, so it does not change with the renames sent. `options.renames` echoes the name each
+  listed entry is imported under, so the wizard starts from the shortened names.
+- The account mapper also keeps what it appends inside the column (`fitName`): the pair suffix and a
+  duplicate's " (n)" cut the base rather than overflow. A security named by its symbol or id when it has
+  no name is cut to 255.
+- Renamed payees are grouped like any other: two given the same name (ignoring case) become one payee.
+- `StartMnyImportDto.options.renames` is `MnyRenameDto[]`: `kind` one of the six values, `handle` an
+  integer of at least 1, `name` a string of at most 255; at most `MNY_MAX_OPTION_ITEMS` entries. A Money
+  file ignores the field; Money's Jet text columns hold at most 255 characters already.
+
 ## 6. Verification
 
 ### 6.1 Expectations computed from the raw file
@@ -1440,6 +1480,7 @@ dated after it as a discrepancy.
 | Bills panel | keep, copy | heading "Scheduled transactions to create", KMyMoney explainer; the unsupported note never shows |
 | Options card (six toggles) | keep | KMyMoney hints for unused payees and categories (KMyMoney seeds its category tree from a template), price history and start fresh |
 | Wipe confirmation dialog | keep | neutral copy |
+| Names too long for Monize | new | shown when `nameFixes` lists any: each name as KMyMoney has it (with its length) beside an input holding the name the import will use, `maxLength` at the entry's bound, a character counter, "Enter a name." on a blank one; **Start import** is disabled while any is blank; `omitted` is counted under the list (5.13) |
 | Notes (warnings panel) | keep | `kmyWarnings.*`, "Review in KMyMoney" footer; out-of-scope items (budgets, reports, ...) appear here as warnings |
 | Progress | keep | heading "Importing your KMyMoney file"; same phases ("Scheduled bills" phase label reused) |
 | Verification report | keep, copy | "From KMyMoney file", "Shares in KMyMoney", holdings explainer saying the figures are KMyMoney's own balance computation; a secondary "import rows sum to X" line under the expected figure when the backend's `mappedDiffers` is true (the frontend applies no tolerance of its own); each line formatted in its own `currencyCode`, the file's base currency when absent; `kmyComplete.asOf` above the table naming `fileAsOf`; download name strips `.kmy` / `.xml`; "Payee aliases" and "Default categories" count tiles when `payeeAliasesCreated` / `payeeDefaultCategoriesSet` are above zero, like the conditional tag and securities tiles |
