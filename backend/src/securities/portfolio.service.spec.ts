@@ -4353,6 +4353,31 @@ describe("PortfolioService", () => {
       // path, which the next test pins (its stored close, per day).
     });
 
+    it("never asks a quote provider for a holding with automatic price updates disabled (#2302)", async () => {
+      accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
+      holdingsRepository.find.mockResolvedValue([
+        mockHoldingAAPL,
+        {
+          ...mockHoldingVFV,
+          security: {
+            ...mockSecurityVFV,
+            skipPriceUpdates: true,
+          } as any,
+        },
+      ]);
+      yahooFinanceService.fetchIntradaySeries.mockResolvedValue([
+        { timestamp: new Date("2026-05-06T13:30:00.000Z"), close: 100 },
+      ]);
+      exchangeRateService.getLatestRate.mockResolvedValue(1.4);
+
+      await service.getIntradayValueSeries(userId, { range: "1d" });
+
+      const asked = yahooFinanceService.fetchIntradaySeries.mock.calls.map(
+        ([symbol]: [string]) => symbol,
+      );
+      expect(asked).toEqual([mockSecurityAAPL.symbol]);
+    });
+
     it("caches results for 60 seconds keyed by user/range/accounts/currency", async () => {
       accountsRepository.find.mockResolvedValue([mockBrokerageAccount]);
       holdingsRepository.find.mockResolvedValue([mockHoldingAAPL]);

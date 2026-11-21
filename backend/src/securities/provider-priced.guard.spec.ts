@@ -27,6 +27,7 @@ const PROVIDER_CALL =
   /\.(?:fetchQuote|fetchHistoricalSeries|fetchHistoricalWindowSeries|fetchIntradaySeries|fetchHistorical|fetchHistoricalWindow)\s*\(/;
 
 const PRICE_SERVICE = "securities/security-price.service.ts";
+const PROVIDER_PRICED_UTIL = "securities/provider-priced.util.ts";
 
 /**
  * Files that call a provider's fetch method without pricing a security, each with
@@ -177,7 +178,7 @@ describe("a bond-linked security is never priced by a quote provider (INV-BOND-0
   });
 
   it("builds the refresh-eligibility predicate on the one named predicate", () => {
-    const methodless = read(PRICE_SERVICE);
+    const methodless = read(PROVIDER_PRICED_UTIL);
     const body = /function isRefreshEligible\([\s\S]*?\n\}\n/.exec(methodless);
     expect(body).not.toBeNull();
     expect(body![0]).toMatch(/\bisPricedByQuoteProvider\s*\(/);
