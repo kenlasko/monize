@@ -2053,11 +2053,11 @@ function TransactionsContent() {
         ) : (
           <>
         {/* Transactions List */}
-        {/* `clip`, not `hidden`: both crop to the rounded card, but `hidden`
-            makes the card a scroll container, and the Modern register's
-            inspector is `sticky` against the window, which a scrolling
-            ancestor would capture (the same reason SwipeShell clips). */}
-        <div className={`${CARD_CLASS} overflow-clip`}>
+        {/* `ui-register-card`: Modern clips this card rather than hiding its
+            overflow (ui-styles-register.css), because `hidden` makes it a
+            scroll container and the Modern inspector is `sticky` against the
+            window. Standard and Classic keep `hidden`. */}
+        <div className={`${CARD_CLASS} overflow-hidden ui-register-card`}>
           <div ref={swipeRef} {...(paginates ? { [SWIPE_PAGINATE_ATTR]: 'true' } : {})}>
           {isLoading && transactions.length === 0 ? (
             <LoadingSpinner text={t('page.loading')} />

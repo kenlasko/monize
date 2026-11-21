@@ -615,7 +615,7 @@ function ReconcileContent() {
             (cancelling <main>'s px-4) so the table gets the full device width;
             the corners square off there because a rounded card flush with the
             viewport reads as a clipping fault. */}
-        <div className={`${CARD_CLASS} max-sm:-mx-4 max-sm:rounded-none overflow-hidden`}>
+        <div className={`${CARD_CLASS} max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 overflow-hidden`}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('list.heading', { count: totalCount })}

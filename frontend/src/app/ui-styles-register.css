@@ -212,3 +212,11 @@ html[data-ui-style='classic'] .ui-register .ui-register-payee {
      squeeze Status out of the row. They truncate instead. */
   max-width: 0;
 }
+
+/* The list card clips instead of hiding its overflow in Modern: `hidden`
+   makes it a scroll container, which captures the inspector's `sticky`
+   and pins it to the card's top. Modern has no column menu that could
+   reach past the card. */
+html[data-ui-style='modern'] .ui-register-card {
+  overflow: clip;
+}
