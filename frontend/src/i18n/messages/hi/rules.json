@@ -4,7 +4,8 @@
     "subtitle": "जब कोई लेन-देन बनाया या आयात किया जाए, तब टैग, श्रेणियाँ और प्राप्तकर्ता अपने-आप भरें",
     "createButton": "नियम बनाएँ",
     "loading": "नियम लोड हो रहे हैं...",
-    "totalCount": "{count, plural, one {# नियम} other {# नियम}}"
+    "totalCount": "{count, plural, one {# नियम} other {# नियम}}",
+    "eyebrow": "स्वचालन"
   },
   "empty": {
     "title": "अभी कोई नियम नहीं है",

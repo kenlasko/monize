@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Email Receipts",
-    "subtitle": "Read order confirmations from a mailbox and turn them into itemized transactions: what is connected, what became of each email, and what waits for you"
+    "subtitle": "Read order confirmations from a mailbox and turn them into itemized transactions: what is connected, what became of each email, and what waits for you",
+    "eyebrow": "Receipts inbox"
   },
   "mailbox": {
     "heading": "Mailbox",

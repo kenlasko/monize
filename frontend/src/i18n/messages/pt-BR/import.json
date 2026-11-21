@@ -38,7 +38,8 @@
   "page": {
     "title": "Importar Transações",
     "subtitle": "Importar transações a partir de arquivos QIF/QMTF, OFX/QFX ou CSV, ou trazer um arquivo completo do Microsoft Money (.mny) ou do KMyMoney (.kmy, .xml)",
-    "stepOf": "Etapa {current} de {total}"
+    "stepOf": "Etapa {current} de {total}",
+    "eyebrow": "Trazer transações"
   },
   "upload": {
     "heading": "Carregar Arquivos de Transações",

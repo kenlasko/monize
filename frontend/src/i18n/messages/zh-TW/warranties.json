@@ -73,7 +73,8 @@
       "prefillFailed": "無法載入該筆交易，因此保固將從空白開始",
       "exported": "{count, plural, other {已匯出 {shown} 項保固}}",
       "exportFailed": "無法匯出保固"
-    }
+    },
+    "eyebrow": "保固登記簿"
   },
   "status": {
     "lifetime": "終身",

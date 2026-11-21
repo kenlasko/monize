@@ -35,7 +35,8 @@
       "createFailed": "Не вдалося створити тег",
       "updateFailed": "Не вдалося оновити тег",
       "deleteFailed": "Не вдалося видалити тег"
-    }
+    },
+    "eyebrow": "Мітки"
   },
   "list": {
     "empty": {

@@ -31,6 +31,7 @@ import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { quoteSearchValue } from '@/lib/search-query';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type SortField = 'date' | 'amount' | 'payee' | 'account';
 
@@ -308,13 +309,13 @@ export function UncategorizedTransactionsReport() {
         </div>
       ) : (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('uncategorizedTransactions.totalUncategorized')}</div>
           <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
             {summary.totalCount}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('uncategorizedTransactions.uncategorizedExpenses')}</div>
           <div className="text-xl font-bold text-red-600 dark:text-red-400">
             {summary.expenseCount}
@@ -325,7 +326,7 @@ export function UncategorizedTransactionsReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('uncategorizedTransactions.uncategorizedIncome')}</div>
           <div className="text-xl font-bold text-green-600 dark:text-green-400">
             {summary.incomeCount}
@@ -336,7 +337,7 @@ export function UncategorizedTransactionsReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('uncategorizedTransactions.showing')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {filteredAndSortedTransactions.length}
@@ -349,7 +350,7 @@ export function UncategorizedTransactionsReport() {
       )}
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <DateRangeSelector
             ranges={['1m', '3m', '6m', '1y', 'all']}
@@ -395,18 +396,18 @@ export function UncategorizedTransactionsReport() {
       {error ? (
         <ReportError onRetry={reload} />
       ) : isLoading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
           </div>
         </div>
       ) : summary.totalCount === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState icon={<CheckCircleIcon />} title={t('uncategorizedTransactions.allCategorized')} />
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

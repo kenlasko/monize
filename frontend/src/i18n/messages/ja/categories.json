@@ -16,7 +16,8 @@
     "summaryTotal": "カテゴリ合計",
     "summaryIncome": "収入カテゴリ",
     "summaryExpense": "支出カテゴリ",
-    "summaryTopLevel": "トップレベル"
+    "summaryTopLevel": "トップレベル",
+    "eyebrow": "カテゴリ一覧"
   },
   "empty": {
     "heading": "カテゴリがまだありません",

@@ -358,12 +358,13 @@ function ImportContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='importTransactions'
         />
         {/* Progress indicator */}
         <div className="mb-8">
-          <ol className="flex items-center justify-center space-x-4">
+          <ol className="ui-import-steps flex items-center justify-center space-x-4">
             {(() => {
               // A Money or KMyMoney import has its own three steps: the text
               // formats' mapping steps never apply, and its review and progress
@@ -398,13 +399,14 @@ function ImportContent() {
                 return (
                   <li
                     key={s}
-                    className="flex items-center"
+                    className="ui-import-step flex items-center"
+                    data-state={isComplete ? 'done' : isActive ? 'current' : 'todo'}
                     aria-current={isActive ? 'step' : undefined}
                     aria-label={t('page.stepOf', { current: visibleIndex + 1, total: visibleSteps.length })}
                   >
                     <div
                       aria-hidden="true"
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      className={`ui-import-dot w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                         isComplete
                           ? 'bg-blue-600 text-white'
                           : isActive
@@ -426,7 +428,7 @@ function ImportContent() {
                     </div>
                     {!isLastStep && (
                       <div
-                        className={`w-12 h-1 ${
+                        className={`ui-import-link w-12 h-1 ${
                           isComplete ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                         }`}
                       />

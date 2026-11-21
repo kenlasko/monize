@@ -16,7 +16,8 @@
     "summaryTotal": "Toplam Kategoriler",
     "summaryIncome": "Gelir Kategorileri",
     "summaryExpense": "Gider Kategorileri",
-    "summaryTopLevel": "Üst Düzey"
+    "summaryTopLevel": "Üst Düzey",
+    "eyebrow": "Kategori planı"
   },
   "empty": {
     "heading": "Henüz kategori yok",

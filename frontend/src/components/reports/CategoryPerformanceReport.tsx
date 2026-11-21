@@ -23,6 +23,7 @@ import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('CategoryPerformanceReport');
 
@@ -441,7 +442,7 @@ export function CategoryPerformanceReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -452,7 +453,7 @@ export function CategoryPerformanceReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('categoryPerformance.noBudgets')}
         </p>
@@ -463,7 +464,7 @@ export function CategoryPerformanceReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedBudgetId}
@@ -488,7 +489,7 @@ export function CategoryPerformanceReport() {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+      <div className={`${CARD_CLASS} p-4 sm:p-6`}>
         {sortedData.length === 0 ? (
           <EmptyState title={t('categoryPerformance.noData')} />
         ) : (

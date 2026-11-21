@@ -336,7 +336,12 @@ html.dark[data-ui-style='modern'] .ui-block-accent {
   background-color: var(--color-blue-400);
   color: var(--color-gray-900);
 }
+/* The dark selector matters: the dark-mode label rule above
+   (`html.dark[...] .ui-stat .ui-stat-label`) out-ranks the plain one, and
+   left the label pale on the pale accent in dark mode. */
 html[data-ui-style='modern'] .ui-stat-lead :is(.ui-stat-label, .ui-stat-value, .ui-stat-hint),
+html.dark[data-ui-style='modern'] .ui-stat .ui-stat-lead :is(.ui-stat-label, .ui-stat-value, .ui-stat-hint),
+html.dark[data-ui-style='modern'] .ui-stat.ui-stat-lead :is(.ui-stat-label, .ui-stat-value, .ui-stat-hint),
 html[data-ui-style='modern'] .ui-stat-lead .ui-money-display :is(.ui-money-prefix, .ui-money-fraction, .ui-money-suffix) {
   color: var(--color-gray-900);
 }

@@ -37,7 +37,8 @@
       "withoutCategory": "Không có danh mục"
     },
     "applyDefaultCategories": "Áp dụng danh mục mặc định",
-    "lookupSettings": "Cài đặt tra cứu người nhận"
+    "lookupSettings": "Cài đặt tra cứu người nhận",
+    "eyebrow": "Danh bạ người nhận thanh toán"
   },
   "list": {
     "columns": {

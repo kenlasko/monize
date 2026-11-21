@@ -385,4 +385,23 @@ describe('SettingsNav', () => {
       expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeInTheDocument();
     });
   });
+
+describe('SettingsNav style markers', () => {
+  it('marks the open section and the danger section for the Classic and Modern nav', () => {
+    render(
+      <SettingsNav
+        sections={defaultSections}
+        activeSection="security"
+        onSectionClick={vi.fn()}
+        variant="vertical"
+      />,
+    );
+    const nav = screen.getByRole('navigation');
+    expect(nav).toHaveClass('ui-settings-nav');
+    expect(screen.getByRole('button', { name: 'Security' })).toHaveAttribute('data-active', 'true');
+    expect(screen.getByRole('button', { name: 'Security' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: 'Profile' })).not.toHaveAttribute('data-active');
+    expect(screen.getByRole('button', { name: 'Danger Zone' })).not.toHaveAttribute('data-danger');
+  });
+});
 });

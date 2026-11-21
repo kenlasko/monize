@@ -73,7 +73,8 @@
       "prefillFailed": "Không thể tải giao dịch đó, nên bảo hành bắt đầu trống",
       "exported": "{count, plural, other {Đã xuất {shown} bảo hành}}",
       "exportFailed": "Không thể xuất các bảo hành"
-    }
+    },
+    "eyebrow": "Sổ bảo hành"
   },
   "status": {
     "lifetime": "Trọn đời",

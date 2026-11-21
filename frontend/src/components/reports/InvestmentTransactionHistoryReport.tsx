@@ -50,6 +50,7 @@ import {
   type SortColumnsByField,
 } from '@/components/reports/InvestmentTransactionHistoryReportParts';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('InvestmentTransactionHistoryReport');
 
@@ -624,7 +625,7 @@ export function InvestmentTransactionHistoryReport() {
   // capped client rows in its place is the defect this gate closes.
   if ((isLoading && response === null) || (isSummaryLoading && summary === null)) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -637,13 +638,13 @@ export function InvestmentTransactionHistoryReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentTransactions.totalTransactions')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {summary ? summary.transactionCount : unknownKpi}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {summary && summary.fxComplete === false
               ? t('investmentTransactions.knownVolume')
@@ -670,13 +671,13 @@ export function InvestmentTransactionHistoryReport() {
             )}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentTransactions.actionTypes')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {summary ? actionSummaries.length : unknownKpi}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentTransactions.securitiesTraded')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {summary ? summary.securitiesTraded : unknownKpi}
@@ -695,7 +696,7 @@ export function InvestmentTransactionHistoryReport() {
       )}
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {/* One control per line on a phone, the desktop row from `sm` up. The
             two pickers are `w-48` each: side by side they are wider than a
             phone, and the pair was pushed off the right of the screen rather
@@ -735,7 +736,7 @@ export function InvestmentTransactionHistoryReport() {
 
       {/* Action Summary */}
       {actionSummaries.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('investmentTransactions.activitySummary')}
           </h3>
@@ -773,11 +774,11 @@ export function InvestmentTransactionHistoryReport() {
 
       {/* Transaction List */}
       {filteredTransactions.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('investmentTransactions.noTransactions')} />
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('investmentTransactions.transactionHistory', { count: filteredTransactions.length })}

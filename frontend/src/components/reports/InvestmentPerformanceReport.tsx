@@ -61,6 +61,7 @@ import {
 } from '@/components/reports/investment-performance-rows';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { TWR_SERIES_MAX_ACCOUNTS } from '@/lib/constants';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-investment-performance-accounts';
 
@@ -463,7 +464,7 @@ export function InvestmentPerformanceReport() {
 
   if (isLoading && response === null) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -474,7 +475,7 @@ export function InvestmentPerformanceReport() {
 
   if (!portfolio || !summaryValues || portfolio.holdings.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <EmptyState title={t('investmentPerformance.noHoldings')} />
       </div>
     );
@@ -484,7 +485,7 @@ export function InvestmentPerformanceReport() {
     <div className="space-y-6">
       {/* Portfolio Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.totalValue')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             <PartialTotal total={valuePartial!} displayCurrency={summaryCurrency}>
@@ -492,7 +493,7 @@ export function InvestmentPerformanceReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.costBasis')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             <PartialTotal total={costPartial!} displayCurrency={summaryCurrency}>
@@ -500,7 +501,7 @@ export function InvestmentPerformanceReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4" data-testid="period-gain-card">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`} data-testid="period-gain-card">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.periodGainLoss')}</div>
           <div className={`text-xl font-bold ${periodPnl === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(periodPnl)}`}>
             {periodResult === null && !periodFailed ? (
@@ -517,7 +518,7 @@ export function InvestmentPerformanceReport() {
             </div>
           )}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4" data-testid="period-return-card">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`} data-testid="period-return-card">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('investmentPerformance.return')}</div>
           <div className={`text-xl font-bold ${periodReturn === null ? 'text-gray-500 dark:text-gray-400' : gainLossColor(periodReturn)}`}>
             {periodResult === null && !periodFailed ? (
@@ -537,7 +538,7 @@ export function InvestmentPerformanceReport() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-2">
             <ReportAccountMultiSelect
@@ -698,7 +699,7 @@ export function InvestmentPerformanceReport() {
         </>
       ) : (
         /* Asset Allocation View */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+        <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('investmentPerformance.assetAllocation')}
           </h3>

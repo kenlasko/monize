@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Bandeja de revisión de IA",
-    "subtitle": "Transacciones que una regla pidió revisar a una IA, perfiles que se pidió redactar a un asistente y modificaciones que un asistente propone para que las apruebes."
+    "subtitle": "Transacciones que una regla pidió revisar a una IA, perfiles que se pidió redactar a un asistente y modificaciones que un asistente propone para que las apruebes.",
+    "eyebrow": "Pendiente de su revisión"
   },
   "filter": {
     "label": "Filtrar por estado",

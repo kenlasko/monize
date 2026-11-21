@@ -51,7 +51,7 @@ export function SuggestedQueries({ onSelect, disabled = false }: SuggestedQuerie
               key={labelKey}
               onClick={() => onSelect(query)}
               disabled={disabled}
-              className="text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 dark:disabled:hover:border-gray-700 disabled:hover:bg-transparent"
+              className="ui-chat-suggest text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 dark:disabled:hover:border-gray-700 disabled:hover:bg-transparent"
             >
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {label}

@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Recibos por correo",
-    "subtitle": "Lee las confirmaciones de pedido de un buzón y conviértelas en transacciones detalladas: qué está conectado, en qué ha quedado cada correo y qué te está esperando"
+    "subtitle": "Lee las confirmaciones de pedido de un buzón y conviértelas en transacciones detalladas: qué está conectado, en qué ha quedado cada correo y qué te está esperando",
+    "eyebrow": "Bandeja de recibos"
   },
   "mailbox": {
     "heading": "Buzón",

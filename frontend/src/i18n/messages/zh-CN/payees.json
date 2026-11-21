@@ -37,7 +37,8 @@
       "withoutCategory": "无分类"
     },
     "applyDefaultCategories": "应用默认分类",
-    "lookupSettings": "收款方查询设置"
+    "lookupSettings": "收款方查询设置",
+    "eyebrow": "收款人索引"
   },
   "list": {
     "columns": {

@@ -129,4 +129,15 @@ describe('AuthShell', () => {
     );
     expect(document.querySelector('select')).toBeFalsy();
   });
+
+  it('carries the style markers: a wordmark and rosette only the Classic and Modern title pages print', () => {
+    const { container, getByText } = renderShell(<AuthShell title="Sign in">x</AuthShell>);
+    const wordmark = container.querySelector('.ui-auth-wordmark');
+    expect(wordmark).toHaveTextContent('Monize');
+    expect(wordmark).toHaveAttribute('aria-hidden', 'true');
+    // Hidden until a style prints it; Standard keeps the logo only.
+    expect(wordmark?.className).toContain('hidden');
+    expect(container.querySelector('svg.ui-auth-guilloche')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('.ui-auth-card')).toContainElement(getByText('x'));
+  });
 });

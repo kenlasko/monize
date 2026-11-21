@@ -35,7 +35,8 @@
       "createFailed": "Error al crear la etiqueta",
       "updateFailed": "Error al actualizar la etiqueta",
       "deleteFailed": "Error al eliminar la etiqueta"
-    }
+    },
+    "eyebrow": "Etiquetas"
   },
   "list": {
     "empty": {

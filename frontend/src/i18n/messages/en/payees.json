@@ -37,7 +37,8 @@
       "withoutCategory": "Without Category"
     },
     "applyDefaultCategories": "Apply Default Categories",
-    "lookupSettings": "Payee Lookup settings"
+    "lookupSettings": "Payee Lookup settings",
+    "eyebrow": "Index of payees"
   },
   "list": {
     "columns": {

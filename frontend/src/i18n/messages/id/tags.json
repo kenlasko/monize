@@ -35,7 +35,8 @@
       "createFailed": "Gagal membuat tag",
       "updateFailed": "Gagal memperbarui tag",
       "deleteFailed": "Gagal menghapus tag"
-    }
+    },
+    "eyebrow": "Label"
   },
   "list": {
     "empty": {

@@ -223,7 +223,7 @@ function AdminNotificationsContent() {
 
   return (
     <PageLayout>
-      <main className="px-4 pt-6 pb-8 sm:px-6 lg:px-12">
+      <main className="ui-settings-main px-4 pt-6 pb-8 sm:px-6 lg:px-12">
         <PageHeader
           title={t('title')}
           subtitle={t('subtitle')}

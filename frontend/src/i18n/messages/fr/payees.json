@@ -37,7 +37,8 @@
       "withoutCategory": "Sans catégorie"
     },
     "applyDefaultCategories": "Appliquer les catégories par défaut",
-    "lookupSettings": "Paramètres de recherche de bénéficiaires"
+    "lookupSettings": "Paramètres de recherche de bénéficiaires",
+    "eyebrow": "Index des bénéficiaires"
   },
   "list": {
     "columns": {

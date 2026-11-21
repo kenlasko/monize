@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "AI 助手",
-    "subtitle": "用自然语言提问您的财务状况"
+    "subtitle": "用自然语言提问您的财务状况",
+    "eyebrow": "助手"
   },
   "bubble": {
     "launcherAriaLabel": "打开 AI 助手",

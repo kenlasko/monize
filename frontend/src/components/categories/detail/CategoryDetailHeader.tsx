@@ -3,6 +3,7 @@
 import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EntitySwitcher } from '@/components/ui/EntitySwitcher';
 import {
@@ -112,13 +113,13 @@ export function CategoryDetailHeader({
             <EntitySwitcher {...switcher} />
           </div>
 
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+          <Badge className="ui-detail-pill">
             {category.isIncome ? t('header.incomePill') : t('header.expensePill')}
-          </span>
+          </Badge>
           {category.isSystem && (
-            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+            <Badge className="ui-detail-pill">
               {t('header.systemBadge')}
-            </span>
+            </Badge>
           )}
         </div>
 

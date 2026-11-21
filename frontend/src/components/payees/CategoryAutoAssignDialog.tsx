@@ -15,6 +15,7 @@ import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { Badge } from '@/components/ui/Badge';
 const logger = createLogger('CategoryAutoAssign');
 
 interface CategoryAutoAssignDialogProps {
@@ -339,10 +340,12 @@ export function CategoryAutoAssignDialog({
                                 {suggestion.transactionCount} transactions
                               </span>
                               {suggestion.uncategorizedCount > 0 && (
-                                <button
+                                <Badge
+                as="button"
+                variant="amber"
                                   type="button"
                                   onClick={() => viewUncategorized(suggestion.payeeId)}
-                                  className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                  className="cursor-pointer transition-colors hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:hover:bg-amber-900/60"
                                   title={t('categoryAutoAssign.viewUncategorizedTitle', {
                                     count: suggestion.uncategorizedCount,
                                     name: suggestion.payeeName,
@@ -351,15 +354,15 @@ export function CategoryAutoAssignDialog({
                                   {t('list.uncategorizedBadge', {
                                     count: suggestion.uncategorizedCount,
                                   })}
-                                </button>
+                                </Badge>
                               )}
                             </div>
                           </td>
                           <td className="px-3 py-2">
-                            <span className="inline-flex text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            <Badge variant="blue">
                               {categoryLabelMap.get(suggestion.suggestedCategoryId) ??
                                 suggestion.suggestedCategoryName}
-                            </span>
+                            </Badge>
                           </td>
                           <td className="px-3 py-2 text-right">
                             <span className={`text-sm font-medium ${

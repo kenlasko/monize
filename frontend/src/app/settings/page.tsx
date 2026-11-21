@@ -283,7 +283,7 @@ function OwnerSettingsView() {
           </aside>
 
           {/* Content column */}
-          <div className="flex-1 min-w-0">
+          <div className="ui-settings-main flex-1 min-w-0">
             {user && !isDemoMode && (
               <div id="profile" className="scroll-mt-32 lg:scroll-mt-22">
                 <ProfileSection
@@ -335,7 +335,7 @@ function OwnerSettingsView() {
               <div id="shared-access" className="scroll-mt-32 lg:scroll-mt-22">
                 <Link
                   href="/settings/shared-access"
-                  className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`${CARD_CLASS} block p-6 mb-6 ${HOVER_ROW_ON_CARD}`}
                 >
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {t('sharedAccessCard.title')}
@@ -351,7 +351,7 @@ function OwnerSettingsView() {
               <div id="emergency-access" className="scroll-mt-32 lg:scroll-mt-22">
                 <Link
                   href="/settings/emergency-access"
-                  className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`${CARD_CLASS} block p-6 mb-6 ${HOVER_ROW_ON_CARD}`}
                 >
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {t('emergencyAccessCard.title')}
@@ -373,7 +373,7 @@ function OwnerSettingsView() {
               <div id="ai-settings" className="scroll-mt-32 lg:scroll-mt-22">
                 <Link
                   href="/settings/ai"
-                  className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`${CARD_CLASS} block p-6 mb-6 ${HOVER_ROW_ON_CARD}`}
                 >
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {t('aiSettingsCard.title')}
@@ -389,7 +389,7 @@ function OwnerSettingsView() {
               <div id="bank-sync" className="scroll-mt-32 lg:scroll-mt-22">
                 <Link
                   href="/settings/bank-sync"
-                  className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`${CARD_CLASS} block p-6 mb-6 ${HOVER_ROW_ON_CARD}`}
                 >
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {t('bankSyncCard.title')}
@@ -436,7 +436,7 @@ function OwnerSettingsView() {
             <div id="tours" className="scroll-mt-32 lg:scroll-mt-22">
               <Link
                 href="/settings/tours"
-                className="block bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className={`${CARD_CLASS} block p-6 mb-6 ${HOVER_ROW_ON_CARD}`}
               >
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   {t('toursCard.title')}

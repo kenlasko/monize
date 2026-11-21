@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "KI-Prüfungseingang",
-    "subtitle": "Buchungen, die eine Regel von einer KI prüfen lassen wollte, Profil, die ein Assistent entwerfen sollte, und die Änderungen, die ein Assistent zur Freigabe vorschlägt."
+    "subtitle": "Buchungen, die eine Regel von einer KI prüfen lassen wollte, Profil, die ein Assistent entwerfen sollte, und die Änderungen, die ein Assistent zur Freigabe vorschlägt.",
+    "eyebrow": "Wartet auf Ihre Prüfung"
   },
   "filter": {
     "label": "Nach Status filtern",

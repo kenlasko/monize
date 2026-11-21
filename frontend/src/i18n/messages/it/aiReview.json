@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Posta di revisione IA",
-    "subtitle": "Le transazioni che una regola ha chiesto a un'IA di rivedere, i parser che è stato chiesto a un assistente di preparare e le modifiche che un assistente propone per la tua approvazione."
+    "subtitle": "Le transazioni che una regola ha chiesto a un'IA di rivedere, i parser che è stato chiesto a un assistente di preparare e le modifiche che un assistente propone per la tua approvazione.",
+    "eyebrow": "In attesa della tua revisione"
   },
   "filter": {
     "label": "Filtra per stato",

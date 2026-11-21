@@ -7,6 +7,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { userSettingsApi } from '@/lib/user-settings';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { getErrorMessage } from '@/lib/errors';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface AiBubbleToggleProps {
   disabled?: boolean;
@@ -57,7 +58,7 @@ export function AiBubbleToggle({
   if (!aiConfigured) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
         {t('title')}
       </h2>

@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "[XX-Email Receipts-XX]",
-    "subtitle": "[XX-Read order confirmations from a mailbox and turn them into itemized transactions: what is connected, what became of each email, and what waits for you-XX]"
+    "subtitle": "[XX-Read order confirmations from a mailbox and turn them into itemized transactions: what is connected, what became of each email, and what waits for you-XX]",
+    "eyebrow": "[XX-Receipts inbox-XX]"
   },
   "mailbox": {
     "heading": "[XX-Mailbox-XX]",

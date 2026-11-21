@@ -179,8 +179,8 @@ export const ChatMessage = memo(function ChatMessage({
 
   if (role === 'user') {
     return (
-      <div className="flex justify-end mb-4">
-        <div className="max-w-[80%] px-4 py-3 rounded-2xl rounded-br-sm bg-blue-600 text-white">
+      <div className="ui-chat-row ui-chat-row-user flex justify-end mb-4">
+        <div className="ui-chat-bubble ui-chat-user max-w-[80%] px-4 py-3 rounded-2xl rounded-br-sm bg-blue-600 text-white">
           <p className="text-sm whitespace-pre-wrap">{content}</p>
           {attachments && attachments.length > 0 && (
             <MessageAttachmentChips attachments={attachments} />
@@ -191,7 +191,7 @@ export const ChatMessage = memo(function ChatMessage({
   }
 
   return (
-    <div className="flex justify-start mb-4">
+    <div className="ui-chat-row ui-chat-row-assistant flex justify-start mb-4">
       <div className="max-w-[85%]">
         {/* Tool calls — click to expand and see input/result */}
         {toolsUsed && toolsUsed.length > 0 && (
@@ -209,7 +209,7 @@ export const ChatMessage = memo(function ChatMessage({
             lost/blank answer. Only render once there is text or an error; the
             streaming cursor then shows alongside the text. */}
         {(error || content.length > 0) && (
-          <div className="px-4 py-3 rounded-2xl rounded-bl-sm bg-gray-100 dark:bg-gray-700/60 text-gray-900 dark:text-gray-100">
+          <div className="ui-chat-bubble ui-chat-assistant px-4 py-3 rounded-2xl rounded-bl-sm bg-gray-100 dark:bg-gray-700/60 text-gray-900 dark:text-gray-100">
             {error ? (
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             ) : (

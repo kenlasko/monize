@@ -35,7 +35,8 @@
       "createFailed": "Failed to create tag",
       "updateFailed": "Failed to update tag",
       "deleteFailed": "Failed to delete tag"
-    }
+    },
+    "eyebrow": "Labels"
   },
   "list": {
     "empty": {

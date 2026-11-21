@@ -50,6 +50,7 @@ import { useTaggedFlowBucket } from "@/hooks/useTaggedFlowBucket";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { flowBarStack } from "@/lib/tagged-flow-stack";
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-cash-flow-accounts';
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-cash-flow-stack-tagged';
@@ -398,7 +399,7 @@ export function CashFlowReport() {
           It sits between the cards and the chart, and both of those change with
           the data, so it can only stay mounted if this is the one tree the
           component ever returns. */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <ReportAccountMultiSelect
             accounts={offeredAccounts}
@@ -427,7 +428,7 @@ export function CashFlowReport() {
       {error ? (
         <ReportError onRetry={reload} />
       ) : isLoading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -436,7 +437,7 @@ export function CashFlowReport() {
       ) : (
         <>
       {/* Monthly Chart */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 px-1 sm:px-0">
           {t('cashFlow.monthlyCashFlow')}
         </h3>
@@ -513,7 +514,7 @@ export function CashFlowReport() {
       {/* Breakdown Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Inflows */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 bg-green-50 dark:bg-green-900/20 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-green-700 dark:text-green-300">
               {t('cashFlow.inflowsByCategory')}
@@ -544,7 +545,7 @@ export function CashFlowReport() {
         </div>
 
         {/* Outflows */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 bg-red-50 dark:bg-red-900/20 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-red-700 dark:text-red-300">
               {t('cashFlow.outflowsByCategory')}

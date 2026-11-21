@@ -4,7 +4,8 @@
     "subtitle": "Renseignez automatiquement les tags, catégories et bénéficiaires lorsqu'une transaction est créée ou importée",
     "createButton": "Créer une règle",
     "loading": "Chargement des règles...",
-    "totalCount": "{count, plural, one {# règle} other {# règles}}"
+    "totalCount": "{count, plural, one {# règle} other {# règles}}",
+    "eyebrow": "Automatisation"
   },
   "empty": {
     "title": "Aucune règle pour le moment",

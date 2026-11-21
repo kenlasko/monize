@@ -38,7 +38,8 @@
   "page": {
     "title": "导入交易",
     "subtitle": "从 QIF/QMTF、OFX/QFX 或 CSV 文件导入交易，或整体导入 Microsoft Money (.mny) 或 KMyMoney (.kmy、.xml) 文件",
-    "stepOf": "第 {current} 步，共 {total} 步"
+    "stepOf": "第 {current} 步，共 {total} 步",
+    "eyebrow": "导入交易"
   },
   "upload": {
     "heading": "上传交易文件",

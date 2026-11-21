@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "AI 어시스턴트",
-    "subtitle": "자연어로 재정에 관한 질문을 하세요"
+    "subtitle": "자연어로 재정에 관한 질문을 하세요",
+    "eyebrow": "어시스턴트"
   },
   "bubble": {
     "launcherAriaLabel": "AI 어시스턴트 열기",

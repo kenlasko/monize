@@ -29,6 +29,7 @@ import type {
 import { EmptyState } from '@/components/ui/EmptyState';
 import { fromMoneyUnits, moneyDecimalsForCurrency, toMoneyUnits } from '@/lib/format';
 import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('ForeignCurrencyFeesReport');
 
@@ -342,7 +343,7 @@ export function ForeignCurrencyFeesReport() {
 
   if (accountsLoaded && eligibleAccounts.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <EmptyState title={tr('foreignCurrencyFees.noEligibleAccounts')} />
       </div>
     );
@@ -351,7 +352,7 @@ export function ForeignCurrencyFeesReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           {/* Both pickers take the card's width on a phone -- side by side
               they are wider than the screen -- and their toolbar widths from
@@ -377,7 +378,7 @@ export function ForeignCurrencyFeesReport() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-6">
+      <div className={`${CARD_CLASS} p-3 sm:p-6`}>
         <ForeignCurrencyFeeChart
           data={monthlyFees.data}
           isLoading={isFeeLoading}
@@ -395,7 +396,7 @@ export function ForeignCurrencyFeesReport() {
       </div>
 
       {/* Transactions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 px-4 pt-4 sm:px-6 sm:pt-6 pb-2">
           {t('list.title')}
         </h3>

@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Hộp thư xem xét của AI",
-    "subtitle": "Các giao dịch mà một quy tắc yêu cầu IA xem xét, hồ sơ mà một trợ lý được yêu cầu soạn thảo, và các chỉnh sửa mà một trợ lý đề xuất để bạn phê duyệt."
+    "subtitle": "Các giao dịch mà một quy tắc yêu cầu IA xem xét, hồ sơ mà một trợ lý được yêu cầu soạn thảo, và các chỉnh sửa mà một trợ lý đề xuất để bạn phê duyệt.",
+    "eyebrow": "Đang chờ bạn xem xét"
   },
   "filter": {
     "label": "Lọc theo trạng thái",

@@ -38,7 +38,8 @@
   "page": {
     "title": "[XX-Import Transactions-XX]",
     "subtitle": "[XX-Import transactions from QIF/QMTF, OFX/QFX, or CSV files, or bring across a whole Microsoft Money (.mny) or KMyMoney (.kmy, .xml) file-XX]",
-    "stepOf": "[XX-Step {current} of {total}-XX]"
+    "stepOf": "[XX-Step {current} of {total}-XX]",
+    "eyebrow": "[XX-Bring in transactions-XX]"
   },
   "upload": {
     "heading": "[XX-Upload Transaction Files-XX]",

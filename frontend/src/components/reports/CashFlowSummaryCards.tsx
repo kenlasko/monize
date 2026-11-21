@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportStatement, useReportStatement } from '@/components/reports/variants/ReportStatement';
 import { useTranslations } from 'next-intl';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -67,7 +68,7 @@ const ORANGE: Tone = {
 
 function SummaryCard({ tone, label, children }: { tone: Tone; label: string; children: React.ReactNode }) {
   return (
-    <div className={`rounded-lg p-4 sm:p-6 ${tone.box}`}>
+    <div className={`ui-rep-tile rounded-lg p-4 sm:p-6 ${tone.box}`}>
       <div className={`text-sm ${tone.label}`}>{label}</div>
       <div className={`text-2xl font-bold ${tone.value}`}>{children}</div>
     </div>
@@ -77,6 +78,7 @@ function SummaryCard({ tone, label, children }: { tone: Tone; label: string; chi
 export function CashFlowSummaryCards({ totals, reportingCurrency, balance }: CashFlowSummaryCardsProps) {
   const t = useTranslations('reports');
   const { formatCurrencyCompact: formatCurrency, formatPercent } = useNumberFormat();
+  const asStatement = useReportStatement();
 
   if (balance) {
     const { bucket, window: win, knownIncome, knownExpenses, completeness } = balance;
@@ -129,6 +131,31 @@ export function CashFlowSummaryCards({ totals, reportingCurrency, balance }: Cas
 
   // No figures is neither a gain nor a loss; it takes the neutral colour.
   const netIsNonNegative = totals === null || totals.net.value >= 0;
+  if (asStatement) {
+    const figure = (total: ConvertedTotal | undefined, prefix = '') =>
+      total ? (
+        <PartialTotal total={total} displayCurrency={reportingCurrency}>
+          {prefix}
+          {formatCurrency(total.value)}
+        </PartialTotal>
+      ) : (
+        t('cashFlow.notAvailable')
+      );
+    return (
+      <ReportStatement
+        ariaLabel={t('cashFlow.netCashFlow')}
+        lines={[
+          { key: 'in', label: t('cashFlow.totalInflows'), value: figure(totals?.income), tone: 'gain' },
+          { key: 'out', label: t('cashFlow.totalOutflows'), value: figure(totals?.expenses), tone: 'loss' },
+        ]}
+        total={{
+          label: t('cashFlow.netCashFlow'),
+          value: figure(totals?.net, netIsNonNegative ? '+' : ''),
+          tone: netIsNonNegative ? 'plain' : 'loss',
+        }}
+      />
+    );
+  }
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <SummaryCard tone={GREEN} label={t('cashFlow.totalInflows')}>

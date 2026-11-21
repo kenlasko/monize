@@ -16,7 +16,8 @@
     "summaryTotal": "Tổng danh mục",
     "summaryIncome": "Danh mục thu nhập",
     "summaryExpense": "Danh mục chi tiêu",
-    "summaryTopLevel": "Cấp cao nhất"
+    "summaryTopLevel": "Cấp cao nhất",
+    "eyebrow": "Sơ đồ danh mục"
   },
   "empty": {
     "heading": "Chưa có danh mục",

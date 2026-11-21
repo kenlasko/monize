@@ -35,6 +35,7 @@ import { createLogger } from '@/lib/logger';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('SavingsRateReport');
 
@@ -260,7 +261,7 @@ export function SavingsRateReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -271,7 +272,7 @@ export function SavingsRateReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('savingsRate.noBudgets')}
         </p>
@@ -289,7 +290,7 @@ export function SavingsRateReport() {
   return (
     <div ref={chartRef} className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedBudgetId}
@@ -330,25 +331,25 @@ export function SavingsRateReport() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('savingsRate.currentRate')}</p>
           <p className={`text-2xl font-bold ${meetsTarget ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {formatPercent(currentRate, 1)}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('savingsRate.averageRate')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatPercent(avgRate, 1)}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('savingsRate.targetRate')}</p>
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {formatPercentTrimmed(targetRate)}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 text-center">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4 text-center`}>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('savingsRate.totalSaved')}</p>
           <p className={`text-2xl font-bold ${gainLossColor(totalSaved)}`}>
             {formatCurrency(totalSaved)}
@@ -357,7 +358,7 @@ export function SavingsRateReport() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {data.length === 0 ? (
           <EmptyState title={t('savingsRate.noData')} />
         ) : (
@@ -418,7 +419,7 @@ export function SavingsRateReport() {
 
       {/* Monthly breakdown table */}
       {data.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+        <div className={`${CARD_CLASS} p-4 sm:p-6`}>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('savingsRate.monthlyBreakdown')}</h3>
           {/* Below `sm` the table becomes a block and each row wraps into a
               three-column grid so all five columns fit a phone without a

@@ -38,7 +38,8 @@
   "page": {
     "title": "Nhập Khẩu Giao Dịch",
     "subtitle": "Nhập khẩu giao dịch từ các tệp QIF/QMTF, OFX/QFX hoặc CSV, hoặc mang sang toàn bộ một tệp Microsoft Money (.mny) hoặc KMyMoney (.kmy, .xml)",
-    "stepOf": "Bước {current} trên {total}"
+    "stepOf": "Bước {current} trên {total}",
+    "eyebrow": "Nhập giao dịch"
   },
   "upload": {
     "heading": "Tải Lên Tệp Giao Dịch",

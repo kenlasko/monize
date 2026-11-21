@@ -35,7 +35,8 @@
       "createFailed": "टैग बनाने में विफल",
       "updateFailed": "टैग अपडेट करने में विफल",
       "deleteFailed": "टैग हटाने में विफल"
-    }
+    },
+    "eyebrow": "लेबल"
   },
   "list": {
     "empty": {

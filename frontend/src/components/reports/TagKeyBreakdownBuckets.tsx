@@ -160,7 +160,7 @@ export function TagKeyBreakdownBuckets({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+              <div className="ui-rep-tile bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
                 <div className="text-sm text-green-600 dark:text-green-400">
                   {t('incomeVsExpenses.totalIncome')}
                 </div>
@@ -173,7 +173,7 @@ export function TagKeyBreakdownBuckets({
                   </PartialTotal>
                 </div>
               </div>
-              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 text-center">
+              <div className="ui-rep-tile bg-red-50 dark:bg-red-900/20 rounded-lg p-4 text-center">
                 <div className="text-sm text-red-600 dark:text-red-400">
                   {t('incomeVsExpenses.totalExpenses')}
                 </div>
@@ -187,7 +187,7 @@ export function TagKeyBreakdownBuckets({
                 </div>
               </div>
               <div
-                className={`rounded-lg p-4 text-center ${
+                className={`ui-rep-tile rounded-lg p-4 text-center ${
                   bucket.totals.knownNet >= 0
                     ? 'bg-blue-50 dark:bg-blue-900/20'
                     : 'bg-orange-50 dark:bg-orange-900/20'
@@ -226,7 +226,7 @@ export function TagKeyBreakdownBuckets({
                 income. */}
             <div
               data-testid="tagged-flows"
-              className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-4"
+              className="ui-rep-tile rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-4"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

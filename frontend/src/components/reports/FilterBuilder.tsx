@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/Badge';
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { FilterGroup, FilterCondition, FilterField } from '@/types/custom-report';
@@ -172,9 +173,9 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees, t
         <div key={gi}>
           {gi > 0 && (
             <div className="flex items-center justify-center py-2">
-              <span className="px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 rounded-full">
+              <Badge variant="amber" className="font-semibold">
                 AND
-              </span>
+              </Badge>
             </div>
           )}
           <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 relative">
@@ -196,9 +197,9 @@ export function FilterBuilder({ value, onChange, accounts, categories, payees, t
                 <div key={ci}>
                   {ci > 0 && (
                     <div className="flex items-center justify-center py-1">
-                      <span className="px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-full">
+                      <Badge variant="blue">
                         OR
-                      </span>
+                      </Badge>
                     </div>
                   )}
                   <div className="grid grid-cols-[auto_1fr_auto] items-start gap-2">

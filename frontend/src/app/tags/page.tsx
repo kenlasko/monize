@@ -166,6 +166,7 @@ function TagsContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
         <PageHeader
           title={t('page.title')}
+          eyebrow={t('page.eyebrow')}
           subtitle={t('page.subtitle')}
           help='tags'
           actions={<Button onClick={openCreate}>{t('page.newButton')}</Button>}
@@ -173,6 +174,7 @@ function TagsContent() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
           <SummaryCard
+            lead
             label={t('page.summary.totalTags')}
             value={tags.length}
             icon={SummaryIcons.tag}

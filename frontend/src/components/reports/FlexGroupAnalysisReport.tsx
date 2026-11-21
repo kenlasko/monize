@@ -31,6 +31,7 @@ import { createLogger } from '@/lib/logger';
 import { chartColors } from '@/lib/chart-colors';
 import { useTranslations } from 'next-intl';
 import { CHART_GRID_PROPS_HORIZONTAL_BARS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('FlexGroupAnalysisReport');
 
@@ -341,7 +342,7 @@ export function FlexGroupAnalysisReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -352,7 +353,7 @@ export function FlexGroupAnalysisReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('flexGroupAnalysis.noBudgets')}
         </p>
@@ -363,7 +364,7 @@ export function FlexGroupAnalysisReport() {
   if (flexGroups.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <select
             value={selectedBudgetId}
             onChange={(e) => setSelectedBudgetId(e.target.value)}
@@ -374,7 +375,7 @@ export function FlexGroupAnalysisReport() {
             ))}
           </select>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+        <div className={`${CARD_CLASS} p-6 text-center`}>
           <p className="text-gray-500 dark:text-gray-400">
             {t('flexGroupAnalysis.noFlexGroups')}
           </p>
@@ -386,7 +387,7 @@ export function FlexGroupAnalysisReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <select
             value={selectedBudgetId}
@@ -411,7 +412,7 @@ export function FlexGroupAnalysisReport() {
         }));
 
         return (
-          <div key={group.groupName} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+          <div key={group.groupName} className={`${CARD_CLASS} p-6`}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {group.groupName}

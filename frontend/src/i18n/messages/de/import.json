@@ -38,7 +38,8 @@
   "page": {
     "title": "Buchungen importieren",
     "subtitle": "Buchungen aus QIF/QMTF-, OFX/QFX- oder CSV-Dateien importieren oder eine ganze Microsoft-Money-Datei (.mny) oder KMyMoney-Datei (.kmy, .xml) übernehmen",
-    "stepOf": "Schritt {current} von {total}"
+    "stepOf": "Schritt {current} von {total}",
+    "eyebrow": "Transaktionen einlesen"
   },
   "upload": {
     "heading": "Buchungsdateien hochladen",

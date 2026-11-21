@@ -261,7 +261,7 @@ const PayeeRow = memo(function PayeeRow({
     return (
       <tr
         ref={rowRef}
-        className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none bg-white dark:bg-gray-900 ${!payee.isActive ? 'opacity-60' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+        className={`ui-list-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none bg-white dark:bg-gray-900 ${!payee.isActive ? 'opacity-60' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
         {...getRowHandlers(payee)}
       >
         <td className="p-0">
@@ -411,7 +411,7 @@ const PayeeRow = memo(function PayeeRow({
   return (
     <tr
       ref={rowRef}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+      className={`ui-list-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${!payee.isActive ? 'opacity-60' : ''} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
       {...getRowHandlers(payee)}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
@@ -608,7 +608,7 @@ export function PayeeList({
     <div>
       <DensityToggleBar view="payees" />
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="ui-table ui-list-ledger ui-list-payees min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           {/* On a phone the wrapped card labels its own values, so the column
               header is dropped -- but the controls in that header row must not
               go with it: these `<th>`s are how the list is sorted, the chosen

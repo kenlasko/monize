@@ -16,7 +16,8 @@
     "summaryTotal": "Totale categorie",
     "summaryIncome": "Categorie entrate",
     "summaryExpense": "Categorie uscite",
-    "summaryTopLevel": "Livello superiore"
+    "summaryTopLevel": "Livello superiore",
+    "eyebrow": "Piano delle categorie"
   },
   "empty": {
     "heading": "Nessuna categoria",

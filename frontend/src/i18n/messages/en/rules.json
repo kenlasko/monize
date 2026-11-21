@@ -4,7 +4,8 @@
     "subtitle": "Fill in tags, categories and payees automatically when a transaction is created or imported",
     "createButton": "Create rule",
     "loading": "Loading rules...",
-    "totalCount": "{count, plural, one {# rule} other {# rules}}"
+    "totalCount": "{count, plural, one {# rule} other {# rules}}",
+    "eyebrow": "Automation"
   },
   "empty": {
     "title": "No rules yet",

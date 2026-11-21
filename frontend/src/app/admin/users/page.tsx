@@ -338,7 +338,7 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute>
       <PageLayout>
-        <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8">
+        <main className="ui-settings-main px-4 sm:px-6 lg:px-12 pt-6 pb-8">
           <PageHeader
             title={t('usersPage.title')}
             subtitle={t('usersPage.userCount', { count: users.length })}

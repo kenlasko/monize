@@ -16,7 +16,8 @@
     "summaryTotal": "[XX-Total Categories-XX]",
     "summaryIncome": "[XX-Income Categories-XX]",
     "summaryExpense": "[XX-Expense Categories-XX]",
-    "summaryTopLevel": "[XX-Top-Level-XX]"
+    "summaryTopLevel": "[XX-Top-Level-XX]",
+    "eyebrow": "[XX-Chart of categories-XX]"
   },
   "empty": {
     "heading": "[XX-No categories yet-XX]",

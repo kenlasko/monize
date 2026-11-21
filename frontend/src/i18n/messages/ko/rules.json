@@ -4,7 +4,8 @@
     "subtitle": "거래가 생성되거나 가져올 때 태그, 카테고리, 수취인을 자동으로 채웁니다",
     "createButton": "규칙 만들기",
     "loading": "규칙을 불러오는 중...",
-    "totalCount": "{count, plural, other {규칙 #개}}"
+    "totalCount": "{count, plural, other {규칙 #개}}",
+    "eyebrow": "자동화"
   },
   "empty": {
     "title": "아직 규칙이 없습니다",

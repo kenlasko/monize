@@ -36,6 +36,7 @@ import { createLogger } from '@/lib/logger';
 import { aggregateHoldingsBySecurity, AggregatedHolding } from '@/lib/aggregate-holdings';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('SecurityTypeAllocationReport');
 
@@ -449,7 +450,7 @@ export function SecurityTypeAllocationReport() {
   if (isLoading && !summaryData) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -461,7 +462,7 @@ export function SecurityTypeAllocationReport() {
 
   if (allocationData.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+      <div className={`${CARD_CLASS} p-8 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('securityTypeAllocation.noData')}
         </p>
@@ -472,7 +473,7 @@ export function SecurityTypeAllocationReport() {
   return (
     <div className="space-y-6">
       {/* Account Filter */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center justify-between">
           {/* Full width on a phone, the toolbar's fixed width from `sm` up:
               at `w-48` an account name has nowhere to go. */}
@@ -495,7 +496,7 @@ export function SecurityTypeAllocationReport() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('securityTypeAllocation.totalPortfolio')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             <PartialTotal
@@ -506,19 +507,19 @@ export function SecurityTypeAllocationReport() {
             </PartialTotal>
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('securityTypeAllocation.assetTypes')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {allocationData.length}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('securityTypeAllocation.totalHoldings')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {totalHoldingsCount}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-3 sm:p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('securityTypeAllocation.largestType')}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             {allocationData[0]?.label || '-'}
@@ -527,7 +528,7 @@ export function SecurityTypeAllocationReport() {
       </div>
 
       {/* Pie Chart */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           {t('securityTypeAllocation.assetTypeAllocation')}
         </h3>
@@ -594,7 +595,7 @@ export function SecurityTypeAllocationReport() {
           user hears the column order rather than the painted one: the WCAG 1.3.2
           tension mechanism A carries. The captions limit the cost, since every
           value names its own column. */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <div className="overflow-x-auto">
           <table role="table" className="block min-w-full divide-y divide-gray-200 dark:divide-gray-700 sm:table">
             <thead role="rowgroup" className="block bg-gray-50 dark:bg-gray-900/50 sm:table-header-group">

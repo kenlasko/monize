@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Trợ lý AI",
-    "subtitle": "Đặt câu hỏi về tài chính của bạn bằng ngôn ngữ tự nhiên"
+    "subtitle": "Đặt câu hỏi về tài chính của bạn bằng ngôn ngữ tự nhiên",
+    "eyebrow": "Trợ lý"
   },
   "bubble": {
     "launcherAriaLabel": "Mở trợ lý AI",

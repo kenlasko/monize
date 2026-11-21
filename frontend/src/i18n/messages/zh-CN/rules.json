@@ -4,7 +4,8 @@
     "subtitle": "在交易创建或导入时，自动填写标签、分类和收款方",
     "createButton": "创建规则",
     "loading": "正在加载规则...",
-    "totalCount": "{count, plural, other {# 条规则}}"
+    "totalCount": "{count, plural, other {# 条规则}}",
+    "eyebrow": "自动化"
   },
   "empty": {
     "title": "还没有规则",

@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Dibuat: {timestamp}"
+  },
+  "statement": {
+    "item": "Item",
+    "amount": "Jumlah",
+    "share": "Porsi"
   }
 }

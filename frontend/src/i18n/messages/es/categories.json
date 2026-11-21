@@ -16,7 +16,8 @@
     "summaryTotal": "Total de categorías",
     "summaryIncome": "Categorías de ingresos",
     "summaryExpense": "Categorías de gastos",
-    "summaryTopLevel": "Nivel superior"
+    "summaryTopLevel": "Nivel superior",
+    "eyebrow": "Plan de categorías"
   },
   "empty": {
     "heading": "Sin categorías todavía",

@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Generated: {timestamp}"
+  },
+  "statement": {
+    "item": "Item",
+    "amount": "Amount",
+    "share": "Share"
   }
 }

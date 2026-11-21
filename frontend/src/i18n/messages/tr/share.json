@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "Bu tarayıcı paylaşılan dosyaları alamaz",
   "unsupportedBrowserMessage": "Kurulu bir uygulamaya paylaşma burada kullanılamıyor. Dosyaları Monize içinden eklemeye devam edebilirsiniz.",
   "goToTransactions": "İşlemler'den ekle",
-  "goToImport": "İçe aktarmaya git"
+  "goToImport": "İçe aktarmaya git",
+  "eyebrow": "Gelen dosya"
 }

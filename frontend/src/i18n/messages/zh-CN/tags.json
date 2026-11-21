@@ -35,7 +35,8 @@
       "createFailed": "创建标签失败",
       "updateFailed": "更新标签失败",
       "deleteFailed": "删除标签失败"
-    }
+    },
+    "eyebrow": "标签"
   },
   "list": {
     "empty": {

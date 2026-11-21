@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Kotak masuk peninjauan AI",
-    "subtitle": "Transaksi yang diminta aturan untuk ditinjau AI, profil yang diminta untuk dibuatkan drafnya oleh asisten, dan perubahan yang diusulkan asisten untuk Anda setujui."
+    "subtitle": "Transaksi yang diminta aturan untuk ditinjau AI, profil yang diminta untuk dibuatkan drafnya oleh asisten, dan perubahan yang diusulkan asisten untuk Anda setujui.",
+    "eyebrow": "Menunggu tinjauan Anda"
   },
   "filter": {
     "label": "Filter menurut status",

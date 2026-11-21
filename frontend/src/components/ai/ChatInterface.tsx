@@ -336,7 +336,7 @@ export function ChatInterface({
 
       {/* Conversation header with clear action */}
       {messages.length > 0 && (
-        <div className="flex items-center justify-between px-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <div className="ui-chat-head flex items-center justify-between px-2 pb-2 border-b border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-400 dark:text-gray-500">
             {t('chat.conversationSaved')}
           </p>
@@ -351,7 +351,7 @@ export function ChatInterface({
       )}
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-2 py-4">
+      <div className="ui-chat-thread flex-1 overflow-y-auto px-2 py-4">
         {messages.length === 0 && !thinking.active ? (
           <SuggestedQueries onSelect={handleSubmit} disabled={!!aiNotConfigured} />
         ) : (
@@ -374,9 +374,9 @@ export function ChatInterface({
 
             {/* Thinking indicator */}
             {thinking.active && (
-              <div className="flex justify-start mb-4">
+              <div className="ui-chat-row ui-chat-row-assistant flex justify-start mb-4">
                 <div className="max-w-[85%]">
-                  <div className="px-4 py-3 rounded-2xl rounded-bl-sm bg-gray-100 dark:bg-gray-700/60">
+                  <div className="ui-chat-bubble ui-chat-assistant px-4 py-3 rounded-2xl rounded-bl-sm bg-gray-100 dark:bg-gray-700/60">
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                       <svg
                         className="w-4 h-4 animate-spin"
@@ -464,7 +464,7 @@ export function ChatInterface({
 
       {/* Input area */}
       <div
-        className="relative border-t border-gray-200 dark:border-gray-700 pt-4 pb-2"
+        className="ui-chat-composer relative border-t border-gray-200 dark:border-gray-700 pt-4 pb-2"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -525,7 +525,7 @@ export function ChatInterface({
             placeholder={aiNotConfigured ? t('chat.inputPlaceholderDisabled') : t('chat.inputPlaceholder')}
             disabled={isLoading || !!aiNotConfigured}
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="ui-chat-input flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
           />
           {isLoading ? (
             <button

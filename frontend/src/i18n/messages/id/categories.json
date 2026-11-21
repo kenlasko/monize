@@ -16,7 +16,8 @@
     "summaryTotal": "Total Kategori",
     "summaryIncome": "Kategori Pendapatan",
     "summaryExpense": "Kategori Pengeluaran",
-    "summaryTopLevel": "Tingkat Atas"
+    "summaryTopLevel": "Tingkat Atas",
+    "eyebrow": "Bagan kategori"
   },
   "empty": {
     "heading": "Belum ada kategori",

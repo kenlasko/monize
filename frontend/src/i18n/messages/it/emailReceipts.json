@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Ricevute via email",
-    "subtitle": "Leggi le conferme d'ordine da una casella di posta e trasformale in transazioni dettagliate: che cosa è collegato, che cosa ne è stato di ogni email e che cosa aspetta te"
+    "subtitle": "Leggi le conferme d'ordine da una casella di posta e trasformale in transazioni dettagliate: che cosa è collegato, che cosa ne è stato di ogni email e che cosa aspetta te",
+    "eyebrow": "Posta delle ricevute"
   },
   "mailbox": {
     "heading": "Casella di posta",

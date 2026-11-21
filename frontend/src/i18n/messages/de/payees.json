@@ -37,7 +37,8 @@
       "withoutCategory": "Ohne Kategorie"
     },
     "applyDefaultCategories": "Standardkategorien zuweisen",
-    "lookupSettings": "Einstellungen für Zahlungsempfänger-Suche"
+    "lookupSettings": "Einstellungen für Zahlungsempfänger-Suche",
+    "eyebrow": "Verzeichnis der Zahlungsempfänger"
   },
   "list": {
     "columns": {

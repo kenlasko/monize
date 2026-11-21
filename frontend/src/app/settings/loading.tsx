@@ -1,4 +1,5 @@
 import { PageHeaderSkeleton, Skeleton } from '@/components/ui/LoadingSkeleton';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 /**
  * The frame of the Settings page (`page.tsx`): the same `max-w-6xl` width,
@@ -19,7 +20,7 @@ export default function SettingsLoading() {
           </div>
           <div className="flex-1 min-w-0">
             {/* Settings Sections */}
-            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+            <div className={`${CARD_CLASS} p-6 mb-6`}>
               <Skeleton className="h-6 w-40 mb-6" />
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -37,7 +38,7 @@ export default function SettingsLoading() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6">
+            <div className={`${CARD_CLASS} p-6`}>
               <Skeleton className="h-6 w-40 mb-6" />
               <div className="space-y-4">
                 <div className="flex justify-between items-center">

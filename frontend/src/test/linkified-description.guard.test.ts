@@ -62,6 +62,10 @@ const LINKIFIED = [
  *    nesting anything interactive in a `<button>` settles it.
  */
 const PLAIN: Record<string, string> = {
+  '/src/components/reports/variants/ReportsCatalogueClassic.tsx':
+    "a built-in report's own description in the reports index, not a transaction's",
+  '/src/components/reports/variants/ReportsCatalogueModern.tsx':
+    "a built-in report's own description in the reports index, not a transaction's",
   '/src/components/accounts/AccountRow.tsx':
     "an account's own description, not a transaction's",
   '/src/components/transactions/AccountInfoWidget.tsx':

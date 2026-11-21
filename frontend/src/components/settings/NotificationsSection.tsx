@@ -13,6 +13,7 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { UserPreferences } from '@/types/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface NotificationsSectionProps {
   initialNotificationEmail: boolean;
@@ -95,7 +96,7 @@ export function NotificationsSection({
   return (
     <div
       {...tourAnchor(TOUR_ANCHORS.settingsNotifications)}
-      className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6"
+      className={`${CARD_CLASS} p-6 mb-6`}
     >
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('heading')}</h2>
 

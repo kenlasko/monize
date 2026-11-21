@@ -83,6 +83,7 @@ function GroupsContent() {
       <main className="px-4 sm:px-6 lg:px-12 pt-6 pb-8 space-y-5">
         <PageHeader
           title={t("title")}
+          eyebrow={t("eyebrow")}
           help="sharedExpenses"
           subtitle={t("subtitle")}
           actions={

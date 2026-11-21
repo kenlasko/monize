@@ -73,7 +73,8 @@
       "prefillFailed": "해당 거래를 불러올 수 없어 빈 보증으로 시작합니다",
       "exported": "{count, plural, other {보증 {shown}건을 내보냈습니다}}",
       "exportFailed": "보증을 내보낼 수 없습니다"
-    }
+    },
+    "eyebrow": "보증 대장"
   },
   "status": {
     "lifetime": "평생 보증",

@@ -37,7 +37,8 @@
       "withoutCategory": "Bez kategorii"
     },
     "applyDefaultCategories": "Przypisz domyślne kategorie",
-    "lookupSettings": "Ustawienia wyszukiwania odbiorców"
+    "lookupSettings": "Ustawienia wyszukiwania odbiorców",
+    "eyebrow": "Indeks odbiorców"
   },
   "list": {
     "columns": {

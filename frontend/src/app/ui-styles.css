@@ -240,6 +240,16 @@ html:is([data-ui-style='classic'], [data-ui-style='modern']) .ui-money-display .
   margin-top: 0.1em;
   margin-inline-end: 0.06em;
 }
+/* Bodoni's hyphen is a hairline: small and raised it all but vanished, and a
+   negative headline read as a positive one. A sign must never be illegible,
+   so Classic sets it in the body face, heavier and a little larger, still
+   beside the raised symbol. */
+html[data-ui-style='classic'] .ui-money-display .ui-money-sign {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.56em;
+  margin-top: 0.02em;
+}
 html[data-ui-style='classic'] .ui-money-display {
   font-weight: 500;
   letter-spacing: -0.01em;

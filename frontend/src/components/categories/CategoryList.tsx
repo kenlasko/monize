@@ -187,7 +187,8 @@ const CategoryRow = memo(function CategoryRow({
     return (
       <tr
         ref={rowRef}
-        className={`hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none bg-white dark:bg-gray-900 ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+        className={`ui-list-row hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none bg-white dark:bg-gray-900 ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+        data-level={category._level || 0}
         {...getRowHandlers(category)}
       >
         <td className="p-0">
@@ -223,8 +224,9 @@ const CategoryRow = memo(function CategoryRow({
   return (
     <tr
       ref={rowRef}
-      className={`group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
-      {...getRowHandlers(category)}
+      className={`ui-list-row group hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none ${density !== 'normal' && index % 2 === 1 ? 'bg-gray-50 dark:bg-table-stripe-dark' : 'bg-white dark:bg-gray-900'} ${isHighlighted ? HIGHLIGHT_FLASH : ''}`}
+      data-level={category._level || 0}
+        {...getRowHandlers(category)}
     >
       <td className={`${cellPadding} whitespace-nowrap`}>
         <div
@@ -455,7 +457,7 @@ export function CategoryList({
       {/* Density toggle */}
       <DensityToggleBar view="categories" />
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="ui-table ui-list-ledger ui-list-categories min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           {/* On a phone the wrapped card labels its own values, so the column
               header is dropped, but its sort controls are not: a slim header
               carries every sort field as a button, and no column label of its

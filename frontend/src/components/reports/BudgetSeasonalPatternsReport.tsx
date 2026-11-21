@@ -22,6 +22,7 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { chartColors } from '@/lib/chart-colors';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 type SeasonalPatternsSortField = 'category' | 'typical' | 'highMonths';
 
@@ -138,7 +139,7 @@ export function BudgetSeasonalPatternsReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -149,7 +150,7 @@ export function BudgetSeasonalPatternsReport() {
 
   if (budgets.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+      <div className={`${CARD_CLASS} p-6 text-center`}>
         <p className="text-gray-500 dark:text-gray-400">
           {t('budgetSeasonalPatterns.noBudgets')}
         </p>
@@ -160,7 +161,7 @@ export function BudgetSeasonalPatternsReport() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <div className="flex flex-wrap gap-3 items-center">
             <select
@@ -196,7 +197,7 @@ export function BudgetSeasonalPatternsReport() {
       </div>
 
       {patterns.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+        <div className={`${CARD_CLASS} p-6 text-center`}>
           <p className="text-gray-500 dark:text-gray-400">
             {t('budgetSeasonalPatterns.notEnoughData')}
           </p>
@@ -204,7 +205,7 @@ export function BudgetSeasonalPatternsReport() {
       ) : activePattern ? (
         <>
           {/* Chart */}
-          <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+          <div ref={chartRef} className={`${CARD_CLASS} p-6`}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {t('budgetSeasonalPatterns.sectionTitle', { categoryName: activePattern.categoryName })}
@@ -256,7 +257,7 @@ export function BudgetSeasonalPatternsReport() {
           </div>
 
           {/* All Categories Summary */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 sm:p-6">
+          <div className={`${CARD_CLASS} p-4 sm:p-6`}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('budgetSeasonalPatterns.allCategoryPatterns')}
             </h2>

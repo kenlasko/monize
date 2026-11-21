@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "Deze browser kan geen gedeelde bestanden ontvangen",
   "unsupportedBrowserMessage": "Delen met een geïnstalleerde app is hier niet beschikbaar. U kunt bestanden nog steeds vanuit Monize toevoegen.",
   "goToTransactions": "Toevoegen via Transacties",
-  "goToImport": "Naar Importeren"
+  "goToImport": "Naar Importeren",
+  "eyebrow": "Binnenkomend bestand"
 }

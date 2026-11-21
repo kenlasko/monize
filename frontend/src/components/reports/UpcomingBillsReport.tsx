@@ -36,6 +36,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { isComplete, type ConvertedTotal } from '@/lib/currency-total';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 /** How far ahead the report projects, matching the three months it always has. */
 const HORIZON_MONTHS = 3;
@@ -307,7 +308,7 @@ export function UpcomingBillsReport() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -338,14 +339,14 @@ export function UpcomingBillsReport() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('upcomingBills.activeBills')}</div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {scheduledTransactions.length}
           </div>
         </div>
         {summary.overdueCount > 0 && (
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+          <div className="ui-rep-tile bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
             <div className="text-sm text-red-600 dark:text-red-400">{t('upcomingBills.overdue')}</div>
             <div className="text-xl font-bold text-red-700 dark:text-red-300">
               {summary.overdueCount}
@@ -359,7 +360,7 @@ export function UpcomingBillsReport() {
             </div>
           </div>
         )}
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <div className="ui-rep-tile bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div className="text-sm text-blue-600 dark:text-blue-400">{t('upcomingBills.thisMonth')}</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
             {summary.thisMonthCount}
@@ -375,7 +376,7 @@ export function UpcomingBillsReport() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {/* The month stepper alone fills a phone, so the view switch and the
             export take a line of their own below it rather than being pushed
             off the right of the card. One row from `sm` up. */}
@@ -436,12 +437,12 @@ export function UpcomingBillsReport() {
       </div>
 
       {scheduledTransactions.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <EmptyState title={t('upcomingBills.noBills')} />
         </div>
       ) : viewType === 'calendar' ? (
         /* Calendar View */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="grid grid-cols-7">
             {([t('upcomingBills.dayLabels.sun'), t('upcomingBills.dayLabels.mon'), t('upcomingBills.dayLabels.tue'), t('upcomingBills.dayLabels.wed'), t('upcomingBills.dayLabels.thu'), t('upcomingBills.dayLabels.fri'), t('upcomingBills.dayLabels.sat')]).map((day) => (
               <div
@@ -506,7 +507,7 @@ export function UpcomingBillsReport() {
         </div>
       ) : (
         /* List View */
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {upcomingBills.slice(0, 50).map((bill, index) => (
               <div

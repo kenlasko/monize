@@ -16,7 +16,8 @@
     "summaryTotal": "전체 카테고리",
     "summaryIncome": "수입 카테고리",
     "summaryExpense": "지출 카테고리",
-    "summaryTopLevel": "최상위"
+    "summaryTopLevel": "최상위",
+    "eyebrow": "카테고리 목록"
   },
   "empty": {
     "heading": "카테고리가 없습니다",

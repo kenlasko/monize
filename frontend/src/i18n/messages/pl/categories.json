@@ -16,7 +16,8 @@
     "summaryTotal": "Wszystkie kategorie",
     "summaryIncome": "Kategorie przychodów",
     "summaryExpense": "Kategorie wydatków",
-    "summaryTopLevel": "Najwyzszy poziom"
+    "summaryTopLevel": "Najwyzszy poziom",
+    "eyebrow": "Plan kategorii"
   },
   "empty": {
     "heading": "Brak kategorii",

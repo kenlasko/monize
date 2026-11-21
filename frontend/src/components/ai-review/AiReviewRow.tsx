@@ -223,7 +223,7 @@ export function AiReviewRow({
 
   return (
     <>
-      <tr>
+      <tr className="ui-docket-row">
         {selectable && (
           <Td className={`${cell} w-10`}>
             {(isApprovable(item) || isSendableToAssistant(item)) && (
@@ -263,7 +263,7 @@ export function AiReviewRow({
           </Td>
         ) : (
           <>
-            <Td className={`${cell} whitespace-nowrap`}>{dateText}</Td>
+            <Td className={`${cell} ui-docket-no whitespace-nowrap`}>{dateText}</Td>
             <Td className={`${cell} min-w-0 break-words`}>{requestContent}</Td>
             <Td align="right" className={`${cell} whitespace-nowrap`}>
               {amountText}

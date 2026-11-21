@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "AI Assistant",
-    "subtitle": "Ask questions about your finances in natural language"
+    "subtitle": "Ask questions about your finances in natural language",
+    "eyebrow": "Assistant"
   },
   "bubble": {
     "launcherAriaLabel": "Open AI assistant",

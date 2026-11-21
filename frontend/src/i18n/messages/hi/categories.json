@@ -16,7 +16,8 @@
     "summaryTotal": "कुल श्रेणियां",
     "summaryIncome": "आय श्रेणियां",
     "summaryExpense": "व्यय श्रेणियां",
-    "summaryTopLevel": "शीर्ष-स्तर"
+    "summaryTopLevel": "शीर्ष-स्तर",
+    "eyebrow": "श्रेणियों का खाका"
   },
   "empty": {
     "heading": "अभी तक कोई श्रेणी नहीं",

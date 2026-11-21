@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Đã tạo: {timestamp}"
+  },
+  "statement": {
+    "item": "Khoản mục",
+    "amount": "Số tiền",
+    "share": "Tỷ trọng"
   }
 }

@@ -4,7 +4,8 @@
     "subtitle": "Automatycznie uzupełniaj tagi, kategorie i odbiorców, gdy transakcja zostanie utworzona lub zaimportowana",
     "createButton": "Utwórz regułę",
     "loading": "Wczytywanie reguł...",
-    "totalCount": "{count, plural, one {# reguła} few {# reguły} many {# reguł} other {# reguły}}"
+    "totalCount": "{count, plural, one {# reguła} few {# reguły} many {# reguł} other {# reguły}}",
+    "eyebrow": "Automatyzacja"
   },
   "empty": {
     "title": "Brak reguł",

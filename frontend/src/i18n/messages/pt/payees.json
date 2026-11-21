@@ -37,7 +37,8 @@
       "withoutCategory": "Sem Categoria"
     },
     "applyDefaultCategories": "Aplicar categorias predefinidas",
-    "lookupSettings": "Definições de pesquisa de beneficiários"
+    "lookupSettings": "Definições de pesquisa de beneficiários",
+    "eyebrow": "Índice de beneficiários"
   },
   "list": {
     "columns": {

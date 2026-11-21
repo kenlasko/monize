@@ -4,7 +4,8 @@
     "subtitle": "Compila automaticamente tag, categorie e beneficiari quando una transazione viene creata o importata",
     "createButton": "Crea regola",
     "loading": "Caricamento delle regole...",
-    "totalCount": "{count, plural, one {# regola} other {# regole}}"
+    "totalCount": "{count, plural, one {# regola} other {# regole}}",
+    "eyebrow": "Automazione"
   },
   "empty": {
     "title": "Ancora nessuna regola",

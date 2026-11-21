@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "このブラウザーは共有されたファイルを受け取れません",
   "unsupportedBrowserMessage": "インストール済みアプリへの共有はここでは利用できません。Monize 内からファイルを追加することはできます。",
   "goToTransactions": "取引から追加",
-  "goToImport": "インポートへ"
+  "goToImport": "インポートへ",
+  "eyebrow": "受信ファイル"
 }

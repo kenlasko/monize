@@ -56,6 +56,7 @@ import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-c
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const MAX_PAGES = 50;
 
@@ -575,7 +576,7 @@ export function SecurityPerformanceReport() {
       {/* Security and benchmark selectors, and the chart's window -- always
           rendered so focus inside DateInput survives reloads. The load and
           error states belong to the body below, not to the whole report. */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4 space-y-4">
+      <div className={`${CARD_CLASS} p-4 space-y-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex w-full flex-wrap gap-2 items-center sm:w-auto">
             {/* From `sm` up, sized to their longest option rather than to the
@@ -675,14 +676,14 @@ export function SecurityPerformanceReport() {
       {error ? (
         <ReportError onRetry={reloadBase} />
       ) : isLoading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
           </div>
         </div>
       ) : selectedSecurityIds.length + activeIndexCodes.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-8 text-center">
+        <div className={`${CARD_CLASS} p-8 text-center`}>
           <p className="text-gray-500 dark:text-gray-400">
             {t('securityPerformance.selectPrompt')}
           </p>
@@ -698,7 +699,7 @@ export function SecurityPerformanceReport() {
           onExportableChange={setComparisonExportable}
         />
       ) : isLoadingDetail ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <div className="space-y-4">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-64 w-full" />
@@ -708,7 +709,7 @@ export function SecurityPerformanceReport() {
         <>
           {/* Security Info */}
           {selectedSecurity && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+            <div className={`${CARD_CLASS} p-4`}>
               <div className="flex flex-wrap gap-6 items-center">
                 <div>
                   <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedSecurity.symbol}</div>
@@ -739,7 +740,7 @@ export function SecurityPerformanceReport() {
           {/* Stats Cards */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+              <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
                 <div className="text-sm text-gray-500 dark:text-gray-400">{t('securityPerformance.currentValue')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {stats.currentValue !== null ? formatCurrencyFull(stats.currentValue, displayCurrency) : '-'}
@@ -753,7 +754,7 @@ export function SecurityPerformanceReport() {
                   )}
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+              <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
                 <div className="text-sm text-gray-500 dark:text-gray-400">{t('securityPerformance.costBasis')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {formatCurrencyFull(stats.costBasis, displayCurrency)}
@@ -779,7 +780,7 @@ export function SecurityPerformanceReport() {
                   </>
                 )}
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+              <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
                 <div className="text-sm text-gray-500 dark:text-gray-400">{t('securityPerformance.annualizedReturn')}</div>
                 <div className={`text-xl font-bold ${stats.annualizedReturn !== null ? gainLossColor(stats.annualizedReturn) : 'text-gray-400'}`}>
                   {stats.annualizedReturn !== null
@@ -795,7 +796,7 @@ export function SecurityPerformanceReport() {
 
           {viewType === 'chart' ? (
             /* Price Chart */
-            <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+            <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 {t('securityPerformance.priceHistory', { symbol: selectedSecurity?.symbol ?? '' })}
               </h3>
@@ -916,7 +917,7 @@ export function SecurityPerformanceReport() {
             </div>
           ) : viewType === 'transactions' ? (
             /* Transaction History */
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+            <div className={`${CARD_CLASS} overflow-hidden`}>
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {t('securityPerformance.transactionHistory', { symbol: selectedSecurity?.symbol ?? '' })}
@@ -1027,7 +1028,7 @@ export function SecurityPerformanceReport() {
             </div>
           ) : (
             /* Dividend History */
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+            <div className={`${CARD_CLASS} overflow-hidden`}>
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {t('securityPerformance.dividendHistory', { symbol: selectedSecurity?.symbol ?? '' })}

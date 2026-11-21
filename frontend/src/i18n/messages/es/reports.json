@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Generado: {timestamp}"
+  },
+  "statement": {
+    "item": "Concepto",
+    "amount": "Importe",
+    "share": "Porcentaje"
   }
 }

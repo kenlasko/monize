@@ -73,7 +73,8 @@
       "prefillFailed": "Diese Buchung konnte nicht geladen werden, daher beginnt die Garantie leer",
       "exported": "{count, plural, one {{shown} Garantie exportiert} other {{shown} Garantien exportiert}}",
       "exportFailed": "Die Garantien konnten nicht exportiert werden"
-    }
+    },
+    "eyebrow": "Garantieregister"
   },
   "status": {
     "lifetime": "Lebenslang",

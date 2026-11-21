@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Reçus par e-mail",
-    "subtitle": "Lisez les confirmations de commande d'une boîte mail et transformez-les en transactions détaillées : ce qui est connecté, ce qu'il est advenu de chaque e-mail et ce qui vous attend"
+    "subtitle": "Lisez les confirmations de commande d'une boîte mail et transformez-les en transactions détaillées : ce qui est connecté, ce qu'il est advenu de chaque e-mail et ce qui vous attend",
+    "eyebrow": "Boîte des reçus"
   },
   "mailbox": {
     "heading": "Boîte mail",

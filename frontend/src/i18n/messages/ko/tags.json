@@ -35,7 +35,8 @@
       "createFailed": "태그 만들기에 실패했습니다",
       "updateFailed": "태그 업데이트에 실패했습니다",
       "deleteFailed": "태그 삭제에 실패했습니다"
-    }
+    },
+    "eyebrow": "라벨"
   },
   "list": {
     "empty": {

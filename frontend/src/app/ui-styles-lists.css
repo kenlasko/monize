@@ -3,3 +3,465 @@
  * (read its header): ramp tokens only, marker classes in @layer components,
  * unlayered rules only where a primitive's own utility must yield.
  */
+
+/*
+ * Markers (all set by the list and management components):
+ *   ui-list-ledger / ui-list-payees|categories|tags|rules|warranties
+ *                      a list table; ui-list-row its data rows
+ *   data-level         a category row's depth in the tree (0 = top level)
+ *   ui-rule-no         a rule's order number cell
+ *   ui-chat-*          the assistant conversation (row, bubble, user,
+ *                      assistant, thread, head, composer, input, suggest)
+ *   ui-shared-settle / -amount / -position   shared-expense balances
+ *   ui-detail-pill     the type and status pills of a detail header
+ */
+
+/* ===================================================================== */
+/* Classic: the index. Ink rules top and bottom, a rule under the         */
+/* small-capital header, hairlines between entries, no stripes; counts    */
+/* and dates in the mono face, set tabular in their own column.           */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-list-ledger {
+  border-collapse: collapse;
+  border-top: 2px solid var(--ui-rule-ink);
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-list-ledger > thead > tr > th {
+  border-bottom: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-list-ledger > tbody {
+  background-color: transparent;
+  border-color: var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-list-ledger > tbody > tr {
+  border-color: var(--ui-rule-hair);
+}
+
+/* Unlayered: the row's own stripe and hover utilities yield. */
+html[data-ui-style='classic'] .ui-list-row {
+  background-color: transparent;
+}
+html[data-ui-style='classic'] .ui-list-row:hover,
+html[data-ui-style='classic'] .ui-list-row:hover > td.sticky {
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='classic'] .ui-list-row:hover,
+html.dark[data-ui-style='classic'] .ui-list-row:hover > td.sticky {
+  background-color: var(--color-gray-800);
+}
+html[data-ui-style='classic'] .ui-list-row > td.sticky {
+  background-color: inherit;
+}
+
+/* Names read as printed entries: ink, not link blue. */
+html[data-ui-style='classic'] .ui-list-row button.text-blue-600 {
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-list-row button.text-blue-600 {
+  color: var(--color-gray-100);
+}
+
+/* Counts and dates: mono, tabular, ruled off in their own column. */
+html[data-ui-style='classic'] .ui-list-ledger > tbody > tr > td:is(.text-right, .text-center):not(.sticky) {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+html[data-ui-style='classic'] :is(.ui-list-payees, .ui-list-tags) > tbody > tr > td.text-right:not(.sticky):not(:last-child) {
+  border-left: 1px solid var(--color-gray-300);
+}
+html.dark[data-ui-style='classic'] :is(.ui-list-payees, .ui-list-tags) > tbody > tr > td.text-right:not(.sticky):not(:last-child) {
+  border-left-color: var(--color-gray-700);
+}
+
+/* Category glyphs are square marks in the book. */
+html[data-ui-style='classic'] .ui-list-categories span[aria-hidden].rounded-full {
+  border-radius: 0;
+}
+
+/* Chart of accounts: a top-level category heads its group on an ink hairline
+   in small capitals; its subcategories sit under it, indented, lighter. */
+html[data-ui-style='classic'] .ui-list-categories > tbody > tr[data-level='0'] {
+  border-top: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-list-categories > tbody > tr[data-level='0']:first-child {
+  border-top-color: transparent;
+}
+html[data-ui-style='classic'] .ui-list-categories > tbody > tr[data-level='0'] > td:first-child button.text-blue-600 {
+  font-family: var(--ui-font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+}
+html[data-ui-style='classic'] .ui-list-categories > tbody > tr:not([data-level='0']) > td:first-child button.text-blue-600 {
+  font-weight: 400;
+}
+html[data-ui-style='classic'] .ui-list-categories > tbody > tr[data-level='1'] > td:first-child {
+  padding-left: 2.25rem;
+}
+html[data-ui-style='classic'] .ui-list-categories > tbody > tr[data-level='2'] > td:first-child {
+  padding-left: 3.5rem;
+}
+
+/* Rules are numbered articles: the order cell is a numero in the mono face. */
+html[data-ui-style='classic'] td.ui-rule-no {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  color: var(--color-gray-500);
+}
+html[data-ui-style='classic'] td.ui-rule-no::before {
+  content: '\2116\00a0';
+}
+
+/* Warranties: a register of certificates; the expiry stands out in the ink. */
+html[data-ui-style='classic'] .ui-list-warranties > tbody > tr > td:nth-child(3) {
+  font-weight: 500;
+}
+
+/* ===================================================================== */
+/* Modern: soft rows in a block. Faint dividers (kit), hover as a rounded */
+/* wash, figures bold and tight, status as pills (Badge).                 */
+/* ===================================================================== */
+
+html[data-ui-style='modern'] .ui-list-ledger > tbody > tr {
+  border-color: var(--ui-rule-soft);
+}
+html[data-ui-style='modern'] .ui-list-row {
+  background-color: transparent;
+}
+html[data-ui-style='modern'] .ui-list-row > td.sticky {
+  background-color: inherit;
+}
+html[data-ui-style='modern'] .ui-list-row:hover,
+html[data-ui-style='modern'] .ui-list-row:hover > td.sticky {
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-list-row:hover,
+html.dark[data-ui-style='modern'] .ui-list-row:hover > td.sticky {
+  background-color: color-mix(in oklab, var(--color-gray-700) 60%, transparent);
+}
+html[data-ui-style='modern'] .ui-list-row > td:first-child {
+  border-start-start-radius: 1rem;
+  border-end-start-radius: 1rem;
+}
+html[data-ui-style='modern'] .ui-list-row > td:last-child {
+  border-start-end-radius: 1rem;
+  border-end-end-radius: 1rem;
+}
+html[data-ui-style='modern'] .ui-list-row button.text-blue-600 {
+  color: var(--color-gray-900);
+  font-weight: 600;
+}
+html.dark[data-ui-style='modern'] .ui-list-row button.text-blue-600 {
+  color: var(--color-gray-100);
+}
+html[data-ui-style='modern'] .ui-list-ledger > tbody > tr > td.text-right:not(.sticky) {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* The payee and category marks are round pucks. */
+html[data-ui-style='modern'] :is(.ui-list-payees, .ui-list-categories, .ui-list-tags) .ui-list-row :is(img, span[aria-hidden]).shrink-0 {
+  border-radius: 9999px;
+}
+html[data-ui-style='modern'] .ui-list-categories > tbody > tr[data-level='1'] > td:first-child {
+  padding-left: 2.25rem;
+}
+html[data-ui-style='modern'] .ui-list-categories > tbody > tr[data-level='2'] > td:first-child {
+  padding-left: 3.5rem;
+}
+html[data-ui-style='modern'] .ui-list-categories > tbody > tr[data-level='0'] > td:first-child button.text-blue-600 {
+  font-weight: 700;
+}
+html[data-ui-style='modern'] td.ui-rule-no {
+  font-weight: 700;
+  color: var(--color-gray-400);
+}
+
+/* ===================================================================== */
+/* Detail headers: payee and category                                     */
+/* ===================================================================== */
+
+/* Classic: the type and status as square small-capital marks. */
+html[data-ui-style='classic'] .ui-detail-header .ui-detail-pill {
+  background-color: transparent;
+  border: 1px solid var(--color-gray-400);
+  color: var(--color-gray-700);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: var(--ui-label-tracking);
+  text-transform: uppercase;
+}
+html.dark[data-ui-style='classic'] .ui-detail-header .ui-detail-pill {
+  border-color: var(--color-gray-500);
+  color: var(--color-gray-300);
+}
+
+/* Modern: the pills take the ink. */
+html[data-ui-style='modern'] .ui-detail-header .ui-detail-pill {
+  background-color: var(--color-gray-900);
+  color: var(--color-white);
+  font-weight: 600;
+}
+html.dark[data-ui-style='modern'] .ui-detail-header .ui-detail-pill {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+
+/* ===================================================================== */
+/* Shared expenses: settle-up lines and positions                         */
+/* ===================================================================== */
+
+html[data-ui-style='classic'] .ui-shared-settle,
+html[data-ui-style='classic'] .ui-shared-position {
+  border-color: var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-shared-amount {
+  font-family: var(--ui-font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+html[data-ui-style='modern'] .ui-shared-settle {
+  margin-top: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 0;
+  border-radius: 1.25rem;
+  background-color: var(--color-gray-100);
+}
+html.dark[data-ui-style='modern'] .ui-shared-settle {
+  background-color: color-mix(in oklab, var(--color-gray-700) 55%, transparent);
+}
+html[data-ui-style='modern'] ul:has(> .ui-shared-settle) {
+  border: 0;
+}
+html[data-ui-style='modern'] .ui-shared-amount {
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+html[data-ui-style='modern'] .ui-shared-position {
+  border-color: var(--ui-rule-soft);
+}
+
+/* ===================================================================== */
+/* The assistant: a correspondence (Classic) and bubbles in blocks        */
+/* (Modern)                                                               */
+/* ===================================================================== */
+
+/* Classic: no bubbles. Each message is a paragraph of the letter, ruled at
+   the margin; the writer's own lines in italics, the reply in the body face
+   on an ink rule, a hairline between exchanges. */
+html[data-ui-style='classic'] .ui-chat-bubble {
+  max-width: 100%;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-radius: 0;
+  background-color: transparent;
+  border-left: 2px solid var(--ui-rule-ink);
+  color: var(--color-gray-900);
+}
+html.dark[data-ui-style='classic'] .ui-chat-bubble {
+  color: var(--color-gray-100);
+}
+html[data-ui-style='classic'] .ui-chat-user {
+  border-left-color: var(--color-gray-400);
+  font-style: italic;
+}
+html[data-ui-style='classic'] .ui-chat-row-user {
+  justify-content: flex-start;
+}
+html[data-ui-style='classic'] .ui-chat-row {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-chat-assistant :is(h1, h2, h3, h4) {
+  font-family: var(--ui-font-display);
+  font-weight: 500;
+}
+html[data-ui-style='classic'] .ui-chat-head {
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-chat-composer {
+  border-top: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-chat-input {
+  border-radius: 0.125rem;
+}
+html[data-ui-style='classic'] .ui-chat-suggest {
+  border-radius: 0;
+  border-width: 0 0 1px;
+  border-color: var(--ui-rule-hair);
+  background-color: transparent;
+}
+
+/* Modern: rounded bubbles. The writer's is the ink block, the reply a white
+   block on the off-white page; the composer is a pill. */
+html[data-ui-style='modern'] .ui-chat-user {
+  border-radius: 1.5rem 1.5rem 0.375rem 1.5rem;
+  background-color: var(--color-gray-900);
+  color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-chat-user {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+html[data-ui-style='modern'] .ui-chat-assistant {
+  border-radius: 1.5rem 1.5rem 1.5rem 0.375rem;
+  background-color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-chat-assistant {
+  background-color: var(--color-gray-800);
+}
+html[data-ui-style='modern'] .ui-chat-input {
+  border-radius: 1.5rem;
+}
+html[data-ui-style='modern'] .ui-chat-suggest {
+  border-radius: 1.25rem;
+  border-color: transparent;
+  background-color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-chat-suggest {
+  background-color: var(--color-gray-800);
+}
+html[data-ui-style='modern'] .ui-chat-composer {
+  border-top-color: transparent;
+}
+html[data-ui-style='modern'] .ui-chat-head {
+  border-bottom-color: var(--ui-rule-soft);
+}
+
+/* ===================================================================== */
+/* The review queue (ui-docket) and the import steps (ui-import-steps)    */
+/* ===================================================================== */
+
+/* Classic: the queue is a docket. Ruled in ink, each entry numbered in the
+   mono face ahead of its date. */
+html[data-ui-style='classic'] .ui-docket {
+  counter-reset: docket;
+  border-collapse: collapse;
+  border-top: 2px solid var(--ui-rule-ink);
+  border-bottom: 2px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-docket > thead > tr > th {
+  border-bottom: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-docket > tbody {
+  background-color: transparent;
+  border-color: var(--ui-rule-hair);
+}
+html[data-ui-style='classic'] .ui-docket-row {
+  counter-increment: docket;
+}
+html[data-ui-style='classic'] .ui-docket-no {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+html[data-ui-style='classic'] .ui-docket-no::before {
+  content: '\2116\00a0' counter(docket, decimal-leading-zero) '\00a0\00a0';
+  color: var(--color-gray-500);
+}
+
+/* Modern: queue rows are soft blocks with a faint rule; the item number is a
+   round puck. */
+html[data-ui-style='modern'] .ui-docket > tbody > tr {
+  border-color: var(--ui-rule-soft);
+}
+html[data-ui-style='modern'] .ui-docket {
+  counter-reset: docket;
+}
+html[data-ui-style='modern'] .ui-docket-row {
+  counter-increment: docket;
+}
+html[data-ui-style='modern'] .ui-docket-no::before {
+  content: counter(docket);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.625rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-900);
+  color: var(--color-white);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+html.dark[data-ui-style='modern'] .ui-docket-no::before {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+
+/* Classic: the wizard is a numbered ruled sequence. Square numerals in the
+   mono face on a ruled line; the current step in the ink, done steps struck
+   through the rule. (Unlayered: the dot's own utilities yield.) */
+html[data-ui-style='classic'] .ui-import-steps {
+  gap: 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--ui-rule-ink);
+}
+html[data-ui-style='classic'] .ui-import-dot {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0;
+  border: 1px solid var(--color-gray-400);
+  background-color: transparent;
+  color: var(--color-gray-500);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+html[data-ui-style='classic'] .ui-import-step[data-state='current'] .ui-import-dot {
+  border: 2px solid var(--ui-rule-ink);
+  color: var(--color-gray-900);
+  font-weight: 700;
+}
+html[data-ui-style='classic'] .ui-import-step[data-state='done'] .ui-import-dot {
+  border-color: var(--ui-rule-ink);
+  background-color: var(--ui-rule-ink);
+  color: var(--color-gray-50);
+}
+html.dark[data-ui-style='classic'] .ui-import-step[data-state='current'] .ui-import-dot {
+  color: var(--color-gray-100);
+}
+html.dark[data-ui-style='classic'] .ui-import-step[data-state='done'] .ui-import-dot {
+  color: var(--color-gray-900);
+}
+html[data-ui-style='classic'] .ui-import-link {
+  width: 2.5rem;
+  height: 1px;
+  background-color: var(--color-gray-400);
+}
+
+/* Modern: pill steps. The current step is the ink pill, done steps the
+   accent, the rest quiet grey; the connector is dropped. */
+html[data-ui-style='modern'] .ui-import-steps {
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+html[data-ui-style='modern'] .ui-import-step {
+  gap: 0;
+}
+html[data-ui-style='modern'] .ui-import-link {
+  display: none;
+}
+html[data-ui-style='modern'] .ui-import-dot {
+  width: auto;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding-inline: 0.75rem;
+  border: 0;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+html[data-ui-style='modern'] .ui-import-step[data-state='current'] .ui-import-dot {
+  background-color: var(--color-gray-900);
+  color: var(--color-white);
+}
+html.dark[data-ui-style='modern'] .ui-import-step[data-state='current'] .ui-import-dot {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-900);
+}

@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "Generato: {timestamp}"
+  },
+  "statement": {
+    "item": "Voce",
+    "amount": "Importo",
+    "share": "Quota"
   }
 }

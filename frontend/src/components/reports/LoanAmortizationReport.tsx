@@ -34,6 +34,7 @@ import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 import { accountSelectOption } from '@/lib/account-utils';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 
 type AmortizationSortField = 'paymentNumber' | 'date' | 'payment' | 'principal' | 'interest' | 'balance';
@@ -448,7 +449,7 @@ export function LoanAmortizationReport() {
 
   if (isLoading || historyLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -459,7 +460,7 @@ export function LoanAmortizationReport() {
 
   if (accounts.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <EmptyState title={t('loanAmortization.empty')} />
       </div>
     );
@@ -468,7 +469,7 @@ export function LoanAmortizationReport() {
   return (
     <div className="space-y-6">
       {/* Account Selector */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
             <AccountSelect
@@ -520,19 +521,19 @@ export function LoanAmortizationReport() {
             summary?.projectedPayoffDate ? 'md:grid-cols-6' : 'md:grid-cols-5'
           } gap-4`}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('loanAmortization.currentBalance')}</div>
             <div className="text-lg font-bold text-red-600 dark:text-red-400">
               {formatCurrency(Math.abs(selectedAccount.currentBalance))}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('loanAmortization.originalAmount')}</div>
             <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
               {formatCurrency(summary?.originalBalance || Math.abs(selectedAccount.openingBalance))}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('loanAmortization.interestRate')}</div>
             <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
               {currentTerms.annualRate != null
@@ -540,7 +541,7 @@ export function LoanAmortizationReport() {
                 : t('loanAmortization.notSet')}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               {interestLabel(summary)}
             </div>
@@ -548,14 +549,14 @@ export function LoanAmortizationReport() {
               {formatCurrency(summary?.totalInterest || 0)}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+          <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('loanAmortization.paymentsMade')}</div>
             <div className="text-lg font-bold text-green-600 dark:text-green-400">
               {historicalCount}
             </div>
           </div>
           {summary?.projectedPayoffDate && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+            <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
               <div className="text-sm text-gray-500 dark:text-gray-400">{t('loanAmortization.estPayoff')}</div>
               <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
                 {formatChartDate(summary.projectedPayoffDate, 'MMM yyyy')}
@@ -567,7 +568,7 @@ export function LoanAmortizationReport() {
 
       {/* Account Details */}
       {!historyError && selectedAccount && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-gray-500 dark:text-gray-400">{t('loanAmortization.accountType')}</span>
@@ -629,7 +630,7 @@ export function LoanAmortizationReport() {
           load, so an empty schedule is never mistaken for a loan that has made
           no payments. */}
       {!historyError && (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+      <div className={`${CARD_CLASS} overflow-hidden`}>
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {hasProjection ? t('loanAmortization.paymentHistoryProjection') : t('loanAmortization.paymentHistory')}

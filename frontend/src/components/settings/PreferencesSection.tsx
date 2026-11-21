@@ -27,6 +27,7 @@ import { UiStyle } from '@/lib/ui-styles';
 import { DefaultViewsGroup } from '@/components/settings/DefaultViewsGroup';
 import { MobileTabsGroup } from '@/components/settings/MobileTabsGroup';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 // CRYPTO is a listing label, not a Yahoo exchange: lookup ranking compares Yahoo
 // suffixes and `exchDisp`, so a preference for it could never match a result.
@@ -259,7 +260,7 @@ export function PreferencesSection({ preferences, onPreferencesUpdated }: Prefer
   const dateFormatOptions = getDateFormatOptions(tc, browserLocale);
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/50 rounded-lg p-6 mb-6">
+    <div className={`${CARD_CLASS} p-6 mb-6`}>
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('heading')}</h2>
 
       <div className="space-y-6">

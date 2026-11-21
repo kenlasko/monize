@@ -73,7 +73,8 @@
       "prefillFailed": "その取引を読み込めなかったため、保証は空の状態で始まります",
       "exported": "{count, plural, other {{shown} 件の保証をエクスポートしました}}",
       "exportFailed": "保証をエクスポートできませんでした"
-    }
+    },
+    "eyebrow": "保証台帳"
   },
   "status": {
     "lifetime": "永久保証",

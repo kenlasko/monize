@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "AI-assistent",
-    "subtitle": "Stel vragen over je financiën in gewone taal"
+    "subtitle": "Stel vragen over je financiën in gewone taal",
+    "eyebrow": "Assistent"
   },
   "bubble": {
     "launcherAriaLabel": "AI-assistent openen",

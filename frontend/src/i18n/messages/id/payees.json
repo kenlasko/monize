@@ -37,7 +37,8 @@
       "withoutCategory": "Tanpa Kategori"
     },
     "applyDefaultCategories": "Terapkan Kategori Default",
-    "lookupSettings": "Pengaturan pencarian penerima"
+    "lookupSettings": "Pengaturan pencarian penerima",
+    "eyebrow": "Indeks penerima"
   },
   "list": {
     "columns": {

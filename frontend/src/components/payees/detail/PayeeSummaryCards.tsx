@@ -103,6 +103,7 @@ export function PayeeSummaryCards({
 
   const cards: SummaryCardItem[] = [
     {
+      lead: true,
       label: isIncomePayee ? t('summary.receivedThisYear') : t('summary.spentThisYear'),
       value:
         thisYear !== null ? formatCurrency(thisYear, displayCurrency) : '—',

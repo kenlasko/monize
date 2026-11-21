@@ -73,7 +73,8 @@
       "prefillFailed": "Die transactie kon niet worden geladen, dus de garantie begint leeg",
       "exported": "{count, plural, one {{shown} garantie geëxporteerd} other {{shown} garanties geëxporteerd}}",
       "exportFailed": "De garanties konden niet worden geëxporteerd"
-    }
+    },
+    "eyebrow": "Garantieregister"
   },
   "status": {
     "lifetime": "Levenslang",

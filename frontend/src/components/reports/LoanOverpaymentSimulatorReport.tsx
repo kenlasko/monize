@@ -22,6 +22,7 @@ import type { LoanRateChange } from '@/types/loan-rate-change';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 import { accountSelectOption } from '@/lib/account-utils';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const DEBT_ACCOUNT_TYPES: AccountType[] = ['LOAN', 'MORTGAGE', 'LINE_OF_CREDIT'];
 
@@ -120,7 +121,7 @@ export function LoanOverpaymentSimulatorReport() {
 
   if (accountsLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -131,7 +132,7 @@ export function LoanOverpaymentSimulatorReport() {
 
   if (accounts.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <EmptyState title={t('loanOverpayment.empty')} />
       </div>
     );
@@ -139,7 +140,7 @@ export function LoanOverpaymentSimulatorReport() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <AccountSelect
@@ -176,7 +177,7 @@ export function LoanOverpaymentSimulatorReport() {
       {selectedAccount && isRevolving && <LineOfCreditView account={selectedAccount} />}
 
       {selectedAccount && !isRevolving && dataLoading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} p-6`}>
           <Skeleton className="h-64 w-full" />
         </div>
       )}

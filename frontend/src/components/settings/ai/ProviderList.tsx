@@ -12,6 +12,7 @@ import { AI_PROVIDER_LABELS, AiProviderType } from '@/types/ai';
 import { aiApi } from '@/lib/ai';
 import { getErrorMessage } from '@/lib/errors';
 import toast from 'react-hot-toast';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface ProviderListProps {
   configs: AiProviderConfig[];
@@ -113,7 +114,7 @@ export function ProviderList({ configs, encryptionAvailable, onConfigsChanged, h
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
+    <div className={`${CARD_CLASS} p-4 sm:p-6 mb-6`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('heading')}</h2>
         <Button size="sm" onClick={() => setShowForm(true)} disabled={disabled}>

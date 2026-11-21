@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 interface ReportErrorProps {
   /** Optional override message; defaults to a generic load-failure note. */
@@ -19,7 +20,7 @@ interface ReportErrorProps {
 export function ReportError({ message, onRetry }: ReportErrorProps) {
   const t = useTranslations('reports');
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6 text-center">
+    <div className={`${CARD_CLASS} p-6 text-center`}>
       <p className="text-sm text-red-600 dark:text-red-400">
         {message || t('error.defaultMessage')}
       </p>

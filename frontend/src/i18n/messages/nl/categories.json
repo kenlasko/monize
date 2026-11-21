@@ -16,7 +16,8 @@
     "summaryTotal": "Totaal categorieën",
     "summaryIncome": "Inkomstencategorieën",
     "summaryExpense": "Uitgavencategorieën",
-    "summaryTopLevel": "Hoofdniveau"
+    "summaryTopLevel": "Hoofdniveau",
+    "eyebrow": "Overzicht van categorieën"
   },
   "empty": {
     "heading": "Nog geen categorieën",

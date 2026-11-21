@@ -38,7 +38,8 @@
   "page": {
     "title": "Імпорт транзакцій",
     "subtitle": "Імпортуйте транзакції з файлів QIF/QMTF, OFX/QFX або CSV чи перенесіть цілий файл Microsoft Money (.mny) або KMyMoney (.kmy, .xml)",
-    "stepOf": "Крок {current} з {total}"
+    "stepOf": "Крок {current} з {total}",
+    "eyebrow": "Завантаження операцій"
   },
   "upload": {
     "heading": "Завантажити файли транзакцій",

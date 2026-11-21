@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Paragony z e-maili",
-    "subtitle": "Odczytuj potwierdzenia zamówień ze skrzynki pocztowej i zamieniaj je na transakcje ze szczegółami pozycji: co jest połączone, co się stało z każdą wiadomością i co czeka na Ciebie"
+    "subtitle": "Odczytuj potwierdzenia zamówień ze skrzynki pocztowej i zamieniaj je na transakcje ze szczegółami pozycji: co jest połączone, co się stało z każdą wiadomością i co czeka na Ciebie",
+    "eyebrow": "Skrzynka paragonów"
   },
   "mailbox": {
     "heading": "Skrzynka pocztowa",

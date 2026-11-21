@@ -28,6 +28,7 @@ export function SharedGroupSummary({ group }: { group: SharedGroupDetail }) {
         className="grid grid-cols-1 gap-4 sm:grid-cols-3"
         cards={[
           {
+            lead: true,
             label: t(sharedPositionCaption(mine?.balance ?? null, true)),
             icon: <BanknotesIcon className="h-5 w-5" />,
             value: (

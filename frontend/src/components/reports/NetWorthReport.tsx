@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportStatement, useReportStatement } from '@/components/reports/variants/ReportStatement';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -50,6 +51,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('NetWorthReport');
 
@@ -400,6 +402,7 @@ export function NetWorthReport() {
   // with it the date field the user is typing into -- which is what made this
   // report impossible to type a custom range into (issue #1201).
   const dataUnavailable = isLoading || !!error;
+  const asStatement = useReportStatement();
 
   return (
     <div className="space-y-6">
@@ -410,9 +413,41 @@ export function NetWorthReport() {
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />
         </div>
+      ) : asStatement ? (
+        <ReportStatement
+          ariaLabel={t('page.names.net-worth')}
+          lines={[]}
+          total={{
+            label: t('netWorth.currentNetWorth'),
+            value: (
+              <PartialTotal total={summary.currentTotal} displayCurrency={defaultCurrency}>
+                {formatCurrency(summary.current)}
+              </PartialTotal>
+            ),
+            tone: summary.current < 0 ? 'loss' : 'plain',
+          }}
+          memo={
+            summary.changeKnown
+              ? [
+                  {
+                    key: 'change',
+                    label: t('netWorth.change'),
+                    value: `${summary.change >= 0 ? '+' : ''}${formatCurrency(summary.change)}`,
+                    tone: summary.change < 0 ? 'loss' : 'gain',
+                  },
+                  {
+                    key: 'pct',
+                    label: t('netWorth.changePct'),
+                    value: formatSignedPercent(summary.changePercent, 1),
+                    tone: summary.changePercent < 0 ? 'loss' : 'gain',
+                  },
+                ]
+              : undefined
+          }
+        />
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} ui-rep-tile p-6`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('netWorth.currentNetWorth')}</div>
           <div className={`text-2xl font-bold ${
             gainLossColor(summary.current)
@@ -422,7 +457,7 @@ export function NetWorthReport() {
             </PartialTotal>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} ui-rep-tile p-6`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('netWorth.change')}</div>
           {summary.changeKnown ? (
             <div className={`text-2xl font-bold ${gainLossColor(summary.change)}`}>
@@ -435,7 +470,7 @@ export function NetWorthReport() {
             </div>
           )}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+        <div className={`${CARD_CLASS} ui-rep-tile p-6`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('netWorth.changePct')}</div>
           {summary.changeKnown ? (
             <div className={`text-2xl font-bold ${gainLossColor(summary.changePercent)}`}>
@@ -458,7 +493,7 @@ export function NetWorthReport() {
       )}
 
       {/* Controls -- always rendered so focus inside DateInput survives reloads */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <DateRangeSelector
             ranges={['1y', '2y', '5y', '10y', 'all']}
@@ -512,7 +547,7 @@ export function NetWorthReport() {
       </div>
 
       {/* Chart or Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         {error ? (
           <ReportError onRetry={reload} />
         ) : isLoading ? (

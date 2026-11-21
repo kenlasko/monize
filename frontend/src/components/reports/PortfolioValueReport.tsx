@@ -1,5 +1,6 @@
 'use client';
 
+import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-control';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
@@ -130,6 +131,7 @@ import { preferredCurrency } from '@/lib/default-currency';
 import { CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { ChartAreaGradient } from '@/components/ui/ChartAreaGradient';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('PortfolioValueReport');
 
@@ -1224,7 +1226,7 @@ export function PortfolioValueReport() {
   // animate into the new data instead of unmounting and re-drawing.
   if (isLoading && chartPoints.length === 0 && !intradayUnavailable) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="space-y-4">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-64 w-full" />
@@ -1237,7 +1239,7 @@ export function PortfolioValueReport() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
             {t('portfolioValue.highestValue')}
             {valuesIncomplete && (
@@ -1254,7 +1256,7 @@ export function PortfolioValueReport() {
             )}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
             {t('portfolioValue.lowestValue')}
             {valuesIncomplete && (
@@ -1275,7 +1277,7 @@ export function PortfolioValueReport() {
             the chart's last point less its first. It includes what was paid
             into them, which is why it is captioned as a value change and never
             as a return. */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
             {t('portfolioValue.valueChange')}
             <InfoTooltip placement="top" text={t('portfolioValue.investedValueChangeTooltip')} />
@@ -1291,7 +1293,7 @@ export function PortfolioValueReport() {
         {/* What was paid into the securities, less what came out of them, and
             beneath it what they paid out: the two parts of the value change
             that are not performance. */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
             {t('portfolioValue.netInvested')}
             <InfoTooltip placement="top" text={t('portfolioValue.netInvestedTooltip')} />
@@ -1318,7 +1320,7 @@ export function PortfolioValueReport() {
         </div>
         {/* What is left once the money paid in is taken out and the money
             paid out counted: the only figure a percentage belongs over. */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+        <div className={`${CARD_CLASS} p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
             {t('portfolioValue.investmentResult')}
             <InfoTooltip placement="top" text={t('portfolioValue.investmentResultTooltip')} />
@@ -1354,7 +1356,7 @@ export function PortfolioValueReport() {
       )}
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 p-4">
+      <div className={`${CARD_CLASS} p-4`}>
         {/* Both rows align on the first line's text rather than centring, so
             the custom range's date fields open below the controls without
             moving the picker, the switches or the actions down with them. */}
@@ -1386,7 +1388,7 @@ export function PortfolioValueReport() {
               actions take a line of their own there. */}
           <div className="flex w-full flex-wrap items-center gap-3 sm:ml-auto sm:w-auto">
             {/* Total vs. per-security stacked view, available on every range. */}
-            <div className="inline-flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-600">
+            <div className={SEGMENTED_GROUP_CLASS}>
               {(['total', 'securities'] as const).map((mode) => {
                 const isActive = (securitiesActive ? 'securities' : 'total') === mode;
                 return (
@@ -1395,11 +1397,7 @@ export function PortfolioValueReport() {
                     type="button"
                     onClick={() => setSeriesMode(mode)}
                     aria-pressed={isActive}
-                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                    className={segmentClass(isActive)}
                   >
                     {mode === 'total'
                       ? t('portfolioValue.viewTotal')
@@ -1425,7 +1423,7 @@ export function PortfolioValueReport() {
       </div>
 
       {/* Chart */}
-      <div ref={chartRef} className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 px-2 py-4 sm:p-6">
+      <div ref={chartRef} className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-1.5">
           {t('portfolioValue.chartTitle')}
           {/* Background-load indicator: chart stays on screen during a
@@ -1739,7 +1737,7 @@ export function PortfolioValueReport() {
           return sortDirection === 'asc' ? comparison : -comparison;
         });
         return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700/50 overflow-hidden">
+        <div className={`${CARD_CLASS} overflow-hidden`}>
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('portfolioValue.breakdownTitle')}

@@ -73,7 +73,8 @@
       "prefillFailed": "Transaksi tersebut tidak dapat dimuat, jadi garansi dimulai dalam keadaan kosong",
       "exported": "{count, plural, other {{shown} garansi diekspor}}",
       "exportFailed": "Garansi tidak dapat diekspor"
-    }
+    },
+    "eyebrow": "Daftar garansi"
   },
   "status": {
     "lifetime": "Seumur hidup",

@@ -2079,5 +2079,10 @@
   },
   "pdfExport": {
     "generatedAt": "生成时间：{timestamp}"
+  },
+  "statement": {
+    "item": "项目",
+    "amount": "金额",
+    "share": "占比"
   }
 }

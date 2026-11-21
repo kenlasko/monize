@@ -4,7 +4,8 @@
     "subtitle": "Vul tags, categorieën en begunstigden automatisch in wanneer een transactie wordt aangemaakt of geïmporteerd",
     "createButton": "Regel maken",
     "loading": "Regels laden...",
-    "totalCount": "{count, plural, one {# regel} other {# regels}}"
+    "totalCount": "{count, plural, one {# regel} other {# regels}}",
+    "eyebrow": "Automatisering"
   },
   "empty": {
     "title": "Nog geen regels",

@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Assistente de IA",
-    "subtitle": "Faça perguntas sobre as suas finanças em linguagem natural"
+    "subtitle": "Faça perguntas sobre as suas finanças em linguagem natural",
+    "eyebrow": "Assistente"
   },
   "bubble": {
     "launcherAriaLabel": "Abrir o assistente de IA",

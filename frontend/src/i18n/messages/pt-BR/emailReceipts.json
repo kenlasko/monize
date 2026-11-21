@@ -5,7 +5,8 @@
   },
   "page": {
     "title": "Recibos por e-mail",
-    "subtitle": "Leia confirmações de pedido de uma caixa de e-mail e transforme-as em transações detalhadas: o que está conectado, o que aconteceu com cada e-mail e o que aguarda você"
+    "subtitle": "Leia confirmações de pedido de uma caixa de e-mail e transforme-as em transações detalhadas: o que está conectado, o que aconteceu com cada e-mail e o que aguarda você",
+    "eyebrow": "Caixa de recibos"
   },
   "mailbox": {
     "heading": "Caixa de e-mail",

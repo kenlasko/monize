@@ -73,7 +73,8 @@
       "prefillFailed": "Impossibile caricare quella transazione, quindi la garanzia parte vuota",
       "exported": "{count, plural, one {{shown} garanzia esportata} other {{shown} garanzie esportate}}",
       "exportFailed": "Impossibile esportare le garanzie"
-    }
+    },
+    "eyebrow": "Registro delle garanzie"
   },
   "status": {
     "lifetime": "A vita",

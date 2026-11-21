@@ -39,6 +39,11 @@ describe('ChatMessage', () => {
       ).toBeInTheDocument();
     });
 
+    it('marks the bubble for the UI styles', () => {
+      render(<ChatMessage role="user" content="Hi" />);
+      expect(screen.getByText('Hi').closest('.ui-chat-bubble')).toHaveClass('ui-chat-user');
+    });
+
     it('preserves whitespace in user messages', () => {
       render(<ChatMessage role="user" content={'Line 1\nLine 2'} />);
       const el = screen.getByText((_content, element) =>

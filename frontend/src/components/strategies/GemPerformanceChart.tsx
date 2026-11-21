@@ -39,6 +39,7 @@ import {
 import { GemCard, GemEmptyState, GemSwatch, GemUnknown } from "./GemPrimitives";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useGemLabels } from "./useGemLabels";
+import { SEGMENTED_GROUP_CLASS, segmentClass } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 import { CHART_GRID_PROPS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
@@ -134,7 +135,7 @@ export function GemPerformanceChart({
     <div
       role="group"
       aria-label={t("gem.chart.rangeAriaLabel")}
-      className="flex flex-wrap gap-1"
+      className={`${SEGMENTED_GROUP_CLASS} flex-wrap`}
     >
       {GEM_RANGES.map((option) => {
         const isActive = option === range;
@@ -144,12 +145,7 @@ export function GemPerformanceChart({
             type="button"
             aria-pressed={isActive}
             onClick={() => onRangeChange(option)}
-            className={cn(
-              "rounded px-2 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800",
-              isActive
-                ? "bg-blue-600 text-white dark:bg-blue-500"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600",
-            )}
+            className={segmentClass(isActive)}
           >
             {t(`gem.chart.ranges.${option}` as Parameters<typeof t>[0])}
           </button>

@@ -38,7 +38,8 @@
   "page": {
     "title": "Transacties importeren",
     "subtitle": "Importeer transacties vanuit QIF/QMTF-, OFX/QFX- of CSV-bestanden, of neem een volledig Microsoft Money- (.mny) of KMyMoney-bestand (.kmy, .xml) over",
-    "stepOf": "Stap {current} van {total}"
+    "stepOf": "Stap {current} van {total}",
+    "eyebrow": "Transacties binnenhalen"
   },
   "upload": {
     "heading": "Transactiebestanden uploaden",

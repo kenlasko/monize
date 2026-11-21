@@ -239,10 +239,10 @@ export function TourTooltip({
 
   const cardBody = (
     <>
-      <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+      <p className="ui-tour-eyebrow text-xs font-medium text-blue-600 dark:text-blue-400">
         {stepLabel}
       </p>
-      <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="ui-tour-title mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">
         {title}
       </h2>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
@@ -341,7 +341,7 @@ export function TourTooltip({
       role="dialog"
       aria-live="polite"
       tabIndex={-1}
-      className={`fixed z-[70] w-80 max-w-[calc(100vw-16px)] rounded-lg border border-gray-200 bg-white p-4 shadow-xl outline-none dark:border-gray-700 dark:bg-gray-800 ${transition} ${
+      className={`ui-tour-tip fixed z-[70] w-80 max-w-[calc(100vw-16px)] rounded-lg border border-gray-200 bg-white p-4 shadow-xl outline-none dark:border-gray-700 dark:bg-gray-800 ${transition} ${
         measured ? 'opacity-100' : 'opacity-0'
       }`}
       style={{ top: shownTop, left: shownLeft }}

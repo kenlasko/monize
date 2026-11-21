@@ -4,6 +4,7 @@ import { CashFlowEvent, CashFlowLegendSwatch } from './MonteCarloChartParts';
 import { useTranslations } from 'next-intl';
 import { CAPTION_CLASS, CellLabel, Th } from '@/components/ui/Table';
 import { gainLossColor } from '@/lib/format';
+import { CARD_CLASS } from '@/components/ui/Card';
 
 export function SummaryStat({
   label,
@@ -16,7 +17,7 @@ export function SummaryStat({
 }) {
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 ${className ?? ''}`}
+      className={`${CARD_CLASS} p-4 ${className ?? ''}`}
     >
       <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
         {label}

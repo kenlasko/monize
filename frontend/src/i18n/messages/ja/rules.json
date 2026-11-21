@@ -4,7 +4,8 @@
     "subtitle": "取引の作成時やインポート時に、タグ、カテゴリ、支払先を自動で入力します",
     "createButton": "ルールを作成",
     "loading": "ルールを読み込み中...",
-    "totalCount": "{count, plural, other {# 件のルール}}"
+    "totalCount": "{count, plural, other {# 件のルール}}",
+    "eyebrow": "自動化"
   },
   "empty": {
     "title": "ルールはまだありません",

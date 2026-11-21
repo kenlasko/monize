@@ -16,7 +16,8 @@
     "summaryTotal": "Kategorien gesamt",
     "summaryIncome": "Einnahmenkategorien",
     "summaryExpense": "Ausgabenkategorien",
-    "summaryTopLevel": "Oberste Ebene"
+    "summaryTopLevel": "Oberste Ebene",
+    "eyebrow": "Kategorienübersicht"
   },
   "empty": {
     "heading": "Noch keine Kategorien",

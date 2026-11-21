@@ -73,7 +73,8 @@
       "prefillFailed": "वह लेनदेन लोड नहीं हो सका, इसलिए वारंटी खाली से शुरू होती है",
       "exported": "{count, plural, one {{shown} वारंटी निर्यात की गई} other {{shown} वारंटी निर्यात की गईं}}",
       "exportFailed": "वारंटी निर्यात नहीं की जा सकीं"
-    }
+    },
+    "eyebrow": "वारंटी रजिस्टर"
   },
   "status": {
     "lifetime": "आजीवन",

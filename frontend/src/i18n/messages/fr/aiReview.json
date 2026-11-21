@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Boîte de révision par l'IA",
-    "subtitle": "Les transactions qu'une règle a demandé de faire réviser par une IA, les profils qu'on a demandé à un assistant de rédiger, et les modifications qu'un assistant propose à votre approbation."
+    "subtitle": "Les transactions qu'une règle a demandé de faire réviser par une IA, les profils qu'on a demandé à un assistant de rédiger, et les modifications qu'un assistant propose à votre approbation.",
+    "eyebrow": "En attente de votre examen"
   },
   "filter": {
     "label": "Filtrer par statut",

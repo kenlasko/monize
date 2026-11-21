@@ -77,7 +77,7 @@ const RuleRow = memo(function RuleRow({
   const rowProps = {
     role: 'row',
     tabIndex: 0,
-    className: `group cursor-pointer select-none ${INTERACTIVE_ROW_FOCUS_CLASS} ${HOVER_ROW_ON_CARD}`,
+    className: `ui-list-row group cursor-pointer select-none ${INTERACTIVE_ROW_FOCUS_CLASS} ${HOVER_ROW_ON_CARD}`,
     ...getRowHandlers(rule),
     onKeyDown: (event: KeyboardEvent<HTMLTableRowElement>) => {
       // Enter on the switch or a menu button is theirs, not the row's.
@@ -160,7 +160,7 @@ const RuleRow = memo(function RuleRow({
 
   return (
     <tr {...rowProps}>
-      <Td className={cn(cellPadding, 'hidden w-12 text-gray-500 dark:text-gray-400 sm:table-cell')}>{index + 1}</Td>
+      <Td className={cn(cellPadding, 'ui-rule-no hidden w-12 text-gray-500 dark:text-gray-400 sm:table-cell')}>{index + 1}</Td>
       <Td className={cn(cellPadding, 'w-16')}>
         {/* The column header names the switch; its accessible name adds the rule's. */}
         <div
@@ -266,7 +266,7 @@ export function RulesList({
     <div>
       <DensityToggleBar view="rules" />
       <div className="overflow-x-auto">
-        <table className={TABLE_CLASS}>
+        <table className={`${TABLE_CLASS} ui-list-ledger ui-list-rules`}>
           {/* The phone card captions its own values, and nothing here sorts, so it has no header row. */}
           {!wrapped && (
             <thead className="bg-gray-50 dark:bg-gray-800">

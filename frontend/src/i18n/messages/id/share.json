@@ -42,5 +42,6 @@
   "unsupportedBrowserTitle": "Peramban ini tidak dapat menerima berkas yang dibagikan",
   "unsupportedBrowserMessage": "Membagikan ke aplikasi yang terpasang tidak tersedia di sini. Anda masih dapat menambahkan berkas dari dalam Monize.",
   "goToTransactions": "Tambahkan dari Transaksi",
-  "goToImport": "Ke Impor"
+  "goToImport": "Ke Impor",
+  "eyebrow": "File masuk"
 }
