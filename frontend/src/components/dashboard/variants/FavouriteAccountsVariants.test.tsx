@@ -65,4 +65,22 @@ describe.each([
     rerender(<Variant {...props({ reordering: true })} />);
     expect(screen.getAllByTitle('Move up')).toHaveLength(3);
   });
+
+  it("shows the institution's logo beside the account it belongs to", () => {
+    const p = props({
+      rows: [row({ institutionLogo: { id: 'inst-1', name: 'TD Bank', hasLogo: true } })],
+    });
+    render(<Variant {...p} />);
+    expect(screen.getByRole('img', { name: 'TD Bank' })).toBeInTheDocument();
+  });
+});
+
+it('Folio stays the star when there is no institution logo, as Standard does', () => {
+  render(<FavouriteAccountsFolio {...props({ rows: [row({})] })} />);
+  expect(screen.getByTestId('favourite-account-star')).toBeInTheDocument();
+});
+
+it("Pebble keeps the account's letter disc when there is no institution logo", () => {
+  render(<FavouriteAccountsPebble {...props({ rows: [row({})] })} />);
+  expect(screen.getByText('V')).toBeInTheDocument();
 });
