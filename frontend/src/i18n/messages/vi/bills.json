@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Không thể xác định số tiền của một hoặc nhiều lịch trình",
     "summaryDueNow": "Đến hạn ngay",
     "loadingText": "Đang tải giao dịch theo lịch...",
-    "chartUnavailable": "Biểu đồ tạm thời không khả dụng"
+    "chartUnavailable": "Biểu đồ tạm thời không khả dụng",
+    "eyebrow": "Định kỳ"
   },
   "viewTabs": {
     "filterLabel": "Loại lịch",
@@ -83,5 +84,12 @@
     "exportButton": "Xuất",
     "exportTitle": "Xuất hóa đơn và tiền gửi sang CSV",
     "exported": "{count, plural, one {Đã xuất # lịch} other {Đã xuất # lịch}}"
+  },
+  "outlook": {
+    "title": "Mười bốn ngày tới",
+    "stripLabel": "Hóa đơn và khoản gửi đã lên lịch trong mười bốn ngày tới: tiền vào ở trên đường kẻ, tiền ra ở dưới",
+    "today": "Hôm nay",
+    "nextUpOn": "Sắp tới, {date}",
+    "daysLabel": "Mười bốn ngày tới, mỗi ngày một thẻ"
   }
 }

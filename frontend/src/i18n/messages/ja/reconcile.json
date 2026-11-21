@@ -1,5 +1,6 @@
 {
   "title": "勘定科目の照合",
+  "eyebrow": "照合シート",
   "subtitle": "銀行の明細と記録を照合します",
   "subtitleActive": "照合中: {name}",
   "setup": {

@@ -1,5 +1,6 @@
 {
   "title": "Rapprocher le compte",
+  "eyebrow": "Feuille de rapprochement",
   "subtitle": "Comparez vos enregistrements avec votre relevé bancaire",
   "subtitleActive": "Rapprochement en cours : {name}",
   "setup": {

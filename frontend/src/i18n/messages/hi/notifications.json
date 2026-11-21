@@ -50,7 +50,8 @@
     "retry": "फिर से कोशिश करें",
     "nextFire": "अगला रिमाइंडर: {date}",
     "openTarget": "संबंधित पेज खोलें",
-    "delegateUnavailable": "रिमाइंडर प्रबंधित करने के लिए अपने खाते पर वापस जाएँ।"
+    "delegateUnavailable": "रिमाइंडर प्रबंधित करने के लिए अपने खाते पर वापस जाएँ।",
+    "eyebrow": "सूचनाएँ"
   },
   "billDue": {
     "titleOverdue": "{payee} अतिदेय",

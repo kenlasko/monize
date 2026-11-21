@@ -62,7 +62,9 @@
     "onPace": "On pace",
     "rollover": "Rollover: {type}",
     "remaining": "{amount} left",
-    "over": "{amount} over"
+    "over": "{amount} over",
+    "leftWord": "left",
+    "overWord": "over"
   },
   "categoryTrend": {
     "title": "Category Trends",
@@ -164,6 +166,7 @@
     "original": "Original: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Budget totals",
     "totalBudget": "Total Budget",
     "spent": "Spent",
     "remaining": "Remaining",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Budget book",
       "title": "Budgets",
       "subtitle": "Manage your budgets and track spending",
       "newBudget": "+ New Budget",

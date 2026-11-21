@@ -62,7 +62,9 @@
     "onPace": "Hızda",
     "rollover": "Devir: {type}",
     "remaining": "{amount} kaldı",
-    "over": "{amount} aşıldı"
+    "over": "{amount} aşıldı",
+    "leftWord": "kaldı",
+    "overWord": "aşım"
   },
   "categoryTrend": {
     "title": "Kategori Trendleri",
@@ -164,6 +166,7 @@
     "original": "Orijinal: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Bütçe toplamları",
     "totalBudget": "Toplam Bütçe",
     "spent": "Harcanan",
     "remaining": "Kalan",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Bütçe defteri",
       "title": "Bütçeler",
       "subtitle": "Bütçelerinizi yönetin ve harcamalarınızı takip edin",
       "newBudget": "+ Yeni Bütçe",

@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "No se pudo valorar una o más programaciones",
     "summaryDueNow": "Vence ahora",
     "loadingText": "Cargando transacciones planificadas...",
-    "chartUnavailable": "Gráfico temporalmente no disponible"
+    "chartUnavailable": "Gráfico temporalmente no disponible",
+    "eyebrow": "Recurrentes"
   },
   "viewTabs": {
     "filterLabel": "Tipo de programación",
@@ -83,5 +84,12 @@
     "exportButton": "Exportar",
     "exportTitle": "Exportar facturas y depósitos a CSV",
     "exported": "{count, plural, one {Se exportó # programación} other {Se exportaron # programaciones}}"
+  },
+  "outlook": {
+    "title": "Los próximos catorce días",
+    "stripLabel": "Facturas y depósitos programados para los próximos catorce días: ingresos sobre la línea, gastos bajo ella",
+    "today": "Hoy",
+    "nextUpOn": "Próximo, {date}",
+    "daysLabel": "Los próximos catorce días, una ficha por día"
   }
 }

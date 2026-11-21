@@ -1,5 +1,6 @@
 {
   "title": "[XX-Reconcile Account-XX]",
+  "eyebrow": "[XX-Reconciliation sheet-XX]",
   "subtitle": "[XX-Match your records against your bank statement-XX]",
   "subtitleActive": "[XX-Reconciling: {name}-XX]",
   "setup": {

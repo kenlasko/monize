@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "一個或多個排程無法計算金額",
     "summaryDueNow": "即將到期",
     "loadingText": "正在載入排程交易...",
-    "chartUnavailable": "圖表暫時無法使用"
+    "chartUnavailable": "圖表暫時無法使用",
+    "eyebrow": "定期"
   },
   "viewTabs": {
     "filterLabel": "排程類型",
@@ -83,5 +84,12 @@
     "exportButton": "匯出",
     "exportTitle": "將帳單與存款匯出為 CSV",
     "exported": "{count, plural, one {已匯出 # 個排程} other {已匯出 # 個排程}}"
+  },
+  "outlook": {
+    "title": "未來十四天",
+    "stripLabel": "未來十四天已排定的帳單與存款：收入在線上，支出在線下",
+    "today": "今天",
+    "nextUpOn": "下一筆，{date}",
+    "daysLabel": "未來十四天，每天一個標籤"
   }
 }

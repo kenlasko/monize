@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Hesaplar",
+    "eyebrow": "Hesap özeti",
     "subtitle": "Banka hesaplarınızı, kredi kartlarınızı ve yatırımlarınızı yönetin",
     "newAccount": "+ Yeni Hesap",
     "newAccountModal": "Yeni Hesap",

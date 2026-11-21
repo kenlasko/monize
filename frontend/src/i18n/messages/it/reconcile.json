@@ -1,5 +1,6 @@
 {
   "title": "Riconcilia conto",
+  "eyebrow": "Foglio di riconciliazione",
   "subtitle": "Confronta i tuoi dati con l'estratto conto bancario",
   "subtitleActive": "Riconciliazione in corso: {name}",
   "setup": {

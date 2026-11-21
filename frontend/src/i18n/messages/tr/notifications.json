@@ -50,7 +50,8 @@
     "retry": "Tekrar dene",
     "nextFire": "Sonraki hatırlatıcı: {date}",
     "openTarget": "İlgili sayfayı aç",
-    "delegateUnavailable": "Hatırlatıcıları yönetmek için kendi hesabınıza dönün."
+    "delegateUnavailable": "Hatırlatıcıları yönetmek için kendi hesabınıza dönün.",
+    "eyebrow": "Bildirimler"
   },
   "billDue": {
     "titleOverdue": "{payee} gecikmiş",

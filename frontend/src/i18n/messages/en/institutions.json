@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "Financial Institutions",
+    "eyebrow": "Register of institutions",
     "subtitle": "Banks and brokerages your accounts belong to",
     "newInstitution": "New Institution",
     "loading": "Loading institutions...",

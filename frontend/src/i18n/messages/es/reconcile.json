@@ -1,5 +1,6 @@
 {
   "title": "Conciliar cuenta",
+  "eyebrow": "Hoja de conciliación",
   "subtitle": "Compara tus registros con el estado de cuenta bancario",
   "subtitleActive": "Conciliando: {name}",
   "setup": {

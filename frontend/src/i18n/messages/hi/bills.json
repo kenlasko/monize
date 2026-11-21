@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "एक या अधिक शेड्यूल की राशि तय नहीं की जा सकी",
     "summaryDueNow": "अभी देय",
     "loadingText": "निर्धारित लेनदेन लोड हो रहे हैं...",
-    "chartUnavailable": "चार्ट अस्थायी रूप से अनुपलब्ध"
+    "chartUnavailable": "चार्ट अस्थायी रूप से अनुपलब्ध",
+    "eyebrow": "आवर्ती"
   },
   "viewTabs": {
     "filterLabel": "शेड्यूल प्रकार",
@@ -83,5 +84,12 @@
     "exportButton": "निर्यात",
     "exportTitle": "बिल और जमा को CSV में निर्यात करें",
     "exported": "{count, plural, one {# शेड्यूल निर्यात किया गया} other {# शेड्यूल निर्यात किए गए}}"
+  },
+  "outlook": {
+    "title": "अगले चौदह दिन",
+    "stripLabel": "अगले चौदह दिनों के निर्धारित बिल और जमा: आने वाला पैसा रेखा के ऊपर, जाने वाला पैसा नीचे",
+    "today": "आज",
+    "nextUpOn": "अगला, {date}",
+    "daysLabel": "अगले चौदह दिन, प्रति दिन एक चिप"
   }
 }

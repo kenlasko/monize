@@ -50,7 +50,8 @@
     "retry": "Riprova",
     "nextFire": "Prossimo promemoria: {date}",
     "openTarget": "Apri la pagina correlata",
-    "delegateUnavailable": "Torna al tuo account per gestire i promemoria."
+    "delegateUnavailable": "Torna al tuo account per gestire i promemoria.",
+    "eyebrow": "Notifiche"
   },
   "billDue": {
     "titleOverdue": "{payee} scaduto",

@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "Instituciones financieras",
+    "eyebrow": "Registro de instituciones",
     "subtitle": "Bancos y corredoras a los que pertenecen tus cuentas",
     "newInstitution": "Nueva institución",
     "loading": "Cargando instituciones...",

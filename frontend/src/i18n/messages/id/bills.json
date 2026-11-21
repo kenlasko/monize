@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Satu atau beberapa jadwal tidak dapat dihitung nilainya",
     "summaryDueNow": "Jatuh Tempo Sekarang",
     "loadingText": "Memuat transaksi terjadwal...",
-    "chartUnavailable": "Grafik sementara tidak tersedia"
+    "chartUnavailable": "Grafik sementara tidak tersedia",
+    "eyebrow": "Berulang"
   },
   "viewTabs": {
     "filterLabel": "Jenis jadwal",
@@ -83,5 +84,12 @@
     "exportButton": "Ekspor",
     "exportTitle": "Ekspor tagihan dan setoran ke CSV",
     "exported": "{count, plural, one {Diekspor # jadwal} other {Diekspor # jadwal}}"
+  },
+  "outlook": {
+    "title": "Empat belas hari ke depan",
+    "stripLabel": "Tagihan dan setoran terjadwal selama empat belas hari ke depan: uang masuk di atas garis, uang keluar di bawahnya",
+    "today": "Hari ini",
+    "nextUpOn": "Berikutnya, {date}",
+    "daysLabel": "Empat belas hari ke depan, satu chip per hari"
   }
 }

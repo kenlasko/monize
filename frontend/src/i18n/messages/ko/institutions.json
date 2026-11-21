@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "금융 기관",
+    "eyebrow": "금융기관 등록부",
     "subtitle": "계정이 속한 은행 및 증권사",
     "newInstitution": "새 기관",
     "loading": "기관을 불러오는 중...",

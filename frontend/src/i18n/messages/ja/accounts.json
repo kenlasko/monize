@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "勘定科目",
+    "eyebrow": "口座明細",
     "subtitle": "銀行口座、クレジットカード、投資を管理する",
     "newAccount": "+ 新規勘定科目",
     "newAccountModal": "新規勘定科目",

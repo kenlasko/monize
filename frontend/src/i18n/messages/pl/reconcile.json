@@ -1,5 +1,6 @@
 {
   "title": "Uzgodnij konto",
+  "eyebrow": "Arkusz uzgodnienia",
   "subtitle": "Porównaj swoje zapisy z wyciągiem bankowym",
   "subtitleActive": "Uzgadnianie: {name}",
   "setup": {

@@ -1,5 +1,6 @@
 {
   "title": "對帳科目",
+  "eyebrow": "對帳單表",
   "subtitle": "將您的記錄與銀行對帳單比對",
   "subtitleActive": "對帳中：{name}",
   "setup": {

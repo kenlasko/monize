@@ -62,7 +62,9 @@
     "onPace": "У темпі",
     "rollover": "Перенесення: {type}",
     "remaining": "{amount} залишилось",
-    "over": "{amount} перевищено"
+    "over": "{amount} перевищено",
+    "leftWord": "залишилось",
+    "overWord": "перевищено"
   },
   "categoryTrend": {
     "title": "Тенденції категорій",
@@ -164,6 +166,7 @@
     "original": "Початковий: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Підсумки бюджету",
     "totalBudget": "Загальний бюджет",
     "spent": "Витрачено",
     "remaining": "Залишок",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Книга бюджетів",
       "title": "Бюджети",
       "subtitle": "Управляйте бюджетами та відстежуйте витрати",
       "newBudget": "+ Новий бюджет",

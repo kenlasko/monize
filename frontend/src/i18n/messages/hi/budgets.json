@@ -62,7 +62,9 @@
     "onPace": "गति पर",
     "rollover": "रोलओवर: {type}",
     "remaining": "{amount} शेष",
-    "over": "{amount} अधिक"
+    "over": "{amount} अधिक",
+    "leftWord": "शेष",
+    "overWord": "अधिक"
   },
   "categoryTrend": {
     "title": "श्रेणी प्रवृत्तियां",
@@ -164,6 +166,7 @@
     "original": "मूल: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "बजट का कुल योग",
     "totalBudget": "कुल बजट",
     "spent": "खर्च",
     "remaining": "शेष",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "बजट बही",
       "title": "बजट",
       "subtitle": "अपने बजट प्रबंधित करें और खर्च ट्रैक करें",
       "newBudget": "+ नया बजट",

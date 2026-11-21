@@ -62,7 +62,9 @@
     "onPace": "ペース通り",
     "rollover": "繰越：{type}",
     "remaining": "{amount} 残",
-    "over": "{amount} 超過"
+    "over": "{amount} 超過",
+    "leftWord": "残り",
+    "overWord": "超過"
   },
   "categoryTrend": {
     "title": "カテゴリトレンド",
@@ -164,6 +166,7 @@
     "original": "元の値：{amount}"
   },
   "summaryCards": {
+    "ariaLabel": "予算合計",
     "totalBudget": "予算合計",
     "spent": "支出",
     "remaining": "残額",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "予算帳",
       "title": "予算",
       "subtitle": "予算を管理して支出を追跡する",
       "newBudget": "+ 新規予算",

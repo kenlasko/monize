@@ -1,5 +1,6 @@
 {
   "title": "Đối Soát Tài Khoản",
+  "eyebrow": "Bảng đối chiếu",
   "subtitle": "Khớp hồ sơ của bạn với sao kê ngân hàng",
   "subtitleActive": "Đang đối soát: {name}",
   "setup": {

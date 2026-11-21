@@ -62,7 +62,9 @@
     "onPace": "진도 적절",
     "rollover": "이월: {type}",
     "remaining": "{amount} 남음",
-    "over": "{amount} 초과"
+    "over": "{amount} 초과",
+    "leftWord": "남음",
+    "overWord": "초과"
   },
   "categoryTrend": {
     "title": "카테고리 추세",
@@ -164,6 +166,7 @@
     "original": "원래: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "예산 합계",
     "totalBudget": "총 예산",
     "spent": "지출",
     "remaining": "잔여",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "예산 장부",
       "title": "예산",
       "subtitle": "예산을 관리하고 지출을 추적하세요",
       "newBudget": "+ 새 예산",

@@ -1,5 +1,6 @@
 {
   "title": "Reconciliar conta",
+  "eyebrow": "Folha de reconciliação",
   "subtitle": "Confronte os seus registos com o extrato bancário",
   "subtitleActive": "A reconciliar: {name}",
   "setup": {

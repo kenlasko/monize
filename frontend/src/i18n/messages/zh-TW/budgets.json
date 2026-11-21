@@ -62,7 +62,9 @@
     "onPace": "進度正常",
     "rollover": "結轉：{type}",
     "remaining": "剩餘 {amount}",
-    "over": "超出 {amount}"
+    "over": "超出 {amount}",
+    "leftWord": "剩餘",
+    "overWord": "超支"
   },
   "categoryTrend": {
     "title": "類別趨勢",
@@ -164,6 +166,7 @@
     "original": "原始：{amount}"
   },
   "summaryCards": {
+    "ariaLabel": "預算合計",
     "totalBudget": "總預算",
     "spent": "已花費",
     "remaining": "剩餘",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "預算簿",
       "title": "預算",
       "subtitle": "管理您的預算並追蹤消費",
       "newBudget": "+ 新增預算",

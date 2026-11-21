@@ -50,7 +50,8 @@
     "retry": "重試",
     "nextFire": "下次提醒：{date}",
     "openTarget": "開啟相關頁面",
-    "delegateUnavailable": "請切換回您自己的帳戶以管理提醒。"
+    "delegateUnavailable": "請切換回您自己的帳戶以管理提醒。",
+    "eyebrow": "通知"
   },
   "billDue": {
     "titleOverdue": "{payee} 已逾期",

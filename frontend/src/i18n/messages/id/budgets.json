@@ -62,7 +62,9 @@
     "onPace": "Sesuai kecepatan",
     "rollover": "Rollover: {type}",
     "remaining": "{amount} tersisa",
-    "over": "{amount} melebihi"
+    "over": "{amount} melebihi",
+    "leftWord": "sisa",
+    "overWord": "lebih"
   },
   "categoryTrend": {
     "title": "Tren Kategori",
@@ -164,6 +166,7 @@
     "original": "Asli: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Total anggaran",
     "totalBudget": "Total Anggaran",
     "spent": "Terpakai",
     "remaining": "Sisa",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Buku anggaran",
       "title": "Anggaran",
       "subtitle": "Kelola anggaran dan lacak pengeluaran Anda",
       "newBudget": "+ Anggaran Baru",

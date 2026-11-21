@@ -62,7 +62,9 @@
     "onPace": "Im Tempo",
     "rollover": "Übertrag: {type}",
     "remaining": "{amount} verbleibend",
-    "over": "{amount} überschritten"
+    "over": "{amount} überschritten",
+    "leftWord": "übrig",
+    "overWord": "überzogen"
   },
   "categoryTrend": {
     "title": "Kategorietrends",
@@ -164,6 +166,7 @@
     "original": "Original: {amount}"
   },
   "summaryCards": {
+    "ariaLabel": "Budgetsummen",
     "totalBudget": "Gesamt-Budget",
     "spent": "Ausgegeben",
     "remaining": "Verbleibend",
@@ -529,6 +532,7 @@
   },
   "pages": {
     "list": {
+      "eyebrow": "Budgetbuch",
       "title": "Budgets",
       "subtitle": "Budgets verwalten und Ausgaben verfolgen",
       "newBudget": "+ Neues Budget",

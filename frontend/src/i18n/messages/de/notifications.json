@@ -50,7 +50,8 @@
     "retry": "Erneut versuchen",
     "nextFire": "Nächste Erinnerung: {date}",
     "openTarget": "Zugehörige Seite öffnen",
-    "delegateUnavailable": "Wechsle zurück zu deinem eigenen Konto, um Erinnerungen zu verwalten."
+    "delegateUnavailable": "Wechsle zurück zu deinem eigenen Konto, um Erinnerungen zu verwalten.",
+    "eyebrow": "Benachrichtigungen"
   },
   "billDue": {
     "titleOverdue": "{payee} überfällig",

@@ -1,6 +1,7 @@
 {
   "page": {
     "title": "金融機関",
+    "eyebrow": "金融機関台帳",
     "subtitle": "勘定科目が属する銀行および証券会社",
     "newInstitution": "新しい金融機関",
     "loading": "金融機関を読み込み中...",

@@ -1,5 +1,6 @@
 {
   "title": "계정 조정",
+  "eyebrow": "대조 시트",
   "subtitle": "은행 명세서와 기록을 대조하세요",
   "subtitleActive": "조정 중: {name}",
   "setup": {

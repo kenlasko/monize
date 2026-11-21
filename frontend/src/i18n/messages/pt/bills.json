@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Não foi possível calcular o valor de uma ou mais programações",
     "summaryDueNow": "A vencer agora",
     "loadingText": "A carregar transações agendadas...",
-    "chartUnavailable": "Gráfico temporariamente indisponível"
+    "chartUnavailable": "Gráfico temporariamente indisponível",
+    "eyebrow": "Recorrentes"
   },
   "viewTabs": {
     "filterLabel": "Tipo de agendamento",
@@ -83,5 +84,12 @@
     "exportButton": "Exportar",
     "exportTitle": "Exportar faturas e depósitos para CSV",
     "exported": "{count, plural, one {# agendamento exportado} other {# agendamentos exportados}}"
+  },
+  "outlook": {
+    "title": "Os próximos catorze dias",
+    "stripLabel": "Contas e depósitos agendados para os próximos catorze dias: entradas acima da linha, saídas abaixo",
+    "today": "Hoje",
+    "nextUpOn": "A seguir, {date}",
+    "daysLabel": "Os próximos catorze dias, um chip por dia"
   }
 }

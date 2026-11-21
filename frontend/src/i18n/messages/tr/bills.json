@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Bir veya daha fazla planın tutarı hesaplanamadı",
     "summaryDueNow": "Şimdi Vadesi Gelen",
     "loadingText": "Zamanlanmış işlemler yükleniyor...",
-    "chartUnavailable": "Grafik geçici olarak kullanılamıyor"
+    "chartUnavailable": "Grafik geçici olarak kullanılamıyor",
+    "eyebrow": "Yinelenen"
   },
   "viewTabs": {
     "filterLabel": "Program türü",
@@ -83,5 +84,12 @@
     "exportButton": "Dışa Aktar",
     "exportTitle": "Faturaları ve mevduatları CSV'ye aktar",
     "exported": "{count, plural, one {# program dışa aktarıldı} other {# program dışa aktarıldı}}"
+  },
+  "outlook": {
+    "title": "Önümüzdeki on dört gün",
+    "stripLabel": "Önümüzdeki on dört gün için planlanmış faturalar ve para yatırmalar: gelen para çizginin üstünde, giden para altında",
+    "today": "Bugün",
+    "nextUpOn": "Sıradaki, {date}",
+    "daysLabel": "Önümüzdeki on dört gün, her gün için bir çip"
   }
 }

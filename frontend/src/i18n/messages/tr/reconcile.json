@@ -1,5 +1,6 @@
 {
   "title": "Hesap Mutabakatı",
+  "eyebrow": "Mutabakat çizelgesi",
   "subtitle": "Kayıtlarınızı banka ekstreniyle eşleştirin",
   "subtitleActive": "Mutabakat yapılıyor: {name}",
   "setup": {

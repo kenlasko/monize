@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "1件以上の予定の金額を算出できませんでした",
     "summaryDueNow": "今すぐ支払い期限",
     "loadingText": "スケジュール済み取引を読み込み中...",
-    "chartUnavailable": "チャートは一時的に利用できません"
+    "chartUnavailable": "チャートは一時的に利用できません",
+    "eyebrow": "定期"
   },
   "viewTabs": {
     "filterLabel": "スケジュールの種類",
@@ -83,5 +84,12 @@
     "exportButton": "エクスポート",
     "exportTitle": "請求・入金をCSVにエクスポート",
     "exported": "{count, plural, one {# 件のスケジュールをエクスポートしました} other {# 件のスケジュールをエクスポートしました}}"
+  },
+  "outlook": {
+    "title": "今後14日間",
+    "stripLabel": "今後14日間の予定された請求と入金：入金は線の上、出金は線の下",
+    "today": "今日",
+    "nextUpOn": "次の予定、{date}",
+    "daysLabel": "今後14日間、1日につき1つのチップ"
   }
 }

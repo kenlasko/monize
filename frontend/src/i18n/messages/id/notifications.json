@@ -50,7 +50,8 @@
     "retry": "Coba lagi",
     "nextFire": "Pengingat berikutnya: {date}",
     "openTarget": "Buka halaman terkait",
-    "delegateUnavailable": "Kembali ke akun Anda sendiri untuk mengelola pengingat."
+    "delegateUnavailable": "Kembali ke akun Anda sendiri untuk mengelola pengingat.",
+    "eyebrow": "Notifikasi"
   },
   "billDue": {
     "titleOverdue": "{payee} terlambat",

@@ -50,7 +50,8 @@
     "retry": "Try again",
     "nextFire": "Next reminder: {date}",
     "openTarget": "Open related page",
-    "delegateUnavailable": "Switch back to your own account to manage reminders."
+    "delegateUnavailable": "Switch back to your own account to manage reminders.",
+    "eyebrow": "Notifications"
   },
   "billDue": {
     "titleOverdue": "{payee} overdue",

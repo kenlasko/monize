@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "[XX-One or more schedules could not be priced-XX]",
     "summaryDueNow": "[XX-Due Now-XX]",
     "loadingText": "[XX-Loading scheduled transactions...-XX]",
-    "chartUnavailable": "[XX-Chart temporarily unavailable-XX]"
+    "chartUnavailable": "[XX-Chart temporarily unavailable-XX]",
+    "eyebrow": "[XX-Recurring-XX]"
   },
   "viewTabs": {
     "filterLabel": "[XX-Schedule type-XX]",
@@ -83,5 +84,12 @@
     "exportButton": "[XX-Export-XX]",
     "exportTitle": "[XX-Export bills and deposits to CSV-XX]",
     "exported": "[XX-{count, plural, one {Exported # schedule} other {Exported # schedules}}-XX]"
+  },
+  "outlook": {
+    "title": "[XX-Next fourteen days-XX]",
+    "stripLabel": "[XX-Scheduled bills and deposits over the next fourteen days: money in above the line, money out below it-XX]",
+    "today": "[XX-Today-XX]",
+    "nextUpOn": "[XX-Next up, {date}-XX]",
+    "daysLabel": "[XX-The next fourteen days, one chip per day-XX]"
   }
 }

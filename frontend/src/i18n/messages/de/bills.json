@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "Ein oder mehrere Zeitpläne konnten nicht bewertet werden",
     "summaryDueNow": "Jetzt fällig",
     "loadingText": "Terminierte Buchungen werden geladen...",
-    "chartUnavailable": "Diagramm vorübergehend nicht verfügbar"
+    "chartUnavailable": "Diagramm vorübergehend nicht verfügbar",
+    "eyebrow": "Wiederkehrend"
   },
   "viewTabs": {
     "filterLabel": "Zeitplantyp",
@@ -83,5 +84,12 @@
     "exportButton": "Exportieren",
     "exportTitle": "Rechnungen und Einzahlungen als CSV exportieren",
     "exported": "{count, plural, one {# Zeitplan exportiert} other {# Zeitpläne exportiert}}"
+  },
+  "outlook": {
+    "title": "Die nächsten vierzehn Tage",
+    "stripLabel": "Geplante Rechnungen und Einzahlungen in den nächsten vierzehn Tagen: Geldeingänge über der Linie, Geldausgänge darunter",
+    "today": "Heute",
+    "nextUpOn": "Als Nächstes, {date}",
+    "daysLabel": "Die nächsten vierzehn Tage, ein Chip pro Tag"
   }
 }

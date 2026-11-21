@@ -13,7 +13,8 @@
     "summaryNetUnpriceable": "一个或多个计划无法计算金额",
     "summaryDueNow": "当前到期",
     "loadingText": "正在加载定期交易...",
-    "chartUnavailable": "图表暂时不可用"
+    "chartUnavailable": "图表暂时不可用",
+    "eyebrow": "定期"
   },
   "viewTabs": {
     "filterLabel": "计划类型",
@@ -83,5 +84,12 @@
     "exportButton": "导出",
     "exportTitle": "将账单与存款导出为 CSV",
     "exported": "{count, plural, one {已导出 # 个计划} other {已导出 # 个计划}}"
+  },
+  "outlook": {
+    "title": "未来十四天",
+    "stripLabel": "未来十四天已安排的账单和存款：收入在线上，支出在线下",
+    "today": "今天",
+    "nextUpOn": "下一笔，{date}",
+    "daysLabel": "未来十四天，每天一个标签"
   }
 }

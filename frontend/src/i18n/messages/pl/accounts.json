@@ -14,6 +14,7 @@
   },
   "page": {
     "title": "Konta",
+    "eyebrow": "Zestawienie kont",
     "subtitle": "Zarządzaj swoimi rachunkami bankowymi, kartami kredytowymi i inwestycjami",
     "newAccount": "+ Nowe konto",
     "newAccountModal": "Nowe konto",
