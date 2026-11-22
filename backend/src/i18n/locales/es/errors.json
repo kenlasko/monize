@@ -767,6 +767,7 @@
     "notFoundById": "Valor con ID {{ id }} no encontrado",
     "notFoundBySymbol": "Valor con símbolo {{ symbol }} no encontrado",
     "cannotDeactivateWithHoldings": "No se puede desactivar un valor con posiciones activas. Vende todas las acciones primero.",
+    "inactiveSecurityLocked": "{{ symbol }} está desactivado, por lo que sus transacciones de inversión no se pueden añadir, modificar ni eliminar. Activa {{ symbol }} primero en la página Valores.",
     "cannotDeleteWithHoldings": "No se puede eliminar un valor que tiene posiciones. Elimina todas las posiciones primero.",
     "cannotDeleteWithTransactions": "No se puede eliminar un valor que tiene transacciones de inversión. Elimina todas las transacciones relacionadas primero.",
     "holdingNotFound": "Posición con ID {{ id }} no encontrada",

@@ -767,6 +767,7 @@
     "notFoundById": "Nie znaleziono papieru wartościowego o ID {{ id }}",
     "notFoundBySymbol": "Nie znaleziono papieru wartościowego o symbolu {{ symbol }}",
     "cannotDeactivateWithHoldings": "Nie można dezaktywować papieru wartościowego z aktywnymi pozycjami. Najpierw sprzedaj wszystkie udziały.",
+    "inactiveSecurityLocked": "{{ symbol }} jest dezaktywowany, więc jego transakcji inwestycyjnych nie można dodawać, zmieniać ani usuwać. Najpierw aktywuj {{ symbol }} na stronie Papiery wartościowe.",
     "cannotDeleteWithHoldings": "Nie można usunąć papieru wartościowego, który ma pozycje. Najpierw usuń wszystkie pozycje.",
     "cannotDeleteWithTransactions": "Nie można usunąć papieru wartościowego, który ma transakcje inwestycyjne. Najpierw usuń wszystkie powiązane transakcje.",
     "holdingNotFound": "Nie znaleziono pozycji o ID {{ id }}",

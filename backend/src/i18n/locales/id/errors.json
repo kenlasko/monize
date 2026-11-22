@@ -767,6 +767,7 @@
     "notFoundById": "Sekuritas dengan ID {{ id }} tidak ditemukan",
     "notFoundBySymbol": "Sekuritas dengan simbol {{ symbol }} tidak ditemukan",
     "cannotDeactivateWithHoldings": "Tidak dapat menonaktifkan sekuritas yang masih memiliki kepemilikan aktif. Jual semua saham terlebih dahulu.",
+    "inactiveSecurityLocked": "{{ symbol }} dinonaktifkan, sehingga transaksi investasinya tidak dapat ditambahkan, diubah, atau dihapus. Aktifkan {{ symbol }} terlebih dahulu di halaman Sekuritas.",
     "cannotDeleteWithHoldings": "Tidak dapat menghapus sekuritas yang masih memiliki kepemilikan. Hapus semua kepemilikan terlebih dahulu.",
     "cannotDeleteWithTransactions": "Tidak dapat menghapus sekuritas yang memiliki transaksi investasi. Hapus semua transaksi terkait terlebih dahulu.",
     "holdingNotFound": "Kepemilikan dengan ID {{ id }} tidak ditemukan",

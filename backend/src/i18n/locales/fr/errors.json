@@ -767,6 +767,7 @@
     "notFoundById": "Titre avec l'ID {{ id }} introuvable",
     "notFoundBySymbol": "Titre avec le symbole {{ symbol }} introuvable",
     "cannotDeactivateWithHoldings": "Impossible de désactiver un titre avec des positions actives. Vendez d'abord toutes les actions.",
+    "inactiveSecurityLocked": "{{ symbol }} est désactivé : ses transactions d'investissement ne peuvent être ni ajoutées, ni modifiées, ni supprimées. Activez d'abord {{ symbol }} sur la page Titres.",
     "cannotDeleteWithHoldings": "Impossible de supprimer un titre qui a des positions. Supprimez d'abord toutes les positions.",
     "cannotDeleteWithTransactions": "Impossible de supprimer un titre qui a des transactions d'investissement. Supprimez d'abord toutes les transactions associées.",
     "holdingNotFound": "Position avec l'ID {{ id }} introuvable",

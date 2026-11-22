@@ -767,6 +767,7 @@
     "notFoundById": "找不到 ID 為 {{ id }} 的證券",
     "notFoundBySymbol": "找不到代碼為 {{ symbol }} 的證券",
     "cannotDeactivateWithHoldings": "無法停用有有效持倉的證券。請先賣出所有股份。",
+    "inactiveSecurityLocked": "{{ symbol }} 已停用，因此無法新增、修改或刪除其投資交易。請先在證券頁面啟用 {{ symbol }}。",
     "cannotDeleteWithHoldings": "無法刪除有持倉的證券。請先移除所有持倉。",
     "cannotDeleteWithTransactions": "無法刪除有投資交易的證券。請先刪除所有相關交易。",
     "holdingNotFound": "找不到 ID 為 {{ id }} 的持倉",
