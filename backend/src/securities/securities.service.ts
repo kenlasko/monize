@@ -1210,10 +1210,22 @@ export class SecuritiesService {
   async deactivate(userId: string, id: string): Promise<Security> {
     const security = await this.findOne(userId, id);
 
-    // Check if security has any holdings with non-zero quantity
-    // Using ABS() to handle potential small negative values from rounding
-    const holdingsCount = await withScopedDb(this.dataSource, (m) =>
-      m
+    // One transaction, the security row locked `FOR UPDATE` before the
+    // holdings are counted: an investment write reads the row `FOR KEY SHARE`
+    // (`assertSecuritiesActiveIn`), which conflicts with it, so a write in
+    // flight commits before the count is taken and a write arriving after
+    // this commit sees the row inactive and refuses (#2323). The row lock is
+    // this transaction's only lock, so it never waits on a writer while one
+    // waits on it.
+    return withScopedDb(this.dataSource, async (m) => {
+      await m.query(
+        "SELECT id FROM securities WHERE id = $1 AND user_id = $2 FOR UPDATE",
+        [security.id, userId],
+      );
+
+      // Check if security has any holdings with non-zero quantity
+      // Using ABS() to handle potential small negative values from rounding
+      const holdingsCount = await m
         .getRepository(Holding)
         .createQueryBuilder("holding")
         .leftJoin("holding.account", "account")
@@ -1222,22 +1234,20 @@ export class SecuritiesService {
         .andWhere("ABS(holding.quantity) > :threshold", {
           threshold: 0.00000001,
         })
-        .getCount(),
-    );
+        .getCount();
 
-    if (holdingsCount > 0) {
-      throw new ForbiddenException(
-        tr(
-          "errors.securities.cannotDeactivateWithHoldings",
-          "Cannot deactivate security with active holdings. Please sell all shares first.",
-        ),
-      );
-    }
+      if (holdingsCount > 0) {
+        throw new ForbiddenException(
+          tr(
+            "errors.securities.cannotDeactivateWithHoldings",
+            "Cannot deactivate security with active holdings. Please sell all shares first.",
+          ),
+        );
+      }
 
-    // A targeted UPDATE, not a save of the row read above: a full save would
-    // write back every column of a stale read, e.g. a bond link changed in
-    // between (INV-BOND-005).
-    return withScopedDb(this.dataSource, async (m) => {
+      // A targeted UPDATE, not a save of the row read above: a full save would
+      // write back every column of a stale read, e.g. a bond link changed in
+      // between (INV-BOND-005).
       const repo = m.getRepository(Security);
       await repo.update({ id: security.id, userId }, { isActive: false });
       return repo.findOneOrFail({ where: { id: security.id, userId } });

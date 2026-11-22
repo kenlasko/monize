@@ -68,6 +68,7 @@ implied.
 | INV-BALANCE-001 | `current_balance` equals opening balance plus included ledger rows | partial |
 | INV-HOLDING-001 | A holding equals a deterministic replay of the investment ledger | enforced |
 | INV-HOLDING-002 | Every view replays the ledger the same way | enforced |
+| INV-HOLDING-003 | A deactivated security's investment ledger does not change | enforced |
 | INV-TRANSFER-001 | A transfer's two legs share the VOID boundary and one balance decision | enforced |
 | INV-ACCOUNTDELETE-001 | An account delete refuses rather than takes a ledger row or a schedule naming the account with it | partial |
 | INV-SPLITFX-001 | A cross-currency split transfer line credits its stated received amount at the implied rate, or the market conversion | enforced |
@@ -991,6 +992,60 @@ held today -- a security bought, held and sold out is valued over its holding
 period from the ledger -- but `backfillHistoricalPrices` used to skip inactive
 securities, so the one operation that fills price history could not fill the
 history of exactly those positions (#1389).
+
+### INV-HOLDING-003 -- a deactivated security's investment ledger does not change
+
+```text
+Statement           While securities.is_active is false, no request adds, edits,
+                    deletes or voids an investment transaction of that security,
+                    nor moves a row onto it. Deactivation requires a zero
+                    position, so the security stays at zero until the person
+                    activates it again. A status change that stays on one side
+                    of VOID (clear, reconcile) moves no shares and is allowed.
+Source of truth     securities.is_active, read by the writing transaction
+Enforcement         assertSecuritiesActiveIn
+                    (backend/src/securities/inactive-security.util.ts), inside
+                    each write's own transaction after lockHoldingScope and
+                    before the first write: InvestmentTransactionsService create,
+                    transferSecurity, update, updateLinkedTransfer, updateStatus
+                    (VOID crossings), remove, createEmbeddedForSplit,
+                    reverseAndRemoveEmbedded and applyParentStatusToEmbeddedRows
+                    (VOID crossings); the investment undo/redo in
+                    ActionHistoryService; the QIF/OFX/CSV investment row. The AI
+                    and MCP previews refuse the same rows before a card is
+                    offered (assertSecurityActive). The row is read FOR KEY SHARE
+                    and SecuritiesService.deactivate locks it FOR UPDATE before
+                    it counts the holdings, so a write in flight commits before
+                    the count and a write after the deactivation sees it.
+                    backend/src/securities/inactive-security.guard.spec.ts lists
+                    every write path and fails when one stops asking or asks
+                    outside its transaction. Exempt, as whole-ledger rewrites
+                    rather than edits of a security's rows: the backup restore,
+                    the MNY/KMY import, removeAll and the account and user
+                    deletes.
+Concurrency scope   per security row (FOR KEY SHARE against FOR UPDATE)
+Retry semantics     A refusal is terminal until the security is activated;
+                    nothing is written, so a retry is harmless.
+Crash semantics     Not applicable -- the guard writes nothing.
+Failure response    409 Conflict, errors.securities.inactiveSecurityLocked,
+                    naming the security and where to activate it
+Required tests      Unit: the helper reads FOR KEY SHARE and refuses with the
+                    symbol (inactive-security.util.spec.ts); each service path
+                    refuses before writing, and a reconcile is still allowed
+                    (investment-transactions.service.spec.ts, "#2323"); the undo
+                    and import paths (action-history.service.spec.ts,
+                    import-investment-processor.service.spec.ts); deactivate
+                    locks before it counts (securities.service.spec.ts). Source
+                    scan: inactive-security.guard.spec.ts. Still owed: a
+                    two-connection test of deactivate against a concurrent BUY.
+Status              enforced
+```
+
+Issue #2323: a mutual fund deactivated at zero shares had one of its
+transactions deleted afterwards, which left shares on an inactive security,
+and the Securities list hid Activate whenever shares were held. Both halves
+are fixed: Activate is always offered on an inactive security (the recovery
+path for data already in that state), and the write that caused it is refused.
 
 ### INV-TRANSFER-001 -- both legs, one decision
 

@@ -767,6 +767,7 @@
     "notFoundById": "Security with ID {{ id }} not found",
     "notFoundBySymbol": "Security with symbol {{ symbol }} not found",
     "cannotDeactivateWithHoldings": "Cannot deactivate security with active holdings. Please sell all shares first.",
+    "inactiveSecurityLocked": "{{ symbol }} is deactivated, so its investment transactions cannot be added, changed or deleted. Activate {{ symbol }} on the Securities page first.",
     "cannotDeleteWithHoldings": "Cannot delete security that has holdings. Remove all holdings first.",
     "cannotDeleteWithTransactions": "Cannot delete security that has investment transactions. Delete all related transactions first.",
     "holdingNotFound": "Holding with ID {{ id }} not found",

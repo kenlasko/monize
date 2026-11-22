@@ -25,6 +25,7 @@ import {
   TransactionStatus,
 } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
+import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { Account, AccountSubType } from "../accounts/entities/account.entity";
 import { isTransactionInFuture, todayYMD } from "../common/date-utils";
 
@@ -213,6 +214,22 @@ describe("InvestmentTransactionsService", () => {
       .fn()
       .mockResolvedValue(Array.isArray(result) ? result : []),
   });
+
+  /**
+   * The security reads as deactivated to `assertSecuritiesActiveIn` (#2323),
+   * every other query answering as the spec staged it.
+   */
+  const stageDeactivatedSecurity = () => {
+    const staged = mockQueryRunner.manager.query.getMockImplementation();
+    mockQueryRunner.manager.query.mockImplementation(
+      async (sql: string, params?: unknown[]) =>
+        String(sql).includes("FROM securities") &&
+        String(sql).includes("FOR KEY SHARE")
+          ? [{ symbol: "AAPL", is_active: false }]
+          : staged?.(sql, params),
+    );
+  };
+  const deactivatedMessage = /AAPL is deactivated/;
 
   beforeEach(async () => {
     jest.useFakeTimers();
@@ -521,6 +538,37 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
         findOneQB,
       );
+    });
+
+    it("refuses a row for a deactivated security before writing anything (#2323)", async () => {
+      stageDeactivatedSecurity();
+
+      await expect(service.create(userId, createBuyDto)).rejects.toThrow(
+        deactivatedMessage,
+      );
+      await expect(service.create(userId, createBuyDto)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(mockActionHistoryService.record).not.toHaveBeenCalled();
+    });
+
+    it("reads the security under the holdings lock, FOR KEY SHARE (#2323)", async () => {
+      await service.create(userId, createBuyDto);
+
+      const calls = mockQueryRunner.manager.query.mock.calls as unknown[][];
+      const advisory = calls.findIndex(([sql]) =>
+        String(sql).includes("pg_advisory_xact_lock"),
+      );
+      const securityRead = calls.findIndex(
+        ([sql]) =>
+          String(sql).includes("FROM securities") &&
+          String(sql).includes("FOR KEY SHARE"),
+      );
+      expect(advisory).toBeGreaterThanOrEqual(0);
+      expect(securityRead).toBeGreaterThan(advisory);
+      expect(calls[securityRead][1]).toEqual([[securityId], userId]);
     });
 
     it("records its own history entry unless the caller records one (issue #2165)", async () => {
@@ -2070,6 +2118,16 @@ describe("InvestmentTransactionsService", () => {
      * Test that fails under it: the first two below -- a purchase is edited
      * into a free one and its gain and tax are reported as known.
      */
+    it("refuses an edit of a deactivated security's row (#2323)", async () => {
+      stageDeactivatedSecurity();
+
+      await expect(
+        service.update(userId, transactionId, { quantity: 5 }),
+      ).rejects.toThrow(deactivatedMessage);
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
     it("refuses to price an existing BUY at zero", async () => {
       await expect(
         service.update(userId, transactionId, { price: 0 }),
@@ -3006,6 +3064,29 @@ describe("InvestmentTransactionsService", () => {
       });
     });
 
+    it("refuses to delete a deactivated security's row (#2323)", async () => {
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          ...mockBuyTransaction,
+          transactionId: cashTransactionId,
+        }),
+      );
+      transactionRepository.findOne.mockResolvedValue({
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        amount: -1509.99,
+      });
+      stageDeactivatedSecurity();
+
+      await expect(service.remove(userId, transactionId)).rejects.toThrow(
+        deactivatedMessage,
+      );
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
     it("recomputes the bond-engine prices of its security after the delete (R7)", async () => {
       const mockQB = createMockQueryBuilder({ ...mockBuyTransaction });
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
@@ -3506,6 +3587,36 @@ describe("InvestmentTransactionsService", () => {
      * from create/update/remove, so two concurrent writers of one account
      * deadlock (40P01).
      */
+    it("refuses to void a deactivated security's row (#2323)", async () => {
+      stageLocks([invLockRow()], [cashLockRow()]);
+      stageDeactivatedSecurity();
+
+      await expect(
+        service.updateStatus(userId, transactionId, TransactionStatus.VOID),
+      ).rejects.toThrow(deactivatedMessage);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(
+        holdingsService.rebuildScopesFromTransactions,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("still reconciles a deactivated security's row: no shares move (#2323)", async () => {
+      stageLocks([invLockRow()], [cashLockRow()]);
+      stageDeactivatedSecurity();
+
+      await service.updateStatus(
+        userId,
+        transactionId,
+        TransactionStatus.RECONCILED,
+      );
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        InvestmentTransaction,
+        transactionId,
+        { status: TransactionStatus.RECONCILED },
+      );
+    });
+
     it("recomputes the bond-engine prices of the security whose row crossed the VOID boundary (R7)", async () => {
       stageLocks([invLockRow()], [cashLockRow()]);
 
@@ -3821,6 +3932,47 @@ describe("InvestmentTransactionsService", () => {
   });
 
   describe("applyParentStatusToEmbeddedRows", () => {
+    describe("an embedded row of a deactivated security (#2323)", () => {
+      beforeEach(() => {
+        transactionSplitRepository.find.mockResolvedValue([
+          { id: "split-1", kind: SplitKind.INVESTMENT },
+        ]);
+        investmentTransactionsRepository.find.mockResolvedValue([
+          {
+            ...mockBuyTransaction,
+            id: "emb-1",
+            transactionId: null,
+            transactionSplitId: "split-1",
+            status: TransactionStatus.CLEARED,
+          },
+        ]);
+        stageDeactivatedSecurity();
+      });
+
+      it("refuses the parent's void, which would move its shares", async () => {
+        await expect(
+          service.applyParentStatusToEmbeddedRows(
+            mockQueryRunner.manager as never,
+            userId,
+            "parent-tx-1",
+            TransactionStatus.VOID,
+          ),
+        ).rejects.toThrow(deactivatedMessage);
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      });
+
+      it("lets the parent be reconciled: the row stays on its side of VOID", async () => {
+        await expect(
+          service.applyParentStatusToEmbeddedRows(
+            mockQueryRunner.manager as never,
+            userId,
+            "parent-tx-1",
+            TransactionStatus.RECONCILED,
+          ),
+        ).resolves.toBeDefined();
+      });
+    });
+
     /**
      * The split parent's status change row-locks `accounts` for the parent's
      * own balance; this pass rebuilds the embedded rows' positions under the
@@ -6593,6 +6745,31 @@ describe("InvestmentTransactionsService", () => {
   });
 
   describe("createEmbeddedForSplit", () => {
+    it("refuses an embedded row of a deactivated security, as create does (#2323)", async () => {
+      accountsService.findOne.mockResolvedValue(mockInvestmentAccount);
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+      stageDeactivatedSecurity();
+
+      await expect(
+        service.createEmbeddedForSplit(
+          mockQueryRunner.manager as never,
+          userId,
+          "2026-05-09",
+          "split-1",
+          accountId,
+          cashAccountId,
+          {
+            action: InvestmentAction.BUY,
+            securityId,
+            quantity: 75,
+            price: 10,
+            commission: 0,
+          },
+        ),
+      ).rejects.toThrow(deactivatedMessage);
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
     it("refuses an embedded BUY with no price", async () => {
       accountsService.findOne.mockResolvedValue(mockInvestmentAccount);
       securitiesService.findOne.mockResolvedValue(mockSecurity);
@@ -7139,6 +7316,33 @@ describe("InvestmentTransactionsService", () => {
   });
 
   describe("reverseAndRemoveEmbedded", () => {
+    it("refuses to remove a deactivated security's embedded row (#2323)", async () => {
+      stageDeactivatedSecurity();
+
+      await expect(
+        service.reverseAndRemoveEmbedded(
+          mockQueryRunner.manager as never,
+          userId,
+          {
+            id: "emb-1",
+            userId,
+            accountId,
+            securityId,
+            action: InvestmentAction.BUY,
+            quantity: 5,
+            price: 10,
+            commission: 0,
+            totalAmount: 50,
+            exchangeRate: 1,
+            transactionDate: "2026-05-09",
+            transactionId: null,
+            transactionSplitId: "split-1",
+          } as never,
+        ),
+      ).rejects.toThrow(deactivatedMessage);
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+    });
+
     it("reverses holdings and removes the row", async () => {
       const embedded: any = {
         id: "emb-1",
@@ -7207,6 +7411,15 @@ describe("InvestmentTransactionsService", () => {
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
         createMockQueryBuilder({ id: transactionId, action: "TRANSFER_OUT" }),
       );
+    });
+
+    it("refuses to move a deactivated security (#2323)", async () => {
+      stageDeactivatedSecurity();
+
+      await expect(
+        service.transferSecurity(userId, transferDto),
+      ).rejects.toThrow(deactivatedMessage);
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it("creates both legs and moves holdings at the supplied cost basis", async () => {
@@ -8280,6 +8493,34 @@ describe("InvestmentTransactionsService", () => {
       );
     });
 
+    it("refuses a deactivated security's row, as update() would (#2323)", async () => {
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          ...mockBuyTransaction,
+          security: { ...mockSecurity, isActive: false },
+        }),
+      );
+
+      await expect(
+        service.previewUpdateInvestmentTransaction(userId, transactionId, {
+          quantity: 5,
+        }),
+      ).rejects.toThrow(deactivatedMessage);
+    });
+
+    it("refuses to move a row onto a deactivated security (#2323)", async () => {
+      securitiesService.resolveBySymbolOrName.mockResolvedValue({
+        match: { ...mockSecurity, isActive: false },
+        candidates: [],
+      });
+
+      await expect(
+        service.previewUpdateInvestmentTransaction(userId, transactionId, {
+          securityQuery: "AAPL",
+        }),
+      ).rejects.toThrow(deactivatedMessage);
+    });
+
     it("merges overrides over the stored transaction and recomputes totals", async () => {
       const preview = await service.previewUpdateInvestmentTransaction(
         userId,
@@ -8411,6 +8652,19 @@ describe("InvestmentTransactionsService", () => {
   });
 
   describe("previewDeleteInvestmentTransaction", () => {
+    it("refuses a deactivated security's row, as remove() would (#2323)", async () => {
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          ...mockBuyTransaction,
+          security: { ...mockSecurity, isActive: false },
+        }),
+      );
+
+      await expect(
+        service.previewDeleteInvestmentTransaction(userId, transactionId),
+      ).rejects.toThrow(deactivatedMessage);
+    });
+
     it("returns a display preview without persisting", async () => {
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
         createMockQueryBuilder(mockBuyTransaction),

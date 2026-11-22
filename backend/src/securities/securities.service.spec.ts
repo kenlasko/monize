@@ -1960,6 +1960,41 @@ describe("SecuritiesService", () => {
       expect(securitiesRepository.save).not.toHaveBeenCalled();
     });
 
+    it("locks the security row FOR UPDATE before it counts the holdings (#2323)", async () => {
+      // An investment write reads the row FOR KEY SHARE and refuses an
+      // inactive one; the conflicting lock here is what keeps a write in
+      // flight from committing shares after the count said zero.
+      securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
+      const getCount = jest.fn().mockResolvedValue(0);
+      holdingsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount,
+      });
+      securitiesRepository.findOneOrFail = jest
+        .fn()
+        .mockResolvedValue({ ...mockSecurity, isActive: false });
+
+      await service.deactivate("user-1", "sec-1");
+
+      const lockIndex = (
+        scopedManager.query.mock.calls as unknown[][]
+      ).findIndex(
+        ([sql]) =>
+          String(sql).includes("FROM securities") &&
+          String(sql).includes("FOR UPDATE"),
+      );
+      expect(lockIndex).toBeGreaterThanOrEqual(0);
+      expect(scopedManager.query.mock.calls[lockIndex][1]).toEqual([
+        mockSecurity.id,
+        "user-1",
+      ]);
+      expect(
+        scopedManager.query.mock.invocationCallOrder[lockIndex],
+      ).toBeLessThan(getCount.mock.invocationCallOrder[0]);
+    });
+
     it("allows deactivating when holdings have zero quantity", async () => {
       securitiesRepository.findOne.mockResolvedValue({ ...mockSecurity });
       const getCount = jest.fn().mockResolvedValue(0); // Zero non-zero holdings
