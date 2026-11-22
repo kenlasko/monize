@@ -199,6 +199,17 @@ describe('SecurityList', () => {
     expect(screen.getByText('Deactivate')).toBeInTheDocument();
   });
 
+  it('still offers Activate on an inactive security that has holdings', () => {
+    // Deactivation needs a zero balance, but a later edit or deletion of one of
+    // its transactions can leave shares behind; Activate is the way back.
+    const securities = [makeSecurity({ isActive: false })];
+    const holdings = { s1: 0.5 };
+
+    render(<SecurityList securities={securities} holdings={holdings} onEdit={onEdit} onToggleActive={onToggleActive} onOpen={onOpen} />);
+    fireEvent.click(screen.getByText('Activate'));
+    expect(onToggleActive).toHaveBeenCalledWith(expect.objectContaining({ isActive: false }));
+  });
+
   it('shows the current share count column at full precision', () => {
     const securities = [makeSecurity()];
     const holdings = { s1: 0.0003 };
