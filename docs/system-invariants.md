@@ -1035,8 +1035,12 @@ Required tests      Unit: the helper reads FOR KEY SHARE and refuses with the
                     (investment-transactions.service.spec.ts, "#2323"); the undo
                     and import paths (action-history.service.spec.ts,
                     import-investment-processor.service.spec.ts); deactivate
-                    locks before it counts (securities.service.spec.ts). Source
-                    scan: inactive-security.guard.spec.ts. Still owed: a
+                    locks before it counts (securities.service.spec.ts). PG
+                    integration: an adjustment on an inactive security is
+                    refused and writes nothing, and the cleanup goes through
+                    once it is activated
+                    (backend/test/integration/security-transaction-history.integration.spec.ts).
+                    Source scan: inactive-security.guard.spec.ts. Still owed: a
                     two-connection test of deactivate against a concurrent BUY.
 Status              enforced
 ```
