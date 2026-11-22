@@ -298,6 +298,7 @@
     "allAccounts": "Tất cả tài khoản ({shares})",
     "accountClosed": "{name} (đã đóng)",
     "addTransaction": "+ Thêm giao tác",
+    "inactiveLocked": "{symbol} đã bị hủy kích hoạt, vì vậy không thể thêm, sửa hoặc xóa các giao dịch của nó. Hãy kích hoạt nó trước trên trang Giấy chứng khoán.",
     "loading": "Đang tải giao tác...",
     "emptyAll": "Không có giao tác nào cho giấy chứng khoán này.",
     "emptyAccount": "Không có giao tác nào cho giấy chứng khoán này trong tài khoản đã chọn.",

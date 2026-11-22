@@ -767,6 +767,7 @@
     "notFoundById": "{{ id }} kimliğine sahip menkul kıymet bulunamadı",
     "notFoundBySymbol": "{{ symbol }} sembolüne sahip menkul kıymet bulunamadı",
     "cannotDeactivateWithHoldings": "Aktif pozisyonları olan menkul kıymet devre dışı bırakılamaz. Lütfen önce tüm hisseleri satın.",
+    "inactiveSecurityLocked": "{{ symbol }} devre dışı bırakıldığı için yatırım işlemleri eklenemez, değiştirilemez veya silinemez. Önce Menkul Kıymetler sayfasında {{ symbol }} öğesini etkinleştirin.",
     "cannotDeleteWithHoldings": "Pozisyonları olan menkul kıymet silinemez. Önce tüm pozisyonları kaldırın.",
     "cannotDeleteWithTransactions": "Yatırım işlemleri olan menkul kıymet silinemez. Önce ilgili tüm işlemleri silin.",
     "holdingNotFound": "{{ id }} kimliğine sahip pozisyon bulunamadı",

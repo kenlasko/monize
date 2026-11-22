@@ -149,6 +149,31 @@ describe("ImportInvestmentProcessorService", () => {
       expect(firstSaveArg.totalAmount).toBe(1509.99);
     });
 
+    it("refuses a row for a deactivated security, saving nothing (#2323)", async () => {
+      const ctx = makeContext({
+        securityMap: new Map([["Vanguard 500", "sec-1"]]),
+      });
+      managerOf(ctx).query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FROM securities") &&
+        String(sql).includes("FOR KEY SHARE")
+          ? [{ symbol: "VFIAX", is_active: false }]
+          : [[], 1],
+      );
+
+      await expect(
+        service.processTransaction(ctx, {
+          action: "Buy",
+          security: "Vanguard 500",
+          quantity: 10,
+          price: 100,
+          commission: 0,
+          date: "2025-01-15",
+        }),
+      ).rejects.toThrow(/VFIAX is deactivated/);
+      expect(managerOf(ctx).save).not.toHaveBeenCalled();
+      expect(ctx.importResult.imported).toBe(0);
+    });
+
     describe("the bond series of a program-linked security (INV-BOND-007)", () => {
       const SERIES = "11111111-1111-5111-8111-111111111111";
       const buy = {

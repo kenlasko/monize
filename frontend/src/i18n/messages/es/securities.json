@@ -298,6 +298,7 @@
     "allAccounts": "Todas las cuentas ({shares})",
     "accountClosed": "{name} (cerrada)",
     "addTransaction": "+ Agregar transacción",
+    "inactiveLocked": "{symbol} está desactivado, por lo que sus transacciones no se pueden añadir, modificar ni eliminar. Actívalo primero en la página Valores.",
     "loading": "Cargando transacciones...",
     "emptyAll": "No hay transacciones para este valor.",
     "emptyAccount": "No hay transacciones para este valor en la cuenta seleccionada.",

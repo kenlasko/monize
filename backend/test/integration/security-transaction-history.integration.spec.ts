@@ -1,3 +1,4 @@
+import { ConflictException } from "@nestjs/common";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { InvestmentTransactionsService } from "@/securities/investment-transactions.service";
@@ -22,7 +23,8 @@ import { createTestAccount } from "../helpers/test-factories";
  * End-to-end coverage for the per-security transaction history view: running
  * share totals across multiple (including closed) accounts, exact residual
  * balances, and adding adjustments to clean them up -- even for closed
- * accounts and inactive securities.
+ * accounts. An inactive security's rows are refused until it is activated
+ * (INV-HOLDING-003, #2323): the cleanup is activate, adjust, deactivate.
  */
 describe("Security transaction history (integration)", () => {
   let module: TestingModule;
@@ -157,7 +159,30 @@ describe("Security transaction history (integration)", () => {
     expect(history.currentQuantityAll).toBeCloseTo(50.001, 6);
   });
 
-  it("clears a residual via an adjustment on an inactive security", async () => {
+  it("refuses an adjustment while the security is inactive, writing nothing (#2323)", async () => {
+    await expect(
+      withUserContext(userId, () =>
+        service.create(userId, {
+          accountId: accountA,
+          action: InvestmentAction.REMOVE_SHARES,
+          transactionDate: "2025-05-01",
+          securityId,
+          quantity: 0.001,
+        } as any),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    const history = await withUserContext(userId, () =>
+      service.getSecurityTransactionHistory(userId, securityId),
+    );
+    expect(history.transactions).toHaveLength(3);
+    expect(history.currentQuantityAll).toBeCloseTo(50.001, 6);
+  });
+
+  it("clears a residual via an adjustment once the security is activated", async () => {
+    await withUserContext(userId, () =>
+      securitiesService.activate(userId, securityId),
+    );
     // Add a REMOVE_SHARES adjustment for the 0.001 residual in (open) A.
     await withUserContext(userId, () =>
       service.create(userId, {
@@ -177,6 +202,9 @@ describe("Security transaction history (integration)", () => {
   });
 
   it("allows an adjustment against a closed account", async () => {
+    await withUserContext(userId, () =>
+      securitiesService.activate(userId, securityId),
+    );
     // Remove the 50 shares stranded in the now-closed Account B.
     await withUserContext(userId, () =>
       service.create(userId, {

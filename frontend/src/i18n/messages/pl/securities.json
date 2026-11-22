@@ -298,6 +298,7 @@
     "allAccounts": "Wszystkie konta ({shares})",
     "accountClosed": "{name} (zamknięte)",
     "addTransaction": "+ Dodaj transakcję",
+    "inactiveLocked": "{symbol} jest dezaktywowany, więc jego transakcji nie można dodawać, zmieniać ani usuwać. Najpierw aktywuj go na stronie Papiery wartościowe.",
     "loading": "Ładowanie transakcji...",
     "emptyAll": "Brak transakcji dla tego papieru wartościowego.",
     "emptyAccount": "Brak transakcji dla tego papieru wartościowego na wybranym koncie.",

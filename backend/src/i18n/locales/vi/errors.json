@@ -767,6 +767,7 @@
     "notFoundById": "Không tìm thấy chứng khoán với ID {{ id }}",
     "notFoundBySymbol": "Không tìm thấy chứng khoán với ký hiệu {{ symbol }}",
     "cannotDeactivateWithHoldings": "Không thể hủy kích hoạt chứng khoán có vị thế đang hoạt động. Vui lòng bán tất cả cổ phiếu trước.",
+    "inactiveSecurityLocked": "{{ symbol }} đã bị hủy kích hoạt, vì vậy không thể thêm, sửa hoặc xóa các giao dịch đầu tư của nó. Hãy kích hoạt {{ symbol }} trước trên trang Giấy chứng khoán.",
     "cannotDeleteWithHoldings": "Không thể xóa chứng khoán có vị thế. Hãy xóa tất cả vị thế trước.",
     "cannotDeleteWithTransactions": "Không thể xóa chứng khoán có giao tác đầu tư. Hãy xóa tất cả giao tác liên quan trước.",
     "holdingNotFound": "Không tìm thấy vị thế với ID {{ id }}",

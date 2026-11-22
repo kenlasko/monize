@@ -767,6 +767,7 @@
     "notFoundById": "ID {{ id }} の有価証券が見つかりません",
     "notFoundBySymbol": "シンボル {{ symbol }} の有価証券が見つかりません",
     "cannotDeactivateWithHoldings": "保有残高のある有価証券は非アクティブにできません。先にすべての株式を売却してください。",
+    "inactiveSecurityLocked": "{{ symbol }} は非アクティブのため、その投資取引を追加、変更、削除できません。先に有価証券ページで {{ symbol }} を有効にしてください。",
     "cannotDeleteWithHoldings": "保有残高のある有価証券は削除できません。先にすべての保有残高を削除してください。",
     "cannotDeleteWithTransactions": "投資取引がある有価証券は削除できません。先に関連するすべての取引を削除してください。",
     "holdingNotFound": "ID {{ id }} の保有残高が見つかりません",

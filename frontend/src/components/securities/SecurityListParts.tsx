@@ -74,7 +74,9 @@ export function buildSecurityActions(
           icon: 'activate',
           tone: 'success',
           onClick: () => handlers.onToggleActive(security),
-          hidden: hasHoldings,
+          // Never hidden: an inactive security can come to hold shares again
+          // (a transaction edited or deleted after it was deactivated), and
+          // activating it is the way out (#2323).
         },
     {
       key: 'delete',

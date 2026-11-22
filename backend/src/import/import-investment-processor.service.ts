@@ -36,6 +36,7 @@ import {
   formatInvestmentCashPayeeName,
 } from "../securities/investment-cash-payee.util";
 import { isQifCashTransfer } from "./qif-cash-transfer-action";
+import { assertSecuritiesActiveIn } from "../securities/inactive-security.util";
 
 @Injectable()
 export class ImportInvestmentProcessorService {
@@ -179,6 +180,9 @@ export class ImportInvestmentProcessorService {
     if (!securityId && qifTx.security) {
       securityId = await this.autoCreateSecurity(ctx, qifTx.security);
     }
+    // A row for a deactivated security is refused, as every other write of
+    // one is (#2323); the row's savepoint rolls it back and the file names it.
+    await assertSecuritiesActiveIn(ctx.manager, ctx.userId, [securityId]);
 
     // Calculate amounts
     const quantity = qifTx.quantity || 0;

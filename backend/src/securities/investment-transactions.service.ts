@@ -71,6 +71,10 @@ import {
   CapitalGainEntry,
 } from "./portfolio-calculation.service";
 import { SecuritiesService } from "./securities.service";
+import {
+  assertSecuritiesActiveIn,
+  assertSecurityActive,
+} from "./inactive-security.util";
 import { SecurityPriceService } from "./security-price.service";
 import { NetWorthService } from "../net-worth/net-worth.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
@@ -1268,6 +1272,9 @@ export class InvestmentTransactionsService {
       // keeps this path in the one order every holdings writer uses.
       await lockHoldingScope(manager, [createDto.accountId]);
 
+      // A deactivated security takes no new rows until it is activated (#2323).
+      await assertSecuritiesActiveIn(manager, userId, [createDto.securityId]);
+
       await options.beforeWrite?.(manager);
 
       // A removal the account cannot cover (OVER_REMOVAL,
@@ -1738,6 +1745,9 @@ export class InvestmentTransactionsService {
       }
       security = resolved.match;
     }
+    // What create() refuses in its transaction (#2323), told before a card is
+    // offered.
+    if (security) assertSecurityActive(security);
 
     // Mirror create()'s action-specific requirements so a preview rejected here
     // is exactly what the real write would reject.
@@ -1978,6 +1988,8 @@ export class InvestmentTransactionsService {
     },
   ): Promise<UpdateInvestmentTransactionPreview> {
     const existing = await this.findOne(userId, transactionId);
+    // update() refuses an edit of a deactivated security's row (#2323).
+    if (existing.security) assertSecurityActive(existing.security);
 
     const hasChange =
       input.action !== undefined ||
@@ -2056,6 +2068,8 @@ export class InvestmentTransactionsService {
     transactionId: string,
   ): Promise<DeleteInvestmentTransactionPreview> {
     const existing = await this.findOne(userId, transactionId);
+    // remove() refuses it too (#2323).
+    if (existing.security) assertSecurityActive(existing.security);
     return {
       transactionId,
       accountName: existing.account?.name ?? "",
@@ -2480,6 +2494,8 @@ export class InvestmentTransactionsService {
         // (`common/db/locks.ts`), both accounts, ascending inside the helper.
         await lockHoldingScope(manager, [dto.fromAccountId, dto.toAccountId]);
 
+        await assertSecuritiesActiveIn(manager, userId, [dto.securityId]);
+
         // Optional for a transfer (it moves lots, keeping their series); named,
         // it must belong to the security's program and both legs carry it.
         const bondGuard = await beginBondWriteGuard(manager, userId, [
@@ -2856,6 +2872,9 @@ export class InvestmentTransactionsService {
 
     if (dto.securityId) {
       await this.securitiesService.findOne(userId, dto.securityId);
+      // A split rebuild recreates its embedded rows: refused for a deactivated
+      // security, as a standalone row's create is (#2323).
+      await assertSecuritiesActiveIn(manager, userId, [dto.securityId]);
     }
 
     this.assertAcquisitionPriced(dto.action, dto.price);
@@ -3000,6 +3019,9 @@ export class InvestmentTransactionsService {
       bondGuard?: BondWriteGuard;
     },
   ): Promise<void> {
+    await assertSecuritiesActiveIn(manager, userId, [
+      investmentTransaction.securityId,
+    ]);
     const bondGuard =
       options?.bondGuard ??
       (await beginBondWriteGuard(manager, userId, [
@@ -3141,6 +3163,16 @@ export class InvestmentTransactionsService {
     // price per bond, is refused and the parent's whole change rolls back.
     const bondGuard = createBondWriteGuard(manager, userId);
     await bondGuard.track(rowsBySplit.flat().map((row) => row.securityId));
+    // A row that crosses the VOID boundary moves shares: refused for a
+    // deactivated security before the first row changes (#2323).
+    await assertSecuritiesActiveIn(
+      manager,
+      userId,
+      rowsBySplit
+        .flat()
+        .filter((row) => (row.status === TransactionStatus.VOID) !== isVoid)
+        .map((row) => row.securityId),
+    );
     const changedRowIds: string[] = [];
 
     for (const rows of rowsBySplit) {
@@ -4026,6 +4058,14 @@ export class InvestmentTransactionsService {
         await lockUnchangedInvestmentRow(manager, userId, leg);
       }
 
+      // Neither the pair's security nor one it moves to may be deactivated
+      // (#2323).
+      await assertSecuritiesActiveIn(manager, userId, [
+        editedLeg.securityId,
+        linkedLeg.securityId,
+        updateDto.securityId,
+      ]);
+
       const bondGuard = await beginBondWriteGuard(manager, userId, [
         editedLeg.securityId,
         updateDto.securityId,
@@ -4388,6 +4428,14 @@ export class InvestmentTransactionsService {
         }
       }
 
+      // Crossing the VOID boundary moves shares, so it is refused for a
+      // deactivated security; a non-VOID status change above is not (#2323).
+      await assertSecuritiesActiveIn(
+        manager,
+        userId,
+        legs.map((leg) => leg.securityId),
+      );
+
       // Each leg's cash row crosses with it (below), so a reconciled cash row
       // under the strict lock refuses the crossing before anything is written
       // (INV-RECONCILE-001, issue #2072).
@@ -4719,6 +4767,13 @@ export class InvestmentTransactionsService {
       ) {
         await this.accountsService.findOne(userId, updateDto.accountId);
       }
+
+      // A deactivated security's rows are not edited, nor is a row moved onto
+      // one (#2323).
+      await assertSecuritiesActiveIn(manager, userId, [
+        oldSecurityId,
+        updateDto.securityId,
+      ]);
 
       const bondGuard = await beginBondWriteGuard(manager, userId, [
         oldSecurityId,
@@ -5310,6 +5365,9 @@ export class InvestmentTransactionsService {
       )) {
         await lockUnchangedInvestmentRow(manager, userId, leg);
       }
+
+      // A deleted row would move a deactivated security's position (#2323).
+      await assertSecuritiesActiveIn(manager, userId, affectedSecurityIds);
 
       // Deleting an acquisition can leave a later removal uncovered: refused
       // after the mutation, in this transaction, so nothing commits

@@ -15,6 +15,7 @@ import {
   restoredSeries,
 } from "../bonds/bond-series-resolver";
 import { beginBondWriteGuard } from "../bonds/bond-write-guard";
+import { assertSecuritiesActiveIn } from "../securities/inactive-security.util";
 import { findBondLinkProblem } from "../securities/bond-link.util";
 import { ActionHistory } from "./entities/action-history.entity";
 import { assertUndoCurrencyKind } from "./undo-currency-kind";
@@ -1678,6 +1679,12 @@ export class ActionHistoryService {
         }),
       );
     }
+    // An undo or redo is a write of the rows like any other: refused while
+    // either security is deactivated (#2323).
+    await assertSecuritiesActiveIn(manager, action.userId, [
+      ...legs.map((leg) => leg.securityId),
+      ...[...currentLegs.values()].map((leg) => leg?.securityId),
+    ]);
     const bondGuard = await beginBondWriteGuard(manager, action.userId, [
       ...legs.map((leg) => leg.securityId),
       ...[...currentLegs.values()].map((leg) => leg?.securityId),
@@ -1752,6 +1759,12 @@ export class ActionHistoryService {
     const legs = linkedTx ? [invTx, linkedTx] : [invTx];
     const accountIds = new Set<string>();
 
+    await assertSecuritiesActiveIn(
+      manager,
+      action.userId,
+      legs.map((leg) => leg.securityId),
+    );
+
     // Undoing a create deletes the rows: refused when that leaves a removal of
     // a program-linked security uncovered (INV-BOND-007).
     const bondGuard = await beginBondWriteGuard(
@@ -1822,6 +1835,10 @@ export class ActionHistoryService {
     const linkedLeg = before.linkedTransferLeg as
       Record<string, any> | undefined;
 
+    await assertSecuritiesActiveIn(manager, action.userId, [
+      before.securityId,
+      linkedLeg?.securityId,
+    ]);
     const bondGuard = await beginBondWriteGuard(manager, action.userId, [
       before.securityId,
       linkedLeg?.securityId,

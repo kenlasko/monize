@@ -767,6 +767,7 @@
     "notFoundById": "Waardepapier met ID {{ id }} niet gevonden",
     "notFoundBySymbol": "Waardepapier met symbool {{ symbol }} niet gevonden",
     "cannotDeactivateWithHoldings": "Kan waardepapier met actieve posities niet deactiveren. Verkoop eerst alle aandelen.",
+    "inactiveSecurityLocked": "{{ symbol }} is gedeactiveerd, dus de beleggingstransacties ervan kunnen niet worden toegevoegd, gewijzigd of verwijderd. Activeer {{ symbol }} eerst op de pagina Waardepapieren.",
     "cannotDeleteWithHoldings": "Kan waardepapier met posities niet verwijderen. Verwijder eerst alle posities.",
     "cannotDeleteWithTransactions": "Kan waardepapier met beleggingstransacties niet verwijderen. Verwijder eerst alle gerelateerde transacties.",
     "holdingNotFound": "Positie met ID {{ id }} niet gevonden",

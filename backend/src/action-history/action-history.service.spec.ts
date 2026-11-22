@@ -1628,6 +1628,66 @@ describe("ActionHistoryService", () => {
   });
 
   describe("undo investment transaction", () => {
+    /** `assertSecuritiesActiveIn` reads the security as deactivated (#2323). */
+    const stageDeactivatedSecurity = () =>
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FROM securities") &&
+        String(sql).includes("FOR KEY SHARE")
+          ? [{ symbol: "VFIAX", is_active: false }]
+          : [],
+      );
+
+    it("refuses to undo the create of a deactivated security's row (#2323)", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "create",
+        entityId: "inv-1",
+        afterData: { id: "inv-1" },
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        id: "inv-1",
+        userId,
+        accountId: "acc-1",
+        securityId: "sec-1",
+        transactionId: null,
+      });
+      stageDeactivatedSecurity();
+
+      await expect(service.undo(userId)).rejects.toThrow(
+        /VFIAX is deactivated/,
+      );
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+    });
+
+    it("refuses to undo the delete of a deactivated security's row (#2323)", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "investment_transaction",
+        action: "delete",
+        entityId: "inv-1",
+        beforeData: {
+          id: "inv-1",
+          accountId: "acc-1",
+          securityId: "sec-1",
+          action: "BUY",
+          transactionDate: "2024-01-15",
+          quantity: 10,
+          price: 100,
+        },
+        afterData: null,
+      });
+      stageDeactivatedSecurity();
+
+      await expect(service.undo(userId)).rejects.toThrow(
+        /VFIAX is deactivated/,
+      );
+      const inserts = (mockQueryRunner.query.mock.calls as unknown[][]).filter(
+        ([sql]) => String(sql).includes("INSERT INTO investment_transactions"),
+      );
+      expect(inserts).toHaveLength(0);
+    });
+
     it("should undo investment create by removing investment tx and cash tx", async () => {
       const invAction = {
         ...mockAction,

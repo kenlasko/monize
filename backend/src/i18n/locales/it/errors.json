@@ -767,6 +767,7 @@
     "notFoundById": "Titolo con ID {{ id }} non trovato",
     "notFoundBySymbol": "Titolo con simbolo {{ symbol }} non trovato",
     "cannotDeactivateWithHoldings": "Impossibile disattivare un titolo con partecipazioni attive. Vendi prima tutte le azioni.",
+    "inactiveSecurityLocked": "{{ symbol }} è disattivato, quindi le sue transazioni di investimento non possono essere aggiunte, modificate o eliminate. Attiva prima {{ symbol }} nella pagina Titoli.",
     "cannotDeleteWithHoldings": "Impossibile eliminare un titolo con partecipazioni. Rimuovi prima tutte le partecipazioni.",
     "cannotDeleteWithTransactions": "Impossibile eliminare un titolo con transazioni di investimento. Elimina prima tutte le transazioni correlate.",
     "holdingNotFound": "Partecipazione con ID {{ id }} non trovata",

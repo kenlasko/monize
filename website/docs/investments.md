@@ -291,7 +291,7 @@ Securities can be added:
 
 ### Deactivating and Deleting Securities
 
-A security you no longer hold can be **Deactivated** from its row: it disappears from the Active list but keeps its history. A security that is not used by any holding or investment transaction can be **Deleted**, which also deletes its price history. A security that is still referenced cannot be deleted until those transactions are removed.
+A security you no longer hold can be **Deactivated** from its row: it disappears from the Active list but keeps its history. While it is deactivated its investment transactions cannot be added, edited, deleted or voided, so its share count stays where it was; to correct one, **Activate** it from its row first (the button is always offered on an inactive security), make the change, and deactivate it again. A security that is not used by any holding or investment transaction can be **Deleted**, which also deletes its price history. A security that is still referenced cannot be deleted until those transactions are removed.
 
 ### Exchange Priority
 
@@ -341,7 +341,7 @@ The tabs below hold the rest:
 | Tab | What it shows |
 |-----|---------------|
 | **Overview** | **About** (the description, sector, industry, country, website, and tags), **Security performance** over standard periods, **Position info** (first and last transaction, total invested and sold, dividends, fees, realized P/L, total return), and the **Accounts** holding it |
-| **Transactions** | Every transaction in this security, with **+ Add transaction** and **Adjust shares** |
+| **Transactions** | Every transaction in this security, with **+ Add transaction** and **Adjust shares** (on a deactivated security, a note saying to activate it first instead) |
 | **Price history** | Every stored price, by year and month, with the tools to manage them (see below) |
 | **Documents** | Links to the security's paperwork: factsheet, KIID, prospectus, annual reports, tax documents, research |
 | **News** | Recent news about the security from the price provider |

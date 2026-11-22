@@ -767,6 +767,7 @@
     "notFoundById": "Wertpapier mit ID {{ id }} nicht gefunden",
     "notFoundBySymbol": "Wertpapier mit Symbol {{ symbol }} nicht gefunden",
     "cannotDeactivateWithHoldings": "Wertpapier mit aktiven Beständen kann nicht deaktiviert werden. Bitte verkaufen Sie zuerst alle Anteile.",
+    "inactiveSecurityLocked": "{{ symbol }} ist deaktiviert, daher können seine Wertpapiertransaktionen nicht hinzugefügt, geändert oder gelöscht werden. Aktivieren Sie {{ symbol }} zuerst auf der Seite Wertpapiere.",
     "cannotDeleteWithHoldings": "Wertpapier mit Beständen kann nicht gelöscht werden. Entfernen Sie zuerst alle Bestände.",
     "cannotDeleteWithTransactions": "Wertpapier mit Investmentbuchungen kann nicht gelöscht werden. Löschen Sie zuerst alle zugehörigen Buchungen.",
     "holdingNotFound": "Bestand mit ID {{ id }} nicht gefunden",

@@ -767,6 +767,7 @@
     "notFoundById": "Título com ID {{ id }} não encontrado",
     "notFoundBySymbol": "Título com símbolo {{ symbol }} não encontrado",
     "cannotDeactivateWithHoldings": "Não é possível desativar o título com posições ativas. Venda todas as ações primeiro.",
+    "inactiveSecurityLocked": "{{ symbol }} está desativado, então suas transações de investimento não podem ser adicionadas, alteradas ou excluídas. Ative {{ symbol }} primeiro na página Títulos.",
     "cannotDeleteWithHoldings": "Não é possível excluir o título que tem posições. Remova todas as posições primeiro.",
     "cannotDeleteWithTransactions": "Não é possível excluir o título que tem transações de investimento. Exclua todas as transações relacionadas primeiro.",
     "holdingNotFound": "Posição com ID {{ id }} não encontrada",
