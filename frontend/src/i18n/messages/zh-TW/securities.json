@@ -298,6 +298,7 @@
     "allAccounts": "所有科目（{shares}）",
     "accountClosed": "{name}（已關閉）",
     "addTransaction": "+ 新增交易",
+    "inactiveLocked": "{symbol} 已停用，因此無法新增、修改或刪除其交易。請先在證券頁面啟用。",
     "loading": "載入交易中...",
     "emptyAll": "此證券無交易記錄。",
     "emptyAccount": "此科目中此證券無交易記錄。",

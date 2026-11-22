@@ -298,6 +298,7 @@
     "allAccounts": "所有账户（{shares} 股）",
     "accountClosed": "{name}（已关闭）",
     "addTransaction": "+ 添加交易",
+    "inactiveLocked": "{symbol} 已停用，因此无法添加、修改或删除其交易。请先在证券页面激活。",
     "loading": "正在加载交易...",
     "emptyAll": "此证券无交易记录。",
     "emptyAccount": "所选账户中此证券无交易记录。",

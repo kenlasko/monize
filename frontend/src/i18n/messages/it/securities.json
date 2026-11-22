@@ -298,6 +298,7 @@
     "allAccounts": "Tutti i conti ({shares})",
     "accountClosed": "{name} (chiuso)",
     "addTransaction": "+ Aggiungi transazione",
+    "inactiveLocked": "{symbol} è disattivato, quindi le sue transazioni non possono essere aggiunte, modificate o eliminate. Attivalo prima nella pagina Titoli.",
     "loading": "Caricamento transazioni...",
     "emptyAll": "Nessuna transazione per questo titolo.",
     "emptyAccount": "Nessuna transazione per questo titolo nel conto selezionato.",

@@ -68,12 +68,14 @@ vi.mock('@/lib/logger', () => ({
   createLogger: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() }),
 }));
 
+// Active: a deactivated security's rows cannot be changed (#2323), which the
+// "a deactivated security" cases below cover.
 const security = {
   id: 'sec-1',
   symbol: 'ACME',
   name: 'Acme Corp',
   currencyCode: 'USD',
-  isActive: false,
+  isActive: true,
 } as any;
 
 const historyData = {
@@ -98,7 +100,7 @@ async function renderHistory(props: Partial<Record<string, unknown>> = {}) {
   await act(async () => {
     render(
       <SecurityTransactionHistory
-        security={security}
+        security={(props.security as typeof security) ?? security}
         onChanged={(props.onChanged as () => void) ?? vi.fn()}
       />,
     );
@@ -109,6 +111,39 @@ describe('SecurityTransactionHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(investmentsApi.getSecurityTransactionHistory).mockResolvedValue(historyData as any);
+  });
+
+  describe('a deactivated security (#2323)', () => {
+    const inactive = { ...security, isActive: false };
+
+    it('says why its transactions cannot be changed and where to activate it', async () => {
+      await renderHistory({ security: inactive });
+      await waitFor(() => {
+        expect(getSelectByLabel('Account')).toBeInTheDocument();
+      });
+      expect(screen.getByRole('note')).toHaveTextContent(
+        'ACME is deactivated, so its transactions cannot be added, changed or deleted. Activate it on the Securities page first.',
+      );
+    });
+
+    it('offers no add or edit the server would refuse, but still lists the history', async () => {
+      await renderHistory({ security: inactive });
+      await waitFor(() => {
+        expect(getSelectByLabel('Account')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('+ Add transaction')).not.toBeInTheDocument();
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      expect(screen.getByText('150')).toBeInTheDocument();
+    });
+
+    it('shows no note for an active security', async () => {
+      await renderHistory();
+      await waitFor(() => {
+        expect(getSelectByLabel('Account')).toBeInTheDocument();
+      });
+      expect(screen.queryByRole('note')).not.toBeInTheDocument();
+      expect(screen.getByText('+ Add transaction')).toBeInTheDocument();
+    });
   });
 
   it('loads and shows transactions with the cross-account running total', async () => {

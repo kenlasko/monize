@@ -298,6 +298,7 @@
     "allAccounts": "All accounts ({shares})",
     "accountClosed": "{name} (closed)",
     "addTransaction": "+ Add transaction",
+    "inactiveLocked": "{symbol} is deactivated, so its transactions cannot be added, changed or deleted. Activate it on the Securities page first.",
     "loading": "Loading transactions...",
     "emptyAll": "No transactions for this security.",
     "emptyAccount": "No transactions for this security in the selected account.",

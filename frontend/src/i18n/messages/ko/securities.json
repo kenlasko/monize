@@ -298,6 +298,7 @@
     "allAccounts": "모든 계정 ({shares})",
     "accountClosed": "{name} (마감됨)",
     "addTransaction": "+ 거래 추가",
+    "inactiveLocked": "{symbol}이(가) 비활성화되어 있어 거래를 추가, 변경 또는 삭제할 수 없습니다. 먼저 유가증권 페이지에서 활성화하세요.",
     "loading": "거래 불러오는 중...",
     "emptyAll": "이 유가증권에 대한 거래가 없습니다.",
     "emptyAccount": "선택한 계정에서 이 유가증권에 대한 거래가 없습니다.",

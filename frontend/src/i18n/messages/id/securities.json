@@ -298,6 +298,7 @@
     "allAccounts": "Semua akun ({shares})",
     "accountClosed": "{name} (ditutup)",
     "addTransaction": "+ Tambah transaksi",
+    "inactiveLocked": "{symbol} dinonaktifkan, sehingga transaksinya tidak dapat ditambahkan, diubah, atau dihapus. Aktifkan terlebih dahulu di halaman Sekuritas.",
     "loading": "Memuat transaksi...",
     "emptyAll": "Tidak ada transaksi untuk sekuritas ini.",
     "emptyAccount": "Tidak ada transaksi untuk sekuritas ini di akun yang dipilih.",

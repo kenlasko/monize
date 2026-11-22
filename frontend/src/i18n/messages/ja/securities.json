@@ -298,6 +298,7 @@
     "allAccounts": "すべての勘定科目（{shares} 株）",
     "accountClosed": "{name}（閉鎖済み）",
     "addTransaction": "+ 取引を追加",
+    "inactiveLocked": "{symbol} は非アクティブのため、その取引を追加、変更、削除できません。先に有価証券ページで有効にしてください。",
     "loading": "取引を読み込み中...",
     "emptyAll": "この有価証券の取引はありません。",
     "emptyAccount": "選択した勘定科目にこの有価証券の取引はありません。",

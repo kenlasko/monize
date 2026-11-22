@@ -145,6 +145,11 @@ export function SecurityTransactionHistory({
     return txns.filter((t) => t.accountId === selectedAccountId);
   }, [history, selectedAccountId]);
 
+  // A deactivated security's rows are refused by the server until it is
+  // activated (INV-HOLDING-003, #2323), so the pane says so rather than
+  // offering an add or an edit that would fail.
+  const isLocked = security.isActive === false;
+
   const defaultAdjustAccountId =
     selectedAccountId !== 'all' ? selectedAccountId : accounts[0]?.accountId;
 
@@ -178,14 +183,23 @@ export function SecurityTransactionHistory({
             />
           </div>
         )}
-        {accounts.length > 0 && !showAddForm && (
+        {accounts.length > 0 && !showAddForm && !isLocked && (
           <Button size="sm" variant="outline" onClick={() => setShowAddForm(true)}>
             {t('transactionHistory.addTransaction')}
           </Button>
         )}
       </div>
 
-      {showAddForm && (
+      {isLocked && (
+        <div
+          role="note"
+          className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-900/20 dark:text-amber-200"
+        >
+          {t('transactionHistory.inactiveLocked', { symbol: security.symbol })}
+        </div>
+      )}
+
+      {showAddForm && !isLocked && (
         <div className="mb-4">
           <SecurityShareAdjustmentForm
             securityId={security.id}
@@ -278,14 +292,16 @@ export function SecurityTransactionHistory({
                       {formatCurrency(tx.totalAmount, security.currencyCode)}
                     </td>
                     <td role="cell" className="col-start-4 row-start-3 flex justify-end p-0 sm:table-cell sm:whitespace-nowrap sm:px-3 sm:py-2 sm:text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditClick(tx.id)}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-                      >
-                        {tc('edit')}
-                      </Button>
+                      {!isLocked && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(tx.id)}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                        >
+                          {tc('edit')}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );

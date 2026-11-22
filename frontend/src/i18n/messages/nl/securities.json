@@ -298,6 +298,7 @@
     "allAccounts": "Alle rekeningen ({shares})",
     "accountClosed": "{name} (gesloten)",
     "addTransaction": "+ Transactie toevoegen",
+    "inactiveLocked": "{symbol} is gedeactiveerd, dus de transacties ervan kunnen niet worden toegevoegd, gewijzigd of verwijderd. Activeer het eerst op de pagina Waardepapieren.",
     "loading": "Transacties laden...",
     "emptyAll": "Geen transacties voor dit waardepapier.",
     "emptyAccount": "Geen transacties voor dit waardepapier op de geselecteerde rekening.",

@@ -298,6 +298,7 @@
     "allAccounts": "Tüm hesaplar ({shares})",
     "accountClosed": "{name} (kapalı)",
     "addTransaction": "+ İşlem ekle",
+    "inactiveLocked": "{symbol} devre dışı bırakıldığı için işlemleri eklenemez, değiştirilemez veya silinemez. Önce Menkul Kıymetler sayfasında etkinleştirin.",
     "loading": "İşlemler yükleniyor...",
     "emptyAll": "Bu menkul kıymet için işlem yok.",
     "emptyAccount": "Seçilen hesapta bu menkul kıymet için işlem yok.",

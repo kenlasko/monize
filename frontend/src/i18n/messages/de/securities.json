@@ -298,6 +298,7 @@
     "allAccounts": "Alle Konten ({shares})",
     "accountClosed": "{name} (geschlossen)",
     "addTransaction": "+ Buchung hinzufügen",
+    "inactiveLocked": "{symbol} ist deaktiviert, daher können seine Transaktionen nicht hinzugefügt, geändert oder gelöscht werden. Aktivieren Sie es zuerst auf der Seite Wertpapiere.",
     "loading": "Buchungen werden geladen...",
     "emptyAll": "Keine Buchungen für dieses Wertpapier.",
     "emptyAccount": "Keine Buchungen für dieses Wertpapier im ausgewählten Konto.",
