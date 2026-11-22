@@ -284,7 +284,7 @@ Highlights of the recent releases. Every version has full notes in [`docs/releas
 
 ### Self-Hosting and Operations
 - Docker Compose files for development, production, demo and several replicas, and a Helm chart for Kubernetes
-- A Windows installer for a single PC, with its own PostgreSQL, tray icon and automatic updates: no Docker needed ([Monize for Windows](https://www.monize.net/docs/windows))
+- A Windows installer for a single PC, with its own PostgreSQL, tray icon and automatic updates: no Docker needed ([Monize for Windows](https://www.monize.net/docs/windows)). In beta now ([latest beta](https://github.com/kenlasko/monize/releases)); the first official release is 1.22.0
 - Several backend replicas with `CLUSTER_MODE=multi`, with PostgreSQL only and no Redis
 - Attachment storage in the database, on disk or in S3 (`ATTACHMENT_STORAGE_PROVIDER`); existing attachments are copied across when you switch
 - The automatic backup store on disk or in S3 (`BACKUP_STORAGE_PROVIDER`)
@@ -733,11 +733,14 @@ For one Windows 10/11 x64 PC there is an installer with everything inside:
 the frontend, the backend and PostgreSQL 18 run as one app with a tray icon,
 installed for the current Windows account without administrator rights.
 
-- **Download:** `Monize-Setup-<version>.exe` from the
-  [latest release](https://github.com/kenlasko/monize/releases/latest). A
-  beta built from `main` is the one
+- **Status:** in beta. The first official release of Monize for Windows
+  will be **1.22.0**; releases before it, including 1.21.0, have no Windows
+  installer.
+- **Download:** until 1.22.0, get the latest beta,
+  `Monize-Setup-<version>.exe`, from the one
   [prerelease](https://github.com/kenlasko/monize/releases) named
-  "Windows beta". Until SignPath Foundation issues its certificate, the
+  "Windows beta". From 1.22.0 on, the installer is also on the
+  [latest release](https://github.com/kenlasko/monize/releases/latest). Until SignPath Foundation issues its certificate, the
   installer is signed with a test certificate Windows does not trust, so
   SmartScreen asks for confirmation. See the
   [code signing policy](#code-signing-policy).

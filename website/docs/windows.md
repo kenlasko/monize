@@ -8,10 +8,12 @@ Out of the box it is a single-PC installation: everything listens on `127.0.0.1`
 
 ## Download
 
+> **Monize for Windows is in beta.** The first official release of Monize for Windows will be **1.22.0**. Releases before 1.22.0, including 1.21.0, have no Windows installer. Until 1.22.0 is out, download the latest beta from the [Releases page](https://github.com/kenlasko/monize/releases).
+
 | Channel | What it is | Where |
 |---------|------------|-------|
-| **Release** | The current Monize release. Recommended. | [Latest release](https://github.com/kenlasko/monize/releases/latest): download `Monize-Setup-<version>.exe` under **Assets** |
-| **Beta** | A preview built from every change merged since the last release. Less tested. | [Releases page](https://github.com/kenlasko/monize/releases): the release marked **Pre-release**, named **Windows beta** |
+| **Beta** | A preview built from every change merged since the last release. Less tested. The only way to get Monize for Windows until 1.22.0. | [Releases page](https://github.com/kenlasko/monize/releases): the release marked **Pre-release**, named **Windows beta**. Download `Monize-Setup-<version>.exe` under **Assets** |
+| **Release** | From 1.22.0 on, the current Monize release. Recommended once it exists. | [Latest release](https://github.com/kenlasko/monize/releases/latest): download `Monize-Setup-<version>.exe` under **Assets** |
 
 There is only ever one beta: each new one replaces the one before it. An installed beta updates itself to the next beta or to the next release, whichever is newer. An installed release never updates to a beta. To leave the beta channel, uninstall (keeping your data) and install the release; [back up](#backups-and-disaster-recovery) first.
 
