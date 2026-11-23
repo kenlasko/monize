@@ -381,15 +381,71 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       }),
     );
 
-    // -90 - 48 + 90 + 90; the market rate would read -80 - 48 + 180.
+    // Both sides of each transfer, each at 90: -90 + 90 for the plain one,
+    // the split's -90 line against its +90 row, and the groceries line's -48
+    // (issue #2337). The market rate would read -80 - 80 - 48 + 180.
     expect(monthly).toEqual([
-      expect.objectContaining({ month: "2026-03", currency: "EUR", total: 42 }),
+      expect.objectContaining({
+        month: "2026-03",
+        currency: "EUR",
+        total: -48,
+        // Two plain legs, the split parent once and its counterpart row.
+        count: 4,
+      }),
     ]);
     expect(flows).toMatchObject({
       fxComplete: true,
-      totalExpenses: 138,
+      totalExpenses: 228,
       totalIncome: 180,
     });
+  });
+
+  it("leaves the split's transfer line out of the MCP flow totals without transfers", async () => {
+    await seed("EUR");
+
+    const flows = await asUser(() =>
+      analytics.getLlmFlowTotals(userId, {
+        startDate: START,
+        endDate: END,
+      }),
+    );
+
+    // Only the groceries line is spending or income.
+    expect(flows).toMatchObject({
+      fxComplete: true,
+      totalExpenses: 48,
+      totalIncome: 0,
+    });
+  });
+
+  it("reads the split's transfer line in the monthly totals of the sending account", async () => {
+    await seed("EUR");
+
+    const monthly = await asUser(() =>
+      analytics.getMonthlyTotals(userId, [usId], START, END),
+    );
+
+    // USD only, so no conversion: -100 plain, -60 groceries, -100 line.
+    expect(monthly).toEqual([
+      expect.objectContaining({
+        month: "2026-03",
+        currency: "USD",
+        total: -260,
+        count: 2,
+      }),
+    ]);
+  });
+
+  it("does not count the split's transfer line as uncategorised in the monthly totals", async () => {
+    await seed("EUR");
+
+    const monthly = await asUser(() =>
+      analytics.getMonthlyTotals(userId, [usId], START, END, ["uncategorized"]),
+    );
+
+    // The groceries line has a category, the plain leg is a transfer and the
+    // transfer line has no category but is not uncategorised spending.
+    expect(monthly).toEqual([]);
   });
 
   it("reads both outgoing transfers at 90 EUR in a budget's transfer actuals", async () => {

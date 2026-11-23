@@ -1787,7 +1787,13 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     flow totals, and the payee and category detail pages'
                     account panels (built-in-reports/account-breakdown-fx.ts),
                     and budget actuals' outgoing-transfer lines
-                    (budgets/budget-spending.util.ts).
+                    (budgets/budget-spending.util.ts). The monthly totals and
+                    the flow totals with transfers in scope count both sides
+                    of a split's transfer: the split's transfer line beside its
+                    counterpart row (`includeTransferSplits`), at the line's
+                    own transfer rate (`transferLegs` with `wholeLegs`), and a
+                    month counts such a split once by id however many rate
+                    parts its lines fall in (issue #2337).
                     Like the Sankey, these reports do not yet say which of the
                     two rates answered. The assistant's and the MCP tools'
                     transaction analytics (TransactionAnalyticsService: the
@@ -1837,7 +1843,9 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     totals, MCP flow totals, a payee's account panel and a
                     budget's transfer actuals (a delegate's summary keeps the
                     market's 80), and each 90 EUR leg to 100 USD
-                    (the market's 112.50), on PostgreSQL.
+                    (the market's 112.50), on PostgreSQL; the monthly total of
+                    both accounts nets each transfer's two sides to the
+                    groceries line's -48 EUR (issue #2337).
                     transaction-analytics.service.spec.ts "a row carrying its own
                     rate": EUR 100 charged as USD 125 reads EUR 100 in the
                     assistant's totals and breakdown, the report rule's figure,

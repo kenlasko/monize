@@ -45,6 +45,30 @@ describe("transferRateSql", () => {
     expect(sql).toContain('fx_cp.linked_transaction_id = "t".id');
     expect(sql).toContain("fx_cp.currency_code = :fx");
   });
+
+  it("reads whole legs and a split's transfer lines in one read", () => {
+    const sql = norm(
+      transferRateSql(":fx", "t", {
+        readerParam: ":reader",
+        splitAlias: "ts",
+        wholeLegs: true,
+      }),
+    );
+
+    // The line's shape first; a row with no transfer line is a whole leg.
+    expect(sql).toMatch(
+      /^COALESCE\(CASE WHEN "ts"\.transfer_account_id IS NOT NULL .* END, CASE WHEN "t"\.is_transfer AND "t"\.is_split IS NOT TRUE .* END\)$/,
+    );
+  });
+
+  it("reads only a split's transfer lines without wholeLegs", () => {
+    const sql = norm(
+      transferRateSql(":fx", "t", { readerParam: ":reader", splitAlias: "ts" }),
+    );
+
+    expect(sql).not.toContain("COALESCE(");
+    expect(sql).not.toContain('"t".is_transfer');
+  });
 });
 
 describe("the transfer rate's reader", () => {

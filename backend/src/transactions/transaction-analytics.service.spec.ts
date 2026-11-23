@@ -13,6 +13,7 @@ import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { Currency } from "../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
 import { Account } from "../accounts/entities/account.entity";
+import { requestContextStorage } from "../common/request-context";
 import {
   convertRateBasis,
   transactionRateBasis,
@@ -1648,6 +1649,36 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
+    it("counts a split with a transfer line once across the parts it sits in", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          ...usdDay("2025-01", "2025-01-10"),
+          total: "-60",
+          count: "2",
+          transferSplitIds: ["split-1"],
+        },
+        {
+          ...usdDay("2025-01", "2025-01-10"),
+          total: "-100",
+          count: "0",
+          transferSplitIds: ["split-1", "split-2"],
+        },
+        {
+          ...usdDay("2025-02", "2025-02-10"),
+          total: "-40",
+          count: "1",
+          transferSplitIds: null,
+        },
+      ]);
+
+      const result = await service.getMonthlyTotals(userId);
+
+      expect(result).toEqual([
+        { month: "2025-01", currency: "USD", total: -160, count: 4 },
+        { month: "2025-02", currency: "USD", total: -40, count: 1 },
+      ]);
+    });
+
     it("rounds totals to storage precision (four decimal places)", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         { ...usdDay("2025-01", "2025-01-10"), total: "-123.456", count: "3" },
@@ -1826,16 +1857,31 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
-    it("keeps whole transfers but excludes transfer split lines (matching getSummary)", async () => {
+    it("reads a split's transfer line at its counterpart row, beside whole legs", async () => {
+      await requestContextStorage.run({ userId }, () =>
+        service.getMonthlyTotals(userId),
+      );
+
+      const transferRate = mockQueryBuilder.addSelect.mock.calls.find(
+        ([, alias]) => alias === "fx_transfer_rate",
+      );
+      expect(transferRate?.[0]).toContain("COALESCE(");
+      expect(transferRate?.[0]).toContain(
+        '"splits".transfer_account_id IS NOT NULL',
+      );
+      expect(transferRate?.[0]).toContain('"transaction".is_transfer');
+    });
+
+    it("keeps whole transfers and a split's transfer lines", async () => {
       await service.getMonthlyTotals(userId);
 
       // Whole transfer transactions are still counted.
       expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
         "transaction.isTransfer = false",
       );
-      // Transfer split lines are excluded so the chart totals/counts reconcile
-      // with the category/payee summary, which shares this query builder.
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+      // So is a split's transfer line, the outgoing side of a transfer whose
+      // incoming row the chart counts (issue #2337).
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
         "(splits.transferAccountId IS NULL OR splits.id IS NULL)",
       );
     });
@@ -1901,7 +1947,7 @@ describe("TransactionAnalyticsService", () => {
       );
       // Should count distinct transactions
       expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
-        "COUNT(DISTINCT transaction.id)",
+        expect.stringContaining("COUNT(DISTINCT transaction.id)"),
         "count",
       );
     });
@@ -2030,7 +2076,7 @@ describe("TransactionAnalyticsService", () => {
           "total",
         );
         expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
-          "COUNT(DISTINCT transaction.id)",
+          expect.stringContaining("COUNT(DISTINCT transaction.id)"),
           "count",
         );
       });
@@ -2475,6 +2521,44 @@ describe("TransactionAnalyticsService", () => {
         .map((c) => c[0])
         .join(" | ");
       expect(allWhereCalls).toContain("ILIKE");
+    });
+  });
+
+  describe("getLlmFlowTotals", () => {
+    const TRANSFER_SPLITS_OUT =
+      "(splits.transferAccountId IS NULL OR splits.id IS NULL)";
+
+    it("counts a split's transfer lines when transfers are in scope", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      await service.getLlmFlowTotals(userId, {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        excludeTransfers: false,
+      });
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+        "transaction.isTransfer = false",
+      );
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+        TRANSFER_SPLITS_OUT,
+      );
+    });
+
+    it("leaves every transfer out by default", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([]);
+
+      await service.getLlmFlowTotals(userId, {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.isTransfer = false",
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        TRANSFER_SPLITS_OUT,
+      );
     });
   });
 

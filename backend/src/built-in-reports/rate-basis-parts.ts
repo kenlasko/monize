@@ -32,8 +32,14 @@ export interface RateBasisColumns {
    * amounts imply (`fx_transfer_rate`, {@link transferRateSql}), which wins
    * over the stored rate. The reader is the request's
    * ({@link transferRateReader}); without one the column is not added.
+   * `wholeLegs` with a `splitAlias`: the rows are whole legs as well as a
+   * split's transfer lines (`TransferLegs`).
    */
-  transferLegs?: { transactionAlias: string; splitAlias?: string };
+  transferLegs?: {
+    transactionAlias: string;
+    splitAlias?: string;
+    wholeLegs?: boolean;
+  };
 }
 
 /**
@@ -76,12 +82,13 @@ export function splitByRateBasis<T extends ObjectLiteral>(
     .addGroupBy("fx_exchange_rate");
   const reader = columns.transferLegs ? transferRateReader() : undefined;
   if (columns.transferLegs && reader) {
-    const { transactionAlias, splitAlias } = columns.transferLegs;
+    const { transactionAlias, splitAlias, wholeLegs } = columns.transferLegs;
     qb.setParameter("fxReaderId", reader)
       .addSelect(
         transferRateSql(":fxReportingCurrency", transactionAlias, {
           readerParam: ":fxReaderId",
           ...(splitAlias ? { splitAlias } : {}),
+          ...(wholeLegs ? { wholeLegs } : {}),
         }),
         "fx_transfer_rate",
       )
