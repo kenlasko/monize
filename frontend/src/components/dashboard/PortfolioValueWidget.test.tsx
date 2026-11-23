@@ -213,8 +213,11 @@ describe('PortfolioValueWidget', () => {
     expect(screen.getByText('$12345')).toBeInTheDocument();
     const periodCalls = getInvestmentsPeriodResult.mock.calls.length;
 
+    expect(screen.getByTestId('portfolio-period-change')).toBeInTheDocument();
+
     getPortfolioValuation.mockResolvedValue({ totalPortfolioValue: 13000, holdings: [] });
     getInvestmentsDaily.mockImplementation(() => new Promise(() => {}));
+    getInvestmentsPeriodResult.mockImplementation(() => new Promise(() => {}));
     await act(async () => {
       view.rerender(widget(1));
     });
@@ -223,8 +226,10 @@ describe('PortfolioValueWidget', () => {
     expect(getInvestmentsDaily).toHaveBeenCalledTimes(2);
     expect(getInvestmentsPeriodResult.mock.calls.length).toBeGreaterThan(periodCalls);
     expect(screen.getByText('$13000')).toBeInTheDocument();
-    // The same series asked again: the chart drawn stays until it answers.
+    // The same questions asked again: the chart and the investment result
+    // drawn stay until they answer.
     expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-period-change')).toBeInTheDocument();
   });
 
   it('asks for everything again after its own refresh, the result included', async () => {

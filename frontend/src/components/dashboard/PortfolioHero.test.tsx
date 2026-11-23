@@ -289,6 +289,9 @@ describe('PortfolioHero', () => {
     expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
     expect(screen.queryByTestId('dashboard-hero-chart-skeleton')).not.toBeInTheDocument();
     expect(within(metric()).queryByTestId('dashboard-hero-figure-skeleton')).not.toBeInTheDocument();
+    // The change pill reads the period result, which keeps its previous answer
+    // through a reload of the same window (`usePortfolioPeriodResult`).
+    expect(screen.getByTestId('dashboard-hero-pill')).toHaveTextContent(/12,345\.67/);
 
     await act(async () => {
       answerValuation(summary({ totalPortfolioValue: 160000.5 }));
