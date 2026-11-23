@@ -315,7 +315,7 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     expect(result.missingCurrencies).toEqual([]);
   });
 
-  it("reads the outgoing leg at 90 EUR in the transaction summary and grouped totals", async () => {
+  it("reads both outgoing legs at 90 EUR in the transaction summary and grouped totals", async () => {
     await seed("EUR");
     await tag("transaction_id", plainOutId);
 
@@ -336,18 +336,18 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       }),
     );
 
-    // The plain leg's 90 and the groceries line's 60 / 1.25; the split's
-    // transfer line is not a row of these reads.
+    // The plain leg's 90, the groceries line's 60 / 1.25 and the split's
+    // transfer line at its 90 (issue #2337).
     expect(summary.converted).toMatchObject({
       currency: "EUR",
-      totalExpenses: 138,
+      totalExpenses: 228,
       missingCurrencies: [],
     });
     const payeeTotal = byPayee.reduce(
       (sum, row) => sum + (row.convertedTotal as number),
       0,
     );
-    expect(payeeTotal).toBe(-138);
+    expect(payeeTotal).toBe(-228);
     expect(byTag).toEqual([
       expect.objectContaining({ name: "home", total: 100, convertedTotal: 90 }),
     ]);
@@ -455,6 +455,129 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     ]);
   });
 
+  it("agrees on a payee's split transfer in the summary and the monthly totals", async () => {
+    await seed("EUR");
+    // The split and its counterpart row share a payee, as the split service
+    // writes them; the plain transfer's payee is another.
+    const shop = await createTestPayee(dataSource, userId, { name: "Shop" });
+    await dataSource.query(
+      `UPDATE transactions SET payee_id = $1, payee_name = 'Shop'
+        WHERE user_id = $2 AND (is_split OR id IN (
+          SELECT linked_transaction_id FROM transaction_splits
+           WHERE transfer_account_id IS NOT NULL))`,
+      [shop.id, userId],
+    );
+
+    const monthly = await asUser(() =>
+      analytics.getMonthlyTotals(userId, undefined, START, END, undefined, [
+        shop.id,
+      ]),
+    );
+    const summary = await asUser(() =>
+      analytics.getSummary(
+        userId,
+        undefined,
+        START,
+        END,
+        undefined,
+        [shop.id],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { inReportingCurrency: true },
+      ),
+    );
+
+    // The -90 line against its +90 row, and the groceries line's -48.
+    expect(monthly).toEqual([
+      expect.objectContaining({
+        month: "2026-03",
+        currency: "EUR",
+        total: -48,
+        count: 2,
+      }),
+    ]);
+    expect(summary.converted).toMatchObject({
+      totalIncome: 90,
+      totalExpenses: 138,
+      netCashFlow: -48,
+      missingCurrencies: [],
+    });
+    expect(summary.transactionCount).toBe(2);
+  });
+
+  it("matches the MCP totals with the summary's own buckets", async () => {
+    await seed("EUR");
+
+    const [summary, flows] = await asUser(() =>
+      Promise.all([
+        analytics.getSummary(
+          userId,
+          undefined,
+          START,
+          END,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          true,
+        ),
+        analytics.getLlmFlowTotals(userId, {
+          startDate: START,
+          endDate: END,
+          excludeTransfers: false,
+        }),
+      ]),
+    );
+
+    // The resources show both side by side: 260 USD out (the plain leg, the
+    // groceries line and the transfer line) is the converted 90 + 48 + 90.
+    expect(summary.byCurrency).toEqual({
+      USD: expect.objectContaining({ totalExpenses: 260, transactionCount: 2 }),
+      EUR: expect.objectContaining({ totalIncome: 180, transactionCount: 2 }),
+    });
+    expect(flows).toMatchObject({ totalExpenses: 228, totalIncome: 180 });
+  });
+
+  it("pulls a split's transfer line in under a tag on its parent", async () => {
+    await seed("EUR");
+    const [parent] = await dataSource.query(
+      `SELECT id FROM transactions WHERE user_id = $1 AND is_split`,
+      [userId],
+    );
+    await tag("transaction_id", parent.id);
+    const [{ id: tagId }] = await dataSource.query(
+      `SELECT id FROM tags WHERE user_id = $1 AND name = 'scope:home'`,
+      [userId],
+    );
+
+    const monthly = await asUser(() =>
+      analytics.getMonthlyTotals(
+        userId,
+        undefined,
+        START,
+        END,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        [tagId],
+      ),
+    );
+
+    // The tagged split is the -60 groceries line and the -100 transfer line,
+    // all USD; the counterpart row carries no tag, so it is not in this read.
+    expect(monthly).toEqual([
+      expect.objectContaining({ currency: "USD", total: -160, count: 1 }),
+    ]);
+  });
+
   it("does not count the split's transfer line as uncategorised in the monthly totals", async () => {
     await seed("EUR");
 
@@ -530,10 +653,11 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       ),
     );
 
-    // The counterpart sits in an account a delegate may not read, so the leg
-    // is the market's 80, beside the groceries line's 48.
+    // The counterpart sits in an account a delegate may not read, so each
+    // leg, the plain one and the split's line, is the market's 80, beside the
+    // groceries line's 48.
     expect(summary.converted).toMatchObject({
-      totalExpenses: 128,
+      totalExpenses: 208,
       missingCurrencies: [],
     });
   });

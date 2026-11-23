@@ -1064,7 +1064,7 @@ describe("TransactionAnalyticsService", () => {
         );
         // Should count distinct transactions to avoid double-counting
         expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
-          "COUNT(DISTINCT transaction.id)",
+          expect.stringContaining("COUNT(DISTINCT transaction.id)"),
           "transactionCount",
         );
       });
@@ -1087,7 +1087,7 @@ describe("TransactionAnalyticsService", () => {
           "totalExpenses",
         );
         expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
-          "COUNT(DISTINCT transaction.id)",
+          expect.stringContaining("COUNT(DISTINCT transaction.id)"),
           "transactionCount",
         );
       });
@@ -1121,12 +1121,57 @@ describe("TransactionAnalyticsService", () => {
         );
       });
 
-      it("filters out transfer splits to exclude them from totals", async () => {
+      it("leaves transfer splits out only with the whole transfer rows", async () => {
         await service.getSummary(userId);
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+          "(splits.transferAccountId IS NULL OR splits.id IS NULL)",
+        );
 
+        mockQueryBuilder.andWhere.mockClear();
+        await service.getSummary(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          true,
+        );
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          "transaction.isTransfer = false",
+        );
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
           "(splits.transferAccountId IS NULL OR splits.id IS NULL)",
         );
+      });
+
+      it("counts a split once across the parts its lines sit in", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([
+          {
+            currencyCode: "USD",
+            totalIncome: "0",
+            totalExpenses: "60",
+            transactionCount: "1",
+            splitIds: ["split-1"],
+          },
+          {
+            currencyCode: "USD",
+            totalIncome: "0",
+            totalExpenses: "100",
+            transactionCount: "0",
+            splitIds: ["split-1"],
+          },
+        ]);
+
+        const result = await service.getSummary(userId);
+
+        expect(result.totalExpenses).toBe(160);
+        expect(result.transactionCount).toBe(2);
+        expect(result.byCurrency.USD.transactionCount).toBe(2);
       });
 
       it("deduplicates category IDs including children", async () => {
@@ -4009,8 +4054,9 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
         "COALESCE(splits.categoryId, transaction.categoryId) IS NOT NULL",
       );
+      // A split's transfer line is a transfer too, not uncategorised.
       expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
-        "transaction.isTransfer = false",
+        "transaction.isTransfer = false AND splits.transferAccountId IS NULL",
       );
       expect(result).toEqual([
         {
