@@ -10,6 +10,7 @@ import {
 } from '@/lib/transaction-status-cycle';
 import { CategoryBudgetStatus } from '@/types/budget';
 import { transactionsApi } from '@/lib/transactions';
+import { investmentsApi } from '@/lib/investments';
 import { getErrorMessage } from '@/lib/errors';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ListTopToolbar, LIST_TOOLBAR_BUTTON_CLASS } from '@/components/ui/ListTopToolbar';
@@ -465,7 +466,12 @@ export function TransactionList({
     setDeletingId(transaction.id);
 
     try {
-      if (transaction.isTransfer) {
+      // An investment's cash leg cannot be deleted on its own (the server
+      // refuses it); deleting it means deleting the investment transaction.
+      if (transaction.linkedInvestmentTransactionId) {
+        await investmentsApi.deleteTransaction(transaction.linkedInvestmentTransactionId);
+        toast.success(t('list.delete.success'));
+      } else if (transaction.isTransfer) {
         await transactionsApi.deleteTransfer(transaction.id);
         toast.success(t('list.delete.transferSuccess'));
       } else {
@@ -1342,11 +1348,19 @@ export function TransactionList({
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={deleteConfirm.isOpen}
-        title={deleteConfirm.transaction?.isTransfer ? t('list.delete.transferTitle') : t('list.delete.transactionTitle')}
+        title={
+          deleteConfirm.transaction?.linkedInvestmentTransactionId
+            ? t('list.delete.investmentTitle')
+            : deleteConfirm.transaction?.isTransfer
+              ? t('list.delete.transferTitle')
+              : t('list.delete.transactionTitle')
+        }
         message={
-          (deleteConfirm.transaction?.isTransfer
-            ? t('list.delete.transferMessage')
-            : t('list.delete.transactionMessage')) +
+          (deleteConfirm.transaction?.linkedInvestmentTransactionId
+            ? t('list.delete.investmentMessage')
+            : deleteConfirm.transaction?.isTransfer
+              ? t('list.delete.transferMessage')
+              : t('list.delete.transactionMessage')) +
           (deleteConfirm.transaction?.status === TransactionStatus.RECONCILED
             ? ` ${t('list.delete.reconciledWarning')}`
             : '')
