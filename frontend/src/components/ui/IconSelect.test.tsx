@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { Profiler } from 'react';
 import { useForm } from 'react-hook-form';
 import { render, screen, fireEvent, act } from '@/test/render';
 import { IconSelect, placeList, SEPARATOR_VALUE, type IconSelectOption } from './IconSelect';
@@ -90,6 +91,35 @@ describe('IconSelect', () => {
     );
     fireEvent.keyDown(trigger, { key: 'Enter' });
     expect(onChange.mock.results[0].value).toBe('a-2');
+  });
+
+  it('leaves the active row to the keyboard when the pointer moves over the list', () => {
+    render(<IconSelect label="Account" options={options} value="a-1" onChange={vi.fn()} />);
+    const trigger = screen.getByRole('combobox', { name: 'Account' });
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    const active = trigger.getAttribute('aria-activedescendant');
+    expect(screen.getByRole('option', { name: /Chequing/ }).id).toBe(active);
+    fireEvent.mouseEnter(screen.getByRole('option', { name: /Savings/ }));
+    expect(trigger.getAttribute('aria-activedescendant')).toBe(active);
+  });
+
+  it('does not redraw the open list on a scroll frame that leaves the field in place', async () => {
+    let commits = 0;
+    render(
+      <Profiler id="icon-select" onRender={() => { commits += 1; }}>
+        <IconSelect label="Account" options={options} value="a-1" onChange={vi.fn()} />
+      </Profiler>,
+    );
+    fireEvent.click(screen.getByRole('combobox', { name: 'Account' }));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    const before = commits;
+    await act(async () => {
+      window.dispatchEvent(new Event('scroll'));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(commits).toBe(before);
   });
 
   it('closes on Escape without letting the key reach a surrounding dialog', () => {
