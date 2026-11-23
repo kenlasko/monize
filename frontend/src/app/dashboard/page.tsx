@@ -216,6 +216,8 @@ function DashboardContent() {
 
   const { isRefreshing, triggerManualRefresh, triggerAutoRefresh } = usePriceRefresh({
     onRefreshComplete: reloadInvestmentWidgets,
+    // Until the page and its valuation are in, as the refresh on load waits.
+    holdAutomaticRefresh: isLoading || investmentSummaryLoading,
   });
   // The automatic refresh (this page's own on load, then every 15 minutes
   // while the site is open) reloads the same widgets, in the background.

@@ -307,6 +307,9 @@ export function useInvestmentData() {
 
   const { isRefreshing: isRefreshingPrices, triggerManualRefresh: handleRefreshPrices, triggerAutoRefresh } = usePriceRefresh({
     onRefreshComplete: reloadAfterPriceRefresh,
+    // Until the first summary is in: a refresh writing beside it would reload
+    // every valuation on the page while the first ones still run (#1888).
+    holdAutomaticRefresh: isLoading || !initialSummarySettled,
   });
   // The automatic refresh (the page's own once the first summary is in, then
   // every 15 minutes while the site is open) reloads the same figures; the

@@ -54,8 +54,12 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 }));
 
 const mockTriggerAutoRefresh = vi.fn();
+let mockPriceRefreshOptions: { holdAutomaticRefresh?: boolean } = {};
 vi.mock('@/hooks/usePriceRefresh', () => ({
-  usePriceRefresh: () => ({ triggerAutoRefresh: mockTriggerAutoRefresh }),
+  usePriceRefresh: (options: { holdAutomaticRefresh?: boolean }) => {
+    mockPriceRefreshOptions = options;
+    return { triggerAutoRefresh: mockTriggerAutoRefresh };
+  },
 }));
 
 vi.mock('@/hooks/useFormModal', () => ({
@@ -995,6 +999,18 @@ describe('useInvestmentData – automatic price refresh', () => {
     expect(result.current.writeRefreshKey).toBeGreaterThan(keyBefore);
     expect(result.current.lastPriceUpdate).toBe('2026-11-23T15:00:00Z');
     expect(result.current.isSummaryLoading).toBe(false);
+  });
+
+  it('holds the automatic refresh until the first summary is in', async () => {
+    let answer: (value: unknown) => void = () => {};
+    mockGetPortfolioSummary.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+    renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(mockPriceRefreshOptions.holdAutomaticRefresh).toBe(true);
+
+    await act(async () => { answer(mockSummary); });
+
+    expect(mockPriceRefreshOptions.holdAutomaticRefresh).toBe(false);
   });
 
   it('keeps the figures and the register when the reload after an automatic refresh fails', async () => {

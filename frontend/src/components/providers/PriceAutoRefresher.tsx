@@ -30,10 +30,11 @@ const loadRefreshState = () => import('@/lib/price-refresh-state');
  *
  * The first refresh is one interval after the site opens, not at once. The
  * Dashboard and Investments pages ask for their own as soon as their first
- * figures are in (`triggerAutoRefresh`), and a refresh landing while a page's
- * first valuation is still running would value the same history twice (#1888).
- * Whether one is due is `runAutomaticPriceRefresh`'s to decide: every refresh,
- * from here, a page or an unscoped Refresh button, restarts the interval.
+ * figures are in (`triggerAutoRefresh`), and hold this one while those load
+ * (`holdAutomaticRefresh`): a refresh landing beside a page's first valuation
+ * would value the same history twice (#1888). Whether one is due is
+ * `runAutomaticPriceRefresh`'s to decide: every refresh, from here, a page or
+ * an unscoped Refresh button, restarts the interval.
  */
 export function PriceAutoRefresher() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);

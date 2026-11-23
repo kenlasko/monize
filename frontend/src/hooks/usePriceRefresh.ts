@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { investmentsApi } from '@/lib/investments';
@@ -8,6 +8,7 @@ import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import {
   getRefreshInProgress,
+  holdAutomaticPriceRefresh,
   markPricesRefreshed,
   pendingAutomaticRefresh,
   runAutomaticPriceRefresh,
@@ -23,6 +24,13 @@ interface UsePriceRefreshOptions {
    * `useOnAutoPriceRefresh`.
    */
   onRefreshComplete?: (lastUpdated?: string) => Promise<void> | void;
+  /**
+   * True while the page's first figures are loading. No automatic refresh
+   * starts meanwhile, and one already running that writes tells the price
+   * surfaces once this is false (`holdAutomaticPriceRefresh`). A manual
+   * refresh is not held: the reader asked for it.
+   */
+  holdAutomaticRefresh?: boolean;
 }
 
 interface UsePriceRefreshReturn {
@@ -44,9 +52,17 @@ interface UsePriceRefreshReturn {
   triggerAutoRefresh: () => void;
 }
 
-export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = {}): UsePriceRefreshReturn {
+export function usePriceRefresh({
+  onRefreshComplete,
+  holdAutomaticRefresh = false,
+}: UsePriceRefreshOptions = {}): UsePriceRefreshReturn {
   const t = useTranslations('securities');
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (!holdAutomaticRefresh) return;
+    return holdAutomaticPriceRefresh();
+  }, [holdAutomaticRefresh]);
 
   const triggerManualRefresh = useCallback(
     async (scopeSecurityIds?: string[]) => {

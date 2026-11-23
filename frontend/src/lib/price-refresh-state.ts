@@ -22,6 +22,10 @@ let refreshInProgress = false;
 // The automatic refresh still running, if any. The reader sees nothing of it,
 // so a click made meanwhile waits for it rather than being dropped.
 let automaticRefresh: Promise<void> | null = null;
+// How many pages are loading their first figures (`holdAutomaticPriceRefresh`),
+// and what a refresh that wrote meanwhile has yet to tell the price surfaces.
+let firstLoadHolds = 0;
+let heldNotification: { lastUpdated?: string } | null = null;
 
 export function getRefreshInProgress(): boolean {
   return refreshInProgress;
@@ -59,14 +63,39 @@ export function __resetPriceRefreshStateForTesting(): void {
   lastRefreshTimestamp = 0;
   refreshInProgress = false;
   automaticRefresh = null;
+  firstLoadHolds = 0;
+  heldNotification = null;
 }
 
 /**
- * Whether an automatic refresh would run at `nowMs`: no refresh is running,
- * and none ran or was attempted within `AUTO_PRICE_REFRESH_INTERVAL_MS`.
+ * Holds the automatic refresh while a page's first figures load, and returns
+ * the release. Meanwhile none starts, and one already running that writes
+ * tells the price surfaces only once every hold is released: a reload landing
+ * beside a page's first valuation values the same history twice (#1888). The
+ * page asks for its own refresh (`triggerAutoRefresh`) once its figures are in.
+ */
+export function holdAutomaticPriceRefresh(): () => void {
+  firstLoadHolds += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    firstLoadHolds -= 1;
+    if (firstLoadHolds > 0 || !heldNotification) return;
+    const { lastUpdated } = heldNotification;
+    heldNotification = null;
+    notifyAutoPriceRefresh(lastUpdated);
+  };
+}
+
+/**
+ * Whether an automatic refresh would run at `nowMs`: no page is loading its
+ * first figures, no refresh is running, and none ran or was attempted within
+ * `AUTO_PRICE_REFRESH_INTERVAL_MS`.
  */
 export function isAutomaticPriceRefreshDue(nowMs: number = Date.now()): boolean {
   return (
+    firstLoadHolds === 0 &&
     !refreshInProgress &&
     nowMs - lastRefreshTimestamp >= AUTO_PRICE_REFRESH_INTERVAL_MS
   );
@@ -112,7 +141,12 @@ export function runAutomaticPriceRefresh(): Promise<void> {
       refreshInProgress = false;
       automaticRefresh = null;
     }
-    if (wrote) notifyAutoPriceRefresh(lastUpdated);
+    if (!wrote) return;
+    if (firstLoadHolds > 0) {
+      heldNotification = { lastUpdated };
+    } else {
+      notifyAutoPriceRefresh(lastUpdated);
+    }
   };
   automaticRefresh = run();
   return automaticRefresh;
