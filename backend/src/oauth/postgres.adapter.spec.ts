@@ -436,6 +436,8 @@ describe("PostgresAdapter", () => {
     for (const name of [
       "where",
       "andWhere",
+      "orderBy",
+      "addOrderBy",
       "limit",
       "select",
       "addSelect",
@@ -483,6 +485,15 @@ describe("PostgresAdapter", () => {
         "limit",
         [OAUTH_CONNECTIONS_LIST_MAX],
       ]);
+      // The cap keeps the newest grants: the order is applied before the limit.
+      const order = grants.calls.findIndex(([name]) => name === "orderBy");
+      const limit = grants.calls.findIndex(([name]) => name === "limit");
+      expect(grants.calls[order]).toEqual([
+        "orderBy",
+        ["(p.payload ->> 'iat')::bigint", "DESC", "NULLS LAST"],
+      ]);
+      expect(order).toBeGreaterThanOrEqual(0);
+      expect(order).toBeLessThan(limit);
       expect(used.calls).toContainEqual([
         "where",
         ["p.grant_id IN (:...ids)", { ids: ["old", "new"] }],
