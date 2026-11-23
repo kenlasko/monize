@@ -222,7 +222,9 @@ account was charged, and only a new rate with no amount sent computes a new
 amount; an amount sent beside a new rate is held to it like a create's (moved or
 not, it is never rewritten from the rate), and a figure resent as the row holds
 it is no change. A moved amount on a
-foreign row derives the rate again rather than leaving it stale, a different currency
+foreign row derives the rate again rather than leaving it stale (the row's own
+rate resent beside it included, unless the original amount is sent too: all
+three figures sent are held to each other exactly as on a create), a different currency
 needs its own `originalAmount` (the row's is in the old one), and the account's
 own currency as `originalCurrencyCode` clears the entry (refusing a rate, or an
 original amount that differs from the amount). A derived rate the

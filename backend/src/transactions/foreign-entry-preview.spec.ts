@@ -311,6 +311,40 @@ describe("previewForeignEntry", () => {
       });
     });
 
+    it("refuses a new amount beside both of the row's own figures resent, as a create does", async () => {
+      // All three figures given: nothing is derived over one the caller sent.
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            amount: -112,
+            request: {
+              originalCurrencyCode: "EUR",
+              originalAmount: -100,
+              exchangeRate: 1.1,
+            },
+            stored: storedEur,
+          }),
+        ),
+      ).rejects.toThrow(/converts to -110 USD.*not -112 USD/);
+    });
+
+    it("derives the rate from a new amount beside the row's own original amount resent", async () => {
+      await expect(
+        previewForeignEntry(
+          manager(),
+          args({
+            amount: -112,
+            request: { originalAmount: -100 },
+            stored: storedEur,
+          }),
+        ),
+      ).resolves.toMatchObject({
+        amount: -112,
+        fields: { exchangeRate: 1.12, exchangeRateSource: "derived" },
+      });
+    });
+
     it("refuses a new rate that disagrees with the amount sent, even the row's own", async () => {
       // The amount charged is never rewritten from a rate beside it.
       await expect(
