@@ -373,11 +373,18 @@ describe("BudgetTrendReportsService", () => {
         },
       ];
 
-      periodsRepository.find.mockResolvedValueOnce(closedPeriods);
+      // The read is newest first, so `take` keeps the latest periods.
+      periodsRepository.find.mockResolvedValueOnce([...closedPeriods].reverse());
       periodsRepository.findOne.mockResolvedValueOnce(null);
 
       const result = await service.getTrend("user-1", "budget-1", 6);
 
+      expect(periodsRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          order: { periodStart: "DESC" },
+          take: 6,
+        }),
+      );
       expect(result).toHaveLength(2);
       expect(result[0].monthKey).toBe("2025-12");
       expect(result[0].budgeted).toBe(800);
@@ -791,6 +798,52 @@ describe("BudgetTrendReportsService", () => {
       expect(result[0].data[0].monthKey).toBe("2026-01");
       expect(result[0].data[0].budgeted).toBe(500);
       expect(result[0].data[0].actual).toBe(420);
+    });
+
+    it("reads the newest periods and returns them oldest first", async () => {
+      const periodCat = (periodId: string, actual: number) =>
+        ({
+          id: `bpc-${periodId}`,
+          budgetPeriodId: periodId,
+          budgetCategoryId: "bc-1",
+          categoryId: "cat-1",
+          budgetedAmount: 500,
+          actualAmount: actual,
+          effectiveBudget: 500,
+          rolloverIn: 0,
+          rolloverOut: 0,
+          budgetCategory: mockBudgetCategory,
+          category: mockCategory,
+        }) as unknown as BudgetPeriodCategory;
+      // What the DESC read returns: the open February first.
+      periodsRepository.find.mockResolvedValueOnce([
+        {
+          id: "p-2",
+          budgetId: "budget-1",
+          periodStart: "2026-02-01",
+          periodEnd: "2026-02-28",
+          status: PeriodStatus.OPEN,
+          periodCategories: [periodCat("p-2", 100)],
+        },
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          status: PeriodStatus.CLOSED,
+          periodCategories: [periodCat("p-1", 420)],
+        },
+      ]);
+
+      const result = await service.getCategoryTrend("user-1", "budget-1", 2);
+
+      expect(periodsRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ order: { periodStart: "DESC" }, take: 2 }),
+      );
+      expect(result[0].data.map((d) => d.monthKey)).toEqual([
+        "2026-01",
+        "2026-02",
+      ]);
     });
 
     it("should show parent:child category name when category has parent", async () => {
