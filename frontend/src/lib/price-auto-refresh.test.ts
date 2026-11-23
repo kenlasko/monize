@@ -16,6 +16,7 @@ const sec = (id: string, overrides: Partial<Security> = {}): Security =>
     marketTimezone: null,
     marketOpenTime: null,
     marketCloseTime: null,
+    quoteProvider: null,
     ...overrides,
   }) as Security;
 
@@ -69,6 +70,25 @@ describe('isTradingNow', () => {
     expect(isTradingNow(sec('msn'), thursday('13:00:00'))).toBe(false);
     expect(isTradingNow(sec('msn'), thursday('20:00:00'))).toBe(false);
     expect(isTradingNow(sec('msn'), saturday('15:00:00'))).toBe(false);
+  });
+
+  // The London Stock Exchange and Deutsche Börse report no session, but they
+  // are the exchange: New York hours would refresh them mostly after the close.
+  it('follows the exchange session of a provider that is the exchange', () => {
+    const lse = sec('vod', { quoteProvider: 'lse' });
+    const xetra = sec('iusq', { quoteProvider: 'deutsche_boerse' });
+    // 07:30 UTC is 08:30 London, 09:30 Frankfurt and 03:30 New York.
+    expect(isTradingNow(lse, thursday('07:30:00'))).toBe(true);
+    expect(isTradingNow(xetra, thursday('07:30:00'))).toBe(true);
+    // 15:45 UTC is 16:45 London (closed), 17:45 Frankfurt (closed), and the
+    // middle of the New York session.
+    expect(isTradingNow(lse, thursday('15:45:00'))).toBe(false);
+    expect(isTradingNow(xetra, thursday('15:45:00'))).toBe(false);
+    expect(isTradingNow(lse, saturday('10:00:00'))).toBe(false);
+    // A session on record still wins over the provider's exchange.
+    expect(isTradingNow(sec('dual', { quoteProvider: 'lse', ...NYSE_SESSION }), thursday('15:45:00'))).toBe(true);
+    // A web page names no exchange: New York hours, as before.
+    expect(isTradingNow(sec('page', { quoteProvider: 'html_table' }), thursday('07:30:00'))).toBe(false);
   });
 });
 
