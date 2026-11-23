@@ -11,6 +11,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { aggregateGroupedTotals, DisplayCurrencyStrategy } from './widget-shared';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
+import { FIAT_MONEY_DECIMALS, sumMoney } from '@/lib/format';
 
 const logger = createLogger('TagKeyBreakdownChart');
 
@@ -129,10 +130,10 @@ export function TagKeyBreakdownChart({ tagKey, params }: TagKeyBreakdownChartPro
 
     const top = aggregated.slice(0, TOP_N);
     const rest = aggregated.slice(TOP_N);
-    const otherValue = rest.reduce(
-      (sum, r) => sum + Math.round(r.value * 10000),
-      0,
-    ) / 10000;
+    const otherValue = sumMoney(
+      rest.map((r) => r.value),
+      FIAT_MONEY_DECIMALS,
+    );
     if (otherValue > 0.0001) {
       top.push({ name: t('tagKeyBreakdown.other'), value: otherValue });
     }

@@ -56,6 +56,21 @@ describe('bucketMonthlyTotals - month', () => {
     expect(bucketMonthlyTotals([], 'month')).toEqual([]);
   });
 
+  it('reads a large total back unchanged (Discussion #2343)', () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles, which the
+    // float scaling rounded to 300000000000.0301.
+    const buckets = bucketMonthlyTotals([m('2020-01', 300_000_000_000.03)], 'month');
+    expect(buckets[0].total).toBe(300_000_000_000.03);
+  });
+
+  it('nets large months that cancel to exactly zero (Discussion #2343)', () => {
+    const buckets = bucketMonthlyTotals(
+      [m('2020-01', 300_000_000_000.03), m('2020-02', -300_000_000_000.03)],
+      'quarter',
+    );
+    expect(buckets[0].total).toBe(0);
+  });
+
   it('gap-fills missing months with zero totals at their true position', () => {
     const data = [m('2020-01', 100), m('2020-04', 300), m('2020-12', 1200)];
     const buckets = bucketMonthlyTotals(data, 'month');

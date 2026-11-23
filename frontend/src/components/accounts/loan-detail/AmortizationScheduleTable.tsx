@@ -15,6 +15,7 @@ import { LoanRateEditing } from './useLoanRateEditing';
 import { CAPTION_CLASS, CellLabel, Th } from '@/components/ui/Table';
 import { ScheduleTableRow } from './ScheduleTableRow';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { FIAT_MONEY_DECIMALS, sumMoney } from '@/lib/format';
 
 const COLLAPSED_PAST_ROWS = 5;
 const COLLAPSED_FUTURE_ROWS = 5;
@@ -41,7 +42,10 @@ type ScheduleUnit =
   | { kind: 'gap'; key: string };
 
 const sumField = (rows: DisplayRow[], field: keyof DisplayRow): number =>
-  rows.reduce((acc, row) => acc + Math.round(Number(row[field]) * 10000), 0) / 10000;
+  sumMoney(
+    rows.map((row) => Number(row[field])),
+    FIAT_MONEY_DECIMALS,
+  );
 
 interface ColumnTotals {
   payment: number;

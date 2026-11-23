@@ -43,6 +43,7 @@ import {
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { FIAT_MONEY_DECIMALS, roundMoney } from '@/lib/format';
 
 const ACCOUNT_TYPE_KEYS = [
   'CHEQUING',
@@ -483,7 +484,7 @@ export function AccountBalancesReport() {
     const push = (name: string, rawSignedValue: number) => {
       // At the storage precision: a group netting to a floating-point epsilon
       // is a zero, not a sliver of a slice with a $0.00 legend row.
-      const signedValue = Math.round(rawSignedValue * 10000) / 10000;
+      const signedValue = roundMoney(rawSignedValue, FIAT_MONEY_DECIMALS);
       // A zero-size slice reads as a measured zero, so it is not drawn.
       if (signedValue === 0) return;
       const color =
