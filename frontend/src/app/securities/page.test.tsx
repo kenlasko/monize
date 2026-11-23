@@ -1004,6 +1004,45 @@ describe('SecuritiesPage', () => {
       await act(async () => { answer([]); });
     });
 
+    it('keeps the list and says nothing when the background re-read fails', async () => {
+      render(<SecuritiesPage />);
+      await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+      mockGetHoldings.mockRejectedValueOnce(new Error('offline'));
+
+      await act(async () => {
+        notifyAutoPriceRefresh('2026-08-31T15:00:00.000Z');
+      });
+
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(screen.getByTestId('security-list')).toBeInTheDocument();
+    });
+
+    it('does not let a background re-read land over a newer load', async () => {
+      render(<SecuritiesPage />);
+      await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+      let answerBackground: (rows: unknown) => void = () => {};
+      mockGetSecurities.mockReturnValueOnce(
+        new Promise((resolve) => { answerBackground = resolve; }),
+      );
+      await act(async () => {
+        notifyAutoPriceRefresh('2026-08-31T15:00:00.000Z');
+      });
+      // A reload started after it, as a write's would be, answers first.
+      mockGetSecurities.mockResolvedValueOnce([]);
+      await act(async () => {
+        notifyAutoPriceRefresh('2026-08-31T15:15:00.000Z');
+      });
+      expect(screen.queryByText('Apple Inc.')).not.toBeInTheDocument();
+
+      await act(async () => {
+        answerBackground([
+          { id: 's1', symbol: 'AAPL', name: 'Apple Inc.', securityType: 'STOCK', exchange: 'NASDAQ', currencyCode: 'USD', isActive: true, skipPriceUpdates: false, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+        ]);
+      });
+
+      expect(screen.queryByText('Apple Inc.')).not.toBeInTheDocument();
+    });
+
     it('reads the last refresh time on load, for the button to report', async () => {
       render(<SecuritiesPage />);
       await waitFor(() => expect(mockGetPriceStatus).toHaveBeenCalled());

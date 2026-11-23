@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -74,16 +74,25 @@ function SecuritiesContent() {
   // The program whose post-save refresh is running; null hides the progress bar.
   const [bondRefreshProgramId, setBondRefreshProgramId] = useState<string | null>(null);
 
-  // The mount load: the state already says loading.
-  const fetchData = useCallback(() => {
+  // "Latest load started wins": a background re-read after an automatic price
+  // refresh and a reload after a write can overlap, and the older answer must
+  // not land over the newer one.
+  const loadSeq = useRef(0);
+
+  // The mount load: the state already says loading. `quiet` is the background
+  // re-read after an automatic price refresh, which keeps the list it has when
+  // it fails rather than telling the reader about a read they never asked for.
+  const fetchData = useCallback(({ quiet = false }: { quiet?: boolean } = {}) => {
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
+      const seq = ++loadSeq.current;
       try {
         const [data, holdingsData, usedIds] = await Promise.all([
           investmentsApi.getSecurities(true),
           investmentsApi.getHoldings(),
           investmentsApi.getUsedSecurityIds(),
         ]);
+        if (seq !== loadSeq.current) return;
         setAllSecurities(data);
         setTransactionSecurityIds(new Set(usedIds));
 
@@ -105,10 +114,11 @@ function SecuritiesContent() {
 
         setHoldings(holdingsMap);
       } catch (error) {
-        toast.error(getErrorMessage(error, t('page.toasts.loadFailed')));
+        if (seq !== loadSeq.current) return;
+        if (!quiet) toast.error(getErrorMessage(error, t('page.toasts.loadFailed')));
         logger.error(error);
       } finally {
-        setIsLoading(false);
+        if (seq === loadSeq.current) setIsLoading(false);
       }
     };
     return run();
@@ -160,7 +170,7 @@ function SecuritiesContent() {
   // the list in the background: `fetchData`, not `loadData`, so the table
   // keeps its rows instead of returning to the loading state.
   useOnAutoPriceRefresh((lastUpdated) => {
-    fetchData();
+    fetchData({ quiet: true });
     if (lastUpdated) {
       setLastPriceUpdate(lastUpdated);
     } else {
