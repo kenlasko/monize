@@ -302,8 +302,9 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
   );
 
   // The fetch alone. Whoever starts it has already put the view into its
-  // loading state: `loadData` for a refresh, the render below for a change of
-  // range, accounts or currency.
+  // loading state: `loadData` for the Refresh button, the render below for a
+  // change of range, accounts or currency. A `refreshKey` reload starts it
+  // without one.
   const fetchData = useCallback(
     (opts: { skipCache?: boolean } = {}) => {
       const seq = ++loadSeqRef.current;
@@ -401,6 +402,10 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
               }),
             );
             setIncompleteCauses(NO_INCOMPLETE_DATA);
+            // A quiet reload (`refreshKey`) did not clear the last answer's
+            // notices before asking; this answer is intraday after all.
+            setIntradayUnavailable(null);
+            setIntradayFallbackNotice(null);
           } else {
             await loadDailyOrMonthly(seq);
           }
@@ -480,13 +485,19 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
     };
   }, [isIntraday, loadData]);
 
-  // Re-fetch when the surrounding view reports a write.
+  // Re-fetch when the surrounding view reports a write or new prices.
   //
   // The key this chart has already acted on is what gates the fetch, not the
-  // effect running: `loadData` changes identity on every range, account and
+  // effect running: `fetchData` changes identity on every range, account and
   // currency change, and the effect above already re-fetches for each of those.
   // Without the comparison this effect would fetch a second time for all of
   // them, and once more on any mount under an already-nonzero key.
+  //
+  // The same request asked again, so the drawn chart stays at full strength
+  // with no "Updating" label and the new points replace it when they land: the
+  // automatic price refresh bumps this key every 15 minutes while a market is
+  // open, and is meant to be invisible. Only a new range, account set or
+  // currency marks the chart as loading.
   const actedOnRefreshKey = useRef(refreshKey);
   useEffect(() => {
     if (actedOnRefreshKey.current === refreshKey) return;
@@ -494,8 +505,8 @@ export function InvestmentValueChart({ accountIds, displayCurrency, titleSuffix,
     // The daily and monthly endpoints are uncached, so re-asking is enough; the
     // intraday one is served from sessionStorage until it is dropped.
     if (isIntraday) clearAllIntradayCache();
-    void loadData({ skipCache: true });
-  }, [refreshKey, isIntraday, loadData]);
+    void fetchData({ skipCache: true });
+  }, [refreshKey, isIntraday, fetchData]);
 
   // What the portfolio DID over this window, as the server worked it out: the
   // value change, the money the reader moved in or out, and what is left. A
