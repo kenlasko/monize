@@ -946,7 +946,10 @@ jobs:
           # handshake (localized catalog copy), and the two values that reach a CSS
           # context are separately allowlist-validated (SAFE_CSS_COLOR), not escaped.
           # Covered by the escaping and CSS-injection cases in src/test/sw-offline.test.ts.
-          # e717be7fe9c133adba7d48ccb371c6ba_0 - Manual HTML sanitization [CWE-79] in the SW offline fallback, no DOM sanitizer available in a worker - review-by: 2026-11-19
+          # Re-reviewed 2026-11-23: the above still holds, escapeHtml and
+          # SAFE_CSS_COLOR are unchanged, and the test coverage they cite still
+          # exercises both the escaping and CSS-injection cases.
+          # e717be7fe9c133adba7d48ccb371c6ba_0 - Manual HTML sanitization [CWE-79] in the SW offline fallback, no DOM sanitizer available in a worker - review-by: 2027-02-21
           # The one below is the presence check at the top of
           # verifyRestoreUploadTicket (backend/src/backup/restore-upload-ticket.ts):
           # `typeof token !== "string" || token.trim() === ""`. It compares nothing
