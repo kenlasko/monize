@@ -9,6 +9,7 @@ import {
   getActiveScopedManager,
 } from "../../../common/db/scoped-db";
 import { todayYMD } from "../../../common/date-utils";
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../../../common/round.util";
 import { syncWindow } from "../../bank-sync-window";
 import { SimplefinRequestBudgetService } from "../../simplefin-request-budget.service";
 import { BankSyncProviderError } from "../bank-sync-provider.errors";
@@ -49,7 +50,7 @@ function fitsPlanner(amount: string): boolean {
   const canonical = BigInt(whole).toString() + "." + fraction.padEnd(4, "0");
   const value = Number(unsigned);
   return (
-    Number.isSafeInteger(Math.round(value * 10000)) &&
+    Number.isSafeInteger(moneyUnits(value, FIAT_MONEY_DECIMALS)) &&
     value.toFixed(4) === canonical
   );
 }

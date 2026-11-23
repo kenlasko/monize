@@ -12,6 +12,7 @@ import { tr } from "../i18n/translate";
 import { DataSource, EntityManager, In } from "typeorm";
 import { acquireAdvisoryLock, LockScope } from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
+import { roundToDecimals } from "../common/round.util";
 import { assertSecurityCurrencyIsFiatIn } from "./security-currency-kind.util";
 import { returnedRows } from "../common/db/query-result";
 import { findTradeListings } from "./trade-listings";
@@ -568,7 +569,7 @@ export class SecuritiesService {
     return [...byKey.values()]
       .map(({ name, weight }) => ({
         name,
-        weight: Math.round(weight * 10000) / 10000,
+        weight: roundToDecimals(weight, 4),
       }))
       .sort((a, b) => b.weight - a.weight);
   }

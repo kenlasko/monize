@@ -325,6 +325,25 @@ The MS Money importer narrows investment values to 6dp price / 8dp quantity
 before writing. That is an importer choice about source fidelity, not the
 storage precision, and it is the one place the two legitimately differ.
 
+### Integer units are shifted, never multiplied
+
+A sum or a comparison in integer units (ten-thousandths for fiat, 1e-8 for a
+share count or a coin) converts each value on its decimal digits:
+`moneyUnits(x, decimals)` for units a caller does arithmetic with,
+`sumMoney(values, decimals)` for a total, `toScaledUnits` / `fromScaledUnits`
+for a `BigInt` running total (`backend/src/common/round.util.ts`; on the client
+`toMoneyUnits` / `fromMoneyUnits` in `frontend/src/lib/format.ts`). Never
+`Math.round(x * 10000)`: for a large amount the float product is not the
+integer it denotes (`300000000000.03 * 10000` is `3000000000000300.5`), so the
+amount scales to `...301` and its negation to `...300`, a pair that should
+cancel leaves `0.0001`, and one amount reads back as `300000000000.0301`
+(Discussion #2343). A `number` of units is exact only while it is a safe
+integer (about 900 billion at four places, 90 million at eight); a running
+total that can pass that is a `BigInt`. `backend/src/common/money-units.guard.spec.ts`
+and `frontend/src/test/money-units.guard.test.ts` fail the float form; a
+percentage built as `Math.round(r * 10000) / 100` is a ratio and passes.
+INV-MONEY-001.
+
 ### The executed total is the fact; the per-share price is derived
 
 A trade's `total_amount` is what it came to; `price` is a quotient of it and
