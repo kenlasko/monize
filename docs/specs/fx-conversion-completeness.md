@@ -65,16 +65,24 @@ interface FxTotal {
 
 `FxAggregate` (`backend/src/common/fx-aggregate.ts`) accumulates this. Callers
 add signed amounts and read the quadruple at the end; they never branch on `null`
-themselves, which is what kept the old code's `?? amount` out of sight. Each
-component is rounded to four places half away from zero by `roundMoney` before
-it is accumulated, so `-0.00005` adds `-0.0001` exactly as `roundMoney` answers
-it; a bare `Math.round(x * 10000)` rounded a negative midpoint toward zero
-(Discussion #2136). The rounded value is then scaled to ten-thousandths by
+themselves, which is what kept the old code's `?? amount` out of sight. A
+component is accumulated at twelve places and the sum is rounded to four places
+once, when `knownSubtotal` or `total` is read, never component by component
+(issue #2360): rounding each converted row first made "convert each row, then
+sum" and "sum the rows, then convert" disagree, so the Custom Report totalled
+two 100.01 EUR receipts at 1.2474 as 124.7525 + 124.7525 = 249.5050 USD while
+Income by Source converted their 200.02 sum to 249.504948 and read 249.5049.
+Both now read 249.5049, however the rows are grouped before they are converted.
+The read rounds through `roundMoney` itself, so a lone component reads exactly
+as `roundMoney` answers it: `-0.00005` reads `-0.0001`, where a bare
+`Math.round(x * 10000)` rounded a negative midpoint toward zero (Discussion
+#2136), and a float artefact just under a midpoint (`41919.852249999996`) reads
+up, where rounding the twelve-place units in integers read it down. A component is scaled by
 shifting its decimal digits (`toScaledUnits` in `backend/src/common/round.util.ts`)
-and summed in a `BigInt`, as `sumMoney` is, never multiplied by `10000` in
-floats: `300000000000.03 * 10000` is `3000000000000300.5`, which `Math.round`
-carried up for the positive amount and toward zero for the negative one, so an
-amount added and then subtracted left `0.0001` (Discussion #2343). A
+and summed in a `BigInt`, as `sumMoney` is, never multiplied in floats:
+`300000000000.03 * 10000` is `3000000000000300.5`, which `Math.round` carried
+up for the positive amount and toward zero for the negative one, so an amount
+added and then subtracted left `0.0001` (Discussion #2343). A
 non-finite component (`NaN`, `Infinity`) has no units to count; it reads
 through `knownSubtotal` and `total` as it did when the subtotal was a double.
 

@@ -17,7 +17,7 @@ describe("FxAggregate", () => {
     expect(agg.missingPairs).toEqual([]);
   });
 
-  describe("rounds each component like roundMoney (Discussion #2136)", () => {
+  describe("rounds a lone component like roundMoney (Discussion #2136)", () => {
     it.each([0.00005, -0.00005, 0.00015, -0.00015, 0.00145, -1.00145, 2.5])(
       "%p, through add and addConverted",
       (amount) => {
@@ -37,11 +37,63 @@ describe("FxAggregate", () => {
       expect(agg.knownSubtotal).toBe(-0.0001);
     });
 
+    it("rounds a float artefact just under a midpoint up, as roundMoney does", () => {
+      // 41919.85225 computed in floats; read back from twelve places without
+      // roundMoney's one-ULP nudge it came back 41919.8522 (issue #2360).
+      const agg = new FxAggregate();
+      agg.addConverted(41919.852249999996);
+      expect(agg.total).toBe(roundMoney(41919.852249999996, 4));
+      expect(agg.total).toBe(41919.8523);
+    });
+
     it("rounds a midpoint the float multiply lands under upward", () => {
       // 0.00145 * 10000 is 14.499999999999998.
       const agg = new FxAggregate();
       agg.add(0.00145, "USD", "EUR");
       expect(agg.total).toBe(0.0015);
+    });
+  });
+
+  describe("rounds once, after summing (issue #2360)", () => {
+    it("converts each row at full precision and rounds the sum", () => {
+      // Two 100.01 EUR receipts at 1.2474 USD are 124.752474 each. Rounded
+      // one by one they summed to 249.5050; their sum is 249.504948.
+      const perRow = new FxAggregate();
+      perRow.add(100.01 * 1.2474, "EUR", "USD");
+      perRow.add(100.01 * 1.2474, "EUR", "USD");
+      expect(perRow.total).toBe(249.5049);
+    });
+
+    it("agrees with converting the rows' sum", () => {
+      const perRow = new FxAggregate();
+      perRow.add(100.01 * 1.2474, "EUR", "USD");
+      perRow.add(100.01 * 1.2474, "EUR", "USD");
+      const summed = new FxAggregate();
+      summed.add(200.02 * 1.2474, "EUR", "USD");
+      expect(perRow.total).toBe(summed.total);
+    });
+
+    it("rounds the merged sum, not each side", () => {
+      const a = new FxAggregate();
+      a.addConverted(124.752474);
+      const b = new FxAggregate();
+      b.addConverted(124.752474);
+      a.merge(b);
+      expect(a.knownSubtotal).toBe(249.5049);
+    });
+
+    it("lets sub-unit components add up to a unit", () => {
+      // Each rounds to 0.0000 alone; together they are 0.0002.
+      const agg = new FxAggregate();
+      for (let i = 0; i < 5; i++) agg.addConverted(0.00004);
+      expect(agg.total).toBe(0.0002);
+    });
+
+    it("rounds a negative sum away from zero", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(-0.000025);
+      agg.addConverted(-0.000025);
+      expect(agg.total).toBe(-0.0001);
     });
   });
 
