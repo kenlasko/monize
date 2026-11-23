@@ -232,6 +232,23 @@ describe("rate-basis-parts", () => {
   });
 
   describe("foldRateParts", () => {
+    it("counts a split once per group however many parts its lines sit in", () => {
+      const folded = foldRateParts(
+        [
+          { k: "a", total: "-60", count: "1", splitIds: ["s1"] },
+          { k: "a", total: "-100", count: "0", splitIds: ["s1", "s2"] },
+          { k: "b", total: "-5", count: "2", splitIds: null },
+        ],
+        (row) => row.k,
+        { sums: ["total"], count: "count", splitIds: "splitIds" },
+      );
+
+      expect(folded.map((g) => [g.key, g.sums.total, g.count])).toEqual([
+        ["a", -160, 3],
+        ["b", -5, 2],
+      ]);
+    });
+
     it("sums each figure exactly, adds the counts and keeps the latest date", () => {
       const folded = foldRateParts(
         [

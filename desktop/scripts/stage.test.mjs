@@ -18,7 +18,7 @@ import {
   missingDestinations,
   stage,
 } from "./lib/stage.mjs";
-import { BACKEND_DEPS_ARCHIVE, asarCli } from "./lib/pack-deps.mjs";
+import { BACKEND_DEPS_ARCHIVE, asarCliPath } from "./lib/pack-deps.mjs";
 
 const { listPackage } = createRequire(import.meta.url)("@electron/asar");
 
@@ -70,6 +70,13 @@ const fakeDeps = ({ dest }) => {
 };
 const fakeImages = ({ out }) => write(out, "x.webp");
 const fakeHooks = { installBackendDeps: fakeDeps, stageHelpImages: fakeImages };
+
+test("asarCliPath finds the installed CLI through the package's bin", () => {
+  const cli = asarCliPath();
+
+  assert.ok(fs.statSync(cli).isFile(), cli);
+  assert.match(path.basename(cli), /^asar\.m?js$/);
+});
 
 test("globToRegExp matches one segment and escapes dots", () => {
   assert.ok(globToRegExp("*.md").test("a.md"));
@@ -495,28 +502,4 @@ test("a vc-runtime entry lists runtime DLLs and stages under postgres/", () => {
   const file = path.join(tmp(), "m.json");
   fs.writeFileSync(file, JSON.stringify({ entries: [entry] }));
   assert.doesNotThrow(() => loadManifest(file));
-});
-
-test("asarCli finds the CLI the installed @electron/asar names in bin", () => {
-  const cli = asarCli();
-  assert.ok(fs.existsSync(cli), cli);
-
-  // 4.x's shape: `exports` admits only the main entry, which sits below the
-  // package root, and the CLI is whatever `bin` names.
-  const root = path.join(tmp(), "node_modules", "@electron", "asar");
-  write(
-    root,
-    "package.json",
-    JSON.stringify({ name: "@electron/asar", bin: "./bin/asar.mjs" }),
-  );
-  write(root, "lib/asar.js");
-  write(root, "bin/asar.mjs");
-  const resolve = () => path.join(root, "lib", "asar.js");
-  assert.equal(asarCli(resolve), path.join(root, "bin", "asar.mjs"));
-
-  fs.writeFileSync(
-    path.join(root, "package.json"),
-    JSON.stringify({ name: "@electron/asar" }),
-  );
-  assert.throws(() => asarCli(resolve), /names no asar CLI/);
 });
