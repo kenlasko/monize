@@ -898,6 +898,7 @@ export function TransactionList({
           onToggleSelection={onToggleSelection}
           highlightTransactionId={highlightTransactionId}
           onRowClick={handlePebbleRowClick}
+          onPayeeClick={onPayeeClick}
           onLongPressStart={handleLongPressStart}
           onLongPressStartTouch={handleLongPressStartTouch}
           onLongPressEnd={handleLongPressEnd}

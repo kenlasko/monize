@@ -336,6 +336,30 @@ describe('Pebble register', () => {
     expect(within(plainRow).queryByRole('img')).toBeNull();
   });
 
+  it('opens the payee instead of the row when the payee icon is clicked', () => {
+    const onPayeeClick = vi.fn();
+    renderList({
+      onPayeeClick,
+      transactions: [
+        makeTx({ id: 'a', transactionDate: '2024-01-16', amount: 200, payeeId: 'payee-1', payeeName: 'Employer' }),
+        makeTx({ id: 'b', transactionDate: '2024-01-15', amount: -50, payeeId: 'payee-2' }),
+      ],
+    });
+    const secondRow = screen.getAllByTestId('pebble-row')[1];
+    fireEvent.click(within(secondRow).getByRole('button', { name: 'View Grocery Store details' }));
+    expect(onPayeeClick).toHaveBeenCalledWith('payee-2');
+    // The click opened the payee, not the row it sits in: the inspector still
+    // shows the first (default-inspected) row rather than switching to this one.
+    expect(within(screen.getByRole('complementary')).getByText('Employer')).toBeTruthy();
+  });
+
+  it('leaves the avatar a plain, non-interactive disc when the row has no payee to open', () => {
+    const onPayeeClick = vi.fn();
+    renderList({ onPayeeClick, transactions: [makeTx({ id: 'a', payeeId: null, isTransfer: true })] });
+    const row = screen.getAllByTestId('pebble-row')[0];
+    expect(within(row).queryByRole('button', { name: /View .* details/ })).toBeNull();
+  });
+
   it('draws the category icon in place of the dot when the category has one', () => {
     const iconTx = makeTx({
       id: 'i',
