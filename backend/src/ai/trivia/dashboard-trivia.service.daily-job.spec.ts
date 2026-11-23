@@ -88,9 +88,24 @@ describe("DashboardTriviaService", () => {
       at("2026-11-19T01:17:00Z");
       selectQb.getRawMany.mockResolvedValue([{ userId: "user-2" }]);
       await service.handleDailyGeneration();
-      expect(selectQb.where).toHaveBeenCalledWith("u.is_active = true");
+      expect(selectQb.where.mock.calls[0][0]).toContain("u.is_active = true");
       expect(service.generateForUser).toHaveBeenCalledTimes(1);
       expect(service.generateForUser).toHaveBeenCalledWith("user-2", "UTC");
+    });
+
+    it("leaves out readers the job would do nothing for before claiming", async () => {
+      (getUsersByEffectiveTimezone as jest.Mock).mockResolvedValue(
+        new Map([["UTC", [userId]]]),
+      );
+      at("2026-11-19T01:17:00Z");
+      selectQb.getRawMany.mockResolvedValue([{ userId }]);
+      await service.handleDailyGeneration();
+      const [sql, params] = selectQb.where.mock.calls[0];
+      // Shown with the trivia on, or holding a row the job must delete.
+      expect(sql).toContain("p.ai_trivia_enabled IS NOT FALSE");
+      expect(sql).toContain(":widget = ANY(p.dashboard_widgets)");
+      expect(sql).toContain("FROM dashboard_trivia d WHERE d.user_id = u.id");
+      expect(params).toEqual({ widget: "trivia" });
     });
 
     it("counts a zone it cannot resolve in UTC", async () => {

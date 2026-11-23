@@ -22,7 +22,7 @@ import {
 import { currentRequestLocale } from "../../i18n/request-locale";
 import { DashboardTrivia } from "../entities/dashboard-trivia.entity";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
-import { dueTriviaUsers } from "./trivia-due-users";
+import { dueTriviaUsers, TRIVIA_WIDGET_ID } from "./trivia-due-users";
 import { keepForRewording } from "./trivia-kept";
 import {
   orderForDisplay,
@@ -44,13 +44,6 @@ import type {
 
 /** Users built at once by the daily job: each reads a whole portfolio. */
 const TRIVIA_GENERATION_CONCURRENCY = 5;
-
-/**
- * The Trivia widget's id in `dashboardWidgets`, the frontend's `'trivia'` in
- * `widget-registry.tsx`. It is not in the default layout, so only a layout
- * that lists it shows the facts.
- */
-const TRIVIA_WIDGET_ID = "trivia";
 
 @Injectable()
 export class DashboardTriviaService {
