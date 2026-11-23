@@ -9,8 +9,9 @@ import ts from 'typescript';
  * cancel chart as 0.0001. Use `sumMoney(values, decimals)`, `roundMoney` /
  * `roundToDecimals`, or `toMoneyUnits` / `fromMoneyUnits` (`lib/format.ts`).
  *
- * Flagged: a `Math.round(...)` whose argument multiplies by ten thousand, or by
- * a constant named like a scale (`SCALE`, `MONEY_UNITS`). Not flagged: a
+ * Flagged: a `Math.round(...)` whose argument multiplies by ten thousand, by a
+ * power of ten (`10 ** decimals`, `Math.pow(10, decimals)`), or by a constant
+ * named like a scale (`SCALE`, `MONEY_UNITS`). Not flagged: a
  * percentage, which the same multiply builds and then divides by 100
  * (`Math.round(r * 10000) / 100`). The share count's 8dp rounding is
  * `investmentFold.guard.test.ts`'s subject: it lives in one file by rule. The
@@ -22,17 +23,43 @@ const sources = import.meta.glob('/src/**/*.{ts,tsx}', {
   import: 'default',
 }) as Record<string, string>;
 
+/**
+ * A constant named like a scale (`SCALE`, `MONEY_UNITS`). Case-sensitive: a
+ * lowercase `scale` in this layer is an image's or a chart's, not money's.
+ */
 const SCALE_NAME = /UNITS|SCALE/;
 
 const unwrap = (node: ts.Expression): ts.Expression =>
   ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
 
+const isNumber = (node: ts.Expression, value: number): boolean => {
+  const inner = unwrap(node);
+  return ts.isNumericLiteral(inner) && Number(inner.text) === value;
+};
+
 const isScale = (node: ts.Expression): boolean => {
   const inner = unwrap(node);
-  return (
-    (ts.isNumericLiteral(inner) && Number(inner.text) === 10_000) ||
-    (ts.isIdentifier(inner) && SCALE_NAME.test(inner.text))
-  );
+  if (ts.isNumericLiteral(inner)) return Number(inner.text) === 10_000;
+  if (ts.isIdentifier(inner)) return SCALE_NAME.test(inner.text);
+  // `10 ** 4`, `10 ** decimals`
+  if (
+    ts.isBinaryExpression(inner) &&
+    inner.operatorToken.kind === ts.SyntaxKind.AsteriskAsteriskToken
+  ) {
+    return isNumber(inner.left, 10);
+  }
+  if (ts.isCallExpression(inner)) {
+    const callee = inner.expression;
+    // `Math.pow(10, decimals)`
+    return (
+      ts.isPropertyAccessExpression(callee) &&
+      callee.expression.getText() === 'Math' &&
+      callee.name.text === 'pow' &&
+      inner.arguments.length > 0 &&
+      isNumber(inner.arguments[0], 10)
+    );
+  }
+  return false;
 };
 
 const multipliesByScale = (node: ts.Expression): boolean => {
@@ -112,6 +139,8 @@ describe('money is scaled to integer units on its decimal digits', () => {
           'const c = Math.round((x - y) * 1e4);',
           'const d = Math.round(amount * rate * SCALE);',
           'const e = Math.round(10000 * x);',
+          'const f = Math.round(x * 10 ** decimals);',
+          'const g = Math.round(x * Math.pow(10, decimals));',
         ].join('\n'),
       ),
     ).toEqual([
@@ -120,6 +149,8 @@ describe('money is scaled to integer units on its decimal digits', () => {
       '3: Math.round((x - y) * 1e4)',
       '4: Math.round(amount * rate * SCALE)',
       '5: Math.round(10000 * x)',
+      '6: Math.round(x * 10 ** decimals)',
+      '7: Math.round(x * Math.pow(10, decimals))',
     ]);
 
     expect(
@@ -133,6 +164,7 @@ describe('money is scaled to integer units on its decimal digits', () => {
           'const cents = Math.round(x * 100) / 100;',
           'const units = toMoneyUnits(x, FIAT_MONEY_DECIMALS);',
           'const el = <span>{Math.round(share * 100)}</span>;',
+          'const px = Math.round(image.width * scale);',
         ].join('\n'),
       ),
     ).toEqual([]);

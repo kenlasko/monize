@@ -85,6 +85,18 @@ describe("investedPeriodResult (spec section 10.5)", () => {
     expect(result.investmentPnl).toBe(0);
   });
 
+  it("scales a day's buy and sale apart before netting them", () => {
+    // 896107217744.2177 - 622315886394.1361 is 273791331350.08154 in doubles,
+    // a unit short of the 273791331350.0816 the two legs net to; scaling the
+    // difference read the period's result as -0.0001 instead of zero.
+    const result = run([0, 273_791_331_350.0816], {
+      1: { capitalIn: 896_107_217_744.2177, capitalOut: 622_315_886_394.1361 },
+    });
+
+    expect(result.investmentCapitalFlows).toBe(273_791_331_350.0816);
+    expect(result.investmentPnl).toBe(0);
+  });
+
   it("case 1: cash only -- nothing invested, nothing earned, a known zero", () => {
     // Deposit 10,000, no securities: IV is 0 on every day of the month.
     const result = run(Array.from({ length: 31 }, () => 0));

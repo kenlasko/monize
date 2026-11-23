@@ -60,7 +60,11 @@ import {
   isCurrencyPseudoSecurity,
 } from "./model/mny-model";
 import { TransactionStatus } from "../../transactions/entities/transaction.entity";
-import { FIAT_MONEY_DECIMALS, roundMoney } from "../../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  fromScaledUnits,
+  toScaledUnits,
+} from "../../common/round.util";
 
 /**
  * Decrypt -> read -> map, in one place.
@@ -258,15 +262,19 @@ export function computeExpectedBalances(
 ): Map<string, number> {
   const placesOf = (key: string): number =>
     placesByKey?.get(key) ?? FIAT_MONEY_DECIMALS;
-  const scaleOf = (key: string): number => 10 ** placesOf(key);
-  const totals = new Map<string, number>(
+  // Each amount shifted on its decimal digits, never `Math.round(x * 10 **
+  // places)`, which misreads a large amount (Discussion #2343).
+  const unitsOf = (key: string, amount: number): bigint =>
+    toScaledUnits(amount, placesOf(key));
+  const totals = new Map<string, bigint>(
     accounts.accounts.map((account) => [
       account.key,
-      Math.round(account.openingBalance * scaleOf(account.key)),
+      unitsOf(account.key, account.openingBalance),
     ]),
   );
 
-  // Integer minor units throughout: 37,000 float additions drift.
+  // Integer minor units throughout, in a BigInt: 37,000 float additions drift,
+  // and a coin's eight places pass 2^53 above 90 million.
   const add = (key: string | null, amount: number, date: string): void => {
     if (key === null || date > asOf) {
       return;
@@ -275,7 +283,7 @@ export function computeExpectedBalances(
     if (current === undefined) {
       return;
     }
-    totals.set(key, current + Math.round(amount * scaleOf(key)));
+    totals.set(key, current + unitsOf(key, amount));
   };
 
   for (const transaction of transactions.transactions) {
@@ -311,7 +319,7 @@ export function computeExpectedBalances(
   return new Map(
     [...totals].map(([key, minorUnits]) => [
       key,
-      roundMoney(minorUnits / scaleOf(key), placesOf(key)),
+      fromScaledUnits(minorUnits, placesOf(key)),
     ]),
   );
 }

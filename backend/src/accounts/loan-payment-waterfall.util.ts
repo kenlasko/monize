@@ -1,4 +1,8 @@
-import { MONEY_DECIMALS, roundMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits,
+  roundMoney,
+} from "../common/round.util";
 import { bookSplitsAtMinorUnit } from "../common/currency-minor-unit.util";
 
 export interface LoanPaymentWaterfallInput {
@@ -217,9 +221,9 @@ export function bookLoanAllocation(
 
 /** A non-negative 4dp amount cut down to the unit (833.3449 -> 833.34 at 2). */
 function towardZeroInUnit(value: number, decimals: number): number {
-  const step = 10 ** Math.max(0, MONEY_DECIMALS - decimals);
-  const units = Math.round(
-    roundMoney(Math.max(0, value)) * 10 ** MONEY_DECIMALS,
+  const step = 10 ** Math.max(0, FIAT_MONEY_DECIMALS - decimals);
+  const units = moneyUnits(Math.max(0, value), FIAT_MONEY_DECIMALS);
+  return roundMoney(
+    (Math.floor(units / step) * step) / 10 ** FIAT_MONEY_DECIMALS,
   );
-  return roundMoney((Math.floor(units / step) * step) / 10 ** MONEY_DECIMALS);
 }

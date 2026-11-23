@@ -63,6 +63,13 @@ describe('bucketMonthlyTotals - month', () => {
     expect(buckets[0].total).toBe(300_000_000_000.03);
   });
 
+  it('draws a month whose total is not a number as partial instead of throwing', () => {
+    const buckets = bucketMonthlyTotals([m('2020-01', 100), m('2020-02', Number.NaN)], 'month');
+    expect(buckets[0]).toMatchObject({ total: 100 });
+    expect(buckets[0].partial).toBeUndefined();
+    expect(buckets[1]).toMatchObject({ total: 0, partial: true });
+  });
+
   it('nets large months that cancel to exactly zero (Discussion #2343)', () => {
     const buckets = bucketMonthlyTotals(
       [m('2020-01', 300_000_000_000.03), m('2020-02', -300_000_000_000.03)],

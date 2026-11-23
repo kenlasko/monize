@@ -147,8 +147,12 @@ export function bucketMonthlyTotals(
 
   for (const datum of data) {
     const { key, startDate, periodStart } = periodInfoForMonth(datum.month, granularity);
-    const partial = datum.total === null;
-    const cents = toMoneyUnits(datum.total ?? datum.knownSubtotal ?? 0, FIAT_MONEY_DECIMALS);
+    const value = datum.total ?? datum.knownSubtotal ?? 0;
+    // A figure that is not a number has no units to add: the period is drawn
+    // as partial rather than the chart failing to render.
+    const known = Number.isFinite(value);
+    const partial = datum.total === null || !known;
+    const cents = known ? toMoneyUnits(value, FIAT_MONEY_DECIMALS) : BigInt(0);
     const existing = accumulator.get(key);
     if (existing) {
       existing.cents += cents;

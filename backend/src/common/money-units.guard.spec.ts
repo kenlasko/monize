@@ -11,8 +11,9 @@ import * as ts from "typescript";
  * share count or a coin.
  *
  * Flagged: a `Math.round(...)` whose argument multiplies by ten thousand or a
- * hundred million (in any spelling), or by a constant named like a scale
- * (`MONEY_UNITS`, `SCALE`, `UNITS_PER_MONEY`). Not flagged: a percentage, which
+ * hundred million (in any spelling), by a power of ten (`10 ** places`,
+ * `Math.pow(10, places)`), or by a constant or helper named like a scale
+ * (`MONEY_UNITS`, `SCALE`, `scaleOf(key)`). Not flagged: a percentage, which
  * the same multiply builds and then divides by 100 (`Math.round(r * 10000) /
  * 100`): it is a ratio, not money. The scan reads the syntax tree, so a comment
  * naming the pattern never trips it.
@@ -22,17 +23,42 @@ const SRC_ROOT = join(__dirname, "..");
 
 /** Ten-thousandths (fiat money) and hundred-millionths (shares, a coin). */
 const SCALES = new Set([10_000, 100_000_000]);
-const SCALE_NAME = /UNITS|SCALE/;
+/** A constant or a helper named like a scale: `MONEY_UNITS`, `scale`, `scaleOf(key)`. */
+const SCALE_NAME = /units|scale/i;
 
 const unwrap = (node: ts.Expression): ts.Expression =>
   ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
 
+const isTen = (node: ts.Expression): boolean => {
+  const inner = unwrap(node);
+  return ts.isNumericLiteral(inner) && Number(inner.text) === 10;
+};
+
 const isScale = (node: ts.Expression): boolean => {
   const inner = unwrap(node);
-  return (
-    (ts.isNumericLiteral(inner) && SCALES.has(Number(inner.text))) ||
-    (ts.isIdentifier(inner) && SCALE_NAME.test(inner.text))
-  );
+  if (ts.isNumericLiteral(inner)) return SCALES.has(Number(inner.text));
+  if (ts.isIdentifier(inner)) return SCALE_NAME.test(inner.text);
+  // `10 ** places`
+  if (
+    ts.isBinaryExpression(inner) &&
+    inner.operatorToken.kind === ts.SyntaxKind.AsteriskAsteriskToken
+  ) {
+    return isTen(inner.left);
+  }
+  if (ts.isCallExpression(inner)) {
+    const callee = inner.expression;
+    // `Math.pow(10, places)`
+    if (
+      ts.isPropertyAccessExpression(callee) &&
+      ts.isIdentifier(callee.expression) &&
+      callee.expression.text === "Math" &&
+      callee.name.text === "pow"
+    ) {
+      return inner.arguments.length > 0 && isTen(inner.arguments[0]);
+    }
+    return ts.isIdentifier(callee) && SCALE_NAME.test(callee.text);
+  }
+  return false;
 };
 
 /** `true` when `node` (and any multiply nested in it) scales by a scale. */
@@ -128,6 +154,10 @@ describe("money is scaled to integer units on its decimal digits", () => {
         "const e = Math.round(q * 1e8) / 1e8;",
         "const f = Math.round(Number(v) * SCALE);",
         "const g = Math.round(10000 * x);",
+        "const h = Math.round(amount * 10 ** places);",
+        "const i = Math.round(amount * Math.pow(10, places));",
+        "const j = Math.round(amount * scaleOf(key));",
+        "const k = Math.round(amount * scale);",
       ].join("\n"),
     );
     expect(flagged).toEqual([
@@ -138,6 +168,10 @@ describe("money is scaled to integer units on its decimal digits", () => {
       "5: Math.round(q * 1e8)",
       "6: Math.round(Number(v) * SCALE)",
       "7: Math.round(10000 * x)",
+      "8: Math.round(amount * 10 ** places)",
+      "9: Math.round(amount * Math.pow(10, places))",
+      "10: Math.round(amount * scaleOf(key))",
+      "11: Math.round(amount * scale)",
     ]);
 
     const clean = floatScaleFindings(

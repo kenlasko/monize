@@ -319,7 +319,7 @@ function decideInvestedPeriod(
   let reinvestedMinor = 0;
   let flowsComplete = true;
   for (const day of flowDays) {
-    capitalMinor += minor(day.capitalIn - day.capitalOut);
+    capitalMinor += minor(day.capitalIn) - minor(day.capitalOut);
     incomeMinor += minor(day.income);
     reinvestedMinor += minor(day.reinvestedIncome);
     if (!day.complete) {
