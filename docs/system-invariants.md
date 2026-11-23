@@ -1753,11 +1753,13 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     The built-in reports and the custom report engine read
                     transactions.exchange_rate the way the Cash Flow Sankey
                     does: a foreign entry whose original currency is the
-                    reporting currency converts at its own rate, a stored 1
-                    across two codes is ignored (ownRateSql and
-                    transactionRateBasis in
-                    built-in-reports/report-currency.service.ts), and anything
-                    else takes the market rate on its own date (issue #2106).
+                    reporting currency converts at its own rate, a recorded
+                    1:1 included (ownRateSql and transactionRateBasis in
+                    built-in-reports/report-currency.service.ts; a foreign
+                    entry cannot be stored without a rate, and an update that
+                    adds one to a plain row must name it, issue #2344), and
+                    anything else takes the market rate on its own date
+                    (issue #2106).
                     A transfer's own conversion is its two posted amounts: the
                     custom report engine converts a transfer leg, or a split's
                     transfer line, whose other side posted in the reporting
@@ -1859,7 +1861,12 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     Source, a custom report, list_transactions, the MCP flow
                     totals, compare_periods, the transaction summary, the
                     monthly totals, the spending insights and the forecast, on
-                    PostgreSQL; forecast-aggregator.service.spec.ts "a row
+                    PostgreSQL, and "recorded at 1:1" holds issue #2344's EUR
+                    100 charged as USD 100 to EUR 100 (the market reads 85.11)
+                    in Spending by Category, a custom report and
+                    list_transactions; transactions.service.spec.ts refuses an
+                    update that adds a foreign entry to a plain row without a
+                    rate; forecast-aggregator.service.spec.ts "a row
                     carrying its own rate" the same in the forecast's history
                     and income. currency-detail.integration.spec.ts totals
                     EUR 100 at the market's 1.60, EUR 100 paid from a CAD

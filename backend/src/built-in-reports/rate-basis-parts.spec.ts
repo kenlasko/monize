@@ -158,7 +158,7 @@ describe("rate-basis-parts", () => {
       ).toBe(0.75);
     });
 
-    it("reads a part's own rate into the reporting currency, and none for a stored 1", () => {
+    it("reads a part's own rate into the reporting currency, a recorded 1 included", () => {
       expect(
         partRateBasis(
           { fx_original_currency: "CAD", fx_exchange_rate: "0.8" },
@@ -170,6 +170,14 @@ describe("rate-basis-parts", () => {
       expect(
         partRateBasis(
           { fx_original_currency: "CAD", fx_exchange_rate: "1" },
+          "USD",
+          "2026-01-12",
+          "CAD",
+        ).own_rate,
+      ).toBe(1);
+      expect(
+        partRateBasis(
+          { fx_original_currency: null, fx_exchange_rate: "1" },
           "USD",
           "2026-01-12",
           "CAD",
