@@ -436,6 +436,25 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     ]);
   });
 
+  it("reads the rows the register lists under the transfer filter in the monthly totals", async () => {
+    await seed("EUR");
+
+    const monthly = await asUser(() =>
+      analytics.getMonthlyTotals(userId, undefined, START, END, ["transfer"]),
+    );
+
+    // The register lists the whole transfer rows only (-90 + 90 and the
+    // counterpart's +90), not the split parent, and the chart adds up to it.
+    expect(monthly).toEqual([
+      expect.objectContaining({
+        month: "2026-03",
+        currency: "EUR",
+        total: 90,
+        count: 3,
+      }),
+    ]);
+  });
+
   it("does not count the split's transfer line as uncategorised in the monthly totals", async () => {
     await seed("EUR");
 

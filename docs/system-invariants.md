@@ -1792,7 +1792,7 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     of a split's transfer: the split's transfer line beside its
                     counterpart row (`includeTransferSplits`), at the line's
                     own transfer rate (`transferLegs` with `wholeLegs`), and a
-                    month counts such a split once by id however many rate
+                    month counts a split once by id however many rate
                     parts its lines fall in (issue #2337).
                     Like the Sankey, these reports do not yet say which of the
                     two rates answered. The assistant's and the MCP tools'

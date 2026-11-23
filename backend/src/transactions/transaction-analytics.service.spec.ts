@@ -1649,25 +1649,25 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
-    it("counts a split with a transfer line once across the parts it sits in", async () => {
+    it("counts a split once across the parts its lines sit in", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {
           ...usdDay("2025-01", "2025-01-10"),
           total: "-60",
           count: "2",
-          transferSplitIds: ["split-1"],
+          splitIds: ["split-1"],
         },
         {
           ...usdDay("2025-01", "2025-01-10"),
           total: "-100",
           count: "0",
-          transferSplitIds: ["split-1", "split-2"],
+          splitIds: ["split-1", "split-2"],
         },
         {
           ...usdDay("2025-02", "2025-02-10"),
           total: "-40",
           count: "1",
-          transferSplitIds: null,
+          splitIds: null,
         },
       ]);
 

@@ -1288,20 +1288,20 @@ export class TransactionAnalyticsService {
       // Split by currency and day so each part converts at its own date
       // before it joins its month; a bare SUM would add currencies together.
       // A split with a transfer line can sit in two parts, the line at its
-      // transfer's rate and the other lines at theirs, so such a transaction
-      // is counted by id across its month rather than once per part.
+      // transfer's rate and the other lines at theirs, so a split is counted
+      // by id across its month rather than once per part.
       queryBuilder
         .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
         .addSelect("transaction.currencyCode", "currencyCode")
         .addSelect(DAY_TX_SQL, "txDate")
         .addSelect(`SUM(${amountExpr})`, "total")
         .addSelect(
-          `COUNT(DISTINCT transaction.id) FILTER (WHERE NOT ${SPLIT_WITH_TRANSFER_LINE_SQL})`,
+          "COUNT(DISTINCT transaction.id) FILTER (WHERE splits.id IS NULL)",
           "count",
         )
         .addSelect(
-          `ARRAY_AGG(DISTINCT transaction.id::text) FILTER (WHERE ${SPLIT_WITH_TRANSFER_LINE_SQL})`,
-          "transferSplitIds",
+          "ARRAY_AGG(DISTINCT transaction.id::text) FILTER (WHERE splits.id IS NOT NULL)",
+          "splitIds",
         )
         .groupBy("month")
         .addGroupBy("transaction.currencyCode")
@@ -1332,13 +1332,11 @@ export class TransactionAnalyticsService {
         days[days.length - 1],
       );
       const groups = this.foldGroups(rows, (r) => r.month, reporting, rates);
-      const transferSplitIds = new Map<string, Set<string>>();
+      const splitIds = new Map<string, Set<string>>();
       for (const row of rows) {
-        const ids = transferSplitIds.get(row.month) ?? new Set<string>();
-        for (const id of (row.transferSplitIds as string[] | null) ?? []) {
-          ids.add(id);
-        }
-        transferSplitIds.set(row.month, ids);
+        const ids = splitIds.get(row.month) ?? new Set<string>();
+        for (const id of (row.splitIds as string[] | null) ?? []) ids.add(id);
+        splitIds.set(row.month, ids);
       }
 
       // `total` is null (with the converted part in `knownSubtotal`) while a
@@ -1348,7 +1346,7 @@ export class TransactionAnalyticsService {
           month: g.first.month as string,
           currency: reporting,
           ...totalFields(g.agg),
-          count: g.count + (transferSplitIds.get(g.first.month)?.size ?? 0),
+          count: g.count + (splitIds.get(g.first.month)?.size ?? 0),
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
     });
@@ -2620,12 +2618,6 @@ export class TransactionAnalyticsService {
 /** One day's SQL, for the `t` alias: the date a row is converted at. */
 const DAY_SQL = "TO_CHAR(t.transactionDate, 'YYYY-MM-DD')";
 const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
-
-/** The row is a line of a split that has a transfer line. */
-const SPLIT_WITH_TRANSFER_LINE_SQL = `(splits.id IS NOT NULL AND EXISTS (
-    SELECT 1 FROM transaction_splits tl
-     WHERE tl.transaction_id = transaction.id
-       AND tl.transfer_account_id IS NOT NULL))`;
 
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;
