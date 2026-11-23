@@ -2365,6 +2365,55 @@ describe("ReportsService", () => {
         });
       });
 
+      describe("rounded once, after the rows are summed (issue #2360)", () => {
+        const receipt = (id: string, transactionDate: string) =>
+          createMockTransaction({
+            id,
+            amount: 100.01,
+            currencyCode: "EUR",
+            transactionDate,
+          });
+
+        beforeEach(() => {
+          mockCurrencyService.getDefaultCurrency.mockResolvedValue("USD");
+          storedRates.set("EUR->USD", 1.2474);
+        });
+
+        const runIncome = async (transactions: Transaction[]) => {
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.CATEGORY,
+              config: {
+                ...defaultConfig,
+                direction: DirectionFilter.INCOME_ONLY,
+              },
+            },
+            transactions,
+          );
+          categoriesRepository.find.mockResolvedValue([mockCategory]);
+          return service.execute("user-1", "report-1");
+        };
+
+        it.each([
+          ["one day", "2025-06-15"],
+          ["two days", "2025-06-16"],
+        ])(
+          "totals two 100.01 EUR receipts on %s as Income by Source does, 249.5049 USD",
+          async (_label, secondDate) => {
+            // Each converts to 124.752474; rounded one by one they summed to
+            // 249.5050, where Income by Source converts their 200.02 sum.
+            const result = await runIncome([
+              receipt("tx-1", "2025-06-15"),
+              receipt("tx-2", secondDate),
+            ]);
+
+            expect(result.data).toHaveLength(1);
+            expect(result.data[0].value).toBe(249.5049);
+            expect(result.summary.total).toBe(249.5049);
+          },
+        );
+      });
+
       describe("without a rate", () => {
         it("withholds the total and names the currency, by category", async () => {
           const result = await run(GroupByType.CATEGORY, groceries);

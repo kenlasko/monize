@@ -597,6 +597,66 @@ describe("IncomeReportsService", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // getIncomeBySource: rounded once, after the parts are summed (issue #2360)
+  // ---------------------------------------------------------------------------
+  describe("getIncomeBySource rounding of converted parts", () => {
+    beforeEach(() => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([{ fromCurrency: "EUR", toCurrency: "USD", rate: 1.2474 }]),
+      );
+      categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
+    });
+
+    it("converts two 100.01 EUR receipts on one day to 249.5049 USD", async () => {
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: "cat-income",
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "200.02000000",
+        },
+      ]);
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.data[0].total).toBe(249.5049);
+      expect(result.totalIncome).toBe(249.5049);
+    });
+
+    it("gives the same figure when the receipts fall on two days", async () => {
+      // Each day's part converts to 124.752474; rounded one by one they summed
+      // to 249.5050.
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: "cat-income",
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.01000000",
+        },
+        {
+          category_id: "cat-income",
+          currency_code: "EUR",
+          tx_date: "2026-01-16",
+          total: "100.01000000",
+        },
+      ]);
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.data[0].total).toBe(249.5049);
+      expect(result.totalIncome).toBe(249.5049);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // getIncomeVsExpenses
   // ---------------------------------------------------------------------------
   describe("getIncomeVsExpenses", () => {

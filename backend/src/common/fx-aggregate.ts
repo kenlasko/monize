@@ -6,23 +6,38 @@ import {
 } from "./round.util";
 
 /**
- * `amount` as a whole count of ten-thousandths, rounded half away from zero by
- * `roundMoney` before it is scaled (Discussion #2136). A bare
- * `Math.round(amount * 10000)` rounds a negative midpoint toward zero
- * (`-0.00005` came back `0` where `roundMoney` answers `-0.0001`) and a
- * positive one lost to the float multiply downward (`0.00145 * 10000` is
- * `14.499999999999998`).
- *
- * The rounded value is then shifted by its decimal digits (`toScaledUnits`),
- * never multiplied by `10000` in floats (Discussion #2343): for a large amount
- * the float product of even an exactly rounded value is not the integer it
- * denotes (`300000000000.03 * 10000` is `3000000000000300.5`), and `Math.round`
- * then carried `+x` up and `-x` toward zero, so adding an amount and its
- * negation left `0.0001`.
+ * The places a component is accumulated at: the fiat precision plus eight
+ * guard digits, so the subtotal is rounded to `FIAT_MONEY_DECIMALS` once, when
+ * it is read, never component by component (issue #2360). Rounding each
+ * converted component to four places first made "convert each row, then sum"
+ * and "sum the rows, then convert" disagree: two 100.01 EUR receipts at 1.2474
+ * are 124.752474 USD each, which rounded to 124.7525 and summed to 249.5050,
+ * while their 200.02 EUR sum converts to 249.504948 and reads 249.5049.
  */
-function toMinorUnits(amount: number): bigint {
-  return toScaledUnits(
-    roundMoney(amount, FIAT_MONEY_DECIMALS),
+const ACCUMULATION_DECIMALS = FIAT_MONEY_DECIMALS + 8;
+
+/**
+ * `amount` as a whole count of `10^-ACCUMULATION_DECIMALS` units, shifted by
+ * its decimal digits (`toScaledUnits`), never multiplied in floats (Discussion
+ * #2343): for a large amount the float product is not the integer it denotes
+ * (`300000000000.03 * 10000` is `3000000000000300.5`), and `Math.round` then
+ * carried `+x` up and `-x` toward zero, so adding an amount and its negation
+ * left `0.0001`.
+ */
+function toAccumulationUnits(amount: number): bigint {
+  return toScaledUnits(amount, ACCUMULATION_DECIMALS);
+}
+
+/**
+ * The subtotal `units` denotes, rounded to four places by `roundMoney` itself
+ * (Discussion #2136): half away from zero, so `-0.00005` reads `-0.0001` where
+ * a bare `Math.round` carried it toward zero, and with its one-ULP nudge, so a
+ * float artefact just under a midpoint (`41919.852249999996`) reads up as
+ * `roundMoney` answers it. Rounding the units in integers alone read it down.
+ */
+function readSubtotal(units: bigint): number {
+  return roundMoney(
+    fromScaledUnits(units, ACCUMULATION_DECIMALS),
     FIAT_MONEY_DECIMALS,
   );
 }
@@ -44,17 +59,18 @@ function toMinorUnits(amount: number): bigint {
  */
 export class FxAggregate {
   /**
-   * Accumulated in integer ten-thousandths (the resolution of `decimal(20,4)`),
-   * per the Financial Math rule in CLAUDE.md: `subtotal += converted` in floats
+   * Accumulated in integer `10^-ACCUMULATION_DECIMALS` units and rounded to
+   * ten-thousandths (the resolution of `decimal(20,4)`) only when read, per the
+   * Financial Math rule in CLAUDE.md: `subtotal += converted` in floats
    * accumulates drift, and this class is the one accumulator every total folds
    * through, which is exactly where that drift would multiply. A `BigInt`, as
    * in `sumMoney` (`docs/specs/money-precision.md` decision 4): integer units
-   * in a double stop being exact past 2^53, about 900 billion at four places.
+   * in a double stop being exact past 2^53.
    */
-  private subtotalMinorUnits = 0n;
+  private subtotalUnits = 0n;
   /**
    * The sum of the non-finite components (`NaN`, `Infinity`), which have no
-   * digits to count in `subtotalMinorUnits`. Zero until one is added, so it
+   * digits to count in `subtotalUnits`. Zero until one is added, so it
    * changes nothing; once one is, the subtotal reads `NaN` or `Infinity` as it
    * always has. This class does not decide what a non-finite amount means.
    */
@@ -91,7 +107,7 @@ export class FxAggregate {
       this.nonFiniteSum += amount;
       return;
     }
-    this.subtotalMinorUnits += toMinorUnits(amount);
+    this.subtotalUnits += toAccumulationUnits(amount);
   }
 
   /**
@@ -104,7 +120,7 @@ export class FxAggregate {
 
   /** Fold in another aggregate, carrying its gaps with its subtotal. */
   merge(other: FxAggregate): void {
-    this.subtotalMinorUnits += other.subtotalMinorUnits;
+    this.subtotalUnits += other.subtotalUnits;
     this.nonFiniteSum += other.nonFiniteSum;
     for (const pair of other.missing) this.missing.add(pair);
     this.unknownComponents += other.unknownComponents;
@@ -122,14 +138,12 @@ export class FxAggregate {
   }
 
   /**
-   * The sum of the components that did convert. Safe to display beside the
-   * missing pairs, never under a field whose name says "total".
+   * The sum of the components that did convert, rounded to four places once,
+   * after they were summed. Safe to display beside the missing pairs, never
+   * under a field whose name says "total".
    */
   get knownSubtotal(): number {
-    return (
-      fromScaledUnits(this.subtotalMinorUnits, FIAT_MONEY_DECIMALS) +
-      this.nonFiniteSum
-    );
+    return readSubtotal(this.subtotalUnits) + this.nonFiniteSum;
   }
 
   /** `"USD->EUR"` for each unresolvable pair; empty when the total is complete. */
