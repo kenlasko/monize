@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   balanceRulePercents,
   netByDate,
@@ -106,5 +106,24 @@ describe('register style data', () => {
     expect(registerGroupLabel('2024-01-16', 'en', '2024-06-01')).toBe('Tuesday, January 16');
     expect(registerGroupLabel('2023-01-16', 'en', '2024-06-01')).toBe('Monday, January 16, 2023');
     expect(previousDay('2024-03-01')).toBe('2024-02-29');
+  });
+
+  it('builds one day formatter per locale and year form, however many groups it labels', () => {
+    const spy = vi.spyOn(Intl, 'DateTimeFormat');
+    try {
+      for (let day = 1; day <= 28; day++) {
+        registerGroupLabel(`2024-02-${String(day).padStart(2, '0')}`, 'fr', '2024-06-01');
+        registerGroupLabel(`2023-02-${String(day).padStart(2, '0')}`, 'fr', '2024-06-01');
+      }
+      expect(spy.mock.calls.length).toBeLessThanOrEqual(2);
+      expect(registerGroupLabel('2024-01-16', 'fr', '2024-06-01')).toBe('mardi 16 janvier');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('falls back to the ISO date when the locale is refused', () => {
+    expect(registerGroupLabel('2024-01-16', 'not a locale!!', '2024-06-01')).toBe('2024-01-16');
+    expect(registerGroupLabel('2024-01-17', 'not a locale!!', '2024-06-01')).toBe('2024-01-17');
   });
 });

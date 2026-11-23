@@ -500,11 +500,12 @@ export function PebbleRegister(p: PebbleRegisterProps) {
     const net = figure?.total.value ?? 0;
     const currency =
       figure?.currency ?? p.transactions.find((x) => x.transactionDate === open.date)?.currencyCode;
+    const title = groupTitle(open.date);
     nodes.push(
-      <section key={open.date} aria-label={groupTitle(open.date)}>
+      <section key={open.date} aria-label={title}>
         <div className="flex items-baseline justify-between px-1.5 pt-4 pb-2">
           <h3 className="!font-sans !text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {groupTitle(open.date)}
+            {title}
           </h3>
           <span className={net > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
             {figure ? (
