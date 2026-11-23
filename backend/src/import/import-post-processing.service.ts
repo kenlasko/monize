@@ -3,7 +3,10 @@ import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import { lockAccountsForBalanceWrite } from "../common/db/locks";
-import { NetWorthService } from "../net-worth/net-worth.service";
+import {
+  NetWorthService,
+  recalculateAccountsInBackground,
+} from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
@@ -212,14 +215,14 @@ export class ImportPostProcessingService {
     userId: string,
     accountIds: ReadonlySet<string>,
   ): void {
-    for (const accountId of accountIds) {
-      this.netWorthService
-        .recalculateAccount(userId, accountId)
-        .catch((err) =>
-          this.logger.warn(
-            `Post-import net worth recalc failed for account ${accountId}: ${err.message}`,
-          ),
-        );
-    }
+    recalculateAccountsInBackground(
+      this.netWorthService,
+      userId,
+      accountIds,
+      (accountId, err) =>
+        this.logger.warn(
+          `Post-import net worth recalc failed for account ${accountId}: ${err.message}`,
+        ),
+    );
   }
 }
