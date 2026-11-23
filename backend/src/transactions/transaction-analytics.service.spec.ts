@@ -1872,6 +1872,28 @@ describe("TransactionAnalyticsService", () => {
       expect(transferRate?.[0]).toContain('"transaction".is_transfer');
     });
 
+    it("matches a split's transfer lines under the transfer filter", async () => {
+      await service.getMonthlyTotals(userId, undefined, undefined, undefined, [
+        "transfer",
+      ]);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
+      );
+    });
+
+    it("does not match a split's transfer line as uncategorised", async () => {
+      await service.getMonthlyTotals(userId, undefined, undefined, undefined, [
+        "uncategorized",
+      ]);
+
+      expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "splits.categoryId IS NULL AND splits.transferAccountId IS NULL",
+        ),
+      );
+    });
+
     it("keeps whole transfers and a split's transfer lines", async () => {
       await service.getMonthlyTotals(userId);
 

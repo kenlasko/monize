@@ -903,7 +903,13 @@ export class TransactionAnalyticsService {
             if (hasTransfer) {
               const method = hasCondition ? "orWhere" : "where";
               hasCondition = true;
-              qb[method]("transaction.isTransfer = true");
+              // A read that keeps a split's transfer lines counts them as
+              // transfers too, or it reads only the incoming side of one.
+              qb[method](
+                includeTransferSplits
+                  ? "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)"
+                  : "transaction.isTransfer = true",
+              );
             }
             if (uniqueCategoryIds.length > 0) {
               const method = hasCondition ? "orWhere" : "where";
