@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { placePopover } from './InfoTooltip';
 import { cn, inputBaseClasses, inputErrorClasses } from '@/lib/utils';
-import { searchIncludes, searchStartsWith } from '@/lib/helpers/search-match';
+import { createSearchMatcher, normalizeForSearch } from '@/lib/helpers/search-match';
 
 interface ComboboxOption {
   value: string;
@@ -64,6 +64,72 @@ interface ComboboxProps {
   onDeleteOption?: (value: string, label: string) => void;
   /** Accessible name for the per-option delete control. */
   deleteOptionAriaLabel?: string;
+}
+
+/** One collator for every comparison; `localeCompare` builds one per call. */
+const LABEL_COLLATOR = new Intl.Collator();
+
+interface IndexedOption {
+  option: ComboboxOption;
+  label: string;
+  subtitle: string | undefined;
+  keywords: string[];
+}
+
+function indexOption(option: ComboboxOption): IndexedOption {
+  return {
+    option,
+    label: normalizeForSearch(option.label),
+    subtitle: option.subtitle ? normalizeForSearch(option.subtitle) : undefined,
+    keywords: option.keywords?.map(normalizeForSearch) ?? [],
+  };
+}
+
+const NO_ALIASES: ReadonlyMap<string, string> = new Map();
+
+/**
+ * Matches by label, subtitle or keyword; label prefix matches first, then A-Z.
+ * `matchedAliases` holds, for an option found by a keyword but not its label,
+ * the first keyword that matched, which the row shows as the reason it is
+ * listed.
+ */
+function filterAndRank(
+  index: IndexedOption[],
+  query: string,
+): { options: ComboboxOption[]; matchedAliases: ReadonlyMap<string, string> } {
+  const match = createSearchMatcher(query);
+  const hits: { option: ComboboxOption; prefix: boolean }[] = [];
+  const matchedAliases = new Map<string, string>();
+  for (const entry of index) {
+    const { option } = entry;
+    const labelHit = match.includes(option.label, entry.label);
+    const alias = labelHit
+      ? undefined
+      : option.keywords?.find((kw, i) => match.includes(kw, entry.keywords[i]));
+    if (alias) matchedAliases.set(option.value, alias);
+    if (labelHit || alias || match.includes(option.subtitle, entry.subtitle)) {
+      hits.push({ option, prefix: match.startsWith(option.label, entry.label) });
+    }
+  }
+  hits.sort((a, b) => {
+    if (a.prefix !== b.prefix) return a.prefix ? -1 : 1;
+    return LABEL_COLLATOR.compare(a.option.label, b.option.label);
+  });
+  return { options: hits.map((hit) => hit.option), matchedAliases };
+}
+
+/** Priority values first, in their given order, then A-Z. */
+function sortByPriority(options: ComboboxOption[], priorityValues: string[] | undefined): ComboboxOption[] {
+  if (!priorityValues || priorityValues.length === 0) return options;
+  const rank = new Map(priorityValues.map((v, i) => [v, i] as const));
+  return [...options].sort((a, b) => {
+    const aIdx = rank.get(a.value);
+    const bIdx = rank.get(b.value);
+    if (aIdx !== undefined && bIdx === undefined) return -1;
+    if (aIdx === undefined && bIdx !== undefined) return 1;
+    if (aIdx !== undefined && bIdx !== undefined) return aIdx - bIdx;
+    return LABEL_COLLATOR.compare(a.label, b.label);
+  });
 }
 
 export function Combobox({
@@ -304,32 +370,15 @@ export function Combobox({
   // When dropdown is open and user is typing, filter by what they typed
   // Otherwise show all options. Prefix matches are sorted first for relevance.
   // When not filtering: priority values first, then alphabetical.
-  const filteredOptions = (isTyping && filterText)
-    ? options
-        .filter(option =>
-          searchIncludes(option.label, filterText) ||
-          searchIncludes(option.subtitle, filterText) ||
-          (option.keywords && option.keywords.some(kw => searchIncludes(kw, filterText)))
-        )
-        .sort((a, b) => {
-          const aPrefix = searchStartsWith(a.label, filterText);
-          const bPrefix = searchStartsWith(b.label, filterText);
-          if (aPrefix && !bPrefix) return -1;
-          if (!aPrefix && bPrefix) return 1;
-          return a.label.localeCompare(b.label);
-        })
-    : priorityValues && priorityValues.length > 0
-      ? [...options].sort((a, b) => {
-          const aIdx = priorityValues.indexOf(a.value);
-          const bIdx = priorityValues.indexOf(b.value);
-          const aIsPriority = aIdx !== -1;
-          const bIsPriority = bIdx !== -1;
-          if (aIsPriority && !bIsPriority) return -1;
-          if (!aIsPriority && bIsPriority) return 1;
-          if (aIsPriority && bIsPriority) return aIdx - bIdx;
-          return a.label.localeCompare(b.label);
-        })
-      : options;
+  // Each option's search keys are worked out once per options list, not once
+  // per keystroke or highlight move.
+  const searchIndex = useMemo(() => options.map(indexOption), [options]);
+  const { options: filteredOptions, matchedAliases } = useMemo(
+    () => (isTyping && filterText)
+      ? filterAndRank(searchIndex, filterText)
+      : { options: sortByPriority(options, priorityValues), matchedAliases: NO_ALIASES },
+    [isTyping, filterText, searchIndex, options, priorityValues],
+  );
 
   // Check if input matches an existing option exactly
   const exactMatch = options.some(
@@ -567,10 +616,8 @@ export function Combobox({
                     {option.subtitle}
                   </span>
                 )}
-                {isTyping && filterText && option.keywords && (() => {
-                  const labelMatches = searchIncludes(option.label, filterText);
-                  if (labelMatches) return null;
-                  const matchedKeyword = option.keywords.find(kw => searchIncludes(kw, filterText));
+                {isTyping && filterText && (() => {
+                  const matchedKeyword = matchedAliases.get(option.value);
                   if (!matchedKeyword) return null;
                   return (
                     <span className="text-purple-500 dark:text-purple-400 text-xs truncate">

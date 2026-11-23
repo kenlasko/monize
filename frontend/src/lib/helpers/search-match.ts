@@ -36,3 +36,28 @@ export function searchStartsWith(text: string | null | undefined, query: string)
   const { needle, normalize } = needleOf(query);
   return normalize(text).startsWith(needle);
 }
+
+/**
+ * One query, many candidates. The query is normalised once, and a candidate
+ * may pass its `normalizeForSearch` key precomputed, so filtering a long list
+ * does no regex work per candidate per keystroke.
+ */
+export interface SearchMatcher {
+  /** `searchIncludes(text, query)`; `key` is `normalizeForSearch(text)`. */
+  includes(text: string | null | undefined, key?: string): boolean;
+  /** `searchStartsWith(text, query)`; `key` is `normalizeForSearch(text)`. */
+  startsWith(text: string | null | undefined, key?: string): boolean;
+}
+
+export function createSearchMatcher(query: string): SearchMatcher {
+  const { needle, normalize } = needleOf(query);
+  // A punctuation-only query matches lower-cased text, which a stripped key
+  // cannot answer, so the key is only used in the normal case.
+  const keyed = normalize === normalizeForSearch;
+  const subject = (text: string, key: string | undefined) =>
+    keyed && key !== undefined ? key : normalize(text);
+  return {
+    includes: (text, key) => (text ? subject(text, key).includes(needle) : false),
+    startsWith: (text, key) => (text ? subject(text, key).startsWith(needle) : false),
+  };
+}

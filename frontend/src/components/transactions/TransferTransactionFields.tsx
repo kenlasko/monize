@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
@@ -15,7 +15,7 @@ import { entryDecimalPlaces, getCurrencySymbol } from '@/lib/format';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { useAuthStore } from '@/store/authStore';
-import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { payeePickerOptions } from '@/components/payees/withPayeeIcons';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface CrossCurrencyInfo {
@@ -94,6 +94,10 @@ export function TransferTransactionFields({
   const accountOptionLabel = useAccountOptionLabel();
   const isActing = useAuthStore((state) => !!state.actingAsUserId);
   const isEdit = !!transaction;
+  const payeeOptions = useMemo(
+    () => payeePickerOptions(payees, { aliases: payeeAliasMap }),
+    [payees, payeeAliasMap],
+  );
 
   // Cross-owner targets, gated by the per-account grant the current mode
   // needs (create vs edit). Closed candidates only stay visible while
@@ -295,12 +299,7 @@ export function TransferTransactionFields({
         <Combobox
           label={t('form.fields.payeeOptional')}
           placeholder={t('form.placeholders.selectOrTypePayee')}
-          options={payees.map(payee => ({
-            value: payee.id,
-            label: payee.name,
-            icon: payeeOptionIcon(payee),
-            keywords: payeeAliasMap?.[payee.id],
-          }))}
+          options={payeeOptions}
           value={transferPayeeId}
           initialDisplayValue={transferPayeeName}
           onChange={(payeeId: string, payeeName: string) => {
