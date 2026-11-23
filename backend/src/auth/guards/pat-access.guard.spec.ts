@@ -79,6 +79,12 @@ describe("PatAccessGuard", () => {
     userId: "11111111-1111-1111-1111-111111111111",
     scopes,
     tokenId: "22222222-2222-2222-2222-222222222222",
+    owner: {
+      id: "11111111-1111-1111-1111-111111111111",
+      isActive: true,
+      mustChangePassword: false,
+      role: "user",
+    },
   });
 
   function ctx(

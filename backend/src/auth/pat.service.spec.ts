@@ -277,6 +277,7 @@ describe("PatService", () => {
         id: "user-1",
         isActive: true,
         mustChangePassword: false,
+        role: "user",
       });
     });
 
@@ -302,7 +303,20 @@ describe("PatService", () => {
         scopes: "read",
         // The credential fingerprint the MCP transport binds a session to.
         tokenId: "token-1",
+        // The owner state the PAT request's req.user is built from, so the
+        // strategy does not read the users row again.
+        owner: {
+          id: "user-1",
+          isActive: true,
+          mustChangePassword: false,
+          role: "user",
+        },
       });
+      expect(userRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: ["id", "isActive", "mustChangePassword", "role"],
+        }),
+      );
       expect(repository.update).toHaveBeenCalledWith(
         "token-1",
         expect.objectContaining({ lastUsedAt: expect.any(Date) }),
@@ -329,6 +343,7 @@ describe("PatService", () => {
           userId: "user-1",
           scopes: "read",
           tokenId: "token-1",
+          owner: expect.objectContaining({ id: "user-1", role: "user" }),
         });
 
         if (writes) {

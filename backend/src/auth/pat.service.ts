@@ -47,7 +47,18 @@ export interface ValidatedToken {
    * user. Not a secret: the raw token is never stored, only its hash.
    */
   tokenId: string;
+  /**
+   * The owner's account state, read once by `validateToken` for its own
+   * checks and carried so the PAT request's `req.user` is built from it
+   * (`JwtStrategy.patUser`) instead of a second read of the same row.
+   */
+  owner: PatOwnerState;
 }
+
+export type PatOwnerState = Pick<
+  User,
+  "id" | "isActive" | "mustChangePassword" | "role"
+>;
 
 @Injectable()
 export class PatService {
@@ -181,7 +192,7 @@ export class PatService {
     const user = await this.scoped(User, (repo) =>
       repo.findOne({
         where: { id: token.userId },
-        select: ["id", "isActive", "mustChangePassword"],
+        select: ["id", "isActive", "mustChangePassword", "role"],
       }),
     );
     if (!user || !user.isActive) {
@@ -211,6 +222,12 @@ export class PatService {
       userId: token.userId,
       scopes: token.scopes,
       tokenId: token.id,
+      owner: {
+        id: user.id,
+        isActive: user.isActive,
+        mustChangePassword: user.mustChangePassword,
+        role: user.role,
+      },
     };
   }
 
