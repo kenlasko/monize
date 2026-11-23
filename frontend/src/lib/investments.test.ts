@@ -335,6 +335,48 @@ describe('investmentsApi', () => {
     );
   });
 
+  it('refreshSelectedPrices sends more ids than the route takes in batches, and adds up the answers', async () => {
+    // The route refuses a list over REFRESH_SELECTED_MAX_IDS outright, so a
+    // catalog of 250 trading securities was never refreshed at all.
+    const ids = Array.from({ length: 250 }, (_, i) => `s-${i}`);
+    vi.mocked(apiClient.post)
+      .mockResolvedValueOnce({ data: { totalSecurities: 100, updated: 100, failed: 0, skipped: 0, results: [], lastUpdated: '2026-11-23T15:00:01Z' } })
+      .mockResolvedValueOnce({ data: { totalSecurities: 100, updated: 98, failed: 2, skipped: 0, results: [{ symbol: 'X', success: false }, { symbol: 'Y', success: false }], lastUpdated: '2026-11-23T15:00:02Z' } })
+      .mockResolvedValueOnce({ data: { totalSecurities: 50, updated: 50, failed: 0, skipped: 0, results: [], lastUpdated: '2026-11-23T15:00:03Z' } });
+
+    const result = await investmentsApi.refreshSelectedPrices(ids);
+
+    const sent = vi.mocked(apiClient.post).mock.calls.map(
+      ([, body]) => (body as { securityIds: string[] }).securityIds,
+    );
+    expect(sent.map((batch) => batch.length)).toEqual([100, 100, 50]);
+    expect(sent.flat()).toEqual(ids);
+    expect(result).toEqual({
+      totalSecurities: 250,
+      updated: 248,
+      failed: 2,
+      skipped: 0,
+      results: [{ symbol: 'X', success: false }, { symbol: 'Y', success: false }],
+      lastUpdated: '2026-11-23T15:00:03Z',
+    });
+  });
+
+  it('refreshSelectedPrices drops the caches a written batch moved when a later batch fails', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { totalValue: 1000 } });
+    await investmentsApi.getPortfolioSummary();
+    vi.mocked(apiClient.post)
+      .mockResolvedValueOnce({ data: { totalSecurities: 100, updated: 3, failed: 0, skipped: 0, results: [], lastUpdated: '' } })
+      .mockRejectedValueOnce(new Error('timeout'));
+
+    await expect(
+      investmentsApi.refreshSelectedPrices(Array.from({ length: 101 }, (_, i) => `s-${i}`)),
+    ).rejects.toThrow('timeout');
+
+    vi.mocked(apiClient.get).mockClear();
+    await investmentsApi.getPortfolioSummary();
+    expect(apiClient.get).toHaveBeenCalled();
+  });
+
   it('refreshSelectedPrices drops the investments cache when a price was written', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { totalValue: 1000 } });
     await investmentsApi.getPortfolioSummary();

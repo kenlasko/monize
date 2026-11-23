@@ -64,7 +64,7 @@ import {
   invalidateCache,
   invalidateScheduledFxReadModel,
 } from './apiCache';
-import { API_MAX_PAGE_LIMIT } from './api-page-limits';
+import { API_MAX_PAGE_LIMIT, REFRESH_SELECTED_MAX_IDS } from './api-page-limits';
 import { PORTFOLIO_VALUATION_TIMEOUT_MS } from './constants';
 
 /**
@@ -83,6 +83,36 @@ export interface UnlinkedTransferPair {
   quantity: number;
   out: { transactionId: string; accountId: string; accountName: string };
   in: { transactionId: string; accountId: string; accountName: string };
+}
+
+/** What `POST /securities/prices/refresh/selected` answers. */
+export interface SelectedPriceRefreshResult {
+  totalSecurities: number;
+  updated: number;
+  failed: number;
+  skipped: number;
+  results: Array<{
+    symbol: string;
+    success: boolean;
+    price?: number;
+    error?: string;
+  }>;
+  lastUpdated: string;
+}
+
+/** Two batches' answers as one: counts added, results in order, the later stamp. */
+function addPriceRefreshResults(
+  first: SelectedPriceRefreshResult,
+  next: SelectedPriceRefreshResult,
+): SelectedPriceRefreshResult {
+  return {
+    totalSecurities: first.totalSecurities + next.totalSecurities,
+    updated: first.updated + next.updated,
+    failed: first.failed + next.failed,
+    skipped: first.skipped + next.skipped,
+    results: [...first.results, ...next.results],
+    lastUpdated: next.lastUpdated || first.lastUpdated,
+  };
 }
 
 export const investmentsApi = {
@@ -816,32 +846,35 @@ export const investmentsApi = {
     return response.data;
   },
 
-  // Refresh prices for specific securities only
-  refreshSelectedPrices: async (securityIds: string[]): Promise<{
-    totalSecurities: number;
-    updated: number;
-    failed: number;
-    skipped: number;
-    results: Array<{
-      symbol: string;
-      success: boolean;
-      price?: number;
-      error?: string;
-    }>;
-    lastUpdated: string;
-  }> => {
-    const response = await apiClient.post(
-      '/securities/prices/refresh/selected',
-      { securityIds },
-      { timeout: 120_000 },
-    );
-    // Only when a price was actually written. A refresh that updated nothing
-    // (market closed, every quote refused, nothing eligible) leaves every
-    // cached investments answer true, and dropping them makes the page pay for
-    // a valuation it already had. One that did moves every account's market
-    // value as well as the portfolio, which is what the balance caches hold.
-    if (response.data?.updated > 0) invalidateBalanceCaches();
-    return response.data;
+  // Refresh prices for specific securities only. The route takes at most
+  // REFRESH_SELECTED_MAX_IDS ids and refuses a longer list, so a longer one is
+  // sent in consecutive batches (one after another, not at once: each batch
+  // asks a quote provider once per security) and the answers are added up.
+  refreshSelectedPrices: async (securityIds: string[]): Promise<SelectedPriceRefreshResult> => {
+    const batches: string[][] = [];
+    for (let start = 0; start < securityIds.length; start += REFRESH_SELECTED_MAX_IDS) {
+      batches.push(securityIds.slice(start, start + REFRESH_SELECTED_MAX_IDS));
+    }
+    let combined: SelectedPriceRefreshResult | null = null;
+    try {
+      for (const batch of batches.length > 0 ? batches : [securityIds]) {
+        const response = await apiClient.post<SelectedPriceRefreshResult>(
+          '/securities/prices/refresh/selected',
+          { securityIds: batch },
+          { timeout: 120_000 },
+        );
+        combined = combined ? addPriceRefreshResults(combined, response.data) : response.data;
+      }
+    } finally {
+      // Only when a price was actually written. A refresh that updated nothing
+      // (market closed, every quote refused, nothing eligible) leaves every
+      // cached investments answer true, and dropping them makes the page pay
+      // for a valuation it already had. One that did moves every account's
+      // market value as well as the portfolio, which is what the balance
+      // caches hold -- also when a later batch then failed.
+      if (combined !== null && combined.updated > 0) invalidateBalanceCaches();
+    }
+    return combined as SelectedPriceRefreshResult;
   },
 
   // Force-refresh historical prices for a single security across the full
