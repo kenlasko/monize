@@ -267,7 +267,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultEnabled: true,
     minWidth: 'half',
     defaultHeight: 'standard',
-    render: (ctx) => <NetWorthChart isLoading={ctx.isLoading} />,
+    render: (ctx) => <NetWorthChart isLoading={ctx.isLoading} refreshKey={ctx.priceRefreshKey} />,
   },
   {
     id: 'assets-liabilities',

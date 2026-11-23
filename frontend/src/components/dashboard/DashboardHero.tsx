@@ -44,7 +44,7 @@ interface DashboardHeroProps {
   investmentSummaryLoading: boolean;
   /** The investment accounts the portfolio set can cover. */
   investmentAccounts: Account[];
-  /** Bumped when a price refresh wrote new prices; the portfolio set re-asks. */
+  /** Bumped when a price refresh wrote new prices; both sets re-ask. */
   priceRefreshKey?: number;
   /**
    * The page header (greeting, date, Customize gear). Drawn once, above the
@@ -150,6 +150,7 @@ export function DashboardHero({
                     hasInvestments={hasInvestments}
                     isLoading={isLoading}
                     investmentSummaryLoading={investmentSummaryLoading}
+                    refreshKey={priceRefreshKey}
                   />
                 ))}
             </HeroPanelActiveContext.Provider>

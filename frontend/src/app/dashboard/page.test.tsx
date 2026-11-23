@@ -474,6 +474,10 @@ describe('DashboardPage', () => {
       await priceRefresh.onRefreshComplete?.();
     });
 
+    // The net worth history Assets vs Liabilities reads is valued from the
+    // new prices too, so it is asked again.
+    expect(mockGetMonthly).toHaveBeenCalledTimes(2);
+
     expect(screen.getByTestId('dashboard-hero')).toHaveAttribute('data-price-refresh-key', '1');
     expect(screen.getByTestId('portfolio-value-widget')).toHaveAttribute('data-refresh-key', '1');
   });

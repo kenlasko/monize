@@ -201,6 +201,21 @@ function DashboardContent() {
       .then(setFavouriteSecurities)
       .catch(() => {});
     if (hasInvestments) {
+      // The investment accounts' share of every month is valued from the new
+      // prices, so the net worth history the widgets read is asked again. A
+      // failed reload keeps what is on screen rather than calling it missing.
+      const netWorthPromise = netWorthApi
+        .getMonthly({
+          startDate: format(subMonths(new Date(), 12), 'yyyy-MM-dd'),
+          endDate: format(new Date(), 'yyyy-MM-dd'),
+        })
+        .then((netWorth) => {
+          setNetWorthData(netWorth);
+          setNetWorthFailed(false);
+        })
+        .catch((error) => {
+          logger.error('Failed to reload net worth history:', error);
+        });
       try {
         const [moversData, portfolio] = await Promise.all([
           investmentsApi.getTopMovers(),
@@ -211,6 +226,7 @@ function DashboardContent() {
       } catch {
         // Silently fail
       }
+      await netWorthPromise;
     }
     await favouritesPromise;
   }, [hasInvestments]);

@@ -78,9 +78,14 @@ function NetWorthCompositionTooltip({
 
 interface NetWorthChartProps {
   isLoading: boolean;
+  /**
+   * Bumped by the dashboard when a price refresh wrote new prices: the
+   * investment accounts' share of every month is valued from them.
+   */
+  refreshKey?: number;
 }
 
-export function NetWorthChart({ isLoading }: NetWorthChartProps) {
+export function NetWorthChart({ isLoading, refreshKey = 0 }: NetWorthChartProps) {
   const t = useTranslations('dashboard');
   const { formatCurrencyCompact: formatCurrency, formatCurrencyLabel, formatPercent, defaultCurrency } = useNumberFormat();
   const formatChartDate = useChartDateFormat();
@@ -100,12 +105,15 @@ export function NetWorthChart({ isLoading }: NetWorthChartProps) {
 
   // The widget's own window, so a longer one than the dashboard loads for the
   // other widgets does not hold them up.
-  const { data, isLoading: dataLoading, error } = useReportData(
+  // A reload after a price refresh asks the same question again, so the chart
+  // already drawn stays until the new answer lands.
+  const { data, dataKey, isLoading: dataLoading, error } = useReportData(
     () => {
       const { start, end } = resolveRangePreset(config.range, { alignment: 'month' });
       return netWorthApi.getMonthly({ startDate: start || undefined, endDate: end });
     },
-    [config.range],
+    [config.range, refreshKey],
+    { requestKey: config.range },
   );
 
   // A month with `fxComplete === false` holds SUBTOTALS. It is drawn as `null`
@@ -183,7 +191,7 @@ export function NetWorthChart({ isLoading }: NetWorthChartProps) {
     </>
   );
 
-  const loading = isLoading || dataLoading || (data === null && !error);
+  const loading = isLoading || (dataLoading && dataKey !== config.range) || (data === null && !error);
   const isPositive = summary ? summary.change >= 0 : true;
 
   return (

@@ -35,6 +35,12 @@ interface NetWorthHeroProps {
   /** Whether `portfolioValuation` is still on its way: "invested" keeps a
    *  placeholder meanwhile, and nothing else in the hero waits for it. */
   investmentSummaryLoading: boolean;
+  /**
+   * Bumped by the dashboard when a price refresh wrote new prices: the
+   * investment accounts' share of every month is valued from them, so the
+   * net worth is asked again.
+   */
+  refreshKey?: number;
 }
 
 /**
@@ -48,6 +54,7 @@ export function NetWorthHero({
   hasInvestments,
   isLoading,
   investmentSummaryLoading,
+  refreshKey = 0,
 }: NetWorthHeroProps) {
   const t = useTranslations('dashboard');
   const uiStyle = useUiStyle();
@@ -55,12 +62,15 @@ export function NetWorthHero({
   const formatChartDate = useChartDateFormat();
 
   // The hero's own window, so a 10-year chart does not hold up the widgets.
-  const { data, isLoading: dataLoading, error } = useReportData(
+  // A reload after a price refresh asks the same question again, so the
+  // figures already drawn stay until the new ones land.
+  const { data, dataKey, isLoading: dataLoading, error } = useReportData(
     () => {
       const { start, end } = resolveRangePreset(config.range, { alignment: 'month' });
       return netWorthApi.getMonthly({ startDate: start || undefined, endDate: end });
     },
-    [config.range],
+    [config.range, refreshKey],
+    { requestKey: config.range },
   );
 
   const snapshot = useMemo(() => heroSnapshot(data ?? []), [data]);
@@ -82,7 +92,7 @@ export function NetWorthHero({
   // The valuation behind "invested" is deliberately not part of this: it is
   // the slowest request here and one figure needs it, so that figure alone
   // keeps a placeholder below.
-  if (isLoading || dataLoading || (data === null && !error)) {
+  if (isLoading || (dataLoading && dataKey !== config.range) || (data === null && !error)) {
     return <HeroSkeleton label={label} />;
   }
   if (error) return <HeroMessage>{t('netWorth.loadFailed')}</HeroMessage>;
