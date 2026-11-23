@@ -173,6 +173,8 @@ describe("ReportsService", () => {
   ) => {
     const qb = {} as Record<string, jest.Mock>;
     qb.leftJoinAndSelect = jest.fn().mockReturnValue(qb);
+    qb.leftJoin = jest.fn().mockReturnValue(qb);
+    qb.addSelect = jest.fn().mockReturnValue(qb);
     qb.where = jest.fn().mockReturnValue(qb);
     qb.andWhere = jest.fn().mockImplementation((arg: any) => {
       // If arg is a Brackets instance, invoke its whereFactory to cover the callback code
@@ -2978,7 +2980,7 @@ describe("ReportsService", () => {
         expect(result.data[0].value).toBe(100);
       });
 
-      it("hydrates the counterpart's side regardless of the report's filters", async () => {
+      it("reads the counterpart's side regardless of the report's filters, selecting only what the conversion reads", async () => {
         const { qb } = setupExecuteMocks(
           {
             groupBy: GroupByType.NONE,
@@ -2990,16 +2992,42 @@ describe("ReportsService", () => {
 
         await service.execute("user-1", "report-1");
 
-        expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+        expect(qb.leftJoin).toHaveBeenCalledWith(
           "linkedTransaction.splits",
           "linkedSplits",
           "linkedSplits.linkedTransactionId = transaction.id",
         );
-        expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+        expect(qb.leftJoin).toHaveBeenCalledWith(
           "splits.linkedTransaction",
           "splitLinkedTransaction",
           "splitLinkedTransaction.userId = transaction.userId",
         );
+        // Not hydrated whole: on a query that multiplies tags by splits by
+        // split tags, a full transaction per joined row is never read.
+        expect(qb.leftJoinAndSelect).not.toHaveBeenCalledWith(
+          "linkedTransaction.splits",
+          expect.anything(),
+          expect.anything(),
+        );
+        expect(qb.leftJoinAndSelect).not.toHaveBeenCalledWith(
+          "splits.linkedTransaction",
+          expect.anything(),
+          expect.anything(),
+        );
+        // Exactly the columns transferCounterpartOf reads, plus the keys.
+        expect(qb.addSelect).toHaveBeenCalledWith([
+          "linkedSplits.id",
+          "linkedSplits.amount",
+          "linkedSplits.linkedTransactionId",
+          "linkedSplits.transferAccountId",
+        ]);
+        expect(qb.addSelect).toHaveBeenCalledWith([
+          "splitLinkedTransaction.id",
+          "splitLinkedTransaction.amount",
+          "splitLinkedTransaction.currencyCode",
+          "splitLinkedTransaction.linkedTransactionId",
+          "splitLinkedTransaction.description",
+        ]);
       });
     });
 

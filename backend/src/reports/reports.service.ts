@@ -681,17 +681,33 @@ export class ReportsService {
         // or not the filters keep it: the parent's line that links back to a
         // split transfer's counterpart, and a split line's own counterpart,
         // both restricted to the reader's ledger like the join above. Context
-        // for the conversion only, never a row of the report.
-        .leftJoinAndSelect(
+        // for the conversion only, never a row of the report, so only the
+        // columns `transferCounterpartOf` reads are selected: this query
+        // already multiplies tags by splits by split tags, and a whole
+        // transaction hydrated per joined row is weight the report never reads.
+        .leftJoin(
           "linkedTransaction.splits",
           "linkedSplits",
           "linkedSplits.linkedTransactionId = transaction.id",
         )
-        .leftJoinAndSelect(
+        .addSelect([
+          "linkedSplits.id",
+          "linkedSplits.amount",
+          "linkedSplits.linkedTransactionId",
+          "linkedSplits.transferAccountId",
+        ])
+        .leftJoin(
           "splits.linkedTransaction",
           "splitLinkedTransaction",
           "splitLinkedTransaction.userId = transaction.userId",
         )
+        .addSelect([
+          "splitLinkedTransaction.id",
+          "splitLinkedTransaction.amount",
+          "splitLinkedTransaction.currencyCode",
+          "splitLinkedTransaction.linkedTransactionId",
+          "splitLinkedTransaction.description",
+        ])
         .where("transaction.userId = :userId", { userId })
         .andWhere("transaction.transactionDate >= :startDate", { startDate })
         .andWhere("transaction.transactionDate <= :endDate", { endDate })
