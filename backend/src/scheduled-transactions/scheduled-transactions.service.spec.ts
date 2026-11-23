@@ -6231,6 +6231,52 @@ describe("ScheduledTransactionsService", () => {
       );
     });
 
+    it("refuses a foreign entry added to a plain schedule without a rate of its own", async () => {
+      // The plain schedule's 1 is the column's default, not a rate (#2358).
+      stubFindOne(
+        makeScheduled({
+          currencyCode: "CAD",
+          originalAmount: null,
+          originalCurrencyCode: null,
+          exchangeRate: 1,
+        }),
+      );
+
+      await expect(
+        service.update(userId, stId, {
+          originalAmount: -40,
+          originalCurrencyCode: "USD",
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it("keeps a foreign schedule's stored rate when an edit names none", async () => {
+      stubFindOne(
+        makeScheduled({
+          currencyCode: "CAD",
+          originalAmount: -40,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1,
+        }),
+      );
+
+      await service.update(userId, stId, {
+        originalAmount: -45,
+        originalCurrencyCode: "USD",
+      });
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ScheduledTransaction,
+        stId,
+        expect.objectContaining({
+          originalAmount: -45,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1,
+        }),
+      );
+    });
+
     it("converts at the rate for the posting date, not the stored estimate", async () => {
       stubFindOne(
         makeScheduled({
