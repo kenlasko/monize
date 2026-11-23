@@ -104,10 +104,8 @@ vi.mock('@/lib/investments', () => ({
   },
 }));
 
+// The dashboard's price refresh, handed down through the widget context.
 const triggerManualRefresh = vi.fn();
-vi.mock('@/hooks/usePriceRefresh', () => ({
-  usePriceRefresh: () => ({ isRefreshing: false, triggerManualRefresh }),
-}));
 
 const investmentAccount = { id: 'i1', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', name: 'Brokerage' } as Account;
 
@@ -130,7 +128,14 @@ function viewport(width: number) {
 
 async function renderWidget() {
   await act(async () => {
-    render(<PortfolioValueWidget accounts={[investmentAccount]} isLoading={false} />);
+    render(
+      <PortfolioValueWidget
+        accounts={[investmentAccount]}
+        isLoading={false}
+        onRefresh={triggerManualRefresh}
+        isRefreshing={false}
+      />,
+    );
   });
 }
 
@@ -190,6 +195,46 @@ describe('PortfolioValueWidget', () => {
     expect(triggerManualRefresh).toHaveBeenCalledTimes(1);
     // No account filter -> refresh every eligible security (undefined scope).
     expect(triggerManualRefresh).toHaveBeenCalledWith(undefined);
+  });
+
+  it('asks for the value, the series and the result again when a price refresh wrote new prices', async () => {
+    getInvestmentsDaily.mockResolvedValue([
+      { date: '2026-05-28', value: 9000 },
+      { date: '2026-06-28', value: 10000 },
+    ]);
+    const widget = (refreshKey: number) => (
+      <PortfolioValueWidget
+        accounts={[investmentAccount]}
+        isLoading={false}
+        refreshKey={refreshKey}
+        onRefresh={triggerManualRefresh}
+        isRefreshing={false}
+      />
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(widget(0));
+    });
+    expect(screen.getByText('$12345')).toBeInTheDocument();
+    const periodCalls = getInvestmentsPeriodResult.mock.calls.length;
+
+    expect(screen.getByTestId('portfolio-period-change')).toBeInTheDocument();
+
+    getPortfolioValuation.mockResolvedValue({ totalPortfolioValue: 13000, holdings: [] });
+    getInvestmentsDaily.mockImplementation(() => new Promise(() => {}));
+    getInvestmentsPeriodResult.mockImplementation(() => new Promise(() => {}));
+    await act(async () => {
+      view.rerender(widget(1));
+    });
+
+    expect(getPortfolioValuation).toHaveBeenCalledTimes(2);
+    expect(getInvestmentsDaily).toHaveBeenCalledTimes(2);
+    expect(getInvestmentsPeriodResult.mock.calls.length).toBeGreaterThan(periodCalls);
+    expect(screen.getByText('$13000')).toBeInTheDocument();
+    // The same questions asked again: the chart and the investment result
+    // drawn stay until they answer.
+    expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-period-change')).toBeInTheDocument();
   });
 
   it('shows the investment result over the window, not the value change', async () => {

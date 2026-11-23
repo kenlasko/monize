@@ -122,17 +122,18 @@ export function usePortfolioPeriodResult({
   const baselineDate = periodBaselineDate(startDate, periodStartDate);
   // Everything the answer depends on. An answer is shown only under the key it
   // was asked for; anything else describes a different window.
-  const key = JSON.stringify([
+  const scopeKey = JSON.stringify([
     period ?? null,
     periodStartDate,
     endDate,
     baselineDate ?? null,
     accountIds ?? null,
     displayCurrency ?? null,
-    reloadKey,
   ]);
+  const key = JSON.stringify([scopeKey, reloadKey]);
   const [state, setState] = useState<{
     key: string;
+    scopeKey: string;
     /** Null when the request failed. */
     result: PortfolioPeriodResult | null;
   } | null>(null);
@@ -156,19 +157,20 @@ export function usePortfolioPeriodResult({
             },
       )
       .then((result) => {
-        if (!cancelled) setState({ key, result });
+        if (!cancelled) setState({ key, scopeKey, result });
       })
       .catch((error) => {
         logger.error('Failed to load the period result:', error);
         // A failed request is not a period that did nothing: every figure stays
         // unknown until the server answers.
-        if (!cancelled) setState({ key, result: null });
+        if (!cancelled) setState({ key, scopeKey, result: null });
       });
     return () => {
       cancelled = true;
     };
   }, [
     key,
+    scopeKey,
     period,
     hasSeries,
     periodStartDate,
@@ -181,6 +183,13 @@ export function usePortfolioPeriodResult({
 
   if (sharedResult !== null) return { periodResult: sharedResult, failed: false };
   if (awaitingShared || skip) return { periodResult: null, failed: false };
-  if (state?.key !== key) return { periodResult: null, failed: false };
+  if (state?.key !== key) {
+    // A reload of the same window (a write or a price refresh moved
+    // `reloadKey`) keeps the previous answer until the new one lands, as
+    // `usePortfolioPeriodResults` does; another window's answer is never kept,
+    // and a failed answer is not carried into the reload.
+    const previous = state?.scopeKey === scopeKey ? state.result : null;
+    return { periodResult: previous, failed: false };
+  }
   return { periodResult: state.result, failed: state.result === null };
 }

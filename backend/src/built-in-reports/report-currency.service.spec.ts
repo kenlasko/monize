@@ -278,7 +278,9 @@ describe("ReportCurrencyService", () => {
       const sql = ownRateSql("$2", "x");
 
       expect(sql).toContain("x.original_currency_code = $2::text");
-      expect(sql).toContain("x.exchange_rate <> 1");
+      expect(sql).toContain("x.exchange_rate > 0");
+      // A recorded 1:1 is a rate like any other (issue #2344).
+      expect(sql).not.toContain("exchange_rate <> 1");
     });
 
     it("reads a transfer leg's rate off its counterpart ahead of the stored one", () => {
@@ -291,7 +293,7 @@ describe("ReportCurrencyService", () => {
       expect(rows).toMatch(/^COALESCE\(CASE/);
       expect(rows).toContain('"x".is_transfer');
       expect(rows).toContain('"x".user_id = $1');
-      expect(rows).toContain("x.exchange_rate <> 1");
+      expect(rows).toContain("x.exchange_rate > 0");
       expect(lines).toContain('"xs".transfer_account_id IS NOT NULL');
       expect(rateBasisColumnsSql("$5", "t", { readerParam: "$1" })).toContain(
         '"t".currency_code <> $5::text',
@@ -310,7 +312,7 @@ describe("ReportCurrencyService", () => {
         transactionRateBasis({ ...leg, transferRate: "1.1111" }, "EUR")
           .own_rate,
       ).toBe(1.1111);
-      // A transfer that moved at par: a real rate, unlike a stored 1.
+      // A transfer that moved at par: a real rate.
       expect(
         transactionRateBasis({ ...leg, transferRate: "1" }, "EUR").own_rate,
       ).toBe(1);
@@ -335,13 +337,27 @@ describe("ReportCurrencyService", () => {
         tx_date: "2025-03-04",
         own_rate: 1.35,
       });
-      // A stored 1 across two codes is the column default, not a rate.
+      // A foreign entry recorded at exactly 1:1 settled at 1, not at the
+      // market rate (issue #2344): normalizeFxEntry admits no foreign entry
+      // without a rate, so the 1 is the one recorded, not the column default.
       expect(
         transactionRateBasis(
           {
             currencyCode: "CAD",
             transactionDate: "2025-03-04",
             originalCurrencyCode: "USD",
+            exchangeRate: 1,
+          },
+          "USD",
+        ).own_rate,
+      ).toBe(1);
+      // The default 1 of a row with no foreign entry is not a rate.
+      expect(
+        transactionRateBasis(
+          {
+            currencyCode: "CAD",
+            transactionDate: "2025-03-04",
+            originalCurrencyCode: null,
             exchangeRate: 1,
           },
           "USD",

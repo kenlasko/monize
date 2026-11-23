@@ -81,6 +81,28 @@ describe("Unified split instructions", () => {
       splitRatios(resolveSplitDraft(zero, "100", 2)).a.percent,
     ).toBeUndefined();
   });
+  it("works out percentages from large exact amounts in exact units", () => {
+    const ratios = splitRatios({
+      splitMode: "EXACT",
+      shares: [
+        { participantId: "a", value: "300000000000.03" },
+        { participantId: "b", value: "100000000000.01" },
+      ],
+    });
+    expect(ratios.a.percent).toBe(75);
+    expect(ratios.b.percent).toBe(25);
+  });
+  it("leaves every percentage unset when an instruction is not a number", () => {
+    const ratios = splitRatios({
+      splitMode: "WEIGHT",
+      shares: [
+        { participantId: "a", value: "2" },
+        { participantId: "b", value: "abc" },
+      ],
+    });
+    expect(ratios.a.percent).toBeUndefined();
+    expect(ratios.b.percent).toBeUndefined();
+  });
   it("uses relative shares and preserves loaded decimal instructions", () => {
     const draft = editSplitDraft(equal(), "400", 2, "WEIGHT", "a", "2");
     expect(

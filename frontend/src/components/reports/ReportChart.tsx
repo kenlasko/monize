@@ -22,7 +22,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { chartColors } from '@/lib/chart-colors';
 import { exportToCsv } from '@/lib/csv-export';
-import { sumMoney, withCurrencyCode } from '@/lib/format';
+import { getDecimalPlacesForCurrency, sumMoney } from '@/lib/format';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
@@ -30,6 +30,9 @@ import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { CHART_BAR_RADIUS, CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { Th, Td } from '@/components/ui/Table';
+
+/** A row a chart can draw: one whose converted value is known. */
+type PlottedDataPoint = AggregatedDataPoint & { value: number; color: string };
 
 // Default columns if none specified
 const DEFAULT_TABLE_COLUMNS = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT];
@@ -81,13 +84,16 @@ function getColumnMap(
     [TableColumn.MEMO]: { header: 'Memo', getValue: (item) => item.memo || '' },
     [TableColumn.CATEGORY]: { header: 'Category', getValue: (item) => item.category || '' },
     [TableColumn.ACCOUNT]: { header: 'Account', getValue: (item) => item.account || '' },
-    [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value },
+    // A listed row with no rate has no converted figure: a blank cell, never 0.
+    [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value ?? '' },
     [TableColumn.ACCOUNT_AMOUNT]: { header: accountAmountHeader, getValue: (item) => item.accountAmount ?? '' },
     [TableColumn.ORIGINAL_AMOUNT]: { header: originalAmountHeader, getValue: (item) => item.originalAmount ?? '' },
     [TableColumn.PERCENTAGE]: {
       header: '%',
       getValue: (item) =>
-        signed ? '' : (item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0)),
+        signed || item.value === null
+          ? ''
+          : (item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0)),
     },
     [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
     [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.tags || '' },
@@ -96,7 +102,7 @@ function getColumnMap(
 
 interface ReportChartTooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: AggregatedDataPoint & { color: string } }>;
+  payload?: Array<{ payload: PlottedDataPoint }>;
   total: number;
   formatCurrency: (value: number) => string;
   formatPercent: (value: number, decimals?: number) => string;
@@ -128,7 +134,7 @@ function ReportChartTooltip({ active, payload, total, formatCurrency, formatPerc
 
 export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, partialTotal, totalLabel = 'Total', signed = false }: ReportChartProps) {
   const t = useTranslations('reports');
-  const { formatCurrency, formatNumber, formatPercent, defaultCurrency } = useNumberFormat();
+  const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
   const { cellFor } = usePartialTotalNote();
   const { formatDate } = useDateFormat();
   const columns = tableColumns && tableColumns.length > 0 ? tableColumns : DEFAULT_TABLE_COLUMNS;
@@ -140,11 +146,20 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     return data.map((item) => ({
       ...item,
       color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
-      magnitude: Math.abs(item.value),
     }));
   }, [data]);
+  // A listed row with no rate stays in the table and the exports under its own
+  // amount (issue #2342), but a chart has nothing to draw for it, and it is in
+  // no total or share.
+  const plottedData = useMemo(
+    () =>
+      chartData
+        .filter((item): item is PlottedDataPoint => item.value !== null)
+        .map((item) => ({ ...item, magnitude: Math.abs(item.value) })),
+    [chartData],
+  );
 
-  const total = sumMoney(chartData.map((item) => item.value));
+  const total = sumMoney(plottedData.map((item) => item.value));
   const formatValue = (value: number) =>
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // The Total row prints the headline the server settled for the metric (a mean
@@ -153,19 +168,25 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const text = formatValue(totalRowValue ?? total);
     return partialTotal ? cellFor(text, partialTotal) : text;
   };
-  // A row's own amount, unconverted, named by its currency where that is not
-  // the reader's: a column of these mixes currencies, so it has no total.
+  // An unconverted amount reads as its number and its code, exactly once on
+  // every row, as the CSV writes it in two columns (issue #2342): a symbol
+  // beside the code named it twice where the symbol is the code ("CHF 100.00
+  // CHF"), and a row in the reader's own currency carried no code at all.
+  const formatInItsCurrency = (amount: number, currencyCode: string) =>
+    `${formatNumber(amount, getDecimalPlacesForCurrency(currencyCode))} ${currencyCode}`;
+  // A row's own amount, unconverted: a column of these mixes currencies, so it
+  // has no total.
   const formatAccountAmount = (item: AggregatedDataPoint) =>
     item.accountAmount === undefined || !item.accountCurrency
       ? ''
-      : withCurrencyCode(formatCurrency(item.accountAmount, item.accountCurrency), item.accountCurrency, defaultCurrency);
+      : formatInItsCurrency(item.accountAmount, item.accountCurrency);
   const accountAmountHeader = t('customReportLabels.tableColumn.ACCOUNT_AMOUNT');
   // What a row entered in a foreign currency was entered as; blank on any other
   // row. It mixes currencies too, so it has no total either.
   const formatOriginalAmount = (item: AggregatedDataPoint) =>
     item.originalAmount === undefined || !item.originalCurrency
       ? ''
-      : withCurrencyCode(formatCurrency(item.originalAmount, item.originalCurrency), item.originalCurrency, defaultCurrency);
+      : formatInItsCurrency(item.originalAmount, item.originalCurrency);
   const originalAmountHeader = t('customReportLabels.tableColumn.ORIGINAL_AMOUNT');
 
   const labelHeader = groupBy === GroupByType.CATEGORY ? 'Category' :
@@ -217,6 +238,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const pdfCell = (col: TableColumn, item: AggregatedDataPoint) => {
       if (col === TableColumn.ACCOUNT_AMOUNT) return formatAccountAmount(item);
       if (col === TableColumn.ORIGINAL_AMOUNT) return formatOriginalAmount(item);
+      if (col === TableColumn.VALUE && item.value === null) return '-';
       const value = columnMap[col]?.getValue(item) ?? '';
       if (typeof value !== 'number') return value;
       if (col === TableColumn.VALUE) return formatValue(value);
@@ -259,7 +281,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
                 <Pie
-                  data={chartData}
+                  data={plottedData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -272,7 +294,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                     if (id) onDataPointClick?.(id);
                   }}
                 >
-                  {chartData.map((entry, index) => (
+                  {plottedData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -289,7 +311,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           {exportBar}
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
+              <BarChart data={plottedData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
                 <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="label"
@@ -311,7 +333,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   cursor={onDataPointClick ? 'pointer' : 'default'}
                   onClick={(entry) => entry.id && onDataPointClick?.(entry.id)}
                 >
-                  {chartData.map((entry, index) => (
+                  {plottedData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
@@ -327,7 +349,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           {exportBar}
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
+              <LineChart data={plottedData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
                 <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="label"
@@ -483,7 +505,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.VALUE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
-                      {formatValue(item.value)}
+                      {item.value === null ? '-' : formatValue(item.value)}
                     </td>
                   )}
                   {columns.includes(TableColumn.ACCOUNT_AMOUNT) && (
@@ -498,7 +520,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.PERCENTAGE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                      {signed
+                      {signed || item.value === null
                         ? '-'
                         : formatPercent(
                             item.percentage ??

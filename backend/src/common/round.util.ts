@@ -55,7 +55,7 @@ export function roundToDecimals(value: number, decimalPlaces: number): number {
   // string exactly instead; no fiat amount at 4 places reaches it below 4.5
   // billion, so those keep the path below.
   if (abs * 10 ** decimalPlaces * Number.EPSILON >= NUDGE_LIMIT_UNITS) {
-    return Number(`${toScaledUnits(value, decimalPlaces)}e-${decimalPlaces}`);
+    return fromScaledUnits(toScaledUnits(value, decimalPlaces), decimalPlaces);
   }
   const nudged = abs + Number.EPSILON * abs;
   // Decompose into mantissa/exponent so the decimal-point shift works
@@ -148,9 +148,10 @@ export function toMoneyNumber(
  * `toExponential()` form, which never switches notation), never by a float
  * multiply: `20999999.99999999 * 1e8` is not an integer in doubles, and
  * `roundToDecimals`' one-ULP nudge is larger than a unit at eight places once
- * a value passes about 90 million.
+ * a value passes about 90 million. `value` must be finite: `NaN` and
+ * `Infinity` have no decimal digits to shift, and `BigInt` throws on them.
  */
-function toScaledUnits(value: number, decimals: number): bigint {
+export function toScaledUnits(value: number, decimals: number): bigint {
   if (value === 0) return 0n;
   const [mantissa, exponent] = value.toExponential().split("e");
   const negative = mantissa.startsWith("-");
@@ -165,6 +166,33 @@ function toScaledUnits(value: number, decimals: number): bigint {
     units = (units * 2n + divisor) / (divisor * 2n);
   }
   return negative ? -units : units;
+}
+
+/**
+ * `value` as a whole number of `10^-decimals` units, rounded half away from
+ * zero as `roundToDecimals` rounds it and then shifted by its decimal digits,
+ * never by a float multiply: `Math.round(300000000000.03 * 10000)` is
+ * `3000000000000301` (the product is `3000000000000300.5` in doubles) while
+ * `-300000000000.03` scales to `-3000000000000300`, so a pair that should
+ * cancel left a unit (Discussion #2343).
+ *
+ * A `number`, for the integer arithmetic a caller does with it, so it is exact
+ * only while the count is a safe integer: below about 900 billion at four
+ * places, 90 million at eight. A sum that can pass that accumulates
+ * `toScaledUnits` in a `BigInt`, as `sumMoney` does. A non-finite `value` comes
+ * back unchanged, as `Math.round` would return it.
+ */
+export function moneyUnits(value: number, decimals: number): number {
+  if (!Number.isFinite(value)) return value;
+  return Number(toScaledUnits(roundToDecimals(value, decimals), decimals));
+}
+
+/**
+ * The `number` a count of `10^-decimals` units denotes: the double nearest the
+ * exact decimal, parsed from its string, never a float division of the count.
+ */
+export function fromScaledUnits(units: bigint, decimals: number): number {
+  return Number(`${units}e-${decimals}`);
 }
 
 /**
@@ -194,5 +222,5 @@ export function sumMoney(
     if (!isFinite(value)) continue;
     totalUnits += toScaledUnits(value, decimals);
   }
-  return Number(`${totalUnits}e-${decimals}`);
+  return fromScaledUnits(totalUnits, decimals);
 }

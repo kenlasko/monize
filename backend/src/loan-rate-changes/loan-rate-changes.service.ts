@@ -21,6 +21,11 @@ import { datedAnnuityInstallment } from "../accounts/annuity-relevel.util";
 import { formatDateYMDLocal } from "../common/date-utils";
 import { ensureYMD } from "../common/recurrence";
 import {
+  FIAT_MONEY_DECIMALS,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
+import {
   applyLoanTemplateRewrite,
   LoanTemplateRewritePlan,
   planLoanTemplateRewrite,
@@ -393,10 +398,10 @@ export class LoanRateChangesService {
       // The loan's installment on both sides, a mortgage's fee lines left
       // out (INV-LOAN-011): the upcoming stated payments below are loan-only
       // figures, and a rate change moves only the loan part of the bill.
-      currentPaymentAmount:
-        Math.round(
-          (installment.templateAmount - templateFeeTotal(installment)) * 10_000,
-        ) / 10_000,
+      currentPaymentAmount: roundMoney(
+        installment.templateAmount - templateFeeTotal(installment),
+        FIAT_MONEY_DECIMALS,
+      ),
       proposedPaymentAmount: installment.allocation.total,
       currentPrincipal: template.principalSplit
         ? Math.abs(Number(template.principalSplit.amount))
@@ -549,15 +554,14 @@ export class LoanRateChangesService {
   }
 }
 
-/** The fee lines a priced template stores, summed on scaled integers. */
+/** The fee lines a priced template stores, summed exactly (`sumMoney`). */
 function templateFeeTotal(installment: {
   template: LoanTemplateSplits;
 }): number {
-  return (
-    (installment.template.feeLines ?? []).reduce(
-      (units, line) =>
-        units + Math.round(Math.abs(Number(line.split.amount)) * 10_000),
-      0,
-    ) / 10_000
+  return sumMoney(
+    (installment.template.feeLines ?? []).map((line) =>
+      Math.abs(Number(line.split.amount)),
+    ),
+    FIAT_MONEY_DECIMALS,
   );
 }

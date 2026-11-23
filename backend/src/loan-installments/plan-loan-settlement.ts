@@ -13,7 +13,11 @@ import {
   LoanPaymentAllocation,
 } from "../accounts/loan-payment-waterfall.util";
 import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
-import { MONEY_DECIMALS, roundMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits,
+  roundMoney,
+} from "../common/round.util";
 import {
   datedAnnuityPayment,
   identifyLoanTemplate,
@@ -85,8 +89,9 @@ export interface LoanSettlementPlanned {
 export type LoanSettlementPlanResult =
   LoanSettlementPlanned | LoanSettlementRefusal;
 
-const SCALE = 10 ** MONEY_DECIMALS;
-const toUnits = (value: number): number => Math.round(value * SCALE);
+const SCALE = 10 ** FIAT_MONEY_DECIMALS;
+const toUnits = (value: number): number =>
+  moneyUnits(value, FIAT_MONEY_DECIMALS);
 const fromUnits = (units: number): number => units / SCALE;
 
 const refuse = (

@@ -1680,7 +1680,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data[0].value).toBeGreaterThanOrEqual(
-          result.data[1].value,
+          result.data[1].value!,
         );
       });
 
@@ -1755,7 +1755,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data[0].value).toBeGreaterThanOrEqual(
-          result.data[1].value,
+          result.data[1].value!,
         );
       });
 
@@ -2387,18 +2387,85 @@ describe("ReportsService", () => {
           expect(result.summary.knownTotal).toBe(200);
         });
 
-        it("leaves the unconverted row out of the listing", async () => {
+        it("keeps the unconverted row listed under its own amount, with no value (issue #2342)", async () => {
           const result = await run(
             GroupByType.NONE,
             groceries,
             MetricType.NONE,
           );
 
-          expect(result.data).toHaveLength(1);
-          expect(result.data[0].value).toBe(200);
+          expect(result.data).toHaveLength(2);
+          expect(
+            result.data.map((d) => [
+              d.id,
+              d.value,
+              d.accountAmount,
+              d.accountCurrency,
+            ]),
+          ).toEqual([
+            ["tx-1", 200, 200, "CAD"],
+            ["tx-2", null, 10000, "JPY"],
+          ]);
+          // Listed, but in no sum: the total is withheld beside the part
+          // that converted.
           expect(result.summary.total).toBeNull();
+          expect(result.summary.knownTotal).toBe(200);
+          expect(result.summary.average).toBeNull();
+          expect(result.summary.count).toBe(2);
+          expect(result.missingCurrencies).toEqual(["JPY"]);
           expect(result.excludedCount).toBe(1);
         });
+
+        it("keeps an unconverted split line listed with no value", async () => {
+          const split = jpy("tx-3", -10000, {
+            isSplit: true,
+            splits: [
+              { id: "s1", amount: -6000, categoryId: "cat-1", tags: [] },
+              { id: "s2", amount: -4000, categoryId: "cat-1", tags: [] },
+            ],
+          });
+          const result = await run(
+            GroupByType.NONE,
+            [cad("tx-1", -200), split],
+            MetricType.NONE,
+          );
+
+          expect(
+            result.data.map((d) => [d.id, d.value, d.accountAmount]),
+          ).toEqual([
+            ["tx-1", 200, 200],
+            ["tx-3", null, 6000],
+            ["tx-3", null, 4000],
+          ]);
+          expect(result.summary.knownTotal).toBe(200);
+          expect(result.excludedCount).toBe(2);
+        });
+
+        it.each([SortDirection.ASC, SortDirection.DESC])(
+          "sorts an unconverted row after every converted one by amount (%s)",
+          async (sortDirection) => {
+            setupExecuteMocks(
+              {
+                groupBy: GroupByType.NONE,
+                config: {
+                  ...defaultConfig,
+                  metric: MetricType.NONE,
+                  sortBy: TableColumn.VALUE,
+                  sortDirection,
+                },
+              },
+              [jpy("tx-2", -10000), cad("tx-1", -200), cad("tx-3", -50)],
+            );
+
+            const result = await service.execute("user-1", "report-1");
+
+            expect(result.data.map((d) => d.id)).toEqual(
+              sortDirection === SortDirection.ASC
+                ? ["tx-3", "tx-1", "tx-2"]
+                : ["tx-1", "tx-3", "tx-2"],
+            );
+          },
+        );
 
         it("withholds the total by payee", async () => {
           const result = await run(GroupByType.PAYEE, groceries);
@@ -2667,7 +2734,7 @@ describe("ReportsService", () => {
           ["tx-out", -90],
           ["tx-in", 90],
         ]);
-        expect(result.data.reduce((sum, d) => sum + d.value, 0)).toBe(0);
+        expect(result.data.reduce((sum, d) => sum + d.value!, 0)).toBe(0);
       });
 
       it("answers the posted amounts when they disagree with the stored rate", async () => {
@@ -2701,7 +2768,10 @@ describe("ReportsService", () => {
       it("records the gap when neither the counterpart nor a rate answers", async () => {
         const result = await run("EUR", [outLeg({ linkedTransaction: null })]);
 
-        expect(result.data).toEqual([]);
+        expect(result.data.map((d) => [d.value, d.accountAmount])).toEqual([
+          [null, -100],
+        ]);
+        expect(result.summary.total).toBeNull();
         expect(result.missingCurrencies).toEqual(["USD"]);
         expect(result.excludedCount).toBe(1);
       });
@@ -2722,6 +2792,69 @@ describe("ReportsService", () => {
         ]);
 
         expect(result.data[0].value).toBe(-80);
+      });
+
+      describe("while the incoming leg is pending the EUR file's import (issue #2338)", () => {
+        // The USD file's import wrote a +100 EUR placeholder, flagged in its
+        // description, until the EUR account's own file says what arrived.
+        const pendingIn = {
+          id: "tx-in",
+          amount: 100,
+          currencyCode: "EUR",
+          exchangeRate: 1,
+          isSplit: false,
+          linkedTransactionId: "tx-out",
+          description:
+            "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+          account: { id: "acc-eur", name: "Euro Savings" },
+        } as never;
+
+        it("converts the outgoing leg at the market rate, not the placeholder", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [
+            outLeg({ linkedTransaction: pendingIn }),
+          ]);
+
+          expect(result.data.map((d) => [d.id, d.value])).toEqual([
+            ["tx-out", -80],
+          ]);
+          expect(result.missingCurrencies).toEqual([]);
+          expect(mockCurrencyService.buildConverter).toHaveBeenCalledWith(
+            [expect.objectContaining({ currency_code: "USD" })],
+            "EUR",
+          );
+        });
+
+        it("reports the conversion missing when no rate is on file", async () => {
+          const result = await run("EUR", [
+            outLeg({ linkedTransaction: pendingIn }),
+          ]);
+
+          // Listed under its own amount, with no converted value (issue #2342).
+          expect(result.data.map((d) => [d.value, d.accountAmount])).toEqual([
+            [null, -100],
+          ]);
+          expect(result.summary.total).toBeNull();
+          expect(result.missingCurrencies).toEqual(["USD"]);
+          expect(result.excludedCount).toBe(1);
+        });
+
+        it("converts at the posted amounts once the import confirmed what arrived", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [
+            outLeg({
+              linkedTransaction: {
+                ...(pendingIn as object),
+                amount: 90,
+                description: null,
+              } as never,
+            }),
+          ]);
+
+          expect(result.data[0].value).toBe(-90);
+        });
       });
 
       it("takes the market rate when neither leg is in the reporting currency", async () => {
@@ -3863,7 +3996,7 @@ describe("ReportsService", () => {
 
         // Average of 33.33, 33.33, 33.34 = 33.3333...
         // Rounded to 4 decimal places (storage precision); display layer trims to 2
-        const value = result.data[0].value;
+        const value = result.data[0].value!;
         expect(value).toBe(33.3333);
         const decimals = value.toString().split(".")[1] || "";
         expect(decimals.length).toBeLessThanOrEqual(4);

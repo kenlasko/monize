@@ -27,7 +27,7 @@ set -euo pipefail
 # The tag is informational -- Docker resolves the digest. Keep both in step
 # with docs/container-images.md; the version must equal @playwright/test in
 # e2e/package-lock.json (checked below).
-IMAGE="mcr.microsoft.com/playwright:v1.65.1-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe"
+IMAGE="mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579"
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 

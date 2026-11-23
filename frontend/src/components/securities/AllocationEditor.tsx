@@ -7,6 +7,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { NumericInput } from '@/components/ui/NumericInput';
 
 import { useNumberFormat } from '@/hooks/useNumberFormat';
+import { roundToDecimals } from '@/lib/format';
 /** A single editable allocation row. `weight` is a percentage string (0-100). */
 export interface AllocationRow {
   name: string;
@@ -66,7 +67,7 @@ export function AllocationEditor({
     () => value.reduce((sum, row) => sum + parseWeight(row.weight), 0),
     [value],
   );
-  const remainder = Math.round((100 - total) * 10000) / 10000;
+  const remainder = roundToDecimals(100 - total, 4);
   const overAllocated = total > 100.0001;
 
   const updateRow = (index: number, patch: Partial<AllocationRow>) => {

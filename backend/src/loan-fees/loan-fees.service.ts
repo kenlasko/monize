@@ -10,7 +10,11 @@ import { Account, AccountType } from "../accounts/entities/account.entity";
 import { datedLoanDebt } from "../accounts/dated-loan-debt.util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { ensureYMD } from "../common/recurrence";
-import { roundMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits,
+  roundMoney,
+} from "../common/round.util";
 import { tr } from "../i18n/translate";
 import { LoanFeeTerms, loanFeeFactsFor } from "../loan-installments/loan-fees";
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
@@ -232,7 +236,7 @@ export class LoanFeesService {
 
     // The parent moves by what the fee lines move: every line this write
     // replaces or removes leaves, every priced line arrives.
-    const units = (value: number) => Math.round(value * 10000);
+    const units = (value: number) => moneyUnits(value, FIAT_MONEY_DECIMALS);
     let deltaUnits = 0;
     for (const line of [...removed, ...adopted]) {
       if (line) deltaUnits -= units(Math.abs(Number(line.amount)));

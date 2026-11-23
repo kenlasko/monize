@@ -110,7 +110,9 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
       } as Partial<Transaction>),
     );
 
-  async function insertPlainTransfer(): Promise<void> {
+  async function insertPlainTransfer(
+    incoming: Partial<Transaction> = {},
+  ): Promise<void> {
     const out = await insertRow({
       accountId: usdId,
       amount: -100,
@@ -123,6 +125,7 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
       // Deliberately not 90 / 100: the posted amounts are the fact.
       exchangeRate: 0.85,
       linkedTransactionId: out.id,
+      ...incoming,
     });
     await dataSource.manager.update(
       Transaction,
@@ -198,6 +201,28 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
     expect(result.excludedCount).toBe(0);
   });
 
+  it("reads no figure off a placeholder still pending the EUR file's import (issue #2338)", async () => {
+    await preferring("EUR");
+    // What the USD file's import writes: the file's 100 as a placeholder.
+    await insertPlainTransfer({
+      amount: 100,
+      exchangeRate: 1,
+      description:
+        "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+    });
+
+    const result = await run(usdId);
+
+    // Only the 100 USD sent is confirmed, and no rate is on file to value it:
+    // the leg stays listed under its own amount, with no value (issue #2342).
+    expect(
+      result.data.map((d) => [d.account, d.accountAmount, d.value]),
+    ).toEqual([["US Chequing", -100, null]]);
+    expect(result.summary.total).toBeNull();
+    expect(result.missingCurrencies).toEqual(["USD"]);
+    expect(result.excludedCount).toBe(1);
+  });
+
   it("reads the incoming leg alone in USD at what was sent", async () => {
     await preferring("USD");
     await insertPlainTransfer();
@@ -215,8 +240,18 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
 
     const result = await run(usdId);
 
-    // The groceries line has no rate on file and is left out, named.
-    expect(result.data.map((d) => d.value)).toEqual([-90]);
+    // The groceries line has no rate on file: it stays listed under its own
+    // amount with no converted value, and is left out of the total, named.
+    expect(
+      result.data
+        .map((d) => [d.accountAmount, d.value])
+        .sort((a, b) => Number(a[0]) - Number(b[0])),
+    ).toEqual([
+      [-100, -90],
+      [-60, null],
+    ]);
+    expect(result.summary.total).toBeNull();
+    expect(result.summary.knownTotal).toBe(-90);
     expect(result.missingCurrencies).toEqual(["USD"]);
     expect(result.excludedCount).toBe(1);
   });

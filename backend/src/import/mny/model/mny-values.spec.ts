@@ -84,6 +84,13 @@ describe("toAmount", () => {
     expect(toAmount(2.00005)).toBe(2.0001);
   });
 
+  it("reads a large amount back unchanged (Discussion #2343)", () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles, which the
+    // float scaling rounded to 300000000000.0301.
+    expect(toAmount("300000000000.03")).toBe(300_000_000_000.03);
+    expect(toAmount("-300000000000.03")).toBe(-300_000_000_000.03);
+  });
+
   it("returns zero for absent or unparseable values", () => {
     expect(toAmount(null)).toBe(0);
     expect(toAmount("not a number")).toBe(0);

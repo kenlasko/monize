@@ -1,13 +1,17 @@
 import { getRequestContext } from "../common/request-context";
+import { PENDING_IMPORT_LIKE } from "../import/pending-import";
 
 /**
  * How a read's transfer legs reach {@link transferRateSql}: the placeholder
  * bound to the reading person's own user id, and the split line's alias when
  * the read's rows are a split's transfer lines rather than whole rows.
+ * `wholeLegs` with a `splitAlias` is a read of both: whole rows LEFT JOINed to
+ * their split lines, where a row with no transfer line is a whole leg.
  */
 export interface TransferLegs {
   readerParam: string;
   splitAlias?: string;
+  wholeLegs?: boolean;
 }
 
 /**
@@ -63,22 +67,51 @@ export function ownTransferLegs(
  * - a split's transfer line (`splitAlias`) links to its counterpart row, whose
  *   own link points at the split parent.
  *
+ * A read of whole rows LEFT JOINed to their split lines (`wholeLegs`) answers
+ * by whichever shape its row is: a split's transfer line by the third, any
+ * other row by the first two.
+ *
  * Only a leg outside the reporting currency whose other side posted in it
  * answers, and only for exactly one other side, non-zero and of the opposite
  * sign, so a link that is not a transfer's two sides falls back to the market
  * rate. Unlike a stored rate, a ratio of exactly 1 is a real rate here: the
- * transfer moved at par. The aliases are quoted, so a query builder leaves the
- * columns alone.
+ * transfer moved at par. A counterpart row still flagged `PENDING IMPORT`
+ * holds the QIF importer's placeholder, not what moved, so it answers nothing
+ * and the leg keeps the market rate until the other account's file is
+ * imported (issue #2338); a split parent's line is the file's own figure. The
+ * aliases are quoted, so a query builder leaves the columns alone.
  */
 export function transferRateSql(
   currencyParam: string,
   transactionAlias: string,
-  { readerParam, splitAlias }: TransferLegs,
+  { readerParam, splitAlias, wholeLegs }: TransferLegs,
+): string {
+  if (!splitAlias) {
+    return wholeLegRateSql(currencyParam, transactionAlias, readerParam);
+  }
+  const line = splitLineRateSql(
+    currencyParam,
+    transactionAlias,
+    splitAlias,
+    readerParam,
+  );
+  // The two shapes are exclusive: a transfer line sits on a split parent,
+  // which the whole-leg form never answers for.
+  return wholeLegs
+    ? `COALESCE(${line}, ${wholeLegRateSql(currencyParam, transactionAlias, readerParam)})`
+    : line;
+}
+
+/** A split's transfer line, at its counterpart row. */
+function splitLineRateSql(
+  currencyParam: string,
+  transactionAlias: string,
+  splitAlias: string,
+  readerParam: string,
 ): string {
   const t = `"${transactionAlias}"`;
-  if (splitAlias) {
-    const s = `"${splitAlias}"`;
-    return `CASE
+  const s = `"${splitAlias}"`;
+  return `CASE
           WHEN ${s}.transfer_account_id IS NOT NULL
            AND ${s}.amount <> 0
            AND ${t}.user_id = ${readerParam}
@@ -92,9 +125,18 @@ export function transferRateSql(
                AND fx_cp.currency_code = ${currencyParam}
                AND fx_cp.amount <> 0
                AND SIGN(fx_cp.amount) <> SIGN(${s}.amount)
+               AND ${notPendingImport("fx_cp")}
           )
         END`;
-  }
+}
+
+/** A whole leg, at its mirror leg or the split line linking back to it. */
+function wholeLegRateSql(
+  currencyParam: string,
+  transactionAlias: string,
+  readerParam: string,
+): string {
+  const t = `"${transactionAlias}"`;
   return `CASE
           WHEN ${t}.is_transfer
            AND ${t}.is_split IS NOT TRUE
@@ -122,9 +164,20 @@ export function transferRateSql(
                    AND fx_leg.currency_code = ${currencyParam}
                    AND (fx_leg.is_split IS TRUE
                         OR fx_leg.linked_transaction_id = ${t}.id)
+                   AND (fx_leg.is_split IS TRUE
+                        OR ${notPendingImport("fx_leg")})
               ) fx_cp
              WHERE fx_cp.amount <> 0
                AND SIGN(fx_cp.amount) <> SIGN(${t}.amount)
           )
         END`;
+}
+
+/**
+ * A counterpart row whose amount is a posted figure rather than the QIF
+ * importer's placeholder. The pattern is a constant of the code, never input.
+ */
+function notPendingImport(alias: string): string {
+  return `(${alias}.description IS NULL
+                   OR ${alias}.description NOT LIKE '${PENDING_IMPORT_LIKE}')`;
 }

@@ -1,3 +1,4 @@
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../../../common/round.util";
 import { MnyValue } from "../msisam/open-mny";
 
 /**
@@ -24,13 +25,6 @@ export const MNY_MAX_YEAR = 2199;
 
 /** Handle values Money uses to mean "no reference". */
 const NULL_HANDLES: ReadonlySet<number> = new Set([0, -1]);
-
-/**
- * Microsoft Money amounts are fiat and carry four places at most, so the .mny
- * import stays at four (`docs/specs/money-precision.md` section 10), not the
- * `NUMERIC(24,8)` the columns now hold.
- */
-const AMOUNT_SCALE = 10000;
 
 /** Trimmed text, or an empty string when absent. */
 export function toText(value: MnyValue): string {
@@ -69,8 +63,11 @@ export function toNumber(value: MnyValue, fallback = 0): number {
 
 /**
  * A money column. Jet currency values arrive as exact decimal strings, so this
- * rounds through integer arithmetic rather than accumulating float error --
- * the repository's financial-math rule.
+ * rounds them with `roundMoney` (on the decimal digits) rather than through a
+ * float multiply, which misreads a large amount (Discussion #2343). Microsoft
+ * Money amounts are fiat and carry four places at most, so the .mny import
+ * stays at four (`docs/specs/money-precision.md` section 10), not the
+ * `NUMERIC(24,8)` the columns now hold.
  */
 export function toAmount(value: MnyValue): number {
   const raw =
@@ -79,9 +76,7 @@ export function toAmount(value: MnyValue): number {
       : typeof value === "number"
         ? value
         : 0;
-  return Number.isFinite(raw)
-    ? Math.round(raw * AMOUNT_SCALE) / AMOUNT_SCALE
-    : 0;
+  return Number.isFinite(raw) ? roundMoney(raw, FIAT_MONEY_DECIMALS) : 0;
 }
 
 /** A Jet boolean column. Absent reads as false, which is Money's own default. */

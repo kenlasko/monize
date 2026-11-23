@@ -11,6 +11,8 @@
  * another.
  */
 
+import { FIAT_MONEY_DECIMALS, sumMoney } from '@/lib/format';
+
 /** The fields this module reads from any look-through result. */
 export interface LookThroughResult {
   items: { name: string; totalValue: number; percentage: number }[];
@@ -57,15 +59,12 @@ export function collapseLookThrough(
     isOther: false,
   }));
 
-  // Integer arithmetic at the storage precision, so summing many buckets cannot
-  // leave float dust behind.
-  const otherUnits = sorted
-    .slice(topN)
-    .reduce(
-      (sum, item) => sum + Math.round(item.totalValue * 10000),
-      Math.round(result.unclassifiedValue * 10000),
-    );
-  const otherValue = otherUnits / 10000;
+  // Summed exactly at the storage precision, so many buckets cannot leave
+  // float dust behind.
+  const otherValue = sumMoney(
+    [result.unclassifiedValue, ...sorted.slice(topN).map((item) => item.totalValue)],
+    FIAT_MONEY_DECIMALS,
+  );
   if (otherValue > 0.0001) {
     slices.push({
       name: otherLabel,

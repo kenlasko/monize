@@ -247,9 +247,12 @@ export async function previewForeignEntry(
     ) {
       return { amount: stored.amount, fields: null, places };
     }
-    // A new amount beside the row's own rate resent: the amount is the
-    // change, and the rate is derived from it rather than refused against it.
-    if (amountMoved && rateResent) exchangeRate = undefined;
+    // A new amount beside the row's own rate resent, the original amount not
+    // sent: the amount is the change, and the rate is derived from it rather
+    // than refused against it. With all three figures sent the caller gave
+    // them, so they must agree as on a create (#2339).
+    if (amountMoved && rateResent && request.originalAmount === undefined)
+      exchangeRate = undefined;
     // An amount the caller sent stays given, moved or not: beside a new rate
     // the two must agree, never the amount charged rewritten from the rate.
     // Only an amount not sent defaults: a rate sent (even the row's own,

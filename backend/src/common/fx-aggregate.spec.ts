@@ -45,6 +45,91 @@ describe("FxAggregate", () => {
     });
   });
 
+  describe("scales a large amount exactly (Discussion #2343)", () => {
+    it("cancels an amount added and then subtracted to zero", () => {
+      // 300000000000.03 * 10000 is 3000000000000300.5 in floats, which
+      // Math.round carried up for the positive amount and toward zero for the
+      // negative one, leaving 0.0001.
+      const total = new FxAggregate();
+      total.addConverted(300_000_000_000.03);
+      total.addConverted(-300_000_000_000.03);
+      expect(total.total).toBe(0);
+      expect(total.knownSubtotal).toBe(0);
+    });
+
+    it("cancels the same pair through add", () => {
+      const agg = new FxAggregate();
+      agg.add(300_000_000_000.03, "USD", "EUR");
+      agg.add(-300_000_000_000.03, "USD", "EUR");
+      expect(agg.total).toBe(0);
+    });
+
+    it("reads a large amount back unchanged", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(300_000_000_000.03);
+      expect(agg.total).toBe(300_000_000_000.03);
+      expect(agg.total).toBe(roundMoney(300_000_000_000.03, 4));
+    });
+
+    it("leaves no residue after a hundred cancelling pairs", () => {
+      // The float scaling left 0.01 here: 0.0001 per pair.
+      const agg = new FxAggregate();
+      for (let i = 0; i < 100; i++) {
+        agg.addConverted(300_000_000_000.03);
+        agg.addConverted(-300_000_000_000.03);
+      }
+      expect(agg.total).toBe(0);
+    });
+
+    it("stays exact once the running subtotal passes 2^53 ten-thousandths", () => {
+      // 9000000000000001 + 9000000000000002 is 18000000000000003 units, which a
+      // double cannot hold; a float accumulator came back 0.0001 after the two
+      // amounts were taken out again.
+      const agg = new FxAggregate();
+      agg.addConverted(900_000_000_000.0001);
+      agg.addConverted(900_000_000_000.0002);
+      expect(agg.total).toBe(1_800_000_000_000.0002);
+      agg.addConverted(-900_000_000_000.0001);
+      agg.addConverted(-900_000_000_000.0002);
+      expect(agg.total).toBe(0);
+    });
+
+    it("stays exact through merge", () => {
+      const a = new FxAggregate();
+      a.addConverted(300_000_000_000.03);
+      const b = new FxAggregate();
+      b.addConverted(-300_000_000_000.03);
+      a.merge(b);
+      expect(a.total).toBe(0);
+    });
+  });
+
+  describe("a non-finite component", () => {
+    // Not a number of ten-thousandths, so it cannot join the BigInt subtotal;
+    // it reads through exactly as it did when the subtotal was a double.
+    it.each([NaN, Infinity, -Infinity])(
+      "%p reads through the subtotal as before",
+      (amount) => {
+        const agg = new FxAggregate();
+        agg.addConverted(100);
+        agg.add(amount, "USD", "EUR");
+        expect(agg.knownSubtotal).toBe(100 + amount);
+        expect(agg.total).toBe(100 + amount);
+        expect(agg.missingPairs).toEqual([]);
+        expect(agg.unknownCount).toBe(0);
+      },
+    );
+
+    it("carries through merge", () => {
+      const a = new FxAggregate();
+      a.addConverted(100);
+      const b = new FxAggregate();
+      b.addConverted(Infinity);
+      a.merge(b);
+      expect(a.total).toBe(Infinity);
+    });
+  });
+
   it("sums converted components", () => {
     const agg = new FxAggregate();
     agg.add(900, "USD", "EUR");

@@ -1,5 +1,6 @@
 import { addMonths, format, lastDayOfMonth } from 'date-fns';
 import { MonthlyTotal } from '@/types/transaction';
+import { FIAT_MONEY_DECIMALS, fromMoneyUnits, toMoneyUnits } from '@/lib/format';
 
 /**
  * Time granularity for the transactions "Monthly Totals" bar chart. The chart
@@ -40,9 +41,6 @@ const GRANULARITY_ORDER: readonly Granularity[] = ['month', 'quarter', 'year'];
  * quarters or years instead of dozens of thin monthly bars.
  */
 export const TARGET_BUCKETS = 24;
-
-// Integer ten-thousandths, matching the backend roundMoney / decimal(20,4).
-const SCALE = 10000;
 
 function spanMonthsBetween(minMonth: string, maxMonth: string): number {
   const [minY, minM] = minMonth.split('-').map(Number);
@@ -127,7 +125,8 @@ function monthKeyFor(date: Date): string {
  * Roll per-month totals up to the given granularity and gap-fill every period
  * from the first populated period to the last, so empty periods render as
  * zero-height bars at their true time position. Totals are accumulated in
- * integer ten-thousandths to avoid float drift, then divided back once.
+ * integer ten-thousandths (`toMoneyUnits`, a `BigInt` shifted from the decimal
+ * digits, never a float multiply) and divided back once.
  */
 export function bucketMonthlyTotals(
   data: MonthlyTotal[],
@@ -140,7 +139,7 @@ export function bucketMonthlyTotals(
     {
       startDate: Date;
       periodStart: string;
-      cents: number;
+      cents: bigint;
       count: number;
       partial: boolean;
     }
@@ -148,8 +147,12 @@ export function bucketMonthlyTotals(
 
   for (const datum of data) {
     const { key, startDate, periodStart } = periodInfoForMonth(datum.month, granularity);
-    const partial = datum.total === null;
-    const cents = Math.round((datum.total ?? datum.knownSubtotal ?? 0) * SCALE);
+    const value = datum.total ?? datum.knownSubtotal ?? 0;
+    // A figure that is not a number has no units to add: the period is drawn
+    // as partial rather than the chart failing to render.
+    const known = Number.isFinite(value);
+    const partial = datum.total === null || !known;
+    const cents = known ? toMoneyUnits(value, FIAT_MONEY_DECIMALS) : BigInt(0);
     const existing = accumulator.get(key);
     if (existing) {
       existing.cents += cents;
@@ -187,7 +190,7 @@ export function bucketMonthlyTotals(
       key,
       periodStart,
       periodEnd: periodEndFor(startDate, granularity),
-      total: bucket ? bucket.cents / SCALE : 0,
+      total: bucket ? fromMoneyUnits(bucket.cents, FIAT_MONEY_DECIMALS) : 0,
       count: bucket ? bucket.count : 0,
       ...(bucket?.partial && { partial: true }),
     });

@@ -148,6 +148,80 @@ describe("transferCounterpartOf", () => {
     ).toBeNull();
     expect(transferCounterpartOf(parent, line({}))).toBeNull();
   });
+
+  describe("a counterpart still pending the other account's import (issue #2338)", () => {
+    const PENDING =
+      "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.";
+
+    it("has none for a plain leg whose mirror leg holds the importer's placeholder", () => {
+      const tx = row({
+        linkedTransaction: {
+          amount: 100,
+          currencyCode: "EUR",
+          isSplit: false,
+          linkedTransactionId: "tx-out",
+          description: `Rent ${PENDING}`,
+        } as never,
+      });
+
+      expect(transferCounterpartOf(tx)).toBeNull();
+    });
+
+    it("has none for a split transfer line whose counterpart row holds the placeholder", () => {
+      const parent = row({ id: "tx-split", isSplit: true, isTransfer: false });
+      const split = line({
+        linkedTransaction: {
+          amount: 100,
+          currencyCode: "EUR",
+          linkedTransactionId: "tx-split",
+          description: PENDING,
+        } as never,
+      });
+
+      expect(transferCounterpartOf(parent, split)).toBeNull();
+    });
+
+    it("reads the mirror leg again once its import replaced the placeholder", () => {
+      const tx = row({
+        linkedTransaction: {
+          amount: 90,
+          currencyCode: "EUR",
+          isSplit: false,
+          linkedTransactionId: "tx-out",
+          description: "Rent",
+        } as never,
+      });
+
+      expect(transferCounterpartOf(tx)).toEqual({
+        amount: 90,
+        currencyCode: "EUR",
+      });
+    });
+
+    it("still reads the posted side for the placeholder leg itself", () => {
+      // The pending EUR leg read in USD converts at what actually left the
+      // USD account: that side is the file's own figure.
+      const tx = row({
+        id: "tx-in",
+        amount: 100,
+        currencyCode: "EUR",
+        linkedTransactionId: "tx-out",
+        description: PENDING,
+        linkedTransaction: {
+          amount: -100,
+          currencyCode: "USD",
+          isSplit: false,
+          linkedTransactionId: "tx-in",
+          description: null,
+        } as never,
+      });
+
+      expect(transferCounterpartOf(tx)).toEqual({
+        amount: -100,
+        currencyCode: "USD",
+      });
+    });
+  });
 });
 
 describe("convertAtTransferAmounts", () => {

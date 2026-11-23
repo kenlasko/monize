@@ -114,7 +114,13 @@ export interface DashboardWidgetContext {
   hasInvestments: boolean;
   hasSecurities: boolean;
   isRefreshing: boolean;
-  onRefresh: () => void;
+  /** The page's price refresh, narrowed to the given securities when they are passed. */
+  onRefresh: (scopeSecurityIds?: string[]) => void;
+  /**
+   * Bumped each time a price refresh wrote new prices, so a widget that
+   * fetches its own valuation re-asks for it.
+   */
+  priceRefreshKey: number;
   onAccountsChanged: () => void;
 }
 
@@ -244,7 +250,15 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     minWidth: 'half',
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
-    render: (ctx) => <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => (
+      <PortfolioValueWidget
+        accounts={ctx.accounts}
+        isLoading={ctx.isLoading}
+        refreshKey={ctx.priceRefreshKey}
+        onRefresh={ctx.onRefresh}
+        isRefreshing={ctx.isRefreshing}
+      />
+    ),
   },
   {
     id: 'net-worth',
@@ -253,7 +267,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultEnabled: true,
     minWidth: 'half',
     defaultHeight: 'standard',
-    render: (ctx) => <NetWorthChart isLoading={ctx.isLoading} />,
+    render: (ctx) => <NetWorthChart isLoading={ctx.isLoading} refreshKey={ctx.priceRefreshKey} />,
   },
   {
     id: 'assets-liabilities',
@@ -379,7 +393,13 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     minWidth: 'third',
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
-    render: (ctx) => <SecurityTypeAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => (
+      <SecurityTypeAllocationWidget
+        accounts={ctx.accounts}
+        isLoading={ctx.isLoading}
+        refreshKey={ctx.priceRefreshKey}
+      />
+    ),
   },
   {
     id: 'geographic-allocation',
@@ -389,7 +409,13 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     minWidth: 'third',
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
-    render: (ctx) => <GeographicAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => (
+      <GeographicAllocationWidget
+        accounts={ctx.accounts}
+        isLoading={ctx.isLoading}
+        refreshKey={ctx.priceRefreshKey}
+      />
+    ),
   },
   {
     id: 'recurring-expenses',

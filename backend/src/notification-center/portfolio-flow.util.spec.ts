@@ -26,6 +26,21 @@ describe("foldExternalFlow", () => {
     expect(folded.value).toBe(1_550); // 1000 + 500*1.1
   });
 
+  it("folds large flows that cancel to exactly zero (Discussion #2343)", () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles, which the
+    // float scaling rounded up for the deposit and toward zero for the
+    // withdrawal, leaving 0.0001.
+    const folded = foldExternalFlow(
+      [
+        { currency: "USD", amount: 300_000_000_000.03 },
+        { currency: "USD", amount: -300_000_000_000.03 },
+      ],
+      "USD",
+      rateFor({}),
+    );
+    expect(folded).toEqual({ complete: true, value: 0, missingPairs: [] });
+  });
+
   it("marks the flow incomplete when a currency has no rate", () => {
     const folded = foldExternalFlow(
       [

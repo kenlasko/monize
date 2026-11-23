@@ -32,8 +32,14 @@ export interface RateBasisColumns {
    * amounts imply (`fx_transfer_rate`, {@link transferRateSql}), which wins
    * over the stored rate. The reader is the request's
    * ({@link transferRateReader}); without one the column is not added.
+   * `wholeLegs` with a `splitAlias`: the rows are whole legs as well as a
+   * split's transfer lines (`TransferLegs`).
    */
-  transferLegs?: { transactionAlias: string; splitAlias?: string };
+  transferLegs?: {
+    transactionAlias: string;
+    splitAlias?: string;
+    wholeLegs?: boolean;
+  };
 }
 
 /**
@@ -76,12 +82,13 @@ export function splitByRateBasis<T extends ObjectLiteral>(
     .addGroupBy("fx_exchange_rate");
   const reader = columns.transferLegs ? transferRateReader() : undefined;
   if (columns.transferLegs && reader) {
-    const { transactionAlias, splitAlias } = columns.transferLegs;
+    const { transactionAlias, splitAlias, wholeLegs } = columns.transferLegs;
     qb.setParameter("fxReaderId", reader)
       .addSelect(
         transferRateSql(":fxReportingCurrency", transactionAlias, {
           readerParam: ":fxReaderId",
           ...(splitAlias ? { splitAlias } : {}),
+          ...(wholeLegs ? { wholeLegs } : {}),
         }),
         "fx_transfer_rate",
       )
@@ -174,9 +181,12 @@ export interface FoldedParts {
  * Fold the parts of a read split by {@link splitByRateBasis} back into one
  * entry per `keyOf`, in first-seen order: each `sumNames` figure summed at the
  * column scale (`sumMoney`, the SQL `SUM` it replaces), `countName` added and
- * the greatest `latestName` (an ISO date) kept. A transaction lies in exactly
+ * the greatest `latestName` (an ISO date) kept. A whole row lies in exactly
  * one part of a group (its day and rate are its own), so the parts' distinct
- * counts add up to the group's.
+ * counts add up to the group's. A split's lines can lie in two (a transfer
+ * line converts at its transfer's rate), so a read over split lines counts
+ * the splits by id instead (`splitIds`, an array of ids per part), each once
+ * per group.
  */
 export function foldRateParts(
   rows: readonly RatePartRow[],
@@ -184,6 +194,7 @@ export function foldRateParts(
   names: {
     sums: readonly string[];
     count: string;
+    splitIds?: string;
     latest?: string;
   },
 ): FoldedParts[] {
@@ -193,6 +204,7 @@ export function foldRateParts(
       first: RatePartRow;
       values: Record<string, number[]>;
       count: number;
+      splitIds: Set<string>;
       latest: string | null;
     }
   >();
@@ -202,6 +214,7 @@ export function foldRateParts(
       first: row,
       values: Object.fromEntries(names.sums.map((name) => [name, []])),
       count: 0,
+      splitIds: new Set<string>(),
       latest: null,
     };
     // The arrays are this fold's own, so appending in place keeps it linear.
@@ -209,6 +222,11 @@ export function foldRateParts(
       group.values[name].push(Number(row[name]) || 0);
     }
     group.count += Number(row[names.count]) || 0;
+    if (names.splitIds) {
+      for (const id of (row[names.splitIds] as string[] | null) ?? []) {
+        group.splitIds.add(id);
+      }
+    }
     const latest: string | null = names.latest
       ? (row[names.latest] ?? null)
       : null;
@@ -226,7 +244,7 @@ export function foldRateParts(
         sumMoney(group.values[name], MONEY_SCALE),
       ]),
     ),
-    count: group.count,
+    count: group.count + group.splitIds.size,
     latest: group.latest,
   }));
 }

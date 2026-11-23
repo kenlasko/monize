@@ -1535,7 +1535,11 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     and a headline total is null beside a `known*` subtotal
                     while anything is excluded. A transaction row in the
                     Uncategorized list that cannot be converted keeps its own
-                    amount under its own currency code. The frontend renders the
+                    amount under its own currency code, and so does a custom
+                    report's transaction list (metric NONE, no grouping): the
+                    row stays listed with `value: null` beside its
+                    `accountAmount`, so it can be matched against a statement,
+                    and is in no sum (issue #2342). The frontend renders the
                     subtotal through PartialTotal. The scan's
                     RETURNS_ITS_INPUT_UNCONVERTED list is empty, a further scan
                     fails any call to convertAmount under built-in-reports/, and
@@ -1753,11 +1757,13 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     The built-in reports and the custom report engine read
                     transactions.exchange_rate the way the Cash Flow Sankey
                     does: a foreign entry whose original currency is the
-                    reporting currency converts at its own rate, a stored 1
-                    across two codes is ignored (ownRateSql and
-                    transactionRateBasis in
-                    built-in-reports/report-currency.service.ts), and anything
-                    else takes the market rate on its own date (issue #2106).
+                    reporting currency converts at its own rate, a recorded
+                    1:1 included (ownRateSql and transactionRateBasis in
+                    built-in-reports/report-currency.service.ts; a foreign
+                    entry cannot be stored without a rate, and an update that
+                    adds one to a plain row must name it, issue #2344), and
+                    anything else takes the market rate on its own date
+                    (issue #2106).
                     A transfer's own conversion is its two posted amounts: the
                     custom report engine converts a transfer leg, or a split's
                     transfer line, whose other side posted in the reporting
@@ -1766,11 +1772,17 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     the report's scope (reports/transfer-counterpart.ts,
                     discussion #2139). The other side is read from the same-owner
                     joins of the report's fetch, as context only; a cross-owner
-                    or unreadable counterpart falls back to the market rate. The
+                    or unreadable counterpart falls back to the market rate, and
+                    so does a counterpart still holding the QIF importer's
+                    placeholder (its description carries PENDING_IMPORT_MARKER,
+                    import/pending-import.ts, until the other account's file is
+                    imported), whose amount is not yet what moved (issue
+                    #2338); with no market rate the leg is reported missing. The
                     SQL reads apply the same rule (issue #2153): a read whose
                     rows can be transfer legs selects transferRateSql
                     (built-in-reports/transfer-rate-sql.ts), the leg's amount
-                    over its counterpart's, as the own rate ahead of a stored
+                    over its counterpart's (never a PENDING IMPORT
+                    placeholder's), as the own rate ahead of a stored
                     one, through ownRateSql / rateBasisColumnsSql with
                     `transferLegs` or splitByRateBasis's `transferLegs`
                     (fx_transfer_rate). The counterpart is a same-owner
@@ -1787,7 +1799,16 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     flow totals, and the payee and category detail pages'
                     account panels (built-in-reports/account-breakdown-fx.ts),
                     and budget actuals' outgoing-transfer lines
-                    (budgets/budget-spending.util.ts).
+                    (budgets/budget-spending.util.ts). Every
+                    TransactionAnalyticsService read over the shared filtered
+                    query (summary, grouped totals, tag breakdown, monthly and
+                    flow totals) keeps a split's transfer line exactly when it
+                    keeps the whole transfer rows, so with transfers in scope
+                    both sides of a split's transfer count, the line at its own
+                    transfer rate (`transferLegs` with `wholeLegs`); the line
+                    is never "Uncategorized", and a split counts once by id
+                    however many rate parts its lines fall in (`splitIds` in
+                    foldRateParts, issue #2337).
                     Like the Sankey, these reports do not yet say which of the
                     two rates answered. The assistant's and the MCP tools'
                     transaction analytics (TransactionAnalyticsService: the
@@ -1828,7 +1849,11 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     market 0.80, with no rate on file at all, and when the
                     incoming leg's stored rate disagrees; the incoming leg alone
                     reads 100 USD; a split transfer's counterpart reads its own
-                    line, not the parent's amount.
+                    line, not the parent's amount; while the incoming leg is
+                    the QIF importer's +100 EUR PENDING IMPORT placeholder the
+                    outgoing leg reads the market's -80 EUR, or is missing with
+                    no rate (also report-custom-transfer-fx.integration.spec.ts),
+                    and -90 once the import confirmed it.
                     report-transfer-fx-surfaces.integration.spec.ts holds the
                     same 100 USD -> 90 EUR transfer, plain and as a split line,
                     to 90 EUR (the market's 80) in the Sankey, the Monthly
@@ -1836,8 +1861,14 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     transaction summary, grouped totals, tag breakdown, monthly
                     totals, MCP flow totals, a payee's account panel and a
                     budget's transfer actuals (a delegate's summary keeps the
-                    market's 80), and each 90 EUR leg to 100 USD
-                    (the market's 112.50), on PostgreSQL.
+                    market's 80, and so do the Sankey and the summary while the
+                    EUR legs hold a PENDING IMPORT placeholder), and each 90 EUR
+                    leg to 100 USD
+                    (the market's 112.50), on PostgreSQL; the monthly total of
+                    both accounts nets each transfer's two sides to the
+                    groceries line's -48 EUR, and a payee's summary and monthly
+                    totals both read -48 EUR, with the MCP resources' summary
+                    buckets matching their converted totals (issue #2337).
                     transaction-analytics.service.spec.ts "a row carrying its own
                     rate": EUR 100 charged as USD 125 reads EUR 100 in the
                     assistant's totals and breakdown, the report rule's figure,
@@ -1859,7 +1890,12 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     Source, a custom report, list_transactions, the MCP flow
                     totals, compare_periods, the transaction summary, the
                     monthly totals, the spending insights and the forecast, on
-                    PostgreSQL; forecast-aggregator.service.spec.ts "a row
+                    PostgreSQL, and "recorded at 1:1" holds issue #2344's EUR
+                    100 charged as USD 100 to EUR 100 (the market reads 85.11)
+                    in Spending by Category, a custom report and
+                    list_transactions; transactions.service.spec.ts refuses an
+                    update that adds a foreign entry to a plain row without a
+                    rate; forecast-aggregator.service.spec.ts "a row
                     carrying its own rate" the same in the forecast's history
                     and income. currency-detail.integration.spec.ts totals
                     EUR 100 at the market's 1.60, EUR 100 paid from a CAD
@@ -2311,7 +2347,13 @@ Enforcement         Service-level, in the write's own transaction before the
                     backend/src/common/money-amount-dto.guard.spec.ts (no
                     maxDecimalPlaces on a money-named DTO field); the frontend's
                     frontend/src/test/money-precision.guard.test.ts holds the
-                    same on the account-currency files.
+                    same on the account-currency files. Integer units are
+                    shifted from the decimal digits (moneyUnits, toScaledUnits;
+                    toMoneyUnits on the client), never Math.round(x * 10000),
+                    which misreads a large amount (Discussion #2343):
+                    backend/src/common/money-units.guard.spec.ts and
+                    frontend/src/test/money-units.guard.test.ts scan every
+                    production file.
 Concurrency scope   per write; the places are read inside the write's
                     transaction, and a currency's decimal_places is edited on
                     the Currencies page.
@@ -2322,8 +2364,8 @@ Failure response    400 errors.transactions.amountPrecisionExceeded, naming the
                     currency and its places.
 Required tests      Unit: assertAmountPrecision, roundMoney / sumMoney /
                     applyFxConversion at eight places, the validators, and each
-                    writer's refusal. Source scan: the two backend guards above
-                    and the frontend guard. PG integration (the column holds
+                    writer's refusal. Source scan: the backend and frontend
+                    guards above. PG integration (the column holds
                     eight places and a fiat value is unchanged):
                     backend/test/integration/money-precision.integration.spec.ts.
 Status              enforced

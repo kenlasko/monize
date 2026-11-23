@@ -185,8 +185,14 @@ surface converts it at that rate -- the register, the realized-gains report and
 the transaction-history KPIs alike. The market rate on the row's own date is
 the fallback for a row carrying none (`resolveFxRate`, INV-FX-001), and the
 surface says which of the two it used rather than leaving the reader with two
-figures for one sale. A stored `1` between two different currencies is the
-column's default, not a rate: it falls back like an absent one. INV-FX-002.
+figures for one sale. On a transaction, a foreign entry's stored `1` is a rate
+like any other: `normalizeFxEntry` admits no foreign entry without a positive
+rate, and an update that first adds one to a plain row must name it rather than
+inherit the plain row's default `1`, so EUR 100 charged as USD 100 reads EUR 100
+(issue #2344). The column's default `1` sits only on rows with no original
+currency, which take the market rate. An investment row's stored `1` between two
+different currencies is still the column's default, not a rate: it falls back
+like an absent one. INV-FX-002.
 
 **Validation.** `normalizeFxEntry(input, accountCurrencyCode)` is shared by
 transactions and scheduled transactions so both accept and reject exactly the
@@ -222,7 +228,9 @@ account was charged, and only a new rate with no amount sent computes a new
 amount; an amount sent beside a new rate is held to it like a create's (moved or
 not, it is never rewritten from the rate), and a figure resent as the row holds
 it is no change. A moved amount on a
-foreign row derives the rate again rather than leaving it stale, a different currency
+foreign row derives the rate again rather than leaving it stale (the row's own
+rate resent beside it included, unless the original amount is sent too: all
+three figures sent are held to each other exactly as on a create), a different currency
 needs its own `originalAmount` (the row's is in the old one), and the account's
 own currency as `originalCurrencyCode` clears the entry (refusing a rate, or an
 original amount that differs from the amount). A derived rate the
@@ -324,6 +332,25 @@ value whose column is wider must not be rounded to money precision on the way in
 The MS Money importer narrows investment values to 6dp price / 8dp quantity
 before writing. That is an importer choice about source fidelity, not the
 storage precision, and it is the one place the two legitimately differ.
+
+### Integer units are shifted, never multiplied
+
+A sum or a comparison in integer units (ten-thousandths for fiat, 1e-8 for a
+share count or a coin) converts each value on its decimal digits:
+`moneyUnits(x, decimals)` for units a caller does arithmetic with,
+`sumMoney(values, decimals)` for a total, `toScaledUnits` / `fromScaledUnits`
+for a `BigInt` running total (`backend/src/common/round.util.ts`; on the client
+`toMoneyUnits` / `fromMoneyUnits` in `frontend/src/lib/format.ts`). Never
+`Math.round(x * 10000)`: for a large amount the float product is not the
+integer it denotes (`300000000000.03 * 10000` is `3000000000000300.5`), so the
+amount scales to `...301` and its negation to `...300`, a pair that should
+cancel leaves `0.0001`, and one amount reads back as `300000000000.0301`
+(Discussion #2343). A `number` of units is exact only while it is a safe
+integer (about 900 billion at four places, 90 million at eight); a running
+total that can pass that is a `BigInt`. `backend/src/common/money-units.guard.spec.ts`
+and `frontend/src/test/money-units.guard.test.ts` fail the float form; a
+percentage built as `Math.round(r * 10000) / 100` is a ratio and passes.
+INV-MONEY-001.
 
 ### The executed total is the fact; the per-share price is derived
 

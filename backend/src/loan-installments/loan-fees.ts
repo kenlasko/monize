@@ -1,4 +1,8 @@
-import { roundToDecimals } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  roundToDecimals,
+  sumMoney,
+} from "../common/round.util";
 import { assertFixedCadence } from "../common/recurrence";
 import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
 import {
@@ -139,18 +143,13 @@ export function priceLoanFees(
   facts: LoanFeeFacts,
 ): PricedLoanFees {
   const amounts: number[] = [];
-  let units = 0;
   for (const fee of fees) {
     const priced = priceLoanFee(fee, facts);
     if (priced.kind === "unknown") return priced;
     amounts.push(priced.amount);
-    units += Math.round(priced.amount * MONEY_SCALE);
   }
-  return { kind: "ok", amounts, total: units / MONEY_SCALE };
+  return { kind: "ok", amounts, total: sumMoney(amounts, FIAT_MONEY_DECIMALS) };
 }
-
-/** 10^4: money's storage precision, the scale fee totals are summed at. */
-const MONEY_SCALE = 10_000;
 
 /**
  * The facts a mortgage's fees are priced from at one installment: the debt

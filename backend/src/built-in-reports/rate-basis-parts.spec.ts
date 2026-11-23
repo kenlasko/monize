@@ -158,7 +158,7 @@ describe("rate-basis-parts", () => {
       ).toBe(0.75);
     });
 
-    it("reads a part's own rate into the reporting currency, and none for a stored 1", () => {
+    it("reads a part's own rate into the reporting currency, a recorded 1 included", () => {
       expect(
         partRateBasis(
           { fx_original_currency: "CAD", fx_exchange_rate: "0.8" },
@@ -170,6 +170,14 @@ describe("rate-basis-parts", () => {
       expect(
         partRateBasis(
           { fx_original_currency: "CAD", fx_exchange_rate: "1" },
+          "USD",
+          "2026-01-12",
+          "CAD",
+        ).own_rate,
+      ).toBe(1);
+      expect(
+        partRateBasis(
+          { fx_original_currency: null, fx_exchange_rate: "1" },
           "USD",
           "2026-01-12",
           "CAD",
@@ -224,6 +232,23 @@ describe("rate-basis-parts", () => {
   });
 
   describe("foldRateParts", () => {
+    it("counts a split once per group however many parts its lines sit in", () => {
+      const folded = foldRateParts(
+        [
+          { k: "a", total: "-60", count: "1", splitIds: ["s1"] },
+          { k: "a", total: "-100", count: "0", splitIds: ["s1", "s2"] },
+          { k: "b", total: "-5", count: "2", splitIds: null },
+        ],
+        (row) => row.k,
+        { sums: ["total"], count: "count", splitIds: "splitIds" },
+      );
+
+      expect(folded.map((g) => [g.key, g.sums.total, g.count])).toEqual([
+        ["a", -160, 3],
+        ["b", -5, 2],
+      ]);
+    });
+
     it("sums each figure exactly, adds the counts and keeps the latest date", () => {
       const folded = foldRateParts(
         [

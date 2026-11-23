@@ -10,6 +10,7 @@ import type {
   ParsedReceipt,
   ReceiptMatchStrategy,
 } from "../parsing/receipt-parser.types";
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../../common/round.util";
 
 /**
  * Which bank transaction an order-confirmation email pays for (spec section
@@ -30,7 +31,6 @@ export const MAX_STORED_CANDIDATES = 10;
 /** An order id or a reference shorter than this is too likely to occur by chance to be a signal. */
 export const MIN_ORDER_ID_LENGTH = 4;
 
-const MONEY_UNITS = 10000;
 const MS_PER_DAY = 86_400_000;
 
 export interface ReceiptMatchCandidate {
@@ -217,8 +217,9 @@ export function matchReceipt(
   const parsedPayee = parsed.payee ?? null;
   const withinTolerance = (candidate: ReceiptMatchCandidate): boolean =>
     paid !== null &&
-    Math.abs(Math.round(Math.abs(candidate.amount) * MONEY_UNITS) - paid) <=
-      config.toleranceUnits;
+    Math.abs(
+      moneyUnits(Math.abs(candidate.amount), FIAT_MONEY_DECIMALS) - paid,
+    ) <= config.toleranceUnits;
   const hasPayeeSignal = (candidate: ReceiptMatchCandidate): boolean =>
     (parserPayeeId !== null && candidate.payeeId === parserPayeeId) ||
     namesParsedPayee(candidate, parsedPayee);
