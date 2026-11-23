@@ -157,14 +157,27 @@ export type RateSortDirection = 'asc' | 'desc';
  * not smaller or larger than any rate. Ties fall back to the date, newest
  * first, then to the provider row before the transaction rows, so a page
  * boundary never moves between two renders of the same list.
+ *
+ * A source sort names each distinct source once: a long history holds tens of
+ * thousands of rows over a handful of sources, and a translation lookup per
+ * comparison made the sort cost hundreds of thousands of them.
  */
 export function sortRateRows(
   rows: readonly RateHistoryRow[],
   field: RateSortField,
   direction: RateSortDirection,
-  sourceLabel: (row: RateHistoryRow) => string,
+  sourceLabel: (source: string | null) => string,
 ): RateHistoryRow[] {
   const sign = direction === 'asc' ? 1 : -1;
+  const labels = new Map<string | null, string>();
+  const labelOf = (row: RateHistoryRow): string => {
+    let label = labels.get(row.source);
+    if (label === undefined) {
+      label = sourceLabel(row.source);
+      labels.set(row.source, label);
+    }
+    return label;
+  };
   const tieBreak = (a: RateHistoryRow, b: RateHistoryRow) =>
     b.date.localeCompare(a.date) || a.key.localeCompare(b.key);
   return [...rows].sort((a, b) => {
@@ -179,7 +192,7 @@ export function sortRateRows(
     const compared =
       field === 'date'
         ? a.date.localeCompare(b.date)
-        : sourceLabel(a).localeCompare(sourceLabel(b));
+        : labelOf(a).localeCompare(labelOf(b));
     return compared * sign || tieBreak(a, b);
   });
 }

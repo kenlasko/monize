@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   buildRateChartSeries,
   buildRateHistoryRows,
@@ -13,7 +13,6 @@ import {
   sortRateRows,
   summarizeRatePeriod,
   summarizeRateSpread,
-  type RateHistoryRow,
 } from './currency-detail';
 import type { StoredRate, TransactionRate } from './exchange-rates';
 
@@ -45,7 +44,7 @@ const transactionRates: TransactionRate[] = [
   },
 ];
 
-const label = (row: RateHistoryRow) => row.source ?? '';
+const label = (source: string | null) => source ?? '';
 
 describe('rate sources', () => {
   it('groups every provider slug, and anything unknown as other', () => {
@@ -146,6 +145,12 @@ describe('sortRateRows', () => {
       'provider:2026-03-02',
       'provider:2026-03-01',
     ]);
+  });
+
+  it('names each distinct source once however many rows share it', () => {
+    const counted = vi.fn(label);
+    sortRateRows(rows, 'source', 'asc', counted);
+    expect(counted).toHaveBeenCalledTimes(new Set(rows.map((row) => row.source)).size);
   });
 
   it('does not reorder its input', () => {
