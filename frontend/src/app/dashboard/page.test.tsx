@@ -174,11 +174,12 @@ vi.mock('@/components/dashboard/DashboardHero', () => ({
 }));
 
 vi.mock('@/components/dashboard/FavouriteAccounts', () => ({
-  FavouriteAccounts: ({ isLoading, institutions, accounts }: any) => (
+  FavouriteAccounts: ({ isLoading, institutions, accounts, brokerageMarketValues }: any) => (
     <div
       data-testid="favourite-accounts"
       data-institutions={institutions?.length}
       data-account-ids={(accounts ?? []).map((a: any) => a.id).join(',')}
+      data-market-values={JSON.stringify([...(brokerageMarketValues ?? new Map()).entries()])}
     >
       {isLoading ? 'loading' : 'loaded'}
     </div>
@@ -485,6 +486,34 @@ describe('DashboardPage', () => {
     expect(mockGetTopMovers).toHaveBeenCalledTimes(1);
     expect(mockGetPortfolioValuation).toHaveBeenCalledTimes(1);
     expect(mockGetFavouriteSecurities).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the brokerage market values when the reload after an automatic refresh fails', async () => {
+    // The values on screen are still a valuation, an older one; a failed
+    // background reload must not drop the holdings out of every account.
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    mockGetPortfolioValuation.mockResolvedValue({
+      holdingsByAccount: [{ accountId: 'acc-1', totalMarketValue: 1200, unpricedHoldingsCount: 0 }],
+    });
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('favourite-accounts')).toHaveAttribute(
+        'data-market-values',
+        '[["acc-1",1200]]',
+      );
+    });
+    mockGetPortfolioValuation.mockRejectedValueOnce(new Error('timeout'));
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+    });
+
+    expect(screen.getByTestId('favourite-accounts')).toHaveAttribute(
+      'data-market-values',
+      '[["acc-1",1200]]',
+    );
   });
 
   it('shows loading state in child components while data loads', async () => {

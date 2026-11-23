@@ -200,10 +200,13 @@ function DashboardContent() {
       try {
         const [moversData, portfolio] = await Promise.all([
           investmentsApi.getTopMovers(),
-          investmentsApi.getPortfolioValuation().catch(() => null),
+          // A failed valuation keeps the one on screen: it is still a
+          // valuation, an older one, and this reload follows a price refresh
+          // (often the unattended one) that nobody is waiting on.
+          investmentsApi.getPortfolioValuation().catch(() => undefined),
         ]);
         setTopMovers(moversData);
-        setPortfolioValuation(portfolio);
+        if (portfolio !== undefined) setPortfolioValuation(portfolio);
       } catch {
         // Silently fail
       }

@@ -996,6 +996,25 @@ describe('useInvestmentData – automatic price refresh', () => {
     expect(result.current.lastPriceUpdate).toBe('2026-11-23T15:00:00Z');
     expect(result.current.isSummaryLoading).toBe(false);
   });
+
+  it('keeps the figures and the register when the reload after an automatic refresh fails', async () => {
+    // Nobody asked for this reload, and what is on screen is still a valuation,
+    // an older one: "No data" and an empty register would be invented.
+    mockGetTransactions.mockResolvedValue({ data: [makeTx('t1')], pagination: null });
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(result.current.portfolioSummary).toEqual(mockSummary);
+    mockGetPortfolioSummary.mockRejectedValueOnce(new Error('timeout'));
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+      await new Promise(res => setTimeout(res, 0));
+    });
+
+    expect(result.current.portfolioSummary).toEqual(mockSummary);
+    expect(result.current.transactions.map((tx) => tx.id)).toEqual(['t1']);
+    expect(result.current.isSummaryLoading).toBe(false);
+  });
 });
 
 /**

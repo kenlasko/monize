@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { accountsApi } from '@/lib/accounts';
 import { investmentsApi } from '@/lib/investments';
 import { roundToCents, sumMoney } from '@/lib/format';
+import { createLogger } from '@/lib/logger';
 import {
   INCOME_ACTIONS,
   incomeBaseKind,
@@ -21,6 +22,8 @@ import { InvestmentRegisterPanel } from '@/components/investments/InvestmentRegi
 import { InvestmentIncomePanel } from './InvestmentIncomePanel';
 import type { Account } from '@/types/account';
 import type { PortfolioSummary, InvestmentTransaction, RealizedGainEntry } from '@/types/investment';
+
+const logger = createLogger('InvestmentDetailView');
 
 /** The year's dividends and interest, or why they cannot be added up. */
 type DividendInterestYtd =
@@ -109,8 +112,40 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
   // blank the page out from under the user.
   const isLoading = loadedForId !== account.id;
 
+  // What the figures on screen were loaded for. A re-run for the same account
+  // and the same write, with only `refreshKey` moved, is a price refresh (the
+  // header's Refresh Prices, or the automatic one every 15 minutes): income and
+  // realized gains are not priced, so only the summary is asked again, and a
+  // request that fails keeps the summary on screen rather than reading as an
+  // account with nothing in it.
+  const loadedRef = useRef<{
+    account: Account;
+    writeKey: number;
+    refreshKey: number;
+    ids: string[];
+  } | null>(null);
+
   useEffect(() => {
     let cancelled = false;
+    const loaded = loadedRef.current;
+    if (
+      loaded &&
+      loaded.account === account &&
+      loaded.writeKey === writeKey &&
+      loaded.refreshKey !== refreshKey
+    ) {
+      investmentsApi
+        .getPortfolioSummary(loaded.ids)
+        .then((summaryData) => {
+          if (cancelled) return;
+          setSummary(summaryData);
+          loadedRef.current = { ...loaded, refreshKey };
+        })
+        .catch((error) => logger.error('Failed to re-value the account after a price refresh:', error));
+      return () => {
+        cancelled = true;
+      };
+    }
     (async () => {
       // Resolve the brokerage/cash pair; a standalone account 400s, in which
       // case it is treated as its own brokerage with no cash half.
@@ -163,6 +198,7 @@ export function InvestmentDetailView({ account, refreshKey = 0 }: InvestmentDeta
       setRealizedGainsKnownYtd(knownTotal);
       setRealizedGainsYtd(knownGains.length === realized.length ? knownTotal : null);
       setLoadedForId(account.id);
+      loadedRef.current = { account, writeKey, refreshKey, ids };
     })();
     return () => {
       cancelled = true;

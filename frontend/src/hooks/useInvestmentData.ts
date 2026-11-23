@@ -226,10 +226,15 @@ export function useInvestmentData() {
   // loading flag here put the summary, the allocation and the holdings back to
   // skeletons a second after they first drew, whenever the automatic price
   // refresh found a new quote.
+  //
+  // `keepOnFailure` is the reload after a price refresh: what is on screen is
+  // still a valuation, an older one, so a request that fails leaves it there
+  // rather than turning the page into "No data" and an empty register.
   const loadAllPortfolioData = useCallback(async (
     accountIds: string[],
     page: number = 1,
     filters: TransactionFilters = {},
+    { keepOnFailure = false }: { keepOnFailure?: boolean } = {},
   ) => {
     const summarySeq = ++summarySeqRef.current;
     const txSeq = ++transactionsSeqRef.current;
@@ -265,12 +270,12 @@ export function useInvestmentData() {
     } catch (error) {
       logger.error('Failed to load portfolio data:', error);
       if (summarySeqRef.current === summarySeq) {
-        setPortfolioSummary(null);
+        if (!keepOnFailure) setPortfolioSummary(null);
         // This request superseded the first summary's, so its answer is the
         // one the summary sections were waiting on.
         setInitialSummarySettled(true);
       }
-      if (transactionsSeqRef.current === txSeq) {
+      if (transactionsSeqRef.current === txSeq && !keepOnFailure) {
         setTransactions([]);
         setPagination(null);
       }
@@ -295,7 +300,9 @@ export function useInvestmentData() {
     // Returned so the refresh button keeps spinning until the summary has
     // been re-valued: the sections keep their previous figures meanwhile,
     // and the spinner is what says they are about to change.
-    return loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+    return loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters, {
+      keepOnFailure: true,
+    });
   };
 
   const { isRefreshing: isRefreshingPrices, triggerManualRefresh: handleRefreshPrices, triggerAutoRefresh } = usePriceRefresh({
