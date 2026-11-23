@@ -59,6 +59,7 @@ import type { LoanProjectionAnchor } from '@/types/scheduled-transaction';
 import type { Transaction } from '@/types/transaction';
 import type { LoanScenario } from '@/types/loan-scenario';
 import type { LoanRateChange } from '@/types/loan-rate-change';
+import { FIAT_MONEY_DECIMALS, sumMoney } from '@/lib/format';
 
 interface LoanDetailViewProps {
   account: Account;
@@ -605,7 +606,10 @@ function buildLoanReportTables({
   if (scheduleRows.length > 0) {
     const showExtra = scheduleRows.some((row) => row.extraPrincipal > 0);
     const sum = (field: 'payment' | 'interest' | 'principal' | 'extraPrincipal') =>
-      scheduleRows.reduce((acc, row) => acc + Math.round(Number(row[field]) * 10000), 0) / 10000;
+      sumMoney(
+        scheduleRows.map((row) => Number(row[field])),
+        FIAT_MONEY_DECIMALS,
+      );
     const rows: CellValue[][] = scheduleRows.map((row) => [
       row.paymentNumber,
       day(row.date),

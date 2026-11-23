@@ -69,7 +69,14 @@ themselves, which is what kept the old code's `?? amount` out of sight. Each
 component is rounded to four places half away from zero by `roundMoney` before
 it is accumulated, so `-0.00005` adds `-0.0001` exactly as `roundMoney` answers
 it; a bare `Math.round(x * 10000)` rounded a negative midpoint toward zero
-(Discussion #2136).
+(Discussion #2136). The rounded value is then scaled to ten-thousandths by
+shifting its decimal digits (`toScaledUnits` in `backend/src/common/round.util.ts`)
+and summed in a `BigInt`, as `sumMoney` is, never multiplied by `10000` in
+floats: `300000000000.03 * 10000` is `3000000000000300.5`, which `Math.round`
+carried up for the positive amount and toward zero for the negative one, so an
+amount added and then subtracted left `0.0001` (Discussion #2343). A
+non-finite component (`NaN`, `Infinity`) has no units to count; it reads
+through `knownSubtotal` and `total` as it did when the subtotal was a double.
 
 **A component can go missing for two reasons, and only one of them has a
 currency to blame.** A missing *rate* is a fact about a pair, and naming it

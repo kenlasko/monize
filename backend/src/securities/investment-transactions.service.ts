@@ -81,7 +81,13 @@ import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { attachInvestmentRowReportingRates } from "./investment-row-reporting-rates";
 import { CurrenciesService } from "../currencies/currencies.service";
-import { roundToDecimals, roundMoney, sumMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits,
+  roundToDecimals,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
 import { stripHtml } from "../common/sanitization.util";
 import {
   BulkCreateResult,
@@ -189,7 +195,7 @@ function addIncomeScaled(
   byCurrency: Map<string, number>,
   row: InvestmentTransaction,
 ): void {
-  const scaled = Math.round(investmentIncomeAmount(row) * 10000);
+  const scaled = moneyUnits(investmentIncomeAmount(row), FIAT_MONEY_DECIMALS);
   if (scaled === 0) return;
   const currency = llmIncomeCurrency(row) ?? "";
   byCurrency.set(currency, (byCurrency.get(currency) ?? 0) + scaled);
@@ -3819,16 +3825,23 @@ export class InvestmentTransactionsService {
       if (e.realizedGain === null) {
         totalsRealizedIncomplete = true;
       } else {
-        totalsRealizedScaled += Math.round(e.realizedGain * 10000);
+        totalsRealizedScaled += moneyUnits(e.realizedGain, FIAT_MONEY_DECIMALS);
       }
-      totalsRealizedKnownScaled += Math.round(
-        (e.realizedGainKnownSubtotal ?? 0) * 10000,
+      totalsRealizedKnownScaled += moneyUnits(
+        e.realizedGainKnownSubtotal ?? 0,
+        FIAT_MONEY_DECIMALS,
       );
       if (e.unrealizedGain === null || e.totalCapitalGain === null) {
         totalsIncomplete = true;
       } else {
-        totalsUnrealizedScaled += Math.round(e.unrealizedGain * 10000);
-        totalsCapitalScaled += Math.round(e.totalCapitalGain * 10000);
+        totalsUnrealizedScaled += moneyUnits(
+          e.unrealizedGain,
+          FIAT_MONEY_DECIMALS,
+        );
+        totalsCapitalScaled += moneyUnits(
+          e.totalCapitalGain,
+          FIAT_MONEY_DECIMALS,
+        );
       }
 
       let key: string;
@@ -3881,10 +3894,11 @@ export class InvestmentTransactionsService {
       if (e.realizedGain === null) {
         b.realizedIncomplete = true;
       } else {
-        b.realizedScaled += Math.round(e.realizedGain * 10000);
+        b.realizedScaled += moneyUnits(e.realizedGain, FIAT_MONEY_DECIMALS);
       }
-      b.realizedKnownScaled += Math.round(
-        (e.realizedGainKnownSubtotal ?? 0) * 10000,
+      b.realizedKnownScaled += moneyUnits(
+        e.realizedGainKnownSubtotal ?? 0,
+        FIAT_MONEY_DECIMALS,
       );
       if (
         e.startValue === null ||
@@ -3894,10 +3908,10 @@ export class InvestmentTransactionsService {
       ) {
         b.incomplete = true;
       } else {
-        b.startValueScaled += Math.round(e.startValue * 10000);
-        b.endValueScaled += Math.round(e.endValue * 10000);
-        b.unrealizedScaled += Math.round(e.unrealizedGain * 10000);
-        b.totalScaled += Math.round(e.totalCapitalGain * 10000);
+        b.startValueScaled += moneyUnits(e.startValue, FIAT_MONEY_DECIMALS);
+        b.endValueScaled += moneyUnits(e.endValue, FIAT_MONEY_DECIMALS);
+        b.unrealizedScaled += moneyUnits(e.unrealizedGain, FIAT_MONEY_DECIMALS);
+        b.totalScaled += moneyUnits(e.totalCapitalGain, FIAT_MONEY_DECIMALS);
       }
     }
 
@@ -5546,12 +5560,15 @@ export class InvestmentTransactionsService {
 
     // round4 here is reserved for per-share prices (4dp price precision);
     // monetary amounts use the shared roundMoney, quantities use round8 (1e-8).
-    const round4 = (n: number): number => Math.round(n * 10000) / 10000;
-    const round8 = (n: number): number => Math.round(n * 1e8) / 1e8;
+    // Totals are summed exactly by sumMoney, never as Math.round(x * 1e8)
+    // units in a double, which misreads a large amount (Discussion #2343) and
+    // passes 2^53 at 90 million shares.
+    const round4 = (n: number): number => roundToDecimals(n, 4);
+    const round8 = (n: number): number => roundToDecimals(n, 8);
 
-    let totalAmountScaled = 0;
-    let totalCommissionScaled = 0;
-    let totalQuantityScaled = 0;
+    const amounts: number[] = [];
+    const commissions: number[] = [];
+    const quantities: number[] = [];
     const incomeScaledByCurrency = new Map<string, number>();
     const actionCounts: Record<string, number> = {};
 
@@ -5559,11 +5576,11 @@ export class InvestmentTransactionsService {
       // Rows as effects for the sums: a VOID row is listed below, flagged, but
       // moved no money or shares, so it joins no total.
       if (!investmentRowHasEffect(r)) continue;
-      totalAmountScaled += Math.round(Number(r.totalAmount) * 10000);
+      amounts.push(Number(r.totalAmount));
       addIncomeScaled(incomeScaledByCurrency, r);
-      totalCommissionScaled += Math.round(Number(r.commission || 0) * 10000);
+      commissions.push(Number(r.commission || 0));
       if (r.quantity !== null && r.quantity !== undefined) {
-        totalQuantityScaled += Math.round(Number(r.quantity) * 1e8);
+        quantities.push(Number(r.quantity));
       }
       actionCounts[r.action] = (actionCounts[r.action] || 0) + 1;
     }
@@ -5599,9 +5616,9 @@ export class InvestmentTransactionsService {
       const buckets = new Map<
         string,
         {
-          amountScaled: number;
-          commissionScaled: number;
-          quantityScaled: number;
+          amounts: number[];
+          commissions: number[];
+          quantities: number[];
           incomeScaled: Map<string, number>;
           count: number;
         }
@@ -5610,17 +5627,17 @@ export class InvestmentTransactionsService {
         if (!investmentRowHasEffect(r)) continue;
         const key = this.getLlmInvestmentGroupKey(r, options.groupBy);
         const b = buckets.get(key) ?? {
-          amountScaled: 0,
-          commissionScaled: 0,
-          quantityScaled: 0,
+          amounts: [],
+          commissions: [],
+          quantities: [],
           incomeScaled: new Map<string, number>(),
           count: 0,
         };
-        b.amountScaled += Math.round(Number(r.totalAmount) * 10000);
+        b.amounts.push(Number(r.totalAmount));
         addIncomeScaled(b.incomeScaled, r);
-        b.commissionScaled += Math.round(Number(r.commission || 0) * 10000);
+        b.commissions.push(Number(r.commission || 0));
         if (r.quantity !== null && r.quantity !== undefined) {
-          b.quantityScaled += Math.round(Number(r.quantity) * 1e8);
+          b.quantities.push(Number(r.quantity));
         }
         b.count += 1;
         buckets.set(key, b);
@@ -5629,9 +5646,9 @@ export class InvestmentTransactionsService {
         .map(([key, b]) => ({
           key,
           transactionCount: b.count,
-          totalQuantity: round8(b.quantityScaled / 1e8),
-          totalAmount: roundMoney(b.amountScaled / 10000),
-          totalCommission: roundMoney(b.commissionScaled / 10000),
+          totalQuantity: sumMoney(b.quantities, 8),
+          totalAmount: sumMoney(b.amounts, FIAT_MONEY_DECIMALS),
+          totalCommission: sumMoney(b.commissions, FIAT_MONEY_DECIMALS),
           incomeByCurrency: incomeByCurrencyOf(b.incomeScaled),
         }))
         .sort((a, b) =>
@@ -5643,10 +5660,10 @@ export class InvestmentTransactionsService {
 
     return {
       transactionCount: rows.length,
-      totalAmount: roundMoney(totalAmountScaled / 10000),
-      totalCommission: roundMoney(totalCommissionScaled / 10000),
+      totalAmount: sumMoney(amounts, FIAT_MONEY_DECIMALS),
+      totalCommission: sumMoney(commissions, FIAT_MONEY_DECIMALS),
       incomeByCurrency: incomeByCurrencyOf(incomeScaledByCurrency),
-      totalQuantity: round8(totalQuantityScaled / 1e8),
+      totalQuantity: sumMoney(quantities, 8),
       actionCounts,
       groupedBy: options.groupBy ?? null,
       groups,

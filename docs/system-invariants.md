@@ -2347,7 +2347,13 @@ Enforcement         Service-level, in the write's own transaction before the
                     backend/src/common/money-amount-dto.guard.spec.ts (no
                     maxDecimalPlaces on a money-named DTO field); the frontend's
                     frontend/src/test/money-precision.guard.test.ts holds the
-                    same on the account-currency files.
+                    same on the account-currency files. Integer units are
+                    shifted from the decimal digits (moneyUnits, toScaledUnits;
+                    toMoneyUnits on the client), never Math.round(x * 10000),
+                    which misreads a large amount (Discussion #2343):
+                    backend/src/common/money-units.guard.spec.ts and
+                    frontend/src/test/money-units.guard.test.ts scan every
+                    production file.
 Concurrency scope   per write; the places are read inside the write's
                     transaction, and a currency's decimal_places is edited on
                     the Currencies page.
@@ -2358,8 +2364,8 @@ Failure response    400 errors.transactions.amountPrecisionExceeded, naming the
                     currency and its places.
 Required tests      Unit: assertAmountPrecision, roundMoney / sumMoney /
                     applyFxConversion at eight places, the validators, and each
-                    writer's refusal. Source scan: the two backend guards above
-                    and the frontend guard. PG integration (the column holds
+                    writer's refusal. Source scan: the backend and frontend
+                    guards above. PG integration (the column holds
                     eight places and a fiat value is unchanged):
                     backend/test/integration/money-precision.integration.spec.ts.
 Status              enforced

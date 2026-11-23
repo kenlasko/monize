@@ -7,8 +7,7 @@ import {
   type ParsedReceiptItem,
 } from "../parsing/receipt-parser.types";
 import type { JoinPart } from "./join-settlement";
-
-const UNITS_PER_MONEY = 10000;
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../../common/round.util";
 
 /** The `link` section of a settlement profile that narrows the component search. */
 export interface ComponentSearch {
@@ -44,7 +43,7 @@ interface FoundRow {
 
 /** A SUM(numeric) read from SQL as 1/10000 units, rounded once. */
 export const unitsOf = (amount: string | number | null | undefined): number =>
-  Math.round(Number(amount ?? 0) * UNITS_PER_MONEY);
+  moneyUnits(Number(amount ?? 0), FIAT_MONEY_DECIMALS);
 
 /**
  * Spec 3, pure: for each link value the newest component first (ties by id),

@@ -9,6 +9,7 @@
  * SQL's job and the integration suite's proof.
  */
 import { FxAggregate } from "../common/fx-aggregate";
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../common/round.util";
 import type {
   CashFlowSankeyLink,
   CashFlowSankeyNode,
@@ -20,7 +21,8 @@ import type {
 /** Integer ten-thousandths, the resolution of `decimal(20,4)`. */
 const SCALE = 10000;
 
-const toMinor = (value: number): number => Math.round(value * SCALE);
+const toMinor = (value: number): number =>
+  moneyUnits(value, FIAT_MONEY_DECIMALS);
 /** `-0` is not a figure anyone should read, so it leaves as `0`. */
 const fromMinor = (minor: number): number => (minor === 0 ? 0 : minor / SCALE);
 

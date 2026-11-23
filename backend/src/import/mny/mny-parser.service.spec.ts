@@ -111,6 +111,22 @@ describe("computeExpectedBalances", () => {
     ).toBe(1.4568);
   });
 
+  it("cancels a large deposit and its withdrawal exactly (Discussion #2343)", () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles, which the
+    // float scaling rounded up for the deposit and toward zero for the
+    // withdrawal, leaving the expected balance 0.0001 off.
+    const balances = computeExpectedBalances(
+      accountsWith(100),
+      transactionsWith([
+        { amount: 300_000_000_000.03, date: "2026-01-02" },
+        { amount: -300_000_000_000.03, date: "2026-01-03" },
+      ]),
+      "2026-12-31",
+    );
+
+    expect(balances.get("acct-1")).toBe(100);
+  });
+
   it("excludes voided transactions, as Monize's own balance query does", () => {
     const balances = computeExpectedBalances(
       accountsWith(0),

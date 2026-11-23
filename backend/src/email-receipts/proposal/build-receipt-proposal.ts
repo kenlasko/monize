@@ -4,7 +4,12 @@ import {
   type AiReviewProposalInput,
   type AiReviewSplitLine,
 } from "../../ai-review/ai-review-work.types";
-import { roundMoney, sumMoney } from "../../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits,
+  roundMoney,
+  sumMoney,
+} from "../../common/round.util";
 import { stripHtml } from "../../common/sanitization.util";
 import { TRANSACTION_NOTE_MAX_LENGTH } from "../../common/transaction-note";
 import { composeDescription } from "../../transaction-rules/rule-template";
@@ -319,7 +324,8 @@ export function buildReceiptProposal(
 
   if (!parsed.complete) return descriptionOnly(parsed.reason);
   if (
-    Math.round(Math.abs(tx.amount) * MONEY_UNITS) !== expectedAmount(parsed)
+    moneyUnits(Math.abs(tx.amount), FIAT_MONEY_DECIMALS) !==
+    expectedAmount(parsed)
   ) {
     return descriptionOnly("amount_differs");
   }
@@ -359,7 +365,7 @@ export function buildReceiptProposal(
   // sums to the transaction to the cent (integer arithmetic, never floats).
   const signedUnits = lines.map((line) => sign * line.direction * line.units);
   const missing =
-    Math.round(tx.amount * MONEY_UNITS) -
+    moneyUnits(tx.amount, FIAT_MONEY_DECIMALS) -
     signedUnits.reduce((sum, units) => sum + units, 0);
   if (missing !== 0) {
     const last = signedUnits.length - 1;
@@ -378,7 +384,8 @@ export function buildReceiptProposal(
   }));
   const splitTotal = sumMoney(splits.map((split) => split.amount));
   if (
-    Math.round(splitTotal * MONEY_UNITS) !== Math.round(tx.amount * MONEY_UNITS)
+    moneyUnits(splitTotal, FIAT_MONEY_DECIMALS) !==
+    moneyUnits(tx.amount, FIAT_MONEY_DECIMALS)
   ) {
     // Complete but not payable as split: the email's total is the list price
     // and no `paid` says what the bank was charged after the discount.

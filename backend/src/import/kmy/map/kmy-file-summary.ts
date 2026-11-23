@@ -10,7 +10,7 @@ import {
 } from "../../mny/model/mny-import-model";
 import { MnyWarning } from "../../mny/model/mny-warnings";
 import { MnyFileCounts } from "../../mny/mny-parser.service";
-import { roundToDecimals } from "../../../common/round.util";
+import { roundToDecimals, toScaledUnits } from "../../../common/round.util";
 import { KmyRawFile } from "../model/kmy-raw";
 import { unitsToNumber } from "./kmy-amounts";
 import { FileExpectations } from "./kmy-file-expectations";
@@ -151,7 +151,7 @@ export function mappedTradeValues(
 ): Map<string, bigint> {
   const totals = new Map<string, bigint>();
   const unitsOf = (amount: number, places: number): bigint =>
-    BigInt(Math.round(amount * 10 ** places));
+    toScaledUnits(amount, places);
   for (const row of investments.transactions) {
     if (
       row.transactionDate > asOf ||

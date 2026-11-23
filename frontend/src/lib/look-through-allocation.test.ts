@@ -28,6 +28,21 @@ describe('collapseLookThrough', () => {
     expect(other.percentage).toBeCloseTo(31.7);
   });
 
+  it('sums a large remainder exactly (Discussion #2343)', () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles, which the
+    // float scaling rounded to 300000000000.0301.
+    const slices = collapseLookThrough(
+      {
+        items: [],
+        totalPortfolioValue: 300_000_000_000.03,
+        unclassifiedValue: 300_000_000_000.03,
+      },
+      'Other',
+    );
+    expect(slices).toHaveLength(1);
+    expect(slices[0].value).toBe(300_000_000_000.03);
+  });
+
   it('omits Other when everything is classified and nothing overflows', () => {
     const slices = collapseLookThrough(
       {

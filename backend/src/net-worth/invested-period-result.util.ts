@@ -14,7 +14,12 @@
  * twelve worked cases are `invested-period-result.util.spec.ts` -- and so
  * neither the single-range route nor the batch route re-derives a row of it.
  */
-import { roundMoney, roundToDecimals } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits,
+  roundMoney,
+  roundToDecimals,
+} from "../common/round.util";
 import { daysBetween } from "../common/time-series/price-boundary.util";
 import {
   chainTwrPercent,
@@ -31,6 +36,13 @@ import {
   InvestedFlowDay,
 } from "./invested-capital-flow.util";
 import { PeriodResultReason } from "./portfolio-period-result.util";
+
+/**
+ * A money figure in integer ten-thousandths, shifted by its decimal digits
+ * (`moneyUnits`), never `Math.round(x * 10000)`, which misreads a large amount
+ * (Discussion #2343).
+ */
+const minor = (value: number): number => moneyUnits(value, FIAT_MONEY_DECIMALS);
 
 /**
  * How `investmentReturnPercent` was arrived at, named on the wire so a later
@@ -283,9 +295,7 @@ function decideInvestedPeriod(
   const investedValueChange =
     pointComplete(start) && pointComplete(end)
       ? roundMoney(
-          (Math.round(end.securitiesValue * 10000) -
-            Math.round(start.securitiesValue * 10000)) /
-            10000,
+          (minor(end.securitiesValue) - minor(start.securitiesValue)) / 10000,
         )
       : null;
 
@@ -309,9 +319,9 @@ function decideInvestedPeriod(
   let reinvestedMinor = 0;
   let flowsComplete = true;
   for (const day of flowDays) {
-    capitalMinor += Math.round((day.capitalIn - day.capitalOut) * 10000);
-    incomeMinor += Math.round(day.income * 10000);
-    reinvestedMinor += Math.round(day.reinvestedIncome * 10000);
+    capitalMinor += minor(day.capitalIn) - minor(day.capitalOut);
+    incomeMinor += minor(day.income);
+    reinvestedMinor += minor(day.reinvestedIncome);
     if (!day.complete) {
       flowsComplete = false;
       // Two different repairs, so two different reasons: a rate to add on the
@@ -357,8 +367,8 @@ function decideInvestedPeriod(
   if (reasons.size > 0) return withheldOnly(withheld());
 
   const pnl = roundMoney(
-    (Math.round(end.securitiesValue * 10000) -
-      Math.round(start.securitiesValue * 10000) -
+    (minor(end.securitiesValue) -
+      minor(start.securitiesValue) -
       capitalMinor +
       incomeMinor) /
       10000,
@@ -495,10 +505,10 @@ function moneyWeightedFigures(
   const windowDays = daysBetween(start.date, end.date);
 
   const flows: XirrFlow[] = [
-    { dayOffset: 0, amountMinor: -Math.round(start.securitiesValue * 10000) },
+    { dayOffset: 0, amountMinor: -minor(start.securitiesValue) },
     {
       dayOffset: windowDays,
-      amountMinor: Math.round(end.securitiesValue * 10000),
+      amountMinor: minor(end.securitiesValue),
     },
   ];
   for (let i = 0; i < days.length; i++) {
@@ -506,9 +516,7 @@ function moneyWeightedFigures(
     flows.push({
       dayOffset: daysBetween(start.date, days[i].date),
       amountMinor:
-        Math.round(flow.capitalOut * 10000) +
-        Math.round(flow.income * 10000) -
-        Math.round(flow.capitalIn * 10000),
+        minor(flow.capitalOut) + minor(flow.income) - minor(flow.capitalIn),
     });
   }
 

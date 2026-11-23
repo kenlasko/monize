@@ -1,3 +1,5 @@
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../common/round.util";
+
 /** One currency's external-flow subtotal, in that currency. */
 export interface FlowSubtotal {
   /**
@@ -65,7 +67,7 @@ export function foldExternalFlow(
       if (!missingPairs.includes(label)) missingPairs.push(label);
       continue;
     }
-    units += Math.round(amount * rate * MONEY_UNITS);
+    units += moneyUnits(amount * rate, FIAT_MONEY_DECIMALS);
   }
   return {
     complete: missingPairs.length === 0,

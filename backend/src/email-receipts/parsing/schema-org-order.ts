@@ -10,6 +10,10 @@ import {
   type ParsedReceipt,
   type ParsedReceiptItem,
 } from "./receipt-parser.types";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits as exactMoneyUnits,
+} from "../../common/round.util";
 
 /**
  * The order an email carries as structured data for the mail client's own
@@ -134,7 +138,7 @@ function decimalUnits(text: string): number | null {
 /** A JSON number in 1/10000 units: finite, not negative, rounded once. */
 function numberUnits(value: number): number | null {
   if (!Number.isFinite(value) || value < 0) return null;
-  const units = Math.round(value * UNITS);
+  const units = exactMoneyUnits(value, FIAT_MONEY_DECIMALS);
   return Number.isSafeInteger(units) && value < 10 ** MAX_INTEGER_DIGITS
     ? units
     : null;
