@@ -186,33 +186,58 @@ function amountTone(amount: number, onDark: boolean): string {
   return '';
 }
 
-function PebbleRow({
-  tx,
-  p,
-  selected,
-  inspected,
-  isFuture,
-}: {
+/**
+ * One row. Memoised on primitive props and the parent's stable handlers, so
+ * an inspector click re-renders the two rows whose `inspected` changed, not
+ * the page. The parent resolves the label, category, colour, amount and
+ * balance text, so the row subscribes to no store of its own.
+ */
+interface PebbleRowProps {
   tx: Transaction;
-  p: PebbleRegisterProps;
+  label: string | null;
+  categoryLabel: string | null;
+  color: string | null | undefined;
+  categoryIcon: string | null | undefined;
+  amount: number;
+  /** The amount shown is a display conversion, marked with an asterisk. */
+  converted: boolean;
+  /** The formatted running balance; null when the column is off. */
+  balanceText: string | null;
+  showDescription: boolean;
+  selectionMode: boolean;
   selected: boolean;
   inspected: boolean;
   isFuture: boolean;
-}) {
-  const { formatCurrency } = useNumberFormat();
-  const payeeDisplay = usePayeeDisplay();
-  const label = payeeDisplay(tx);
-  const categoryLabel = useCategoryLabel(p.categoryLabelMap)(tx);
-  const color = tx.category
-    ? (p.categoryColorMap?.get(tx.category.id) ?? tx.category.color)
-    : null;
-  const categoryIcon = tx.category
-    ? (p.categoryIconMap?.get(tx.category.id) ?? tx.category.icon)
-    : null;
-  const amount = rowAmount(tx, p.displayAmounts);
+  highlighted: boolean;
+  onRowClick: PebbleRegisterProps['onRowClick'];
+  onPayeeClick: PebbleRegisterProps['onPayeeClick'];
+  onToggleSelection: PebbleRegisterProps['onToggleSelection'];
+  onLongPressStart: PebbleRegisterProps['onLongPressStart'];
+  onLongPressStartTouch: PebbleRegisterProps['onLongPressStartTouch'];
+  onLongPressEnd: PebbleRegisterProps['onLongPressEnd'];
+  onTouchMove: PebbleRegisterProps['onTouchMove'];
+  onContextMenu: PebbleRegisterProps['onContextMenu'];
+  onCycleStatus: PebbleRegisterProps['onCycleStatus'];
+}
+
+const PebbleRow = React.memo(function PebbleRow({
+  tx,
+  label,
+  categoryLabel,
+  color,
+  categoryIcon,
+  amount,
+  converted,
+  balanceText,
+  showDescription,
+  selectionMode,
+  selected,
+  inspected,
+  isFuture,
+  highlighted,
+  ...p
+}: PebbleRowProps) {
   const isVoid = tx.status === TransactionStatus.VOID;
-  const balance = p.runningBalances.get(tx.id);
-  const highlighted = !!p.highlightTransactionId && p.highlightTransactionId === tx.id;
   const open = () => p.onRowClick(tx);
   return (
     <li
@@ -241,7 +266,7 @@ function PebbleRow({
             : HOVER_ROW_ON_PAGE
       } ${isVoid ? 'opacity-50' : ''} ${isFuture && !isVoid ? 'opacity-60' : ''} ${highlighted ? HIGHLIGHT_FLASH : ''}`}
     >
-      {p.selectionMode && (
+      {selectionMode && (
         <span onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
@@ -256,7 +281,7 @@ function PebbleRow({
       <span className="min-w-0 flex-1 sm:flex-[3_1_0%]">
         <span className={`block truncate font-semibold text-[15px] ${isVoid ? 'line-through' : ''}`}>
           {label || '-'}
-          {tx.description && !p.hidden.has('description') && (
+          {tx.description && showDescription && (
             <span className={`font-normal ${inspected ? 'opacity-70' : 'text-gray-500 dark:text-gray-400'} max-sm:hidden`}>
               {' · '}<LinkifiedText text={tx.description} />
             </span>
@@ -289,16 +314,16 @@ function PebbleRow({
       </span>
       <span className={`shrink-0 text-right font-semibold text-[15px] sm:w-28 whitespace-nowrap ${isVoid ? 'line-through' : ''} ${amountTone(amount, inspected)}`}>
         <MoneyFigure amount={amount} currencyCode={tx.currencyCode} />
-        {p.displayAmounts.has(tx.id) && <span className="ml-0.5 text-xs font-normal">*</span>}
+        {converted && <span className="ml-0.5 text-xs font-normal">*</span>}
       </span>
-      {p.showRunningBalance && (
+      {balanceText !== null && (
         <span className={`hidden md:block shrink-0 w-24 text-right text-sm ${inspected ? 'opacity-70' : 'text-gray-500 dark:text-gray-400'}`}>
-          {balance !== undefined ? formatCurrency(balance, tx.currencyCode) : '-'}
+          {balanceText}
         </span>
       )}
     </li>
   );
-}
+});
 
 function InspectorRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -452,6 +477,8 @@ function useFirstBlockOffset(
 export function PebbleRegister(p: PebbleRegisterProps) {
   const t = useTranslations('transactions');
   const { formatCurrency } = useNumberFormat();
+  const payeeDisplay = usePayeeDisplay();
+  const categoryLabelOf = useCategoryLabel(p.categoryLabelMap);
   const registerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inspected =
@@ -511,14 +538,37 @@ export function PebbleRegister(p: PebbleRegisterProps) {
       );
     }
     if (!cur.open) cur.open = { date: tx.transactionDate, rows: [] };
+    const balance = p.runningBalances.get(tx.id);
     cur.open.rows.push(
       <PebbleRow
         key={tx.id}
         tx={tx}
-        p={p}
+        label={payeeDisplay(tx)}
+        categoryLabel={categoryLabelOf(tx)}
+        color={tx.category ? (p.categoryColorMap?.get(tx.category.id) ?? tx.category.color) : null}
+        categoryIcon={tx.category ? (p.categoryIconMap?.get(tx.category.id) ?? tx.category.icon) : null}
+        amount={rowAmount(tx, p.displayAmounts)}
+        converted={p.displayAmounts.has(tx.id)}
+        balanceText={
+          p.showRunningBalance
+            ? (balance !== undefined ? formatCurrency(balance, tx.currencyCode) : '-')
+            : null
+        }
+        showDescription={!p.hidden.has('description')}
+        selectionMode={!!p.selectionMode}
         selected={p.selectionMode ? p.isRowSelected(tx.id) : false}
         inspected={p.inspectorVisible && inspected?.id === tx.id}
         isFuture={tx.transactionDate > p.today}
+        highlighted={!!p.highlightTransactionId && p.highlightTransactionId === tx.id}
+        onRowClick={p.onRowClick}
+        onPayeeClick={p.onPayeeClick}
+        onToggleSelection={p.onToggleSelection}
+        onLongPressStart={p.onLongPressStart}
+        onLongPressStartTouch={p.onLongPressStartTouch}
+        onLongPressEnd={p.onLongPressEnd}
+        onTouchMove={p.onTouchMove}
+        onContextMenu={p.onContextMenu}
+        onCycleStatus={p.onCycleStatus}
       />,
     );
   });

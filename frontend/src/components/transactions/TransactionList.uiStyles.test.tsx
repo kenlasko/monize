@@ -13,6 +13,19 @@ import { useHiddenColumnsStore } from '@/store/hiddenColumnsStore';
  */
 
 const style = vi.hoisted(() => ({ value: 'standard' as 'standard' | 'folio' | 'pebble' }));
+// Counts the row figures (not the inspector's `display` one) drawn, so a test
+// can tell which rows re-rendered.
+const rowFigureRenders = vi.hoisted(() => ({ count: 0 }));
+vi.mock('@/components/ui/MoneyFigure', async (orig) => {
+  const actual = await orig<typeof import('@/components/ui/MoneyFigure')>();
+  return {
+    ...actual,
+    MoneyFigure: (props: Parameters<typeof actual.MoneyFigure>[0]) => {
+      if (!props.display) rowFigureRenders.count += 1;
+      return actual.MoneyFigure(props);
+    },
+  };
+});
 vi.mock('@/hooks/useUiStyle', () => ({ useUiStyle: () => style.value }));
 vi.mock('@/hooks/useIsMobile', async (orig) => ({
   ...(await orig<typeof import('@/hooks/useIsMobile')>()),
@@ -308,6 +321,16 @@ describe('Pebble register', () => {
     expect(within(inspector).getByText('Employer')).toBeTruthy();
     fireEvent.click(screen.getAllByTestId('pebble-row')[1]);
     expect(within(screen.getByRole('complementary')).getByText('Grocery Store')).toBeTruthy();
+  });
+
+  it('redraws only the rows whose inspected state changed when another row is clicked', () => {
+    renderList();
+    rowFigureRenders.count = 0;
+    // From the first row (inspected by default) to the third: those two
+    // change, the second keeps its render.
+    fireEvent.click(screen.getAllByTestId('pebble-row')[2]);
+    expect(within(screen.getByRole('complementary')).getByText('Cafe')).toBeTruthy();
+    expect(rowFigureRenders.count).toBe(2);
   });
 
   it('offers the actions a row already has', () => {
