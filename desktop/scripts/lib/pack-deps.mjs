@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
@@ -21,29 +21,29 @@ export const BACKEND_DEPS_ARCHIVE = "backend/node_modules.asar";
  */
 export const UNPACKED_PATTERN = "*.node";
 
-const ASAR_PACKAGE = "@electron/asar";
-
 /**
- * The path of @electron/asar's CLI, read from its own `bin` field. The package
- * exports only its main entry, so no subpath of it resolves, and the CLI's
- * file name has changed between major versions.
+ * The path of @electron/asar's CLI, read from its package's `bin`. Since 4.x
+ * the package's `exports` names only its entry point, so neither the CLI nor
+ * its package.json resolves as a subpath, and the CLI moved to `bin/asar.mjs`:
+ * the package directory is found from the entry point instead.
  */
 export function asarCliPath() {
-  let dir = path.dirname(require.resolve(ASAR_PACKAGE));
+  let dir = path.dirname(require.resolve("@electron/asar"));
   for (;;) {
     const manifest = path.join(dir, "package.json");
-    if (existsSync(manifest)) {
+    try {
       const pkg = JSON.parse(readFileSync(manifest, "utf8"));
-      if (pkg.name === ASAR_PACKAGE) {
+      if (pkg.name === "@electron/asar") {
         const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.asar;
-        if (!bin) throw new Error(`${ASAR_PACKAGE} declares no asar CLI`);
-        return path.resolve(dir, bin);
+        if (!bin) throw new Error(`${manifest} names no asar CLI`);
+        return path.join(dir, bin);
       }
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
     }
     const parent = path.dirname(dir);
-    if (parent === dir) {
-      throw new Error(`${ASAR_PACKAGE}'s package.json was not found`);
-    }
+    if (parent === dir)
+      throw new Error("@electron/asar's package.json not found");
     dir = parent;
   }
 }
