@@ -19,7 +19,6 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useReportData } from '@/hooks/useReportData';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
-import { useOnAutoPriceRefresh } from '@/hooks/useOnAutoPriceRefresh';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
@@ -102,16 +101,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     base: baseWindow,
   });
 
-  // What the series is asked for. A reload of the same request (a price
-  // refresh) keeps the drawn chart until the new one lands; only a different
-  // request (a range or account change) goes back to the skeleton.
-  const seriesRequestKey = JSON.stringify([start, end, accountIdsCsv ?? null, defaultCurrency, isDaily]);
-  const {
-    data: series,
-    isLoading: dataLoading,
-    reload: reloadSeries,
-    dataKey: seriesKey,
-  } = useReportData(() => {
+  const { data: series, isLoading: dataLoading, reload: reloadSeries } = useReportData(() => {
     const params = {
       startDate: start || undefined,
       endDate: end,
@@ -142,7 +132,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
               : null,
         })),
       );
-  }, [start, end, accountIdsCsv, defaultCurrency, isDaily], { requestKey: seriesRequestKey });
+  }, [start, end, accountIdsCsv, defaultCurrency, isDaily]);
 
   // Fetch the same valuation the Investments page's summary is built on so the
   // header shows live "Total Portfolio Value" (holdings + cash, from current
@@ -162,8 +152,6 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
   const { isRefreshing, triggerManualRefresh } = usePriceRefresh({
     onRefreshComplete: reloadValueData,
   });
-  // New quotes from the automatic refresh move the value and today's point.
-  useOnAutoPriceRefresh(reloadValueData);
 
   const handleRefresh = useCallback(() => {
     // Scope the price refresh to the holdings this widget shows when an account
@@ -266,7 +254,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     </>
   );
 
-  const loading = isLoading || (dataLoading && seriesKey !== seriesRequestKey);
+  const loading = isLoading || dataLoading;
 
   const refreshButton = (
     <button

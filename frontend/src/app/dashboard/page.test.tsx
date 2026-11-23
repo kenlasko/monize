@@ -445,27 +445,6 @@ describe('DashboardPage', () => {
     });
   });
 
-  it('reloads the investment widgets in the background after an automatic refresh', async () => {
-    mockGetAccounts.mockResolvedValue([
-      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
-    ]);
-    render(<DashboardPage />);
-    await waitFor(() => {
-      expect(mockTriggerAutoRefresh).toHaveBeenCalled();
-    });
-    mockGetTopMovers.mockClear();
-    mockGetPortfolioValuation.mockClear();
-    mockGetFavouriteSecurities.mockClear();
-
-    await act(async () => {
-      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
-    });
-
-    expect(mockGetTopMovers).toHaveBeenCalledTimes(1);
-    expect(mockGetPortfolioValuation).toHaveBeenCalledTimes(1);
-    expect(mockGetFavouriteSecurities).toHaveBeenCalledTimes(1);
-  });
-
   it('loads top movers directly when investment accounts exist', async () => {
     mockGetAccounts.mockResolvedValue([
       { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
@@ -485,6 +464,27 @@ describe('DashboardPage', () => {
       expect(screen.getByTestId('top-movers')).toHaveTextContent('no-investments');
     });
     expect(mockGetTopMovers).not.toHaveBeenCalled();
+  });
+
+  it('reloads the investment widgets in the background after an automatic refresh', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(mockTriggerAutoRefresh).toHaveBeenCalled();
+    });
+    mockGetTopMovers.mockClear();
+    mockGetPortfolioValuation.mockClear();
+    mockGetFavouriteSecurities.mockClear();
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+    });
+
+    expect(mockGetTopMovers).toHaveBeenCalledTimes(1);
+    expect(mockGetPortfolioValuation).toHaveBeenCalledTimes(1);
+    expect(mockGetFavouriteSecurities).toHaveBeenCalledTimes(1);
   });
 
   it('shows loading state in child components while data loads', async () => {

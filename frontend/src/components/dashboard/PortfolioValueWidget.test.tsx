@@ -3,7 +3,6 @@ import { act, fireEvent, screen } from '@testing-library/react';
 import { render } from '@/test/render';
 import { Account } from '@/types/account';
 import { PortfolioValueWidget } from './PortfolioValueWidget';
-import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
 
 // `data-points` carries the rows the chart was handed, so a test can see what is
 // plotted and not only what the header says.
@@ -191,54 +190,6 @@ describe('PortfolioValueWidget', () => {
     expect(triggerManualRefresh).toHaveBeenCalledTimes(1);
     // No account filter -> refresh every eligible security (undefined scope).
     expect(triggerManualRefresh).toHaveBeenCalledWith(undefined);
-  });
-
-  it('reloads in the background after an automatic refresh, keeping the drawn chart', async () => {
-    // Every 15 minutes while a market is open: a skeleton each time would be
-    // the one visible trace of a refresh that is meant to be invisible.
-    getInvestmentsDaily.mockResolvedValue([
-      { date: '2026-05-28', value: 9000 },
-      { date: '2026-06-28', value: 10000 },
-    ]);
-    await renderWidget();
-    let answer: (rows: unknown) => void = () => {};
-    getInvestmentsDaily.mockReturnValue(new Promise((resolve) => { answer = resolve; }));
-    getPortfolioValuation.mockResolvedValue({ totalPortfolioValue: 12400, holdings: [] });
-
-    await act(async () => {
-      notifyAutoPriceRefresh('2026-06-28T15:00:00Z');
-    });
-
-    expect(getInvestmentsDaily).toHaveBeenCalledTimes(2);
-    expect(screen.getByTestId('area-chart')).toBeInTheDocument();
-    expect(screen.getByText('$12400')).toBeInTheDocument();
-
-    await act(async () => {
-      answer([
-        { date: '2026-05-28', value: 9000 },
-        { date: '2026-06-28', value: 10400 },
-      ]);
-    });
-    expect(screen.getByTestId('area-chart').getAttribute('data-points')).toContain('10400');
-  });
-
-  it('shows the skeleton again for a different request, not stale figures', async () => {
-    getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
-    const { rerender } = await (async () => {
-      let result: ReturnType<typeof render>;
-      await act(async () => {
-        result = render(<PortfolioValueWidget accounts={[investmentAccount]} isLoading={false} />);
-      });
-      return result!;
-    })();
-    getInvestmentsDaily.mockReturnValue(new Promise(() => {}));
-    configState.current = { range: '3m', accountIds: [] };
-
-    await act(async () => {
-      rerender(<PortfolioValueWidget accounts={[investmentAccount]} isLoading={false} />);
-    });
-
-    expect(screen.queryByTestId('area-chart')).not.toBeInTheDocument();
   });
 
   it('shows the investment result over the window, not the value change', async () => {
