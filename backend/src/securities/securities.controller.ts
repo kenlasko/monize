@@ -686,14 +686,17 @@ export class SecuritiesController {
             results: [...providerResult.results, ...recomputed.results],
           };
     if (result.updated > 0) {
-      // Fire-and-forget: recalculate this user's investment snapshots
-      this.netWorthService
-        .recalculateAllAccounts(req.user.id)
-        .catch((err) =>
-          this.logger.warn(
-            `Background account recalculation failed: ${err.message}`,
-          ),
-        );
+      // Awaited, after the prices committed: the caller reloads the net worth
+      // as soon as this answers (the dashboard's hero and charts), and the
+      // monthly figures are read from the snapshots this rewrites. Answering
+      // first let that reload read the snapshot priced before the refresh. A
+      // failed recalculation does not fail the refresh: the prices were
+      // written, and the next recalculation picks them up.
+      try {
+        await this.netWorthService.recalculateAllAccounts(req.user.id);
+      } catch (err) {
+        this.logger.warn(`Account recalculation failed: ${err.message}`);
+      }
     }
     // Fire-and-forget: populate sector data for securities missing it
     this.sectorWeightingService
