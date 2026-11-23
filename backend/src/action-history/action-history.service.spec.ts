@@ -789,6 +789,76 @@ describe("ActionHistoryService", () => {
       expect(mockDataSource.transaction).toHaveBeenCalled();
     });
 
+    describe("an edit that added a foreign entry to a plain row (#2358)", () => {
+      const plain = {
+        accountId: "acc-1",
+        amount: -117.5,
+        currencyCode: "USD",
+        exchangeRate: 1,
+        originalAmount: null,
+        originalCurrencyCode: null,
+      };
+      const foreign = {
+        ...plain,
+        exchangeRate: 1.175,
+        originalAmount: -100,
+        originalCurrencyCode: "EUR",
+      };
+      const stubAction = (isUndone: boolean) => {
+        mockRepository.findOne.mockResolvedValue({
+          ...mockAction,
+          entityType: "transaction",
+          action: "update",
+          entityId: "tx-1",
+          isUndone,
+          beforeData: plain,
+          afterData: foreign,
+        });
+        mockQueryRunner.manager.findOne.mockResolvedValue({
+          id: "tx-1",
+          userId,
+          accountId: "acc-1",
+          currencyCode: "USD",
+        });
+        mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+        mockQueryRunner.query.mockResolvedValue([
+          { opening_balance: "0", tx_sum: "-117.5" },
+        ]);
+      };
+
+      it("clears the entry on undo, never leaving the default 1 beside EUR 100", async () => {
+        stubAction(false);
+
+        await service.undo(userId);
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          expect.any(Function),
+          "tx-1",
+          expect.objectContaining({
+            exchangeRate: 1,
+            originalAmount: null,
+            originalCurrencyCode: null,
+          }),
+        );
+      });
+
+      it("puts the entry back with its own rate on redo", async () => {
+        stubAction(true);
+
+        await service.redo(userId);
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          expect.any(Function),
+          "tx-1",
+          expect.objectContaining({
+            exchangeRate: 1.175,
+            originalAmount: -100,
+            originalCurrencyCode: "EUR",
+          }),
+        );
+      });
+    });
+
     it("should restore splits when beforeData contains splits", async () => {
       const updateAction = {
         ...mockAction,
