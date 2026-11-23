@@ -1793,7 +1793,16 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     flow totals, and the payee and category detail pages'
                     account panels (built-in-reports/account-breakdown-fx.ts),
                     and budget actuals' outgoing-transfer lines
-                    (budgets/budget-spending.util.ts).
+                    (budgets/budget-spending.util.ts). Every
+                    TransactionAnalyticsService read over the shared filtered
+                    query (summary, grouped totals, tag breakdown, monthly and
+                    flow totals) keeps a split's transfer line exactly when it
+                    keeps the whole transfer rows, so with transfers in scope
+                    both sides of a split's transfer count, the line at its own
+                    transfer rate (`transferLegs` with `wholeLegs`); the line
+                    is never "Uncategorized", and a split counts once by id
+                    however many rate parts its lines fall in (`splitIds` in
+                    foldRateParts, issue #2337).
                     Like the Sankey, these reports do not yet say which of the
                     two rates answered. The assistant's and the MCP tools'
                     transaction analytics (TransactionAnalyticsService: the
@@ -1849,7 +1858,11 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     market's 80, and so do the Sankey and the summary while the
                     EUR legs hold a PENDING IMPORT placeholder), and each 90 EUR
                     leg to 100 USD
-                    (the market's 112.50), on PostgreSQL.
+                    (the market's 112.50), on PostgreSQL; the monthly total of
+                    both accounts nets each transfer's two sides to the
+                    groceries line's -48 EUR, and a payee's summary and monthly
+                    totals both read -48 EUR, with the MCP resources' summary
+                    buckets matching their converted totals (issue #2337).
                     transaction-analytics.service.spec.ts "a row carrying its own
                     rate": EUR 100 charged as USD 125 reads EUR 100 in the
                     assistant's totals and breakdown, the report rule's figure,
