@@ -1305,6 +1305,23 @@ describe("AiRelayService", () => {
       expect(harness.rows[0].claimedBy).toBe("session-b");
     });
 
+    it("rewrites a parked holder's seen time only once it is a third of the window old", async () => {
+      const poll = service.waitForPrompt(USER, undefined, MINE);
+      await jest.advanceTimersByTimeAsync(0);
+      const seen = new Set([harness.agents[0].agentSeenAt]);
+      for (let i = 0; i < 5; i += 1) {
+        await jest.advanceTimersByTimeAsync(WAKE_POLL_INTERVAL_MS);
+        seen.add(harness.agents[0].agentSeenAt);
+      }
+      await jest.advanceTimersByTimeAsync(1000);
+      // Held throughout: an empty poll, not a refusal.
+      expect(await poll).toBeNull();
+      // Five asks over the park; the row was written on the first and once
+      // its seen time reached 15 s, not on each ask.
+      expect(seen.size).toBe(2);
+      expect(harness.agents[0].agentCredential).toBe(MINE);
+    });
+
     it("lets another credential take over once the holder has been silent and has no turn", async () => {
       expect(await pollOnce(MINE)).toBeNull();
       await jest.advanceTimersByTimeAsync(CONNECTED_WINDOW_MS + 1000);
