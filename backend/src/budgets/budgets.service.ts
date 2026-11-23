@@ -305,7 +305,7 @@ export class BudgetsService {
       );
     }
 
-    return withScopedDb(this.dataSource, async (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
       // INV-BUDGET-002: the membership check shares the write's transaction.
       await assertBucketAssignable(
         m,
@@ -322,6 +322,9 @@ export class BudgetsService {
         }),
       );
     });
+    // After the commit: the cached actuals were computed from the old lines.
+    this.invalidateCategoryActuals(budget.id);
+    return saved;
   }
 
   /**
@@ -412,7 +415,7 @@ export class BudgetsService {
   ): Promise<BudgetCategory> {
     // The lookups, the refusal and the save share one transaction, so a
     // refused PATCH has written nothing.
-    return withScopedDb(this.dataSource, async (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
       await this.findOne(userId, budgetId);
 
       const repo = m.getRepository(BudgetCategory);
@@ -456,6 +459,8 @@ export class BudgetsService {
       );
       return repo.save(budgetCategory);
     });
+    this.invalidateCategoryActuals(budgetId);
+    return saved;
   }
 
   private applyCategoryUpdate(
@@ -511,6 +516,7 @@ export class BudgetsService {
     await withScopedDb(this.dataSource, (m) =>
       m.getRepository(BudgetCategory).remove(budgetCategory),
     );
+    this.invalidateCategoryActuals(budgetId);
   }
 
   async bulkUpdateCategories(
@@ -544,7 +550,7 @@ export class BudgetsService {
 
     // Apply all amount changes atomically so a partial failure cannot leave
     // some categories updated and others not.
-    return withScopedDb(this.dataSource, async (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
       // Membership (truth table D) is checked for every item before the first
       // write, in this same transaction; a refusal leaves nothing written.
       for (const item of categories) {
@@ -568,6 +574,8 @@ export class BudgetsService {
       }
       return results;
     });
+    this.invalidateCategoryActuals(budgetId);
+    return saved;
   }
 
   async getSummary(

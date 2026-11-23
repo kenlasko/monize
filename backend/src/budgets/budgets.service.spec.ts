@@ -1005,6 +1005,58 @@ describe("BudgetsService", () => {
     });
   });
 
+  describe("line edits drop the cached actuals", () => {
+    // The summary caches its actuals for ten seconds; a line edit must not be
+    // answered from figures computed over the old lines.
+    const edits: Array<[string, (s: BudgetsService) => Promise<unknown>]> = [
+      [
+        "addCategory",
+        (s) =>
+          s.addCategory("user-1", "budget-1", {
+            categoryId: "cat-1",
+            amount: 500,
+          }),
+      ],
+      [
+        "updateCategory",
+        (s) =>
+          s.updateCategory("user-1", "budget-1", "bc-1", { amount: 700 }),
+      ],
+      ["removeCategory", (s) => s.removeCategory("user-1", "budget-1", "bc-1")],
+      [
+        "bulkUpdateCategories",
+        (s) =>
+          s.bulkUpdateCategories("user-1", "budget-1", [
+            { id: "bc-1", amount: 700 },
+          ]),
+      ],
+    ];
+
+    it.each(edits)("after %s", async (_name, edit) => {
+      const compute = jest
+        .spyOn(service as any, "computeCategoryActuals")
+        .mockResolvedValue({ lines: [], outsideTransferIncome: 0 });
+      budgetsRepository.findOne.mockResolvedValue({ ...mockBudget });
+      await service.getSummary("user-1", "budget-1");
+      await service.getSummary("user-1", "budget-1");
+      expect(compute).toHaveBeenCalledTimes(1);
+
+      categoriesRepository.findOne.mockResolvedValue(mockCategory);
+      budgetCategoriesRepository.findOne.mockImplementation(
+        async ({ where }: { where: { id?: string } }) =>
+          where.id ? { ...mockBudgetCategory, id: "bc-1" } : null,
+      );
+      budgetCategoriesRepository.find.mockResolvedValue([
+        { ...mockBudgetCategory, id: "bc-1" },
+      ]);
+      budgetCategoriesRepository.save.mockImplementation(async (d) => d);
+      await edit(service);
+      await service.getSummary("user-1", "budget-1");
+
+      expect(compute).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe("bucket membership (INV-BUDGET-002, truth table D)", () => {
     const expenseLine = (over: Record<string, unknown> = {}) => ({
       ...mockBudgetCategory,
