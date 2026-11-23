@@ -2,6 +2,7 @@ import type { BuiltInReportsService } from "../../built-in-reports/built-in-repo
 import type { SpendingByCategoryResponse } from "../../built-in-reports/dto/spending-by-category.dto";
 import type { SpendingByPayeeResponse } from "../../built-in-reports/dto/spending-by-payee.dto";
 import type { IncomeBySourceResponse } from "../../built-in-reports/dto/income-by-source.dto";
+import { mapWithConcurrency } from "../../common/concurrency.util";
 import type { TriviaFamily } from "./trivia-families";
 import { pickRank, pickWindow, windowRange } from "./trivia-windows";
 import type { TriviaWindow } from "./trivia.types";
@@ -63,7 +64,8 @@ function windowsOf(
 
 /**
  * Reads each `(report, window)` the picks need exactly once: two families
- * that picked the same window share one report call.
+ * that picked the same window share one report call. Each report call opens
+ * its own transaction, so at most `limit` run at once.
  */
 export async function readWindowedReports(
   reports: BuiltInReportsService,
@@ -71,45 +73,45 @@ export async function readWindowedReports(
   userId: string,
   today: string,
   picks: TriviaPicks,
+  limit: number,
 ): Promise<TriviaWindowedReads> {
   const out = emptyWindowedReads();
-  const read = async <T>(
+  const jobs = <T>(
     into: WindowedRead<T>,
     source: string,
     windows: TriviaWindow[],
     call: (start: string | undefined, end: string) => Promise<T>,
-  ) => {
-    await Promise.all(
-      windows.map(async (window) => {
-        const { startDate, endDate } = windowRange(window, today);
-        into.set(
-          window,
-          await attempt(`${source} (${window})`, () =>
-            call(startDate, endDate),
-          ),
-        );
-      }),
-    );
-  };
-  await Promise.all([
-    read(
-      out.spendingByCategory,
-      "spending",
-      windowsOf(picks, ["spendingTopCategory", "spendingRankedCategory"]),
-      (s, e) => reports.getSpendingByCategory(userId, s, e),
-    ),
-    read(
-      out.spendingByPayee,
-      "payees",
-      windowsOf(picks, ["spendingTopPayee", "spendingRankedPayee"]),
-      (s, e) => reports.getSpendingByPayee(userId, s, e),
-    ),
-    read(
-      out.incomeBySource,
-      "income",
-      windowsOf(picks, ["incomeTopSource", "incomeRankedSource"]),
-      (s, e) => reports.getIncomeBySource(userId, s, e),
-    ),
-  ]);
+  ): (() => Promise<void>)[] =>
+    windows.map((window) => async () => {
+      const { startDate, endDate } = windowRange(window, today);
+      into.set(
+        window,
+        await attempt(`${source} (${window})`, () => call(startDate, endDate)),
+      );
+    });
+  await mapWithConcurrency(
+    [
+      ...jobs(
+        out.spendingByCategory,
+        "spending",
+        windowsOf(picks, ["spendingTopCategory", "spendingRankedCategory"]),
+        (s, e) => reports.getSpendingByCategory(userId, s, e),
+      ),
+      ...jobs(
+        out.spendingByPayee,
+        "payees",
+        windowsOf(picks, ["spendingTopPayee", "spendingRankedPayee"]),
+        (s, e) => reports.getSpendingByPayee(userId, s, e),
+      ),
+      ...jobs(
+        out.incomeBySource,
+        "income",
+        windowsOf(picks, ["incomeTopSource", "incomeRankedSource"]),
+        (s, e) => reports.getIncomeBySource(userId, s, e),
+      ),
+    ],
+    limit,
+    (run) => run(),
+  );
   return out;
 }

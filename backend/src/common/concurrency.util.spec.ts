@@ -1,4 +1,28 @@
-import { mapWithConcurrency } from "./concurrency.util";
+import { allWithConcurrency, mapWithConcurrency } from "./concurrency.util";
+
+describe("allWithConcurrency", () => {
+  it("keeps each thunk's result at its position, within the limit", async () => {
+    let active = 0;
+    let maxActive = 0;
+    const run =
+      <T>(value: T, ms: number) =>
+      async (): Promise<T> => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise((r) => setTimeout(r, ms));
+        active -= 1;
+        return value;
+      };
+    const [a, b, c, d] = await allWithConcurrency(2, [
+      run("one", 20),
+      run(2, 5),
+      run(true, 10),
+      run(null, 1),
+    ] as const);
+    expect([a, b, c, d]).toEqual(["one", 2, true, null]);
+    expect(maxActive).toBe(2);
+  });
+});
 
 describe("mapWithConcurrency", () => {
   it("returns results in input order regardless of completion order", async () => {

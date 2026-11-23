@@ -42,8 +42,12 @@ import type {
   TriviaItem,
 } from "./trivia.types";
 
-/** Users built at once by the daily job: each reads a whole portfolio. */
-const TRIVIA_GENERATION_CONCURRENCY = 5;
+/**
+ * Users built at once by the daily job: each reads a whole portfolio and
+ * holds up to `TRIVIA_READ_CONCURRENCY` connections, so a tick holds at most
+ * six of the default pool of ten and requests keep the rest.
+ */
+export const TRIVIA_GENERATION_CONCURRENCY = 3;
 
 @Injectable()
 export class DashboardTriviaService {

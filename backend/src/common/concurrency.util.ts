@@ -59,3 +59,21 @@ export async function mapWithConcurrency<T, R>(
   await Promise.all(workers);
   return results;
 }
+
+/**
+ * `Promise.all` over a tuple of thunks, at most `limit` in flight at once:
+ * the typed form of {@link mapWithConcurrency} for a fixed set of
+ * independent reads of different types. Each entry keeps its own result type
+ * and position.
+ */
+export async function allWithConcurrency<T extends readonly unknown[]>(
+  limit: number,
+  thunks: { readonly [K in keyof T]: () => Promise<T[K]> },
+): Promise<T> {
+  const results = await mapWithConcurrency(
+    thunks as readonly (() => Promise<unknown>)[],
+    limit,
+    (run) => run(),
+  );
+  return results as unknown as T;
+}

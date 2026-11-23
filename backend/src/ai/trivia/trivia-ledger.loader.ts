@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
+import { allWithConcurrency } from "../../common/concurrency.util";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
 import { warrantyStatusBounds } from "../../warranties/warranty-status.util";
@@ -14,6 +15,12 @@ import type {
   TriviaRecordCounts,
   TriviaWarranties,
 } from "./trivia-ledger-facts";
+
+/**
+ * Report reads one build runs at once. With the daily job's user concurrency
+ * this keeps a tick well inside the default pool of ten connections.
+ */
+export const TRIVIA_READ_CONCURRENCY = 2;
 
 /** The ledger's twelve-month reads, and the other windows the picks asked for. */
 export interface TriviaLedgerLoad extends TriviaLedgerInput {
@@ -43,7 +50,10 @@ export class TriviaLedgerLoader {
   ): Promise<TriviaLedgerLoad> {
     const { startDate, endDate } = triviaWindow(today);
 
-    // Independent reads, each already isolated by `attempt`.
+    // Independent reads, each already isolated by `attempt`. Each opens its
+    // own transaction, so at most TRIVIA_READ_CONCURRENCY connections are held
+    // at once: the daily job builds several users side by side and a page
+    // load shares the pool with the rest of the dashboard.
     const [
       spendingByCategory,
       spendingByPayee,
@@ -51,32 +61,37 @@ export class TriviaLedgerLoader {
       incomeBySource,
       records,
       warranties,
-      windowed,
-    ] = await Promise.all([
-      this.attempt(userId, "spending", () =>
-        this.reports.getSpendingByCategory(userId, startDate, endDate),
-      ),
-      this.attempt(userId, "payees", () =>
-        this.reports.getSpendingByPayee(userId, startDate, endDate),
-      ),
-      this.attempt(userId, "cash flow", () =>
-        this.reports.getIncomeVsExpenses(userId, startDate, endDate),
-      ),
-      this.attempt(userId, "income", () =>
-        this.reports.getIncomeBySource(userId, startDate, endDate),
-      ),
-      this.attempt(userId, "records", () => this.countRecords(userId)),
-      this.attempt(userId, "warranties", () =>
-        this.readWarranties(userId, today),
-      ),
-      readWindowedReports(
-        this.reports,
-        (source, read) => this.attempt(userId, source, read),
-        userId,
-        today,
-        picks,
-      ),
-    ]);
+    ] = await allWithConcurrency(TRIVIA_READ_CONCURRENCY, [
+      () =>
+        this.attempt(userId, "spending", () =>
+          this.reports.getSpendingByCategory(userId, startDate, endDate),
+        ),
+      () =>
+        this.attempt(userId, "payees", () =>
+          this.reports.getSpendingByPayee(userId, startDate, endDate),
+        ),
+      () =>
+        this.attempt(userId, "cash flow", () =>
+          this.reports.getIncomeVsExpenses(userId, startDate, endDate),
+        ),
+      () =>
+        this.attempt(userId, "income", () =>
+          this.reports.getIncomeBySource(userId, startDate, endDate),
+        ),
+      () => this.attempt(userId, "records", () => this.countRecords(userId)),
+      () =>
+        this.attempt(userId, "warranties", () =>
+          this.readWarranties(userId, today),
+        ),
+    ] as const);
+    const windowed = await readWindowedReports(
+      this.reports,
+      (source, read) => this.attempt(userId, source, read),
+      userId,
+      today,
+      picks,
+      TRIVIA_READ_CONCURRENCY,
+    );
 
     return {
       currency,
