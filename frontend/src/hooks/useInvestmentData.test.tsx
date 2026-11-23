@@ -3,6 +3,7 @@ import { renderHook, act } from '@/test/render';
 import { useInvestmentData } from './useInvestmentData';
 import { transactionsApi } from '@/lib/transactions';
 import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
+import { readPageSnapshot } from '@/lib/page-snapshot';
 
 // --- API mocks ---
 const mockDeleteTransaction = vi.fn();
@@ -1164,6 +1165,23 @@ describe('useInvestmentData – returning to the page', () => {
     await act(async () => result.current.handleAccountChange(['acc-2']));
     await settle();
     expect(result.current.isSummaryLoading).toBe(true);
+  });
+
+  it('keeps one summary snapshot, for the latest selection, however many were visited', async () => {
+    const first = renderHook(() => useInvestmentData());
+    await settle();
+    first.unmount();
+
+    mockStoredSelection = ['acc-2'];
+    const second = renderHook(() => useInvestmentData());
+    await settle();
+    second.unmount();
+
+    expect(readPageSnapshot('investments:summary')).toEqual({
+      selection: 'acc-2',
+      value: mockSummary,
+    });
+    expect(readPageSnapshot('investments:summary:acc-2')).toBeUndefined();
   });
 
   it('draws nothing from a snapshot when a link names the account to show', async () => {
