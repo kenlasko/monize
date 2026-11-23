@@ -1,6 +1,10 @@
 import { EntityManager } from "typeorm";
 import { Account, AccountType } from "../accounts/entities/account.entity";
-import { roundMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
 import { LoanFee } from "../loan-fees/entities/loan-fee.entity";
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { LoanFeeTerms, loanFeeFactsFor, priceLoanFees } from "./loan-fees";
@@ -72,9 +76,7 @@ export function priceFeeLines(
   const stored = feeLines.map((line) =>
     roundMoney(Math.abs(Number(line.split.amount))),
   );
-  const templateTotal =
-    stored.reduce((units, amount) => units + Math.round(amount * 10_000), 0) /
-    10_000;
+  const templateTotal = sumMoney(stored, FIAT_MONEY_DECIMALS);
   if (!input.reprice) {
     return {
       kind: "ok",

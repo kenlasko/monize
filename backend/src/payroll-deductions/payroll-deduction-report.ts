@@ -1,7 +1,7 @@
 import { EntityManager } from "typeorm";
 import { addDaysYMD } from "../common/date-utils";
 import { returnedRows } from "../common/db/query-result";
-import { MONEY_DECIMALS, roundMoney } from "../common/round.util";
+import { MONEY_DECIMALS, moneyUnits, roundMoney } from "../common/round.util";
 import { PayrollDeductionRule } from "./entities/payroll-deduction-rule.entity";
 import {
   CATEGORY_DEDUCTION_ROWS_SQL,
@@ -140,7 +140,7 @@ export interface PayrollReportGroup {
 const SCALE = 10 ** MONEY_DECIMALS;
 
 function toUnits(value: number): number {
-  return Math.round(value * SCALE);
+  return moneyUnits(value, MONEY_DECIMALS);
 }
 
 function fromUnits(units: number): number {

@@ -37,8 +37,7 @@ import { loadReceiptCandidates } from "../pipeline/receipt-candidates";
 import { ReceiptSourceLines } from "../pipeline/receipt-source-lines";
 import { readTradeEmail } from "../pipeline/trade-reading";
 import type { DraftComponentReader } from "./component-draft";
-
-const MONEY_UNITS = 10_000;
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../../common/round.util";
 
 /** The parts of a stored email a dry run reads. */
 export interface DryRunReceipt {
@@ -466,7 +465,8 @@ export function compareWithExpected(
   const paid = receiptMatchAmount(parsed);
   const total =
     paid !== null &&
-    Math.abs(Math.round(Math.abs(expected.amount) * MONEY_UNITS) - paid) <=
-      matchConfig.toleranceUnits;
+    Math.abs(
+      moneyUnits(Math.abs(expected.amount), FIAT_MONEY_DECIMALS) - paid,
+    ) <= matchConfig.toleranceUnits;
   return { date, total, agrees: date && total };
 }

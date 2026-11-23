@@ -4,7 +4,12 @@ import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { preferredCurrency } from "../common/default-currency.util";
-import { roundMoney, roundToDecimals } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  roundMoney,
+  roundToDecimals,
+  sumMoney,
+} from "../common/round.util";
 import {
   RateIndex,
   buildRateIndex,
@@ -292,9 +297,9 @@ export class DailyMovementService {
       .sort(byAbsoluteChangeDesc);
 
     const anyChangeUnknown = rows.some((row) => row.change === null);
-    const explained = rows.reduce(
-      (sum, row) => sum + Math.round((row.change ?? 0) * 10000),
-      0,
+    const explained = sumMoney(
+      rows.map((row) => row.change ?? 0),
+      FIAT_MONEY_DECIMALS,
     );
 
     return {
@@ -307,7 +312,7 @@ export class DailyMovementService {
       remainder:
         decision.movement === null || anyChangeUnknown
           ? null
-          : roundMoney(decision.movement - explained / 10000),
+          : roundMoney(decision.movement - explained),
     };
   }
 

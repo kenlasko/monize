@@ -128,6 +128,12 @@ describe("unitsOf", () => {
     expect(unitsOf(null)).toBe(0);
     expect(unitsOf(12.5)).toBe(125000);
   });
+
+  it("scales a large amount to the units it denotes (Discussion #2343)", () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles.
+    expect(unitsOf("300000000000.03")).toBe(3_000_000_000_000_300);
+    expect(unitsOf("-300000000000.03")).toBe(-3_000_000_000_000_300);
+  });
 });
 
 describe("loadLinkedComponents", () => {

@@ -38,7 +38,12 @@ import {
   isPricedByQuoteProvider,
   isRefreshEligible,
 } from "./provider-priced.util";
-import { roundMoney } from "../common/round.util";
+import {
+  FIAT_MONEY_DECIMALS,
+  moneyUnits,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
 import { collectTagKeys } from "../tags/tag-key-value.util";
 import {
   buildPortfolioSummaryMemoKey,
@@ -2456,7 +2461,7 @@ export class PortfolioService {
         barUnrated?.add(currency);
         return 0;
       }
-      return Math.round(amount * rate * 10000);
+      return moneyUnits(amount * rate, FIAT_MONEY_DECIMALS);
     };
   }
 
@@ -2578,30 +2583,31 @@ export class PortfolioService {
     if (hasCash)
       series.push({ key: "cash", type: "cash", symbol: null, name: "" });
 
-    const round4 = (v: number) => Math.round(v * 10000) / 10000;
+    const round4 = (v: number) => roundMoney(v, FIAT_MONEY_DECIMALS);
     const points: IntradayBreakdownPoint[] = timestamps.map((ts, ti) => {
       const values: Record<string, number> = {};
-      let total = 0;
+      const parts: number[] = [];
       for (const id of topIds) {
         const v = round4(secValues.get(id)![ti]);
         values[id] = v;
-        total += v;
+        parts.push(v);
       }
       if (hasOther) {
-        let sum = 0;
-        for (const id of otherIds) sum += secValues.get(id)![ti];
-        const v = round4(sum);
+        const v = sumMoney(
+          otherIds.map((id) => secValues.get(id)![ti]),
+          FIAT_MONEY_DECIMALS,
+        );
         values.other = v;
-        total += v;
+        parts.push(v);
       }
       if (hasCash) {
         const v = round4(cash[ti]);
         values.cash = v;
-        total += v;
+        parts.push(v);
       }
       return {
         timestamp: new Date(ts).toISOString(),
-        total: round4(total),
+        total: sumMoney(parts, FIAT_MONEY_DECIMALS),
         values,
         ...barFlags[ti],
         ...(sessionCloses.has(ts) ? { sessionClose: true as const } : {}),

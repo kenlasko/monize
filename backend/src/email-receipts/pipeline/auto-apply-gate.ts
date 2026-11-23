@@ -3,6 +3,7 @@ import type { EmailReceiptMatchKind } from "../entities/email-receipt.entity";
 import { receiptMatchAmount } from "../matching/match-receipt";
 import type { ParsedReceipt } from "../parsing/receipt-parser.types";
 import type { ReceiptProposalKind } from "../proposal/build-receipt-proposal";
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../../common/round.util";
 
 /** What `autoApplyAllowed` reads: every condition of spec section 7. */
 export interface AutoApplyFacts {
@@ -26,8 +27,6 @@ export interface AutoApplyFacts {
   forwarded: boolean;
 }
 
-const MONEY_UNITS = 10000;
-
 /**
  * Spec section 7. Applies only when every condition holds: the mailbox opted in;
  * the parser is `approved`; the parse is `complete` and was read by a parser
@@ -50,7 +49,7 @@ export function autoApplyAllowed(facts: AutoApplyFacts): boolean {
     // The email's own markup is no approved parser's reading: a person looks first.
     facts.parsed.source !== "schema_org" &&
     receiptMatchAmount(facts.parsed) !== null &&
-    Math.round(Math.abs(facts.transactionAmount) * MONEY_UNITS) ===
+    moneyUnits(Math.abs(facts.transactionAmount), FIAT_MONEY_DECIMALS) ===
       receiptMatchAmount(facts.parsed) &&
     (facts.matchKind === "order_id" ||
       facts.matchKind === "reference" ||

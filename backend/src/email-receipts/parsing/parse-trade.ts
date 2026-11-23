@@ -15,6 +15,7 @@ import {
   type ReceiptTraceHit,
 } from "./receipt-parser.types";
 import { parseTradeNumber, tradeAmountCurrency } from "./trade-number";
+import { toScaledUnits } from "../../common/round.util";
 
 /**
  * The trade reader (design "Trade confirmations"): the lines of one brokerage
@@ -562,7 +563,7 @@ export function parseTradeLines(
 export function tradeExecutedTotalUnits(trade: ParsedTrade): number | null {
   if (trade.total !== null) return trade.total;
   if (trade.price === null || trade.quantity === null) return null;
-  const quantity8 = BigInt(Math.round(trade.quantity * 1e8));
+  const quantity8 = toScaledUnits(trade.quantity, 8);
   // From the price as written when the reading carries it: quantity (1e-8) x
   // price (1e-8) is 1e-16, money is 1e-4, so divide by 1e12, half up. A
   // reading stored before `priceUnits8` existed keeps the card price.

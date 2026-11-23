@@ -13,7 +13,7 @@ import {
 } from "../common/scheduled-occurrences";
 import { ensureYMD } from "../common/recurrence";
 import { currencyMinorUnitDecimals } from "../common/currency-minor-unit.util";
-import { MONEY_DECIMALS, roundMoney } from "../common/round.util";
+import { MONEY_DECIMALS, moneyUnits, roundMoney } from "../common/round.util";
 import { bookLoanAllocation } from "../accounts/loan-payment-waterfall.util";
 import { periodsPerYearForStoredFrequency } from "../accounts/payment-frequency.util";
 import {
@@ -163,7 +163,7 @@ export type LoanOccurrenceProjection =
   | { readonly status: "priced"; readonly occurrences: LoanOccurrence[] };
 
 const SCALE = 10 ** MONEY_DECIMALS;
-const toUnits = (value: number): number => Math.round(value * SCALE);
+const toUnits = (value: number): number => moneyUnits(value, MONEY_DECIMALS);
 const fromUnits = (units: number): number => units / SCALE;
 
 /** An occurrence nothing can be said about beyond its identity, its dated rate and why. */

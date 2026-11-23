@@ -3,7 +3,12 @@ import { Account } from "../accounts/entities/account.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
-import { LoanFeeTerms, originalPrincipalOf, priceLoanFee } from "./loan-fees";
+import {
+  LoanFeeTerms,
+  originalPrincipalOf,
+  priceLoanFee,
+  priceLoanFees,
+} from "./loan-fees";
 import {
   datedAnnuityPayment,
   identifyLoanTemplate,
@@ -39,6 +44,18 @@ describe("mortgage fees", () => {
     amount: null,
     rate: null,
     ...overrides,
+  });
+
+  it("totals large fees exactly (Discussion #2343)", () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles, which the
+    // float scaling turned into a total of 300000000000.0301.
+    expect(priceLoanFees([fee({ amount: 300_000_000_000.03 })], facts)).toEqual(
+      {
+        kind: "ok",
+        amounts: [300_000_000_000.03],
+        total: 300_000_000_000.03,
+      },
+    );
   });
 
   describe("priceLoanFee (table 3.1)", () => {

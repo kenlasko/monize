@@ -13,6 +13,7 @@ import {
   receiptExtractionSchema,
   type ReceiptExtractionAnswer,
 } from "./email-receipt-ai.schema";
+import { FIAT_MONEY_DECIMALS, moneyUnits } from "../../common/round.util";
 
 /**
  * The AI's answer as a `ParsedReceipt` (spec "AI extraction"). The model reads
@@ -23,8 +24,6 @@ import {
  * are proposed, refused and described by one set of rules. Pure: no database, no
  * provider call.
  */
-
-const MONEY_UNITS = 10000;
 
 export type AiExtraction =
   | {
@@ -45,14 +44,14 @@ const clean = (text: string): string =>
 /**
  * One amount as 1/10000 units, or null when it is not a non-negative amount.
  * A JSON number must be finite and not negative and is scaled once with
- * `Math.round(n * 10000)`; a string goes through the receipt amount grammar
+ * `moneyUnits`, on its decimal digits; a string goes through the receipt amount grammar
  * (spec section 2) and must hold nothing but the amount and a currency mark, as
  * a parser's amount capture must.
  */
 export function aiAmountToUnits(value: string | number): number | null {
   if (typeof value === "number") {
     if (!Number.isFinite(value) || value < 0) return null;
-    const units = Math.round(value * MONEY_UNITS);
+    const units = moneyUnits(value, FIAT_MONEY_DECIMALS);
     return Number.isSafeInteger(units) ? units : null;
   }
   return isPlainReceiptAmount(value) ? parseReceiptAmount(value) : null;
