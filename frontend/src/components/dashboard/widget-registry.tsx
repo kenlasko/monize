@@ -114,7 +114,8 @@ export interface DashboardWidgetContext {
   hasInvestments: boolean;
   hasSecurities: boolean;
   isRefreshing: boolean;
-  onRefresh: () => void;
+  /** The page's price refresh, narrowed to the given securities when they are passed. */
+  onRefresh: (scopeSecurityIds?: string[]) => void;
   /**
    * Bumped each time a price refresh wrote new prices, so a widget that
    * fetches its own valuation re-asks for it.
@@ -250,7 +251,13 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
     render: (ctx) => (
-      <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} refreshKey={ctx.priceRefreshKey} />
+      <PortfolioValueWidget
+        accounts={ctx.accounts}
+        isLoading={ctx.isLoading}
+        refreshKey={ctx.priceRefreshKey}
+        onRefresh={ctx.onRefresh}
+        isRefreshing={ctx.isRefreshing}
+      />
     ),
   },
   {

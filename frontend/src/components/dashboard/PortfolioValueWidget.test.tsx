@@ -104,16 +104,8 @@ vi.mock('@/lib/investments', () => ({
   },
 }));
 
+// The dashboard's price refresh, handed down through the widget context.
 const triggerManualRefresh = vi.fn();
-// The widget's `onRefreshComplete`, as the hook would call it once its own
-// refresh wrote new prices.
-const priceRefresh: { onRefreshComplete?: () => Promise<void> | void } = {};
-vi.mock('@/hooks/usePriceRefresh', () => ({
-  usePriceRefresh: (options: { onRefreshComplete?: () => Promise<void> | void } = {}) => {
-    priceRefresh.onRefreshComplete = options.onRefreshComplete;
-    return { isRefreshing: false, triggerManualRefresh };
-  },
-}));
 
 const investmentAccount = { id: 'i1', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', name: 'Brokerage' } as Account;
 
@@ -136,7 +128,14 @@ function viewport(width: number) {
 
 async function renderWidget() {
   await act(async () => {
-    render(<PortfolioValueWidget accounts={[investmentAccount]} isLoading={false} />);
+    render(
+      <PortfolioValueWidget
+        accounts={[investmentAccount]}
+        isLoading={false}
+        onRefresh={triggerManualRefresh}
+        isRefreshing={false}
+      />,
+    );
   });
 }
 
@@ -198,13 +197,19 @@ describe('PortfolioValueWidget', () => {
     expect(triggerManualRefresh).toHaveBeenCalledWith(undefined);
   });
 
-  it('asks for the value, the series and the result again when the dashboard refreshed prices', async () => {
+  it('asks for the value, the series and the result again when a price refresh wrote new prices', async () => {
     getInvestmentsDaily.mockResolvedValue([
       { date: '2026-05-28', value: 9000 },
       { date: '2026-06-28', value: 10000 },
     ]);
     const widget = (refreshKey: number) => (
-      <PortfolioValueWidget accounts={[investmentAccount]} isLoading={false} refreshKey={refreshKey} />
+      <PortfolioValueWidget
+        accounts={[investmentAccount]}
+        isLoading={false}
+        refreshKey={refreshKey}
+        onRefresh={triggerManualRefresh}
+        isRefreshing={false}
+      />
     );
     let view!: ReturnType<typeof render>;
     await act(async () => {
@@ -230,20 +235,6 @@ describe('PortfolioValueWidget', () => {
     // drawn stay until they answer.
     expect(screen.getByTestId('area-chart')).toBeInTheDocument();
     expect(screen.getByTestId('portfolio-period-change')).toBeInTheDocument();
-  });
-
-  it('asks for everything again after its own refresh, the result included', async () => {
-    getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
-    await renderWidget();
-    const periodCalls = getInvestmentsPeriodResult.mock.calls.length;
-
-    await act(async () => {
-      await priceRefresh.onRefreshComplete?.();
-    });
-
-    expect(getPortfolioValuation).toHaveBeenCalledTimes(2);
-    expect(getInvestmentsDaily).toHaveBeenCalledTimes(2);
-    expect(getInvestmentsPeriodResult.mock.calls.length).toBeGreaterThan(periodCalls);
   });
 
   it('shows the investment result over the window, not the value change', async () => {

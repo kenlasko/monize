@@ -223,9 +223,12 @@ vi.mock('@/components/dashboard/FavouriteSecurities', () => ({
 }));
 
 vi.mock('@/components/dashboard/PortfolioValueWidget', () => ({
-  PortfolioValueWidget: ({ isLoading, refreshKey }: any) => (
+  PortfolioValueWidget: ({ isLoading, refreshKey, onRefresh }: any) => (
     <div data-testid="portfolio-value-widget" data-refresh-key={refreshKey}>
       {isLoading ? 'loading' : 'loaded'}
+      <button type="button" onClick={() => onRefresh(['sec-1'])}>
+        Refresh portfolio value
+      </button>
     </div>
   ),
 }));
@@ -245,6 +248,7 @@ vi.mock('@/components/dashboard/FavouriteReportsWidget', () => ({
 }));
 
 const mockTriggerAutoRefresh = vi.fn();
+const mockTriggerManualRefresh = vi.fn();
 // The page's `onRefreshComplete`, as the hook would call it once a refresh
 // wrote new prices.
 const priceRefresh: { onRefreshComplete?: () => Promise<void> | void } = {};
@@ -253,7 +257,7 @@ vi.mock('@/hooks/usePriceRefresh', () => ({
     priceRefresh.onRefreshComplete = options.onRefreshComplete;
     return {
     isRefreshing: false,
-    triggerManualRefresh: vi.fn(),
+    triggerManualRefresh: mockTriggerManualRefresh,
     triggerAutoRefresh: mockTriggerAutoRefresh,
     };
   },
@@ -472,6 +476,18 @@ describe('DashboardPage', () => {
 
     expect(screen.getByTestId('dashboard-hero')).toHaveAttribute('data-price-refresh-key', '1');
     expect(screen.getByTestId('portfolio-value-widget')).toHaveAttribute('data-refresh-key', '1');
+  });
+
+  it('runs the Portfolio Value widget\'s refresh through the page, so it reloads every priced widget', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('portfolio-value-widget')).toHaveTextContent('loaded');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh portfolio value' }));
+    expect(mockTriggerManualRefresh).toHaveBeenCalledWith(['sec-1']);
   });
 
   it('loads top movers directly when investment accounts exist', async () => {
