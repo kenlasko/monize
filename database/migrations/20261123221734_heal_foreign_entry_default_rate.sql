@@ -8,8 +8,10 @@
 -- Since #2344 the reports read a 1 beside an original currency as a recorded
 -- rate (ownRateSql, transactionRateBasis), so EUR 100 charged as USD 117.50 and
 -- stored at 1 reads EUR 117.50, and the Foreign Currency Fees report derives a
--- USD 17.50 fee from it. The code fix stops new ones; this heals the rows
--- already written.
+-- USD 17.50 fee from it. Undoing such an edit wrote the same state, restoring
+-- the plain row's 1 beside the edit's original amount. The code fixes stop new
+-- ones (#2344 for the update, #2358 for the undo and a schedule's update); this
+-- heals the rows already written.
 --
 -- The amount the account was charged is the fact, so the repair is the rate
 -- the row's own two amounts imply, with the account's foreign-transaction fee
@@ -39,55 +41,70 @@
 -- The fee is the account's fx_fee_percent today, not the one in force when the
 -- row was written; the row stores no other.
 --
+-- How many rows were healed is not known in advance (issue #2358 never counted
+-- them), and the fee caveat above can rewrite a genuine 1:1 entry written
+-- under an older fee, so the count is raised as a NOTICE, which db-migrate
+-- logs at startup.
+--
 -- Re-runnable: a healed row no longer carries exchange_rate = 1, so a second
 -- pass selects nothing.
 
-WITH candidates AS (
-    SELECT t.id,
-           t.amount,
-           t.original_amount,
-           CASE WHEN a.fx_fee_percent > 0 THEN a.fx_fee_percent / 100 ELSE 0 END AS fee,
-           -- moneyDecimalsFor: four places for fiat, a coin's own up to eight.
-           GREATEST(4, LEAST(8, COALESCE(c.decimal_places, 2))) AS money_places,
-           COALESCE(c.decimal_places, 2) AS currency_places
-    FROM transactions t
-    JOIN accounts a ON a.id = t.account_id
-    LEFT JOIN currencies c ON c.code = t.currency_code
-    WHERE t.original_currency_code IS NOT NULL
-      AND t.original_currency_code <> t.currency_code
+DO $$
+DECLARE
+    healed INTEGER;
+BEGIN
+    WITH candidates AS (
+        SELECT t.id,
+               t.amount,
+               t.original_amount,
+               CASE WHEN a.fx_fee_percent > 0 THEN a.fx_fee_percent / 100 ELSE 0 END AS fee,
+               -- moneyDecimalsFor: four places for fiat, a coin's own up to eight.
+               GREATEST(4, LEAST(8, COALESCE(c.decimal_places, 2))) AS money_places,
+               COALESCE(c.decimal_places, 2) AS currency_places
+        FROM transactions t
+        JOIN accounts a ON a.id = t.account_id
+        LEFT JOIN currencies c ON c.code = t.currency_code
+        WHERE t.original_currency_code IS NOT NULL
+          AND t.original_currency_code <> t.currency_code
+          AND t.exchange_rate = 1
+          AND t.amount <> 0
+          AND t.original_amount <> 0
+          AND sign(t.amount) = sign(t.original_amount)
+          AND t.shared_expense_posting_id IS NULL
+          AND a.shared_expense_group_id IS NULL
+    ),
+    derived AS (
+        SELECT id,
+               amount,
+               currency_places,
+               -- applyFxConversion(original_amount, 1, fee)
+               round(original_amount, money_places)
+                 - round(abs(round(original_amount, money_places)) * fee, money_places) AS at_par,
+               -- fxBaseFromCharged(amount, fee) / original_amount. The NULLIFs
+               -- make a division by zero a NULL rate, which the UPDATE skips,
+               -- whatever order the planner evaluates the filters in.
+               round(
+                 CASE
+                   WHEN fee = 0 THEN amount
+                   WHEN amount >= 0 THEN round(amount / NULLIF(1 - fee, 0), money_places)
+                   ELSE round(amount / (1 + fee), money_places)
+                 END / NULLIF(original_amount, 0),
+                 10
+               ) AS rate
+        FROM candidates
+    )
+    UPDATE transactions t
+    SET exchange_rate = d.rate
+    FROM derived d
+    WHERE t.id = d.id
       AND t.exchange_rate = 1
-      AND t.amount <> 0
-      AND t.original_amount <> 0
-      AND sign(t.amount) = sign(t.original_amount)
-      AND t.shared_expense_posting_id IS NULL
-      AND a.shared_expense_group_id IS NULL
-),
-derived AS (
-    SELECT id,
-           amount,
-           currency_places,
-           -- applyFxConversion(original_amount, 1, fee)
-           round(original_amount, money_places)
-             - round(abs(round(original_amount, money_places)) * fee, money_places) AS at_par,
-           -- fxBaseFromCharged(amount, fee) / original_amount. The NULLIFs
-           -- make a division by zero a NULL rate, which the UPDATE skips,
-           -- whatever order the planner evaluates the filters in.
-           round(
-             CASE
-               WHEN fee = 0 THEN amount
-               WHEN amount >= 0 THEN round(amount / NULLIF(1 - fee, 0), money_places)
-               ELSE round(amount / (1 + fee), money_places)
-             END / NULLIF(original_amount, 0),
-             10
-           ) AS rate
-    FROM candidates
-)
-UPDATE transactions t
-SET exchange_rate = d.rate
-FROM derived d
-WHERE t.id = d.id
-  AND t.exchange_rate = 1
-  AND abs(d.at_par - d.amount) > power(10::numeric, -d.currency_places)
-  AND d.rate > 0
-  AND d.rate < 1e10
-  AND d.rate <> 1;
+      AND abs(d.at_par - d.amount) > power(10::numeric, -d.currency_places)
+      AND d.rate > 0
+      AND d.rate < 1e10
+      AND d.rate <> 1;
+
+    GET DIAGNOSTICS healed = ROW_COUNT;
+    IF healed > 0 THEN
+        RAISE NOTICE 'heal_foreign_entry_default_rate: rewrote the inherited exchange_rate 1 on % foreign-currency transaction(s) to the rate their amounts imply (issue #2358)', healed;
+    END IF;
+END $$;

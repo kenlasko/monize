@@ -1762,7 +1762,8 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     built-in-reports/report-currency.service.ts; a foreign
                     entry cannot be stored without a rate, and an update that
                     adds one to a plain row or a plain schedule must name it,
-                    issues #2344 and #2358; the rows the old update path left
+                    and undo restores the original amount and currency with
+                    the rate, issues #2344 and #2358; the rows the old update path left
                     at the inherited 1 beside amounts it contradicts were
                     rewritten to the rate their amounts imply by migration
                     20261123221734_heal_foreign_entry_default_rate.sql), and
@@ -1900,10 +1901,12 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     list_transactions; transactions.service.spec.ts and
                     scheduled-transactions.service.spec.ts refuse an update
                     that adds a foreign entry to a plain row or schedule
-                    without a rate;
+                    without a rate; action-history.service.spec.ts undoes and
+                    redoes an edit that added a foreign entry with its rate;
                     migration-heal-foreign-entry-default-rate.integration.spec.ts
                     rewrites an inherited 1 to the rate the amounts imply, the
-                    fee backed out, and keeps every 1 the amounts agree with,
+                    fee backed out, keeps every 1 the amounts agree with, and
+                    leaves shared-expense ledger rows without raising PSE01,
                     on PostgreSQL; forecast-aggregator.service.spec.ts "a row
                     carrying its own rate" the same in the forecast's history
                     and income. currency-detail.integration.spec.ts totals

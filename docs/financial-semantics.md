@@ -189,8 +189,9 @@ figures for one sale. On a transaction, a foreign entry's stored `1` is a rate
 like any other: `normalizeFxEntry` admits no foreign entry without a positive
 rate, and an update that first adds one to a plain row must name it rather than
 inherit the plain row's default `1`, so EUR 100 charged as USD 100 reads EUR 100
-(issue #2344); a scheduled transaction's update refuses the same edit (issue
-#2358). Rows the old update path had already left at the inherited `1` beside
+(issue #2344); a scheduled transaction's update refuses the same edit, and an
+undo or redo of a transaction edit restores the original amount and currency
+with the rate (issue #2358). Rows the old update path had already left at the inherited `1` beside
 amounts it contradicts were healed by migration
 `20261123221734_heal_foreign_entry_default_rate.sql`, which rewrote the rate to
 the one the row's two amounts imply with the account's fee backed out, the

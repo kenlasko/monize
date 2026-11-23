@@ -105,6 +105,7 @@ describe("migration 20261123221734 heals a foreign entry's inherited default rat
 
   beforeEach(async () => {
     await cleanTables(dataSource, [
+      "shared_groups",
       "transaction_splits",
       "transactions",
       "accounts",
@@ -260,6 +261,63 @@ describe("migration 20261123221734 heals a foreign entry's inherited default rat
     expect((await rowOf(ownRate)).rate).toBe(1.2);
     expect((await rowOf(zeroCharged)).rate).toBe(1);
     expect((await rowOf(fullFeeIncome)).rate).toBe(1);
+  });
+
+  it("leaves shared-expense ledger rows alone rather than abort on PSE01", async () => {
+    // shared_protect_ledger_transaction refuses a financial edit of a row the
+    // shared-expense journal posted, or of a row on a shared group's settlement
+    // account. Healing one would raise PSE01, abort the migration and
+    // crash-loop every deployment holding such a row. The fixture is seeded
+    // the way a restore writes it (app.preserve_timestamps), in one implicit
+    // transaction so SET LOCAL holds for every statement.
+    const group = "70000000-0000-4000-8000-000000000001";
+    const payer = "70000000-0000-4000-8000-000000000002";
+    const payee = "70000000-0000-4000-8000-000000000003";
+    const entry = "70000000-0000-4000-8000-000000000004";
+    const integration = "70000000-0000-4000-8000-000000000005";
+    const posting = "70000000-0000-4000-8000-000000000006";
+    const settlement = "70000000-0000-4000-8000-000000000007";
+    const posted = "70000000-0000-4000-8000-000000000008";
+    const onSettlement = "70000000-0000-4000-8000-000000000009";
+    await dataSource.query(`
+      SET LOCAL app.preserve_timestamps = 'on';
+      INSERT INTO shared_groups (id, owner_user_id, name, currency_code)
+        VALUES ('${group}', '${userId}', 'Trip', 'USD');
+      INSERT INTO shared_participants (id, group_id, name)
+        VALUES ('${payer}', '${group}', 'Me'), ('${payee}', '${group}', 'Friend');
+      INSERT INTO shared_entries
+          (id, group_id, type, title, entry_date, original_amount,
+           original_currency_code, group_amount, fx_rate, rounding_seed,
+           from_participant_id, to_participant_id)
+        VALUES ('${entry}', '${group}', 'REPAYMENT', 'Settle up', '2026-08-14',
+                100, 'USD', 100, 1, 'seed', '${payer}', '${payee}');
+      INSERT INTO shared_integrations (id, user_id, group_id, participant_id, account_id)
+        VALUES ('${integration}', '${userId}', '${group}', '${payer}', '${plainCardId}');
+      INSERT INTO shared_postings
+          (id, user_id, group_id, entry_id, integration_id, accepted_revision,
+           input_fingerprint, accepted_snapshot)
+        VALUES ('${posting}', '${userId}', '${group}', '${entry}',
+                '${integration}', 1, 'fp', '{}');
+      INSERT INTO accounts
+          (id, user_id, account_type, name, currency_code, opening_balance,
+           managed_purpose, shared_expense_group_id)
+        VALUES ('${settlement}', '${userId}', 'OTHER', 'Trip settlement', 'USD', 0,
+                'SHARED_SETTLEMENT', '${group}');
+      INSERT INTO transactions
+          (id, user_id, account_id, transaction_date, amount, currency_code,
+           exchange_rate, original_amount, original_currency_code,
+           shared_expense_posting_id)
+        VALUES
+          ('${posted}', '${userId}', '${plainCardId}', '2026-08-14', -117.5,
+           'USD', 1, -100, 'EUR', '${posting}'),
+          ('${onSettlement}', '${userId}', '${settlement}', '2026-08-14', -117.5,
+           'USD', 1, -100, 'EUR', NULL);
+    `);
+
+    await expect(applyMigration()).resolves.not.toThrow();
+
+    expect((await rowOf(posted)).rate).toBe(1);
+    expect((await rowOf(onSettlement)).rate).toBe(1);
   });
 
   it("changes nothing on a second pass", async () => {
