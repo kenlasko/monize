@@ -18,7 +18,7 @@ import {
   missingDestinations,
   stage,
 } from "./lib/stage.mjs";
-import { BACKEND_DEPS_ARCHIVE } from "./lib/pack-deps.mjs";
+import { BACKEND_DEPS_ARCHIVE, asarCliPath } from "./lib/pack-deps.mjs";
 
 const { listPackage } = createRequire(import.meta.url)("@electron/asar");
 
@@ -70,6 +70,13 @@ const fakeDeps = ({ dest }) => {
 };
 const fakeImages = ({ out }) => write(out, "x.webp");
 const fakeHooks = { installBackendDeps: fakeDeps, stageHelpImages: fakeImages };
+
+test("asarCliPath finds the installed CLI through the package's bin", () => {
+  const cli = asarCliPath();
+
+  assert.ok(fs.statSync(cli).isFile(), cli);
+  assert.match(path.basename(cli), /^asar\.m?js$/);
+});
 
 test("globToRegExp matches one segment and escapes dots", () => {
   assert.ok(globToRegExp("*.md").test("a.md"));
