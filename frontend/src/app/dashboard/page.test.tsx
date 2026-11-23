@@ -164,10 +164,10 @@ vi.mock('@/lib/net-worth', () => ({
 
 // Mock all dashboard child components
 vi.mock('@/components/dashboard/DashboardHero', () => ({
-  DashboardHero: ({ header }: any) => (
+  DashboardHero: ({ header, priceRefreshKey }: any) => (
     <div>
       {header}
-      <div data-testid="dashboard-hero" />
+      <div data-testid="dashboard-hero" data-price-refresh-key={priceRefreshKey} />
     </div>
   ),
 }));
@@ -223,8 +223,10 @@ vi.mock('@/components/dashboard/FavouriteSecurities', () => ({
 }));
 
 vi.mock('@/components/dashboard/PortfolioValueWidget', () => ({
-  PortfolioValueWidget: ({ isLoading }: any) => (
-    <div data-testid="portfolio-value-widget">{isLoading ? 'loading' : 'loaded'}</div>
+  PortfolioValueWidget: ({ isLoading, refreshKey }: any) => (
+    <div data-testid="portfolio-value-widget" data-refresh-key={refreshKey}>
+      {isLoading ? 'loading' : 'loaded'}
+    </div>
   ),
 }));
 
@@ -243,12 +245,18 @@ vi.mock('@/components/dashboard/FavouriteReportsWidget', () => ({
 }));
 
 const mockTriggerAutoRefresh = vi.fn();
+// The page's `onRefreshComplete`, as the hook would call it once a refresh
+// wrote new prices.
+const priceRefresh: { onRefreshComplete?: () => Promise<void> | void } = {};
 vi.mock('@/hooks/usePriceRefresh', () => ({
-  usePriceRefresh: () => ({
+  usePriceRefresh: (options: { onRefreshComplete?: () => Promise<void> | void } = {}) => {
+    priceRefresh.onRefreshComplete = options.onRefreshComplete;
+    return {
     isRefreshing: false,
     triggerManualRefresh: vi.fn(),
     triggerAutoRefresh: mockTriggerAutoRefresh,
-  }),
+    };
+  },
 }));
 
 // Mock PageLayout to simplify
@@ -442,6 +450,28 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(mockTriggerAutoRefresh).toHaveBeenCalled();
     });
+  });
+
+  it('has the hero and Portfolio Value ask again once a price refresh wrote new prices', async () => {
+    // Top Movers and the valuation are the page's own and reload with it; the
+    // hero's portfolio set and the Portfolio Value widget fetch their own, so
+    // a refresh that only reloaded the page's left their figures stale.
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('portfolio-value-widget')).toHaveTextContent('loaded');
+    });
+    expect(screen.getByTestId('dashboard-hero')).toHaveAttribute('data-price-refresh-key', '0');
+    expect(screen.getByTestId('portfolio-value-widget')).toHaveAttribute('data-refresh-key', '0');
+
+    await act(async () => {
+      await priceRefresh.onRefreshComplete?.();
+    });
+
+    expect(screen.getByTestId('dashboard-hero')).toHaveAttribute('data-price-refresh-key', '1');
+    expect(screen.getByTestId('portfolio-value-widget')).toHaveAttribute('data-refresh-key', '1');
   });
 
   it('loads top movers directly when investment accounts exist', async () => {

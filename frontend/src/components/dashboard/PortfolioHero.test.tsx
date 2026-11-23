@@ -251,6 +251,51 @@ describe('PortfolioHero', () => {
     expect(periodArgs).toHaveBeenCalledWith(expect.objectContaining({ skip: true }));
   });
 
+  it('asks for every figure again when a price refresh wrote new prices, keeping the old ones meanwhile', async () => {
+    const cfg = config({ portfolioMetric: 'twr' });
+    const hero = (refreshKey: number) => (
+      <PortfolioHero
+        config={cfg}
+        investmentAccounts={ACCOUNTS}
+        hasInvestments
+        isLoading={false}
+        refreshKey={refreshKey}
+      />
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(hero(0));
+    });
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+    expect(periodArgs).toHaveBeenLastCalledWith(expect.objectContaining({ reloadKey: 0 }));
+
+    let answerValuation: (value: PortfolioSummary) => void = () => {};
+    getPortfolioValuation.mockReturnValue(
+      new Promise<PortfolioSummary>((resolve) => {
+        answerValuation = resolve;
+      }),
+    );
+    getPortfolioSummary.mockImplementation(never);
+    loadSeries.mockImplementation(never);
+    await act(async () => {
+      view.rerender(hero(1));
+    });
+
+    expect(getPortfolioValuation).toHaveBeenCalledTimes(2);
+    expect(getPortfolioSummary).toHaveBeenCalledTimes(2);
+    expect(loadSeries).toHaveBeenCalledTimes(2);
+    expect(periodArgs).toHaveBeenLastCalledWith(expect.objectContaining({ reloadKey: 1 }));
+    // The same question asked again: what is on screen stays until it answers.
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/154,523\.85/);
+    expect(screen.queryByTestId('dashboard-hero-chart-skeleton')).not.toBeInTheDocument();
+    expect(within(metric()).queryByTestId('dashboard-hero-figure-skeleton')).not.toBeInTheDocument();
+
+    await act(async () => {
+      answerValuation(summary({ totalPortfolioValue: 160000.5 }));
+    });
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/160,000\.50/);
+  });
+
   it('says so when the portfolio could not be loaded', async () => {
     getPortfolioValuation.mockRejectedValue(new Error('boom'));
     await renderHero();

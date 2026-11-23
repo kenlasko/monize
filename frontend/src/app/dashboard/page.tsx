@@ -146,6 +146,10 @@ function DashboardContent() {
   // holds only its "invested" figure on this, and the automatic price refresh
   // waits for it so the two do not compete for the server.
   const [investmentSummaryLoading, setInvestmentSummaryLoading] = useState(false);
+  // Bumped when a price refresh wrote new prices. The hero's portfolio set and
+  // the Portfolio Value widget fetch their own valuations and series, and
+  // re-ask only when this moves, as the Investments page's charts do.
+  const [priceRefreshKey, setPriceRefreshKey] = useState(0);
   const layoutDraft = useDashboardLayoutDraft();
   // A delegate never enters edit mode (DASH-9).
   const editing = layoutDraft.editing && !isDelegateView;
@@ -188,6 +192,7 @@ function DashboardContent() {
   );
 
   const reloadInvestmentWidgets = useCallback(async () => {
+    setPriceRefreshKey((key) => key + 1);
     // Favourite securities can exist without investment accounts, so always
     // refresh them; top movers only apply when there are holdings.
     invalidateCache('investments:favouriteSecurities');
@@ -358,6 +363,7 @@ function DashboardContent() {
     hasSecurities,
     isRefreshing,
     onRefresh: triggerManualRefresh,
+    priceRefreshKey,
     onAccountsChanged: loadDashboardData,
   };
 
@@ -587,6 +593,7 @@ function DashboardContent() {
               isLoading={isLoading}
               investmentSummaryLoading={investmentSummaryLoading}
               investmentAccounts={portfolioAccounts}
+              priceRefreshKey={priceRefreshKey}
               header={header}
               scheduledTransactions={scheduledTransactions}
             />

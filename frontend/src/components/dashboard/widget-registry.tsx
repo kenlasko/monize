@@ -115,6 +115,11 @@ export interface DashboardWidgetContext {
   hasSecurities: boolean;
   isRefreshing: boolean;
   onRefresh: () => void;
+  /**
+   * Bumped each time a price refresh wrote new prices, so a widget that
+   * fetches its own valuation re-asks for it.
+   */
+  priceRefreshKey: number;
   onAccountsChanged: () => void;
 }
 
@@ -244,7 +249,9 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     minWidth: 'half',
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
-    render: (ctx) => <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => (
+      <PortfolioValueWidget accounts={ctx.accounts} isLoading={ctx.isLoading} refreshKey={ctx.priceRefreshKey} />
+    ),
   },
   {
     id: 'net-worth',

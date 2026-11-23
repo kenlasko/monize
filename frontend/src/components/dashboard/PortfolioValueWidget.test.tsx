@@ -105,8 +105,14 @@ vi.mock('@/lib/investments', () => ({
 }));
 
 const triggerManualRefresh = vi.fn();
+// The widget's `onRefreshComplete`, as the hook would call it once its own
+// refresh wrote new prices.
+const priceRefresh: { onRefreshComplete?: () => Promise<void> | void } = {};
 vi.mock('@/hooks/usePriceRefresh', () => ({
-  usePriceRefresh: () => ({ isRefreshing: false, triggerManualRefresh }),
+  usePriceRefresh: (options: { onRefreshComplete?: () => Promise<void> | void } = {}) => {
+    priceRefresh.onRefreshComplete = options.onRefreshComplete;
+    return { isRefreshing: false, triggerManualRefresh };
+  },
 }));
 
 const investmentAccount = { id: 'i1', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', name: 'Brokerage' } as Account;
@@ -190,6 +196,49 @@ describe('PortfolioValueWidget', () => {
     expect(triggerManualRefresh).toHaveBeenCalledTimes(1);
     // No account filter -> refresh every eligible security (undefined scope).
     expect(triggerManualRefresh).toHaveBeenCalledWith(undefined);
+  });
+
+  it('asks for the value, the series and the result again when the dashboard refreshed prices', async () => {
+    getInvestmentsDaily.mockResolvedValue([
+      { date: '2026-05-28', value: 9000 },
+      { date: '2026-06-28', value: 10000 },
+    ]);
+    const widget = (refreshKey: number) => (
+      <PortfolioValueWidget accounts={[investmentAccount]} isLoading={false} refreshKey={refreshKey} />
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(widget(0));
+    });
+    expect(screen.getByText('$12345')).toBeInTheDocument();
+    const periodCalls = getInvestmentsPeriodResult.mock.calls.length;
+
+    getPortfolioValuation.mockResolvedValue({ totalPortfolioValue: 13000, holdings: [] });
+    getInvestmentsDaily.mockImplementation(() => new Promise(() => {}));
+    await act(async () => {
+      view.rerender(widget(1));
+    });
+
+    expect(getPortfolioValuation).toHaveBeenCalledTimes(2);
+    expect(getInvestmentsDaily).toHaveBeenCalledTimes(2);
+    expect(getInvestmentsPeriodResult.mock.calls.length).toBeGreaterThan(periodCalls);
+    expect(screen.getByText('$13000')).toBeInTheDocument();
+    // The same series asked again: the chart drawn stays until it answers.
+    expect(screen.getByTestId('area-chart')).toBeInTheDocument();
+  });
+
+  it('asks for everything again after its own refresh, the result included', async () => {
+    getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 10000 }]);
+    await renderWidget();
+    const periodCalls = getInvestmentsPeriodResult.mock.calls.length;
+
+    await act(async () => {
+      await priceRefresh.onRefreshComplete?.();
+    });
+
+    expect(getPortfolioValuation).toHaveBeenCalledTimes(2);
+    expect(getInvestmentsDaily).toHaveBeenCalledTimes(2);
+    expect(getInvestmentsPeriodResult.mock.calls.length).toBeGreaterThan(periodCalls);
   });
 
   it('shows the investment result over the window, not the value change', async () => {

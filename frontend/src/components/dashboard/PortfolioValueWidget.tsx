@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { parseISO } from 'date-fns';
 import {
@@ -62,9 +62,15 @@ const DAILY_RANGES = new Set(['1w', 'mtd', '3m', '6m', 'ytd']);
 interface PortfolioValueWidgetProps {
   accounts: Account[];
   isLoading: boolean;
+  /**
+   * Bumped by the dashboard when a price refresh wrote new prices (its own
+   * automatic refresh on load, or Top Movers' button), so the value, the
+   * series and the period result are asked again.
+   */
+  refreshKey?: number;
 }
 
-export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidgetProps) {
+export function PortfolioValueWidget({ accounts, isLoading, refreshKey = 0 }: PortfolioValueWidgetProps) {
   const t = useTranslations('dashboard');
   const { formatCurrency, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
@@ -101,7 +107,17 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     base: baseWindow,
   });
 
-  const { data: series, isLoading: dataLoading, reload: reloadSeries } = useReportData(() => {
+  // This widget's own refresh button writes prices too; either refresh moves
+  // every figure valued from them. Both counters only grow, so their sum moves
+  // whenever either does.
+  const [ownRefreshKey, setOwnRefreshKey] = useState(0);
+  const priceKey = refreshKey + ownRefreshKey;
+
+  // What the series asks for, without the refresh key: a reload after a price
+  // refresh keeps the chart already drawn until the new one lands.
+  const seriesKey = JSON.stringify([start, end, accountIdsCsv ?? null, defaultCurrency, isDaily]);
+
+  const { data: series, dataKey: seriesDataKey, isLoading: dataLoading } = useReportData(() => {
     const params = {
       startDate: start || undefined,
       endDate: end,
@@ -132,25 +148,20 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
               : null,
         })),
       );
-  }, [start, end, accountIdsCsv, defaultCurrency, isDaily]);
+  }, [start, end, accountIdsCsv, defaultCurrency, isDaily, priceKey], { requestKey: seriesKey });
 
   // Fetch the same valuation the Investments page's summary is built on so the
   // header shows live "Total Portfolio Value" (holdings + cash, from current
   // prices), rather than the last point of the historical snapshot series.
   // Scope it to the widget's configured accounts so it stays in sync with the
   // chart.
-  const { data: summary, reload: reloadSummary } = useReportData(
+  const { data: summary } = useReportData(
     () => investmentsApi.getPortfolioValuation(config.accountIds),
-    [accountIdsCsv],
+    [accountIdsCsv, priceKey],
   );
 
-  const reloadValueData = useCallback(() => {
-    reloadSeries();
-    reloadSummary();
-  }, [reloadSeries, reloadSummary]);
-
   const { isRefreshing, triggerManualRefresh } = usePriceRefresh({
-    onRefreshComplete: reloadValueData,
+    onRefreshComplete: () => setOwnRefreshKey((key) => key + 1),
   });
 
   const handleRefresh = useCallback(() => {
@@ -184,6 +195,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     hasSeries: (series?.length ?? 0) > 0,
     accountIds: accountIdsCsv,
     displayCurrency: defaultCurrency,
+    reloadKey: priceKey,
   });
 
   // The opening point is dated by the session its close came from, which is
@@ -254,7 +266,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     </>
   );
 
-  const loading = isLoading || dataLoading;
+  const loading = isLoading || (dataLoading && seriesDataKey !== seriesKey);
 
   const refreshButton = (
     <button
