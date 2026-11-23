@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
@@ -72,11 +72,15 @@ export function DuplicateTransactionReport() {
   const categoryColorMap = useMemo(() => buildCategoryColorMap(categories ?? []), [categories]);
   const categoryIconMap = useMemo(() => buildCategoryIconMap(categories ?? []), [categories]);
 
-  const handleTransactionClick = (tx: DuplicateTransactionItem) => {
-    // An exact payee term, so "Costco" does not also open "Costco Gas Bar".
-    const search = tx.payeeName ? quoteSearchValue('payee', tx.payeeName) : '';
-    router.push(`/transactions?search=${encodeURIComponent(search)}`);
-  };
+  // Stable, so a tick redraws only the group it falls in (DuplicateGroupCard is memoised).
+  const handleTransactionClick = useCallback(
+    (tx: DuplicateTransactionItem) => {
+      // An exact payee term, so "Costco" does not also open "Costco Gas Bar".
+      const search = tx.payeeName ? quoteSearchValue('payee', tx.payeeName) : '';
+      router.push(`/transactions?search=${encodeURIComponent(search)}`);
+    },
+    [router],
+  );
 
   // Loading and error render inside the tree below, never as an early return,
   // so the toolbar stays mounted across a reload.
@@ -104,14 +108,14 @@ export function DuplicateTransactionReport() {
 
   const { confidenceLabel, reasonLabel, categoryLabel } = useDuplicateLabels();
 
-  const toggleRow = (id: string) => {
+  const toggleRow = useCallback((id: string) => {
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  }, []);
 
   // Under the strict lock a reconciled copy cannot be deleted, so selecting a
   // level leaves those for the user rather than letting one refuse the batch.
