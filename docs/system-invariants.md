@@ -1535,7 +1535,11 @@ Enforcement         The 1:1 half is enforced. Consumers return null on an absent
                     and a headline total is null beside a `known*` subtotal
                     while anything is excluded. A transaction row in the
                     Uncategorized list that cannot be converted keeps its own
-                    amount under its own currency code. The frontend renders the
+                    amount under its own currency code, and so does a custom
+                    report's transaction list (metric NONE, no grouping): the
+                    row stays listed with `value: null` beside its
+                    `accountAmount`, so it can be matched against a statement,
+                    and is in no sum (issue #2342). The frontend renders the
                     subtotal through PartialTotal. The scan's
                     RETURNS_ITS_INPUT_UNCONVERTED list is empty, a further scan
                     fails any call to convertAmount under built-in-reports/, and

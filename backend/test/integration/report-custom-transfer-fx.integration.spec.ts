@@ -213,8 +213,12 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
 
     const result = await run(usdId);
 
-    // Only the 100 USD sent is confirmed, and no rate is on file to value it.
-    expect(result.data).toEqual([]);
+    // Only the 100 USD sent is confirmed, and no rate is on file to value it:
+    // the leg stays listed under its own amount, with no value (issue #2342).
+    expect(
+      result.data.map((d) => [d.account, d.accountAmount, d.value]),
+    ).toEqual([["US Chequing", -100, null]]);
+    expect(result.summary.total).toBeNull();
     expect(result.missingCurrencies).toEqual(["USD"]);
     expect(result.excludedCount).toBe(1);
   });
@@ -236,8 +240,18 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
 
     const result = await run(usdId);
 
-    // The groceries line has no rate on file and is left out, named.
-    expect(result.data.map((d) => d.value)).toEqual([-90]);
+    // The groceries line has no rate on file: it stays listed under its own
+    // amount with no converted value, and is left out of the total, named.
+    expect(
+      result.data
+        .map((d) => [d.accountAmount, d.value])
+        .sort((a, b) => Number(a[0]) - Number(b[0])),
+    ).toEqual([
+      [-100, -90],
+      [-60, null],
+    ]);
+    expect(result.summary.total).toBeNull();
+    expect(result.summary.knownTotal).toBe(-90);
     expect(result.missingCurrencies).toEqual(["USD"]);
     expect(result.excludedCount).toBe(1);
   });
