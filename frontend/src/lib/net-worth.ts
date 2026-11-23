@@ -1,5 +1,6 @@
 import apiClient from './api';
 import { PORTFOLIO_VALUATION_TIMEOUT_MS } from './constants';
+import { dedupe } from './apiCache';
 import {
   MonthlyNetWorth,
   MonthlyInvestmentValue,
@@ -19,6 +20,9 @@ import {
  */
 const SERVER_REQUEST_TIMEOUT_MS = 600_000;
 
+/** How long a monthly net-worth answer is reused by a second asker. */
+const NET_WORTH_MONTHLY_TTL_MS = 10_000;
+
 /**
  * The by-account series values each account as its own scope, one after
  * another, so its cost is roughly one valuation per account rather than one
@@ -29,16 +33,29 @@ export function twrSeriesByAccountTimeoutMs(accountCount: number): number {
 }
 
 export const netWorthApi = {
-  getMonthly: async (params?: {
+  /**
+   * Coalesced: the dashboard's hero and its Net Worth widget ask for the same
+   * window at the same moment, on load and again after every price refresh.
+   * The key sits under `accounts:` because the series is the accounts'
+   * balances month by month, so `invalidateBalanceCaches()` (every money
+   * write, price and rate refresh) drops it. The TTL is short because the
+   * server rebuilds its monthly snapshots after a write on its own schedule.
+   */
+  getMonthly: (params?: {
     startDate?: string;
     endDate?: string;
-  }): Promise<MonthlyNetWorth[]> => {
-    const response = await apiClient.get<MonthlyNetWorth[]>(
-      '/net-worth/monthly',
-      { params },
-    );
-    return response.data;
-  },
+  }): Promise<MonthlyNetWorth[]> =>
+    dedupe(
+      `accounts:net-worth-monthly:${params?.startDate ?? ''}:${params?.endDate ?? ''}`,
+      async () => {
+        const response = await apiClient.get<MonthlyNetWorth[]>(
+          '/net-worth/monthly',
+          { params },
+        );
+        return response.data;
+      },
+      NET_WORTH_MONTHLY_TTL_MS,
+    ),
 
   getInvestmentsMonthly: async (params?: {
     startDate?: string;

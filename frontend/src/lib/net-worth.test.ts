@@ -2,13 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
 import { netWorthApi, twrSeriesByAccountTimeoutMs } from './net-worth';
 import { PORTFOLIO_VALUATION_TIMEOUT_MS } from './constants';
+import { clearAllCache, invalidateBalanceCaches } from './apiCache';
 
 vi.mock('./api', () => ({
   default: { get: vi.fn(), post: vi.fn() },
 }));
 
 describe('netWorthApi', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearAllCache();
+  });
 
   it('getMonthly fetches /net-worth/monthly', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: [{ month: '2025-01' }] });
@@ -23,6 +27,24 @@ describe('netWorthApi', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/net-worth/monthly', {
       params: { startDate: '2025-01-01', endDate: '2025-12-31' },
     });
+  });
+
+  it('getMonthly coalesces two askers of the same window into one request', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    const window = { startDate: '2025-01-01', endDate: '2025-12-31' };
+    await Promise.all([netWorthApi.getMonthly(window), netWorthApi.getMonthly(window)]);
+    expect(apiClient.get).toHaveBeenCalledTimes(1);
+    // A different window is a different question.
+    await netWorthApi.getMonthly({ startDate: '2024-01-01', endDate: '2025-12-31' });
+    expect(apiClient.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('getMonthly asks again after a balance write invalidates', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    await netWorthApi.getMonthly();
+    invalidateBalanceCaches();
+    await netWorthApi.getMonthly();
+    expect(apiClient.get).toHaveBeenCalledTimes(2);
   });
 
   it('getInvestmentsMonthly fetches /net-worth/investments-monthly', async () => {
