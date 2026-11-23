@@ -153,6 +153,8 @@
       "transactionTitle": "Hapus Transaksi",
       "transferMessage": "Apakah Anda yakin ingin menghapus transfer ini? Kedua transaksi yang terkait akan dihapus.",
       "transactionMessage": "Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.",
+      "investmentTitle": "Hapus Transaksi Investasi",
+      "investmentMessage": "Ini adalah sisi kas dari sebuah transaksi investasi. Menghapusnya juga menghapus transaksi investasi tersebut, beserta pengaruhnya pada kepemilikan Anda. Tindakan ini tidak dapat dibatalkan.",
       "success": "Transaksi dihapus",
       "transferSuccess": "Transfer dihapus",
       "error": "Gagal menghapus transaksi",

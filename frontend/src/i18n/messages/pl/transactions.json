@@ -153,6 +153,8 @@
       "transactionTitle": "Usuń transakcję",
       "transferMessage": "Czy na pewno chcesz usunąć ten przelew? Obie powiązane transakcje zostaną usunięte.",
       "transactionMessage": "Czy na pewno chcesz usunąć tę transakcję? Tej operacji nie można cofnąć.",
+      "investmentTitle": "Usuń transakcję inwestycyjną",
+      "investmentMessage": "To jest gotówkowa część transakcji inwestycyjnej. Jej usunięcie usuwa też transakcję inwestycyjną wraz z jej wpływem na Twoje pozycje. Tej operacji nie można cofnąć.",
       "success": "Usunięto transakcję",
       "transferSuccess": "Usunięto przelew",
       "error": "Nie udało się usunąć transakcji",

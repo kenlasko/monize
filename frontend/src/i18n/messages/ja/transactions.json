@@ -153,6 +153,8 @@
       "transactionTitle": "取引を削除",
       "transferMessage": "この振替を削除してもよろしいですか？リンクされた両方の取引が削除されます。",
       "transactionMessage": "この取引を削除してもよろしいですか？この操作は元に戻せません。",
+      "investmentTitle": "投資取引を削除",
+      "investmentMessage": "これは投資取引の現金側の取引です。削除すると投資取引も削除され、保有銘柄への影響も取り消されます。この操作は元に戻せません。",
       "success": "取引を削除しました",
       "transferSuccess": "振替を削除しました",
       "error": "取引の削除に失敗しました",

@@ -153,6 +153,8 @@
       "transactionTitle": "Buchung löschen",
       "transferMessage": "Möchten Sie diese Überweisung wirklich löschen? Beide verknüpften Buchungen werden gelöscht.",
       "transactionMessage": "Möchten Sie diese Buchung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "investmentTitle": "Investmentbuchung löschen",
+      "investmentMessage": "Dies ist die Geldseite einer Investmentbuchung. Wenn Sie sie löschen, wird auch die Investmentbuchung gelöscht, samt ihrer Wirkung auf Ihre Bestände. Diese Aktion kann nicht rückgängig gemacht werden.",
       "success": "Buchung gelöscht",
       "transferSuccess": "Überweisung gelöscht",
       "error": "Buchung konnte nicht gelöscht werden",

@@ -153,6 +153,8 @@
       "transactionTitle": "删除交易",
       "transferMessage": "确定要删除此转账吗？两笔关联交易均将被删除。",
       "transactionMessage": "确定要删除此交易吗？此操作无法撤销。",
+      "investmentTitle": "删除投资交易",
+      "investmentMessage": "这是一笔投资交易的现金部分。删除它也会删除该投资交易及其对您持仓的影响。此操作无法撤销。",
       "success": "交易已删除",
       "transferSuccess": "转账已删除",
       "error": "删除交易失败",

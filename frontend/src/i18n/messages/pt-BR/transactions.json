@@ -153,6 +153,8 @@
       "transactionTitle": "Excluir Transação",
       "transferMessage": "Tem certeza de que quer excluir esta transferência? Ambas as transações associadas serão excluídas.",
       "transactionMessage": "Tem certeza de que quer excluir esta transação? Esta ação não pode ser desfeita.",
+      "investmentTitle": "Excluir Transação de Investimento",
+      "investmentMessage": "Esta é a parte em dinheiro de uma transação de investimento. Excluí-la também exclui a transação de investimento, junto com o efeito dela nas suas posições. Esta ação não pode ser desfeita.",
       "success": "Transação excluída",
       "transferSuccess": "Transferência excluída",
       "error": "Falha ao excluir a transação",
