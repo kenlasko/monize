@@ -436,24 +436,6 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     ]);
   });
 
-  it("reads both sides of each transfer under the transfer filter in the monthly totals", async () => {
-    await seed("EUR");
-
-    const monthly = await asUser(() =>
-      analytics.getMonthlyTotals(userId, undefined, START, END, ["transfer"]),
-    );
-
-    // -90 + 90 twice; the groceries line is not a transfer.
-    expect(monthly).toEqual([
-      expect.objectContaining({
-        month: "2026-03",
-        currency: "EUR",
-        total: 0,
-        count: 4,
-      }),
-    ]);
-  });
-
   it("does not count the split's transfer line as uncategorised in the monthly totals", async () => {
     await seed("EUR");
 

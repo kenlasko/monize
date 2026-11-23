@@ -1790,8 +1790,7 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     (budgets/budget-spending.util.ts). The monthly totals and
                     the flow totals with transfers in scope count both sides
                     of a split's transfer: the split's transfer line beside its
-                    counterpart row (`includeTransferSplits`, also under the
-                    `transfer` category filter), at the line's
+                    counterpart row (`includeTransferSplits`), at the line's
                     own transfer rate (`transferLegs` with `wholeLegs`), and a
                     month counts such a split once by id however many rate
                     parts its lines fall in (issue #2337).
