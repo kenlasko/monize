@@ -1019,8 +1019,7 @@ describe("BudgetsService", () => {
       ],
       [
         "updateCategory",
-        (s) =>
-          s.updateCategory("user-1", "budget-1", "bc-1", { amount: 700 }),
+        (s) => s.updateCategory("user-1", "budget-1", "bc-1", { amount: 700 }),
       ],
       ["removeCategory", (s) => s.removeCategory("user-1", "budget-1", "bc-1")],
       [
@@ -2534,7 +2533,9 @@ describe("BudgetsService", () => {
           },
         ],
       };
-      budgetsRepository.findOne.mockResolvedValue(budgetWithNoExpenseCategories);
+      budgetsRepository.findOne.mockResolvedValue(
+        budgetWithNoExpenseCategories,
+      );
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([spendingRow("cat-1", "5000")]),

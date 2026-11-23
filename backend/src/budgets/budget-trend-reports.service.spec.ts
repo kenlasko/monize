@@ -374,7 +374,9 @@ describe("BudgetTrendReportsService", () => {
       ];
 
       // The read is newest first, so `take` keeps the latest periods.
-      periodsRepository.find.mockResolvedValueOnce([...closedPeriods].reverse());
+      periodsRepository.find.mockResolvedValueOnce(
+        [...closedPeriods].reverse(),
+      );
       periodsRepository.findOne.mockResolvedValueOnce(null);
 
       const result = await service.getTrend("user-1", "budget-1", 6);
