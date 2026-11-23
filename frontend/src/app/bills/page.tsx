@@ -747,7 +747,7 @@ function BillsContent() {
     [calendarMonth, scheduledTransactions],
   );
 
-  const outlook = useBillsOutlook(scheduledTransactions, financialToday);
+  const outlook = useBillsOutlook(scheduledTransactions, accounts, financialToday);
 
   useRetainScrollPosition(!isLoading);
 

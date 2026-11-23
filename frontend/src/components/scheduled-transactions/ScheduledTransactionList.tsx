@@ -407,11 +407,6 @@ function ScheduledAmountValue({
   );
 }
 
-/** The day a schedule's next occurrence falls due, after any override. */
-function dueDayOf(transaction: ScheduledTransaction): string {
-  return transaction.nextOverride?.overrideDate || String(transaction.nextDueDate ?? '').split('T')[0];
-}
-
 interface ScheduledTransactionRowProps {
   transaction: ScheduledTransaction;
   isProcessing: boolean;
@@ -888,7 +883,10 @@ export function ScheduledTransactionList({
               density={density}
               cellPadding={cellPadding}
               index={index}
-              sameDay={index > 0 && dueDayOf(transactions[index - 1]) === dueDayOf(transaction)}
+              sameDay={
+                index > 0 &&
+                nextOccurrenceDueDate(transactions[index - 1]) === nextOccurrenceDueDate(transaction)
+              }
               formatDate={formatDate}
               formatAmount={formatAmount}
               getDueDateStatus={getDueDateStatus}
