@@ -51,6 +51,7 @@ export interface PebbleRegisterProps {
   onToggleSelection?: (id: string) => void;
   highlightTransactionId?: string | null;
   onRowClick: (transaction: Transaction) => void;
+  onPayeeClick?: (payeeId: string) => void;
   onLongPressStart: (transaction: Transaction, e: React.MouseEvent) => void;
   onLongPressStartTouch: (transaction: Transaction, e: React.TouchEvent) => void;
   onLongPressEnd: () => void;
@@ -140,6 +141,46 @@ function Avatar({
   );
 }
 
+/**
+ * The avatar, made a button when the row's payee can be opened. A transfer
+ * or a payee-less row has no `payeeId` and stays the plain, non-interactive
+ * disc.
+ */
+function PayeeAvatar({
+  tx,
+  label,
+  color,
+  size,
+  onInk = false,
+  onPayeeClick,
+}: {
+  tx: Transaction;
+  label: string | null;
+  color: string | null | undefined;
+  size: 'md' | 'lg';
+  onInk?: boolean;
+  onPayeeClick?: (payeeId: string) => void;
+}) {
+  const t = useTranslations('transactions');
+  if (!tx.payeeId || !onPayeeClick) {
+    return <Avatar tx={tx} label={label} color={color} size={size} onInk={onInk} />;
+  }
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onPayeeClick(tx.payeeId!);
+      }}
+      aria-label={t('list.row.viewPayeeTitle', { name: label ?? '' })}
+      title={t('list.row.viewPayeeTitle', { name: label ?? '' })}
+      className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+    >
+      <Avatar tx={tx} label={label} color={color} size={size} onInk={onInk} />
+    </button>
+  );
+}
+
 function amountTone(amount: number, onDark: boolean): string {
   if (amount > 0) return onDark ? 'text-green-300 dark:text-green-700' : 'text-green-700 dark:text-green-400';
   return '';
@@ -211,7 +252,7 @@ function PebbleRow({
           />
         </span>
       )}
-      <Avatar tx={tx} label={label} color={color} size="md" onInk={inspected} />
+      <PayeeAvatar tx={tx} label={label} color={color} size="md" onInk={inspected} onPayeeClick={p.onPayeeClick} />
       <span className="min-w-0 flex-1 sm:flex-[3_1_0%]">
         <span className={`block truncate font-semibold text-[15px] ${isVoid ? 'line-through' : ''}`}>
           {label || '-'}
@@ -301,7 +342,7 @@ function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
       className="ui-pebble-inspector hidden lg:flex lg:w-[22rem] xl:w-[24rem] shrink-0 self-start sticky top-[calc(8.5rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] max-h-[calc(100dvh-9.5rem-env(safe-area-inset-top)+var(--app-header-offset,0px))] overflow-y-auto flex-col gap-4 rounded-[28px] bg-white p-7 text-gray-900 shadow-card dark:bg-gray-900 dark:text-gray-100 dark:shadow-card-dark"
     >
       <div className="flex items-center gap-3.5">
-        <Avatar tx={tx} label={label} color={color} size="lg" />
+        <PayeeAvatar tx={tx} label={label} color={color} size="lg" onPayeeClick={p.onPayeeClick} />
         <div className="min-w-0">
           <div className="ui-page-title truncate text-2xl leading-tight">{label || '-'}</div>
           <div className="text-gray-500 dark:text-gray-400">
