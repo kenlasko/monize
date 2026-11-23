@@ -156,7 +156,7 @@
 </ol>
 <p>Then record buys and sells in the account like any other security, with quantities of up to eight decimal places (<code>0.00512340</code> BTC).</p>
 <ul>
-<li><strong>Prices</strong> are refreshed daily, weekends included, because crypto markets do not close. The last year of prices is fetched when you add the security; to value a past date further back, use <strong>Add Another Year of History</strong> on its Price history tab (see <a href="#historical-prices">Historical Prices</a>). Bitcoin&#x27;s history reaches back to 2014 at most, and most other coins have less</li>
+<li><strong>Prices</strong> are refreshed daily, weekends included, because crypto markets do not close, and every 15 minutes while Monize is open (see <a href="#automatic-updates">Automatic Updates</a>). The last year of prices is fetched when you add the security; to value a past date further back, use <strong>Add Another Year of History</strong> on its Price history tab (see <a href="#historical-prices">Historical Prices</a>). Bitcoin&#x27;s history reaches back to 2014 at most, and most other coins have less</li>
 <li><strong>Value in your reporting currency</strong> is converted through your normal <a href="/docs/currency-management">exchange rates</a>, like any other holding. A <code>BTC-EUR</code> holding in a EUR account shows in your reporting currency, say CAD, at the EUR rate</li>
 <li><strong>A coin per currency</strong>: if you buy the same coin in two currencies, add a security for each (<code>BTC-EUR</code> and <code>BTC-USD</code>) and keep each in an account in that currency</li>
 </ul>
@@ -180,10 +180,12 @@
 <p>Security prices are updated automatically and can also be refreshed manually.</p>
 <h3 id="automatic-updates">Automatic Updates<a class="hlink" href="#automatic-updates" aria-label="Link to this section">#</a></h3>
 <ul>
-<li><strong>Schedule:</strong> Weekdays (Monday-Friday) at 5:00 PM New York time</li>
+<li><strong>Schedule:</strong> Weekdays (Monday-Friday) at 5:00 PM New York time, and weekends too for cryptocurrency</li>
+<li><strong>While Monize is open:</strong> Every 15 minutes, on whatever page you are on, Monize also refreshes the price of each security whose market is trading at that moment. A cryptocurrency trades around the clock, every day; any other security trades during its exchange&#x27;s session, in the exchange&#x27;s own time zone. A security whose provider reports no session (MSN, the London Stock Exchange, Deutsche Börse, a web page, or one never refreshed yet) is refreshed during the New York session, 9:30 AM to 4:00 PM. The figures on screen update in place, with no message and no reload. Nothing is refreshed while the Monize tab is in the background; coming back to it after 15 minutes or more refreshes at once</li>
 <li><strong>Source:</strong> Each security&#x27;s quote provider -- Yahoo Finance by default, or MSN, the London Stock Exchange, Deutsche Börse, a table on a web page, or the bond engine</li>
 <li><strong>Data:</strong> Daily prices (close, plus open, high, low and volume where the provider supplies them)</li>
 </ul>
+<p>A security with <strong>Disable automatic price updates</strong> turned on is never refreshed automatically, and neither is one linked to a bond program: its price comes from the bond engine, and its issuer&#x27;s offer is fetched only when you ask for it.</p>
 <h3 id="manual-refresh">Manual Refresh<a class="hlink" href="#manual-refresh" aria-label="Link to this section">#</a></h3>
 <p>Click <strong>Refresh</strong> on the Investments page, the Securities page, a security&#x27;s detail page, or the Dashboard to fetch the latest prices immediately.</p>
 <h3 id="manual-price-management">Manual Price Management<a class="hlink" href="#manual-price-management" aria-label="Link to this section">#</a></h3>
