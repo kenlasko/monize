@@ -123,7 +123,7 @@ export function Pagination({
           <button
             onClick={() => goToPage(currentPage - 10)}
             disabled={currentPage <= 1}
-            className={`${buttonClass} hidden sm:inline-flex`}
+            className={`${buttonClass} hidden sm:inline-flex items-center justify-center`}
             title={t('pagination.back10Pages')}
           >
             -10
@@ -174,7 +174,7 @@ export function Pagination({
           <button
             onClick={() => goToPage(currentPage + 10)}
             disabled={currentPage >= totalPages}
-            className={`${buttonClass} hidden sm:inline-flex`}
+            className={`${buttonClass} hidden sm:inline-flex items-center justify-center`}
             title={t('pagination.forward10Pages')}
           >
             +10
