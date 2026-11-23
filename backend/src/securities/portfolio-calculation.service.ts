@@ -1672,7 +1672,38 @@ export class PortfolioCalculationService {
       group.txs.push(tx);
     }
 
-    // Cache FX rates: (securityCurrency -> accountCurrency, on a given date).
+    // Every account-currency boundary and transfer asks for its own date's rate
+    // from the security's currency into the account's. That history is loaded
+    // once per account currency for the window, as the reporting fold below
+    // loads its own, rather than looked up a date at a time: a daily report
+    // over a year asked one query per boundary date per pair.
+    const accountPairs = new Map<string, Set<string>>();
+    for (const group of groups.values()) {
+      const from = group.securityCurrencyCode;
+      const to = group.accountCurrencyCode;
+      if (!from || !to || from === to) continue;
+      const froms = accountPairs.get(to) ?? new Set<string>();
+      froms.add(from);
+      accountPairs.set(to, froms);
+    }
+    const accountIndexes = new Map<
+      string,
+      { froms: Set<string>; index: RateIndex }
+    >();
+    for (const [to, froms] of accountPairs) {
+      accountIndexes.set(to, {
+        froms,
+        index: await this.exchangeRateService.getRateIndex(
+          froms,
+          to,
+          periods[0].priceLookupStart,
+          periods[periods.length - 1].periodEnd,
+        ),
+      });
+    }
+
+    // Cache FX rates: (securityCurrency -> accountCurrency, on a given date),
+    // for a pair no loaded index covers.
     const fxCache = new Map<string, number | null>();
     // `null` when the pair has no rate. This used to end `: 1`, valuing a
     // foreign security's period start and end as though its currency were the
@@ -1695,6 +1726,10 @@ export class PortfolioCalculationService {
     ): Promise<number | null> => {
       if (!from || !to) return null;
       if (from === to) return 1;
+      const indexed = accountIndexes.get(to);
+      if (indexed?.froms.has(from)) {
+        return resolveIndexedRate(indexed.index, from, to, onDate).rate;
+      }
       const cacheKey = `${from}->${to}@${onDate}`;
       const cached = fxCache.get(cacheKey);
       if (cached !== undefined) return cached;
