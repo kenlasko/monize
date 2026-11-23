@@ -30,6 +30,7 @@ import { ScheduledTransaction } from "../scheduled-transactions/entities/schedul
 import { EmailService } from "../notifications/email.service";
 import {
   CategorySpending,
+  queryCategorySpending,
   queryCategorySpendingBuckets,
 } from "./budget-spending.util";
 import { monthBuckets } from "../test-helpers/budget-spending-buckets";
@@ -1219,6 +1220,49 @@ describe("BudgetAlertService", () => {
 
       expect(result.alertsCreated).toBe(0);
       expect(result.emailsSent).toBe(0);
+    });
+
+    it("resolves an income-linked line's percentage against the period's income", async () => {
+      // A 30% line on 5,000 of income is a 1,500 line; spending 1,000 of it is
+      // 66.67%, not the 3,333% a literal 30 would read as.
+      (queryCategorySpending as jest.Mock).mockResolvedValueOnce(
+        spending({ "cat-income": 5000, "cat-1": -1000 }),
+      );
+      const spy = jest.spyOn(service, "checkThresholdAlerts");
+      alertsRepository.find.mockResolvedValue([]);
+      try {
+        await service.processAlerts(
+          makeBudget({
+            incomeLinked: true,
+            baseIncome: null,
+            categories: [
+              makeCategory({
+                id: "bc-income",
+                categoryId: "cat-income",
+                category: {
+                  id: "cat-income",
+                  name: "Salary",
+                  isIncome: true,
+                } as any,
+                amount: 0,
+                isIncome: true,
+              }),
+              makeCategory({ id: "bc-1", categoryId: "cat-1", amount: 30 }),
+            ],
+          }),
+        );
+        const line = spy.mock.calls
+          .map(([cat]) => cat)
+          .find((cat) => cat.budgetCategoryId === "bc-1");
+        expect(line).toEqual(
+          expect.objectContaining({ budgeted: 1500, percentUsed: 66.67 }),
+        );
+        expect(
+          insertedAlerts.filter((a) => a.budgetCategoryId === "bc-1"),
+        ).toEqual([]);
+      } finally {
+        spy.mockRestore();
+      }
     });
 
     describe("period day count", () => {

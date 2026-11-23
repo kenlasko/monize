@@ -42,6 +42,8 @@ import {
 } from "./budget-date.utils";
 import {
   queryCategorySpending,
+  resolveBudgetIncome,
+  resolveBudgetLineBudgeted,
   resolveCategoryName,
   resolveCategorySpent,
   resolveOutsideTransferIncome,
@@ -1231,11 +1233,23 @@ export class BudgetAlertService {
         budgetCategories,
         periodStart,
         periodEnd,
+        budget.id,
       ),
     );
 
+    // An income-linked budget's expense line holds a percentage of the
+    // period's income, not an amount: resolve it the way the budget page does
+    // (`BudgetsService.computeCategoryActuals`), or a 30% line reads as $30.
+    const actualIncome = budget.incomeLinked
+      ? resolveBudgetIncome(budgetCategories, spending)
+      : 0;
+
     const lines = budgetCategories.map((bc) => {
-      const budgeted = Number(bc.amount);
+      const budgeted = resolveBudgetLineBudgeted(
+        bc,
+        budget.incomeLinked,
+        actualIncome,
+      );
       const spent = resolveCategorySpent(
         bc,
         spending.spendingMap,
