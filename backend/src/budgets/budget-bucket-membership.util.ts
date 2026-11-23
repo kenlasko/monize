@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { EntityManager } from "typeorm";
+import { EntityManager, In } from "typeorm";
 import { tr } from "../i18n/translate";
 import { BudgetBucket } from "./entities/budget-bucket.entity";
 
@@ -23,24 +23,64 @@ export async function assertBucketAssignable(
   isIncome: boolean,
 ): Promise<void> {
   if (bucketId === null) return;
-  if (isIncome) {
-    throw new BadRequestException(
-      tr(
-        "errors.budgets.bucketOnIncomeLine",
-        "An income line cannot belong to a bucket",
-      ),
-    );
-  }
+  if (isIncome) throw bucketOnIncomeLine();
   const bucket = await m
     .getRepository(BudgetBucket)
     .findOne({ where: { id: bucketId, budgetId } });
-  if (!bucket) {
-    throw new NotFoundException(
-      tr(
-        "errors.budgets.bucketNotFound",
-        `Bucket with ID ${bucketId} not found`,
-        { id: bucketId },
+  if (!bucket) throw bucketNotFound(bucketId);
+}
+
+/**
+ * `assertBucketAssignable` for a batch (the bulk line update): the same rule
+ * and the same refusals, item by item in order, with the budget's named
+ * buckets read in one query instead of one per line. It takes the write's
+ * `EntityManager` for the same reason.
+ */
+export async function assertBucketsAssignable(
+  m: EntityManager,
+  budgetId: string,
+  lines: ReadonlyArray<{ bucketId: string | null; isIncome: boolean }>,
+): Promise<void> {
+  const wanted = [
+    ...new Set(
+      lines.flatMap((line) =>
+        line.bucketId !== null && !line.isIncome ? [line.bucketId] : [],
       ),
-    );
+    ),
+  ];
+  const found =
+    wanted.length === 0
+      ? new Set<string>()
+      : new Set(
+          (
+            await m.getRepository(BudgetBucket).find({
+              where: { id: In(wanted), budgetId },
+              select: { id: true },
+            })
+          ).map((bucket) => bucket.id),
+        );
+  for (const { bucketId, isIncome } of lines) {
+    if (bucketId === null) continue;
+    if (isIncome) throw bucketOnIncomeLine();
+    if (!found.has(bucketId)) throw bucketNotFound(bucketId);
   }
+}
+
+function bucketOnIncomeLine(): BadRequestException {
+  return new BadRequestException(
+    tr(
+      "errors.budgets.bucketOnIncomeLine",
+      "An income line cannot belong to a bucket",
+    ),
+  );
+}
+
+function bucketNotFound(bucketId: string): NotFoundException {
+  return new NotFoundException(
+    tr(
+      "errors.budgets.bucketNotFound",
+      `Bucket with ID ${bucketId} not found`,
+      { id: bucketId },
+    ),
+  );
 }

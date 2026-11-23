@@ -4,7 +4,7 @@ import {
   resolveCategorySpentOrNull,
 } from "./budget-spending.util";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { BudgetsService } from "./budgets.service";
 import { ScheduledEffectiveAmountService } from "../scheduled-transactions/scheduled-effective-amount.service";
@@ -208,7 +208,7 @@ describe("BudgetsService", () => {
       remove: jest.fn(),
     };
 
-    bucketsRepository = { findOne: jest.fn() };
+    bucketsRepository = { findOne: jest.fn(), find: jest.fn() };
 
     // BudgetsService fans BILL_DUE out through the dispatch seam now; `notify`
     // takes the same input `create` did, so the ensureBillDue assertions read it
@@ -1238,7 +1238,7 @@ describe("BudgetsService", () => {
           expenseLine({ id: "bc-2", bucketId: "bucket-1" }),
           expenseLine({ id: "bc-3", bucketId: "bucket-1" }),
         ]);
-        bucketsRepository.findOne.mockResolvedValue(ownBucket);
+        bucketsRepository.find.mockResolvedValue([ownBucket]);
         const result = await service.bulkUpdateCategories(
           "user-1",
           "budget-1",
@@ -1253,6 +1253,14 @@ describe("BudgetsService", () => {
           null,
           "bucket-1",
         ]);
+        // The named buckets are read once for the batch, not once per line.
+        expect(bucketsRepository.find).toHaveBeenCalledTimes(1);
+        expect(bucketsRepository.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: In(["bucket-1"]), budgetId: "budget-1" },
+          }),
+        );
+        expect(bucketsRepository.findOne).not.toHaveBeenCalled();
       });
 
       it("refuses the whole request, writing nothing, when one item names a foreign bucket", async () => {
@@ -1260,9 +1268,7 @@ describe("BudgetsService", () => {
           expenseLine({ id: "bc-1" }),
           expenseLine({ id: "bc-2" }),
         ]);
-        bucketsRepository.findOne
-          .mockResolvedValueOnce(ownBucket)
-          .mockResolvedValueOnce(null);
+        bucketsRepository.find.mockResolvedValue([ownBucket]);
         await expect(
           service.bulkUpdateCategories("user-1", "budget-1", [
             { id: "bc-1", amount: 1, bucketId: "bucket-1" },
@@ -1277,7 +1283,7 @@ describe("BudgetsService", () => {
           expenseLine({ id: "bc-1" }),
           expenseLine({ id: "bc-2", isIncome: true }),
         ]);
-        bucketsRepository.findOne.mockResolvedValue(ownBucket);
+        bucketsRepository.find.mockResolvedValue([ownBucket]);
         await expect(
           service.bulkUpdateCategories("user-1", "budget-1", [
             { id: "bc-1", amount: 1 },
@@ -2369,12 +2375,12 @@ describe("BudgetsService", () => {
   });
   describe("getDashboardSummary", () => {
     it("returns null if no active budgets exist", async () => {
-      budgetsRepository.find.mockResolvedValue([]);
+      budgetsRepository.findOne.mockResolvedValue(null);
 
       const result = await service.getDashboardSummary("user-1");
 
       expect(result).toBeNull();
-      expect(budgetsRepository.find).toHaveBeenCalledWith({
+      expect(budgetsRepository.findOne).toHaveBeenCalledWith({
         where: { userId: "user-1", isActive: true },
         relations: [
           "categories",
@@ -2434,7 +2440,7 @@ describe("BudgetsService", () => {
           },
         ],
       };
-      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+      budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest
@@ -2489,7 +2495,7 @@ describe("BudgetsService", () => {
           },
         ],
       };
-      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+      budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest
@@ -2528,7 +2534,7 @@ describe("BudgetsService", () => {
           },
         ],
       };
-      budgetsRepository.find.mockResolvedValue([budgetWithNoExpenseCategories]);
+      budgetsRepository.findOne.mockResolvedValue(budgetWithNoExpenseCategories);
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest.fn().mockResolvedValue([spendingRow("cat-1", "5000")]),
@@ -2550,7 +2556,7 @@ describe("BudgetsService", () => {
 
   describe("getCategoryBudgetStatus", () => {
     it("returns empty map if no active budgets exist", async () => {
-      budgetsRepository.find.mockResolvedValue([]);
+      budgetsRepository.findOne.mockResolvedValue(null);
 
       const result = await service.getCategoryBudgetStatus("user-1", ["cat-1"]);
 
@@ -2559,7 +2565,7 @@ describe("BudgetsService", () => {
     });
 
     it("returns empty map if categoryIds is empty", async () => {
-      budgetsRepository.find.mockResolvedValue([mockBudget]);
+      budgetsRepository.findOne.mockResolvedValue(mockBudget);
 
       const result = await service.getCategoryBudgetStatus("user-1", []);
 
@@ -2589,7 +2595,7 @@ describe("BudgetsService", () => {
           },
         ],
       };
-      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+      budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest
@@ -2649,7 +2655,7 @@ describe("BudgetsService", () => {
           },
         ],
       };
-      budgetsRepository.find.mockResolvedValue([budgetWithIncomeAndExpense]);
+      budgetsRepository.findOne.mockResolvedValue(budgetWithIncomeAndExpense);
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest
@@ -2705,7 +2711,7 @@ describe("BudgetsService", () => {
           },
         ],
       };
-      budgetsRepository.find.mockResolvedValue([budgetWithCategories]);
+      budgetsRepository.findOne.mockResolvedValue(budgetWithCategories);
 
       const directQb = createMockQueryBuilder({
         getRawMany: jest
