@@ -153,6 +153,8 @@
       "transactionTitle": "İşlemi Sil",
       "transferMessage": "Bu transferi silmek istediğinizden emin misiniz? Bağlantılı her iki işlem de silinecektir.",
       "transactionMessage": "Bu işlemi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "investmentTitle": "Yatırım İşlemini Sil",
+      "investmentMessage": "Bu, bir yatırım işleminin nakit tarafıdır. Silmek, yatırım işlemini ve onun varlıklarınız üzerindeki etkisini de siler. Bu işlem geri alınamaz.",
       "success": "İşlem silindi",
       "transferSuccess": "Transfer silindi",
       "error": "İşlem silinemedi",

@@ -153,6 +153,8 @@
       "transactionTitle": "Eliminar transacción",
       "transferMessage": "¿Estás seguro de que quieres eliminar esta transferencia? Se eliminarán ambas transacciones vinculadas.",
       "transactionMessage": "¿Estás seguro de que quieres eliminar esta transacción? Esta acción no se puede deshacer.",
+      "investmentTitle": "Eliminar transacción de inversión",
+      "investmentMessage": "Esta es la parte en efectivo de una transacción de inversión. Al eliminarla también se elimina la transacción de inversión, junto con su efecto en tus posiciones. Esta acción no se puede deshacer.",
       "success": "Transacción eliminada",
       "transferSuccess": "Transferencia eliminada",
       "error": "Error al eliminar la transacción",

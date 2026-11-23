@@ -153,6 +153,8 @@
       "transactionTitle": "Delete Transaction",
       "transferMessage": "Are you sure you want to delete this transfer? Both linked transactions will be deleted.",
       "transactionMessage": "Are you sure you want to delete this transaction? This action cannot be undone.",
+      "investmentTitle": "Delete Investment Transaction",
+      "investmentMessage": "This is the cash side of an investment transaction. Deleting it deletes the investment transaction too, along with its effect on your holdings. This action cannot be undone.",
       "success": "Transaction deleted",
       "transferSuccess": "Transfer deleted",
       "error": "Failed to delete transaction",

@@ -153,6 +153,8 @@
       "transactionTitle": "거래 삭제",
       "transferMessage": "이 이체를 삭제하시겠습니까? 연결된 두 거래가 모두 삭제됩니다.",
       "transactionMessage": "이 거래를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "investmentTitle": "투자 거래 삭제",
+      "investmentMessage": "이 항목은 투자 거래의 현금 부분입니다. 삭제하면 투자 거래와 보유 종목에 대한 영향도 함께 삭제됩니다. 이 작업은 취소할 수 없습니다.",
       "success": "거래가 삭제되었습니다",
       "transferSuccess": "이체가 삭제되었습니다",
       "error": "거래 삭제에 실패했습니다",

@@ -153,6 +153,8 @@
       "transactionTitle": "Xóa giao tác",
       "transferMessage": "Bạn có chắc muốn xóa chuyển khoản này? Cả hai giao tác liên kết sẽ bị xóa.",
       "transactionMessage": "Bạn có chắc muốn xóa giao tác này? Không thể hoàn tác.",
+      "investmentTitle": "Xóa giao dịch đầu tư",
+      "investmentMessage": "Đây là phần tiền mặt của một giao dịch đầu tư. Xóa nó cũng sẽ xóa giao dịch đầu tư, cùng với ảnh hưởng của nó lên các khoản nắm giữ của bạn. Không thể hoàn tác.",
       "success": "Giao tác đã bị xóa",
       "transferSuccess": "Chuyển khoản đã bị xóa",
       "error": "Không thể xóa giao tác",

@@ -1,7 +1,7 @@
 'use client';
 
 import { LinkifiedText } from '@/components/ui/LinkifiedText';
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { HOVER_ROW_ON_PAGE } from '@/components/ui/Card';
@@ -329,17 +329,21 @@ function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
   const showEdit = !!p.onEdit && p.canEdit(tx);
   const showCopy = !linked && !!p.onDuplicate;
   const showSchedule = !linked && !!p.onScheduleRecurring;
-  const showDelete = !linked && p.canDelete(tx);
+  // A linked row's Delete removes the investment transaction it belongs to
+  // (`TransactionList` routes it), so the row offers it like any other.
+  const showDelete = p.canDelete(tx);
   return (
     // Sticky against the window, so it follows the list. It only sticks once
     // the page title has scrolled away, which is when the floating page bar
     // has slid in under the header, so the offset clears both: the header's
     // still-visible part (4rem less --app-header-offset as it slides away) and
     // the bar (~4rem), plus a gap. Its own height is capped to what is left,
-    // scrolling inside when the details run longer.
+    // scrolling inside when the details run longer. At rest its top margin
+    // drops it past the sort strip and the first day's heading, so it lines
+    // up with the first row's block rather than with the strip above.
     <aside
       aria-label={t('list.pebble.inspectorLabel')}
-      className="ui-pebble-inspector hidden lg:flex lg:w-[22rem] xl:w-[24rem] shrink-0 self-start sticky top-[calc(8.5rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] max-h-[calc(100dvh-9.5rem-env(safe-area-inset-top)+var(--app-header-offset,0px))] overflow-y-auto flex-col gap-4 rounded-[28px] bg-white p-7 text-gray-900 shadow-card dark:bg-gray-900 dark:text-gray-100 dark:shadow-card-dark"
+      className="ui-pebble-inspector hidden lg:flex mt-[var(--ui-pebble-first-block,0px)] lg:w-[22rem] xl:w-[24rem] shrink-0 self-start sticky top-[calc(8.5rem+env(safe-area-inset-top)-var(--app-header-offset,0px))] max-h-[calc(100dvh-9.5rem-env(safe-area-inset-top)+var(--app-header-offset,0px))] overflow-y-auto flex-col gap-4 rounded-[28px] bg-white p-7 text-gray-900 shadow-card dark:bg-gray-900 dark:text-gray-100 dark:shadow-card-dark"
     >
       <div className="flex items-center gap-3.5">
         <PayeeAvatar tx={tx} label={label} color={color} size="lg" onPayeeClick={p.onPayeeClick} />
@@ -387,7 +391,7 @@ function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
         <div className="flex flex-wrap gap-2">
           {showEdit && (
             <button type="button" className={PILL} onClick={() => p.onEdit?.(tx)}>
-              {linked ? t('list.row.viewButton') : tc('edit')}
+              {tc('edit')}
             </button>
           )}
           {showCopy && (
@@ -416,9 +420,40 @@ function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
   );
 }
 
+/**
+ * Publishes, as `--ui-pebble-first-block` on the register, how far below the
+ * list column's top its first day block starts. The sort strip can wrap and a
+ * today divider can come first, so the distance is measured, not assumed.
+ */
+function useFirstBlockOffset(
+  registerRef: React.RefObject<HTMLDivElement | null>,
+  listRef: React.RefObject<HTMLDivElement | null>,
+  active: boolean,
+  transactions: Transaction[],
+) {
+  useLayoutEffect(() => {
+    const register = registerRef.current;
+    const list = listRef.current;
+    if (!active || !register || !list) return;
+    const measure = () => {
+      const first = list.querySelector('ul');
+      const offset = first
+        ? first.getBoundingClientRect().top - list.getBoundingClientRect().top
+        : 0;
+      register.style.setProperty('--ui-pebble-first-block', `${Math.max(0, Math.round(offset))}px`);
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(list);
+    return () => observer?.disconnect();
+  }, [registerRef, listRef, active, transactions]);
+}
+
 export function PebbleRegister(p: PebbleRegisterProps) {
   const t = useTranslations('transactions');
   const { formatCurrency } = useNumberFormat();
+  const registerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const inspected =
     p.transactions.find((tx) => tx.id === p.inspectedId) ?? p.transactions[0] ?? null;
 
@@ -489,13 +524,16 @@ export function PebbleRegister(p: PebbleRegisterProps) {
   });
   flush();
 
+  const showInspector = p.inspectorVisible && !!inspected;
+  useFirstBlockOffset(registerRef, listRef, showInspector, p.transactions);
+
   return (
-    <div className="ui-pebble-register flex items-start gap-6 px-4 pb-4">
-      <div className="min-w-0 flex-1">
+    <div ref={registerRef} className="ui-pebble-register flex items-start gap-6 px-4 pb-4">
+      <div ref={listRef} className="min-w-0 flex-1">
         {p.sortStrip}
         {nodes}
       </div>
-      {p.inspectorVisible && inspected && <Inspector tx={inspected} p={p} />}
+      {showInspector && <Inspector tx={inspected} p={p} />}
     </div>
   );
 }

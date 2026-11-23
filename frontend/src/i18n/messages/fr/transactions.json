@@ -153,6 +153,8 @@
       "transactionTitle": "Supprimer la transaction",
       "transferMessage": "Êtes-vous sûr de vouloir supprimer ce virement ? Les deux transactions liées seront supprimées.",
       "transactionMessage": "Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible.",
+      "investmentTitle": "Supprimer la transaction d'investissement",
+      "investmentMessage": "Il s'agit du volet espèces d'une transaction d'investissement. La supprimer supprime aussi la transaction d'investissement, ainsi que son effet sur vos positions. Cette action est irréversible.",
       "success": "Transaction supprimée",
       "transferSuccess": "Virement supprimé",
       "error": "Échec de la suppression de la transaction",

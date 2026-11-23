@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@/test/render';
+import { render, screen, within, fireEvent, act } from '@/test/render';
 import { TransactionList } from './TransactionList';
 import { useDensityStore } from '@/store/densityStore';
 import { Transaction, TransactionStatus } from '@/types/transaction';
@@ -20,6 +20,9 @@ vi.mock('@/hooks/useIsMobile', async (orig) => ({
 }));
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: { delete: vi.fn(), deleteTransfer: vi.fn(), updateStatus: vi.fn() },
+}));
+vi.mock('@/lib/investments', () => ({
+  investmentsApi: { deleteTransaction: vi.fn() },
 }));
 vi.mock('@/hooks/useDateFormat', () => ({
   useDateFormat: () => ({
@@ -315,6 +318,47 @@ describe('Pebble register', () => {
     expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }));
     expect(within(inspector).getByRole('button', { name: 'Delete' })).toBeTruthy();
     expect(within(inspector).getByRole('button', { name: 'Copy' })).toBeTruthy();
+  });
+
+  it('offers Edit and Delete on an investment cash leg, and Delete removes the investment transaction', async () => {
+    const { transactionsApi } = await import('@/lib/transactions');
+    const { investmentsApi } = await import('@/lib/investments');
+    (investmentsApi.deleteTransaction as any).mockResolvedValue(undefined);
+    const onEdit = vi.fn();
+    const onRefresh = vi.fn();
+    const leg = makeTx({ id: 'leg', payeeName: 'Buy XEQT', linkedInvestmentTransactionId: 'inv-1' });
+    renderList({ transactions: [leg], onEdit, onRefresh });
+    const inspector = screen.getByRole('complementary');
+    expect(within(inspector).queryByRole('button', { name: 'View' })).toBeNull();
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Edit' }));
+    expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 'leg' }));
+
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Delete' }));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Delete Investment Transaction')).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    });
+    expect(investmentsApi.deleteTransaction).toHaveBeenCalledWith('inv-1');
+    expect(transactionsApi.delete).not.toHaveBeenCalled();
+    expect(onRefresh).toHaveBeenCalled();
+  });
+
+  it('drops the inspector to the first day block, past the sort strip and the day heading', () => {
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const top = this.tagName === 'UL' ? 172 : 100;
+        return { top, left: 0, right: 0, bottom: top, width: 0, height: 0, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+      });
+    try {
+      const { container } = renderList();
+      const register = container.querySelector('.ui-pebble-register') as HTMLElement;
+      expect(register.style.getPropertyValue('--ui-pebble-first-block')).toBe('72px');
+      expect(screen.getByRole('complementary').className).toContain('mt-[var(--ui-pebble-first-block,0px)]');
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('is reachable from the keyboard', () => {

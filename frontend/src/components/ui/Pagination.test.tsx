@@ -54,6 +54,15 @@ describe('Pagination', () => {
     expect(screen.getByTitle('Forward 10 pages')).toBeInTheDocument();
   });
 
+  it('centres the jump labels in their flex box, as the other buttons centre theirs', () => {
+    // `inline-flex` alone stretches the text to the box's top, so -10 / +10
+    // sat higher than the arrows beside them.
+    render(<Pagination {...defaultProps} totalPages={20} totalItems={200} currentPage={10} />);
+    for (const title of ['Back 10 pages', 'Forward 10 pages']) {
+      expect(screen.getByTitle(title).className).toMatch(/\bsm:inline-flex\b.*\bitems-center\b/);
+    }
+  });
+
   it('does not show jump buttons when totalPages <= 10', () => {
     render(<Pagination {...defaultProps} />);
     expect(screen.queryByTitle('Back 10 pages')).not.toBeInTheDocument();

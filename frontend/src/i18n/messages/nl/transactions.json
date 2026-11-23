@@ -153,6 +153,8 @@
       "transactionTitle": "Transactie verwijderen",
       "transferMessage": "Weet je zeker dat je deze overboeking wilt verwijderen? Beide gekoppelde transacties worden verwijderd.",
       "transactionMessage": "Weet je zeker dat je deze transactie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      "investmentTitle": "Beleggingstransactie verwijderen",
+      "investmentMessage": "Dit is de geldkant van een beleggingstransactie. Als je deze verwijdert, wordt ook de beleggingstransactie verwijderd, samen met het effect op je posities. Deze actie kan niet ongedaan worden gemaakt.",
       "success": "Transactie verwijderd",
       "transferSuccess": "Overboeking verwijderd",
       "error": "Verwijderen van transactie mislukt",
