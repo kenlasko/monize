@@ -1092,6 +1092,46 @@ describe("SecuritiesController", () => {
       );
     });
 
+    it("answers only once the net worth snapshots have been recalculated", async () => {
+      // The dashboard reloads the net worth as soon as the refresh answers, and
+      // the monthly figures are read from these snapshots: answering first let
+      // that reload read the month priced before the refresh.
+      securitiesService.findOne.mockResolvedValue(mockSecurity);
+      const summary = {
+        totalSecurities: 1,
+        updated: 1,
+        failed: 0,
+        skipped: 0,
+        results: [],
+        lastUpdated: new Date(),
+      };
+      securityPriceService.refreshPricesForSecurities.mockResolvedValue(
+        summary,
+      );
+      let finishRecalc: () => void = () => {};
+      netWorthService.recalculateAllAccounts.mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishRecalc = resolve;
+        }),
+      );
+
+      let answered = false;
+      const response = controller
+        .refreshSelectedPrices(req, { securityIds: ["sec-1"] } as any)
+        .then((value) => {
+          answered = true;
+          return value;
+        });
+      await new Promise((r) => setImmediate(r));
+      expect(netWorthService.recalculateAllAccounts).toHaveBeenCalledWith(
+        "user-1",
+      );
+      expect(answered).toBe(false);
+
+      finishRecalc();
+      await expect(response).resolves.toEqual(summary);
+    });
+
     it("swallows background recalc errors and sector update errors", async () => {
       securitiesService.findOne.mockResolvedValue(mockSecurity);
       const summary = {

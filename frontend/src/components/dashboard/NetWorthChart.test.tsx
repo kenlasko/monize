@@ -132,6 +132,30 @@ describe('NetWorthChart', () => {
     expect(screen.queryByText('View full report')).not.toBeInTheDocument();
   });
 
+  it('asks for the history again when a price refresh wrote new prices, keeping the chart meanwhile', async () => {
+    getMonthly.mockResolvedValue(twoMonths);
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<NetWorthChart isLoading={false} refreshKey={0} />);
+    });
+    expect(screen.getByText('$15000')).toBeInTheDocument();
+
+    let answer: (value: unknown[]) => void = () => {};
+    getMonthly.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    await act(async () => {
+      view.rerender(<NetWorthChart isLoading={false} refreshKey={1} />);
+    });
+    expect(getMonthly).toHaveBeenCalledTimes(2);
+    // The same question asked again: the chart drawn stays until it answers.
+    expect(screen.getByTestId('composed-chart')).toBeInTheDocument();
+    expect(screen.getByText('$15000')).toBeInTheDocument();
+
+    await act(async () => {
+      answer([twoMonths[0], { ...twoMonths[1], assets: 16000, netWorth: 16000 }]);
+    });
+    expect(screen.getByText('$16000')).toBeInTheDocument();
+  });
+
   it('fetches the configured window, month-aligned', async () => {
     configState.current = { range: '10y', barStyle: 'accountType' };
     await renderWidget(twoMonths);

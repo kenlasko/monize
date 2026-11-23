@@ -100,6 +100,29 @@ describe('GeographicAllocationWidget', () => {
     expect(screen.getByText('United States')).toBeInTheDocument();
   });
 
+  it('asks for the valuation and the country weightings again when the dashboard refreshed prices', async () => {
+    const widget = (refreshKey: number) => (
+      <GeographicAllocationWidget accounts={[investmentAccount]} isLoading={false} refreshKey={refreshKey} />
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(widget(0));
+    });
+    expect(screen.getByText('North America')).toBeInTheDocument();
+
+    getPortfolioValuation.mockReturnValue(new Promise(() => {}));
+    getCountryWeightings.mockReturnValue(new Promise(() => {}));
+    await act(async () => {
+      view.rerender(widget(1));
+    });
+    expect(getPortfolioValuation).toHaveBeenCalledTimes(2);
+    expect(getCountryWeightings).toHaveBeenCalledTimes(2);
+    // The listing data is not priced, so it is not asked for again.
+    expect(getSecurities).toHaveBeenCalledTimes(1);
+    // The same question asked again: the chart drawn stays until it answers.
+    expect(screen.getByText('North America')).toBeInTheDocument();
+  });
+
   it('marks the region view as a subtotal when a holding could not be converted', async () => {
     // The GBP holding has no rate, so it is dropped from the aggregation. The
     // remaining bars are a share of the convertible subset, not of the whole

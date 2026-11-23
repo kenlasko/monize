@@ -18,7 +18,6 @@ import { investmentsApi } from '@/lib/investments';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useReportData } from '@/hooks/useReportData';
-import { usePriceRefresh } from '@/hooks/usePriceRefresh';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
@@ -62,9 +61,28 @@ const DAILY_RANGES = new Set(['1w', 'mtd', '3m', '6m', 'ytd']);
 interface PortfolioValueWidgetProps {
   accounts: Account[];
   isLoading: boolean;
+  /**
+   * Bumped by the dashboard when a price refresh wrote new prices (the
+   * automatic one on load, Top Movers' button or this widget's), so the value,
+   * the series and the period result are asked again.
+   */
+  refreshKey?: number;
+  /**
+   * The dashboard's price refresh, scoped to the given securities. Run through
+   * the page so a refresh started here reloads every widget priced from it,
+   * this one through `refreshKey`.
+   */
+  onRefresh: (scopeSecurityIds?: string[]) => void;
+  isRefreshing: boolean;
 }
 
-export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidgetProps) {
+export function PortfolioValueWidget({
+  accounts,
+  isLoading,
+  refreshKey = 0,
+  onRefresh,
+  isRefreshing,
+}: PortfolioValueWidgetProps) {
   const t = useTranslations('dashboard');
   const { formatCurrency, formatCurrencyAxis, formatSignedPercent } = useNumberFormat();
   const { defaultCurrency } = useExchangeRates();
@@ -101,7 +119,11 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     base: baseWindow,
   });
 
-  const { data: series, isLoading: dataLoading, reload: reloadSeries } = useReportData(() => {
+  // What the series asks for, without the refresh key: a reload after a price
+  // refresh keeps the chart already drawn until the new one lands.
+  const seriesKey = JSON.stringify([start, end, accountIdsCsv ?? null, defaultCurrency, isDaily]);
+
+  const { data: series, dataKey: seriesDataKey, isLoading: dataLoading } = useReportData(() => {
     const params = {
       startDate: start || undefined,
       endDate: end,
@@ -132,26 +154,17 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
               : null,
         })),
       );
-  }, [start, end, accountIdsCsv, defaultCurrency, isDaily]);
+  }, [start, end, accountIdsCsv, defaultCurrency, isDaily, refreshKey], { requestKey: seriesKey });
 
   // Fetch the same valuation the Investments page's summary is built on so the
   // header shows live "Total Portfolio Value" (holdings + cash, from current
   // prices), rather than the last point of the historical snapshot series.
   // Scope it to the widget's configured accounts so it stays in sync with the
   // chart.
-  const { data: summary, reload: reloadSummary } = useReportData(
+  const { data: summary } = useReportData(
     () => investmentsApi.getPortfolioValuation(config.accountIds),
-    [accountIdsCsv],
+    [accountIdsCsv, refreshKey],
   );
-
-  const reloadValueData = useCallback(() => {
-    reloadSeries();
-    reloadSummary();
-  }, [reloadSeries, reloadSummary]);
-
-  const { isRefreshing, triggerManualRefresh } = usePriceRefresh({
-    onRefreshComplete: reloadValueData,
-  });
 
   const handleRefresh = useCallback(() => {
     // Scope the price refresh to the holdings this widget shows when an account
@@ -160,8 +173,8 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
       config.accountIds.length > 0 && summary
         ? [...new Set(summary.holdings.map((h) => h.securityId))]
         : undefined;
-    void triggerManualRefresh(scope);
-  }, [config.accountIds, summary, triggerManualRefresh]);
+    onRefresh(scope);
+  }, [config.accountIds, summary, onRefresh]);
 
   const totalPortfolioValue = summary?.totalPortfolioValue ?? null;
   // The headline is a subtotal whenever the server says a holding has no price
@@ -184,6 +197,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     hasSeries: (series?.length ?? 0) > 0,
     accountIds: accountIdsCsv,
     displayCurrency: defaultCurrency,
+    reloadKey: refreshKey,
   });
 
   // The opening point is dated by the session its close came from, which is
@@ -254,7 +268,7 @@ export function PortfolioValueWidget({ accounts, isLoading }: PortfolioValueWidg
     </>
   );
 
-  const loading = isLoading || dataLoading;
+  const loading = isLoading || (dataLoading && seriesDataKey !== seriesKey);
 
   const refreshButton = (
     <button

@@ -107,6 +107,62 @@ describe('SecurityTypeAllocationWidget', () => {
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
   });
 
+  it('asks for the valuation again when the dashboard refreshed prices, keeping the chart meanwhile', async () => {
+    getPortfolioValuation.mockResolvedValue({
+      holdings: [holding('s1', 'STOCK', 700), holding('s2', 'ETF', 300)],
+      holdingsByAccount: [],
+    });
+    const widget = (refreshKey: number) => (
+      <SecurityTypeAllocationWidget accounts={[investmentAccount]} isLoading={false} refreshKey={refreshKey} />
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(widget(0));
+    });
+
+    let answer: (value: unknown) => void = () => {};
+    getPortfolioValuation.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    await act(async () => {
+      view.rerender(widget(1));
+    });
+    expect(getPortfolioValuation).toHaveBeenCalledTimes(2);
+    // The same question asked again: the chart drawn stays until it answers.
+    expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+    expect(screen.getByText('ETFs')).toBeInTheDocument();
+
+    await act(async () => {
+      answer({ holdings: [holding('s1', 'STOCK', 700)], holdingsByAccount: [] });
+    });
+    expect(screen.queryByText('ETFs')).not.toBeInTheDocument();
+  });
+
+  it('asks for the look-through breakdown again when the dashboard refreshed prices', async () => {
+    widgetCfg.config = { accountIds: [], view: 'assetClass' };
+    getPortfolioValuation.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
+    getAssetClassWeightings.mockResolvedValue({
+      items: [
+        { assetClass: 'Equity', assetClassKey: 'equity', directValue: 700, etfValue: 0, totalValue: 700, percentage: 100 },
+      ],
+      totalPortfolioValue: 700,
+      totalDirectValue: 700,
+      totalEtfValue: 0,
+      unclassifiedValue: 0,
+    });
+    const widget = (refreshKey: number) => (
+      <SecurityTypeAllocationWidget accounts={[investmentAccount]} isLoading={false} refreshKey={refreshKey} />
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(widget(0));
+    });
+    getAssetClassWeightings.mockReturnValue(new Promise(() => {}));
+    await act(async () => {
+      view.rerender(widget(1));
+    });
+    expect(getAssetClassWeightings).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Equities')).toBeInTheDocument();
+  });
+
   it('shows the empty state with no holdings', async () => {
     getPortfolioValuation.mockResolvedValue({ holdings: [], holdingsByAccount: [] });
     await renderWidget();
