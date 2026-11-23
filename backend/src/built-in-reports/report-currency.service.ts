@@ -105,8 +105,10 @@ export function wholeGroups<T extends RawRateBasis>(
  * The row's own rate into the reporting currency, when it carries one that
  * reaches it (INV-FX-002): a foreign entry whose original currency IS the
  * reporting currency settled at `exchange_rate` account-currency units per
- * reporting unit. A stored 1 between two different codes is the column's
- * default, not a rate, and falls back to the market rate like an absent one.
+ * reporting unit, 1 included: `normalizeFxEntry` refuses a foreign entry
+ * without a positive rate, so a 1 beside an original currency is a rate
+ * somebody recorded (issue #2344). The column's default 1 sits only on rows
+ * with no foreign entry, which never reach this branch.
  *
  * A read whose rows can be transfer legs passes `transferLegs`
  * (`ownTransferLegs`): a leg of the reader's own whose other side posted in
@@ -122,7 +124,6 @@ export function ownRateSql(
           WHEN ${alias}.original_currency_code = ${currencyParam}::text
            AND ${alias}.original_currency_code <> ${alias}.currency_code
            AND ${alias}.exchange_rate > 0
-           AND ${alias}.exchange_rate <> 1
           THEN ${alias}.exchange_rate
         END`;
   if (!transferLegs) return stored;
@@ -185,8 +186,7 @@ export function transactionRateBasis(
     toOwnRate(tx.transferRate) ??
     (tx.originalCurrencyCode === reportingCurrency &&
     tx.originalCurrencyCode !== tx.currencyCode &&
-    rate > 0 &&
-    rate !== 1
+    rate > 0
       ? rate
       : null);
   const date =

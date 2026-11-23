@@ -3598,10 +3598,32 @@ describe("TransactionAnalyticsService", () => {
         );
       });
 
-      it("falls back to the market rate for a stored 1 across two currencies", async () => {
+      it("converts a foreign entry recorded at exactly 1:1 at 1, not the market's 1.175", async () => {
+        // EUR 100 charged as USD 100 (issue #2344): EUR 100, never EUR 85.11.
         mockQueryBuilder.getRawMany.mockResolvedValue([
           {
             ...ownRateRow,
+            fx_exchange_rate: "1.00000000",
+            totalIncome: "0",
+            totalExpenses: "100",
+          },
+        ]);
+
+        const result = await service.getLlmListTransactions(userId, {
+          startDate: "2025-12-01",
+          endDate: "2025-12-31",
+        });
+
+        expect(result.fxComplete).toBe(true);
+        expect(result.totalExpenses).toBe(100);
+        expect(managerMock.query).not.toHaveBeenCalled();
+      });
+
+      it("takes the market rate for a row with no foreign entry", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValue([
+          {
+            ...ownRateRow,
+            fx_original_currency: null,
             fx_exchange_rate: "1.00000000",
             totalIncome: "0",
             totalExpenses: "117.5",
@@ -3869,8 +3891,8 @@ describe("TransactionAnalyticsService", () => {
         amounts: [12.5, 12.5, 13.2],
         dates: ["2025-10-01", "2025-11-03", "2025-12-01"],
         // The latest settled into EUR at its own 1.10 USD per EUR; the
-        // previous carries the column's default 1, which is not a rate.
-        originalCurrencies: [null, "EUR", "EUR"],
+        // previous is a plain USD row whose default 1 is not a rate.
+        originalCurrencies: [null, null, "EUR"],
         exchangeRates: ["1", "1", "1.10000000"],
         txnCount: "3",
       };

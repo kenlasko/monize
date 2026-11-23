@@ -392,7 +392,7 @@ describe("ForecastAggregatorService", () => {
         expect(scoped.manager.query).not.toHaveBeenCalled();
       });
 
-      it("falls back to the market rate on the row's day for a stored 1 across two currencies", async () => {
+      it("falls back to the market rate on the row's day for a row with no foreign entry", async () => {
         mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
           mockQueryBuilder([
             {
@@ -402,6 +402,8 @@ describe("ForecastAggregatorService", () => {
               isIncome: false,
               ...ownRate,
               fx_day: "2025-12-15",
+              // A plain USD row: its default 1 is not a rate.
+              fx_original_currency: null,
               fx_exchange_rate: "1.0000000000",
               income: "0",
               expenses: "117.5",
@@ -417,8 +419,8 @@ describe("ForecastAggregatorService", () => {
         const result = await service.computeAggregates(userId, "EUR");
 
         expect(result.fxComplete).toBe(true);
-        // 117.5 at the day's 1.175; the stored 1 read 117.5 and the
-        // month's last rate 94.
+        // 117.5 at the day's 1.175; the default 1 read as a rate would give
+        // 117.5 and the month's last rate 94.
         expect(result.monthlyHistory[0].totalExpenses).toBe(100);
       });
 

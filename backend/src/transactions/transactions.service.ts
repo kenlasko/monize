@@ -3908,8 +3908,15 @@ export class TransactionsService {
               "originalCurrencyCode" in updateData
                 ? updateData.originalCurrencyCode
                 : transaction.originalCurrencyCode,
+            // A row with no foreign entry carries the column's default 1,
+            // not a rate: a foreign entry added to it names its own, or is
+            // refused, so a stored 1 beside an original currency is always a
+            // recorded one (ownRateSql reads it as such, issue #2344).
             exchangeRate:
-              updateData.exchangeRate ?? Number(transaction.exchangeRate),
+              updateData.exchangeRate ??
+              (transaction.originalCurrencyCode != null
+                ? Number(transaction.exchangeRate)
+                : undefined),
             amount: updateData.amount ?? Number(transaction.amount),
           },
           effectiveAccountCurrency,
