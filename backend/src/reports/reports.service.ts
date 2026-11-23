@@ -45,6 +45,7 @@ import {
   ExecuteReportDto,
   ReportResult,
   AggregatedDataPoint,
+  KnownDataPoint,
   ReportSummary,
 } from "./dto/execute-report.dto";
 import { roundMoney, sumMoney } from "../common/round.util";
@@ -1072,8 +1073,9 @@ export class ReportsService {
           // is the trade's own cash side, not a row of this report.
           for (const split of ordinarySplitLines(tx)) {
             const accountAmount = lineAmount(split.amount);
+            // A line with no rate stays listed, its converted value unknown,
+            // so it can still be matched against a statement (issue #2342).
             const value = conv.convert(accountAmount, tx, split);
-            if (value === null) continue;
             result.push({
               id: tx.id,
               label:
@@ -1099,7 +1101,6 @@ export class ReportsService {
         } else {
           const accountAmount = lineAmount(tx.amount);
           const value = conv.convert(accountAmount, tx);
-          if (value === null) continue;
           result.push({
             id: tx.id,
             label:
@@ -1196,7 +1197,7 @@ export class ReportsService {
       Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
     );
 
-    const result: AggregatedDataPoint[] = [];
+    const result: KnownDataPoint[] = [];
     for (const [categoryId, data] of dataMap) {
       const category = categoryMap.get(categoryId);
       const parent = category?.parentId
@@ -1260,7 +1261,7 @@ export class ReportsService {
       Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
     );
 
-    const result: AggregatedDataPoint[] = [];
+    const result: KnownDataPoint[] = [];
     for (const [payeeId, data] of dataMap) {
       const payee = payeeMap.get(payeeId);
       result.push({
@@ -1334,7 +1335,7 @@ export class ReportsService {
       Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
     );
 
-    const result: AggregatedDataPoint[] = [];
+    const result: KnownDataPoint[] = [];
     for (const [tagId, data] of dataMap) {
       const info = tagInfo.get(tagId);
       result.push({
@@ -1402,7 +1403,7 @@ export class ReportsService {
     }
     const dataMap = cells.settle();
 
-    const result: AggregatedDataPoint[] = [];
+    const result: KnownDataPoint[] = [];
     for (const [key, data] of dataMap) {
       result.push({
         id: key,
@@ -1499,7 +1500,7 @@ export class ReportsService {
 
       const enriched = data.map((point) => {
         const id = point.id || "";
-        if (unconvertible.has(id)) return point;
+        if (unconvertible.has(id) || point.value === null) return point;
         const budgeted = budgetMap.get(id) ?? 0;
         return {
           ...point,
@@ -1563,14 +1564,17 @@ export class ReportsService {
     truncated: boolean,
   ): ReportSummary {
     const count = data.reduce((acc, d) => acc + (d.count ?? 1), 0);
+    // A listed row with no rate counts as listed but adds to no sum; its gap
+    // is already in `gaps`, so the total is withheld.
+    const known = data.filter((d): d is KnownDataPoint => d.value !== null);
     const knownTotal =
       metric === MetricType.AVERAGE
         ? roundMoney(
             count > 0
-              ? sumMoney(data.map((d) => d.value * (d.count ?? 1))) / count
+              ? sumMoney(known.map((d) => d.value * (d.count ?? 1))) / count
               : 0,
           )
-        : roundMoney(sumMoney(data.map((d) => d.value)));
+        : roundMoney(sumMoney(known.map((d) => d.value)));
     const average =
       metric === MetricType.AVERAGE
         ? knownTotal
@@ -1599,7 +1603,11 @@ export class ReportsService {
       switch (sortBy) {
         case TableColumn.LABEL:
           return multiplier * a.label.localeCompare(b.label);
+        // A row with no rate has no value to rank: it sorts after every row
+        // that has one, in either direction.
         case TableColumn.VALUE:
+          if (a.value === null || b.value === null)
+            return Number(a.value === null) - Number(b.value === null);
           return multiplier * (a.value - b.value);
         case TableColumn.COUNT:
           return multiplier * ((a.count || 0) - (b.count || 0));

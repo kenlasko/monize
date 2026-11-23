@@ -154,14 +154,17 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     ...Object.keys(TIMEFRAME_LABELS).map((value) => ({ value, label: t(`customReportLabels.timeframe.${value}`) })),
   ];
 
-  // Mirror ReportChart's colour assignment so legend swatches match chart slices/bars.
+  // Mirror ReportChart's colour assignment so legend swatches match chart
+  // slices/bars, and its plotting: a row with no converted value is not drawn.
   const legendData = useMemo(() => {
     if (!result) return [];
     let colourIndex = 0;
-    return result.data.map((item) => ({
-      ...item,
-      color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
-    }));
+    return result.data
+      .map((item) => ({
+        ...item,
+        color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
+      }))
+      .filter((item) => item.value !== null);
   }, [result]);
 
   // The headline, per metric: a count is a number, every other metric money. A

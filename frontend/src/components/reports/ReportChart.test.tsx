@@ -689,6 +689,64 @@ describe('ReportChart', () => {
       expect(tableData.totalRow).toEqual(['Total', '$180.00', '']);
     });
   });
+  describe('a listed row with no rate (issue #2342)', () => {
+    const rows = [
+      { label: 'Hotel', value: null, count: 1, id: 'tx-1', accountAmount: 100, accountCurrency: 'USD' },
+      { label: 'Groceries', value: 50, count: 1, id: 'tx-2', accountAmount: 50, accountCurrency: 'CAD' },
+    ];
+    const columns = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.ACCOUNT_AMOUNT, TableColumn.PERCENTAGE];
+
+    it('stays in the table under its own amount, a dash for its converted amount and share', () => {
+      const { container } = render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+
+      const cells = Array.from(container.querySelectorAll('tbody tr')[0].querySelectorAll('td')).map((td) => td.textContent);
+      expect(cells).toEqual(['Hotel', '-', '$100.00 USD', '-']);
+      // The share and the total are of what converted.
+      const known = Array.from(container.querySelectorAll('tbody tr')[1].querySelectorAll('td')).map((td) => td.textContent);
+      expect(known).toEqual(['Groceries', '$50.00', '$50.00', '100.0%']);
+      expect(container.querySelector('tfoot tr')?.children[1].textContent).toBe('$50.00');
+    });
+
+    it('exports csv with a blank converted cell, never a zero', async () => {
+      const { exportToCsv } = await import('@/lib/csv-export');
+      (exportToCsv as any).mockClear();
+      render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+
+      const [, , csvRows] = (exportToCsv as any).mock.calls[0];
+      expect(csvRows[0]).toEqual(['Hotel', '', 100, 'USD', '']);
+      expect(csvRows[2]).toEqual(['Total', 50, '', '', 100]);
+    });
+
+    it('exports pdf with a dash for the converted amount', async () => {
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      (exportToPdf as any).mockClear();
+      render(
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+      );
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
+
+      const { tableData } = (exportToPdf as any).mock.calls[0][0];
+      expect(tableData.rows[0]).toEqual(['Hotel', '-', '$100.00 USD', '']);
+      expect(tableData.totalRow[1]).toBe('$50.00');
+    });
+
+    it('is not drawn on a chart, which has no value to plot for it', () => {
+      const onClick = vi.fn();
+      render(
+        <ReportChart viewType={ReportViewType.PIE_CHART} data={rows} groupBy={GroupByType.NONE} onDataPointClick={onClick} />
+      );
+      // The mocked Pie clicks its first slice: the first row that converted.
+      fireEvent.click(screen.getByTestId('pie-click-with-id'));
+      expect(onClick).toHaveBeenCalledWith('tx-2');
+    });
+  });
   describe('tag column', () => {
     const rows = [
       { label: 'Hotel', value: 135, count: 1, id: 'tx-1', tags: 'Vacation' },

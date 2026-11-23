@@ -31,6 +31,9 @@ import { CHART_BAR_RADIUS, CHART_GRID_PROPS, CHART_TOOLTIP_CLASS } from '@/lib/c
 import { ChartActiveDot } from '@/components/ui/ChartActiveDot';
 import { Th, Td } from '@/components/ui/Table';
 
+/** A row a chart can draw: one whose converted value is known. */
+type PlottedDataPoint = AggregatedDataPoint & { value: number; color: string };
+
 // Default columns if none specified
 const DEFAULT_TABLE_COLUMNS = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT];
 
@@ -81,13 +84,16 @@ function getColumnMap(
     [TableColumn.MEMO]: { header: 'Memo', getValue: (item) => item.memo || '' },
     [TableColumn.CATEGORY]: { header: 'Category', getValue: (item) => item.category || '' },
     [TableColumn.ACCOUNT]: { header: 'Account', getValue: (item) => item.account || '' },
-    [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value },
+    // A listed row with no rate has no converted figure: a blank cell, never 0.
+    [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value ?? '' },
     [TableColumn.ACCOUNT_AMOUNT]: { header: accountAmountHeader, getValue: (item) => item.accountAmount ?? '' },
     [TableColumn.ORIGINAL_AMOUNT]: { header: originalAmountHeader, getValue: (item) => item.originalAmount ?? '' },
     [TableColumn.PERCENTAGE]: {
       header: '%',
       getValue: (item) =>
-        signed ? '' : (item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0)),
+        signed || item.value === null
+          ? ''
+          : (item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0)),
     },
     [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
     [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.tags || '' },
@@ -96,7 +102,7 @@ function getColumnMap(
 
 interface ReportChartTooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: AggregatedDataPoint & { color: string } }>;
+  payload?: Array<{ payload: PlottedDataPoint }>;
   total: number;
   formatCurrency: (value: number) => string;
   formatPercent: (value: number, decimals?: number) => string;
@@ -140,11 +146,20 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     return data.map((item) => ({
       ...item,
       color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
-      magnitude: Math.abs(item.value),
     }));
   }, [data]);
+  // A listed row with no rate stays in the table and the exports under its own
+  // amount (issue #2342), but a chart has nothing to draw for it, and it is in
+  // no total or share.
+  const plottedData = useMemo(
+    () =>
+      chartData
+        .filter((item): item is PlottedDataPoint => item.value !== null)
+        .map((item) => ({ ...item, magnitude: Math.abs(item.value) })),
+    [chartData],
+  );
 
-  const total = sumMoney(chartData.map((item) => item.value));
+  const total = sumMoney(plottedData.map((item) => item.value));
   const formatValue = (value: number) =>
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // The Total row prints the headline the server settled for the metric (a mean
@@ -217,6 +232,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const pdfCell = (col: TableColumn, item: AggregatedDataPoint) => {
       if (col === TableColumn.ACCOUNT_AMOUNT) return formatAccountAmount(item);
       if (col === TableColumn.ORIGINAL_AMOUNT) return formatOriginalAmount(item);
+      if (col === TableColumn.VALUE && item.value === null) return '-';
       const value = columnMap[col]?.getValue(item) ?? '';
       if (typeof value !== 'number') return value;
       if (col === TableColumn.VALUE) return formatValue(value);
@@ -259,7 +275,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
                 <Pie
-                  data={chartData}
+                  data={plottedData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -272,7 +288,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                     if (id) onDataPointClick?.(id);
                   }}
                 >
-                  {chartData.map((entry, index) => (
+                  {plottedData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -289,7 +305,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           {exportBar}
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
+              <BarChart data={plottedData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
                 <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="label"
@@ -311,7 +327,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   cursor={onDataPointClick ? 'pointer' : 'default'}
                   onClick={(entry) => entry.id && onDataPointClick?.(entry.id)}
                 >
-                  {chartData.map((entry, index) => (
+                  {plottedData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
@@ -327,7 +343,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
           {exportBar}
           <div ref={chartContainerRef} className="h-80">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
+              <LineChart data={plottedData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }}>
                 <CartesianGrid {...CHART_GRID_PROPS} />
                 <XAxis
                   dataKey="label"
@@ -483,7 +499,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.VALUE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
-                      {formatValue(item.value)}
+                      {item.value === null ? '-' : formatValue(item.value)}
                     </td>
                   )}
                   {columns.includes(TableColumn.ACCOUNT_AMOUNT) && (
@@ -498,7 +514,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.PERCENTAGE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                      {signed
+                      {signed || item.value === null
                         ? '-'
                         : formatPercent(
                             item.percentage ??

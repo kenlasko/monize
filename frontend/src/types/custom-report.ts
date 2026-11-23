@@ -134,7 +134,13 @@ export type UpdateCustomReportData = Partial<CreateCustomReportData>;
 
 export interface AggregatedDataPoint {
   label: string;
-  value: number;
+  /**
+   * The figure in the report's currency. `null` only on a listed transaction
+   * with no rate into it on its date: the row stays listed under its own
+   * `accountAmount` so it can be matched against a statement, and is in no
+   * total (`excludedCount` counts it).
+   */
+  value: number | null;
   id?: string;
   color?: string;
   percentage?: number;

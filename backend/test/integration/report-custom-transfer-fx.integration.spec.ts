@@ -215,8 +215,18 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
 
     const result = await run(usdId);
 
-    // The groceries line has no rate on file and is left out, named.
-    expect(result.data.map((d) => d.value)).toEqual([-90]);
+    // The groceries line has no rate on file: it stays listed under its own
+    // amount with no converted value, and is left out of the total, named.
+    expect(
+      result.data
+        .map((d) => [d.accountAmount, d.value])
+        .sort((a, b) => Number(a[0]) - Number(b[0])),
+    ).toEqual([
+      [-100, -90],
+      [-60, null],
+    ]);
+    expect(result.summary.total).toBeNull();
+    expect(result.summary.knownTotal).toBe(-90);
     expect(result.missingCurrencies).toEqual(["USD"]);
     expect(result.excludedCount).toBe(1);
   });
