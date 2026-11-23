@@ -37,6 +37,11 @@ const TYPE_COLOURS: Record<string, string> = {
 interface SecurityTypeAllocationWidgetProps {
   accounts: Account[];
   isLoading: boolean;
+  /**
+   * Bumped by the dashboard when a price refresh wrote new prices: the
+   * valuation and the weightings are priced from them, so both are asked again.
+   */
+  refreshKey?: number;
 }
 
 interface TypeAllocation {
@@ -50,6 +55,7 @@ interface TypeAllocation {
 export function SecurityTypeAllocationWidget({
   accounts,
   isLoading,
+  refreshKey = 0,
 }: SecurityTypeAllocationWidgetProps) {
   const t = useTranslations('dashboard');
   const assetClassLabel = useAssetClassLabel();
@@ -72,12 +78,18 @@ export function SecurityTypeAllocationWidget({
       : type;
   };
 
-  const { data: summary, isLoading: dataLoading } = useReportData(
+  // What each request asks for, without the refresh key: a reload after a
+  // price refresh keeps the chart drawn until the new answer lands.
+  const summaryKey = JSON.stringify(config.accountIds);
+  const assetClassKey = JSON.stringify([config.accountIds, config.view]);
+
+  const { data: summary, dataKey: summaryDataKey, isLoading: dataLoading } = useReportData(
     () =>
       investmentsApi.getPortfolioValuation(
         config.accountIds.length > 0 ? config.accountIds : undefined,
       ),
-    [config.accountIds],
+    [config.accountIds, refreshKey],
+    { requestKey: summaryKey },
   );
 
   const holdings = useMemo<HoldingWithMarketValue[]>(
@@ -88,14 +100,15 @@ export function SecurityTypeAllocationWidget({
   // The look-through breakdown, which sees inside a fund rather than filing all
   // of it under ETF. Fetched only while that view is active, so the ordinary
   // security-type view costs no extra request.
-  const { data: assetClasses, isLoading: assetClassLoading } = useReportData(
+  const { data: assetClasses, dataKey: assetClassDataKey, isLoading: assetClassLoading } = useReportData(
     () =>
       config.view === 'assetClass'
         ? investmentsApi.getAssetClassWeightings(
             config.accountIds.length > 0 ? config.accountIds : undefined,
           )
         : Promise.resolve(null),
-    [config.accountIds, config.view],
+    [config.accountIds, config.view, refreshKey],
+    { requestKey: assetClassKey },
   );
 
   const assetClassData = useMemo<TypeAllocation[]>(() => {
@@ -193,7 +206,10 @@ export function SecurityTypeAllocationWidget({
   );
 
   const loading =
-    isLoading || (config.view === 'assetClass' ? assetClassLoading : dataLoading);
+    isLoading ||
+    (config.view === 'assetClass'
+      ? assetClassLoading && assetClassDataKey !== assetClassKey
+      : dataLoading && summaryDataKey !== summaryKey);
 
   return (
     <WidgetCard

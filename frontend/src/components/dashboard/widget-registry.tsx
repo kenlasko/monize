@@ -386,7 +386,13 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     minWidth: 'third',
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
-    render: (ctx) => <SecurityTypeAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => (
+      <SecurityTypeAllocationWidget
+        accounts={ctx.accounts}
+        isLoading={ctx.isLoading}
+        refreshKey={ctx.priceRefreshKey}
+      />
+    ),
   },
   {
     id: 'geographic-allocation',
@@ -396,7 +402,13 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     minWidth: 'third',
     defaultHeight: 'standard',
     shouldRender: (ctx) => ctx.isLoading || ctx.hasInvestments,
-    render: (ctx) => <GeographicAllocationWidget accounts={ctx.accounts} isLoading={ctx.isLoading} />,
+    render: (ctx) => (
+      <GeographicAllocationWidget
+        accounts={ctx.accounts}
+        isLoading={ctx.isLoading}
+        refreshKey={ctx.priceRefreshKey}
+      />
+    ),
   },
   {
     id: 'recurring-expenses',
