@@ -169,6 +169,25 @@ export function toScaledUnits(value: number, decimals: number): bigint {
 }
 
 /**
+ * `value` as a whole number of `10^-decimals` units, rounded half away from
+ * zero as `roundToDecimals` rounds it and then shifted by its decimal digits,
+ * never by a float multiply: `Math.round(300000000000.03 * 10000)` is
+ * `3000000000000301` (the product is `3000000000000300.5` in doubles) while
+ * `-300000000000.03` scales to `-3000000000000300`, so a pair that should
+ * cancel left a unit (Discussion #2343).
+ *
+ * A `number`, for the integer arithmetic a caller does with it, so it is exact
+ * only while the count is a safe integer: below about 900 billion at four
+ * places, 90 million at eight. A sum that can pass that accumulates
+ * `toScaledUnits` in a `BigInt`, as `sumMoney` does. A non-finite `value` comes
+ * back unchanged, as `Math.round` would return it.
+ */
+export function moneyUnits(value: number, decimals: number): number {
+  if (!Number.isFinite(value)) return value;
+  return Number(toScaledUnits(roundToDecimals(value, decimals), decimals));
+}
+
+/**
  * The `number` a count of `10^-decimals` units denotes: the double nearest the
  * exact decimal, parsed from its string, never a float division of the count.
  */

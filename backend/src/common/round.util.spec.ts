@@ -2,11 +2,14 @@ import {
   FIAT_MONEY_DECIMALS,
   MONEY_DECIMALS,
   MONEY_SCALE,
+  fromScaledUnits,
   moneyDecimalsFor,
+  moneyUnits,
   roundToDecimals,
   roundMoney,
   sumMoney,
   toMoneyNumber,
+  toScaledUnits,
 } from "./round.util";
 
 describe("toMoneyNumber", () => {
@@ -216,6 +219,43 @@ describe("roundMoney", () => {
     expect(roundMoney(1700 / 136000.123456789, 8)).toBe(0.01249999);
     expect(roundMoney(0.000000005, 8)).toBe(0.00000001);
     expect(roundMoney(-0.000000005, 8)).toBe(-0.00000001);
+  });
+});
+
+describe("moneyUnits (Discussion #2343)", () => {
+  it("scales a large amount to the units it denotes, in both signs", () => {
+    // 300000000000.03 * 10000 is 3000000000000300.5 in doubles, which
+    // Math.round carried to ...301 for the positive amount and ...300 for the
+    // negative one.
+    expect(moneyUnits(300_000_000_000.03, 4)).toBe(3_000_000_000_000_300);
+    expect(moneyUnits(-300_000_000_000.03, 4)).toBe(-3_000_000_000_000_300);
+  });
+
+  it("rounds half away from zero, as roundMoney does", () => {
+    expect(moneyUnits(0.00005, 4)).toBe(1);
+    expect(moneyUnits(-0.00005, 4)).toBe(-1);
+    expect(moneyUnits(0.00145, 4)).toBe(15);
+    expect(moneyUnits(1.23456789, 8)).toBe(123_456_789);
+  });
+
+  it("is zero for zero of either sign", () => {
+    expect(moneyUnits(0, 4)).toBe(0);
+    expect(moneyUnits(-0.00001, 4)).toBe(0);
+  });
+
+  it("hands a non-finite value back, as Math.round would", () => {
+    expect(moneyUnits(NaN, 4)).toBeNaN();
+    expect(moneyUnits(Infinity, 4)).toBe(Infinity);
+    expect(moneyUnits(-Infinity, 4)).toBe(-Infinity);
+  });
+});
+
+describe("toScaledUnits and fromScaledUnits", () => {
+  it("round-trip a large amount exactly", () => {
+    const units = toScaledUnits(300_000_000_000.03, 4);
+    expect(units).toBe(3_000_000_000_000_300n);
+    expect(fromScaledUnits(units, 4)).toBe(300_000_000_000.03);
+    expect(fromScaledUnits(-units, 4)).toBe(-300_000_000_000.03);
   });
 });
 
