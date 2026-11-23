@@ -3,6 +3,7 @@ import { render, screen, waitFor, within, fireEvent } from '@/test/render';
 import { act } from '@testing-library/react';
 import toast from 'react-hot-toast';
 import DashboardPage from './page';
+import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
 import { DEFAULT_DASHBOARD_WIDGET_IDS } from '@/components/dashboard/widget-registry';
 
 // Mock next/image
@@ -442,6 +443,27 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(mockTriggerAutoRefresh).toHaveBeenCalled();
     });
+  });
+
+  it('reloads the investment widgets in the background after an automatic refresh', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: 'acc-1', name: 'Brokerage', accountType: 'INVESTMENT', isClosed: false },
+    ]);
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(mockTriggerAutoRefresh).toHaveBeenCalled();
+    });
+    mockGetTopMovers.mockClear();
+    mockGetPortfolioValuation.mockClear();
+    mockGetFavouriteSecurities.mockClear();
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+    });
+
+    expect(mockGetTopMovers).toHaveBeenCalledTimes(1);
+    expect(mockGetPortfolioValuation).toHaveBeenCalledTimes(1);
+    expect(mockGetFavouriteSecurities).toHaveBeenCalledTimes(1);
   });
 
   it('loads top movers directly when investment accounts exist', async () => {

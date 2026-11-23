@@ -24,6 +24,7 @@ import { CARD_CLASS } from '@/components/ui/Card';
 import { SecurityList, type SecurityHoldings, type SecurityTransactions, type SecuritySortField, type SortDirection } from '@/components/securities/SecurityList';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
+import { useOnAutoPriceRefresh } from '@/hooks/useOnAutoPriceRefresh';
 import { BondRefreshProgress } from '@/components/securities/BondRefreshProgress';
 import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components/ui/segmented-control';
 import { RefreshPricesButton } from '@/components/investments/RefreshPricesButton';
@@ -154,6 +155,18 @@ function SecuritiesContent() {
   const handleRefreshPrices = useCallback(() => {
     void triggerManualRefresh();
   }, [triggerManualRefresh]);
+
+  // The automatic refresh (every 15 minutes while the site is open) re-reads
+  // the list in the background: `fetchData`, not `loadData`, so the table
+  // keeps its rows instead of returning to the loading state.
+  useOnAutoPriceRefresh((lastUpdated) => {
+    fetchData();
+    if (lastUpdated) {
+      setLastPriceUpdate(lastUpdated);
+    } else {
+      loadPriceStatus();
+    }
+  });
 
   // Legacy `?price=<id>` links land on the detail page's Price history tab.
   useEffect(() => {

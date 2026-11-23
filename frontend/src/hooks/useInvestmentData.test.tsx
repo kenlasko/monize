@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@/test/render';
 import { useInvestmentData } from './useInvestmentData';
 import { transactionsApi } from '@/lib/transactions';
+import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
 
 // --- API mocks ---
 const mockDeleteTransaction = vi.fn();
@@ -975,6 +976,26 @@ describe('useInvestmentData – automatic price refresh', () => {
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
 
     expect(mockTriggerAutoRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-values the page in the background when an automatic refresh wrote prices', async () => {
+    // The page's own refresh on load, then the open site's every 15 minutes,
+    // report through the signal: the summary is asked again and every surface
+    // keyed on writeRefreshKey re-asks, without returning to a skeleton.
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    const keyBefore = result.current.writeRefreshKey;
+    mockGetPortfolioSummary.mockClear();
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+      await new Promise(res => setTimeout(res, 0));
+    });
+
+    expect(mockGetPortfolioSummary).toHaveBeenCalledTimes(1);
+    expect(result.current.writeRefreshKey).toBeGreaterThan(keyBefore);
+    expect(result.current.lastPriceUpdate).toBe('2026-11-23T15:00:00Z');
+    expect(result.current.isSummaryLoading).toBe(false);
   });
 });
 

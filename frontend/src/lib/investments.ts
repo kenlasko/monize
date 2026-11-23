@@ -810,7 +810,9 @@ export const investmentsApi = {
     const response = await apiClient.post('/securities/prices/refresh', undefined, {
       timeout: 120_000,
     });
-    invalidateCache('investments:');
+    // A stored close values every holding, so it moves every portfolio total
+    // and every investment account's market value, not only `investments:`.
+    invalidateBalanceCaches();
     return response.data;
   },
 
@@ -836,8 +838,9 @@ export const investmentsApi = {
     // Only when a price was actually written. A refresh that updated nothing
     // (market closed, every quote refused, nothing eligible) leaves every
     // cached investments answer true, and dropping them makes the page pay for
-    // a valuation it already had.
-    if (response.data?.updated > 0) invalidateCache('investments:');
+    // a valuation it already had. One that did moves every account's market
+    // value as well as the portfolio, which is what the balance caches hold.
+    if (response.data?.updated > 0) invalidateBalanceCaches();
     return response.data;
   },
 

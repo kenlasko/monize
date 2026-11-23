@@ -820,6 +820,21 @@ describe('investmentsApi valuation-input writes (INV-CACHE-001)', () => {
     expectDropped();
   });
 
+  it('refreshSelectedPrices drops the valuation caches when a price was written', async () => {
+    // A stored quote moves every investment account's market value as well as
+    // the portfolio; the automatic refresh writes some every 15 minutes while
+    // a market is open.
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { updated: 1 } });
+    await investmentsApi.refreshSelectedPrices(['s1']);
+    expectDropped();
+  });
+
+  it('refreshPrices drops the valuation caches', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { updated: 1 } });
+    await investmentsApi.refreshPrices();
+    expectDropped();
+  });
+
   it('updateSecurityPrice drops the valuation caches', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 1 } });
     await investmentsApi.updateSecurityPrice('s1', 1, { price: 2 } as any);

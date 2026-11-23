@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import SecuritiesPage from './page';
+import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
 import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components/ui/segmented-control';
 import toast from 'react-hot-toast';
 
@@ -982,6 +983,25 @@ describe('SecuritiesPage', () => {
       // refresh only reach the screen if the list is read again.
       await waitFor(() => expect(mockGetHoldings).toHaveBeenCalled());
       expect(toast.success).toHaveBeenCalledWith('2 security prices updated');
+    });
+
+    it('re-reads the list in the background after an automatic refresh', async () => {
+      render(<SecuritiesPage />);
+      await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+      mockGetHoldings.mockClear();
+      let answer: (rows: unknown) => void = () => {};
+      mockGetHoldings.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+
+      await act(async () => {
+        notifyAutoPriceRefresh('2026-08-31T15:00:00.000Z');
+      });
+
+      // The table keeps its rows while the new values load: the refresh is
+      // meant to be invisible, and a loading state every 15 minutes is not.
+      expect(mockGetHoldings).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('security-list')).toBeInTheDocument();
+      expect(toast.success).not.toHaveBeenCalled();
+      await act(async () => { answer([]); });
     });
 
     it('reads the last refresh time on load, for the button to report', async () => {

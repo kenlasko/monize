@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@/test/render';
+import { usePriceRefresh } from './usePriceRefresh';
 import {
-  isMarketHours,
+  __resetPriceRefreshStateForTesting,
   getRefreshInProgress,
+  isAutomaticPriceRefreshDue,
+  runAutomaticPriceRefresh,
   setRefreshInProgress,
-  usePriceRefresh,
-} from './usePriceRefresh';
+} from '@/lib/price-refresh-state';
+import { subscribeAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
+import { AUTO_PRICE_REFRESH_INTERVAL_MS } from '@/lib/price-auto-refresh';
 
 vi.mock('@/lib/investments', () => ({
   investmentsApi: {
@@ -53,12 +57,6 @@ vi.mock('@/lib/errors', () => ({
 import { investmentsApi } from '@/lib/investments';
 import toast from 'react-hot-toast';
 
-describe('isMarketHours', () => {
-  it('returns a boolean', () => {
-    expect(typeof isMarketHours()).toBe('boolean');
-  });
-});
-
 describe('getRefreshInProgress / setRefreshInProgress', () => {
   afterEach(() => setRefreshInProgress(false));
 
@@ -75,7 +73,7 @@ describe('getRefreshInProgress / setRefreshInProgress', () => {
 describe('usePriceRefresh', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setRefreshInProgress(false);
+    __resetPriceRefreshStateForTesting();
   });
 
   it('returns isRefreshing and trigger functions', () => {
@@ -356,14 +354,73 @@ describe('usePriceRefresh', () => {
     expect(investmentsApi.getSecurities).not.toHaveBeenCalled();
   });
 
-  it('triggerAutoRefresh skips when outside market hours', async () => {
-    // Real isMarketHours runs; check that when refreshInProgress is true it short-circuits
+  it('triggerAutoRefresh does nothing while a refresh is in progress', async () => {
     setRefreshInProgress(true);
     const { result } = renderHook(() => usePriceRefresh());
     act(() => {
       result.current.triggerAutoRefresh();
     });
     expect(investmentsApi.getSecurities).not.toHaveBeenCalled();
+  });
+
+  it('triggerAutoRefresh runs the automatic refresh, not onRefreshComplete', async () => {
+    // The automatic refresh reports through the signal every price surface
+    // listens to; the page that started it listens too, so calling its
+    // onRefreshComplete as well would reload it twice.
+    const onRefreshComplete = vi.fn();
+    const heard = vi.fn();
+    const unsubscribe = subscribeAutoPriceRefresh(heard);
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([
+      sec('btc', { securityType: 'CRYPTO' }),
+    ] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 1, failed: 0, totalSecurities: 1, skipped: 0, results: [], lastUpdated: '2026-11-21T12:00:00Z',
+    });
+
+    const { result } = renderHook(() => usePriceRefresh({ onRefreshComplete }));
+    await act(async () => {
+      result.current.triggerAutoRefresh();
+    });
+
+    expect(investmentsApi.refreshSelectedPrices).toHaveBeenCalledWith(['btc']);
+    expect(heard).toHaveBeenCalledWith('2026-11-21T12:00:00Z');
+    expect(onRefreshComplete).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(result.current.isRefreshing).toBe(false);
+    unsubscribe();
+  });
+
+  it('a click during an automatic refresh waits for it, then refreshes', async () => {
+    // The automatic refresh shows nothing, so dropping the click (as a second
+    // click during a manual refresh is) would leave the reader's Refresh
+    // doing nothing at all.
+    let finishAutomatic: (value: unknown) => void = () => {};
+    vi.mocked(investmentsApi.getSecurities)
+      .mockImplementationOnce(
+        () => new Promise((resolve) => { finishAutomatic = resolve; }) as any,
+      )
+      .mockResolvedValue([sec('s-1')] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 1, failed: 0, totalSecurities: 1, skipped: 0, results: [], lastUpdated: '',
+    });
+
+    const { result } = renderHook(() => usePriceRefresh());
+    let click: Promise<void> = Promise.resolve();
+    await act(async () => {
+      result.current.triggerAutoRefresh();
+      click = result.current.triggerManualRefresh();
+    });
+    expect(result.current.isRefreshing).toBe(true);
+    expect(investmentsApi.getSecurities).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishAutomatic([sec('s-1')]);
+      await click;
+    });
+
+    expect(investmentsApi.getSecurities).toHaveBeenCalledTimes(2);
+    expect(toast.success).toHaveBeenCalledWith('1 security price updated');
+    expect(result.current.isRefreshing).toBe(false);
   });
 
   it('uses singular "1 security price" message when only one updated', async () => {
@@ -376,5 +433,134 @@ describe('usePriceRefresh', () => {
       await result.current.triggerManualRefresh();
     });
     expect(toast.success).toHaveBeenCalledWith('1 security price updated');
+  });
+});
+
+describe('runAutomaticPriceRefresh', () => {
+  // Thursday 2026-07-30, 14:00 UTC: 10:00 in New York, 15:00 in London.
+  const DURING_NYSE = new Date('2026-07-30T14:00:00Z');
+  const NYSE_SESSION = {
+    marketTimezone: 'America/New_York',
+    marketOpenTime: '09:30:00',
+    marketCloseTime: '16:00:00',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __resetPriceRefreshStateForTesting();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(DURING_NYSE);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('refreshes only the securities whose market is trading, without a toast', async () => {
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([
+      sec('aapl', NYSE_SESSION),
+      sec('vod', {
+        marketTimezone: 'Europe/London',
+        marketOpenTime: '08:00:00',
+        marketCloseTime: '16:30:00',
+      }),
+      sec('tse', {
+        marketTimezone: 'Asia/Tokyo',
+        marketOpenTime: '09:00:00',
+        marketCloseTime: '15:30:00',
+      }),
+      sec('btc', { securityType: 'CRYPTO' }),
+      sec('off', { ...NYSE_SESSION, skipPriceUpdates: true }),
+      sec('edo', { securityType: 'BOND', bondProgramId: 'p-1' }),
+    ] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 3, failed: 0, totalSecurities: 3, skipped: 0, results: [], lastUpdated: '',
+    });
+
+    await runAutomaticPriceRefresh();
+
+    expect(investmentsApi.getSecurities).toHaveBeenCalledWith(false);
+    expect(investmentsApi.refreshSelectedPrices).toHaveBeenCalledWith(['aapl', 'vod', 'btc']);
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('tells the price surfaces when a quote was written', async () => {
+    const heard = vi.fn();
+    const unsubscribe = subscribeAutoPriceRefresh(heard);
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([sec('aapl', NYSE_SESSION)] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 1, failed: 0, totalSecurities: 1, skipped: 0, results: [], lastUpdated: '2026-07-30T14:00:01Z',
+    });
+
+    await runAutomaticPriceRefresh();
+
+    expect(heard).toHaveBeenCalledWith('2026-07-30T14:00:01Z');
+    unsubscribe();
+  });
+
+  it('tells nobody when nothing was written', async () => {
+    const heard = vi.fn();
+    const unsubscribe = subscribeAutoPriceRefresh(heard);
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([sec('aapl', NYSE_SESSION)] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 0, failed: 1, totalSecurities: 1, skipped: 0,
+      results: [{ symbol: 'AAPL', success: false, error: 'refused' }], lastUpdated: '',
+    });
+
+    await runAutomaticPriceRefresh();
+
+    expect(heard).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it('asks the server nothing when no market is open', async () => {
+    // Saturday: only a coin would trade.
+    vi.setSystemTime(new Date('2026-08-01T15:00:00Z'));
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([sec('aapl', NYSE_SESSION)] as any);
+
+    await runAutomaticPriceRefresh();
+
+    expect(investmentsApi.refreshSelectedPrices).not.toHaveBeenCalled();
+  });
+
+  it('runs at most once per interval, counting an attempt that found nothing open', async () => {
+    vi.setSystemTime(new Date('2026-08-01T15:00:00Z'));
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([sec('aapl', NYSE_SESSION)] as any);
+
+    await runAutomaticPriceRefresh();
+    expect(isAutomaticPriceRefreshDue()).toBe(false);
+    await runAutomaticPriceRefresh();
+    expect(investmentsApi.getSecurities).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date(Date.now() + AUTO_PRICE_REFRESH_INTERVAL_MS));
+    expect(isAutomaticPriceRefreshDue()).toBe(true);
+    await runAutomaticPriceRefresh();
+    expect(investmentsApi.getSecurities).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits out the interval after a manual refresh', async () => {
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([sec('aapl', NYSE_SESSION)] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 1, failed: 0, totalSecurities: 1, skipped: 0, results: [], lastUpdated: '',
+    });
+    const { result } = renderHook(() => usePriceRefresh());
+    await act(async () => {
+      await result.current.triggerManualRefresh();
+    });
+    vi.mocked(investmentsApi.getSecurities).mockClear();
+
+    await runAutomaticPriceRefresh();
+
+    expect(investmentsApi.getSecurities).not.toHaveBeenCalled();
+  });
+
+  it('logs a failure and never rejects', async () => {
+    vi.mocked(investmentsApi.getSecurities).mockRejectedValue(new Error('offline'));
+
+    await expect(runAutomaticPriceRefresh()).resolves.toBeUndefined();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(getRefreshInProgress()).toBe(false);
   });
 });

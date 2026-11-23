@@ -24,6 +24,7 @@ import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
+import { useOnAutoPriceRefresh } from '@/hooks/useOnAutoPriceRefresh';
 import { useFormModal } from '@/hooks/useFormModal';
 import { createLogger } from '@/lib/logger';
 import { PAGE_SIZE } from '@/lib/constants';
@@ -276,28 +277,34 @@ export function useInvestmentData() {
     }
   }, []);
 
+  const reloadAfterPriceRefresh = (lastUpdated?: string) => {
+    // New prices move every figure valued from them, not only the summary
+    // this hook fetches: the value chart and both period-result surfaces
+    // (Value change / Investment result, Portfolio performance) fetch their
+    // own and re-ask only when this key moves.
+    setWriteRefreshKey((key) => key + 1);
+    // Prefer the refresh result's timestamp: savePriceData UPDATEs existing
+    // rows in place, so the DB-backed lastUpdated (createdAt) wouldn't advance
+    // on same-day refreshes. Fall back to the DB value if the result didn't
+    // carry one (e.g. when no securities to refresh).
+    if (lastUpdated) {
+      setLastPriceUpdate(lastUpdated);
+    } else {
+      loadPriceStatus();
+    }
+    // Returned so the refresh button keeps spinning until the summary has
+    // been re-valued: the sections keep their previous figures meanwhile,
+    // and the spinner is what says they are about to change.
+    return loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
+  };
+
   const { isRefreshing: isRefreshingPrices, triggerManualRefresh: handleRefreshPrices, triggerAutoRefresh } = usePriceRefresh({
-    onRefreshComplete: (lastUpdated) => {
-      // New prices move every figure valued from them, not only the summary
-      // this hook fetches: the value chart and both period-result surfaces
-      // (Value change / Investment result, Portfolio performance) fetch their
-      // own and re-ask only when this key moves.
-      setWriteRefreshKey((key) => key + 1);
-      // Prefer the refresh result's timestamp: savePriceData UPDATEs existing
-      // rows in place, so the DB-backed lastUpdated (createdAt) wouldn't advance
-      // on same-day refreshes. Fall back to the DB value if the result didn't
-      // carry one (e.g. when no securities to refresh).
-      if (lastUpdated) {
-        setLastPriceUpdate(lastUpdated);
-      } else {
-        loadPriceStatus();
-      }
-      // Returned so the refresh button keeps spinning until the summary has
-      // been re-valued: the sections keep their previous figures meanwhile,
-      // and the spinner is what says they are about to change.
-      return loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-    },
+    onRefreshComplete: reloadAfterPriceRefresh,
   });
+  // The automatic refresh (the page's own once the first summary is in, then
+  // every 15 minutes while the site is open) reloads the same figures; the
+  // reload runs in the background, so nothing returns to its skeleton.
+  useOnAutoPriceRefresh(reloadAfterPriceRefresh);
 
   const loadPortfolioSummary = useCallback((accountIds: string[]) => {
     const fetchSummary = async () => {
