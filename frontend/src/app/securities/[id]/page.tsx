@@ -29,6 +29,7 @@ import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
+import { useOnAutoPriceRefresh } from '@/hooks/useOnAutoPriceRefresh';
 import { BondRefreshProgress } from '@/components/securities/BondRefreshProgress';
 import { investmentsApi } from '@/lib/investments';
 import { getErrorMessage } from '@/lib/errors';
@@ -247,6 +248,9 @@ function SecurityDetailContent() {
     isRefreshing: isRefreshingPrice,
     triggerManualRefresh: refreshPrices,
   } = usePriceRefresh({ onRefreshComplete: reloadAfterPriceRefresh });
+  // The automatic refresh (every 15 minutes while the site is open, while this
+  // security's market trades) re-reads the quote and the history in place.
+  useOnAutoPriceRefresh(reloadAfterPriceRefresh);
 
   // One signal for every bond section that loads its own data: bumped when a
   // price refresh settles (success, failure or nothing to do), so each re-reads

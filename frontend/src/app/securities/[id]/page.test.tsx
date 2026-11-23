@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, fireEvent, waitFor, within } from '@/test/render';
 import SecurityDetailPage from './page';
+import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
 import type { Security, SecurityDetail } from '@/types/investment';
 
 const mockPush = vi.fn();
@@ -391,6 +392,22 @@ describe('SecurityDetailPage', () => {
       expect(mockGetSecurityDetail).toHaveBeenCalled();
       expect(mockGetSecurityPrices).toHaveBeenCalled();
     });
+  });
+
+  it('re-reads the quote in place after an automatic refresh', async () => {
+    await renderPage();
+    mockGetSecurityDetail.mockClear();
+    mockGetSecurityPrices.mockClear();
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-07-30T15:00:00.000Z');
+    });
+
+    expect(mockGetSecurityDetail).toHaveBeenCalledWith('sec-1');
+    expect(mockGetSecurityPrices).toHaveBeenCalled();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Apple Inc.' }),
+    ).toBeInTheDocument();
   });
 
   it('leaves the page up when the post-refresh re-read fails', async () => {

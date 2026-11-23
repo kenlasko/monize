@@ -22,3 +22,12 @@
  * layers cannot drift apart quietly.
  */
 export const API_MAX_PAGE_LIMIT = 200;
+
+/**
+ * How many security ids one `POST /securities/prices/refresh/selected` takes
+ * (`@ArrayMaxSize` on `RefreshSecurityPricesDto`). A longer list is refused
+ * outright, so `investmentsApi.refreshSelectedPrices` sends one in consecutive
+ * batches of this size; `src/test/api-page-limits.test.ts` checks it against
+ * the DTO.
+ */
+export const REFRESH_SELECTED_MAX_IDS = 100;

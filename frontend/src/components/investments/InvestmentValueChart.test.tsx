@@ -1208,6 +1208,34 @@ describe('InvestmentValueChart', () => {
       });
     });
 
+    // The automatic price refresh bumps the key every 15 minutes while a market
+    // is open: a dimmed chart and an "Updating" label each time would be the
+    // one visible trace of a refresh that is meant to be invisible.
+    it('re-fetches without marking the drawn chart as loading', async () => {
+      const { rerender } = render(<InvestmentValueChart refreshKey={0} />);
+      await screen.findByText('Portfolio Value Over Time');
+      let answer: (rows: unknown) => void = () => {};
+      vi.mocked(netWorthApi.getInvestmentsDaily).mockImplementationOnce(
+        () => new Promise((resolve) => { answer = resolve; }) as any,
+      );
+
+      await act(async () => {
+        rerender(<InvestmentValueChart refreshKey={1} />);
+      });
+
+      expect(netWorthApi.getInvestmentsDaily).toHaveBeenCalledTimes(2);
+      expect(screen.queryByTestId('chart-loading-indicator')).toBeNull();
+      expect(document.querySelector('.opacity-60')).toBeNull();
+
+      await act(async () => {
+        answer([
+          { date: '2023-06-01', value: 10000 },
+          { date: '2024-01-01', value: 16000 },
+        ]);
+      });
+      expect(screen.queryByTestId('chart-loading-indicator')).toBeNull();
+    });
+
     // The intraday series is served from sessionStorage, so a re-fetch that
     // trusted the cache would hand back the pre-write points.
     it('drops the intraday cache and re-fetches when the key is bumped', async () => {

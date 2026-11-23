@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { API_MAX_PAGE_LIMIT } from '@/lib/api-page-limits';
+import { API_MAX_PAGE_LIMIT, REFRESH_SELECTED_MAX_IDS } from '@/lib/api-page-limits';
 
 /**
  * No call site may ask a paged endpoint for more rows than it accepts.
@@ -200,5 +200,15 @@ describe('the client cap matches the caps the server enforces', () => {
 
     expect(declared, 'the limit check was rewritten -- update this test').toBeTruthy();
     expect(Number(declared![1])).toBe(API_MAX_PAGE_LIMIT);
+  });
+
+  // The selected-price refresh refuses a longer list outright; the client
+  // batches by this number, so a raised or lowered cap must move both.
+  it('matches the id cap on POST /securities/prices/refresh/selected', () => {
+    const dto = backendSource('backend/src/securities/dto/refresh-security-prices.dto.ts');
+    const declared = /@ArrayMaxSize\((\d+)\)/.exec(dto);
+
+    expect(declared, '@ArrayMaxSize not found -- update this test').toBeTruthy();
+    expect(Number(declared![1])).toBe(REFRESH_SELECTED_MAX_IDS);
   });
 });

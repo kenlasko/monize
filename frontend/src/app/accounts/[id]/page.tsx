@@ -24,6 +24,7 @@ import { AssetDetailView } from '@/components/accounts/asset-detail/AssetDetailV
 import { ForeignCurrencyFeesSection } from '@/components/accounts/shared/ForeignCurrencyFeesSection';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
+import { useOnAutoPriceRefresh } from '@/hooks/useOnAutoPriceRefresh';
 import { accountsApi } from '@/lib/accounts';
 import { isInvestmentCashHalf } from '@/lib/account-utils';
 // The per-account-type detail-view registry: which view this route renders,
@@ -200,6 +201,12 @@ function AccountDetailContent() {
 
   useOnUndoRedo(loadData);
   useOnAiAction(loadData);
+  // The automatic price refresh (every 15 minutes while the site is open)
+  // re-reads an investment account's body the way its Refresh Prices does;
+  // the body keeps its figures while it does.
+  useOnAutoPriceRefresh(() => {
+    if (detailView === 'investment') setInvestmentRefreshKey((k) => k + 1);
+  });
 
   useEffect(() => {
     let cancelled = false;

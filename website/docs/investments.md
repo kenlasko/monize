@@ -314,7 +314,7 @@ To track a coin as a security:
 
 Then record buys and sells in the account like any other security, with quantities of up to eight decimal places (`0.00512340` BTC).
 
-- **Prices** are refreshed daily, weekends included, because crypto markets do not close. The last year of prices is fetched when you add the security; to value a past date further back, use **Add Another Year of History** on its Price history tab (see [Historical Prices](#historical-prices)). Bitcoin's history reaches back to 2014 at most, and most other coins have less
+- **Prices** are refreshed daily, weekends included, because crypto markets do not close, and every 15 minutes while Monize is open (see [Automatic Updates](#automatic-updates)). The last year of prices is fetched when you add the security; to value a past date further back, use **Add Another Year of History** on its Price history tab (see [Historical Prices](#historical-prices)). Bitcoin's history reaches back to 2014 at most, and most other coins have less
 - **Value in your reporting currency** is converted through your normal [exchange rates](currency-management.md), like any other holding. A `BTC-EUR` holding in a EUR account shows in your reporting currency, say CAD, at the EUR rate
 - **A coin per currency**: if you buy the same coin in two currencies, add a security for each (`BTC-EUR` and `BTC-USD`) and keep each in an account in that currency
 
@@ -354,9 +354,12 @@ Security prices are updated automatically and can also be refreshed manually.
 
 ### Automatic Updates
 
-- **Schedule:** Weekdays (Monday-Friday) at 5:00 PM New York time
+- **Schedule:** Weekdays (Monday-Friday) at 5:00 PM New York time, and weekends too for cryptocurrency
+- **While Monize is open:** Every 15 minutes, on whatever page you are on, Monize also refreshes the price of each security whose market is trading at that moment. A cryptocurrency trades around the clock, every day; any other security trades during its exchange's session, in the exchange's own time zone. A security priced by the London Stock Exchange or Deutsche Börse is refreshed during that exchange's session (8:00 AM to 4:30 PM London time, or 9:00 AM to 5:30 PM Frankfurt time), and one whose provider reports no session (MSN, a web page, or one never refreshed yet) during the New York session, 9:30 AM to 4:00 PM. The figures on screen update in place, with no message and no reload. Nothing is refreshed while the Monize tab is in the background; coming back to it after 15 minutes or more refreshes at once
 - **Source:** Each security's quote provider -- Yahoo Finance by default, or MSN, the London Stock Exchange, Deutsche Börse, a table on a web page, or the bond engine
 - **Data:** Daily prices (close, plus open, high, low and volume where the provider supplies them)
+
+A security with **Disable automatic price updates** turned on is never refreshed automatically, and neither is one linked to a bond program: its price comes from the bond engine, and its issuer's offer is fetched only when you ask for it.
 
 ### Manual Refresh
 

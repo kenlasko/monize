@@ -12,7 +12,9 @@ vi.mock('@/hooks/useNumberFormat', async () => {
 
 // Stub the heavy portfolio components -- they have their own tests.
 vi.mock('@/components/investments/PortfolioSummaryCard', () => ({
-  PortfolioSummaryCard: () => <div data-testid="portfolio-summary" />,
+  PortfolioSummaryCard: ({ summary }: { summary: { totalPortfolioValue: number } | null }) => (
+    <div data-testid="portfolio-summary">{summary ? summary.totalPortfolioValue : 'no summary'}</div>
+  ),
 }));
 vi.mock('@/components/investments/AssetAllocationChart', () => ({
   AssetAllocationChart: () => <div data-testid="allocation" />,
@@ -289,6 +291,47 @@ describe('InvestmentDetailView', () => {
     });
 
     await waitFor(() => expect(mockGetPortfolioSummary).toHaveBeenCalledTimes(2));
+  });
+
+  // A price refresh (the header's, or the automatic one every 15 minutes) moves
+  // the valuation only: the pair, the year's income and the realized gains are
+  // not priced, so they are not asked again.
+  it('re-asks only the summary when only the refresh key moved', async () => {
+    let rendered: ReturnType<typeof render>;
+    await act(async () => {
+      rendered = render(<InvestmentDetailView account={brokerage} refreshKey={0} />);
+    });
+    await waitFor(() => expect(screen.getByText('$60.00')).toBeInTheDocument());
+    mockGetPortfolioSummary.mockResolvedValueOnce({ totalPortfolioValue: 10400, holdings: [], holdingsByAccount: [], allocation: [] });
+
+    await act(async () => {
+      rendered!.rerender(<InvestmentDetailView account={brokerage} refreshKey={1} />);
+    });
+
+    await waitFor(() => expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('10400'));
+    expect(mockGetPortfolioSummary).toHaveBeenLastCalledWith(['br-1', 'cash-1']);
+    expect(mockGetInvestmentPair).toHaveBeenCalledTimes(1);
+    expect(mockGetRealizedGains).toHaveBeenCalledTimes(1);
+  });
+
+  // Nobody is waiting on that reload, and the figures it would replace are
+  // still a valuation: "No data", no income and no gains would be invented.
+  it('keeps every figure when the summary fails after a price refresh', async () => {
+    let rendered: ReturnType<typeof render>;
+    await act(async () => {
+      rendered = render(<InvestmentDetailView account={brokerage} refreshKey={0} />);
+    });
+    await waitFor(() => expect(screen.getByText('$60.00')).toBeInTheDocument());
+    mockGetPortfolioSummary.mockRejectedValueOnce(new Error('timeout'));
+
+    await act(async () => {
+      rendered!.rerender(<InvestmentDetailView account={brokerage} refreshKey={1} />);
+    });
+
+    expect(mockGetPortfolioSummary).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('portfolio-summary')).toHaveTextContent('10000');
+    expect(screen.getByText('$60.00')).toBeInTheDocument();
+    expect(screen.getByText('$100.00')).toBeInTheDocument();
   });
 
   // Issue #1190: a cash deposit changed the cash balance the Holdings by Account

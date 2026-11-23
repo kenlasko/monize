@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@/test/render';
 import { useInvestmentData } from './useInvestmentData';
 import { transactionsApi } from '@/lib/transactions';
+import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
 
 // --- API mocks ---
 const mockDeleteTransaction = vi.fn();
@@ -53,9 +54,12 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 }));
 
 const mockTriggerAutoRefresh = vi.fn();
+let mockPriceRefreshOptions: { holdAutomaticRefresh?: boolean } = {};
 vi.mock('@/hooks/usePriceRefresh', () => ({
-  usePriceRefresh: () => ({ triggerAutoRefresh: mockTriggerAutoRefresh }),
-  setRefreshInProgress: vi.fn(),
+  usePriceRefresh: (options: { holdAutomaticRefresh?: boolean }) => {
+    mockPriceRefreshOptions = options;
+    return { triggerAutoRefresh: mockTriggerAutoRefresh };
+  },
 }));
 
 vi.mock('@/hooks/useFormModal', () => ({
@@ -975,6 +979,57 @@ describe('useInvestmentData – automatic price refresh', () => {
     await act(async () => { await new Promise(res => setTimeout(res, 0)); });
 
     expect(mockTriggerAutoRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-values the page in the background when an automatic refresh wrote prices', async () => {
+    // The page's own refresh on load, then the open site's every 15 minutes,
+    // report through the signal: the summary is asked again and every surface
+    // keyed on writeRefreshKey re-asks, without returning to a skeleton.
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    const keyBefore = result.current.writeRefreshKey;
+    mockGetPortfolioSummary.mockClear();
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+      await new Promise(res => setTimeout(res, 0));
+    });
+
+    expect(mockGetPortfolioSummary).toHaveBeenCalledTimes(1);
+    expect(result.current.writeRefreshKey).toBeGreaterThan(keyBefore);
+    expect(result.current.lastPriceUpdate).toBe('2026-11-23T15:00:00Z');
+    expect(result.current.isSummaryLoading).toBe(false);
+  });
+
+  it('holds the automatic refresh until the first summary is in', async () => {
+    let answer: (value: unknown) => void = () => {};
+    mockGetPortfolioSummary.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+    renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(mockPriceRefreshOptions.holdAutomaticRefresh).toBe(true);
+
+    await act(async () => { answer(mockSummary); });
+
+    expect(mockPriceRefreshOptions.holdAutomaticRefresh).toBe(false);
+  });
+
+  it('keeps the figures and the register when the reload after an automatic refresh fails', async () => {
+    // Nobody asked for this reload, and what is on screen is still a valuation,
+    // an older one: "No data" and an empty register would be invented.
+    mockGetTransactions.mockResolvedValue({ data: [makeTx('t1')], pagination: null });
+    const { result } = renderHook(() => useInvestmentData());
+    await act(async () => { await new Promise(res => setTimeout(res, 0)); });
+    expect(result.current.portfolioSummary).toEqual(mockSummary);
+    mockGetPortfolioSummary.mockRejectedValueOnce(new Error('timeout'));
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+      await new Promise(res => setTimeout(res, 0));
+    });
+
+    expect(result.current.portfolioSummary).toEqual(mockSummary);
+    expect(result.current.transactions.map((tx) => tx.id)).toEqual(['t1']);
+    expect(result.current.isSummaryLoading).toBe(false);
   });
 });
 

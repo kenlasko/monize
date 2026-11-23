@@ -40,6 +40,9 @@ const BALANCE_WRITING_ROUTES = [
   /['`]\/payees\/category-suggestions\/apply['`]/,
   // A stored close values every holding, so it moves every portfolio total.
   /['`]\/securities\/\$\{[^}]+\}\/prices/,
+  // A quote refresh stores closes too, manual or automatic (every 15 minutes
+  // while a market is open and the site is).
+  /['`]\/securities\/prices\/refresh/,
 ];
 
 /**
@@ -133,5 +136,7 @@ describe('a write that moves money drops the cached balances', () => {
     expect(covered).toContain('reassignTransactions'); // categoriesApi
     expect(covered).toContain('applyCategorySuggestions'); // payeesApi
     expect(covered).toContain('createSecurityPrice'); // investmentsApi
+    expect(covered).toContain('refreshSelectedPrices'); // investmentsApi
+    expect(covered).toContain('refreshPrices'); // investmentsApi
   });
 });

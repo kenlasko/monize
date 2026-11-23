@@ -220,7 +220,6 @@ vi.mock('@/hooks/usePriceRefresh', () => ({
       }
     },
   }),
-  setRefreshInProgress: vi.fn(),
 }));
 
 vi.mock('@/components/layout/PageLayout', () => ({

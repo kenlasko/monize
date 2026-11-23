@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, fireEvent } from '@/test/render';
 import AccountDetailPage from './page';
+import { notifyAutoPriceRefresh } from '@/lib/autoPriceRefreshSignal';
 import { Account } from '@/types/account';
 
 const mockPush = vi.fn();
@@ -80,6 +81,14 @@ vi.mock('@/lib/accounts', () => ({
     getDailyBalances: (...args: unknown[]) => mockGetDailyBalances(...args),
     getBalanceForecast: (...args: unknown[]) => mockGetBalanceForecast(...args),
   },
+}));
+
+// The investment body has its own tests; here it only reports the refresh key
+// the page hands it, which is how a price refresh reaches it.
+vi.mock('@/components/accounts/investment-detail/InvestmentDetailView', () => ({
+  InvestmentDetailView: ({ refreshKey }: { refreshKey?: number }) => (
+    <div data-testid="investment-detail" data-refresh-key={refreshKey} />
+  ),
 }));
 
 // The line-of-credit view renders the register's balance-history chart; keep
@@ -641,6 +650,25 @@ describe('AccountDetailPage', () => {
 
     expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open in Investments' })).toBeInTheDocument();
+  });
+
+  it('re-reads the investment body after an automatic price refresh', async () => {
+    mockGetById.mockResolvedValue(makeAccount({
+      id: 'brok-1',
+      name: 'TFSA - Brokerage',
+      accountType: 'INVESTMENT',
+      accountSubType: 'INVESTMENT_BROKERAGE',
+      isClosed: false,
+    }));
+    await renderPage();
+    const body = screen.getByTestId('investment-detail');
+    const before = Number(body.getAttribute('data-refresh-key'));
+
+    await act(async () => {
+      notifyAutoPriceRefresh('2026-11-23T15:00:00Z');
+    });
+
+    expect(Number(screen.getByTestId('investment-detail').getAttribute('data-refresh-key'))).toBe(before + 1);
   });
 
   it('drops the investments link for a closed investment account', async () => {

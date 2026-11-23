@@ -24,6 +24,7 @@ import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 import { usePriceRefresh } from '@/hooks/usePriceRefresh';
+import { useOnAutoPriceRefresh } from '@/hooks/useOnAutoPriceRefresh';
 import { useFormModal } from '@/hooks/useFormModal';
 import { createLogger } from '@/lib/logger';
 import { PAGE_SIZE } from '@/lib/constants';
@@ -225,10 +226,15 @@ export function useInvestmentData() {
   // loading flag here put the summary, the allocation and the holdings back to
   // skeletons a second after they first drew, whenever the automatic price
   // refresh found a new quote.
+  //
+  // `keepOnFailure` is the reload after a price refresh: what is on screen is
+  // still a valuation, an older one, so a request that fails leaves it there
+  // rather than turning the page into "No data" and an empty register.
   const loadAllPortfolioData = useCallback(async (
     accountIds: string[],
     page: number = 1,
     filters: TransactionFilters = {},
+    { keepOnFailure = false }: { keepOnFailure?: boolean } = {},
   ) => {
     const summarySeq = ++summarySeqRef.current;
     const txSeq = ++transactionsSeqRef.current;
@@ -264,40 +270,51 @@ export function useInvestmentData() {
     } catch (error) {
       logger.error('Failed to load portfolio data:', error);
       if (summarySeqRef.current === summarySeq) {
-        setPortfolioSummary(null);
+        if (!keepOnFailure) setPortfolioSummary(null);
         // This request superseded the first summary's, so its answer is the
         // one the summary sections were waiting on.
         setInitialSummarySettled(true);
       }
-      if (transactionsSeqRef.current === txSeq) {
+      if (transactionsSeqRef.current === txSeq && !keepOnFailure) {
         setTransactions([]);
         setPagination(null);
       }
     }
   }, []);
 
+  const reloadAfterPriceRefresh = (lastUpdated?: string) => {
+    // New prices move every figure valued from them, not only the summary
+    // this hook fetches: the value chart and both period-result surfaces
+    // (Value change / Investment result, Portfolio performance) fetch their
+    // own and re-ask only when this key moves.
+    setWriteRefreshKey((key) => key + 1);
+    // Prefer the refresh result's timestamp: savePriceData UPDATEs existing
+    // rows in place, so the DB-backed lastUpdated (createdAt) wouldn't advance
+    // on same-day refreshes. Fall back to the DB value if the result didn't
+    // carry one (e.g. when no securities to refresh).
+    if (lastUpdated) {
+      setLastPriceUpdate(lastUpdated);
+    } else {
+      loadPriceStatus();
+    }
+    // Returned so the refresh button keeps spinning until the summary has
+    // been re-valued: the sections keep their previous figures meanwhile,
+    // and the spinner is what says they are about to change.
+    return loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters, {
+      keepOnFailure: true,
+    });
+  };
+
   const { isRefreshing: isRefreshingPrices, triggerManualRefresh: handleRefreshPrices, triggerAutoRefresh } = usePriceRefresh({
-    onRefreshComplete: (lastUpdated) => {
-      // New prices move every figure valued from them, not only the summary
-      // this hook fetches: the value chart and both period-result surfaces
-      // (Value change / Investment result, Portfolio performance) fetch their
-      // own and re-ask only when this key moves.
-      setWriteRefreshKey((key) => key + 1);
-      // Prefer the refresh result's timestamp: savePriceData UPDATEs existing
-      // rows in place, so the DB-backed lastUpdated (createdAt) wouldn't advance
-      // on same-day refreshes. Fall back to the DB value if the result didn't
-      // carry one (e.g. when no securities to refresh).
-      if (lastUpdated) {
-        setLastPriceUpdate(lastUpdated);
-      } else {
-        loadPriceStatus();
-      }
-      // Returned so the refresh button keeps spinning until the summary has
-      // been re-valued: the sections keep their previous figures meanwhile,
-      // and the spinner is what says they are about to change.
-      return loadAllPortfolioData(selectedAccountIds, currentPage, transactionFilters);
-    },
+    onRefreshComplete: reloadAfterPriceRefresh,
+    // Until the first summary is in: a refresh writing beside it would reload
+    // every valuation on the page while the first ones still run (#1888).
+    holdAutomaticRefresh: isLoading || !initialSummarySettled,
   });
+  // The automatic refresh (the page's own once the first summary is in, then
+  // every 15 minutes while the site is open) reloads the same figures; the
+  // reload runs in the background, so nothing returns to its skeleton.
+  useOnAutoPriceRefresh(reloadAfterPriceRefresh);
 
   const loadPortfolioSummary = useCallback((accountIds: string[]) => {
     const fetchSummary = async () => {

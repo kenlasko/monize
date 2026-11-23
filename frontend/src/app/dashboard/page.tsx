@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { subMonths, format } from 'date-fns';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
+import { useOnAutoPriceRefresh } from '@/hooks/useOnAutoPriceRefresh';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/store/authStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -219,10 +220,13 @@ function DashboardContent() {
       try {
         const [moversData, portfolio] = await Promise.all([
           investmentsApi.getTopMovers(),
-          investmentsApi.getPortfolioValuation().catch(() => null),
+          // A failed valuation keeps the one on screen: it is still a
+          // valuation, an older one, and this reload follows a price refresh
+          // (often the unattended one) that nobody is waiting on.
+          investmentsApi.getPortfolioValuation().catch(() => undefined),
         ]);
         setTopMovers(moversData);
-        setPortfolioValuation(portfolio);
+        if (portfolio !== undefined) setPortfolioValuation(portfolio);
       } catch {
         // Silently fail
       }
@@ -233,7 +237,12 @@ function DashboardContent() {
 
   const { isRefreshing, triggerManualRefresh, triggerAutoRefresh } = usePriceRefresh({
     onRefreshComplete: reloadInvestmentWidgets,
+    // Until the page and its valuation are in, as the refresh on load waits.
+    holdAutomaticRefresh: isLoading || investmentSummaryLoading,
   });
+  // The automatic refresh (this page's own on load, then every 15 minutes
+  // while the site is open) reloads the same widgets, in the background.
+  useOnAutoPriceRefresh(reloadInvestmentWidgets);
 
   // A change of who the dashboard is loaded for shows the spinner again; set
   // during render rather than in the effect that reloads it.

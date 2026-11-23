@@ -1,52 +1,36 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { investmentsApi } from '@/lib/investments';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import {
+  getRefreshInProgress,
+  holdAutomaticPriceRefresh,
+  markPricesRefreshed,
+  pendingAutomaticRefresh,
+  runAutomaticPriceRefresh,
+  setRefreshInProgress,
+} from '@/lib/price-refresh-state';
 
 const logger = createLogger('PriceRefresh');
-const REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
-
-// Module-level state — persists across component mounts within the same SPA session
-let lastRefreshTimestamp = 0;
-let refreshInProgress = false;
-
-export function isMarketHours(): boolean {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-    weekday: 'short',
-  }).formatToParts(now);
-
-  const weekday = parts.find((p) => p.type === 'weekday')?.value;
-  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
-  const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
-
-  if (weekday === 'Sat' || weekday === 'Sun') return false;
-
-  const timeInMinutes = hour * 60 + minute;
-  return timeInMinutes >= 570 && timeInMinutes < 960; // 9:30 AM - 4:00 PM
-}
-
-export function getRefreshInProgress(): boolean {
-  return refreshInProgress;
-}
-
-export function setRefreshInProgress(value: boolean): void {
-  refreshInProgress = value;
-  if (value) {
-    lastRefreshTimestamp = Date.now();
-  }
-}
 
 interface UsePriceRefreshOptions {
+  /**
+   * Called after a manual refresh wrote a price. An automatic refresh does
+   * not call it; a surface that follows those subscribes with
+   * `useOnAutoPriceRefresh`.
+   */
   onRefreshComplete?: (lastUpdated?: string) => Promise<void> | void;
+  /**
+   * True while the page's first figures are loading. No automatic refresh
+   * starts meanwhile, and one already running that writes tells the price
+   * surfaces once this is false (`holdAutomaticPriceRefresh`). A manual
+   * refresh is not held: the reader asked for it.
+   */
+  holdAutomaticRefresh?: boolean;
 }
 
 interface UsePriceRefreshReturn {
@@ -61,17 +45,42 @@ interface UsePriceRefreshReturn {
    *   instead of every active security in their catalog.
    */
   triggerManualRefresh: (scopeSecurityIds?: string[]) => Promise<void>;
+  /**
+   * Start an automatic refresh (`runAutomaticPriceRefresh`) when one is due.
+   * It reports through `useOnAutoPriceRefresh`, not `onRefreshComplete`.
+   */
   triggerAutoRefresh: () => void;
 }
 
-export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = {}): UsePriceRefreshReturn {
+export function usePriceRefresh({
+  onRefreshComplete,
+  holdAutomaticRefresh = false,
+}: UsePriceRefreshOptions = {}): UsePriceRefreshReturn {
   const t = useTranslations('securities');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const doRefresh = useCallback(
-    async (silent: boolean, scopeSecurityIds?: string[]) => {
-      if (refreshInProgress) return;
-      refreshInProgress = true;
+  useEffect(() => {
+    if (!holdAutomaticRefresh) return;
+    return holdAutomaticPriceRefresh();
+  }, [holdAutomaticRefresh]);
+
+  const triggerManualRefresh = useCallback(
+    async (scopeSecurityIds?: string[]) => {
+      // An automatic refresh shows nothing, so a click made during one waits
+      // for it rather than being dropped.
+      const pending = pendingAutomaticRefresh();
+      if (pending) {
+        setIsRefreshing(true);
+        await pending;
+      }
+      if (getRefreshInProgress()) {
+        if (pending) setIsRefreshing(false);
+        return;
+      }
+      // Only a refresh of every eligible security covers what the automatic
+      // one would ask for, so only that one restarts its interval.
+      const restartsInterval = scopeSecurityIds === undefined;
+      setRefreshInProgress(true, { restartsInterval });
       setIsRefreshing(true);
       try {
         // Refresh prices for every active security in the user's catalog
@@ -96,42 +105,40 @@ export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = 
           )
           .map((s) => s.id);
         if (securityIds.length === 0) {
-          if (!silent) toast.success(t('priceRefresh.noneToUpdate'));
+          toast.success(t('priceRefresh.noneToUpdate'));
           return;
         }
         const result = await investmentsApi.refreshSelectedPrices(securityIds);
-        lastRefreshTimestamp = Date.now();
-        if (!silent) {
-          if (result.failed > 0) {
-            const failures = result.results.filter((r) => !r.success);
-            const symbolList = failures.map((r) => r.symbol).join(', ');
-            // The server already says *why* it refused, translated, and a
-            // currency mismatch is repaired by editing the security rather
-            // than by refreshing again: a count of failures alone sends the
-            // reader nowhere. Distinct, because one refusal usually covers
-            // every symbol in a group.
-            const reasons = [
-              ...new Set(failures.map((r) => r.error).filter((e): e is string => !!e)),
-            ];
-            const symbols = symbolList ? ` (${symbolList})` : '';
-            toast.error(
-              reasons.length > 0
-                ? t('priceRefresh.partialFailureWithReasons', {
-                    updated: result.updated,
-                    failed: result.failed,
-                    symbols,
-                    reasons: reasons.join('\n'),
-                  })
-                : t('priceRefresh.partialFailure', {
-                    updated: result.updated,
-                    failed: result.failed,
-                    symbols,
-                  }),
-              { duration: 8000 },
-            );
-          } else {
-            toast.success(t('priceRefresh.updated', { count: result.updated }));
-          }
+        if (restartsInterval) markPricesRefreshed();
+        if (result.failed > 0) {
+          const failures = result.results.filter((r) => !r.success);
+          const symbolList = failures.map((r) => r.symbol).join(', ');
+          // The server already says *why* it refused, translated, and a
+          // currency mismatch is repaired by editing the security rather
+          // than by refreshing again: a count of failures alone sends the
+          // reader nowhere. Distinct, because one refusal usually covers
+          // every symbol in a group.
+          const reasons = [
+            ...new Set(failures.map((r) => r.error).filter((e): e is string => !!e)),
+          ];
+          const symbols = symbolList ? ` (${symbolList})` : '';
+          toast.error(
+            reasons.length > 0
+              ? t('priceRefresh.partialFailureWithReasons', {
+                  updated: result.updated,
+                  failed: result.failed,
+                  symbols,
+                  reasons: reasons.join('\n'),
+                })
+              : t('priceRefresh.partialFailure', {
+                  updated: result.updated,
+                  failed: result.failed,
+                  symbols,
+                }),
+            { duration: 8000 },
+          );
+        } else {
+          toast.success(t('priceRefresh.updated', { count: result.updated }));
         }
         // Only when something actually changed. `onRefreshComplete` reloads the
         // page's data -- on the Investments page a portfolio summary and a
@@ -145,37 +152,18 @@ export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = 
         }
       } catch (error) {
         logger.error('Failed to refresh prices:', error);
-        if (!silent) toast.error(getErrorMessage(error, t('priceRefresh.failed')));
+        toast.error(getErrorMessage(error, t('priceRefresh.failed')));
       } finally {
-        refreshInProgress = false;
+        setRefreshInProgress(false);
         setIsRefreshing(false);
       }
     },
     [onRefreshComplete, t],
   );
 
-  const triggerManualRefresh = useCallback(
-    async (scopeSecurityIds?: string[]) => {
-      await doRefresh(false, scopeSecurityIds);
-    },
-    [doRefresh],
-  );
-
   const triggerAutoRefresh = useCallback(() => {
-    if (!isMarketHours()) {
-      logger.info('Skipping auto-refresh: outside market hours');
-      return;
-    }
-    if (Date.now() - lastRefreshTimestamp < REFRESH_COOLDOWN_MS) {
-      logger.info('Skipping auto-refresh: cooldown active');
-      return;
-    }
-    if (refreshInProgress) {
-      logger.info('Skipping auto-refresh: refresh already in progress');
-      return;
-    }
-    doRefresh(true);
-  }, [doRefresh]);
+    void runAutomaticPriceRefresh();
+  }, []);
 
   return { isRefreshing, triggerManualRefresh, triggerAutoRefresh };
 }
