@@ -61,7 +61,10 @@ export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = 
         if (pending) setIsRefreshing(false);
         return;
       }
-      setRefreshInProgress(true);
+      // Only a refresh of every eligible security covers what the automatic
+      // one would ask for, so only that one restarts its interval.
+      const restartsInterval = scopeSecurityIds === undefined;
+      setRefreshInProgress(true, { restartsInterval });
       setIsRefreshing(true);
       try {
         // Refresh prices for every active security in the user's catalog
@@ -90,7 +93,7 @@ export function usePriceRefresh({ onRefreshComplete }: UsePriceRefreshOptions = 
           return;
         }
         const result = await investmentsApi.refreshSelectedPrices(securityIds);
-        markPricesRefreshed();
+        if (restartsInterval) markPricesRefreshed();
         if (result.failed > 0) {
           const failures = result.results.filter((r) => !r.success);
           const symbolList = failures.map((r) => r.symbol).join(', ');

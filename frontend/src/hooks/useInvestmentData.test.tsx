@@ -56,7 +56,6 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 const mockTriggerAutoRefresh = vi.fn();
 vi.mock('@/hooks/usePriceRefresh', () => ({
   usePriceRefresh: () => ({ triggerAutoRefresh: mockTriggerAutoRefresh }),
-  setRefreshInProgress: vi.fn(),
 }));
 
 vi.mock('@/hooks/useFormModal', () => ({

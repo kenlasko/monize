@@ -556,6 +556,28 @@ describe('runAutomaticPriceRefresh', () => {
     expect(investmentsApi.getSecurities).not.toHaveBeenCalled();
   });
 
+  it('does not wait out the interval after a manual refresh of a few securities', async () => {
+    // One security refreshed from its own page leaves every other quote as
+    // old as it was; restarting the interval would hold them back by up to
+    // fifteen minutes more.
+    vi.mocked(investmentsApi.getSecurities).mockResolvedValue([
+      sec('aapl', NYSE_SESSION),
+      sec('msft', NYSE_SESSION),
+    ] as any);
+    vi.mocked(investmentsApi.refreshSelectedPrices).mockResolvedValue({
+      updated: 1, failed: 0, totalSecurities: 1, skipped: 0, results: [], lastUpdated: '',
+    });
+    const { result } = renderHook(() => usePriceRefresh());
+    await act(async () => {
+      await result.current.triggerManualRefresh(['aapl']);
+    });
+    expect(isAutomaticPriceRefreshDue()).toBe(true);
+
+    await runAutomaticPriceRefresh();
+
+    expect(investmentsApi.refreshSelectedPrices).toHaveBeenLastCalledWith(['aapl', 'msft']);
+  });
+
   it('logs a failure and never rejects', async () => {
     vi.mocked(investmentsApi.getSecurities).mockRejectedValue(new Error('offline'));
 

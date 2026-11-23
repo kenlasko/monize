@@ -3,13 +3,17 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { AUTO_PRICE_REFRESH_INTERVAL_MS } from '@/lib/price-auto-refresh';
-import {
-  isAutomaticPriceRefreshDue,
-  runAutomaticPriceRefresh,
-} from '@/lib/price-refresh-state';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('PriceAutoRefresher');
 
 /** How often the clock is read; the refresh itself is at most once per interval. */
 const CHECK_EVERY_MS = 30_000;
+
+// The refresh and the investments API it calls load on first use: this is
+// mounted on every page, the signed-out ones included, and a visit shorter
+// than the interval never needs them.
+const loadRefreshState = () => import('@/lib/price-refresh-state');
 
 /**
  * Keeps security prices current while the site is open: every
@@ -28,7 +32,8 @@ const CHECK_EVERY_MS = 30_000;
  * Dashboard and Investments pages ask for their own as soon as their first
  * figures are in (`triggerAutoRefresh`), and a refresh landing while a page's
  * first valuation is still running would value the same history twice (#1888).
- * Every refresh, from here, a page or a Refresh button, restarts the interval.
+ * Whether one is due is `runAutomaticPriceRefresh`'s to decide: every refresh,
+ * from here, a page or an unscoped Refresh button, restarts the interval.
  */
 export function PriceAutoRefresher() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -37,17 +42,23 @@ export function PriceAutoRefresher() {
 
   useEffect(() => {
     if (!authHydrated || !isAuthenticated || isDelegateView) return;
+    let stopped = false;
     const startedAt = Date.now();
     const check = () => {
       if (document.visibilityState !== 'visible') return;
-      const now = Date.now();
-      if (now - startedAt < AUTO_PRICE_REFRESH_INTERVAL_MS) return;
-      if (!isAutomaticPriceRefreshDue(now)) return;
-      void runAutomaticPriceRefresh();
+      if (Date.now() - startedAt < AUTO_PRICE_REFRESH_INTERVAL_MS) return;
+      loadRefreshState()
+        .then(({ runAutomaticPriceRefresh }) => {
+          if (!stopped) void runAutomaticPriceRefresh();
+        })
+        // A chunk that will not load (the site was redeployed under the open
+        // tab) is tried again at the next check.
+        .catch((error) => logger.warn('Could not load the price refresh:', error));
     };
     const timer = window.setInterval(check, CHECK_EVERY_MS);
     document.addEventListener('visibilitychange', check);
     return () => {
+      stopped = true;
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', check);
     };

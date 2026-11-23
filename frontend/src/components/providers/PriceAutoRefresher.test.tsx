@@ -4,11 +4,9 @@ import { PriceAutoRefresher } from './PriceAutoRefresher';
 import { AUTO_PRICE_REFRESH_INTERVAL_MS } from '@/lib/price-auto-refresh';
 
 const mockRun = vi.fn();
-const mockDue = vi.fn();
 
 vi.mock('@/lib/price-refresh-state', () => ({
   runAutomaticPriceRefresh: () => mockRun(),
-  isAutomaticPriceRefreshDue: (now: number) => mockDue(now),
 }));
 
 let authState: { isAuthenticated: boolean; _hasHydrated: boolean; actingAsUserId: string | null } = {
@@ -36,10 +34,21 @@ async function renderRefresher() {
   return result!;
 }
 
-/** Moves the clock and fires every timer due on the way. */
-function advance(ms: number) {
-  act(() => {
+/**
+ * Moves the clock, fires every timer due on the way and lets the refresh
+ * module (imported on first use) load.
+ */
+async function advance(ms: number) {
+  await act(async () => {
     vi.advanceTimersByTime(ms);
+    await vi.dynamicImportSettled();
+  });
+}
+
+async function showTab(next: DocumentVisibilityState) {
+  await act(async () => {
+    setVisibility(next);
+    await vi.dynamicImportSettled();
   });
 }
 
@@ -48,7 +57,6 @@ describe('PriceAutoRefresher', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     mockRun.mockResolvedValue(undefined);
-    mockDue.mockReturnValue(true);
     authState = { isAuthenticated: true, _hasHydrated: true, actingAsUserId: null };
     visibility = 'visible';
     Object.defineProperty(document, 'visibilityState', {
@@ -65,35 +73,35 @@ describe('PriceAutoRefresher', () => {
     // The landing page asks for its own refresh once its first figures are
     // in; one here as well would value the same history beside it (#1888).
     await renderRefresher();
-    advance(60_000);
+    await advance(60_000);
     expect(mockRun).not.toHaveBeenCalled();
   });
 
-  it('refreshes once the interval has passed with the site open', async () => {
+  it('asks for a refresh once the interval has passed with the site open', async () => {
     await renderRefresher();
-    advance(AUTO_PRICE_REFRESH_INTERVAL_MS - 30_000);
+    await advance(AUTO_PRICE_REFRESH_INTERVAL_MS - 30_000);
     expect(mockRun).not.toHaveBeenCalled();
-    advance(30_000);
+    await advance(30_000);
     expect(mockRun).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves the interval to the shared refresh state', async () => {
+  it('keeps asking, and leaves whether one is due to the shared refresh state', async () => {
     // A refresh from a page or a Refresh button restarts the interval; the
-    // shared state is what knows when one last ran.
-    mockDue.mockReturnValue(false);
+    // shared state is what knows when one last ran, and turns down the asks
+    // in between.
     await renderRefresher();
-    advance(AUTO_PRICE_REFRESH_INTERVAL_MS * 2);
-    expect(mockDue).toHaveBeenCalled();
-    expect(mockRun).not.toHaveBeenCalled();
+    await advance(AUTO_PRICE_REFRESH_INTERVAL_MS);
+    await advance(30_000);
+    expect(mockRun).toHaveBeenCalledTimes(2);
   });
 
-  it('asks nothing while the tab is hidden, and refreshes on coming back', async () => {
+  it('asks nothing while the tab is hidden, and asks on coming back', async () => {
     await renderRefresher();
-    act(() => setVisibility('hidden'));
-    advance(AUTO_PRICE_REFRESH_INTERVAL_MS * 2);
+    await showTab('hidden');
+    await advance(AUTO_PRICE_REFRESH_INTERVAL_MS * 2);
     expect(mockRun).not.toHaveBeenCalled();
 
-    act(() => setVisibility('visible'));
+    await showTab('visible');
     expect(mockRun).toHaveBeenCalledTimes(1);
   });
 
@@ -105,8 +113,8 @@ describe('PriceAutoRefresher', () => {
     ]) {
       authState = state;
       const { unmount } = await renderRefresher();
-      advance(AUTO_PRICE_REFRESH_INTERVAL_MS * 2);
-      act(() => setVisibility('visible'));
+      await advance(AUTO_PRICE_REFRESH_INTERVAL_MS * 2);
+      await showTab('visible');
       unmount();
     }
     expect(mockRun).not.toHaveBeenCalled();
@@ -115,8 +123,20 @@ describe('PriceAutoRefresher', () => {
   it('stops on unmount', async () => {
     const { unmount } = await renderRefresher();
     unmount();
-    advance(AUTO_PRICE_REFRESH_INTERVAL_MS * 2);
-    act(() => setVisibility('visible'));
+    await advance(AUTO_PRICE_REFRESH_INTERVAL_MS * 2);
+    await showTab('visible');
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it('does not refresh for a page it has left while the refresh module loaded', async () => {
+    const { unmount } = await renderRefresher();
+    act(() => {
+      vi.advanceTimersByTime(AUTO_PRICE_REFRESH_INTERVAL_MS);
+    });
+    unmount();
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     expect(mockRun).not.toHaveBeenCalled();
   });
 });

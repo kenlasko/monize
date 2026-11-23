@@ -27,9 +27,19 @@ export function getRefreshInProgress(): boolean {
   return refreshInProgress;
 }
 
-export function setRefreshInProgress(value: boolean): void {
+/**
+ * Marks a refresh as running (or finished). A refresh starting is also the
+ * last refresh, which restarts the automatic interval, unless
+ * `restartsInterval` is false: a manual refresh scoped to a few securities
+ * (one security's page, the holdings an account filter shows) leaves every
+ * other quote as old as it was, so it must not hold their refresh back.
+ */
+export function setRefreshInProgress(
+  value: boolean,
+  { restartsInterval = true }: { restartsInterval?: boolean } = {},
+): void {
   refreshInProgress = value;
-  if (value) {
+  if (value && restartsInterval) {
     lastRefreshTimestamp = Date.now();
   }
 }
