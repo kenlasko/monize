@@ -96,9 +96,11 @@ export class McpRelayTools {
             return toolResult({ hasPrompt: false });
           }
           // First claim by a credential: the dedupe key makes a repeat a no-op.
-          // Awaits only the row write (the fan-out is detached); never throws.
+          // Not awaited: it runs on every claimed turn, almost always to find
+          // the key already written, and the agent should not wait on that.
+          // It opens its own transaction and never throws (`send` catches).
           if (user.credentialId) {
-            await this.securityNotices.relayCredentialFirstUse(
+            void this.securityNotices.relayCredentialFirstUse(
               user.userId,
               user.credentialId,
             );
