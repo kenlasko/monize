@@ -69,7 +69,9 @@ function rollUp(values: Record<string, number>, period: BreakdownPeriod): Record
   const parts = new Map<string, number[]>();
   for (const [month, value] of Object.entries(values)) {
     const key = periodKeyOf(month, period);
-    parts.set(key, [...(parts.get(key) ?? []), value]);
+    const list = parts.get(key);
+    if (list) list.push(value);
+    else parts.set(key, [value]);
   }
   return Object.fromEntries(Array.from(parts, ([key, list]) => [key, sumMoney(list)]));
 }

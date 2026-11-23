@@ -75,6 +75,18 @@ vi.mock('@/lib/csv-export', () => ({
   exportToCsv: (...args: unknown[]) => mockExportToCsv(...args),
 }));
 
+const breakdownByPeriodSpy = vi.fn();
+vi.mock('@/lib/breakdown-period', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/breakdown-period')>();
+  return {
+    ...actual,
+    breakdownByPeriod: (...args: Parameters<typeof actual.breakdownByPeriod>) => {
+      breakdownByPeriodSpy();
+      return actual.breakdownByPeriod(...args);
+    },
+  };
+});
+
 const PERIOD_KEY = 'monize-reports-monthly-category-breakdown-period';
 const SORT_COLUMN_KEY = 'monize-reports-monthly-category-breakdown-sort-column';
 
@@ -231,6 +243,16 @@ describe('MonthlyCategoryBreakdownReport yearly view', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Yearly' }));
     });
     expect(window.localStorage.getItem(SORT_COLUMN_KEY)).toBe('"category"');
+  });
+
+  it('re-sorts the folded years without folding every month again', async () => {
+    window.localStorage.setItem(PERIOD_KEY, '"year"');
+    await renderReport();
+    const folds = breakdownByPeriodSpy.mock.calls.length;
+    await act(async () => {
+      fireEvent.click(screen.getByText('Total'));
+    });
+    expect(breakdownByPeriodSpy.mock.calls.length).toBe(folds);
   });
 
   it('exports the yearly columns under a yearly file name', async () => {
