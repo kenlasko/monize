@@ -103,6 +103,42 @@ describe('NetWorthHero', () => {
     expect(change).toHaveTextContent(/this month/);
   });
 
+  it('asks for the net worth again when a price refresh wrote new prices, keeping the figures meanwhile', async () => {
+    const hero = (refreshKey: number) => (
+      <NetWorthHero
+        config={configState.current}
+        portfolioValuation={portfolio()}
+        hasInvestments
+        isLoading={false}
+        investmentSummaryLoading={false}
+        refreshKey={refreshKey}
+      />
+    );
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(hero(0));
+    });
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/1,100/);
+
+    let answer: (value: MonthlyNetWorth[]) => void = () => {};
+    getMonthly.mockReturnValue(
+      new Promise<MonthlyNetWorth[]>((resolve) => {
+        answer = resolve;
+      }),
+    );
+    await act(async () => {
+      view.rerender(hero(1));
+    });
+    expect(getMonthly).toHaveBeenCalledTimes(2);
+    // The same question asked again: what is on screen stays until it answers.
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/1,100/);
+
+    await act(async () => {
+      answer([...SERIES.slice(0, 3), month('2026-11', 1250)]);
+    });
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/1,250/);
+  });
+
   it('says a fall in words, not only with the arrow', async () => {
     getMonthly.mockResolvedValue([month('2026-10', 1000), month('2026-11', 800)]);
     await renderHero();

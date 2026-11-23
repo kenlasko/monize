@@ -228,6 +228,54 @@ describe("usePortfolioPeriodResult", () => {
     expect(hook.current.periodResult).toBeNull();
   });
 
+  it("keeps the previous answer while a reload of the same window is in flight", async () => {
+    let reloadKey = 0;
+    const { result: hook, rerender } = renderHook(() =>
+      usePortfolioPeriodResult({ ...base, range: "1y", reloadKey }),
+    );
+    await waitFor(() =>
+      expect(hook.current.periodResult?.valueChange).toBe(10000),
+    );
+
+    // A price refresh moved the key: the figure on screen stays until the
+    // new answer lands, rather than dropping back to its placeholder.
+    let answer: (value: PortfolioPeriodResult) => void = () => {};
+    vi.mocked(netWorthApi.getInvestmentsPeriodResult).mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    );
+    reloadKey = 1;
+    rerender();
+    expect(netWorthApi.getInvestmentsPeriodResult).toHaveBeenCalledTimes(2);
+    expect(hook.current.periodResult?.valueChange).toBe(10000);
+    expect(hook.current.failed).toBe(false);
+
+    answer(result({ valueChange: 12000 }));
+    await waitFor(() =>
+      expect(hook.current.periodResult?.valueChange).toBe(12000),
+    );
+  });
+
+  it("does not carry a failed answer into a reload", async () => {
+    vi.mocked(netWorthApi.getInvestmentsPeriodResult).mockRejectedValue(
+      new Error("period unavailable"),
+    );
+    let reloadKey = 0;
+    const { result: hook, rerender } = renderHook(() =>
+      usePortfolioPeriodResult({ ...base, range: "1y", reloadKey }),
+    );
+    await waitFor(() => expect(hook.current.failed).toBe(true));
+
+    vi.mocked(netWorthApi.getInvestmentsPeriodResult).mockImplementation(
+      () => new Promise(() => {}),
+    );
+    reloadKey = 1;
+    rerender();
+    expect(hook.current.failed).toBe(false);
+    expect(hook.current.periodResult).toBeNull();
+  });
+
   /**
    * The Investments page asks for the "Portfolio performance" batch once and
    * hands it to the chart: a named window the batch reports is the figure this

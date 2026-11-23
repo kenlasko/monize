@@ -223,9 +223,8 @@ export class CurrencyDetailService {
 
   /**
    * The rates the reader's own transactions settled at between `code` and the
-   * reporting currency, newest first: a foreign entry's stored rate (a stored
-   * 1 between two codes is the column's default, not a rate, and is skipped,
-   * as `ownRateSql` skips it) and a transfer's two posted amounts
+   * reporting currency, newest first: a foreign entry's stored rate (a 1
+   * included, as `ownRateSql` takes it) and a transfer's two posted amounts
    * (`transferRateSql`, read on the reader's own legs only). Each is stated as
    * reporting-currency units per 1 unit of `code`, the direction the stored
    * provider rates are listed in. Empty for the reporting currency itself,
@@ -286,7 +285,6 @@ export class CurrencyDetailService {
                       CASE WHEN t.currency_code = $3
                             AND t.original_currency_code = $2
                             AND t.exchange_rate > 0
-                            AND t.exchange_rate <> 1
                            THEN t.exchange_rate
                       END AS direct_rate,
                       t.transaction_date

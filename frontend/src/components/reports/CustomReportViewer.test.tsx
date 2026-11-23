@@ -276,6 +276,48 @@ describe("CustomReportViewer", () => {
     expect(screen.getByText("30 transactions")).toBeInTheDocument();
   });
 
+  it("keeps a listed row with no rate out of the legend, which only names what the chart draws (issue #2342)", async () => {
+    mockGetById.mockResolvedValue({
+      id: "rpt-1",
+      name: "Bar List",
+      viewType: "BAR_CHART",
+      timeframeType: "LAST_3_MONTHS",
+      groupBy: "NONE",
+      config: {
+        metric: "NONE",
+        direction: "EXPENSES_ONLY",
+        includeTransfers: false,
+      },
+      filters: {},
+    });
+    mockExecute.mockResolvedValue({
+      viewType: "BAR_CHART",
+      groupBy: "NONE",
+      data: [
+        { label: "Hotel", value: null, count: 1, id: "tx-1", accountAmount: 100, accountCurrency: "USD" },
+        { label: "Groceries", value: 50, count: 1, id: "tx-2", accountAmount: 50, accountCurrency: "CAD" },
+      ],
+      summary: { total: null, knownTotal: 50, count: 2, average: null },
+      currency: "CAD",
+      missingCurrencies: ["USD"],
+      excludedCount: 1,
+      timeframe: {
+        label: "Last 3 months",
+        startDate: "2024-10-01",
+        endDate: "2025-01-01",
+      },
+    });
+    render(<CustomReportViewer reportId="rpt-1" />);
+    await waitFor(() => {
+      expect(screen.getByText("Groceries")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Hotel")).not.toBeInTheDocument();
+    // The chart still receives the row: its table and exports list it.
+    expect(screen.getByTestId("chart-point-tx-1")).toBeInTheDocument();
+    expect(screen.getByTestId("report-chart")).toHaveAttribute("data-partial", "1");
+  });
+
   it("renders bar chart legend", async () => {
     mockGetById.mockResolvedValue({
       id: "rpt-1",

@@ -15,7 +15,7 @@ touches:
 
 ## Decided
 - scripts/e2e-playwright.sh pins the image as tag@digest, and Docker resolves the digest. Moving only the tag keeps the old browsers: E2E then fails with "Executable doesn't exist at /ms-playwright/chromium-<rev>". Read the index and per-platform digests with `docker buildx imagetools inspect mcr.microsoft.com/playwright:vX.Y.Z-noble`, and update the script and both tables in docs/container-images.md together. The image must be over a week old (check `--format '{{json .Image}}'` created).
-- desktop/scripts/lib/pack-deps.mjs finds the asar CLI through `asarCli()`: resolve the package entry, walk up to its package.json, join `bin`. @electron/asar 4.x has `exports: "./lib/asar.js"` and ships bin/asar.mjs, so any hard-coded subpath (including `@electron/asar/package.json`) throws ERR_PACKAGE_PATH_NOT_EXPORTED.
+- desktop/scripts/lib/pack-deps.mjs finds the asar CLI through `asarCliPath()`: resolve the package entry, walk up to its package.json, join `bin`. @electron/asar 4.x has `exports: "./lib/asar.js"` and ships bin/asar.mjs, so any hard-coded subpath (including `@electron/asar/package.json`) throws ERR_PACKAGE_PATH_NOT_EXPORTED.
 
 ## Tried and ruled out
 - Trusting the script's own version check: it compares the tag text with e2e/package-lock.json, so a stale digest under a correct tag passes it.

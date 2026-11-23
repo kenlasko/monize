@@ -2656,6 +2656,51 @@ describe("TransactionsService", () => {
       );
     });
 
+    it("refuses a foreign entry added to a plain row without a rate of its own", async () => {
+      // The plain row's 1 is the column's default; inheriting it would store
+      // a 1 beside an original currency that the reports read as recorded.
+      transactionsRepository.findOne.mockResolvedValue({
+        ...mockTx,
+        currencyCode: "USD",
+        exchangeRate: 1,
+        originalAmount: null,
+        originalCurrencyCode: null,
+      });
+
+      await expect(
+        service.update("user-1", "tx-1", {
+          originalAmount: -50,
+          originalCurrencyCode: "EUR",
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it("keeps a foreign entry's recorded 1:1 rate when an edit names none", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        ...mockTx,
+        currencyCode: "USD",
+        exchangeRate: 1,
+        originalAmount: -50,
+        originalCurrencyCode: "EUR",
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({ ...mockTx });
+
+      await service.update("user-1", "tx-1", {
+        originalAmount: -50,
+        originalCurrencyCode: "EUR",
+      } as any);
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        "tx-1",
+        expect.objectContaining({
+          originalAmount: -50,
+          originalCurrencyCode: "EUR",
+        }),
+      );
+    });
+
     it("re-normalizes a foreign entry when the row moves to an account in the entry's currency", async () => {
       // Row in a USD account entered as EUR 100: moving it to a EUR account
       // makes the "foreign" entry ordinary. Re-labelling currencyCode without

@@ -185,8 +185,14 @@ surface converts it at that rate -- the register, the realized-gains report and
 the transaction-history KPIs alike. The market rate on the row's own date is
 the fallback for a row carrying none (`resolveFxRate`, INV-FX-001), and the
 surface says which of the two it used rather than leaving the reader with two
-figures for one sale. A stored `1` between two different currencies is the
-column's default, not a rate: it falls back like an absent one. INV-FX-002.
+figures for one sale. On a transaction, a foreign entry's stored `1` is a rate
+like any other: `normalizeFxEntry` admits no foreign entry without a positive
+rate, and an update that first adds one to a plain row must name it rather than
+inherit the plain row's default `1`, so EUR 100 charged as USD 100 reads EUR 100
+(issue #2344). The column's default `1` sits only on rows with no original
+currency, which take the market rate. An investment row's stored `1` between two
+different currencies is still the column's default, not a rate: it falls back
+like an absent one. INV-FX-002.
 
 **Validation.** `normalizeFxEntry(input, accountCurrencyCode)` is shared by
 transactions and scheduled transactions so both accept and reject exactly the
@@ -222,7 +228,9 @@ account was charged, and only a new rate with no amount sent computes a new
 amount; an amount sent beside a new rate is held to it like a create's (moved or
 not, it is never rewritten from the rate), and a figure resent as the row holds
 it is no change. A moved amount on a
-foreign row derives the rate again rather than leaving it stale, a different currency
+foreign row derives the rate again rather than leaving it stale (the row's own
+rate resent beside it included, unless the original amount is sent too: all
+three figures sent are held to each other exactly as on a create), a different currency
 needs its own `originalAmount` (the row's is in the old one), and the account's
 own currency as `originalCurrencyCode` clears the entry (refusing a rate, or an
 original amount that differs from the amount). A derived rate the

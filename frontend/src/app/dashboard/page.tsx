@@ -146,6 +146,10 @@ function DashboardContent() {
   // holds only its "invested" figure on this, and the automatic price refresh
   // waits for it so the two do not compete for the server.
   const [investmentSummaryLoading, setInvestmentSummaryLoading] = useState(false);
+  // Bumped when a price refresh wrote new prices. The hero's portfolio set and
+  // the Portfolio Value widget fetch their own valuations and series, and
+  // re-ask only when this moves, as the Investments page's charts do.
+  const [priceRefreshKey, setPriceRefreshKey] = useState(0);
   const layoutDraft = useDashboardLayoutDraft();
   // A delegate never enters edit mode (DASH-9).
   const editing = layoutDraft.editing && !isDelegateView;
@@ -188,6 +192,7 @@ function DashboardContent() {
   );
 
   const reloadInvestmentWidgets = useCallback(async () => {
+    setPriceRefreshKey((key) => key + 1);
     // Favourite securities can exist without investment accounts, so always
     // refresh them; top movers only apply when there are holdings.
     invalidateCache('investments:favouriteSecurities');
@@ -196,6 +201,21 @@ function DashboardContent() {
       .then(setFavouriteSecurities)
       .catch(() => {});
     if (hasInvestments) {
+      // The investment accounts' share of every month is valued from the new
+      // prices, so the net worth history the widgets read is asked again. A
+      // failed reload keeps what is on screen rather than calling it missing.
+      const netWorthPromise = netWorthApi
+        .getMonthly({
+          startDate: format(subMonths(new Date(), 12), 'yyyy-MM-dd'),
+          endDate: format(new Date(), 'yyyy-MM-dd'),
+        })
+        .then((netWorth) => {
+          setNetWorthData(netWorth);
+          setNetWorthFailed(false);
+        })
+        .catch((error) => {
+          logger.error('Failed to reload net worth history:', error);
+        });
       try {
         const [moversData, portfolio] = await Promise.all([
           investmentsApi.getTopMovers(),
@@ -206,6 +226,7 @@ function DashboardContent() {
       } catch {
         // Silently fail
       }
+      await netWorthPromise;
     }
     await favouritesPromise;
   }, [hasInvestments]);
@@ -358,6 +379,7 @@ function DashboardContent() {
     hasSecurities,
     isRefreshing,
     onRefresh: triggerManualRefresh,
+    priceRefreshKey,
     onAccountsChanged: loadDashboardData,
   };
 
@@ -587,6 +609,7 @@ function DashboardContent() {
               isLoading={isLoading}
               investmentSummaryLoading={investmentSummaryLoading}
               investmentAccounts={portfolioAccounts}
+              priceRefreshKey={priceRefreshKey}
               header={header}
               scheduledTransactions={scheduledTransactions}
             />

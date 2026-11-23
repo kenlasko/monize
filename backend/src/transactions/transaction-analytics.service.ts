@@ -543,7 +543,8 @@ export class TransactionAnalyticsService {
           `SUM(CASE WHEN ${amountExpr} < 0 THEN ABS(${amountExpr}) ELSE 0 END)`,
           "totalExpenses",
         )
-        .addSelect("COUNT(DISTINCT transaction.id)", "transactionCount")
+        .addSelect(WHOLE_ROW_COUNT_SQL, "transactionCount")
+        .addSelect(SPLIT_IDS_SQL, "splitIds")
         .addSelect(
           "TO_CHAR(MIN(transaction.transactionDate), 'YYYY-MM-DD')",
           "firstDate",
@@ -587,6 +588,7 @@ export class TransactionAnalyticsService {
         {
           sums: ["totalIncome", "totalExpenses"],
           count: "transactionCount",
+          splitIds: "splitIds",
         },
       )) {
         const income = bucket.sums.totalIncome;
@@ -781,12 +783,16 @@ export class TransactionAnalyticsService {
     // into income/expense per split. A split parent carries `amount =
     // SUM(splits)`, so summing the parent row nets opposite-sign splits
     // together and under-counts both totalIncome and totalExpenses.
-    // Filter out transfer splits -- they're movements between own
-    // accounts, not spending or income.
+    // A split's transfer line goes with the whole transfer rows: out with
+    // `excludeTransfers`, in otherwise. It is the outgoing side of a transfer
+    // whose incoming row is a whole row, so a read keeping one without the
+    // other counts half the transfer (issue #2337).
     queryBuilder.leftJoin("transaction.splits", "splits");
-    queryBuilder.andWhere(
-      "(splits.transferAccountId IS NULL OR splits.id IS NULL)",
-    );
+    if (excludeTransfers) {
+      queryBuilder.andWhere(
+        "(splits.transferAccountId IS NULL OR splits.id IS NULL)",
+      );
+    }
     // ...and an embedded investment line is the trade's own cash side, not
     // ordinary cash. Unconditional, unlike excludeInvestmentLinked below: that
     // flag is about whole rows a caller may want to see, while this line's
@@ -883,11 +889,11 @@ export class TransactionAnalyticsService {
                       )}`,
                     )
                     // A split transaction counts as uncategorised when any of
-                    // its non-transfer split lines has no category (transfer
-                    // splits are already excluded by the base query), matching
-                    // the category breakdown grouping.
+                    // its non-transfer split lines has no category (a read
+                    // with transfers keeps transfer lines; not here),
+                    // matching the category breakdown grouping.
                     .orWhere(
-                      `transaction.isSplit = true AND transaction.isTransfer = false AND splits.categoryId IS NULL AND ${investmentLinkedSplitExclusion(
+                      `transaction.isSplit = true AND transaction.isTransfer = false AND splits.categoryId IS NULL AND splits.transferAccountId IS NULL AND ${investmentLinkedSplitExclusion(
                         "splits",
                       )}`,
                     );
@@ -1005,14 +1011,15 @@ export class TransactionAnalyticsService {
       const categoryIdExpr =
         "COALESCE(splits.categoryId, transaction.categoryId)";
       // Transfers are movements between own accounts, not spending, so a
-      // transfer with no category must not swell the "Uncategorized" bucket.
-      // This matches the transaction-list filter, which excludes transfers
-      // from "uncategorized". A transfer carrying an optional category still
-      // shows under that category.
+      // transfer with no category, a whole row or a split's transfer line,
+      // must not swell the "Uncategorized" bucket. This matches the
+      // transaction-list filter, which excludes transfers from
+      // "uncategorized". A transfer carrying an optional category still shows
+      // under that category.
       const categorizedOrNotTransfer = () =>
         new Brackets((qb) => {
           qb.where(`${categoryIdExpr} IS NOT NULL`).orWhere(
-            "transaction.isTransfer = false",
+            "transaction.isTransfer = false AND splits.transferAccountId IS NULL",
           );
         });
 
@@ -1040,7 +1047,8 @@ export class TransactionAnalyticsService {
         .addSelect("transaction.currencyCode", "currencyCode")
         .addSelect(`SUM(${amountExpr})`, "total")
         .addSelect(`SUM(ABS(${amountExpr}))`, "magnitude")
-        .addSelect("COUNT(DISTINCT transaction.id)", "count")
+        .addSelect(WHOLE_ROW_COUNT_SQL, "count")
+        .addSelect(SPLIT_IDS_SQL, "splitIds")
         .addGroupBy("transaction.currencyCode");
       const reporting = await resolveUserDefaultCurrency(
         this.dataSource,
@@ -1099,7 +1107,11 @@ export class TransactionAnalyticsService {
   > {
     const keyOf = (row: RawGroupRow) => String(row.group_key);
     const sums = magnitude === "total" ? ["total"] : ["total", magnitude];
-    const groups = foldRateParts(parts, keyOf, { sums, count: "count" }).sort(
+    const groups = foldRateParts(parts, keyOf, {
+      sums,
+      count: "count",
+      splitIds: "splitIds",
+    }).sort(
       (a, b) =>
         b.sums[magnitude] - a.sums[magnitude] || compareGroupKeys(a.key, b.key),
     );
@@ -1144,8 +1156,9 @@ export class TransactionAnalyticsService {
    * transaction tagged both `country:usa` and `country:poland` counts under
    * each, so shares can sum past 100%). Split amounts are summed via
    * `COALESCE(splits.amount, transaction.amount)`, so split transactions still
-   * total correctly; transfers and brokerage side-transactions are excluded by
-   * the shared base query. Attribution is transaction-level -- split-level tags
+   * total correctly; brokerage side-transactions are excluded by the shared
+   * base query, and a transfer counts on each tagged side, a split's transfer
+   * line under its parent's tags. Attribution is transaction-level -- split-level tags
    * are not considered here. Rows are per-currency (like `getGroupedTotals`) so
    * the caller converts to a single display currency.
    */
@@ -1199,7 +1212,8 @@ export class TransactionAnalyticsService {
         .select(valueExpr, "value")
         .addSelect("transaction.currencyCode", "currencyCode")
         .addSelect(`SUM(ABS(${amountExpr}))`, "total")
-        .addSelect("COUNT(DISTINCT transaction.id)", "count")
+        .addSelect(WHOLE_ROW_COUNT_SQL, "count")
+        .addSelect(SPLIT_IDS_SQL, "splitIds")
         .groupBy(valueExpr)
         .addGroupBy("transaction.currencyCode");
       const reporting = await resolveUserDefaultCurrency(
@@ -1256,7 +1270,9 @@ export class TransactionAnalyticsService {
       // exclusion, conditional split join), which let the chart footer count and
       // the widget count diverge and read as a stale/"caching" mismatch.
       // getMonthlyTotals is only called when filters are active (the frontend
-      // switches to daily balances otherwise).
+      // switches to daily balances otherwise). Like the summary, it counts
+      // both sides of every transfer, a split's transfer line included
+      // (issue #2337).
       const queryBuilder = await this.createFilteredAnalyticsQuery(m, userId, {
         accountIds,
         startDate,
@@ -1277,12 +1293,16 @@ export class TransactionAnalyticsService {
 
       // Split by currency and day so each part converts at its own date
       // before it joins its month; a bare SUM would add currencies together.
+      // A split with a transfer line can sit in two parts, the line at its
+      // transfer's rate and the other lines at theirs, so a split is counted
+      // by id across its month rather than once per part.
       queryBuilder
         .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
         .addSelect("transaction.currencyCode", "currencyCode")
         .addSelect(DAY_TX_SQL, "txDate")
         .addSelect(`SUM(${amountExpr})`, "total")
-        .addSelect("COUNT(DISTINCT transaction.id)", "count")
+        .addSelect(WHOLE_ROW_COUNT_SQL, "count")
+        .addSelect(SPLIT_IDS_SQL, "splitIds")
         .groupBy("month")
         .addGroupBy("transaction.currencyCode")
         .addGroupBy(DAY_TX_SQL)
@@ -1293,6 +1313,7 @@ export class TransactionAnalyticsService {
       );
       byOwnRate(queryBuilder, "transaction", defaultCurrency, {
         transfers: true,
+        splitAlias: "splits",
       });
 
       const rows = await queryBuilder.getRawMany();
@@ -1311,6 +1332,12 @@ export class TransactionAnalyticsService {
         days[days.length - 1],
       );
       const groups = this.foldGroups(rows, (r) => r.month, reporting, rates);
+      const splitIds = new Map<string, Set<string>>();
+      for (const row of rows) {
+        const ids = splitIds.get(row.month) ?? new Set<string>();
+        for (const id of (row.splitIds as string[] | null) ?? []) ids.add(id);
+        splitIds.set(row.month, ids);
+      }
 
       // `total` is null (with the converted part in `knownSubtotal`) while a
       // part of the month has no admissible rate.
@@ -1319,7 +1346,7 @@ export class TransactionAnalyticsService {
           month: g.first.month as string,
           currency: reporting,
           ...totalFields(g.agg),
-          count: g.count,
+          count: g.count + (splitIds.get(g.first.month)?.size ?? 0),
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
     });
@@ -1733,6 +1760,7 @@ export class TransactionAnalyticsService {
         .addGroupBy(dayExpr);
       byOwnRate(qb, "transaction", reporting, {
         transfers: !excludeTransfers,
+        splitAlias: "splits",
       });
 
       const rows = await qb.getRawMany();
@@ -2590,6 +2618,17 @@ export class TransactionAnalyticsService {
 const DAY_SQL = "TO_CHAR(t.transactionDate, 'YYYY-MM-DD')";
 const DAY_TX_SQL = "TO_CHAR(transaction.transactionDate, 'YYYY-MM-DD')";
 
+/**
+ * A part's transaction count over the base query's splits join, in two
+ * columns: the whole rows, which lie in one part each, and the ids of the
+ * splits, whose lines can lie in two (a transfer line at its transfer's rate,
+ * the other lines at theirs), so a fold counts each split once by id.
+ */
+const WHOLE_ROW_COUNT_SQL =
+  "COUNT(DISTINCT transaction.id) FILTER (WHERE splits.id IS NULL)";
+const SPLIT_IDS_SQL =
+  "ARRAY_AGG(DISTINCT transaction.id::text) FILTER (WHERE splits.id IS NOT NULL)";
+
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;
 
@@ -2604,10 +2643,17 @@ const TRANSACTION_OWN_RATE_BASIS: RateBasisColumns = {
   exchangeRate: "transaction.exchangeRate",
 };
 
-/** The same, for a read whose rows can be transfer legs. */
+/**
+ * The same, for a read whose rows can be transfer legs: whole rows and, on
+ * the joined `splits`, a split's transfer lines.
+ */
 const TRANSACTION_RATE_BASIS: RateBasisColumns = {
   ...TRANSACTION_OWN_RATE_BASIS,
-  transferLegs: { transactionAlias: "transaction" },
+  transferLegs: {
+    transactionAlias: "transaction",
+    splitAlias: "splits",
+    wholeLegs: true,
+  },
 };
 
 /** The transaction-list filter surface every analytics read applies. */
@@ -2621,6 +2667,7 @@ interface AnalyticsReadFilters {
   amountFrom?: number;
   amountTo?: number;
   excludeInvestmentLinked?: boolean;
+  /** Leave out whole transfer rows and a split's transfer lines alike. */
   excludeTransfers?: boolean;
   tagIds?: string[];
   includeUnreconciledBeforeStart?: boolean;
@@ -2728,21 +2775,28 @@ const clampGroupLimit = (limit: number | undefined): number =>
  * day, so {@link addDatedAmount} reads each part's own rate the way the
  * reports do (INV-FX-002); `alias` is the query's transaction alias. A read
  * whose rows can be transfer legs passes `transfers`, so a leg converts at its
- * transfer's posted amounts too.
+ * transfer's posted amounts too, and `splitAlias` when they are LEFT JOINed to
+ * their split lines, so a split's transfer line converts at its own.
  */
 function byOwnRate(
   qb: SelectQueryBuilder<Transaction>,
   alias: string,
   reporting: string,
-  { transfers = false }: { transfers?: boolean } = {},
+  {
+    transfers = false,
+    splitAlias,
+  }: { transfers?: boolean; splitAlias?: string } = {},
 ): SelectQueryBuilder<Transaction> {
+  const transferLegs = splitAlias
+    ? { transactionAlias: alias, splitAlias, wholeLegs: true }
+    : { transactionAlias: alias };
   splitByRateBasis(
     qb,
     {
       currency: `${alias}.currencyCode`,
       originalCurrency: `${alias}.originalCurrencyCode`,
       exchangeRate: `${alias}.exchangeRate`,
-      ...(transfers ? { transferLegs: { transactionAlias: alias } } : {}),
+      ...(transfers ? { transferLegs } : {}),
     },
     reporting,
     { byDay: false },

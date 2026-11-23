@@ -37,6 +37,11 @@ const MAX_EXCHANGE_BARS = 8;
 interface GeographicAllocationWidgetProps {
   accounts: Account[];
   isLoading: boolean;
+  /**
+   * Bumped by the dashboard when a price refresh wrote new prices: the
+   * valuation and the weightings are priced from them, so both are asked again.
+   */
+  refreshKey?: number;
 }
 
 interface SimpleSlice {
@@ -49,6 +54,7 @@ interface SimpleSlice {
 export function GeographicAllocationWidget({
   accounts,
   isLoading,
+  refreshKey = 0,
 }: GeographicAllocationWidgetProps) {
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
@@ -66,9 +72,14 @@ export function GeographicAllocationWidget({
 
   const accountIds = config.accountIds.length > 0 ? config.accountIds : undefined;
 
-  const { data: summary, isLoading: summaryLoading } = useReportData(
+  // What both priced requests ask for, without the refresh key: a reload after
+  // a price refresh keeps the chart drawn until the new answer lands.
+  const scopeKey = JSON.stringify(config.accountIds);
+
+  const { data: summary, dataKey: summaryDataKey, isLoading: summaryLoading } = useReportData(
     () => investmentsApi.getPortfolioValuation(accountIds),
-    [config.accountIds],
+    [config.accountIds, refreshKey],
+    { requestKey: scopeKey },
   );
 
   const { data: securities } = useReportData(
@@ -76,9 +87,10 @@ export function GeographicAllocationWidget({
     [],
   );
 
-  const { data: countryResp, isLoading: countryLoading } = useReportData(
+  const { data: countryResp, dataKey: countryDataKey, isLoading: countryLoading } = useReportData(
     () => investmentsApi.getCountryWeightings(accountIds),
-    [config.accountIds],
+    [config.accountIds, refreshKey],
+    { requestKey: scopeKey },
   );
 
   const holdings = useMemo<HoldingWithMarketValue[]>(
@@ -153,7 +165,9 @@ export function GeographicAllocationWidget({
 
   const loading =
     isLoading ||
-    (config.view === 'country' ? countryLoading : summaryLoading);
+    (config.view === 'country'
+      ? countryLoading && countryDataKey !== scopeKey
+      : summaryLoading && summaryDataKey !== scopeKey);
 
   const activeSlices = config.view === 'country' ? countrySlices : regionSlices;
   const isEmpty =

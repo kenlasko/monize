@@ -25,7 +25,13 @@ export class ExecuteReportDto {
 // Response interfaces
 export interface AggregatedDataPoint {
   label: string;
-  value: number;
+  /**
+   * The figure in {@link ReportResult.currency}. `null` only on a listed
+   * transaction (metric NONE, no grouping) with no rate into it on its date:
+   * the row stays listed under its own `accountAmount` so it can be matched
+   * against a statement, and is in no total (`excludedCount` counts it).
+   */
+  value: number | null;
   id?: string;
   color?: string;
   percentage?: number;
@@ -58,6 +64,12 @@ export interface AggregatedDataPoint {
   actual?: number;
 }
 
+/**
+ * A data point whose value is known: every grouped point is, since a group's
+ * sum leaves a row with no rate out rather than listing it.
+ */
+export type KnownDataPoint = AggregatedDataPoint & { value: number };
+
 export interface ReportTimeframe {
   startDate: string;
   endDate: string;
@@ -73,11 +85,14 @@ export interface ReportSummary {
    */
   total: number | null;
   /**
-   * Sum of `data`. Equals `total` when nothing was excluded; otherwise it is a
+   * Sum of `data`'s known values. Equals `total` when nothing was excluded; otherwise it is a
    * subtotal and must be labelled as one, never under "Total".
    */
   knownTotal: number;
-  /** Rows counted in `data`; rows left out for want of a rate are not in it. */
+  /**
+   * Rows counted in `data`; rows left out for want of a rate are not in it,
+   * except on a transaction list, which lists them with a `null` value.
+   */
   count: number;
   /** `null` with `total`: a mean over the rows that converted is not the mean. */
   average: number | null;

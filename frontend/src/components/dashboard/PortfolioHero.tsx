@@ -48,6 +48,11 @@ interface PortfolioHeroProps {
   investmentAccounts: Account[];
   hasInvestments: boolean;
   isLoading: boolean;
+  /**
+   * Bumped by the dashboard when a price refresh wrote new prices: every figure
+   * here is valued from them, so each request is asked again.
+   */
+  refreshKey?: number;
 }
 
 /**
@@ -63,7 +68,13 @@ interface PortfolioHeroProps {
  * a since-inception return each cost far more, so each keeps a placeholder in
  * its own place rather than holding the rest of the hero.
  */
-export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLoading }: PortfolioHeroProps) {
+export function PortfolioHero({
+  config,
+  investmentAccounts,
+  hasInvestments,
+  isLoading,
+  refreshKey = 0,
+}: PortfolioHeroProps) {
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
   const uiStyle = useUiStyle();
@@ -78,31 +89,57 @@ export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLo
   const base = useMemo(() => resolveRangePreset(range, { alignment: 'month' }), [range]);
   const { start, periodStart, end } = usePortfolioRangeWindow({ range, base });
 
-  const { data: series, isLoading: seriesLoading, error: seriesError } = useReportData(
+  // What each request asks for, without the refresh key: a reload after a
+  // price refresh asks the same question again, so the figures already drawn
+  // stay on screen until the new ones land rather than dropping back to a
+  // placeholder seconds after the page opened.
+  const seriesKey = JSON.stringify([hasInvestments, range, start, end, accountIdsCsv ?? null]);
+  const summaryKey = JSON.stringify([hasInvestments, accountIdsCsv ?? null]);
+
+  const {
+    data: series,
+    dataKey: seriesDataKey,
+    isLoading: seriesLoading,
+    error: seriesError,
+  } = useReportData(
     () =>
       hasInvestments
         ? loadPortfolioValueSeries({ range, start, end, accountIds: accountIdsCsv })
         : Promise.resolve({ points: [], intradayUnavailable: false }),
-    [hasInvestments, range, start, end, accountIdsCsv],
+    [hasInvestments, range, start, end, accountIdsCsv, refreshKey],
+    { requestKey: seriesKey },
   );
 
-  const { data: summary, isLoading: summaryLoading, error: summaryError } = useReportData(
+  const {
+    data: summary,
+    dataKey: summaryDataKey,
+    isLoading: summaryLoading,
+    error: summaryError,
+  } = useReportData(
     () =>
       hasInvestments
         ? investmentsApi.getPortfolioValuation(config.portfolioAccountIds)
         : Promise.resolve(null),
-    [hasInvestments, accountIdsCsv],
+    [hasInvestments, accountIdsCsv, refreshKey],
+    { requestKey: summaryKey },
   );
 
   // Only a since-inception return needs the summary's walk; the simple return
   // is the valuation's own.
   const needsReturns = config.portfolioMetric !== 'simpleReturn';
-  const { data: returns, isLoading: returnsLoading, error: returnsError } = useReportData(
+  const returnsKey = JSON.stringify([hasInvestments, needsReturns, accountIdsCsv ?? null]);
+  const {
+    data: returns,
+    dataKey: returnsDataKey,
+    isLoading: returnsLoading,
+    error: returnsError,
+  } = useReportData(
     () =>
       hasInvestments && needsReturns
         ? investmentsApi.getPortfolioSummary(config.portfolioAccountIds)
         : Promise.resolve(null),
-    [hasInvestments, needsReturns, accountIdsCsv],
+    [hasInvestments, needsReturns, accountIdsCsv, refreshKey],
+    { requestKey: returnsKey },
   );
 
   const { periodResult, failed: periodFailed } = usePortfolioPeriodResult({
@@ -113,6 +150,7 @@ export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLo
     hasSeries: (series?.points.length ?? 0) > 0,
     accountIds: accountIdsCsv,
     displayCurrency: defaultCurrency,
+    reloadKey: refreshKey,
     skip: !hasInvestments,
   });
 
@@ -148,14 +186,14 @@ export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLo
   if (!hasInvestments && !isLoading) {
     return <HeroMessage>{t('hero.portfolioEmpty')}</HeroMessage>;
   }
-  if (isLoading || summaryLoading || (summary === null && !summaryError)) {
+  if (isLoading || (summaryLoading && summaryDataKey !== summaryKey) || (summary === null && !summaryError)) {
     return <HeroSkeleton label={label} />;
   }
   if (summaryError || !summary) {
     return <HeroMessage>{t('hero.portfolioLoadFailed')}</HeroMessage>;
   }
 
-  const seriesPending = seriesLoading || (series === null && !seriesError);
+  const seriesPending = (seriesLoading && seriesDataKey !== seriesKey) || (series === null && !seriesError);
 
   const windowLabel = t(`widgets.rangeLabels.${range}` as Parameters<typeof t>[0]);
   const dir = (chunks: ReactNode) => <span className="sr-only">{chunks}</span>;
@@ -199,7 +237,7 @@ export function PortfolioHero({ config, investmentAccounts, hasInvestments, isLo
     }
     // A failed request is said to be one, not shown as a withheld return.
     if (returnsError) return <UnknownAmount reasonText={t('hero.portfolioLoadFailed')} />;
-    if (returnsLoading || !returns) return <HeroFigureSkeleton width="w-14" />;
+    if ((returnsLoading && returnsDataKey !== returnsKey) || !returns) return <HeroFigureSkeleton width="w-14" />;
     switch (config.portfolioMetric) {
       case 'twr':
         return returns.timeWeightedReturn != null ? (

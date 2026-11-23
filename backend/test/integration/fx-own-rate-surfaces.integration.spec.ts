@@ -443,6 +443,71 @@ describe("a row's own rate on every surface (integration)", () => {
     ).toEqual({ month: MONTH, total: INCOME, sourceCount: 1 });
   });
   /**
+   * A foreign entry recorded at exactly 1:1 (issue #2344): EUR 100 charged as
+   * USD 100 on day 28, when the market said 1.175. The recorded 1 is the rate
+   * it settled at, so every surface reads EUR 100, never the market's 85.11;
+   * only a plain row's default 1 is not a rate.
+   */
+  it("converts a foreign entry recorded at 1:1 at that rate", async () => {
+    const [{ id: usCardId }] = await dataSource.query(
+      `SELECT id FROM accounts WHERE user_id = $1 AND name = 'US Card'`,
+      [userId],
+    );
+    const dining = await createTestCategory(dataSource, userId, {
+      name: "Dining",
+    });
+    await dataSource.manager.save(
+      dataSource.manager.create(Transaction, {
+        userId,
+        accountId: usCardId,
+        status: TransactionStatus.UNRECONCILED,
+        isTransfer: false,
+        isSplit: false,
+        amount: -100,
+        currencyCode: "USD",
+        originalCurrencyCode: "EUR",
+        originalAmount: -100,
+        exchangeRate: 1,
+        transactionDate: day(28),
+        categoryId: dining.id,
+        payeeName: "Bistro",
+      } as Partial<Transaction>),
+    );
+
+    const byCategory = await asUser(() =>
+      spending.getSpendingByCategory(userId, START, END),
+    );
+    const report = await runCustomReport(DirectionFilter.EXPENSES_ONLY);
+    const list = await asUser(() =>
+      analytics.getLlmListTransactions(userId, {
+        startDate: START,
+        endDate: END,
+        groupBy: "category",
+        direction: "expenses",
+      }),
+    );
+
+    expect(byCategory.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ categoryId: dining.id, total: 100 }),
+      ]),
+    );
+    expect(byCategory.totalSpending).toBe(EXPENSES + 100);
+    expect(report.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: dining.id, value: 100 }),
+      ]),
+    );
+    expect(report.summary.total).toBe(EXPENSES + 100);
+    expect(list.breakdown).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ categoryId: dining.id, total: 100 }),
+      ]),
+    );
+    expect(list.totalExpenses).toBe(EXPENSES + 100);
+  });
+
+  /**
    * A detected recurring charge reaches both prompts beside reporting-currency
    * figures, so its occurrences convert by the same rule (issue #2155). The
    * USD charge's previous occurrence has no rate of its own and reads the

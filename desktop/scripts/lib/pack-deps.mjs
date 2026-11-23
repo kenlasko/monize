@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
@@ -22,31 +22,29 @@ export const BACKEND_DEPS_ARCHIVE = "backend/node_modules.asar";
 export const UNPACKED_PATTERN = "*.node";
 
 /**
- * The @electron/asar command-line script, named by the package's own `bin`
- * field. A hard-coded subpath stops resolving when a release moves it or
- * closes it off: 4.x ships `bin/asar.mjs` and an `exports` map that exposes
- * only the entry point, so `@electron/asar/bin/asar.js` no longer resolves.
- * The entry point always does, and the package root is above it.
+ * The path of @electron/asar's CLI, read from its package's `bin`. Since 4.x
+ * the package's `exports` names only its entry point, so neither the CLI nor
+ * its package.json resolves as a subpath, and the CLI moved to `bin/asar.mjs`:
+ * the package directory is found from the entry point instead.
  */
-export function asarCli() {
-  const entry = require.resolve("@electron/asar");
-  for (let dir = path.dirname(entry); ; dir = path.dirname(dir)) {
+export function asarCliPath() {
+  let dir = path.dirname(require.resolve("@electron/asar"));
+  for (;;) {
     const manifest = path.join(dir, "package.json");
-    if (existsSync(manifest)) {
+    try {
       const pkg = JSON.parse(readFileSync(manifest, "utf8"));
       if (pkg.name === "@electron/asar") {
         const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.asar;
-        if (!bin) {
-          throw new Error(
-            `@electron/asar ${pkg.version} declares no asar command`,
-          );
-        }
+        if (!bin) throw new Error(`${manifest} names no asar CLI`);
         return path.join(dir, bin);
       }
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
     }
-    if (path.dirname(dir) === dir) {
-      throw new Error(`no @electron/asar package.json above ${entry}`);
-    }
+    const parent = path.dirname(dir);
+    if (parent === dir)
+      throw new Error("@electron/asar's package.json not found");
+    dir = parent;
   }
 }
 
@@ -55,7 +53,7 @@ export function asarCli() {
  * this Node so that staging stays synchronous. Throws when the CLI fails.
  */
 export function packArchive({ root, archive, run = spawnSync }) {
-  const cli = asarCli();
+  const cli = asarCliPath();
   const result = run(
     process.execPath,
     [cli, "pack", root, archive, "--unpack", UNPACKED_PATTERN],
