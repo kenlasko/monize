@@ -278,6 +278,34 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     expect(result.missingCurrencies).toEqual([]);
   });
 
+  it("keeps the market rate while the EUR legs hold the QIF importer's placeholder (issue #2338)", async () => {
+    await seed("EUR");
+    await dataSource.query(
+      `UPDATE transactions
+          SET description = $3
+        WHERE user_id = $1 AND account_id = $2`,
+      [
+        userId,
+        euId,
+        "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+      ],
+    );
+
+    const flows = await asUser(() =>
+      sankey.getCashFlowSankey(userId, START, END, { accountIds: [usId] }),
+    );
+    const summary = await summaryOf([usId]);
+
+    // The plain leg and the split's transfer line, each the market's 80 EUR:
+    // the 90 EUR the counterparts hold is not yet what arrived. The summary
+    // counts both beside the groceries line's 48 (issue #2337).
+    expect(flows.nodes.find((n) => n.id === "class:savings")?.total).toBe(160);
+    expect(summary.converted).toMatchObject({
+      totalExpenses: 208,
+      missingCurrencies: [],
+    });
+  });
+
   it("reads the outgoing leg at 90 EUR in the monthly category breakdown", async () => {
     await seed("EUR");
 

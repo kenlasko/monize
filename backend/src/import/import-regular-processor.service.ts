@@ -35,14 +35,7 @@ import { roundMoney } from "../common/round.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { tr } from "../i18n/translate";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
-
-/**
- * The flag on a cross-currency transfer leg whose amount is not the bank's own:
- * importing the other account's file corrects it. The pending lookups below
- * search for this text.
- */
-const PENDING_IMPORT_NOTE =
-  "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.";
+import { PENDING_IMPORT_LIKE, PENDING_IMPORT_NOTE } from "./pending-import";
 
 @Injectable()
 export class ImportRegularProcessorService {
@@ -295,7 +288,7 @@ export class ImportRegularProcessorService {
       .andWhere("t.transaction_date = :date", { date: qifTx.date })
       .andWhere("t.is_transfer = true")
       .andWhere("t.description LIKE :note", {
-        note: "%PENDING IMPORT%",
+        note: PENDING_IMPORT_LIKE,
       })
       .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
       .andWhere("linked.account_id = :linkedAccountId", {
@@ -601,7 +594,7 @@ export class ImportRegularProcessorService {
       .andWhere("t.is_transfer = true")
       .andWhere("t.linked_transaction_id IS NULL")
       .andWhere("t.description LIKE :note", {
-        note: "%PENDING IMPORT%",
+        note: PENDING_IMPORT_LIKE,
       })
       .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
       .getOne();
@@ -863,7 +856,7 @@ export class ImportRegularProcessorService {
         .andWhere("t.is_transfer = true")
         .andWhere("t.linked_transaction_id IS NULL")
         .andWhere("t.description LIKE :note", {
-          note: "%PENDING IMPORT%",
+          note: PENDING_IMPORT_LIKE,
         })
         .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
         .getOne();
