@@ -1196,6 +1196,46 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
     }
   });
 
+  it("reads only the closes the window can be priced from, not the whole history", async () => {
+    txRepo.find.mockResolvedValue([
+      makeTx({
+        id: "buy",
+        action: InvestmentAction.BUY,
+        transactionDate: "2020-03-15",
+        quantity: 100,
+        price: 50,
+        totalAmount: 5000,
+      }),
+    ]);
+    priceRepo.query.mockResolvedValue(
+      priceRows([
+        // The newest close before the window, which the preceding-row branch
+        // returns, prices the period's start boundary.
+        { date: "2023-12-29", price: 50 },
+        { date: "2024-01-31", price: 55 },
+      ]),
+    );
+
+    const result = await service.calculateCapitalGainsByMonth(userId, {
+      startDate: "2024-01-01",
+      endDate: "2024-01-31",
+    });
+
+    const priceCalls = priceRepo.query.mock.calls.filter(([sql]: [string]) =>
+      /FROM security_prices/.test(sql),
+    );
+    expect(priceCalls).toHaveLength(1);
+    const [sql, params] = priceCalls[0];
+    // Bounded to [the day before the first period, the last period's end],
+    // plus one LATERAL row per security before the window.
+    expect(params).toEqual([[securityId], "2023-12-31", "2024-01-31"]);
+    expect(sql).toMatch(/price_date >= \$2::date/);
+    expect(sql).toMatch(/price_date <= \$3::date/);
+    expect(sql).toMatch(/price_date < \$2::date[\s\S]*LIMIT 1/);
+    expect(result[0].startValue).toBe(5000);
+    expect(result[0].endValue).toBe(5500);
+  });
+
   it("still computes gains when the security and account share a currency", async () => {
     // The same-currency path must not be caught by the missing-rate handling:
     // rate 1 is correct here because the codes are equal, and no lookup happens.
