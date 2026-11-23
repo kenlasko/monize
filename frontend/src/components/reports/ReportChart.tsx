@@ -22,7 +22,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { chartColors } from '@/lib/chart-colors';
 import { exportToCsv } from '@/lib/csv-export';
-import { sumMoney, withCurrencyCode } from '@/lib/format';
+import { getDecimalPlacesForCurrency, sumMoney } from '@/lib/format';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
@@ -134,7 +134,7 @@ function ReportChartTooltip({ active, payload, total, formatCurrency, formatPerc
 
 export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, partialTotal, totalLabel = 'Total', signed = false }: ReportChartProps) {
   const t = useTranslations('reports');
-  const { formatCurrency, formatNumber, formatPercent, defaultCurrency } = useNumberFormat();
+  const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
   const { cellFor } = usePartialTotalNote();
   const { formatDate } = useDateFormat();
   const columns = tableColumns && tableColumns.length > 0 ? tableColumns : DEFAULT_TABLE_COLUMNS;
@@ -168,19 +168,25 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const text = formatValue(totalRowValue ?? total);
     return partialTotal ? cellFor(text, partialTotal) : text;
   };
-  // A row's own amount, unconverted, named by its currency where that is not
-  // the reader's: a column of these mixes currencies, so it has no total.
+  // An unconverted amount reads as its number and its code, exactly once on
+  // every row, as the CSV writes it in two columns (issue #2342): a symbol
+  // beside the code named it twice where the symbol is the code ("CHF 100.00
+  // CHF"), and a row in the reader's own currency carried no code at all.
+  const formatInItsCurrency = (amount: number, currencyCode: string) =>
+    `${formatNumber(amount, getDecimalPlacesForCurrency(currencyCode))} ${currencyCode}`;
+  // A row's own amount, unconverted: a column of these mixes currencies, so it
+  // has no total.
   const formatAccountAmount = (item: AggregatedDataPoint) =>
     item.accountAmount === undefined || !item.accountCurrency
       ? ''
-      : withCurrencyCode(formatCurrency(item.accountAmount, item.accountCurrency), item.accountCurrency, defaultCurrency);
+      : formatInItsCurrency(item.accountAmount, item.accountCurrency);
   const accountAmountHeader = t('customReportLabels.tableColumn.ACCOUNT_AMOUNT');
   // What a row entered in a foreign currency was entered as; blank on any other
   // row. It mixes currencies too, so it has no total either.
   const formatOriginalAmount = (item: AggregatedDataPoint) =>
     item.originalAmount === undefined || !item.originalCurrency
       ? ''
-      : withCurrencyCode(formatCurrency(item.originalAmount, item.originalCurrency), item.originalCurrency, defaultCurrency);
+      : formatInItsCurrency(item.originalAmount, item.originalCurrency);
   const originalAmountHeader = t('customReportLabels.tableColumn.ORIGINAL_AMOUNT');
 
   const labelHeader = groupBy === GroupByType.CATEGORY ? 'Category' :

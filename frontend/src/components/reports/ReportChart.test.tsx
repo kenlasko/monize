@@ -643,18 +643,36 @@ describe('ReportChart', () => {
     ];
     const columns = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.ACCOUNT_AMOUNT];
 
-    it('prints each row in its account currency, naming a currency that is not the reader\'s, and totals nothing', () => {
+    it('prints each row in its account currency, naming every currency once, the reader\'s too, and totals nothing', () => {
       const { container } = render(
         <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
       );
 
       expect(screen.getByRole('columnheader', { name: 'Amount (account currency)' })).toBeInTheDocument();
       const bodyRows = container.querySelectorAll('tbody tr');
-      expect(bodyRows[0].lastElementChild?.textContent).toBe('$100.00 USD');
-      expect(bodyRows[1].lastElementChild?.textContent).toBe('$40.00');
+      expect(bodyRows[0].lastElementChild?.textContent).toBe('100.00 USD');
+      expect(bodyRows[1].lastElementChild?.textContent).toBe('40.00 CAD');
       expect(bodyRows[2].lastElementChild?.textContent).toBe('-');
       // Amounts in several currencies have no sum: the footer cell is empty.
       expect(container.querySelector('tfoot tr')?.lastElementChild?.textContent).toBe('');
+    });
+
+    it('names a currency once whose symbol is its code, at the currency\'s own places (issue #2342)', () => {
+      const { container } = render(
+        <ReportChart
+          viewType={ReportViewType.TABLE}
+          data={[
+            { label: 'Zurich', value: 150, count: 1, id: 'tx-1', accountAmount: 100, accountCurrency: 'CHF' },
+            { label: 'Tokyo', value: 90, count: 1, id: 'tx-2', accountAmount: 10000, accountCurrency: 'JPY' },
+          ]}
+          groupBy={GroupByType.NONE}
+          tableColumns={columns}
+        />
+      );
+
+      const bodyRows = container.querySelectorAll('tbody tr');
+      expect(bodyRows[0].lastElementChild?.textContent).toBe('100.00 CHF');
+      expect(bodyRows[1].lastElementChild?.textContent).toBe('10000 JPY');
     });
 
     it('exports csv with the raw amount and its currency in a column of its own', async () => {
@@ -684,8 +702,8 @@ describe('ReportChart', () => {
 
       const { tableData } = (exportToPdf as any).mock.calls[0][0];
       expect(tableData.headers).toEqual(['Item', 'Amount', 'Amount (account currency)']);
-      expect(tableData.rows[0]).toEqual(['Hotel', '$135.00', '$100.00 USD']);
-      expect(tableData.rows[1]).toEqual(['Groceries', '$40.00', '$40.00']);
+      expect(tableData.rows[0]).toEqual(['Hotel', '$135.00', '100.00 USD']);
+      expect(tableData.rows[1]).toEqual(['Groceries', '$40.00', '40.00 CAD']);
       expect(tableData.totalRow).toEqual(['Total', '$180.00', '']);
     });
   });
@@ -702,10 +720,10 @@ describe('ReportChart', () => {
       );
 
       const cells = Array.from(container.querySelectorAll('tbody tr')[0].querySelectorAll('td')).map((td) => td.textContent);
-      expect(cells).toEqual(['Hotel', '-', '$100.00 USD', '-']);
+      expect(cells).toEqual(['Hotel', '-', '100.00 USD', '-']);
       // The share and the total are of what converted.
       const known = Array.from(container.querySelectorAll('tbody tr')[1].querySelectorAll('td')).map((td) => td.textContent);
-      expect(known).toEqual(['Groceries', '$50.00', '$50.00', '100.0%']);
+      expect(known).toEqual(['Groceries', '$50.00', '50.00 CAD', '100.0%']);
       expect(container.querySelector('tfoot tr')?.children[1].textContent).toBe('$50.00');
     });
 
@@ -733,7 +751,7 @@ describe('ReportChart', () => {
       await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
 
       const { tableData } = (exportToPdf as any).mock.calls[0][0];
-      expect(tableData.rows[0]).toEqual(['Hotel', '-', '$100.00 USD', '']);
+      expect(tableData.rows[0]).toEqual(['Hotel', '-', '100.00 USD', '']);
       expect(tableData.totalRow[1]).toBe('$50.00');
     });
 
@@ -790,15 +808,15 @@ describe('ReportChart', () => {
     ];
     const columns = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.ORIGINAL_AMOUNT];
 
-    it('prints what a row was entered as, naming a currency that is not the reader\'s, blank elsewhere, and totals nothing', () => {
+    it('prints what a row was entered as, naming every currency once, blank elsewhere, and totals nothing', () => {
       const { container } = render(
         <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
       );
 
       expect(screen.getByRole('columnheader', { name: 'Amount (original currency)' })).toBeInTheDocument();
       const bodyRows = container.querySelectorAll('tbody tr');
-      expect(bodyRows[0].lastElementChild?.textContent).toBe('$100.00 EUR');
-      expect(bodyRows[1].lastElementChild?.textContent).toBe('$40.00');
+      expect(bodyRows[0].lastElementChild?.textContent).toBe('100.00 EUR');
+      expect(bodyRows[1].lastElementChild?.textContent).toBe('40.00 CAD');
       expect(bodyRows[2].lastElementChild?.textContent).toBe('-');
       // Amounts in several currencies have no sum: the footer cell is empty.
       expect(container.querySelector('tfoot tr')?.lastElementChild?.textContent).toBe('');
@@ -831,7 +849,7 @@ describe('ReportChart', () => {
 
       const { tableData } = (exportToPdf as any).mock.calls[0][0];
       expect(tableData.headers).toEqual(['Item', 'Amount', 'Amount (original currency)']);
-      expect(tableData.rows[0]).toEqual(['Hotel', '$150.00', '$100.00 EUR']);
+      expect(tableData.rows[0]).toEqual(['Hotel', '$150.00', '100.00 EUR']);
       expect(tableData.rows[2]).toEqual(['Groceries', '$20.00', '']);
       expect(tableData.totalRow).toEqual(['Total', '$210.00', '']);
     });
