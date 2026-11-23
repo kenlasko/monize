@@ -1770,11 +1770,17 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     the report's scope (reports/transfer-counterpart.ts,
                     discussion #2139). The other side is read from the same-owner
                     joins of the report's fetch, as context only; a cross-owner
-                    or unreadable counterpart falls back to the market rate. The
+                    or unreadable counterpart falls back to the market rate, and
+                    so does a counterpart still holding the QIF importer's
+                    placeholder (its description carries PENDING_IMPORT_MARKER,
+                    import/pending-import.ts, until the other account's file is
+                    imported), whose amount is not yet what moved (issue
+                    #2338); with no market rate the leg is reported missing. The
                     SQL reads apply the same rule (issue #2153): a read whose
                     rows can be transfer legs selects transferRateSql
                     (built-in-reports/transfer-rate-sql.ts), the leg's amount
-                    over its counterpart's, as the own rate ahead of a stored
+                    over its counterpart's (never a PENDING IMPORT
+                    placeholder's), as the own rate ahead of a stored
                     one, through ownRateSql / rateBasisColumnsSql with
                     `transferLegs` or splitByRateBasis's `transferLegs`
                     (fx_transfer_rate). The counterpart is a same-owner
@@ -1832,7 +1838,11 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     market 0.80, with no rate on file at all, and when the
                     incoming leg's stored rate disagrees; the incoming leg alone
                     reads 100 USD; a split transfer's counterpart reads its own
-                    line, not the parent's amount.
+                    line, not the parent's amount; while the incoming leg is
+                    the QIF importer's +100 EUR PENDING IMPORT placeholder the
+                    outgoing leg reads the market's -80 EUR, or is missing with
+                    no rate (also report-custom-transfer-fx.integration.spec.ts),
+                    and -90 once the import confirmed it.
                     report-transfer-fx-surfaces.integration.spec.ts holds the
                     same 100 USD -> 90 EUR transfer, plain and as a split line,
                     to 90 EUR (the market's 80) in the Sankey, the Monthly
@@ -1840,7 +1850,9 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     transaction summary, grouped totals, tag breakdown, monthly
                     totals, MCP flow totals, a payee's account panel and a
                     budget's transfer actuals (a delegate's summary keeps the
-                    market's 80), and each 90 EUR leg to 100 USD
+                    market's 80, and so do the Sankey and the summary while the
+                    EUR legs hold a PENDING IMPORT placeholder), and each 90 EUR
+                    leg to 100 USD
                     (the market's 112.50), on PostgreSQL.
                     transaction-analytics.service.spec.ts "a row carrying its own
                     rate": EUR 100 charged as USD 125 reads EUR 100 in the

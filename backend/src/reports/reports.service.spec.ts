@@ -2794,6 +2794,69 @@ describe("ReportsService", () => {
         expect(result.data[0].value).toBe(-80);
       });
 
+      describe("while the incoming leg is pending the EUR file's import (issue #2338)", () => {
+        // The USD file's import wrote a +100 EUR placeholder, flagged in its
+        // description, until the EUR account's own file says what arrived.
+        const pendingIn = {
+          id: "tx-in",
+          amount: 100,
+          currencyCode: "EUR",
+          exchangeRate: 1,
+          isSplit: false,
+          linkedTransactionId: "tx-out",
+          description:
+            "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+          account: { id: "acc-eur", name: "Euro Savings" },
+        } as never;
+
+        it("converts the outgoing leg at the market rate, not the placeholder", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [
+            outLeg({ linkedTransaction: pendingIn }),
+          ]);
+
+          expect(result.data.map((d) => [d.id, d.value])).toEqual([
+            ["tx-out", -80],
+          ]);
+          expect(result.missingCurrencies).toEqual([]);
+          expect(mockCurrencyService.buildConverter).toHaveBeenCalledWith(
+            [expect.objectContaining({ currency_code: "USD" })],
+            "EUR",
+          );
+        });
+
+        it("reports the conversion missing when no rate is on file", async () => {
+          const result = await run("EUR", [
+            outLeg({ linkedTransaction: pendingIn }),
+          ]);
+
+          // Listed under its own amount, with no converted value (issue #2342).
+          expect(result.data.map((d) => [d.value, d.accountAmount])).toEqual([
+            [null, -100],
+          ]);
+          expect(result.summary.total).toBeNull();
+          expect(result.missingCurrencies).toEqual(["USD"]);
+          expect(result.excludedCount).toBe(1);
+        });
+
+        it("converts at the posted amounts once the import confirmed what arrived", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [
+            outLeg({
+              linkedTransaction: {
+                ...(pendingIn as object),
+                amount: 90,
+                description: null,
+              } as never,
+            }),
+          ]);
+
+          expect(result.data[0].value).toBe(-90);
+        });
+      });
+
       it("takes the market rate when neither leg is in the reporting currency", async () => {
         storedRates.set("USD->CAD", 1.4);
 
