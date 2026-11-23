@@ -1181,7 +1181,12 @@ export class ActionHistoryService {
       "transactionDate",
       "amount",
       "currencyCode",
+      // The foreign entry travels with its rate: restoring the rate alone put
+      // a plain row's default 1 back beside the edit's original amount, a 1
+      // the reports read as recorded (issue #2358).
       "exchangeRate",
+      "originalAmount",
+      "originalCurrencyCode",
       "payeeId",
       "payeeName",
       "categoryId",

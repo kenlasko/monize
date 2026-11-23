@@ -2754,10 +2754,15 @@ export class ScheduledTransactionsService {
             updateData.originalCurrencyCode !== undefined
               ? updateData.originalCurrencyCode
               : scheduled.originalCurrencyCode,
+          // A plain schedule carries the column's default 1, not a rate: a
+          // foreign entry added to it names its own or is refused, as a
+          // transaction's update does (issue #2358).
           exchangeRate:
             updateData.exchangeRate !== undefined
               ? updateData.exchangeRate
-              : scheduled.exchangeRate,
+              : scheduled.originalCurrencyCode != null
+                ? scheduled.exchangeRate
+                : undefined,
         },
         accountCurrencyCode,
         fxKind,

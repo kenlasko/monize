@@ -1761,7 +1761,12 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     1:1 included (ownRateSql and transactionRateBasis in
                     built-in-reports/report-currency.service.ts; a foreign
                     entry cannot be stored without a rate, and an update that
-                    adds one to a plain row must name it, issue #2344), and
+                    adds one to a plain row or a plain schedule must name it,
+                    and undo restores the original amount and currency with
+                    the rate, issues #2344 and #2358; the rows the old update path left
+                    at the inherited 1 beside amounts it contradicts were
+                    rewritten to the rate their amounts imply by migration
+                    20261123221734_heal_foreign_entry_default_rate.sql), and
                     anything else takes the market rate on its own date
                     (issue #2106).
                     A transfer's own conversion is its two posted amounts: the
@@ -1893,9 +1898,16 @@ Test                investment-transaction-summary.service.spec.ts: a sale of
                     PostgreSQL, and "recorded at 1:1" holds issue #2344's EUR
                     100 charged as USD 100 to EUR 100 (the market reads 85.11)
                     in Spending by Category, a custom report and
-                    list_transactions; transactions.service.spec.ts refuses an
-                    update that adds a foreign entry to a plain row without a
-                    rate; forecast-aggregator.service.spec.ts "a row
+                    list_transactions; transactions.service.spec.ts and
+                    scheduled-transactions.service.spec.ts refuse an update
+                    that adds a foreign entry to a plain row or schedule
+                    without a rate; action-history.service.spec.ts undoes and
+                    redoes an edit that added a foreign entry with its rate;
+                    migration-heal-foreign-entry-default-rate.integration.spec.ts
+                    rewrites an inherited 1 to the rate the amounts imply, the
+                    fee backed out, keeps every 1 the amounts agree with, and
+                    leaves shared-expense ledger rows without raising PSE01,
+                    on PostgreSQL; forecast-aggregator.service.spec.ts "a row
                     carrying its own rate" the same in the forecast's history
                     and income. currency-detail.integration.spec.ts totals
                     EUR 100 at the market's 1.60, EUR 100 paid from a CAD
