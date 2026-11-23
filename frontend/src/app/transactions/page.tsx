@@ -213,7 +213,11 @@ function TransactionsContent() {
   // it: the dialog owns its Modal, and swapping in the real one after
   // QuickAddDialogPlaceholder replays the Modal's entry animation.
   useEffect(() => {
-    const warm = () => { void import('@/components/transactions/quick-add/QuickAddDialog'); };
+    // A warm-up that fails (offline, or a chunk gone after a redeploy) is
+    // harmless: the dialog loads, or reports, when it is opened.
+    const warm = () => {
+      import('@/components/transactions/quick-add/QuickAddDialog').catch(() => undefined);
+    };
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(warm, { timeout: 5000 });
       return () => window.cancelIdleCallback(id);
