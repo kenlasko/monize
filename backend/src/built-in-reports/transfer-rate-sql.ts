@@ -1,4 +1,5 @@
 import { getRequestContext } from "../common/request-context";
+import { PENDING_IMPORT_LIKE } from "../import/pending-import";
 
 /**
  * How a read's transfer legs reach {@link transferRateSql}: the placeholder
@@ -67,8 +68,11 @@ export function ownTransferLegs(
  * answers, and only for exactly one other side, non-zero and of the opposite
  * sign, so a link that is not a transfer's two sides falls back to the market
  * rate. Unlike a stored rate, a ratio of exactly 1 is a real rate here: the
- * transfer moved at par. The aliases are quoted, so a query builder leaves the
- * columns alone.
+ * transfer moved at par. A counterpart row still flagged `PENDING IMPORT`
+ * holds the QIF importer's placeholder, not what moved, so it answers nothing
+ * and the leg keeps the market rate until the other account's file is
+ * imported (issue #2338); a split parent's line is the file's own figure. The
+ * aliases are quoted, so a query builder leaves the columns alone.
  */
 export function transferRateSql(
   currencyParam: string,
@@ -92,6 +96,7 @@ export function transferRateSql(
                AND fx_cp.currency_code = ${currencyParam}
                AND fx_cp.amount <> 0
                AND SIGN(fx_cp.amount) <> SIGN(${s}.amount)
+               AND ${notPendingImport("fx_cp")}
           )
         END`;
   }
@@ -122,9 +127,20 @@ export function transferRateSql(
                    AND fx_leg.currency_code = ${currencyParam}
                    AND (fx_leg.is_split IS TRUE
                         OR fx_leg.linked_transaction_id = ${t}.id)
+                   AND (fx_leg.is_split IS TRUE
+                        OR ${notPendingImport("fx_leg")})
               ) fx_cp
              WHERE fx_cp.amount <> 0
                AND SIGN(fx_cp.amount) <> SIGN(${t}.amount)
           )
         END`;
+}
+
+/**
+ * A counterpart row whose amount is a posted figure rather than the QIF
+ * importer's placeholder. The pattern is a constant of the code, never input.
+ */
+function notPendingImport(alias: string): string {
+  return `(${alias}.description IS NULL
+                   OR ${alias}.description NOT LIKE '${PENDING_IMPORT_LIKE}')`;
 }

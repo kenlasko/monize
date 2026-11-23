@@ -1,4 +1,5 @@
 import { requestContextStorage } from "../common/request-context";
+import { PENDING_IMPORT_LIKE } from "../import/pending-import";
 import {
   ownTransferLegs,
   transferRateReader,
@@ -44,6 +45,23 @@ describe("transferRateSql", () => {
     expect(sql).toContain('fx_cp.user_id = "t".user_id');
     expect(sql).toContain('fx_cp.linked_transaction_id = "t".id');
     expect(sql).toContain("fx_cp.currency_code = :fx");
+  });
+
+  it("reads no rate off a counterpart still pending the other file's import (issue #2338)", () => {
+    const whole = norm(transferRateSql("$4::text", "t", { readerParam: "$1" }));
+    const split = norm(
+      transferRateSql(":fx", "t", { readerParam: ":reader", splitAlias: "ts" }),
+    );
+
+    // A mirror leg answers only once its placeholder was replaced; a split
+    // parent's line is the file's own figure.
+    expect(whole).toContain(
+      `AND (fx_leg.is_split IS TRUE OR (fx_leg.description IS NULL OR fx_leg.description NOT LIKE '${PENDING_IMPORT_LIKE}'))`,
+    );
+    expect(split).toContain(
+      `AND (fx_cp.description IS NULL OR fx_cp.description NOT LIKE '${PENDING_IMPORT_LIKE}')`,
+    );
+    expect(PENDING_IMPORT_LIKE).toBe("%PENDING IMPORT%");
   });
 });
 
