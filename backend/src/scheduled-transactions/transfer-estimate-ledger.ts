@@ -1,7 +1,7 @@
 import { EntityManager } from "typeorm";
 import {
-  LEDGER_BALANCE_EXPRESSION,
   LEDGER_MOVEMENT_PREDICATE,
+  ledgerBalanceAsOfExpression,
   ledgerBalanceJoin,
 } from "../common/ledger-balance.sql";
 import {
@@ -125,23 +125,31 @@ export async function loadTransferDestinations(
     }
   }
 
-  const asOf: { accountId: string; date: string }[] = accounts.map((row) => ({
-    accountId: row.id,
-    date: today,
-  }));
-  for (const [accountId, date] of lastSettlementOf) {
-    asOf.push({ accountId, date });
-  }
-  const balances: { account_id: string; as_of: string; balance: string }[] =
-    await m.query(
-      `SELECT a.id AS account_id, TO_CHAR(d.as_of, 'YYYY-MM-DD') AS as_of,
-              ${LEDGER_BALANCE_EXPRESSION} AS balance
-         FROM unnest($2::uuid[], $3::date[]) AS d(account_id, as_of)
-         JOIN accounts a ON a.id = d.account_id AND a.user_id = $1
-         ${ledgerBalanceJoin("d.as_of", ["t.user_id = $1"])}
-        GROUP BY a.id, a.opening_balance, d.as_of`,
-      [userId, asOf.map((p) => p.accountId), asOf.map((p) => p.date)],
-    );
+  // Both balances of an account in one pass over its ledger: the join is
+  // bounded at the later of the two dates and each balance keeps only the
+  // rows on or before its own (`ledgerBalanceAsOfExpression`). An as-of row
+  // per date summed the account's whole history once for each.
+  const balances: {
+    account_id: string;
+    balance_today: string;
+    balance_at_settlement: string | null;
+  }[] = await m.query(
+    `SELECT a.id AS account_id,
+            ${ledgerBalanceAsOfExpression("$3::date")} AS balance_today,
+            CASE WHEN d.settled_on IS NULL THEN NULL
+                 ELSE ${ledgerBalanceAsOfExpression("d.settled_on")}
+            END AS balance_at_settlement
+       FROM unnest($2::uuid[], $4::date[]) AS d(account_id, settled_on)
+       JOIN accounts a ON a.id = d.account_id AND a.user_id = $1
+       ${ledgerBalanceJoin("GREATEST($3::date, d.settled_on)", ["t.user_id = $1"])}
+      GROUP BY a.id, a.opening_balance, d.settled_on`,
+    [
+      userId,
+      accounts.map((row) => row.id),
+      today,
+      accounts.map((row) => lastSettlementOf.get(row.id) ?? null),
+    ],
+  );
   // Credits are counted whenever they are dated: a payment posted early is
   // dated on its due date, after today, and has already settled what it pays.
   // For a card, those after its closed statement; for any account, those
@@ -175,20 +183,19 @@ export async function loadTransferDestinations(
     ],
   );
 
-  const balanceAt = new Map(
-    balances.map((b) => [`${b.account_id}|${b.as_of}`, Number(b.balance)]),
-  );
+  const balancesOf = new Map(balances.map((b) => [b.account_id, b]));
   const creditsOf = new Map(credits.map((c) => [c.account_id, c]));
   for (const row of accounts) {
     const lastSettlement = lastSettlementOf.get(row.id) ?? null;
+    const rowBalances = balancesOf.get(row.id);
     const rowCredits = creditsOf.get(row.id);
     result.set(row.id, {
       facts: factsOf(row),
       currencyCode: row.currency_code,
       ledger: {
-        balanceToday: balanceAt.get(`${row.id}|${today}`) ?? 0,
+        balanceToday: Number(rowBalances?.balance_today ?? 0),
         balanceAtLastSettlement: lastSettlement
-          ? (balanceAt.get(`${row.id}|${lastSettlement}`) ?? 0)
+          ? Number(rowBalances?.balance_at_settlement ?? 0)
           : null,
         creditsSinceLastSettlement: lastSettlement
           ? Number(rowCredits?.credits_since ?? 0)

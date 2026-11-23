@@ -6,7 +6,9 @@ import {
   ACCOUNT_BALANCES_AS_OF_DATES_SQL,
   LEDGER_EXCLUDES_VOID,
   LEDGER_MOVEMENT_PREDICATE,
+  LEDGER_BALANCE_EXPRESSION,
   LEDGER_TOP_LEVEL_ONLY,
+  ledgerBalanceAsOfExpression,
   ledgerBalanceJoin,
 } from "./ledger-balance.sql";
 
@@ -129,5 +131,17 @@ describe("as-of ledger balance SQL", () => {
       ledgerBalanceJoin("d.as_of"),
     );
     expect(ACCOUNT_BALANCES_AS_OF_DATES_SQL).toContain("unnest($3::date[])");
+  });
+
+  it("states a one-pass as-of balance as the balance expression filtered at its date", () => {
+    // The same opening balance plus the same sum, keeping only the rows on or
+    // before the date, so several balances of one account read in one pass
+    // over a join bounded at the latest of them equal the per-date reads.
+    expect(ledgerBalanceAsOfExpression("d.as_of")).toBe(
+      LEDGER_BALANCE_EXPRESSION.replace(
+        "SUM(t.amount)",
+        "SUM(t.amount) FILTER (WHERE t.transaction_date <= d.as_of)",
+      ),
+    );
   });
 });

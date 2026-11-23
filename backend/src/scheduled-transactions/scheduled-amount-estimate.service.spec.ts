@@ -260,12 +260,19 @@ describe("ScheduledAmountEstimateService", () => {
         if (sql.includes("statement_settlement_day")) {
           return opts.account === null ? [] : [opts.account ?? cardRow];
         }
-        if (sql.includes("AS balance")) {
-          return Object.entries(opts.balances ?? {}).map(([asOf, b]) => ({
-            account_id: "acc-card",
-            as_of: asOf,
-            balance: String(b),
-          }));
+        if (sql.includes("AS balance_today")) {
+          // One row per account carrying both balances, as the one-pass read
+          // answers: today's, and the closed statement's (any other date).
+          const entries = Object.entries(opts.balances ?? {});
+          if (entries.length === 0) return [];
+          const settled = entries.find(([asOf]) => asOf !== NOV_19);
+          return [
+            {
+              account_id: "acc-card",
+              balance_today: String(opts.balances?.[NOV_19] ?? 0),
+              balance_at_settlement: settled ? String(settled[1]) : null,
+            },
+          ];
         }
         if (sql.includes("AS credits_since")) {
           return [
@@ -324,14 +331,24 @@ describe("ScheduledAmountEstimateService", () => {
         "2024-11-19",
         NOV_19,
       ]);
-      const balances = manager.query.mock.calls.find(([sql]) =>
-        String(sql).includes("AS balance"),
-      )!;
-      expect(balances[1]).toEqual([
+      const balanceReads = manager.query.mock.calls.filter(([sql]) =>
+        String(sql).includes("AS balance_today"),
+      );
+      // Both balances of the card in one pass over its ledger, not one
+      // full-history sum per as-of date.
+      expect(balanceReads).toHaveLength(1);
+      const [balanceSql, balanceParams] = balanceReads[0];
+      expect(balanceParams).toEqual([
         "user-1",
-        ["acc-card", "acc-card"],
-        [NOV_19, "2026-11-05"],
+        ["acc-card"],
+        NOV_19,
+        ["2026-11-05"],
       ]);
+      expect(balanceSql).toContain("GREATEST($3::date, d.settled_on)");
+      expect(balanceSql).toContain(
+        "FILTER (WHERE t.transaction_date <= d.settled_on)",
+      );
+      expect(balanceSql).toContain("'VOID'");
       const credits = manager.query.mock.calls.find(([sql]) =>
         String(sql).includes("AS credits"),
       )!;

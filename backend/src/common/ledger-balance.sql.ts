@@ -71,6 +71,15 @@ export function ledgerBalanceJoin(
 export const LEDGER_BALANCE_EXPRESSION = `COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount), 0)`;
 
 /**
+ * `LEDGER_BALANCE_EXPRESSION` as of `asOfDate`, over a `ledgerBalanceJoin`
+ * bounded at that date or later: several balances of one account read in one
+ * pass over its rows, each keeping only those on or before its own date.
+ */
+export function ledgerBalanceAsOfExpression(asOfDate: string): string {
+  return `COALESCE(a.opening_balance, 0) + COALESCE(SUM(t.amount) FILTER (WHERE t.transaction_date <= ${asOfDate}), 0)`;
+}
+
+/**
  * A complete single-account as-of balance query: `$1` account, `$2` owner,
  * `$3` the as-of date.
  */
