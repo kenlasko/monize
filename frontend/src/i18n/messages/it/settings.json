@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Transazioni personali collegate",
         "budgetBuckets": "Buste del budget",
         "budgetPeriodBuckets": "Buste dei periodi del budget"
+      },
+      "delegationRowsLost": "Voci di accesso condiviso che non è stato possibile ripristinare: {count}. Sono autorizzazioni, oppure preferiti o esclusioni dal patrimonio netto impostati da un altro utente su uno dei tuoi conti. Il conto non è nel backup, oppure la condivisione è stata rimossa. Condividi di nuovo il conto con quell'utente.",
+      "delegationRowsKept": "Voci di accesso condiviso mantenute: {count}. Le persone con cui condividi conti mantengono accesso, preferiti ed esclusioni dal patrimonio netto sui conti ripristinati.",
+      "severedReferences": "Alcune righe puntavano a dati che non sono nel backup. Sono state ripristinate senza quel collegamento:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Trasferimenti da o verso un altro utente che hanno perso la transazione abbinata: {count}. Il lato dell'altro utente non è nel tuo backup.",
+        "accounts_institution_id": "Conti che hanno perso la propria istituzione: {count}. Il backup non la contiene. Scegli di nuovo l'istituzione nel conto.",
+        "budget_categories_bucket_id": "Categorie di budget che hanno perso il proprio gruppo: {count}. Contano come non assegnate.",
+        "other": "Righe che hanno perso un collegamento ({name}): {count}."
       }
     },
     "storedBackups": {

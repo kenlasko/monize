@@ -603,6 +603,35 @@ describe('BackupRestoreSection', () => {
       expect(screen.queryByText(/could not be fetched/)).not.toBeInTheDocument();
     });
 
+    it('says how many shared-access entries were kept and which were not restored', async () => {
+      await restoreWith({
+        message: 'Backup restored successfully',
+        restored: { accounts: 4 },
+        delegationRows: { kept: 3, notRestored: 2 },
+      });
+      expect(screen.getByText(/2 shared-access entries on your accounts could not be restored/)).toBeInTheDocument();
+      expect(screen.getByText(/3 shared-access entries were kept/)).toBeInTheDocument();
+    });
+
+    it('lists the severed references with a line per kind', async () => {
+      await restoreWith({
+        message: 'Backup restored successfully',
+        restored: { accounts: 4 },
+        severedReferences: [
+          { table: 'transactions', column: 'linked_transaction_id', count: 2 },
+          { table: 'widgets', column: 'gadget_id', count: 1 },
+        ],
+      });
+      expect(screen.getByText(/2 transfers to or from another user lost their paired transactions/)).toBeInTheDocument();
+      expect(screen.getByText(/1 row lost a link \(widgets\.gadget_id\)/)).toBeInTheDocument();
+    });
+
+    it('says nothing about delegation or severed references when there are none', async () => {
+      await restoreWith({ message: 'Backup restored successfully', restored: { accounts: 1 } });
+      expect(screen.queryByText(/shared-access/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/lost a link/)).not.toBeInTheDocument();
+    });
+
     it('says nothing about lost series when none were', async () => {
       await restoreWith({
         message: 'Backup restored successfully',

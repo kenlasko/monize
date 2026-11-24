@@ -17,7 +17,10 @@ import { randomUUID } from "crypto";
 import { gunzip } from "zlib";
 import { promisify } from "util";
 import { withScopedDb } from "../common/db/scoped-db";
-import { withPreserveTimestamps } from "../common/db/with-context";
+import {
+  withPreserveTimestamps,
+  withSystemContext,
+} from "../common/db/with-context";
 import { recalculateUserCurrentBalances } from "../accounts/accounts.service";
 import { todayInTimezoneOrUtc } from "../common/date-utils";
 import { preferredCurrency } from "../common/default-currency.util";
@@ -46,6 +49,13 @@ import { restoreProcessingGate } from "./restore-processing-gate";
 import { validateRestoredNotifications } from "./notification-restore-bounds";
 import { validateRestoredSchedules } from "./restore-custom-recurrence";
 import { RESTORE_PLAN } from "./restore-plan";
+import {
+  DelegationOutcome,
+  DelegationSnapshot,
+  delegationRowCount,
+  reinstateDelegations,
+  snapshotDelegations,
+} from "./restore-delegations";
 import {
   remapRestoreRow,
   resolveRestoreReferences,
@@ -327,6 +337,7 @@ export class BackupRestoreService {
         }
 
         const restored: Record<string, number> = {};
+        let delegationSnapshot: DelegationSnapshot;
 
         // One transaction for the whole restore, exactly as the QueryRunner block
         // was: a half-applied restore would leave the account in a state that is
@@ -350,8 +361,17 @@ export class BackupRestoreService {
         // consumed and the user must re-authenticate to retry. That is the safe
         // direction -- do not "fix" this path by treating it as replay-safe.
         return this.maintenance
-          .withMaintenanceLease(userId, "backup restore", () =>
-            withPreserveTimestamps(() =>
+          .withMaintenanceLease(userId, "backup restore", async () => {
+            // The wipe cascades away the grants on these accounts and the
+            // favourites and exclusions other users hold on them. Read them first
+            // (restore-delegations.ts); they belong partly to the delegates, so
+            // under RLS only a system context can see them.
+            delegationSnapshot = await withSystemContext(() =>
+              withScopedDb(this.dataSource, (manager) =>
+                snapshotDelegations(manager, userId),
+              ),
+            );
+            return withPreserveTimestamps(() =>
               withScopedDb(this.dataSource, async (manager) => {
                 // Phase 1: Delete all existing user data (same order as deleteData in users.service)
                 await this.db.deleteAllUserData(userId, manager);
@@ -504,9 +524,14 @@ export class BackupRestoreService {
                     : {}),
                 };
               }),
-            ),
-          )
+            );
+          })
           .then(async (result) => {
+            const delegationRows = await this.reinstateDelegationRows(
+              userId,
+              delegationSnapshot,
+              idRemap,
+            );
             // The restore may have inserted currencies (a coin among them);
             // the crypto adapter re-reads on its next question rather than
             // after its cache expires. After the commit, so the read sees them.
@@ -555,7 +580,23 @@ export class BackupRestoreService {
                 );
               },
             );
-            return result;
+            return {
+              ...result,
+              ...(delegationRows.kept + delegationRows.notRestored > 0
+                ? { delegationRows }
+                : {}),
+              ...(references.severed.length > 0
+                ? {
+                    severedReferences: references.severed.map(
+                      ({ table, column, rows }) => ({
+                        table,
+                        column,
+                        count: rows,
+                      }),
+                    ),
+                  }
+                : {}),
+            };
           })
           .catch(async (error) => {
             this.logger.error(
@@ -571,6 +612,33 @@ export class BackupRestoreService {
       },
       { signal: input.queueAbortSignal },
     );
+  }
+
+  /**
+   * Write the delegation rows read before the wipe back onto the restored
+   * accounts, after the restore committed. A system context, because the
+   * favourites and exclusions belong to the delegates and the restoring user
+   * cannot write them under RLS; so it is its own transaction. A failure here
+   * must not turn a committed restore into an error: every row is then reported
+   * as not restored.
+   */
+  private async reinstateDelegationRows(
+    userId: string,
+    snapshot: DelegationSnapshot,
+    idRemap: ReadonlyMap<string, string>,
+  ): Promise<DelegationOutcome> {
+    try {
+      return await withSystemContext(() =>
+        withScopedDb(this.dataSource, (manager) =>
+          reinstateDelegations(manager, userId, snapshot, idRemap),
+        ),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Could not restore delegation rows for user ${userId}: ${(error as Error).message}`,
+      );
+      return { kept: 0, notRestored: delegationRowCount(snapshot) };
+    }
   }
 
   /**

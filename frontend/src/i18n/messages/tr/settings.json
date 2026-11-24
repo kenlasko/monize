@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Bağlı kişisel işlemler",
         "budgetBuckets": "Bütçe zarfları",
         "budgetPeriodBuckets": "Bütçe dönemi zarfları"
+      },
+      "delegationRowsLost": "Geri yüklenemeyen paylaşılan erişim kayıtları: {count}. Bunlar izinler veya başka bir kullanıcının hesaplarınızdan biri için belirlediği favoriler ya da net değer dışı bırakmalardır. Hesap yedekte yok ya da paylaşım kaldırılmış. Hesabı bu kullanıcıyla yeniden paylaşın.",
+      "delegationRowsKept": "Korunan paylaşılan erişim kayıtları: {count}. Hesaplarınızı paylaştığınız kişiler, geri yüklenen hesaplarda erişimlerini, favorilerini ve net değer dışı bırakmalarını korur.",
+      "severedReferences": "Bazı satırlar yedekte bulunmayan verilere işaret ediyordu. Bu bağlantı olmadan geri yüklendiler:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Eşleşen işlemini kaybeden, başka bir kullanıcıdan gelen veya ona giden transferler: {count}. Diğer kullanıcının tarafı yedeğinizde yok.",
+        "accounts_institution_id": "Kurumunu kaybeden hesaplar: {count}. Yedek onu içermiyor. Hesapta kurumu yeniden seçin.",
+        "budget_categories_bucket_id": "Kovasını kaybeden bütçe kategorileri: {count}. Atanmamış sayılırlar.",
+        "other": "Bir bağlantıyı kaybeden satırlar ({name}): {count}."
       }
     },
     "storedBackups": {

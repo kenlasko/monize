@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Transaksi pribadi tertaut",
         "budgetBuckets": "Kantong anggaran",
         "budgetPeriodBuckets": "Kantong periode anggaran"
+      },
+      "delegationRowsLost": "Entri akses bersama yang tidak dapat dipulihkan: {count}. Entri ini adalah izin, atau favorit atau pengecualian kekayaan bersih yang diatur pengguna lain pada salah satu akun Anda. Akun tidak ada di cadangan, atau berbagi telah dihapus. Bagikan lagi akun itu kepada pengguna tersebut.",
+      "delegationRowsKept": "Entri akses bersama yang dipertahankan: {count}. Orang yang berbagi akun dengan Anda tetap memiliki akses, favorit, dan pengecualian kekayaan bersih pada akun yang dipulihkan.",
+      "severedReferences": "Beberapa baris menunjuk ke data yang tidak ada di cadangan. Baris itu dipulihkan tanpa tautan tersebut:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Transfer dari atau ke pengguna lain yang kehilangan transaksi pasangannya: {count}. Sisi pengguna lain tidak ada di cadangan Anda.",
+        "accounts_institution_id": "Akun yang kehilangan institusinya: {count}. Cadangan tidak memuatnya. Pilih lagi institusi pada akun.",
+        "budget_categories_bucket_id": "Kategori anggaran yang kehilangan bucket-nya: {count}. Kategori ini dihitung sebagai belum ditetapkan.",
+        "other": "Baris yang kehilangan tautan ({name}): {count}."
       }
     },
     "storedBackups": {

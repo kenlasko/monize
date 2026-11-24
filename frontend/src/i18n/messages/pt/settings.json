@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Transações pessoais associadas",
         "budgetBuckets": "Cofres do orçamento",
         "budgetPeriodBuckets": "Cofres do período do orçamento"
+      },
+      "delegationRowsLost": "Entradas de acesso partilhado que não foi possível restaurar: {count}. São permissões, ou favoritos ou exclusões do património líquido definidos por outro utilizador numa das suas contas. A conta não está na cópia de segurança, ou a partilha foi removida. Partilhe de novo a conta com esse utilizador.",
+      "delegationRowsKept": "Entradas de acesso partilhado mantidas: {count}. As pessoas com quem partilha contas mantêm o acesso, os favoritos e as exclusões do património líquido nas contas restauradas.",
+      "severedReferences": "Algumas linhas apontavam para dados que não estão na cópia de segurança. Foram restauradas sem essa ligação:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Transferências de ou para outro utilizador que perderam a transação associada: {count}. O lado do outro utilizador não está na sua cópia de segurança.",
+        "accounts_institution_id": "Contas que perderam a instituição: {count}. A cópia de segurança não a contém. Escolha de novo a instituição na conta.",
+        "budget_categories_bucket_id": "Categorias de orçamento que perderam o grupo: {count}. Contam como não atribuídas.",
+        "other": "Linhas que perderam uma ligação ({name}): {count}."
       }
     },
     "storedBackups": {

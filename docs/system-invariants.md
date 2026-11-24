@@ -7769,7 +7769,12 @@ Enforcement         resolveRestoreReferences (backup/restore-references.ts),
                     parent's (DeferredFkRepair.ownedThrough). The reference
                     columns are RESTORE_REFERENCE_COLUMNS, checked against every
                     foreign key and scalar UUID column in database/schema.sql.
-                    Holds with RLS_MODE=off, the default.
+                    Holds with RLS_MODE=off, the default. A restore also removes
+                    none of another user's rows for good: the grants,
+                    favourites and net-worth exclusions on the user's accounts
+                    are read before the wipe and written back onto the restored
+                    accounts (restore-delegations.ts), the rest counted in
+                    RestoreResult.delegationRows.
 Concurrency scope   per restore (one transaction under the maintenance lease)
 Retry semantics     A refused file is refused identically on retry; nothing was
                     written.
@@ -7782,7 +7787,9 @@ Required tests      Unit: restore-references.spec.ts (schema coverage in both
                     every repair to the restoring user's rows"). Integration:
                     backup-restore.integration.spec.ts (a crafted file naming a
                     second user's rows is refused and leaves both users' data
-                    untouched).
+                    untouched; a delegate's grant, favourite and exclusion
+                    survive a replace restore of the owner). Unit:
+                    restore-delegations.spec.ts.
 Status              enforced
 ```
 

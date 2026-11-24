@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Gekoppelde persoonlijke transacties",
         "budgetBuckets": "Budgetpotjes",
         "budgetPeriodBuckets": "Budgetperiodepotjes"
+      },
+      "delegationRowsLost": "Items voor gedeelde toegang die niet konden worden hersteld: {count}. Dit zijn machtigingen, of favorieten of uitsluitingen van het nettovermogen die een andere gebruiker op een van uw rekeningen heeft ingesteld. De rekening staat niet in de back-up, of het delen is verwijderd. Deel de rekening opnieuw met die gebruiker.",
+      "delegationRowsKept": "Items voor gedeelde toegang die bewaard zijn: {count}. Mensen met wie u rekeningen deelt, behouden hun toegang, favorieten en uitsluitingen van het nettovermogen op de herstelde rekeningen.",
+      "severedReferences": "Sommige rijen verwezen naar gegevens die niet in de back-up staan. Ze zijn hersteld zonder die koppeling:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Overboekingen van of naar een andere gebruiker die hun gekoppelde transactie kwijt zijn: {count}. De kant van de andere gebruiker staat niet in uw back-up.",
+        "accounts_institution_id": "Rekeningen die hun instelling kwijt zijn: {count}. De back-up bevat die niet. Kies de instelling opnieuw bij de rekening.",
+        "budget_categories_bucket_id": "Budgetcategorieën die hun bucket kwijt zijn: {count}. Ze tellen als niet toegewezen.",
+        "other": "Rijen die een koppeling kwijt zijn ({name}): {count}."
       }
     },
     "storedBackups": {

@@ -2370,4 +2370,134 @@ describe("Backup export/restore round-trip (integration)", () => {
       expect(doc.producedBy).toEqual({ schemaMigration: null });
     });
   });
+
+  describe("delegations across a replace restore", () => {
+    // synchronize:true builds these tables without the account foreign key that
+    // database/schema.sql declares (ON DELETE CASCADE), and the cascade is what
+    // the replace restore's wipe trips over. Declare it as the schema does.
+    beforeAll(async () => {
+      for (const table of [
+        "account_delegate_grants",
+        "delegate_account_favourites",
+        "delegate_net_worth_exclusions",
+      ]) {
+        await dataSource.query(
+          `ALTER TABLE ${table} DROP CONSTRAINT IF EXISTS ${table}_account_cascade`,
+        );
+        await dataSource.query(
+          `ALTER TABLE ${table} ADD CONSTRAINT ${table}_account_cascade
+             FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE`,
+        );
+      }
+    });
+
+    it("keeps a delegate's grant, favourite and exclusion on the restored account", async () => {
+      const owner = await createTestUserDirect(dataSource, {
+        email: "deleg-owner@example.com",
+      });
+      const delegate = await createTestUserDirect(dataSource, {
+        email: "deleg-delegate@example.com",
+      });
+      const seeded = await seedUserData(owner.id);
+      const [{ id: delegationId }] = await dataSource.query(
+        `INSERT INTO account_delegates (owner_user_id, delegate_user_id, status)
+         VALUES ($1, $2, 'active') RETURNING id`,
+        [owner.id, delegate.id],
+      );
+      await dataSource.query(
+        `INSERT INTO account_delegate_grants (delegation_id, account_id, can_read, is_joint)
+         VALUES ($1, $2, true, true)`,
+        [delegationId, seeded.accountId],
+      );
+      await dataSource.query(
+        `INSERT INTO delegate_account_favourites (delegate_user_id, account_id, sort_order)
+         VALUES ($1, $2, 4)`,
+        [delegate.id, seeded.accountId],
+      );
+      await dataSource.query(
+        `INSERT INTO delegate_net_worth_exclusions (delegate_user_id, account_id)
+         VALUES ($1, $2)`,
+        [delegate.id, seeded.accountId],
+      );
+
+      const { buffer } = await withUserContext(owner.id, () =>
+        service.exportToBuffer(owner.id),
+      );
+      const result = await withUserContext(owner.id, () =>
+        service.restoreData(owner.id, {
+          compressedData: buffer,
+          password: PASSWORD,
+        }),
+      );
+
+      // The restore mints fresh account ids; the rows follow the account.
+      const [{ id: newAccountId }] = await dataSource.query(
+        `SELECT id FROM accounts WHERE user_id = $1 AND name = 'Checking'`,
+        [owner.id],
+      );
+      expect(newAccountId).not.toBe(seeded.accountId);
+      const grants = await dataSource.query(
+        `SELECT is_joint FROM account_delegate_grants
+          WHERE delegation_id = $1 AND account_id = $2`,
+        [delegationId, newAccountId],
+      );
+      expect(grants).toEqual([{ is_joint: true }]);
+      const favourites = await dataSource.query(
+        `SELECT sort_order FROM delegate_account_favourites
+          WHERE delegate_user_id = $1 AND account_id = $2`,
+        [delegate.id, newAccountId],
+      );
+      expect(favourites).toEqual([{ sort_order: 4 }]);
+      const exclusions = await dataSource.query(
+        `SELECT 1 FROM delegate_net_worth_exclusions
+          WHERE delegate_user_id = $1 AND account_id = $2`,
+        [delegate.id, newAccountId],
+      );
+      expect(exclusions).toHaveLength(1);
+      expect(result.delegationRows).toEqual({ kept: 3, notRestored: 0 });
+    });
+
+    it("reports the delegation rows of an account the file does not contain", async () => {
+      const owner = await createTestUserDirect(dataSource, {
+        email: "deleg-owner2@example.com",
+      });
+      const delegate = await createTestUserDirect(dataSource, {
+        email: "deleg-delegate2@example.com",
+      });
+      await seedUserData(owner.id);
+      const { buffer } = await withUserContext(owner.id, () =>
+        service.exportToBuffer(owner.id),
+      );
+      // An account created after the backup was taken, shared with the delegate.
+      const lateId = randomUUID();
+      await dataSource.query(
+        `INSERT INTO accounts (id, user_id, account_type, name, currency_code,
+                               current_balance, opening_balance)
+         VALUES ($1, $2, 'SAVINGS', 'Late', 'USD', 0, 0)`,
+        [lateId, owner.id],
+      );
+      const [{ id: delegationId }] = await dataSource.query(
+        `INSERT INTO account_delegates (owner_user_id, delegate_user_id, status)
+         VALUES ($1, $2, 'active') RETURNING id`,
+        [owner.id, delegate.id],
+      );
+      await dataSource.query(
+        `INSERT INTO account_delegate_grants (delegation_id, account_id)
+         VALUES ($1, $2)`,
+        [delegationId, lateId],
+      );
+
+      const result = await withUserContext(owner.id, () =>
+        service.restoreData(owner.id, {
+          compressedData: buffer,
+          password: PASSWORD,
+        }),
+      );
+
+      expect(result.delegationRows).toEqual({ kept: 0, notRestored: 1 });
+      expect(
+        await dataSource.query(`SELECT 1 FROM account_delegate_grants`),
+      ).toHaveLength(0);
+    });
+  });
 });

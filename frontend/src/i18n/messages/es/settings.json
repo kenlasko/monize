@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Transacciones personales vinculadas",
         "budgetBuckets": "Bolsillos del presupuesto",
         "budgetPeriodBuckets": "Bolsillos de períodos del presupuesto"
+      },
+      "delegationRowsLost": "Entradas de acceso compartido que no se pudieron restaurar: {count}. Son permisos, o favoritos o exclusiones del patrimonio neto que otro usuario definió en una de sus cuentas. La cuenta no está en la copia de seguridad, o se quitó el uso compartido. Vuelva a compartir la cuenta con ese usuario.",
+      "delegationRowsKept": "Entradas de acceso compartido que se conservaron: {count}. Las personas con las que comparte cuentas mantienen su acceso, favoritos y exclusiones del patrimonio neto en las cuentas restauradas.",
+      "severedReferences": "Algunas filas apuntaban a datos que no están en la copia de seguridad. Se restauraron sin ese vínculo:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Transferencias hacia o desde otro usuario que perdieron su transacción pareja: {count}. El lado del otro usuario no está en su copia de seguridad.",
+        "accounts_institution_id": "Cuentas que perdieron su institución: {count}. La copia de seguridad no la contiene. Elija de nuevo la institución en la cuenta.",
+        "budget_categories_bucket_id": "Categorías de presupuesto que perdieron su grupo: {count}. Cuentan como sin asignar.",
+        "other": "Filas que perdieron un vínculo ({name}): {count}."
       }
     },
     "storedBackups": {

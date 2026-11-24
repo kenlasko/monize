@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Powiązane transakcje osobiste",
         "budgetBuckets": "Koperty budżetu",
         "budgetPeriodBuckets": "Koperty okresów budżetu"
+      },
+      "delegationRowsLost": "Wpisy udostępnionego dostępu, których nie udało się przywrócić: {count}. Są to uprawnienia albo ulubione lub wyłączenia z wartości netto, które inny użytkownik ustawił na jednym z Twoich kont. Konta nie ma w kopii zapasowej albo udostępnienie usunięto. Udostępnij konto temu użytkownikowi ponownie.",
+      "delegationRowsKept": "Wpisy udostępnionego dostępu, które zachowano: {count}. Osoby, którym udostępniasz konta, zachowują dostęp, ulubione i wyłączenia z wartości netto na przywróconych kontach.",
+      "severedReferences": "Niektóre wiersze wskazywały dane, których nie ma w kopii zapasowej. Przywrócono je bez tego powiązania:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Przelewy od innego użytkownika lub do niego, które utraciły sparowaną transakcję: {count}. Strony drugiego użytkownika nie ma w Twojej kopii zapasowej.",
+        "accounts_institution_id": "Konta, które utraciły instytucję: {count}. Kopia zapasowa jej nie zawiera. Wybierz instytucję na koncie ponownie.",
+        "budget_categories_bucket_id": "Kategorie budżetu, które utraciły koszyk: {count}. Liczą się jako nieprzypisane.",
+        "other": "Wiersze, które utraciły powiązanie ({name}): {count}."
       }
     },
     "storedBackups": {
