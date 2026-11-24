@@ -77,6 +77,8 @@
     "title": "Eliminar Transação",
     "message": "Eliminar esta transação? Será removida da conta e desta reconciliação.",
     "transferTitle": "Eliminar Transferência",
+    "splitLegTitle": "Remover transferência da divisão",
+    "splitLegMessage": "Esta transferência é uma linha de uma transação dividida {hasPayee, select, true {com {payee} } other {}}de {date}. Eliminá-la remove apenas esta linha e recalcula o total da divisão. A divisão e as suas outras linhas mantêm-se. Também é removida desta reconciliação.",
     "transferMessage": "Eliminar esta transferência? Ambos os lados são removidos, nesta conta e na outra."
   },
   "stale": {

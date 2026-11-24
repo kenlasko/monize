@@ -77,6 +77,8 @@
     "title": "İşlemi Sil",
     "message": "Bu işlem silinsin mi? Hesaptan ve bu mutabakattan kaldırılacak.",
     "transferTitle": "Transferi Sil",
+    "splitLegTitle": "Aktarımı Bölmeden Kaldır",
+    "splitLegMessage": "Bu aktarım, {date} tarihli bölünmüş işlemin {hasPayee, select, true {({payee}) } other {}}bir satırıdır. Silmek yalnızca bu satırı kaldırır ve bölmenin toplamını yeniden hesaplar. Bölme ve diğer satırları kalır. Ayrıca bu mutabakattan da kaldırılır.",
     "transferMessage": "Bu transfer silinsin mi? Her iki tarafı da kaldırılır, bu hesapta ve diğerinde."
   },
   "stale": {

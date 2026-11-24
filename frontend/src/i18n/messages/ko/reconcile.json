@@ -77,6 +77,8 @@
     "title": "거래 삭제",
     "message": "이 거래를 삭제할까요? 계좌와 이 조정에서 제거됩니다.",
     "transferTitle": "이체 삭제",
+    "splitLegTitle": "분할에서 이체 제거",
+    "splitLegMessage": "이 이체는 {date}의 분할 거래{hasPayee, select, true {({payee})} other {}}의 한 줄입니다. 삭제하면 이 줄만 제거되고 분할 합계가 다시 계산됩니다. 분할과 다른 줄은 그대로 남습니다. 이 대조에서도 제거됩니다.",
     "transferMessage": "이 이체를 삭제할까요? 이 계좌와 상대 계좌의 양쪽 모두 제거됩니다."
   },
   "stale": {
