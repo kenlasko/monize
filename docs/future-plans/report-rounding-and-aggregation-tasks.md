@@ -13,6 +13,8 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 - [x] AI aggregators: insights, forecast, transaction analytics.
 - [x] Client `sumConverted` accumulates as `FxAggregate` does.
 
+- [ ] The Monthly Comparison's changes from the months' aggregates rather than their rounded figures (the spec's rule 4 residual).
+
 ## 2 the precision of a figure on the wire
 
 - [ ] The maintainer's choice of the spec's section 6 option, then its implementation.

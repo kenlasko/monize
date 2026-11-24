@@ -8,6 +8,7 @@ import { TransactionAnalyticsService } from "../../transactions/transaction-anal
 import { RecurringCharge } from "../../transactions/recurring-charges.util";
 import { Category } from "../../categories/entities/category.entity";
 import { FxAggregate } from "../../common/fx-aggregate";
+import { roundMoney } from "../../common/round.util";
 import { isNetSpending } from "../../built-in-reports/spending-reports.service";
 import { buildRateIndex } from "../../common/time-series/rate-index.util";
 import {
@@ -318,7 +319,9 @@ export class InsightsAggregatorService {
         currentMonthTotal: cat.byMonth.get(currentMonth)?.knownSubtotal ?? 0,
         previousMonthTotal: cat.byMonth.get(previousMonth)?.knownSubtotal ?? 0,
         averageMonthlyTotal:
-          monthCount > 0 ? overall.unroundedSubtotal / monthCount : 0,
+          monthCount > 0
+            ? roundMoney(overall.unroundedSubtotal / monthCount)
+            : 0,
         monthCount,
         transactionCount: cat.txnCount,
       });

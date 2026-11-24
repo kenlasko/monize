@@ -3395,9 +3395,12 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     report's totals, convertDatedRows, the AI insights and
                     forecast aggregators and the client's sumConverted
                     (frontend/src/lib/currency-total.ts): stage 1 of
-                    docs/future-plans/report-rounding-and-aggregation-tasks.md. No source scan refuses a new
-                    addConverted(part.knownSubtotal) or a sumMoney over rounded
-                    rows.
+                    docs/future-plans/report-rounding-and-aggregation-tasks.md.
+                    backend/src/common/report-rounding.guard.spec.ts fails an
+                    addConverted, add, sumMoney, += or -= over an aggregate's
+                    knownSubtotal / unroundedSubtotal, and an isNetSpending
+                    over a reading or a roundMoney; a reading first stored in
+                    a variable and then folded passes it.
 Concurrency scope   -- (read path)
 Retry semantics     -- (read path)
 Crash semantics     -- (read path)

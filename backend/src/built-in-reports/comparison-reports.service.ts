@@ -188,12 +188,8 @@ export class ComparisonReportsService {
     // a month that rounded its running sum on every row, or savings taken from
     // two four-place readings, could miss its year by a unit
     // (docs/specs/report-rounding-and-aggregation.md rules 2 and 4).
-    const savingsOf = (income: FxAggregate, expenses: FxAggregate): number => {
-      const savings = new FxAggregate();
-      savings.merge(income);
-      savings.mergeNegated(expenses);
-      return savings.knownSubtotal;
-    };
+    const savingsOf = (income: FxAggregate, expenses: FxAggregate): number =>
+      FxAggregate.difference(income, expenses).knownSubtotal;
     yearMap.forEach((yearData, year) => {
       const aggregate = yearAggregates.get(year)!;
       aggregate.months.forEach((month, index) => {

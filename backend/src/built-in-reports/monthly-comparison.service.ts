@@ -122,9 +122,12 @@ export class MonthlyComparisonService {
     const currentSavings = curData?.net ?? 0;
     const previousSavings = prevData?.net ?? 0;
 
-    // A change is the difference of the two figures this report shows, so
-    // the three agree on the page; rounding it drops the float residue that
-    // subtracting two four-place doubles leaves (1999.5556000000001).
+    // A change is the difference of the two figures this report shows,
+    // rounded to drop the float residue that subtracting two four-place
+    // doubles leaves (1999.5556000000006). The months come from two other
+    // reports already rounded, so it can sit a unit from the exact change: a
+    // residual recorded in rule 4 of
+    // docs/specs/report-rounding-and-aggregation.md.
     const change = (current: number, previous: number) =>
       roundMoney(current - previous);
 

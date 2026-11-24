@@ -27,6 +27,17 @@ const ACCUMULATION_DECIMALS = FIAT_MONEY_DECIMALS + 8;
 const SIGN_THRESHOLD_UNITS =
   10n ** BigInt(ACCUMULATION_DECIMALS - MONEY_SCALE) / 2n;
 
+/**
+ * How far below a subtotal's components their float residue reaches, as a
+ * shift: each converted component is a double, exact to about one part in
+ * 2^52 of its size (one rounding of `amount * rate`, one of the shortest
+ * decimal string), so the residue a sum of them can carry is under 2^-50 of
+ * their summed magnitude. 16,768.69 at 9731.4245182213 (about 163 million),
+ * refunded as 4,012.32 and 12,756.37 at the same rate, nets to -0.00000002 in
+ * doubles: residue, not money, though over half a unit at `MONEY_SCALE`.
+ */
+const FLOAT_RESIDUE_SHIFT = 50n;
+
 /** One `10^-FIAT_MONEY_DECIMALS` unit, in accumulation units. */
 const FIAT_UNIT = 10n ** BigInt(ACCUMULATION_DECIMALS - FIAT_MONEY_DECIMALS);
 
@@ -83,6 +94,11 @@ export class FxAggregate {
    */
   private subtotalUnits = 0n;
   /**
+   * The components' summed magnitudes in the same units, which bound the float
+   * residue their sum can carry (`sign`).
+   */
+  private magnitudeUnits = 0n;
+  /**
    * The sum of the non-finite components (`NaN`, `Infinity`), which have no
    * digits to count in `subtotalUnits`. Zero until one is added, so it
    * changes nothing; once one is, the subtotal reads `NaN` or `Infinity` as it
@@ -121,7 +137,9 @@ export class FxAggregate {
       this.nonFiniteSum += amount;
       return;
     }
-    this.subtotalUnits += toAccumulationUnits(amount);
+    const units = toAccumulationUnits(amount);
+    this.subtotalUnits += units;
+    this.magnitudeUnits += units < 0n ? -units : units;
   }
 
   /**
@@ -135,6 +153,7 @@ export class FxAggregate {
   /** Fold in another aggregate, carrying its gaps with its subtotal. */
   merge(other: FxAggregate): void {
     this.subtotalUnits += other.subtotalUnits;
+    this.magnitudeUnits += other.magnitudeUnits;
     this.nonFiniteSum += other.nonFiniteSum;
     for (const pair of other.missing) this.missing.add(pair);
     this.unknownComponents += other.unknownComponents;
@@ -149,25 +168,49 @@ export class FxAggregate {
    */
   mergeNegated(other: FxAggregate): void {
     this.subtotalUnits -= other.subtotalUnits;
+    this.magnitudeUnits += other.magnitudeUnits;
     this.nonFiniteSum -= other.nonFiniteSum;
     for (const pair of other.missing) this.missing.add(pair);
     this.unknownComponents += other.unknownComponents;
   }
 
   /**
+   * `minuend` less `subtrahend` as a new aggregate carrying both's gaps: a net
+   * (income less expenses, a period's savings) worked out before either side
+   * is rounded, so it is the single rounding of its own value.
+   */
+  static difference(
+    minuend: FxAggregate,
+    subtrahend: FxAggregate,
+  ): FxAggregate {
+    const difference = new FxAggregate();
+    difference.merge(minuend);
+    difference.mergeNegated(subtrahend);
+    return difference;
+  }
+
+  /**
    * The sign of the known subtotal before it is rounded to money precision:
-   * `1`, `-1`, or `0` for a subtotal under half a unit at `MONEY_SCALE` (the
-   * residue of a float conversion, finer than any amount the ledger holds).
-   * `NaN` once a `NaN` component was added. A direction decision (is this
-   * category spending, is this net income) reads this, never the rounded
-   * subtotal: a net of 0.00003 is money in, though it reads `0` at four places
+   * `1`, `-1`, or `0` for a subtotal that is float residue rather than money
+   * -- under half a unit at `MONEY_SCALE` (finer than any amount the ledger
+   * holds), or within the residue its components' size can carry
+   * (`FLOAT_RESIDUE_SHIFT`). `NaN` once a `NaN` component was added. A
+   * direction decision (is this category spending, is this net income) reads
+   * this, never the rounded subtotal: a net of 0.00003 is money in, though it
+   * reads `0` at four places
    * (`docs/specs/report-rounding-and-aggregation.md` rule 5).
    */
   get sign(): number {
     if (this.nonFiniteSum !== 0) return Math.sign(this.nonFiniteSum);
-    if (this.subtotalUnits >= SIGN_THRESHOLD_UNITS) return 1;
-    if (this.subtotalUnits <= -SIGN_THRESHOLD_UNITS) return -1;
-    return 0;
+    const magnitude =
+      this.subtotalUnits < 0n ? -this.subtotalUnits : this.subtotalUnits;
+    if (
+      magnitude < SIGN_THRESHOLD_UNITS ||
+      magnitude <= this.magnitudeUnits >> FLOAT_RESIDUE_SHIFT
+    ) {
+      return 0;
+    }
+    return this.subtotalUnits > 0n ? 1 : -1;
   }
 
   /**
@@ -182,7 +225,9 @@ export class FxAggregate {
    * Sankey's closing identity: rounding each part on its own made two
    * 124.752474 children 124.7525 each under a 249.5049 parent. Each part stays
    * within one unit of its own subtotal (rule 6). A non-finite part has no
-   * units to apportion, so then every part reads on its own.
+   * units to apportion, so then every part reads on its own. A `target` the
+   * parts cannot reach that way (more than one unit a part from their sum) is
+   * a caller's error and throws, rather than leaving parts that do not add up.
    */
   static apportionUnits(
     parts: readonly FxAggregate[],
@@ -214,7 +259,12 @@ export class FxAggregate {
             ? 1
             : -1,
       );
-    const bonus = new Set(order.slice(0, Math.max(0, short)));
+    if (short < 0 || short > parts.length) {
+      throw new RangeError(
+        `apportionUnits: ${goal} is not within a unit a part of the parts' sum`,
+      );
+    }
+    const bonus = new Set(order.slice(0, short));
     return floors.map((f, index) => Number(f) + (bonus.has(index) ? 1 : 0));
   }
 

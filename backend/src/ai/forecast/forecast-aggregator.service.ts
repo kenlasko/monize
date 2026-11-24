@@ -15,6 +15,7 @@ import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { RecurringCharge } from "../../transactions/recurring-charges.util";
 import { FxAggregate } from "../../common/fx-aggregate";
+import { roundMoney } from "../../common/round.util";
 import {
   buildRateIndex,
   convertAtDate,
@@ -430,14 +431,12 @@ export class ForecastAggregatorService {
       }
       for (const pair of data.income.missingPairs) missing.add(pair);
       for (const pair of data.expenses.missingPairs) missing.add(pair);
-      const netCashFlow = new FxAggregate();
-      netCashFlow.merge(data.income);
-      netCashFlow.mergeNegated(data.expenses);
       return {
         month,
         totalIncome: data.income.knownSubtotal,
         totalExpenses: data.expenses.knownSubtotal,
-        netCashFlow: netCashFlow.knownSubtotal,
+        netCashFlow: FxAggregate.difference(data.income, data.expenses)
+          .knownSubtotal,
         categoryBreakdown: breakdown.sort((a, b) => b.total - a.total),
       };
     });
@@ -618,24 +617,27 @@ export class ForecastAggregatorService {
 
     const totals = monthlyIncome.map((m) => m.total);
     // A mean over the months' folded sum, divided before anything is rounded
-    // (docs/specs/report-rounding-and-aggregation.md rule 8).
+    // and rounded once for the reader; the variability ratio divides by the
+    // unrounded mean (docs/specs/report-rounding-and-aggregation.md rule 8).
     const income = new FxAggregate();
     for (const m of byMonth.values()) income.merge(m.total);
-    const averageMonthlyIncome =
+    const mean =
       totals.length > 0 ? income.unroundedSubtotal / totals.length : 0;
 
     let incomeVariability = 0;
-    if (totals.length > 1 && averageMonthlyIncome > 0) {
+    if (totals.length > 1 && mean > 0) {
       const variance =
-        totals.reduce(
-          (sum, t) => sum + Math.pow(t - averageMonthlyIncome, 2),
-          0,
-        ) / totals.length;
-      incomeVariability = Math.sqrt(variance) / averageMonthlyIncome;
+        totals.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) /
+        totals.length;
+      incomeVariability = Math.sqrt(variance) / mean;
     }
 
     return {
-      patterns: { monthlyIncome, averageMonthlyIncome, incomeVariability },
+      patterns: {
+        monthlyIncome,
+        averageMonthlyIncome: roundMoney(mean),
+        incomeVariability,
+      },
       missingPairs: [...missing].sort(),
     };
   }

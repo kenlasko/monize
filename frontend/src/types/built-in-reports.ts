@@ -19,7 +19,7 @@ export interface SpendingByCategoryResponse {
    * `PartialTotal` in that case, never this under a caption saying "Total".
    */
   totalSpending: number | null;
-  /** Sum of `data`; equals `totalSpending` when nothing was excluded. */
+  /** What `data` adds up to, rounded once (not the sum of its rounded rows); equals `totalSpending` when nothing was excluded. */
   knownSpending: number;
   /** Reporting currency every figure is expressed in. */
   currency: string;
@@ -59,7 +59,7 @@ export interface SpendingByPayeeResponse {
    * `PartialTotal` in that case, never this under a caption saying "Total".
    */
   totalSpending: number | null;
-  /** Sum of `data`; equals `totalSpending` when nothing was excluded. */
+  /** What `data` adds up to, rounded once (not the sum of its rounded rows); equals `totalSpending` when nothing was excluded. */
   knownSpending: number;
   /** Reporting currency every figure is expressed in. */
   currency: string;
@@ -85,7 +85,7 @@ export interface IncomeBySourceResponse {
    * `PartialTotal` in that case, never this under a caption saying "Total".
    */
   totalIncome: number | null;
-  /** Sum of `data`; equals `totalIncome` when nothing was excluded. */
+  /** What `data` adds up to, rounded once (not the sum of its rounded rows); equals `totalIncome` when nothing was excluded. */
   knownIncome: number;
   /** Reporting currency every figure is expressed in. */
   currency: string;

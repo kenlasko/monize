@@ -66,11 +66,16 @@ before they were added:
    one group (INV-REPORT-004), so a grouping that changes what nets together can
    change what is kept; that is the report's definition, not rounding. A total
    need not equal the sum of the rounded rows above it: each row is within half
-   a unit of its own value, and the total is the right figure. Two definitions
-   keep the sum of what they show, and say so where they are computed: a tag
-   bucket's window flows are the sum of its per-period flows (I8 of
-   `docs/specs/report-tag-key-breakdown.md`), and the Monthly Comparison's
-   change is the difference of the two months it shows, rounded.
+   a unit of its own value, and the total is the right figure. The same holds
+   for a net or a variance on one row: the custom report's budget variance is
+   actual less plan, rounded once, so it can sit a unit from the row's rounded
+   `actual` less its rounded `budgeted`. One definition keeps the sum of what it
+   shows and says so where it is computed: a tag bucket's window flows are the
+   sum of its per-period flows (I8 of `docs/specs/report-tag-key-breakdown.md`).
+   One residual is recorded rather than defined: the Monthly Comparison reads
+   each month's figures from Income vs Expenses and Spending by Category, so its
+   change is the difference of two rounded figures, rounded, and can sit a unit
+   from the exact change until those reports hand it their aggregates.
 5. **A direction or threshold decision reads the sign before rounding.** "Is this
    category spending", "is this net income", "is this figure zero" read
    `FxAggregate.sign`, judged at `MONEY_SCALE`: a net of 0.00003 is money in

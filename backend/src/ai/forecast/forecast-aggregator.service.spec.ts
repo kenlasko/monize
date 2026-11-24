@@ -736,6 +736,24 @@ describe("ForecastAggregatorService", () => {
       expect(result.scheduledTransactions[0].isIncome).toBe(true);
     });
 
+    it("rounds the mean monthly income once, from the months' sum (issue #2384)", async () => {
+      // 100 + 100 + 100.01 over three months is 100.00333..., which reads
+      // 100.0033; the unrounded quotient used to reach the model as it was.
+      mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
+        mockQueryBuilder(
+          [
+            ["2025-04", "100"],
+            ["2025-05", "100"],
+            ["2025-06", "100.01"],
+          ].map(([month, total]) => ({ month, total, payees: ["Source 1"] })),
+        ),
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.incomePatterns.averageMonthlyIncome).toBe(100.0033);
+    });
+
     it("computes income patterns and variability", async () => {
       const incomeData = [
         { month: "2025-03", total: "4000", payees: ["Source 1"] },

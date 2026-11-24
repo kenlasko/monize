@@ -32,8 +32,11 @@ export class IncomeBySourceResponse {
   totalIncome: number | null;
 
   /**
-   * Sum of `data`. Equals `totalIncome` when nothing was excluded; otherwise a
-   * subtotal, to be labelled as one and never shown under a "Total" caption.
+   * What `data`'s rows add up to, rounded once from their unrounded sums, so
+   * it can sit a ten-thousandth from the sum of the rounded rows
+   * (docs/specs/report-rounding-and-aggregation.md rule 4). Equals
+   * `totalIncome` when nothing was excluded; otherwise a subtotal, to be
+   * labelled as one and never shown under a "Total" caption.
    */
   @ApiProperty({ example: 8000.0 })
   knownIncome: number;

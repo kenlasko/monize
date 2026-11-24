@@ -514,27 +514,26 @@ export class IncomeReportsService {
     const windowExpenses = new FxAggregate();
     const data: IncomeExpensePeriodItem[] = periods.map((period) => {
       const found = byPeriod.get(period.period);
-      const net = new FxAggregate();
       if (found) {
         windowIncome.merge(found.income);
         windowExpenses.merge(found.expenses);
-        net.merge(found.income);
-        net.mergeNegated(found.expenses);
       }
       return {
         ...period,
         income: found?.income.knownSubtotal ?? 0,
         expenses: found?.expenses.knownSubtotal ?? 0,
-        net: net.knownSubtotal,
+        net: found
+          ? FxAggregate.difference(found.income, found.expenses).knownSubtotal
+          : 0,
       };
     });
 
-    const windowNet = new FxAggregate();
-    windowNet.merge(windowIncome);
-    windowNet.mergeNegated(windowExpenses);
     const knownIncome = windowIncome.knownSubtotal;
     const knownExpenses = windowExpenses.knownSubtotal;
-    const knownNet = windowNet.knownSubtotal;
+    const knownNet = FxAggregate.difference(
+      windowIncome,
+      windowExpenses,
+    ).knownSubtotal;
     const complete = gaps.isComplete;
 
     return {

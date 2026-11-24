@@ -693,9 +693,7 @@ export class TransactionAnalyticsService {
       if (converted?.totalExpenses) expenses.merge(converted.totalExpenses);
       includedTransactionCount += bucket.transactionCount;
     }
-    const net = new FxAggregate();
-    net.merge(income);
-    net.mergeNegated(expenses);
+    const net = FxAggregate.difference(income, expenses);
     const complete = missing.length === 0;
     return {
       currency: reporting,

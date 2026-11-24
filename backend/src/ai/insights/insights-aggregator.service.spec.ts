@@ -133,6 +133,20 @@ describe("InsightsAggregatorService", () => {
       expect(dining.transactionCount).toBe(10);
     });
 
+    it("rounds a category's monthly average once, from its months' sum (issue #2384)", async () => {
+      // 100 + 100 + 100.01 over three months is 100.00333..., which reads
+      // 100.0033.
+      withRows(
+        ["2026-01", "2026-02", "2026-03"].map((month, i) =>
+          row({ month, net: i === 2 ? "100.01" : "100" }),
+        ),
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.categorySpending[0].averageMonthlyTotal).toBe(100.0033);
+    });
+
     it("nets refunds within a category and drops a category that nets to a credit", async () => {
       withRows([
         row({ month: "2026-01", net: "500" }),
