@@ -941,6 +941,9 @@ export class InvestmentTransactionsService {
     );
 
     if (cashTransaction) {
+      // The cash row an edit replaces or a delete removes is still a
+      // reconciled row: the strict lock applies before the first delete.
+      await assertReconciledRowsMutable(manager, userId, [cashTransaction]);
       const removed = await manager.delete(Transaction, {
         id: transactionId,
         userId,
@@ -2074,6 +2077,7 @@ export class InvestmentTransactionsService {
     transactionId: string,
   ): Promise<DeleteInvestmentTransactionPreview> {
     const existing = await this.findOne(userId, transactionId);
+    this.assertNotEmbedded(existing);
     // remove() refuses it too (#2323).
     if (existing.security) assertSecurityActive(existing.security);
     return {
@@ -5313,8 +5317,20 @@ export class InvestmentTransactionsService {
     }
   }
 
+  /** An embedded row belongs to its parent split line; see update(). */
+  private assertNotEmbedded(transaction: InvestmentTransaction): void {
+    if (transaction.transactionSplitId == null) return;
+    throw new BadRequestException(
+      tr(
+        "errors.securities.embeddedDeleteLocked",
+        "This investment transaction is part of a split transaction. Edit or remove the split line on its parent transaction instead, so both sides change together.",
+      ),
+    );
+  }
+
   async remove(userId: string, id: string): Promise<void> {
     const transaction = await this.findOne(userId, id);
+    this.assertNotEmbedded(transaction);
     const beforeData: Record<string, unknown> = { ...transaction };
     const { accountId } = transaction;
 
@@ -5761,6 +5777,16 @@ export class InvestmentTransactionsService {
       const transactions = await manager.find(InvestmentTransaction, {
         where: { userId },
       });
+      // Refused as a whole, before any write: an embedded row is the cash side
+      // of a split line, and removing it would leave the line charging cash.
+      if (transactions.some((t) => t.transactionSplitId != null)) {
+        throw new BadRequestException(
+          tr(
+            "errors.securities.embeddedDeleteAllLocked",
+            "Some investment transactions are part of split transactions. Remove those split lines on their parent transactions first, then delete all investment transactions.",
+          ),
+        );
+      }
       const transactionsDeleted = transactions.length;
       deletedSecurityIds = transactions.map((t) => t.securityId);
 
@@ -5776,6 +5802,10 @@ export class InvestmentTransactionsService {
           linkedCashTxIds,
           userId,
         );
+
+        await assertReconciledRowsMutable(manager, userId, [
+          ...cashTransactions.values(),
+        ]);
 
         for (const cashTx of cashTransactions.values()) {
           const removed = await manager.delete(Transaction, {

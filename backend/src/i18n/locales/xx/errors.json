@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "[XX-Cannot change the account of an investment split; remove the split and add it on the new account instead-XX]",
     "splitNoFundingAccount": "[XX-Investment splits do not use a separate funding account-XX]",
     "cannotChangeSplitDate": "[XX-Cannot change the date of an investment split; edit the parent split transaction date instead-XX]",
+    "embeddedDeleteLocked": "[XX-This investment transaction is part of a split transaction. Edit or remove the split line on its parent transaction instead, so both sides change together.-XX]",
+    "embeddedDeleteAllLocked": "[XX-Some investment transactions are part of split transactions. Remove those split lines on their parent transactions first, then delete all investment transactions.-XX]",
     "embeddedStatusLocked": "[XX-This investment transaction is part of a split transaction. Change the split transaction's status instead, so both sides change together.-XX]",
     "accruedInterestActionNotAllowed": "[XX-Accrued interest can only be recorded on a REDEEM transaction, not on {{ action }}.-XX]",
     "accruedInterestNotAllowedInSplit": "[XX-Accrued interest cannot be recorded on an investment transaction inside a split. Record the interest as its own split line instead.-XX]",

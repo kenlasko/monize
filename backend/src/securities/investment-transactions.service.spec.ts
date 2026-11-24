@@ -2128,6 +2128,32 @@ describe("InvestmentTransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    it("refuses an edit whose replaced cash row is reconciled under the strict lock, deleting nothing", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+        lockReconciledTransactions: true,
+      });
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          ...mockBuyTransaction,
+          transactionId: cashTransactionId,
+        }),
+      );
+      transactionRepository.findOne.mockResolvedValue({
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        amount: -1509.99,
+        status: TransactionStatus.RECONCILED,
+      });
+
+      await expect(
+        service.update(userId, transactionId, { quantity: 5 }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
     it("refuses to price an existing BUY at zero", async () => {
       await expect(
         service.update(userId, transactionId, { price: 0 }),
@@ -3084,6 +3110,50 @@ describe("InvestmentTransactionsService", () => {
       );
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("refuses a row embedded in a split, writing nothing", async () => {
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          ...mockBuyTransaction,
+          transactionId: null,
+          transactionSplitId: "split-1",
+        }),
+      );
+
+      await expect(service.remove(userId, transactionId)).rejects.toThrow(
+        /split line on its parent transaction/,
+      );
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("refuses a row whose cash row is reconciled under the strict lock, deleting nothing", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+        lockReconciledTransactions: true,
+      });
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          ...mockBuyTransaction,
+          transactionId: cashTransactionId,
+        }),
+      );
+      transactionRepository.findOne.mockResolvedValue({
+        id: cashTransactionId,
+        userId,
+        accountId: cashAccountId,
+        amount: -1509.99,
+        status: TransactionStatus.RECONCILED,
+      });
+
+      await expect(service.remove(userId, transactionId)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
@@ -4907,6 +4977,24 @@ describe("InvestmentTransactionsService", () => {
   });
 
   describe("removeAll", () => {
+    it("refuses the whole call when a row is embedded in a split, writing nothing", async () => {
+      mockQueryRunner.manager.find.mockResolvedValue([
+        mockBuyTransaction,
+        {
+          ...mockSellTransaction,
+          transactionId: null,
+          transactionSplitId: "s1",
+        },
+      ]);
+
+      await expect(service.removeAll(userId)).rejects.toThrow(
+        /split transactions/,
+      );
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
     it("deletes all transactions, holdings, and resets account balances", async () => {
       const transactions = [mockBuyTransaction, mockSellTransaction];
       const cashTx1 = {
@@ -8652,6 +8740,19 @@ describe("InvestmentTransactionsService", () => {
   });
 
   describe("previewDeleteInvestmentTransaction", () => {
+    it("refuses a row embedded in a split, as remove() does", async () => {
+      investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          ...mockBuyTransaction,
+          transactionSplitId: "split-1",
+        }),
+      );
+
+      await expect(
+        service.previewDeleteInvestmentTransaction(userId, transactionId),
+      ).rejects.toThrow(/split line on its parent transaction/);
+    });
+
     it("refuses a deactivated security's row, as remove() would (#2323)", async () => {
       investmentTransactionsRepository.createQueryBuilder.mockReturnValue(
         createMockQueryBuilder({
