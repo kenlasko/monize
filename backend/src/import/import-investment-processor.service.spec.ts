@@ -149,6 +149,43 @@ describe("ImportInvestmentProcessorService", () => {
       expect(firstSaveArg.totalAmount).toBe(1509.99);
     });
 
+    it("refuses an action the map does not know instead of storing a BUY", async () => {
+      const ctx = makeContext({
+        securityMap: new Map([["Apple Inc", "sec-1"]]),
+      });
+
+      await expect(
+        service.processTransaction(ctx, {
+          action: "Reprice",
+          security: "Apple Inc",
+          price: 12.5,
+          amount: -100,
+          date: "2025-01-15",
+        }),
+      ).rejects.toThrow(/"Reprice".*amount -100/);
+      expect(managerOf(ctx).save).not.toHaveBeenCalled();
+      expect(ctx.importResult.imported).toBe(0);
+    });
+
+    it("keeps an empty action as a BUY", async () => {
+      const ctx = makeContext({
+        securityMap: new Map([["Apple Inc", "sec-1"]]),
+      });
+
+      await service.processTransaction(ctx, {
+        action: "",
+        security: "Apple Inc",
+        quantity: 1,
+        price: 10,
+        date: "2025-01-15",
+      });
+
+      expect(managerOf(ctx).save.mock.calls[0][0].action).toBe(
+        InvestmentAction.BUY,
+      );
+      expect(ctx.importResult.imported).toBe(1);
+    });
+
     it("refuses a row for a deactivated security, saving nothing (#2323)", async () => {
       const ctx = makeContext({
         securityMap: new Map([["Vanguard 500", "sec-1"]]),
@@ -641,21 +678,6 @@ describe("ImportInvestmentProcessorService", () => {
       const qifTx = {
         action: "BuyX",
         security: "Test Stock",
-        quantity: 10,
-        price: 100,
-        date: "2025-03-01",
-      };
-
-      await service.processTransaction(ctx, qifTx);
-
-      const firstSaveArg = managerOf(ctx).save.mock.calls[0][0];
-      expect(firstSaveArg.action).toBe(InvestmentAction.BUY);
-    });
-
-    it("should default to BUY for unknown actions", async () => {
-      const ctx = makeContext();
-      const qifTx = {
-        action: "UnknownAction",
         quantity: 10,
         price: 100,
         date: "2025-03-01",
