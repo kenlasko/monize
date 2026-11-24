@@ -116,6 +116,8 @@
     "addAsAliasLabel": "\"{name}\"i hedef alacaklıya takma ad olarak ekle",
     "willLabel": "Bu işlem şunları yapacak:",
     "willMoveTransactions": "\"{source}\"daki tüm işlemleri \"{target}\"a taşı",
+    "willRepointRules": "{count, plural, one {\"{source}\" kullanan # kuralı \"{target}\" kullanacak şekilde değiştir} other {\"{source}\" kullanan # kuralı \"{target}\" kullanacak şekilde değiştir}}",
+    "willRepointReports": "{count, plural, one {\"{source}\" ile filtreleyen # özel raporu \"{target}\" ile filtreleyecek şekilde değiştir} other {\"{source}\" ile filtreleyen # özel raporu \"{target}\" ile filtreleyecek şekilde değiştir}}",
     "willAddAlias": "Gelecekteki içe aktarmaların otomatik eşleşmesi için \"{source}\"u takma ad olarak ekle",
     "willDelete": "\"{source}\" alacaklısını sil",
     "merging": "Birleştiriliyor...",

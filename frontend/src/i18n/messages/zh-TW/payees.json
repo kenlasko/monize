@@ -116,6 +116,8 @@
     "addAsAliasLabel": "將「{name}」新增為目標收款人的別名",
     "willLabel": "此操作將：",
     "willMoveTransactions": "將所有交易從「{source}」移至「{target}」",
+    "willRepointRules": "{count, plural, one {將使用\"{source}\"的 # 條規則改為使用\"{target}\"} other {將使用\"{source}\"的 # 條規則改為使用\"{target}\"}}",
+    "willRepointReports": "{count, plural, one {將依\"{source}\"篩選的 # 份自訂報表改為依\"{target}\"篩選} other {將依\"{source}\"篩選的 # 份自訂報表改為依\"{target}\"篩選}}",
     "willAddAlias": "將「{source}」新增為別名，以便未來匯入時自動比對",
     "willDelete": "刪除「{source}」收款人",
     "merging": "合併中...",

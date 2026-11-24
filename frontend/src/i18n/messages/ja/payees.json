@@ -116,6 +116,8 @@
     "addAsAliasLabel": "ターゲット支払先にエイリアスとして「{name}」を追加",
     "willLabel": "これにより：",
     "willMoveTransactions": "「{source}」からすべての取引を「{target}」に移動",
+    "willRepointRules": "{count, plural, one {\"{source}\"を使用している # 件のルールを \"{target}\" を使用するよう変更} other {\"{source}\"を使用している # 件のルールを \"{target}\" を使用するよう変更}}",
+    "willRepointReports": "{count, plural, one {\"{source}\"で絞り込んでいる # 件のカスタムレポートを \"{target}\" で絞り込むよう変更} other {\"{source}\"で絞り込んでいる # 件のカスタムレポートを \"{target}\" で絞り込むよう変更}}",
     "willAddAlias": "将来のインポートが自動マッチするようにエイリアスとして「{source}」を追加",
     "willDelete": "「{source}」支払先を削除",
     "merging": "マージ中...",
