@@ -152,6 +152,8 @@
       "transferTitle": "Xóa chuyển khoản",
       "transactionTitle": "Xóa giao tác",
       "transferMessage": "Bạn có chắc muốn xóa chuyển khoản này? Cả hai giao tác liên kết sẽ bị xóa.",
+      "splitLegTitle": "Gỡ chuyển khoản khỏi giao dịch chia",
+      "splitLegMessage": "Chuyển khoản này là một dòng của giao dịch chia {hasPayee, select, true {với {payee} } other {}}ngày {date}. Xóa sẽ chỉ gỡ dòng này và tính lại tổng của phần chia. Phần chia và các dòng khác vẫn được giữ.",
       "transactionMessage": "Bạn có chắc muốn xóa giao tác này? Không thể hoàn tác.",
       "investmentTitle": "Xóa giao dịch đầu tư",
       "investmentMessage": "Đây là phần tiền mặt của một giao dịch đầu tư. Xóa nó cũng sẽ xóa giao dịch đầu tư, cùng với ảnh hưởng của nó lên các khoản nắm giữ của bạn. Không thể hoàn tác.",

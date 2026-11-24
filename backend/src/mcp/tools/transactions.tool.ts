@@ -110,6 +110,14 @@ type ManageOperation = "create" | "update" | "delete";
 const RECONCILED_CONFIRM_NOTE =
   "\nWarning: this transaction is reconciled. Changing it will affect a completed reconciliation.";
 
+/** What deleting a split-transfer leg removes, as lines of an MCP confirmation prompt. */
+function splitLineConfirmNote(splitLine: {
+  payeeName: string | null;
+  transactionDate: string;
+}): string {
+  return `\nThis removes only this transfer line from the split transaction${splitLine.payeeName ? ` with ${splitLine.payeeName}` : ""} dated ${splitLine.transactionDate}, and re-totals the split. The split and its other lines stay.`;
+}
+
 /** The tag change an edit makes, as lines of an MCP confirmation prompt. */
 function tagConfirmNote(change: {
   tagNames?: string[];
@@ -1797,7 +1805,7 @@ export class McpTransactionsTools {
         ctx,
         userId,
         action,
-        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${preview.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`,
+        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${preview.splitLine ? splitLineConfirmNote(preview.splitLine) : ""}${preview.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`,
       );
       if (isAsk(outcome)) return outcome.ask;
       if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);
@@ -1857,10 +1865,13 @@ export class McpTransactionsTools {
     ) {
       return toolResult(RELAY_PREVIEW_SHOWN);
     }
+    const splitLegCount = bulk.previewRows.filter(
+      (row) => row.splitLine,
+    ).length;
     const confirmation = await confirmWrite(
       server,
       ctx,
-      `Delete ${bulk.okRows.length} transaction(s)?${bulk.skipped.length ? ` (${bulk.skipped.length} skipped)` : ""}`,
+      `Delete ${bulk.okRows.length} transaction(s)?${bulk.skipped.length ? ` (${bulk.skipped.length} skipped)` : ""}${splitLegCount ? `\n${splitLegCount} of them ${splitLegCount === 1 ? "is a transfer line" : "are transfer lines"} of split transactions: only that line is removed from each split, and the split is re-totalled.` : ""}`,
       action.descriptor,
     );
     if (isAsk(confirmation)) return confirmation.ask;
@@ -1923,7 +1934,7 @@ export class McpTransactionsTools {
       case "update_transfer":
         return `${card.type === "create_transfer" ? "Create" : "Edit"} transfer?\nFrom: ${p.fromAccountName}\nTo: ${p.toAccountName}\nAmount: ${p.amount} ${p.currencyCode}${tagConfirmNote(p)}`;
       case "delete_transaction":
-        return `Delete this transaction?\nAccount: ${p.accountName}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
+        return `Delete this transaction?\nAccount: ${p.accountName}${p.splitLine ? splitLineConfirmNote(p.splitLine) : ""}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       case "update_transaction":
         return `Apply this transaction edit?\nAccount: ${p.accountName}\nAmount: ${p.amount} ${p.currencyCode}${fxConfirmNote(p)}${tagConfirmNote(p)}${p.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`;
       default:

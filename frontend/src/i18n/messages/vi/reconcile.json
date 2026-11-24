@@ -77,6 +77,8 @@
     "title": "Xóa giao dịch",
     "message": "Xóa giao dịch này? Giao dịch sẽ bị gỡ khỏi tài khoản và khỏi lần đối soát này.",
     "transferTitle": "Xóa chuyển khoản",
+    "splitLegTitle": "Gỡ chuyển khoản khỏi giao dịch chia",
+    "splitLegMessage": "Chuyển khoản này là một dòng của giao dịch chia {hasPayee, select, true {với {payee} } other {}}ngày {date}. Xóa sẽ chỉ gỡ dòng này và tính lại tổng của phần chia. Phần chia và các dòng khác vẫn được giữ. Nó cũng bị gỡ khỏi lần đối chiếu này.",
     "transferMessage": "Xóa chuyển khoản này? Cả hai vế đều bị gỡ, ở tài khoản này và ở tài khoản kia."
   },
   "stale": {

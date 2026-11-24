@@ -3926,6 +3926,49 @@ describe('TransactionForm', () => {
       );
     });
 
+    // The receiving leg of a SPLIT transfer links to the split PARENT, whose
+    // amount is the total of every line: the source figure is the line's.
+    it('loads and re-sends the split LINE amount, not the parent total, for a split transfer leg', async () => {
+      const leg = createExistingTransaction({
+        id: 'leg-40',
+        accountId: 'acc-1',
+        amount: 40,
+        isTransfer: true,
+        linkedTransactionId: 'split-parent',
+        linkedTransaction: {
+          ...createExistingTransaction({
+            id: 'split-parent',
+            accountId: 'acc-3',
+            amount: -100,
+            isSplit: true,
+            isTransfer: false,
+            linkedTransactionId: null,
+            splits: [
+              { id: 's1', amount: -60, linkedTransactionId: null },
+              { id: 's2', amount: -40, linkedTransactionId: 'leg-40' },
+            ],
+          }),
+          account: { id: 'acc-3', name: 'USD Account' },
+        },
+        payeeId: null,
+        payeeName: null,
+        categoryId: null,
+        category: null,
+      });
+      await act(async () => {
+        render(<TransactionForm transaction={leg} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+      });
+      await waitFor(() => expect(screen.getByLabelText(/Transfer Amount/)).toBeInTheDocument());
+      expect((screen.getByLabelText(/Transfer Amount/) as HTMLInputElement).value).toBe('40.00');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Update Transfer/i }));
+      });
+
+      await waitFor(() => expect(mockUpdateTransfer).toHaveBeenCalledTimes(1));
+      expect(mockUpdateTransfer.mock.calls[0][1]).toEqual(expect.objectContaining({ amount: 40 }));
+    });
+
     it('duplicates the transfer with the source amount', async () => {
       const incoming = createIncomingCadLeg();
       await act(async () => {

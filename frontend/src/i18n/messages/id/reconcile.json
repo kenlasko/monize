@@ -77,6 +77,8 @@
     "title": "Hapus Transaksi",
     "message": "Hapus transaksi ini? Transaksi akan dihapus dari akun dan dari rekonsiliasi ini.",
     "transferTitle": "Hapus Transfer",
+    "splitLegTitle": "Hapus Transfer dari Pemisahan",
+    "splitLegMessage": "Transfer ini adalah satu baris dari transaksi terpisah {hasPayee, select, true {dengan {payee} } other {}}tanggal {date}. Menghapusnya hanya menghapus baris ini dan menghitung ulang total pemisahan. Pemisahan dan baris lainnya tetap ada. Transfer ini juga dihapus dari rekonsiliasi ini.",
     "transferMessage": "Hapus transfer ini? Kedua sisinya dihapus, di akun ini dan di akun lainnya."
   },
   "stale": {

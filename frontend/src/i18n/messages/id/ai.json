@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Dilewati",
     "reconciledBadge": "Rekonsiliasi",
     "reconciledWarning": "Transaksi ini telah direkonsiliasi. Mengubahnya akan memengaruhi rekonsiliasi yang telah selesai.",
+    "splitLineDeleteNote": "Ini hanya menghapus baris transfer ini dari transaksi terpisah dengan {payee} tanggal {date} dan menghitung ulang total pemisahan. Pemisahan dan baris lainnya tetap ada.",
+    "splitLineDeleteNoteNoPayee": "Ini hanya menghapus baris transfer ini dari transaksi terpisah tanggal {date} dan menghitung ulang total pemisahan. Pemisahan dan baris lainnya tetap ada.",
     "investmentActions": {
       "BUY": "Beli",
       "SELL": "Jual",

@@ -77,6 +77,8 @@
     "title": "刪除交易",
     "message": "刪除這筆交易？它將從帳戶與本次對帳中移除。",
     "transferTitle": "刪除轉帳",
+    "splitLegTitle": "從拆分中移除轉帳",
+    "splitLegMessage": "此轉帳是 {date} 拆分交易{hasPayee, select, true {（{payee}）} other {}}的一列。刪除只會移除這一列，並重新計算拆分合計。拆分及其其他列會保留。 它也會從本次對帳中移除。",
     "transferMessage": "刪除這筆轉帳？它的兩邊都會被移除，本帳戶與對方帳戶。"
   },
   "stale": {

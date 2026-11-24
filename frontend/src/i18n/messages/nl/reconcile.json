@@ -77,6 +77,8 @@
     "title": "Transactie verwijderen",
     "message": "Deze transactie verwijderen? Ze wordt uit de rekening en uit deze afstemming verwijderd.",
     "transferTitle": "Overboeking verwijderen",
+    "splitLegTitle": "Overboeking uit splitsing verwijderen",
+    "splitLegMessage": "Deze overboeking is één regel van een gesplitste transactie {hasPayee, select, true {met {payee} } other {}}van {date}. Bij verwijderen wordt alleen deze regel verwijderd en wordt het totaal van de splitsing opnieuw berekend. De splitsing en de andere regels blijven staan. Hij wordt ook uit deze afstemming verwijderd.",
     "transferMessage": "Deze overboeking verwijderen? Beide kanten worden verwijderd, in deze rekening en in de andere."
   },
   "stale": {

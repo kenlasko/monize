@@ -77,6 +77,8 @@
     "title": "取引を削除",
     "message": "この取引を削除しますか？口座とこの照合から取り除かれます。",
     "transferTitle": "振替を削除",
+    "splitLegTitle": "分割から振替を削除",
+    "splitLegMessage": "この振替は、{date}の分割取引{hasPayee, select, true {({payee})} other {}}の1行です。削除すると、この行だけが削除され、分割の合計が再計算されます。分割とその他の行は残ります。 この照合からも削除されます。",
     "transferMessage": "この振替を削除しますか？この口座と相手口座の両方の明細が取り除かれます。"
   },
   "stale": {

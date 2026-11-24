@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Atlandı",
     "reconciledBadge": "Mutabakatlı",
     "reconciledWarning": "Bu işlemde mutabakat sağlandı. Değiştirmek, tamamlanmış bir mutabakatı etkiler.",
+    "splitLineDeleteNote": "Bu işlem yalnızca bu aktarım satırını, {date} tarihli {payee} ile bölünmüş işlemden kaldırır ve bölmenin toplamını yeniden hesaplar. Bölme ve diğer satırları kalır.",
+    "splitLineDeleteNoteNoPayee": "Bu işlem yalnızca bu aktarım satırını, {date} tarihli bölünmüş işlemden kaldırır ve bölmenin toplamını yeniden hesaplar. Bölme ve diğer satırları kalır.",
     "investmentActions": {
       "BUY": "Al",
       "SELL": "Sat",

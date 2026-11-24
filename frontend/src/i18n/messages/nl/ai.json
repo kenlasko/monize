@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Overgeslagen",
     "reconciledBadge": "Afgestemd",
     "reconciledWarning": "Deze transactie is afgestemd. Het wijzigen ervan heeft invloed op een voltooide afstemming.",
+    "splitLineDeleteNote": "Hiermee wordt alleen deze overboekingsregel verwijderd uit de gesplitste transactie met {payee} van {date} en wordt het totaal van de splitsing opnieuw berekend. De splitsing en de andere regels blijven staan.",
+    "splitLineDeleteNoteNoPayee": "Hiermee wordt alleen deze overboekingsregel verwijderd uit de gesplitste transactie van {date} en wordt het totaal van de splitsing opnieuw berekend. De splitsing en de andere regels blijven staan.",
     "investmentActions": {
       "BUY": "Kopen",
       "SELL": "Verkopen",

@@ -1699,50 +1699,6 @@ describe("TransactionTransferService", () => {
       });
     });
 
-    it("delegates to removeTransferFromSplit when transaction is part of a split", async () => {
-      const tx = {
-        id: "linked-from-split",
-        userId: "user-1",
-        isTransfer: true,
-        linkedTransactionId: "parent-tx",
-        accountId: "account-2",
-        amount: 50,
-      };
-
-      const parentSplit = {
-        id: "parent-split",
-        transactionId: "parent-tx",
-        linkedTransactionId: "linked-from-split",
-      };
-
-      mockFindOne.mockResolvedValue(tx);
-      splitsRepository.findOne.mockResolvedValue(parentSplit);
-
-      // Mock for removeTransferFromSplit internal calls
-      transactionsRepository.findOne.mockResolvedValue({
-        id: "parent-tx",
-        accountId: "account-1",
-        amount: -100,
-      });
-      splitsRepository.find.mockResolvedValue([parentSplit]);
-
-      await service.removeTransfer("user-1", "linked-from-split", mockFindOne);
-
-      // Should remove the parent transaction and all related splits. Both ledger
-      // rows go through the conditional delete (audit FV4-002); only the split
-      // rows, which carry no balance, still use `remove`.
-      expect(splitsRepository.remove).toHaveBeenCalled();
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: "parent-tx",
-        userId: "user-1",
-      });
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: "linked-from-split",
-        userId: "user-1",
-      });
-      expect(transactionsRepository.remove).not.toHaveBeenCalled();
-    });
-
     it("triggers net worth recalc for affected accounts", async () => {
       const fromTx = {
         id: "from-tx",
@@ -1770,72 +1726,6 @@ describe("TransactionTransferService", () => {
       expect(netWorthService.triggerDebouncedRecalc).toHaveBeenCalledWith(
         "to-account",
         "user-1",
-      );
-    });
-
-    it("recalculates balances instead of adjusting them when removing a future-dated split-linked transfer", async () => {
-      mockedIsTransactionInFuture.mockReturnValue(true);
-
-      const tx = {
-        id: "linked-from-split",
-        userId: "user-1",
-        isTransfer: true,
-        linkedTransactionId: "parent-tx",
-        accountId: "account-2",
-        amount: 50,
-        transactionDate: "2099-01-01",
-      };
-
-      const targetSplit = {
-        id: "target-split",
-        transactionId: "parent-tx",
-        linkedTransactionId: "linked-from-split",
-      };
-      // A second split links to a different leg, exercising the linked-leg
-      // future recalc branch (line 627).
-      const otherSplit = {
-        id: "other-split",
-        transactionId: "parent-tx",
-        linkedTransactionId: "other-leg",
-      };
-
-      mockFindOne.mockResolvedValue(tx);
-      splitsRepository.findOne.mockResolvedValue(targetSplit);
-      transactionsRepository.findOne.mockImplementation((opts: any) => {
-        const id = opts?.where?.id;
-        if (id === "parent-tx")
-          return Promise.resolve({
-            id: "parent-tx",
-            accountId: "account-1",
-            amount: -100,
-            transactionDate: "2099-01-01",
-          });
-        if (id === "other-leg")
-          return Promise.resolve({
-            id: "other-leg",
-            accountId: "account-3",
-            amount: 25,
-            transactionDate: "2099-01-01",
-          });
-        return Promise.resolve(null);
-      });
-      splitsRepository.find.mockResolvedValue([targetSplit, otherSplit]);
-
-      await service.removeTransfer("user-1", "linked-from-split", mockFindOne);
-
-      // Future-dated: balances are recalculated, never adjusted.
-      expect(accountsService.updateBalance).not.toHaveBeenCalled();
-      expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
-        "user-1",
-        "account-3",
-      );
-      expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
-        "user-1",
-        "account-1",
-      );
-      expect(accountsService.recalculateCurrentBalance).toHaveBeenCalledWith(
-        "user-1",
-        "account-2",
       );
     });
   });
@@ -2566,6 +2456,37 @@ describe("TransactionTransferService", () => {
           expect.anything(),
         );
         // No amount change => no balance movement.
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      // The old form loaded "Transfer Amount" from the split PARENT and sent its
+      // total back as the leg's amount: a description-only edit of a +500 leg
+      // under a -1000 parent (two 500 lines) re-priced the leg to +1000.
+      it("refuses the split parent's total as the amount of a same-currency leg, writing nothing", async () => {
+        splitsRepository.findOne.mockResolvedValue(parentSplit);
+        splitsRepository.find.mockResolvedValue([
+          { id: "split-1", amount: -500 },
+          { id: "split-2", amount: -500 },
+        ]);
+        mockFindOne
+          .mockResolvedValueOnce(counterpartLeg)
+          .mockResolvedValueOnce(splitParent);
+
+        await expect(
+          service.updateTransfer(
+            "user-1",
+            "leg-tx",
+            {
+              amount: 1000,
+              description: "New note",
+              fromAccountId: "from-account",
+              toAccountId: "to-account",
+            } as any,
+            mockFindOne,
+          ),
+        ).rejects.toThrow(BadRequestException);
+
+        expect(transactionsRepository.update).not.toHaveBeenCalled();
         expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
 
@@ -4241,9 +4162,8 @@ describe("TransactionTransferService", () => {
 
       await service.removeTransfer("user-1", "from-tx", mockFindOne);
 
-      // The split-parent lookup is its own short read transaction (as the
-      // pre-RLS autocommit read was); every write lands in one withScopedDb.
-      expect(mockDataSource.transaction).toHaveBeenCalledTimes(2);
+      // Every write lands in one withScopedDb.
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
     });
 
     it("removeTransfer propagates write errors so the tenant transaction rolls back", async () => {
@@ -4265,9 +4185,8 @@ describe("TransactionTransferService", () => {
         service.removeTransfer("user-1", "from-tx", mockFindOne),
       ).rejects.toThrow("Balance error");
 
-      // Lookup + write block; the rejection above is what makes the
-      // surrounding write transaction roll back.
-      expect(mockDataSource.transaction).toHaveBeenCalledTimes(2);
+      // The rejection above is what makes the write transaction roll back.
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
     });
 
     it("updateTransfer runs its writes in a single tenant transaction", async () => {
@@ -4349,8 +4268,7 @@ describe("TransactionTransferService", () => {
         ),
       ).rejects.toThrow("DB error");
 
-      // Lookup + write block; the rejection above is what makes the
-      // surrounding write transaction roll back.
+      // The rejection above is what makes the write transaction roll back.
       expect(mockDataSource.transaction).toHaveBeenCalledTimes(3); // + the currencies' places read
     });
   });
@@ -4937,6 +4855,41 @@ describe("TransactionTransferService", () => {
         findOne as any,
       );
       expect(changed.changesFields).toBe(true);
+    });
+
+    // The receiving leg of a split transfer links to the split PARENT. Its
+    // source figure is the split line's, not the parent's total.
+    it("prices a split transfer leg at its line, not the split parent's total", async () => {
+      const parent = {
+        ...fromLeg,
+        id: "parent-tx",
+        amount: -100,
+        isSplit: true,
+        isTransfer: false,
+        linkedTransactionId: null,
+        splits: [
+          { id: "s1", amount: -60, linkedTransactionId: null },
+          { id: "s2", amount: -40, linkedTransactionId: "leg-tx" },
+        ],
+      };
+      const leg = {
+        ...toLeg,
+        id: "leg-tx",
+        amount: 40,
+        linkedTransactionId: "parent-tx",
+      };
+      const findOne = jest.fn(async (_uid: string, id: string) =>
+        id === "parent-tx" ? parent : leg,
+      );
+      const resent = await service.previewUpdateTransfer(
+        "user-1",
+        "leg-tx",
+        { amount: 40, transactionDate: "2026-01-15", description: "old" },
+        findOne as any,
+      );
+      expect(resent.amount).toBe(40);
+      expect(resent.toAmount).toBe(40);
+      expect(resent.changesFields).toBe(false);
     });
 
     it("determines canonical from/to legs and returns the resulting state", async () => {

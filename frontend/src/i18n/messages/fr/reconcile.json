@@ -77,6 +77,8 @@
     "title": "Supprimer la transaction",
     "message": "Supprimer cette transaction ? Elle sera retirée du compte et de ce rapprochement.",
     "transferTitle": "Supprimer le virement",
+    "splitLegTitle": "Retirer le virement de la ventilation",
+    "splitLegMessage": "Ce virement est une ligne d'une opération ventilée {hasPayee, select, true {avec {payee} } other {}}du {date}. La suppression retire uniquement cette ligne et recalcule le total de la ventilation. La ventilation et ses autres lignes sont conservées. Elle est aussi retirée de ce rapprochement.",
     "transferMessage": "Supprimer ce virement ? Ses deux côtés sont retirés, dans ce compte et dans l'autre."
   },
   "stale": {

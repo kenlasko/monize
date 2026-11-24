@@ -1357,6 +1357,24 @@ describe("TransactionToolPrepService", () => {
       expect(result.okRows).toEqual([{ transactionId: "t1" }]);
       expect(result.skipped).toHaveLength(1);
     });
+
+    it("carries the split a delete row's line is removed from", async () => {
+      transactions.previewDelete.mockResolvedValueOnce({
+        transactionId: "leg1",
+        accountName: "Savings",
+        amount: 40,
+        transactionDate: "2026-01-16",
+        payeeName: null,
+        categoryName: null,
+        description: null,
+        currencyCode: "USD",
+        splitLine: { payeeName: "Costco", transactionDate: "2026-01-15" },
+      });
+      const result = await service.prepareDeleteBulk(userId, ["leg1"]);
+      expect(result.previewRows[0]).toMatchObject({
+        splitLine: { payeeName: "Costco", transactionDate: "2026-01-15" },
+      });
+    });
   });
 
   describe("cross-owner transfer refusal (both AI and MCP surfaces)", () => {

@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Pominięto",
     "reconciledBadge": "Uzgodniona",
     "reconciledWarning": "Ta transakcja jest uzgodniona. Jej zmiana wpłynie na zakończone uzgodnienie.",
+    "splitLineDeleteNote": "Usunie to tylko tę linię przelewu z transakcji podzielonej z {payee} z dnia {date} i przeliczy sumę podziału. Podział i jego pozostałe linie zostaną.",
+    "splitLineDeleteNoteNoPayee": "Usunie to tylko tę linię przelewu z transakcji podzielonej z dnia {date} i przeliczy sumę podziału. Podział i jego pozostałe linie zostaną.",
     "investmentActions": {
       "BUY": "Kupno",
       "SELL": "Sprzedaż",

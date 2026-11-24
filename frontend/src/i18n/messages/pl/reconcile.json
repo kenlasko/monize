@@ -77,6 +77,8 @@
     "title": "Usuń transakcję",
     "message": "Usunąć tę transakcję? Zostanie usunięta z konta i z tego uzgodnienia.",
     "transferTitle": "Usuń przelew",
+    "splitLegTitle": "Usuń przelew z podziału",
+    "splitLegMessage": "Ten przelew jest jedną linią transakcji podzielonej {hasPayee, select, true {z {payee} } other {}}z dnia {date}. Usunięcie usuwa tylko tę linię i przelicza sumę podziału. Podział i jego pozostałe linie zostają. Zostanie też usunięty z tego uzgodnienia.",
     "transferMessage": "Usunąć ten przelew? Obie jego strony zostaną usunięte, na tym koncie i na drugim."
   },
   "stale": {

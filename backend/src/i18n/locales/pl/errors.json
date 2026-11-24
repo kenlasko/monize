@@ -882,6 +882,7 @@
     "notATransfer": "Transakcja nie jest przelewem",
     "splitTransferLegAccountLocked": "Ten przelew jest częścią transakcji podzielonej. Aby zmienić jego konta, edytuj podział w transakcji źródłowej.",
     "splitTransferLegStatusLocked": "Ten przelew jest częścią transakcji podzielonej. Anuluj go lub przywróć, edytując transakcję podzieloną, do której należy, aby obie strony zmieniły się razem.",
+    "splitTransferLegAmountIsParentTotal": "Ta kwota jest sumą całego podziału, a nie tej linii przelewu. Edytuj podział w transakcji źródłowej, aby zmienić kwotę linii.",
     "investmentCashLegLocked": "Ta transakcja jest stroną gotówkową transakcji inwestycyjnej. Zmień lub usuń transakcję inwestycyjną, aby obie strony zmieniły się razem.",
     "investmentCashLegStatusLocked": "Ta transakcja jest gotówkową stroną transakcji inwestycyjnej. Unieważnij ją lub przywróć, zmieniając status transakcji inwestycyjnej, aby obie strony zmieniły się razem.",
     "notFoundById": "Nie znaleziono transakcji o ID {{ id }}",

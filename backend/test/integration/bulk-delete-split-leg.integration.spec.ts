@@ -174,13 +174,42 @@ describe("Bulk delete of a split-transfer leg (integration)", () => {
     expect(ruleOf("transaction_splits", "transaction_id")).toBe("CASCADE");
   });
 
-  it("deleting one leg removes the whole split transfer, no orphan sibling", async () => {
-    const { bLegId } = await createSplitTransfer();
+  // Changed with #2366 (maintainer chose Option 1): a leg alone is one line of
+  // its split, so only B's line goes and the split collapses into a plain A->C
+  // transfer. The balance == ledger check is the #2283 orphan guard and stays.
+  it("deleting one leg removes only B's line and leaves a plain A to C transfer", async () => {
+    const { parentId, cLegId } = await createSplitTransfer();
+    const bLeg: { id: string }[] = await dataSource.query(
+      `SELECT id FROM transactions WHERE user_id = $1 AND account_id = $2`,
+      [userId, bId],
+    );
 
-    const result = await bulkDelete([bLegId]);
+    const result = await bulkDelete([bLeg[0].id]);
 
     expect(result.deleted).toBe(1);
-    await expectPreTransferState();
+    expect(await balanceOf(aId)).toBe(960);
+    expect(await balanceOf(bId)).toBe(0);
+    expect(await balanceOf(cId)).toBe(40);
+    expect(await rowCount()).toBe(2);
+    const [parent] = await dataSource.query(
+      `SELECT amount::float8 AS amount, is_split, is_transfer, linked_transaction_id
+         FROM transactions WHERE id = $1`,
+      [parentId],
+    );
+    expect(parent).toMatchObject({
+      amount: -40,
+      is_split: false,
+      is_transfer: true,
+      linked_transaction_id: cLegId,
+    });
+    const [cLeg] = await dataSource.query(
+      `SELECT linked_transaction_id FROM transactions WHERE id = $1`,
+      [cLegId],
+    );
+    expect(cLeg.linked_transaction_id).toBe(parentId);
+    for (const id of [aId, bId, cId]) {
+      expect(await balanceOf(id)).toBe(await ledgerOf(id));
+    }
   });
 
   it("deleting the split parent removes every leg", async () => {

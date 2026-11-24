@@ -882,6 +882,7 @@
     "notATransfer": "İşlem bir transfer değil",
     "splitTransferLegAccountLocked": "Bu transfer, bölünmüş bir işlemin parçasıdır. Hesaplarını değiştirmek için kaynak işlemdeki bölümü düzenleyin.",
     "splitTransferLegStatusLocked": "Bu transfer, bölünmüş bir işlemin parçasıdır. İki tarafın birlikte değişmesi için, ait olduğu bölünmüş işlemi düzenleyerek iptal edin veya geri yükleyin.",
+    "splitTransferLegAmountIsParentTotal": "Bu tutar, bu aktarım satırının değil, bölmenin tamamının toplamıdır. Satırın tutarını değiştirmek için kaynak işlemdeki bölmeyi düzenleyin.",
     "investmentCashLegLocked": "Bu işlem bir yatırım işleminin nakit tarafıdır. İki tarafın birlikte değişmesi için bunun yerine yatırım işlemini değiştirin veya silin.",
     "investmentCashLegStatusLocked": "Bu işlem, bir yatırım işleminin nakit tarafıdır. İki tarafın birlikte değişmesi için, yatırım işleminin durumunu değiştirerek iptal edin veya geri yükleyin.",
     "notFoundById": "{{ id }} kimliğine sahip işlem bulunamadı",

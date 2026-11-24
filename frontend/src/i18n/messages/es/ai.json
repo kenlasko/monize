@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Omitida",
     "reconciledBadge": "Conciliada",
     "reconciledWarning": "Esta transacción está conciliada. Modificarla afectará a una conciliación completada.",
+    "splitLineDeleteNote": "Esto elimina solo esta línea de transferencia de la transacción dividida con {payee} del {date} y recalcula el total de la división. La división y sus otras líneas se conservan.",
+    "splitLineDeleteNoteNoPayee": "Esto elimina solo esta línea de transferencia de la transacción dividida del {date} y recalcula el total de la división. La división y sus otras líneas se conservan.",
     "investmentActions": {
       "BUY": "Comprar",
       "SELL": "Vender",

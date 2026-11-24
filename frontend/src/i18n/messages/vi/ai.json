@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Đã bỏ qua",
     "reconciledBadge": "Đã điều hoà",
     "reconciledWarning": "Giao dịch này đã được điều hoà. Việc thay đổi sẽ ảnh hưởng đến một lần điều hoà đã hoàn tất.",
+    "splitLineDeleteNote": "Thao tác này chỉ xóa dòng chuyển khoản này khỏi giao dịch chia với {payee} ngày {date} và tính lại tổng của phần chia. Phần chia và các dòng khác vẫn được giữ.",
+    "splitLineDeleteNoteNoPayee": "Thao tác này chỉ xóa dòng chuyển khoản này khỏi giao dịch chia ngày {date} và tính lại tổng của phần chia. Phần chia và các dòng khác vẫn được giữ.",
     "investmentActions": {
       "BUY": "Mua",
       "SELL": "Bán",

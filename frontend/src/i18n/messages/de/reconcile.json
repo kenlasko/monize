@@ -77,6 +77,8 @@
     "title": "Buchung löschen",
     "message": "Diese Buchung löschen? Sie wird aus dem Konto und aus diesem Abgleich entfernt.",
     "transferTitle": "Überweisung löschen",
+    "splitLegTitle": "Überweisung aus Aufteilung entfernen",
+    "splitLegMessage": "Diese Überweisung ist eine Zeile einer aufgeteilten Transaktion {hasPayee, select, true {mit {payee} } other {}}vom {date}. Beim Löschen wird nur diese Zeile entfernt und die Aufteilung neu summiert. Die Aufteilung und ihre anderen Zeilen bleiben bestehen. Sie wird auch aus diesem Abgleich entfernt.",
     "transferMessage": "Diese Überweisung löschen? Beide Seiten werden entfernt, in diesem Konto und im anderen."
   },
   "stale": {

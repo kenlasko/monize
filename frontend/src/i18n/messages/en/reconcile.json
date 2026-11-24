@@ -77,6 +77,8 @@
     "title": "Delete Transaction",
     "message": "Delete this transaction? It will be removed from the account and from this reconciliation.",
     "transferTitle": "Delete Transfer",
+    "splitLegTitle": "Remove Transfer from Split",
+    "splitLegMessage": "This transfer is one line of a split transaction {hasPayee, select, true {with {payee} } other {}}dated {date}. Deleting it removes only this line and re-totals the split. The split and its other lines stay. It is also removed from this reconciliation.",
     "transferMessage": "Delete this transfer? Both sides of it are removed, in this account and in the other one."
   },
   "stale": {

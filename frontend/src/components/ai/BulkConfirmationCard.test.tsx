@@ -359,6 +359,35 @@ describe('BulkConfirmationCard', () => {
       expect(screen.getByText('Icon: house')).toBeInTheDocument();
     });
 
+    it('says a delete row for a split transfer leg removes only that line', () => {
+      render(
+        <BulkConfirmationCard
+          action={makeAction({
+            type: 'batch_actions',
+            descriptor: { type: 'batch_actions', operation: 'delete' },
+            preview: {
+              rows: [
+                {
+                  status: 'ok',
+                  accountName: 'Savings',
+                  amount: 40,
+                  currencyCode: 'USD',
+                  transactionDate: '2026-01-16',
+                  payeeName: null,
+                  splitLine: { payeeName: 'Costco', transactionDate: '2026-01-15' },
+                },
+              ],
+            },
+          })}
+          onConfirm={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByText(/removes only this transfer line from the split transaction with Costco dated 2026-01-15/),
+      ).toBeInTheDocument();
+    });
+
     it('flags reconciled rows in an update batch', () => {
       render(
         <BulkConfirmationCard
