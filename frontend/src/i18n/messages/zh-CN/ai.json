@@ -233,7 +233,7 @@
     "tagColor": "颜色",
     "tagIcon": "图标",
     "tagRemovedFrom": "将从以下项移除",
-    "tagCarriedCount": "{count, plural, =0 {无交易} other {# 笔交易和拆分行}}",
+    "tagCarriedCount": "{count, plural, =0 {无记录} other {# 条记录（交易、拆分行、计划交易和证券）}}",
     "createRuleTitle": "创建此规则？",
     "updateRuleTitle": "应用此规则的修改？",
     "deleteRuleTitle": "删除此规则？",

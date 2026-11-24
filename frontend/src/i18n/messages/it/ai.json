@@ -233,7 +233,7 @@
     "tagColor": "Colore",
     "tagIcon": "Icona",
     "tagRemovedFrom": "Rimosso da",
-    "tagCarriedCount": "{count, plural, =0 {nessuna transazione} one {# transazione o riga di suddivisione} other {# transazioni e righe di suddivisione}}",
+    "tagCarriedCount": "{count, plural, =0 {nessun elemento} one {# elemento (transazione, riga di suddivisione, transazione pianificata o titolo)} other {# elementi (transazioni, righe di suddivisione, transazioni pianificate e titoli)}}",
     "createRuleTitle": "Creare questa regola?",
     "updateRuleTitle": "Applicare questa modifica alla regola?",
     "deleteRuleTitle": "Eliminare questa regola?",

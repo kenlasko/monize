@@ -233,7 +233,7 @@
     "tagColor": "色",
     "tagIcon": "アイコン",
     "tagRemovedFrom": "削除される対象",
-    "tagCarriedCount": "{count, plural, =0 {取引なし} other {# 件の取引と分割行}}",
+    "tagCarriedCount": "{count, plural, =0 {レコードなし} other {# 件のレコード（取引、分割行、予定取引、証券）}}",
     "createRuleTitle": "このルールを作成しますか？",
     "updateRuleTitle": "このルールの変更を適用しますか？",
     "deleteRuleTitle": "このルールを削除しますか？",

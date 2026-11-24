@@ -233,7 +233,7 @@
     "tagColor": "Renk",
     "tagIcon": "Simge",
     "tagRemovedFrom": "Kaldırılacağı yer",
-    "tagCarriedCount": "{count, plural, =0 {hiçbir işlem} other {# işlem ve bölme satırı}}",
+    "tagCarriedCount": "{count, plural, =0 {hiçbir kayıt} other {# kayıt (işlemler, bölme satırları, planlı işlemler ve menkul kıymetler)}}",
     "createRuleTitle": "Bu kural oluşturulsun mu?",
     "updateRuleTitle": "Bu kural düzenlemesi uygulansın mı?",
     "deleteRuleTitle": "Bu kural silinsin mi?",

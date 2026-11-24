@@ -233,7 +233,7 @@
     "tagColor": "Kleur",
     "tagIcon": "Pictogram",
     "tagRemovedFrom": "Verwijderd van",
-    "tagCarriedCount": "{count, plural, =0 {geen transacties} one {# transactie of splitsregel} other {# transacties en splitsregels}}",
+    "tagCarriedCount": "{count, plural, =0 {geen items} one {# item (transactie, splitsregel, geplande transactie of effect)} other {# items (transacties, splitsregels, geplande transacties en effecten)}}",
     "createRuleTitle": "Deze regel aanmaken?",
     "updateRuleTitle": "Deze regelwijziging toepassen?",
     "deleteRuleTitle": "Deze regel verwijderen?",

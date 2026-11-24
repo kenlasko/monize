@@ -24,8 +24,16 @@
     "totalCount": "{count, plural, one {# étiquette} other {# étiquettes}}",
     "delete": {
       "title": "Supprimer l'étiquette",
-      "withTransactionsMessage": "Voulez-vous vraiment supprimer « {name} » ? Cette étiquette est utilisée dans {count, plural, one {# transaction} other {# transactions}}. Elle sera retirée de ces transactions.",
-      "simpleMessage": "Voulez-vous vraiment supprimer « {name} » ? Cette action est irréversible."
+      "withUsesMessage": "Voulez-vous vraiment supprimer \"{name}\" ? Le tag sera retiré de : {places}. Rien d'autre ne change sur ces éléments. Cette action est irréversible.",
+      "simpleMessage": "Voulez-vous vraiment supprimer \"{name}\" ? Il n'est utilisé nulle part. Cette action est irréversible.",
+      "unknownMessage": "Impossible de vérifier où \"{name}\" est utilisé. Si vous le supprimez, il sera retiré de chaque transaction, ligne de ventilation, transaction planifiée et titre qui l'utilise. Cette action est irréversible.",
+      "kinds": {
+        "transactions": "{count, plural, one {# transaction} other {# transactions}}",
+        "transactionSplits": "{count, plural, one {# ligne de ventilation de transaction} other {# lignes de ventilation de transaction}}",
+        "scheduledTransactions": "{count, plural, one {# transaction planifiée} other {# transactions planifiées}}",
+        "scheduledSplits": "{count, plural, one {# ligne de ventilation planifiée} other {# lignes de ventilation planifiées}}",
+        "securities": "{count, plural, one {# titre} other {# titres}}"
+      }
     },
     "toasts": {
       "created": "Étiquette créée avec succès",
