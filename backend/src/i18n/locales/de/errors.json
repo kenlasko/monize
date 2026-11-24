@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Das Konto eines Investmentteils kann nicht geändert werden; entfernen Sie den Teil und fügen Sie ihn beim neuen Konto hinzu",
     "splitNoFundingAccount": "Investmentteile verwenden kein separates Finanzierungskonto",
     "cannotChangeSplitDate": "Das Datum eines Investmentteils kann nicht geändert werden; bearbeiten Sie stattdessen das Datum der übergeordneten Buchung",
+    "embeddedDeleteLocked": "Diese Investmentbuchung gehört zu einer Splitbuchung. Bearbeiten oder entfernen Sie stattdessen die Splitzeile in der übergeordneten Buchung, damit sich beide Seiten gemeinsam ändern.",
+    "embeddedDeleteAllLocked": "Einige Investmentbuchungen gehören zu Splitbuchungen. Entfernen Sie zuerst diese Splitzeilen in den übergeordneten Buchungen und löschen Sie dann alle Investmentbuchungen.",
     "embeddedStatusLocked": "Diese Investmentbuchung ist Teil einer aufgeteilten Transaktion. Ändern Sie stattdessen den Status der aufgeteilten Transaktion, damit sich beide Seiten gemeinsam ändern.",
     "accruedInterestActionNotAllowed": "Aufgelaufene Zinsen können nur bei einer REDEEM-Buchung erfasst werden, nicht bei {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Aufgelaufene Zinsen können nicht bei einer Investmentbuchung innerhalb einer aufgeteilten Transaktion erfasst werden. Erfassen Sie die Zinsen stattdessen als eigene Teilbuchung.",

@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Tidak dapat mengubah akun dari pembagian investasi; hapus pembagian dan tambahkan di akun baru",
     "splitNoFundingAccount": "Pembagian investasi tidak menggunakan akun pendanaan terpisah",
     "cannotChangeSplitDate": "Tidak dapat mengubah tanggal pembagian investasi; edit tanggal transaksi pembagian induk",
+    "embeddedDeleteLocked": "Transaksi investasi ini merupakan bagian dari transaksi terpisah. Ubah atau hapus baris pemisahan pada transaksi induknya, agar kedua sisi berubah bersamaan.",
+    "embeddedDeleteAllLocked": "Beberapa transaksi investasi merupakan bagian dari transaksi terpisah. Hapus dahulu baris pemisahan tersebut pada transaksi induknya, lalu hapus semua transaksi investasi.",
     "embeddedStatusLocked": "Transaksi investasi ini merupakan bagian dari transaksi terpisah. Ubah status transaksi terpisah tersebut, agar kedua sisi berubah bersama-sama.",
     "accruedInterestActionNotAllowed": "Bunga akrual hanya dapat dicatat pada transaksi REDEEM, bukan pada {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Bunga akrual tidak dapat dicatat pada transaksi investasi di dalam transaksi terpisah. Catat bunga sebagai baris terpisah tersendiri.",

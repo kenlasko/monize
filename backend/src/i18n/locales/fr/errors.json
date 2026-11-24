@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Impossible de changer le compte d'une fraction d'investissement ; supprimez la fraction et ajoutez-la sur le nouveau compte",
     "splitNoFundingAccount": "Les fractions d'investissement n'utilisent pas de compte de financement séparé",
     "cannotChangeSplitDate": "Impossible de changer la date d'une fraction d'investissement ; modifiez plutôt la date de la transaction fractionnée parente",
+    "embeddedDeleteLocked": "Cette transaction d'investissement fait partie d'une transaction ventilée. Modifiez ou supprimez plutôt la ligne de ventilation dans la transaction parente, afin que les deux côtés changent ensemble.",
+    "embeddedDeleteAllLocked": "Certaines transactions d'investissement font partie de transactions ventilées. Supprimez d'abord ces lignes de ventilation dans leurs transactions parentes, puis supprimez toutes les transactions d'investissement.",
     "embeddedStatusLocked": "Cette transaction d'investissement fait partie d'une transaction fractionnée. Modifiez plutôt le statut de la transaction fractionnée, afin que les deux côtés changent ensemble.",
     "accruedInterestActionNotAllowed": "Les intérêts courus ne peuvent être enregistrés que sur une transaction REDEEM, pas sur {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Les intérêts courus ne peuvent pas être enregistrés sur une transaction d'investissement incluse dans une transaction fractionnée. Enregistrez plutôt les intérêts sur leur propre ligne de fractionnement.",

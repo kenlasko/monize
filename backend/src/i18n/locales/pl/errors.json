@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Nie można zmienić konta podziału inwestycyjnego; zamiast tego usuń podział i dodaj go na nowym koncie",
     "splitNoFundingAccount": "Podziały inwestycyjne nie używają osobnego konta finansującego",
     "cannotChangeSplitDate": "Nie można zmienić daty podziału inwestycyjnego; zamiast tego edytuj datę nadrzędnej transakcji podzielonej",
+    "embeddedDeleteLocked": "Ta transakcja inwestycyjna jest częścią transakcji podzielonej. Zamiast tego edytuj lub usuń linię podziału w transakcji nadrzędnej, aby obie strony zmieniły się razem.",
+    "embeddedDeleteAllLocked": "Niektóre transakcje inwestycyjne są częścią transakcji podzielonych. Najpierw usuń te linie podziału w transakcjach nadrzędnych, a potem usuń wszystkie transakcje inwestycyjne.",
     "embeddedStatusLocked": "Ta transakcja inwestycyjna jest częścią transakcji podzielonej. Zamiast tego zmień status transakcji podzielonej, aby obie strony zmieniły się razem.",
     "accruedInterestActionNotAllowed": "Odsetki naliczone można zapisać wyłącznie na transakcji REDEEM, a nie na {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Odsetek naliczonych nie można zapisać na transakcji inwestycyjnej wewnątrz transakcji podzielonej. Zapisz odsetki jako osobną pozycję podziału.",

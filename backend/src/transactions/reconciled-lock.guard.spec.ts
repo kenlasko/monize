@@ -143,6 +143,17 @@ const ENFORCEMENT_SITES: {
     why: "editing an embedded investment rewrites the split amount and the parent's total",
     beforeWrite: "manager.update(TransactionSplit",
   },
+  {
+    file: "../securities/investment-transactions.service.ts",
+    fn: "private async deleteCashTransactionInTransaction(",
+    why: "editing or deleting an investment row removes the cash row it carries",
+    beforeWrite: "manager.delete(Transaction",
+  },
+  {
+    file: "../securities/investment-transactions.service.ts",
+    fn: "async removeAll(",
+    why: "DELETE /investment-transactions removes every linked cash row",
+  },
 ];
 
 const ASSERTION = /assertReconciled(?:Rows|Ids)Mutable\s*\(/;

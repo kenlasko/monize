@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Không thể thay đổi tài khoản của phần chia đầu tư; hãy xóa phần chia và thêm lại trên tài khoản mới",
     "splitNoFundingAccount": "Các phần chia đầu tư không sử dụng tài khoản cấp vốn riêng",
     "cannotChangeSplitDate": "Không thể thay đổi ngày của phần chia đầu tư; hãy chỉnh sửa ngày giao tác chia cha thay thế",
+    "embeddedDeleteLocked": "Giao dịch đầu tư này là một phần của giao dịch chia nhỏ. Hãy sửa hoặc xóa dòng chia nhỏ trong giao dịch cha, để cả hai phía thay đổi cùng nhau.",
+    "embeddedDeleteAllLocked": "Một số giao dịch đầu tư là một phần của giao dịch chia nhỏ. Hãy xóa các dòng chia nhỏ đó trong giao dịch cha trước, rồi xóa tất cả giao dịch đầu tư.",
     "embeddedStatusLocked": "Giao dịch đầu tư này là một phần của giao dịch được chia nhỏ. Hãy thay đổi trạng thái của giao dịch được chia nhỏ, để cả hai bên thay đổi cùng nhau.",
     "accruedInterestActionNotAllowed": "Lãi dồn tích chỉ có thể được ghi nhận trên giao dịch REDEEM, không phải trên {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Không thể ghi nhận lãi dồn tích trên giao dịch đầu tư nằm trong giao dịch chia nhỏ. Hãy ghi nhận lãi thành một dòng chia nhỏ riêng.",
