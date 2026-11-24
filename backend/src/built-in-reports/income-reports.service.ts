@@ -224,9 +224,10 @@ export class IncomeReportsService {
       // Signed net within the category (INV-REPORT-004): a correction lowers
       // the source, and a source whose debits meet its credits earned nothing.
       .filter((item) => item.total > 0)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 15);
+      .sort((a, b) => b.total - a.total);
 
+    // Every source, not a top-N: the caller decides how many to draw. Cutting
+    // here made `totalIncome` the sum of the largest fifteen.
     const knownIncome = roundMoney(sumMoney(data.map((item) => item.total)));
 
     return {

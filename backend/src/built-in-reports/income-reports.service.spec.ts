@@ -346,7 +346,7 @@ describe("IncomeReportsService", () => {
       expect(result.data[0].total).toBe(1270);
     });
 
-    it("limits results to top 15 sources", async () => {
+    it("returns every source and totals all of them", async () => {
       const rawResults = Array.from({ length: 20 }, (_, i) => ({
         category_id: `cat-inc-${i}`,
         currency_code: "USD",
@@ -377,7 +377,10 @@ describe("IncomeReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.data).toHaveLength(15);
+      expect(result.data).toHaveLength(20);
+      // 100 + 200 + ... + 2000
+      expect(result.totalIncome).toBe(21000);
+      expect(result.knownIncome).toBe(21000);
     });
 
     it("passes startDate parameter when provided", async () => {

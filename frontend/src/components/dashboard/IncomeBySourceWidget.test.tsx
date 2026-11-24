@@ -3,7 +3,15 @@ import { act, screen } from '@testing-library/react';
 import { render } from '@/test/render';
 import { IncomeBySourceWidget } from './IncomeBySourceWidget';
 
-vi.mock('recharts', async () => (await import('@/test/recharts-mock')).rechartsMock());
+vi.mock('recharts', async () => {
+  const base = (await import('@/test/recharts-mock')).rechartsMock();
+  return {
+    ...base,
+    Pie: ({ data }: { data: Array<{ name: string; value: number }> }) => (
+      <div data-testid="pie-data" data-slices={JSON.stringify(data)} />
+    ),
+  };
+});
 
 vi.mock('@/hooks/useWidgetConfig', () => ({
   useWidgetConfig: () => ({ config: { range: '1y', chartType: 'pie' }, updateConfig: vi.fn() }),
@@ -62,5 +70,21 @@ describe('IncomeBySourceWidget', () => {
     await renderWidget();
     expect(screen.getByTestId('partial-total')).toHaveTextContent('$50');
     expect(screen.queryByText('$0')).not.toBeInTheDocument();
+  });
+
+  it('merges sources past the fifteenth into Other so the slices add up to the total', async () => {
+    const data = Array.from({ length: 20 }, (_, i) => ({
+      categoryId: `c${i}`,
+      categoryName: `Source ${i}`,
+      color: null,
+      total: 100,
+    }));
+    getIncomeBySource.mockResolvedValue({ data, totalIncome: 2000 });
+    await renderWidget();
+    const slices = JSON.parse(screen.getByTestId('pie-data').dataset.slices!);
+    expect(slices).toHaveLength(16);
+    expect(slices[15]).toMatchObject({ name: 'Other', value: 500 });
+    expect(slices.reduce((s: number, x: { value: number }) => s + x.value, 0)).toBe(2000);
+    expect(screen.getByText('$2000')).toBeInTheDocument();
   });
 });
