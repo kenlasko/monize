@@ -1,12 +1,14 @@
 'use client';
 
-import { useRef, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { userSettingsApi } from '@/lib/user-settings';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getErrorMessage } from '@/lib/errors';
+import { createLatestSaveTracker } from '@/lib/helpers/latest-save';
+import type { UserPreferences } from '@/types/auth';
 import { ColorTheme } from '@/lib/color-themes';
 import { UI_STYLE_PALETTES, type UiStyle } from '@/lib/ui-styles';
 import { THEME_SWATCHES } from '@/lib/theme-swatches';
@@ -46,7 +48,7 @@ export function ColorThemeSelector({ value, onChange, uiStyle = 'standard' }: Co
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { setColorTheme: setAppColorTheme, resolvedTheme } = useTheme();
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const saveSeq = useRef(0);
+  const [saves] = useState(() => createLatestSaveTracker<UserPreferences>());
   const offered = UI_STYLE_PALETTES[uiStyle];
   const palettes = offered.includes(value) ? offered : [value, ...offered];
 
@@ -54,16 +56,18 @@ export function ColorThemeSelector({ value, onChange, uiStyle = 'standard' }: Co
     onChange(next);
     setAppColorTheme(next);
 
-    // Only the latest save's reply is adopted (see UiStyleSelector).
-    const seq = ++saveSeq.current;
+    // Replies are ordered as in UiStyleSelector (`createLatestSaveTracker`).
+    const save = saves.begin();
     startTransition(async () => {
       try {
         const updated = await userSettingsApi.updatePreferences({ colorTheme: next });
-        if (seq !== saveSeq.current) return;
-        updatePreferencesStore(updated);
-        toast.success(t('toasts.saved'));
+        const { adopt, isLatest } = save.succeeded(updated);
+        if (adopt) updatePreferencesStore(adopt);
+        if (isLatest) toast.success(t('toasts.saved'));
       } catch (error) {
-        if (seq !== saveSeq.current) return;
+        const { adopt, isLatest } = save.failed();
+        if (adopt) updatePreferencesStore(adopt);
+        if (!isLatest) return;
         toast.error(getErrorMessage(error, t('toasts.colorThemeSaveFailed')));
       }
     });
