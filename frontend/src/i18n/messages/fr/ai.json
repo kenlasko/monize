@@ -235,7 +235,7 @@
     "tagColor": "Couleur",
     "tagIcon": "Icône",
     "tagRemovedFrom": "Retirée de",
-    "tagCarriedCount": "{count, plural, =0 {aucune transaction} one {# transaction ou ligne de ventilation} other {# transactions et lignes de ventilation}}",
+    "tagCarriedCount": "{count, plural, =0 {aucun élément} one {# élément (transaction, ligne de ventilation, transaction planifiée ou titre)} other {# éléments (transactions, lignes de ventilation, transactions planifiées et titres)}}",
     "createRuleTitle": "Créer cette règle ?",
     "updateRuleTitle": "Appliquer cette modification de la règle ?",
     "deleteRuleTitle": "Supprimer cette règle ?",

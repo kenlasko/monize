@@ -300,6 +300,21 @@ describe("TagsService", () => {
       expect(tagsRepository.remove).toHaveBeenCalledWith(mockTag);
     });
 
+    it("strips the tag id from the owner's scheduled tag_ids first", async () => {
+      tagsRepository.findOne.mockResolvedValue(mockTag);
+      tagsRepository.remove.mockResolvedValue(mockTag);
+
+      await service.remove(userId, "tag-1");
+
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE scheduled_transactions"),
+        ["tag-1", userId],
+      );
+      expect(mockManager.query.mock.invocationCallOrder[0]).toBeLessThan(
+        tagsRepository.remove.mock.invocationCallOrder[0],
+      );
+    });
+
     it("throws NotFoundException when tag does not exist", async () => {
       tagsRepository.findOne.mockResolvedValue(null);
 
@@ -337,6 +352,37 @@ describe("TagsService", () => {
       await expect(
         service.getTransactionCount(userId, "nonexistent"),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("getDeleteImpact()", () => {
+    it("counts every kind of place the tag is used", async () => {
+      tagsRepository.findOne.mockResolvedValue(mockTag);
+      mockManager.query.mockResolvedValue([
+        {
+          transactions: "4",
+          splits: "3",
+          scheduled: "2",
+          scheduled_splits: "1",
+          securities: "5",
+        },
+      ]);
+
+      await expect(service.getDeleteImpact(userId, "tag-1")).resolves.toEqual({
+        transactions: 4,
+        transactionSplits: 3,
+        scheduledTransactions: 2,
+        scheduledSplits: 1,
+        securities: 5,
+      });
+    });
+
+    it("throws NotFoundException when tag does not exist", async () => {
+      tagsRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.getDeleteImpact(userId, "nope")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

@@ -235,7 +235,7 @@
     "tagColor": "색상",
     "tagIcon": "아이콘",
     "tagRemovedFrom": "제거 대상",
-    "tagCarriedCount": "{count, plural, =0 {거래 없음} other {# 개의 거래 및 분할 항목}}",
+    "tagCarriedCount": "{count, plural, =0 {기록 없음} other {# 개의 기록 (거래, 분할 항목, 예약 거래, 증권)}}",
     "createRuleTitle": "이 규칙을 만들까요?",
     "updateRuleTitle": "이 규칙 수정을 적용할까요?",
     "deleteRuleTitle": "이 규칙을 삭제할까요?",

@@ -24,8 +24,16 @@
     "totalCount": "{count, plural, one {# Etikett} other {# Etiketten}}",
     "delete": {
       "title": "Etikett löschen",
-      "withTransactionsMessage": "Möchten Sie \"{name}\" wirklich löschen? Dieses Etikett wird bei {count, plural, one {# Buchung} other {# Buchungen}} verwendet. Das Etikett wird von diesen Buchungen entfernt.",
-      "simpleMessage": "Möchten Sie \"{name}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+      "withUsesMessage": "Möchten Sie \"{name}\" wirklich löschen? Das Etikett wird entfernt von: {places}. Sonst ändert sich an diesen Einträgen nichts. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "simpleMessage": "Möchten Sie \"{name}\" wirklich löschen? Es wird nirgends verwendet. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "unknownMessage": "Es konnte nicht geprüft werden, wo \"{name}\" verwendet wird. Beim Löschen wird es von jeder Buchung, Aufteilungszeile, geplanten Buchung und jedem Wertpapier entfernt, die es verwenden. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "kinds": {
+        "transactions": "{count, plural, one {# Buchung} other {# Buchungen}}",
+        "transactionSplits": "{count, plural, one {# Buchungs-Aufteilungszeile} other {# Buchungs-Aufteilungszeilen}}",
+        "scheduledTransactions": "{count, plural, one {# geplante Buchung} other {# geplante Buchungen}}",
+        "scheduledSplits": "{count, plural, one {# geplante Aufteilungszeile} other {# geplante Aufteilungszeilen}}",
+        "securities": "{count, plural, one {# Wertpapier} other {# Wertpapiere}}"
+      }
     },
     "toasts": {
       "created": "Etikett erfolgreich erstellt",

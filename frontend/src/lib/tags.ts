@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { Tag, CreateTagData, UpdateTagData, TagUsageMap } from '@/types/tag';
+import { Tag, CreateTagData, UpdateTagData, TagUsageMap, TagDeleteImpact } from '@/types/tag';
 import { dedupe, invalidateCache } from './apiCache';
 
 export const tagsApi = {
@@ -42,6 +42,11 @@ export const tagsApi = {
 
   getTransactionCount: async (id: string): Promise<number> => {
     const response = await apiClient.get<number>(`/tags/${id}/transaction-count`);
+    return response.data;
+  },
+
+  getDeleteImpact: async (id: string): Promise<TagDeleteImpact> => {
+    const response = await apiClient.get<TagDeleteImpact>(`/tags/${id}/delete-impact`);
     return response.data;
   },
 

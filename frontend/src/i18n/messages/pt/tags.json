@@ -24,8 +24,16 @@
     "totalCount": "{count, plural, one {# etiqueta} other {# etiquetas}}",
     "delete": {
       "title": "Eliminar etiqueta",
-      "withTransactionsMessage": "Tem a certeza de que pretende eliminar \"{name}\"? Esta etiqueta está associada a {count, plural, one {# transação} other {# transações}}. A etiqueta será removida dessas transações.",
-      "simpleMessage": "Tem a certeza de que pretende eliminar \"{name}\"? Esta ação não pode ser desfeita."
+      "withUsesMessage": "Tem a certeza de que quer eliminar \"{name}\"? A etiqueta será removida de: {places}. Mais nada muda nesses itens. Esta ação não pode ser anulada.",
+      "simpleMessage": "Tem a certeza de que quer eliminar \"{name}\"? Não é usada em lado nenhum. Esta ação não pode ser anulada.",
+      "unknownMessage": "Não foi possível verificar onde \"{name}\" é usada. Se a eliminar, será removida de todas as transações, linhas de divisão, transações agendadas e valores mobiliários que a usam. Esta ação não pode ser anulada.",
+      "kinds": {
+        "transactions": "{count, plural, one {# transação} other {# transações}}",
+        "transactionSplits": "{count, plural, one {# linha de divisão de transação} other {# linhas de divisão de transação}}",
+        "scheduledTransactions": "{count, plural, one {# transação agendada} other {# transações agendadas}}",
+        "scheduledSplits": "{count, plural, one {# linha de divisão agendada} other {# linhas de divisão agendadas}}",
+        "securities": "{count, plural, one {# valor mobiliário} other {# valores mobiliários}}"
+      }
     },
     "toasts": {
       "created": "Etiqueta criada com sucesso",

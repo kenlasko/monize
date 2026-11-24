@@ -24,8 +24,16 @@
     "totalCount": "[XX-{count, plural, one {# tag} other {# tags}}-XX]",
     "delete": {
       "title": "[XX-Delete Tag-XX]",
-      "withTransactionsMessage": "[XX-Are you sure you want to delete \"{name}\"? This tag is used on {count, plural, one {# transaction} other {# transactions}}. The tag will be removed from those transactions.-XX]",
-      "simpleMessage": "[XX-Are you sure you want to delete \"{name}\"? This action cannot be undone.-XX]"
+      "withUsesMessage": "[XX-Are you sure you want to delete \"{name}\"? The tag will be removed from: {places}. Nothing else on them changes. This action cannot be undone.-XX]",
+      "simpleMessage": "[XX-Are you sure you want to delete \"{name}\"? It is not used anywhere. This action cannot be undone.-XX]",
+      "unknownMessage": "[XX-Could not check where \"{name}\" is used. If you delete it, it is removed from every transaction, split line, scheduled transaction and security that uses it. This action cannot be undone.-XX]",
+      "kinds": {
+        "transactions": "[XX-{count, plural, one {# transaction} other {# transactions}}-XX]",
+        "transactionSplits": "[XX-{count, plural, one {# transaction split line} other {# transaction split lines}}-XX]",
+        "scheduledTransactions": "[XX-{count, plural, one {# scheduled transaction} other {# scheduled transactions}}-XX]",
+        "scheduledSplits": "[XX-{count, plural, one {# scheduled split line} other {# scheduled split lines}}-XX]",
+        "securities": "[XX-{count, plural, one {# security} other {# securities}}-XX]"
+      }
     },
     "toasts": {
       "created": "[XX-Tag created successfully-XX]",

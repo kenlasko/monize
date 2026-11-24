@@ -235,7 +235,7 @@
     "tagColor": "Kolor",
     "tagIcon": "Ikona",
     "tagRemovedFrom": "Usunięty z",
-    "tagCarriedCount": "{count, plural, =0 {żadnej transakcji} one {# transakcji lub linii podziału} other {# transakcji i linii podziału}}",
+    "tagCarriedCount": "{count, plural, =0 {żadnej pozycji} one {# pozycji (transakcji, linii podziału, zaplanowanej transakcji lub papieru wartościowego)} other {# pozycji (transakcji, linii podziału, zaplanowanych transakcji i papierów wartościowych)}}",
     "createRuleTitle": "Utworzyć tę regułę?",
     "updateRuleTitle": "Zastosować tę zmianę reguły?",
     "deleteRuleTitle": "Usunąć tę regułę?",

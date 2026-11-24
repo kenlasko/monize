@@ -235,7 +235,7 @@
     "tagColor": "Warna",
     "tagIcon": "Ikon",
     "tagRemovedFrom": "Dihapus dari",
-    "tagCarriedCount": "{count, plural, =0 {tidak ada transaksi} other {# transaksi dan baris pemisahan}}",
+    "tagCarriedCount": "{count, plural, =0 {tidak ada catatan} other {# catatan (transaksi, baris pemisahan, transaksi terjadwal, dan sekuritas)}}",
     "createRuleTitle": "Buat aturan ini?",
     "updateRuleTitle": "Terapkan perubahan aturan ini?",
     "deleteRuleTitle": "Hapus aturan ini?",

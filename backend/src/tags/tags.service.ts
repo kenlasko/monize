@@ -27,6 +27,38 @@ import {
 } from "./tag-llm-shape";
 import { searchIncludes } from "../common/helpers/search-match";
 
+export interface TagDeleteImpact {
+  transactions: number;
+  transactionSplits: number;
+  scheduledTransactions: number;
+  scheduledSplits: number;
+  securities: number;
+}
+
+/** Counts every row that carries the tag, void and future-dated ones included. */
+export async function countTagReferences(
+  m: EntityManager,
+  tagId: string,
+): Promise<TagDeleteImpact> {
+  const [row] = await m.query(
+    `SELECT
+       (SELECT COUNT(*) FROM transaction_tags WHERE tag_id = $1) AS transactions,
+       (SELECT COUNT(*) FROM transaction_split_tags WHERE tag_id = $1) AS splits,
+       (SELECT COUNT(*) FROM scheduled_transactions
+         WHERE tag_ids @> to_jsonb($1::text)) AS scheduled,
+       (SELECT COUNT(*) FROM scheduled_transaction_split_tags WHERE tag_id = $1) AS scheduled_splits,
+       (SELECT COUNT(*) FROM security_tags WHERE tag_id = $1) AS securities`,
+    [tagId],
+  );
+  return {
+    transactions: Number(row.transactions),
+    transactionSplits: Number(row.splits),
+    scheduledTransactions: Number(row.scheduled),
+    scheduledSplits: Number(row.scheduled_splits),
+    securities: Number(row.securities),
+  };
+}
+
 /** Upper bounds for one additive/removal call (design 6.2). */
 export const MAX_TAGS_PER_CALL = 100;
 export const MAX_TRANSACTIONS_PER_CALL = 1000;
@@ -219,9 +251,18 @@ export class TagsService {
       color: tag.color,
       icon: tag.icon,
     };
-    await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Tag).remove(tag),
-    );
+    await withScopedDb(this.dataSource, async (m) => {
+      // scheduled_transactions.tag_ids is JSONB with no foreign key, so the
+      // delete would leave a dead id that makes posting the schedule fail
+      // ("One or more tags not found"). Strip it in the same transaction.
+      await m.query(
+        `UPDATE scheduled_transactions
+            SET tag_ids = tag_ids - $1::text
+          WHERE user_id = $2 AND tag_ids @> to_jsonb($1::text)`,
+        [id, tag.userId],
+      );
+      await m.getRepository(Tag).remove(tag);
+    });
     this.actionHistoryService.record(userId, {
       entityType: "tag",
       entityId: id,
@@ -240,6 +281,15 @@ export class TagsService {
         where: { tagId: id },
       }),
     );
+  }
+
+  /**
+   * Every place a delete removes the tag from: the four link tables (they
+   * cascade) and the schedules' JSONB `tag_ids` (stripped by `remove`).
+   */
+  async getDeleteImpact(userId: string, id: string): Promise<TagDeleteImpact> {
+    await this.findOne(userId, id);
+    return withScopedDb(this.dataSource, (m) => countTagReferences(m, id));
   }
 
   async getAllTransactionCounts(

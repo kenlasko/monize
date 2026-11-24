@@ -91,6 +91,16 @@ export class TagsController {
     return this.tagsService.getTransactionCount(req.user.id, id);
   }
 
+  @Get(":id/delete-impact")
+  @AllowDelegate()
+  @ApiOperation({
+    summary: "Count every place a delete would remove this tag from",
+  })
+  @ApiResponse({ status: 200, description: "Counts retrieved successfully" })
+  getDeleteImpact(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.tagsService.getDeleteImpact(req.user.id, id);
+  }
+
   @Post()
   @ApiOperation({ summary: "Create a new tag" })
   @ApiResponse({ status: 201, description: "Tag created successfully" })

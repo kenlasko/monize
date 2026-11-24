@@ -235,7 +235,7 @@
     "tagColor": "顏色",
     "tagIcon": "圖示",
     "tagRemovedFrom": "將從以下項目移除",
-    "tagCarriedCount": "{count, plural, =0 {無交易} other {# 筆交易和拆分行}}",
+    "tagCarriedCount": "{count, plural, =0 {無記錄} other {# 筆記錄（交易、拆分行、排程交易和證券）}}",
     "createRuleTitle": "建立此規則？",
     "updateRuleTitle": "套用此規則的修改？",
     "deleteRuleTitle": "刪除此規則？",

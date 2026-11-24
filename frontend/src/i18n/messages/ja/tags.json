@@ -24,8 +24,16 @@
     "totalCount": "{count, plural, one {# 件のタグ} other {# 件のタグ}}",
     "delete": {
       "title": "タグを削除",
-      "withTransactionsMessage": "\"{name}\" を削除してもよろしいですか？このタグは {count, plural, one {# 件の取引} other {# 件の取引}} で使用されています。該当する取引からタグが削除されます。",
-      "simpleMessage": "\"{name}\" を削除してもよろしいですか？この操作は元に戻せません。"
+      "withUsesMessage": "「{name}」を削除してもよろしいですか？タグは次から削除されます：{places}。それ以外は変更されません。この操作は元に戻せません。",
+      "simpleMessage": "「{name}」を削除してもよろしいですか？このタグはどこにも使われていません。この操作は元に戻せません。",
+      "unknownMessage": "「{name}」の使用場所を確認できませんでした。削除すると、このタグを使っているすべての取引、分割行、予定取引、証券から削除されます。この操作は元に戻せません。",
+      "kinds": {
+        "transactions": "{count, plural, other {# 件の取引}}",
+        "transactionSplits": "{count, plural, other {# 件の取引分割行}}",
+        "scheduledTransactions": "{count, plural, other {# 件の予定取引}}",
+        "scheduledSplits": "{count, plural, other {# 件の予定分割行}}",
+        "securities": "{count, plural, other {# 件の証券}}"
+      }
     },
     "toasts": {
       "created": "タグを作成しました",

@@ -235,7 +235,7 @@
     "tagColor": "Màu",
     "tagIcon": "Biểu tượng",
     "tagRemovedFrom": "Gỡ khỏi",
-    "tagCarriedCount": "{count, plural, =0 {không giao dịch nào} other {# giao dịch và dòng chia}}",
+    "tagCarriedCount": "{count, plural, =0 {không có bản ghi nào} other {# bản ghi (giao dịch, dòng chia, giao dịch định kỳ và chứng khoán)}}",
     "createRuleTitle": "Tạo quy tắc này?",
     "updateRuleTitle": "Áp dụng chỉnh sửa quy tắc này?",
     "deleteRuleTitle": "Xóa quy tắc này?",
