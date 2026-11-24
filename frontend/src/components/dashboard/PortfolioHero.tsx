@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { parseISO } from 'date-fns';
 import { investmentsApi } from '@/lib/investments';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { partialTotalFor, portfolioPartialTotal } from '@/lib/net-worth-completeness';
 import { isComplete } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -86,7 +87,8 @@ export function PortfolioHero({
     config.portfolioAccountIds.length > 0 ? config.portfolioAccountIds.join(',') : undefined;
 
   // The window as the Investments page value chart resolves it.
-  const base = useMemo(() => resolveRangePreset(range, { alignment: 'month' }), [range]);
+  const today = useFinancialToday();
+  const base = useMemo(() => resolveRangePreset(range, { alignment: 'month', today }), [range, today]);
   const { start, periodStart, end } = usePortfolioRangeWindow({ range, base });
 
   // What each request asks for, without the refresh key: a reload after a

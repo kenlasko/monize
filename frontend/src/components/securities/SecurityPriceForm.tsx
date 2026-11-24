@@ -1,5 +1,6 @@
 'use client';
 
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { MutableRefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, Controller } from 'react-hook-form';
@@ -39,6 +40,7 @@ interface SecurityPriceFormProps {
 
 export function SecurityPriceForm({ price, onSubmit, onCancel, onDirtyChange, submitRef, bondProgramId }: SecurityPriceFormProps) {
   const t = useTranslations('securities');
+  const userToday = useFinancialToday();
   const {
     register,
     handleSubmit,
@@ -48,7 +50,7 @@ export function SecurityPriceForm({ price, onSubmit, onCancel, onDirtyChange, su
   } = useForm<PriceFormData>({
     resolver: zodResolver(buildPriceSchema(t)),
     defaultValues: {
-      priceDate: price?.priceDate || new Date().toISOString().substring(0, 10),
+      priceDate: price?.priceDate || userToday,
       closePrice: price?.closePrice != null ? Number(price.closePrice) : undefined,
       openPrice: price?.openPrice != null ? Number(price.openPrice) : undefined,
       highPrice: price?.highPrice != null ? Number(price.highPrice) : undefined,

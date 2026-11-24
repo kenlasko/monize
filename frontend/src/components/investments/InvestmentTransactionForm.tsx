@@ -58,6 +58,7 @@ import {
   redemptionTotalWithInterest,
   supportsAccruedInterest,
 } from '@/lib/investment-actions';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -308,6 +309,7 @@ function InvestmentTransactionFormFields({
   const { defaultCurrency, formatCurrency, formatShareQuantity, formatPrice, formatNumber } =
     useNumberFormat();
   const { formatDate } = useDateFormat();
+  const userToday = useFinancialToday();
   const [isLoading, setIsLoading] = useState(false);
   // What the submit button does once a *new* transaction has been created.
   // Kept under its own key: entering a batch of trades and entering a batch of
@@ -438,7 +440,7 @@ function InvestmentTransactionFormFields({
           action: defaultAction ?? 'BUY',
           transactionDate:
             defaultDate ||
-            getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY),
+            getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY, userToday),
           fundingAccountId: '',
           destinationAccountId: '',
           quantity: undefined,

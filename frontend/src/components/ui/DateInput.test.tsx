@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent } from '@/test/render';
+import { render, fireEvent, act } from '@/test/render';
 import { DateInput } from './DateInput';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 // Default to the browser preference, resolved to the pattern jsdom's en-US
 // locale produces. `browser` is no longer a mode of its own -- every desktop
@@ -49,6 +50,21 @@ describe('DateInput', () => {
       const { getByLabelText } = renderDateInput('2025-06-15');
       fireEvent.keyDown(getByLabelText('Date'), { key: 't' });
       expect(onDateChange).toHaveBeenCalledWith('2026-04-01');
+    });
+
+    it("T and relative shortcuts use the user's day, not the browser's", () => {
+      // 2026-11-23T20:00Z is Nov 24 in Pacific/Kiritimati, Nov 23 in UTC.
+      vi.setSystemTime(new Date('2026-11-23T20:00:00Z'));
+      usePreferencesStore.setState({ preferences: { timezone: 'Pacific/Kiritimati' } as never });
+      try {
+        const { getByLabelText } = renderDateInput('');
+        fireEvent.keyDown(getByLabelText('Date'), { key: 't' });
+        expect(onDateChange).toHaveBeenLastCalledWith('2026-11-24');
+        fireEvent.keyDown(getByLabelText('Date'), { key: '+' });
+        expect(onDateChange).toHaveBeenLastCalledWith('2026-11-25');
+      } finally {
+        act(() => usePreferencesStore.setState({ preferences: null }));
+      }
     });
 
     it('Y sets first day of year from existing date', () => {

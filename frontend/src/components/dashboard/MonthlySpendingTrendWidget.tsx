@@ -20,6 +20,7 @@ import { useReportData } from '@/hooks/useReportData';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { chartColors } from '@/lib/chart-colors';
 import { ChartTooltip } from '@/components/reports/ChartTooltip';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
@@ -48,9 +49,11 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
     MONTHLY_SPENDING_TREND_DEFAULT,
   );
 
+  const today = useFinancialToday();
+
   const { start, end } = useMemo(
-    () => resolveRangePreset(config.range, { alignment: 'month' }),
-    [config.range],
+    () => resolveRangePreset(config.range, { alignment: 'month', today }),
+    [config.range, today],
   );
 
   const { data: response, isLoading: dataLoading } = useReportData(

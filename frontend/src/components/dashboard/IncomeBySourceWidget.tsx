@@ -22,6 +22,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { reportTotal } from '@/lib/currency-total';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { CHART_COLOURS_INCOME } from '@/lib/chart-colours';
 import { chartColors } from '@/lib/chart-colors';
 import { sumMoney } from '@/lib/format';
@@ -60,9 +61,11 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
     INCOME_BY_SOURCE_DEFAULT,
   );
 
+  const today = useFinancialToday();
+
   const { start, end } = useMemo(
-    () => resolveRangePreset(config.range),
-    [config.range],
+    () => resolveRangePreset(config.range, { today }),
+    [config.range, today],
   );
 
   const { data: response, isLoading: dataLoading } = useReportData(

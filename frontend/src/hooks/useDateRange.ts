@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('useDateRange');
@@ -55,6 +56,7 @@ interface UseDateRangeReturn {
 
 export function useDateRange(options: UseDateRangeOptions): UseDateRangeReturn {
   const { defaultRange, alignment = 'day', storageKey } = options;
+  const today = useFinancialToday();
   const [dateRange, setDateRange] = useState<string>(
     () => readPersistedRange(storageKey)?.dateRange ?? defaultRange,
   );
@@ -80,8 +82,8 @@ export function useDateRange(options: UseDateRangeOptions): UseDateRangeReturn {
 
   const resolveRange = useCallback(
     (range: string): { start: string; end: string } =>
-      resolveRangePreset(range, { alignment, startDate, endDate }),
-    [alignment, startDate, endDate]
+      resolveRangePreset(range, { alignment, startDate, endDate, today }),
+    [alignment, startDate, endDate, today]
   );
 
   const resolvedRange = useMemo(

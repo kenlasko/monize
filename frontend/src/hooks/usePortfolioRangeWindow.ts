@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import {
   applyPortfolioWindowStart,
   type PortfolioRangeWindow,
@@ -23,8 +24,9 @@ export function usePortfolioRangeWindow(params: {
   now?: Date;
 }): PortfolioRangeWindow {
   const { range, base, now } = params;
+  const today = useFinancialToday();
   return useMemo(
-    () => applyPortfolioWindowStart(range, base, { now }),
-    [range, base, now],
+    () => applyPortfolioWindowStart(range, base, { now, today }),
+    [range, base, now, today],
   );
 }

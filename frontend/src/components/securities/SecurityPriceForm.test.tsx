@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/render';
+import { render, screen, fireEvent, act } from '@/test/render';
 import { SecurityPriceForm } from './SecurityPriceForm';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 vi.mock('@/hooks/useDateFormat', () => ({
   useDateFormat: () => ({ formatDate: (d: string) => d, dateFormat: 'browser', datePattern: 'YYYY-MM-DD' }),
@@ -12,6 +13,19 @@ describe('SecurityPriceForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("defaults the price date to the user's day, not the UTC day", () => {
+    // 2026-11-24T04:30Z is Nov 23 23:30 in America/New_York (UTC-5).
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-24T04:30:00Z') });
+    usePreferencesStore.setState({ preferences: { timezone: 'America/New_York' } as never });
+    try {
+      render(<SecurityPriceForm onSubmit={onSubmit} onCancel={onCancel} />);
+      expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2026-11-23');
+    } finally {
+      act(() => usePreferencesStore.setState({ preferences: null }));
+      vi.useRealTimers();
+    }
   });
 
   it('renders form fields', () => {

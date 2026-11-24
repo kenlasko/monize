@@ -21,6 +21,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { reportTotal } from '@/lib/currency-total';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { chartSeriesColor } from '@/lib/chart-colors';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
@@ -48,9 +49,11 @@ export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps)
     SPENDING_BY_PAYEE_DEFAULT,
   );
 
+  const today = useFinancialToday();
+
   const { start, end } = useMemo(
-    () => resolveRangePreset(config.range),
-    [config.range],
+    () => resolveRangePreset(config.range, { today }),
+    [config.range, today],
   );
 
   const { data: response, isLoading: dataLoading } = useReportData(

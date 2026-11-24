@@ -8,6 +8,7 @@ import type { CashFlowSankeyNode } from '@/types/built-in-reports';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import { categoriesApi } from '@/lib/categories';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useReportData } from '@/hooks/useReportData';
@@ -58,7 +59,9 @@ export function CashFlowSankeyWidget({ accounts, isLoading }: CashFlowSankeyWidg
   const accountIds = Array.isArray(config.accountIds) ? config.accountIds : [];
   const accountIdsKey = accountIds.join(',');
 
-  const { start, end } = useMemo(() => resolveRangePreset(config.range), [config.range]);
+  const today = useFinancialToday();
+
+  const { start, end } = useMemo(() => resolveRangePreset(config.range, { today }), [config.range, today]);
 
   const { data: categories } = useReportData(() => categoriesApi.getAll(), []);
   const { data: response, isLoading: dataLoading } = useReportData(
