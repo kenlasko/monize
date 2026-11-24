@@ -108,7 +108,8 @@ export async function reinstateDelegations(
          (delegation_id, account_id, can_read, can_create, can_edit, can_delete,
           is_joint, created_at)
        SELECT $1, $2, $3, $4, $5, $6, $7, $8
-        WHERE EXISTS (SELECT 1 FROM account_delegates WHERE id = $1)
+        WHERE EXISTS (SELECT 1 FROM account_delegates
+                       WHERE id = $1 AND owner_user_id = $9 AND status <> 'revoked')
           AND EXISTS (SELECT 1 FROM accounts WHERE id = $2 AND user_id = $9)
        ON CONFLICT DO NOTHING
        RETURNING id`,
