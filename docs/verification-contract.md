@@ -114,6 +114,7 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-REPORT-002 chart reduction | **required** | **required** | -- | -- | -- | -- | -- | -- |
 | INV-REPORT-003 a transfer leg is a named flow | **required** | -- | required | -- | -- | -- | -- | optional |
 | INV-REPORT-004 a category's cost is its signed sum | required | -- | **required** | -- | -- | -- | -- | -- |
+| INV-REPORT-005 a report figure is rounded once | **required** | optional | -- | -- | -- | -- | -- | -- |
 | INV-SANKEY-001 the Sankey closes | **required** | -- | required | -- | -- | -- | -- | -- |
 | INV-SANKEY-002 a leg counts once, by scope and class | required | -- | **required** | -- | -- | -- | -- | -- |
 | INV-SANKEY-003 linkage and VOID out of every branch | supporting | **required** | required | -- | -- | -- | -- | -- |

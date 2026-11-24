@@ -136,6 +136,24 @@ a new reason fails it until it has copy); a spec that the read path calls the
 fetch once per missing unit and re-reads before it discloses; and a spec that
 a rejected request renders as a failure, not as an empty result.
 
+### 1.4 A part folds into a total as its aggregate, never as its reading
+
+A reporting-only figure is rounded once, from its own components, at the
+precision it is presented at. A cell, a category, a month or a node enters the
+figure above it through `FxAggregate.merge` / `mergeNegated`, never as its
+rounded `knownSubtotal`, a `roundMoney(...)` result or a four-place row value:
+two 100.01 EUR receipts at 1.2474 totalled 249.5049 USD grouped by category and
+249.5050 grouped by payee, because the payee grouping read two cells at four
+places before adding them, and the Cash Flow Sankey answered a 500 when a parent
+and its children were each read on their own (issue #2384). A direction decision
+(`isNetSpending`, a positive net) reads `FxAggregate.sign`, never the rounded
+value, so a net of 0.00003 keeps its row; a presentation whose parts must add up
+apportions them from the parent's single rounding (`FxAggregate.apportionUnits`).
+A posted amount is not a reporting figure: it is the fact, rounded by the write.
+`docs/specs/report-rounding-and-aggregation.md` has the three precisions, the
+rules, the numerical examples and the open decision on wire precision.
+INV-REPORT-005.
+
 ## 2. Cost basis and tax
 
 Realized result is market value minus cost basis; tax applies only to gains.

@@ -97,6 +97,7 @@ implied.
 | INV-REPORT-002 | A chart's down-sampling never reaches a count, a total or an export | enforced |
 | INV-REPORT-003 | A transfer leg appears in a report only as a named flow, never inside income, expenses or net | enforced |
 | INV-REPORT-004 | A category's cost is its signed sum within the category, on every report surface | partial |
+| INV-REPORT-005 | A report figure is rounded once, from its own components: no part enters a total as its rounded reading | partial |
 | INV-SANKEY-001 | The Cash Flow Sankey closes: income + inflows + deficit = expenses + outflows + unspent | enforced |
 | INV-SANKEY-002 | A Sankey transfer leg is counted at most once, by its own account's scope and its counterpart's class | enforced |
 | INV-SANKEY-003 | Investment linkage and VOID are excluded on every Sankey branch | enforced |
@@ -3369,6 +3370,48 @@ Required tests      Integration:
                     refund".
 Known gap           No source scan holds the rule: a new aggregator summing
                     Math.abs per row passes every guard.
+Status              partial
+```
+
+### INV-REPORT-005 -- a report figure is rounded once, from its own components
+
+```text
+Statement           A reporting-only money figure is rounded once, from the
+                    exact sum of its converted components, at the precision
+                    it is presented at. No part (a cell, a category, a month,
+                    a node) enters the figure above it as its rounded reading,
+                    so an additive total is the same for every grouping that
+                    holds each component once; a direction decision reads the
+                    sign before rounding; a presentation whose parts must add
+                    up apportions them from the parent's single rounding. A
+                    posted amount is the fact and is not re-derived.
+Source of truth     The converted components, accumulated in FxAggregate
+                    (backend/src/common/fx-aggregate.ts) at twelve places.
+Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
+                    FxAggregate.sign reads a direction; apportionUnits splits a
+                    parent between its parts. Applied in the Cash Flow Sankey
+                    (cash-flow-sankey-assembly.ts) and in the surfaces listed in
+                    docs/future-plans/report-rounding-and-aggregation-tasks.md
+                    stage 1. No source scan refuses a new
+                    addConverted(part.knownSubtotal) or a sumMoney over rounded
+                    rows.
+Concurrency scope   -- (read path)
+Retry semantics     -- (read path)
+Crash semantics     -- (read path)
+Failure response    -- a report answers; it does not refuse.
+Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
+                    apportionUnits over generated parts);
+                    cash-flow-sankey.property.spec.ts over two-currency ledgers
+                    (closes at both depths, depth moves no total, each side's
+                    total is one FxAggregate over its rows);
+                    cash-flow-sankey.service.spec.ts "rounds each figure once".
+Known gap           Report figures leave the server at four places and the
+                    screen rounds them again at the currency's places, so a
+                    figure under half a ten-thousandth below a cent's midpoint
+                    shows one cent high (section 6 of
+                    docs/specs/report-rounding-and-aggregation.md, undecided).
+                    Several client totals are built from rounded rows (the
+                    same task list, stage 3).
 Status              partial
 ```
 
