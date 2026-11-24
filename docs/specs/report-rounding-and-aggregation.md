@@ -78,9 +78,11 @@ before they were added:
    from the exact change until those reports hand it their aggregates.
 5. **A direction or threshold decision reads the sign before rounding.** "Is this
    category spending", "is this net income", "is this figure zero" read
-   `FxAggregate.sign`, judged at `MONEY_SCALE`: a net of 0.00003 is money in
-   though it reads 0.0000; a residue under half of 0.00000001 (finer than any
-   amount the ledger holds) is a float artefact and is zero.
+   `FxAggregate.sign`: a net of 0.00003 is money in though it reads 0.0000. A
+   net that is float residue is zero: one under half of 0.00000001 (finer than
+   any amount the ledger holds), or one within 2^-50 of its components' summed
+   size, the most a sum of converted doubles can carry (16,768.69 at
+   9731.4245182213 refunded in two parts nets to -0.00000002 in doubles).
 6. **A presentation that must add up apportions.** Where parts must sum to their
    parent (the Sankey's links), the parent is its own single rounding and the
    parts are apportioned from it by largest remainder
@@ -183,7 +185,7 @@ definition of what it counts.
 | Rule | Test |
 | --- | --- |
 | 2, 4 | the custom report over generated ledgers (two currencies, a rate per date to ten places, income and expense categories, large amounts, values near a midpoint): the headline is the same grouped by category, payee, month and day and unaggregated, and equals one `FxAggregate` over every row. The categories are sign-consistent (no refunds), so no grouping changes what nets (rule 4); the section 4 rows for the custom report and Spending by Category |
-| 5, 8 | a category netting 0.00003 is kept; one netting to a float residue is not; `FxAggregate.sign` over the threshold |
+| 5, 8 | a category netting 0.00003 is kept; one netting to a float residue is not, at a cent's scale and at 163 million; `FxAggregate.sign` over both bounds |
 | 6 | the Sankey over generated two-currency ledgers: closes at depth 1 and 2, depth moves no total, each side's total equals one `FxAggregate` over that side's rows; the section 4 Sankey rows; `apportionUnits` keeps every part within one unit and sums to the whole's reading |
 | 7 | `mergeNegated` carries missing pairs and the unknown count |
 | client | `sumConverted` agrees with `FxAggregate` over the same converted components |
