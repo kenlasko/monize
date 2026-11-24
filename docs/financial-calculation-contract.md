@@ -151,7 +151,8 @@ value, so a net of 0.00003 keeps its row; a presentation whose parts must add up
 apportions them from the parent's single rounding (`FxAggregate.apportionUnits`).
 A posted amount is not a reporting figure: it is the fact, rounded by the write.
 `docs/specs/report-rounding-and-aggregation.md` has the three precisions, the
-rules, the numerical examples and the open decision on wire precision.
+rules, the numerical examples and the decision on wire precision (each figure
+rounded on the server at its currency's own places, stage 2).
 INV-REPORT-005.
 
 ## 2. Cost basis and tax

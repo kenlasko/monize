@@ -20,7 +20,8 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 
 ## 2 the precision of a figure on the wire
 
-- [ ] The maintainer's choice of the spec's section 6 option, then its implementation.
+- [x] The maintainer's choice of the spec's section 6 option: (b), a report figure rounded on the server at the reporting currency's own places (issue #2384, 2026-11-24).
+- [ ] Its implementation, in its own PR: every report figure (built-in, custom, Sankey, AI/MCP report tools) rounded once at `currency.decimal_places` on the server; the Sankey's unit becomes the currency's minor unit; fixtures and the section 4 examples restated at currency places.
 
 ## 3 client surfaces
 

@@ -1,8 +1,9 @@
 # Spec: a report figure is rounded once, from its own components
 
-Status: proposed on `claude/issue-2384` (issue #2384, discussion #2382).
-Rules 1 to 8 restate the contract the issue agreed; section 6 is a decision
-the issue leaves open and the maintainer is asked to make.
+Status: approved on issue #2384 (2026-11-24; discussion #2382). Rules 1 to 8
+restate the contract the issue agreed; section 6 records the maintainer's
+choice of option (b). Stage 1 (section 5) lands on `claude/issue-2384`;
+stages 2 and 3 follow in their own PRs.
 Governs: every reporting-only money figure -- the built-in reports, the custom
 report engine, the Cash Flow Sankey, the dashboard widgets and AI/MCP tools that
 read them -- and the screen, CSV and PDF outputs of each.
@@ -155,7 +156,7 @@ than the floors' 249.5048, and the tie goes to the lower key.
   `FxAggregate` does, so a client total of converted rows agrees with the
   server's.
 
-## 6. Open decision: the precision of a figure on the wire
+## 6. Decision: a report figure is rounded on the server at its currency's places
 
 A report figure leaves the server rounded at four places
 (`FIAT_MONEY_DECIMALS`), and the screen rounds it again at the currency's own
@@ -178,9 +179,14 @@ rounding happens on another machine. The options:
   Sankey needs no apportionment; client code that adds wire values must
   accumulate as `FxAggregate` does.
 
-Until it is decided, stage 1 keeps (a).
+**Decided (issue #2384): option (b), in its own PR (stage 2).** Each report
+figure is the single rounding of its calculated value at the reporting
+currency's own places, done on the server, so the screen's rounding of it is
+the identity and the CSV, the PDF and the AI tools read the same figure. Stage 1
+keeps four places on the wire until stage 2 lands, so the one-cent double
+rounding above stands until then.
 
-## 7. Stage 2: the client and the exports
+## 7. Stage 3: the client and the exports
 
 The client still builds several totals from rounded rows, rounds chart values to
 whole units before a total or a CSV reads them, and writes some PDFs unformatted.

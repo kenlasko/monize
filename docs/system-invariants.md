@@ -3422,8 +3422,9 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
 Known gap           Report figures leave the server at four places and the
                     screen rounds them again at the currency's places, so a
                     figure under half a ten-thousandth below a cent's midpoint
-                    shows one cent high (section 6 of
-                    docs/specs/report-rounding-and-aggregation.md, undecided).
+                    shows one cent high until stage 2 rounds each figure on
+                    the server at its currency's places (section 6 of
+                    docs/specs/report-rounding-and-aggregation.md, option (b)).
                     Several client totals are built from rounded rows (the
                     same task list, stage 3). Budget Health adds a month's
                     converted foreign income, rounded once, to its native

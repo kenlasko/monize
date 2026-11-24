@@ -21,16 +21,18 @@ Executes [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-round
   (`frontend/src/lib/csv-export.ts`, `frontend/src/lib/pdf-export-tables.ts`).
 - The instruction files are at their byte ceilings
   (`backend/src/common/instruction-files.spec.ts`), so the rule lives in the
-  spec and in `docs/financial-calculation-contract.md`, not in `AGENTS.md`.
+  spec and in `docs/financial-calculation-contract.md`; `AGENTS.md` carries
+  only "fold parts with `merge`" beside `FxAggregate`.
 
 ## Stages
 
 1. **Backend folds and the client accumulator (issue #2384, first PR).** The
    spec's section 5. Observable: the section 4 table; the property specs named
    in the spec's section 8.
-2. **The precision of a figure on the wire.** The spec's section 6, once the
-   maintainer chooses. Observable: a figure 0.00002 under a cent's midpoint
-   reads the same on screen, in the CSV and in the PDF.
+2. **The precision of a figure on the wire.** The spec's section 6: option
+   (b), each report figure rounded once on the server at the reporting
+   currency's own places, chosen on issue #2384. Observable: a figure 0.00002
+   under a cent's midpoint reads the same on screen, in the CSV and in the PDF.
 3. **Client surfaces.** One PR per group in the task list: each total the client
    builds from rounded rows reads the server's total, chart values rounded to
    whole units stay in the chart, and every export writes the figure the screen
