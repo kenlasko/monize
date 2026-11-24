@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Odbiorca występuje w więcej niż jednej grupie scalania",
     "autoMergeSourceNotFound": "Nie znaleziono jednego lub więcej odbiorców źródłowych",
     "autoMergeGroupConflict": "Nie można scalić \"{{ name }}\": wartość \"{{ value }}\" jest już używana",
-    "autoMergeGroupFailed": "Nie można scalić \"{{ name }}\""
+    "autoMergeGroupFailed": "Nie można scalić \"{{ name }}\"",
+    "inUse": "Nie można usunąć odbiorcy „{{ name }}”: nadal używają go {{ summary }}. Scal go z innym odbiorcą albo najpierw usuń te elementy."
   },
   "reports": {
     "notFound": "Nie znaleziono raportu o ID {{ id }}",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "Nie znaleziono tej połączonej aplikacji. Mogła już zostać odwołana.",
     "invalidConnectionId": "Nieprawidłowy identyfikator połączonej aplikacji"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "transakcje",
+      "scheduledTransactions": "transakcje zaplanowane",
+      "warranties": "gwarancje",
+      "emailReceiptParsers": "profile e-mailowych rachunków",
+      "loanOverpaymentPayee": "konta kredytowe (odbiorca dodatkowych spłat)",
+      "sharedPeople": "osoby we wspólnych wydatkach",
+      "sharedPostings": "wpisy wspólnych wydatków",
+      "rules": "reguły"
+    }
   }
 }

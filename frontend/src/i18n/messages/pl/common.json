@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "Zawiera {count, plural, one {# zaległą zaplanowaną transakcję} few {# zaległe zaplanowane transakcje} many {# zaległych zaplanowanych transakcji} other {# zaległej zaplanowanej transakcji}}"
+  },
+  "recordInUse": {
+    "intro": "Nie można go usunąć, dopóki te elementy go używają. Otwórz jeden, aby go zobaczyć:",
+    "kinds": {
+      "transactions": "{count, plural, one {# transakcja} few {# transakcje} many {# transakcji} other {# transakcji}}",
+      "scheduledTransactions": "{count, plural, one {# transakcja zaplanowana} few {# transakcje zaplanowane} many {# transakcji zaplanowanych} other {# transakcji zaplanowanej}}",
+      "warranties": "{count, plural, one {# gwarancja} few {# gwarancje} many {# gwarancji} other {# gwarancji}}",
+      "emailReceiptParsers": "{count, plural, one {# profil e-mailowych rachunków} few {# profile e-mailowych rachunków} many {# profili e-mailowych rachunków} other {# profilu e-mailowych rachunków}}",
+      "loanOverpaymentPayee": "{count, plural, one {# konto kredytowe (odbiorca dodatkowych spłat)} few {# konta kredytowe (odbiorca dodatkowych spłat)} many {# kont kredytowych (odbiorca dodatkowych spłat)} other {# konta kredytowego (odbiorca dodatkowych spłat)}}",
+      "sharedPeople": "{count, plural, one {# osoba we wspólnych wydatkach} few {# osoby we wspólnych wydatkach} many {# osób we wspólnych wydatkach} other {# osoby we wspólnych wydatkach}}",
+      "sharedPostings": "{count, plural, one {# wpis wspólnych wydatków} few {# wpisy wspólnych wydatków} many {# wpisów wspólnych wydatków} other {# wpisu wspólnych wydatków}}",
+      "rules": "{count, plural, one {# reguła} few {# reguły} many {# reguł} other {# reguły}}"
+    }
   }
 }

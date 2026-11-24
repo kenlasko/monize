@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "ある支払先が複数のマージグループに含まれています",
     "autoMergeSourceNotFound": "1つ以上のソース支払先が見つかりませんでした",
     "autoMergeGroupConflict": "「{{ name }}」を統合できませんでした: 値「{{ value }}」はすでに使用されています",
-    "autoMergeGroupFailed": "「{{ name }}」を統合できませんでした"
+    "autoMergeGroupFailed": "「{{ name }}」を統合できませんでした",
+    "inUse": "支払先「{{ name }}」は削除できません。まだ {{ summary }} が使用しています。別の支払先に統合するか、先にこれらの項目を削除してください。"
   },
   "reports": {
     "notFound": "ID {{ id }} のレポートが見つかりません",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "その接続済みアプリは見つかりませんでした。すでに取り消されている可能性があります。",
     "invalidConnectionId": "接続済みアプリの ID が無効です"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "取引",
+      "scheduledTransactions": "予定取引",
+      "warranties": "保証",
+      "emailReceiptParsers": "メールレシートプロファイル",
+      "loanOverpaymentPayee": "ローン口座（追加返済の支払先）",
+      "sharedPeople": "共有費用メンバー",
+      "sharedPostings": "共有費用の記帳",
+      "rules": "ルール"
+    }
   }
 }

@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Một người nhận xuất hiện trong nhiều hơn một nhóm gộp",
     "autoMergeSourceNotFound": "Không tìm thấy một hoặc nhiều người nhận nguồn",
     "autoMergeGroupConflict": "Không thể hợp nhất \"{{ name }}\": giá trị \"{{ value }}\" đã được sử dụng",
-    "autoMergeGroupFailed": "Không thể hợp nhất \"{{ name }}\""
+    "autoMergeGroupFailed": "Không thể hợp nhất \"{{ name }}\"",
+    "inUse": "Không thể xóa người nhận \"{{ name }}\": vẫn còn {{ summary }} đang dùng. Hãy gộp vào một người nhận khác, hoặc xóa các mục này trước."
   },
   "reports": {
     "notFound": "Không tìm thấy báo cáo với ID {{ id }}",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "Không tìm thấy ứng dụng đã kết nối đó. Có thể nó đã bị thu hồi.",
     "invalidConnectionId": "ID ứng dụng đã kết nối không hợp lệ"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "giao dịch",
+      "scheduledTransactions": "giao dịch đã lên lịch",
+      "warranties": "bảo hành",
+      "emailReceiptParsers": "hồ sơ biên lai email",
+      "loanOverpaymentPayee": "tài khoản vay (người nhận khoản trả thêm)",
+      "sharedPeople": "người chia sẻ chi tiêu",
+      "sharedPostings": "bút toán chi tiêu chung",
+      "rules": "quy tắc"
+    }
   }
 }

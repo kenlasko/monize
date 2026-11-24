@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "某個收款人出現在多個合併群組中",
     "autoMergeSourceNotFound": "找不到一個或多個來源收款人",
     "autoMergeGroupConflict": "無法合併「{{ name }}」：值「{{ value }}」已被使用",
-    "autoMergeGroupFailed": "無法合併「{{ name }}」"
+    "autoMergeGroupFailed": "無法合併「{{ name }}」",
+    "inUse": "無法刪除收款方「{{ name }}」：仍有 {{ summary }} 在使用它。請將它合併到另一個收款方，或先移除這些項目。"
   },
   "reports": {
     "notFound": "找不到 ID 為 {{ id }} 的報表",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "找不到該已連線的應用程式，可能已被撤銷。",
     "invalidConnectionId": "已連線的應用程式 ID 無效"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "交易",
+      "scheduledTransactions": "排程交易",
+      "warranties": "保固",
+      "emailReceiptParsers": "電子郵件收據設定檔",
+      "loanOverpaymentPayee": "貸款帳戶（額外還款收款方）",
+      "sharedPeople": "共享支出成員",
+      "sharedPostings": "共享支出記錄",
+      "rules": "規則"
+    }
   }
 }

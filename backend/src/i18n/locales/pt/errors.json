@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Um beneficiário aparece em mais de um grupo de combinação",
     "autoMergeSourceNotFound": "Um ou mais beneficiários de origem não foram encontrados",
     "autoMergeGroupConflict": "Não foi possível mesclar \"{{ name }}\": o valor \"{{ value }}\" já está em uso",
-    "autoMergeGroupFailed": "Não foi possível mesclar \"{{ name }}\""
+    "autoMergeGroupFailed": "Não foi possível mesclar \"{{ name }}\"",
+    "inUse": "Não é possível eliminar o beneficiário \"{{ name }}\": ainda é usado por {{ summary }}. Una-o a outro beneficiário ou remova primeiro estes itens."
   },
   "reports": {
     "notFound": "Relatório com ID {{ id }} não encontrado",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "Essa aplicação ligada não foi encontrada. Pode já ter sido revogada.",
     "invalidConnectionId": "ID de aplicação ligada inválido"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "transações",
+      "scheduledTransactions": "transações agendadas",
+      "warranties": "garantias",
+      "emailReceiptParsers": "perfis de recibos por e-mail",
+      "loanOverpaymentPayee": "contas de empréstimo (beneficiário de pagamentos extra)",
+      "sharedPeople": "pessoas de despesas partilhadas",
+      "sharedPostings": "lançamentos de despesas partilhadas",
+      "rules": "regras"
+    }
   }
 }

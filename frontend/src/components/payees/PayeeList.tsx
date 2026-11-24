@@ -5,10 +5,13 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Payee } from '@/types/payee';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { payeesApi } from '@/lib/payees';
+import { payeesApi, payeeInUseHref } from '@/lib/payees';
+import { RecordInUseNotice } from '@/components/ui/RecordInUseNotice';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { createLogger } from '@/lib/logger';
-import { getErrorMessage } from '@/lib/errors';
+import { getErrorMessage, getRecordInUseEntries, type RecordInUseEntry } from '@/lib/errors';
 import { useTableDensity, type DensityLevel } from '@/hooks/useTableDensity';
 import { useDensityPreference } from '@/store/densityStore';
 import { HIGHLIGHT_FLASH, HIGHLIGHT_FLASH_CELL, useScrollIntoViewWhen } from '@/hooks/useHighlightTarget';
@@ -484,6 +487,7 @@ export function PayeeList({
   const router = useRouter();
   const { formatDate } = useDateFormat();
   const [deletePayee, setDeletePayee] = useState<Payee | null>(null);
+  const [inUse, setInUse] = useState<{ payee: Payee; entries: RecordInUseEntry[] } | null>(null);
   const [actionSheet, setActionSheet] = useState<{ open: boolean; payee: Payee | null }>({ open: false, payee: null });
   const { density } = useDensityPreference('payees');
   const [localSortField, setLocalSortField] = useState<SortField>('name');
@@ -582,8 +586,13 @@ export function PayeeList({
         onRefresh();
       }
     } catch (error) {
-      toast.error(getErrorMessage(error, t('list.toasts.deleteFailed')));
-      logger.error(error);
+      const entries = getRecordInUseEntries(error);
+      if (entries) {
+        setInUse({ payee: deletePayee, entries });
+      } else {
+        toast.error(getErrorMessage(error, t('list.toasts.deleteFailed')));
+        logger.error(error);
+      }
     } finally {
       setDeletePayee(null);
     }
@@ -744,6 +753,39 @@ export function PayeeList({
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletePayee(null)}
       />
+
+      <Modal
+        isOpen={inUse !== null}
+        onClose={() => setInUse(null)}
+        maxWidth="md"
+        padding="md"
+        title={t('list.inUse.title', { name: inUse?.payee.name ?? '' })}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setInUse(null)}>
+              {t('list.inUse.close')}
+            </Button>
+            {onMerge && inUse?.payee.isActive && (
+              <Button
+                onClick={() => {
+                  const payee = inUse.payee;
+                  setInUse(null);
+                  onMerge(payee);
+                }}
+              >
+                {t('list.inUse.mergeInstead')}
+              </Button>
+            )}
+          </>
+        }
+      >
+        {inUse && (
+          <>
+            <RecordInUseNotice entries={inUse.entries} hrefFor={(entry) => payeeInUseHref(inUse.payee.id, entry)} />
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{t('list.inUse.mergeHint')}</p>
+          </>
+        )}
+      </Modal>
 
       <RowActionSheet
         isOpen={actionSheet.open}

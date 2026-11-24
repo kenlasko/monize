@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "Bao gồm {count, plural, one {# giao dịch theo lịch quá hạn} other {# giao dịch theo lịch quá hạn}}"
+  },
+  "recordInUse": {
+    "intro": "Không thể xóa trong khi các mục này còn dùng nó. Mở một mục để xem:",
+    "kinds": {
+      "transactions": "{count, plural, other {# giao dịch}}",
+      "scheduledTransactions": "{count, plural, other {# giao dịch đã lên lịch}}",
+      "warranties": "{count, plural, other {# bảo hành}}",
+      "emailReceiptParsers": "{count, plural, other {# hồ sơ biên lai email}}",
+      "loanOverpaymentPayee": "{count, plural, other {# tài khoản vay (người nhận khoản trả thêm)}}",
+      "sharedPeople": "{count, plural, other {# người chia sẻ chi tiêu}}",
+      "sharedPostings": "{count, plural, other {# bút toán chi tiêu chung}}",
+      "rules": "{count, plural, other {# quy tắc}}"
+    }
   }
 }

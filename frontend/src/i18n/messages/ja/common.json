@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "期限超過のスケジュール済み取引 {count, plural, one {# 件} other {# 件}}を含む"
+  },
+  "recordInUse": {
+    "intro": "次の項目が使用している間は削除できません。項目を開いて確認してください:",
+    "kinds": {
+      "transactions": "{count, plural, other {#件の取引}}",
+      "scheduledTransactions": "{count, plural, other {#件の予定取引}}",
+      "warranties": "{count, plural, other {#件の保証}}",
+      "emailReceiptParsers": "{count, plural, other {#件のメールレシートプロファイル}}",
+      "loanOverpaymentPayee": "{count, plural, other {#件のローン口座（追加返済の支払先）}}",
+      "sharedPeople": "{count, plural, other {#人の共有費用メンバー}}",
+      "sharedPostings": "{count, plural, other {#件の共有費用の記帳}}",
+      "rules": "{count, plural, other {#件のルール}}"
+    }
   }
 }

@@ -71,3 +71,17 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+/** One kind of row still using a record, from a 409 `RECORD_IN_USE` refusal. */
+export interface RecordInUseEntry {
+  kind: string;
+  count: number;
+  ids?: string[];
+}
+
+/** The `errors` list of a `RECORD_IN_USE` refusal, or null for any other failure. */
+export function getRecordInUseEntries(error: unknown): RecordInUseEntry[] | null {
+  if (getErrorCode(error) !== 'RECORD_IN_USE') return null;
+  const data = (error as { response?: { data?: { errors?: unknown } } }).response?.data;
+  return Array.isArray(data?.errors) ? (data.errors as RecordInUseEntry[]) : null;
+}

@@ -213,6 +213,10 @@ describe("PayeesService", () => {
     mockDataSource = dataSource;
     txManager = manager;
     txManager.find.mockResolvedValue([]);
+    // No row references the payee (delete's reference count); a test overrides it.
+    txManager.query.mockImplementation(async (sql: string) =>
+      sql.includes("FROM accounts") ? [] : [{ count: 0 }],
+    );
     txManager.update.mockResolvedValue({ affected: 0 });
     txManager.query.mockResolvedValue([]);
     txManager.create.mockImplementation((_, data) => data);
@@ -1437,6 +1441,80 @@ describe("PayeesService", () => {
       await service.remove(userId, "payee-1");
 
       expect(payeesRepository.remove).toHaveBeenCalledWith(mockPayee);
+      // The row is locked before the references are counted.
+      expect(payeesRepository.findOne).toHaveBeenLastCalledWith(
+        expect.objectContaining({ lock: { mode: "pessimistic_write" } }),
+      );
+    });
+
+    it("refuses with 409 and counts while a warranty and a rule use the payee, writing nothing", async () => {
+      payeesRepository.findOne.mockResolvedValue(mockPayee);
+      txManager.query.mockImplementation(async (sql: string) => {
+        if (sql.includes("FROM warranties")) return [{ count: 2 }];
+        if (sql.includes("FROM transaction_rules")) return [{ count: 1 }];
+        if (sql.includes("FROM accounts")) return [{ id: "loan-1" }];
+        return [{ count: 0 }];
+      });
+
+      const error = await service
+        .remove(userId, "payee-1")
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ConflictException);
+      const body = (error as ConflictException).getResponse() as any;
+      expect(body.errorCode).toBe("RECORD_IN_USE");
+      expect(body.errors).toEqual([
+        { kind: "warranties", count: 2 },
+        { kind: "loanOverpaymentPayee", count: 1, ids: ["loan-1"] },
+        { kind: "rules", count: 1 },
+      ]);
+      expect(body.message).toContain("warranties (2)");
+      expect(payeesRepository.remove).not.toHaveBeenCalled();
+      expect(
+        (service as any).actionHistoryService.record,
+      ).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["FROM transactions", "transactions"],
+      ["FROM scheduled_transactions", "scheduledTransactions"],
+      ["FROM email_receipt_parsers", "emailReceiptParsers"],
+      ["FROM shared_people", "sharedPeople"],
+      ["FROM shared_postings", "sharedPostings"],
+    ])("refuses while %s holds a row", async (needle, kind) => {
+      payeesRepository.findOne.mockResolvedValue(mockPayee);
+      txManager.query.mockImplementation(async (sql: string) =>
+        sql.includes(needle)
+          ? [{ count: 3 }]
+          : sql.includes("FROM accounts")
+            ? []
+            : [{ count: 0 }],
+      );
+
+      const error = await service
+        .remove(userId, "payee-1")
+        .catch((e: unknown) => e);
+
+      expect((error as ConflictException).getResponse()).toMatchObject({
+        errors: [{ kind, count: 3 }],
+      });
+      expect(payeesRepository.remove).not.toHaveBeenCalled();
+    });
+
+    it("previewDeletePayee reports the same refusal", async () => {
+      payeesRepository.findOne.mockResolvedValue(mockPayee);
+      txManager.query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM warranties")
+          ? [{ count: 1 }]
+          : sql.includes("FROM accounts")
+            ? []
+            : [{ count: 0 }],
+      );
+      jest.spyOn(service, "findByName").mockResolvedValue(mockPayee as any);
+
+      await expect(
+        service.previewDeletePayee(userId, { name: mockPayee.name }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it("should throw NotFoundException when payee does not exist", async () => {

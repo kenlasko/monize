@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Satu penerima muncul di lebih dari satu grup penggabungan",
     "autoMergeSourceNotFound": "Satu atau lebih penerima sumber tidak ditemukan",
     "autoMergeGroupConflict": "Tidak dapat menggabungkan \"{{ name }}\": nilai \"{{ value }}\" sudah digunakan",
-    "autoMergeGroupFailed": "Tidak dapat menggabungkan \"{{ name }}\""
+    "autoMergeGroupFailed": "Tidak dapat menggabungkan \"{{ name }}\"",
+    "inUse": "Penerima pembayaran \"{{ name }}\" tidak dapat dihapus: masih dipakai oleh {{ summary }}. Gabungkan ke penerima pembayaran lain, atau hapus dulu item tersebut."
   },
   "reports": {
     "notFound": "Laporan dengan ID {{ id }} tidak ditemukan",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "Aplikasi terhubung itu tidak ditemukan. Mungkin sudah dicabut.",
     "invalidConnectionId": "ID aplikasi terhubung tidak valid"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "transaksi",
+      "scheduledTransactions": "transaksi terjadwal",
+      "warranties": "garansi",
+      "emailReceiptParsers": "profil struk email",
+      "loanOverpaymentPayee": "akun pinjaman (penerima pembayaran tambahan)",
+      "sharedPeople": "orang pengeluaran bersama",
+      "sharedPostings": "entri pengeluaran bersama",
+      "rules": "aturan"
+    }
   }
 }

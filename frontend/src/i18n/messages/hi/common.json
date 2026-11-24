@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "{count, plural, one {# अतिदेय निर्धारित लेनदेन} other {# अतिदेय निर्धारित लेनदेन}} शामिल"
+  },
+  "recordInUse": {
+    "intro": "जब तक ये आइटम इसका उपयोग करते हैं, इसे हटाया नहीं जा सकता। देखने के लिए किसी एक को खोलें:",
+    "kinds": {
+      "transactions": "{count, plural, one {# लेन-देन} other {# लेन-देन}}",
+      "scheduledTransactions": "{count, plural, one {# निर्धारित लेन-देन} other {# निर्धारित लेन-देन}}",
+      "warranties": "{count, plural, one {# वारंटी} other {# वारंटी}}",
+      "emailReceiptParsers": "{count, plural, one {# ईमेल रसीद प्रोफ़ाइल} other {# ईमेल रसीद प्रोफ़ाइल}}",
+      "loanOverpaymentPayee": "{count, plural, one {# ऋण खाता (अतिरिक्त भुगतान का प्राप्तकर्ता)} other {# ऋण खाते (अतिरिक्त भुगतान का प्राप्तकर्ता)}}",
+      "sharedPeople": "{count, plural, one {# साझा खर्च का व्यक्ति} other {# साझा खर्च के व्यक्ति}}",
+      "sharedPostings": "{count, plural, one {# साझा खर्च की प्रविष्टि} other {# साझा खर्च की प्रविष्टियाँ}}",
+      "rules": "{count, plural, one {# नियम} other {# नियम}}"
+    }
   }
 }

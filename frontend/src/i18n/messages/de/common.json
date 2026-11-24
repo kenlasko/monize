@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "Enthält {count, plural, one {# überfällige terminierte Buchung} other {# überfällige terminierte Buchungen}}"
+  },
+  "recordInUse": {
+    "intro": "Er kann nicht gelöscht werden, solange diese Einträge ihn verwenden. Öffnen Sie einen Eintrag, um ihn anzusehen:",
+    "kinds": {
+      "transactions": "{count, plural, one {# Transaktion} other {# Transaktionen}}",
+      "scheduledTransactions": "{count, plural, one {# geplante Transaktion} other {# geplante Transaktionen}}",
+      "warranties": "{count, plural, one {# Garantie} other {# Garantien}}",
+      "emailReceiptParsers": "{count, plural, one {# E-Mail-Beleg-Profil} other {# E-Mail-Beleg-Profile}}",
+      "loanOverpaymentPayee": "{count, plural, one {# Darlehenskonto (Zahlungsempfänger für Sonderzahlungen)} other {# Darlehenskonten (Zahlungsempfänger für Sonderzahlungen)}}",
+      "sharedPeople": "{count, plural, one {# Person für geteilte Ausgaben} other {# Personen für geteilte Ausgaben}}",
+      "sharedPostings": "{count, plural, one {# Buchung geteilter Ausgaben} other {# Buchungen geteilter Ausgaben}}",
+      "rules": "{count, plural, one {# Regel} other {# Regeln}}"
+    }
   }
 }

@@ -1,3 +1,4 @@
+import { ConflictException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 
 import { withUserContext } from "@/common/db/with-context";
@@ -120,6 +121,7 @@ describe("Payee merge moves every payee reference (integration)", () => {
 
   beforeEach(async () => {
     await cleanTables(db, [
+      "transaction_rules",
       "shared_people",
       "email_receipt_parsers",
       "warranties",
@@ -200,6 +202,60 @@ describe("Payee merge moves every payee reference (integration)", () => {
       parserRevision: refs.parser.revision,
       loan: bystander,
       person: bystander,
+    });
+  });
+
+  describe("delete", () => {
+    it("refuses a payee still referenced, with counts, and changes nothing", async () => {
+      const payee = await seedPayee("Costco");
+      const refs = await seedReferences(payee);
+      await query(
+        `INSERT INTO transaction_rules (user_id, name, position, condition, actions)
+         VALUES ($1, 'Costco', 0, '{}'::jsonb, $2::jsonb)`,
+        [userId, JSON.stringify([{ type: "set_payee", payeeId: payee }])],
+      );
+
+      const error = await withUserContext(userId, () =>
+        payees.remove(userId, payee),
+      ).catch((e: unknown) => e);
+
+      expect((error as ConflictException).getResponse()).toMatchObject({
+        errorCode: "RECORD_IN_USE",
+        errors: [
+          { kind: "warranties", count: 1 },
+          { kind: "emailReceiptParsers", count: 1 },
+          { kind: "loanOverpaymentPayee", count: 1, ids: [refs.loan.id] },
+          { kind: "sharedPeople", count: 1 },
+          { kind: "rules", count: 1 },
+        ],
+      });
+      expect(await referencesOf(refs)).toMatchObject({
+        warranty: payee,
+        parser: payee,
+        loan: payee,
+        person: payee,
+      });
+      const [{ n }] = await query<{ n: string }>(
+        `SELECT COUNT(*) AS n FROM payees WHERE id = $1`,
+        [payee],
+      );
+      expect(Number(n)).toBe(1);
+    });
+
+    it("deletes an unreferenced payee together with its aliases", async () => {
+      const payee = await seedPayee("Costco");
+      await query(
+        `INSERT INTO payee_aliases (user_id, payee_id, alias) VALUES ($1, $2, 'COSTCO #1')`,
+        [userId, payee],
+      );
+
+      await withUserContext(userId, () => payees.remove(userId, payee));
+
+      const [{ n }] = await query<{ n: string }>(
+        `SELECT COUNT(*) AS n FROM payees WHERE id = $1`,
+        [payee],
+      );
+      expect(Number(n)).toBe(0);
     });
   });
 });

@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Un bénéficiaire apparaît dans plusieurs groupes de fusion",
     "autoMergeSourceNotFound": "Un ou plusieurs bénéficiaires sources sont introuvables",
     "autoMergeGroupConflict": "Impossible de fusionner « {{ name }} » : la valeur « {{ value }} » est déjà utilisée",
-    "autoMergeGroupFailed": "Impossible de fusionner « {{ name }} »"
+    "autoMergeGroupFailed": "Impossible de fusionner « {{ name }} »",
+    "inUse": "Le bénéficiaire « {{ name }} » ne peut pas être supprimé : il est encore utilisé par {{ summary }}. Fusionnez-le avec un autre bénéficiaire, ou retirez d’abord ces éléments."
   },
   "reports": {
     "notFound": "Rapport avec l'ID {{ id }} introuvable",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "Cette application connectée est introuvable. Elle a peut-être déjà été révoquée.",
     "invalidConnectionId": "Identifiant d'application connectée non valide"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "transactions",
+      "scheduledTransactions": "opérations planifiées",
+      "warranties": "garanties",
+      "emailReceiptParsers": "profils de reçus par e-mail",
+      "loanOverpaymentPayee": "comptes de prêt (bénéficiaire des remboursements anticipés)",
+      "sharedPeople": "personnes de dépenses partagées",
+      "sharedPostings": "écritures de dépenses partagées",
+      "rules": "règles"
+    }
   }
 }

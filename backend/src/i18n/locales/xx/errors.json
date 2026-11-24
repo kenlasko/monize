@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "[XX-A payee appears in more than one merge group-XX]",
     "autoMergeSourceNotFound": "[XX-One or more source payees were not found-XX]",
     "autoMergeGroupConflict": "[XX-Could not merge \"{{ name }}\": the value \"{{ value }}\" is already in use-XX]",
-    "autoMergeGroupFailed": "[XX-Could not merge \"{{ name }}\"-XX]"
+    "autoMergeGroupFailed": "[XX-Could not merge \"{{ name }}\"-XX]",
+    "inUse": "[XX-Payee \"{{ name }}\" cannot be deleted: it is still used by {{ summary }}. Merge it into another payee instead, or remove these first.-XX]"
   },
   "reports": {
     "notFound": "[XX-Report with ID {{ id }} not found-XX]",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "[XX-That connected app was not found. It may already have been revoked.-XX]",
     "invalidConnectionId": "[XX-Invalid connected app id-XX]"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "[XX-transactions-XX]",
+      "scheduledTransactions": "[XX-scheduled transactions-XX]",
+      "warranties": "[XX-warranties-XX]",
+      "emailReceiptParsers": "[XX-email receipt profiles-XX]",
+      "loanOverpaymentPayee": "[XX-loan accounts (overpayment payee)-XX]",
+      "sharedPeople": "[XX-shared-expense people-XX]",
+      "sharedPostings": "[XX-shared-expense postings-XX]",
+      "rules": "[XX-rules-XX]"
+    }
   }
 }

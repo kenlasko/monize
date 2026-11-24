@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "한 수취인이 둘 이상의 병합 그룹에 나타납니다",
     "autoMergeSourceNotFound": "하나 이상의 원본 수취인을 찾을 수 없습니다",
     "autoMergeGroupConflict": "\"{{ name }}\"을(를) 병합할 수 없습니다: \"{{ value }}\" 값이 이미 사용 중입니다",
-    "autoMergeGroupFailed": "\"{{ name }}\"을(를) 병합할 수 없습니다"
+    "autoMergeGroupFailed": "\"{{ name }}\"을(를) 병합할 수 없습니다",
+    "inUse": "수취인 \"{{ name }}\"을(를) 삭제할 수 없습니다. {{ summary }}에서 아직 사용 중입니다. 다른 수취인과 병합하거나 먼저 이 항목을 제거하세요."
   },
   "reports": {
     "notFound": "ID가 {{ id }}인 보고서를 찾을 수 없습니다",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "해당 연결된 앱을 찾을 수 없습니다. 이미 취소되었을 수 있습니다.",
     "invalidConnectionId": "연결된 앱 ID가 올바르지 않습니다"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "거래",
+      "scheduledTransactions": "예정 거래",
+      "warranties": "보증",
+      "emailReceiptParsers": "이메일 영수증 프로필",
+      "loanOverpaymentPayee": "대출 계좌(추가 상환 수취인)",
+      "sharedPeople": "공동 지출 인원",
+      "sharedPostings": "공동 지출 항목",
+      "rules": "규칙"
+    }
   }
 }

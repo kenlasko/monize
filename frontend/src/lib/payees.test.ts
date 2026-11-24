@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
-import { payeesApi } from './payees';
+import { payeesApi, payeeInUseHref } from './payees';
 import { invalidateCache, setCache, getCached, clearAllCache } from './apiCache';
 
 vi.mock('./api', () => ({
@@ -291,5 +291,22 @@ describe('payeesApi recategorising writes drop budget caches (INV-CACHE-001)', (
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'p-1' } });
     await payeesApi.update('p-1', { name: 'X' } as any);
     expect(getCached('budgets:dashboard')).toEqual({ id: 'b' });
+  });
+});
+
+describe('payeeInUseHref', () => {
+  it.each([
+    [{ kind: 'transactions', count: 1 }, '/transactions?payeeId=p1'],
+    [{ kind: 'scheduledTransactions', count: 1 }, '/bills'],
+    [{ kind: 'warranties', count: 1 }, '/warranties'],
+    [{ kind: 'emailReceiptParsers', count: 1 }, '/settings/email-receipts'],
+    [{ kind: 'loanOverpaymentPayee', count: 1, ids: ['a1'] }, '/accounts/a1'],
+    [{ kind: 'loanOverpaymentPayee', count: 2, ids: ['a1', 'a2'] }, '/accounts'],
+    [{ kind: 'sharedPeople', count: 1 }, '/shared-expenses'],
+    [{ kind: 'sharedPostings', count: 1 }, '/shared-expenses'],
+    [{ kind: 'rules', count: 1 }, '/rules'],
+    [{ kind: 'unknown', count: 1 }, undefined],
+  ])('links %o to %s', (entry, href) => {
+    expect(payeeInUseHref('p1', entry)).toBe(href);
   });
 });

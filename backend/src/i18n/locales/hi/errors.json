@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "एक भुगतानकर्ता एक से अधिक विलय समूहों में दिखाई देता है",
     "autoMergeSourceNotFound": "एक या अधिक स्रोत भुगतानकर्ता नहीं मिले",
     "autoMergeGroupConflict": "\"{{ name }}\" को मर्ज नहीं किया जा सका: मान \"{{ value }}\" पहले से उपयोग में है",
-    "autoMergeGroupFailed": "\"{{ name }}\" को मर्ज नहीं किया जा सका"
+    "autoMergeGroupFailed": "\"{{ name }}\" को मर्ज नहीं किया जा सका",
+    "inUse": "प्राप्तकर्ता \"{{ name }}\" को हटाया नहीं जा सकता: इसका उपयोग अभी भी {{ summary }} करते हैं। इसे किसी दूसरे प्राप्तकर्ता में मर्ज करें, या पहले इन आइटम को हटाएँ।"
   },
   "reports": {
     "notFound": "ID {{ id }} वाली रिपोर्ट नहीं मिली",
@@ -1106,5 +1107,17 @@
   "oauth": {
     "connectionNotFound": "वह कनेक्टेड ऐप नहीं मिला। हो सकता है उसे पहले ही रद्द किया जा चुका हो।",
     "invalidConnectionId": "कनेक्टेड ऐप की अमान्य आईडी"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "लेन-देन",
+      "scheduledTransactions": "निर्धारित लेन-देन",
+      "warranties": "वारंटी",
+      "emailReceiptParsers": "ईमेल रसीद प्रोफ़ाइल",
+      "loanOverpaymentPayee": "ऋण खाते (अतिरिक्त भुगतान का प्राप्तकर्ता)",
+      "sharedPeople": "साझा खर्च के व्यक्ति",
+      "sharedPostings": "साझा खर्च की प्रविष्टियाँ",
+      "rules": "नियम"
+    }
   }
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/test/render';
 import { PayeeList } from './PayeeList';
 import { Payee } from '@/types/payee';
+import { AxiosError } from 'axios';
 import { useDensityStore } from '@/store/densityStore';
 
 const mockPush = vi.fn();
@@ -22,7 +23,8 @@ const mockPayeesApi = {
   delete: vi.fn().mockResolvedValue(undefined),
 };
 
-vi.mock('@/lib/payees', () => ({
+vi.mock('@/lib/payees', async (importOriginal) => ({
+  payeeInUseHref: (await importOriginal<typeof import('@/lib/payees')>()).payeeInUseHref,
   payeesApi: {
     delete: (...args: any[]) => mockPayeesApi.delete(...args),
   },
@@ -370,6 +372,39 @@ describe('PayeeList', () => {
     await waitFor(() => {
       expect(onRefresh).toHaveBeenCalled();
     });
+  });
+
+  it('shows what still uses the payee, linked, when the delete is refused with 409', async () => {
+    const refusal = Object.assign(new AxiosError('Conflict'), {
+      response: {
+        status: 409,
+        data: {
+          errorCode: 'RECORD_IN_USE',
+          errors: [
+            { kind: 'transactions', count: 2 },
+            { kind: 'warranties', count: 1 },
+            { kind: 'loanOverpaymentPayee', count: 1, ids: ['loan-1'] },
+          ],
+        },
+      },
+    });
+    mockPayeesApi.delete.mockRejectedValueOnce(refusal);
+    const onMerge = vi.fn();
+    const payee = makePayee({ id: 'p1', name: 'Walmart' });
+
+    render(<PayeeList payees={[payee]} onEdit={onEdit} onRefresh={onRefresh} onMerge={onMerge} />);
+    fireEvent.click(screen.getByText('Delete'));
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+
+    expect(await screen.findByText('Cannot delete "Walmart"')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '2 transactions' })).toHaveAttribute('href', '/transactions?payeeId=p1');
+    expect(screen.getByRole('link', { name: '1 warranty' })).toHaveAttribute('href', '/warranties');
+    expect(screen.getByRole('link', { name: /1 loan account/ })).toHaveAttribute('href', '/accounts/loan-1');
+    expect(onRefresh).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Merge instead' }));
+    expect(onMerge).toHaveBeenCalledWith(payee);
   });
 
   it('calls onDelete instead of onRefresh when onDelete is provided', async () => {
