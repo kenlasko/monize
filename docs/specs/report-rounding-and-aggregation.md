@@ -142,6 +142,14 @@ than the floors' 249.5048, and the tie goes to the lower key.
   hand the aggregates to a caller that folds further (the analytics summary).
 - The AI aggregators: insights, forecast, and the analytics groups' direction
   decisions.
+- Monthly Category Breakdown accumulates as aggregates rather than floats; the
+  monthly net worth and an account's portfolio gain are single differences
+  (`FxAggregate.difference`); the transactions widget
+  (`frontend/src/components/transactions/widget-shared.ts`) reads the server's
+  net rather than rebuilding it from the two rounded sides.
+- `backend/src/common/report-rounding.guard.spec.ts` fails rule 2's mechanical
+  forms: an `addConverted`, `add`, `sumMoney`, `+=`, `-=`, `+` or `-` over an
+  aggregate's reading, and an `isNetSpending` over a reading or a `roundMoney`.
 - The client's `sumConverted` (`frontend/src/lib/currency-total.ts`)
   accumulates its converted components with eight guard places, as
   `FxAggregate` does, so a client total of converted rows agrees with the

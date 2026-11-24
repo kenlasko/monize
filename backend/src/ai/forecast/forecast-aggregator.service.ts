@@ -420,7 +420,8 @@ export class ForecastAggregatorService {
         const net = cat.net.knownSubtotal;
         if (cat.isIncome) data.income.merge(cat.net);
         else data.expenses.mergeNegated(cat.net);
-        const total = cat.isIncome ? net : -net;
+        // `0 - net`, not `-net`: a net that reads 0 is listed as 0, never -0.
+        const total = cat.isIncome ? net : 0 - net;
         if (cat.isIncome ? cat.net.sign > 0 : cat.net.sign < 0) {
           breakdown.push({
             categoryName: cat.categoryName,

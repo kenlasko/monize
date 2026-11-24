@@ -13,7 +13,10 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 - [x] AI aggregators: insights, forecast, transaction analytics.
 - [x] Client `sumConverted` accumulates as `FxAggregate` does.
 
+- [x] Monthly Category Breakdown accumulates as aggregates; the monthly net worth and an account's portfolio gain are single differences (`FxAggregate.difference`); the transactions widget reads the server's net.
+- [x] `report-rounding.guard.spec.ts` holds rule 2's mechanical forms.
 - [ ] The Monthly Comparison's changes from the months' aggregates rather than their rounded figures (the spec's rule 4 residual).
+- [ ] Budget Health (`backend/src/budgets/budget-health-reports.service.ts`) adds a month's converted foreign income, read once at four places, to its native income; its other sides are sums of four-place budget-currency amounts, exact.
 
 ## 2 the precision of a figure on the wire
 

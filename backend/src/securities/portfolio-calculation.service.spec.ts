@@ -5144,6 +5144,20 @@ describe("PortfolioCalculationService gain over the priced holdings (A26-M38)", 
       expect(result.valuationComplete).toBe(true);
     });
 
+    it("takes the gain from value less cost before either is rounded (issue #2384)", async () => {
+      // Two holdings worth 124.752474 each on a cost of 0.00005: the gain is
+      // 249.504898, which reads 249.5049. The four-place readings, 249.5049
+      // less 0.0001, made it 249.5048.
+      const result = await build([
+        held("a", 124.752474, 0.00005),
+        held("b", 124.752474, 0),
+      ]);
+
+      expect(result.totalMarketValue).toBe(249.5049);
+      expect(result.gainCostBasis).toBe(0.0001);
+      expect(result.totalGainLoss).toBe(249.5049);
+    });
+
     it("reports a zero percent over a zero matched cost", async () => {
       const result = await build([held("b", null, 50000)]);
 

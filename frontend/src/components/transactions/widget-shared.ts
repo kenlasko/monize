@@ -119,7 +119,10 @@ export function summarizeInDisplayCurrency(
   return {
     income: converted.knownIncome,
     expenses: converted.knownExpenses,
-    net: roundMoney(converted.knownIncome - converted.knownExpenses),
+    // The server's net is income less expenses before either is rounded
+    // (docs/specs/report-rounding-and-aggregation.md rule 2); only a partial
+    // summary, which has none, falls back to the difference of its two sides.
+    net: converted.netCashFlow ?? roundMoney(converted.knownIncome - converted.knownExpenses),
     missingCurrencies: converted.missingCurrencies,
     includedTransactionCount: converted.includedTransactionCount,
     excludedTransactionCount: converted.excludedTransactionCount,

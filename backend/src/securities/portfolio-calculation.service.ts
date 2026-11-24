@@ -2667,7 +2667,12 @@ export class PortfolioCalculationService {
     // Value less cost of the SAME holdings (A26-M38): the unpriced holdings' cost
     // is not charged against a value that never included them.
     const gainCostBasis = gainCostAgg.knownSubtotal;
-    const totalGainLoss = gainValueAgg.knownSubtotal - gainCostBasis;
+    // Value less cost before either is rounded, rounded once
+    // (docs/specs/report-rounding-and-aggregation.md rule 2).
+    const totalGainLoss = FxAggregate.difference(
+      gainValueAgg,
+      gainCostAgg,
+    ).knownSubtotal;
 
     return {
       totalCostBasis,

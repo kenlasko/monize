@@ -3391,16 +3391,19 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     FxAggregate.sign reads a direction; apportionUnits splits a
                     parent between its parts. Applied in the Cash Flow Sankey
                     (cash-flow-sankey-assembly.ts), the custom report
-                    (report-net-cells.ts, report-rows.ts), every built-in
-                    report's totals, convertDatedRows, the AI insights and
-                    forecast aggregators and the client's sumConverted
-                    (frontend/src/lib/currency-total.ts): stage 1 of
-                    docs/future-plans/report-rounding-and-aggregation-tasks.md.
+                    (report-net-cells.ts, report-rows.ts), the built-in
+                    reports ticked in stage 1 of
+                    docs/future-plans/report-rounding-and-aggregation-tasks.md,
+                    convertDatedRows, the monthly net worth, an account's
+                    portfolio gain, the AI insights and forecast aggregators
+                    and the client's sumConverted
+                    (frontend/src/lib/currency-total.ts).
                     backend/src/common/report-rounding.guard.spec.ts fails an
-                    addConverted, add, sumMoney, += or -= over an aggregate's
-                    knownSubtotal / unroundedSubtotal, and an isNetSpending
-                    over a reading or a roundMoney; a reading first stored in
-                    a variable and then folded passes it.
+                    addConverted, add, sumMoney, +=, -=, + or - over an
+                    aggregate's knownSubtotal / unroundedSubtotal (a sort
+                    comparator excepted), and an isNetSpending over a reading
+                    or a roundMoney; a reading first stored in a variable and
+                    then folded passes it.
 Concurrency scope   -- (read path)
 Retry semantics     -- (read path)
 Crash semantics     -- (read path)
@@ -3422,7 +3425,11 @@ Known gap           Report figures leave the server at four places and the
                     shows one cent high (section 6 of
                     docs/specs/report-rounding-and-aggregation.md, undecided).
                     Several client totals are built from rounded rows (the
-                    same task list, stage 3).
+                    same task list, stage 3). Budget Health adds a month's
+                    converted foreign income, rounded once, to its native
+                    income, and the Monthly Comparison's changes are
+                    differences of two rounded figures (stage 1's open
+                    items).
 Status              partial
 ```
 

@@ -1111,14 +1111,15 @@ export class NetWorthService {
         // summary and the assistant print these to the cent, and a chart that
         // wants whole units rounds at its own surface (as the investment
         // series below already do). Net worth is the difference of the two
-        // unrounded subtotals, rounded once.
+        // unrounded subtotals, rounded once (FxAggregate.difference): the
+        // difference of their four-place readings could sit a unit off
+        // (docs/specs/report-rounding-and-aggregation.md rule 2).
         return {
           month,
           assets: roundMoney(data.assets.knownSubtotal),
           liabilities: roundMoney(data.liabilities.knownSubtotal),
-          netWorth: roundMoney(
-            data.assets.knownSubtotal - data.liabilities.knownSubtotal,
-          ),
+          netWorth: FxAggregate.difference(data.assets, data.liabilities)
+            .knownSubtotal,
           // Stage 1 of docs/specs/fx-conversion-completeness.md: the three
           // figures above are the subtotal of what converted, and these two
           // fields say so. They are NOT yet nullable -- that is stage 2, with

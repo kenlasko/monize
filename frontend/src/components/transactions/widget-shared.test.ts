@@ -115,6 +115,32 @@ describe('summarizeInDisplayCurrency', () => {
     });
   });
 
+  it("reads the server's net, rounded once, not the difference of its rounded sides (issue #2384)", () => {
+    // 249.504948 in and 0.00005 out net 249.504898, which reads 249.5049;
+    // the rounded sides, 249.5049 and 0.0001, differ by 249.5048.
+    const result = summarizeInDisplayCurrency(
+      summary(
+        {
+          EUR: { totalIncome: 200.02, totalExpenses: 0, netCashFlow: 200.02, transactionCount: 2 },
+          USD: { totalIncome: 0, totalExpenses: 0.00005, netCashFlow: -0.00005, transactionCount: 1 },
+        },
+        {
+          currency: 'USD',
+          totalIncome: 249.5049,
+          totalExpenses: 0.0001,
+          netCashFlow: 249.5049,
+          knownIncome: 249.5049,
+          knownExpenses: 0.0001,
+          includedTransactionCount: 3,
+          excludedTransactionCount: 0,
+          missingCurrencies: [],
+        },
+      ),
+      converted('USD'),
+    );
+    expect(result.net).toBe(249.5049);
+  });
+
   it('carries the excluded bucket, its currency and its transaction count', () => {
     const result = summarizeInDisplayCurrency(
       summary(

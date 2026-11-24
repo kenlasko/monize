@@ -17,6 +17,9 @@ import * as ts from "typescript";
  *   `mergeNegated`;
  * - `sumMoney(...)`: fold the parts' aggregates instead;
  * - `x += ...` / `x -= ...`: accumulate in an `FxAggregate`;
+ * - `a.knownSubtotal - b.knownSubtotal`, or a reading `+` / `-` anything: fold
+ *   the two with `FxAggregate.difference` or `FxAggregate.sum` and read once (a
+ *   sort comparator, which only orders rows, is exempt);
  * - `isNetSpending(...)` over a reading or a `roundMoney(...)`: judge the
  *   direction on `agg.sign`, before rounding (rule 5).
  * The scan reads the syntax tree, so a comment naming the pattern never trips
@@ -31,6 +34,31 @@ const READINGS = new Set(["knownSubtotal", "unroundedSubtotal"]);
 const readsSubtotal = (node: ts.Node): boolean =>
   (ts.isPropertyAccessExpression(node) && READINGS.has(node.name.text)) ||
   ts.forEachChild(node, (child) => readsSubtotal(child) || undefined) === true;
+
+/** `true` when `node` is itself a reading, under parentheses or a minus. */
+const isReading = (node: ts.Expression): boolean => {
+  if (ts.isParenthesizedExpression(node)) return isReading(node.expression);
+  if (
+    ts.isPrefixUnaryExpression(node) &&
+    node.operator === ts.SyntaxKind.MinusToken
+  ) {
+    return isReading(node.operand);
+  }
+  return ts.isPropertyAccessExpression(node) && READINGS.has(node.name.text);
+};
+
+/** `true` when `node` sits in a function handed to a `.sort(...)` call. */
+const inSortComparator = (node: ts.Node): boolean => {
+  let fn: ts.Node | undefined = node.parent;
+  while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
+  const call = fn?.parent;
+  return (
+    !!call &&
+    ts.isCallExpression(call) &&
+    ts.isPropertyAccessExpression(call.expression) &&
+    call.expression.name.text === "sort"
+  );
+};
 
 /** `true` when `node` calls `roundMoney` anywhere inside it. */
 const callsRoundMoney = (node: ts.Node): boolean =>
@@ -90,6 +118,15 @@ export function roundedFoldFindings(
     ) {
       flag(node);
     }
+    if (
+      ts.isBinaryExpression(node) &&
+      (node.operatorToken.kind === ts.SyntaxKind.PlusToken ||
+        node.operatorToken.kind === ts.SyntaxKind.MinusToken) &&
+      (isReading(node.left) || isReading(node.right)) &&
+      !inSortComparator(node)
+    ) {
+      flag(node);
+    }
     ts.forEachChild(node, visit);
   };
   visit(sf);
@@ -139,6 +176,9 @@ describe("a part folds into a total as its aggregate (INV-REPORT-005)", () => {
         "overall -= agg.unroundedSubtotal;",
         "if (!isNetSpending(roundMoney(overall))) continue;",
         "if (isNetSpending(agg.knownSubtotal)) keep();",
+        "const net = roundMoney(a.knownSubtotal - b.knownSubtotal);",
+        "const gain = value.knownSubtotal - cost;",
+        "const both = (x.unroundedSubtotal) + -(y.knownSubtotal);",
       ].join("\n"),
     );
     expect(flagged).toEqual([
@@ -150,6 +190,9 @@ describe("a part folds into a total as its aggregate (INV-REPORT-005)", () => {
       "6: overall -= agg.unroundedSubtotal",
       "7: isNetSpending(roundMoney(overall))",
       "8: isNetSpending(agg.knownSubtotal)",
+      "9: a.knownSubtotal - b.knownSubtotal",
+      "10: value.knownSubtotal - cost",
+      "11: (x.unroundedSubtotal) + -(y.knownSubtotal)",
     ]);
 
     const clean = roundedFoldFindings(
@@ -167,6 +210,10 @@ describe("a part folds into a total as its aggregate (INV-REPORT-005)", () => {
         "const mean = roundMoney(agg.unroundedSubtotal / count);",
         "missing.add(pair);",
         "const t = sumMoney(values, MONEY_SCALE);",
+        "rows.sort((a, b) => b.agg.knownSubtotal - a.agg.knownSubtotal);",
+        "rows.sort(function (a, b) { return b.knownSubtotal - a.knownSubtotal; });",
+        "const share = (part.unroundedSubtotal / whole.unroundedSubtotal) * 100;",
+        "const total = readSubtotal(units) + this.nonFiniteSum;",
       ].join("\n"),
     );
     expect(clean).toEqual([]);
