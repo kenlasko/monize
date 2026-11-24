@@ -116,6 +116,8 @@
     "addAsAliasLabel": "\"{name}\" als alias toevoegen aan de doelbegunstigde",
     "willLabel": "Dit zal:",
     "willMoveTransactions": "Alle transacties van \"{source}\" verplaatsen naar \"{target}\"",
+    "willRepointRules": "{count, plural, one {# regel die \"{source}\" gebruikt, wijzigen naar \"{target}\"} other {# regels die \"{source}\" gebruiken, wijzigen naar \"{target}\"}}",
+    "willRepointReports": "{count, plural, one {# aangepast rapport dat op \"{source}\" filtert, wijzigen naar \"{target}\"} other {# aangepaste rapporten die op \"{source}\" filteren, wijzigen naar \"{target}\"}}",
     "willAddAlias": "\"{source}\" als alias toevoegen zodat toekomstige imports automatisch overeenkomen",
     "willDelete": "De begunstigde \"{source}\" verwijderen",
     "merging": "Samenvoegen...",

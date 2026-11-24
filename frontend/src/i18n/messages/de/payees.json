@@ -116,6 +116,8 @@
     "addAsAliasLabel": "\"{name}\" als Alias beim Ziel-Zahlungsempfänger hinzufügen",
     "willLabel": "Folgendes wird ausgeführt:",
     "willMoveTransactions": "Alle Buchungen von \"{source}\" nach \"{target}\" verschieben",
+    "willRepointRules": "{count, plural, one {# Regel, die \"{source}\" verwendet, auf \"{target}\" umstellen} other {# Regeln, die \"{source}\" verwenden, auf \"{target}\" umstellen}}",
+    "willRepointReports": "{count, plural, one {# eigenen Bericht, der nach \"{source}\" filtert, auf \"{target}\" umstellen} other {# eigene Berichte, die nach \"{source}\" filtern, auf \"{target}\" umstellen}}",
     "willAddAlias": "\"{source}\" als Alias hinzufügen, damit zukünftige Importe automatisch zugeordnet werden",
     "willDelete": "Den Zahlungsempfänger \"{source}\" löschen",
     "merging": "Wird zusammengeführt...",

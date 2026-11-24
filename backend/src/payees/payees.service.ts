@@ -28,6 +28,7 @@ import { matchesAliasPattern } from "./alias-match.util";
 import { aliasesConflict } from "./alias-overlap.util";
 import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
 import { reassignPayeeReferences } from "./payee-references";
+import { countPayeeJsonReferences } from "./payee-json-references";
 import {
   applyPayeeCategoryToAll,
   backfillPayeeCategory,
@@ -1922,6 +1923,17 @@ export class PayeesService {
     }
 
     return null;
+  }
+
+  /** What a merge of this payee repoints besides transactions, for the dialog. */
+  async getMergeImpact(
+    userId: string,
+    payeeId: string,
+  ): Promise<{ rules: number; reports: number }> {
+    await this.findOne(userId, payeeId);
+    return withScopedDb(this.dataSource, (m) =>
+      countPayeeJsonReferences(m, userId, payeeId),
+    );
   }
 
   /**

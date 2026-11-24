@@ -41,6 +41,7 @@ describe("PayeesController", () => {
       removeAlias: jest.fn(),
       getAliases: jest.fn(),
       mergePayees: jest.fn(),
+      getMergeImpact: jest.fn(),
       calculateCategorySuggestions: jest.fn(),
       applyCategorySuggestions: jest.fn(),
       previewDeactivation: jest.fn(),
@@ -483,6 +484,23 @@ describe("PayeesController", () => {
   });
 
   // ─── Merge endpoint ────────────────────────────────────────────────
+
+  describe("getMergeImpact()", () => {
+    it("delegates with userId and payeeId", async () => {
+      mockPayeesService.getMergeImpact.mockResolvedValue({
+        rules: 2,
+        reports: 0,
+      });
+
+      const result = await controller.getMergeImpact(mockReq, "payee-1");
+
+      expect(result).toEqual({ rules: 2, reports: 0 });
+      expect(mockPayeesService.getMergeImpact).toHaveBeenCalledWith(
+        "user-1",
+        "payee-1",
+      );
+    });
+  });
 
   describe("mergePayees()", () => {
     it("delegates to payeesService.mergePayees with userId and dto", async () => {

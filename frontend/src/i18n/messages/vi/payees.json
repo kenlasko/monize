@@ -116,6 +116,8 @@
     "addAsAliasLabel": "Thêm \"{name}\" làm bí danh cho người nhận đích",
     "willLabel": "Điều này sẽ:",
     "willMoveTransactions": "Chuyển tất cả giao dịch từ \"{source}\" sang \"{target}\"",
+    "willRepointRules": "{count, plural, one {Đổi # quy tắc đang dùng \"{source}\" sang dùng \"{target}\"} other {Đổi # quy tắc đang dùng \"{source}\" sang dùng \"{target}\"}}",
+    "willRepointReports": "{count, plural, one {Đổi # báo cáo tùy chỉnh đang lọc theo \"{source}\" sang lọc theo \"{target}\"} other {Đổi # báo cáo tùy chỉnh đang lọc theo \"{source}\" sang lọc theo \"{target}\"}}",
     "willAddAlias": "Thêm \"{source}\" làm bí danh để các lần nhập trong tương lai tự động khớp",
     "willDelete": "Xóa người nhận \"{source}\"",
     "merging": "Đang gộp...",

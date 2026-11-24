@@ -518,6 +518,17 @@ export class PayeesController {
     return this.payeesService.getAliases(req.user.id, id);
   }
 
+  @Get(":id/merge-impact")
+  @ApiOperation({
+    summary:
+      "Count the rules and custom reports a merge of this payee would repoint",
+  })
+  @ApiResponse({ status: 200, description: "Rule and report counts" })
+  @ApiResponse({ status: 404, description: "Payee not found" })
+  getMergeImpact(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.payeesService.getMergeImpact(req.user.id, id);
+  }
+
   @Get(":id/detail")
   @AllowDelegate()
   @ApiOperation({ summary: "Get the payee detail page aggregate" })

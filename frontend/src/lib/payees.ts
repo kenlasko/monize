@@ -282,6 +282,14 @@ export const payeesApi = {
     return response.data;
   },
 
+  // Rules and custom reports a merge of this payee would repoint
+  getMergeImpact: async (payeeId: string): Promise<{ rules: number; reports: number }> => {
+    const response = await apiClient.get<{ rules: number; reports: number }>(
+      `/payees/${payeeId}/merge-impact`,
+    );
+    return response.data;
+  },
+
   // ===== Auto-Merge Methods =====
 
   // Preview auto-merge groups of near-duplicate payees

@@ -99,7 +99,9 @@ describe("reassignPayeeReferences", () => {
   function makeManager() {
     return {
       update: jest.fn().mockResolvedValue({ affected: 2 }),
-      query: jest.fn().mockResolvedValue([[], 1]),
+      query: jest.fn((sql: string) =>
+        Promise.resolve(sql.startsWith("SELECT") ? [] : [[], 1]),
+      ),
     };
   }
 
@@ -148,8 +150,9 @@ describe("reassignPayeeReferences", () => {
       );
     }
     expect(Object.keys(result).sort()).toEqual(
-      Object.keys(PAYEE_REFERENCE_MOVES).sort(),
+      [...Object.keys(PAYEE_REFERENCE_MOVES), "json"].sort(),
     );
+    expect(result.json).toEqual({ rules: 0, reports: 0 });
     expect(result["transactions.payee_id"]).toBe(2);
     expect(result["shared_people.payee_id"]).toBe(1);
   });
