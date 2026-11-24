@@ -28,6 +28,7 @@ import { useReportData } from '@/hooks/useReportData';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { WidgetCard, WidgetConfigRow } from './WidgetCard';
@@ -101,9 +102,10 @@ export function IncomeExpensesBarChart({
   );
 
   const isWeekly = config.range === WEEKLY_RANGE;
+  const today = useFinancialToday();
   const { start, end } = useMemo(
-    () => resolveRangePreset(config.range, { alignment: isWeekly ? 'day' : 'month' }),
-    [config.range, isWeekly],
+    () => resolveRangePreset(config.range, { alignment: isWeekly ? 'day' : 'month', today }),
+    [config.range, isWeekly, today],
   );
   const accountIdsKey = config.accountIds.join(',');
 

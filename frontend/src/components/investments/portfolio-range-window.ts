@@ -1,5 +1,5 @@
 import { format, subDays, subMonths, subYears } from 'date-fns';
-import { resolveRangePreset, type ResolveRangeOptions } from '@/lib/date-range';
+import { rangeAnchor, resolveRangePreset, type ResolveRangeOptions } from '@/lib/date-range';
 import {
   previousCalendarDay,
   usesPriorCloseBaseline,
@@ -152,7 +152,7 @@ export function applyPortfolioWindowStart(
   options: ResolveRangeOptions = {},
 ): PortfolioRangeWindow {
   const rule = PORTFOLIO_WINDOW_STARTS[range] ?? { kind: 'inherit' };
-  const periodStart = periodStartFor(rule, base.start, options.now ?? new Date());
+  const periodStart = periodStartFor(rule, base.start, rangeAnchor(options));
   const start =
     periodStart && usesPriorCloseBaseline(range)
       ? previousCalendarDay(periodStart)

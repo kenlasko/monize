@@ -4,6 +4,7 @@ import { type ReactNode, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { netWorthApi } from '@/lib/net-worth';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { partialTotalFor } from '@/lib/net-worth-completeness';
 import { isComplete } from '@/lib/currency-total';
 import { moneyDecimalsForCurrency } from '@/lib/format';
@@ -64,12 +65,13 @@ export function NetWorthHero({
   // The hero's own window, so a 10-year chart does not hold up the widgets.
   // A reload after a price refresh asks the same question again, so the
   // figures already drawn stay until the new ones land.
+  const today = useFinancialToday();
   const { data, dataKey, isLoading: dataLoading, error } = useReportData(
     () => {
-      const { start, end } = resolveRangePreset(config.range, { alignment: 'month' });
+      const { start, end } = resolveRangePreset(config.range, { alignment: 'month', today });
       return netWorthApi.getMonthly({ startDate: start || undefined, endDate: end });
     },
-    [config.range, refreshKey],
+    [config.range, refreshKey, today],
     { requestKey: config.range },
   );
 

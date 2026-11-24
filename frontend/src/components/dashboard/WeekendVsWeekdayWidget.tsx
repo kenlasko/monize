@@ -22,6 +22,7 @@ import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { reportTotal } from '@/lib/currency-total';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { CHART_SERIES } from '@/lib/chart-colors';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
@@ -52,9 +53,11 @@ export function WeekendVsWeekdayWidget({ isLoading }: WeekendVsWeekdayWidgetProp
     WEEKEND_WEEKDAY_DEFAULT,
   );
 
+  const today = useFinancialToday();
+
   const { start, end } = useMemo(
-    () => resolveRangePreset(config.range),
-    [config.range],
+    () => resolveRangePreset(config.range, { today }),
+    [config.range, today],
   );
 
   const { data: reportData, isLoading: dataLoading } = useReportData(

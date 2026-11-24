@@ -18,6 +18,23 @@ export interface ResolveRangeOptions {
   endDate?: string;
   /** Injectable "now" for deterministic tests. Defaults to the current date. */
   now?: Date;
+  /**
+   * The user's day (YYYY-MM-DD, `useFinancialToday()`). Wins over `now`: every
+   * preset is anchored on it, not on the browser's calendar.
+   */
+  today?: string;
+}
+
+/**
+ * The anchor the date-fns arithmetic runs on. With `today` it is local noon of
+ * that calendar day: date-fns reads and writes in the browser's zone, so noon
+ * keeps `format`, `subDays` and `startOfMonth` on that day across any DST shift
+ * (a midnight anchor can slide a day).
+ */
+export function rangeAnchor({ now, today }: Pick<ResolveRangeOptions, 'now' | 'today'>): Date {
+  if (!today) return now ?? new Date();
+  const [y, m, d] = today.split('-').map(Number);
+  return new Date(y, m - 1, d, 12);
 }
 
 /**
@@ -32,8 +49,8 @@ export function resolveRangePreset(
   range: string,
   options: ResolveRangeOptions = {},
 ): { start: string; end: string } {
-  const { alignment = 'day', startDate = '', endDate = '', now = new Date() } =
-    options;
+  const { alignment = 'day', startDate = '', endDate = '' } = options;
+  const now = rangeAnchor(options);
 
   if (range === 'custom') {
     return { start: startDate, end: endDate };

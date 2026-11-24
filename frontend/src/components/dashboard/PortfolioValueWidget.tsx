@@ -22,6 +22,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { usePortfolioRangeWindow } from '@/hooks/usePortfolioRangeWindow';
 import { usePortfolioPeriodResult } from '@/hooks/usePortfolioPeriodResult';
 import {
@@ -103,9 +104,10 @@ export function PortfolioValueWidget({
   );
 
   const isDaily = DAILY_RANGES.has(config.range);
+  const today = useFinancialToday();
   const baseWindow = useMemo(
-    () => resolveRangePreset(config.range, { alignment: isDaily ? 'day' : 'month' }),
-    [config.range, isDaily],
+    () => resolveRangePreset(config.range, { alignment: isDaily ? 'day' : 'month', today }),
+    [config.range, isDaily, today],
   );
 
   const accountIdsCsv =

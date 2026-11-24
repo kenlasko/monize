@@ -13,6 +13,7 @@ import {
 import { chartColors } from '@/lib/chart-colors';
 import { netWorthApi } from '@/lib/net-worth';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -107,12 +108,13 @@ export function NetWorthChart({ isLoading, refreshKey = 0 }: NetWorthChartProps)
   // other widgets does not hold them up.
   // A reload after a price refresh asks the same question again, so the chart
   // already drawn stays until the new answer lands.
+  const today = useFinancialToday();
   const { data, dataKey, isLoading: dataLoading, error } = useReportData(
     () => {
-      const { start, end } = resolveRangePreset(config.range, { alignment: 'month' });
+      const { start, end } = resolveRangePreset(config.range, { alignment: 'month', today });
       return netWorthApi.getMonthly({ startDate: start || undefined, endDate: end });
     },
-    [config.range, refreshKey],
+    [config.range, refreshKey, today],
     { requestKey: config.range },
   );
 

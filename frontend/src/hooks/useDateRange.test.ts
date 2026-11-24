@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDateRange } from './useDateRange';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 describe('useDateRange', () => {
   beforeEach(() => {
@@ -256,5 +257,18 @@ describe('useDateRange', () => {
       expect(restored.current.resolvedRange.start).toBe('2024-03-01');
       expect(restored.current.resolvedRange.end).toBe('2024-09-30');
     });
+  });
+
+  it("resolves ytd on the user's day when the preference zone differs from the process zone", () => {
+    // 2026-12-31T20:00Z is 2027-01-01 in Pacific/Kiritimati (UTC+14) but still
+    // Dec 31 in the UTC test process.
+    vi.setSystemTime(new Date('2026-12-31T20:00:00Z'));
+    usePreferencesStore.setState({ preferences: { timezone: 'Pacific/Kiritimati' } as never });
+    try {
+      const { result } = renderHook(() => useDateRange({ defaultRange: 'ytd' }));
+      expect(result.current.resolvedRange).toEqual({ start: '2027-01-01', end: '2027-01-01' });
+    } finally {
+      act(() => usePreferencesStore.setState({ preferences: null }));
+    }
   });
 });

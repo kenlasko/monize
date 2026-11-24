@@ -14,6 +14,7 @@ import { HOVER_ROW_ON_CARD } from '@/components/ui/Card';
 import { useReportData } from '@/hooks/useReportData';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -85,7 +86,9 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
   // persisted and it closes whenever the data behind it changes.
   const [otherExpanded, setOtherExpanded] = useState(false);
 
-  const { start, end } = useMemo(() => resolveRangePreset(config.range), [config.range]);
+  const today = useFinancialToday();
+
+  const { start, end } = useMemo(() => resolveRangePreset(config.range, { today }), [config.range, today]);
   const accountIdsKey = config.accountIds.join(',');
 
   /**

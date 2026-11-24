@@ -50,4 +50,15 @@ describe('resolveRangePreset', () => {
   it('falls back to a 3-month window for unknown presets', () => {
     expect(resolveRangePreset('bogus', { now: NOW }).start).toBe('2026-04-07');
   });
+
+  it("anchors every preset on the user's day, not on `now`'s", () => {
+    // 20:00Z on Dec 31 is already Jan 1 for a user at UTC+14.
+    const browserNow = new Date('2026-12-31T20:00:00Z');
+    expect(resolveRangePreset('ytd', { now: browserNow, today: '2027-01-01' })).toEqual({
+      start: '2027-01-01',
+      end: '2027-01-01',
+    });
+    expect(resolveRangePreset('mtd', { now: browserNow, today: '2027-01-01' }).start).toBe('2027-01-01');
+    expect(resolveRangePreset('1m', { now: browserNow, today: '2027-01-01' }).start).toBe('2026-12-02');
+  });
 });
