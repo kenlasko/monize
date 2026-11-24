@@ -228,9 +228,9 @@ export class TaxRecurringReportsService {
       );
     };
 
-    const incomeBySource = new Map<string, number>();
-    const deductibleExpenses = new Map<string, number>();
-    const allExpensesByCategory = new Map<string, number>();
+    const incomeBySource = new Map<string, FxAggregate>();
+    const deductibleExpenses = new Map<string, FxAggregate>();
+    const allExpensesByCategory = new Map<string, FxAggregate>();
     const totalIncome = new FxAggregate();
     const totalExpenses = new FxAggregate();
     // A row with no rate into the reporting currency is unknown, never its
@@ -243,7 +243,7 @@ export class TaxRecurringReportsService {
     // not cancel; the display name only groups the classified results.
     const netByCategory = new Map<
       string,
-      { name: string; leafName: string; net: number }
+      { name: string; leafName: string; net: FxAggregate }
     >();
 
     rawResults.forEach((row) => {
@@ -274,55 +274,57 @@ export class TaxRecurringReportsService {
       // (INV-REPORT-004).
       const key =
         row.category_id ?? (amount < 0 ? "null:spend" : "null:income");
-      netByCategory.set(key, {
+      const entry = netByCategory.get(key) ?? {
         name: catName,
         leafName: category?.name ?? catName,
-        net: roundMoney((netByCategory.get(key)?.net ?? 0) + amount),
-      });
+        net: new FxAggregate(),
+      };
+      entry.net.addConverted(amount);
+      netByCategory.set(key, entry);
     });
 
-    // A category is classified once, by its net: spending when its debits
-    // exceed its credits (`isNetSpending`), income when its credits do.
-    const addTo = (map: Map<string, number>, name: string, value: number) =>
-      map.set(name, roundMoney((map.get(name) ?? 0) + value));
-    netByCategory.forEach(({ name: catName, leafName, net: rawNet }) => {
-      const net = roundMoney(rawNet);
-      if (isNetSpending(-net)) {
-        totalExpenses.addConverted(-net);
-        addTo(allExpensesByCategory, catName, -net);
+    // A category is classified once, by the sign of its net before rounding:
+    // spending when its debits exceed its credits (`isNetSpending`), income
+    // when its credits do. Every list and total folds the nets as aggregates
+    // and is rounded once (docs/specs/report-rounding-and-aggregation.md
+    // rules 2 and 5).
+    const addTo = (
+      map: Map<string, FxAggregate>,
+      name: string,
+      net: FxAggregate,
+      spent: boolean,
+    ) => {
+      const sum = map.get(name) ?? new FxAggregate();
+      if (spent) sum.mergeNegated(net);
+      else sum.merge(net);
+      map.set(name, sum);
+    };
+    netByCategory.forEach(({ name: catName, leafName, net }) => {
+      if (isNetSpending(-net.sign)) {
+        totalExpenses.mergeNegated(net);
+        addTo(allExpensesByCategory, catName, net, true);
         if (matchesKeywords(catName) || matchesKeywords(leafName))
-          addTo(deductibleExpenses, catName, -net);
-      } else if (net > 0) {
-        totalIncome.addConverted(net);
-        addTo(incomeBySource, catName, net);
+          addTo(deductibleExpenses, catName, net, true);
+      } else if (net.sign > 0) {
+        totalIncome.merge(net);
+        addTo(incomeBySource, catName, net, false);
       }
     });
 
-    const knownIncome = roundMoney(totalIncome.knownSubtotal);
-    const knownExpenses = roundMoney(totalExpenses.knownSubtotal);
-    const knownDeductible = roundMoney(
-      sumMoney(Array.from(deductibleExpenses.values())),
-    );
+    const deductible = new FxAggregate();
+    for (const sum of deductibleExpenses.values()) deductible.merge(sum);
+    const knownIncome = totalIncome.knownSubtotal;
+    const knownExpenses = totalExpenses.knownSubtotal;
+    const knownDeductible = deductible.knownSubtotal;
+    const listOf = (map: Map<string, FxAggregate>) =>
+      Array.from(map.entries())
+        .map(([name, sum]) => ({ name, total: sum.knownSubtotal }))
+        .sort((a, b) => b.total - a.total);
 
     return {
-      incomeBySource: Array.from(incomeBySource.entries())
-        .map(([name, total]) => ({
-          name,
-          total: roundMoney(total),
-        }))
-        .sort((a, b) => b.total - a.total),
-      deductibleExpenses: Array.from(deductibleExpenses.entries())
-        .map(([name, total]) => ({
-          name,
-          total: roundMoney(total),
-        }))
-        .sort((a, b) => b.total - a.total),
-      allExpenses: Array.from(allExpensesByCategory.entries())
-        .map(([name, total]) => ({
-          name,
-          total: roundMoney(total),
-        }))
-        .sort((a, b) => b.total - a.total),
+      incomeBySource: listOf(incomeBySource),
+      deductibleExpenses: listOf(deductibleExpenses),
+      allExpenses: listOf(allExpensesByCategory),
       totals: {
         income: gaps.headline(knownIncome),
         expenses: gaps.headline(knownExpenses),
@@ -448,7 +450,7 @@ export class TaxRecurringReportsService {
         payeeName: string;
         payeeId: string | null;
         occurrences: number;
-        totalAmount: number;
+        totalAmount: FxAggregate;
         lastTransactionDate: Date;
         categoryName: string | null;
       }
@@ -476,18 +478,20 @@ export class TaxRecurringReportsService {
       const existing = payeeMerged.get(key);
       if (existing) {
         existing.occurrences += row.occurrences;
-        existing.totalAmount += totalAmount;
+        existing.totalAmount.addConverted(totalAmount);
         if (
           new Date(row.last_transaction_date) > existing.lastTransactionDate
         ) {
           existing.lastTransactionDate = new Date(row.last_transaction_date);
         }
       } else {
+        const sum = new FxAggregate();
+        sum.addConverted(totalAmount);
         payeeMerged.set(key, {
           payeeName: row.payee_name,
           payeeId: row.payee_id,
           occurrences: row.occurrences,
-          totalAmount,
+          totalAmount: sum,
           lastTransactionDate: new Date(row.last_transaction_date),
           categoryName: row.category_name,
         });
@@ -521,8 +525,10 @@ export class TaxRecurringReportsService {
           payeeName: row.payeeName,
           payeeId: row.payeeId,
           occurrences,
-          totalAmount: roundMoney(totalAmount),
-          averageAmount: roundMoney(totalAmount / occurrences),
+          totalAmount: totalAmount.knownSubtotal,
+          averageAmount: roundMoney(
+            totalAmount.unroundedSubtotal / occurrences,
+          ),
           lastTransactionDate: formatDateYMD(row.lastTransactionDate),
           frequency,
           categoryName: row.categoryName,
@@ -533,10 +539,15 @@ export class TaxRecurringReportsService {
       // parts no longer ranks the payees.
       .sort((a, b) => b.totalAmount - a.totalAmount);
 
-    const knownTotalRecurring = roundMoney(
-      sumMoney(data.map((item) => item.totalAmount)),
+    // The payees' aggregates folded and rounded once; the estimate divides the
+    // unrounded total (docs/specs/report-rounding-and-aggregation.md rules 2
+    // and 8).
+    const recurring = new FxAggregate();
+    for (const row of payeeMerged.values()) recurring.merge(row.totalAmount);
+    const knownTotalRecurring = recurring.knownSubtotal;
+    const knownMonthlyEstimate = roundMoney(
+      recurring.unroundedSubtotal / monthCount,
     );
-    const knownMonthlyEstimate = roundMoney(knownTotalRecurring / monthCount);
 
     return {
       data,
@@ -699,6 +710,7 @@ export class TaxRecurringReportsService {
         name: string;
         payeeName: string;
         payments: { date: Date; amount: number }[];
+        paid: FxAggregate;
       }
     >();
 
@@ -754,6 +766,7 @@ export class TaxRecurringReportsService {
             name: scheduled.name,
             payeeName: scheduled.payeeName,
             payments: [],
+            paid: new FxAggregate(),
           };
           billPaymentMap.set(scheduled.id, payment);
         }
@@ -761,13 +774,13 @@ export class TaxRecurringReportsService {
           date: new Date(tx.transaction_date),
           amount: txAmount,
         });
+        payment.paid.addConverted(txAmount);
       }
     });
 
     const billPayments: BillPaymentItem[] = Array.from(billPaymentMap.values())
       .filter((bp) => bp.payments.length > 0)
       .map((bp) => {
-        const totalPaid = sumMoney(bp.payments.map((p) => p.amount));
         const sortedPayments = [...bp.payments].sort(
           (a, b) => b.date.getTime() - a.date.getTime(),
         );
@@ -775,9 +788,11 @@ export class TaxRecurringReportsService {
           scheduledTransactionId: bp.id,
           scheduledTransactionName: bp.name,
           payeeName: bp.payeeName,
-          totalPaid: roundMoney(totalPaid),
+          totalPaid: bp.paid.knownSubtotal,
           paymentCount: bp.payments.length,
-          averagePayment: roundMoney(totalPaid / bp.payments.length),
+          averagePayment: roundMoney(
+            bp.paid.unroundedSubtotal / bp.payments.length,
+          ),
           lastPaymentDate: sortedPayments[0]
             ? formatDateYMD(sortedPayments[0].date)
             : null,
@@ -790,27 +805,29 @@ export class TaxRecurringReportsService {
     // every locale; the one consumer builds its own localized label from the
     // key, so the label was dead payload waiting for the next consumer to
     // reach for the obvious field name.
-    const monthlyMap = new Map<string, number>();
+    // Every figure, a bill's, a month's or the window's, is the single
+    // rounding of its payments (docs/specs/report-rounding-and-aggregation.md
+    // rules 2 and 8).
+    const monthlyMap = new Map<string, FxAggregate>();
+    const paid = new FxAggregate();
     billPaymentMap.forEach((bp) => {
+      paid.merge(bp.paid);
       bp.payments.forEach((payment) => {
         const monthKey = payment.date.toISOString().slice(0, 7);
-        monthlyMap.set(
-          monthKey,
-          (monthlyMap.get(monthKey) ?? 0) + payment.amount,
-        );
+        const month = monthlyMap.get(monthKey) ?? new FxAggregate();
+        month.addConverted(payment.amount);
+        monthlyMap.set(monthKey, month);
       });
     });
 
     const monthlyTotals: MonthlyBillTotal[] = Array.from(monthlyMap.entries())
       .map(([month, total]) => ({
         month,
-        total: roundMoney(total),
+        total: total.knownSubtotal,
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    const knownTotalPaid = roundMoney(
-      sumMoney(billPayments.map((bp) => bp.totalPaid)),
-    );
+    const knownTotalPaid = paid.knownSubtotal;
     const totalPayments = billPayments.reduce(
       (sum, bp) => sum + bp.paymentCount,
       0,
@@ -825,8 +842,10 @@ export class TaxRecurringReportsService {
         knownTotalPaid,
         totalPayments,
         uniqueBills: billPayments.length,
-        monthlyAverage: gaps.headline(roundMoney(knownTotalPaid / monthCount)),
-        knownMonthlyAverage: roundMoney(knownTotalPaid / monthCount),
+        monthlyAverage: gaps.headline(
+          roundMoney(paid.unroundedSubtotal / monthCount),
+        ),
+        knownMonthlyAverage: roundMoney(paid.unroundedSubtotal / monthCount),
       },
       currency: defaultCurrency,
       missingCurrencies: gaps.missingCurrencies,

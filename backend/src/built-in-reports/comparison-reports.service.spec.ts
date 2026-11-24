@@ -973,6 +973,93 @@ describe("ComparisonReportsService", () => {
   // ---------------------------------------------------------------------------
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001)
   // ---------------------------------------------------------------------------
+  describe("rounded once, after the parts are folded (issue #2384)", () => {
+    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.7525 alone, and 249.504948
+    // for two, which reads 249.5049. A figure that rounded its running sum on
+    // every row, or added four-place readings, came to 249.5050.
+    beforeEach(() => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.currency_code === "EUR" ? amount * 1.2474 : amount,
+      );
+    });
+
+    it("totals a month's two days of income at 249.5049", async () => {
+      const currentYear = new Date().getFullYear();
+      scopedManager.query.mockResolvedValue(
+        ["2026-01-05", "2026-01-06"].map((txDate) => ({
+          year: currentYear,
+          month: 1,
+          currency_code: "EUR",
+          tx_date: txDate,
+          own_rate: null,
+          income: "100.01",
+          expenses: "0",
+        })),
+      );
+
+      const result = await service.getYearOverYear(mockUserId, 1);
+
+      const yearData = result.data[0];
+      expect(yearData.months[0].income).toBe(249.5049);
+      expect(yearData.months[0].savings).toBe(249.5049);
+      expect(yearData.totals.income).toBe(249.5049);
+    });
+
+    it("takes savings from income and expenses before either is rounded", async () => {
+      // 124.752474 in and 0.000049896 out save 124.752424104, which reads
+      // 124.7524. The two four-place readings, 124.7525 and 0, saved 124.7525.
+      const currentYear = new Date().getFullYear();
+      scopedManager.query.mockResolvedValue([
+        {
+          year: currentYear,
+          month: 1,
+          currency_code: "EUR",
+          tx_date: "2026-01-05",
+          own_rate: null,
+          income: "100.01",
+          expenses: "0.00004",
+        },
+      ]);
+
+      const result = await service.getYearOverYear(mockUserId, 1);
+
+      const yearData = result.data[0];
+      expect(yearData.months[0].savings).toBe(124.7524);
+      expect(yearData.totals.savings).toBe(124.7524);
+    });
+
+    it("totals a Saturday's two categories at 249.5049", async () => {
+      scopedManager.query.mockResolvedValue(
+        ["cat-parent", "cat-standalone"].map((categoryId) => ({
+          day_of_week: 6,
+          category_id: categoryId,
+          currency_code: "EUR",
+          tx_date: "2025-06-07",
+          own_rate: null,
+          tx_count: 1,
+          total: "100.01",
+        })),
+      );
+      categoriesRepository.find.mockResolvedValue([
+        mockParentCategory,
+        mockStandaloneCategory,
+      ]);
+
+      const result = await service.getWeekendVsWeekday(
+        mockUserId,
+        "2025-06-01",
+        "2025-06-30",
+      );
+
+      expect(result.byDay[6].total).toBe(249.5049);
+      expect(result.summary.weekendTotal).toBe(249.5049);
+      expect(result.byCategory.map((c) => c.weekendTotal)).toEqual([
+        124.7525, 124.7525,
+      ]);
+    });
+  });
+
   describe("a currency that has no rate", () => {
     const noJpyRate = (
       amount: number,

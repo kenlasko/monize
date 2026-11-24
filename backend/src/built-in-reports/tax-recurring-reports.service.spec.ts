@@ -1,4 +1,5 @@
 import { DataSource } from "typeorm";
+import { roundMoney } from "../common/round.util";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { TaxRecurringReportsService } from "./tax-recurring-reports.service";
@@ -1635,6 +1636,123 @@ describe("TaxRecurringReportsService", () => {
   // ---------------------------------------------------------------------------
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001)
   // ---------------------------------------------------------------------------
+  describe("rounded once, after the parts are folded (issue #2384)", () => {
+    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.7525 alone, and 249.504948
+    // for two, which reads 249.5049. A figure that rounded its running sum on
+    // every row, or added four-place readings, came to 249.5050.
+    beforeEach(() => {
+      currencyService.convertRow.mockImplementation(
+        (amount: number, row: RawRateBasis) =>
+          row.currency_code === "EUR" ? amount * 1.2474 : amount,
+      );
+    });
+
+    it("totals two income sources and two deductible categories at 249.5049", async () => {
+      const bonus: Category = {
+        ...mockSalaryCategory,
+        id: "cat-bonus",
+        name: "Bonus",
+      };
+      const dental: Category = {
+        ...mockMedicalCategory,
+        id: "cat-dental",
+        name: "Medical Dental",
+      };
+      categoriesRepository.find.mockResolvedValue([
+        mockSalaryCategory,
+        bonus,
+        mockMedicalCategory,
+        dental,
+      ]);
+      scopedManager.query.mockResolvedValue([
+        ...["cat-salary", "cat-bonus"].map((categoryId) => ({
+          category_id: categoryId,
+          currency_code: "EUR",
+          tx_date: "2025-03-01",
+          amount: "100.01",
+        })),
+        ...["cat-medical", "cat-dental"].map((categoryId) => ({
+          category_id: categoryId,
+          currency_code: "EUR",
+          tx_date: "2025-03-01",
+          amount: "-100.01",
+        })),
+      ]);
+
+      const result = await service.getTaxSummary(mockUserId, 2025);
+
+      expect(result.incomeBySource.map((i) => i.total)).toEqual([
+        124.7525, 124.7525,
+      ]);
+      expect(result.totals.income).toBe(249.5049);
+      expect(result.totals.expenses).toBe(249.5049);
+      expect(result.totals.deductible).toBe(249.5049);
+    });
+
+    it("totals two recurring payees at 249.5049 and estimates a month from the unrounded total", async () => {
+      scopedManager.query.mockResolvedValue(
+        ["streaming", "music"].map((name) => ({
+          payee_id: null,
+          payee_name_normalized: name,
+          payee_name: name,
+          category_name: null,
+          currency_code: "EUR",
+          tx_date: "2025-06-01",
+          occurrences: 3,
+          total_amount: "100.01",
+          last_transaction_date: new Date("2025-06-01"),
+          history_start: "2025-04-01",
+        })),
+      );
+
+      const result = await service.getRecurringExpenses(mockUserId, 3);
+
+      expect(result.data.map((d) => d.totalAmount)).toEqual([
+        124.7525, 124.7525,
+      ]);
+      expect(result.summary.totalRecurring).toBe(249.5049);
+      expect(result.summary.monthlyEstimate).toBe(
+        roundMoney(249.504948 / result.summary.monthCount),
+      );
+    });
+
+    it("totals a bill's two payments at 249.5049", async () => {
+      scopedManager.query
+        .mockResolvedValueOnce([
+          {
+            id: "st-1",
+            name: "Rent",
+            amount: "-125.00",
+            payee_name: "Landlord",
+          },
+        ])
+        .mockResolvedValueOnce(
+          ["2025-01-15", "2025-02-15"].map((date, i) => ({
+            id: `tx-${i}`,
+            transaction_date: new Date(date),
+            currency_code: "EUR",
+            tx_date: date,
+            own_rate: null,
+            amount: "100.01",
+            payee_name_normalized: "landlord",
+          })),
+        );
+
+      const result = await service.getBillPaymentHistory(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.billPayments[0].totalPaid).toBe(249.5049);
+      expect(result.billPayments[0].averagePayment).toBe(124.7525);
+      expect(result.summary.totalPaid).toBe(249.5049);
+      expect(result.monthlyTotals.map((m) => m.total)).toEqual([
+        124.7525, 124.7525,
+      ]);
+    });
+  });
+
   describe("a currency that has no rate", () => {
     beforeEach(() => {
       currencyService.convertRow.mockImplementation(

@@ -11,12 +11,7 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
-import {
-  MONEY_SCALE,
-  roundMoney,
-  sumMoney,
-  toMoneyNumber,
-} from "../common/round.util";
+import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
 import {
   YearOverYearResponse,
   YearData,
@@ -118,7 +113,12 @@ export class ComparisonReportsService {
     // not blank it.
     const yearAggregates = new Map<
       number,
-      { income: FxAggregate; expenses: FxAggregate; complete: boolean }
+      {
+        income: FxAggregate;
+        expenses: FxAggregate;
+        months: Array<{ income: FxAggregate; expenses: FxAggregate }>;
+        complete: boolean;
+      }
     >();
     for (let year = oldestYear; year <= currentYear; year++) {
       yearMap.set(year, {
@@ -141,6 +141,10 @@ export class ComparisonReportsService {
       yearAggregates.set(year, {
         income: new FxAggregate(),
         expenses: new FxAggregate(),
+        months: Array.from({ length: 12 }, () => ({
+          income: new FxAggregate(),
+          expenses: new FxAggregate(),
+        })),
         complete: true,
       });
     }
@@ -154,7 +158,7 @@ export class ComparisonReportsService {
       const yearData = yearMap.get(row.year);
       const aggregate = yearAggregates.get(row.year);
       if (yearData && aggregate) {
-        const monthData = yearData.months[row.month - 1];
+        const month = aggregate.months[row.month - 1];
         const income = convert(
           // An aggregate in the row's own currency, read before conversion: a coin's
           // sum keeps its stored 8 places (MONEY_SCALE, lossless; a fiat figure reads
@@ -172,22 +176,37 @@ export class ComparisonReportsService {
           aggregate.complete = false;
           return;
         }
-        monthData.income = roundMoney(monthData.income + income);
-        monthData.expenses = roundMoney(monthData.expenses + expenses);
-        monthData.savings = roundMoney(monthData.income - monthData.expenses);
-
+        month.income.addConverted(income);
+        month.expenses.addConverted(expenses);
         aggregate.income.addConverted(income);
         aggregate.expenses.addConverted(expenses);
       }
     });
 
+    // A month's figures and a year's are each rounded once from their own
+    // rows, and savings is income less expenses before either is rounded:
+    // a month that rounded its running sum on every row, or savings taken from
+    // two four-place readings, could miss its year by a unit
+    // (docs/specs/report-rounding-and-aggregation.md rules 2 and 4).
+    const savingsOf = (income: FxAggregate, expenses: FxAggregate): number => {
+      const savings = new FxAggregate();
+      savings.merge(income);
+      savings.mergeNegated(expenses);
+      return savings.knownSubtotal;
+    };
     yearMap.forEach((yearData, year) => {
       const aggregate = yearAggregates.get(year)!;
-      const knownIncome = roundMoney(aggregate.income.knownSubtotal);
-      const knownExpenses = roundMoney(aggregate.expenses.knownSubtotal);
-      const knownSavings = roundMoney(
-        aggregate.income.knownSubtotal - aggregate.expenses.knownSubtotal,
-      );
+      aggregate.months.forEach((month, index) => {
+        yearData.months[index] = {
+          month: index + 1,
+          income: month.income.knownSubtotal,
+          expenses: month.expenses.knownSubtotal,
+          savings: savingsOf(month.income, month.expenses),
+        };
+      });
+      const knownIncome = aggregate.income.knownSubtotal;
+      const knownExpenses = aggregate.expenses.knownSubtotal;
+      const knownSavings = savingsOf(aggregate.income, aggregate.expenses);
       yearData.totals = {
         income: aggregate.complete ? knownIncome : null,
         expenses: aggregate.complete ? knownExpenses : null,
@@ -263,16 +282,18 @@ export class ComparisonReportsService {
     );
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
-    const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+    // Each figure folds its groups' aggregates and is rounded once (rules 2
+    // and 4): a day, a category's weekend or weekday share, and the two totals.
+    const dayTotals = Array.from({ length: 7 }, () => new FxAggregate());
     const dayCounts = [0, 0, 0, 0, 0, 0, 0];
 
     const weekendByCategory = new Map<
       string,
-      { name: string; total: number }
+      { name: string; total: FxAggregate }
     >();
     const weekdayByCategory = new Map<
       string,
-      { name: string; total: number }
+      { name: string; total: FxAggregate }
     >();
 
     // A row with no rate into the reporting currency is unknown, never its
@@ -297,7 +318,7 @@ export class ComparisonReportsService {
         day_of_week: number;
         category_id: string | null;
         tx_count: number;
-        totals: number[];
+        total: FxAggregate;
         failed: boolean;
       }
     >();
@@ -310,7 +331,7 @@ export class ComparisonReportsService {
           day_of_week: row.day_of_week,
           category_id: row.category_id,
           tx_count: 0,
-          totals: [],
+          total: new FxAggregate(),
           failed: false,
         };
         groups.set(key, group);
@@ -321,19 +342,20 @@ export class ComparisonReportsService {
         return;
       }
       group.tx_count += row.tx_count;
-      group.totals.push(converted);
+      group.total.addConverted(converted);
     });
 
     groups.forEach((row) => {
       if (row.failed) return;
-      const total = sumMoney(row.totals);
+      const total = row.total;
       // A refund nets against the debits of its own (day, category); a group
-      // whose credits meet its debits was not spent in (INV-REPORT-004).
-      if (!isNetSpending(total)) return;
+      // whose credits meet its debits was not spent in (INV-REPORT-004). Judged
+      // on the sign before rounding (rule 5).
+      if (!isNetSpending(total.sign)) return;
       const count = row.tx_count;
       const isWeekend = row.day_of_week === 0 || row.day_of_week === 6;
 
-      dayTotals[row.day_of_week] += total;
+      dayTotals[row.day_of_week].merge(total);
       dayCounts[row.day_of_week] += count;
 
       let displayId = "uncategorized";
@@ -351,29 +373,28 @@ export class ComparisonReportsService {
       }
 
       const targetMap = isWeekend ? weekendByCategory : weekdayByCategory;
-      const existing = targetMap.get(displayId);
-      if (existing) {
-        existing.total += total;
-      } else {
-        targetMap.set(displayId, { name: displayName, total });
-      }
+      const existing = targetMap.get(displayId) ?? {
+        name: displayName,
+        total: new FxAggregate(),
+      };
+      existing.total.merge(total);
+      targetMap.set(displayId, existing);
     });
 
-    const knownWeekendTotal = sumMoney([dayTotals[0], dayTotals[6]]);
-    const knownWeekdayTotal = sumMoney([
-      dayTotals[1],
-      dayTotals[2],
-      dayTotals[3],
-      dayTotals[4],
-      dayTotals[5],
-    ]);
+    const totalOfDays = (days: number[]): number => {
+      const sum = new FxAggregate();
+      for (const day of days) sum.merge(dayTotals[day]);
+      return sum.knownSubtotal;
+    };
+    const knownWeekendTotal = totalOfDays([0, 6]);
+    const knownWeekdayTotal = totalOfDays([1, 2, 3, 4, 5]);
     const weekendCount = dayCounts[0] + dayCounts[6];
     const weekdayCount =
       dayCounts[1] + dayCounts[2] + dayCounts[3] + dayCounts[4] + dayCounts[5];
 
     const byDay: DaySpending[] = dayTotals.map((total, index) => ({
       dayOfWeek: index,
-      total: roundMoney(total),
+      total: total.knownSubtotal,
       count: dayCounts[index],
     }));
 
@@ -388,8 +409,8 @@ export class ComparisonReportsService {
         return {
           categoryId: catId === "uncategorized" ? null : catId,
           categoryName: weekend?.name || weekday?.name || "Unknown",
-          weekendTotal: roundMoney(weekend?.total || 0),
-          weekdayTotal: roundMoney(weekday?.total || 0),
+          weekendTotal: weekend?.total.knownSubtotal ?? 0,
+          weekdayTotal: weekday?.total.knownSubtotal ?? 0,
         };
       })
       .sort(
