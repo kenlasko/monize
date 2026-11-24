@@ -11,7 +11,7 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 - [x] Custom report: cells fold exactly; headline, average, budget variance and percentages from the aggregates; the transaction list's headline folds unrounded values; property spec over groupings.
 - [x] Built-in reports: Spending by Category, by Payee, Monthly Spending Trend; Income by Source, the period rows and tag buckets; Year over Year savings; Weekend vs Weekday; Tax Summary; Recurring Expenses; Bill Payment History; Monthly Comparison; `convertDatedRows`.
 - [x] AI aggregators: insights, forecast, transaction analytics.
-- [ ] Client `sumConverted` accumulates as `FxAggregate` does.
+- [x] Client `sumConverted` accumulates as `FxAggregate` does.
 
 ## 2 the precision of a figure on the wire
 
@@ -42,7 +42,8 @@ Totals the client sums where the server has one, or has none to give:
 - [ ] `frontend/src/components/reports/sankey-layout.ts`: merged links and the "Other" node are float sums (presentation only; INV-SANKEY-005 keeps them off the figures).
 - [ ] `frontend/src/components/reports/ForeignCurrencyFeesReport.tsx`: month and grand totals re-sum rounded server totals.
 - [ ] `frontend/src/components/reports/WeekendVsWeekdayReport.tsx`: the share denominator is a client sum of two server totals.
-- [ ] `frontend/src/components/reports/UpcomingBillsReport.tsx`: totals through `sumEffectiveOccurrences` (fixed by the accumulator in stage 1).
+- [x] `frontend/src/components/reports/UpcomingBillsReport.tsx`: totals through `sumEffectiveOccurrences` (fixed by the accumulator in stage 1).
+- [ ] `frontend/src/lib/currency-total.ts`: `combineTotals` combines its totals' rounded values (a net worth of rounded assets less rounded liabilities); its callers are `frontend/src/app/accounts/page.tsx`, `frontend/src/app/bills/page.tsx`, `AccountBalancesReport.tsx` and `frontend/src/components/transactions/register-style-data.ts`.
 
 Exports:
 
