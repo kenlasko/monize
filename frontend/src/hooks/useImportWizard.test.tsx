@@ -1359,6 +1359,47 @@ describe('useImportWizard - possible duplicates (docs/specs/import-duplicate-rev
     expect(result.current.step).not.toBe('complete');
   });
 
+  it('checks several files at once and lists their pairs in file order', async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockParseQif.mockResolvedValue(baseParsedQif({ categories: [] }));
+    // The first file's answer lands last: the list still follows the files.
+    const answers: Array<() => void> = [];
+    let inFlight = 0;
+    let peak = 0;
+    const held = () =>
+      new Promise<{ accountId: string; currencyCode: string; rows: unknown[] }>((resolve) => {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        answers.push(() => {
+          inFlight -= 1;
+          resolve({ accountId: 'acc-1', currencyCode: 'CAD', rows: [PAIR] });
+        });
+      });
+    mockFindQifDuplicates.mockImplementationOnce(held).mockImplementationOnce(held);
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('a.qif', '1'), makeFile('b.qif', '2')]));
+    });
+    act(() => {
+      result.current.setFileAccountId(0, 'acc-1');
+      result.current.setFileAccountId(1, 'acc-1');
+    });
+    let importing: Promise<void> | undefined;
+    act(() => {
+      importing = result.current.handleImport();
+    });
+    await waitFor(() => expect(answers).toHaveLength(2));
+    expect(peak).toBe(2);
+    await act(async () => {
+      answers[1]();
+      answers[0]();
+      await importing;
+    });
+    expect(result.current.step).toBe('duplicates');
+    expect(result.current.duplicateReview?.map((file) => file.fileName)).toEqual(['a.qif', 'b.qif']);
+  });
+
   it('does not check an investment file, whose rows are not compared', async () => {
     mockGetAllAccounts.mockResolvedValue([baseAccount()]);
     mockParseQif.mockResolvedValue(baseParsedQif({ categories: [], accountType: 'INVESTMENT' }));
