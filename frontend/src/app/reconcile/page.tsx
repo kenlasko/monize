@@ -33,6 +33,7 @@ import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { ReconciliationData, Transaction } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
+import { splitTransferParent } from '@/lib/split-transfer-leg';
 import { useSortableTable } from '@/hooks/useSortableTable';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useFormModal } from '@/hooks/useFormModal';
@@ -141,6 +142,7 @@ function ReconcileContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isReconciling, setIsReconciling] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+  const deleteSplitParent = deleteTarget ? splitTransferParent(deleteTarget) : null;
   const [isDeleting, setIsDeleting] = useState(false);
   // Post-reconciliation liability-payment prompt: the scheduled bill (if any)
   // that pays down the reconciled liability account.
@@ -318,6 +320,21 @@ function ReconcileContent() {
     closeTransactionModal();
     await reloadReconciliationData();
   }, [closeTransactionModal, reloadReconciliationData]);
+
+  // A transfer is read in full first: the receiving leg of a split transfer
+  // links to its split parent, and deleting it removes only its line from that
+  // split, which the dialog must say. A failed read falls back to the row as listed.
+  const handleDeleteRequest = useCallback(async (transaction: Transaction) => {
+    if (!transaction.isTransfer) {
+      setDeleteTarget(transaction);
+      return;
+    }
+    try {
+      setDeleteTarget(await transactionsApi.getById(transaction.id));
+    } catch {
+      setDeleteTarget(transaction);
+    }
+  }, []);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget || isDeleting) return;
@@ -671,7 +688,7 @@ function ReconcileContent() {
               formatCurrency={formatAccountAmount}
               moneyDecimals={reconcileMoneyDecimals}
               onEdit={transactionModal.openEdit}
-              onDelete={setDeleteTarget}
+              onDelete={handleDeleteRequest}
               onCycleStatus={handleCycleStatus}
               reconciledLocked={reconciledLocked}
             />
@@ -808,8 +825,24 @@ function ReconcileContent() {
 
         <ConfirmDialog
           isOpen={deleteTarget !== null}
-          title={deleteTarget?.isTransfer ? t('delete.transferTitle') : t('delete.title')}
-          message={deleteTarget?.isTransfer ? t('delete.transferMessage') : t('delete.message')}
+          title={
+            deleteSplitParent
+              ? t('delete.splitLegTitle')
+              : deleteTarget?.isTransfer
+                ? t('delete.transferTitle')
+                : t('delete.title')
+          }
+          message={
+            deleteSplitParent
+              ? t('delete.splitLegMessage', {
+                  hasPayee: deleteSplitParent.payeeName ? 'true' : 'false',
+                  payee: deleteSplitParent.payeeName ?? '',
+                  date: formatDate(deleteSplitParent.transactionDate),
+                })
+              : deleteTarget?.isTransfer
+                ? t('delete.transferMessage')
+                : t('delete.message')
+          }
           confirmLabel={tc('actions.delete')}
           cancelLabel={tc('cancel')}
           variant="danger"

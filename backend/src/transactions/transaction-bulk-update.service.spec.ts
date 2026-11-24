@@ -7,6 +7,7 @@ import {
   SearchFormats,
 } from "./transaction-search-query.util";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
+import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
@@ -2792,10 +2793,10 @@ describe("TransactionBulkUpdateService", () => {
       expect(deletes).toEqual([["split-linked-1"], ["tx-1"]]);
     });
 
-    it("expands a selected split-transfer leg to its parent and every sibling leg (A26-H05)", async () => {
+    it("deletes the whole split when a leg is selected with its parent, and every sibling leg (A26-H05)", async () => {
       // A -100 split to B (-60 line, +60 leg) and C (-40 line, +40 leg); the
-      // user selects B's leg only.
-      makeTransaction({
+      // user selects B's leg and the parent.
+      const parentTx = makeTransaction({
         id: "parent",
         accountId: "acc-a",
         amount: -100,
@@ -2817,10 +2818,12 @@ describe("TransactionBulkUpdateService", () => {
       });
 
       const resolveQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([{ id: "leg-b" }]),
+        getMany: jest
+          .fn()
+          .mockResolvedValue([{ id: "leg-b" }, { id: "parent" }]),
       });
       const detailsQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([bLeg]),
+        getMany: jest.fn().mockResolvedValue([bLeg, parentTx]),
       });
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
@@ -2852,14 +2855,14 @@ describe("TransactionBulkUpdateService", () => {
 
       const result = await service.bulkDelete(userId, {
         mode: "ids",
-        transactionIds: ["leg-b"],
+        transactionIds: ["leg-b", "parent"],
       });
 
       expect(result).toEqual({ deleted: 1 });
       expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-a", 100);
       expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-b", -60);
       expect(accountsService.updateBalance).toHaveBeenCalledWith("acc-c", -40);
-      expect(deletes).toEqual([["leg-c", "parent"], ["leg-b"]]);
+      expect(deletes).toEqual([["leg-c"], ["leg-b", "parent"]]);
       // By role: the split parent is locked on its own before any leg.
       const lockCalls = (lockTransactionRows as jest.Mock).mock.calls;
       expect(lockCalls[0][1]).toEqual(["parent"]);
@@ -2870,10 +2873,10 @@ describe("TransactionBulkUpdateService", () => {
       );
     });
 
-    it("counts a selected split-transfer leg the split cleanup already removed", async () => {
+    it("counts a selected split-transfer leg the split cleanup already removed, parent selected too", async () => {
       // A -100 split to B (-60 line, +60 leg) and C (-40 line, +40 leg); the
-      // user selects B's leg only.
-      makeTransaction({
+      // user selects B's leg and the parent.
+      const parentTx = makeTransaction({
         id: "parent",
         accountId: "acc-a",
         amount: -100,
@@ -2895,10 +2898,12 @@ describe("TransactionBulkUpdateService", () => {
       });
 
       const resolveQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([{ id: "leg-b" }]),
+        getMany: jest
+          .fn()
+          .mockResolvedValue([{ id: "leg-b" }, { id: "parent" }]),
       });
       const detailsQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([bLeg]),
+        getMany: jest.fn().mockResolvedValue([bLeg, parentTx]),
       });
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
@@ -2927,11 +2932,8 @@ describe("TransactionBulkUpdateService", () => {
           delete: jest.fn().mockReturnThis(),
           from: jest.fn().mockReturnThis(),
           // The cleanup removed leg-b already: the primary DELETE of
-          // ["leg-b"] finds nothing.
-          execute: jest.fn().mockImplementation(async () => ({
-            affected:
-              deletes[deletes.length - 1]?.toString() === "leg-b" ? 0 : 1,
-          })),
+          // ["leg-b", "parent"] finds only the parent.
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
         });
         qb.where = jest.fn().mockImplementation((_sql, params) => {
           deletes.push([...params.ids].sort());
@@ -2943,10 +2945,143 @@ describe("TransactionBulkUpdateService", () => {
 
       const result = await service.bulkDelete(userId, {
         mode: "ids",
-        transactionIds: ["leg-b"],
+        transactionIds: ["leg-b", "parent"],
       });
 
-      expect(result).toEqual({ deleted: 1 });
+      expect(result).toEqual({ deleted: 2 });
+    });
+
+    // kenlasko/monize#2366: a leg alone is one line of its split.
+    it("removes only the lines of selected split-transfer legs, in parent then line order, leaving the splits", async () => {
+      const legB = makeTransaction({
+        id: "leg-b",
+        accountId: "acc-b",
+        amount: 60,
+        isTransfer: true,
+        linkedTransactionId: "parent-2",
+      });
+      const legC = makeTransaction({
+        id: "leg-c",
+        accountId: "acc-c",
+        amount: 40,
+        isTransfer: true,
+        linkedTransactionId: "parent-1",
+      });
+      const resolveQb = createMockQueryBuilder({
+        getMany: jest
+          .fn()
+          .mockResolvedValue([{ id: "leg-b" }, { id: "leg-c" }]),
+      });
+      const detailsQb = createMockQueryBuilder({
+        getMany: jest.fn().mockResolvedValue([legB, legC]),
+      });
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(resolveQb)
+        .mockReturnValueOnce(detailsQb);
+      mockManagerFind.mockImplementation(async (entity: unknown) =>
+        entity === TransactionSplit
+          ? [
+              {
+                id: "s-b",
+                transactionId: "parent-2",
+                linkedTransactionId: "leg-b",
+              },
+              {
+                id: "s-c",
+                transactionId: "parent-1",
+                linkedTransactionId: "leg-c",
+              },
+            ]
+          : [
+              { id: "parent-1", accountId: "acc-a" },
+              { id: "parent-2", accountId: "acc-a" },
+            ],
+      );
+      splitService.removeSplit = jest.fn().mockResolvedValue(undefined);
+      const deletes: unknown[] = [];
+      mockManagerCreateQueryBuilder.mockImplementation(() => {
+        const qb = createMockQueryBuilder({
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        });
+        qb.where = jest.fn().mockImplementation(() => {
+          deletes.push("delete");
+          return qb;
+        });
+        return qb;
+      });
+
+      const result = await service.bulkDelete(userId, {
+        mode: "ids",
+        transactionIds: ["leg-b", "leg-c"],
+      });
+
+      expect(result).toEqual({ deleted: 2 });
+      expect(
+        splitService.removeSplit.mock.calls.map((c) => [c[0].id, c[1]]),
+      ).toEqual([
+        ["parent-1", "s-c"],
+        ["parent-2", "s-b"],
+      ]);
+      // Neither the parents nor the legs are deleted as rows here, and no
+      // balance is moved by this service: removeSplit does it.
+      expect(deletes).toEqual([]);
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("does not touch the split lines when the parent is selected with the leg", async () => {
+      const parentTx = makeTransaction({
+        id: "parent",
+        accountId: "acc-a",
+        amount: -100,
+        isSplit: true,
+      });
+      const leg = makeTransaction({
+        id: "leg-b",
+        accountId: "acc-b",
+        amount: 60,
+        isTransfer: true,
+        linkedTransactionId: "parent",
+      });
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getMany: jest
+              .fn()
+              .mockResolvedValue([{ id: "leg-b" }, { id: "parent" }]),
+          }),
+        )
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getMany: jest.fn().mockResolvedValue([leg, parentTx]),
+          }),
+        );
+      mockManagerFind.mockResolvedValue([
+        { id: "s-b", transactionId: "parent", linkedTransactionId: "leg-b" },
+      ]);
+      splitService.removeSplit = jest.fn();
+      mockManagerCreateQueryBuilder.mockImplementation(() => {
+        const qb = createMockQueryBuilder({
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        });
+        qb.where = jest.fn().mockReturnValue(qb);
+        return qb;
+      });
+
+      await service.bulkDelete(userId, {
+        mode: "ids",
+        transactionIds: ["leg-b", "parent"],
+      });
+
+      expect(splitService.removeSplit).not.toHaveBeenCalled();
+      expect(splitService.deleteSplitSideEffects).toHaveBeenCalledWith(
+        "parent",
+        userId,
+        expect.anything(),
+      );
     });
 
     it("does not adjust balance for future-dated transactions", async () => {

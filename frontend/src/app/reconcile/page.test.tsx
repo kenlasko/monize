@@ -87,6 +87,7 @@ const mockBulkReconcile = vi.fn();
 const mockScheduledGetAll = vi.fn();
 const mockDelete = vi.fn();
 const mockDeleteTransfer = vi.fn();
+const mockGetById = vi.fn();
 const mockUpdateStatus = vi.fn();
 
 vi.mock('@/lib/accounts', () => ({
@@ -108,6 +109,7 @@ vi.mock('@/lib/transactions', () => ({
     bulkReconcile: (...args: any[]) => mockBulkReconcile(...args),
     delete: (...args: any[]) => mockDelete(...args),
     deleteTransfer: (...args: any[]) => mockDeleteTransfer(...args),
+    getById: (...args: any[]) => mockGetById(...args),
     updateStatus: (...args: any[]) => mockUpdateStatus(...args),
   },
 }));
@@ -813,13 +815,41 @@ describe('ReconcilePage', () => {
         ...mockReconciliationData,
         transactions: [{ ...mockTransactions[0], isTransfer: true }],
       });
+      mockGetById.mockResolvedValue({ ...mockTransactions[0], isTransfer: true });
       await advanceToReconcileStep();
-      openRowAction('tx-1', 'Delete');
+      await act(async () => {
+        openRowAction('tx-1', 'Delete');
+      });
       await act(async () => {
         fireEvent.click(screen.getByText('Delete'));
       });
       expect(mockDeleteTransfer).toHaveBeenCalledWith('tx-1');
       expect(mockDelete).not.toHaveBeenCalled();
+    });
+
+    it('says a split transfer leg removes only its line from the split', async () => {
+      const leg = { ...mockTransactions[0], isTransfer: true };
+      mockGetReconciliationData.mockResolvedValue({
+        ...mockReconciliationData,
+        transactions: [leg],
+      });
+      mockGetById.mockResolvedValue({
+        ...leg,
+        linkedTransaction: {
+          ...mockTransactions[1],
+          id: 'split-parent',
+          isSplit: true,
+          payeeName: 'Costco',
+        },
+      });
+      await advanceToReconcileStep();
+      await act(async () => {
+        openRowAction('tx-1', 'Delete');
+      });
+      expect(screen.getByText('Remove Transfer from Split')).toBeInTheDocument();
+      expect(screen.getByText(/removes only this line and re-totals the split/)).toBeInTheDocument();
+      expect(screen.getByText(/with Costco/)).toBeInTheDocument();
+      expect(screen.queryByText(/Both sides/)).not.toBeInTheDocument();
     });
 
     it('asks before deleting', async () => {

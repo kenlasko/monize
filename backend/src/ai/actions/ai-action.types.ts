@@ -1121,6 +1121,8 @@ export interface AiActionPreview extends ForeignEntryFields {
    * disturb a completed reconciliation.
    */
   isReconciled?: boolean;
+  /** A delete of a split-transfer leg removes only that line from this split. */
+  splitLine?: { payeeName: string | null; transactionDate: string };
   /**
    * Resolved category-split lines for a split create/update. Display-only --
    * shown on the confirmation card in place of the single category row.

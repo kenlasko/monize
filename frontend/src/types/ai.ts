@@ -595,6 +595,8 @@ export interface PendingActionPreviewRow extends PendingActionForeignEntry {
   splitTagChanges?: PendingActionSplitTagChange[];
   /** True when this bulk update/delete row targets a reconciled transaction. */
   isReconciled?: boolean;
+  /** A delete row for a split transfer's receiving leg removes only that line from this split. */
+  splitLine?: { payeeName: string | null; transactionDate: string };
   /**
    * What the user's rules will also do to this created row on approval, with a
    * transfer or split they add (display-only; the single card's shape).

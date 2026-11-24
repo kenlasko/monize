@@ -583,4 +583,77 @@ describe("Removing one split line (integration)", () => {
       expect(await balanceOf(savingsId)).toBe(40);
     });
   });
+
+  describe("bulk delete of the receiving leg of a split transfer", () => {
+    function bulkDelete(ids: string[]) {
+      return withUserContext(userId, () =>
+        service.bulkDelete(userId, { mode: "ids", transactionIds: ids }),
+      );
+    }
+
+    it("removes only the leg's line and keeps the parent and its other lines", async () => {
+      const { parentId, groceriesLineId, savingsLegId } = await createSplit();
+      await withUserContext(userId, () =>
+        service.addSplit(userId, parentId, {
+          amount: -10,
+          categoryId: groceriesId,
+        } as never),
+      );
+
+      const result = await bulkDelete([savingsLegId]);
+
+      expect(result.deleted).toBe(1);
+      const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+        id: parentId,
+      });
+      expect(Number(parent.amount)).toBe(-70);
+      const lines = await dataSource.manager.find(TransactionSplit, {
+        where: { transactionId: parentId },
+      });
+      expect(lines.map((l) => l.id)).toContain(groceriesLineId);
+      expect(lines).toHaveLength(2);
+      expect(
+        await dataSource.manager.findOneBy(Transaction, { id: savingsLegId }),
+      ).toBeNull();
+      expect(await balanceOf(chequingId)).toBe(930);
+      expect(await balanceOf(savingsId)).toBe(0);
+      await expectBalancesMatchLedger();
+    });
+
+    it("deletes the whole split when the parent is selected with the leg", async () => {
+      const { parentId, savingsLegId } = await createSplit();
+
+      await bulkDelete([savingsLegId, parentId]);
+
+      expect(
+        await dataSource.manager.count(Transaction, { where: { userId } }),
+      ).toBe(0);
+      expect(await balanceOf(chequingId)).toBe(1000);
+      expect(await balanceOf(savingsId)).toBe(0);
+      await expectBalancesMatchLedger();
+    });
+
+    it("refuses a reconciled leg under the strict lock, writing nothing", async () => {
+      const { parentId, savingsLegId } = await createSplit();
+      await dataSource.query(
+        `INSERT INTO user_preferences (user_id, lock_reconciled_transactions)
+         VALUES ($1, true)
+         ON CONFLICT (user_id) DO UPDATE SET lock_reconciled_transactions = true`,
+        [userId],
+      );
+      await dataSource.query(
+        `UPDATE transactions SET status = 'RECONCILED' WHERE id = $1`,
+        [savingsLegId],
+      );
+
+      await expect(bulkDelete([savingsLegId])).rejects.toThrow(/reconciled/i);
+
+      const parent = await dataSource.manager.findOneByOrFail(Transaction, {
+        id: parentId,
+      });
+      expect(Number(parent.amount)).toBe(-100);
+      expect(await balanceOf(chequingId)).toBe(900);
+      expect(await balanceOf(savingsId)).toBe(40);
+    });
+  });
 });

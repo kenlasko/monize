@@ -394,6 +394,18 @@ export function BulkConfirmationCard({
                   {secondary}
                 </div>
               )}
+              {!isError && row.splitLine && (
+                <div className="text-xs text-amber-700 dark:text-amber-400">
+                  {row.splitLine.payeeName
+                    ? t('confirmAction.splitLineDeleteNote', {
+                        payee: row.splitLine.payeeName,
+                        date: row.splitLine.transactionDate,
+                      })
+                    : t('confirmAction.splitLineDeleteNoteNoPayee', {
+                        date: row.splitLine.transactionDate,
+                      })}
+                </div>
+              )}
               {!isError && (
                 // A transfer or split the rules add moves another account's balance: never hidden.
                 <RuleEffectsLines effects={row.ruleEffects} currencyCode={row.currencyCode} />

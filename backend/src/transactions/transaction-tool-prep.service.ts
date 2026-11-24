@@ -982,6 +982,7 @@ export class TransactionToolPrepService {
           categoryName: preview.categoryName,
           description: preview.description,
           isReconciled: preview.isReconciled,
+          ...(preview.splitLine ? { splitLine: preview.splitLine } : {}),
         });
       } catch (err) {
         const reason = this.skipReason(err);

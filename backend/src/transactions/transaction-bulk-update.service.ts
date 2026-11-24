@@ -610,8 +610,8 @@ export class TransactionBulkUpdateService {
     userId: string,
     dto: BulkDeleteDto,
   ): Promise<BulkDeleteResult> {
-    const allIds = await this.resolveTransactionIds(userId, dto);
-    if (allIds.length === 0) {
+    const selectedIds = await this.resolveTransactionIds(userId, dto);
+    if (selectedIds.length === 0) {
       return { deleted: 0 };
     }
 
@@ -630,7 +630,7 @@ export class TransactionBulkUpdateService {
           "transaction.linkedTransactionId",
           "transaction.isSplit",
         ])
-        .where("transaction.id IN (:...ids)", { ids: allIds })
+        .where("transaction.id IN (:...ids)", { ids: selectedIds })
         .andWhere("transaction.userId = :userId", { userId })
         .getMany(),
     );
@@ -638,6 +638,29 @@ export class TransactionBulkUpdateService {
     if (transactions.length === 0) {
       return { deleted: 0 };
     }
+
+    // The receiving leg of a split transfer is one line of its split, so
+    // deleting it removes that line only (`removeSplit`, the single delete's
+    // path, kenlasko/monize#2366). Not so when the parent is selected too:
+    // deleting the parent wins and takes the whole split, so those legs stay in
+    // the selection below.
+    const selectedIdSet = new Set(transactions.map((t) => t.id));
+    const lineRemovals = (
+      await withScopedDb(this.dataSource, (m) =>
+        m.find(TransactionSplit, {
+          where: { linkedTransactionId: In([...selectedIdSet]) },
+        }),
+      )
+    )
+      .filter((split) => !selectedIdSet.has(split.transactionId))
+      // Parent then line id: the same order on every run.
+      .sort(
+        (x, y) =>
+          x.transactionId.localeCompare(y.transactionId) ||
+          x.id.localeCompare(y.id),
+      );
+    const lineLegIds = new Set(lineRemovals.map((s) => s.linkedTransactionId));
+    const allIds = selectedIds.filter((id) => !lineLegIds.has(id));
 
     // Every account whose balance this delete touches, including accounts
     // reached only through a linked transfer leg or a split counterpart.
@@ -655,17 +678,38 @@ export class TransactionBulkUpdateService {
 
     // Balance adjustments and both delete passes commit atomically.
     let deleted = 0;
+    let lineDeleted = 0;
     const touchedSecurityIds = new Set<string>();
     await withScopedDb(this.dataSource, async (m) => {
-      const transactionIdsSet = new Set(transactions.map((t) => t.id));
+      // Each removal locks, checks the reconciled lock and re-totals inside this
+      // transaction, so a refusal anywhere below rolls every line back too.
+      if (lineRemovals.length > 0) {
+        const parents = await m.find(Transaction, {
+          where: {
+            id: In([...new Set(lineRemovals.map((s) => s.transactionId))]),
+            userId,
+          },
+        });
+        const parentById = new Map(parents.map((p) => [p.id, p]));
+        for (const split of lineRemovals) {
+          const parent = parentById.get(split.transactionId);
+          if (!parent) continue;
+          affectedAccountIds.add(parent.accountId);
+          await this.splitService.removeSplit(parent, split.id, userId);
+          lineDeleted++;
+        }
+      }
+      if (allIds.length === 0) return;
+      const transactionIdsSet = new Set(allIds);
 
       // A split-transfer leg links to its split PARENT, not to a mirror leg.
       // Queuing that link as "the other leg" deleted the parent, cascaded its
       // split rows and left every sibling leg standing with its money: a
       // -100.00 split to B (60.00) and C (40.00), bulk-deleted from B's
       // register, left C at 40.00 with nothing on the other side (A26-H05). So
-      // a selected leg brings its parent's whole set. (The single
-      // delete of a leg removes only that line, `removeSplit`, kenlasko/monize#2366.)
+      // a selected leg whose parent is selected too brings the parent's
+      // whole set. A leg alone never reaches here: it was routed to
+      // `removeSplit` above (kenlasko/monize#2366).
       const legParents = await m.find(TransactionSplit, {
         select: { transactionId: true },
         where: { linkedTransactionId: In([...transactionIdsSet]) },
@@ -844,7 +888,7 @@ export class TransactionBulkUpdateService {
       touchedSecurityIds,
     );
 
-    return { deleted };
+    return { deleted: deleted + lineDeleted };
   }
 
   private extractUpdateFields(dto: BulkUpdateDto): Partial<Transaction> {
