@@ -74,7 +74,10 @@ import { clearForeignSeriesOfUser } from "../bonds/bond-series-resolver";
 import { invalidatePortfolioSummary } from "../securities/portfolio-summary-memo";
 import { CryptoFxProvider } from "../currencies/providers/crypto-fx.provider";
 import { RateHistoryCatchUpService } from "../currencies/rate-history-catch-up.service";
-import { NetWorthService } from "../net-worth/net-worth.service";
+import {
+  NetWorthService,
+  recalculateAccountsInBackground,
+} from "../net-worth/net-worth.service";
 
 const gunzipAsync = promisify(gunzip);
 
@@ -541,15 +544,15 @@ export class BackupRestoreService {
                 // Snapshots and the memoized valuation read before the rates
                 // landed converted without them.
                 invalidatePortfolioSummary(userId);
-                for (const accountId of restoredAccountIds) {
-                  this.netWorth
-                    .recalculateAccount(userId, accountId)
-                    .catch((err) =>
-                      this.logger.warn(
-                        `Post-restore net worth recalc failed for account ${accountId}: ${err.message}`,
-                      ),
-                    );
-                }
+                recalculateAccountsInBackground(
+                  this.netWorth,
+                  userId,
+                  restoredAccountIds,
+                  (accountId, err) =>
+                    this.logger.warn(
+                      `Post-restore net worth recalc failed for account ${accountId}: ${err.message}`,
+                    ),
+                );
               },
             );
             return result;

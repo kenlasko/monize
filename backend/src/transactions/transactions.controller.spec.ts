@@ -36,6 +36,7 @@ describe("TransactionsController", () => {
       createWithOutcome: jest.fn(),
       createTransferWithOutcome: jest.fn(),
       findAll: jest.fn(),
+      findRegisterExportRows: jest.fn(),
       findOne: jest.fn(),
       findOneForDisplay: jest.fn(),
       update: jest.fn(),
@@ -931,16 +932,6 @@ describe("TransactionsController", () => {
   });
 
   describe("exportRegister()", () => {
-    const page = (
-      data: Record<string, unknown>[],
-      hasMore: boolean,
-    ): {
-      data: Record<string, unknown>[];
-      pagination: { hasMore: boolean };
-    } => ({
-      data,
-      pagination: { hasMore },
-    });
     const row = (id: string, extra: Record<string, unknown> = {}) => ({
       id,
       transactionDate: "2026-01-15",
@@ -960,36 +951,35 @@ describe("TransactionsController", () => {
       ...extra,
     });
 
-    it("walks every page of the register in one request (issue #2198)", async () => {
-      mockService.findAll
-        .mockResolvedValueOnce(page([row("tx-1"), row("tx-2")], true))
-        .mockResolvedValueOnce(page([row("tx-3")], false));
+    it("reads the whole register once instead of walking its pages (issue #2198)", async () => {
+      mockService.findRegisterExportRows.mockResolvedValueOnce([
+        row("tx-1"),
+        row("tx-2"),
+        row("tx-3"),
+      ]);
 
       const result = await controller.exportRegister(mockReq, uuid1);
 
       expect(result.data.map((r) => r.id)).toEqual(["tx-1", "tx-2", "tx-3"]);
-      expect(mockService.findAll).toHaveBeenCalledTimes(2);
-      // Page number and the API's largest page size, in findAll's page and
-      // limit positions; the account filter rides along on every page.
-      expect(mockService.findAll.mock.calls.map((c) => [c[6], c[7]])).toEqual([
-        [1, 200],
-        [2, 200],
-      ]);
-      expect(mockService.findAll.mock.calls[1][1]).toEqual([uuid1]);
-      // No page is ever asked to land on a target row.
-      expect(mockService.findAll.mock.calls[0][10]).toBeUndefined();
+      expect(mockService.findRegisterExportRows).toHaveBeenCalledTimes(1);
+      // The paged register (with its count, running-balance seed and
+      // reporting rates per page) is never asked.
+      expect(mockService.findAll).not.toHaveBeenCalled();
+      expect(mockService.findRegisterExportRows.mock.calls[0][1]).toEqual(
+        expect.objectContaining({ accountIds: [uuid1] }),
+      );
     });
 
     it("answers with only the fields the file is built from", async () => {
-      mockService.findAll.mockResolvedValueOnce(page([row("tx-1")], false));
+      mockService.findRegisterExportRows.mockResolvedValueOnce([row("tx-1")]);
 
       const result = await controller.exportRegister(mockReq);
 
       expect(result.data[0].account).toEqual({ name: "Chequing" });
     });
 
-    it("passes the register's filters and order to every page", async () => {
-      mockService.findAll.mockResolvedValueOnce(page([], false));
+    it("passes the register's filters and order to the read", async () => {
+      mockService.findRegisterExportRows.mockResolvedValueOnce([]);
 
       await controller.exportRegister(
         mockReq,
@@ -1016,28 +1006,33 @@ describe("TransactionsController", () => {
         "asc",
       );
 
-      const args = mockService.findAll.mock.calls[0];
-      expect(args[0]).toBe("user-1");
-      expect(args[1]).toEqual([uuid1, uuid2]);
-      expect(args[2]).toBe("2026-01-01");
-      expect(args[3]).toBe("2026-01-31");
-      expect(args[4]).toEqual([uuid3]);
-      expect(args[8]).toBe(true);
-      expect(args[9]).toBe("coffee");
-      expect(args[11]).toBe(-50);
-      expect(args[12]).toBe(50);
-      expect(args[14]).toEqual(["CLEARED", "VOID"]);
-      expect(args[15]).toBe("amount");
-      expect(args[16]).toBe("ASC");
-      expect(args[18]).toEqual(["USD"]);
-      expect(args[19]).toBe(true);
+      const [userId, listing] =
+        mockService.findRegisterExportRows.mock.calls[0];
+      expect(userId).toBe("user-1");
+      expect(listing).toEqual(
+        expect.objectContaining({
+          accountIds: [uuid1, uuid2],
+          startDate: "2026-01-01",
+          endDate: "2026-01-31",
+          categoryIds: [uuid3],
+          includeInvestmentBrokerage: true,
+          search: "coffee",
+          amountFrom: -50,
+          amountTo: 50,
+          statuses: ["CLEARED", "VOID"],
+          sortBy: "amount",
+          sortDirection: "ASC",
+          originalCurrencyCodes: ["USD"],
+          hasAttachments: true,
+        }),
+      );
     });
 
     it("refuses an invalid filter before reading anything", async () => {
       await expect(
         controller.exportRegister(mockReq, undefined, undefined, "not-a-date"),
       ).rejects.toThrow(BadRequestException);
-      expect(mockService.findAll).not.toHaveBeenCalled();
+      expect(mockService.findRegisterExportRows).not.toHaveBeenCalled();
     });
 
     it("exports nothing for a delegate who can read none of the accounts", async () => {
@@ -1049,7 +1044,7 @@ describe("TransactionsController", () => {
       const result = await controller.exportRegister(actingReq);
 
       expect(result).toEqual({ data: [] });
-      expect(mockService.findAll).not.toHaveBeenCalled();
+      expect(mockService.findRegisterExportRows).not.toHaveBeenCalled();
     });
 
     it("masks a counterpart the delegate cannot read before dropping the fields the mask keys on", async () => {
@@ -1057,23 +1052,18 @@ describe("TransactionsController", () => {
       mockCrossOwnerAccess.readableAccountIdSetFor.mockResolvedValue(
         new Set([uuid1]),
       );
-      mockService.findAll.mockResolvedValueOnce(
-        page(
-          [
-            row("tx-1", {
-              userId: "owner-1",
-              isTransfer: true,
-              payeeName: "Transfer to Secret Savings",
-              linkedTransaction: {
-                userId: "owner-1",
-                accountId: uuid2,
-                account: { id: uuid2, name: "Secret Savings" },
-              },
-            }),
-          ],
-          false,
-        ),
-      );
+      mockService.findRegisterExportRows.mockResolvedValueOnce([
+        row("tx-1", {
+          userId: "owner-1",
+          isTransfer: true,
+          payeeName: "Transfer to Secret Savings",
+          linkedTransaction: {
+            userId: "owner-1",
+            accountId: uuid2,
+            account: { id: uuid2, name: "Secret Savings" },
+          },
+        }),
+      ]);
       const actingReq = {
         user: {
           id: "owner-1",

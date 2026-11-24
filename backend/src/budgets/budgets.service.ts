@@ -15,7 +15,10 @@ import { CreateTransferIncomeLineDto } from "./dto/create-transfer-income-line.d
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { assertTransferAccountsOwned } from "./budget-transfer-lines.util";
-import { assertBucketAssignable } from "./budget-bucket-membership.util";
+import {
+  assertBucketAssignable,
+  assertBucketsAssignable,
+} from "./budget-bucket-membership.util";
 import {
   Notification,
   NotificationType,
@@ -305,7 +308,7 @@ export class BudgetsService {
       );
     }
 
-    return withScopedDb(this.dataSource, async (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
       // INV-BUDGET-002: the membership check shares the write's transaction.
       await assertBucketAssignable(
         m,
@@ -322,6 +325,9 @@ export class BudgetsService {
         }),
       );
     });
+    // After the commit: the cached actuals were computed from the old lines.
+    this.invalidateCategoryActuals(budget.id);
+    return saved;
   }
 
   /**
@@ -412,7 +418,7 @@ export class BudgetsService {
   ): Promise<BudgetCategory> {
     // The lookups, the refusal and the save share one transaction, so a
     // refused PATCH has written nothing.
-    return withScopedDb(this.dataSource, async (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
       await this.findOne(userId, budgetId);
 
       const repo = m.getRepository(BudgetCategory);
@@ -456,6 +462,8 @@ export class BudgetsService {
       );
       return repo.save(budgetCategory);
     });
+    this.invalidateCategoryActuals(budgetId);
+    return saved;
   }
 
   private applyCategoryUpdate(
@@ -511,6 +519,7 @@ export class BudgetsService {
     await withScopedDb(this.dataSource, (m) =>
       m.getRepository(BudgetCategory).remove(budgetCategory),
     );
+    this.invalidateCategoryActuals(budgetId);
   }
 
   async bulkUpdateCategories(
@@ -544,20 +553,19 @@ export class BudgetsService {
 
     // Apply all amount changes atomically so a partial failure cannot leave
     // some categories updated and others not.
-    return withScopedDb(this.dataSource, async (m) => {
+    const saved = await withScopedDb(this.dataSource, async (m) => {
       // Membership (truth table D) is checked for every item before the first
       // write, in this same transaction; a refusal leaves nothing written.
-      for (const item of categories) {
-        const line = byId.get(item.id)!;
-        const bucketId =
-          item.bucketId !== undefined ? item.bucketId : line.bucketId;
-        await assertBucketAssignable(
-          m,
-          budgetId,
-          bucketId ?? null,
-          line.isIncome,
-        );
-      }
+      await assertBucketsAssignable(
+        m,
+        budgetId,
+        categories.map((item) => {
+          const line = byId.get(item.id)!;
+          const bucketId =
+            item.bucketId !== undefined ? item.bucketId : line.bucketId;
+          return { bucketId: bucketId ?? null, isIncome: line.isIncome };
+        }),
+      );
       const results: BudgetCategory[] = [];
       for (const item of categories) {
         const budgetCategory = byId.get(item.id)!;
@@ -568,6 +576,8 @@ export class BudgetsService {
       }
       return results;
     });
+    this.invalidateCategoryActuals(budgetId);
+    return saved;
   }
 
   async getSummary(
@@ -1024,24 +1034,9 @@ export class BudgetsService {
       percentUsed: number;
     }>;
   } | null> {
-    const budgets = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Budget).find({
-        where: { userId, isActive: true },
-        relations: [
-          "categories",
-          "categories.category",
-          "categories.category.parent",
-          "categories.transferAccount",
-        ],
-        order: { createdAt: "DESC" },
-      }),
-    );
+    const budget = await this.findNewestActiveBudget(userId);
+    if (!budget) return null;
 
-    if (budgets.length === 0) {
-      return null;
-    }
-
-    const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
     const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
@@ -1117,19 +1112,6 @@ export class BudgetsService {
       }
     >
   > {
-    const budgets = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Budget).find({
-        where: { userId, isActive: true },
-        relations: [
-          "categories",
-          "categories.category",
-          "categories.category.parent",
-          "categories.transferAccount",
-        ],
-        order: { createdAt: "DESC" },
-      }),
-    );
-
     const result = new Map<
       string,
       {
@@ -1140,9 +1122,10 @@ export class BudgetsService {
       }
     >();
 
-    if (budgets.length === 0 || categoryIds.length === 0) return result;
+    if (categoryIds.length === 0) return result;
+    const budget = await this.findNewestActiveBudget(userId);
+    if (!budget) return result;
 
-    const budget = budgets[0];
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
     const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
@@ -1168,6 +1151,26 @@ export class BudgetsService {
     }
 
     return result;
+  }
+
+  /**
+   * The budget the dashboard widget and the category status read: the newest
+   * active one, with the relations its actuals need. One budget is loaded,
+   * not every active budget with its lines.
+   */
+  private findNewestActiveBudget(userId: string): Promise<Budget | null> {
+    return withScopedDb(this.dataSource, (m) =>
+      m.getRepository(Budget).findOne({
+        where: { userId, isActive: true },
+        relations: [
+          "categories",
+          "categories.category",
+          "categories.category.parent",
+          "categories.transferAccount",
+        ],
+        order: { createdAt: "DESC" },
+      }),
+    );
   }
 
   private getCurrentPeriodDates(_budget: Budget): PeriodDateRange {

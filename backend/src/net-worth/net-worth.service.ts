@@ -12,6 +12,7 @@ import {
   runOutsideActiveScopedManager,
   withScopedDb,
 } from "../common/db/scoped-db";
+import { mapWithConcurrency } from "../common/concurrency.util";
 import { lockAccountsForBalanceWrite } from "../common/db/locks";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { MonthlyAccountBalance } from "./entities/monthly-account-balance.entity";
@@ -322,6 +323,38 @@ export async function settlePendingAccountRecalcs(): Promise<void> {
   while (pendingAccountRecalcs.size > 0) {
     await Promise.allSettled([...pendingAccountRecalcs]);
   }
+}
+
+/** Account rebuilds a bulk caller (restore, import) runs at once. */
+export const BULK_RECALC_CONCURRENCY = 3;
+
+/**
+ * Rebuilds several accounts' snapshots in the background, at most
+ * {@link BULK_RECALC_CONCURRENCY} at a time: a restore or an import can touch
+ * dozens of accounts, and each rebuild is a locked transaction holding a
+ * pooled connection. A failure goes to `onError` and the rest go on. Started
+ * outside the caller's scoped manager for the reason `triggerDebouncedRecalc`
+ * gives: later rebuilds start after the caller's transaction may have
+ * committed. The whole batch is registered in `pendingAccountRecalcs`, so a
+ * teardown also waits for rebuilds not yet started.
+ */
+export function recalculateAccountsInBackground(
+  netWorth: Pick<NetWorthService, "recalculateAccount">,
+  userId: string,
+  accountIds: Iterable<string>,
+  onError: (accountId: string, error: Error) => void,
+): void {
+  const ids = [...new Set(accountIds)];
+  if (ids.length === 0) return;
+  const batch = runOutsideActiveScopedManager(() =>
+    mapWithConcurrency(ids, BULK_RECALC_CONCURRENCY, (accountId) =>
+      netWorth
+        .recalculateAccount(userId, accountId)
+        .catch((error: Error) => onError(accountId, error)),
+    ),
+  );
+  pendingAccountRecalcs.add(batch);
+  void batch.finally(() => pendingAccountRecalcs.delete(batch));
 }
 
 @Injectable()

@@ -236,11 +236,21 @@ export function createRelayRowsHarness(): RelayRowsHarness {
           "INSERT INTO ai_relay_agents (user_id, agent_credential, agent_seen_at)",
         )
       ) {
-        const [userId, credentialId, windowMs] = params as [
+        const [userId, credentialId, windowMs, refreshMs] = params as [
           string,
           string,
           number,
+          number,
         ];
+        const kept = agents.find(
+          (a) =>
+            a.userId === userId &&
+            a.agentCredential === credentialId &&
+            a.agentSeenAt !== null &&
+            a.agentSeenAt + refreshMs > now(),
+        );
+        // The holder's recent ask: held, and nothing written.
+        if (kept) return [{ user_id: userId }];
         const existed = agents.some((a) => a.userId === userId);
         const agent = agentOf(userId);
         const holder = agent.agentCredential;

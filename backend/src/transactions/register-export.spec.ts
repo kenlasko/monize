@@ -2,7 +2,6 @@ import {
   collectRegisterExportRows,
   toTransactionExportRow,
 } from "./register-export";
-import type { PaginatedTransactions } from "./transactions.service";
 import type { Transaction } from "./entities/transaction.entity";
 
 const tx = (id: string, extra: Record<string, unknown> = {}): Transaction =>
@@ -25,9 +24,6 @@ const tx = (id: string, extra: Record<string, unknown> = {}): Transaction =>
     splits: [],
     ...extra,
   }) as unknown as Transaction;
-
-const page = (data: Transaction[], hasMore: boolean) =>
-  ({ data, pagination: { hasMore } }) as unknown as PaginatedTransactions;
 
 describe("toTransactionExportRow", () => {
   it("keeps the names the file shows and drops the rest of each relation", () => {
@@ -101,39 +97,35 @@ describe("toTransactionExportRow", () => {
 });
 
 describe("collectRegisterExportRows", () => {
-  it("walks pages until the register says there are no more", async () => {
-    const fetchPage = jest
-      .fn()
-      .mockResolvedValueOnce(page([tx("a"), tx("b")], true))
-      .mockResolvedValueOnce(page([tx("c")], false));
+  it("reads the register once and keeps its order", async () => {
+    const fetchRows = jest.fn().mockResolvedValue([tx("a"), tx("b"), tx("c")]);
     const readableAccountIds = jest.fn();
 
     const rows = await collectRegisterExportRows({
-      fetchPage,
+      fetchRows,
       readableAccountIds,
       isActing: false,
     });
 
     expect(rows.map((r) => r.id)).toEqual(["a", "b", "c"]);
-    expect(fetchPage.mock.calls).toEqual([
-      [1, 200],
-      [2, 200],
-    ]);
+    // One read for the whole file: no page walk, so no per-page count,
+    // running-balance seed or reporting-rate pass.
+    expect(fetchRows).toHaveBeenCalledTimes(1);
     // Same-owner rows never pay the grants query.
     expect(readableAccountIds).not.toHaveBeenCalled();
   });
 
-  it("stops at an empty page even when it claims there is more", async () => {
-    const fetchPage = jest.fn().mockResolvedValue(page([], true));
+  it("answers no rows without asking for the readable set", async () => {
+    const readableAccountIds = jest.fn();
 
     const rows = await collectRegisterExportRows({
-      fetchPage,
-      readableAccountIds: jest.fn(),
-      isActing: false,
+      fetchRows: jest.fn().mockResolvedValue([]),
+      readableAccountIds,
+      isActing: true,
     });
 
     expect(rows).toEqual([]);
-    expect(fetchPage).toHaveBeenCalledTimes(1);
+    expect(readableAccountIds).not.toHaveBeenCalled();
   });
 
   it("masks a cross-owner counterpart the reader cannot read, fetching the readable set once", async () => {
@@ -147,19 +139,18 @@ describe("collectRegisterExportRows", () => {
           account: { id: "acc-9", name: "Their Savings" },
         },
       });
-    const fetchPage = jest
-      .fn()
-      .mockResolvedValueOnce(page([crossOwner("a")], true))
-      .mockResolvedValueOnce(page([crossOwner("b")], false));
     const readableAccountIds = jest.fn().mockResolvedValue(new Set(["acc-1"]));
 
     const rows = await collectRegisterExportRows({
-      fetchPage,
+      fetchRows: jest
+        .fn()
+        .mockResolvedValue([crossOwner("a"), crossOwner("b")]),
       readableAccountIds,
       isActing: false,
     });
 
     expect(readableAccountIds).toHaveBeenCalledTimes(1);
+    expect(rows).toHaveLength(2);
     for (const row of rows) {
       expect(row.linkedTransaction).toEqual({
         account: { name: "Hidden account" },
@@ -169,24 +160,17 @@ describe("collectRegisterExportRows", () => {
   });
 
   it("leaves a counterpart the reader can read as it is", async () => {
-    const fetchPage = jest.fn().mockResolvedValueOnce(
-      page(
-        [
-          tx("a", {
-            isTransfer: true,
-            linkedTransaction: {
-              userId: "user-1",
-              accountId: "acc-2",
-              account: { id: "acc-2", name: "Savings" },
-            },
-          }),
-        ],
-        false,
-      ),
-    );
-
     const rows = await collectRegisterExportRows({
-      fetchPage,
+      fetchRows: jest.fn().mockResolvedValue([
+        tx("a", {
+          isTransfer: true,
+          linkedTransaction: {
+            userId: "user-1",
+            accountId: "acc-2",
+            account: { id: "acc-2", name: "Savings" },
+          },
+        }),
+      ]),
       readableAccountIds: jest.fn().mockResolvedValue(new Set(["acc-2"])),
       isActing: true,
     });

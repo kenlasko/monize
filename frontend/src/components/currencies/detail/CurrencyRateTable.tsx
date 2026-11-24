@@ -125,9 +125,7 @@ export function CurrencyRateTable({
 
   const sorted = useMemo(
     () =>
-      sortRateRows(filterRateRows(rows, activeFilter), activeSortField, sortDirection, (row) =>
-        sourceLabel(row.source),
-      ),
+      sortRateRows(filterRateRows(rows, activeFilter), activeSortField, sortDirection, sourceLabel),
     [rows, activeFilter, activeSortField, sortDirection, sourceLabel],
   );
 

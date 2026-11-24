@@ -292,6 +292,11 @@ export async function findGrantsForAccount(
     .andWhere("(p.expires_at IS NULL OR p.expires_at > :now)", {
       now: new Date(),
     })
+    // Newest first BEFORE the cap, so an account past the cap sees its newest
+    // grants rather than an arbitrary subset; the JS sort below is the same
+    // order.
+    .orderBy("(p.payload ->> 'iat')::bigint", "DESC", "NULLS LAST")
+    .addOrderBy("p.id", "ASC")
     .limit(OAUTH_CONNECTIONS_LIST_MAX)
     .getMany();
   if (grants.length === 0) return [];

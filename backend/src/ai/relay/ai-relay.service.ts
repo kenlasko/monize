@@ -103,6 +103,14 @@ export const RELAY_POLL_REFUSED = "refused" as const;
 const CONNECTED_WINDOW_MS = 45 * 1000; // 45 seconds
 
 /**
+ * How stale the holder's `agent_seen_at` may get before a poll rewrites it.
+ * A third of CONNECTED_WINDOW_MS: always far from the takeover threshold, and
+ * still longer than WAKE_POLL_INTERVAL_MS, so a parked holder writes once
+ * every few asks rather than on each one (`holdChat`).
+ */
+const HOLD_REFRESH_MS = CONNECTED_WINDOW_MS / 3;
+
+/**
  * How long the user can be inactive (no new prompt) before the relay tells the
  * agent to stop its polling loop. An idle agent otherwise long-polls
  * `get_next_prompt` forever, and every empty poll is a fresh turn that bloats
@@ -824,6 +832,19 @@ export class AiRelayService {
    * subquery reads the statement's snapshot, which can miss a claim that
    * committed while this waited -- but that claim also refreshed
    * `agent_seen_at` under the same lock, which already refuses the takeover.
+   *
+   * A holder whose `agent_seen_at` is younger than HOLD_REFRESH_MS keeps the
+   * chat without writing (`kept`): a parked agent asks every
+   * WAKE_POLL_INTERVAL_MS, and rewriting the row on each ask was a write per
+   * idle poll. That skip takes no row lock, which the argument above does not
+   * need: a takeover requires `agent_seen_at` older than CONNECTED_WINDOW_MS,
+   * and the skip only happens while it is younger than HOLD_REFRESH_MS, a
+   * third of that, so the two can never both be true of the row a takeover
+   * locks. Once it is older the holder upserts and locks as before. The cost
+   * is that `agent_seen_at` trails the holder's last ask by up to
+   * HOLD_REFRESH_MS, so a holder that falls silent can lose the chat
+   * CONNECTED_WINDOW_MS - HOLD_REFRESH_MS (30 s) after its last ask rather
+   * than the full window: still six of its own five-second asks missed.
    */
   private async holdChat(
     manager: EntityManager,
@@ -832,8 +853,16 @@ export class AiRelayService {
   ): Promise<boolean> {
     const held = returnedRows<{ user_id: string }>(
       await manager.query(
-        `INSERT INTO ai_relay_agents (user_id, agent_credential, agent_seen_at)
-         VALUES ($1, $2, CURRENT_TIMESTAMP)
+        `WITH kept AS (
+           SELECT user_id
+             FROM ai_relay_agents
+            WHERE user_id = $1
+              AND agent_credential = $2
+              AND agent_seen_at + ${msInterval("$4")} > CURRENT_TIMESTAMP
+         ), taken AS (
+         INSERT INTO ai_relay_agents (user_id, agent_credential, agent_seen_at)
+         SELECT $1, $2, CURRENT_TIMESTAMP
+          WHERE NOT EXISTS (SELECT 1 FROM kept)
          ON CONFLICT (user_id) DO UPDATE
             SET agent_credential = EXCLUDED.agent_credential,
                 agent_seen_at = CURRENT_TIMESTAMP
@@ -856,8 +885,12 @@ export class AiRelayService {
                            )
                   )
                 )
-         RETURNING user_id`,
-        [userId, credentialId, CONNECTED_WINDOW_MS],
+         RETURNING user_id
+         )
+         SELECT user_id FROM kept
+         UNION ALL
+         SELECT user_id FROM taken`,
+        [userId, credentialId, CONNECTED_WINDOW_MS, HOLD_REFRESH_MS],
       ),
     );
     return held.length > 0;

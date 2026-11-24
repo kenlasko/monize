@@ -3821,6 +3821,68 @@ describe("TransactionsService", () => {
       return mockQb;
     };
 
+    describe("findRegisterExportRows", () => {
+      const listing = {
+        accountIds: ["acc-1"],
+        startDate: "2026-01-01",
+        statuses: [TransactionStatus.CLEARED],
+        includeInvestmentBrokerage: false,
+        sortBy: "date" as const,
+        sortDirection: "DESC" as const,
+        jointAccountIds: [],
+      };
+
+      it("reads the filtered register in one statement, with no page, count or balance work", async () => {
+        const rows = [{ id: "tx-1" }, { id: "tx-2" }, { id: "tx-3" }];
+        const mockQb = createMockQueryBuilder();
+        mockQb.getMany.mockResolvedValue(rows);
+        transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
+
+        const result = await service.findRegisterExportRows("user-1", listing);
+
+        expect(result).toBe(rows);
+        // The listing query alone: no running-balance sums, no rate index.
+        expect(transactionsRepository.createQueryBuilder).toHaveBeenCalledTimes(
+          1,
+        );
+        expect(mockQb.getMany).toHaveBeenCalledTimes(1);
+        expect(mockQb.getManyAndCount).not.toHaveBeenCalled();
+        expect(mockQb.getCount).not.toHaveBeenCalled();
+        expect(mockQb.skip).not.toHaveBeenCalled();
+        expect(mockQb.take).not.toHaveBeenCalled();
+        expect(investmentTxRepository.find).not.toHaveBeenCalled();
+      });
+
+      it("applies the register's filters and order, as the paged list does", async () => {
+        const mockQb = createMockQueryBuilder();
+        transactionsRepository.createQueryBuilder.mockReturnValue(mockQb);
+
+        await service.findRegisterExportRows("user-1", listing);
+
+        expect(mockQb.andWhere).toHaveBeenCalledWith(
+          "transaction.accountId IN (:...accountIds)",
+          { accountIds: ["acc-1"] },
+        );
+        expect(mockQb.andWhere).toHaveBeenCalledWith(
+          "transaction.transactionDate >= :startDate",
+          { startDate: "2026-01-01" },
+        );
+        expect(mockQb.andWhere).toHaveBeenCalledWith(
+          "transaction.status IN (:...statuses)",
+          { statuses: [TransactionStatus.CLEARED] },
+        );
+        expect(mockQb.orderBy).toHaveBeenCalledWith(
+          "transaction.transactionDate",
+          "DESC",
+          undefined,
+        );
+        expect(mockQb.addOrderBy).toHaveBeenCalledWith(
+          "transaction.id",
+          "DESC",
+        );
+      });
+    });
+
     it("returns empty paginated result with defaults", async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);

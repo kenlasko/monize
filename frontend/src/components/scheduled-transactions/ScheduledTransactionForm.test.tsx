@@ -3775,6 +3775,30 @@ describe('ScheduledTransactionForm: Estimate', () => {
     expect(screen.getByLabelText('Amount')).not.toBeDisabled();
   });
 
+  it('asks for the preview once the due date settles, not once per change', async () => {
+    render(<ScheduledTransactionForm scheduledTransaction={estimatedSt} />);
+    await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalledTimes(1));
+    const dateInput = screen.getByLabelText('Next Due Date') as HTMLInputElement;
+
+    // Three steps, each its own render, closer together than the debounce.
+    for (const day of ['2024-03-02', '2024-03-03', '2024-03-04']) {
+      await act(async () => {
+        fireEvent.change(dateInput, { target: { value: day } });
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+    }
+    await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalledTimes(2));
+    expect(mockGetAmountEstimate).toHaveBeenLastCalledWith(
+      'acc-1',
+      { payeeId: 'payee-1', categoryId: 'cat-1' },
+      '2024-03-04',
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+    expect(mockGetAmountEstimate).toHaveBeenCalledTimes(2);
+  });
+
   it('disables the currency picker while estimating', async () => {
     render(<ScheduledTransactionForm scheduledTransaction={estimatedSt} />);
     await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());

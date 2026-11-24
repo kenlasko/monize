@@ -5,6 +5,12 @@ const TOKEN: ValidatedToken = {
   userId: "11111111-1111-1111-1111-111111111111",
   scopes: "read",
   tokenId: "22222222-2222-2222-2222-222222222222",
+  owner: {
+    id: "11111111-1111-1111-1111-111111111111",
+    isActive: true,
+    mustChangePassword: false,
+    role: "user",
+  },
 };
 
 describe("patBearerOf", () => {

@@ -626,11 +626,14 @@ export function MonthlyCategoryBreakdownReport() {
 
   const currency = data?.currency;
 
+  // The server answers in months; a yearly table folds them into years. From
+  // here on a "month" is a column key: YYYY-MM, or YYYY in a yearly table. Its
+  // own memo, so a sort click re-sorts the folded answer instead of folding
+  // every month of history again.
+  const columns = useMemo(() => (data ? breakdownByPeriod(data, period) : null), [data, period]);
+
   const model = useMemo(() => {
-    if (!data) return null;
-    // The server answers in months; a yearly table folds them into years. From
-    // here on a "month" is a column key: YYYY-MM, or YYYY in a yearly table.
-    const columns = breakdownByPeriod(data, period);
+    if (!columns) return null;
     // Drop the in-progress (current) column unless the user opts in. It is
     // removed wherever it appears so the toggle always takes effect.
     const months = includeCurrentPeriod
@@ -659,13 +662,11 @@ export function MonthlyCategoryBreakdownReport() {
       isIncome: boolean,
       row: MonthlyBreakdownCategoryRow,
     ) => {
+      // The groups are this memo's own objects, so a row is pushed into its
+      // list rather than copying the list per row.
       const existing = groups.get(key);
-      groups.set(
-        key,
-        existing
-          ? { ...existing, list: [...existing.list, row] }
-          : { key, title, isIncome, list: [row] },
-      );
+      if (existing) existing.list.push(row);
+      else groups.set(key, { key, title, isIncome, list: [row] });
     };
     for (const row of rows) {
       if (row.parentId && row.parentName) {
@@ -815,14 +816,13 @@ export function MonthlyCategoryBreakdownReport() {
       allTransferAccountIds,
     };
   }, [
-    data,
+    columns,
     otherExpensesLabel,
     otherIncomeLabel,
     sortColumn,
     sortDir,
     includeCurrentPeriod,
     currentPeriod,
-    period,
     t,
   ]);
 

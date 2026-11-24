@@ -64,6 +64,16 @@ export interface ListPlacement {
  * `MENU_MIN_WIDTH`), slid left to stay inside the right edge, and flipped above
  * the field when the room below is cramped and the room above is larger.
  */
+export function samePlacement(a: ListPlacement, b: ListPlacement): boolean {
+  return (
+    a.left === b.left &&
+    a.width === b.width &&
+    a.maxHeight === b.maxHeight &&
+    a.top === b.top &&
+    a.bottom === b.bottom
+  );
+}
+
 export function placeList(
   rect: Pick<DOMRect, 'left' | 'top' | 'bottom' | 'width'>,
   viewportWidth: number,
@@ -174,9 +184,19 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
     [needle, choosable, options],
   );
 
+  // A scroll frame that leaves the field where it was keeps the same
+  // placement object, so the open list does not re-render every frame.
+  // The placement last set, read by `measure` without a state update. Every
+  // write to `placement` goes through `measure` or `close`, which keep it.
+  const placementRef = useRef<ListPlacement | null>(null);
   const measure = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
-    if (rect) setPlacement(placeList(rect, window.innerWidth, window.innerHeight));
+    if (!rect) return;
+    const next = placeList(rect, window.innerWidth, window.innerHeight);
+    const prev = placementRef.current;
+    if (prev && samePlacement(prev, next)) return;
+    placementRef.current = next;
+    setPlacement(next);
   }, []);
 
   const indexOfValue = useCallback(
@@ -197,6 +217,7 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
   };
 
   const close = (refocus = false) => {
+    placementRef.current = null;
     setPlacement(null);
     setQuery('');
     setActiveIndex(-1);
@@ -505,13 +526,16 @@ export const IconSelect = forwardRef<HTMLSelectElement, IconSelectProps>(functio
                       aria-disabled={option.disabled || undefined}
                       // Keep focus on the field (or the filter) through the click.
                       onMouseDown={(event) => event.preventDefault()}
-                      onMouseEnter={() => !option.disabled && setActiveIndex(index)}
+                      // The pointer's highlight is CSS; the active row (the
+                      // one Enter picks and the reader hears) moves with the
+                      // keyboard only, so hovering redraws nothing.
                       onClick={() => choose(option)}
                       className={cn(
                         'flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm',
                         option.disabled
                           ? 'cursor-default text-gray-400 dark:text-gray-500'
                           : 'text-gray-900 dark:text-gray-100',
+                        !option.disabled && index !== activeIndex && 'hover:bg-blue-50 dark:hover:bg-blue-900/50',
                         index === activeIndex && 'bg-blue-100 dark:bg-blue-900',
                         option.value === current && index !== activeIndex && 'bg-blue-50 dark:bg-blue-900/30',
                         option.value === current && 'font-semibold',

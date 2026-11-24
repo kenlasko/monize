@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useTranslations } from 'next-intl';
 import { gainLossColor } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -33,7 +34,32 @@ interface DuplicateGroupCardProps {
   categoryIconMap: ReadonlyMap<string, string | null>;
 }
 
-export function DuplicateGroupCard({
+/**
+ * Whether a card would draw the same thing: the same props, and the same rows
+ * of this group ticked. The report hands every card the whole selection, which
+ * is a new set on every tick, so comparing it by identity would redraw every
+ * group for a tick in one of them.
+ */
+export function duplicateGroupCardPropsEqual(
+  prev: DuplicateGroupCardProps,
+  next: DuplicateGroupCardProps,
+): boolean {
+  if (
+    prev.group !== next.group ||
+    prev.onToggle !== next.onToggle ||
+    prev.onOpen !== next.onOpen ||
+    prev.categoryColorMap !== next.categoryColorMap ||
+    prev.categoryIconMap !== next.categoryIconMap
+  ) {
+    return false;
+  }
+  if (prev.selected === next.selected) return true;
+  return next.group.transactions.every(
+    (tx) => prev.selected.has(tx.id) === next.selected.has(tx.id),
+  );
+}
+
+export const DuplicateGroupCard = memo(function DuplicateGroupCard({
   group,
   selected,
   onToggle,
@@ -119,4 +145,4 @@ export function DuplicateGroupCard({
       </div>
     </div>
   );
-}
+}, duplicateGroupCardPropsEqual);

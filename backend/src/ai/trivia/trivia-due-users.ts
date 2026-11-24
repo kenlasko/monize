@@ -11,6 +11,13 @@ import { zonedWallClock } from "../../securities/providers/market-session.util";
  */
 export const TRIVIA_BUILD_HOURS = 4;
 
+/**
+ * The Trivia widget's id in `dashboardWidgets`, the frontend's `'trivia'` in
+ * `widget-registry.tsx`. It is not in the default layout, so only a layout
+ * that lists it shows the facts.
+ */
+export const TRIVIA_WIDGET_ID = "trivia";
+
 /** A reader the tick may build for, with the zone their day is counted in. */
 export interface DueTriviaUser {
   userId: string;
@@ -24,6 +31,11 @@ export interface DueTriviaUser {
  * the runtime cannot resolve counts in UTC. The active-user read happens only
  * when some bucket is in its window. Call inside `withSystemContext`: both
  * reads span users.
+ *
+ * A reader the job would do nothing for is left out here, before the per-user
+ * claim and preference read: one who neither shows the Trivia widget with the
+ * trivia switched on nor has a stored row. A reader with a row is kept even
+ * with the widget hidden, so `generateForUser` still deletes it.
  */
 export async function dueTriviaUsers(
   dataSource: DataSource,
@@ -49,7 +61,18 @@ async function activeUserIds(dataSource: DataSource): Promise<Set<string>> {
       .createQueryBuilder()
       .select("u.id", "userId")
       .from("users", "u")
-      .where("u.is_active = true")
+      .where(
+        `u.is_active = true AND (
+           EXISTS (SELECT 1 FROM dashboard_trivia d WHERE d.user_id = u.id)
+           OR EXISTS (
+             SELECT 1 FROM user_preferences p
+              WHERE p.user_id = u.id
+                AND p.ai_trivia_enabled IS NOT FALSE
+                AND :widget = ANY(p.dashboard_widgets)
+           )
+         )`,
+        { widget: TRIVIA_WIDGET_ID },
+      )
       .getRawMany<{ userId: string }>(),
   );
   return new Set(rows.map((r) => r.userId));

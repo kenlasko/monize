@@ -40,8 +40,10 @@ const logger = createLogger('Investments');
 /**
  * What the page last drew, so a return draws it at once (`page-snapshot.ts`).
  * The accounts are the same whatever is selected; the summary and the first
- * page of the unfiltered register are keyed by the selection that produced
- * them, so a return under another selection waits for its own answer.
+ * page of the unfiltered register carry the selection that produced them, so
+ * a return under another selection waits for its own answer. One entry each,
+ * holding the latest selection's answer: a key per selection kept a full
+ * portfolio summary for every selection the tab had ever seen.
  */
 const ACCOUNTS_SNAPSHOT_KEY = 'investments:accounts';
 interface InvestmentAccountsSnapshot {
@@ -51,13 +53,23 @@ interface InvestmentAccountsSnapshot {
 function selectionKey(accountIds: readonly string[]): string {
   return [...accountIds].sort().join(',');
 }
-const summarySnapshotKey = (accountIds: readonly string[]) =>
-  `investments:summary:${selectionKey(accountIds)}`;
-const transactionsSnapshotKey = (accountIds: readonly string[]) =>
-  `investments:transactions:${selectionKey(accountIds)}`;
+const SUMMARY_SNAPSHOT_KEY = 'investments:summary';
+const TRANSACTIONS_SNAPSHOT_KEY = 'investments:transactions';
 interface InvestmentTransactionsSnapshot {
   data: InvestmentTransaction[];
   pagination: InvestmentTransactionPaginationInfo | null;
+}
+interface SelectionSnapshot<T> {
+  selection: string;
+  value: T;
+}
+/** The stored answer, only when it was produced for this selection. */
+function readSelectionSnapshot<T>(key: string, accountIds: readonly string[]): T | undefined {
+  const stored = readPageSnapshot<SelectionSnapshot<T>>(key);
+  return stored && stored.selection === selectionKey(accountIds) ? stored.value : undefined;
+}
+function writeSelectionSnapshot<T>(key: string, accountIds: readonly string[], value: T): void {
+  writePageSnapshot<SelectionSnapshot<T>>(key, { selection: selectionKey(accountIds), value });
 }
 function rememberAccounts(update: InvestmentAccountsSnapshot): void {
   writePageSnapshot<InvestmentAccountsSnapshot>(ACCOUNTS_SNAPSHOT_KEY, {
@@ -83,9 +95,10 @@ export function useInvestmentData() {
     if (searchParams.get('accountId')) return { accounts: accountsSnapshot };
     return {
       accounts: accountsSnapshot,
-      summary: readPageSnapshot<PortfolioSummary>(summarySnapshotKey(selectedAccountIds)),
-      transactions: readPageSnapshot<InvestmentTransactionsSnapshot>(
-        transactionsSnapshotKey(selectedAccountIds),
+      summary: readSelectionSnapshot<PortfolioSummary>(SUMMARY_SNAPSHOT_KEY, selectedAccountIds),
+      transactions: readSelectionSnapshot<InvestmentTransactionsSnapshot>(
+        TRANSACTIONS_SNAPSHOT_KEY,
+        selectedAccountIds,
       ),
     };
   });
@@ -255,13 +268,13 @@ export function useInvestmentData() {
       if (summarySeqRef.current === summarySeq) {
         setPortfolioSummary(summaryData);
         setInitialSummarySettled(true);
-        writePageSnapshot(summarySnapshotKey(accountIds), summaryData);
+        writeSelectionSnapshot(SUMMARY_SNAPSHOT_KEY, accountIds, summaryData);
       }
       if (transactionsSeqRef.current === txSeq) {
         setTransactions(txResponse.data || []);
         setPagination(txResponse.pagination);
         if (isLandingView(page, filters)) {
-          writePageSnapshot<InvestmentTransactionsSnapshot>(transactionsSnapshotKey(accountIds), {
+          writeSelectionSnapshot<InvestmentTransactionsSnapshot>(TRANSACTIONS_SNAPSHOT_KEY, accountIds, {
             data: txResponse.data || [],
             pagination: txResponse.pagination,
           });
@@ -324,7 +337,7 @@ export function useInvestmentData() {
         const summaryData = await investmentsApi.getPortfolioSummary(ids);
         if (summarySeqRef.current !== seq) return;
         setPortfolioSummary(summaryData);
-        writePageSnapshot(summarySnapshotKey(accountIds), summaryData);
+        writeSelectionSnapshot(SUMMARY_SNAPSHOT_KEY, accountIds, summaryData);
       } catch (error) {
         logger.error('Failed to load portfolio summary:', error);
         if (summarySeqRef.current !== seq) return;
@@ -357,7 +370,7 @@ export function useInvestmentData() {
         setTransactions(txResponse.data || []);
         setPagination(txResponse.pagination);
         if (isLandingView(page, filters)) {
-          writePageSnapshot<InvestmentTransactionsSnapshot>(transactionsSnapshotKey(accountIds), {
+          writeSelectionSnapshot<InvestmentTransactionsSnapshot>(TRANSACTIONS_SNAPSHOT_KEY, accountIds, {
             data: txResponse.data || [],
             pagination: txResponse.pagination,
           });

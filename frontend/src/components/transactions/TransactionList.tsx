@@ -64,6 +64,7 @@ import {
   pageReportingCurrency,
   pageTotals,
   registerGroupLabel,
+  type RegisterFigure,
 } from './register-style-data';
 import { PebbleRegister } from './variants/PebbleRegister';
 import { PartialTotal } from '@/components/ui/PartialTotal';
@@ -279,6 +280,8 @@ function CompactDatesToggle({
   );
 }
 
+const NO_DAY_NET: ReadonlyMap<string, RegisterFigure> = new Map();
+
 export function TransactionList({
   transactions,
   onEdit,
@@ -448,6 +451,22 @@ export function TransactionList({
       else onEdit?.(transaction);
     },
     [inspectorVisible, onEdit],
+  );
+  // Stable across an inspector click, so the memoised Pebble rows that did
+  // not change keep their render.
+  const isRowSelected = useCallback(
+    (id: string) => (selectAllMatching ? !excludedIds?.has(id) : (selectedIds?.has(id) || false)),
+    [selectAllMatching, excludedIds, selectedIds],
+  );
+  const canEditRow = useCallback(
+    (tx: Transaction) =>
+      !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canEdit),
+    [jointPermissionsByAccount],
+  );
+  const canDeleteRow = useCallback(
+    (tx: Transaction) =>
+      !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canDelete),
+    [jointPermissionsByAccount],
   );
 
   const handleActionSheetClose = useCallback(() => {
@@ -893,14 +912,12 @@ export function TransactionList({
           showRunningBalance={showRunningBalance}
           runningBalances={runningBalances}
           displayAmounts={displayAmounts}
-          dayNet={styleData?.dayNet ?? new Map()}
+          dayNet={styleData?.dayNet ?? NO_DAY_NET}
           inspectorVisible={inspectorVisible}
           inspectedId={inspectedId}
           deletingId={deletingId}
           selectionMode={selectionMode}
-          isRowSelected={(id) =>
-            selectAllMatching ? !excludedIds?.has(id) : (selectedIds?.has(id) || false)
-          }
+          isRowSelected={isRowSelected}
           onToggleSelection={onToggleSelection}
           highlightTransactionId={highlightTransactionId}
           onRowClick={handlePebbleRowClick}
@@ -915,12 +932,8 @@ export function TransactionList({
           onDuplicate={onDuplicate}
           onScheduleRecurring={onScheduleRecurring}
           onDeleteClick={handleDeleteClick}
-          canEdit={(tx) =>
-            !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canEdit)
-          }
-          canDelete={(tx) =>
-            !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canDelete)
-          }
+          canEdit={canEditRow}
+          canDelete={canDeleteRow}
           categoryColorMap={categoryColorMap}
           categoryLabelMap={categoryLabelMap}
           categoryIconMap={categoryIconMap}

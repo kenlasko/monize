@@ -154,19 +154,42 @@ export function balanceRulePercents(balances: ReadonlyMap<string, number>): Map<
   return out;
 }
 
+/**
+ * One formatter per (locale, with year), built on first use: a register page
+ * asks for a label per date group on every render, and an Intl formatter is
+ * costly to construct. `null` records a locale the runtime refused.
+ */
+const groupLabelFormatters = new Map<string, Intl.DateTimeFormat | null>();
+
+function groupLabelFormatter(locale: string | undefined, withYear: boolean): Intl.DateTimeFormat | null {
+  const key = `${locale ?? ''}|${withYear ? 'y' : ''}`;
+  let formatter = groupLabelFormatters.get(key);
+  if (formatter === undefined) {
+    try {
+      formatter = new Intl.DateTimeFormat(locale, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        ...(withYear ? { year: 'numeric' } : {}),
+        timeZone: 'UTC',
+      });
+    } catch {
+      formatter = null;
+    }
+    groupLabelFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
 /** "Wednesday, November 11", in the reader's language; the year only when it is not this one. */
 export function registerGroupLabel(date: string, locale: string | undefined, today: string): string {
   const [y, m, d] = date.split('-').map(Number);
   const when = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
   const sameYear = date.slice(0, 4) === today.slice(0, 4);
+  const formatter = groupLabelFormatter(locale, !sameYear);
+  if (!formatter) return date;
   try {
-    return new Intl.DateTimeFormat(locale, {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      ...(sameYear ? {} : { year: 'numeric' }),
-      timeZone: 'UTC',
-    }).format(when);
+    return formatter.format(when);
   } catch {
     return date;
   }

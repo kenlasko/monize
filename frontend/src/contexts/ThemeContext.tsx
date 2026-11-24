@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import Cookies from 'js-cookie';
 import { ColorTheme, isColorTheme } from '@/lib/color-themes';
 import { UiStyle, isUiStyle } from '@/lib/ui-styles';
@@ -153,20 +153,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [resolvedTheme, colorTheme, mounted]);
 
-  const setTheme = (newTheme: Theme) => {
+  // The setters and the value are stable across renders. PreferencesLoader
+  // re-applies the stored preference whenever a setter's identity changes, so
+  // a setter rebuilt on every render would put the saved choice back the
+  // moment a new one was picked, before the save that records it returned.
+  const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem(THEME_KEY, newTheme);
-  };
+  }, []);
 
-  const setColorTheme = (newColorTheme: ColorTheme) => {
+  const setColorTheme = useCallback((newColorTheme: ColorTheme) => {
     setColorThemeState(newColorTheme);
     localStorage.setItem(COLOR_THEME_KEY, newColorTheme);
-  };
+  }, []);
 
-  const setUiStyle = (newUiStyle: UiStyle) => {
+  const setUiStyle = useCallback((newUiStyle: UiStyle) => {
     setUiStyleState(newUiStyle);
     localStorage.setItem(UI_STYLE_KEY, newUiStyle);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ theme, resolvedTheme, setTheme, colorTheme, setColorTheme, uiStyle, setUiStyle }),
+    [theme, resolvedTheme, setTheme, colorTheme, setColorTheme, uiStyle, setUiStyle],
+  );
 
   // Prevent flash of incorrect theme
   if (!mounted) {
@@ -174,7 +183,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, colorTheme, setColorTheme, uiStyle, setUiStyle }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

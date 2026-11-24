@@ -46,6 +46,7 @@ export function ColorThemeSelector({ value, onChange, uiStyle = 'standard' }: Co
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { setColorTheme: setAppColorTheme, resolvedTheme } = useTheme();
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const saveSeq = useRef(0);
   const offered = UI_STYLE_PALETTES[uiStyle];
   const palettes = offered.includes(value) ? offered : [value, ...offered];
 
@@ -53,12 +54,16 @@ export function ColorThemeSelector({ value, onChange, uiStyle = 'standard' }: Co
     onChange(next);
     setAppColorTheme(next);
 
+    // Only the latest save's reply is adopted (see UiStyleSelector).
+    const seq = ++saveSeq.current;
     startTransition(async () => {
       try {
         const updated = await userSettingsApi.updatePreferences({ colorTheme: next });
+        if (seq !== saveSeq.current) return;
         updatePreferencesStore(updated);
         toast.success(t('toasts.saved'));
       } catch (error) {
+        if (seq !== saveSeq.current) return;
         toast.error(getErrorMessage(error, t('toasts.colorThemeSaveFailed')));
       }
     });

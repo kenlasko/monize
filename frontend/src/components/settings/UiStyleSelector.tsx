@@ -41,6 +41,7 @@ export function UiStyleSelector({
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { setUiStyle: setAppUiStyle, setColorTheme: setAppColorTheme } = useTheme();
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const saveSeq = useRef(0);
 
   const handleChange = (next: UiStyle) => {
     // A style offers only its own palettes (`UI_STYLE_PALETTES`); one the new
@@ -55,14 +56,20 @@ export function UiStyleSelector({
       setAppColorTheme(palette);
     }
 
+    // Arrowing through the options saves each one; only the latest save's
+    // reply is adopted, so an earlier reply landing late cannot put the store
+    // back on a style the reader has already moved past.
+    const seq = ++saveSeq.current;
     startTransition(async () => {
       try {
         const updated = await userSettingsApi.updatePreferences(
           paletteChanged ? { uiStyle: next, colorTheme: palette } : { uiStyle: next },
         );
+        if (seq !== saveSeq.current) return;
         updatePreferencesStore(updated);
         toast.success(t('toasts.saved'));
       } catch (error) {
+        if (seq !== saveSeq.current) return;
         toast.error(getErrorMessage(error, t('toasts.uiStyleSaveFailed')));
       }
     });

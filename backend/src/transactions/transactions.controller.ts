@@ -692,8 +692,11 @@ export class TransactionsController {
     if (listing === null) return { data: [] };
 
     const data = await collectRegisterExportRows({
-      fetchPage: (pageNum, pageSize) =>
-        this.findRegisterPage(listing, pageNum, pageSize),
+      fetchRows: () =>
+        this.transactionsService.findRegisterExportRows(
+          listing.userId,
+          listing,
+        ),
       readableAccountIds: () =>
         this.crossOwnerAccess.readableAccountIdSetFor(
           req.user.realUserId ?? req.user.id,

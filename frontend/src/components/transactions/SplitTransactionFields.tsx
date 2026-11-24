@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
@@ -16,7 +16,7 @@ import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { RecentTransactionsPopover } from './RecentTransactionsPopover';
 import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { NoteLinks } from '@/components/ui/LinkifiedText';
-import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { payeePickerOptions } from '@/components/payees/withPayeeIcons';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface SplitTransactionFieldsProps {
@@ -84,6 +84,10 @@ export function SplitTransactionFields({
   const accountOptionLabel = useAccountOptionLabel();
   const historyButtonRef = useRef<HTMLButtonElement>(null);
   const [showRecentPopover, setShowRecentPopover] = useState(false);
+  const payeeOptions = useMemo(
+    () => payeePickerOptions(payees, { withCategory: true }),
+    [payees],
+  );
 
   return (
     <div className="space-y-4">
@@ -123,12 +127,7 @@ export function SplitTransactionFields({
             <Combobox
               label={t('form.fields.payee')}
               placeholder={t('form.placeholders.selectOrTypePayee')}
-              options={payees.map(payee => ({
-                value: payee.id,
-                label: payee.name,
-                icon: payeeOptionIcon(payee),
-                subtitle: payee.defaultCategory?.name,
-              }))}
+              options={payeeOptions}
               value={selectedPayeeId}
               initialDisplayValue={transaction?.payeeName || ''}
               onChange={handlePayeeChange}

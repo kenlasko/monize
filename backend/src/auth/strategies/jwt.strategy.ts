@@ -98,26 +98,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * acting-as-self one below. `pat` marks the request as non-interactive --
    * `RequestContextInterceptor` reads it so a script cannot keep the owner's
    * `last_activity_at` (the emergency-access clock) fresh.
+   *
+   * The owner's state is the row `validateToken` read for this same request
+   * (`ValidatedToken.owner`), so a PAT request reads `users` once, not twice.
    */
-  private patUser(pat: ValidatedToken) {
-    return withUserContext(pat.userId, async () => {
-      const user = await this.authService.getUserStateById(pat.userId);
-      if (!user || !user.isActive) {
-        throw new UnauthorizedException(
-          tr(
-            "errors.auth.userNotFoundOrInactive",
-            "User not found or inactive",
-          ),
-        );
-      }
-      return {
-        ...user,
-        realUserId: user.id,
-        isActing: false,
-        delegationId: null,
-        pat: { tokenId: pat.tokenId, scopes: pat.scopes },
-      };
-    });
+  private async patUser(pat: ValidatedToken) {
+    const user = pat.owner;
+    if (!user || user.id !== pat.userId || !user.isActive) {
+      throw new UnauthorizedException(
+        tr("errors.auth.userNotFoundOrInactive", "User not found or inactive"),
+      );
+    }
+    return {
+      ...user,
+      realUserId: user.id,
+      isActing: false,
+      delegationId: null,
+      pat: { tokenId: pat.tokenId, scopes: pat.scopes },
+    };
   }
 
   async validate(payload: any) {

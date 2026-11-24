@@ -5,10 +5,11 @@ import BudgetDetailPage from './page';
 
 // Mock next/navigation
 const mockPush = vi.fn();
+let mockParamsId = 'budget-1';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => '/budgets/budget-1',
-  useParams: () => ({ id: 'budget-1' }),
+  useParams: () => ({ id: mockParamsId }),
 }));
 
 // Mock next/image
@@ -99,6 +100,7 @@ const mockGetTrend = vi.fn();
 const mockDeleteBudget = vi.fn();
 const mockGetPeriodDetail = vi.fn();
 const mockGetAll = vi.fn();
+const mockGetBucketStatus = vi.fn();
 
 vi.mock('@/lib/budgets', () => ({
   budgetsApi: {
@@ -110,6 +112,7 @@ vi.mock('@/lib/budgets', () => ({
     delete: (...args: any[]) => mockDeleteBudget(...args),
     getPeriodDetail: (...args: any[]) => mockGetPeriodDetail(...args),
     getAll: (...args: any[]) => mockGetAll(...args),
+    getBucketStatus: (...args: any[]) => mockGetBucketStatus(...args),
   },
 }));
 
@@ -242,6 +245,8 @@ describe('BudgetDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockParamsId = 'budget-1';
+    mockGetBucketStatus.mockResolvedValue({});
     capturedOnCategoryClick = undefined;
     capturedOnPeriodChange = undefined;
     mockGetSummary.mockResolvedValue(mockSummary);
@@ -336,6 +341,49 @@ describe('BudgetDetailPage', () => {
     });
     expect(screen.queryByRole('button', { name: 'Switch to another budget' })).toBeNull();
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('starts the bucket status as soon as the summary answers', async () => {
+    mockGetSummary.mockResolvedValue({
+      ...mockSummary,
+      budget: { ...mockSummary.budget, strategy: 'BUCKET' },
+    });
+    // The trend never answers: the bucket status must not wait for it.
+    mockGetTrend.mockReturnValue(new Promise(() => {}));
+    render(<BudgetDetailPage />);
+
+    await waitFor(() => {
+      expect(mockGetBucketStatus).toHaveBeenCalledWith('budget-1');
+    });
+  });
+
+  it('does not let a slower load of the previous budget land over the new one', async () => {
+    let resolveFirst: (value: unknown) => void = () => {};
+    mockGetSummary.mockImplementation((id: string) =>
+      id === 'budget-1'
+        ? new Promise((resolve) => {
+            resolveFirst = resolve;
+          })
+        : Promise.resolve({
+            ...mockSummary,
+            budget: { ...mockSummary.budget, id: 'budget-2', name: 'Vacation Fund' },
+          }),
+    );
+    const { rerender } = render(<BudgetDetailPage />);
+
+    mockParamsId = 'budget-2';
+    await act(async () => {
+      rerender(<BudgetDetailPage />);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Vacation Fund')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      resolveFirst(mockSummary);
+    });
+    expect(screen.getByText('Vacation Fund')).toBeInTheDocument();
+    expect(screen.queryByText('February 2026')).toBeNull();
   });
 
   it('calls API with correct budget ID', async () => {

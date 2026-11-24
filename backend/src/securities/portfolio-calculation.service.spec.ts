@@ -1118,14 +1118,13 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
     expect(jan.realizedGain).toBe(0);
   });
 
-  it("resolves an unrated pair once per boundary date, however many securities carry it", async () => {
-    // The cache held only found rates, so a refusal was re-resolved (and
-    // re-warned) for every security group in that currency. An absence is an
-    // answer and is cached like one. The cache is now keyed by boundary date
-    // too (the fold values each boundary at that date's FX, P5), so the pair is
-    // resolved once PER DISTINCT boundary date -- here the two January
-    // boundaries, 2023-12-31 and 2024-01-31 -- and shared across both security
-    // groups rather than re-resolved four times.
+  it("loads an account currency's rate history once, however many securities and boundary dates need it", async () => {
+    // The fold used to resolve security -> account currency one boundary date
+    // at a time (one query per date per pair: about 365 a year for a daily
+    // report). The window's history for each account currency is now loaded
+    // once, as the reporting fold's is, and every boundary and transfer date
+    // resolves from it. An unrated pair resolves to an absence from that same
+    // read, never a per-date lookup.
     exchangeRateService.resolveStoredRate = storedRateDouble();
     txRepo.find.mockResolvedValue([
       makeTx({
@@ -1168,7 +1167,7 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
       ]),
     );
 
-    await service.calculateCapitalGainsByMonth(userId, {
+    const result = await service.calculateCapitalGainsByMonth(userId, {
       startDate: "2024-01-01",
       endDate: "2024-01-31",
     });
@@ -1176,11 +1175,65 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
     const usdCad = exchangeRateService.resolveStoredRate.mock.calls.filter(
       (call: unknown[]) => call[0] === "USD" && call[1] === "CAD",
     );
-    // Two distinct boundary dates, each resolved once -- not four times (two
-    // securities * two dates), which is what dropping the cache would cost.
-    const distinctDates = new Set(usdCad.map((call: unknown[]) => call[2]));
-    expect(distinctDates).toEqual(new Set(["2023-12-31", "2024-01-31"]));
-    expect(usdCad).toHaveLength(2);
+    expect(usdCad).toHaveLength(0);
+    const cadIndexReads = exchangeRateService.getRateIndex.mock.calls.filter(
+      (call: unknown[]) => call[1] === "CAD",
+    );
+    // One read for the account currency's window: the price lookup's start
+    // (the day before the first period) to the last period's end. The
+    // reporting replay may read its own index for the same currency.
+    const accountRead = cadIndexReads.find(
+      (call: unknown[]) =>
+        call[2] === "2023-12-31" &&
+        call[3] === "2024-01-31" &&
+        (call[0] as Set<string>).has("USD"),
+    );
+    expect(accountRead).toBeDefined();
+    // No stored USD->CAD history: both groups' boundaries are unknown.
+    for (const entry of result) {
+      expect(entry.startValue).toBeNull();
+      expect(entry.endValue).toBeNull();
+    }
+  });
+
+  it("reads only the closes the window can be priced from, not the whole history", async () => {
+    txRepo.find.mockResolvedValue([
+      makeTx({
+        id: "buy",
+        action: InvestmentAction.BUY,
+        transactionDate: "2020-03-15",
+        quantity: 100,
+        price: 50,
+        totalAmount: 5000,
+      }),
+    ]);
+    priceRepo.query.mockResolvedValue(
+      priceRows([
+        // The newest close before the window, which the preceding-row branch
+        // returns, prices the period's start boundary.
+        { date: "2023-12-29", price: 50 },
+        { date: "2024-01-31", price: 55 },
+      ]),
+    );
+
+    const result = await service.calculateCapitalGainsByMonth(userId, {
+      startDate: "2024-01-01",
+      endDate: "2024-01-31",
+    });
+
+    const priceCalls = priceRepo.query.mock.calls.filter(([sql]: [string]) =>
+      /FROM security_prices/.test(sql),
+    );
+    expect(priceCalls).toHaveLength(1);
+    const [sql, params] = priceCalls[0];
+    // Bounded to [the day before the first period, the last period's end],
+    // plus one LATERAL row per security before the window.
+    expect(params).toEqual([[securityId], "2023-12-31", "2024-01-31"]);
+    expect(sql).toMatch(/price_date >= \$2::date/);
+    expect(sql).toMatch(/price_date <= \$3::date/);
+    expect(sql).toMatch(/price_date < \$2::date[\s\S]*LIMIT 1/);
+    expect(result[0].startValue).toBe(5000);
+    expect(result[0].endValue).toBe(5500);
   });
 
   it("still computes gains when the security and account share a currency", async () => {
@@ -1233,21 +1286,27 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
     // currency's. The old fold resolved USD->PLN ONCE, at todayYMD() in live
     // mode, and multiplied that single rate into both ends, reporting a flat
     // price as a flat value (0) and hiding the FX move entirely.
-    const byDate: Record<string, number> = {
-      "2023-12-31": 4.0,
-      "2024-01-31": 5.0,
-    };
-    exchangeRateService.resolveStoredRate = jest.fn(
-      async (from: string, to: string, onDate: string) => {
-        if (from === to) return resolutionFor(1);
-        if (from === "USD" && to === "PLN") {
-          // Any date the fold did not ask for -- notably today, which the old
-          // code used for both ends -- resolves to a distinct rate so the old
-          // single-rate behaviour reports a change of 0.
-          return resolutionFor(byDate[onDate] ?? 4.5);
-        }
-        return resolutionFor(null);
-      },
+    // The stored USD->PLN history, as the window's rate index loads it. A
+    // later observation (today's, which the old code used for both ends)
+    // carries a distinct rate, so the old single-rate behaviour reports a
+    // change of 0.
+    exchangeRateService.getRateIndex = jest.fn(
+      async (_froms: ReadonlySet<string>, to: string) =>
+        to === "PLN"
+          ? new Map([
+              [
+                "USD->PLN",
+                [
+                  { date: "2023-12-31", rate: 4.0 },
+                  { date: "2024-01-31", rate: 5.0 },
+                  { date: "2025-06-02", rate: 4.5 },
+                ],
+              ],
+            ])
+          : new Map(),
+    );
+    exchangeRateService.resolveStoredRate = jest.fn(async () =>
+      resolutionFor(null),
     );
     txRepo.find.mockResolvedValue([
       makeTx({
@@ -1287,20 +1346,19 @@ describe("PortfolioCalculationService.calculateCapitalGainsByMonth", () => {
     expect(jan.totalCapitalGain).toBe(1000);
     expect(jan.unrealizedGain).toBe(1000);
 
-    // The two ends were resolved at their own dates, in historical (non-live)
-    // mode, never at todayYMD().
-    expect(exchangeRateService.resolveStoredRate).toHaveBeenCalledWith(
-      "USD",
+    // The two ends were resolved from the window's index at their own dates,
+    // never at todayYMD(), and never one stored lookup per date.
+    expect(exchangeRateService.getRateIndex).toHaveBeenCalledWith(
+      new Set(["USD"]),
       "PLN",
       "2023-12-31",
-      { mode: "historical" },
-    );
-    expect(exchangeRateService.resolveStoredRate).toHaveBeenCalledWith(
-      "USD",
-      "PLN",
       "2024-01-31",
-      { mode: "historical" },
     );
+    expect(
+      exchangeRateService.resolveStoredRate.mock.calls.filter(
+        (call: unknown[]) => call[0] === "USD" && call[1] === "PLN",
+      ),
+    ).toHaveLength(0);
   });
 
   it("withholds the period when a held position has no price on a boundary it spans (P5)", async () => {

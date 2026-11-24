@@ -1,7 +1,53 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@/test/render';
 import { buildRateHistoryRows, rateRowsInWindow } from '@/lib/currency-detail';
-import { CurrencyRateChart } from './CurrencyRateChart';
+import { CurrencyRateChart, chartDays } from './CurrencyRateChart';
+
+const txPoint = (id: string, date: string, rate: number) => ({
+  transactionId: id,
+  date,
+  t: new Date(`${date}T00:00:00`).getTime(),
+  rate,
+  kind: 'foreignEntry' as const,
+  accountName: 'CAD Chequing',
+  payeeName: null,
+  marketRate: null,
+});
+
+describe('chartDays', () => {
+  it('gathers several transaction rates on one day when no provider rate is in the window', () => {
+    const days = chartDays(
+      [],
+      [
+        txPoint('a', '2020-03-01', 1.2),
+        txPoint('b', '2020-03-01', 1.3),
+        txPoint('c', '2020-03-02', 1.4),
+      ] as never,
+    );
+    expect(days.map((d) => [d.date, d.rate, d.transactions.map((p) => p.transactionId)])).toEqual([
+      ['2020-03-01', null, ['a', 'b']],
+      ['2020-03-02', null, ['c']],
+    ]);
+  });
+
+  it('hangs each transaction rate on the provider day on or before it', () => {
+    const provider = [
+      { t: 1, date: '2020-03-01', rate: 1.4 },
+      { t: 2, date: '2020-03-03', rate: 1.5 },
+    ];
+    const days = chartDays(
+      provider as never,
+      [
+        txPoint('a', '2020-03-01', 1.2),
+        txPoint('b', '2020-03-02', 1.3),
+        txPoint('c', '2020-03-04', 1.6),
+      ] as never,
+    );
+    expect(days.map((d) => d.transactions.map((p) => p.transactionId))).toEqual([['a', 'b'], ['c']]);
+    // The provider rows themselves are not changed.
+    expect(provider[0]).not.toHaveProperty('transactions');
+  });
+});
 
 const rows = buildRateHistoryRows(
   [

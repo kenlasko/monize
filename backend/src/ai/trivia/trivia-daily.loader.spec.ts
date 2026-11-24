@@ -347,6 +347,17 @@ describe("TriviaDailyLoader", () => {
       expect(input.budget?.lines).toEqual([{ spent: null, budgeted: 200 }]);
     });
 
+    it("loads only the newest active budget, not every one with its lines", async () => {
+      await loader.load(USER, "CAD", TODAY, noOptions);
+      expect(budgetFind).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: USER, isActive: true },
+          order: { createdAt: "DESC" },
+          take: 1,
+        }),
+      );
+    });
+
     it("has no budget when none is active", async () => {
       const input = await loader.load(USER, "CAD", TODAY, noOptions);
       expect(input.budget).toBeNull();

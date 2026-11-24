@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
 import Cookies from 'js-cookie';
+import { useEffect } from 'react';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { THEME_SWATCHES } from '@/lib/theme-swatches';
 
@@ -375,5 +376,32 @@ describe('ThemeContext', () => {
       changeHandler?.();
     });
     expect(result.current.resolvedTheme).toBe('light');
+  });
+  it('keeps its setters stable so a preference sync does not revert a new choice', () => {
+    // PreferencesLoader re-applies the stored preference whenever a setter's
+    // identity changes. The stored value still holds the old style until the
+    // save returns, so a rebuilt setter would put the old style straight back.
+    const stored = { uiStyle: 'standard' as const, colorTheme: 'default' as const };
+    function useWithSync() {
+      const theme = useTheme();
+      const { setUiStyle, setColorTheme } = theme;
+      useEffect(() => {
+        setUiStyle(stored.uiStyle);
+      }, [setUiStyle]);
+      useEffect(() => {
+        setColorTheme(stored.colorTheme);
+      }, [setColorTheme]);
+      return theme;
+    }
+    const { result } = renderHook(() => useWithSync(), { wrapper: ThemeProvider });
+    const before = result.current;
+
+    act(() => {
+      result.current.setUiStyle('folio');
+    });
+    expect(result.current.uiStyle).toBe('folio');
+    expect(result.current.setUiStyle).toBe(before.setUiStyle);
+    expect(result.current.setColorTheme).toBe(before.setColorTheme);
+    expect(result.current.setTheme).toBe(before.setTheme);
   });
 });

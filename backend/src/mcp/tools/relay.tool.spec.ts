@@ -69,6 +69,24 @@ describe("McpRelayTools", () => {
       expect(relayCredentialFirstUse).toHaveBeenCalledWith("user-1", "pat:t1");
     });
 
+    it("hands the prompt over without waiting for the first-use notice", async () => {
+      // A notice that never settles must not hold the agent's turn.
+      const relayCredentialFirstUse = jest.fn(
+        () => new Promise<void>(() => {}),
+      );
+      const handlers = register(
+        {
+          waitForPrompt: jest
+            .fn()
+            .mockResolvedValue({ promptId: "p1", prompt: "hi", history: [] }),
+        },
+        { relayCredentialFirstUse },
+      );
+      const result = await handlers.get_next_prompt({}, ctx());
+      expect(parse(result).promptId).toBe("p1");
+      expect(relayCredentialFirstUse).toHaveBeenCalledWith("user-1", "pat:t1");
+    });
+
     it("announces nothing when no prompt was claimed", async () => {
       const relayCredentialFirstUse = jest.fn();
       const handlers = register(

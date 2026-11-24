@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
@@ -16,7 +16,7 @@ import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { RecentTransactionsPopover } from './RecentTransactionsPopover';
 import { TOUR_ANCHORS, tourAnchor } from '@/lib/tours/anchors';
 import { useDisableTransactionSplit } from '@/store/tourStore';
-import { payeeOptionIcon } from '@/components/payees/withPayeeIcons';
+import { payeePickerOptions } from '@/components/payees/withPayeeIcons';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 
 interface NormalTransactionFieldsProps {
@@ -110,6 +110,10 @@ export function NormalTransactionFields({
   // A tour can grey out Split so its walkthrough keeps to one path; false
   // whenever no such tour is running.
   const splitDisabled = useDisableTransactionSplit();
+  const payeeOptions = useMemo(
+    () => payeePickerOptions(payees, { aliases: payeeAliasMap, withCategory: true }),
+    [payees, payeeAliasMap],
+  );
 
   return (
     <div className="ui-entry-normal space-y-4">
@@ -158,13 +162,7 @@ export function NormalTransactionFields({
             <Combobox
               label={t('form.fields.payee')}
               placeholder={t('form.placeholders.selectOrTypePayee')}
-              options={payees.map(payee => ({
-                value: payee.id,
-                label: payee.name,
-                icon: payeeOptionIcon(payee),
-                subtitle: payee.defaultCategory?.name,
-                keywords: payeeAliasMap[payee.id],
-              }))}
+              options={payeeOptions}
               value={selectedPayeeId}
               initialDisplayValue={transaction?.payeeName || initialPayeeName || ''}
               onChange={handlePayeeChange}

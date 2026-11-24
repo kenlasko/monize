@@ -68,8 +68,12 @@ import { preferredCurrency } from '@/lib/default-currency';
 import { readXmlHead, sniffXmlImportKind } from '@/lib/xml-import-sniff';
 import { accountSelectOption } from '@/lib/account-utils';
 import { withCategoryIcons } from '@/components/categories/CategoryPickerIcon';
+import { mapWithConcurrency } from '@/lib/helpers/map-with-concurrency';
 
 const logger = createLogger('Import');
+
+/** Files whose duplicate check may be in flight at once. */
+const DUPLICATE_CHECK_CONCURRENCY = 3;
 
 /** What `detectFileType` makes of a file: an import type, or an `.xml` that is neither KMyMoney nor OFX. */
 export type DetectedFileType = ImportFileType | 'unrecognizedXml';
@@ -1068,26 +1072,31 @@ export function useImportWizard() {
    * the import must not run as if there were none.
    */
   const findDuplicateReview = async (): Promise<ImportDuplicateReviewFile[]> => {
-    const review: ImportDuplicateReviewFile[] = [];
-    for (const [fileIndex, fileData] of importFiles.entries()) {
-      if (fileData.parsedData?.accountType === 'INVESTMENT') continue;
-      const body = importRequestFor(fileData, categoryMappings, accountMappings, securityMappings);
-      const answer =
-        fileType === 'csv'
-          ? await importApi.findCsvDuplicates(body as ImportCsvRequest)
-          : fileType === 'ofx'
-            ? await importApi.findOfxDuplicates(body as ImportOfxRequest)
-            : await importApi.findQifDuplicates(body as ImportQifRequest);
-      if (answer.rows.length === 0) continue;
-      review.push({
-        fileIndex,
-        fileName: fileData.fileName,
-        accountName: accounts.find((a) => a.id === fileData.selectedAccountId)?.name ?? '',
-        currencyCode: answer.currencyCode,
-        rows: answer.rows,
-      });
-    }
-    return review;
+    // The files are checked a few at a time rather than one after another;
+    // each request carries a whole file, so the fan-out stays bounded.
+    const checked = await mapWithConcurrency(
+      [...importFiles.entries()],
+      DUPLICATE_CHECK_CONCURRENCY,
+      async ([fileIndex, fileData]): Promise<ImportDuplicateReviewFile | null> => {
+        if (fileData.parsedData?.accountType === 'INVESTMENT') return null;
+        const body = importRequestFor(fileData, categoryMappings, accountMappings, securityMappings);
+        const answer =
+          fileType === 'csv'
+            ? await importApi.findCsvDuplicates(body as ImportCsvRequest)
+            : fileType === 'ofx'
+              ? await importApi.findOfxDuplicates(body as ImportOfxRequest)
+              : await importApi.findQifDuplicates(body as ImportQifRequest);
+        if (answer.rows.length === 0) return null;
+        return {
+          fileIndex,
+          fileName: fileData.fileName,
+          accountName: accounts.find((a) => a.id === fileData.selectedAccountId)?.name ?? '',
+          currencyCode: answer.currencyCode,
+          rows: answer.rows,
+        };
+      },
+    );
+    return checked.filter((file): file is ImportDuplicateReviewFile => file !== null);
   };
 
   /**

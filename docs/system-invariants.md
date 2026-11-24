@@ -9025,7 +9025,11 @@ Enforcement         backend/src/ai/relay/ai-relay.service.ts. The claim is a CTE
                     chat only when no credential holds it, it is the holder, or
                     the holder has been quiet past CONNECTED_WINDOW_MS with no
                     turn in flight or just answered; the upsert's row lock
-                    serialises a takeover against the holder's claim. The answer
+                    serialises a takeover against the holder's claim. A holder
+                    whose agent_seen_at is younger than HOLD_REFRESH_MS (a third
+                    of the window) keeps the chat without writing, which no
+                    takeover can contest, since one needs the full window of
+                    quiet. The answer
                     and the report_progress adoption add claimed_credential =
                     the caller's credential, so another credential of the same
                     user holding the promptId writes nothing. Buffered
@@ -10260,7 +10264,8 @@ Statement           A budget line's bucket_id names a bucket of the SAME
                     budget, and an income line has none. A bucket of another
                     budget, or another person's, is read as missing.
 Source of truth     budget_categories.bucket_id, budget_buckets.budget_id
-Enforcement         assertBucketAssignable
+Enforcement         assertBucketAssignable, or assertBucketsAssignable for
+                    the bulk line update (one bucket read for the batch)
                     (backend/src/budgets/budget-bucket-membership.util.ts)
                     runs inside the withScopedDb transaction of every write
                     that sets bucket_id, before the write; the bucket is read

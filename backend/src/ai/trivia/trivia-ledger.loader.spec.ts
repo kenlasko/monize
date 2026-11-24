@@ -1,6 +1,9 @@
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
-import { TriviaLedgerLoader } from "./trivia-ledger.loader";
+import {
+  TRIVIA_READ_CONCURRENCY,
+  TriviaLedgerLoader,
+} from "./trivia-ledger.loader";
 import { triviaWindow } from "./trivia-windows";
 import { WINDOWED_FAMILIES, type TriviaPicks } from "./trivia-windowed-reads";
 import type { TriviaWindow } from "./trivia.types";
@@ -129,6 +132,34 @@ describe("TriviaLedgerLoader", () => {
         [],
       ),
     );
+
+    it("holds at most TRIVIA_READ_CONCURRENCY reads open at once", async () => {
+      let active = 0;
+      let maxActive = 0;
+      const tracked = (value: unknown) => async () => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        for (let i = 0; i < 5; i += 1) await Promise.resolve();
+        active -= 1;
+        return value;
+      };
+      for (const [name, read] of Object.entries(reports)) {
+        read.mockImplementation(tracked({ id: name }));
+      }
+      // Every family on a different window: the most reads one build makes.
+      await loader.load(
+        "user-1",
+        "CAD",
+        TODAY,
+        picksOf("d90", {
+          spendingRankedCategory: "d30",
+          spendingRankedPayee: "d30",
+          incomeRankedSource: "all",
+        }),
+      );
+      expect(reports.getSpendingByCategory).toHaveBeenCalledTimes(3);
+      expect(maxActive).toBe(TRIVIA_READ_CONCURRENCY);
+    });
 
     it("reads only the m12 windows when every pick is m12", async () => {
       const input = await loader.load("user-1", "CAD", TODAY, M12);

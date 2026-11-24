@@ -328,6 +328,8 @@ export class TriviaDailyLoader {
           "categories.transferAccount",
         ],
         order: { createdAt: "DESC" },
+        // Only the newest is read: the lines of the others are never used.
+        take: 1,
       });
       const budget = budgets[0];
       if (!budget) return null;

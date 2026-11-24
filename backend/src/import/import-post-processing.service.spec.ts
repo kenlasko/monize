@@ -2,7 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { Logger } from "@nestjs/common";
 import { ImportPostProcessingService } from "./import-post-processing.service";
-import { NetWorthService } from "../net-worth/net-worth.service";
+import {
+  BULK_RECALC_CONCURRENCY,
+  NetWorthService,
+  settlePendingAccountRecalcs,
+} from "../net-worth/net-worth.service";
 import { SecurityPriceService } from "../securities/security-price.service";
 import { SecuritiesService } from "../securities/securities.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
@@ -342,6 +346,34 @@ describe("ImportPostProcessingService", () => {
         true,
       );
       expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("rebuilds many accounts' net worth a few at a time, each failure on its own", async () => {
+      let active = 0;
+      let maxActive = 0;
+      netWorth.recalculateAccount.mockImplementation(
+        async (_user: string, accountId: string) => {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          await new Promise((resolve) => setImmediate(resolve));
+          active -= 1;
+          if (accountId === "acct-3") throw new Error("lock timeout");
+        },
+      );
+      const ids = Array.from({ length: 10 }, (_, i) => `acct-${i}`);
+
+      await service.run(userId, false, new Set(ids));
+      await settlePendingAccountRecalcs();
+
+      expect(netWorth.recalculateAccount).toHaveBeenCalledTimes(10);
+      expect(maxActive).toBe(BULK_RECALC_CONCURRENCY);
+      expect(
+        warnSpy.mock.calls.some((c) =>
+          String(c[0]).includes(
+            "Post-import net worth recalc failed for account acct-3",
+          ),
+        ),
+      ).toBe(true);
     });
 
     it("does not let a net-worth recalculation failure reject the import", async () => {

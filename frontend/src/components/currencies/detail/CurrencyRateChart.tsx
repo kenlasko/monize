@@ -4,10 +4,10 @@ import { useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
-  ReferenceDot,
   ResponsiveContainer,
+  Scatter,
   Tooltip,
   XAxis,
   YAxis,
@@ -56,21 +56,23 @@ interface ChartDay {
  * date falls on it or after it and before the next one, so the tooltip of the
  * day a dot sits beside names it. With no provider rate in the window the
  * transaction dates themselves are the days, with no line between them.
+ *
+ * Each day's list is built in place: the days are this function's own fresh
+ * objects, and a copy per insert made a busy day quadratic.
  */
-function chartDays(
+export function chartDays(
   provider: ReturnType<typeof buildRateChartSeries>['provider'],
   transactions: readonly TransactionRateChartPoint[],
 ): ChartDay[] {
   if (provider.length === 0) {
     const byDate = new Map<string, ChartDay>();
     for (const point of transactions) {
-      const day = byDate.get(point.date) ?? {
-        t: point.t,
-        date: point.date,
-        rate: null,
-        transactions: [],
-      };
-      byDate.set(point.date, { ...day, transactions: [...day.transactions, point] });
+      let day = byDate.get(point.date);
+      if (!day) {
+        day = { t: point.t, date: point.date, rate: null, transactions: [] };
+        byDate.set(point.date, day);
+      }
+      day.transactions.push(point);
     }
     return [...byDate.values()];
   }
@@ -78,9 +80,45 @@ function chartDays(
   let index = 0;
   for (const point of transactions) {
     while (index + 1 < days.length && days[index + 1].date <= point.date) index += 1;
-    days[index] = { ...days[index], transactions: [...days[index].transactions, point] };
+    days[index].transactions.push(point);
   }
   return days;
+}
+
+/** The span and the top of the plotted values, in one pass and without spreading. */
+function chartExtent(
+  days: readonly ChartDay[],
+  transactions: readonly TransactionRateChartPoint[],
+): { first: number; last: number; maxRate: number } {
+  let first = Infinity;
+  let last = -Infinity;
+  let maxRate = 0;
+  for (const day of days) {
+    if (day.t < first) first = day.t;
+    if (day.t > last) last = day.t;
+    if (day.rate !== null && day.rate > maxRate) maxRate = day.rate;
+  }
+  for (const point of transactions) {
+    if (point.t < first) first = point.t;
+    if (point.t > last) last = point.t;
+    if (point.rate > maxRate) maxRate = point.rate;
+  }
+  return { first, last, maxRate };
+}
+
+/** One of the reader's settled rates, drawn as the highlight dot. */
+function TransactionDot({ cx, cy }: { cx?: number; cy?: number }) {
+  if (cx === undefined || cy === undefined) return null;
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={5}
+      fill={chartColors.warning}
+      stroke={chartColors.surface}
+      strokeWidth={1.5}
+    />
+  );
 }
 
 function RateTooltip({
@@ -96,7 +134,10 @@ function RateTooltip({
   formatLabel: (date: string) => string;
   describe: (point: TransactionRateChartPoint) => string;
 }) {
-  const day = active ? payload?.[0]?.payload : undefined;
+  // The day under the cursor; the transaction dots carry no tooltip of their own.
+  const day = active
+    ? payload?.find((entry) => Array.isArray(entry.payload?.transactions))?.payload
+    : undefined;
   if (!day) return null;
   return (
     <div className={CHART_TOOLTIP_CLASS}>
@@ -150,13 +191,7 @@ export function CurrencyRateChart({
         axisDecimals: 4,
       };
     }
-    const maxRate = Math.max(
-      ...built.map((d) => d.rate ?? 0),
-      ...series.transactions.map((p) => p.rate),
-    );
-    const times = [...built.map((d) => d.t), ...series.transactions.map((p) => p.t)];
-    const first = Math.min(...times);
-    const last = Math.max(...times);
+    const { first, last, maxRate } = chartExtent(built, series.transactions);
     // The balance chart's rule: month ticks up to two years, year ticks beyond.
     const useYearTicks = (last - first) / 86_400_000 > 730;
     return {
@@ -215,7 +250,7 @@ export function CurrencyRateChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart data={days} margin={{ left: 0, right: 8, top: 12, bottom: 0 }}>
+            <ComposedChart data={days} margin={{ left: 0, right: 8, top: 12, bottom: 0 }}>
               <CartesianGrid {...CHART_GRID_PROPS} />
               <XAxis
                 dataKey="t"
@@ -260,20 +295,17 @@ export function CurrencyRateChart({
               />
               {/* The reader's own settled rates, at their own value rather
                   than snapped to the line: the distance between the two is
-                  what the highlight is for. */}
-              {transactions.map((point) => (
-                <ReferenceDot
-                  key={point.transactionId}
-                  x={point.t}
-                  y={point.rate}
-                  r={5}
-                  fill={chartColors.warning}
-                  stroke={chartColors.surface}
-                  strokeWidth={1.5}
-                  ifOverflow="extendDomain"
-                />
-              ))}
-            </LineChart>
+                  what the highlight is for. One series rather than a component
+                  per rate: a long window holds thousands of them, and the
+                  series' own values widen both axes as the dots once did. */}
+              <Scatter
+                data={transactions as TransactionRateChartPoint[]}
+                dataKey="rate"
+                shape={TransactionDot}
+                tooltipType="none"
+                isAnimationActive={false}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         )}
       </div>

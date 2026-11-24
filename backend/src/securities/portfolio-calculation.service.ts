@@ -1635,7 +1635,13 @@ export class PortfolioCalculationService {
         transactions.filter((t) => t.securityId).map((t) => t.securityId!),
       ),
     ];
-    const allPrices = await this.getAllPricesForSecurities(securityIds);
+    // Every price the fold looks up is on a boundary (the day before a period
+    // through its end) or a transfer inside a period, so the closes it needs
+    // are those that answer "on or before" for a date in this window.
+    const allPrices = await this.getAllPricesForSecurities(securityIds, {
+      from: periods[0].priceLookupStart,
+      to: periods[periods.length - 1].periodEnd,
+    });
 
     // Group transactions by (account, security)
     type GroupKey = string;
@@ -1672,7 +1678,38 @@ export class PortfolioCalculationService {
       group.txs.push(tx);
     }
 
-    // Cache FX rates: (securityCurrency -> accountCurrency, on a given date).
+    // Every account-currency boundary and transfer asks for its own date's rate
+    // from the security's currency into the account's. That history is loaded
+    // once per account currency for the window, as the reporting fold below
+    // loads its own, rather than looked up a date at a time: a daily report
+    // over a year asked one query per boundary date per pair.
+    const accountPairs = new Map<string, Set<string>>();
+    for (const group of groups.values()) {
+      const from = group.securityCurrencyCode;
+      const to = group.accountCurrencyCode;
+      if (!from || !to || from === to) continue;
+      const froms = accountPairs.get(to) ?? new Set<string>();
+      froms.add(from);
+      accountPairs.set(to, froms);
+    }
+    const accountIndexes = new Map<
+      string,
+      { froms: Set<string>; index: RateIndex }
+    >();
+    for (const [to, froms] of accountPairs) {
+      accountIndexes.set(to, {
+        froms,
+        index: await this.exchangeRateService.getRateIndex(
+          froms,
+          to,
+          periods[0].priceLookupStart,
+          periods[periods.length - 1].periodEnd,
+        ),
+      });
+    }
+
+    // Cache FX rates: (securityCurrency -> accountCurrency, on a given date),
+    // for a pair no loaded index covers.
     const fxCache = new Map<string, number | null>();
     // `null` when the pair has no rate. This used to end `: 1`, valuing a
     // foreign security's period start and end as though its currency were the
@@ -1695,6 +1732,10 @@ export class PortfolioCalculationService {
     ): Promise<number | null> => {
       if (!from || !to) return null;
       if (from === to) return 1;
+      const indexed = accountIndexes.get(to);
+      if (indexed?.froms.has(from)) {
+        return resolveIndexedRate(indexed.index, from, to, onDate).rate;
+      }
       const cacheKey = `${from}->${to}@${onDate}`;
       const cached = fxCache.get(cacheKey);
       if (cached !== undefined) return cached;
@@ -3208,11 +3249,18 @@ export class PortfolioCalculationService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Get all historical prices for a list of security IDs, ordered by date.
-   * Returns a map of securityId -> sorted array of { date, price }.
+   * The stored closes `lookupPrice` can answer from for any date in
+   * `[from, to]`, per security, ascending by date.
+   *
+   * "On or before `d`" for `d` in the window is either a close inside the
+   * window or the single newest close before it, so those are all that is
+   * read: the in-window rows plus one preceding row per security (served by
+   * `idx_security_prices_security_date`). Reading every close ever stored
+   * loaded a security's whole history for a one-month report.
    */
   async getAllPricesForSecurities(
     securityIds: string[],
+    window: { from: string; to: string },
   ): Promise<Map<string, { date: string; price: number }[]>> {
     if (securityIds.length === 0) return new Map();
 
@@ -3223,10 +3271,26 @@ export class PortfolioCalculationService {
     }[] = await withScopedDb(this.dataSource, (m) =>
       m.query(
         `SELECT security_id, price_date::text AS price_date, close_price
-         FROM security_prices
-         WHERE security_id = ANY($1)
-         ORDER BY security_id, price_date ASC`,
-        [securityIds],
+           FROM (
+             SELECT sp.security_id, sp.price_date, sp.close_price
+               FROM security_prices sp
+              WHERE sp.security_id = ANY($1::uuid[])
+                AND sp.price_date >= $2::date
+                AND sp.price_date <= $3::date
+             UNION ALL
+             SELECT pre.security_id, pre.price_date, pre.close_price
+               FROM unnest($1::uuid[]) AS s(id)
+               CROSS JOIN LATERAL (
+                 SELECT sp.security_id, sp.price_date, sp.close_price
+                   FROM security_prices sp
+                  WHERE sp.security_id = s.id
+                    AND sp.price_date < $2::date
+                  ORDER BY sp.price_date DESC
+                  LIMIT 1
+               ) pre
+           ) prices
+          ORDER BY security_id, price_date ASC`,
+        [securityIds, window.from, window.to],
       ),
     );
 

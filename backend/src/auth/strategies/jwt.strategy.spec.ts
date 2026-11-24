@@ -327,6 +327,7 @@ describe("JwtStrategy", () => {
       userId: USER_ID,
       scopes: "read",
       tokenId: "55555555-5555-5555-5555-555555555555",
+      owner: mockUser,
     };
 
     // passport attaches success/fail/error to a per-request copy of the
@@ -365,14 +366,15 @@ describe("JwtStrategy", () => {
     });
 
     it("succeeds with the owner acting as self for an admitted token", async () => {
-      authService.getUserStateById.mockResolvedValue(mockUser);
       const req = patRequest();
       admitPat(req, PAT);
 
       strategy.authenticate(req as any);
       await settle();
 
-      expect(authService.getUserStateById).toHaveBeenCalledWith(USER_ID);
+      // The owner's state is the row `validateToken` already read for this
+      // request; the users row is not read a second time.
+      expect(authService.getUserStateById).not.toHaveBeenCalled();
       expect(hooks.success).toHaveBeenCalledWith({
         ...mockUser,
         id: USER_ID,
@@ -388,12 +390,12 @@ describe("JwtStrategy", () => {
     it.each([
       ["missing", null],
       ["inactive", { ...mockUser, isActive: false }],
+      ["another account", { ...mockUser, id: "someone-else" }],
     ])(
       "errors with Unauthorized when the owner is %s",
       async (_label, user) => {
-        authService.getUserStateById.mockResolvedValue(user);
         const req = patRequest();
-        admitPat(req, PAT);
+        admitPat(req, { ...PAT, owner: user as ValidatedToken["owner"] });
 
         strategy.authenticate(req as any);
         await settle();

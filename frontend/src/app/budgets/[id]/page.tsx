@@ -106,20 +106,50 @@ function BudgetDetailContent() {
     setError(null);
   }
 
+  // The newest page load; a slower, older one (the budget the switcher left,
+  // or an earlier reload) must not land over it.
+  const loadRequest = useRef(0);
+
   // The mount / budget-switch load: the state already says loading.
   const fetchData = useCallback(() => {
+    const load = ++loadRequest.current;
+    const isCurrentLoad = () => loadRequest.current === load;
     // Writes live in `run` so they land after the request, not during the effect.
     const run = async () => {
       try {
+        const summaryRequest = budgetsApi.getSummary(budgetId);
+        // Only a Bucket budget has a bucket status. It needs only the summary,
+        // so it starts as soon as the summary answers rather than after the
+        // slowest of the page's reads, and never fails the page: its own card
+        // says the request failed.
+        void summaryRequest
+          .then((summaryData) => {
+            if (!isCurrentLoad() || summaryData.budget.strategy !== 'BUCKET') return;
+            const request = ++bucketStatusRequest.current;
+            const isCurrent = () => bucketStatusRequest.current === request;
+            setBucketStatus({ state: 'loading' });
+            budgetsApi
+              .getBucketStatus(budgetId)
+              .then((data) => {
+                if (isCurrent()) setBucketStatus({ state: 'ready', data });
+              })
+              .catch(() => {
+                if (isCurrent()) setBucketStatus({ state: 'error' });
+              });
+          })
+          // The summary's own failure is reported by the page load below.
+          .catch(() => undefined);
+
         const [summaryData, velocityData, periodsData, stData, dailyData, trend] =
           await Promise.all([
-            budgetsApi.getSummary(budgetId),
+            summaryRequest,
             budgetsApi.getVelocity(budgetId),
             budgetsApi.getPeriods(budgetId),
             scheduledTransactionsApi.getAll(),
             budgetsApi.getDailySpending(budgetId).catch(() => []),
             budgetsApi.getTrend(budgetId).catch(() => []),
           ]);
+        if (!isCurrentLoad()) return;
 
         setSummary(summaryData);
         setVelocity(velocityData);
@@ -127,28 +157,13 @@ function BudgetDetailContent() {
         setScheduledTransactions(stData);
         setDailySpending(dailyData);
         setTrendData(trend);
-
-        // Only a Bucket budget has a bucket status. It loads beside the rest
-        // but never fails the page: its own card says the request failed.
-        if (summaryData.budget.strategy === 'BUCKET') {
-          const request = ++bucketStatusRequest.current;
-          const isCurrent = () => bucketStatusRequest.current === request;
-          setBucketStatus({ state: 'loading' });
-          budgetsApi
-            .getBucketStatus(budgetId)
-            .then((data) => {
-              if (isCurrent()) setBucketStatus({ state: 'ready', data });
-            })
-            .catch(() => {
-              if (isCurrent()) setBucketStatus({ state: 'error' });
-            });
-        }
       } catch (err) {
+        if (!isCurrentLoad()) return;
         const message = getErrorMessage(err, t('pages.detail.toasts.loadFailed'));
         setError(message);
         toast.error(message);
       } finally {
-        setIsLoading(false);
+        if (isCurrentLoad()) setIsLoading(false);
       }
     };
     return run();

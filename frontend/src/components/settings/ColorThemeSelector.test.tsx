@@ -41,6 +41,7 @@ vi.mock('@/lib/errors', () => ({
 
 import toast from 'react-hot-toast';
 import { userSettingsApi } from '@/lib/user-settings';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 /** rgb() as the DOM reports an inline hex background. */
 function rgb(hex: string): string {
@@ -68,6 +69,31 @@ describe('ColorThemeSelector', () => {
     // Every other option is skipped by Tab and reached with the arrows.
     const others = screen.getAllByRole('radio').filter((r) => r !== checked[0]);
     expect(others.every((r) => r.getAttribute('tabindex') === '-1')).toBe(true);
+  });
+
+  it('adopts only the latest save when an earlier reply lands after it', async () => {
+    const replies: Array<(value: unknown) => void> = [];
+    const pending = () => new Promise((resolve) => replies.push(resolve));
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>)
+      .mockImplementationOnce(pending)
+      .mockImplementationOnce(pending);
+    const updateSpy = vi.spyOn(usePreferencesStore.getState(), 'updatePreferences');
+    render(<ColorThemeSelector value="default" onChange={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', { name: /latte/i }));
+      fireEvent.click(screen.getByRole('radio', { name: /default/i }));
+    });
+    expect(replies).toHaveLength(2);
+    await act(async () => {
+      replies[1]({ colorTheme: 'default' });
+      replies[0]({ colorTheme: 'latte' });
+    });
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1));
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy).toHaveBeenCalledWith({ colorTheme: 'default' });
+    updateSpy.mockRestore();
   });
 
   it('applies and persists the colour theme immediately on click', async () => {

@@ -288,6 +288,28 @@ function hasRegisterContentFilters(
   );
 }
 
+/** The register's filters as the export reads them (the paged list's, unparsed). */
+export interface RegisterExportListing {
+  accountIds?: string[];
+  startDate?: string;
+  endDate?: string;
+  categoryIds?: string[];
+  payeeIds?: string[];
+  includeInvestmentBrokerage: boolean;
+  search?: string;
+  amountFrom?: number;
+  amountTo?: number;
+  tagIds?: string[];
+  statuses?: TransactionStatus[];
+  sortBy: TransactionSortField;
+  sortDirection: "ASC" | "DESC";
+  tagKeyFilter?: TagKeyFilter;
+  originalCurrencyCodes?: string[];
+  hasAttachments?: boolean;
+  jointAccountIds: string[];
+  externalId?: string;
+}
+
 export interface PaginatedTransactions extends PaginatedResult<TransactionWithInvestmentLink> {
   startingBalance?: number;
   /**
@@ -2037,130 +2059,15 @@ export class TransactionsService {
     // math, and investment/attachment enrichment -- is one read block on a
     // single withScopedDb manager.
     return withScopedDb(this.dataSource, async (m) => {
-      const queryBuilder = this.registerRowsQuery(m).where(
-        this.registerScope("transaction", userId, jointAccountIds),
+      const queryBuilder = await this.buildRegisterListingQuery(
+        m,
+        userId,
+        accountIds,
+        rowFilters,
+        jointAccountIds,
+        sortBy,
+        sortDirection,
       );
-      // The joined aliases are handed over so a sort by account or category
-      // orders by the name the reader sees. Only this query joins them; the
-      // three that sum the rows newer than a page pass none, which is what
-      // stops one of them being ordered by a table it does not select.
-      applyRegisterOrder(queryBuilder, "transaction", sortDirection, sortBy, {
-        account: "account",
-        category: "category",
-      });
-
-      if (!includeInvestmentBrokerage) {
-        queryBuilder.andWhere(brokerageExclusionForEntity("account"));
-      }
-
-      if (accountIds && accountIds.length > 0) {
-        queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
-          accountIds,
-        });
-      }
-
-      if (startDate) {
-        queryBuilder.andWhere("transaction.transactionDate >= :startDate", {
-          startDate,
-        });
-      }
-
-      if (endDate) {
-        queryBuilder.andWhere("transaction.transactionDate <= :endDate", {
-          endDate,
-        });
-      }
-
-      if (categoryIds && categoryIds.length > 0) {
-        await this.applyCategoryFilters(m, queryBuilder, categoryIds, userId);
-      }
-
-      if (payeeIds && payeeIds.length > 0) {
-        queryBuilder.andWhere("transaction.payeeId IN (:...payeeIds)", {
-          payeeIds,
-        });
-      }
-
-      // Split grain on the hydrated `splits` alias: a split transaction is
-      // drawn with only its matching lines and a filtered total, as the
-      // category filter draws it (advanced-search plan, question 5).
-      applyParsedSearch(queryBuilder, parsedSearch, {
-        transaction: "transaction",
-        splits: "splits",
-        grain: "split",
-        paramPrefix: "srch",
-      });
-
-      if (amountFrom !== undefined) {
-        queryBuilder.andWhere("transaction.amount >= :amountFrom", {
-          amountFrom,
-        });
-      }
-
-      if (amountTo !== undefined) {
-        queryBuilder.andWhere("transaction.amount <= :amountTo", { amountTo });
-      }
-
-      if (tagIds && tagIds.length > 0) {
-        queryBuilder.leftJoin("transaction.tags", "filterTags");
-        queryBuilder.leftJoin("splits.tags", "filterSplitTags");
-        queryBuilder.andWhere(
-          new Brackets((qb) => {
-            qb.where("filterTags.id IN (:...filterTagIds)", {
-              filterTagIds: tagIds,
-            }).orWhere("filterSplitTags.id IN (:...filterTagIds)", {
-              filterTagIds: tagIds,
-            });
-          }),
-        );
-      }
-
-      if (tagKeyFilter) {
-        const { clause, params } = buildTagKeyFilterClause(
-          "transaction",
-          tagKeyFilter,
-        );
-        queryBuilder.andWhere(clause, params);
-      }
-
-      if (statuses && statuses.length > 0) {
-        queryBuilder.andWhere("transaction.status IN (:...statuses)", {
-          statuses,
-        });
-      }
-
-      if (originalCurrencyCodes && originalCurrencyCodes.length > 0) {
-        queryBuilder.andWhere(
-          "transaction.original_currency_code IN (:...originalCurrencyCodes)",
-          { originalCurrencyCodes },
-        );
-      }
-
-      if (externalId !== undefined) {
-        queryBuilder.andWhere("transaction.externalId = :externalId", {
-          externalId,
-        });
-      }
-
-      // Attachment presence filter. An EXISTS subquery against the separate
-      // transaction_attachments table keeps this out of the heavily-joined main
-      // query, so it never multiplies rows or corrupts pagination.
-      if (hasAttachments !== undefined) {
-        // Primaries only: a scan pair's hidden original is not an attachment
-        // the user has, so "no attachments" must not be false because one is
-        // stored behind the row they deleted the visible half of. The row's
-        // own attachments and its linked warranties' documents alike
-        // (attachment-parent.ts).
-        const existsSubquery =
-          `SELECT 1 FROM transaction_attachments ta WHERE ` +
-          `${attachmentReachableFromTransactionSql("ta", "transaction.id")} ` +
-          `AND ${primaryAttachmentSql("ta")}`;
-        queryBuilder.andWhere(
-          hasAttachments
-            ? `EXISTS (${existsSubquery})`
-            : `NOT EXISTS (${existsSubquery})`,
-        );
-      }
 
       if (targetTransactionId) {
         safePage = await this.calculateTargetPage(
@@ -2285,6 +2192,213 @@ export class TransactionsService {
           searchInterpretation: searchInterpretation(parsedSearch),
         }),
       };
+    });
+  }
+
+  /**
+   * The register's listing query, filtered and ordered, with no page window:
+   * one definition for the paged register and its export, so a file holds
+   * exactly the rows (and the order) the register shows.
+   */
+  private async buildRegisterListingQuery(
+    m: EntityManager,
+    userId: string,
+    accountIds: string[] | undefined,
+    filters: RegisterRowFilters,
+    jointAccountIds: string[],
+    sortBy: TransactionSortField,
+    sortDirection: "ASC" | "DESC",
+  ): Promise<SelectQueryBuilder<Transaction>> {
+    const {
+      startDate,
+      endDate,
+      categoryIds,
+      payeeIds,
+      tagIds,
+      search: parsedSearch,
+      amountFrom,
+      amountTo,
+      statuses,
+      originalCurrencyCodes,
+      hasAttachments,
+      tagKeyFilter,
+      externalId,
+      includeInvestmentBrokerage,
+    } = filters;
+    const queryBuilder = this.registerRowsQuery(m).where(
+      this.registerScope("transaction", userId, jointAccountIds),
+    );
+    // The joined aliases are handed over so a sort by account or category
+    // orders by the name the reader sees. Only this query joins them; the
+    // three that sum the rows newer than a page pass none, which is what
+    // stops one of them being ordered by a table it does not select.
+    applyRegisterOrder(queryBuilder, "transaction", sortDirection, sortBy, {
+      account: "account",
+      category: "category",
+    });
+
+    if (!includeInvestmentBrokerage) {
+      queryBuilder.andWhere(brokerageExclusionForEntity("account"));
+    }
+
+    if (accountIds && accountIds.length > 0) {
+      queryBuilder.andWhere("transaction.accountId IN (:...accountIds)", {
+        accountIds,
+      });
+    }
+
+    if (startDate) {
+      queryBuilder.andWhere("transaction.transactionDate >= :startDate", {
+        startDate,
+      });
+    }
+
+    if (endDate) {
+      queryBuilder.andWhere("transaction.transactionDate <= :endDate", {
+        endDate,
+      });
+    }
+
+    if (categoryIds && categoryIds.length > 0) {
+      await this.applyCategoryFilters(m, queryBuilder, categoryIds, userId);
+    }
+
+    if (payeeIds && payeeIds.length > 0) {
+      queryBuilder.andWhere("transaction.payeeId IN (:...payeeIds)", {
+        payeeIds,
+      });
+    }
+
+    // Split grain on the hydrated `splits` alias: a split transaction is
+    // drawn with only its matching lines and a filtered total, as the
+    // category filter draws it (advanced-search plan, question 5).
+    applyParsedSearch(queryBuilder, parsedSearch, {
+      transaction: "transaction",
+      splits: "splits",
+      grain: "split",
+      paramPrefix: "srch",
+    });
+
+    if (amountFrom !== undefined) {
+      queryBuilder.andWhere("transaction.amount >= :amountFrom", {
+        amountFrom,
+      });
+    }
+
+    if (amountTo !== undefined) {
+      queryBuilder.andWhere("transaction.amount <= :amountTo", { amountTo });
+    }
+
+    if (tagIds && tagIds.length > 0) {
+      queryBuilder.leftJoin("transaction.tags", "filterTags");
+      queryBuilder.leftJoin("splits.tags", "filterSplitTags");
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where("filterTags.id IN (:...filterTagIds)", {
+            filterTagIds: tagIds,
+          }).orWhere("filterSplitTags.id IN (:...filterTagIds)", {
+            filterTagIds: tagIds,
+          });
+        }),
+      );
+    }
+
+    if (tagKeyFilter) {
+      const { clause, params } = buildTagKeyFilterClause(
+        "transaction",
+        tagKeyFilter,
+      );
+      queryBuilder.andWhere(clause, params);
+    }
+
+    if (statuses && statuses.length > 0) {
+      queryBuilder.andWhere("transaction.status IN (:...statuses)", {
+        statuses,
+      });
+    }
+
+    if (originalCurrencyCodes && originalCurrencyCodes.length > 0) {
+      queryBuilder.andWhere(
+        "transaction.original_currency_code IN (:...originalCurrencyCodes)",
+        { originalCurrencyCodes },
+      );
+    }
+
+    if (externalId !== undefined) {
+      queryBuilder.andWhere("transaction.externalId = :externalId", {
+        externalId,
+      });
+    }
+
+    // Attachment presence filter. An EXISTS subquery against the separate
+    // transaction_attachments table keeps this out of the heavily-joined main
+    // query, so it never multiplies rows or corrupts pagination.
+    if (hasAttachments !== undefined) {
+      // Primaries only: a scan pair's hidden original is not an attachment
+      // the user has, so "no attachments" must not be false because one is
+      // stored behind the row they deleted the visible half of. The row's
+      // own attachments and its linked warranties' documents alike
+      // (attachment-parent.ts).
+      const existsSubquery =
+        `SELECT 1 FROM transaction_attachments ta WHERE ` +
+        `${attachmentReachableFromTransactionSql("ta", "transaction.id")} ` +
+        `AND ${primaryAttachmentSql("ta")}`;
+      queryBuilder.andWhere(
+        hasAttachments
+          ? `EXISTS (${existsSubquery})`
+          : `NOT EXISTS (${existsSubquery})`,
+      );
+    }
+
+    return queryBuilder;
+  }
+
+  /**
+   * Every row of a filtered register, in register order, for the CSV export.
+   *
+   * One statement in one transaction, so the file is one snapshot: walking
+   * the paged register instead re-counted the listing, re-seeded a running
+   * balance and re-attached reporting rates for every 200-row page -- none of
+   * which the file uses -- and a write between two pages could shift an
+   * OFFSET and duplicate or drop a row. The rows carry the register's joins;
+   * the caller masks and projects them.
+   */
+  async findRegisterExportRows(
+    userId: string,
+    listing: RegisterExportListing,
+  ): Promise<Transaction[]> {
+    return withScopedDb(this.dataSource, async (m) => {
+      const parsedSearch = await resolveTransactionSearch(
+        m,
+        userId,
+        listing.search,
+      );
+      const rowFilters: RegisterRowFilters = {
+        startDate: listing.startDate,
+        endDate: listing.endDate,
+        categoryIds: listing.categoryIds,
+        payeeIds: listing.payeeIds,
+        tagIds: listing.tagIds,
+        search: parsedSearch,
+        amountFrom: listing.amountFrom,
+        amountTo: listing.amountTo,
+        statuses: listing.statuses,
+        originalCurrencyCodes: listing.originalCurrencyCodes,
+        hasAttachments: listing.hasAttachments,
+        tagKeyFilter: listing.tagKeyFilter,
+        externalId: listing.externalId,
+        includeInvestmentBrokerage: listing.includeInvestmentBrokerage,
+      };
+      const queryBuilder = await this.buildRegisterListingQuery(
+        m,
+        userId,
+        listing.accountIds,
+        rowFilters,
+        listing.jointAccountIds,
+        listing.sortBy,
+        listing.sortDirection,
+      );
+      return queryBuilder.getMany();
     });
   }
 

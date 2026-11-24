@@ -187,6 +187,9 @@ interface EstimateRequest {
   nextDueDate: string;
 }
 
+/** How long the estimate's inputs must hold still before the preview is asked for. */
+const ESTIMATE_PREVIEW_DEBOUNCE_MS = 250;
+
 /**
  * The key an estimate preview is requested and kept by, the request itself
  * serialized, or `null` while its basis is incomplete: a transaction's payee
@@ -522,20 +525,25 @@ export function ScheduledTransactionForm({
     if (!estimateRequestKey || isActingDelegate) return;
     const request = JSON.parse(estimateRequestKey) as EstimateRequest;
     let cancelled = false;
-    scheduledTransactionsApi
-      .getAmountEstimate(request.accountId, request.basis, request.nextDueDate || undefined)
-      .then((estimate) => {
-        if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate });
-      })
-      .catch((err) => {
-        // A failed lookup is not "no history", and not a reason to drop the
-        // saved schedule's own estimate (a delegate is refused the preview):
-        // whatever was shown stays, and the save still works the estimate out
-        // on the server.
-        logger.warn?.('Failed to fetch the amount estimate', err);
-      });
+    // Stepping the date or the frequency changes the key on every press; ask
+    // once the field has settled rather than once per step.
+    const timer = window.setTimeout(() => {
+      scheduledTransactionsApi
+        .getAmountEstimate(request.accountId, request.basis, request.nextDueDate || undefined)
+        .then((estimate) => {
+          if (!cancelled) setEstimatePreview({ key: estimateRequestKey, estimate });
+        })
+        .catch((err) => {
+          // A failed lookup is not "no history", and not a reason to drop the
+          // saved schedule's own estimate (a delegate is refused the preview):
+          // whatever was shown stays, and the save still works the estimate out
+          // on the server.
+          logger.warn?.('Failed to fetch the amount estimate', err);
+        });
+    }, ESTIMATE_PREVIEW_DEBOUNCE_MS);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [estimateRequestKey, isActingDelegate]);
   const currentEstimate =

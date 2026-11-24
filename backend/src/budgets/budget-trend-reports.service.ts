@@ -148,10 +148,12 @@ export class BudgetTrendReportsService {
   ): Promise<CategoryTrendSeries[]> {
     const budget = await this.budgetsService.findOne(userId, budgetId);
 
-    const periods = await withScopedDb(this.dataSource, (m) =>
+    // The newest `months` periods, read newest first so `take` keeps the
+    // latest rather than the earliest, then put back in calendar order.
+    const newestFirst = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(BudgetPeriod).find({
         where: { budgetId: budget.id },
-        order: { periodStart: "ASC" },
+        order: { periodStart: "DESC" },
         take: months,
         relations: [
           "periodCategories",
@@ -161,6 +163,7 @@ export class BudgetTrendReportsService {
         ],
       }),
     );
+    const periods = [...newestFirst].reverse();
 
     if (periods.length === 0) {
       return this.computeLiveCategoryTrend(userId, budget, months, categoryIds);
@@ -248,13 +251,16 @@ export class BudgetTrendReportsService {
     budgetId: string,
     months: number,
   ): Promise<BudgetPeriod[]> {
-    return withScopedDb(this.dataSource, (m) =>
+    // Newest first so `take` keeps the latest closed periods, then returned
+    // in calendar order.
+    const newestFirst = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(BudgetPeriod).find({
         where: { budgetId, status: PeriodStatus.CLOSED },
-        order: { periodStart: "ASC" },
+        order: { periodStart: "DESC" },
         take: months,
       }),
     );
+    return [...newestFirst].reverse();
   }
 
   private async getCurrentOpenPeriod(
