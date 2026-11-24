@@ -397,7 +397,7 @@ export interface PendingActionPreview extends PendingActionForeignEntry {
   /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
   tagColor?: string | null;
   tagIcon?: string | null;
-  /** delete_tag: how many transactions and split lines carry the tag. */
+  /** delete_tag: how many rows (transactions, split lines, schedules, securities) carry the tag. */
   tagCarriedCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;
@@ -553,7 +553,7 @@ export interface PendingActionPreviewRow extends PendingActionForeignEntry {
   /** The colour (#RRGGBB) and icon the action sets: null clears, absent leaves it. */
   tagColor?: string | null;
   tagIcon?: string | null;
-  /** delete_tag: how many transactions and split lines carry the tag. */
+  /** delete_tag: how many rows (transactions, split lines, schedules, securities) carry the tag. */
   tagCarriedCount?: number;
   /** Payee website, as the commit would store it. */
   website?: string | null;

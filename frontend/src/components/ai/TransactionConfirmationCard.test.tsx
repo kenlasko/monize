@@ -869,7 +869,9 @@ describe('TransactionConfirmationCard', () => {
       );
       expect(screen.getByText('Removed from')).toBeInTheDocument();
       expect(
-        screen.getByText('3 transactions and split lines'),
+        screen.getByText(
+          '3 records (transactions, split lines, scheduled transactions and securities)',
+        ),
       ).toBeInTheDocument();
       expect(screen.getByText('Tag deleted')).toBeInTheDocument();
       expect(screen.queryByRole('link')).toBeNull();

@@ -74,7 +74,8 @@ const mockGetAll = vi.fn().mockResolvedValue([]);
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
-const mockGetTransactionCount = vi.fn().mockResolvedValue(0);
+const none = { transactions: 0, transactionSplits: 0, scheduledTransactions: 0, scheduledSplits: 0, securities: 0 };
+const mockGetDeleteImpact = vi.fn().mockResolvedValue(none);
 const mockGetAllTransactionCounts = vi.fn().mockResolvedValue({});
 
 vi.mock('@/lib/tags', () => ({
@@ -83,7 +84,7 @@ vi.mock('@/lib/tags', () => ({
     create: (...args: any[]) => mockCreate(...args),
     update: (...args: any[]) => mockUpdate(...args),
     delete: (...args: any[]) => mockDelete(...args),
-    getTransactionCount: (...args: any[]) => mockGetTransactionCount(...args),
+    getDeleteImpact: (...args: any[]) => mockGetDeleteImpact(...args),
     getAllTransactionCounts: (...args: any[]) => mockGetAllTransactionCounts(...args),
   },
 }));
@@ -238,7 +239,7 @@ describe('TagsPage', () => {
     vi.clearAllMocks();
     mockGetAll.mockResolvedValue([]);
     mockGetAllTransactionCounts.mockResolvedValue({});
-    mockGetTransactionCount.mockResolvedValue(0);
+    mockGetDeleteImpact.mockResolvedValue(none);
   });
 
   it('renders the page header with title', async () => {
@@ -485,7 +486,7 @@ describe('TagsPage', () => {
 
   it('opens delete confirmation when delete is clicked', async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    mockGetTransactionCount.mockResolvedValue(0);
+    mockGetDeleteImpact.mockResolvedValue(none);
     await renderPage();
     await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
     await act(async () => {
@@ -496,43 +497,53 @@ describe('TagsPage', () => {
     });
   });
 
-  it('shows transaction count in delete dialog when tag is in use', async () => {
+  const openDelete = async () => {
     mockGetAll.mockResolvedValue(mockTags);
-    mockGetTransactionCount.mockResolvedValue(5);
     await renderPage();
     await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('delete-tag-1'));
     });
-    await waitFor(() => {
-      expect(screen.getByTestId('dialog-message')).toHaveTextContent(/used on 5 transaction/);
+    await waitFor(() => expect(screen.getByTestId('dialog-message')).toBeInTheDocument());
+  };
+
+  it('names every kind of place the tag is removed from, with counts', async () => {
+    mockGetDeleteImpact.mockResolvedValue({
+      transactions: 5,
+      transactionSplits: 1,
+      scheduledTransactions: 2,
+      scheduledSplits: 3,
+      securities: 1,
     });
+    await openDelete();
+    const text = screen.getByTestId('dialog-message').textContent;
+    expect(text).toContain('5 transactions');
+    expect(text).toContain('1 transaction split line');
+    expect(text).toContain('2 scheduled transactions');
+    expect(text).toContain('3 scheduled split lines');
+    expect(text).toContain('1 security');
   });
 
-  it('shows singular "transaction" in delete dialog when count is 1', async () => {
-    mockGetAll.mockResolvedValue(mockTags);
-    mockGetTransactionCount.mockResolvedValue(1);
-    await renderPage();
-    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('delete-tag-1'));
-    });
-    await waitFor(() => {
-      expect(screen.getByTestId('dialog-message')).toHaveTextContent(/used on 1 transaction\./);
-    });
+  it('lists only the kinds that are in use', async () => {
+    mockGetDeleteImpact.mockResolvedValue({ ...none, scheduledTransactions: 1 });
+    await openDelete();
+    const text = screen.getByTestId('dialog-message').textContent;
+    expect(text).toContain('1 scheduled transaction');
+    expect(text).not.toMatch(/security|split line/);
   });
 
-  it('handles getTransactionCount error gracefully', async () => {
-    mockGetAll.mockResolvedValue(mockTags);
-    mockGetTransactionCount.mockRejectedValueOnce(new Error('fail'));
-    await renderPage();
-    await waitFor(() => expect(screen.getByTestId('tag-list')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('delete-tag-1'));
-    });
-    await waitFor(() => {
-      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
-    });
+  it('says the tag is unused only when every count is zero', async () => {
+    mockGetDeleteImpact.mockResolvedValue(none);
+    await openDelete();
+    expect(screen.getByTestId('dialog-message')).toHaveTextContent(/not used anywhere/);
+  });
+
+  it('does not claim the tag is unused when the lookup fails', async () => {
+    mockGetDeleteImpact.mockRejectedValueOnce(new Error('fail'));
+    await openDelete();
+    const message = screen.getByTestId('dialog-message');
+    expect(message).toHaveTextContent(/Could not check where/);
+    expect(message).not.toHaveTextContent(/not used anywhere/);
   });
 
   it('deletes tag when confirmed', async () => {

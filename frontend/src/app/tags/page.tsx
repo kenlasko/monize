@@ -15,7 +15,7 @@ import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { tagsApi } from '@/lib/tags';
-import { Tag } from '@/types/tag';
+import { Tag, TagDeleteImpact } from '@/types/tag';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -29,6 +29,14 @@ import { getErrorMessage } from '@/lib/errors';
 import { searchIncludes } from '@/lib/helpers/search-match';
 
 const logger = createLogger('Tags');
+
+const DELETE_IMPACT_KEYS = {
+  transactions: 'transactions',
+  transactionSplits: 'transactionSplits',
+  scheduledTransactions: 'scheduledTransactions',
+  scheduledSplits: 'scheduledSplits',
+  securities: 'securities',
+} as const;
 
 export default function TagsPage() {
   return (
@@ -49,7 +57,9 @@ function TagsContent() {
   const [sortField, setSortField] = useLocalStorage<SortField>('monize-tags-sort-field', 'name');
   const [sortDirection, setSortDirection] = useLocalStorage<SortDirection>('monize-tags-sort-dir', 'asc');
   const [deleteTag, setDeleteTag] = useState<Tag | null>(null);
-  const [deleteTransactionCount, setDeleteTransactionCount] = useState<number>(0);
+  // null while unknown; deleteImpactFailed says the lookup failed (never "unused").
+  const [deleteImpact, setDeleteImpact] = useState<TagDeleteImpact | null>(null);
+  const [deleteImpactFailed, setDeleteImpactFailed] = useState(false);
   const { showForm, editingItem, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Tag>();
 
   // The mount load: the state already says loading.
@@ -113,13 +123,24 @@ function TagsContent() {
 
   const handleDeleteClick = useCallback(async (tag: Tag) => {
     try {
-      const count = await tagsApi.getTransactionCount(tag.id);
-      setDeleteTransactionCount(count);
+      setDeleteImpact(await tagsApi.getDeleteImpact(tag.id));
+      setDeleteImpactFailed(false);
     } catch {
-      setDeleteTransactionCount(0);
+      setDeleteImpact(null);
+      setDeleteImpactFailed(true);
     }
     setDeleteTag(tag);
   }, []);
+
+  const deleteMessage = (() => {
+    const name = deleteTag?.name ?? '';
+    if (deleteImpactFailed || !deleteImpact) return t('page.delete.unknownMessage', { name });
+    const parts = (Object.keys(DELETE_IMPACT_KEYS) as (keyof TagDeleteImpact)[])
+      .filter(kind => deleteImpact[kind] > 0)
+      .map(kind => t(`page.delete.kinds.${DELETE_IMPACT_KEYS[kind]}`, { count: deleteImpact[kind] }));
+    if (parts.length === 0) return t('page.delete.simpleMessage', { name });
+    return t('page.delete.withUsesMessage', { name, places: parts.join(', ') });
+  })();
 
   const handleConfirmDelete = async () => {
     if (!deleteTag) return;
@@ -223,11 +244,7 @@ function TagsContent() {
         <ConfirmDialog
           isOpen={deleteTag !== null}
           title={t('page.delete.title')}
-          message={
-            deleteTransactionCount > 0
-              ? t('page.delete.withTransactionsMessage', { name: deleteTag?.name ?? '', count: deleteTransactionCount })
-              : t('page.delete.simpleMessage', { name: deleteTag?.name ?? '' })
-          }
+          message={deleteMessage}
           confirmLabel={tc('delete')}
           variant="danger"
           onConfirm={handleConfirmDelete}
