@@ -80,8 +80,8 @@ before they were added:
    category spending", "is this net income", "is this figure zero" read
    `FxAggregate.sign`: a net of 0.00003 is money in though it reads 0.0000. A
    net that is float residue is zero: one under half of 0.00000001 (finer than
-   any amount the ledger holds), or one within 2^-50 of its components' summed
-   size, the most a sum of converted doubles can carry (16,768.69 at
+   any amount the ledger holds), or one within 2^-51 of its components' summed
+   size, over the 3 x 2^-53 a sum of converted doubles can carry (16,768.69 at
    9731.4245182213 refunded in two parts nets to -0.00000002 in doubles).
 6. **A presentation that must add up apportions.** Where parts must sum to their
    parent (the Sankey's links), the parent is its own single rounding and the
@@ -123,7 +123,8 @@ than the floors' 249.5048, and the tie goes to the lower key.
 
 - `FxAggregate.mergeNegated`, `sign`, `unroundedSubtotal` (for a mean or a
   share) and `apportionUnits`.
-- The Cash Flow Sankey (`cash-flow-sankey-assembly.ts`): each side's total is
+- The Cash Flow Sankey (`cash-flow-sankey-assembly.ts`,
+  `cash-flow-sankey-figures.ts`): each side's total is
   rounded once and its nodes, a depth-2 parent's children and a class's
   accounts are apportioned (rule 6); a category's side is judged on its sign
   (rule 5).

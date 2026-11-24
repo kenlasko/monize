@@ -129,7 +129,8 @@ export class InsightsAggregatorService {
         { reportingCurrency: currency },
       ),
     ]);
-    const { categorySpending, monthlySpending, missingRatePairs } = spending;
+    const { categorySpending, monthlySpending, monthTotals, missingRatePairs } =
+      spending;
 
     const currentMonth = monthlySpending.find(
       (m) => m.month === currentMonthStart.substring(0, 7),
@@ -142,13 +143,15 @@ export class InsightsAggregatorService {
     const totalSpendingCurrentMonth = currentMonth?.total ?? 0;
     const totalSpendingPreviousMonth = previousMonth?.total ?? 0;
 
-    const completedMonths = monthlySpending.filter(
-      (m) => m.month !== currentMonthStart.substring(0, 7),
+    // A mean over the completed months' folded sum, divided and then rounded
+    // once (docs/specs/report-rounding-and-aggregation.md rule 8).
+    const completed = [...monthTotals].filter(
+      ([month]) => month !== currentMonthStart.substring(0, 7),
     );
+    const completedSum = FxAggregate.sum(completed.map(([, total]) => total));
     const averageMonthlySpending =
-      completedMonths.length > 0
-        ? completedMonths.reduce((sum, m) => sum + m.total, 0) /
-          completedMonths.length
+      completed.length > 0
+        ? roundMoney(completedSum.unroundedSubtotal / completed.length)
         : 0;
 
     const daysElapsedInMonth = Number(today.slice(8, 10));
@@ -189,6 +192,8 @@ export class InsightsAggregatorService {
   ): Promise<{
     categorySpending: CategorySpending[];
     monthlySpending: MonthlySpending[];
+    /** Each month's total before rounding, for a figure built over months. */
+    monthTotals: Map<string, FxAggregate>;
     missingRatePairs: string[];
   }> {
     const rows: SpendingRow[] = await withScopedDb(
@@ -355,6 +360,9 @@ export class InsightsAggregatorService {
     return {
       categorySpending,
       monthlySpending,
+      monthTotals: new Map(
+        [...months].map(([month, data]) => [month, data.total]),
+      ),
       missingRatePairs: [...missing].sort(),
     };
   }

@@ -133,6 +133,26 @@ describe("InsightsAggregatorService", () => {
       expect(dining.transactionCount).toBe(10);
     });
 
+    it("rounds the average completed month once, from the months' sum (issue #2384)", async () => {
+      // Three completed months of 100, 100 and 100.01 average 100.00333...,
+      // which reads 100.0033; the mean of the rounded months went out as an
+      // unrounded quotient.
+      const now = new Date();
+      const monthsBack = (n: number) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - n, 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      };
+      withRows(
+        [1, 2, 3].map((n) =>
+          row({ month: monthsBack(n), net: n === 3 ? "100.01" : "100" }),
+        ),
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.averageMonthlySpending).toBe(100.0033);
+    });
+
     it("rounds a category's monthly average once, from its months' sum (issue #2384)", async () => {
       // 100 + 100 + 100.01 over three months is 100.00333..., which reads
       // 100.0033.

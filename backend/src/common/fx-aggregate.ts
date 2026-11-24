@@ -29,14 +29,17 @@ const SIGN_THRESHOLD_UNITS =
 
 /**
  * How far below a subtotal's components their float residue reaches, as a
- * shift: each converted component is a double, exact to about one part in
- * 2^52 of its size (one rounding of `amount * rate`, one of the shortest
- * decimal string), so the residue a sum of them can carry is under 2^-50 of
+ * shift. Each converted component is a double carrying three roundings of at
+ * most u = 2^-53 of its size each (the amount read from its decimal, the
+ * product `amount * rate`, the shortest decimal string it is scaled from), so
+ * the residue a sum of them can carry is under 3u, and so under 2^-51, of
  * their summed magnitude. 16,768.69 at 9731.4245182213 (about 163 million),
  * refunded as 4,012.32 and 12,756.37 at the same rate, nets to -0.00000002 in
- * doubles: residue, not money, though over half a unit at `MONEY_SCALE`.
+ * doubles: residue, not money, though over half a unit at `MONEY_SCALE`. The
+ * bound only reaches a ten-thousandth once the components pass about 10^12,
+ * where a double's own spacing is already wider than one.
  */
-const FLOAT_RESIDUE_SHIFT = 50n;
+const FLOAT_RESIDUE_SHIFT = 51n;
 
 /** One `10^-FIAT_MONEY_DECIMALS` unit, in accumulation units. */
 const FIAT_UNIT = 10n ** BigInt(ACCUMULATION_DECIMALS - FIAT_MONEY_DECIMALS);
@@ -175,6 +178,16 @@ export class FxAggregate {
   }
 
   /**
+   * `parts` folded into one new aggregate, carrying every part's gaps: a total
+   * over parts that are aggregates themselves.
+   */
+  static sum(parts: Iterable<FxAggregate>): FxAggregate {
+    const sum = new FxAggregate();
+    for (const part of parts) sum.merge(part);
+    return sum;
+  }
+
+  /**
    * `minuend` less `subtrahend` as a new aggregate carrying both's gaps: a net
    * (income less expenses, a period's savings) worked out before either side
    * is rounded, so it is the single rounding of its own value.
@@ -238,9 +251,9 @@ export class FxAggregate {
         moneyUnits(part.knownSubtotal, FIAT_MONEY_DECIMALS),
       );
     }
-    const whole = new FxAggregate();
-    for (const part of parts) whole.merge(part);
-    const goal = target ?? moneyUnits(whole.knownSubtotal, FIAT_MONEY_DECIMALS);
+    const goal =
+      target ??
+      moneyUnits(FxAggregate.sum(parts).knownSubtotal, FIAT_MONEY_DECIMALS);
     const floors = parts.map((part) => {
       const units = part.subtotalUnits;
       const quotient = units / FIAT_UNIT;

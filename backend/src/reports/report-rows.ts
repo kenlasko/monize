@@ -34,13 +34,11 @@ export function sumOf(value: number | null): FxAggregate | null {
   return sum;
 }
 
-/** The aggregates of `rows` folded into one; rows with no value add nothing. */
+/** The aggregates of `rows` folded into one; a row with no sum adds nothing. */
 export function mergedSum(rows: readonly ReportRow[]): FxAggregate {
-  const total = new FxAggregate();
-  for (const row of rows) {
-    if (row.sum !== null && row.point.value !== null) total.merge(row.sum);
-  }
-  return total;
+  return FxAggregate.sum(
+    rows.flatMap((row) => (row.sum === null ? [] : [row.sum])),
+  );
 }
 
 /**

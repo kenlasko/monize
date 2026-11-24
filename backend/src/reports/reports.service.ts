@@ -1230,8 +1230,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = new FxAggregate();
-    for (const { agg } of dataMap.values()) whole.merge(agg);
+    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
 
     const result: ReportRow[] = [];
     for (const [categoryId, data] of dataMap) {
@@ -1291,8 +1290,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = new FxAggregate();
-    for (const { agg } of dataMap.values()) whole.merge(agg);
+    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
 
     const result: ReportRow[] = [];
     for (const [payeeId, data] of dataMap) {
@@ -1362,8 +1360,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = new FxAggregate();
-    for (const { agg } of dataMap.values()) whole.merge(agg);
+    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
 
     const result: ReportRow[] = [];
     for (const [tagId, data] of dataMap) {

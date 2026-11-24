@@ -9,6 +9,11 @@
  * SQL's job and the integration suite's proof.
  */
 import { FxAggregate } from "../common/fx-aggregate";
+import {
+  apportionByKey,
+  placeRoots,
+  sideFigures,
+} from "./cash-flow-sankey-figures";
 import type {
   CashFlowSankeyLink,
   CashFlowSankeyNode,
@@ -206,24 +211,6 @@ function categoryPath(
   return path;
 }
 
-/**
- * `parts`' figures in ten-thousandths, apportioned so they sum to `target`
- * (by default their merged reading) through `FxAggregate.apportionUnits`. A
- * tie between remainders goes to the lower key, so the answer does not depend
- * on the order the rows arrived in.
- */
-function apportionByKey(
-  parts: ReadonlyArray<[string, FxAggregate]>,
-  target?: number,
-): Map<string, number> {
-  const ordered = [...parts].sort(([a], [b]) => a.localeCompare(b));
-  const units = FxAggregate.apportionUnits(
-    ordered.map(([, agg]) => agg),
-    target,
-  );
-  return new Map(ordered.map(([key], index) => [key, units[index]]));
-}
-
 export function assembleCashFlowSankey(
   input: SankeyAssemblyInput,
 ): CashFlowSankeyResponse {
@@ -372,39 +359,9 @@ export function assembleCashFlowSankey(
     links.push(link);
   };
 
-  // ---- Every figure is rounded once, from its own components
-  // (docs/specs/report-rounding-and-aggregation.md rule 6). Each side's total
-  // is the single rounding of everything on that side and the nodes on it are
-  // apportioned from it; a depth-2 parent's children and a class's accounts
-  // are apportioned from their parent. So every pass-through node closes in
-  // ten-thousandths, and no total is a sum of separately rounded parts, which
-  // read two 124.752474 children as 249.5050 under a 249.5049 parent.
-  const rootViews = [...roots.entries()].map(([rootId, bucket]) => {
-    const category = byId.get(rootId)!;
-    const complete = bucket.agg.isComplete;
-    // A complete category sits where it nets (the isNetSpending rule, both
-    // ways), judged before rounding (rule 5); one whose net is unknown sits
-    // where its own type says, since the sign that would move it is the
-    // figure that is missing.
-    const sign = bucket.agg.sign;
-    const isIncomeSide = complete
-      ? sign > 0 || (sign === 0 && category.isIncome)
-      : category.isIncome;
-    const kind: SankeyNodeKind = isIncomeSide ? "income" : "expense";
-    // In the side's direction: what came in, or what was spent.
-    const oriented = new FxAggregate();
-    if (isIncomeSide) oriented.merge(bucket.agg);
-    else oriented.mergeNegated(bucket.agg);
-    return {
-      rootId,
-      category,
-      complete,
-      isIncomeSide,
-      id: `${kind}:${rootId}`,
-      kind,
-      oriented,
-    };
-  });
+  // ---- Every figure is rounded once, from its own components, and the
+  // parts of a node are apportioned from it (cash-flow-sankey-figures.ts).
+  const rootViews = placeRoots(roots, byId);
   // A complete uncategorized side that nets to nothing is not a node.
   const uncategorized = (
     [
@@ -412,29 +369,13 @@ export function assembleCashFlowSankey(
       [uncategorizedExpense, "expense"],
     ] as Array<[FxAggregate, "income" | "expense"]>
   ).filter(([agg]) => !(agg.isComplete && agg.sign === 0));
-
-  /** Each node's figure in ten-thousandths, once its side is apportioned. */
-  const figures = new Map<string, number>();
-  const apportionSide = (parts: Array<[string, FxAggregate]>): void => {
-    for (const [id, units] of apportionByKey(parts)) figures.set(id, units);
-  };
-  for (const side of ["income", "expense"] as const) {
-    apportionSide([
-      ...rootViews
-        .filter((root) => root.isIncomeSide === (side === "income"))
-        .map((root): [string, FxAggregate] => [root.id, root.oriented]),
-      ...uncategorized
-        .filter(([, which]) => which === side)
-        .map(([agg]): [string, FxAggregate] => [`uncategorized:${side}`, agg]),
-    ]);
-  }
-  apportionSide(
+  const figures = sideFigures(
+    rootViews,
+    uncategorized,
     [...inflowClasses].map(([flowClass, bucket]) => [
       INFLOW_ID[flowClass],
       bucket.agg,
     ]),
-  );
-  apportionSide(
     [...outflowClasses].map(([flowClass, bucket]) => [
       `class:${flowClass}`,
       bucket.agg,
