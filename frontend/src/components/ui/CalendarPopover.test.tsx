@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { fireEvent, screen, act } from '@testing-library/react';
 import { render } from '@/test/render';
 import { CalendarPopover } from './CalendarPopover';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 function Wrapper({
   value,
@@ -159,6 +160,23 @@ describe('CalendarPopover', () => {
     const arg = onSelect.mock.calls[0][0];
     expect(arg).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("marks and selects today on the user's day, not the browser's", () => {
+    // 2026-11-23T20:00Z is Nov 24 in Pacific/Kiritimati, Nov 23 in UTC.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-23T20:00:00Z') });
+    usePreferencesStore.setState({ preferences: { timezone: 'Pacific/Kiritimati' } as never });
+    try {
+      const onSelect = vi.fn();
+      render(<Wrapper value="" onSelect={onSelect} onClose={vi.fn()} />);
+      expect(screen.getByRole('button', { name: '24' }).className).toContain('ring-1');
+      expect(screen.getByRole('button', { name: '23' }).className).not.toContain('ring-1');
+      fireEvent.click(screen.getByText('Today'));
+      expect(onSelect).toHaveBeenCalledWith('2026-11-24');
+    } finally {
+      act(() => usePreferencesStore.setState({ preferences: null }));
+      vi.useRealTimers();
+    }
   });
 
   it('closes on Escape key', () => {

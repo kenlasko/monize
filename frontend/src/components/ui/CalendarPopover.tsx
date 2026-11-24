@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 
 interface CalendarPopoverProps {
   /** Currently selected date in YYYY-MM-DD format */
@@ -43,9 +44,12 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
   const t = useTranslations('common');
   const DAYS = t.raw('weekdaysMin') as string[];
   const MONTHS = t.raw('monthsShort') as string[];
+  // The user's day, not the browser's.
+  const today = useFinancialToday();
+  const [todayY, todayM, todayD] = today.split('-').map(Number);
   const parsed = value ? value.split('-').map(Number) : null;
-  const initialYear = parsed ? parsed[0] : new Date().getFullYear();
-  const initialMonth = parsed ? parsed[1] - 1 : new Date().getMonth();
+  const initialYear = parsed ? parsed[0] : todayY;
+  const initialMonth = parsed ? parsed[1] - 1 : todayM - 1;
 
   const [viewYear, setViewYear] = useState(initialYear);
   const [viewMonth, setViewMonth] = useState(initialMonth);
@@ -136,10 +140,9 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
   }, [onSelect, onClose]);
 
   const handleToday = useCallback(() => {
-    const now = new Date();
-    onSelect(toIso(now.getFullYear(), now.getMonth(), now.getDate()));
+    onSelect(today);
     onClose();
-  }, [onSelect, onClose]);
+  }, [onSelect, onClose, today]);
 
   if (!position) return null;
 
@@ -224,9 +227,9 @@ export function CalendarPopover({ value, onSelect, onClose, anchorRef }: Calenda
             {cells.map((cell, i) => {
               const isSelected = cell.current && cell.day === selectedDay;
               const isToday = cell.current
-                && viewYear === new Date().getFullYear()
-                && viewMonth === new Date().getMonth()
-                && cell.day === new Date().getDate();
+                && viewYear === todayY
+                && viewMonth === todayM - 1
+                && cell.day === todayD;
               return (
                 <button
                   key={i}

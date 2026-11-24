@@ -13,6 +13,7 @@ import {
 } from '@/lib/date-parse';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { isTouchDevice } from '@/lib/touch-device';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 
 interface DateInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -28,12 +29,10 @@ interface DateInputProps extends InputHTMLAttributes<HTMLInputElement> {
  */
 const MAX_TYPED_DATE_LENGTH = 24;
 
-function parseOrToday(value: string): Date {
-  if (value) {
-    const [y, m, d] = value.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  }
-  return new Date();
+// `today` is the user's day (useFinancialToday), never the browser clock.
+function parseOrToday(value: string, today: string): Date {
+  const [y, m, d] = (value || today).split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 function DateShortcutTooltip() {
@@ -106,49 +105,49 @@ function DateShortcutTooltip() {
 
 // Resolves the computed date for a keyboard shortcut key.
 // Returns null if the key is not a recognized shortcut.
-function resolveShortcutDate(key: string, currentValue: string): Date | null {
+function resolveShortcutDate(key: string, currentValue: string, today: string): Date | null {
   switch (key) {
     case 't':
     case 'T':
-      return new Date();
+      return parseOrToday('', today);
     case 'y':
     case 'Y': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       return new Date(d.getFullYear(), 0, 1);
     }
     case 'r':
     case 'R': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       return new Date(d.getFullYear(), 11, 31);
     }
     case 'm':
     case 'M': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       return new Date(d.getFullYear(), d.getMonth(), 1);
     }
     case 'h':
     case 'H': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       // Day 0 of next month = last day of current month
       return new Date(d.getFullYear(), d.getMonth() + 1, 0);
     }
     case '+':
     case '=': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       d.setDate(d.getDate() + 1);
       return d;
     }
     case '-': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       d.setDate(d.getDate() - 1);
       return d;
     }
     case 'PageUp': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     }
     case 'PageDown': {
-      const d = parseOrToday(currentValue);
+      const d = parseOrToday(currentValue, today);
       return new Date(d.getFullYear(), d.getMonth() - 1, 1);
     }
     default:
@@ -275,6 +274,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const t = useTranslations('common');
     const { datePattern } = useDateFormat();
     const mode = getInputMode();
+    const today = useFinancialToday();
 
     // Internal YYYY-MM-DD value; the display string is the same date rendered
     // through the user's pattern.
@@ -363,8 +363,8 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const parseTypedValue = useCallback((text: string): string | null => {
       const strict = parseDateFromFormat(text, datePattern);
       if (strict) return strict;
-      return parseFlexibleDate(text, datePattern, parseOrToday(isoValue));
-    }, [datePattern, isoValue]);
+      return parseFlexibleDate(text, datePattern, parseOrToday(isoValue, today));
+    }, [datePattern, isoValue, today]);
 
     // Commit whatever is typed, then show it in canonical form. Returns true
     // when the text named a date.
@@ -444,7 +444,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       }
 
       const currentIso = mode === 'desktop' ? isoValue : e.currentTarget.value;
-      const newDate = resolveShortcutDate(e.key, currentIso);
+      const newDate = resolveShortcutDate(e.key, currentIso, today);
 
       if (newDate) {
         e.preventDefault();
@@ -452,7 +452,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       }
 
       onKeyDown?.(e);
-    }, [mode, isoValue, displayValue, datePattern, emitDateChange, commitTypedValue, onKeyDown]);
+    }, [mode, isoValue, displayValue, datePattern, today, emitDateChange, commitTypedValue, onKeyDown]);
 
     // Restore a segment highlight after the controlled text input re-renders
     // with a new displayValue.
