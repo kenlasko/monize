@@ -1845,7 +1845,15 @@ Pvoid where prohibited
       });
     });
 
-    it.each(["XOut", "XIn", "Cash", "WithdrwX", "ContribX"])(
+    it.each([
+      "XOut",
+      "XIn",
+      "Cash",
+      "Withdrw",
+      "Contrib",
+      "WithdrwX",
+      "ContribX",
+    ])(
       "keeps the account as the transfer of a %s row, whose cash the import moves",
       (action) => {
         // The L line precedes N, as Money writes it: the account is settled

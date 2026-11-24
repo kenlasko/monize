@@ -1411,34 +1411,6 @@ describe("ImportInvestmentProcessorService", () => {
       await testActionMapping("RtrnCap", InvestmentAction.RETURN_OF_CAPITAL);
     });
 
-    it("maps MargInt to INTEREST", async () => {
-      await testActionMapping("MargInt", InvestmentAction.INTEREST);
-    });
-
-    it("maps MiscExp to INTEREST", async () => {
-      await testActionMapping("MiscExp", InvestmentAction.INTEREST);
-    });
-
-    it("maps MiscInc to INTEREST", async () => {
-      await testActionMapping("MiscInc", InvestmentAction.INTEREST);
-    });
-
-    it("maps Contrib to BUY", async () => {
-      await testActionMapping("Contrib", InvestmentAction.BUY);
-    });
-
-    it("maps ContribX to BUY when no transfer account (X suffix stripped)", async () => {
-      await testActionMapping("ContribX", InvestmentAction.BUY);
-    });
-
-    it("maps Withdrw to SELL", async () => {
-      await testActionMapping("Withdrw", InvestmentAction.SELL);
-    });
-
-    it("maps WithdrwX to SELL when no transfer account (X suffix stripped)", async () => {
-      await testActionMapping("WithdrwX", InvestmentAction.SELL);
-    });
-
     it("maps Exercise to BUY", async () => {
       await testActionMapping("Exercise", InvestmentAction.BUY);
     });
@@ -1453,10 +1425,6 @@ describe("ImportInvestmentProcessorService", () => {
 
     it("maps Vest to ADD_SHARES", async () => {
       await testActionMapping("Vest", InvestmentAction.ADD_SHARES);
-    });
-
-    it("maps Cash to INTEREST when no transfer account", async () => {
-      await testActionMapping("Cash", InvestmentAction.INTEREST);
     });
 
     it("Cash with transfer account is handled as a cash transfer, not an investment transaction", async () => {
@@ -1600,7 +1568,6 @@ describe("ImportInvestmentProcessorService", () => {
   describe("a named account on an action that is not a cash transfer", () => {
     it.each([
       ["DivX", InvestmentAction.DIVIDEND, 130],
-      ["MiscInc", InvestmentAction.INTEREST, 3],
       ["SellX", InvestmentAction.SELL, 91111.51],
     ])(
       "writes a %s row's cash into the investment account, not the named one",
@@ -1655,6 +1622,191 @@ describe("ImportInvestmentProcessorService", () => {
         expect(ctx.affectedAccountIds.has("acc-icici")).toBe(false);
       },
     );
+  });
+
+  // Quicken's cash-only actions have no investment action: each is a plain cash
+  // transaction in the cash account with no investment row. They used to map to
+  // INTEREST/SELL/BUY, so MiscExp and MargInt raised the balance, and
+  // Withdrw/Contrib were stored as security-less SELL/BUY rows with the
+  // opposite cash sign.
+  describe("Quicken cash-only actions post plain cash rows", () => {
+    const cashRowsOf = (ctx: ImportContext) => [
+      ...new Set(
+        managerOf(ctx)
+          .save.mock.calls.map(([e]) => e)
+          .filter((e) => e instanceof Object && "accountId" in e),
+      ),
+    ];
+    const balanceDeltas = (ctx: ImportContext) =>
+      managerOf(ctx).query.mock.calls.map(([, params]) => params);
+
+    it.each([
+      ["MiscExp", 25, -25],
+      ["MargInt", 40, -40],
+      ["MiscExp", -25, -25],
+      ["MiscInc", 12.5, 12.5],
+      ["MiscInc", -12.5, 12.5],
+      ["Withdrw", 300, -300],
+      ["Contrib", 300, 300],
+      ["MiscExpX", 25, -25],
+      ["WithdrwX", 300, -300],
+      ["ContribX", 300, 300],
+      ["Cash", -3016, -3016],
+      ["Cash", 3016, 3016],
+    ])(
+      "%s with amount %s moves the cash balance by %s, no investment row",
+      async (action, amount, delta) => {
+        const ctx = makeContext({
+          categoryMap: new Map([["Fees", "cat-fees"]]),
+        });
+
+        await service.processTransaction(ctx, {
+          action,
+          date: "2025-01-15",
+          amount,
+          category: "Fees",
+          payee: "P",
+        });
+
+        const rows = cashRowsOf(ctx);
+        expect(rows.some((e) => e instanceof InvestmentTransaction)).toBe(
+          false,
+        );
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toMatchObject({
+          accountId,
+          amount: delta,
+          categoryId: "cat-fees",
+          currencyCode: "USD",
+          isTransfer: false,
+        });
+        expect(balanceDeltas(ctx)).toEqual([[delta, accountId]]);
+        expect(ctx.importResult.imported).toBe(1);
+      },
+    );
+
+    it("leaves a row uncategorized when its category is not mapped", async () => {
+      const ctx = makeContext();
+      await service.processTransaction(ctx, {
+        action: "MiscExp",
+        date: "2025-01-15",
+        amount: 25,
+        category: "Unmapped",
+      });
+      expect(cashRowsOf(ctx)[0]).toMatchObject({
+        amount: -25,
+        categoryId: null,
+      });
+    });
+
+    it("posts to the linked cash account of a brokerage", async () => {
+      const ctx = makeContext({
+        account: {
+          id: accountId,
+          currencyCode: "CAD",
+          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+          linkedAccountId: "acc-cash",
+          name: "Brokerage",
+        } as any,
+      });
+      managerOf(ctx).findOne.mockResolvedValue({
+        id: "acc-cash",
+        currencyCode: "CAD",
+      });
+      await service.processTransaction(ctx, {
+        action: "MargInt",
+        date: "2025-01-15",
+        amount: 40,
+      });
+      expect(cashRowsOf(ctx)[0]).toMatchObject({
+        accountId: "acc-cash",
+        amount: -40,
+        currencyCode: "CAD",
+      });
+      expect(balanceDeltas(ctx)).toEqual([[-40, "acc-cash"]]);
+    });
+
+    it("ignores a named account on MiscExp: no transfer pair", async () => {
+      const ctx = makeContext({
+        accountMap: new Map([["ICICI Bank", "acc-icici"]]),
+      });
+      await service.processTransaction(ctx, {
+        action: "MiscExp",
+        date: "2025-01-15",
+        amount: 25,
+        isTransfer: true,
+        transferAccount: "ICICI Bank",
+      });
+      const rows = cashRowsOf(ctx);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ amount: -25, isTransfer: false });
+      expect(ctx.affectedAccountIds.has("acc-icici")).toBe(false);
+    });
+
+    it.each([
+      ["Withdrw", 300, -300, 300],
+      ["Contrib", 300, 300, -300],
+      ["Cash", -3016, -3016, 3016],
+    ])(
+      "%s naming a mapped account is a transfer pair (%s)",
+      async (action, amount, own, other) => {
+        const ctx = makeContext({
+          accountMap: new Map([["Chequing", "acc-chq"]]),
+        });
+        managerOf(ctx).findOne.mockImplementation((_e: any, opts: any) =>
+          Promise.resolve(
+            opts?.where?.id === "acc-chq"
+              ? { id: "acc-chq", currencyCode: "USD" }
+              : null,
+          ),
+        );
+        await service.processTransaction(ctx, {
+          action,
+          date: "2025-01-15",
+          amount,
+          isTransfer: true,
+          transferAccount: "Chequing",
+        });
+        const rows = cashRowsOf(ctx);
+        expect(rows.some((e) => e instanceof InvestmentTransaction)).toBe(
+          false,
+        );
+        expect(rows[0]).toMatchObject({
+          accountId,
+          amount: own,
+          isTransfer: true,
+        });
+        expect(rows[1]).toMatchObject({
+          accountId: "acc-chq",
+          amount: other,
+          isTransfer: true,
+          linkedTransactionId: rows[0].id,
+        });
+        expect(balanceDeltas(ctx)).toEqual([
+          [own, accountId],
+          [other, "acc-chq"],
+        ]);
+      },
+    );
+
+    it("skips a Withdrw that duplicates an existing transfer", async () => {
+      const ctx = makeContext({
+        accountMap: new Map([["Chequing", "acc-chq"]]),
+      });
+      managerOf(ctx).createQueryBuilder.mockReturnValue(
+        makeMockQueryBuilder(1),
+      );
+      await service.processTransaction(ctx, {
+        action: "Withdrw",
+        date: "2025-01-15",
+        amount: 300,
+        isTransfer: true,
+        transferAccount: "Chequing",
+      });
+      expect(ctx.importResult.skipped).toBe(1);
+      expect(ctx.importResult.imported).toBe(0);
+      expect(managerOf(ctx).save).not.toHaveBeenCalled();
+    });
   });
 
   describe("XIn / XOut cash transfers", () => {

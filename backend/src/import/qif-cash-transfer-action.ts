@@ -2,7 +2,7 @@
  * Whether a QIF investment row is written as a cash transfer between the
  * investment account and another account (`processCashTransfer` in
  * `import-investment-processor.service.ts`) rather than as an investment
- * transaction. XIn and XOut always are; Cash, WithdrwX and ContribX only when
+ * transaction. XIn and XOut always are; Cash, Withdrw(X) and Contrib(X) only when
  * the row names the other account. Every other action ignores a named account:
  * its cash stays in the investment account, and the other account's own export
  * carries the matching transfer.
@@ -19,6 +19,8 @@ export function isQifCashTransfer(
   return (
     !!transferAccount &&
     (normalized === "cash" ||
+      normalized === "withdrw" ||
+      normalized === "contrib" ||
       normalized === "withdrwx" ||
       normalized === "contribx")
   );
