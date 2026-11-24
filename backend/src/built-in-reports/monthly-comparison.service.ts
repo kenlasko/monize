@@ -4,7 +4,7 @@ import { withScopedDb } from "../common/db/scoped-db";
 import { SpendingReportsService } from "./spending-reports.service";
 import { IncomeReportsService } from "./income-reports.service";
 import { ReportCurrencyService } from "./report-currency.service";
-import { roundMoney, sumMoney } from "../common/round.util";
+import { roundMoney } from "../common/round.util";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import {
   NumberT,
@@ -32,6 +32,7 @@ import {
   MonthlyComparisonInvestments,
   InvestmentAccountPerformance,
   InvestmentTopMover,
+  SpendingByCategoryResponse,
 } from "./dto";
 
 @Injectable()
@@ -115,8 +116,17 @@ export class MonthlyComparisonService {
     const previousIncome = prevData?.income ?? 0;
     const currentExpenses = curData?.expenses ?? 0;
     const previousExpenses = prevData?.expenses ?? 0;
-    const currentSavings = currentIncome - currentExpenses;
-    const previousSavings = previousIncome - previousExpenses;
+    // A month's savings is its own net, rounded once from its rows, never the
+    // difference of its two rounded sides
+    // (docs/specs/report-rounding-and-aggregation.md rule 2).
+    const currentSavings = curData?.net ?? 0;
+    const previousSavings = prevData?.net ?? 0;
+
+    // A change is the difference of the two figures this report shows, so
+    // the three agree on the page; rounding it drops the float residue that
+    // subtracting two four-place doubles leaves (1999.5556000000001).
+    const change = (current: number, previous: number) =>
+      roundMoney(current - previous);
 
     // Build income/expenses section
     const incomeExpenses: MonthlyComparisonIncomeExpenses = {
@@ -124,18 +134,18 @@ export class MonthlyComparisonService {
       previousMonth: previousMonthStr,
       currentIncome,
       previousIncome,
-      incomeChange: currentIncome - previousIncome,
+      incomeChange: change(currentIncome, previousIncome),
       incomeChangePercent: this.percentChange(previousIncome, currentIncome),
       currentExpenses,
       previousExpenses,
-      expensesChange: currentExpenses - previousExpenses,
+      expensesChange: change(currentExpenses, previousExpenses),
       expensesChangePercent: this.percentChange(
         previousExpenses,
         currentExpenses,
       ),
       currentSavings,
       previousSavings,
-      savingsChange: currentSavings - previousSavings,
+      savingsChange: change(currentSavings, previousSavings),
       savingsChangePercent: this.percentChange(previousSavings, currentSavings),
     };
 
@@ -160,8 +170,8 @@ export class MonthlyComparisonService {
 
     // Build expense comparison
     const expenses = this.buildExpenseComparison(
-      currentSpending.data,
-      previousSpending.data,
+      currentSpending,
+      previousSpending,
     );
 
     // Build top 5 categories
@@ -235,19 +245,11 @@ export class MonthlyComparisonService {
   }
 
   private buildExpenseComparison(
-    currentData: {
-      categoryId: string | null;
-      categoryName: string;
-      color: string | null;
-      total: number;
-    }[],
-    previousData: {
-      categoryId: string | null;
-      categoryName: string;
-      color: string | null;
-      total: number;
-    }[],
+    current: SpendingByCategoryResponse,
+    previous: SpendingByCategoryResponse,
   ): MonthlyComparisonExpenses {
+    const currentData = current.data;
+    const previousData = previous.data;
     const currentMonth: CategorySpendingSnapshot[] = currentData.map((c) => ({
       categoryId: c.categoryId,
       categoryName: c.categoryName,
@@ -313,15 +315,14 @@ export class MonthlyComparisonService {
       }))
       .sort((a, b) => b.currentTotal - a.currentTotal);
 
-    const currentTotal = sumMoney(currentData.map((c) => c.total));
-    const previousTotal = sumMoney(previousData.map((c) => c.total));
-
+    // Each month's total as Spending by Category rounds it, once from its
+    // categories' aggregates, never re-summed from their rounded rows.
     return {
       currentMonth,
       previousMonth,
       comparison,
-      currentTotal: roundMoney(currentTotal),
-      previousTotal: roundMoney(previousTotal),
+      currentTotal: current.knownSpending,
+      previousTotal: previous.knownSpending,
     };
   }
 
@@ -378,7 +379,7 @@ export class MonthlyComparisonService {
       previousNetWorth,
       knownCurrentNetWorth: cur.known,
       knownPreviousNetWorth: prev.known,
-      netWorthChange: bothComplete ? cur.known - prev.known : null,
+      netWorthChange: bothComplete ? roundMoney(cur.known - prev.known) : null,
       netWorthChangePercent: bothComplete
         ? this.percentChange(prev.known, cur.known)
         : null,

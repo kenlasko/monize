@@ -479,6 +479,57 @@ describe("TransactionAnalyticsService", () => {
       });
     });
 
+    it("rounds the converted totals once, across currencies and days (issue #2384)", async () => {
+      // 100.01 EUR and 100.01 GBP, each at 1.2474 into CAD, are 124.752474
+      // each: 249.504948 together, which reads 249.5049. Adding the two
+      // currencies' four-place readings came to 249.5050.
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce(
+        ["EUR", "GBP"].map((currencyCode) => ({
+          currencyCode,
+          fx_day: "2026-01-12",
+          fx_original_currency: null,
+          fx_exchange_rate: "1",
+          totalIncome: "100.01",
+          totalExpenses: "0",
+          transactionCount: "1",
+        })),
+      );
+      managerMock.query.mockResolvedValue(
+        ["EUR", "GBP"].map((from) => ({
+          from_currency: from,
+          to_currency: "CAD",
+          rate: "1.2474",
+          rate_date: "2026-01-10",
+        })),
+      );
+
+      const result = await service.getSummary(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { inReportingCurrency: true },
+      );
+
+      expect(result.converted).toMatchObject({
+        totalIncome: 249.5049,
+        totalExpenses: 0,
+        netCashFlow: 249.5049,
+      });
+    });
+
     it("reduces first/last transaction dates across currency rows", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {

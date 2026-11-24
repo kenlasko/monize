@@ -9,7 +9,7 @@ import {
   RateIndexLogger,
   RateIndexQuery,
 } from "../common/time-series/rate-index.util";
-import { FIAT_MONEY_DECIMALS, sumMoney } from "../common/round.util";
+import { FxAggregate } from "../common/fx-aggregate";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { preferredCurrency } from "../common/default-currency.util";
 import { TransferLegs, transferRateSql } from "./transfer-rate-sql";
@@ -317,6 +317,12 @@ export interface DatedAmountRow {
  * on its own date (INV-FX-001), never at today's (issue #2106). A figure is
  * `null` while any part has no admissible rate. The history is loaded once,
  * through `query`, for the days the market-rate parts cover.
+ *
+ * Each figure is the single rounding of its converted parts
+ * (`convertDatedRowAggregates` carries them unrounded, for a caller that folds
+ * the figures further): summing the parts' four-place readings read two days
+ * of 124.752474 as 249.5050 (docs/specs/report-rounding-and-aggregation.md
+ * rule 2).
  */
 export async function convertDatedRows(
   query: RateIndexQuery,
@@ -324,7 +330,40 @@ export async function convertDatedRows(
   reportingCurrency: string,
   logger?: RateIndexLogger,
 ): Promise<Map<string, Record<string, number | null>>> {
-  const totals = new Map<string, Record<string, number | null>>();
+  return readAggregates(
+    await convertDatedRowAggregates(query, rows, reportingCurrency, logger),
+  );
+}
+
+/** Each figure of `aggregates` read once, `null` kept. */
+export function readAggregates(
+  aggregates: ReadonlyMap<string, Record<string, FxAggregate | null>>,
+): Map<string, Record<string, number | null>> {
+  return new Map(
+    [...aggregates].map(([key, figures]) => [
+      key,
+      Object.fromEntries(
+        Object.entries(figures).map(([name, agg]) => [
+          name,
+          agg === null ? null : agg.knownSubtotal,
+        ]),
+      ),
+    ]),
+  );
+}
+
+/**
+ * {@link convertDatedRows}, each figure left as the aggregate of its converted
+ * parts, for a caller that folds the figures into a total of its own (`merge`)
+ * rather than adding their four-place readings.
+ */
+export async function convertDatedRowAggregates(
+  query: RateIndexQuery,
+  rows: readonly DatedAmountRow[],
+  reportingCurrency: string,
+  logger?: RateIndexLogger,
+): Promise<Map<string, Record<string, FxAggregate | null>>> {
+  const totals = new Map<string, Record<string, FxAggregate | null>>();
   if (rows.length === 0) return totals;
   const bases = rows.map((row) =>
     transactionRateBasis(
@@ -352,11 +391,10 @@ export async function convertDatedRows(
       ? new Map()
       : await buildRateIndex(query, foreign, reportingCurrency, first, last);
 
-  // The parts of each figure, summed once at the end in integer units
-  // (`sumMoney`); `null` once a part has no rate.
-  const parts = new Map<string, Record<string, number[] | null>>();
+  // The parts of each figure, accumulated unrounded; `null` once a part has
+  // no rate.
   rows.forEach((row, i) => {
-    const acc = parts.get(row.key) ?? {};
+    const acc = totals.get(row.key) ?? {};
     for (const [name, amount] of Object.entries(row.amounts)) {
       const converted =
         amount === 0
@@ -368,23 +406,16 @@ export async function convertDatedRows(
               rateIndex,
               logger,
             );
-      const held = name in acc ? acc[name] : [];
-      acc[name] =
-        held === null || converted === null ? null : [...held, converted];
+      const held = name in acc ? acc[name] : new FxAggregate();
+      if (held === null || converted === null) {
+        acc[name] = null;
+      } else {
+        held.addConverted(converted);
+        acc[name] = held;
+      }
     }
-    parts.set(row.key, acc);
+    totals.set(row.key, acc);
   });
-  for (const [key, acc] of parts) {
-    totals.set(
-      key,
-      Object.fromEntries(
-        Object.entries(acc).map(([name, values]) => [
-          name,
-          values === null ? null : sumMoney(values, FIAT_MONEY_DECIMALS),
-        ]),
-      ),
-    );
-  }
   return totals;
 }
 
