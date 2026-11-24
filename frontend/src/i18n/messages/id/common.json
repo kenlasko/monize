@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "Termasuk {count, plural, one {# transaksi terjadwal lewat jatuh tempo} other {# transaksi terjadwal lewat jatuh tempo}}"
+  },
+  "recordInUse": {
+    "intro": "Data ini tidak dapat dihapus selama item berikut masih memakainya. Buka salah satu untuk melihatnya:",
+    "kinds": {
+      "transactions": "{count, plural, other {# transaksi}}",
+      "scheduledTransactions": "{count, plural, other {# transaksi terjadwal}}",
+      "warranties": "{count, plural, other {# garansi}}",
+      "emailReceiptParsers": "{count, plural, other {# profil struk email}}",
+      "loanOverpaymentPayee": "{count, plural, other {# akun pinjaman (penerima pembayaran tambahan)}}",
+      "sharedPeople": "{count, plural, other {# orang pengeluaran bersama}}",
+      "sharedPostings": "{count, plural, other {# entri pengeluaran bersama}}",
+      "rules": "{count, plural, other {# aturan}}"
+    }
   }
 }

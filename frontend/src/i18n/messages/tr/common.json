@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "{count, plural, one {# vadesi geçmiş zamanlanmış işlem} other {# vadesi geçmiş zamanlanmış işlem}} dahil"
+  },
+  "recordInUse": {
+    "intro": "Bu öğeler kullandığı sürece silinemez. Görmek için birini açın:",
+    "kinds": {
+      "transactions": "{count, plural, other {# işlem}}",
+      "scheduledTransactions": "{count, plural, other {# planlı işlem}}",
+      "warranties": "{count, plural, other {# garanti}}",
+      "emailReceiptParsers": "{count, plural, other {# e-posta makbuz profili}}",
+      "loanOverpaymentPayee": "{count, plural, other {# kredi hesabı (ek ödeme alıcısı)}}",
+      "sharedPeople": "{count, plural, other {# paylaşılan gider kişisi}}",
+      "sharedPostings": "{count, plural, other {# paylaşılan gider kaydı}}",
+      "rules": "{count, plural, other {# kural}}"
+    }
   }
 }

@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "一个收款人出现在多个合并组中",
     "autoMergeSourceNotFound": "一个或多个来源收款人未找到",
     "autoMergeGroupConflict": "无法合并\"{{ name }}\"：值\"{{ value }}\"已被使用",
-    "autoMergeGroupFailed": "无法合并\"{{ name }}\""
+    "autoMergeGroupFailed": "无法合并\"{{ name }}\"",
+    "inUse": "无法删除收款方“{{ name }}”：仍有 {{ summary }} 在使用它。请将它合并到另一个收款方，或先移除这些项目。"
   },
   "reports": {
     "notFound": "未找到 ID 为 {{ id }} 的报告",
@@ -1105,5 +1106,17 @@
   "oauth": {
     "connectionNotFound": "未找到该已连接的应用，可能已被撤销。",
     "invalidConnectionId": "已连接的应用 ID 无效"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "交易",
+      "scheduledTransactions": "计划交易",
+      "warranties": "保修",
+      "emailReceiptParsers": "邮件收据配置",
+      "loanOverpaymentPayee": "贷款账户（额外还款收款方）",
+      "sharedPeople": "共享支出成员",
+      "sharedPostings": "共享支出记录",
+      "rules": "规则"
+    }
   }
 }

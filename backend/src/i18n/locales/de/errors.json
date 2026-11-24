@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Ein Zahlungsempfänger erscheint in mehr als einer Zusammenführungsgruppe",
     "autoMergeSourceNotFound": "Ein oder mehrere Quell-Zahlungsempfänger wurden nicht gefunden",
     "autoMergeGroupConflict": "\"{{ name }}\" konnte nicht zusammengeführt werden: Der Wert \"{{ value }}\" wird bereits verwendet",
-    "autoMergeGroupFailed": "\"{{ name }}\" konnte nicht zusammengeführt werden"
+    "autoMergeGroupFailed": "\"{{ name }}\" konnte nicht zusammengeführt werden",
+    "inUse": "Der Zahlungsempfänger „{{ name }}“ kann nicht gelöscht werden: Er wird noch verwendet von {{ summary }}. Führen Sie ihn stattdessen mit einem anderen Zahlungsempfänger zusammen oder entfernen Sie zuerst diese Einträge."
   },
   "reports": {
     "notFound": "Bericht mit ID {{ id }} nicht gefunden",
@@ -1105,5 +1106,17 @@
   "oauth": {
     "connectionNotFound": "Diese verbundene App wurde nicht gefunden. Möglicherweise wurde sie bereits widerrufen.",
     "invalidConnectionId": "Ungültige ID der verbundenen App"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "Transaktionen",
+      "scheduledTransactions": "geplante Transaktionen",
+      "warranties": "Garantien",
+      "emailReceiptParsers": "E-Mail-Beleg-Profile",
+      "loanOverpaymentPayee": "Darlehenskonten (Zahlungsempfänger für Sonderzahlungen)",
+      "sharedPeople": "Personen für geteilte Ausgaben",
+      "sharedPostings": "Buchungen geteilter Ausgaben",
+      "rules": "Regeln"
+    }
   }
 }

@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "Inclui {count, plural, one {# transação agendada em atraso} other {# transações agendadas em atraso}}"
+  },
+  "recordInUse": {
+    "intro": "Não pode ser eliminado enquanto estes itens o usarem. Abra um para o ver:",
+    "kinds": {
+      "transactions": "{count, plural, one {# transação} other {# transações}}",
+      "scheduledTransactions": "{count, plural, one {# transação agendada} other {# transações agendadas}}",
+      "warranties": "{count, plural, one {# garantia} other {# garantias}}",
+      "emailReceiptParsers": "{count, plural, one {# perfil de recibos por e-mail} other {# perfis de recibos por e-mail}}",
+      "loanOverpaymentPayee": "{count, plural, one {# conta de empréstimo (beneficiário de pagamentos extra)} other {# contas de empréstimo (beneficiário de pagamentos extra)}}",
+      "sharedPeople": "{count, plural, one {# pessoa de despesas partilhadas} other {# pessoas de despesas partilhadas}}",
+      "sharedPostings": "{count, plural, one {# lançamento de despesas partilhadas} other {# lançamentos de despesas partilhadas}}",
+      "rules": "{count, plural, one {# regra} other {# regras}}"
+    }
   }
 }

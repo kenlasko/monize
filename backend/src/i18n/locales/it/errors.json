@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Un beneficiario compare in più di un gruppo di unione",
     "autoMergeSourceNotFound": "Uno o più beneficiari di origine non sono stati trovati",
     "autoMergeGroupConflict": "Impossibile unire \"{{ name }}\": il valore \"{{ value }}\" è già in uso",
-    "autoMergeGroupFailed": "Impossibile unire \"{{ name }}\""
+    "autoMergeGroupFailed": "Impossibile unire \"{{ name }}\"",
+    "inUse": "Il beneficiario «{{ name }}» non può essere eliminato: è ancora usato da {{ summary }}. Uniscilo a un altro beneficiario oppure rimuovi prima questi elementi."
   },
   "reports": {
     "notFound": "Report con ID {{ id }} non trovato",
@@ -1105,5 +1106,17 @@
   "oauth": {
     "connectionNotFound": "App connessa non trovata. Potrebbe essere già stata revocata.",
     "invalidConnectionId": "ID dell'app connessa non valido"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "transazioni",
+      "scheduledTransactions": "transazioni pianificate",
+      "warranties": "garanzie",
+      "emailReceiptParsers": "profili ricevute e-mail",
+      "loanOverpaymentPayee": "conti di prestito (beneficiario dei pagamenti extra)",
+      "sharedPeople": "persone di spese condivise",
+      "sharedPostings": "registrazioni di spese condivise",
+      "rules": "regole"
+    }
   }
 }

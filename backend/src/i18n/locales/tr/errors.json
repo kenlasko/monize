@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Bir alacaklı birden fazla birleştirme grubunda görünüyor",
     "autoMergeSourceNotFound": "Bir veya daha fazla kaynak alacaklı bulunamadı",
     "autoMergeGroupConflict": "\"{{ name }}\" birleştirilemedi: \"{{ value }}\" değeri zaten kullanımda",
-    "autoMergeGroupFailed": "\"{{ name }}\" birleştirilemedi"
+    "autoMergeGroupFailed": "\"{{ name }}\" birleştirilemedi",
+    "inUse": "\"{{ name }}\" alıcısı silinemiyor: hâlâ {{ summary }} tarafından kullanılıyor. Başka bir alıcıyla birleştirin veya önce bu öğeleri kaldırın."
   },
   "reports": {
     "notFound": "{{ id }} kimliğine sahip rapor bulunamadı",
@@ -1105,5 +1106,17 @@
   "oauth": {
     "connectionNotFound": "Bu bağlı uygulama bulunamadı. Zaten iptal edilmiş olabilir.",
     "invalidConnectionId": "Geçersiz bağlı uygulama kimliği"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "işlem",
+      "scheduledTransactions": "planlı işlem",
+      "warranties": "garanti",
+      "emailReceiptParsers": "e-posta makbuz profili",
+      "loanOverpaymentPayee": "kredi hesabı (ek ödeme alıcısı)",
+      "sharedPeople": "paylaşılan gider kişisi",
+      "sharedPostings": "paylaşılan gider kaydı",
+      "rules": "kural"
+    }
   }
 }

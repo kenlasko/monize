@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "Inclusief {count, plural, one {# achterstallige geplande transactie} other {# achterstallige geplande transacties}}"
+  },
+  "recordInUse": {
+    "intro": "Het kan niet worden verwijderd zolang deze items het gebruiken. Open er een om het te bekijken:",
+    "kinds": {
+      "transactions": "{count, plural, one {# transactie} other {# transacties}}",
+      "scheduledTransactions": "{count, plural, one {# geplande transactie} other {# geplande transacties}}",
+      "warranties": "{count, plural, one {# garantie} other {# garanties}}",
+      "emailReceiptParsers": "{count, plural, one {# e-mailbonprofiel} other {# e-mailbonprofielen}}",
+      "loanOverpaymentPayee": "{count, plural, one {# leningrekening (begunstigde voor extra aflossingen)} other {# leningrekeningen (begunstigde voor extra aflossingen)}}",
+      "sharedPeople": "{count, plural, one {# persoon voor gedeelde uitgaven} other {# personen voor gedeelde uitgaven}}",
+      "sharedPostings": "{count, plural, one {# boeking van gedeelde uitgaven} other {# boekingen van gedeelde uitgaven}}",
+      "rules": "{count, plural, one {# regel} other {# regels}}"
+    }
   }
 }

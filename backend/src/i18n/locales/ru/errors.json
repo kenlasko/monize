@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Получатель присутствует в нескольких группах объединения",
     "autoMergeSourceNotFound": "Один или несколько исходных получателей не найдены",
     "autoMergeGroupConflict": "Не удалось объединить \"{{ name }}\": значение \"{{ value }}\" уже используется",
-    "autoMergeGroupFailed": "Не удалось объединить \"{{ name }}\""
+    "autoMergeGroupFailed": "Не удалось объединить \"{{ name }}\"",
+    "inUse": "Получателя «{{ name }}» нельзя удалить: его всё ещё используют {{ summary }}. Объедините его с другим получателем или сначала удалите эти элементы."
   },
   "reports": {
     "notFound": "Отчёт с ID {{ id }} не найден",
@@ -1105,5 +1106,17 @@
   "oauth": {
     "connectionNotFound": "Это подключённое приложение не найдено. Возможно, доступ уже отозван.",
     "invalidConnectionId": "Недопустимый идентификатор подключённого приложения"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "транзакции",
+      "scheduledTransactions": "запланированные транзакции",
+      "warranties": "гарантии",
+      "emailReceiptParsers": "профиля email-квитанций",
+      "loanOverpaymentPayee": "кредитных счёта (получатель допплатежей)",
+      "sharedPeople": "участника совместных расходов",
+      "sharedPostings": "записи совместных расходов",
+      "rules": "правила"
+    }
   }
 }

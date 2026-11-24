@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Een begunstigde komt voor in meer dan één samenvoegingsgroep",
     "autoMergeSourceNotFound": "Een of meer bronbegunstigden zijn niet gevonden",
     "autoMergeGroupConflict": "Kan \"{{ name }}\" niet samenvoegen: de waarde \"{{ value }}\" is al in gebruik",
-    "autoMergeGroupFailed": "Kan \"{{ name }}\" niet samenvoegen"
+    "autoMergeGroupFailed": "Kan \"{{ name }}\" niet samenvoegen",
+    "inUse": "De begunstigde \"{{ name }}\" kan niet worden verwijderd: hij wordt nog gebruikt door {{ summary }}. Voeg hem samen met een andere begunstigde of verwijder eerst deze items."
   },
   "reports": {
     "notFound": "Rapport met ID {{ id }} niet gevonden",
@@ -1105,5 +1106,17 @@
   "oauth": {
     "connectionNotFound": "Die gekoppelde app is niet gevonden. Mogelijk is de toegang al ingetrokken.",
     "invalidConnectionId": "Ongeldige id van gekoppelde app"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "transacties",
+      "scheduledTransactions": "geplande transacties",
+      "warranties": "garanties",
+      "emailReceiptParsers": "e-mailbonprofielen",
+      "loanOverpaymentPayee": "leningrekeningen (begunstigde voor extra aflossingen)",
+      "sharedPeople": "personen voor gedeelde uitgaven",
+      "sharedPostings": "boekingen van gedeelde uitgaven",
+      "rules": "regels"
+    }
   }
 }

@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "包含 {count, plural, one {# 筆} other {# 筆}}逾期排程交易"
+  },
+  "recordInUse": {
+    "intro": "只要這些項目還在使用它，就無法刪除。開啟其中一項即可查看：",
+    "kinds": {
+      "transactions": "{count, plural, other {#筆交易}}",
+      "scheduledTransactions": "{count, plural, other {#筆排程交易}}",
+      "warranties": "{count, plural, other {#項保固}}",
+      "emailReceiptParsers": "{count, plural, other {#個電子郵件收據設定檔}}",
+      "loanOverpaymentPayee": "{count, plural, other {#個貸款帳戶（額外還款收款方）}}",
+      "sharedPeople": "{count, plural, other {#位共享支出成員}}",
+      "sharedPostings": "{count, plural, other {#筆共享支出記錄}}",
+      "rules": "{count, plural, other {#條規則}}"
+    }
   }
 }

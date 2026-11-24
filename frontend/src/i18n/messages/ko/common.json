@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "연체된 예정 거래 {count, plural, one {#건} other {#건}} 포함"
+  },
+  "recordInUse": {
+    "intro": "아래 항목이 사용 중인 동안에는 삭제할 수 없습니다. 항목을 열어 확인하세요:",
+    "kinds": {
+      "transactions": "{count, plural, other {#건의 거래}}",
+      "scheduledTransactions": "{count, plural, other {#건의 예정 거래}}",
+      "warranties": "{count, plural, other {#건의 보증}}",
+      "emailReceiptParsers": "{count, plural, other {#개의 이메일 영수증 프로필}}",
+      "loanOverpaymentPayee": "{count, plural, other {#개의 대출 계좌(추가 상환 수취인)}}",
+      "sharedPeople": "{count, plural, other {#명의 공동 지출 인원}}",
+      "sharedPostings": "{count, plural, other {#건의 공동 지출 항목}}",
+      "rules": "{count, plural, other {#개의 규칙}}"
+    }
   }
 }

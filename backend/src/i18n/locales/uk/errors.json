@@ -617,7 +617,8 @@
     "autoMergeDuplicatePayee": "Одержувач присутній у більш ніж одній групі об'єднання",
     "autoMergeSourceNotFound": "Одного або кількох вихідних одержувачів не знайдено",
     "autoMergeGroupConflict": "Не вдалося об'єднати «{{ name }}»: значення «{{ value }}» вже використовується",
-    "autoMergeGroupFailed": "Не вдалося об'єднати «{{ name }}»"
+    "autoMergeGroupFailed": "Не вдалося об'єднати «{{ name }}»",
+    "inUse": "Отримувача «{{ name }}» не можна видалити: його все ще використовують {{ summary }}. Об’єднайте його з іншим отримувачем або спершу видаліть ці елементи."
   },
   "reports": {
     "notFound": "Звіт з ідентифікатором {{ id }} не знайдено",
@@ -1105,5 +1106,17 @@
   "oauth": {
     "connectionNotFound": "Цей підключений застосунок не знайдено. Можливо, доступ уже скасовано.",
     "invalidConnectionId": "Недійсний ідентифікатор підключеного застосунку"
+  },
+  "recordInUse": {
+    "kinds": {
+      "transactions": "транзакції",
+      "scheduledTransactions": "заплановані транзакції",
+      "warranties": "гарантії",
+      "emailReceiptParsers": "профілі email-квитанцій",
+      "loanOverpaymentPayee": "кредитні рахунки (отримувач додаткових платежів)",
+      "sharedPeople": "учасники спільних витрат",
+      "sharedPostings": "записи спільних витрат",
+      "rules": "правила"
+    }
   }
 }

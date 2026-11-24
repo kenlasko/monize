@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "包含 {count, plural, one {# 笔} other {# 笔}}逾期定期交易"
+  },
+  "recordInUse": {
+    "intro": "只要这些项目还在使用它，就无法删除。打开其中一项即可查看：",
+    "kinds": {
+      "transactions": "{count, plural, other {#笔交易}}",
+      "scheduledTransactions": "{count, plural, other {#笔计划交易}}",
+      "warranties": "{count, plural, other {#项保修}}",
+      "emailReceiptParsers": "{count, plural, other {#个邮件收据配置}}",
+      "loanOverpaymentPayee": "{count, plural, other {#个贷款账户（额外还款收款方）}}",
+      "sharedPeople": "{count, plural, other {#位共享支出成员}}",
+      "sharedPostings": "{count, plural, other {#条共享支出记录}}",
+      "rules": "{count, plural, other {#条规则}}"
+    }
   }
 }
