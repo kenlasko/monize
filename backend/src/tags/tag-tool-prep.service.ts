@@ -17,9 +17,7 @@ import type {
   BatchUpdateTagRow,
 } from "../ai/actions/ai-action.types";
 import { Tag } from "./entities/tag.entity";
-import { TransactionTag } from "./entities/transaction-tag.entity";
-import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
-import { TagsService } from "./tags.service";
+import { TagsService, countTagReferences } from "./tags.service";
 
 /** One `manage_tags` item: the tag by name, and what to set. */
 export interface ManageTagRow {
@@ -55,8 +53,9 @@ export interface DeleteTagPreview {
   tagId: string;
   name: string;
   /**
-   * The transactions and split lines that carry the tag and lose it, void and
-   * future-dated rows and each leg of a transfer included.
+   * Every row that carries the tag and loses it: transactions, split lines,
+   * scheduled transactions and their split lines, securities. Void and
+   * future-dated rows and each leg of a transfer are included.
    */
   carriedCount: number;
 }
@@ -189,16 +188,16 @@ export class TagToolPrepService {
     // list_tags' useCount (uses to date) measures.
     return withScopedDb(this.dataSource, async (m) => {
       const tag = await this.resolve(m, userId, row.name);
-      const onTransactions = await m.count(TransactionTag, {
-        where: { tagId: tag.id },
-      });
-      const onSplits = await m.count(TransactionSplitTag, {
-        where: { tagId: tag.id },
-      });
+      const n = await countTagReferences(m, tag.id);
       return {
         tagId: tag.id,
         name: tag.name,
-        carriedCount: onTransactions + onSplits,
+        carriedCount:
+          n.transactions +
+          n.transactionSplits +
+          n.scheduledTransactions +
+          n.scheduledSplits +
+          n.securities,
       };
     });
   }

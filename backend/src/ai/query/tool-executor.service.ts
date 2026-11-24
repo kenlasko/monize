@@ -3123,7 +3123,7 @@ export class ToolExecutorService {
           : ` "${name}"`;
         const lost =
           operation === "delete"
-            ? `; it is removed from ${pendingAction.preview.tagCarriedCount ?? 0} transaction(s) and split line(s)`
+            ? `; it is removed from ${pendingAction.preview.tagCarriedCount ?? 0} place(s): transactions, split lines, scheduled transactions and securities`
             : "";
         return {
           data: PENDING_ACTION_TOOL_RESULT,

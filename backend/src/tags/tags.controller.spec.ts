@@ -17,6 +17,7 @@ describe("TagsController", () => {
       update: jest.fn(),
       remove: jest.fn(),
       getTransactionCount: jest.fn(),
+      getDeleteImpact: jest.fn(),
       getAllTransactionCounts: jest.fn(),
       getUsage: jest.fn(),
       setTransactionTags: jest.fn(),
@@ -63,6 +64,20 @@ describe("TagsController", () => {
 
       expect(result).toEqual(expected);
       expect(mockTagsService.findOne).toHaveBeenCalledWith("user-1", "tag-1");
+    });
+  });
+
+  describe("getDeleteImpact()", () => {
+    it("delegates to tagsService.getDeleteImpact with userId and id", async () => {
+      mockTagsService.getDeleteImpact.mockResolvedValue({ transactions: 1 });
+
+      const result = await controller.getDeleteImpact(mockReq, "tag-1");
+
+      expect(result).toEqual({ transactions: 1 });
+      expect(mockTagsService.getDeleteImpact).toHaveBeenCalledWith(
+        "user-1",
+        "tag-1",
+      );
     });
   });
 

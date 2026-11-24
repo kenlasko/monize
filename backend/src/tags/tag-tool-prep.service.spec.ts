@@ -5,8 +5,6 @@ import {
 } from "@nestjs/common";
 import { TagToolPrepService, tagPreviewRow } from "./tag-tool-prep.service";
 import { Tag } from "./entities/tag.entity";
-import { TransactionTag } from "./entities/transaction-tag.entity";
-import { TransactionSplitTag } from "./entities/transaction-split-tag.entity";
 import {
   createScopedDbMocks,
   ManagerMock,
@@ -120,13 +118,19 @@ describe("TagToolPrepService", () => {
   });
 
   describe("delete", () => {
-    it("counts every transaction and split line that loses the tag", async () => {
-      manager.count.mockImplementation(async (entity: unknown) =>
-        entity === TransactionTag ? 3 : entity === TransactionSplitTag ? 2 : 0,
-      );
+    it("counts every place that loses the tag, schedules and securities included", async () => {
+      manager.query.mockResolvedValue([
+        {
+          transactions: "3",
+          splits: "2",
+          scheduled: "1",
+          scheduled_splits: "1",
+          securities: "1",
+        },
+      ]);
       await expect(
         service.prepareDelete(userId, { name: "trip" }),
-      ).resolves.toEqual({ tagId: "tag-trip", name: "Trip", carriedCount: 5 });
+      ).resolves.toEqual({ tagId: "tag-trip", name: "Trip", carriedCount: 8 });
     });
   });
 
@@ -157,7 +161,15 @@ describe("TagToolPrepService", () => {
     });
 
     it("maps a deletion to the tag id", async () => {
-      manager.count.mockResolvedValue(0);
+      manager.query.mockResolvedValue([
+        {
+          transactions: "0",
+          splits: "0",
+          scheduled: "0",
+          scheduled_splits: "0",
+          securities: "0",
+        },
+      ]);
       const result = await service.prepareMany(userId, "delete", [
         { name: "Home" },
       ]);
