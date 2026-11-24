@@ -1241,6 +1241,11 @@ export interface AiActionPreviewRow extends ForeignEntryFields {
    * the card can flag the row before the user approves the batch.
    */
   isReconciled?: boolean;
+  /**
+   * A delete of the receiving leg of a split transfer removes only that line
+   * from the split on this payee and date, so the card says so.
+   */
+  splitLine?: { payeeName: string | null; transactionDate: string };
   // Investment-transaction display fields.
   investmentAction?: InvestmentAction;
   symbol?: string | null;

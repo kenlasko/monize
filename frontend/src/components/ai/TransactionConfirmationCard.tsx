@@ -572,6 +572,18 @@ export function TransactionConfirmationCard({
               {t('confirmAction.reconciledWarning')}
             </p>
           )}
+        {preview.splitLine && type === 'delete_transaction' && (
+          <p className="text-xs text-amber-700 dark:text-amber-400 pt-1">
+            {preview.splitLine.payeeName
+              ? t('confirmAction.splitLineDeleteNote', {
+                  payee: preview.splitLine.payeeName,
+                  date: preview.splitLine.transactionDate,
+                })
+              : t('confirmAction.splitLineDeleteNoteNoPayee', {
+                  date: preview.splitLine.transactionDate,
+                })}
+          </p>
+        )}
         {redemptionSplit?.outcome === 'differs' && isInvestmentTxType && (
           <p className="text-xs text-amber-700 dark:text-amber-400 pt-1">
             {t('confirmAction.redemptionSplitDiffers')}

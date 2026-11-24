@@ -1651,7 +1651,21 @@ export class TransactionTransferService {
     );
 
     const isFromTransaction = Number(transaction.amount) < 0;
-    const fromTransaction = isFromTransaction ? transaction : linkedTransaction;
+    // The receiving leg of a split transfer links to the split PARENT, whose
+    // amount is the total of every line. The source figure of THIS transfer is
+    // its line's: taking the parent's total as "from" priced the transfer at the
+    // whole split, and the commit sent it back as the leg's amount.
+    const splitLine =
+      !isFromTransaction && linkedTransaction.isSplit
+        ? linkedTransaction.splits?.find(
+            (line) => line.linkedTransactionId === transaction.id,
+          )
+        : undefined;
+    const fromTransaction = isFromTransaction
+      ? transaction
+      : splitLine
+        ? ({ ...linkedTransaction, amount: splitLine.amount } as Transaction)
+        : linkedTransaction;
     const toTransaction = isFromTransaction ? linkedTransaction : transaction;
 
     const oldFromAmount = Math.abs(Number(fromTransaction.amount));
@@ -1832,16 +1846,13 @@ export class TransactionTransferService {
       );
     }
 
-    const parentSplit = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(TransactionSplit).findOne({
-        where: { linkedTransactionId: transactionId },
-      }),
-    );
+    // A split-transfer leg never reaches here: `TransactionsService.removeTransfer`
+    // routes it to `removeSplit`, which removes that one line only.
 
     // Cross-owner pair: the owner-scoped read of the linked leg misses. Route
     // to connected (delete both) / frozen (own leg only) / 403 before any
     // deletion; the same-owner path below is untouched.
-    if (!parentSplit && transaction.linkedTransactionId) {
+    if (transaction.linkedTransactionId) {
       let scopedLinked: Transaction | null = null;
       try {
         scopedLinked = await findOne(userId, transaction.linkedTransactionId);
@@ -1855,67 +1866,51 @@ export class TransactionTransferService {
 
     const affectedAccountIds = new Set<string>();
 
-    // Both legs (or the whole split parent) and their balance adjustments are
-    // removed atomically.
+    // Both legs and their balance adjustments are removed atomically.
     await withScopedDb(this.dataSource, async (m) => {
-      if (parentSplit) {
-        await this.removeTransferFromSplitInTransaction(
-          m,
-          parentSplit,
-          transaction,
-          transactionId,
-          affectedAccountIds,
+      // Both legs are locked here, in ascending id order, and their amounts
+      // re-read: the delta each leg reverses must be the version the delete
+      // actually removes, and a fixed lock order is what keeps two concurrent
+      // transfer deletions from holding one another's second leg. A snapshot
+      // taken before the transaction let two deletions each reverse the same
+      // pair of amounts while only one pair of rows went away (P4-003).
+      const legIds = [transactionId];
+      if (transaction.linkedTransactionId) {
+        legIds.push(transaction.linkedTransactionId);
+      }
+      const locked = await lockTransactionRows(m, legIds, userId);
+
+      const ownLeg = locked.get(transactionId);
+      if (!ownLeg) {
+        throw new NotFoundException(
+          tr(
+            "errors.transactions.notFoundById",
+            `Transaction with ID ${transactionId} not found`,
+            { id: transactionId },
+          ),
         );
-      } else {
-        // Both legs are locked here, in ascending id order, and their amounts
-        // re-read: the delta each leg reverses must be the version the delete
-        // actually removes, and a fixed lock order is what keeps two concurrent
-        // transfer deletions from holding one another's second leg. A snapshot
-        // taken before the transaction let two deletions each reverse the same
-        // pair of amounts while only one pair of rows went away (P4-003).
-        const legIds = [transactionId];
-        if (transaction.linkedTransactionId) {
-          legIds.push(transaction.linkedTransactionId);
-        }
-        const locked = await lockTransactionRows(m, legIds, userId);
+      }
+      const linkedLeg = transaction.linkedTransactionId
+        ? locked.get(transaction.linkedTransactionId)
+        : undefined;
 
-        const ownLeg = locked.get(transactionId);
-        if (!ownLeg) {
-          throw new NotFoundException(
-            tr(
-              "errors.transactions.notFoundById",
-              `Transaction with ID ${transactionId} not found`,
-              { id: transactionId },
-            ),
-          );
-        }
-        const linkedLeg = transaction.linkedTransactionId
-          ? locked.get(transaction.linkedTransactionId)
-          : undefined;
+      // Strict reconciled lock. Both legs are one movement of money, so a
+      // reconciled leg refuses the deletion of the pair -- deleting only the
+      // unreconciled half is the divergent state the transfer routes exist
+      // to prevent.
+      await assertReconciledRowsMutable(
+        m,
+        userId,
+        [linkedLeg, ownLeg].filter((leg) => leg !== undefined),
+      );
 
-        // Strict reconciled lock. Both legs are one movement of money, so a
-        // reconciled leg refuses the deletion of the pair -- deleting only the
-        // unreconciled half is the divergent state the transfer routes exist
-        // to prevent.
-        await assertReconciledRowsMutable(
-          m,
-          userId,
-          [linkedLeg, ownLeg].filter((leg) => leg !== undefined),
-        );
-
-        for (const leg of [linkedLeg, ownLeg]) {
-          if (!leg) continue;
-          affectedAccountIds.add(leg.accountId);
-          // Conditional delete, reverse only what this call removed, VOID rows
-          // reverse nothing, future-dated rows recompute. Shared with split
-          // removal so the sequence exists once (see remove-transaction-leg.ts).
-          await removeLockedTransactionLeg(
-            m,
-            leg,
-            userId,
-            this.accountsService,
-          );
-        }
+      for (const leg of [linkedLeg, ownLeg]) {
+        if (!leg) continue;
+        affectedAccountIds.add(leg.accountId);
+        // Conditional delete, reverse only what this call removed, VOID rows
+        // reverse nothing, future-dated rows recompute. Shared with split
+        // removal so the sequence exists once (see remove-transaction-leg.ts).
+        await removeLockedTransactionLeg(m, leg, userId, this.accountsService);
       }
     });
 
@@ -1996,80 +1991,6 @@ export class TransactionTransferService {
       await withScopedDb(this.dataSource, (m) => removeLeg(m, ownLeg));
     }
     this.triggerNetWorthRecalc(ownLeg.accountId, ownLeg.userId);
-  }
-
-  private async removeTransferFromSplitInTransaction(
-    m: EntityManager,
-    parentSplit: TransactionSplit,
-    transaction: Transaction,
-    transactionId: string,
-    affectedAccountIds: Set<string>,
-  ): Promise<void> {
-    const userId = transaction.userId;
-    const parentTransactionId = parentSplit.transactionId;
-
-    // The split parent first, on its own, and only then its legs.
-    //
-    // A single sorted batch over parent-plus-legs looks tidier and deadlocks:
-    // `TransactionSplitService.removeSplit` cannot know a leg id before it has
-    // read the split, so it necessarily locks the parent and *then* the leg. A
-    // batch that sorts the two together takes them in id order instead, which is
-    // the opposite order whenever the leg's UUID sorts first -- and two requests
-    // in opposite orders is a PostgreSQL 40P01 for both (audit RV4-005).
-    //
-    // So the ordering rule is by *role*, not by id: parent before legs, legs
-    // among themselves ascending. The parent lock is then the serialization
-    // point -- any two paths touching the same parent's legs have already
-    // queued behind it, so their leg order cannot matter. See common/db/locks.ts.
-    const parent = await lockTransactionRow(m, parentTransactionId, userId);
-
-    const allSplits = await m.find(TransactionSplit, {
-      where: { transactionId: parentTransactionId },
-    });
-    const siblingLegIds = allSplits
-      .map((split) => split.linkedTransactionId)
-      .filter((id): id is string => Boolean(id) && id !== transactionId);
-
-    // Now the legs, in one ascending batch. Locking each as it is reached is what
-    // let two removals interleave and each reverse the same amount; every reversal
-    // below derives its amount from the locked row and only fires when this call
-    // is the one that removed it (audit FV4-002).
-    const locked = await lockTransactionRows(
-      m,
-      [...siblingLegIds, transaction.id],
-      userId,
-    );
-
-    // Strict reconciled lock over everything this deletion removes: the
-    // parent, its category lines with it, and every leg (A26-M11). The
-    // same-owner pair path asserts its two legs; this branch asserted nothing.
-    await assertReconciledRowsMutable(
-      m,
-      userId,
-      [parent, ...locked.values()].filter(
-        (row): row is LockedTransactionRow => row !== null,
-      ),
-    );
-
-    if (parent) {
-      for (const legId of siblingLegIds) {
-        const leg = locked.get(legId);
-        if (!leg) continue;
-        affectedAccountIds.add(leg.accountId);
-        await removeLockedTransactionLeg(m, leg, userId, this.accountsService);
-      }
-
-      await m.remove(allSplits);
-
-      affectedAccountIds.add(parent.accountId);
-      await removeLockedTransactionLeg(m, parent, userId, this.accountsService);
-    }
-
-    affectedAccountIds.add(transaction.accountId);
-    const ownLeg = locked.get(transaction.id);
-    if (ownLeg) {
-      await removeLockedTransactionLeg(m, ownLeg, userId, this.accountsService);
-    }
   }
 
   async updateTransfer(
@@ -3175,6 +3096,30 @@ export class TransactionTransferService {
     const parentHasOneLine =
       roundMoney(Math.abs(Number(parentTransaction.amount)), parentDecimals) ===
       roundMoney(Math.abs(Number(parentSplit.amount)), parentDecimals);
+    // Same currency: `amount` is this leg's own figure, so the parent's total
+    // arriving as `amount` on a multi-line parent is the echo the old form sent
+    // (`transferSourceLeg` read the parent). It would re-price this line to the
+    // whole split and move both balances, so it is refused, not applied.
+    // A value equal to the leg's current amount is no change and passes.
+    if (
+      !crossCurrency &&
+      !parentHasOneLine &&
+      updateDto.amount !== undefined &&
+      roundMoney(Math.abs(updateDto.amount), legDecimals) ===
+        roundMoney(
+          Math.abs(Number(parentTransaction.amount)),
+          parentDecimals,
+        ) &&
+      roundMoney(Math.abs(updateDto.amount), legDecimals) !==
+        roundMoney(Math.abs(Number(counterpart.amount)), legDecimals)
+    ) {
+      throw new BadRequestException(
+        tr(
+          "errors.transactions.splitTransferLegAmountIsParentTotal",
+          "This amount is the total of the whole split, not of this transfer line. Edit the split on the source transaction to change the line's amount.",
+        ),
+      );
+    }
     const explicitSourceAmount =
       crossCurrency &&
       parentHasOneLine &&

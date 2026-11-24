@@ -1367,8 +1367,9 @@ Enforcement         assertReconciledRowsMutable / assertReconciledIdsMutable
                     updateTransfer and each branch they hand off to, scanned on
                     its own (updateSplitTransferLeg,
                     updateConnectedCrossOwnerTransfer, updateFrozenTransferLeg,
-                    removeCrossOwnerTransfer,
-                    removeTransferFromSplitInTransaction; an assertion in one
+                    removeCrossOwnerTransfer; the delete of a
+                    split-transfer leg is TransactionSplitService.removeSplit,
+                    listed below; an assertion in one
                     branch no longer satisfies the whole route, A26-M11). A
                     cross-owner leg is asked under its own owner's setting,
                     since each owner reconciles their own statement.

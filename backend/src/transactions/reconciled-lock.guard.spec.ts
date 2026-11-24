@@ -86,12 +86,6 @@ const ENFORCEMENT_SITES: {
     beforeWrite: "removeLockedTransactionLeg(",
   },
   {
-    file: "transaction-transfer.service.ts",
-    fn: "private async removeTransferFromSplitInTransaction(",
-    why: "DELETE .../transfer on a split-transfer leg: the parent and every leg",
-    beforeWrite: "removeLockedTransactionLeg(",
-  },
-  {
     file: "transaction-bulk-update.service.ts",
     fn: "async bulkUpdate(",
     why: "POST /transactions/bulk-update, the route a single-row refusal is walked around by",

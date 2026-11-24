@@ -8498,119 +8498,16 @@ describe("TransactionsService", () => {
   });
 
   describe("removeTransfer with parent split", () => {
-    it("deletes parent transaction and all splits when removing linked transaction from split", async () => {
+    // The receiving leg of a split transfer is one line of the split: deleting
+    // it removes that line and re-totals the parent (kenlasko/monize#2366),
+    // through the same `removeSplit` the split editor uses. The old path deleted
+    // the parent, every line and every sibling leg.
+    it("removes only that transfer line through removeSplit, never the parent or sibling legs", async () => {
       const linkedTx = {
         id: "linked-tx-1",
         userId: "user-1",
         accountId: "account-2",
         amount: 40,
-        isTransfer: true,
-        linkedTransactionId: "tx-parent",
-        splits: [],
-      };
-
-      // This is a linked transaction from a split
-      const parentSplit = {
-        id: "parent-split-1",
-        transactionId: "tx-parent",
-        linkedTransactionId: "linked-tx-1",
-      };
-      splitsRepository.findOne.mockResolvedValue(parentSplit);
-
-      const parentTx = {
-        id: "tx-parent",
-        userId: "user-1",
-        accountId: "account-1",
-        amount: -100,
-        status: TransactionStatus.UNRECONCILED,
-      };
-
-      const anotherLinkedTx = {
-        id: "another-linked-tx",
-        accountId: "account-3",
-        amount: 60,
-      };
-
-      // The access check reads the named leg; the split parent is then locked on
-      // its own, *before* its legs, because a batch sorting parent and legs
-      // together would take them in the opposite order from `removeSplit`
-      // whenever a leg's UUID sorts first (audit RV4-005). The sibling legs come
-      // through the batch reader.
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(linkedTx)
-        .mockResolvedValueOnce(parentTx);
-      transactionsRepository.find.mockResolvedValue([
-        parentTx,
-        anotherLinkedTx,
-      ]);
-
-      const allSplits = [
-        {
-          id: "split-1",
-          transactionId: "tx-parent",
-          linkedTransactionId: "linked-tx-1",
-          transferAccountId: "account-2",
-        },
-        {
-          id: "split-2",
-          transactionId: "tx-parent",
-          linkedTransactionId: "another-linked-tx",
-          transferAccountId: "account-3",
-        },
-      ];
-      mockQueryRunner.manager.find.mockResolvedValueOnce(allSplits);
-
-      await service.removeTransfer("user-1", "linked-tx-1");
-
-      // Should revert balance for the other linked transaction
-      expect(accountsService.updateBalance).toHaveBeenCalledWith(
-        "account-3",
-        -60,
-      );
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: "another-linked-tx",
-        userId: "user-1",
-      });
-
-      // Should remove all splits -- they carry no balance, so `remove` is fine
-      expect(mockQueryRunner.manager.remove).toHaveBeenCalledWith(allSplits);
-
-      // Should revert parent transaction balance and remove
-      expect(accountsService.updateBalance).toHaveBeenCalledWith(
-        "account-1",
-        100,
-      );
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: "tx-parent",
-        userId: "user-1",
-      });
-
-      // Should revert the linked transaction's own balance and remove it
-      expect(accountsService.updateBalance).toHaveBeenCalledWith(
-        "account-2",
-        -40,
-      );
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: "linked-tx-1",
-        userId: "user-1",
-      });
-      expect(transactionsRepository.remove).not.toHaveBeenCalledWith(linkedTx);
-    });
-
-    it("reverses nothing when the whole VOID split is deleted (RR4-001)", async () => {
-      // `removeParentTransaction` guarded the deleted row and the split parent on
-      // status, and the sibling counterpart loop in the same function did not. So
-      // deleting one leg under a VOID split parent debited every OTHER target
-      // account by its own amount -- money out of nothing, from a plain
-      // `DELETE /transactions/:id`. Every reversal now goes through one
-      // inclusion-aware helper.
-      const linkedTx = {
-        id: "linked-tx-1",
-        userId: "user-1",
-        accountId: "account-2",
-        amount: 40,
-        status: TransactionStatus.VOID,
-        transactionDate: "2020-01-01",
         isTransfer: true,
         linkedTransactionId: "tx-parent",
         splits: [],
@@ -8620,66 +8517,41 @@ describe("TransactionsService", () => {
         transactionId: "tx-parent",
         linkedTransactionId: "linked-tx-1",
       });
-
-      const parentTx = {
-        id: "tx-parent",
-        userId: "user-1",
-        accountId: "account-1",
-        amount: -100,
-        status: TransactionStatus.VOID,
-        transactionDate: "2020-01-01",
-      };
-      const siblingLeg = {
-        id: "another-linked-tx",
-        accountId: "account-3",
-        amount: 30,
-        status: TransactionStatus.VOID,
-        transactionDate: "2020-01-01",
-      };
-
-      // The access check reads the named leg through the caller's findOne; the
-      // split parent is then locked on its own and the sibling legs come through
-      // the batch lock reader (both served from the repository mocks, per the
-      // merged parent-before-legs lock ordering). The splits themselves are read
-      // from the scoped manager.
-      transactionsRepository.findOne
-        .mockResolvedValueOnce(linkedTx)
-        .mockResolvedValueOnce(parentTx);
-      transactionsRepository.find.mockResolvedValue([parentTx, siblingLeg]);
-      mockQueryRunner.manager.find.mockResolvedValueOnce([
-        {
-          id: "split-1",
-          transactionId: "tx-parent",
-          linkedTransactionId: "linked-tx-1",
-          transferAccountId: "account-2",
-        },
-        {
-          id: "split-2",
-          transactionId: "tx-parent",
-          linkedTransactionId: "another-linked-tx",
-          transferAccountId: "account-3",
-        },
-      ]);
+      transactionsRepository.findOne.mockResolvedValue(linkedTx);
+      const removeSplit = jest
+        .spyOn(service, "removeSplit")
+        .mockResolvedValue(undefined);
 
       await service.removeTransfer("user-1", "linked-tx-1");
 
-      // None of the three rows contributed to a balance, so none is reversed.
+      expect(removeSplit).toHaveBeenCalledWith(
+        "user-1",
+        "tx-parent",
+        "parent-split-1",
+      );
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
-      // All of them are still removed: the record of an event that did not
-      // happen. Rows go via the conditional DELETE (removeLockedTransactionLeg
-      // -> m.delete { id, userId }), not manager.remove(entity).
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: "another-linked-tx",
-        userId: "user-1",
+    });
+
+    it("refuses a row that is not a transfer before touching the split", async () => {
+      splitsRepository.findOne.mockResolvedValue({
+        id: "parent-split-1",
+        transactionId: "tx-parent",
+        linkedTransactionId: "linked-tx-1",
       });
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: "tx-parent",
-        userId: "user-1",
-      });
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
+      transactionsRepository.findOne.mockResolvedValue({
         id: "linked-tx-1",
         userId: "user-1",
+        isTransfer: false,
       });
+      const removeSplit = jest
+        .spyOn(service, "removeSplit")
+        .mockResolvedValue(undefined);
+
+      await expect(
+        service.removeTransfer("user-1", "linked-tx-1"),
+      ).rejects.toThrow(BadRequestException);
+      expect(removeSplit).not.toHaveBeenCalled();
     });
   });
 
@@ -11703,6 +11575,40 @@ describe("TransactionsService", () => {
       const preview = await service.previewDelete("user-1", "tx-1");
 
       expect(preview.isReconciled).toBe(true);
+    });
+
+    it("names the split a split-transfer leg's delete removes its line from", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({
+          id: "leg-1",
+          userId: "user-1",
+          amount: 40,
+          isTransfer: true,
+          transactionDate: "2026-01-16",
+          currencyCode: "USD",
+          account: { name: "Savings" },
+        })
+        .mockResolvedValueOnce({
+          id: "tx-parent",
+          userId: "user-1",
+          amount: -100,
+          payeeName: "Costco",
+          transactionDate: "2026-01-15",
+          currencyCode: "USD",
+          account: { name: "Checking" },
+        });
+      splitsRepository.findOne.mockResolvedValue({
+        id: "split-1",
+        transactionId: "tx-parent",
+        linkedTransactionId: "leg-1",
+      });
+
+      const preview = await service.previewDelete("user-1", "leg-1");
+
+      expect(preview.splitLine).toEqual({
+        payeeName: "Costco",
+        transactionDate: "2026-01-15",
+      });
     });
   });
 

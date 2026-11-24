@@ -664,8 +664,8 @@ export class TransactionBulkUpdateService {
       // split rows and left every sibling leg standing with its money: a
       // -100.00 split to B (60.00) and C (40.00), bulk-deleted from B's
       // register, left C at 40.00 with nothing on the other side (A26-H05). So
-      // a selected leg brings its parent's whole set, the way the single
-      // delete does (`removeTransferFromSplitInTransaction`).
+      // a selected leg brings its parent's whole set. (The single
+      // delete of a leg removes only that line, `removeSplit`, kenlasko/monize#2366.)
       const legParents = await m.find(TransactionSplit, {
         select: { transactionId: true },
         where: { linkedTransactionId: In([...transactionIdsSet]) },

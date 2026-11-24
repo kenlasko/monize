@@ -882,6 +882,7 @@
     "notATransfer": "[XX-Transaction is not a transfer-XX]",
     "splitTransferLegAccountLocked": "[XX-This transfer is part of a split transaction. Change its accounts by editing the split on the source transaction instead.-XX]",
     "splitTransferLegStatusLocked": "[XX-This transfer is part of a split transaction. Void or restore it by editing the split transaction it belongs to, so both sides change together.-XX]",
+    "splitTransferLegAmountIsParentTotal": "[XX-This amount is the total of the whole split, not of this transfer line. Edit the split on the source transaction to change the line's amount.-XX]",
     "investmentCashLegLocked": "[XX-This transaction is the cash side of an investment transaction. Change or delete the investment transaction instead, so both sides change together.-XX]",
     "investmentCashLegStatusLocked": "[XX-This transaction is the cash side of an investment transaction. Void or restore it by changing the investment transaction's status, so both sides change together.-XX]",
     "notFoundById": "[XX-Transaction with ID {{ id }} not found-XX]",

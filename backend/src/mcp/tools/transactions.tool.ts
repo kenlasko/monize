@@ -1797,7 +1797,7 @@ export class McpTransactionsTools {
         ctx,
         userId,
         action,
-        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${preview.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`,
+        `Delete this transaction?\nAccount: ${preview.accountName}\nAmount: ${preview.amount} ${preview.currencyCode}\nDate: ${preview.transactionDate}${preview.splitLine ? `\nThis removes only this transfer line from the split transaction${preview.splitLine.payeeName ? ` with ${preview.splitLine.payeeName}` : ""} dated ${preview.splitLine.transactionDate}, and re-totals the split. The split and its other lines stay.` : ""}${preview.isReconciled ? RECONCILED_CONFIRM_NOTE : ""}`,
       );
       if (isAsk(outcome)) return outcome.ask;
       if (outcome === "relay") return toolResult(RELAY_PREVIEW_SHOWN);

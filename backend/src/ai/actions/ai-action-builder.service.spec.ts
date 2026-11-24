@@ -984,6 +984,25 @@ describe("AiActionBuilderService", () => {
     });
   });
 
+  it("carries the split a delete of a split-transfer leg removes its line from", () => {
+    const action = builder.buildDeleteTransaction("u1", {
+      transactionId: "leg1",
+      accountName: "Savings",
+      amount: 40,
+      transactionDate: "2025-04-02",
+      payeeName: null,
+      categoryName: null,
+      description: null,
+      currencyCode: "USD",
+      isReconciled: false,
+      splitLine: { payeeName: "Costco", transactionDate: "2025-04-01" },
+    });
+
+    expect(action.preview).toMatchObject({
+      splitLine: { payeeName: "Costco", transactionDate: "2025-04-01" },
+    });
+  });
+
   it("builds an update_investment_transaction action", () => {
     const preview: UpdateInvestmentTransactionPreview = {
       transactionId: "it1",

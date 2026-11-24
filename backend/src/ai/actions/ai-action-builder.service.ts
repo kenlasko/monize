@@ -743,6 +743,7 @@ export class AiActionBuilderService {
         categoryName: preview.categoryName,
         description: preview.description,
         isReconciled: preview.isReconciled,
+        ...(preview.splitLine ? { splitLine: preview.splitLine } : {}),
       },
     };
   }

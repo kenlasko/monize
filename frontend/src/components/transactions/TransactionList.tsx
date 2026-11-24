@@ -12,6 +12,7 @@ import { CategoryBudgetStatus } from '@/types/budget';
 import { transactionsApi } from '@/lib/transactions';
 import { investmentsApi } from '@/lib/investments';
 import { getErrorMessage } from '@/lib/errors';
+import { splitTransferParent } from '@/lib/split-transfer-leg';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ListTopToolbar, LIST_TOOLBAR_BUTTON_CLASS } from '@/components/ui/ListTopToolbar';
 import { ColumnChooserMenu, type ColumnChooserItem } from '@/components/ui/ColumnChooserMenu';
@@ -509,6 +510,11 @@ export function TransactionList({
   const handleDeleteCancel = useCallback(() => {
     setDeleteConfirm({ isOpen: false, transaction: null });
   }, []);
+
+  // The receiving leg of a split transfer deletes as one line of that split.
+  const splitParent = deleteConfirm.transaction
+    ? splitTransferParent(deleteConfirm.transaction)
+    : null;
 
   // Whether the strict lock is on, which is what makes a reconcile from this
   // register a one-way door after the undo window closes.
@@ -1364,16 +1370,24 @@ export function TransactionList({
         title={
           deleteConfirm.transaction?.linkedInvestmentTransactionId
             ? t('list.delete.investmentTitle')
-            : deleteConfirm.transaction?.isTransfer
-              ? t('list.delete.transferTitle')
-              : t('list.delete.transactionTitle')
+            : splitParent
+              ? t('list.delete.splitLegTitle')
+              : deleteConfirm.transaction?.isTransfer
+                ? t('list.delete.transferTitle')
+                : t('list.delete.transactionTitle')
         }
         message={
           (deleteConfirm.transaction?.linkedInvestmentTransactionId
             ? t('list.delete.investmentMessage')
-            : deleteConfirm.transaction?.isTransfer
-              ? t('list.delete.transferMessage')
-              : t('list.delete.transactionMessage')) +
+            : splitParent
+              ? t('list.delete.splitLegMessage', {
+                  hasPayee: splitParent.payeeName ? 'true' : 'false',
+                  payee: splitParent.payeeName ?? '',
+                  date: formatDate(splitParent.transactionDate),
+                })
+              : deleteConfirm.transaction?.isTransfer
+                ? t('list.delete.transferMessage')
+                : t('list.delete.transactionMessage')) +
           (deleteConfirm.transaction?.status === TransactionStatus.RECONCILED
             ? ` ${t('list.delete.reconciledWarning')}`
             : '')

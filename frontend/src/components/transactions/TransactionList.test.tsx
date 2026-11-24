@@ -1531,6 +1531,36 @@ describe('TransactionList', () => {
       });
     });
 
+    it('says a split transfer leg removes only its line from the split', async () => {
+      const tx = createTransaction({
+        isTransfer: true,
+        linkedTransactionId: 'split-parent',
+        linkedTransaction: createTransaction({
+          id: 'split-parent',
+          isSplit: true,
+          payeeName: 'Costco',
+          transactionDate: '2024-01-15',
+        }),
+      });
+
+      render(
+        <TransactionList
+          transactions={[tx]}
+          onEdit={mockOnEdit}
+          onRefresh={mockOnRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Delete'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Remove Transfer from Split')).toBeInTheDocument();
+        expect(screen.getByText(/removes only this line and re-totals the split/)).toBeInTheDocument();
+        expect(screen.getByText(/with Costco/)).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/Both linked transactions/)).not.toBeInTheDocument();
+    });
+
     it('deletes transaction when confirm is clicked', async () => {
       const { transactionsApi } = await import('@/lib/transactions');
       vi.mocked(transactionsApi.delete).mockResolvedValueOnce(undefined);

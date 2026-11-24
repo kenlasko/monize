@@ -208,6 +208,29 @@ describe('TransactionConfirmationCard', () => {
     expect(screen.getByText(/reconciled/i)).toBeInTheDocument();
   });
 
+  it('says a delete of a split transfer leg removes only that line from the split', () => {
+    render(
+      <TransactionConfirmationCard
+        action={makeAction({
+          type: 'delete_transaction',
+          descriptor: { type: 'delete_transaction' },
+          preview: {
+            accountName: 'Savings',
+            amount: 40,
+            currencyCode: 'USD',
+            transactionDate: '2026-01-15',
+            payeeName: null,
+            categoryName: null,
+            splitLine: { payeeName: 'Costco', transactionDate: '2026-01-14' },
+          },
+        })}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/removes only this transfer line from the split transaction with Costco dated 2026-01-14/)).toBeInTheDocument();
+  });
+
   it('shows the reference number an update sets, and no row when it sets none', () => {
     const update = (referenceNumber?: string) =>
       makeAction({

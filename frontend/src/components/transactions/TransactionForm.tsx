@@ -92,6 +92,7 @@ import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { NoteLinks } from '@/components/ui/LinkifiedText';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 import type { TransactionFormDraft } from './transaction-form-draft';
+import { splitTransferParent, splitTransferLine } from '@/lib/split-transfer-leg';
 
 const logger = createLogger('TransactionForm');
 
@@ -120,8 +121,19 @@ function transferSourceAmount(source: Transaction): number {
   return Math.abs(Number(transferSourceLeg(source).amount));
 }
 
-/** The FROM (negative) leg of a transfer, whichever leg the form was opened on. */
+/**
+ * The FROM (negative) leg of a transfer, whichever leg the form was opened on.
+ * For the receiving leg of a split transfer the linked row is the split PARENT,
+ * whose amount is the total of every line, so the source figure is the line's
+ * own (the parent's currency); a line that was not loaded falls back to this
+ * leg, never to the parent's total, which would re-price the transfer on save.
+ */
 function transferSourceLeg(source: Transaction): Transaction {
+  const parent = splitTransferParent(source);
+  if (parent) {
+    const line = splitTransferLine(source);
+    return { ...parent, amount: line ? line.amount : -Math.abs(Number(source.amount)) };
+  }
   const linked = source.linkedTransaction;
   return Number(source.amount) >= 0 && linked ? linked : source;
 }

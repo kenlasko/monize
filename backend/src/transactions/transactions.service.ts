@@ -518,6 +518,12 @@ export interface DeleteTransactionPreview {
    * completed reconciliation, so the confirmation surfaces flag this.
    */
   isReconciled: boolean;
+  /**
+   * Set when the target is the receiving leg of a split transfer: the delete
+   * removes only that transfer line from this split transaction and re-totals
+   * it, never the split itself.
+   */
+  splitLine?: { payeeName: string | null; transactionDate: string };
 }
 
 export { TransferResult };
@@ -1886,8 +1892,24 @@ export class TransactionsService {
     transactionId: string,
   ): Promise<DeleteTransactionPreview> {
     const existing = await this.findOne(userId, transactionId);
+    const parentSplit = existing.isTransfer
+      ? await this.splitService.getTransferSplitByLinkedTransaction(
+          transactionId,
+        )
+      : null;
+    const splitParent = parentSplit
+      ? await this.findOne(userId, parentSplit.transactionId)
+      : null;
     return {
       transactionId,
+      ...(splitParent
+        ? {
+            splitLine: {
+              payeeName: splitParent.payeeName ?? null,
+              transactionDate: splitParent.transactionDate,
+            },
+          }
+        : {}),
       accountName: existing.account?.name ?? "",
       amount: Number(existing.amount),
       transactionDate: existing.transactionDate,
@@ -4991,6 +5013,29 @@ export class TransactionsService {
     transactionId: string,
     actor?: TransferActor,
   ): Promise<void> {
+    // The receiving leg of a split transfer is one line of the split, not a
+    // whole transfer: remove that line and re-total the parent, leaving the
+    // parent and its other lines in place (kenlasko/monize#2366).
+    const parentSplit =
+      await this.splitService.getTransferSplitByLinkedTransaction(
+        transactionId,
+      );
+    if (parentSplit) {
+      const leg = await this.findOne(userId, transactionId);
+      if (!leg.isTransfer) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.notATransfer",
+            "Transaction is not a transfer",
+          ),
+        );
+      }
+      return this.removeSplit(
+        userId,
+        parentSplit.transactionId,
+        parentSplit.id,
+      );
+    }
     return this.transferService.removeTransfer(
       userId,
       transactionId,

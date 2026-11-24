@@ -156,6 +156,8 @@
     "rowSkippedBadge": "[XX-Skipped-XX]",
     "reconciledBadge": "[XX-Reconciled-XX]",
     "reconciledWarning": "[XX-This transaction is reconciled. Changing it will affect a completed reconciliation.-XX]",
+    "splitLineDeleteNote": "[XX-This removes only this transfer line from the split transaction with {payee} dated {date}, and re-totals the split. The split and its other lines stay.-XX]",
+    "splitLineDeleteNoteNoPayee": "[XX-This removes only this transfer line from the split transaction dated {date}, and re-totals the split. The split and its other lines stay.-XX]",
     "investmentActions": {
       "BUY": "[XX-Buy-XX]",
       "SELL": "[XX-Sell-XX]",

@@ -411,6 +411,8 @@ export interface PendingActionPreview extends PendingActionForeignEntry {
    * disturb a completed reconciliation.
    */
   isReconciled?: boolean;
+  /** A delete of a split transfer's receiving leg removes only that line from this split. */
+  splitLine?: { payeeName: string | null; transactionDate: string };
   /**
    * Category-split lines for a split create_transaction / update_transaction.
    * When present the card shows the breakdown in place of the single category.
