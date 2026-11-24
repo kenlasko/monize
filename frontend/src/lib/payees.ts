@@ -1,4 +1,5 @@
 import apiClient from './api';
+import type { RecordInUseEntry } from './errors';
 import {
   Payee,
   CreatePayeeData,
@@ -307,3 +308,26 @@ export const payeesApi = {
     return response.data;
   },
 };
+
+/** Where a payee's items of one kind can be seen (a list page where no filtered view exists). */
+export function payeeInUseHref(payeeId: string, entry: RecordInUseEntry): string | undefined {
+  switch (entry.kind) {
+    case 'transactions':
+      return `/transactions?payeeId=${payeeId}`;
+    case 'scheduledTransactions':
+      return '/bills';
+    case 'warranties':
+      return '/warranties';
+    case 'emailReceiptParsers':
+      return '/settings/email-receipts';
+    case 'loanOverpaymentPayee':
+      return entry.ids?.length === 1 ? `/accounts/${entry.ids[0]}` : '/accounts';
+    case 'sharedPeople':
+    case 'sharedPostings':
+      return '/shared-expenses';
+    case 'rules':
+      return '/rules';
+    default:
+      return undefined;
+  }
+}

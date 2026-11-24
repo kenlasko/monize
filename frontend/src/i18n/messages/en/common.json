@@ -281,5 +281,18 @@
   },
   "scheduledOverdue": {
     "included": "Includes {count, plural, one {# overdue scheduled transaction} other {# overdue scheduled transactions}}"
+  },
+  "recordInUse": {
+    "intro": "It cannot be deleted while these items use it. Open one to see it:",
+    "kinds": {
+      "transactions": "{count, plural, one {# transaction} other {# transactions}}",
+      "scheduledTransactions": "{count, plural, one {# scheduled transaction} other {# scheduled transactions}}",
+      "warranties": "{count, plural, one {# warranty} other {# warranties}}",
+      "emailReceiptParsers": "{count, plural, one {# email receipt profile} other {# email receipt profiles}}",
+      "loanOverpaymentPayee": "{count, plural, one {# loan account (overpayment payee)} other {# loan accounts (overpayment payee)}}",
+      "sharedPeople": "{count, plural, one {# shared-expense person} other {# shared-expense people}}",
+      "sharedPostings": "{count, plural, one {# shared-expense posting} other {# shared-expense postings}}",
+      "rules": "{count, plural, one {# rule} other {# rules}}"
+    }
   }
 }
