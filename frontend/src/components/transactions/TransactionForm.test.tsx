@@ -4420,6 +4420,35 @@ describe('TransactionForm', () => {
       });
     });
 
+    it("defaults a new form and a duplicate to the user's day, not the browser's", async () => {
+      // 2026-11-23T20:00Z is already Nov 24 in Pacific/Kiritimati; the UTC
+      // test process still reads Nov 23.
+      vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-23T20:00:00Z') });
+      usePreferencesStore.setState({ preferences: { timezone: 'Pacific/Kiritimati' } as never });
+      try {
+        sessionStorage.clear();
+        const fresh = render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+        await waitFor(() => {
+          expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2026-11-24');
+        });
+        fresh.unmount();
+
+        render(
+          <TransactionForm
+            duplicateFrom={createExistingTransaction({ transactionDate: '2020-06-01' })}
+            onSuccess={mockOnSuccess}
+            onCancel={mockOnCancel}
+          />,
+        );
+        await waitFor(() => {
+          expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2026-11-24');
+        });
+      } finally {
+        act(() => usePreferencesStore.setState({ preferences: null }));
+        vi.useRealTimers();
+      }
+    });
+
     it('pre-fills description from source transaction and submits it via create', async () => {
       const source = createExistingTransaction({ amount: -75.5, description: 'Monthly bill' });
       mockCreate.mockResolvedValueOnce({});

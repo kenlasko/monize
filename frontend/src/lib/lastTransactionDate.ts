@@ -1,5 +1,3 @@
-import { getLocalDateString } from './utils';
-
 /**
  * Remembers the date a user last entered when creating a transaction, so the
  * next new-transaction form pre-fills the same date instead of resetting to
@@ -20,10 +18,11 @@ const REMEMBER_DURATION_MS = 60 * 60 * 1000; // 1 hour
 /**
  * Return the remembered transaction date for the given key if it was saved
  * within the last hour; otherwise today's local date. Expired or unparseable
- * entries are cleaned up as a side effect.
+ * entries are cleaned up as a side effect. `today` is the user's day
+ * (`useFinancialToday()`), never the browser's.
  */
-export function getRememberedTransactionDate(key: string): string {
-  if (typeof window === 'undefined') return getLocalDateString();
+export function getRememberedTransactionDate(key: string, today: string): string {
+  if (typeof window === 'undefined') return today;
   const stored = sessionStorage.getItem(key);
   if (stored) {
     try {
@@ -36,7 +35,7 @@ export function getRememberedTransactionDate(key: string): string {
     }
     sessionStorage.removeItem(key);
   }
-  return getLocalDateString();
+  return today;
 }
 
 /**

@@ -42,7 +42,7 @@ import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Modal } from '@/components/ui/Modal';
 import { TagForm } from '@/components/tags/TagForm';
 import { transactionsApi } from '@/lib/transactions';
-import { getLocalDateString, resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso, formatDatetimeLocal, parseDatetimeFromFormat } from '@/lib/utils';
+import { resolveTimezone, isoToDatetimeLocal, datetimeLocalToIso, formatDatetimeLocal, parseDatetimeFromFormat } from '@/lib/utils';
 import {
   LAST_TRANSACTION_DATE_KEY,
   getRememberedTransactionDate,
@@ -67,6 +67,7 @@ import { useContactLookupAvailable } from '@/hooks/useContactLookupAvailable';
 import { usePayeeContactLookup } from '@/hooks/usePayeeContactLookup';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { buildCategoryTree, signAmountByCategory } from '@/lib/categoryUtils';
+import { useFinancialToday } from '@/hooks/useFinancialToday';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -299,6 +300,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
   const showCreatedAt = usePreferencesStore((s) => s.preferences?.showCreatedAt ?? false);
   const timeFormat = usePreferencesStore((s) => s.preferences?.timeFormat ?? '24h');
   const timezonePref = usePreferencesStore((s) => s.preferences?.timezone);
+  const userToday = useFinancialToday();
   const [isLoading, setIsLoading] = useState(false);
   // Set on the click, before validation resolves: `isLoading` is set only
   // once it has, so it cannot stop a second click from creating the row twice.
@@ -516,7 +518,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
             ? initialTransferAccounts.fromAccountId
             : initSource.accountId,
           // For duplicates, use today's date; for edits, use the original date
-          transactionDate: duplicateFrom ? getLocalDateString() : initSource.transactionDate,
+          transactionDate: duplicateFrom ? userToday : initSource.transactionDate,
           payeeId: initSource.payeeId || '',
           payeeName: initSource.payeeName || '',
           categoryId: initSource.categoryId || '',
@@ -540,7 +542,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
             // account effect below, for whichever account the draft names.
             categoryId: draftCategoryId || '',
             transactionDate:
-              newEntryDraft.date || defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
+              newEntryDraft.date || defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY, userToday),
             // A foreign figure's account-currency amount is derived from it once
             // the rate arrives, so the draft's own is not seeded beside it.
             ...(newEntryDraft.amount !== undefined && !draftForeign ? { amount: newEntryDraft.amount } : {}),
@@ -553,7 +555,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
             payeeId: defaultPayee?.id || '',
             payeeName: defaultPayee?.name || '',
             categoryId: payeeCategoryId || defaultCategoryId || '',
-            transactionDate: defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY),
+            transactionDate: defaultDate || getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY, userToday),
             currencyCode: defaultCurrency,
             status: TransactionStatus.UNRECONCILED,
           },

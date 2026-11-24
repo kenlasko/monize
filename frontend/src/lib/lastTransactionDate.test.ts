@@ -34,8 +34,8 @@ describe('lastTransactionDate', () => {
     it('keeps each key independent', () => {
       rememberTransactionDate(LAST_TRANSACTION_DATE_KEY, '2026-01-01');
       rememberTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY, '2026-12-31');
-      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY)).toBe('2026-01-01');
-      expect(getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY)).toBe(
+      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY, getLocalDateString())).toBe('2026-01-01');
+      expect(getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY, getLocalDateString())).toBe(
         '2026-12-31',
       );
     });
@@ -43,9 +43,13 @@ describe('lastTransactionDate', () => {
 
   describe('getRememberedTransactionDate', () => {
     it('returns today when nothing is stored', () => {
-      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY)).toBe(
+      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY, getLocalDateString())).toBe(
         getLocalDateString(),
       );
+    });
+
+    it("returns the day it is given, not the browser's", () => {
+      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY, '2026-11-24')).toBe('2026-11-24');
     });
 
     it('returns a stored date saved within the last hour', () => {
@@ -53,7 +57,7 @@ describe('lastTransactionDate', () => {
         LAST_INVESTMENT_TRANSACTION_DATE_KEY,
         JSON.stringify({ date: '2026-02-20', savedAt: Date.now() - 30 * 60 * 1000 }),
       );
-      expect(getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY)).toBe(
+      expect(getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY, getLocalDateString())).toBe(
         '2026-02-20',
       );
     });
@@ -63,7 +67,7 @@ describe('lastTransactionDate', () => {
         LAST_INVESTMENT_TRANSACTION_DATE_KEY,
         JSON.stringify({ date: '2026-02-20', savedAt: Date.now() - 61 * 60 * 1000 }),
       );
-      expect(getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY)).toBe(
+      expect(getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY, getLocalDateString())).toBe(
         getLocalDateString(),
       );
       expect(sessionStorage.getItem(LAST_INVESTMENT_TRANSACTION_DATE_KEY)).toBeNull();
@@ -71,7 +75,7 @@ describe('lastTransactionDate', () => {
 
     it('falls back to today and clears a legacy non-JSON value', () => {
       sessionStorage.setItem(LAST_TRANSACTION_DATE_KEY, '2026-02-20');
-      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY)).toBe(
+      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY, getLocalDateString())).toBe(
         getLocalDateString(),
       );
       expect(sessionStorage.getItem(LAST_TRANSACTION_DATE_KEY)).toBeNull();
@@ -79,7 +83,7 @@ describe('lastTransactionDate', () => {
 
     it('round-trips a remembered date just under the one-hour boundary', () => {
       rememberTransactionDate(LAST_TRANSACTION_DATE_KEY, '2026-05-05');
-      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY)).toBe('2026-05-05');
+      expect(getRememberedTransactionDate(LAST_TRANSACTION_DATE_KEY, getLocalDateString())).toBe('2026-05-05');
     });
   });
 });
