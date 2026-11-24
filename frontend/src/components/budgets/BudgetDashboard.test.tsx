@@ -4,6 +4,8 @@ import { BudgetDashboard } from './BudgetDashboard';
 import type { BudgetSummary, BudgetVelocity, Budget } from '@/types/budget';
 
 // Mock child components
+const capturedPeriod: { bills?: string; heatmap?: string } = {};
+
 vi.mock('./BudgetSummaryCards', () => ({
   BudgetSummaryCards: (props: any) => (
     <div data-testid="summary-cards">
@@ -35,11 +37,17 @@ vi.mock('./BudgetFlexGroupCard', () => ({
 }));
 
 vi.mock('./BudgetUpcomingBills', () => ({
-  BudgetUpcomingBills: () => <div data-testid="upcoming-bills" />,
+  BudgetUpcomingBills: (props: { periodEnd: string }) => {
+    capturedPeriod.bills = props.periodEnd;
+    return <div data-testid="upcoming-bills" />;
+  },
 }));
 
 vi.mock('./BudgetHeatmap', () => ({
-  BudgetHeatmap: () => <div data-testid="heatmap" />,
+  BudgetHeatmap: (props: { periodStart: string; periodEnd: string }) => {
+    capturedPeriod.heatmap = `${props.periodStart}..${props.periodEnd}`;
+    return <div data-testid="heatmap" />;
+  },
 }));
 
 vi.mock('./BudgetBucketSummary', () => ({
@@ -58,8 +66,8 @@ const mockBudget: Budget = {
   name: 'February 2026',
   description: null,
   budgetType: 'MONTHLY',
-  periodStart: '2026-02-01',
-  periodEnd: '2026-02-28',
+  periodStart: '2025-09-01',
+  periodEnd: null,
   baseIncome: 6000,
   incomeLinked: false,
   strategy: 'FIXED',
@@ -81,6 +89,8 @@ const mockSummary: BudgetSummary = {
   incomeLinked: false,
   actualIncome: null,
   outsideTransferIncome: 0,
+  periodStart: '2026-02-01',
+  periodEnd: '2026-02-28',
   categoryBreakdown: [
     {
       budgetCategoryId: 'bc-1',
@@ -127,6 +137,23 @@ describe('BudgetDashboard', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('draws the widgets over the summary period, not the budget start', () => {
+    render(
+      <BudgetDashboard
+        summary={mockSummary}
+        velocity={mockVelocity}
+        scheduledTransactions={[]}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={85}
+        displayCurrency="USD"
+        formatCurrency={mockFormat}
+      />,
+    );
+    expect(capturedPeriod.heatmap).toBe('2026-02-01..2026-02-28');
+    expect(capturedPeriod.bills).toBe('2026-02-28');
   });
 
   it('renders all dashboard widgets', () => {

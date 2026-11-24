@@ -365,6 +365,9 @@ export interface BudgetSummary {
    */
   outsideTransferIncome: number;
   categoryBreakdown: CategoryBreakdown[];
+  /** The current period the figures were read for (not the budget's start). */
+  periodStart: string;
+  periodEnd: string;
 }
 
 export interface UpcomingBill {
