@@ -27,7 +27,15 @@ import { toCountMap } from "../common/count-map.util";
 import { matchesAliasPattern } from "./alias-match.util";
 import { aliasesConflict } from "./alias-overlap.util";
 import { insertPayeeAliasIgnoringDuplicate } from "./insert-payee-alias.util";
-import { reassignPayeeReferences } from "./payee-references";
+import {
+  recordInUseException,
+  recordInUseSummary,
+  RecordInUseEntry,
+} from "../common/helpers/record-in-use";
+import {
+  findPayeeReferences,
+  reassignPayeeReferences,
+} from "./payee-references";
 import {
   applyPayeeCategoryToAll,
   backfillPayeeCategory,
@@ -144,6 +152,22 @@ export interface UpdatePayeePreview {
 export interface DeletePayeePreview {
   payeeId: string;
   name: string;
+}
+
+/** Refuse (409) while any row outside the payee's own aliases still uses it. */
+function refuseWhileReferenced(
+  name: string,
+  references: RecordInUseEntry[],
+): void {
+  if (references.length === 0) return;
+  throw recordInUseException(
+    tr(
+      "errors.payees.inUse",
+      `Payee "${name}" cannot be deleted: it is still used by ${recordInUseSummary(references)}. Merge it into another payee instead, or remove these first.`,
+      { name, summary: recordInUseSummary(references) },
+    ),
+    references,
+  );
 }
 
 /**
@@ -669,6 +693,12 @@ export class PayeesService {
     input: { name: string },
   ): Promise<DeletePayeePreview> {
     const payee = await this.resolvePayeeForManage(userId, input.name);
+    refuseWhileReferenced(
+      payee.name,
+      await withScopedDb(this.dataSource, (m) =>
+        findPayeeReferences(m, userId, payee.id),
+      ),
+    );
     return { payeeId: payee.id, name: payee.name };
   }
 
@@ -1289,9 +1319,24 @@ export class PayeesService {
       defaultCategoryId: payee.defaultCategoryId,
       isActive: payee.isActive,
     };
-    await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Payee).remove(payee),
-    );
+    // Lock, count and delete in one transaction: a reference committed while
+    // this waits for the lock is counted, and a refusal has written nothing.
+    await withScopedDb(this.dataSource, async (m) => {
+      const locked = await m.getRepository(Payee).findOne({
+        where: { id, userId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!locked) {
+        throw new NotFoundException(
+          tr("errors.payees.notFound", `Payee with ID ${id} not found`, { id }),
+        );
+      }
+      refuseWhileReferenced(
+        locked.name,
+        await findPayeeReferences(m, userId, id),
+      );
+      await m.getRepository(Payee).remove(locked);
+    });
     this.actionHistoryService.record(userId, {
       entityType: "payee",
       entityId: id,

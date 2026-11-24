@@ -7366,6 +7366,14 @@ Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.t
                     disagree in either direction. A moved receipt parser's
                     revision is bumped, so an editor holding the old revision is
                     refused rather than writing the deleted payee back.
+                    A plain delete is refused the same way: PayeesService.remove
+                    locks the payee row, findPayeeReferences counts every
+                    reference (aliases excepted, plus rule JSONB) in the same
+                    transaction, and any count above zero is a 409 RECORD_IN_USE
+                    (recordInUseException, common/helpers/record-in-use.ts) with
+                    { kind, count } per kind and nothing written;
+                    previewDeletePayee (AI/MCP) refuses the same way.
+                    PAYEE_REFERENCE_COUNTS is typed to PAYEE_REFERENCE_MOVES' keys.
 Concurrency scope   per user
 Crash semantics     One transaction: the moves and the delete commit together or
                     not at all.

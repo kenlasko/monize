@@ -4,6 +4,7 @@ import { EmailReceiptParser } from "../email-receipts/entities/email-receipt-par
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Warranty } from "../warranties/entities/warranty.entity";
+import { RecordInUseEntry } from "../common/helpers/record-in-use";
 import { affectedRowCount } from "../common/db/query-result";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 
@@ -137,4 +138,100 @@ export async function reassignPayeeReferences(
     moved[column] = await PAYEE_REFERENCE_MOVES[column](m, reassignment);
   }
   return moved;
+}
+
+type CountedColumn = Exclude<PayeeReferenceColumn, "payee_aliases.payee_id">;
+
+/** What blocks deleting a payee: one entry per kind of row still pointing at it. */
+export type PayeeReferenceKind =
+  | "transactions"
+  | "scheduledTransactions"
+  | "warranties"
+  | "emailReceiptParsers"
+  | "loanOverpaymentPayee"
+  | "sharedPeople"
+  | "sharedPostings"
+  | "rules";
+
+const countRows = (table: string) =>
+  `SELECT count(*)::int AS count FROM ${table} WHERE user_id = $1 AND payee_id = $2`;
+
+/**
+ * How a delete counts each column of `PAYEE_REFERENCE_MOVES` (typed to the same
+ * keys, so a new reference cannot be moved without being counted). Aliases are
+ * part of the payee and cascade, so they are not counted. The loan link reports
+ * account ids so the client can link to the account.
+ */
+const PAYEE_REFERENCE_COUNTS: Record<
+  CountedColumn,
+  { kind: PayeeReferenceKind; sql: string }
+> = {
+  "transactions.payee_id": {
+    kind: "transactions",
+    sql: countRows("transactions"),
+  },
+  "scheduled_transactions.payee_id": {
+    kind: "scheduledTransactions",
+    sql: countRows("scheduled_transactions"),
+  },
+  "warranties.payee_id": { kind: "warranties", sql: countRows("warranties") },
+  "email_receipt_parsers.payee_id": {
+    kind: "emailReceiptParsers",
+    sql: countRows("email_receipt_parsers"),
+  },
+  "accounts.overpayment_payee_id": {
+    kind: "loanOverpaymentPayee",
+    sql: "SELECT id FROM accounts WHERE user_id = $1 AND overpayment_payee_id = $2",
+  },
+  "shared_people.payee_id": {
+    kind: "sharedPeople",
+    sql: countRows("shared_people"),
+  },
+  "shared_postings.payee_id": {
+    kind: "sharedPostings",
+    sql: countRows("shared_postings"),
+  },
+};
+
+/**
+ * Rules keep a payee id inside `condition` / `actions` JSONB, with no foreign
+ * key, so a delete leaves it dangling and the rule turns invalid. A UUID has no
+ * LIKE wildcard and is unique, so a text match is exact.
+ * shortcut: matches the id anywhere in the JSON text; fine for UUIDs.
+ */
+const RULES_SQL =
+  "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)";
+
+/**
+ * Every kind of row that still points at the payee, with a count above zero.
+ * Run inside the delete's transaction, after locking the payee row.
+ */
+export async function findPayeeReferences(
+  m: EntityManager,
+  userId: string,
+  payeeId: string,
+): Promise<RecordInUseEntry[]> {
+  const found: RecordInUseEntry[] = [];
+  for (const { kind, sql } of Object.values(PAYEE_REFERENCE_COUNTS)) {
+    const rows: { count?: number; id?: string }[] = await m.query(sql, [
+      userId,
+      payeeId,
+    ]);
+    if (kind === "loanOverpaymentPayee") {
+      if (rows.length > 0) {
+        found.push({
+          kind,
+          count: rows.length,
+          ids: rows.map((r) => r.id as string),
+        });
+      }
+    } else if (Number(rows[0]?.count) > 0) {
+      found.push({ kind, count: Number(rows[0].count) });
+    }
+  }
+  const [rules] = await m.query(RULES_SQL, [userId, `%${payeeId}%`]);
+  if (Number(rules?.count) > 0) {
+    found.push({ kind: "rules", count: Number(rules.count) });
+  }
+  return found;
 }
