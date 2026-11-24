@@ -3391,10 +3391,11 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     FxAggregate.sign reads a direction; apportionUnits splits a
                     parent between its parts. Applied in the Cash Flow Sankey
                     (cash-flow-sankey-assembly.ts), the custom report
-                    (report-net-cells.ts, report-rows.ts) and the surfaces
-                    ticked in
-                    docs/future-plans/report-rounding-and-aggregation-tasks.md
-                    stage 1. No source scan refuses a new
+                    (report-net-cells.ts, report-rows.ts), every built-in
+                    report's totals, convertDatedRows, the AI insights and
+                    forecast aggregators and the client's sumConverted
+                    (frontend/src/lib/currency-total.ts): stage 1 of
+                    docs/future-plans/report-rounding-and-aggregation-tasks.md. No source scan refuses a new
                     addConverted(part.knownSubtotal) or a sumMoney over rounded
                     rows.
 Concurrency scope   -- (read path)
@@ -3409,7 +3410,9 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     cash-flow-sankey.service.spec.ts "rounds each figure once";
                     reports.service.spec.ts "rounded once, whatever the
                     grouping" (generated three-currency ledgers under seven
-                    groupings against one FxAggregate over the rows).
+                    groupings against one FxAggregate over the rows); an
+                    "issue #2384" case in each built-in report's spec, the AI
+                    aggregators' and frontend/src/lib/currency-total.test.ts.
 Known gap           Report figures leave the server at four places and the
                     screen rounds them again at the currency's places, so a
                     figure under half a ten-thousandth below a cent's midpoint

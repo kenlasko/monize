@@ -66,7 +66,11 @@ before they were added:
    one group (INV-REPORT-004), so a grouping that changes what nets together can
    change what is kept; that is the report's definition, not rounding. A total
    need not equal the sum of the rounded rows above it: each row is within half
-   a unit of its own value, and the total is the right figure.
+   a unit of its own value, and the total is the right figure. Two definitions
+   keep the sum of what they show, and say so where they are computed: a tag
+   bucket's window flows are the sum of its per-period flows (I8 of
+   `docs/specs/report-tag-key-breakdown.md`), and the Monthly Comparison's
+   change is the difference of the two months it shows, rounded.
 5. **A direction or threshold decision reads the sign before rounding.** "Is this
    category spending", "is this net income", "is this figure zero" read
    `FxAggregate.sign`, judged at `MONEY_SCALE`: a net of 0.00003 is money in
@@ -110,24 +114,30 @@ than the floors' 249.5048, and the tie goes to the lower key.
 
 ## 5. Stage 1: what this branch changes
 
-- `FxAggregate.mergeNegated`, `FxAggregate.sign`, `FxAggregate.apportionUnits`.
+- `FxAggregate.mergeNegated`, `sign`, `unroundedSubtotal` (for a mean or a
+  share) and `apportionUnits`.
 - The Cash Flow Sankey (`cash-flow-sankey-assembly.ts`): each side's total is
   rounded once and its nodes, a depth-2 parent's children and a class's
   accounts are apportioned (rule 6); a category's side is judged on its sign
   (rule 5).
-- The custom report: a cell folds into its group exactly; the headline, the
-  average and the budget variance fold the groups' aggregates; percentages are
-  shares of unrounded values; the transaction list's headline folds each row's
-  converted value rather than its four-place reading.
-- The built-in reports' headline and per-period totals fold their parts'
-  aggregates; each `isNetSpending` or `> 0` decision reads the sign; the report
-  currency's dated-row helper (`convertDatedRows`) accumulates rather than
-  rounding each day's part.
-- The AI aggregators (insights, forecast, transaction analytics) that fold a
-  rounded category into a month.
+- The custom report (`report-net-cells.ts`, `report-rows.ts`): a cell folds
+  into its group exactly; the headline, the average, the budget variance and
+  the shares are worked out from the rows' aggregates; the transaction list's
+  headline folds unrounded values.
+- The built-in reports: Spending by Category, by Payee, the Monthly Spending
+  Trend, Income by Source, Income vs Expenses (each period and the window, a
+  tag bucket's per-period flows), Year over Year, Weekend vs Weekday, the Tax
+  Summary, Recurring Expenses, Bill Payment History and the Monthly Comparison
+  fold their parts' aggregates; each spending or income decision reads the sign.
+- `convertDatedRows` / `convertRateParts` round each figure once from its
+  dated parts, and `convertDatedRowAggregates` / `convertRatePartAggregates`
+  hand the aggregates to a caller that folds further (the analytics summary).
+- The AI aggregators: insights, forecast, and the analytics groups' direction
+  decisions.
 - The client's `sumConverted` (`frontend/src/lib/currency-total.ts`)
-  accumulates its converted components as `FxAggregate` does, so a client total
-  of converted rows agrees with the server's.
+  accumulates its converted components with eight guard places, as
+  `FxAggregate` does, so a client total of converted rows agrees with the
+  server's.
 
 ## 6. Open decision: the precision of a figure on the wire
 

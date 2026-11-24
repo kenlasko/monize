@@ -73,6 +73,9 @@ sum" and "sum the rows, then convert" disagree, so the Custom Report totalled
 two 100.01 EUR receipts at 1.2474 as 124.7525 + 124.7525 = 249.5050 USD while
 Income by Source converted their 200.02 sum to 249.504948 and read 249.5049.
 Both now read 249.5049, however the rows are grouped before they are converted.
+A part folds into the figure above it the same way, as its aggregate (`merge`,
+`mergeNegated`), never as its four-place reading
+(`docs/specs/report-rounding-and-aggregation.md`, issue #2384).
 The read rounds through `roundMoney` itself, so a lone component reads exactly
 as `roundMoney` answers it: `-0.00005` reads `-0.0001`, where a bare
 `Math.round(x * 10000)` rounded a negative midpoint toward zero (Discussion
