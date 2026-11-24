@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 vi.mock('@/lib/payees', () => ({
   payeesApi: {
     mergePayees: vi.fn(),
+    getMergeImpact: vi.fn(),
   },
 }));
 
@@ -64,6 +65,8 @@ describe('MergePayeeDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Never settles, so the dialog tests below see no state update outside act().
+    vi.mocked(payeesApi.getMergeImpact).mockReturnValue(new Promise(() => {}));
     // jsdom does not implement scrollIntoView; silence errors from Combobox scroll logic
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
@@ -498,5 +501,40 @@ describe('MergePayeeDialog', () => {
     await waitFor(() => {
       expect(screen.queryByText('Merging...')).not.toBeInTheDocument();
     });
+  });
+
+  it('states how many rules and reports the merge will repoint', async () => {
+    vi.mocked(payeesApi.getMergeImpact).mockResolvedValue({ rules: 2, reports: 1 });
+    render(
+      <MergePayeeDialog
+        isOpen={true}
+        sourcePayee={sourcePayee}
+        allPayees={allPayees}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(payeesApi.getMergeImpact).toHaveBeenCalledWith('p1'));
+    await selectTargetPayee();
+
+    expect(
+      await screen.findByText(/Change 2 rules that use "STARBUCKS #12345" to use "Starbucks"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Change 1 custom report that filters by/)).toBeInTheDocument();
+  });
+
+  it('shows no rule line when none use the payee', async () => {
+    vi.mocked(payeesApi.getMergeImpact).mockResolvedValue({ rules: 0, reports: 0 });
+    render(
+      <MergePayeeDialog
+        isOpen={true}
+        sourcePayee={sourcePayee}
+        allPayees={allPayees}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+    await selectTargetPayee();
+    expect(screen.queryByText(/Change \d+ rule/)).not.toBeInTheDocument();
   });
 });

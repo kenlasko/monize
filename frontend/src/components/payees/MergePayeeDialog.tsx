@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Payee } from '@/types/payee';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +31,22 @@ export function MergePayeeDialog({
   const [targetPayeeId, setTargetPayeeId] = useState('');
   const [addAsAlias, setAddAsAlias] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [impact, setImpact] = useState<{ rules: number; reports: number } | null>(null);
+  const sourceId = sourcePayee?.id;
+
+  // The rules and reports that name the source are repointed by the merge; say how many.
+  useEffect(() => {
+    if (!isOpen || !sourceId) return;
+    let cancelled = false;
+    payeesApi
+      .getMergeImpact(sourceId)
+      .then((r) => !cancelled && setImpact(r))
+      .catch(() => !cancelled && setImpact(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, sourceId]);
 
   const payeeOptions = useMemo(() => {
     return allPayees
@@ -135,6 +151,24 @@ export function MergePayeeDialog({
               <li>
                 {t('merge.willMoveTransactions', { source: sourcePayee.name, target: targetPayee.name })}
               </li>
+              {impact && impact.rules > 0 && (
+                <li>
+                  {t('merge.willRepointRules', {
+                    count: impact.rules,
+                    source: sourcePayee.name,
+                    target: targetPayee.name,
+                  })}
+                </li>
+              )}
+              {impact && impact.reports > 0 && (
+                <li>
+                  {t('merge.willRepointReports', {
+                    count: impact.reports,
+                    source: sourcePayee.name,
+                    target: targetPayee.name,
+                  })}
+                </li>
+              )}
               {addAsAlias && (
                 <li>
                   {t('merge.willAddAlias', { source: sourcePayee.name })}

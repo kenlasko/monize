@@ -214,6 +214,7 @@ describe("PayeesService", () => {
     txManager = manager;
     txManager.find.mockResolvedValue([]);
     txManager.update.mockResolvedValue({ affected: 0 });
+    txManager.query.mockResolvedValue([]);
     txManager.create.mockImplementation((_, data) => data);
     txManager.save.mockImplementation((data) => data);
     txManager.createQueryBuilder.mockImplementation(() => ({
@@ -383,6 +384,21 @@ describe("PayeesService", () => {
       const created = payeesRepository.create.mock.calls[0][0];
       expect(created).not.toHaveProperty("contactLookupAt");
       expect(created).not.toHaveProperty("contactLookupSource");
+    });
+
+    describe("getMergeImpact", () => {
+      it("counts the user's rules and reports that name the payee", async () => {
+        payeesRepository.findOne.mockResolvedValue(mockPayee);
+        txManager.query.mockResolvedValue([{ n: "3" }]);
+
+        const result = await service.getMergeImpact(userId, "payee-1");
+
+        expect(result).toEqual({ rules: 3, reports: 3 });
+        expect(txManager.query).toHaveBeenCalledWith(
+          expect.stringContaining("FROM transaction_rules"),
+          [userId, "%payee-1%"],
+        );
+      });
     });
 
     describe("previewCreate", () => {
@@ -2918,6 +2934,45 @@ describe("PayeesService", () => {
         );
       }
       expect(txManager.remove).toHaveBeenCalledWith(Payee, sourcePayee);
+    });
+
+    it("repoints a rule's condition and actions to the target before deleting the source", async () => {
+      const sourcePayee = { ...mockPayeeNoCategory, id: "payee-2" };
+      payeesRepository.findOne
+        .mockResolvedValueOnce({ ...mockPayee, id: "payee-1" })
+        .mockResolvedValueOnce(sourcePayee);
+      txManager.query.mockImplementation((sql: string) =>
+        sql.includes("FROM transaction_rules")
+          ? [
+              {
+                id: "rule-1",
+                condition: { field: "payeeId", op: "eq", value: "payee-2" },
+                actions: [{ type: "set_payee", payeeId: "payee-2" }],
+              },
+            ]
+          : [],
+      );
+
+      await service.mergePayees(userId, {
+        targetPayeeId: "payee-1",
+        sourcePayeeId: "payee-2",
+        addAsAlias: false,
+      });
+
+      const call = txManager.query.mock.calls.find(
+        ([sql]: [string]) =>
+          typeof sql === "string" && sql.startsWith("UPDATE transaction_rules"),
+      );
+      expect(call[1]).toEqual([
+        JSON.stringify({ field: "payeeId", op: "eq", value: "payee-1" }),
+        JSON.stringify([{ type: "set_payee", payeeId: "payee-1" }]),
+        "rule-1",
+        userId,
+      ]);
+      const index = txManager.query.mock.calls.indexOf(call);
+      expect(txManager.query.mock.invocationCallOrder[index]).toBeLessThan(
+        txManager.remove.mock.invocationCallOrder[0],
+      );
     });
   });
 

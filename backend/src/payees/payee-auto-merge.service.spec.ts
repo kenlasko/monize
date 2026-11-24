@@ -89,6 +89,7 @@ describe("PayeeAutoMergeService", () => {
     txManager.findOne.mockResolvedValue(undefined);
     txManager.find.mockResolvedValue([]);
     txManager.update.mockResolvedValue({ affected: 3 });
+    txManager.query.mockResolvedValue([]);
     txManager.remove.mockResolvedValue(undefined);
     txManager.create.mockImplementation((_entity, data) => data);
     txManager.save.mockImplementation((data) => data);
@@ -629,6 +630,18 @@ describe("PayeeAutoMergeService", () => {
           removeOrder,
         );
       }
+      // Payee ids kept in rule JSON have no foreign key: looked up for the
+      // source before the remove, so a rule is rewritten, not left dangling.
+      const ruleLookup = m.query.mock.calls.findIndex(
+        (call: unknown[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("FROM transaction_rules") &&
+          (call[1] as string[])[1] === "%p2%",
+      );
+      expect(ruleLookup).toBeGreaterThanOrEqual(0);
+      expect(m.query.mock.invocationCallOrder[ruleLookup]).toBeLessThan(
+        removeOrder,
+      );
       expect(m.remove).toHaveBeenCalledWith(
         Payee,
         expect.objectContaining({ id: "p2" }),

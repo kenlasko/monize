@@ -7355,8 +7355,11 @@ Statement           Merging a payee into another (the Merge dialog, POST
                     so a column the merge does not move is silently cleared by
                     the delete (#2026: warranties, email receipt parsers, a
                     loan's overpayment payee and shared-expense people lost
-                    theirs).
-Source of truth     The foreign keys to payees(id) in database/schema.sql.
+                    theirs). The same holds for a payee id stored in JSON, where
+                    no foreign key exists: the condition and actions of
+                    transaction_rules and the filters of custom_reports.
+Source of truth     The foreign keys to payees(id) in database/schema.sql, and
+                    PAYEE_JSON_REFERENCES for the ids kept in JSON.
 Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.ts)
                     holds one statement per referencing column, each scoped to
                     the merging user; reassignPayeeReferences runs them all in
@@ -7366,6 +7369,10 @@ Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.t
                     disagree in either direction. A moved receipt parser's
                     revision is bumped, so an editor holding the old revision is
                     refused rather than writing the deleted payee back.
+                    repointPayeeJsonReferences (payee-json-references.ts)
+                    rewrites the JSON ids; payee-json-references.spec.ts fails
+                    when a rule action type carrying a payeeId is missing from
+                    PAYEE_RULE_ACTION_PATHS.
 Concurrency scope   per user
 Crash semantics     One transaction: the moves and the delete commit together or
                     not at all.
