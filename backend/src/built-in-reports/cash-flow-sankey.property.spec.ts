@@ -5,6 +5,8 @@ import {
   SankeyTransferRow,
 } from "./cash-flow-sankey-assembly";
 import type { CashFlowSankeyResponse } from "./dto";
+import { FxAggregate } from "../common/fx-aggregate";
+import { moneyUnits } from "../common/round.util";
 
 /**
  * SANKEY-001 and SANKEY-002 over generated ledgers.
@@ -370,6 +372,136 @@ describe("Cash Flow Sankey over generated ledgers", () => {
       expect(
         result.totals.income === null || result.totals.expenses === null,
       ).toBe(true);
+    }
+  });
+});
+
+/**
+ * The same ledgers with every other row in EUR, each converted at its own
+ * date's rate carried to ten places: the case the identity converter above
+ * cannot reach, where a node and its parts each rounded on their own differ
+ * by a unit and the diagram did not close (issue #2384). What is asserted is
+ * that it closes at both depths, that depth (a presentation) moves no total,
+ * and that each total is the single rounding of the converted rows on its
+ * side, worked out here from the rows rather than from the nodes.
+ */
+describe("Cash Flow Sankey over generated ledgers in two currencies (issue #2384)", () => {
+  const seeds = Array.from({ length: LEDGERS }, (_, i) => 2384 + i * 7919);
+
+  function inTwoCurrencies(seed: number) {
+    const ledger = generate(seed);
+    const random = prng(seed ^ 0x2384);
+    const rates = new Map<string, number>();
+    const rateOn = (date: string): number => {
+      let rate = rates.get(date);
+      if (rate === undefined) {
+        rate = Number((0.6 + random() * 0.9).toFixed(10));
+        rates.set(date, rate);
+      }
+      return rate;
+    };
+    const selected = select(ledger);
+    const categorized = selected.categorized.map((row, i) =>
+      i % 2 === 0 ? { ...row, currency: "EUR" } : row,
+    );
+    const transfers = selected.transfers.map((row, i) =>
+      i % 2 === 0 ? { ...row, currency: "EUR" } : row,
+    );
+    const convert = (amount: number, currency: string, date: string) =>
+      currency === CURRENCY ? amount : amount * rateOn(date);
+    return { ledger, categorized, transfers, convert };
+  }
+
+  const reading = (agg: FxAggregate): number =>
+    moneyUnits(agg.knownSubtotal, 4);
+
+  it("closes at both depths, and depth moves no total", () => {
+    for (const seed of seeds) {
+      const { ledger, categorized, transfers, convert } = inTwoCurrencies(seed);
+      const run = (depth: 1 | 2) =>
+        assembleCashFlowSankey({
+          startDate: "2026-09-01",
+          endDate: "2026-09-30",
+          currency: CURRENCY,
+          scopeAccountIds: [...ledger.scope],
+          depth,
+          categories: ledger.categories,
+          categorized,
+          transfers,
+          convert,
+        });
+      const shallow = run(1);
+      const deep = run(2);
+      expect({ seed, totals: deep.totals }).toEqual({
+        seed,
+        totals: shallow.totals,
+      });
+    }
+  });
+
+  it("rounds each side's total once, from the rows on that side", () => {
+    for (const seed of seeds) {
+      const { ledger, categorized, transfers, convert } = inTwoCurrencies(seed);
+      const result = assembleCashFlowSankey({
+        startDate: "2026-09-01",
+        endDate: "2026-09-30",
+        currency: CURRENCY,
+        scopeAccountIds: [...ledger.scope],
+        depth: 2,
+        categories: ledger.categories,
+        categorized,
+        transfers,
+        convert,
+      });
+
+      const byId = new Map(ledger.categories.map((c) => [c.id, c]));
+      const nets = new Map<string, FxAggregate>();
+      const income = new FxAggregate();
+      const expenses = new FxAggregate();
+      for (const row of categorized) {
+        const halves = [row.positive, row.negative]
+          .filter((half) => half !== 0)
+          .map((half) => convert(half, row.currency, row.date));
+        if (row.categoryId === null) {
+          for (const half of halves) {
+            if (half > 0) income.addConverted(half);
+            else expenses.addConverted(-half);
+          }
+          continue;
+        }
+        const root = byId.get(row.categoryId)!.parentId ?? row.categoryId;
+        const net = nets.get(root) ?? new FxAggregate();
+        for (const half of halves) net.addConverted(half);
+        nets.set(root, net);
+      }
+      for (const [root, net] of nets) {
+        const isIncome =
+          net.sign > 0 || (net.sign === 0 && byId.get(root)!.isIncome);
+        if (isIncome) income.merge(net);
+        else expenses.mergeNegated(net);
+      }
+      const inflows = new FxAggregate();
+      const outflows = new FxAggregate();
+      for (const row of transfers) {
+        if (row.inflow !== 0)
+          inflows.addConverted(convert(row.inflow, row.currency, row.date));
+        if (row.outflow !== 0)
+          outflows.addConverted(-convert(row.outflow, row.currency, row.date));
+      }
+
+      expect({
+        seed,
+        income: minor(result.totals.income),
+        expenses: minor(result.totals.expenses),
+        inflows: minor(result.totals.inflows),
+        outflows: minor(result.totals.outflows),
+      }).toEqual({
+        seed,
+        income: reading(income),
+        expenses: reading(expenses),
+        inflows: reading(inflows),
+        outflows: reading(outflows),
+      });
     }
   });
 });
