@@ -619,7 +619,7 @@ describe("BuiltInReportsService", () => {
       expect(result.data[0].total).toBe(1270);
     });
 
-    it("limits results to top 15 sources", async () => {
+    it("returns every source and totals all of them", async () => {
       const rawResults = Array.from({ length: 20 }, (_, i) => ({
         category_id: `cat-inc-${i}`,
         currency_code: "USD",
@@ -650,7 +650,8 @@ describe("BuiltInReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.data).toHaveLength(15);
+      expect(result.data).toHaveLength(20);
+      expect(result.totalIncome).toBe(21000);
     });
   });
 

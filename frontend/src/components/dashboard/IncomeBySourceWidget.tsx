@@ -23,6 +23,8 @@ import { reportTotal } from '@/lib/currency-total';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { resolveRangePreset } from '@/lib/date-range';
 import { CHART_COLOURS_INCOME } from '@/lib/chart-colours';
+import { chartColors } from '@/lib/chart-colors';
+import { sumMoney } from '@/lib/format';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { ChartViewToggle } from '@/components/ui/ChartViewToggle';
@@ -39,6 +41,9 @@ const WIDGET_ID = 'income-by-source';
 interface IncomeBySourceWidgetProps {
   isLoading: boolean;
 }
+
+/** Sources that keep a slice of their own before the rest become Other. */
+const MAX_SLICES = 15;
 
 interface IncomeSlice {
   id: string;
@@ -72,7 +77,7 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
   const chartData = useMemo<IncomeSlice[]>(() => {
     if (!response) return [];
     let colourIndex = 0;
-    return response.data.map((item: IncomeSourceItem) => {
+    const slices = response.data.map((item: IncomeSourceItem) => {
       let colour = item.color || '';
       if (!colour) {
         colour = CHART_COLOURS_INCOME[colourIndex % CHART_COLOURS_INCOME.length];
@@ -85,7 +90,20 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
         colour,
       };
     });
-  }, [response]);
+    // The server returns every source; the chart keeps the largest and merges
+    // the rest, so the slices still add up to the total.
+    if (slices.length <= MAX_SLICES) return slices;
+    const rest = slices.slice(MAX_SLICES);
+    return [
+      ...slices.slice(0, MAX_SLICES),
+      {
+        id: '',
+        name: t('expensesPieChart.other'),
+        value: sumMoney(rest.map((item) => item.value)),
+        colour: chartColors.neutral,
+      },
+    ];
+  }, [response, t]);
 
   // `totalIncome` is withheld when a row could not be converted; what is shown
   // is the part that did, marked as a subtotal, and shares are of what is shown.
