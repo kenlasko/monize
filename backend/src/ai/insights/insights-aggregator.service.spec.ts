@@ -213,6 +213,43 @@ describe("InsightsAggregatorService", () => {
       expect(result.missingRatePairs).toEqual(["GBP->USD"]);
     });
 
+    it("rounds a month's total once, from its categories (issue #2384)", async () => {
+      // Two categories of 100.01 EUR at 1.2474 are 124.752474 USD each:
+      // 249.504948 together, which reads 249.5049. Adding the categories'
+      // four-place readings came to 249.5050.
+      withRows(
+        ["cat-1", "cat-2"].map((categoryId) =>
+          row({
+            month: "2026-01",
+            categoryId,
+            categoryName: categoryId,
+            net: "100.01",
+            currencyCode: "EUR",
+            fx_day: "2026-01-25",
+          }),
+        ),
+      );
+      managerQuery.mockImplementation(async (sql: string) =>
+        /exchange_rates/.test(sql)
+          ? [
+              {
+                from_currency: "EUR",
+                to_currency: "USD",
+                rate: "1.2474",
+                rate_date: "2026-01-20",
+              },
+            ]
+          : [],
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(
+        result.monthlySpending[0].categoryBreakdown.map((c) => c.total),
+      ).toEqual([124.7525, 124.7525]);
+      expect(result.monthlySpending[0].total).toBe(249.5049);
+    });
+
     describe("each row at its own rate or on its own date (issue #2130)", () => {
       const eurRate = (date: string) =>
         managerQuery.mockImplementation(async (sql: string) =>

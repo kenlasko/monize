@@ -11,7 +11,6 @@ import { Transaction } from "../../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledOccurrenceService } from "../../scheduled-transactions/scheduled-occurrence.service";
 import { addDaysYMD, todayYMD } from "../../common/date-utils";
-import { roundMoney } from "../../common/round.util";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { RecurringCharge } from "../../transactions/recurring-charges.util";
@@ -414,11 +413,14 @@ export class ForecastAggregatorService {
       const breakdown: MonthlyHistoryEntry["categoryBreakdown"] = [];
       for (const cat of data.categories.values()) {
         for (const pair of cat.net.missingPairs) missing.add(pair);
+        // A category folds into its month as an aggregate and is listed when
+        // the sign of its net before rounding says it moved money its way
+        // (docs/specs/report-rounding-and-aggregation.md rules 2 and 5).
         const net = cat.net.knownSubtotal;
-        if (cat.isIncome) data.income.addConverted(net);
-        else data.expenses.addConverted(-net);
+        if (cat.isIncome) data.income.merge(cat.net);
+        else data.expenses.mergeNegated(cat.net);
         const total = cat.isIncome ? net : -net;
-        if (total > 0) {
+        if (cat.isIncome ? cat.net.sign > 0 : cat.net.sign < 0) {
           breakdown.push({
             categoryName: cat.categoryName,
             total,
@@ -428,13 +430,14 @@ export class ForecastAggregatorService {
       }
       for (const pair of data.income.missingPairs) missing.add(pair);
       for (const pair of data.expenses.missingPairs) missing.add(pair);
-      const totalIncome = data.income.knownSubtotal;
-      const totalExpenses = data.expenses.knownSubtotal;
+      const netCashFlow = new FxAggregate();
+      netCashFlow.merge(data.income);
+      netCashFlow.mergeNegated(data.expenses);
       return {
         month,
-        totalIncome,
-        totalExpenses,
-        netCashFlow: roundMoney(totalIncome - totalExpenses),
+        totalIncome: data.income.knownSubtotal,
+        totalExpenses: data.expenses.knownSubtotal,
+        netCashFlow: netCashFlow.knownSubtotal,
         categoryBreakdown: breakdown.sort((a, b) => b.total - a.total),
       };
     });
@@ -614,10 +617,12 @@ export class ForecastAggregatorService {
     });
 
     const totals = monthlyIncome.map((m) => m.total);
+    // A mean over the months' folded sum, divided before anything is rounded
+    // (docs/specs/report-rounding-and-aggregation.md rule 8).
+    const income = new FxAggregate();
+    for (const m of byMonth.values()) income.merge(m.total);
     const averageMonthlyIncome =
-      totals.length > 0
-        ? totals.reduce((sum, t) => sum + t, 0) / totals.length
-        : 0;
+      totals.length > 0 ? income.unroundedSubtotal / totals.length : 0;
 
     let incomeVariability = 0;
     if (totals.length > 1 && averageMonthlyIncome > 0) {

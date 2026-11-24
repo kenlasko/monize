@@ -8,7 +8,6 @@ import { TransactionAnalyticsService } from "../../transactions/transaction-anal
 import { RecurringCharge } from "../../transactions/recurring-charges.util";
 import { Category } from "../../categories/entities/category.entity";
 import { FxAggregate } from "../../common/fx-aggregate";
-import { roundMoney } from "../../common/round.util";
 import { isNetSpending } from "../../built-in-reports/spending-reports.service";
 import { buildRateIndex } from "../../common/time-series/rate-index.util";
 import {
@@ -297,17 +296,20 @@ export class InsightsAggregatorService {
     const months = new Map<
       string,
       {
-        total: number;
+        total: FxAggregate;
         breakdown: Array<{ categoryName: string; total: number }>;
       }
     >();
     for (const [categoryId, cat] of categories) {
-      let overall = 0;
+      // The months fold as aggregates and the category is judged on the sign
+      // of the whole before rounding; a month's total folds its categories the
+      // same way (docs/specs/report-rounding-and-aggregation.md rules 2 and 5).
+      const overall = new FxAggregate();
       for (const agg of cat.byMonth.values()) {
-        overall += agg.knownSubtotal;
+        overall.merge(agg);
         for (const pair of agg.missingPairs) missing.add(pair);
       }
-      if (!isNetSpending(roundMoney(overall))) continue;
+      if (!isNetSpending(overall.sign)) continue;
 
       const monthCount = cat.byMonth.size;
       categorySpending.push({
@@ -315,14 +317,18 @@ export class InsightsAggregatorService {
         categoryId,
         currentMonthTotal: cat.byMonth.get(currentMonth)?.knownSubtotal ?? 0,
         previousMonthTotal: cat.byMonth.get(previousMonth)?.knownSubtotal ?? 0,
-        averageMonthlyTotal: monthCount > 0 ? overall / monthCount : 0,
+        averageMonthlyTotal:
+          monthCount > 0 ? overall.unroundedSubtotal / monthCount : 0,
         monthCount,
         transactionCount: cat.txnCount,
       });
       for (const [month, agg] of cat.byMonth) {
-        const entry = months.get(month) ?? { total: 0, breakdown: [] };
+        const entry = months.get(month) ?? {
+          total: new FxAggregate(),
+          breakdown: [],
+        };
         months.set(month, entry);
-        entry.total += agg.knownSubtotal;
+        entry.total.merge(agg);
         entry.breakdown.push({
           categoryName: cat.name,
           total: agg.knownSubtotal,
@@ -339,7 +345,7 @@ export class InsightsAggregatorService {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => ({
         month,
-        total: roundMoney(data.total),
+        total: data.total.knownSubtotal,
         categoryBreakdown: data.breakdown.sort((a, b) => b.total - a.total),
       }));
 
