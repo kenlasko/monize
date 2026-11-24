@@ -8,7 +8,7 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 - [x] Spec, plan, task list; `docs/financial-calculation-contract.md` rule; `docs/system-invariants.md` entry.
 - [x] `FxAggregate.mergeNegated`, `sign`, `apportionUnits`, with tests.
 - [x] Cash Flow Sankey: sides rounded once, nodes, children and accounts apportioned; side judged on the sign; two-currency property spec.
-- [ ] Custom report: cells fold exactly; headline, average, budget variance and percentages from the aggregates; the transaction list's headline folds unrounded values; property spec over groupings.
+- [x] Custom report: cells fold exactly; headline, average, budget variance and percentages from the aggregates; the transaction list's headline folds unrounded values; property spec over groupings.
 - [ ] Built-in reports: Spending by Category, by Payee, Monthly Spending Trend; Income by Source, the period rows and tag buckets; Year over Year savings; Weekend vs Weekday; Tax Summary; Recurring Expenses; Bill Payment History; Monthly Comparison; `convertDatedRows`.
 - [ ] AI aggregators: insights, forecast, transaction analytics.
 - [ ] Client `sumConverted` accumulates as `FxAggregate` does.

@@ -360,6 +360,24 @@ describe("FxAggregate", () => {
     });
   });
 
+  describe("unroundedSubtotal (issue #2384)", () => {
+    it("reads the twelve-place sum a mean or a share divides", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(100.01 * 1.2474);
+      agg.addConverted(100.03 * 1.2474);
+      expect(agg.knownSubtotal).toBe(249.5299);
+      expect(agg.unroundedSubtotal).toBe(249.529896);
+      expect(roundMoney(agg.unroundedSubtotal / 2)).toBe(124.7649);
+    });
+
+    it("carries a non-finite component", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(1);
+      agg.addConverted(-Infinity);
+      expect(agg.unroundedSubtotal).toBe(-Infinity);
+    });
+  });
+
   describe("sign is judged before rounding (issue #2384)", () => {
     it.each([
       [0.00003, 1],

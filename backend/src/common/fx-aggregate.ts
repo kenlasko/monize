@@ -238,6 +238,21 @@ export class FxAggregate {
     return readSubtotal(this.subtotalUnits) + this.nonFiniteSum;
   }
 
+  /**
+   * The known subtotal before it is rounded to money precision: the double
+   * nearest its twelve-place sum. For a figure that is not a sum -- a mean, a
+   * share of a total -- which is divided first and rounded once after
+   * (`docs/specs/report-rounding-and-aggregation.md` rule 8). A sum folds the
+   * aggregate itself (`merge`), never this number: past about nine thousand a
+   * double holds fewer places than the accumulator.
+   */
+  get unroundedSubtotal(): number {
+    return (
+      fromScaledUnits(this.subtotalUnits, ACCUMULATION_DECIMALS) +
+      this.nonFiniteSum
+    );
+  }
+
   /** `"USD->EUR"` for each unresolvable pair; empty when the total is complete. */
   get missingPairs(): string[] {
     return [...this.missing].sort();

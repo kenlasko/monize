@@ -3390,7 +3390,9 @@ Source of truth     The converted components, accumulated in FxAggregate
 Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     FxAggregate.sign reads a direction; apportionUnits splits a
                     parent between its parts. Applied in the Cash Flow Sankey
-                    (cash-flow-sankey-assembly.ts) and in the surfaces listed in
+                    (cash-flow-sankey-assembly.ts), the custom report
+                    (report-net-cells.ts, report-rows.ts) and the surfaces
+                    ticked in
                     docs/future-plans/report-rounding-and-aggregation-tasks.md
                     stage 1. No source scan refuses a new
                     addConverted(part.knownSubtotal) or a sumMoney over rounded
@@ -3404,7 +3406,10 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     cash-flow-sankey.property.spec.ts over two-currency ledgers
                     (closes at both depths, depth moves no total, each side's
                     total is one FxAggregate over its rows);
-                    cash-flow-sankey.service.spec.ts "rounds each figure once".
+                    cash-flow-sankey.service.spec.ts "rounds each figure once";
+                    reports.service.spec.ts "rounded once, whatever the
+                    grouping" (generated three-currency ledgers under seven
+                    groupings against one FxAggregate over the rows).
 Known gap           Report figures leave the server at four places and the
                     screen rounds them again at the currency's places, so a
                     figure under half a ten-thousandth below a cent's midpoint
