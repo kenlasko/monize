@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Übersprungen",
     "reconciledBadge": "Abgeglichen",
     "reconciledWarning": "Diese Transaktion ist abgeglichen. Eine Änderung wirkt sich auf einen abgeschlossenen Abgleich aus.",
+    "splitLineDeleteNote": "Dadurch wird nur diese Übertragungszeile aus der aufgeteilten Transaktion mit {payee} vom {date} entfernt und die Aufteilung neu summiert. Die Aufteilung und ihre anderen Zeilen bleiben bestehen.",
+    "splitLineDeleteNoteNoPayee": "Dadurch wird nur diese Übertragungszeile aus der aufgeteilten Transaktion vom {date} entfernt und die Aufteilung neu summiert. Die Aufteilung und ihre anderen Zeilen bleiben bestehen.",
     "investmentActions": {
       "BUY": "Kauf",
       "SELL": "Verkauf",

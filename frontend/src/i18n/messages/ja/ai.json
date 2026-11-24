@@ -139,6 +139,8 @@
     "rowSkippedBadge": "スキップ",
     "reconciledBadge": "照合済み",
     "reconciledWarning": "この取引は照合済みです。変更すると完了した照合に影響します。",
+    "splitLineDeleteNote": "この操作では、{date}の{payee}の分割取引からこの振替行だけを削除し、分割の合計を再計算します。分割とその他の行は残ります。",
+    "splitLineDeleteNoteNoPayee": "この操作では、{date}の分割取引からこの振替行だけを削除し、分割の合計を再計算します。分割とその他の行は残ります。",
     "investmentActions": {
       "BUY": "買い",
       "SELL": "売り",

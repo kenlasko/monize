@@ -139,6 +139,8 @@
     "rowSkippedBadge": "已略過",
     "reconciledBadge": "已對帳",
     "reconciledWarning": "此交易已對帳。變更將影響已完成的對帳。",
+    "splitLineDeleteNote": "這只會從 {date} 與 {payee} 的拆分交易中移除這一轉帳列，並重新計算拆分合計。拆分及其其他列會保留。",
+    "splitLineDeleteNoteNoPayee": "這只會從 {date} 的拆分交易中移除這一轉帳列，並重新計算拆分合計。拆分及其其他列會保留。",
     "investmentActions": {
       "BUY": "買入",
       "SELL": "賣出",

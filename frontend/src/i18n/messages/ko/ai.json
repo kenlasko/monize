@@ -139,6 +139,8 @@
     "rowSkippedBadge": "건너뜀",
     "reconciledBadge": "조정됨",
     "reconciledWarning": "이 거래는 조정되었습니다. 변경하면 완료된 조정에 영향을 줍니다.",
+    "splitLineDeleteNote": "이 작업은 {date}의 {payee} 분할 거래에서 이 이체 줄만 제거하고 분할 합계를 다시 계산합니다. 분할과 다른 줄은 그대로 남습니다.",
+    "splitLineDeleteNoteNoPayee": "이 작업은 {date}의 분할 거래에서 이 이체 줄만 제거하고 분할 합계를 다시 계산합니다. 분할과 다른 줄은 그대로 남습니다.",
     "investmentActions": {
       "BUY": "매수",
       "SELL": "매도",

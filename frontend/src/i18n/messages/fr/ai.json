@@ -139,6 +139,8 @@
     "rowSkippedBadge": "Ignorée",
     "reconciledBadge": "Rapproché",
     "reconciledWarning": "Cette transaction est rapprochée. La modifier affectera un rapprochement terminé.",
+    "splitLineDeleteNote": "Cela supprime uniquement cette ligne de virement de l'opération ventilée avec {payee} du {date} et recalcule le total de la ventilation. La ventilation et ses autres lignes sont conservées.",
+    "splitLineDeleteNoteNoPayee": "Cela supprime uniquement cette ligne de virement de l'opération ventilée du {date} et recalcule le total de la ventilation. La ventilation et ses autres lignes sont conservées.",
     "investmentActions": {
       "BUY": "Achat",
       "SELL": "Vente",
