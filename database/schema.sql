@@ -1333,6 +1333,7 @@ CREATE TABLE security_prices (
     volume BIGINT,
     source VARCHAR(50), -- yahoo_finance, msn_finance, manual, bond_engine (a bond-linked security's engine price), or transaction action (buy, sell, reinvest, transfer_in, transfer_out)
     quoted_at TIMESTAMPTZ, -- instant the provider says the quote was struck; NULL for manual/transaction-derived rows
+    refreshed_at TIMESTAMPTZ, -- instant a provider refresh last wrote this row; NULL for manual/transaction-derived rows
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(security_id, price_date)
 );
