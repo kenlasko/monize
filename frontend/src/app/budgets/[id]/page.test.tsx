@@ -197,8 +197,8 @@ const mockSummary = {
     name: 'February 2026',
     description: null,
     budgetType: 'MONTHLY',
-    periodStart: '2026-02-01',
-    periodEnd: '2026-02-28',
+    periodStart: '2025-09-01',
+    periodEnd: null,
     baseIncome: 6000,
     incomeLinked: false,
     strategy: 'FIXED',
@@ -214,6 +214,8 @@ const mockSummary = {
   totalIncome: 6000,
   remaining: 2100,
   percentUsed: 59.62,
+  periodStart: '2026-02-01',
+  periodEnd: '2026-02-28',
   categoryBreakdown: [
     {
       budgetCategoryId: 'bc-1',

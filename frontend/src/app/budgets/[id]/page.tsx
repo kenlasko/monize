@@ -249,18 +249,10 @@ function BudgetDetailContent() {
         (c) => c.budgetCategoryId === budgetCategoryId,
       );
       if (!cat?.categoryId) return;
-      const periodEndVal = summary.budget.periodEnd
-        ?? new Date(
-          new Date(summary.budget.periodStart + 'T00:00:00').getFullYear(),
-          new Date(summary.budget.periodStart + 'T00:00:00').getMonth() + 1,
-          0,
-        )
-          .toISOString()
-          .split('T')[0];
       localStorage.setItem('transactions.filter.accountStatus', JSON.stringify('active'));
       const params = new URLSearchParams({
-        startDate: summary.budget.periodStart,
-        endDate: periodEndVal,
+        startDate: summary.periodStart,
+        endDate: summary.periodEnd,
         categoryIds: cat.categoryId,
       });
       router.push(`/transactions?${params.toString()}`);

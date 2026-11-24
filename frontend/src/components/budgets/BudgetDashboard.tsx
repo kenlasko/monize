@@ -51,16 +51,7 @@ export function BudgetDashboard({
   formatCurrency,
   onCategoryClick,
 }: BudgetDashboardProps) {
-  const periodEnd = summary.budget.periodEnd
-    ?? new Date(
-      new Date(summary.budget.periodStart + 'T00:00:00').getFullYear(),
-      new Date(summary.budget.periodStart + 'T00:00:00').getMonth() + 1,
-      0,
-    )
-      .toISOString()
-      .split('T')[0];
-
-  const periodStart = summary.budget.periodStart;
+  const { periodStart, periodEnd } = summary;
 
   // Compute pace percent: what % of the period has elapsed
   const pacePercent =
