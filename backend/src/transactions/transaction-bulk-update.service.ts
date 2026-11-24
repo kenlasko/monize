@@ -645,14 +645,48 @@ export class TransactionBulkUpdateService {
     // deleting the parent wins and takes the whole split, so those legs stay in
     // the selection below.
     const selectedIdSet = new Set(transactions.map((t) => t.id));
-    const lineRemovals = (
-      await withScopedDb(this.dataSource, (m) =>
-        m.find(TransactionSplit, {
-          where: { linkedTransactionId: In([...selectedIdSet]) },
-        }),
+    const legSplits = await withScopedDb(this.dataSource, (m) =>
+      m.find(TransactionSplit, {
+        where: { linkedTransactionId: In([...selectedIdSet]) },
+      }),
+    );
+    // A parent whose every line is a selected leg loses all of them: removing
+    // the lines one by one would collapse it at the second-last removal and the
+    // last line would be gone, so that split is deleted whole, as when its
+    // parent is selected. With fewer lines selected, a collapse can only follow
+    // the last removal of that parent, so no later removal meets a missing line.
+    const parentIdsToCheck = [
+      ...new Set(
+        legSplits
+          .map((split) => split.transactionId)
+          .filter((id) => !selectedIdSet.has(id)),
+      ),
+    ];
+    const allLines =
+      parentIdsToCheck.length > 0
+        ? await withScopedDb(this.dataSource, (m) =>
+            m.find(TransactionSplit, {
+              where: { transactionId: In(parentIdsToCheck) },
+            }),
+          )
+        : [];
+    const fullyCovered = new Set(
+      parentIdsToCheck.filter((parentId) =>
+        allLines
+          .filter((line) => line.transactionId === parentId)
+          .every(
+            (line) =>
+              line.linkedTransactionId !== null &&
+              selectedIdSet.has(line.linkedTransactionId),
+          ),
+      ),
+    );
+    const lineRemovals = legSplits
+      .filter(
+        (split) =>
+          !selectedIdSet.has(split.transactionId) &&
+          !fullyCovered.has(split.transactionId),
       )
-    )
-      .filter((split) => !selectedIdSet.has(split.transactionId))
       // Parent then line id: the same order on every run.
       .sort(
         (x, y) =>

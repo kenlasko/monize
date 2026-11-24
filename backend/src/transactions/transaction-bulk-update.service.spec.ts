@@ -2978,24 +2978,43 @@ describe("TransactionBulkUpdateService", () => {
       transactionsRepository.createQueryBuilder
         .mockReturnValueOnce(resolveQb)
         .mockReturnValueOnce(detailsQb);
-      mockManagerFind.mockImplementation(async (entity: unknown) =>
-        entity === TransactionSplit
-          ? [
-              {
-                id: "s-b",
-                transactionId: "parent-2",
-                linkedTransactionId: "leg-b",
-              },
-              {
-                id: "s-c",
-                transactionId: "parent-1",
-                linkedTransactionId: "leg-c",
-              },
-            ]
-          : [
+      mockManagerFind.mockImplementation(
+        async (entity: unknown, opts: { where: Record<string, unknown> }) => {
+          if (entity !== TransactionSplit) {
+            return [
               { id: "parent-1", accountId: "acc-a" },
               { id: "parent-2", accountId: "acc-a" },
-            ],
+            ];
+          }
+          const legLines = [
+            {
+              id: "s-b",
+              transactionId: "parent-2",
+              linkedTransactionId: "leg-b",
+            },
+            {
+              id: "s-c",
+              transactionId: "parent-1",
+              linkedTransactionId: "leg-c",
+            },
+          ];
+          // Every line of each parent: one unselected line stays on each.
+          return "transactionId" in opts.where
+            ? [
+                ...legLines,
+                {
+                  id: "s-x",
+                  transactionId: "parent-1",
+                  linkedTransactionId: null,
+                },
+                {
+                  id: "s-y",
+                  transactionId: "parent-2",
+                  linkedTransactionId: null,
+                },
+              ]
+            : legLines;
+        },
       );
       splitService.removeSplit = jest.fn().mockResolvedValue(undefined);
       const deletes: unknown[] = [];
@@ -3028,6 +3047,69 @@ describe("TransactionBulkUpdateService", () => {
       // balance is moved by this service: removeSplit does it.
       expect(deletes).toEqual([]);
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("deletes the whole split when the selected legs cover every line of it", async () => {
+      makeTransaction({
+        id: "parent",
+        accountId: "acc-a",
+        amount: -100,
+        isSplit: true,
+      });
+      const legB = makeTransaction({
+        id: "leg-b",
+        accountId: "acc-b",
+        amount: 60,
+        isTransfer: true,
+        linkedTransactionId: "parent",
+      });
+      const legC = makeTransaction({
+        id: "leg-c",
+        accountId: "acc-c",
+        amount: 40,
+        isTransfer: true,
+        linkedTransactionId: "parent",
+      });
+      transactionsRepository.createQueryBuilder
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getMany: jest
+              .fn()
+              .mockResolvedValue([{ id: "leg-b" }, { id: "leg-c" }]),
+          }),
+        )
+        .mockReturnValueOnce(
+          createMockQueryBuilder({
+            getMany: jest.fn().mockResolvedValue([legB, legC]),
+          }),
+        );
+      mockManagerFind.mockResolvedValue([
+        { id: "s-b", transactionId: "parent", linkedTransactionId: "leg-b" },
+        { id: "s-c", transactionId: "parent", linkedTransactionId: "leg-c" },
+      ]);
+      splitService.removeSplit = jest.fn();
+      mockManagerCreateQueryBuilder.mockImplementation(() => {
+        const qb = createMockQueryBuilder({
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        });
+        qb.where = jest.fn().mockReturnValue(qb);
+        return qb;
+      });
+
+      await service.bulkDelete(userId, {
+        mode: "ids",
+        transactionIds: ["leg-b", "leg-c"],
+      });
+
+      // Removing one line would collapse the parent and lose the other line.
+      expect(splitService.removeSplit).not.toHaveBeenCalled();
+      expect(splitService.deleteSplitSideEffects).toHaveBeenCalledWith(
+        "parent",
+        userId,
+        expect.anything(),
+      );
     });
 
     it("does not touch the split lines when the parent is selected with the leg", async () => {
