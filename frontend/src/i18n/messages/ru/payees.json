@@ -122,6 +122,8 @@
     "addAsAliasLabel": "Добавить \"{name}\" как псевдоним целевого получателя",
     "willLabel": "Это выполнит:",
     "willMoveTransactions": "Перенести все проводки из \"{source}\" в \"{target}\"",
+    "willRepointRules": "{count, plural, one {Заменить \"{source}\" на \"{target}\" в # правиле} few {Заменить \"{source}\" на \"{target}\" в # правилах} many {Заменить \"{source}\" на \"{target}\" в # правилах} other {Заменить \"{source}\" на \"{target}\" в # правилах}}",
+    "willRepointReports": "{count, plural, one {Заменить \"{source}\" на \"{target}\" в # пользовательском отчёте} few {Заменить \"{source}\" на \"{target}\" в # пользовательских отчётах} many {Заменить \"{source}\" на \"{target}\" в # пользовательских отчётах} other {Заменить \"{source}\" на \"{target}\" в # пользовательских отчётах}}",
     "willAddAlias": "Добавить \"{source}\" как псевдоним для автоматического распознавания при импорте",
     "willDelete": "Удалить получателя \"{source}\"",
     "merging": "Объединение...",

@@ -122,6 +122,8 @@
     "addAsAliasLabel": "Agregar \"{name}\" como alias en el beneficiario de destino",
     "willLabel": "Esto hará:",
     "willMoveTransactions": "Mover todas las transacciones de \"{source}\" a \"{target}\"",
+    "willRepointRules": "{count, plural, one {Cambiar # regla que usa \"{source}\" para que use \"{target}\"} other {Cambiar # reglas que usan \"{source}\" para que usen \"{target}\"}}",
+    "willRepointReports": "{count, plural, one {Cambiar # informe personalizado que filtra por \"{source}\" para que filtre por \"{target}\"} other {Cambiar # informes personalizados que filtran por \"{source}\" para que filtren por \"{target}\"}}",
     "willAddAlias": "Agregar \"{source}\" como alias para que las importaciones futuras coincidan automáticamente",
     "willDelete": "Eliminar el beneficiario \"{source}\"",
     "merging": "Fusionando...",

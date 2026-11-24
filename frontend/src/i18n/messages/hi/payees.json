@@ -122,6 +122,8 @@
     "addAsAliasLabel": "लक्ष्य भुगतानकर्ता पर \"{name}\" उपनाम के रूप में जोड़ें",
     "willLabel": "यह करेगा:",
     "willMoveTransactions": "\"{source}\" से \"{target}\" में सभी लेनदेन ले जाएगा",
+    "willRepointRules": "{count, plural, one {\"{source}\" का उपयोग करने वाले # नियम को \"{target}\" का उपयोग करने के लिए बदलेगा} other {\"{source}\" का उपयोग करने वाले # नियमों को \"{target}\" का उपयोग करने के लिए बदलेगा}}",
+    "willRepointReports": "{count, plural, one {\"{source}\" से फ़िल्टर करने वाली # कस्टम रिपोर्ट को \"{target}\" से फ़िल्टर करने के लिए बदलेगा} other {\"{source}\" से फ़िल्टर करने वाली # कस्टम रिपोर्ट को \"{target}\" से फ़िल्टर करने के लिए बदलेगा}}",
     "willAddAlias": "\"{source}\" को उपनाम के रूप में जोड़ेगा ताकि भविष्य के आयात स्वतः मिलान करें",
     "willDelete": "\"{source}\" भुगतानकर्ता हटाएगा",
     "merging": "मर्ज हो रहा है...",

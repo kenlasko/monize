@@ -122,6 +122,8 @@
     "addAsAliasLabel": "Tambahkan \"{name}\" sebagai alias pada penerima target",
     "willLabel": "Ini akan:",
     "willMoveTransactions": "Memindahkan semua transaksi dari \"{source}\" ke \"{target}\"",
+    "willRepointRules": "{count, plural, one {Ubah # aturan yang memakai \"{source}\" agar memakai \"{target}\"} other {Ubah # aturan yang memakai \"{source}\" agar memakai \"{target}\"}}",
+    "willRepointReports": "{count, plural, one {Ubah # laporan kustom yang memfilter \"{source}\" agar memfilter \"{target}\"} other {Ubah # laporan kustom yang memfilter \"{source}\" agar memfilter \"{target}\"}}",
     "willAddAlias": "Menambahkan \"{source}\" sebagai alias agar impor di masa depan cocok otomatis",
     "willDelete": "Menghapus penerima \"{source}\"",
     "merging": "Menggabungkan...",

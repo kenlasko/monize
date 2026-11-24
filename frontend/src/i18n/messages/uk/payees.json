@@ -122,6 +122,8 @@
     "addAsAliasLabel": "Додати \"{name}\" як псевдонім цільового одержувача",
     "willLabel": "Це призведе до:",
     "willMoveTransactions": "Перенесення всіх транзакцій з \"{source}\" до \"{target}\"",
+    "willRepointRules": "{count, plural, one {Замінити \"{source}\" на \"{target}\" у # правилі} few {Замінити \"{source}\" на \"{target}\" у # правилах} many {Замінити \"{source}\" на \"{target}\" у # правилах} other {Замінити \"{source}\" на \"{target}\" у # правилах}}",
+    "willRepointReports": "{count, plural, one {Замінити \"{source}\" на \"{target}\" у # власному звіті} few {Замінити \"{source}\" на \"{target}\" у # власних звітах} many {Замінити \"{source}\" на \"{target}\" у # власних звітах} other {Замінити \"{source}\" на \"{target}\" у # власних звітах}}",
     "willAddAlias": "Додавання \"{source}\" як псевдоніма для автоматичного розпізнавання при майбутньому імпорті",
     "willDelete": "Видалення одержувача \"{source}\"",
     "merging": "Об'єднання...",

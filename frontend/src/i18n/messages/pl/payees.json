@@ -122,6 +122,8 @@
     "addAsAliasLabel": "Dodaj \"{name}\" jako alias odbiorcy docelowego",
     "willLabel": "Spowoduje to:",
     "willMoveTransactions": "Przenieś wszystkie transakcje z \"{source}\" do \"{target}\"",
+    "willRepointRules": "{count, plural, one {Zamień \"{source}\" na \"{target}\" w # regule} few {Zamień \"{source}\" na \"{target}\" w # regułach} many {Zamień \"{source}\" na \"{target}\" w # regułach} other {Zamień \"{source}\" na \"{target}\" w # regułach}}",
+    "willRepointReports": "{count, plural, one {Zamień \"{source}\" na \"{target}\" w # raporcie niestandardowym} few {Zamień \"{source}\" na \"{target}\" w # raportach niestandardowych} many {Zamień \"{source}\" na \"{target}\" w # raportach niestandardowych} other {Zamień \"{source}\" na \"{target}\" w # raportach niestandardowych}}",
     "willAddAlias": "Dodaj \"{source}\" jako alias, aby przyszłe importy dopasowywały się automatycznie",
     "willDelete": "Usuń odbiorcę \"{source}\"",
     "merging": "Scalanie...",

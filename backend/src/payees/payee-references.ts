@@ -7,6 +7,10 @@ import { Warranty } from "../warranties/entities/warranty.entity";
 import { RecordInUseEntry } from "../common/helpers/record-in-use";
 import { affectedRowCount } from "../common/db/query-result";
 import { PayeeAlias } from "./entities/payee-alias.entity";
+import {
+  PayeeJsonMoves,
+  repointPayeeJsonReferences,
+} from "./payee-json-references";
 
 /** One payee being folded into another, for one user. */
 export interface PayeeReassignment {
@@ -130,14 +134,21 @@ export type PayeeReferenceColumn = keyof typeof PAYEE_REFERENCE_MOVES;
 export async function reassignPayeeReferences(
   m: EntityManager,
   reassignment: PayeeReassignment,
-): Promise<Record<PayeeReferenceColumn, number>> {
+): Promise<Record<PayeeReferenceColumn, number> & { json: PayeeJsonMoves }> {
   const moved = {} as Record<PayeeReferenceColumn, number>;
   for (const column of Object.keys(
     PAYEE_REFERENCE_MOVES,
   ) as PayeeReferenceColumn[]) {
     moved[column] = await PAYEE_REFERENCE_MOVES[column](m, reassignment);
   }
-  return moved;
+  // Ids kept in JSON have no foreign key; see payee-json-references.ts.
+  const json = await repointPayeeJsonReferences(
+    m,
+    reassignment.userId,
+    reassignment.sourcePayeeId,
+    reassignment.target.id,
+  );
+  return { ...moved, json };
 }
 
 type CountedColumn = Exclude<PayeeReferenceColumn, "payee_aliases.payee_id">;

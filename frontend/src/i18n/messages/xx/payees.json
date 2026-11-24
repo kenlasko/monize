@@ -122,6 +122,8 @@
     "addAsAliasLabel": "[XX-Add \"{name}\" as an alias on the target payee-XX]",
     "willLabel": "[XX-This will:-XX]",
     "willMoveTransactions": "[XX-Move all transactions from \"{source}\" to \"{target}\"-XX]",
+    "willRepointRules": "[XX-{count, plural, one {Change # rule that uses \"{source}\" to use \"{target}\" instead} other {Change # rules that use \"{source}\" to use \"{target}\" instead}}-XX]",
+    "willRepointReports": "[XX-{count, plural, one {Change # custom report that filters by \"{source}\" to filter by \"{target}\" instead} other {Change # custom reports that filter by \"{source}\" to filter by \"{target}\" instead}}-XX]",
     "willAddAlias": "[XX-Add \"{source}\" as an alias so future imports auto-match-XX]",
     "willDelete": "[XX-Delete the \"{source}\" payee-XX]",
     "merging": "[XX-Merging...-XX]",

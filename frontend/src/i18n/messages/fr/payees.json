@@ -122,6 +122,8 @@
     "addAsAliasLabel": "Ajouter « {name} » comme alias sur le bénéficiaire cible",
     "willLabel": "Cette action va :",
     "willMoveTransactions": "Déplacer toutes les transactions de « {source} » vers « {target} »",
+    "willRepointRules": "{count, plural, one {Remplacer « {source} » par « {target} » dans # règle} other {Remplacer « {source} » par « {target} » dans # règles}}",
+    "willRepointReports": "{count, plural, one {Remplacer « {source} » par « {target} » dans # rapport personnalisé} other {Remplacer « {source} » par « {target} » dans # rapports personnalisés}}",
     "willAddAlias": "Ajouter « {source} » comme alias pour que les importations futures correspondent automatiquement",
     "willDelete": "Supprimer le bénéficiaire « {source} »",
     "merging": "Fusion en cours...",
