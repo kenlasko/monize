@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Impossibile cambiare il conto di una suddivisione di investimento; rimuovi la suddivisione e aggiungila al nuovo conto",
     "splitNoFundingAccount": "Le suddivisioni di investimento non usano un conto di finanziamento separato",
     "cannotChangeSplitDate": "Impossibile cambiare la data di una suddivisione di investimento; modifica invece la data della transazione suddivisa genitore",
+    "embeddedDeleteLocked": "Questa transazione di investimento fa parte di una transazione suddivisa. Modifica o rimuovi invece la riga di suddivisione nella transazione principale, così entrambi i lati cambiano insieme.",
+    "embeddedDeleteAllLocked": "Alcune transazioni di investimento fanno parte di transazioni suddivise. Rimuovi prima quelle righe di suddivisione nelle transazioni principali, poi elimina tutte le transazioni di investimento.",
     "embeddedStatusLocked": "Questa transazione di investimento fa parte di una transazione suddivisa. Modifica invece lo stato della transazione suddivisa, in modo che entrambi i lati cambino insieme.",
     "accruedInterestActionNotAllowed": "Gli interessi maturati possono essere registrati solo su una transazione REDEEM, non su {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Gli interessi maturati non possono essere registrati su una transazione di investimento all'interno di una suddivisione. Registra gli interessi come riga a sé della suddivisione.",

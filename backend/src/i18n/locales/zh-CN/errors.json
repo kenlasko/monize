@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "无法更改投资拆分项的账户；请移除拆分项并在新账户上添加",
     "splitNoFundingAccount": "投资拆分项不使用单独的资金账户",
     "cannotChangeSplitDate": "无法更改投资拆分项的日期；请编辑父拆分交易的日期",
+    "embeddedDeleteLocked": "此投资交易属于拆分交易。请改为在其父交易中编辑或删除拆分行，以便两侧一起变更。",
+    "embeddedDeleteAllLocked": "部分投资交易属于拆分交易。请先在其父交易中删除这些拆分行，然后再删除所有投资交易。",
     "embeddedStatusLocked": "此投资交易属于拆分交易的一部分。请改为更改拆分交易的状态，使两侧一并变更。",
     "accruedInterestActionNotAllowed": "应计利息仅能记录在 REDEEM 交易上，不能记录在 {{ action }} 上。",
     "accruedInterestNotAllowedInSplit": "拆分交易内的投资交易无法记录应计利息。请将利息记为单独的拆分行。",

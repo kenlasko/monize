@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "無法變更投資分割的科目；請移除分割後在新科目上重新新增",
     "splitNoFundingAccount": "投資分割不使用獨立的資金科目",
     "cannotChangeSplitDate": "無法變更投資分割的日期；請改為編輯父分割交易的日期",
+    "embeddedDeleteLocked": "此投資交易屬於拆分交易。請改為在其父交易中編輯或刪除拆分行，讓兩側一起變更。",
+    "embeddedDeleteAllLocked": "部分投資交易屬於拆分交易。請先在其父交易中刪除這些拆分行，再刪除所有投資交易。",
     "embeddedStatusLocked": "此投資交易屬於拆分交易的一部分。請改為變更拆分交易的狀態，使兩側一併變更。",
     "accruedInterestActionNotAllowed": "應計利息僅能記錄於 REDEEM 交易，不能記錄於 {{ action }}。",
     "accruedInterestNotAllowedInSplit": "拆分交易內的投資交易無法記錄應計利息。請將利息記為單獨的拆分列。",

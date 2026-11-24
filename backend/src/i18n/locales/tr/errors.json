@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Yatırım bölümünün hesabı değiştirilemez; bölümü kaldırın ve yeni hesaba ekleyin",
     "splitNoFundingAccount": "Yatırım bölümleri ayrı bir fonlama hesabı kullanmaz",
     "cannotChangeSplitDate": "Yatırım bölümünün tarihi değiştirilemez; bunun yerine üst bölünmüş işlem tarihini düzenleyin",
+    "embeddedDeleteLocked": "Bu yatırım işlemi, bölünmüş bir işlemin parçasıdır. Bunun yerine üst işlemdeki bölme satırını düzenleyin veya kaldırın; böylece iki taraf birlikte değişir.",
+    "embeddedDeleteAllLocked": "Bazı yatırım işlemleri bölünmüş işlemlerin parçasıdır. Önce bu bölme satırlarını üst işlemlerinde kaldırın, sonra tüm yatırım işlemlerini silin.",
     "embeddedStatusLocked": "Bu yatırım işlemi, bölünmüş bir işlemin parçasıdır. İki tarafın birlikte değişmesi için bunun yerine bölünmüş işlemin durumunu değiştirin.",
     "accruedInterestActionNotAllowed": "Birikmiş faiz yalnızca REDEEM işleminde kaydedilebilir, {{ action }} işleminde kaydedilemez.",
     "accruedInterestNotAllowedInSplit": "Bölünmüş bir işlemin içindeki yatırım işleminde birikmiş faiz kaydedilemez. Faizi kendi bölüm satırı olarak kaydedin.",

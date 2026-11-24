@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Kan de rekening van een beleggingssplitsing niet wijzigen; verwijder de splitsing en voeg deze toe aan de nieuwe rekening",
     "splitNoFundingAccount": "Beleggingssplitsingen gebruiken geen afzonderlijke financieringsrekening",
     "cannotChangeSplitDate": "Kan de datum van een beleggingssplitsing niet wijzigen; bewerk in plaats daarvan de datum van de bovenliggende splitsingstransactie",
+    "embeddedDeleteLocked": "Deze beleggingstransactie maakt deel uit van een gesplitste transactie. Bewerk of verwijder in plaats daarvan de splitsingsregel in de bovenliggende transactie, zodat beide kanten samen veranderen.",
+    "embeddedDeleteAllLocked": "Sommige beleggingstransacties maken deel uit van gesplitste transacties. Verwijder eerst die splitsingsregels in hun bovenliggende transacties en verwijder daarna alle beleggingstransacties.",
     "embeddedStatusLocked": "Deze beleggingstransactie maakt deel uit van een gesplitste transactie. Wijzig in plaats daarvan de status van de gesplitste transactie, zodat beide zijden samen wijzigen.",
     "accruedInterestActionNotAllowed": "Opgelopen rente kan alleen op een REDEEM-transactie worden vastgelegd, niet op {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Opgelopen rente kan niet worden vastgelegd op een beleggingstransactie binnen een gesplitste transactie. Leg de rente vast als een eigen splitsingsregel.",

@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "No se puede cambiar la cuenta de un desglose de inversión; elimina el desglose y añádelo en la nueva cuenta",
     "splitNoFundingAccount": "Los desgloses de inversión no usan una cuenta de financiación separada",
     "cannotChangeSplitDate": "No se puede cambiar la fecha de un desglose de inversión; edita la fecha de la transacción de desglose padre",
+    "embeddedDeleteLocked": "Esta transacción de inversión forma parte de una transacción dividida. Edite o elimine en su lugar la línea de división en la transacción principal, para que ambos lados cambien juntos.",
+    "embeddedDeleteAllLocked": "Algunas transacciones de inversión forman parte de transacciones divididas. Elimine primero esas líneas de división en sus transacciones principales y después elimine todas las transacciones de inversión.",
     "embeddedStatusLocked": "Esta transacción de inversión forma parte de una transacción dividida. Cambia el estado de la transacción dividida en su lugar, para que ambos lados cambien juntos.",
     "accruedInterestActionNotAllowed": "Los intereses devengados solo pueden registrarse en una transacción REDEEM, no en {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Los intereses devengados no pueden registrarse en una transacción de inversión dentro de una división. Registra los intereses como su propia línea de la división.",

@@ -750,6 +750,8 @@
     "cannotChangeSplitAccount": "Não é possível alterar a conta de uma parcela de investimento; remova a parcela e adicione-a na nova conta",
     "splitNoFundingAccount": "As parcelas de investimento não utilizam uma conta de financiamento separada",
     "cannotChangeSplitDate": "Não é possível alterar a data de uma parcela de investimento; edite a data da transação-mãe dividida",
+    "embeddedDeleteLocked": "Esta transação de investimento faz parte de uma transação dividida. Edite ou remova a linha de divisão na transação principal, para que ambos os lados mudem em conjunto.",
+    "embeddedDeleteAllLocked": "Algumas transações de investimento fazem parte de transações divididas. Remova primeiro essas linhas de divisão nas transações principais e depois elimine todas as transações de investimento.",
     "embeddedStatusLocked": "Esta transação de investimento faz parte de uma transação dividida. Altere antes o estado da transação dividida, para que ambos os lados mudem em conjunto.",
     "accruedInterestActionNotAllowed": "Os juros corridos só podem ser registados numa transação REDEEM, não em {{ action }}.",
     "accruedInterestNotAllowedInSplit": "Os juros corridos não podem ser registados numa transação de investimento dentro de uma divisão. Registe os juros como uma linha própria da divisão.",
