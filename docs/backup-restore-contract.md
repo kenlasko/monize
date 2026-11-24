@@ -1402,11 +1402,18 @@ Known and unresolved; none of these is a bug report waiting to be filed:
   preference rows nothing is known, so nothing is normalized. A new entry states
   its own evidence rule; a migration with no such column to lean on has no safe
   marker-less rule and normalizes only artifacts that carry a marker.
-- **Delegation is reset.** `account_delegates`, `account_delegate_grants` and
-  `delegate_account_favourites` are excluded by design, and cascade away when
-  accounts are deleted. A restore therefore removes existing grants and
-  favourites. Whether that security reset is the intended product behaviour is
-  undecided.
+- **Delegation is kept, not reset.** `account_delegates`, `account_delegate_grants`,
+  `delegate_account_favourites` and `delegate_net_worth_exclusions` are excluded
+  from a backup, and the wipe of `accounts` cascades the last three away. A
+  restore therefore reads them before the wipe (`restore-delegations.ts`) and,
+  after the commit, writes them back onto each restored account's fresh id
+  (through `idRemap`) where the delegation still exists, in a system-context
+  transaction because the favourites and exclusions belong to the delegates.
+  A favourite or exclusion returns only with its delegate's grant. The result
+  reports `delegationRows: { kept, notRestored }` and `severedReferences`
+  (`table.column`, count) -- the latter no longer only in the log. A failed
+  write-back leaves the committed restore in place and counts every row as not
+  restored.
 - **`ON CONFLICT DO NOTHING` counts optimistically.** `insertRows` increments its
   counter per attempted row, not per affected row, and there is no post-restore
   cardinality or closure check. UUID remapping removes ordinary primary-key

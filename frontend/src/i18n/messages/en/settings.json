@@ -911,6 +911,15 @@
         "not-attempted": "too many series in one restore; not attempted",
         "other": "unknown reason"
       },
+      "delegationRowsLost": "{count, plural, one {# shared-access entry} other {# shared-access entries}} on your accounts could not be restored: a grant, or a favourite or net-worth exclusion that another user set on one of your accounts. The account is not in the backup, or the sharing was removed. Share the account with that user again.",
+      "delegationRowsKept": "{count, plural, one {# shared-access entry was kept} other {# shared-access entries were kept}}: people you share accounts with keep their access, favourites and net-worth exclusions on the restored accounts.",
+      "severedReferences": "Some rows pointed at data that is not in the backup. They were restored without that link:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "{count, plural, one {# transfer to or from another user lost its paired transaction} other {# transfers to or from another user lost their paired transactions}}. The other user's side is not in your backup.",
+        "accounts_institution_id": "{count, plural, one {# account lost its institution} other {# accounts lost their institution}}: the backup does not contain it. Choose the institution again on the account.",
+        "budget_categories_bucket_id": "{count, plural, one {# budget category lost its bucket} other {# budget categories lost their bucket}}: it counts as unassigned.",
+        "other": "{count, plural, one {# row} other {# rows}} lost a link ({name})."
+      },
       "doneButton": "Done",
       "unlinkedBondSecuritiesList": "Affected securities: {symbols}.",
       "unlinkedBondSecuritiesMore": "and {count} more",

@@ -99,6 +99,18 @@ export interface RestoreResult {
     securityCount: number;
     defaultCurrency: string | null;
   };
+  /**
+   * Grants, delegate favourites and net-worth exclusions on the restored
+   * accounts: `kept` were written back, `notRestored` could not be (the account
+   * is not in the file, or the delegation is gone). Outside `restored`. Absent
+   * when the accounts had none.
+   */
+  delegationRows?: { kept: number; notRestored: number };
+  /**
+   * References the file named but did not carry, restored unlinked: one entry
+   * per `table.column`. Outside `restored`. Absent when none.
+   */
+  severedReferences?: { table: string; column: string; count: number }[];
 }
 
 export type SupportBackupSection =

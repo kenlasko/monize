@@ -66,6 +66,13 @@ const UNRECOVERED_SERIES_REASONS: ReadonlySet<string> = new Set([
   'not-attempted',
 ]);
 
+/** The `table.column` references the server reports as restored unlinked. */
+const SEVERED_REFERENCE_KINDS: ReadonlySet<string> = new Set([
+  'transactions.linked_transaction_id',
+  'accounts.institution_id',
+  'budget_categories.bucket_id',
+]);
+
 /**
  * The restore wrote rows whose currency's kind on this server disagrees with
  * them; name each kind of row, list what the server named, and say how to
@@ -867,6 +874,46 @@ export function BackupRestoreSection({ user }: BackupRestoreSectionProps) {
                     )}
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* Delegation rows live outside a backup; the restore wrote back the
+                ones it could. Say how many it could not, so a delegate's lost
+                access is never silent. */}
+            {!!restoreResult.delegationRows?.notRestored && (
+              <p className="mt-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-800 dark:text-amber-200">
+                {t('restoreResult.delegationRowsLost', {
+                  count: restoreResult.delegationRows.notRestored,
+                })}
+              </p>
+            )}
+            {!!restoreResult.delegationRows?.kept && (
+              <p className="mt-4 rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-sm text-gray-700 dark:text-gray-300">
+                {t('restoreResult.delegationRowsKept', {
+                  count: restoreResult.delegationRows.kept,
+                })}
+              </p>
+            )}
+
+            {/* References the file named without carrying the row: restored unlinked. */}
+            {!!restoreResult.severedReferences?.length && (
+              <div className="mt-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-800 dark:text-amber-200">
+                <p>{t('restoreResult.severedReferences')}</p>
+                <ul className="mt-2 list-disc pl-5">
+                  {restoreResult.severedReferences.map((item) => {
+                    const key = `${item.table}.${item.column}`;
+                    return (
+                      <li key={key}>
+                        {t(
+                          SEVERED_REFERENCE_KINDS.has(key)
+                            ? `restoreResult.severedReferenceKind.${key.replace('.', '_')}`
+                            : 'restoreResult.severedReferenceKind.other',
+                          { count: item.count, name: key },
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             )}
 

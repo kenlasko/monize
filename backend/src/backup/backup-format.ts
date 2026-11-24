@@ -117,6 +117,21 @@ export interface RestoreResult {
     securityCount: number;
     defaultCurrency: string | null;
   };
+  /**
+   * Grants, delegate favourites and delegate net-worth exclusions on the
+   * restored accounts. They are not in a backup, so the restore reads them
+   * before the wipe and writes them again onto the restored accounts
+   * (`restore-delegations.ts`): `kept` were written back, `notRestored` could
+   * not be (the account is not in the file, or the delegation is gone).
+   * Omitted when the user's accounts had none.
+   */
+  delegationRows?: { kept: number; notRestored: number };
+  /**
+   * References the file named but did not carry, restored unlinked instead of
+   * refused (`SEVERED_WHEN_UNRESOLVED`): one entry per `table.column`, `count`
+   * rows each. Omitted when none.
+   */
+  severedReferences?: Array<{ table: string; column: string; count: number }>;
 }
 
 /** Why a series a backup references could not be fetched during the restore. */
