@@ -1,12 +1,14 @@
 'use client';
 
-import { useRef, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { userSettingsApi } from '@/lib/user-settings';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getErrorMessage } from '@/lib/errors';
+import { createLatestSaveTracker } from '@/lib/helpers/latest-save';
+import type { UserPreferences } from '@/types/auth';
 import { paletteAfterStyleChange, UI_STYLES, UiStyle } from '@/lib/ui-styles';
 import type { ColorTheme } from '@/lib/color-themes';
 
@@ -41,7 +43,7 @@ export function UiStyleSelector({
   const updatePreferencesStore = usePreferencesStore((state) => state.updatePreferences);
   const { setUiStyle: setAppUiStyle, setColorTheme: setAppColorTheme } = useTheme();
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const saveSeq = useRef(0);
+  const [saves] = useState(() => createLatestSaveTracker<UserPreferences>());
 
   const handleChange = (next: UiStyle) => {
     // A style offers only its own palettes (`UI_STYLE_PALETTES`); one the new
@@ -56,20 +58,22 @@ export function UiStyleSelector({
       setAppColorTheme(palette);
     }
 
-    // Arrowing through the options saves each one; only the latest save's
-    // reply is adopted, so an earlier reply landing late cannot put the store
-    // back on a style the reader has already moved past.
-    const seq = ++saveSeq.current;
+    // Arrowing through the options saves each one. The latest save's reply is
+    // adopted, and an earlier one only once the latest has failed, so the
+    // store ends on what the server holds (`createLatestSaveTracker`).
+    const save = saves.begin();
     startTransition(async () => {
       try {
         const updated = await userSettingsApi.updatePreferences(
           paletteChanged ? { uiStyle: next, colorTheme: palette } : { uiStyle: next },
         );
-        if (seq !== saveSeq.current) return;
-        updatePreferencesStore(updated);
-        toast.success(t('toasts.saved'));
+        const { adopt, isLatest } = save.succeeded(updated);
+        if (adopt) updatePreferencesStore(adopt);
+        if (isLatest) toast.success(t('toasts.saved'));
       } catch (error) {
-        if (seq !== saveSeq.current) return;
+        const { adopt, isLatest } = save.failed();
+        if (adopt) updatePreferencesStore(adopt);
+        if (!isLatest) return;
         toast.error(getErrorMessage(error, t('toasts.uiStyleSaveFailed')));
       }
     });

@@ -1,6 +1,6 @@
 import apiClient from './api';
 import { PORTFOLIO_VALUATION_TIMEOUT_MS } from './constants';
-import { dedupe } from './apiCache';
+import { dedupe, invalidateCache } from './apiCache';
 import {
   MonthlyNetWorth,
   MonthlyInvestmentValue,
@@ -217,10 +217,17 @@ export const netWorthApi = {
     return response.data;
   },
 
+  /**
+   * Rebuilds the monthly snapshots on the server, so the coalesced
+   * `getMonthly` answers are dropped once it returns: the report reloads
+   * straight after, inside `getMonthly`'s TTL, and would otherwise be served
+   * the series from before the rebuild.
+   */
   recalculate: async (): Promise<{ success: boolean }> => {
     const response = await apiClient.post<{ success: boolean }>(
       '/net-worth/recalculate',
     );
+    invalidateCache('accounts:net-worth-monthly:');
     return response.data;
   },
 };

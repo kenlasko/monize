@@ -118,6 +118,16 @@ describe('netWorthApi', () => {
     expect(result.success).toBe(true);
   });
 
+  it('getMonthly asks again once a recalculation has rebuilt the snapshots', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { success: true } });
+    const window = { startDate: '2025-01-01', endDate: '2025-12-31' };
+    await netWorthApi.getMonthly(window);
+    await netWorthApi.recalculate();
+    await netWorthApi.getMonthly(window);
+    expect(apiClient.get).toHaveBeenCalledTimes(2);
+  });
+
   it('getInvestmentsDaily fetches /net-worth/investments-daily', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
     await netWorthApi.getInvestmentsDaily({ accountIds: 'a1', displayCurrency: 'CAD' });

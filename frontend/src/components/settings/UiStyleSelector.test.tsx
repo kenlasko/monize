@@ -141,6 +141,33 @@ describe('UiStyleSelector', () => {
     updateSpy.mockRestore();
   });
 
+  it('adopts the earlier save the server kept when the latest one fails', async () => {
+    const replies: Array<{ resolve: (value: unknown) => void; reject: (error: unknown) => void }> = [];
+    const pending = () =>
+      new Promise((resolve, reject) => replies.push({ resolve, reject }));
+    (userSettingsApi.updatePreferences as ReturnType<typeof vi.fn>)
+      .mockImplementationOnce(pending)
+      .mockImplementationOnce(pending);
+    const updateSpy = vi.spyOn(usePreferencesStore.getState(), 'updatePreferences');
+    render(<UiStyleSelector value="standard" onChange={() => {}} colorTheme="default" onColorThemeChange={() => {}} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', { name: /folio/i }));
+      fireEvent.click(screen.getByRole('radio', { name: /pebble/i }));
+    });
+    expect(replies).toHaveLength(2);
+    await act(async () => {
+      replies[0].resolve({ uiStyle: 'folio' });
+      replies[1].reject(new Error('offline'));
+    });
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to save UI style'));
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy).toHaveBeenCalledWith({ uiStyle: 'folio' });
+    expect(toast.success).not.toHaveBeenCalled();
+    updateSpy.mockRestore();
+  });
+
   describe('palettes follow the style', () => {
     it('switches to the companion when the palette in use is not one the style offers', async () => {
       const onColorThemeChange = vi.fn();

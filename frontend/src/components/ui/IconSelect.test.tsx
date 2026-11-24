@@ -93,14 +93,19 @@ describe('IconSelect', () => {
     expect(onChange.mock.results[0].value).toBe('a-2');
   });
 
-  it('leaves the active row to the keyboard when the pointer moves over the list', () => {
-    render(<IconSelect label="Account" options={options} value="a-1" onChange={vi.fn()} />);
+  it('picks the row under the pointer on Enter, without scrolling the list to it', () => {
+    const onChange = vi.fn((event: React.ChangeEvent<HTMLSelectElement>) => event.target.value);
+    render(<IconSelect label="Account" options={options} value="a-1" onChange={onChange} />);
     const trigger = screen.getByRole('combobox', { name: 'Account' });
     fireEvent.keyDown(trigger, { key: 'ArrowDown' });
-    const active = trigger.getAttribute('aria-activedescendant');
-    expect(screen.getByRole('option', { name: /Chequing/ }).id).toBe(active);
-    fireEvent.mouseEnter(screen.getByRole('option', { name: /Savings/ }));
-    expect(trigger.getAttribute('aria-activedescendant')).toBe(active);
+    const savings = screen.getByRole('option', { name: /Savings/ });
+    const scrollIntoView = vi.fn();
+    savings.scrollIntoView = scrollIntoView;
+    fireEvent.mouseEnter(savings);
+    expect(trigger.getAttribute('aria-activedescendant')).toBe(savings.id);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(onChange.mock.results[0].value).toBe('a-2');
   });
 
   it('does not redraw the open list on a scroll frame that leaves the field in place', async () => {
