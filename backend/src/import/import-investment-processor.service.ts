@@ -38,6 +38,16 @@ import {
 import { isQifCashTransfer } from "./qif-cash-transfer-action";
 import { assertSecuritiesActiveIn } from "../securities/inactive-security.util";
 
+/** Sign of the cash leg per Quicken cash-only action; 0 keeps the file's sign. */
+const CASH_ONLY_SIGN: Record<string, -1 | 0 | 1> = {
+  miscexp: -1,
+  margint: -1,
+  withdrw: -1,
+  miscinc: 1,
+  contrib: 1,
+  cash: 0,
+};
+
 @Injectable()
 export class ImportInvestmentProcessorService {
   private readonly logger = new Logger(ImportInvestmentProcessorService.name);
@@ -114,13 +124,35 @@ export class ImportInvestmentProcessorService {
         qifTx.isTransfer ? qifTx.transferAccount : null,
       )
     ) {
-      // WithdrwX means money leaving the account (like XOut)
-      if (qifActionRaw === "withdrwx") {
+      // Withdrw(X) means money leaving the account (like XOut)
+      if (qifActionRaw === "withdrwx" || qifActionRaw === "withdrw") {
         qifTx.action = "xout";
-      } else if (qifActionRaw === "contribx") {
+      } else if (qifActionRaw === "contribx" || qifActionRaw === "contrib") {
         qifTx.action = "xin";
       }
       await this.processCashTransfer(ctx, qifTx);
+      return;
+    }
+
+    // Quicken's cash-only actions have no Monize investment action: they are
+    // plain cash transactions in the cash account and write no investment row.
+    // (Withdrw/Contrib naming a mapped account were routed above as transfers.)
+    const cashOnlyBase = qifActionRaw.replace(/x$/, "");
+    const cashOnlySign = CASH_ONLY_SIGN[cashOnlyBase];
+    if (cashOnlySign !== undefined) {
+      const amount = qifTx.amount || 0;
+      await this.processCashTransfer(
+        ctx,
+        {
+          ...qifTx,
+          action: "cashonly",
+          isTransfer: false,
+          transferAccount: null,
+          // Quicken writes these amounts unsigned; Cash keeps the file's sign.
+          amount: cashOnlySign === 0 ? amount : cashOnlySign * Math.abs(amount),
+        },
+        (qifTx.category && ctx.categoryMap.get(qifTx.category)) || null,
+      );
       return;
     }
 
@@ -144,19 +176,13 @@ export class ImportInvestmentProcessorService {
       reinvlg: InvestmentAction.REINVEST_CAPITAL_GAIN_LONG,
       reinvsh: InvestmentAction.REINVEST_CAPITAL_GAIN_SHORT,
       reinvmd: InvestmentAction.REINVEST,
-      // Quicken-specific actions
-      withdrw: InvestmentAction.SELL,
-      contrib: InvestmentAction.BUY,
-      margint: InvestmentAction.INTEREST,
-      miscexp: InvestmentAction.INTEREST,
-      miscinc: InvestmentAction.INTEREST,
+      // Quicken-specific actions (cash-only ones are CASH_ONLY_SIGN above)
       // Return of capital is not a dividend: it comes off the basis (#1800).
       rtrncap: InvestmentAction.RETURN_OF_CAPITAL,
       shtsell: InvestmentAction.SELL,
       cvrshrt: InvestmentAction.BUY,
       xin: InvestmentAction.TRANSFER_IN,
       xout: InvestmentAction.TRANSFER_OUT,
-      cash: InvestmentAction.INTEREST,
       exercise: InvestmentAction.BUY,
       expire: InvestmentAction.REMOVE_SHARES,
       grant: InvestmentAction.ADD_SHARES,
@@ -372,6 +398,7 @@ export class ImportInvestmentProcessorService {
   private async processCashTransfer(
     ctx: ImportContext,
     qifTx: any,
+    categoryId: string | null = null,
   ): Promise<void> {
     // Determine the cash account to credit/debit.
     // For brokerage accounts with a linked cash account, cash goes there.
@@ -483,6 +510,7 @@ export class ImportInvestmentProcessorService {
       description: qifTx.memo || null,
       status,
       currencyCode: cashCurrencyCode,
+      categoryId,
       isTransfer: !!transferAccountId,
     });
     const savedCashTx = await ctx.manager.save(cashTx);
