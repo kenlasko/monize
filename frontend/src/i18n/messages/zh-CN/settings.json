@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "已关联的个人交易",
         "budgetBuckets": "预算资金桶",
         "budgetPeriodBuckets": "预算期间资金桶"
+      },
+      "delegationRowsLost": "无法恢复的共享访问条目：{count} 个。它们是其他用户在您某个账户上设置的授权、收藏或净资产排除。该账户不在备份中，或共享已被移除。请重新与该用户共享此账户。",
+      "delegationRowsKept": "已保留的共享访问条目：{count} 个。与您共享账户的人在已恢复的账户上保留其访问权限、收藏和净资产排除。",
+      "severedReferences": "有些行指向备份中不存在的数据。它们已在没有该链接的情况下恢复：",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "失去配对交易的跨用户转账：{count} 笔。对方用户一侧不在您的备份中。",
+        "accounts_institution_id": "失去所属机构的账户：{count} 个。备份中不包含该机构。请在账户上重新选择机构。",
+        "budget_categories_bucket_id": "失去分组的预算类别：{count} 个。它们按未分配计算。",
+        "other": "失去链接的行（{name}）：{count} 行。"
       }
     },
     "storedBackups": {

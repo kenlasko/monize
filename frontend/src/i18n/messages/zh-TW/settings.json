@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "已連結的個人交易",
         "budgetBuckets": "預算資金桶",
         "budgetPeriodBuckets": "預算期間資金桶"
+      },
+      "delegationRowsLost": "無法還原的共用存取項目：{count} 個。它們是其他使用者在您某個帳戶上設定的授權、我的最愛或淨資產排除。該帳戶不在備份中，或共用已被移除。請重新與該使用者共用此帳戶。",
+      "delegationRowsKept": "已保留的共用存取項目：{count} 個。與您共用帳戶的人在已還原的帳戶上保留其存取權限、我的最愛和淨資產排除。",
+      "severedReferences": "有些列指向備份中不存在的資料。它們已在沒有該連結的情況下還原：",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "失去配對交易的跨使用者轉帳：{count} 筆。對方使用者一側不在您的備份中。",
+        "accounts_institution_id": "失去所屬機構的帳戶：{count} 個。備份中不包含該機構。請在帳戶上重新選擇機構。",
+        "budget_categories_bucket_id": "失去分組的預算類別：{count} 個。它們視為未分配。",
+        "other": "失去連結的列（{name}）：{count} 列。"
       }
     },
     "storedBackups": {

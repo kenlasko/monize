@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Verknüpfte persönliche Transaktionen",
         "budgetBuckets": "Budget-Töpfe",
         "budgetPeriodBuckets": "Budget-Periodentöpfe"
+      },
+      "delegationRowsLost": "Einträge für geteilten Zugriff, die nicht wiederhergestellt werden konnten: {count}. Es sind Freigaben oder Favoriten bzw. Nettovermögen-Ausschlüsse, die ein anderer Nutzer für eines Ihrer Konten gesetzt hat. Das Konto ist nicht in der Sicherung, oder die Freigabe wurde entfernt. Geben Sie das Konto für diesen Nutzer erneut frei.",
+      "delegationRowsKept": "Einträge für geteilten Zugriff, die erhalten blieben: {count}. Personen, für die Sie Konten freigeben, behalten Zugriff, Favoriten und Nettovermögen-Ausschlüsse auf den wiederhergestellten Konten.",
+      "severedReferences": "Einige Zeilen verwiesen auf Daten, die nicht in der Sicherung sind. Sie wurden ohne diese Verknüpfung wiederhergestellt:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Überweisungen von oder zu einem anderen Nutzer, die ihre Gegenbuchung verloren haben: {count}. Die Seite des anderen Nutzers ist nicht in Ihrer Sicherung.",
+        "accounts_institution_id": "Konten, die ihr Institut verloren haben: {count}. Die Sicherung enthält es nicht. Wählen Sie das Institut am Konto erneut aus.",
+        "budget_categories_bucket_id": "Budgetkategorien, die ihren Bucket verloren haben: {count}. Sie gelten als nicht zugeordnet.",
+        "other": "Zeilen, die eine Verknüpfung verloren haben ({name}): {count}."
       }
     },
     "storedBackups": {

@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "リンクされた個人取引",
         "budgetBuckets": "予算のバケット",
         "budgetPeriodBuckets": "予算期間のバケット"
+      },
+      "delegationRowsLost": "復元できなかった共有アクセスのエントリ: {count} 件。別のユーザーがあなたの口座に設定した権限、お気に入り、純資産からの除外です。口座がバックアップにないか、共有が削除されています。そのユーザーと口座をもう一度共有してください。",
+      "delegationRowsKept": "保持された共有アクセスのエントリ: {count} 件。口座を共有している相手は、復元された口座に対するアクセス、お気に入り、純資産からの除外を引き続き保持します。",
+      "severedReferences": "一部の行が、バックアップにないデータを指していました。そのリンクなしで復元されました:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "対応する取引を失った、他のユーザーとの間の振替: {count} 件。相手側のデータはバックアップに含まれていません。",
+        "accounts_institution_id": "金融機関を失った口座: {count} 件。バックアップには含まれていません。口座で金融機関を選び直してください。",
+        "budget_categories_bucket_id": "バケットを失った予算カテゴリ: {count} 件。未割り当てとして扱われます。",
+        "other": "リンクを失った行 ({name}): {count} 件。"
       }
     },
     "storedBackups": {

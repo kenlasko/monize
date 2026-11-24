@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Transactions personnelles liées",
         "budgetBuckets": "Enveloppes budgétaires",
         "budgetPeriodBuckets": "Enveloppes de périodes budgétaires"
+      },
+      "delegationRowsLost": "Entrées d'accès partagé qui n'ont pas pu être restaurées : {count}. Ce sont des autorisations, ou des favoris ou exclusions du patrimoine net définis par un autre utilisateur sur l'un de vos comptes. Le compte n'est pas dans la sauvegarde, ou le partage a été supprimé. Partagez de nouveau le compte avec cet utilisateur.",
+      "delegationRowsKept": "Entrées d'accès partagé conservées : {count}. Les personnes avec qui vous partagez des comptes gardent leur accès, leurs favoris et leurs exclusions du patrimoine net sur les comptes restaurés.",
+      "severedReferences": "Certaines lignes pointaient vers des données absentes de la sauvegarde. Elles ont été restaurées sans ce lien :",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Virements vers ou depuis un autre utilisateur qui ont perdu leur transaction jumelle : {count}. Le côté de l'autre utilisateur n'est pas dans votre sauvegarde.",
+        "accounts_institution_id": "Comptes qui ont perdu leur établissement : {count}. La sauvegarde ne le contient pas. Choisissez de nouveau l'établissement sur le compte.",
+        "budget_categories_bucket_id": "Catégories de budget qui ont perdu leur regroupement : {count}. Elles comptent comme non affectées.",
+        "other": "Lignes qui ont perdu un lien ({name}) : {count}."
       }
     },
     "storedBackups": {

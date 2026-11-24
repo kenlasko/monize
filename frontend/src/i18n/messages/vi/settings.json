@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "Giao dịch cá nhân được liên kết",
         "budgetBuckets": "Hũ ngân sách",
         "budgetPeriodBuckets": "Hũ kỳ ngân sách"
+      },
+      "delegationRowsLost": "Số mục truy cập chia sẻ không thể khôi phục: {count}. Đó là quyền được cấp, hoặc mục yêu thích hay mục loại trừ khỏi giá trị ròng mà người dùng khác đặt cho một trong các tài khoản của bạn. Tài khoản không có trong bản sao lưu, hoặc việc chia sẻ đã bị gỡ. Hãy chia sẻ lại tài khoản với người dùng đó.",
+      "delegationRowsKept": "Số mục truy cập chia sẻ được giữ lại: {count}. Những người bạn chia sẻ tài khoản vẫn giữ quyền truy cập, mục yêu thích và mục loại trừ khỏi giá trị ròng trên các tài khoản đã khôi phục.",
+      "severedReferences": "Một số dòng trỏ tới dữ liệu không có trong bản sao lưu. Chúng được khôi phục mà không có liên kết đó:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "Số khoản chuyển từ hoặc đến người dùng khác bị mất giao dịch đối ứng: {count}. Phía người dùng khác không có trong bản sao lưu của bạn.",
+        "accounts_institution_id": "Số tài khoản bị mất tổ chức: {count}. Bản sao lưu không chứa tổ chức đó. Hãy chọn lại tổ chức trên tài khoản.",
+        "budget_categories_bucket_id": "Số danh mục ngân sách bị mất nhóm: {count}. Chúng được tính là chưa gán.",
+        "other": "Số dòng bị mất một liên kết ({name}): {count}."
       }
     },
     "storedBackups": {

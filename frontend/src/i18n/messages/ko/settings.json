@@ -933,6 +933,15 @@
         "sharedLedgerLinks": "연결된 개인 거래",
         "budgetBuckets": "예산 버킷",
         "budgetPeriodBuckets": "예산 기간 버킷"
+      },
+      "delegationRowsLost": "복원하지 못한 공유 액세스 항목: {count}개. 다른 사용자가 내 계좌에 설정한 권한, 즐겨찾기 또는 순자산 제외입니다. 계좌가 백업에 없거나 공유가 삭제되었습니다. 해당 사용자와 계좌를 다시 공유하세요.",
+      "delegationRowsKept": "유지된 공유 액세스 항목: {count}개. 계좌를 공유한 사람은 복원된 계좌에 대한 액세스, 즐겨찾기, 순자산 제외를 그대로 유지합니다.",
+      "severedReferences": "일부 행이 백업에 없는 데이터를 가리켰습니다. 해당 연결 없이 복원되었습니다:",
+      "severedReferenceKind": {
+        "transactions_linked_transaction_id": "짝이 되는 거래를 잃은 다른 사용자와의 이체: {count}건. 상대 사용자 쪽은 백업에 없습니다.",
+        "accounts_institution_id": "금융기관을 잃은 계좌: {count}개. 백업에 포함되어 있지 않습니다. 계좌에서 금융기관을 다시 선택하세요.",
+        "budget_categories_bucket_id": "버킷을 잃은 예산 카테고리: {count}개. 미할당으로 계산됩니다.",
+        "other": "연결을 잃은 행 ({name}): {count}개."
       }
     },
     "storedBackups": {
