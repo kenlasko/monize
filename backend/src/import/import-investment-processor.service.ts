@@ -169,8 +169,17 @@ export class ImportInvestmentProcessorService {
 
     const qifAction = (qifTx.action || "").toLowerCase();
     const baseAction = qifAction.replace(/x$/, "");
-    const action =
-      actionMap[baseAction] || actionMap[qifAction] || InvestmentAction.BUY;
+    const mapped = actionMap[baseAction] || actionMap[qifAction];
+    // A named action the map does not know (NReprice, NStkDiv, a typo) is
+    // refused, not stored as a BUY that spends cash. The row's savepoint rolls
+    // back and the file's errorMessages name it. An empty action (no N line)
+    // keeps the BUY default.
+    if (!mapped && qifAction !== "") {
+      throw new Error(
+        `Unknown investment action "${qifTx.action}" (amount ${qifTx.amount ?? 0}); the row was not imported`,
+      );
+    }
+    const action = mapped || InvestmentAction.BUY;
 
     // Resolve security
     let securityId = qifTx.security
