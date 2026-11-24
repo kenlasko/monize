@@ -500,6 +500,7 @@ export const RULES: Record<string, TableRules> = {
     volume: keep,
     source: keep,
     quoted_at: keep, // when the quote was struck; price_date beside it is kept too
+    refreshed_at: keep, // when a refresh last wrote the row
     created_at: keep,
   },
   security_documents: {

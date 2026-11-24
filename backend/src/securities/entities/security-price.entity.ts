@@ -107,6 +107,16 @@ export class SecurityPrice {
   @Column({ type: "timestamptz", name: "quoted_at", nullable: true })
   quotedAt: Date | null;
 
+  /**
+   * The instant a provider refresh last wrote this row, on insert and on every
+   * same-day update, which is what "last updated" means to the reader. Null for
+   * manual entries, rows derived from transactions, and everything written
+   * before the column existed.
+   */
+  @ApiProperty({ required: false, nullable: true })
+  @Column({ type: "timestamptz", name: "refreshed_at", nullable: true })
+  refreshedAt: Date | null;
+
   @ManyToOne(() => Security)
   @JoinColumn({ name: "security_id" })
   security: Security;

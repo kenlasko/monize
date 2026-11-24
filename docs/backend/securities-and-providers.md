@@ -14,6 +14,8 @@ Paths beginning with `src/`, `test/` or `scripts/`, and layer configuration file
 
 A daily bar is not a quote, so settling clears `quoted_at`; and a `source = 'manual'` row is a user correction no provider write may overwrite -- the quote path and `bulkUpsertPrices` both carry `WHERE security_prices.source IS DISTINCT FROM 'manual'`, and the quote path treats the refusal as a successful no-op that reads back the winning row. The honest cost: a manual row on a provider-priced security has no adjusted close, so that day stays out of the adjusted series.
 
+**"Last updated" is when a refresh last wrote, not when the row was created.** A same-day refresh updates the row in place, so `created_at` stays at the day's first write and the Investments page's Refresh button read "6 hours ago" after a page load while the 15-minute automatic refresh had written a minute earlier (#2385). The quote path stamps `refreshed_at = NOW()` on insert and update, and `getLastUpdateTime` (`GET /securities/prices/status`) orders by `COALESCE(refreshed_at, created_at)`; `quoted_at` is the provider's strike time, which is a different question.
+
 Related: **a bar's timestamp is the instant its session opened, so the day it belongs to is the exchange's calendar day.** `barDate` reads it in `meta.exchangeTimezoneName`, falling back to UTC; `setHours(0,0,0,0)` made `price_date` a function of the container's timezone.
 
 ## A price is a number in a currency, and only one side of that reaches the row

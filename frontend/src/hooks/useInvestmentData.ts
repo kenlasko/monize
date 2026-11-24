@@ -301,9 +301,9 @@ export function useInvestmentData() {
     // (Value change / Investment result, Portfolio performance) fetch their
     // own and re-ask only when this key moves.
     setWriteRefreshKey((key) => key + 1);
-    // Prefer the refresh result's timestamp: savePriceData UPDATEs existing
-    // rows in place, so the DB-backed lastUpdated (createdAt) wouldn't advance
-    // on same-day refreshes. Fall back to the DB value if the result didn't
+    // Prefer the refresh result's timestamp, which saves a round trip; the
+    // status endpoint answers from the rows' refreshed_at, so a page load
+    // reads the same instant (#2385). Fall back to it if the result didn't
     // carry one (e.g. when no securities to refresh).
     if (lastUpdated) {
       setLastPriceUpdate(lastUpdated);

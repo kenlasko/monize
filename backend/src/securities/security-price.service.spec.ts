@@ -1,4 +1,3 @@
-import { Not } from "typeorm";
 import { Logger, NotFoundException } from "@nestjs/common";
 import {
   SecurityPriceService,
@@ -637,23 +636,61 @@ describe("SecurityPriceService", () => {
   });
 
   describe("getLastUpdateTime", () => {
-    it("returns the createdAt of the most recent price entry", async () => {
+    const mockLatestQuery = (row: unknown) => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(row),
+      };
+      securityPriceRepository.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    };
+
+    /**
+     * Issue #2385: a same-day refresh updates the row in place, so its
+     * `createdAt` stays at the day's first write. Answering from it put
+     * "6 hours ago" on the Investments page's Refresh button after a page load,
+     * while the automatic refresh had written a minute earlier.
+     */
+    it("answers with when a refresh last wrote, not when the row was created", async () => {
+      const createdAt = new Date("2025-06-01T14:30:00Z");
+      const refreshedAt = new Date("2025-06-01T20:29:00Z");
+      const qb = mockLatestQuery({ createdAt, refreshedAt });
+
+      const result = await service.getLastUpdateTime();
+
+      expect(result).toEqual(refreshedAt);
+      expect(qb.orderBy).toHaveBeenCalledWith(
+        "COALESCE(sp.refreshed_at, sp.created_at)",
+        "DESC",
+      );
+      expect(qb.limit).toHaveBeenCalledWith(1);
+    });
+
+    it("excludes bond-engine rows", async () => {
+      // A bond-engine row is written every day by accrual: it is not a quote
+      // provider's write, and counting it would hide a provider outage.
+      const qb = mockLatestQuery(null);
+
+      await service.getLastUpdateTime();
+
+      expect(qb.where).toHaveBeenCalledWith("sp.source <> :bondEngine", {
+        bondEngine: "bond_engine",
+      });
+    });
+
+    it("falls back to createdAt for a row no refresh wrote", async () => {
       const createdAt = new Date("2025-06-01T17:00:00Z");
-      securityPriceRepository.findOne.mockResolvedValue({ createdAt });
+      mockLatestQuery({ createdAt, refreshedAt: null });
 
       const result = await service.getLastUpdateTime();
 
       expect(result).toEqual(createdAt);
-      expect(securityPriceRepository.findOne).toHaveBeenCalledWith({
-        // A bond-engine row is written every day by accrual: it is not a quote
-        // provider's write, and counting it would hide a provider outage.
-        where: { source: Not("bond_engine") },
-        order: { createdAt: "DESC" },
-      });
     });
 
     it("returns null when no price entries exist", async () => {
-      securityPriceRepository.findOne.mockResolvedValue(null);
+      mockLatestQuery(null);
 
       const result = await service.getLastUpdateTime();
 
@@ -3513,6 +3550,10 @@ describe("SecurityPriceService", () => {
 
       const sql = priceUpsertSql();
       expect(sql).toContain("ON CONFLICT (security_id, price_date) DO UPDATE");
+      // Stamped on the update branch too: the row a same-day refresh rewrites
+      // is the one the Refresh button's "x ago" is read from (#2385).
+      expect(sql).toContain("refreshed_at = EXCLUDED.refreshed_at");
+      expect(sql).toMatch(/\$9::TIMESTAMPTZ, NOW\(\)/);
       // The read-back is by the id the statement returned, so it cannot pick up
       // a different row.
       expect(sql).toContain("RETURNING id");

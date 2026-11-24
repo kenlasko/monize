@@ -5,7 +5,7 @@ import {
   Optional,
 } from "@nestjs/common";
 import { tr } from "../i18n/translate";
-import { In, DataSource, EntityManager, Not } from "typeorm";
+import { In, DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { returnedRows } from "../common/db/query-result";
 import { Cron } from "@nestjs/schedule";
@@ -1084,7 +1084,8 @@ export class SecurityPriceService {
       const rows: unknown = await m.query(
         `INSERT INTO security_prices
            (security_id, price_date, open_price, high_price, low_price,
-            close_price, adjusted_close, volume, source, quoted_at)
+            close_price, adjusted_close, volume, source, quoted_at,
+            refreshed_at)
          SELECT $1::UUID, $2::DATE, $3::NUMERIC, $4::NUMERIC, $5::NUMERIC,
                 $6::NUMERIC,
                 CASE WHEN EXISTS (
@@ -1092,7 +1093,7 @@ export class SecurityPriceService {
                         WHERE adj.security_id = $1::UUID
                           AND adj.adjusted_close IS NOT NULL
                      ) THEN $6::NUMERIC ELSE NULL END,
-                $7::BIGINT, $8::VARCHAR, $9::TIMESTAMPTZ
+                $7::BIGINT, $8::VARCHAR, $9::TIMESTAMPTZ, NOW()
           WHERE NOT EXISTS (${BOND_LINKED_SQL})
          ON CONFLICT (security_id, price_date) DO UPDATE SET
            close_price    = EXCLUDED.close_price,
@@ -1102,7 +1103,8 @@ export class SecurityPriceService {
            low_price   = COALESCE(EXCLUDED.low_price,   security_prices.low_price),
            volume      = COALESCE(EXCLUDED.volume,      security_prices.volume),
            source      = EXCLUDED.source,
-           quoted_at   = COALESCE(EXCLUDED.quoted_at,   security_prices.quoted_at)
+           quoted_at   = COALESCE(EXCLUDED.quoted_at,   security_prices.quoted_at),
+           refreshed_at = EXCLUDED.refreshed_at
          WHERE ${PROVIDER_MAY_REPLACE_SQL}
          RETURNING id`,
         [
@@ -1334,13 +1336,23 @@ export class SecurityPriceService {
    * marker: an outage of the quote providers must stay visible.
    */
   async getLastUpdateTime(): Promise<Date | null> {
+    // `refreshed_at`, not `created_at`: a same-day refresh updates the row in
+    // place, so `created_at` stays at the day's first write and the page said
+    // "6 hours ago" after a refresh a minute earlier (#2385). Rows no provider
+    // wrote (manual, transaction-derived, older than the column) still count
+    // by their `created_at`.
     const latest = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(SecurityPrice).findOne({
-        where: { source: Not(BOND_ENGINE_PRICE_SOURCE) },
-        order: { createdAt: "DESC" },
-      }),
+      m
+        .getRepository(SecurityPrice)
+        .createQueryBuilder("sp")
+        .where("sp.source <> :bondEngine", {
+          bondEngine: BOND_ENGINE_PRICE_SOURCE,
+        })
+        .orderBy("COALESCE(sp.refreshed_at, sp.created_at)", "DESC")
+        .limit(1)
+        .getOne(),
     );
-    return latest?.createdAt ?? null;
+    return latest ? (latest.refreshedAt ?? latest.createdAt) : null;
   }
 
   // ─── Historical backfill ─────────────────────────────────────────────────
