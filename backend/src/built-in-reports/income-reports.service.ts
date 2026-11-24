@@ -214,21 +214,29 @@ export class IncomeReportsService {
       }
     }
 
-    const data: IncomeSourceItem[] = Array.from(categoryTotals.entries())
+    // Signed net within the category (INV-REPORT-004): a correction lowers
+    // the source, and a source whose debits meet its credits earned nothing.
+    // Judged on the net's sign before rounding, so a source that earned
+    // 0.00003 is still one (docs/specs/report-rounding-and-aggregation.md
+    // rule 5).
+    const earned = Array.from(categoryTotals.entries()).filter(
+      ([, { agg }]) => agg.sign > 0,
+    );
+    const data: IncomeSourceItem[] = earned
       .map(([id, { agg, category }]) => ({
         categoryId: id,
         categoryName: category.name,
         color: category.color || null,
-        total: roundMoney(agg.knownSubtotal),
+        total: agg.knownSubtotal,
       }))
-      // Signed net within the category (INV-REPORT-004): a correction lowers
-      // the source, and a source whose debits meet its credits earned nothing.
-      .filter((item) => item.total > 0)
       .sort((a, b) => b.total - a.total);
 
     // Every source, not a top-N: the caller decides how many to draw. Cutting
-    // here made `totalIncome` the sum of the largest fifteen.
-    const knownIncome = roundMoney(sumMoney(data.map((item) => item.total)));
+    // here made `totalIncome` the sum of the largest fifteen. The sources fold
+    // as aggregates, so the total is rounded once (rule 2).
+    const income = new FxAggregate();
+    for (const [, { agg }] of earned) income.merge(agg);
+    const knownIncome = income.knownSubtotal;
 
     return {
       data,
@@ -441,7 +449,10 @@ export class IncomeReportsService {
     missingCurrencies: string[];
     excludedCount: number;
   } {
-    const byPeriod = new Map<string, { income: number; expenses: number }>();
+    const byPeriod = new Map<
+      string,
+      { income: FxAggregate; expenses: FxAggregate }
+    >();
     /**
      * Currencies with no rate into the reporting currency, and how many
      * aggregate rows that cost.
@@ -465,13 +476,13 @@ export class IncomeReportsService {
         continue;
       }
       const key = periodKeyForStart(row.period_start, bucket);
-      const existing = byPeriod.get(key);
-      if (existing) {
-        existing.income += income;
-        existing.expenses += expenses;
-      } else {
-        byPeriod.set(key, { income, expenses });
-      }
+      const period = byPeriod.get(key) ?? {
+        income: new FxAggregate(),
+        expenses: new FxAggregate(),
+      };
+      period.income.addConverted(income);
+      period.expenses.addConverted(expenses);
+      byPeriod.set(key, period);
     }
 
     // Every bucket in the window, including the empty ones: a week nothing
@@ -494,21 +505,36 @@ export class IncomeReportsService {
             periodEnd: bucket === "month" ? `${period}-01` : period,
           }));
 
+    // Each figure, a period's or the window's, is the single rounding of its
+    // own rows: the window folds the periods' aggregates rather than adding
+    // their four-place readings (docs/specs/report-rounding-and-aggregation.md
+    // rules 2 and 4), and a net is income less expenses before either is
+    // rounded.
+    const windowIncome = new FxAggregate();
+    const windowExpenses = new FxAggregate();
     const data: IncomeExpensePeriodItem[] = periods.map((period) => {
-      const found = byPeriod.get(period.period) ?? { income: 0, expenses: 0 };
+      const found = byPeriod.get(period.period);
+      const net = new FxAggregate();
+      if (found) {
+        windowIncome.merge(found.income);
+        windowExpenses.merge(found.expenses);
+        net.merge(found.income);
+        net.mergeNegated(found.expenses);
+      }
       return {
         ...period,
-        income: roundMoney(found.income),
-        expenses: roundMoney(found.expenses),
-        net: roundMoney(found.income - found.expenses),
+        income: found?.income.knownSubtotal ?? 0,
+        expenses: found?.expenses.knownSubtotal ?? 0,
+        net: net.knownSubtotal,
       };
     });
 
-    const knownIncome = roundMoney(sumMoney(data.map((item) => item.income)));
-    const knownExpenses = roundMoney(
-      sumMoney(data.map((item) => item.expenses)),
-    );
-    const knownNet = roundMoney(sumMoney(data.map((item) => item.net)));
+    const windowNet = new FxAggregate();
+    windowNet.merge(windowIncome);
+    windowNet.mergeNegated(windowExpenses);
+    const knownIncome = windowIncome.knownSubtotal;
+    const knownExpenses = windowExpenses.knownSubtotal;
+    const knownNet = windowNet.knownSubtotal;
     const complete = gaps.isComplete;
 
     return {
@@ -906,7 +932,7 @@ export class IncomeReportsService {
     const flowGapGroups = new Set<string>();
     const flowsByPeriod = new Map<
       string,
-      { inflows: number[]; outflows: number[] }
+      { inflows: FxAggregate; outflows: FxAggregate }
     >();
 
     for (const row of flowRows) {
@@ -922,24 +948,26 @@ export class IncomeReportsService {
         continue;
       }
       const key = periodKeyForStart(row.period_start, bucket);
-      const entry = flowsByPeriod.get(key);
-      if (entry) {
-        entry.inflows.push(inflow);
-        entry.outflows.push(outflow);
-      } else {
-        flowsByPeriod.set(key, { inflows: [inflow], outflows: [outflow] });
-      }
+      const entry = flowsByPeriod.get(key) ?? {
+        inflows: new FxAggregate(),
+        outflows: new FxAggregate(),
+      };
+      entry.inflows.addConverted(inflow);
+      entry.outflows.addConverted(outflow);
+      flowsByPeriod.set(key, entry);
     }
 
-    // Every period carries its own flows (zero when nothing happened), and the
-    // window figures below are the sum of exactly these, so a bar can never
-    // disagree with the total.
+    // Every period carries its own flows (zero when nothing happened), each
+    // the single rounding of its converted rows, and the window figures below
+    // are the sum of exactly these, so a bar can never disagree with the total
+    // (I8 of docs/specs/report-tag-key-breakdown.md, a definition this report
+    // keeps over rule 4 of docs/specs/report-rounding-and-aggregation.md).
     const periodData: IncomeExpenseTagPeriodItem[] = data.map((item) => {
       const flows = flowsByPeriod.get(item.period);
       return {
         ...item,
-        taggedInflows: roundMoney(sumMoney(flows?.inflows ?? [])),
-        taggedOutflows: roundMoney(sumMoney(flows?.outflows ?? [])),
+        taggedInflows: flows?.inflows.knownSubtotal ?? 0,
+        taggedOutflows: flows?.outflows.knownSubtotal ?? 0,
       };
     });
 

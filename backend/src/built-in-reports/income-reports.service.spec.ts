@@ -660,6 +660,137 @@ describe("IncomeReportsService", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Rounded once, after the parts are folded (issue #2384)
+  // ---------------------------------------------------------------------------
+  describe("totals rounded once, after the parts are folded (issue #2384)", () => {
+    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.7525 alone, and 249.504948
+    // for two, which reads 249.5049. A total that added two four-place
+    // readings came to 249.5050.
+    beforeEach(() => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([{ fromCurrency: "EUR", toCurrency: "USD", rate: 1.2474 }]),
+      );
+    });
+
+    it("totals two sources at 249.5049", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        mockIncomeCategory,
+        { ...mockIncomeCategory, id: "cat-bonus", name: "Bonus" },
+      ]);
+      scopedManager.query.mockResolvedValue(
+        ["cat-income", "cat-bonus"].map((categoryId) => ({
+          category_id: categoryId,
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "100.01000000",
+        })),
+      );
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.data.map((d) => d.total)).toEqual([124.7525, 124.7525]);
+      expect(result.totalIncome).toBe(249.5049);
+    });
+
+    it("keeps a source that earned less than a ten-thousandth", async () => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          {
+            fromCurrency: "EUR",
+            toCurrency: "USD",
+            rate: 1.2,
+            rateDate: "2026-01-10",
+          },
+          {
+            fromCurrency: "EUR",
+            toCurrency: "USD",
+            rate: 1.2000003,
+            rateDate: "2026-01-20",
+          },
+        ]),
+      );
+      categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: "cat-income",
+          currency_code: "EUR",
+          tx_date: "2026-01-12",
+          total: "-100.00000000",
+        },
+        {
+          category_id: "cat-income",
+          currency_code: "EUR",
+          tx_date: "2026-01-22",
+          total: "100.00000000",
+        },
+      ]);
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].total).toBe(0);
+    });
+
+    it("totals two months of income and net at 249.5049", async () => {
+      scopedManager.query.mockResolvedValue(
+        ["2026-01-01", "2026-02-01"].map((periodStart) => ({
+          period_start: periodStart,
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          income: "100.01",
+          expenses: "0",
+        })),
+      );
+
+      const result = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2026-01-01",
+        "2026-02-28",
+      );
+
+      expect(result.data.map((d) => d.income)).toEqual([124.7525, 124.7525]);
+      expect(result.totals).toMatchObject({
+        income: 249.5049,
+        expenses: 0,
+        net: 249.5049,
+      });
+    });
+
+    it("nets each period and the window from unrounded income and expenses", async () => {
+      // 100.01 EUR in and 0.01 EUR out at 1.2474 net 124.74 USD exactly in
+      // each month, though the sides read 124.7525 and 0.0125.
+      scopedManager.query.mockResolvedValue(
+        ["2026-01-01", "2026-02-01"].map((periodStart) => ({
+          period_start: periodStart,
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          income: "100.01",
+          expenses: "0.01",
+        })),
+      );
+
+      const result = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2026-01-01",
+        "2026-02-28",
+      );
+
+      expect(result.data.map((d) => d.net)).toEqual([124.74, 124.74]);
+      expect(result.totals.net).toBe(249.48);
+      expect(result.totals.income).toBe(249.5049);
+      expect(result.totals.expenses).toBe(0.0249);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // getIncomeVsExpenses
   // ---------------------------------------------------------------------------
   describe("getIncomeVsExpenses", () => {

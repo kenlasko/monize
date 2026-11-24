@@ -1041,6 +1041,135 @@ describe("SpendingReportsService", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Rounded once (issue #2384)
+  // ---------------------------------------------------------------------------
+  describe("rounded once, after the parts are folded (issue #2384)", () => {
+    // 100.01 EUR at 1.2474 is 124.752474 USD: two such rows read 124.7525
+    // each, and 249.504948 together, which reads 249.5049. A total that added
+    // the rows' four-place readings came to 249.5050.
+    const eur = (row: Record<string, unknown>) => ({
+      currency_code: "EUR",
+      tx_date: FIXTURE_TX_DATE,
+      total: "100.0100",
+      ...row,
+    });
+
+    beforeEach(() => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([{ fromCurrency: "EUR", toCurrency: "USD", rate: 1.2474 }]),
+      );
+      categoriesRepository.find.mockResolvedValue([
+        mockParentCategory,
+        mockChildCategory,
+      ]);
+    });
+
+    it.each([
+      ["rolled up", true, 1],
+      ["with subcategories", false, 2],
+    ])(
+      "totals two subcategories %s at 249.5049",
+      async (_label, rollupToParent, rows) => {
+        scopedManager.query.mockResolvedValue([
+          eur({ category_id: "cat-child" }),
+          eur({ category_id: "cat-parent" }),
+        ]);
+
+        const result = await service.getSpendingByCategory(
+          mockUserId,
+          "2025-01-01",
+          "2026-12-31",
+          { rollupToParent },
+        );
+
+        expect(result.data).toHaveLength(rows);
+        expect(result.totalSpending).toBe(249.5049);
+        expect(result.knownSpending).toBe(249.5049);
+      },
+    );
+
+    it("keeps a category that cost less than a ten-thousandth", async () => {
+      // 100.00 EUR spent at 1.2000003 and refunded at 1.2 cost 0.00003 USD:
+      // spending, though it reads 0.0000. Judged at four places it was not.
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          {
+            fromCurrency: "EUR",
+            toCurrency: "USD",
+            rate: 1.2000003,
+            rateDate: "2026-01-10",
+          },
+          {
+            fromCurrency: "EUR",
+            toCurrency: "USD",
+            rate: 1.2,
+            rateDate: "2026-01-20",
+          },
+        ]),
+      );
+      scopedManager.query.mockResolvedValue([
+        eur({ category_id: "cat-parent", tx_date: "2026-01-12", total: "100" }),
+        eur({
+          category_id: "cat-parent",
+          tx_date: "2026-01-22",
+          total: "-100",
+        }),
+      ]);
+
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        "2025-01-01",
+        "2026-12-31",
+      );
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].total).toBe(0);
+      expect(result.totalSpending).toBe(0);
+    });
+
+    it("totals the listed payees at 249.5049", async () => {
+      scopedManager.query.mockResolvedValue([
+        eur({ payee_id: null, payee_name: "Cafe" }),
+        eur({ payee_id: null, payee_name: "Bakery" }),
+      ]);
+
+      const result = await service.getSpendingByPayee(
+        mockUserId,
+        "2025-01-01",
+        "2026-12-31",
+      );
+
+      expect(result.data.map((d) => d.total)).toEqual([124.7525, 124.7525]);
+      expect(result.totalSpending).toBe(249.5049);
+    });
+
+    it("totals a month's categories at 249.5049, and keeps a category the months net to spending", async () => {
+      const other: Category = {
+        ...mockParentCategory,
+        id: "cat-other",
+        name: "Other",
+      };
+      categoriesRepository.find.mockResolvedValue([mockParentCategory, other]);
+      scopedManager.query.mockResolvedValue([
+        eur({ month: "2026-01", category_id: "cat-parent" }),
+        eur({ month: "2026-01", category_id: "cat-other" }),
+      ]);
+
+      const result = await service.getMonthlySpendingTrend(
+        mockUserId,
+        "2025-01-01",
+        "2026-12-31",
+      );
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].categories.map((c) => c.total)).toEqual([
+        124.7525, 124.7525,
+      ]);
+      expect(result.data[0].totalSpending).toBe(249.5049);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // getSpendingByPayee
   // ---------------------------------------------------------------------------
   describe("getSpendingByPayee", () => {

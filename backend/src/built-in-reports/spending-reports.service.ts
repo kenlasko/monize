@@ -13,12 +13,7 @@ import {
   RawMonthlyCategoryAggregate,
   rateBasisColumnsSql,
 } from "./report-currency.service";
-import {
-  MONEY_SCALE,
-  roundMoney,
-  sumMoney,
-  toMoneyNumber,
-} from "../common/round.util";
+import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   SpendingByCategoryResponse,
@@ -284,22 +279,32 @@ export class SpendingReportsService {
       } as Category).agg.addConverted(converted);
     }
 
-    const data: CategorySpendingItem[] = Array.from(parentTotals.entries())
+    // Netting happens before this filter, so a category is judged on what it
+    // cost after its refunds -- not on whether it happened to hold a debit --
+    // and on the sign of that net before rounding, so a category that cost
+    // 0.00003 is still one (docs/specs/report-rounding-and-aggregation.md
+    // rule 5).
+    const spent = Array.from(parentTotals.entries()).filter(([, { agg }]) =>
+      isNetSpending(agg.sign),
+    );
+    const data: CategorySpendingItem[] = spent
       .map(([id, { agg, category }]) => ({
         categoryId: id === "uncategorized" ? null : id,
         categoryName: category?.name || "Uncategorized",
         color: category?.color || null,
-        total: roundMoney(agg.knownSubtotal),
+        total: agg.knownSubtotal,
       }))
-      // Netting happens before this filter, so a category is judged on what it
-      // cost after its refunds -- not on whether it happened to hold a debit.
-      .filter((item) => isNetSpending(item.total))
       .sort((a, b) => b.total - a.total);
 
     // Every category, not a top-N: the caller decides how many to draw and can
     // still say what it merged. Truncating here made `totalSpending` the sum of
-    // the largest fifteen under a name that says "total".
-    const knownSpending = roundMoney(sumMoney(data.map((item) => item.total)));
+    // the largest fifteen under a name that says "total". The categories fold
+    // as aggregates, so the total is rounded once: summing their rounded rows
+    // read two 124.752474 subcategories as 249.5050 where their parent, rolled
+    // up, read 249.5049 (rule 2).
+    const spending = new FxAggregate();
+    for (const [, { agg }] of spent) spending.merge(agg);
+    const knownSpending = spending.knownSubtotal;
 
     return {
       data,
@@ -399,16 +404,19 @@ export class SpendingReportsService {
       }
     }
 
-    const data: PayeeSpendingItem[] = Array.from(payeeTotals.values())
-      .map((row) => ({
-        payeeId: row.payeeId,
-        payeeName: row.payeeName,
-        total: roundMoney(row.agg.knownSubtotal),
-      }))
-      .sort((a, b) => b.total - a.total)
+    const top = Array.from(payeeTotals.values())
+      .sort((a, b) => b.agg.knownSubtotal - a.agg.knownSubtotal)
       .slice(0, 20);
+    const data: PayeeSpendingItem[] = top.map((row) => ({
+      payeeId: row.payeeId,
+      payeeName: row.payeeName,
+      total: row.agg.knownSubtotal,
+    }));
 
-    const knownSpending = roundMoney(sumMoney(data.map((item) => item.total)));
+    // The listed payees' aggregates, folded and rounded once (rule 2).
+    const spending = new FxAggregate();
+    for (const row of top) spending.merge(row.agg);
+    const knownSpending = spending.knownSubtotal;
 
     return {
       data,
@@ -538,7 +546,7 @@ export class SpendingReportsService {
     for (const monthMap of monthlyData.values()) {
       for (const [catId, { agg }] of monthMap) {
         const overall = allCategoryTotals.get(catId) ?? new FxAggregate();
-        overall.addConverted(agg.knownSubtotal);
+        overall.merge(agg);
         allCategoryTotals.set(catId, overall);
       }
     }
@@ -546,12 +554,11 @@ export class SpendingReportsService {
     // period, not per month: one month's refund is still part of a category
     // that was spent in. A category that is net-credit across the range was
     // not -- and an income category, now that credits are read at all, never
-    // is one.
+    // is one. The months fold as aggregates and the net is judged on its sign
+    // before rounding (rules 2 and 5).
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
-        .filter(([, overall]) =>
-          isNetSpending(roundMoney(overall.knownSubtotal)),
-        )
+        .filter(([, overall]) => isNetSpending(overall.sign))
         .map(([id]) => id),
     );
     const topCategories = Array.from(allCategoryTotals.entries())
@@ -584,17 +591,22 @@ export class SpendingReportsService {
               categoryId: catId === "uncategorized" ? null : catId,
               categoryName: category?.name || "Uncategorized",
               color: category?.color || null,
-              total: roundMoney(catData?.agg.knownSubtotal ?? 0),
+              total: catData?.agg.knownSubtotal ?? 0,
             };
           },
         );
 
-        const totalSpending = sumMoney(categories.map((cat) => cat.total));
+        // The month's listed categories, folded and rounded once (rule 2).
+        const monthSpending = new FxAggregate();
+        for (const catId of topCategories) {
+          const catData = catMap.get(catId);
+          if (catData) monthSpending.merge(catData.agg);
+        }
 
         return {
           month,
           categories,
-          totalSpending: roundMoney(totalSpending),
+          totalSpending: monthSpending.knownSubtotal,
         };
       });
 
