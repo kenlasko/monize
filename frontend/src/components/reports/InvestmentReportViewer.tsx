@@ -25,6 +25,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { exportToCsv } from '@/lib/csv-export';
+import { roundToCurrencyPlaces } from '@/lib/format';
 import { createLogger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
 import { useTranslations } from 'next-intl';
@@ -244,14 +245,16 @@ export function InvestmentReportViewer({ reportId }: InvestmentReportViewerProps
           const v = row.values[key];
           if (v === null || v === undefined) return '';
           // Mirror the on-screen currency mode in the exported numbers,
-          // including the unknown marker for a row with no rate to base.
+          // including the unknown marker for a row with no rate to base. The
+          // product is a figure the client works out, so it is rounded once at
+          // the base currency's places, the figure the cell shows.
           if (
             currencyMode === 'base' &&
             INVESTMENT_COLUMN_MAP[key]?.type === 'currency'
           ) {
             return row.baseExchangeRate === null
               ? ''
-              : Number(v) * row.baseExchangeRate;
+              : roundToCurrencyPlaces(Number(v) * row.baseExchangeRate, result.baseCurrency);
           }
           return v;
         }),

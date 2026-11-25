@@ -361,7 +361,9 @@ export function RealizedGainsReport() {
     return sorted;
   }, [entries, sellTransactionsSort.sortField, sellTransactionsSort.sortDirection, toDisplay]);
 
-  const getExportData = useCallback(() => {
+  // The CSV writes each amount as the server's number; the PDF is read by a
+  // person and formats it as the tables on screen do (`fmtValue`).
+  const getExportData = useCallback((surface: 'csv' | 'pdf') => {
     const headers = [t('realizedGains.csvColSecurity'), t('realizedGains.csvColDateSold'), t('realizedGains.csvColQuantity'), t('realizedGains.csvColProceeds'), t('realizedGains.csvColCostBasis'), t('realizedGains.csvColGainLoss'), t('realizedGains.csvColReturn')];
     const rows: (string | number)[][] = sortedEntries.map((entry) => {
       const proceeds = toDisplay(entry, 'proceeds');
@@ -378,29 +380,31 @@ export function RealizedGainsReport() {
         costBasis !== null && gain !== null && costBasis !== 0
           ? formatPercent((gain / costBasis) * 100, 2)
           : '-';
+      const money = (value: number | null) =>
+        value === null ? unknown : surface === 'pdf' ? fmtValue(value) : value;
       return [
         entry.symbol || 'N/A',
         format(parseLocalDate(entry.transactionDate), 'yyyy-MM-dd'),
         entry.quantity,
-        proceeds ?? unknown,
-        costBasis ?? unknown,
-        gain ?? unknown,
+        money(proceeds),
+        money(costBasis),
+        money(gain),
         returnPct,
       ];
     });
     return { headers, rows };
-  }, [sortedEntries, toDisplay, formatPercent, t]);
+  }, [sortedEntries, toDisplay, formatPercent, fmtValue, t]);
 
   const handleExportCsv = useCallback(() => {
-    const { headers, rows } = getExportData();
+    const { headers, rows } = getExportData('csv');
     exportToCsv('realized-gains', headers, rows);
   }, [getExportData]);
 
   const handleExportPdf = useCallback(async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    const { headers, rows } = getExportData();
+    const { headers, rows } = getExportData('pdf');
     const unknownGain = t('realizedGains.csvUnknownCost');
-    const totalRow: (string | number)[] = [t('realizedGains.total'), '', '', totals.totalProceeds, totals.totalCostBasis, totals.unknownCount > 0 ? unknownGain : totals.totalGain, ''];
+    const totalRow: (string | number)[] = [t('realizedGains.total'), '', '', fmtValue(totals.totalProceeds), fmtValue(totals.totalCostBasis), totals.unknownCount > 0 ? unknownGain : fmtValue(totals.totalGain), ''];
     await exportToPdf({
       title: t('realizedGains.pdfTitle'),
       subtitle: t('realizedGains.pdfSubtitle', { count: securityGains.length, gain: totals.unknownCount > 0 ? unknownGain : fmtValue(totals.totalGain) }),

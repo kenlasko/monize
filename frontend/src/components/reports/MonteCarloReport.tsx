@@ -24,7 +24,7 @@ import {
 } from '@/lib/monte-carlo';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
-import { getCurrencySymbol } from '@/lib/format';
+import { getCurrencySymbol, roundToCurrencyPlaces } from '@/lib/format';
 import { showErrorToast } from '@/lib/errors';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -325,13 +325,16 @@ export function MonteCarloReport() {
       {
         title: t('monteCarlo.csvTitle'),
         headers: header,
+        // Numbers at the currency's places, as the table shows them; `toFixed(2)`
+        // wrote text, two places for a JPY projection and 1.00 for a 1.005 the
+        // screen reads as 1.01.
         rows: tableRows.map((row) => [
           row.year,
-          row.p10.toFixed(2),
-          row.p25.toFixed(2),
-          row.p50.toFixed(2),
-          row.p75.toFixed(2),
-          row.p90.toFixed(2),
+          roundToCurrencyPlaces(row.p10, defaultCurrency),
+          roundToCurrencyPlaces(row.p25, defaultCurrency),
+          roundToCurrencyPlaces(row.p50, defaultCurrency),
+          roundToCurrencyPlaces(row.p75, defaultCurrency),
+          roundToCurrencyPlaces(row.p90, defaultCurrency),
           row.events.map(eventLabel).join('; '),
         ]),
       },
@@ -355,7 +358,7 @@ export function MonteCarloReport() {
       `monte-carlo-${(form.name || 'scenario').toLowerCase().replace(/\s+/g, '-')}`,
       sections,
     );
-  }, [result, tableRows, form.name, numberFormatters, t]);
+  }, [result, tableRows, form.name, numberFormatters, defaultCurrency, t]);
 
   const handleExportPdf = useCallback(async () => {
     if (!result) return;

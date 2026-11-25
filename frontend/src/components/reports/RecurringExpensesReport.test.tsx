@@ -488,7 +488,7 @@ describe("RecurringExpensesReport", () => {
     expect(mockExportToCsv.mock.calls[0][2][0][6]).toBe("2025-01-15");
   });
 
-  it("writes the reader's own date format to the PDF, where the CSV writes ISO", async () => {
+  it("writes the reader's own date format and the table's amounts to the PDF, where the CSV writes ISO and numbers", async () => {
     mockGetRecurringExpenses.mockResolvedValue({
       data: [
         {
@@ -497,7 +497,8 @@ describe("RecurringExpensesReport", () => {
           categoryName: null,
           frequency: "MONTHLY",
           occurrences: 6,
-          averageAmount: 15.99,
+          // 2.50498 read once at two places, as the server sends it.
+          averageAmount: 2.5,
           totalAmount: 95.94,
           lastTransactionDate: "2025-01-15",
         },
@@ -511,16 +512,19 @@ describe("RecurringExpensesReport", () => {
     });
     await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledTimes(1));
     // Same record, same columns, same order as the CSV -- a PDF is a READING
-    // surface, so the one cell whose rendering depends on its reader differs.
+    // surface, so the cells whose rendering depends on its reader differ: the
+    // date and the two amounts, formatted as the table shows them.
     expect(mockExportToPdf.mock.calls[0][0].tableData.rows[0]).toEqual([
       "Netflix",
       "Uncategorized",
       "Monthly",
       6,
-      15.99,
-      95.94,
+      "$2.50",
+      "$95.94",
       "preferred-date:2025-01-15",
     ]);
+    fireEvent.click(screen.getByTestId("export-csv"));
+    expect(mockExportToCsv.mock.calls[0][2][0].slice(4, 6)).toEqual([2.5, 95.94]);
   });
 
   it("changes min occurrences when selector changes", async () => {

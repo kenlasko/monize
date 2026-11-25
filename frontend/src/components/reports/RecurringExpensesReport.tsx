@@ -72,8 +72,9 @@ interface SortColumn extends TableSortColumn<RecurringSortField> {
   /**
    * This column's exported cell, for the surface it is being written to. A CSV
    * is read by a MACHINE and a PDF by a person, so a date is ISO in the one and
-   * the reader's own format in the other; a column whose cell does not depend
-   * on the surface simply ignores the argument.
+   * the reader's own format in the other, and an amount is the server's number
+   * in the one and formatted as the table shows it in the other; a column whose
+   * cell does not depend on the surface simply ignores the argument.
    */
   csvValue: (expense: RecurringExpenseItem, surface: ExportSurface) => string | number;
 }
@@ -361,14 +362,14 @@ export function RecurringExpensesReport() {
       label: t('recurringExpenses.colAvgAmount'),
       align: 'right',
       csvLabel: t('recurringExpenses.csvColAvgAmount'),
-      csvValue: (e) => e.averageAmount,
+      csvValue: (e, surface) => (surface === 'pdf' ? formatCurrency(e.averageAmount) : e.averageAmount),
     },
     total: {
       field: 'total',
       label: t('recurringExpenses.colSixMonthTotal'),
       align: 'right',
       csvLabel: t('recurringExpenses.csvColSixMonthTotal'),
-      csvValue: (e) => e.totalAmount,
+      csvValue: (e, surface) => (surface === 'pdf' ? formatCurrency(e.totalAmount) : e.totalAmount),
     },
     lastPaid: {
       field: 'lastPaid',

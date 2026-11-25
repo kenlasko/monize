@@ -264,9 +264,10 @@ export function BillPaymentHistoryReport() {
    * rows must get one file, `yyyy-MM-dd` is the form a spreadsheet sorts and
    * every unconverted sibling export writes, and a localized date is ambiguous
    * (`03/04/2026`) and sorts lexicographically wrong. The PDF is a reading
-   * surface and takes the reader's own format. The three figure columns are
-   * already raw numbers and stay that way -- a formatted amount is what
-   * reopened issue #1134 on the sibling report.
+   * surface and takes the reader's own format. The two amount columns follow
+   * the same split: the server's number in the CSV -- a formatted amount is
+   * what reopened issue #1134 on the sibling report -- and the table's own
+   * formatting in the PDF, which printed `1234.5` beside a "$1,235" card.
    */
   const getExportData = (surface: ExportSurface) => {
     if (!billData) return null;
@@ -275,8 +276,8 @@ export function BillPaymentHistoryReport() {
       bp.scheduledTransactionName,
       bp.payeeName || '',
       bp.paymentCount,
-      bp.averagePayment,
-      bp.totalPaid,
+      surface === 'pdf' ? formatCurrency(bp.averagePayment) : bp.averagePayment,
+      surface === 'pdf' ? formatCurrency(bp.totalPaid) : bp.totalPaid,
       bp.lastPaymentDate
         ? surface === 'pdf'
           ? formatDate(bp.lastPaymentDate)

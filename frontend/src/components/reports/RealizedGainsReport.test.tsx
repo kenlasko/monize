@@ -506,6 +506,29 @@ describe('RealizedGainsReport', () => {
     });
   });
 
+  it('formats the PDF table and total row as the screen does, keeping the CSV numbers raw', async () => {
+    // 2.50498 read once at two places, as the server sends it.
+    mockGetRealizedGains.mockResolvedValue([
+      gainEntry({ proceeds: 2.5, costBasis: 1, realizedGain: 1.5 }),
+    ]);
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    render(<RealizedGainsReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('export-pdf'));
+    });
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledTimes(1));
+    const { tableData } = mockExportToPdf.mock.calls[0][0];
+    expect(tableData.rows[0].slice(3, 6)).toEqual(['$2.50', '$1.00', '$1.50']);
+    expect(tableData.totalRow.slice(3, 6)).toEqual(['$2.50', '$1.00', '$1.50']);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('export-csv'));
+    });
+    expect((mockExportToCsv.mock.calls[0][2] as unknown[][])[0].slice(3, 6)).toEqual([2.5, 1, 1.5]);
+  });
+
   it('uses Unknown symbol and name for entries with no symbol/securityName', async () => {
     mockGetRealizedGains.mockResolvedValue([
       gainEntry({ symbol: null, securityName: null }),

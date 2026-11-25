@@ -5,6 +5,7 @@ import {
   resolveCurrencySymbol,
   formatCurrency,
   getDecimalPlacesForCurrency,
+  roundToCurrencyPlaces,
   roundToDecimals,
   roundToCents,
   roundToEntryPlaces,
@@ -163,6 +164,26 @@ describe('getDecimalPlacesForCurrency', () => {
 
   it('returns 2 for invalid currency', () => {
     expect(getDecimalPlacesForCurrency('INVALID')).toBe(2);
+  });
+});
+
+describe('roundToCurrencyPlaces', () => {
+  afterEach(() => {
+    clearCurrencyDecimals();
+  });
+
+  it('rounds once at the places the screen shows the currency in', () => {
+    // 2.50498 read once is 2.50; through four places first it would be 2.51.
+    expect(roundToCurrencyPlaces(2.50498, 'USD')).toBe(2.5);
+    expect(roundToCurrencyPlaces(1.005, 'USD')).toBe(1.01);
+    expect(roundToCurrencyPlaces(-2.50498, 'CAD')).toBe(-2.5);
+    expect(roundToCurrencyPlaces(1234.5, 'JPY')).toBe(1235);
+    expect(roundToCurrencyPlaces(1.23456, 'BHD')).toBe(1.235);
+  });
+
+  it("keeps a registered coin's own places", () => {
+    registerCurrencyDecimals([{ code: 'BTC', decimalPlaces: 8 }]);
+    expect(roundToCurrencyPlaces(0.123456789, 'BTC')).toBe(0.12345679);
   });
 });
 
