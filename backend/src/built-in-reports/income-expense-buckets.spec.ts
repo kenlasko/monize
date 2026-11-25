@@ -30,6 +30,12 @@ describe("income vs expenses bucketing", () => {
       expect(sql).not.toContain("make_interval");
     });
 
+    it("truncates to the year for the breakdown's yearly funds (issue #2413)", () => {
+      const sql = bucketStartSql("year", "t.transaction_date", "$3");
+      expect(sql).toContain("date_trunc('year', t.transaction_date)");
+      expect(sql).not.toContain("make_interval");
+    });
+
     it("shifts, truncates and shifts back for a week", () => {
       const sql = bucketStartSql("week", "t.transaction_date", "$3");
       expect(sql).toContain("date_trunc('week'");
@@ -48,6 +54,19 @@ describe("income vs expenses bucketing", () => {
   });
 
   describe("enumerateIncomeExpensePeriods", () => {
+    it("covers every year the window touches, keyed YYYY", () => {
+      const periods = enumerateIncomeExpensePeriods(
+        "2024-03-15",
+        "2025-06-30",
+        "year",
+      );
+      expect(periods).toEqual([
+        { period: "2024", periodStart: "2024-01-01", periodEnd: "2024-12-31" },
+        { period: "2025", periodStart: "2025-01-01", periodEnd: "2025-12-31" },
+      ]);
+      expect(periodKeyForStart("2025-01-01", "year")).toBe("2025");
+    });
+
     it("covers every month the window touches, partial months included", () => {
       const periods = enumerateIncomeExpensePeriods(
         "2025-01-15",

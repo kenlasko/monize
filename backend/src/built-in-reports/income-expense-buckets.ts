@@ -2,11 +2,14 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  addYears,
   endOfMonth,
+  endOfYear,
   format,
   parseISO,
   startOfMonth,
   startOfWeek,
+  startOfYear,
 } from "date-fns";
 
 /**
@@ -16,16 +19,21 @@ import {
  * read this endpoint -- so the granularity is a parameter of the question, not
  * something a caller re-derives from the answer. A client that bucketed the
  * rows itself would be deciding which transaction belongs to which bar, which
- * is half of deciding what the bar says.
+ * is half of deciding what the bar says. A year is the Monthly & Yearly
+ * Breakdown's funds block: a year folds its months' aggregates here, where the
+ * page added twelve monthly readings (issue #2413).
  */
-export type IncomeExpenseBucket = "month" | "week";
+export type IncomeExpenseBucket = "month" | "week" | "year";
 
 /** Day the user's week starts on: 0 = Sunday through 6 = Saturday. */
 export type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /** One bar: its key, and the dates it covers inclusive. */
 export interface IncomeExpensePeriod {
-  /** `YYYY-MM` for a month, the week's first day as `YYYY-MM-DD` for a week. */
+  /**
+   * `YYYY-MM` for a month, the week's first day as `YYYY-MM-DD` for a week,
+   * `YYYY` for a year.
+   */
   period: string;
   periodStart: string;
   periodEnd: string;
@@ -59,6 +67,9 @@ export function bucketStartSql(
   if (bucket === "month") {
     return `TO_CHAR(date_trunc('month', ${column}), 'YYYY-MM-DD')`;
   }
+  if (bucket === "year") {
+    return `TO_CHAR(date_trunc('year', ${column}), 'YYYY-MM-DD')`;
+  }
   // The cast is explicit because `make_interval(days => $n)` is the parameter's
   // only appearance, and PostgreSQL will not infer an integer from a named
   // argument on its own.
@@ -85,20 +96,35 @@ export function enumerateIncomeExpensePeriods(
   let cursor =
     bucket === "month"
       ? startOfMonth(parseISO(startDate))
-      : startOfWeek(parseISO(startDate), { weekStartsOn });
+      : bucket === "year"
+        ? startOfYear(parseISO(startDate))
+        : startOfWeek(parseISO(startDate), { weekStartsOn });
 
   // A window is bounded by its own dates, so this terminates; the cap is a
   // guard against a caller passing an end before its start.
   while (cursor <= end && periods.length < 1000) {
     const periodEnd =
-      bucket === "month" ? endOfMonth(cursor) : addDays(cursor, 6);
+      bucket === "month"
+        ? endOfMonth(cursor)
+        : bucket === "year"
+          ? endOfYear(cursor)
+          : addDays(cursor, 6);
     periods.push({
       period:
-        bucket === "month" ? format(cursor, "yyyy-MM") : format(cursor, ISO),
+        bucket === "month"
+          ? format(cursor, "yyyy-MM")
+          : bucket === "year"
+            ? format(cursor, "yyyy")
+            : format(cursor, ISO),
       periodStart: format(cursor, ISO),
       periodEnd: format(periodEnd, ISO),
     });
-    cursor = bucket === "month" ? addMonths(cursor, 1) : addWeeks(cursor, 1);
+    cursor =
+      bucket === "month"
+        ? addMonths(cursor, 1)
+        : bucket === "year"
+          ? addYears(cursor, 1)
+          : addWeeks(cursor, 1);
   }
 
   return periods;
@@ -109,5 +135,6 @@ export function periodKeyForStart(
   start: string,
   bucket: IncomeExpenseBucket,
 ): string {
-  return bucket === "month" ? start.slice(0, 7) : start;
+  if (bucket === "month") return start.slice(0, 7);
+  return bucket === "year" ? start.slice(0, 4) : start;
 }

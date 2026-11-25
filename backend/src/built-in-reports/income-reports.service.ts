@@ -14,7 +14,12 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { ownTransferLegs } from "./transfer-rate-sql";
-import { MONEY_SCALE, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundToDecimals,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   IncomeBySourceResponse,
@@ -553,8 +558,18 @@ export class IncomeReportsService {
           .sort()
           .map((period) => ({
             period,
-            periodStart: bucket === "month" ? `${period}-01` : period,
-            periodEnd: bucket === "month" ? `${period}-01` : period,
+            periodStart:
+              bucket === "month"
+                ? `${period}-01`
+                : bucket === "year"
+                  ? `${period}-01-01`
+                  : period,
+            periodEnd:
+              bucket === "month"
+                ? `${period}-01`
+                : bucket === "year"
+                  ? `${period}-12-31`
+                  : period,
           }));
 
     // Each figure, a period's or the window's, is the single rounding of its
@@ -973,7 +988,7 @@ export class IncomeReportsService {
     convert: ReportConverter,
     places: number,
   ): IncomeExpenseTagBucket {
-    const { data, totals, missingCurrencies, excludedCount } =
+    const { data, totals, missingCurrencies, excludedCount, periods } =
       this.summarizePeriodRows(
         rows,
         bucket,
@@ -1023,10 +1038,33 @@ export class IncomeReportsService {
     // keeps over rule 4 of docs/specs/report-rounding-and-aggregation.md).
     const periodData: IncomeExpenseTagPeriodItem[] = data.map((item) => {
       const flows = flowsByPeriod.get(item.period);
+      const own = periods.get(item.period);
+      // The period's Balance (spec section 10.9 of
+      // docs/specs/report-tag-key-breakdown.md): what came in less what went
+      // out, the four aggregates folded before it is read, and its percentage
+      // over what came in divided from the unrounded figures. Built on the
+      // page from the four readings, it could sit a unit off (issue #2413).
+      const received = FxAggregate.sum([
+        own?.income ?? new FxAggregate(),
+        flows?.inflows ?? new FxAggregate(),
+      ]);
+      const paid = FxAggregate.sum([
+        own?.expenses ?? new FxAggregate(),
+        flows?.outflows ?? new FxAggregate(),
+      ]);
+      const balance = FxAggregate.difference(received, paid);
       return {
         ...item,
         taggedInflows: flows?.inflows.knownSubtotalAt(places) ?? 0,
         taggedOutflows: flows?.outflows.knownSubtotalAt(places) ?? 0,
+        balance: balance.knownSubtotalAt(places),
+        balancePercent:
+          received.knownSubtotalAt(places) > 0
+            ? roundToDecimals(
+                (balance.unroundedSubtotal / received.unroundedSubtotal) * 100,
+                2,
+              )
+            : null,
       };
     });
 

@@ -317,7 +317,7 @@ export class BuiltInReportsController {
       req.user.id,
       query.startDate,
       query.endDate,
-      { accountIds: query.accountIds },
+      { accountIds: query.accountIds, period: query.period },
     );
   }
 }

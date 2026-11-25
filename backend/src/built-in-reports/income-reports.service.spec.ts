@@ -1130,6 +1130,34 @@ describe("IncomeReportsService", () => {
       expect(sql).toContain("make_interval(days => $3::int)");
     });
 
+    // The yearly breakdown's funds block added twelve monthly readings into a
+    // year; the database groups the year's rows and the year is read once
+    // (issue #2413).
+    it("buckets by year when asked, keyed YYYY", async () => {
+      scopedManager.query.mockResolvedValue([
+        row("2025-01-01", "0.005", "0"),
+        row("2025-01-01", "0.004", "0", "USD"),
+      ]);
+
+      const result = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2024-01-01",
+        "2025-06-30",
+        { bucket: "year" },
+      );
+
+      expect(result.data.map((d) => d.period)).toEqual(["2024", "2025"]);
+      expect(result.data[1]).toMatchObject({
+        periodStart: "2025-01-01",
+        periodEnd: "2025-12-31",
+        income: 0.01,
+      });
+      const [sql, params] = scopedManager.query.mock.calls[0];
+      expect(sql).toContain("date_trunc('year'");
+      expect(sql).not.toContain("make_interval");
+      expect(params).toEqual([mockUserId, "2025-06-30", "USD", "2024-01-01"]);
+    });
+
     it("groups by month with no week shifting when the bucket is a month", async () => {
       scopedManager.query.mockResolvedValue([]);
 
@@ -1332,6 +1360,38 @@ describe("IncomeReportsService", () => {
       expect(household.totals.expenses).toBe(0);
       expect(household.taggedInflows).toBe(1000);
       expect(household.taggedOutflows).toBe(1000);
+    });
+
+    // 0.005 of income and of tagged inflows, 0.005 of expenses and 0.004 of
+    // tagged outflows read 0.01, 0.01, 0.01 and 0.00: the page's Balance of the
+    // four readings was 0.01 where the period's, 0.001, reads 0.00 (issue
+    // #2413).
+    it("sends each period's Balance from the four aggregates, read once", async () => {
+      scopedManager.query
+        .mockResolvedValueOnce([row("2025-01-01", "0.005", "0.005")])
+        .mockResolvedValueOnce([
+          valueRow("2025-01-01", "household", "0.005", "0.005"),
+        ])
+        .mockResolvedValueOnce([flowRow("household", "0.005", "0.004")])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2025-01-01",
+        "2025-01-31",
+        { tagKey: "scope" },
+      );
+
+      const household = bucketByValue(result.buckets, "household");
+      expect(household.data[0]).toMatchObject({
+        income: 0.01,
+        expenses: 0.01,
+        taggedInflows: 0.01,
+        taggedOutflows: 0,
+        balance: 0,
+      });
+      // 0.001 over the 0.010 that came in.
+      expect(household.data[0].balancePercent).toBe(10);
     });
 
     it("truth table 3.2: income stays 100, never 200, when a salary is later moved through tagged transfers", async () => {

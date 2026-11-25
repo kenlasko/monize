@@ -51,6 +51,73 @@ export class MonthlyBreakdownCategoryRow {
 
   @ApiProperty({ example: 1480.0 })
   withdrawalTotal: number;
+
+  @ApiProperty({
+    example: "uuid-parent",
+    description:
+      "The section the row draws under: its parent's id, its own id for a " +
+      "top-level category, or __other_income__ / __other_expense__ for the " +
+      "uncategorized row.",
+  })
+  sectionKey: string;
+
+  @ApiProperty({
+    example: 218.5,
+    description:
+      "The row's columns summed once, in the row's own sign convention: the " +
+      "single rounding of its cells' exact sum, never the sum of the cells.",
+  })
+  total: number;
+
+  @ApiProperty({
+    example: 36.42,
+    description:
+      "The total over the columns listed, divided before it is read.",
+  })
+  average: number;
+}
+
+/** A line of figures: one per column, the window's total and its average. */
+export class MonthlyBreakdownFigures {
+  @ApiProperty({ example: { "2025-01": 120.5, "2025-02": 98.0 } })
+  valuesByMonth: Record<string, number>;
+
+  @ApiProperty({ example: 218.5 })
+  total: number;
+
+  @ApiProperty({ example: 109.25 })
+  average: number;
+}
+
+/**
+ * One section of the breakdown, the rows sharing a `sectionKey`, in the
+ * section's own sign convention (money in positive for an income section,
+ * money out positive for an expense one).
+ */
+export class MonthlyBreakdownSection extends MonthlyBreakdownFigures {
+  @ApiProperty({ example: "uuid-parent" })
+  key: string;
+
+  @ApiProperty({ example: false })
+  isIncome: boolean;
+}
+
+/** The breakdown's bottom lines, each folded from the sections' aggregates. */
+export class MonthlyBreakdownSummary {
+  @ApiProperty({ type: MonthlyBreakdownFigures })
+  income: MonthlyBreakdownFigures;
+
+  @ApiProperty({ type: MonthlyBreakdownFigures })
+  expenses: MonthlyBreakdownFigures;
+
+  @ApiProperty({ type: MonthlyBreakdownFigures })
+  balance: MonthlyBreakdownFigures;
+
+  @ApiProperty({ type: MonthlyBreakdownFigures })
+  transfers: MonthlyBreakdownFigures;
+
+  @ApiProperty({ type: MonthlyBreakdownFigures })
+  overall: MonthlyBreakdownFigures;
 }
 
 /**
@@ -83,9 +150,21 @@ export class MonthlyBreakdownTransferRow {
       "currency. Positive for 'from' rows, negative for 'to' rows.",
   })
   valuesByMonth: Record<string, number>;
+
+  @ApiProperty({ example: 250.0 })
+  total: number;
+
+  @ApiProperty({ example: 125.0 })
+  average: number;
 }
 
 export class MonthlyCategoryBreakdownResponse {
+  @ApiProperty({
+    enum: ["month", "year"],
+    description: "The column width: `months` holds YYYY-MM or YYYY keys.",
+  })
+  period: "month" | "year";
+
   @ApiProperty({
     type: [String],
     example: ["2025-01", "2025-02", "2025-03"],
@@ -98,6 +177,12 @@ export class MonthlyCategoryBreakdownResponse {
 
   @ApiProperty({ type: [MonthlyBreakdownTransferRow] })
   transfers: MonthlyBreakdownTransferRow[];
+
+  @ApiProperty({ type: [MonthlyBreakdownSection] })
+  sections: MonthlyBreakdownSection[];
+
+  @ApiProperty({ type: MonthlyBreakdownSummary })
+  summary: MonthlyBreakdownSummary;
 
   /** Reporting currency every figure above is expressed in. */
   @ApiProperty({ example: "USD" })

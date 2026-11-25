@@ -233,7 +233,7 @@ export class BuiltInReportsService {
     userId: string,
     startDate: string | undefined,
     endDate: string,
-    options?: { accountIds?: string[] },
+    options?: { accountIds?: string[]; period?: "month" | "year" },
   ): Promise<MonthlyCategoryBreakdownResponse> {
     return this.monthlyCategoryBreakdown.getMonthlyCategoryBreakdown(
       userId,
