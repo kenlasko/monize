@@ -645,9 +645,10 @@ export interface DuplicateTransactionsResponse {
     mediumCount: number;
     lowCount: number;
     /**
-     * What the extra copies come to in `currency`, each group converted at its
-     * own row's rate or its date's market rate; `null` while a group's
-     * currency has no rate, `knownPotentialSavings` carrying what converted.
+     * What the extra copies come to in `currency`, each copy converted at the
+     * rate its own row recorded, else its date's market rate; `null` while a
+     * copy's currency has no rate, `knownPotentialSavings` carrying what
+     * converted.
      */
     potentialSavings: number | null;
     knownPotentialSavings: number;

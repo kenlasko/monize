@@ -664,6 +664,22 @@ describe("DataQualityReportsService", () => {
       expect(result.summary.potentialSavings).toBe(110);
     });
 
+    it("orders rows that tie on date and amount by id, so a group's first copy is always the same row (issue #2410)", async () => {
+      // With copies in two currencies the first row is the one the impact
+      // leaves out: on a tie with no further key, 110 or 100 by row order.
+      scopedManager.query.mockResolvedValue([]);
+
+      await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(scopedManager.query.mock.calls[0][0]).toMatch(
+        /ORDER BY t\.transaction_date ASC, t\.amount ASC, t\.id ASC/,
+      );
+    });
+
     it("assigns high confidence when date, amount and payee match but the category differs", async () => {
       scopedManager.query.mockResolvedValue([
         {

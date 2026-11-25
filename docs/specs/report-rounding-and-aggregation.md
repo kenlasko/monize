@@ -228,7 +228,7 @@ the wire; stage 2 removes the one-cent double rounding.
   the Monthly Category Breakdown, Spending Anomalies, the Uncategorized
   Transactions summary, the Duplicate Transactions report's potential impact,
   which added each group's amount in its own currency and now converts each
-  group at its own row's rate basis); the custom report, including the transaction list's
+  extra copy at its own row's rate basis); the custom report, including the transaction list's
   `value`, which left unrounded; the Cash Flow Sankey, apportioned and closed in
   the currency's minor unit; the Foreign Currency Fees report's converted
   total; the monthly net worth and what reuses it (the account summary's

@@ -229,7 +229,7 @@ The **Duplicate Transaction Finder** groups transactions that look like copies o
 
 Each transaction shows its date, payee, description, category, account and amount, and whether it is **Cleared** or **Reconciled**. Click a transaction to open it on the Transactions page.
 
-**Potential Impact** is what the extra copies add up to in your default currency, each group converted at the exchange rate of its own date. When a group is in a currency with no exchange rate for that date, the figure shows what could be converted, marked with an asterisk.
+**Potential Impact** is what the extra copies add up to in your default currency, each copy converted at the rate its foreign-currency entry recorded, or else at the exchange rate of its own date. When a copy is in a currency with no exchange rate for that date, the figure shows what could be converted, marked with an asterisk.
 
 To remove duplicates without leaving the report:
 

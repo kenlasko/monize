@@ -347,7 +347,7 @@ export class DataQualityReportsService {
         -- and the remedy is deleting one whole transaction -- a per-child figure
         -- would name a row nobody can delete. Which is also why it needs no
         -- split-provenance clause: a row it admits is one the user owns.
-      ORDER BY t.transaction_date ASC, t.amount ASC
+      ORDER BY t.transaction_date ASC, t.amount ASC, t.id ASC
     `;
 
     interface RawTx extends RawRateBasis {

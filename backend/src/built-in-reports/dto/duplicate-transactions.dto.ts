@@ -108,7 +108,7 @@ export class DuplicateTransactionsSummary {
     nullable: true,
     type: Number,
     description:
-      "What the extra copies come to in the reporting currency (`currency`), each group converted at its own row's rate or the market rate on its date. Null while a group's currency has no rate; the converted part is knownPotentialSavings.",
+      "What the extra copies come to in the reporting currency (`currency`), each copy converted at the rate its own row recorded, else the market rate on its date. Null while a copy's currency has no rate; the converted part is knownPotentialSavings.",
   })
   potentialSavings: number | null;
 
