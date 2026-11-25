@@ -684,9 +684,9 @@ describe("BudgetHealthReportsService", () => {
     /**
      * A month's income is one aggregate over its native rows, its converted
      * foreign parts and the toggle's converted figure, read once (issue #2408,
-     * `docs/specs/report-rounding-and-aggregation.md` rule 2). Adding the
-     * parts' four-place readings read 10.0049 + 0.0001 + 0.6251 = 10.6301; the
-     * exact 10.630025 reads 10.6300.
+     * `docs/specs/report-rounding-and-aggregation.md` rule 2), at the
+     * budget currency's two places (issue #2410). Adding the parts' readings
+     * gives 10.00 + 0.01 + 0.63 = 10.64; the exact 10.6340625 reads 10.63.
      */
     it("folds a month's native, foreign and transferred-in income into one aggregate", async () => {
       const thisMonth = new Date();
@@ -694,12 +694,12 @@ describe("BudgetHealthReportsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(
         createMockQueryBuilder({
           getRawMany: jest.fn().mockResolvedValue([
-            { month, currencyCode: "USD", total: "10.0049" },
-            // EUR 0.0001 settled into USD at its own 1.6: 0.0000625.
+            { month, currencyCode: "USD", total: "10.004" },
+            // EUR 0.008 settled into USD at its own 1.6: 0.005.
             {
               month,
               currencyCode: "EUR",
-              total: "0.0001",
+              total: "0.008",
               fx_day: `${month}-05`,
               fx_original_currency: "USD",
               fx_exchange_rate: "1.60000000",
@@ -707,16 +707,16 @@ describe("BudgetHealthReportsService", () => {
           ]),
         }),
       );
-      // EUR 1.0001 transferred in at 1.6: 0.6250625, which reads 0.6251.
+      // EUR 1.0001 transferred in at 1.6: 0.6250625, which reads 0.63.
       mockSpending({ ...spending({}), ...outsideIncome(1.0001 / 1.6) });
 
       const result = await service.getSavingsRate("user-1", "budget-1", 1);
 
       const exact = new FxAggregate();
-      for (const part of [10.0049, 0.0001 / 1.6, 1.0001 / 1.6]) {
+      for (const part of [10.004, 0.008 / 1.6, 1.0001 / 1.6]) {
         exact.addConverted(part);
       }
-      expect(result[0].income).toBe(exact.knownSubtotal);
+      expect(result[0].income).toBe(exact.knownSubtotalAt(2));
       expect(result[0].income).toBe(10.63);
       expect(result[0]).toMatchObject({
         expenses: 0,
@@ -765,6 +765,29 @@ describe("BudgetHealthReportsService", () => {
       });
     });
 
+    it("reads the figures at the budget currency's own places, whole yen for JPY (issue #2410)", async () => {
+      budgetsService.findOne.mockResolvedValueOnce({
+        ...mockBudget,
+        currencyCode: "JPY",
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder(),
+      );
+      mockSpending({
+        ...spending({ "cat-essential": -0.4 }),
+        ...outsideIncome(1000.6),
+      });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      // At USD's two places these would read 1000.60, 0.40 and 1000.20.
+      expect(result[0]).toMatchObject({
+        income: 1001,
+        expenses: 0,
+        savings: 1000,
+      });
+    });
+
     it("keeps a month's native income and the toggle's figure when its foreign income had no rate", async () => {
       const thisMonth = new Date();
       const month = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}`;
@@ -801,14 +824,15 @@ describe("BudgetHealthReportsService", () => {
       expect(result[0]).toMatchObject({ income: 0, savingsRate: 0 });
     });
 
-    it("gives no rate over an income that reads as zero", async () => {
+    it("gives no rate over an income that reads as zero at the budget's places", async () => {
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(
         createMockQueryBuilder(),
       );
-      // 0.00003 is money in (its sign), but it reads 0.0000.
+      // 0.004 is money in (its sign), but it reads 0.00 at USD's two places
+      // (issue #2410); at four it read 0.004 and took a rate.
       mockSpending({
         ...spending({ "cat-essential": -500 }),
-        ...outsideIncome(0.00003),
+        ...outsideIncome(0.004),
       });
 
       const result = await service.getSavingsRate("user-1", "budget-1", 1);
@@ -880,9 +904,8 @@ describe("BudgetHealthReportsService", () => {
       expect(result[0].expenses).toBe(0);
     });
 
-    it("rounds money fields to 4dp precision", async () => {
+    it("reads every money field as zero over a month with no rows", async () => {
       const result = await service.getSavingsRate("user-1", "budget-1", 1);
-      // With no transactions, all monetary fields should be 0
       expect(result[0]).toMatchObject({
         income: 0,
         expenses: 0,

@@ -3285,6 +3285,8 @@ describe("TransactionAnalyticsService", () => {
     it("reads each figure and each change once at the reporting currency's places (issue #2410)", async () => {
       // 100.004 and 150.005 read 100.00 and 150.01; their exact change,
       // 50.001, reads 50.00, where the difference of the readings is 50.01.
+      // Its percentage is 50.001 over 100.004, 50.00 (rule 8); the two
+      // readings' 50.01 over 100.00 would be 50.01.
       mockQueryBuilder.getRawMany
         .mockResolvedValueOnce([
           row({ categoryId: "cat-food", total: "100.004", count: "5" }),
@@ -3298,15 +3300,18 @@ describe("TransactionAnalyticsService", () => {
       expect(result.period1.total).toBe(100);
       expect(result.period2.total).toBe(150.01);
       expect(result.totalChange).toBe(50);
+      expect(result.totalChangePercent).toBe(50);
       expect(result.comparison[0]).toMatchObject({
         period1Amount: 100,
         period2Amount: 150.01,
         change: 50,
+        changePercent: 50,
       });
     });
 
-    it("gives no percentage over a first period that reads 0.00 (issue #2410)", async () => {
-      // 0.003 shows as 0.00: a change over it is "new", not 3,333,233%.
+    it("divides nothing by a first period that reads 0.00: the row is new (100) and the total 0 (issue #2410)", async () => {
+      // 0.003 shows as 0.00 and is no base: a change over it is "new", not
+      // 3,333,233%.
       mockQueryBuilder.getRawMany
         .mockResolvedValueOnce([
           row({ categoryId: "cat-food", total: "0.003", count: "1" }),
