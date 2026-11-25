@@ -603,9 +603,9 @@ describe('CashFlowSankeyReport', () => {
     expect(screen.getByText(/A credit card payment is never a debt payment/)).toBeInTheDocument();
   });
 
-  it('says beside the nodes, in both views, that a category can read a cent off Spending by Category (issue #2410)', async () => {
+  it('says beside the nodes, in both views, that a category can read a cent off Spending by Category or Income by Source (issue #2410)', async () => {
     await renderReport();
-    const note = /can therefore differ by one cent, or the smallest unit of your currency, from the same category in Spending by Category/;
+    const note = /can therefore differ by one cent, or the smallest unit of your currency, from the same category in Spending by Category or Income by Source/;
     expect(screen.getByTestId('sankey-rounding-note')).toHaveTextContent(note);
 
     await act(async () => {

@@ -253,8 +253,9 @@ the wire; stage 2 removes the one-cent double rounding.
   and the assistant's and MCP's
   report tools: `generate_report` hands out the reports' own figures, and the
   flow totals, the grouped breakdown and `compare_periods` read at the
-  reporting currency's places, `compare_periods`' summary line printing them at
-  those places.
+  reporting currency's places, the summary lines of `compare_periods`,
+  `list_transactions` and `get_portfolio_summary` printing them at those
+  places.
 - **Rules 4, 5 and 8 at the new precision.** A difference of two readings is a
   visible cent off at two places, so `compare_periods` works each change out
   from the two periods' aggregates and each percentage from the unrounded
@@ -289,7 +290,10 @@ the wire; stage 2 removes the one-cent double rounding.
   account's totals stay at its currency's money precision while the
   Investments page's account groups and headline and the Accounts page add
   them to a cash balance on the client (stage 3): read at two places, that sum
-  of two readings sat a cent off.
+  of two readings sat a cent off. The Cash Flow Sankey's unspent or deficit
+  is the four side totals' readings netted in the minor unit, which closing
+  the diagram needs (rule 6), so it can sit a unit or two off the period's
+  net read once (Income vs Expenses' net for the same period).
 
 ## 7. Stage 3: the client and the exports
 
