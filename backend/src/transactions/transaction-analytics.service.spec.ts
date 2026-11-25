@@ -334,6 +334,7 @@ describe("TransactionAnalyticsService", () => {
         netCashFlow: -315,
         knownIncome: 0,
         knownExpenses: 315,
+        knownNet: -315,
         includedTransactionCount: 3,
         excludedTransactionCount: 0,
         missingCurrencies: [],
@@ -473,6 +474,7 @@ describe("TransactionAnalyticsService", () => {
         netCashFlow: null,
         knownIncome: 10,
         knownExpenses: 50,
+        knownNet: -40,
         includedTransactionCount: 1,
         excludedTransactionCount: 1,
         missingCurrencies: ["JPY"],
@@ -527,6 +529,70 @@ describe("TransactionAnalyticsService", () => {
         totalIncome: 249.5049,
         totalExpenses: 0,
         netCashFlow: 249.5049,
+        knownNet: 249.5049,
+      });
+    });
+
+    it("nets a partial summary's known sides before either is rounded (issue #2409)", async () => {
+      // 100.01 EUR in and 0.00004 EUR out at 1.2474 are 124.752474 and
+      // 0.000049896 CAD: a known net of 124.752424104, which reads 124.7524.
+      // JPY has no rate, so the summary is partial; the difference of its two
+      // readings, 124.7525 and 0, was 124.7525.
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([
+        {
+          currencyCode: "EUR",
+          fx_day: "2026-01-12",
+          fx_original_currency: null,
+          fx_exchange_rate: "1",
+          totalIncome: "100.01",
+          totalExpenses: "0.00004",
+          transactionCount: "2",
+        },
+        {
+          currencyCode: "JPY",
+          fx_day: "2026-01-12",
+          fx_original_currency: null,
+          fx_exchange_rate: "1",
+          totalIncome: "0",
+          totalExpenses: "1000",
+          transactionCount: "1",
+        },
+      ]);
+      managerMock.query.mockResolvedValue([
+        {
+          from_currency: "EUR",
+          to_currency: "CAD",
+          rate: "1.2474",
+          rate_date: "2026-01-10",
+        },
+      ]);
+
+      const result = await service.getSummary(
+        userId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { inReportingCurrency: true },
+      );
+
+      expect(result.converted).toMatchObject({
+        netCashFlow: null,
+        knownIncome: 124.7525,
+        knownExpenses: 0,
+        knownNet: 124.7524,
+        missingCurrencies: ["JPY"],
       });
     });
 

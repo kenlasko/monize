@@ -148,7 +148,8 @@ than the floors' 249.5048, and the tie goes to the lower key.
   monthly net worth and an account's portfolio gain are single differences
   (`FxAggregate.difference`); the transactions widget
   (`frontend/src/components/transactions/widget-shared.ts`) reads the server's
-  net rather than rebuilding it from the two rounded sides.
+  `knownNet`, the known sides' single difference on a partial summary as on a
+  complete one, rather than rebuilding it from the two rounded sides.
 - `backend/src/common/report-rounding.guard.spec.ts` fails rule 2's mechanical
   forms: an `addConverted`, `add`, `sumMoney`, `+=`, `-=`, `+` or `-` over an
   aggregate's reading, and an `isNetSpending` over a reading or a `roundMoney`.
