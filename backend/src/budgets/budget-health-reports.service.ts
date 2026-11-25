@@ -301,7 +301,8 @@ export class BudgetHealthReportsService {
         this.dataSource,
         async (m) => {
           // Line grain: a split reads its lines, not its net, and its
-          // transfer lines are left out (spec split-line-equivalence rule 1).
+          // transfer lines are left out (spec split-line-equivalence rules
+          // 1, 4 and 5).
           const qb = excludeBudgetAccounts(
             m
               .getRepository(Transaction)

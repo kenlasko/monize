@@ -41,6 +41,13 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 - [x] `getSavingsRate` income fallback (`backend/src/budgets/budget-health-reports.service.ts`):
   read at line grain and drop the split transfer line.
 - [x] A split with a positive transfer line adds nothing to income.
+- [ ] Follow-ups found in review, older than T4: the fallback applies no
+  investment exclusion (`investmentExclusionSql`), so brokerage cash deposits
+  count as income unless the account is excluded from the budget; a positive
+  line in a budgeted expense category (a refund) lowers that category's
+  expenses and also counts as fallback income; the budget generator's history
+  queries (`budget-generator.service.ts`, the two `t.is_transfer = false`
+  reads) were not checked for the split-line defect.
 
 ## T5 close
 
