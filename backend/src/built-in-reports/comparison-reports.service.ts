@@ -381,13 +381,26 @@ export class ComparisonReportsService {
       targetMap.set(displayId, existing);
     });
 
-    const totalOfDays = (days: number[]): number => {
+    const sumOfDays = (days: number[]): FxAggregate => {
       const sum = new FxAggregate();
       for (const day of days) sum.merge(dayTotals[day]);
-      return sum.knownSubtotalAt(places);
+      return sum;
     };
-    const knownWeekendTotal = totalOfDays([0, 6]);
-    const knownWeekdayTotal = totalOfDays([1, 2, 3, 4, 5]);
+    const weekendSum = sumOfDays([0, 6]);
+    const weekdaySum = sumOfDays([1, 2, 3, 4, 5]);
+    const knownWeekendTotal = weekendSum.knownSubtotalAt(places);
+    const knownWeekdayTotal = weekdaySum.knownSubtotalAt(places);
+    // Each side's share of the week's spending, divided from the unrounded
+    // sums: a share over the two rounded totals is a ratio of readings, not
+    // of the spending (docs/specs/report-rounding-and-aggregation.md rule 8).
+    // Withheld with the totals while a row is left out; 0 over no spending.
+    const whole = FxAggregate.sum([weekendSum, weekdaySum]);
+    const shareOf = (part: FxAggregate): number | null =>
+      !gaps.isComplete
+        ? null
+        : whole.sign > 0
+          ? (part.unroundedSubtotal / whole.unroundedSubtotal) * 100
+          : 0;
     const weekendCount = dayCounts[0] + dayCounts[6];
     const weekdayCount =
       dayCounts[1] + dayCounts[2] + dayCounts[3] + dayCounts[4] + dayCounts[5];
@@ -425,6 +438,8 @@ export class ComparisonReportsService {
         weekdayTotal: gaps.headline(knownWeekdayTotal),
         knownWeekendTotal,
         knownWeekdayTotal,
+        weekendShare: shareOf(weekendSum),
+        weekdayShare: shareOf(weekdaySum),
         weekendCount,
         weekdayCount,
       },

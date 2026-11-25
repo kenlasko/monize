@@ -448,6 +448,41 @@ describe("ComparisonReportsService", () => {
   // getWeekendVsWeekday
   // ---------------------------------------------------------------------------
   describe("getWeekendVsWeekday", () => {
+    // 0.0049 on a Saturday and 0.0051 on a Tuesday read 0.00 and 0.01, so a
+    // share over the two totals read 0% and 100% where the spending splits
+    // 49% and 51% (docs/specs/report-rounding-and-aggregation.md rule 8,
+    // issue #2413).
+    it("divides each side's share from the unrounded sums, not the two totals", async () => {
+      scopedManager.query.mockResolvedValue([
+        {
+          day_of_week: 6,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 1,
+          total: "0.0049",
+        },
+        {
+          day_of_week: 2,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 1,
+          total: "0.0051",
+        },
+      ]);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getWeekendVsWeekday(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.summary.weekendTotal).toBe(0);
+      expect(result.summary.weekdayTotal).toBe(0.01);
+      expect(result.summary.weekendShare).toBeCloseTo(49, 10);
+      expect(result.summary.weekdayShare).toBeCloseTo(51, 10);
+    });
+
     it("returns zeroed summary when no transactions exist", async () => {
       scopedManager.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
@@ -1164,6 +1199,9 @@ describe("ComparisonReportsService", () => {
       expect(result.summary.weekdayTotal).toBeNull();
       expect(result.summary.knownWeekendTotal).toBe(50);
       expect(result.summary.knownWeekdayTotal).toBe(0);
+      // A share of a withheld week is withheld with it.
+      expect(result.summary.weekendShare).toBeNull();
+      expect(result.summary.weekdayShare).toBeNull();
       expect(result.summary.weekendCount).toBe(1);
       expect(result.currency).toBe("USD");
       expect(result.missingCurrencies).toEqual(["JPY"]);
@@ -1182,6 +1220,8 @@ describe("ComparisonReportsService", () => {
 
       expect(result.summary.weekendTotal).toBe(0);
       expect(result.summary.weekdayTotal).toBe(0);
+      expect(result.summary.weekendShare).toBe(0);
+      expect(result.summary.weekdayShare).toBe(0);
       expect(result.missingCurrencies).toEqual([]);
       expect(result.excludedCount).toBe(0);
     });

@@ -161,8 +161,19 @@ export function WeekendVsWeekdayReport() {
   const weekendAvg = isComplete(weekendKnown) ? (weekendCount > 0 ? weekendTotal / weekendCount : 0) : null;
   const weekdayAvg = isComplete(weekdayKnown) ? (weekdayCount > 0 ? weekdayTotal / weekdayCount : 0) : null;
   const totalSpending = weekendTotal + weekdayTotal;
-  const weekendPercent = shareKnown ? (totalSpending > 0 ? (weekendTotal / totalSpending) * 100 : 0) : null;
-  const weekdayPercent = weekendPercent === null ? null : 100 - weekendPercent;
+  // Each side's share is the server's, divided from the unrounded sums; a
+  // share over the two rounded totals read 0.0049 against 0.0051 as 0% and
+  // 100% (docs/specs/report-rounding-and-aggregation.md rule 8). A backend
+  // that predates the fields gets the share over its two totals.
+  const legacyWeekendPercent = shareKnown ? (totalSpending > 0 ? (weekendTotal / totalSpending) * 100 : 0) : null;
+  const weekendPercent =
+    summary?.weekendShare !== undefined ? summary.weekendShare : legacyWeekendPercent;
+  const weekdayPercent =
+    summary?.weekdayShare !== undefined
+      ? summary.weekdayShare
+      : legacyWeekendPercent === null
+        ? null
+        : 100 - legacyWeekendPercent;
 
   // A figure in a file or an image has no tooltip, so the text itself carries
   // the marker.

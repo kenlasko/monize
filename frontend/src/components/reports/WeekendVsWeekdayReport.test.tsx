@@ -273,6 +273,42 @@ describe('WeekendVsWeekdayReport', () => {
     );
   });
 
+  // 0.0049 on weekends and 0.0051 on weekdays read 0.00 and 0.01: a share over
+  // the two rounded totals read 0% and 100% where the server's, divided from
+  // the unrounded sums, is 49% and 51% (issue #2413).
+  it("prints each side's share as the server divided it, not a share of the two rounded totals", async () => {
+    mockGetWeekendVsWeekday.mockResolvedValue({
+      summary: {
+        weekendTotal: 0,
+        weekdayTotal: 0.01,
+        knownWeekendTotal: 0,
+        knownWeekdayTotal: 0.01,
+        weekendShare: 49,
+        weekdayShare: 51,
+        weekendCount: 1,
+        weekdayCount: 1,
+      },
+      byDay: [],
+      byCategory: [],
+      currency: 'CAD',
+      missingCurrencies: [],
+      excludedCount: 0,
+    });
+    render(<WeekendVsWeekdayReport />);
+    await waitFor(() => {
+      expect(document.body).toHaveTextContent('(49.0%)');
+    });
+    expect(document.body).toHaveTextContent('(51.0%)');
+    expect(document.body).not.toHaveTextContent('(100.0%)');
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('export-pdf'));
+    });
+    const legend = mockExportToPdf.mock.calls[0][0].chartLegend as Array<{ label: string }>;
+    expect(legend[0].label).toContain('(49.0%)');
+    expect(legend[1].label).toContain('(51.0%)');
+  });
+
   it('marks the null totals as subtotals and withholds every ratio over them', async () => {
     mockGetWeekendVsWeekday.mockResolvedValue({
       summary: {

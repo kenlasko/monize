@@ -385,6 +385,12 @@ export interface WeekendVsWeekdayResponse {
     /** The part that did convert; render through `PartialTotal` when the field above is `null`. */
     knownWeekendTotal: number;
     knownWeekdayTotal: number;
+    /**
+     * Each side's share of the week's spending in percent, divided from the
+     * unrounded sums; `null` with the totals, absent from an older backend.
+     */
+    weekendShare?: number | null;
+    weekdayShare?: number | null;
     weekendCount: number;
     weekdayCount: number;
   };
