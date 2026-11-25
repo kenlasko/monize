@@ -63,8 +63,10 @@ export class IncomeExpenseTagPeriodItem extends IncomeExpensePeriodItem {
   taggedOutflows: number;
 
   /**
-   * income + taggedInflows - expenses - taggedOutflows, the four aggregates
-   * folded before it is read; the known part while a row was left out.
+   * The period's Balance with this bucket's flows: the All figure's income +
+   * taggedInflows - the All figure's expenses - taggedOutflows, the four
+   * aggregates folded before it is read; the known part while a row was left
+   * out.
    */
   @ApiProperty({ example: 500.0 })
   balance: number;

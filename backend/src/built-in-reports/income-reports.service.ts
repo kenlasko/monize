@@ -301,7 +301,7 @@ export class IncomeReportsService {
       tagKey,
       transferScopeAccountIds,
     } = options;
-    const { response } = await this.incomeVsExpensesWindow(
+    const { response, periods } = await this.incomeVsExpensesWindow(
       userId,
       startDate,
       endDate,
@@ -321,6 +321,7 @@ export class IncomeReportsService {
       { accountIds, bucket, weekStartsOn, transferScopeAccountIds },
       trimmedTagKey,
       response.currency,
+      periods,
     );
 
     return { ...response, tagKey: trimmedTagKey, buckets };
@@ -653,6 +654,7 @@ export class IncomeReportsService {
     },
     tagKey: string,
     defaultCurrency: string,
+    allPeriods: ReadonlyMap<string, IncomeExpensePeriodAggregates>,
   ): Promise<IncomeExpenseTagBucket[]> {
     const { accountIds, bucket, weekStartsOn, transferScopeAccountIds } =
       windowOptions;
@@ -972,6 +974,7 @@ export class IncomeReportsService {
         weekStartsOn,
         convert,
         places,
+        allPeriods,
       ),
     );
   }
@@ -987,8 +990,9 @@ export class IncomeReportsService {
     weekStartsOn: WeekStartsOn,
     convert: ReportConverter,
     places: number,
+    allPeriods: ReadonlyMap<string, IncomeExpensePeriodAggregates>,
   ): IncomeExpenseTagBucket {
-    const { data, totals, missingCurrencies, excludedCount, periods } =
+    const { data, totals, missingCurrencies, excludedCount } =
       this.summarizePeriodRows(
         rows,
         bucket,
@@ -1038,18 +1042,19 @@ export class IncomeReportsService {
     // keeps over rule 4 of docs/specs/report-rounding-and-aggregation.md).
     const periodData: IncomeExpenseTagPeriodItem[] = data.map((item) => {
       const flows = flowsByPeriod.get(item.period);
-      const own = periods.get(item.period);
-      // The period's Balance (spec section 10.9 of
-      // docs/specs/report-tag-key-breakdown.md): what came in less what went
-      // out, the four aggregates folded before it is read, and its percentage
-      // over what came in divided from the unrounded figures. Built on the
-      // page from the four readings, it could sit a unit off (issue #2413).
+      const all = allPeriods.get(item.period);
+      // The period's Balance with this bucket's flows (spec section 10.9 of
+      // docs/specs/report-tag-key-breakdown.md): the All income plus the
+      // tagged inflows, less the All expenses and the tagged outflows, the four
+      // aggregates folded before it is read, and its percentage over what came
+      // in divided from the unrounded figures. Built on the page from the four
+      // readings, it could sit a unit off (issue #2413).
       const received = FxAggregate.sum([
-        own?.income ?? new FxAggregate(),
+        all?.income ?? new FxAggregate(),
         flows?.inflows ?? new FxAggregate(),
       ]);
       const paid = FxAggregate.sum([
-        own?.expenses ?? new FxAggregate(),
+        all?.expenses ?? new FxAggregate(),
         flows?.outflows ?? new FxAggregate(),
       ]);
       const balance = FxAggregate.difference(received, paid);

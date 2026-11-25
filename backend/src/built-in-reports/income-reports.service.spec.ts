@@ -1362,16 +1362,15 @@ describe("IncomeReportsService", () => {
       expect(household.taggedOutflows).toBe(1000);
     });
 
-    // 0.005 of income and of tagged inflows, 0.005 of expenses and 0.004 of
-    // tagged outflows read 0.01, 0.01, 0.01 and 0.00: the page's Balance of the
-    // four readings was 0.01 where the period's, 0.001, reads 0.00 (issue
-    // #2413).
+    // The All figure's 0.015 of income and 0.005 of expenses, and the
+    // bucket's 0.005 of tagged inflows and 0.004 of outflows, read 0.02, 0.01,
+    // 0.01 and 0.00: the page's Balance of the four readings was 0.02 where
+    // the period's, 0.011, reads 0.01 (issue #2413). The Balance is the All
+    // figure's, not the bucket's own categorized rows'.
     it("sends each period's Balance from the four aggregates, read once", async () => {
       scopedManager.query
-        .mockResolvedValueOnce([row("2025-01-01", "0.005", "0.005")])
-        .mockResolvedValueOnce([
-          valueRow("2025-01-01", "household", "0.005", "0.005"),
-        ])
+        .mockResolvedValueOnce([row("2025-01-01", "0.015", "0.005")])
+        .mockResolvedValueOnce([valueRow("2025-01-01", "household", "0", "0")])
         .mockResolvedValueOnce([flowRow("household", "0.005", "0.004")])
         .mockResolvedValueOnce([]);
 
@@ -1384,14 +1383,12 @@ describe("IncomeReportsService", () => {
 
       const household = bucketByValue(result.buckets, "household");
       expect(household.data[0]).toMatchObject({
-        income: 0.01,
-        expenses: 0.01,
         taggedInflows: 0.01,
         taggedOutflows: 0,
-        balance: 0,
+        balance: 0.01,
       });
-      // 0.001 over the 0.010 that came in.
-      expect(household.data[0].balancePercent).toBe(10);
+      // 0.011 over the 0.020 that came in.
+      expect(household.data[0].balancePercent).toBe(55);
     });
 
     it("truth table 3.2: income stays 100, never 200, when a salary is later moved through tagged transfers", async () => {
