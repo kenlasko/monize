@@ -22,13 +22,13 @@ import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMult
 import type { Account } from '@/types/account';
 import type {
   FxFeeMonthlyTotal,
+  FxFeeTotals,
   MonthlyTotal,
   PaginationInfo,
   Transaction,
 } from '@/types/transaction';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { fromMoneyUnits, moneyDecimalsForCurrency, toMoneyUnits } from '@/lib/format';
-import { useCurrencyDecimalsVersion } from '@/hooks/useCurrencyDecimalsVersion';
+import { ReportError } from '@/components/reports/ReportError';
 import { CARD_CLASS } from '@/components/ui/Card';
 
 const logger = createLogger('ForeignCurrencyFeesReport');
@@ -142,15 +142,6 @@ export function ForeignCurrencyFeesReport() {
     return currencies.size === 1 ? [...currencies][0] : defaultCurrency;
   }, [effectiveAccountIds, accountsById, defaultCurrency]);
 
-  // A fee in another currency is the server's conversion, each fee at its own
-  // transaction's rate or date; a month of fees at today's rate would move
-  // with the currency rather than with what the bank charged (issue #2106).
-  const convertFee = useCallback(
-    (row: FxFeeMonthlyTotal, accountCurrency: string): number | null =>
-      accountCurrency === displayCurrency ? row.feeTotal : (row.convertedFeeTotal ?? null),
-    [displayCurrency],
-  );
-
   // Nothing to fetch (no account in scope, or the account list has not
   // arrived): the fee rows are empty and settled for this key. Adjusted during
   // render rather than from the loading effect below.
@@ -204,49 +195,47 @@ export function ForeignCurrencyFeesReport() {
     [availableCurrencies],
   );
 
-  // Roll every account's rows up to one converted fee total per month, honouring
-  // the currency filter. Accumulated in integer units of the display
-  // currency's money precision (four for fiat, a coin's eight when every
-  // account in scope is that coin) to avoid drift.
-  const registryVersion = useCurrencyDecimalsVersion();
-  const monthlyFees = useMemo(() => {
-    const active = selectedCurrencies.length > 0 ? new Set(selectedCurrencies) : null;
-    const decimals = moneyDecimalsForCurrency(displayCurrency);
-    const byMonth = new Map<string, { units: bigint; count: number }>();
-    // A fee whose currency has no rate to the display currency is left out of
-    // the chart (added at its face value it would be a figure in another
-    // currency), so its currency is named and it is counted -- the chart is a
-    // subtotal, not the whole, and the note beside it says so.
-    const missing = new Set<string>();
-    let excludedCount = 0;
-    for (const result of feeResults) {
-      for (const row of result.rows) {
-        if (active && !active.has(row.currencyCode)) continue;
-        const converted = convertFee(row, result.currency);
-        if (converted === null) {
-          missing.add(result.currency);
-          excludedCount += row.count;
-          continue;
-        }
-        const bucket = byMonth.get(row.month) ?? { units: BigInt(0), count: 0 };
-        if (Number.isFinite(converted)) bucket.units += toMoneyUnits(converted, decimals);
-        bucket.count += row.count;
-        byMonth.set(row.month, bucket);
-      }
-    }
-    const data: MonthlyTotal[] = [...byMonth.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, bucket]) => ({
-        month,
-        total: fromMoneyUnits(bucket.units, decimals),
-        count: bucket.count,
-      }));
-    return { data, missingCurrencies: [...missing], excludedCount };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the registry version re-runs the read
-  }, [feeResults, selectedCurrencies, convertFee, displayCurrency, registryVersion]);
-
   const currencyKey = selectedCurrencies.join(',');
   const availableKey = availableCurrencies.join(',');
+
+  // The chart's figures are the server's, over the accounts and paid
+  // currencies chosen: each column, the total and each average read once from
+  // the fees' aggregates. Summed here from each account's four-place
+  // conversions, three fees of 2.50496 read 7.50 where they come to 7.51
+  // (issue #2413). Kept with the selection that asked for them.
+  const totalsKey = `${accountKey}|${currencyKey}|${refreshTick}`;
+  const [feeTotals, setFeeTotals] = useState<{ key: string; totals: FxFeeTotals | null } | null>(null);
+  useEffect(() => {
+    if (!accountsLoaded || effectiveAccountIds.length === 0) return;
+    let cancelled = false;
+    transactionsApi
+      .getFxFeeTotals(effectiveAccountIds, selectedCurrencies)
+      .catch((error) => {
+        logger.error('Failed to load fee totals:', error);
+        return null;
+      })
+      .then((totals) => {
+        if (!cancelled) setFeeTotals({ key: totalsKey, totals });
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalsKey, accountsLoaded]);
+  const totals = feeTotals?.key === totalsKey && !feeRequestEmpty ? feeTotals.totals : null;
+  const isTotalsLoading = !feeRequestEmpty && feeTotals?.key !== totalsKey;
+  // A request that failed is said to be one, never drawn as no fees.
+  const totalsFailed = !feeRequestEmpty && feeTotals?.key === totalsKey && feeTotals.totals === null;
+  const chartMonths = useMemo<MonthlyTotal[]>(
+    () =>
+      (totals?.byGranularity.month.buckets ?? []).map((bucket) => ({
+        month: bucket.key,
+        total: bucket.total,
+        count: bucket.count,
+      })),
+    [totals],
+  );
+
 
   // The register: foreign transactions across the selected accounts and paid
   // currencies (defaulting to all paid currencies on those accounts).
@@ -379,17 +368,22 @@ export function ForeignCurrencyFeesReport() {
 
       {/* Chart */}
       <div className={`${CARD_CLASS} p-3 sm:p-6`}>
+        {totalsFailed ? (
+          <ReportError onRetry={refresh} />
+        ) : (
         <ForeignCurrencyFeeChart
-          data={monthlyFees.data}
-          isLoading={isFeeLoading}
-          currencyCode={displayCurrency}
+          data={chartMonths}
+          isLoading={isFeeLoading || isTotalsLoading}
+          currencyCode={totals?.currency ?? displayCurrency}
+          totals={totals ?? undefined}
         />
-        {monthlyFees.missingCurrencies.length > 0 && (
+        )}
+        {totals && totals.missingCurrencies.length > 0 && (
           <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
             {tCommon('partialTotal.explanation', {
-              count: monthlyFees.excludedCount,
-              displayCurrency,
-              currencies: monthlyFees.missingCurrencies.join(', '),
+              count: totals.excludedCount,
+              displayCurrency: totals.currency,
+              currencies: totals.missingCurrencies.join(', '),
             })}
           </p>
         )}

@@ -101,6 +101,55 @@ describe('ForeignCurrencyFeeChart', () => {
     expect(screen.getByText('5')).toBeInTheDocument();
   });
 
+  // Converted from several currencies, three fees of 2.50496 read 2.50 a month
+  // and the chart added those into a quarter and a total of 7.50 where the fees
+  // come to 7.51; with the server's figures it prints those (issue #2413).
+  describe("with the server's totals", () => {
+    const months = [
+      { month: '2026-01', total: 2.5, count: 1 },
+      { month: '2026-02', total: 2.5, count: 1 },
+      { month: '2026-03', total: 2.5, count: 1 },
+    ];
+    const totals = (gap = { missingCurrencies: [] as string[], excludedCount: 0 }) => ({
+      currency: 'CAD',
+      total: 7.51,
+      count: 3,
+      byGranularity: {
+        month: {
+          buckets: months.map((m) => ({ key: m.month, periodStart: `${m.month}-01`, total: m.total, count: m.count })),
+          periodAverage: 2.5,
+        },
+        quarter: { buckets: [{ key: '2026-Q1', periodStart: '2026-01-01', total: 7.51, count: 3 }], periodAverage: 7.51 },
+        year: { buckets: [{ key: '2026', periodStart: '2026-01-01', total: 7.51, count: 3 }], periodAverage: 7.51 },
+      },
+      ...gap,
+    });
+
+    it('prints the total and a quarter as the server read them', () => {
+      render(
+        <ForeignCurrencyFeeChart data={months} isLoading={false} currencyCode="CAD" totals={totals()} />,
+      );
+      expect(screen.getByText('Total Fees').parentElement).toHaveTextContent('CAD 7.51');
+      expect(screen.getByText('Monthly Avg').parentElement).toHaveTextContent('CAD 2.50');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Quarter' }));
+      expect(capturedProps.barChart.data.map((d: { total: number }) => d.total)).toEqual([7.51]);
+      expect(screen.getByText('Quarterly Avg').parentElement).toHaveTextContent('CAD 7.51');
+    });
+
+    it('marks the total partial when a fee had no rate', () => {
+      render(
+        <ForeignCurrencyFeeChart
+          data={months}
+          isLoading={false}
+          currencyCode="CAD"
+          totals={totals({ missingCurrencies: ['USD'], excludedCount: 1 })}
+        />,
+      );
+      expect(screen.getByText('Total Fees').parentElement!.querySelector('[data-testid="partial-total"]')).not.toBeNull();
+    });
+  });
+
   it('colours fee bars from the expense token and refund months from income', () => {
     render(
       <ForeignCurrencyFeeChart

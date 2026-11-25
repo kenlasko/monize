@@ -16,7 +16,8 @@ import {
   LabelList,
   Cell,
 } from 'recharts';
-import { MonthlyTotal } from '@/types/transaction';
+import type { FxFeeTotals, MonthlyTotal } from '@/types/transaction';
+import { PartialTotal } from '@/components/ui/PartialTotal';
 import {
   bucketMonthlyTotals,
   selectGranularity,
@@ -84,6 +85,15 @@ interface ForeignCurrencyFeeChartProps {
    * in the loading or empty states.
    */
   leftControls?: ReactNode;
+  /**
+   * The server's figures for every column, the total and each average, where
+   * `data`'s months were converted from several currencies: a quarter, a year
+   * or the total added up here from the months' readings sat a unit off the
+   * fees read once (issue #2413). Absent, the figures are summed from `data`,
+   * which holds one account's fees in its own currency, posted amounts that
+   * add up exactly.
+   */
+  totals?: FxFeeTotals;
 }
 
 interface ChartDataPoint extends BucketedPoint {
@@ -133,6 +143,7 @@ export function ForeignCurrencyFeeChart({
   accountName,
   hideTitle = false,
   leftControls,
+  totals,
 }: ForeignCurrencyFeeChartProps) {
   const t = useTranslations('accountDetail-fxFees');
   const chartTitle = t('chart.title');
@@ -187,10 +198,19 @@ export function ForeignCurrencyFeeChart({
     [granularity, formatChartDate, t],
   );
 
-  const buckets = useMemo(
-    () => bucketMonthlyTotals(data, granularity),
-    [data, granularity],
-  );
+  const buckets = useMemo(() => {
+    const laidOut = bucketMonthlyTotals(data, granularity);
+    if (!totals) return laidOut;
+    // The columns as the chart lays them out (empty periods included), each
+    // carrying the server's figure for it.
+    const served = new Map(
+      totals.byGranularity[granularity].buckets.map((bucket) => [bucket.key, bucket]),
+    );
+    return laidOut.map((bucket) => {
+      const figure = served.get(bucket.key);
+      return { ...bucket, total: figure?.total ?? 0, count: figure?.count ?? 0 };
+    });
+  }, [data, granularity, totals]);
 
   const chartData = useMemo<ChartDataPoint[]>(
     () =>
@@ -209,12 +229,19 @@ export function ForeignCurrencyFeeChart({
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
+    if (totals) {
+      return {
+        total: totals.total,
+        totalCount: totals.count,
+        periodAvg: totals.byGranularity[granularity].periodAverage,
+      };
+    }
     const total = sumMoney(chartData.map((d) => d.total));
     const totalCount = chartData.reduce((sum, d) => sum + d.count, 0);
     const periodsElapsed = chartData.length;
     const periodAvg = periodsElapsed > 0 ? total / periodsElapsed : 0;
     return { total, totalCount, periodAvg };
-  }, [chartData]);
+  }, [chartData, totals, granularity]);
 
   // The same figures as the on-screen summary cards, drawn under the chart in
   // the exported PNG.
@@ -406,7 +433,13 @@ export function ForeignCurrencyFeeChart({
           <div>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('chart.total')}</div>
             <div className={`font-semibold ${feeColorClass(summary.total)}`}>
-              {formatFee(summary.total)}
+              {totals ? (
+                <PartialTotal total={{ value: totals.total, missingCurrencies: totals.missingCurrencies, excludedCount: totals.excludedCount }} displayCurrency={currencyCode}>
+                  {formatFee(summary.total)}
+                </PartialTotal>
+              ) : (
+                formatFee(summary.total)
+              )}
             </div>
           </div>
           <div>

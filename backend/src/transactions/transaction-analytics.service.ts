@@ -3,6 +3,7 @@ import {
   Brackets,
   DataSource,
   EntityManager,
+  In,
   SelectQueryBuilder,
 } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -50,10 +51,18 @@ import {
 } from "../common/time-series/rate-index.util";
 import { isNetSpending } from "../built-in-reports/spending-reports.service";
 import {
+  convertDatedRowAggregates,
   convertDatedRows,
   convertRateBasis,
   toOwnRate,
 } from "../built-in-reports/report-currency.service";
+import {
+  foldFxFeeTotals,
+  FX_FEE_AMOUNT_SQL,
+  FxFeeGranularity,
+  FxFeeGranularityTotals,
+  FxFeeMonthPart,
+} from "./fx-fee-totals";
 import {
   compareGroupKeys,
   convertRatePartAggregates,
@@ -79,6 +88,23 @@ const BASIS_POINTS_PER_UNIT = 10000;
 /** `ratio` as a percentage rounded to two places (`0.12345` -> `12.35`). */
 function percentToTwoPlaces(ratio: number): number {
   return Math.round(ratio * BASIS_POINTS_PER_UNIT) / 100;
+}
+
+/**
+ * The Foreign Currency Fees report's figures over the accounts and paid
+ * currencies the reader chose: each column, the grand total and each average
+ * read once from the fees' aggregates (issue #2413).
+ */
+export interface FxFeeTotals {
+  /** The accounts' shared currency, else the reader's reporting currency. */
+  currency: string;
+  total: number;
+  count: number;
+  byGranularity: Record<FxFeeGranularity, FxFeeGranularityTotals>;
+  /** Account currencies with no rate into `currency`; their fees are in no figure. */
+  missingCurrencies: string[];
+  /** Transactions whose fees were left out for want of a rate. */
+  excludedCount: number;
 }
 
 export interface FxFeeMonthlySummaryRow {
@@ -1391,10 +1417,7 @@ export class TransactionAnalyticsService {
       const decimals = account
         ? moneyDecimalsForCode(places, account.currencyCode)
         : FIAT_MONEY_DECIMALS;
-      const feeExpr =
-        "CASE WHEN transaction.originalAmount IS NULL THEN 0 " +
-        "ELSE ROUND(transaction.originalAmount * transaction.exchangeRate, CAST(:feeDecimals AS int)) - transaction.amount " +
-        "END";
+      const feeExpr = FX_FEE_AMOUNT_SQL;
 
       const feeRows = () =>
         m
@@ -1428,11 +1451,12 @@ export class TransactionAnalyticsService {
         userId,
       );
       const accountCurrency = account?.currencyCode;
-      // Four places, not the reporting currency's: the Foreign Currency Fees
-      // page adds these rows into its month and grand totals, and a sum of
-      // two-place readings sits a cent off the sum read once. They move to
-      // the currency's places with those totals, in stage 3
-      // (docs/specs/report-rounding-and-aggregation.md section 6).
+      // Each row read once at the reporting currency's places: the Foreign
+      // Currency Fees page's month and grand totals come from
+      // `getFxFeeTotals`, which folds the fees before it reads them, so no
+      // page adds these rows (docs/specs/report-rounding-and-aggregation.md
+      // section 6, issue #2413).
+      const convertedPlaces = await loadReportPlaces(m, reporting);
       const converted =
         accountCurrency && accountCurrency !== reporting && rows.length > 0
           ? await convertDatedRows(
@@ -1461,7 +1485,7 @@ export class TransactionAnalyticsService {
                 amounts: { feeTotal: Number(row.feeTotal) || 0 },
               })),
               reporting,
-              FIAT_MONEY_DECIMALS,
+              convertedPlaces,
               this.logger,
             )
           : null;
@@ -1483,6 +1507,149 @@ export class TransactionAnalyticsService {
                 null),
         };
       });
+    });
+  }
+
+  /**
+   * The Foreign Currency Fees report's totals across `accountIds`, narrowed to
+   * the `currencyCodes` the transactions were paid in when given. The figures
+   * are in the accounts' shared currency, else in the reporting currency with
+   * each fee converted at its own transaction's rate or its own date's market
+   * rate (issue #2106). Every fee is folded into its month's aggregate before
+   * anything is read, so a quarter, a year, the grand total and an average are
+   * each one rounding at the currency's places, never a sum of rounded rows
+   * (docs/specs/report-rounding-and-aggregation.md rule 2, issue #2413). A
+   * month's fees in one paid currency with no rate are left out whole, their
+   * account's currency named and their transactions counted.
+   */
+  async getFxFeeTotals(
+    userId: string,
+    accountIds: readonly string[],
+    currencyCodes?: readonly string[],
+  ): Promise<FxFeeTotals> {
+    return withScopedDb(this.dataSource, async (m) => {
+      const accounts =
+        accountIds.length === 0
+          ? []
+          : await m.getRepository(Account).find({
+              where: { userId, id: In([...accountIds]) },
+              select: { id: true, currencyCode: true },
+              order: { id: "ASC" },
+            });
+      const reporting = await resolveUserDefaultCurrency(
+        this.dataSource,
+        userId,
+      );
+      const accountCurrencies = new Set(accounts.map((a) => a.currencyCode));
+      const currency =
+        accountCurrencies.size === 1 ? [...accountCurrencies][0] : reporting;
+      const currencyPlaces = await loadCurrencyPlacesForRead(m, [
+        ...accountCurrencies,
+      ]);
+      const places = await loadReportPlaces(m, currency);
+
+      const months = new Map<string, FxFeeMonthPart>();
+      const addPart = (month: string, sum: FxAggregate, count: number) => {
+        const part = months.get(month) ?? { sum: new FxAggregate(), count: 0 };
+        part.sum.merge(sum);
+        part.count += count;
+        months.set(month, part);
+      };
+      const missing = new Set<string>();
+      let excludedCount = 0;
+
+      for (const account of accounts) {
+        const decimals = moneyDecimalsForCode(
+          currencyPlaces,
+          account.currencyCode,
+        );
+        let query = m
+          .getRepository(Transaction)
+          .createQueryBuilder("transaction")
+          .select("TO_CHAR(transaction.transactionDate, 'YYYY-MM')", "month")
+          .addSelect("transaction.originalCurrencyCode", "currencyCode")
+          .addSelect(DAY_TX_SQL, "txDate")
+          .addSelect("transaction.exchangeRate", "exchangeRate")
+          .addSelect(`COALESCE(SUM(${FX_FEE_AMOUNT_SQL}), 0)`, "feeTotal")
+          .addSelect("COUNT(DISTINCT transaction.id)", "count")
+          .where("transaction.userId = :userId", { userId })
+          .andWhere("transaction.accountId = :accountId", {
+            accountId: account.id,
+          })
+          .andWhere("transaction.originalCurrencyCode IS NOT NULL")
+          .andWhere("transaction.parentTransactionId IS NULL")
+          .andWhere("transaction.status != :voidStatus", {
+            voidStatus: TransactionStatus.VOID,
+          })
+          .setParameter("feeDecimals", decimals);
+        if (currencyCodes && currencyCodes.length > 0) {
+          query = query.andWhere(
+            "transaction.originalCurrencyCode IN (:...currencyCodes)",
+            { currencyCodes: [...currencyCodes] },
+          );
+        }
+        const rows: {
+          month: string;
+          currencyCode: string;
+          txDate: string;
+          exchangeRate: string | null;
+          feeTotal: string;
+          count: string;
+        }[] = await query
+          .groupBy("month")
+          .addGroupBy("transaction.originalCurrencyCode")
+          .addGroupBy(DAY_TX_SQL)
+          .addGroupBy("transaction.exchangeRate")
+          .getRawMany();
+
+        if (account.currencyCode === currency) {
+          for (const row of rows) {
+            const sum = new FxAggregate();
+            sum.addConverted(Number(row.feeTotal) || 0);
+            addPart(row.month, sum, Number(row.count) || 0);
+          }
+          continue;
+        }
+
+        const keyOf = (row: { month: string; currencyCode: string }) =>
+          `${row.month}|${row.currencyCode}`;
+        const counts = new Map<string, number>();
+        for (const row of rows) {
+          counts.set(
+            keyOf(row),
+            (counts.get(keyOf(row)) ?? 0) + (Number(row.count) || 0),
+          );
+        }
+        const converted = await convertDatedRowAggregates(
+          (sql, params) => m.query(sql, params),
+          rows.map((row) => ({
+            key: keyOf(row),
+            currencyCode: account.currencyCode,
+            txDate: row.txDate,
+            originalCurrencyCode: row.currencyCode,
+            exchangeRate: row.exchangeRate,
+            amounts: { feeTotal: Number(row.feeTotal) || 0 },
+          })),
+          currency,
+          this.logger,
+        );
+        for (const [key, count] of counts) {
+          const sum = converted.get(key)?.feeTotal ?? null;
+          if (sum === null) {
+            missing.add(account.currencyCode);
+            excludedCount += count;
+            continue;
+          }
+          addPart(key.split("|")[0], sum, count);
+        }
+      }
+
+      return {
+        currency,
+        ...foldFxFeeTotals(months, places),
+        missingCurrencies: [...missing],
+        excludedCount,
+      };
     });
   }
 

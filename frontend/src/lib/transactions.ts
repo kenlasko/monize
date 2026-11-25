@@ -19,6 +19,7 @@ import {
   BulkDeleteResult,
   MonthlyTotal,
   FxFeeMonthlyTotal,
+  FxFeeTotals,
   GroupedTotal,
   RecurringChargeInfo,
   StaleUnreconciledSummary,
@@ -445,6 +446,24 @@ export const transactionsApi = {
       '/transactions/fx-fee-summary',
       { params: { accountId }, timeout: 60000 },
     );
+    return response.data;
+  },
+
+  // The Foreign Currency Fees report's totals across accounts, each column,
+  // the grand total and each average read once on the server.
+  getFxFeeTotals: async (
+    accountIds: readonly string[],
+    currencyCodes?: readonly string[],
+  ): Promise<FxFeeTotals> => {
+    const response = await apiClient.get<FxFeeTotals>('/transactions/fx-fee-totals', {
+      params: {
+        accountIds: accountIds.join(','),
+        ...(currencyCodes && currencyCodes.length > 0
+          ? { currencyCodes: currencyCodes.join(',') }
+          : {}),
+      },
+      timeout: 60000,
+    });
     return response.data;
   },
 

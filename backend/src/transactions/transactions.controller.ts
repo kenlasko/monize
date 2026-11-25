@@ -53,6 +53,7 @@ import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
 import { TransferActor } from "./transaction-transfer.service";
 import { GetRecentTransactionsDto } from "./dto/get-recent-transactions.dto";
+import { FxFeeTotalsQueryDto } from "./dto/fx-fee-totals-query.dto";
 import { BulkReconcileDto } from "./dto/bulk-reconcile.dto";
 import { BulkUpdateDto, BulkDeleteDto } from "./dto/bulk-update.dto";
 import { BulkCreateTransactionsDto } from "./dto/bulk-create.dto";
@@ -1493,6 +1494,33 @@ export class TransactionsController {
       if (!readable.includes(accountId)) return [];
     }
     return this.transactionsService.getFxFeeSummary(req.user.id, accountId);
+  }
+
+  @Get("fx-fee-totals")
+  @ApiOperation({
+    summary:
+      "Get the Foreign Currency Fees report's totals across accounts: each month, quarter and year, the grand total and each period average, read once from the fees' aggregates",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Foreign-transaction fee totals retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @AllowDelegate()
+  async getFxFeeTotals(@Request() req, @Query() query: FxFeeTotalsQueryDto) {
+    let accountIds = query.accountIds;
+    if (req.user.isActing) {
+      // A delegate only sees fee analytics for accounts they can READ.
+      const readable = new Set(
+        await this.delegationService.readableAccountIds(req.user.delegationId),
+      );
+      accountIds = accountIds.filter((id) => readable.has(id));
+    }
+    return this.transactionsService.getFxFeeTotals(
+      req.user.id,
+      accountIds,
+      query.currencyCodes,
+    );
   }
 
   @Get("recent")

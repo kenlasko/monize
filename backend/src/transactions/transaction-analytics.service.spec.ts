@@ -4837,7 +4837,7 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
-    it("keeps a converted fee total at four places while the page adds the rows (issue #2410)", async () => {
+    it("reads a converted fee total once at the reporting currency's places (issue #2413)", async () => {
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
       });
@@ -4865,13 +4865,12 @@ describe("TransactionAnalyticsService", () => {
 
       const result = await service.getFxFeeSummary(userId, "acc-1");
 
-      // 3.1312 CAD at 1.25 is 2.50496 USD, read at four places: 2.505. The
-      // Foreign Currency Fees page sums these rows into its month and grand
-      // totals, so three of them read at two places (2.50 each) would total
-      // 7.50 where the fees come to 7.51; they move to the currency's places
-      // with those totals (stage 3). The fee in the account's own currency is
-      // the posted figure and keeps its precision.
-      expect(result[0].convertedFeeTotal).toBe(2.505);
+      // 3.1312 CAD at 1.25 is 2.50496 USD, read once at USD's two places:
+      // 2.50, where four places then two read 2.505 and 2.51. No page adds
+      // these rows any more; the report's totals come from getFxFeeTotals.
+      // The fee in the account's own currency is the posted figure and keeps
+      // its precision.
+      expect(result[0].convertedFeeTotal).toBe(2.5);
       expect(result[0].feeTotal).toBe(3.1312);
     });
 
@@ -4951,6 +4950,134 @@ describe("TransactionAnalyticsService", () => {
       expect(result).toMatchObject([
         { month: "2026-03", currencyCode: "CAD", feeTotal: 0.000025, count: 1 },
       ]);
+    });
+  });
+
+  describe("getFxFeeTotals", () => {
+    const feeRow = (month: string, txDate: string, feeTotal: string) => ({
+      month,
+      currencyCode: "EUR",
+      txDate,
+      exchangeRate: "1.5",
+      feeTotal,
+      count: "1",
+    });
+
+    // Three CAD fees of 3.1312 at 1.25 CAD per USD are 2.50496 USD each: the
+    // page added the three rows' readings into a quarter and a grand total of
+    // 7.50 where the fees come to 7.51 (issue #2413).
+    it("folds every fee before reading a column, the total or an average", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+      accountsRepository.find = jest.fn().mockResolvedValue([
+        { id: "acc-cad", currencyCode: "CAD" },
+        { id: "acc-usd", currencyCode: "USD" },
+      ]);
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          feeRow("2026-01", "2026-01-05", "3.1312"),
+          feeRow("2026-02", "2026-02-05", "3.1312"),
+          feeRow("2026-03", "2026-03-05", "3.1312"),
+        ])
+        .mockResolvedValueOnce([]);
+      managerMock.query.mockResolvedValue([
+        storedRate("USD", "CAD", 1.25, "2026-01-04"),
+        storedRate("USD", "CAD", 1.25, "2026-02-04"),
+        storedRate("USD", "CAD", 1.25, "2026-03-04"),
+      ]);
+
+      const result = await service.getFxFeeTotals(userId, [
+        "acc-cad",
+        "acc-usd",
+      ]);
+
+      expect(result.currency).toBe("USD");
+      expect(result.total).toBe(7.51);
+      expect(result.count).toBe(3);
+      expect(
+        result.byGranularity.month.buckets.map((bucket) => bucket.total),
+      ).toEqual([2.5, 2.5, 2.5]);
+      expect(result.byGranularity.quarter.buckets[0].total).toBe(7.51);
+      expect(result.missingCurrencies).toEqual([]);
+      expect(result.excludedCount).toBe(0);
+    });
+
+    it("keeps one shared account currency unconverted", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+      accountsRepository.find = jest.fn().mockResolvedValue([
+        { id: "acc-1", currencyCode: "CAD" },
+        { id: "acc-2", currencyCode: "CAD" },
+      ]);
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([feeRow("2026-01", "2026-01-05", "1.005")])
+        .mockResolvedValueOnce([feeRow("2026-01", "2026-01-09", "1.005")]);
+
+      const result = await service.getFxFeeTotals(userId, ["acc-1", "acc-2"]);
+
+      expect(result.currency).toBe("CAD");
+      expect(result.total).toBe(2.01);
+      expect(result.byGranularity.month.buckets).toEqual([
+        { key: "2026-01", periodStart: "2026-01-01", total: 2.01, count: 2 },
+      ]);
+      expect(managerMock.query).not.toHaveBeenCalled();
+    });
+
+    it("leaves out a month's fees with no rate, naming the account's currency", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+      accountsRepository.find = jest.fn().mockResolvedValue([
+        { id: "acc-cad", currencyCode: "CAD" },
+        { id: "acc-usd", currencyCode: "USD" },
+      ]);
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([feeRow("2026-01", "2026-01-05", "5")])
+        .mockResolvedValueOnce([feeRow("2026-01", "2026-01-05", "2")]);
+
+      const result = await service.getFxFeeTotals(userId, [
+        "acc-cad",
+        "acc-usd",
+      ]);
+
+      expect(result.total).toBe(2);
+      expect(result.missingCurrencies).toEqual(["CAD"]);
+      expect(result.excludedCount).toBe(1);
+      expect(JSON.stringify(result)).not.toContain('"total":7');
+    });
+
+    it("narrows to the paid currencies asked for and scopes to the user", async () => {
+      accountsRepository.find = jest
+        .fn()
+        .mockResolvedValue([{ id: "acc-1", currencyCode: "CAD" }]);
+
+      await service.getFxFeeTotals(userId, ["acc-1"], ["EUR"]);
+
+      expect(accountsRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId }),
+        }),
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.originalCurrencyCode IN (:...currencyCodes)",
+        { currencyCodes: ["EUR"] },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "transaction.status != :voidStatus",
+        { voidStatus: "VOID" },
+      );
+    });
+
+    it("answers no figures for no accounts without reading any", async () => {
+      accountsRepository.find = jest.fn();
+
+      const result = await service.getFxFeeTotals(userId, []);
+
+      expect(accountsRepository.find).not.toHaveBeenCalled();
+      expect(result.total).toBe(0);
+      expect(result.byGranularity.year.buckets).toEqual([]);
     });
   });
 });
