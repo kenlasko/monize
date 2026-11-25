@@ -6,7 +6,7 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 | ID | Task | Depends on | Deploy impact | Recommended agent | Status |
 | --- | --- | --- | --- | --- | --- |
 | S0 | Spec, plan, task list, INV-REPORT-006 entry | -- | none | -- | done |
-| T1 | Transfer rollups read the split transfer line | S0 | visible | sonnet, medium | open |
+| T1 | Transfer rollups read the split transfer line | S0 | visible | sonnet, medium | done |
 | T2 | The transfers filter reads the split transfer line, in analytics and the register | S0 | visible | opus, high | open |
 | T3 | Tag filters select a line once (`EXISTS`) | S0 | visible | sonnet, high | open |
 | T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | open |
@@ -14,13 +14,13 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 
 ## T1 transfer rollups
 
-- [ ] `getTransferRows` (`backend/src/built-in-reports/monthly-category-breakdown.service.ts`):
+- [x] `getTransferRows` (`backend/src/built-in-reports/monthly-category-breakdown.service.ts`):
   add the split transfer lines as a second branch, the way
   `splitTransferLegsQuery` (`cash-flow-sankey.service.ts`) does, with the
   line's rate basis (`ownTransferLegs(userId, "$1", "ts")`).
-- [ ] `getTransfersByAccount` (`backend/src/transactions/transaction-analytics.service.ts`):
+- [x] `getTransfersByAccount` (`backend/src/transactions/transaction-analytics.service.ts`):
   the same, by the line's parent account.
-- [ ] Restate "reads the outgoing leg at 90 EUR" to 180; add the whole-vs-split
+- [x] Restate "reads the outgoing leg at 90 EUR" to 180; add the whole-vs-split
   parity case.
 
 ## T2 the transfers filter

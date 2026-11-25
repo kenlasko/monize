@@ -670,14 +670,14 @@ describe("MonthlyCategoryBreakdownService", () => {
       );
 
       const calls = scopedManager.query.mock.calls;
-      expect(calls).toHaveLength(4);
+      // Per request: the category query, then the transfer rows' two branches.
+      expect(calls).toHaveLength(6);
       for (const [sql, params] of calls) {
         expect(sql).not.toContain("ANY(");
         expect(params).toEqual([mockUserId, "2025-12-31", "USD", "2025-01-01"]);
       }
       // The two requests are the same SQL: omitting it is today's query.
-      expect(calls[2][0]).toBe(calls[0][0]);
-      expect(calls[3][0]).toBe(calls[1][0]);
+      for (let i = 0; i < 3; i++) expect(calls[i + 3][0]).toBe(calls[i][0]);
     });
 
     it("scopes BOTH the category query and the transfer-rows query, parameterized", async () => {
