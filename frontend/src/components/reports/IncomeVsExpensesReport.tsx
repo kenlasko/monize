@@ -220,7 +220,12 @@ export function IncomeVsExpensesReport() {
   const chartData = useMemo<ChartDataItem[]>(
     () =>
       (response?.data ?? []).map((item: IncomeExpensePeriodItem) => {
-        const savings = item.income - item.expenses;
+        // Savings is the server's net, its one rounding of the period's
+        // exact difference; the difference of the two rounded sides can sit
+        // a unit off it (docs/specs/report-rounding-and-aggregation.md
+        // rule 4). Every figure stays as it arrives: the table, the tooltip
+        // and the CSV read these rows beside the chart.
+        const savings = item.net;
         const savingsRate =
           item.income > 0 ? Math.round((savings / item.income) * 100) : 0;
         // Flows ride beside the bars and never enter income, expenses or the
@@ -230,15 +235,15 @@ export function IncomeVsExpensesReport() {
         return {
           name: item.period,
           fullName: formatChartDate(parseISO(item.periodStart), "MMM yyyy"),
-          Income: Math.round(item.income),
-          Expenses: Math.round(item.expenses),
-          Savings: Math.round(savings),
+          Income: item.income,
+          Expenses: item.expenses,
+          Savings: savings,
           SavingsRate: savingsRate,
           ...(balanceView ? periodBalanceFields(item, flows) : {}),
           ...(flowBucket
             ? {
-                TaggedInflows: Math.round(flows ? flows.taggedInflows : 0),
-                TaggedOutflows: Math.round(flows ? flows.taggedOutflows : 0),
+                TaggedInflows: flows ? flows.taggedInflows : 0,
+                TaggedOutflows: flows ? flows.taggedOutflows : 0,
               }
             : {}),
           // The dates the bar covers come from the server, which decided the
@@ -256,12 +261,13 @@ export function IncomeVsExpensesReport() {
    * The server withholds each total when a row could not be converted and sends
    * the part that did convert beside it, so what is shown is the subtotal and
    * the marker says so. Sharing one `ConvertedTotal` across all four keeps them
-   * from disagreeing about their own completeness.
+   * from disagreeing about their own completeness. Savings is the server's net
+   * of the known sides, not the difference of their two readings.
    */
   const totals = useMemo(() => {
     const totalIncome = response?.totals.knownIncome ?? 0;
     const totalExpenses = response?.totals.knownExpenses ?? 0;
-    const totalSavings = totalIncome - totalExpenses;
+    const totalSavings = response?.totals.knownNet ?? 0;
     const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
     return { totalIncome, totalExpenses, totalSavings, savingsRate };
   }, [response]);

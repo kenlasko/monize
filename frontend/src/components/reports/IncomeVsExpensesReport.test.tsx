@@ -394,6 +394,48 @@ describe("IncomeVsExpensesReport", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  describe("figures from the server, not from whole units (issue #2412)", () => {
+    // Two months of 10.60 income and 0.20 expenses: each side rounds to a
+    // whole unit (11 and 0), so the old savings were 11 a month. The server's
+    // net is 10.40 a month, and its window net, 10.49, is the single rounding
+    // of the exact difference where the two readings 10.51 and 0.01 differ by
+    // 10.50.
+    const response = {
+      data: [
+        { period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 10.6, expenses: 0.2, net: 10.4 },
+        { period: "2024-02", periodStart: "2024-02-01", periodEnd: "2024-02-29", income: 10.6, expenses: 0.2, net: 10.4 },
+      ],
+      totals: { income: 10.51, expenses: 0.01, net: 10.49, knownIncome: 10.51, knownExpenses: 0.01, knownNet: 10.49 },
+      currency: "USD",
+      missingCurrencies: [],
+      excludedCount: 0,
+    };
+
+    it("reads the window's savings from the server's net", async () => {
+      mockGetIncomeVsExpenses.mockResolvedValue(response);
+      const { container } = render(<IncomeVsExpensesReport />);
+      await waitFor(() => expect(screen.getByTestId("toggle-table")).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId("toggle-table")); });
+      const savings = Array.from(container.querySelectorAll("tfoot td")).find((td) =>
+        td.textContent?.startsWith("Savings"),
+      );
+      expect(savings?.textContent).toContain("$10");
+      expect(savings?.textContent).not.toContain("$11");
+    });
+
+    it("reads each month's savings from the server's net and writes the server's figures to the CSV", async () => {
+      mockGetIncomeVsExpenses.mockResolvedValue(response);
+      render(<IncomeVsExpensesReport />);
+      await waitFor(() => expect(screen.getByTestId("export-csv")).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId("export-csv")); });
+      const [, , rows] = mockExportToCsv.mock.calls[0];
+      expect(rows.map((r: unknown[]) => r.slice(1, 4))).toEqual([
+        [10.6, 0.2, 10.4],
+        [10.6, 0.2, 10.4],
+      ]);
+    });
+  });
+
   it("marks the totals as subtotals when the server left a row out", async () => {
     // Each total is withheld when a row could not be converted; what is shown
     // is the part that did convert, marked. Income, expenses and savings all
@@ -1130,6 +1172,30 @@ describe("IncomeVsExpensesReport", () => {
         expect(lines).toContain("Tagged outflows: household: $25");
         expect(lines).toContain("Balance: $-65");
         expect(lines).toContain("Balance %: \u2014");
+      });
+
+      it("on: the tooltip keeps a tagged outflow under half a unit (issue #2412)", async () => {
+        // 0.40 rounded to a whole unit read 0, and the tooltip drops a zero
+        // outflow: the period's outflow vanished from it.
+        mockGetIncomeVsExpenses.mockResolvedValue({
+          ...augResponse(0),
+          data: [period("2026-08", "2026-08-01", "2026-08-31", 100, 40)],
+          buckets: [
+            {
+              ...augResponse(0).buckets[0],
+              data: [tagged(period("2026-08", "2026-08-01", "2026-08-31", 100, 40), 0, 0.4)],
+              taggedInflows: 0,
+              taggedOutflows: 0.4,
+            },
+          ],
+        });
+        render(<IncomeVsExpensesReport />);
+        await turnOn();
+        renderTooltipFor(lastChartData[0], ["Income", "Expenses", "Balance", "TaggedInflows", "TaggedOutflows"]);
+
+        const lines = Array.from(document.querySelectorAll("p")).map((p) => p.textContent);
+        expect(lines).toContain("Tagged outflows: household: $0");
+        expect(lastChartData[0]).toMatchObject({ TaggedOutflows: 0.4, Balance: 59.6 });
       });
 
       it("switching the tab to untagged returns to Savings", async () => {

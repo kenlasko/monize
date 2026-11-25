@@ -6,6 +6,11 @@ import { PortfolioValueWidget } from './PortfolioValueWidget';
 
 // `data-points` carries the rows the chart was handed, so a test can see what is
 // plotted and not only what the header says.
+// `tooltip.content` is the last tooltip body the chart was given, so a test
+// can render what the reader sees on hover.
+const tooltip = vi.hoisted(() => ({
+  content: null as null | ((props: { active: boolean; payload: Array<{ payload: unknown }> }) => React.ReactNode),
+}));
 vi.mock('recharts', async () => ({
   ...(await import('@/test/recharts-mock')).rechartsMock(),
   AreaChart: ({ children, data }: { children?: React.ReactNode; data?: unknown[] }) => (
@@ -13,6 +18,10 @@ vi.mock('recharts', async () => ({
       {children}
     </div>
   ),
+  Tooltip: ({ content }: { content: typeof tooltip.content }) => {
+    tooltip.content = content;
+    return null;
+  },
 }));
 
 const configState = { current: { range: '1y', accountIds: [] as string[] } };
@@ -168,6 +177,16 @@ describe('PortfolioValueWidget', () => {
     expect(screen.getByText('$12345')).toBeInTheDocument();
     expect(screen.queryByText('$10000')).not.toBeInTheDocument();
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+  });
+
+  it("plots and prints the server's figure, not its whole units (issue #2412)", async () => {
+    // Rounded to a whole unit, 1,234.56 was printed at full precision as 1,235.
+    getInvestmentsDaily.mockResolvedValue([{ date: '2026-06-28', value: 1234.56 }]);
+    await renderWidget();
+    const rows = JSON.parse(screen.getByTestId('area-chart').getAttribute('data-points') ?? '[]');
+    expect(rows[0].value).toBe(1234.56);
+    render(<>{tooltip.content!({ active: true, payload: [{ payload: rows[0] }] })}</>);
+    expect(screen.getByText('$1234.56')).toBeInTheDocument();
   });
 
   it('uses daily data for short ranges', async () => {

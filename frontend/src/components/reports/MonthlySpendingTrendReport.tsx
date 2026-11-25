@@ -30,6 +30,8 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ChartTooltip } from "@/components/reports/ChartTooltip";
 import { ReportError } from "@/components/reports/ReportError";
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
+import { PartialTotal } from '@/components/ui/PartialTotal';
+import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import { exportToCsv } from "@/lib/csv-export";
 import { chartColors } from "@/lib/chart-colors";
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
@@ -78,7 +80,7 @@ export function MonthlySpendingTrendReport() {
   const t = useTranslations('reports');
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
-  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, defaultCurrency } =
     useNumberFormat();
   const formatChartDate = useChartDateFormat();
   const [viewType, setViewType] = useState<'line' | 'table'>('line');
@@ -120,9 +122,13 @@ export function MonthlySpendingTrendReport() {
         return {
           name: item.period,
           fullName: formatChartDate(parseISO(item.periodStart), "MMM yyyy"),
-          Expenses: Math.round(item.expenses),
-          Income: Math.round(item.income),
-          Net: Math.round(item.net),
+          // The server's figures as they arrive, at the reporting currency's
+          // places: the table, the tooltip and the CSV read these, so they
+          // are not rounded to whole units for the chart
+          // (docs/specs/report-rounding-and-aggregation.md section 7).
+          Expenses: item.expenses,
+          Income: item.income,
+          Net: item.net,
           // The dates the bucket covers come from the server that chose it.
           monthStart: item.periodStart,
           monthEnd: item.periodEnd,
@@ -154,24 +160,47 @@ export function MonthlySpendingTrendReport() {
     return sorted;
   }, [chartData, sortField, sortDirection]);
 
+  // The window's totals are the server's, each the single rounding of its
+  // months' exact sum; a sum of the months' figures can sit a unit off it
+  // (spec rule 4). The known part is what converted; the notice above names
+  // what did not.
   const totals = useMemo(() => {
-    const totalExpenses = chartData.reduce((sum, m) => sum + m.Expenses, 0);
-    const totalIncome = chartData.reduce((sum, m) => sum + m.Income, 0);
+    const totalExpenses = response?.totals.knownExpenses ?? 0;
+    const totalIncome = response?.totals.knownIncome ?? 0;
+    const totalNet = response?.totals.knownNet ?? 0;
     const avgExpenses =
       chartData.length > 0 ? totalExpenses / chartData.length : 0;
     const avgIncome = chartData.length > 0 ? totalIncome / chartData.length : 0;
-    return { totalExpenses, totalIncome, avgExpenses, avgIncome };
-  }, [chartData]);
+    return { totalExpenses, totalIncome, totalNet, avgExpenses, avgIncome };
+  }, [response, chartData.length]);
+
+  // A total over a window with a row left out is a subtotal, and every figure
+  // above (and the averages of them) says so, on the screen and in the PDF.
+  const completeness = useMemo(
+    () => ({
+      missingCurrencies: response?.missingCurrencies ?? [],
+      excludedCount: response?.excludedCount ?? 0,
+    }),
+    [response],
+  );
+  const reportingCurrency = response?.currency ?? defaultCurrency;
+  const { noteFor } = usePartialTotalNote();
+  const marked = (value: number) => (
+    <PartialTotal total={{ value, ...completeness }} displayCurrency={reportingCurrency}>
+      {formatCurrency(value)}
+    </PartialTotal>
+  );
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import("@/lib/pdf-export");
+    const note = noteFor({ value: totals.totalIncome, ...completeness });
     await exportToPdf({
       title: t('monthlySpendingTrend.pdfTitle'),
       summaryCards: [
-        { label: t('monthlySpendingTrend.totalIncome'), value: formatCurrency(totals.totalIncome), color: '#16a34a' },
-        { label: t('monthlySpendingTrend.totalExpenses'), value: formatCurrency(totals.totalExpenses), color: '#dc2626' },
-        { label: t('monthlySpendingTrend.avgMonthlyIncome'), value: formatCurrency(totals.avgIncome), color: '#16a34a' },
-        { label: t('monthlySpendingTrend.avgMonthlyExpenses'), value: formatCurrency(totals.avgExpenses), color: '#dc2626' },
+        { label: t('monthlySpendingTrend.totalIncome'), value: formatCurrency(totals.totalIncome), color: '#16a34a', note },
+        { label: t('monthlySpendingTrend.totalExpenses'), value: formatCurrency(totals.totalExpenses), color: '#dc2626', note },
+        { label: t('monthlySpendingTrend.avgMonthlyIncome'), value: formatCurrency(totals.avgIncome), color: '#16a34a', note },
+        { label: t('monthlySpendingTrend.avgMonthlyExpenses'), value: formatCurrency(totals.avgExpenses), color: '#dc2626', note },
       ],
       chartContainer: chartRef.current,
       chartLegend: [
@@ -325,15 +354,15 @@ export function MonthlySpendingTrendReport() {
                   <tr>
                     <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-100">{t('monthlySpendingTrend.total')}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold text-green-600 dark:text-green-400">
-                      {formatCurrency(totals.totalIncome)}
+                      {marked(totals.totalIncome)}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-bold text-red-600 dark:text-red-400">
-                      {formatCurrency(totals.totalExpenses)}
+                      {marked(totals.totalExpenses)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right text-sm font-bold ${gainLossColor(totals.totalIncome - totals.totalExpenses)}`}
+                      className={`px-4 py-3 text-right text-sm font-bold ${gainLossColor(totals.totalNet)}`}
                     >
-                      {formatCurrency(totals.totalIncome - totals.totalExpenses)}
+                      {marked(totals.totalNet)}
                     </td>
                   </tr>
                 </tfoot>
@@ -391,7 +420,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.totalIncome')}
                 </div>
                 <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                  {formatCurrency(totals.totalIncome)}
+                  {marked(totals.totalIncome)}
                 </div>
               </div>
               <div>
@@ -399,7 +428,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.totalExpenses')}
                 </div>
                 <div className="text-lg font-semibold text-red-600 dark:text-red-400">
-                  {formatCurrency(totals.totalExpenses)}
+                  {marked(totals.totalExpenses)}
                 </div>
               </div>
               <div>
@@ -407,7 +436,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.avgMonthlyIncome')}
                 </div>
                 <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                  {formatCurrency(totals.avgIncome)}
+                  {marked(totals.avgIncome)}
                 </div>
               </div>
               <div>
@@ -415,7 +444,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.avgMonthlyExpenses')}
                 </div>
                 <div className="text-lg font-semibold text-red-600 dark:text-red-400">
-                  {formatCurrency(totals.avgExpenses)}
+                  {marked(totals.avgExpenses)}
                 </div>
               </div>
             </div>

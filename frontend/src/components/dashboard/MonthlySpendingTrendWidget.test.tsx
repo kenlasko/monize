@@ -1,9 +1,26 @@
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, screen } from '@testing-library/react';
 import { render } from '@/test/render';
 import { MonthlySpendingTrendWidget } from './MonthlySpendingTrendWidget';
 
-vi.mock('recharts', async () => (await import('@/test/recharts-mock')).rechartsMock());
+// What the chart was last given: its rows and its tooltip, so a test can
+// render what the reader sees on hover.
+const drawn = vi.hoisted(() => ({
+  rows: [] as Array<Record<string, unknown>>,
+  tooltip: null as null | ((props: { active: boolean; payload: unknown[] }) => ReactNode),
+}));
+vi.mock('recharts', async () => ({
+  ...(await import('@/test/recharts-mock')).rechartsMock(),
+  LineChart: ({ children, data }: { children?: ReactNode; data: Array<Record<string, unknown>> }) => {
+    drawn.rows = data;
+    return <div>{children}</div>;
+  },
+  Tooltip: ({ content }: { content: typeof drawn.tooltip }) => {
+    drawn.tooltip = content;
+    return null;
+  },
+}));
 
 vi.mock('@/hooks/useWidgetConfig', () => ({
   useWidgetConfig: () => ({ config: { range: '1y' }, updateConfig: vi.fn() }),
@@ -57,6 +74,30 @@ describe('MonthlySpendingTrendWidget', () => {
     });
     await renderWidget();
     expect(screen.getByText(/JPY/)).toBeInTheDocument();
+  });
+
+  it("prints the server's figures in the tooltip, not their whole units (issue #2412)", async () => {
+    // Rounded to whole units, 1,234.56 and 10.40 were printed at full precision
+    // as 1,235 and 10.
+    getIncomeVsExpenses.mockResolvedValue({
+      data: [{ period: '2026-01', periodStart: '2026-01-01', periodEnd: '2026-01-31', income: 1234.56, expenses: 10.4, net: 1224.16 }],
+      totals: { income: 1234.56, expenses: 10.4, net: 1224.16, knownIncome: 1234.56, knownExpenses: 10.4, knownNet: 1224.16 },
+    });
+    await renderWidget();
+    const row = drawn.rows[0];
+    render(
+      <>
+        {drawn.tooltip!({
+          active: true,
+          payload: [
+            { name: 'Expenses', value: row.Expenses, color: '#000', payload: row },
+            { name: 'Income', value: row.Income, color: '#000', payload: row },
+          ],
+        })}
+      </>,
+    );
+    expect(screen.getByText(/\$10\.4$/)).toBeInTheDocument();
+    expect(screen.getByText(/\$1234\.56$/)).toBeInTheDocument();
   });
 
   it('shows the empty state with no data', async () => {

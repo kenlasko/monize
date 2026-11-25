@@ -304,6 +304,14 @@ Those surfaces are listed, file by file, in
 rules 2, 4 and 8 and section 6's decision, and none changes a report's own
 definition of what it counts.
 
+Issue #2412 (the charts' whole units): a chart of report figures carries the
+server's figures, so its table, tooltip, cards and CSV read them; a total or a
+net reads the server's (`totals.knownNet`, a month's `netWorth`). The monthly
+net worth gains `netWorthChangeFromStart`, each month less the series' first,
+the two aggregates' difference read once, for the window's change the Net
+Worth report and widget show: the difference of the two end readings sat a
+unit off it as the month-on-month change did (rule 4).
+
 ## 8. Test matrix
 
 | Rule | Test |

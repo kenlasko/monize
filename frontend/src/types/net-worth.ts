@@ -33,6 +33,13 @@ export interface MonthlyNetWorth {
    * first month; absent from an older backend mid-deploy.
    */
   netWorthChange?: number | null;
+  /**
+   * `netWorth` less the series' first month's, worked out on the server from
+   * the two months' unrounded figures and rounded once: the window's change.
+   * `0` for the first month; absent from an older backend mid-deploy. Read it
+   * through `netWorthWindowChange` (`lib/net-worth-change.ts`).
+   */
+  netWorthChangeFromStart?: number;
 }
 
 export interface MonthlyInvestmentValue {

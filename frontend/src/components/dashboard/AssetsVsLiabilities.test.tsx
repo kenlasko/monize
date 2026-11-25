@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { render } from '@/test/render';
@@ -5,7 +6,23 @@ import { AssetsVsLiabilities } from './AssetsVsLiabilities';
 import type { AssetsLiabilitiesConfig } from './widget-config';
 import { MonthlyNetWorth } from '@/types/net-worth';
 
-vi.mock('recharts', async () => (await import('@/test/recharts-mock')).rechartsMock());
+// What the donut was last given: its slices and its tooltip, so a case can
+// render the tooltip the chart would show over one slice.
+const drawn = vi.hoisted(() => ({
+  slices: [] as Array<{ key: string; value: number }>,
+  tooltip: null as null | ((props: { active: boolean; payload: Array<{ payload: unknown }> }) => ReactNode),
+}));
+vi.mock('recharts', async () => ({
+  ...(await import('@/test/recharts-mock')).rechartsMock(),
+  Pie: ({ data }: { data: Array<{ key: string; value: number }> }) => {
+    drawn.slices = data;
+    return null;
+  },
+  Tooltip: ({ content }: { content: typeof drawn.tooltip }) => {
+    drawn.tooltip = content;
+    return null;
+  },
+}));
 
 const updateConfig = vi.fn();
 const configState: { current: AssetsLiabilitiesConfig } = { current: { view: 'legend' } };
@@ -99,6 +116,31 @@ describe('AssetsVsLiabilities', () => {
     );
     expect(screen.getByRole('button', { name: /^Assets/ })).toBeInTheDocument();
     expect(screen.queryByText('Liabilities')).not.toBeInTheDocument();
+  });
+
+  describe('figures from the server, not from whole units (issue #2412)', () => {
+    // 100.40 of assets against 0.40 owed: rounded to whole units the
+    // liabilities read 0 and their slice was dropped, net worth read 100
+    // where the month's own is 100.00, and each share was over 100 rather
+    // than the 100.80 the two sides come to.
+    const month: MonthlyNetWorth = { month: '2026-05-01', assets: 100.4, liabilities: 0.4, netWorth: 100 };
+
+    it('keeps a slice under half a unit', () => {
+      render(<AssetsVsLiabilities data={[month]} isLoading={false} />);
+      expect(screen.getByRole('button', { name: /^Liabilities/ })).toHaveTextContent('$0');
+      expect(drawn.slices.map((slice) => [slice.key, slice.value])).toEqual([
+        ['assets', 100.4],
+        ['liabilities', 0.4],
+      ]);
+    });
+
+    it("shares each slice over the server's two figures", () => {
+      render(<AssetsVsLiabilities data={[{ ...month, assets: 99.4, liabilities: 0.6, netWorth: 98.8 }]} isLoading={false} />);
+      const assets = drawn.slices.find((slice) => slice.key === 'assets')!;
+      render(<>{drawn.tooltip!({ active: true, payload: [{ payload: assets }] })}</>);
+      // 99.40 over 100.00 is 99.4%; over the whole units 99 + 1 it was 99.0%.
+      expect(screen.getByText(/\(99\.4%\)/)).toBeInTheDocument();
+    });
   });
 
   it('puts net worth inside the donut, compact in the callout view and in full in the legend', () => {

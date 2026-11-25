@@ -932,6 +932,7 @@ export class NetWorthService {
         assetsFxComplete: _assetsFxComplete,
         liabilitiesFxComplete: _liabilitiesFxComplete,
         netWorthChange: _netWorthChange,
+        netWorthChangeFromStart: _netWorthChangeFromStart,
         ...month
       }) => month,
     );
@@ -981,6 +982,15 @@ export class NetWorthService {
        * either month's `fxComplete` is false.
        */
       netWorthChange: number | null;
+      /**
+       * `netWorth` less the series' first month's, the difference of the two
+       * months' aggregates read once at the reporting currency's places, so a
+       * window's change is one figure rather than the difference of two
+       * readings (docs/specs/report-rounding-and-aggregation.md rule 4). `0`
+       * for the first month. A subtotal whenever this month's or the first
+       * month's `fxComplete` is false.
+       */
+      netWorthChangeFromStart: number;
     }[]
   > {
     const months = await this.getMonthlyNetWorthWithAggregates(
@@ -1175,6 +1185,7 @@ export class NetWorthService {
     }
 
     let previousNetWorth: FxAggregate | null = null;
+    let firstNetWorth: FxAggregate | null = null;
     return Array.from(monthMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => {
@@ -1207,6 +1218,11 @@ export class NetWorthService {
                 previousNetWorth,
               ).knownSubtotalAt(places);
         previousNetWorth = netWorthAggregate;
+        firstNetWorth ??= netWorthAggregate;
+        const netWorthChangeFromStart = FxAggregate.difference(
+          netWorthAggregate,
+          firstNetWorth,
+        ).knownSubtotalAt(places);
         return {
           month,
           assets: data.assets.knownSubtotalAt(places),
@@ -1230,6 +1246,7 @@ export class NetWorthService {
             ]),
           ),
           netWorthChange,
+          netWorthChangeFromStart,
         };
       });
   }
