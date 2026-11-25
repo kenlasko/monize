@@ -1,4 +1,5 @@
 import { DataSource } from "typeorm";
+import { FxAggregate } from "../common/fx-aggregate";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BudgetActivityReportsService } from "./budget-activity-reports.service";
@@ -58,6 +59,7 @@ function spending(
     transferIncomeMap: new Map(),
     incompleteTransferIncomeAccountIds: new Set(),
     outsideTransferIncome: 0,
+    outsideTransferIncomeAggregate: new FxAggregate(),
     outsideTransferIncomeComplete: true,
     missingRatePairs: extra.incomplete ? ["JPY->USD"] : [],
   };

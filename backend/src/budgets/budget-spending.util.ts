@@ -257,6 +257,12 @@ export interface CategorySpending {
    * names, when `config.transfersInAsIncome` is on; `0` when it is off.
    */
   outsideTransferIncome: number;
+  /**
+   * The aggregate `outsideTransferIncome` reads, for a caller that folds it
+   * into a figure of its own rather than adding its four-place reading
+   * (`docs/specs/report-rounding-and-aggregation.md` rule 2).
+   */
+  outsideTransferIncomeAggregate: FxAggregate;
   /** `false` when a row of `outsideTransferIncome` had no rate. */
   outsideTransferIncomeComplete: boolean;
   /** `"JPY->CAD"` for each pair with no admissible rate, sorted. */
@@ -337,6 +343,7 @@ export function emptyCategorySpending(currency: string): CategorySpending & {
     transferIncomeMap: new Map(),
     incompleteTransferIncomeAccountIds: new Set(),
     outsideTransferIncome: 0,
+    outsideTransferIncomeAggregate: new FxAggregate(),
     outsideTransferIncomeComplete: true,
     missingRatePairs: [],
   };
@@ -658,6 +665,7 @@ export async function queryCategorySpendingBuckets(
     const outsideAgg = outsideIncome.totals.get("");
     if (outsideAgg) {
       spending.outsideTransferIncome = outsideAgg.knownSubtotal;
+      spending.outsideTransferIncomeAggregate = outsideAgg;
       spending.outsideTransferIncomeComplete = outsideAgg.isComplete;
     }
     spending.missingRatePairs = [
@@ -723,6 +731,18 @@ export function resolveOutsideTransferIncome(
   spending: Pick<CategorySpending, "outsideTransferIncome">,
 ): number {
   return Math.max(spending.outsideTransferIncome, 0);
+}
+
+/**
+ * {@link resolveOutsideTransferIncome} as an aggregate, for a caller that folds
+ * it into a total of its own: the toggle's net when its sign is positive, an
+ * empty aggregate otherwise. The direction is read before rounding (rule 5).
+ */
+export function resolveOutsideTransferIncomeAggregate(
+  spending: Pick<CategorySpending, "outsideTransferIncomeAggregate">,
+): FxAggregate {
+  const net = spending.outsideTransferIncomeAggregate;
+  return net.sign > 0 ? net : new FxAggregate();
 }
 
 /**

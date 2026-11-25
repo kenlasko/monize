@@ -3429,9 +3429,8 @@ Known gap           Report figures leave the server at four places and the
                     the server at its currency's places (section 6 of
                     docs/specs/report-rounding-and-aggregation.md, option (b)).
                     Several client totals are built from rounded rows (the
-                    same task list, stage 3). Budget Health adds a month's
-                    converted foreign income, rounded once, to its native
-                    income (a stage 1 open item).
+                    same task list, stage 3). Budget Health's income-line and
+                    expense sides add each line's own four-place actual.
 Status              partial
 ```
 

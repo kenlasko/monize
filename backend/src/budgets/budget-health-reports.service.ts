@@ -15,7 +15,7 @@ import {
   HealthScoreHistoryPoint,
   SavingsRatePoint,
 } from "./budget-reports.service";
-import { roundMoney, roundToDecimals, sumMoney } from "../common/round.util";
+import { roundToDecimals, sumMoney } from "../common/round.util";
 import {
   budgetExcludedAccountIds,
   CategorySpending,
@@ -23,12 +23,13 @@ import {
   queryCategorySpending,
   queryCategorySpendingBuckets,
   resolveCategorySpent,
-  resolveOutsideTransferIncome,
+  resolveOutsideTransferIncomeAggregate,
   isTransferIncomeLine,
   budgetTransfersInAsIncome,
 } from "./budget-spending.util";
+import { FxAggregate } from "../common/fx-aggregate";
 import {
-  convertRateParts,
+  convertRatePartAggregates,
   RatePartRow,
   splitByRateBasis,
 } from "../built-in-reports/rate-basis-parts";
@@ -271,9 +272,11 @@ export class BudgetHealthReportsService {
     // transaction of the window, converted into the budget's currency at each
     // row's own rate or the market rate on its date (issue #2155). A month
     // with a foreign row that has no rate is reported incomplete and keeps
-    // only its budget-currency income (`convertRateParts` withholds the
-    // month's whole foreign figure); nothing is added 1:1.
-    const incomeByMonth = new Map<string, number>();
+    // only its budget-currency income (`convertRatePartAggregates` withholds
+    // the month's whole foreign figure); nothing is added 1:1. Each month is
+    // one aggregate over its native rows and its converted foreign parts, read
+    // once (`docs/specs/report-rounding-and-aggregation.md` rule 2).
+    const incomeByMonth = new Map<string, FxAggregate>();
     const foreignIncomeMonths = new Set<string>();
     if (incomeLines.length === 0) {
       const startD = new Date(
@@ -310,7 +313,7 @@ export class BudgetHealthReportsService {
           const parts: RatePartRow[] = await qb.getRawMany();
           return {
             rows: parts,
-            converted: await convertRateParts(
+            converted: await convertRatePartAggregates(
               (sql, params) => m.query(sql, params),
               parts,
               budget.currencyCode,
@@ -321,22 +324,24 @@ export class BudgetHealthReportsService {
           };
         },
       );
+      const monthIncome = (month: string): FxAggregate => {
+        let agg = incomeByMonth.get(month);
+        if (!agg) {
+          agg = new FxAggregate();
+          incomeByMonth.set(month, agg);
+        }
+        return agg;
+      };
       for (const row of rows) {
         if (row.currencyCode !== budget.currencyCode) continue;
-        incomeByMonth.set(
-          row.month,
-          (incomeByMonth.get(row.month) || 0) + parseFloat(row.total || "0"),
-        );
+        monthIncome(row.month).addConverted(parseFloat(row.total || "0"));
       }
       for (const [month, figures] of converted) {
         if (figures.total === null) {
           foreignIncomeMonths.add(month);
           continue;
         }
-        incomeByMonth.set(
-          month,
-          (incomeByMonth.get(month) || 0) + figures.total,
-        );
+        monthIncome(month).merge(figures.total);
       }
     }
 
@@ -398,23 +403,35 @@ export class BudgetHealthReportsService {
             )
           : 0;
 
-      // `config.transfersInAsIncome` adds to either side's income.
-      const income = sumMoney([
-        incomeLines.length > 0
-          ? sumSide(true)
-          : incomeByMonth.get(monthKey) || 0,
-        spending ? resolveOutsideTransferIncome(spending) : 0,
-      ]);
-      const expenses = sumSide(false);
-      const savings = income - expenses;
+      // `config.transfersInAsIncome` adds to either side's income, folded
+      // from its aggregate rather than its four-place reading (rule 2).
+      const income = new FxAggregate();
+      if (incomeLines.length > 0) {
+        income.addConverted(sumSide(true));
+      } else {
+        const native = incomeByMonth.get(monthKey);
+        if (native) income.merge(native);
+      }
+      if (spending) {
+        income.merge(resolveOutsideTransferIncomeAggregate(spending));
+      }
+      const expenses = new FxAggregate();
+      expenses.addConverted(sumSide(false));
+      const savings = FxAggregate.difference(income, expenses);
+      // A ratio of the unrounded figures, rounded once (rule 8).
       const savingsRate =
-        income > 0 ? roundToDecimals((savings / income) * 100, 2) : 0;
+        income.sign > 0
+          ? roundToDecimals(
+              (savings.unroundedSubtotal / income.unroundedSubtotal) * 100,
+              2,
+            )
+          : 0;
 
       result.push({
         monthKey,
-        income: roundMoney(income),
-        expenses: roundMoney(expenses),
-        savings: roundMoney(savings),
+        income: income.knownSubtotal,
+        expenses: expenses.knownSubtotal,
+        savings: savings.knownSubtotal,
         savingsRate,
         valuationComplete:
           !foreignIncomeMonths.has(monthKey) &&

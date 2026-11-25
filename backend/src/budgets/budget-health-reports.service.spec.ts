@@ -1,4 +1,5 @@
 import { DataSource } from "typeorm";
+import { FxAggregate } from "../common/fx-aggregate";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
@@ -59,8 +60,29 @@ function spending(
     transferIncomeMap: new Map(),
     incompleteTransferIncomeAccountIds: new Set(),
     outsideTransferIncome: 0,
+    outsideTransferIncomeAggregate: new FxAggregate(),
     outsideTransferIncomeComplete: true,
     missingRatePairs: incomplete.length > 0 ? ["JPY->USD"] : [],
+  };
+}
+
+const roundTo2 = (x: number) => Math.round(x * 100) / 100;
+
+/**
+ * The toggle's figure as `queryCategorySpendingBuckets` builds it: its reading
+ * and the aggregate of its converted rows.
+ */
+function outsideIncome(
+  ...converted: number[]
+): Pick<
+  CategorySpending,
+  "outsideTransferIncome" | "outsideTransferIncomeAggregate"
+> {
+  const agg = new FxAggregate();
+  for (const amount of converted) agg.addConverted(amount);
+  return {
+    outsideTransferIncome: agg.knownSubtotal,
+    outsideTransferIncomeAggregate: agg,
   };
 }
 
@@ -537,7 +559,7 @@ describe("BudgetHealthReportsService", () => {
       mockSpending({
         ...spending({ "cat-food": -1000 }),
         transferIncomeMap: new Map([["acct-hisa", 2000]]),
-        outsideTransferIncome: 500,
+        ...outsideIncome(500),
       });
 
       const result = await service.getSavingsRate("user-1", "budget-1", 1);
@@ -581,7 +603,7 @@ describe("BudgetHealthReportsService", () => {
       transactionsRepository.createQueryBuilder.mockReturnValueOnce(
         createMockQueryBuilder(),
       );
-      mockSpending({ ...spending({}), outsideTransferIncome: 2000 });
+      mockSpending({ ...spending({}), ...outsideIncome(2000) });
 
       const result = await service.getSavingsRate("user-1", "budget-1", 1);
 
@@ -657,6 +679,125 @@ describe("BudgetHealthReportsService", () => {
 
       expect(result[0].income).toBe(3000);
       expect(result[0].valuationComplete).toBe(false);
+    });
+
+    /**
+     * A month's income is one aggregate over its native rows, its converted
+     * foreign parts and the toggle's converted figure, read once (issue #2408,
+     * `docs/specs/report-rounding-and-aggregation.md` rule 2). Adding the
+     * parts' four-place readings read 10.0049 + 0.0001 + 0.6251 = 10.6301; the
+     * exact 10.630025 reads 10.6300.
+     */
+    it("folds a month's native, foreign and transferred-in income into one aggregate", async () => {
+      const thisMonth = new Date();
+      const month = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}`;
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            { month, currencyCode: "USD", total: "10.0049" },
+            // EUR 0.0001 settled into USD at its own 1.6: 0.0000625.
+            {
+              month,
+              currencyCode: "EUR",
+              total: "0.0001",
+              fx_day: `${month}-05`,
+              fx_original_currency: "USD",
+              fx_exchange_rate: "1.60000000",
+            },
+          ]),
+        }),
+      );
+      // EUR 1.0001 transferred in at 1.6: 0.6250625, which reads 0.6251.
+      mockSpending({ ...spending({}), ...outsideIncome(1.0001 / 1.6) });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      const exact = new FxAggregate();
+      for (const part of [10.0049, 0.0001 / 1.6, 1.0001 / 1.6]) {
+        exact.addConverted(part);
+      }
+      expect(result[0].income).toBe(exact.knownSubtotal);
+      expect(result[0].income).toBe(10.63);
+      expect(result[0]).toMatchObject({
+        expenses: 0,
+        savings: 10.63,
+        savingsRate: 100,
+        valuationComplete: true,
+      });
+    });
+
+    /**
+     * Savings is income less expenses worked out before either is rounded,
+     * and the rate is the ratio of the unrounded figures (rules 2 and 8):
+     * 0.6250625 + 0.6250625 - 0.0001 = 1.250025 reads 1.2500, where the old
+     * 1.2502 - 0.0001 read 1.2501.
+     */
+    it("works savings out as one difference of the unrounded income and expenses", async () => {
+      const thisMonth = new Date();
+      const month = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}`;
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            {
+              month,
+              currencyCode: "EUR",
+              total: "1.0001",
+              fx_day: `${month}-05`,
+              fx_original_currency: "USD",
+              fx_exchange_rate: "1.60000000",
+            },
+          ]),
+        }),
+      );
+      mockSpending({
+        ...spending({ "cat-essential": -0.0001 }),
+        ...outsideIncome(1.0001 / 1.6),
+      });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0]).toMatchObject({
+        income: 1.2501,
+        expenses: 0.0001,
+        savings: 1.25,
+        savingsRate: roundTo2((1.250025 / 1.250125) * 100),
+        valuationComplete: true,
+      });
+    });
+
+    it("keeps a month's native income and the toggle's figure when its foreign income had no rate", async () => {
+      const thisMonth = new Date();
+      const month = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}`;
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([
+            { month, currencyCode: "USD", total: "3000" },
+            {
+              month,
+              currencyCode: "JPY",
+              total: "100000",
+              fx_day: `${month}-05`,
+            },
+          ]),
+        }),
+      );
+      mockSpending({ ...spending({}), ...outsideIncome(1.0001 / 1.6) });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0].income).toBe(3000.6251);
+      expect(result[0].valuationComplete).toBe(false);
+    });
+
+    it("leaves a net outflow from the toggle's accounts out of income", async () => {
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder(),
+      );
+      mockSpending({ ...spending({}), ...outsideIncome(-250) });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0]).toMatchObject({ income: 0, savingsRate: 0 });
     });
 
     it("reads income and expenses through the budget page's net, converted actuals", async () => {

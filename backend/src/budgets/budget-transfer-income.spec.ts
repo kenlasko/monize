@@ -9,8 +9,10 @@ import {
   resolveCategorySpent,
   resolveCategorySpentOrNull,
   resolveOutsideTransferIncome,
+  resolveOutsideTransferIncomeAggregate,
 } from "./budget-spending.util";
 import { BudgetCategory } from "./entities/budget-category.entity";
+import { FxAggregate } from "../common/fx-aggregate";
 
 /**
  * Issue #2141 (`docs/specs/budget-transfer-income.md`): a transfer income line
@@ -181,6 +183,31 @@ describe("resolveOutsideTransferIncome", () => {
   });
 });
 
+describe("resolveOutsideTransferIncomeAggregate", () => {
+  const net = (...amounts: number[]) => {
+    const agg = new FxAggregate();
+    for (const amount of amounts) agg.addConverted(amount);
+    return spendingOf({ outsideTransferIncomeAggregate: agg });
+  };
+
+  it("hands on the toggle's aggregate while its net is money in", () => {
+    const spending = net(1.0001 / 1.6);
+    expect(resolveOutsideTransferIncomeAggregate(spending)).toBe(
+      spending.outsideTransferIncomeAggregate,
+    );
+    // 0.00003 reads 0 at four places, but it is money in (rule 5).
+    expect(
+      resolveOutsideTransferIncomeAggregate(net(0.00003)).unroundedSubtotal,
+    ).toBe(0.00003);
+  });
+
+  it("is empty for a net outflow, as the clamped figure is zero", () => {
+    const clamped = resolveOutsideTransferIncomeAggregate(net(-42));
+    expect(clamped.knownSubtotal).toBe(0);
+    expect(clamped.isComplete).toBe(true);
+  });
+});
+
 describe("queryCategorySpending with transfers in", () => {
   it("keys a transfer income line's rows by source, signed, apart from outgoing lines", async () => {
     const incomingParent = makeQbReturning([
@@ -275,6 +302,7 @@ describe("queryCategorySpending with transfers in", () => {
     expect(result.transferIncomeMap.get("hisa")).toBe(2000);
     expect(result.transferIncomeMap.has("rrsp")).toBe(false);
     expect(result.outsideTransferIncome).toBe(200);
+    expect(result.outsideTransferIncomeAggregate.knownSubtotal).toBe(200);
     expect(result.outsideTransferIncomeComplete).toBe(true);
   });
 
