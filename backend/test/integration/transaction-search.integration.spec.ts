@@ -84,7 +84,7 @@ describe("transaction search (integration)", () => {
       currencyCode: "USD",
     });
     pendingAccount = await createTestAccount(dataSource, userId, {
-      name: "Euro Savings",
+      name: "Pending",
       currencyCode: "USD",
     });
     const groceries = await createTestCategory(dataSource, userId, {
