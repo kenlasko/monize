@@ -228,17 +228,20 @@ export function CashFlowReport() {
         return {
           name: item.period,
           fullName: formatChartDate(parseISO(item.periodStart), "MMM yyyy"),
-          Income: Math.round(item.income),
-          Expenses: Math.round(item.expenses),
-          Net: Math.round(item.net),
+          // The server's figures as they arrive: the tooltip reads them, and a
+          // tagged outflow under half a unit rounded to 0 dropped out of it
+          // (docs/specs/report-rounding-and-aggregation.md rule 8).
+          Income: item.income,
+          Expenses: item.expenses,
+          Net: item.net,
           ...(balanceView ? periodBalanceFields(item, flowsByPeriod.get(item.period)) : {}),
           // Flows ride beside the bars and never enter income, expenses or net
           // (INV-REPORT-003). A period the bucket has no row for had no tagged
           // transfer in it, which is a known zero.
           ...(flowBucket
             ? {
-                TaggedInflows: Math.round(flowsByPeriod.get(item.period)?.taggedInflows ?? 0),
-                TaggedOutflows: Math.round(flowsByPeriod.get(item.period)?.taggedOutflows ?? 0),
+                TaggedInflows: flowsByPeriod.get(item.period)?.taggedInflows ?? 0,
+                TaggedOutflows: flowsByPeriod.get(item.period)?.taggedOutflows ?? 0,
               }
             : {}),
           // The dates the bucket covers come from the server that chose it.

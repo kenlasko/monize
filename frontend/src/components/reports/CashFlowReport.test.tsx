@@ -950,6 +950,29 @@ describe("CashFlowReport", () => {
         expect(lines).toContain("Balance %: \u2014");
       });
 
+      it("on: the tooltip keeps a tagged outflow under half a unit (issue #2412)", async () => {
+        // 0.40 rounded to a whole unit read 0, and the tooltip drops a zero
+        // outflow: the period's outflow vanished from it.
+        mockGetCashFlow.mockResolvedValue({
+          ...augResponse(),
+          data: [{ ...aug, income: 100, expenses: 40, net: 60 }],
+          buckets: [
+            {
+              ...augResponse().buckets[0],
+              data: [{ ...aug, income: 0, expenses: 0, net: 0, taggedInflows: 0, taggedOutflows: 0.4 }],
+              taggedInflows: 0,
+              taggedOutflows: 0.4,
+            },
+          ],
+        });
+        render(<CashFlowReport />);
+        fireEvent.click(await screen.findByRole("switch", switchName));
+
+        const lines = tooltipFor(["Income", "Expenses", "Balance", "TaggedInflows", "TaggedOutflows"]);
+        expect(lines).toContain("Tagged outflows: household: $0");
+        expect(lastChartData[0]).toMatchObject({ TaggedOutflows: 0.4, Balance: 59.6 });
+      });
+
       it("the untagged tab returns to Net Cash Flow", async () => {
         mockGetCashFlow.mockResolvedValue({
           ...augResponse(),

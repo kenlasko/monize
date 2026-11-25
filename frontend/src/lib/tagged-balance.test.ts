@@ -98,6 +98,12 @@ describe('periodBalanceFields', () => {
     ).toEqual({ Balance: -691, BalancePercent: -8.86 });
   });
 
+  it('keeps the balance at money precision rather than whole units (issue #2412)', () => {
+    expect(
+      periodBalanceFields({ income: 10.6, expenses: 0.2 }, { taggedInflows: 0.4, taggedOutflows: 0.3 }),
+    ).toEqual({ Balance: 10.5, BalancePercent: 95.45 });
+  });
+
   it('treats a period with no flow row as a known zero of flows', () => {
     expect(periodBalanceFields({ income: 100, expenses: 40 }, undefined)).toEqual({
       Balance: 60,

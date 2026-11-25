@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@/test/render";
 import { MonthlySpendingTrendReport } from "./MonthlySpendingTrendReport";
 
+const mockExportToCsv = vi.fn();
+vi.mock("@/lib/csv-export", () => ({
+  exportToCsv: (...args: unknown[]) => mockExportToCsv(...args),
+}));
+
+/** The window's totals as the server sends them beside the months. */
+function totalsOf(income: number, expenses: number, net = income - expenses) {
+  return { income, expenses, net, knownIncome: income, knownExpenses: expenses, knownNet: net };
+}
+
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -115,6 +125,7 @@ describe("MonthlySpendingTrendReport", () => {
   it("renders empty state when no data returned", async () => {
     mockGetIncomeVsExpenses.mockResolvedValue({
       data: [],
+      totals: totalsOf(0, 0),
     });
     render(<MonthlySpendingTrendReport />);
     await waitFor(() => {
@@ -128,6 +139,7 @@ describe("MonthlySpendingTrendReport", () => {
         { period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 },
         { period: "2024-02", periodStart: "2024-02-01", periodEnd: "2024-02-29", income: 5200, expenses: 3500, net: 1700 },
       ],
+      totals: totalsOf(10200, 6500),
     });
     render(<MonthlySpendingTrendReport />);
     await waitFor(() => {
@@ -141,6 +153,7 @@ describe("MonthlySpendingTrendReport", () => {
   it("tells the reader when rows without a rate were left out of the totals", async () => {
     mockGetIncomeVsExpenses.mockResolvedValue({
       data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }],
+      totals: totalsOf(5000, 3000),
       currency: "USD",
       missingCurrencies: ["JPY"],
       excludedCount: 2,
@@ -150,7 +163,7 @@ describe("MonthlySpendingTrendReport", () => {
   });
 
   it("renders date range selector", async () => {
-    mockGetIncomeVsExpenses.mockResolvedValue({ data: [] });
+    mockGetIncomeVsExpenses.mockResolvedValue({ data: [], totals: totalsOf(0, 0) });
     render(<MonthlySpendingTrendReport />);
     await waitFor(() => {
       expect(screen.getByTestId("date-range-selector")).toBeInTheDocument();
@@ -160,6 +173,7 @@ describe("MonthlySpendingTrendReport", () => {
   it("renders line chart when data present", async () => {
     mockGetIncomeVsExpenses.mockResolvedValue({
       data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }],
+      totals: totalsOf(5000, 3000),
     });
     render(<MonthlySpendingTrendReport />);
     await waitFor(() => {
@@ -179,6 +193,7 @@ describe("MonthlySpendingTrendReport", () => {
   it("navigates to transactions page with date range on chart click", async () => {
     mockGetIncomeVsExpenses.mockResolvedValue({
       data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }],
+      totals: totalsOf(5000, 3000),
     });
     render(<MonthlySpendingTrendReport />);
     await waitFor(() => {
@@ -197,6 +212,7 @@ describe("MonthlySpendingTrendReport", () => {
         { period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 },
         { period: "2024-03", periodStart: "2024-03-01", periodEnd: "2024-03-31", income: 1000, expenses: 2000, net: -1000 },
       ],
+      totals: totalsOf(11200, 8500),
     });
     const { container } = render(<MonthlySpendingTrendReport />);
     await waitFor(() => expect(screen.getByTestId("toggle-table")).toBeInTheDocument());
@@ -221,8 +237,59 @@ describe("MonthlySpendingTrendReport", () => {
   });
 });
 
+describe("MonthlySpendingTrendReport: totals and the CSV read the server's figures (issue #2412)", () => {
+  // Two months of 10.60 income and 0.60 expenses: each rounds up to a whole
+  // unit, so the months' whole units add to 22 and 2 where the server's
+  // totals are 21.20 and 1.20, and its net 20.00.
+  const months = [
+    { period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 10.6, expenses: 0.6, net: 10 },
+    { period: "2024-02", periodStart: "2024-02-01", periodEnd: "2024-02-29", income: 10.6, expenses: 0.6, net: 10 },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRange.end = "2025-01-01";
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: months,
+      totals: totalsOf(21.2, 1.2, 20),
+      currency: "USD",
+      missingCurrencies: [],
+      excludedCount: 0,
+    });
+  });
+
+  it("prints the server's totals in the cards, not the sum of whole-unit months", async () => {
+    render(<MonthlySpendingTrendReport />);
+    const income = await screen.findByText("Total Income");
+    expect(income.nextElementSibling).toHaveTextContent("$21");
+    expect(screen.getByText("Total Expenses").nextElementSibling).toHaveTextContent("$1");
+  });
+
+  it("prints the server's totals and net in the table footer", async () => {
+    const { container } = render(<MonthlySpendingTrendReport />);
+    await waitFor(() => expect(screen.getByTestId("toggle-table")).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId("toggle-table")); });
+    const footer = container.querySelectorAll("tfoot td");
+    expect([...footer].map((td) => td.textContent)).toEqual(["Total", "$21", "$1", "$20"]);
+  });
+
+  it("writes each month's server figure to the CSV, not its whole units", async () => {
+    render(<MonthlySpendingTrendReport />);
+    await waitFor(() => expect(screen.getByTestId("export-csv")).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId("export-csv")); });
+    const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+    expect(rows.map((r) => r.slice(1))).toEqual([
+      [10.6, 0.6, 10],
+      [10.6, 0.6, 10],
+    ]);
+  });
+});
+
 describe("MonthlySpendingTrendReport: a reload is not the previous answer", () => {
-  const answer = { data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }] };
+  const answer = {
+    data: [{ period: "2024-01", periodStart: "2024-01-01", periodEnd: "2024-01-31", income: 5000, expenses: 3000, net: 2000 }],
+    totals: totalsOf(5000, 3000),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();

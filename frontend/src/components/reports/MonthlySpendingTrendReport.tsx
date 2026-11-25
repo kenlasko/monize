@@ -120,9 +120,13 @@ export function MonthlySpendingTrendReport() {
         return {
           name: item.period,
           fullName: formatChartDate(parseISO(item.periodStart), "MMM yyyy"),
-          Expenses: Math.round(item.expenses),
-          Income: Math.round(item.income),
-          Net: Math.round(item.net),
+          // The server's figures as they arrive, at the reporting currency's
+          // places: the table, the tooltip and the CSV read these, so they
+          // are not rounded to whole units for the chart
+          // (docs/specs/report-rounding-and-aggregation.md section 7).
+          Expenses: item.expenses,
+          Income: item.income,
+          Net: item.net,
           // The dates the bucket covers come from the server that chose it.
           monthStart: item.periodStart,
           monthEnd: item.periodEnd,
@@ -154,14 +158,19 @@ export function MonthlySpendingTrendReport() {
     return sorted;
   }, [chartData, sortField, sortDirection]);
 
+  // The window's totals are the server's, each the single rounding of its
+  // months' exact sum; a sum of the months' figures can sit a unit off it
+  // (spec rule 4). The known part is what converted; the notice above names
+  // what did not.
   const totals = useMemo(() => {
-    const totalExpenses = chartData.reduce((sum, m) => sum + m.Expenses, 0);
-    const totalIncome = chartData.reduce((sum, m) => sum + m.Income, 0);
+    const totalExpenses = response?.totals.knownExpenses ?? 0;
+    const totalIncome = response?.totals.knownIncome ?? 0;
+    const totalNet = response?.totals.knownNet ?? 0;
     const avgExpenses =
       chartData.length > 0 ? totalExpenses / chartData.length : 0;
     const avgIncome = chartData.length > 0 ? totalIncome / chartData.length : 0;
-    return { totalExpenses, totalIncome, avgExpenses, avgIncome };
-  }, [chartData]);
+    return { totalExpenses, totalIncome, totalNet, avgExpenses, avgIncome };
+  }, [response, chartData.length]);
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import("@/lib/pdf-export");
@@ -331,9 +340,9 @@ export function MonthlySpendingTrendReport() {
                       {formatCurrency(totals.totalExpenses)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right text-sm font-bold ${gainLossColor(totals.totalIncome - totals.totalExpenses)}`}
+                      className={`px-4 py-3 text-right text-sm font-bold ${gainLossColor(totals.totalNet)}`}
                     >
-                      {formatCurrency(totals.totalIncome - totals.totalExpenses)}
+                      {formatCurrency(totals.totalNet)}
                     </td>
                   </tr>
                 </tfoot>

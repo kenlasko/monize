@@ -110,9 +110,10 @@ export function taggedBalanceWindow(
 /**
  * One period's chart/table fields in the Balance view. The period's own income
  * and expenses go through `taggedBalance`; a period the active bucket has no
- * row for had no tagged transfer in it, which is a known zero. Balance is
- * rounded to whole units like the other chart series, the percentage keeps its
- * two decimals.
+ * row for had no tagged transfer in it, which is a known zero. Balance keeps
+ * the money precision `taggedBalance` sums at, since the table, the tooltip and
+ * the CSV read it beside the chart (a whole-unit Balance was a CSV figure the
+ * screen never showed); the percentage keeps its two decimals.
  */
 export function periodBalanceFields(
   period: { income: number; expenses: number },
@@ -125,7 +126,7 @@ export function periodBalanceFields(
     taggedOutflows: flows ? flows.taggedOutflows : 0,
   });
   return {
-    ...(balance === null ? {} : { Balance: Math.round(balance) }),
+    ...(balance === null ? {} : { Balance: balance }),
     BalancePercent: balancePercent,
   };
 }
