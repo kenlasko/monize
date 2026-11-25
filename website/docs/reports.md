@@ -229,6 +229,8 @@ The **Duplicate Transaction Finder** groups transactions that look like copies o
 
 Each transaction shows its date, payee, description, category, account and amount, and whether it is **Cleared** or **Reconciled**. Click a transaction to open it on the Transactions page.
 
+**Potential Impact** is what the extra copies add up to in your default currency, each group converted at the exchange rate of its own date. When a group is in a currency with no exchange rate for that date, the figure shows what could be converted, marked with an asterisk.
+
 To remove duplicates without leaving the report:
 
 1. Under **Select duplicates**, click a confidence level. Every extra copy in each group at that level is ticked, and one copy per group is left unticked: a reconciled copy first, then a cleared one, otherwise the earliest. Reconciled copies are ticked like any other (history imported from Microsoft Money arrives reconciled), except while **Lock reconciled transactions** is on, when a reconciled transaction is never ticked for you because it cannot be deleted.
