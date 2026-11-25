@@ -735,14 +735,15 @@ export function resolveOutsideTransferIncome(
 
 /**
  * {@link resolveOutsideTransferIncome} as an aggregate, for a caller that folds
- * it into a total of its own: the toggle's net when its sign is positive, an
- * empty aggregate otherwise. The direction is read before rounding (rule 5).
+ * it into a total of its own: a copy of the toggle's net when its sign is
+ * positive, an empty aggregate otherwise. The direction is read before
+ * rounding (rule 5).
  */
 export function resolveOutsideTransferIncomeAggregate(
   spending: Pick<CategorySpending, "outsideTransferIncomeAggregate">,
 ): FxAggregate {
   const net = spending.outsideTransferIncomeAggregate;
-  return net.sign > 0 ? net : new FxAggregate();
+  return net.sign > 0 ? FxAggregate.sum([net]) : new FxAggregate();
 }
 
 /**

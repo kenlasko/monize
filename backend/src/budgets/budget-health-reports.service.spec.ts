@@ -800,6 +800,26 @@ describe("BudgetHealthReportsService", () => {
       expect(result[0]).toMatchObject({ income: 0, savingsRate: 0 });
     });
 
+    it("gives no rate over an income that reads as zero", async () => {
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(
+        createMockQueryBuilder(),
+      );
+      // 0.00003 is money in (its sign), but it reads 0.0000.
+      mockSpending({
+        ...spending({ "cat-essential": -500 }),
+        ...outsideIncome(0.00003),
+      });
+
+      const result = await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(result[0]).toMatchObject({
+        income: 0,
+        expenses: 500,
+        savings: -500,
+        savingsRate: 0,
+      });
+    });
+
     it("reads income and expenses through the budget page's net, converted actuals", async () => {
       budgetsService.findOne.mockResolvedValueOnce({
         ...mockBudget,

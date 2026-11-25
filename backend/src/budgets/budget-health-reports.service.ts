@@ -418,9 +418,10 @@ export class BudgetHealthReportsService {
       const expenses = new FxAggregate();
       expenses.addConverted(sumSide(false));
       const savings = FxAggregate.difference(income, expenses);
-      // A ratio of the unrounded figures, rounded once (rule 8).
+      // A ratio of the unrounded figures, rounded once (rule 8), over an
+      // income that reads as money: dust that shows as 0 has no rate.
       const savingsRate =
-        income.sign > 0
+        income.knownSubtotal > 0
           ? roundToDecimals(
               (savings.unroundedSubtotal / income.unroundedSubtotal) * 100,
               2,

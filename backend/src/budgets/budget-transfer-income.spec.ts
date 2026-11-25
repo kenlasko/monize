@@ -190,10 +190,12 @@ describe("resolveOutsideTransferIncomeAggregate", () => {
     return spendingOf({ outsideTransferIncomeAggregate: agg });
   };
 
-  it("hands on the toggle's aggregate while its net is money in", () => {
+  it("hands on a copy of the toggle's aggregate while its net is money in", () => {
     const spending = net(1.0001 / 1.6);
-    expect(resolveOutsideTransferIncomeAggregate(spending)).toBe(
-      spending.outsideTransferIncomeAggregate,
+    const income = resolveOutsideTransferIncomeAggregate(spending);
+    expect(income).not.toBe(spending.outsideTransferIncomeAggregate);
+    expect(income.unroundedSubtotal).toBe(
+      spending.outsideTransferIncomeAggregate.unroundedSubtotal,
     );
     // 0.00003 reads 0 at four places, but it is money in (rule 5).
     expect(
