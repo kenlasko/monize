@@ -36,6 +36,12 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
   filter-mode recategorization rewrite the split's category lines
   (`docs/specs/split-bulk-update.md` I2), so it waits for a rule on what a bulk
   edit of such a split does. Until then "select all matching" skips it.
+- [ ] Follow-ups found in review, each older than T2 and shared with the
+  category filter, which also hydrates only a split's matching lines: the
+  register export (`register-export.ts`) writes the parent's amount beside the
+  hydrated lines only; `amountFrom` / `amountTo` compare the parent's amount,
+  not the shown line's; the `is:transfer` search term
+  (`transaction-search.util.ts`) still matches whole transfer rows only.
 
 ## T3 tag filters
 
