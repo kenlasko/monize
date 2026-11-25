@@ -62,6 +62,7 @@ Files: `backend/src/import/import-regular-processor.service.ts`, its spec, `back
 - The plain path computes its leg as the split path does: `resolveFxRateOrNull` for the row's date, `applyFxConversion` at the target currency's precision, the rate stored on the leg. One helper serves both paths.
 - No rate: refuse the row with a message naming the pair and the date (a key beside `errors.import.noRateForSplitTransfer`). Nothing is written for that row.
 - Repeat the backfill in a new migration, for rows a release without this change wrote after B1.
+- `shared_protect_ledger_transaction` (`database/schema.sql`) refuses any change to a shared-posting row outside its ignore list (`status`, `reconciled_date`, `description`, `payee_name`, `payee_id`, `updated_at`), and `amount_is_provisional` is not on it. B1's backfill skips shared-ledger rows for that reason; decide whether clearing the flag on such a row is refused or the column joins the list.
 
 Acceptance: design section 7, rows 2, 3 and 6, plus the file-order reversal, as specs. A confirmed transaction whose description contains the old text is not matched as pending. A provisional leg whose description was edited or cleared is still matched. Balances move by the estimate, then by the difference on confirmation.
 
@@ -85,6 +86,7 @@ Files: `backend/src/transactions/transactions.controller.ts`, the transactions s
 - Convert-to-transaction, unlink, and any other path that ends a leg's life as a transfer leg clears the flag (design P3). Grep the bulk, assistant-action and MCP routes to the same writes.
 - A spec over the create, update, transfer-update and bulk-update DTOs proves `amountIsProvisional` is refused from a body (design P2).
 - The split-transfer counterpart leg goes through its own update path; cover it.
+- `shared_protect_ledger_transaction` (`database/schema.sql`) refuses any change to a shared-posting row outside its ignore list (`status`, `reconciled_date`, `description`, `payee_name`, `payee_id`, `updated_at`), and `amount_is_provisional` is not on it. B1's backfill skips shared-ledger rows for that reason; decide whether clearing the flag on such a row is refused or the column joins the list.
 
 Acceptance: design section 10 rows 6 and 9 and the split half of row 10.
 
