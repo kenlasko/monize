@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@/test/render';
 import { ReportChart } from './ReportChart';
 import { ReportViewType, GroupByType, TableColumn, MetricType } from '@/types/custom-report';
@@ -23,6 +23,9 @@ vi.mock('@/hooks/useDateFormat', () => ({
 vi.mock('@/lib/chart-colours', () => ({
   CHART_COLOURS: ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b'],
 }));
+
+// The rows a test hands the mocked tooltip; null hands it the fixed three below.
+const tooltipItems = vi.hoisted(() => ({ current: null as any[] | null }));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
@@ -50,6 +53,15 @@ vi.mock('recharts', () => ({
   Tooltip: ({ content }: any) => {
     if (content && content.type) {
       const C = content.type;
+      if (tooltipItems.current) {
+        return (
+          <div data-testid="tooltip">
+            {tooltipItems.current.map((item) => (
+              <C key={item.label} {...content.props} active={true} payload={[{ payload: item }]} />
+            ))}
+          </div>
+        );
+      }
       return (
         <div data-testid="tooltip">
           <C {...content.props} active={true} payload={[{ payload: { label: 'Groceries', value: 500, count: 20, color: '#000' } }]} />
@@ -78,6 +90,10 @@ const sampleData = [
 ];
 
 describe('ReportChart', () => {
+  afterEach(() => {
+    tooltipItems.current = null;
+  });
+
   it('renders pie chart view', () => {
     render(
       <ReportChart
@@ -442,6 +458,7 @@ describe('ReportChart', () => {
         ]}
         groupBy={GroupByType.CATEGORY}
         tableColumns={[TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE, TableColumn.COUNT]}
+        totalRowValue={0.3}
         partialTotal={{ value: 0.3, missingCurrencies: ['JPY'], excludedCount: 1 }}
       />
     );
@@ -645,7 +662,7 @@ describe('ReportChart', () => {
 
     it('prints each row in its account currency, naming every currency once, the reader\'s too, and totals nothing', () => {
       const { container } = render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={180} />
       );
 
       expect(screen.getByRole('columnheader', { name: 'Amount (account currency)' })).toBeInTheDocument();
@@ -679,7 +696,7 @@ describe('ReportChart', () => {
       const { exportToCsv } = await import('@/lib/csv-export');
       (exportToCsv as any).mockClear();
       render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={180} />
       );
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
@@ -695,7 +712,7 @@ describe('ReportChart', () => {
       const { exportToPdf } = await import('@/lib/pdf-export');
       (exportToPdf as any).mockClear();
       render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={180} />
       );
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
@@ -716,7 +733,7 @@ describe('ReportChart', () => {
 
     it('stays in the table under its own amount, a dash for its converted amount and share', () => {
       const { container } = render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={50} />
       );
 
       const cells = Array.from(container.querySelectorAll('tbody tr')[0].querySelectorAll('td')).map((td) => td.textContent);
@@ -731,7 +748,7 @@ describe('ReportChart', () => {
       const { exportToCsv } = await import('@/lib/csv-export');
       (exportToCsv as any).mockClear();
       render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={50} />
       );
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
@@ -745,7 +762,7 @@ describe('ReportChart', () => {
       const { exportToPdf } = await import('@/lib/pdf-export');
       (exportToPdf as any).mockClear();
       render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={50} />
       );
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
@@ -775,7 +792,7 @@ describe('ReportChart', () => {
 
     it('prints the row\'s own tags, joined, and nothing for an untagged row', () => {
       const { container } = render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={180} />
       );
 
       expect(screen.getByRole('columnheader', { name: 'Tag' })).toBeInTheDocument();
@@ -789,7 +806,7 @@ describe('ReportChart', () => {
       const { exportToCsv } = await import('@/lib/csv-export');
       (exportToCsv as any).mockClear();
       render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={180} />
       );
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
@@ -810,7 +827,7 @@ describe('ReportChart', () => {
 
     it('prints what a row was entered as, naming every currency once, blank elsewhere, and totals nothing', () => {
       const { container } = render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={210} />
       );
 
       expect(screen.getByRole('columnheader', { name: 'Amount (original currency)' })).toBeInTheDocument();
@@ -826,7 +843,7 @@ describe('ReportChart', () => {
       const { exportToCsv } = await import('@/lib/csv-export');
       (exportToCsv as any).mockClear();
       render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={210} />
       );
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
@@ -842,7 +859,7 @@ describe('ReportChart', () => {
       const { exportToPdf } = await import('@/lib/pdf-export');
       (exportToPdf as any).mockClear();
       render(
-        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} />
+        <ReportChart viewType={ReportViewType.TABLE} data={rows} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={210} />
       );
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
@@ -852,6 +869,99 @@ describe('ReportChart', () => {
       expect(tableData.rows[0]).toEqual(['Hotel', '$150.00', '100.00 EUR']);
       expect(tableData.rows[2]).toEqual(['Groceries', '$20.00', '']);
       expect(tableData.totalRow).toEqual(['Total', '$210.00', '']);
+    });
+  });
+  // Every total and share the chart prints is the server's: the share
+  // denominator was the sum of the rounded rows, and under an average metric
+  // the sum of the groups' means (issue #2413).
+  describe('a share and a total the server settled', () => {
+    it('reads each row\'s share off the server under an average metric, never a share of the summed means', () => {
+      // One expense of 10 and three of 30: means 10 and 30, shares of the
+      // whole 10% and 90%. Over the summed means they read 25% and 75%.
+      const data = [
+        { label: 'A', value: 10, count: 1, id: 'a', percentage: 10 },
+        { label: 'B', value: 30, count: 3, id: 'b', percentage: 90 },
+      ];
+      tooltipItems.current = data;
+      render(
+        <ReportChart
+          viewType={ReportViewType.BAR_CHART}
+          data={data}
+          groupBy={GroupByType.CATEGORY}
+          metric={MetricType.AVERAGE}
+          totalRowValue={25}
+        />,
+      );
+      const tooltip = screen.getByTestId('tooltip');
+      expect(tooltip).toHaveTextContent('$10.00 (10.0%)');
+      expect(tooltip).toHaveTextContent('$30.00 (90.0%)');
+      expect(tooltip).not.toHaveTextContent('25.0%');
+    });
+
+    it('gives a row without a server share none under an average metric', () => {
+      const data = [{ label: 'A', value: 10, count: 1, id: 'a' }];
+      tooltipItems.current = data;
+      render(
+        <ReportChart
+          viewType={ReportViewType.PIE_CHART}
+          data={data}
+          groupBy={GroupByType.CATEGORY}
+          metric={MetricType.AVERAGE}
+          totalRowValue={10}
+        />,
+      );
+      expect(screen.getByTestId('tooltip')).not.toHaveTextContent('%');
+    });
+
+    // Two listed rows of 1.2474 each read 1.25 on their own, and the server's
+    // headline, their sum read once, is 2.49: a share over the rows' 2.50
+    // read 50.0% where it is 50.2%.
+    it('takes a listed row\'s share over the server\'s headline, not the rows\' sum', async () => {
+      const data = [
+        { label: 'Lunch', value: 1.25, count: 1, id: 'tx-1' },
+        { label: 'Coffee', value: 1.25, count: 1, id: 'tx-2' },
+      ];
+      tooltipItems.current = data;
+      const columns = [TableColumn.LABEL, TableColumn.VALUE, TableColumn.PERCENTAGE];
+      const { container, unmount } = render(
+        <ReportChart viewType={ReportViewType.TABLE} data={data} groupBy={GroupByType.NONE} tableColumns={columns} totalRowValue={2.49} />,
+      );
+      const cells = Array.from(container.querySelectorAll('tbody tr')[0].querySelectorAll('td')).map((td) => td.textContent);
+      expect(cells).toEqual(['Lunch', '$1.25', '50.2%']);
+      expect(container.querySelector('tfoot tr')?.children[1].textContent).toBe('$2.49');
+
+      const { exportToCsv } = await import('@/lib/csv-export');
+      (exportToCsv as any).mockClear();
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+      const csvRows = (exportToCsv as any).mock.calls[0][2];
+      expect(csvRows[0]).toEqual(['Lunch', 1.25, 50.2]);
+      expect(csvRows[2]).toEqual(['Total', 2.49, 100]);
+      unmount();
+
+      render(
+        <ReportChart viewType={ReportViewType.PIE_CHART} data={data} groupBy={GroupByType.NONE} totalRowValue={2.49} />,
+      );
+      expect(screen.getByTestId('tooltip')).toHaveTextContent('$1.25 (50.2%)');
+    });
+
+    it('leaves the Total row blank without a headline, never the rows added up', async () => {
+      const data = [
+        { label: 'Lunch', value: 1.25, count: 1, id: 'tx-1' },
+        { label: 'Coffee', value: 1.25, count: 1, id: 'tx-2' },
+      ];
+      const columns = [TableColumn.LABEL, TableColumn.VALUE];
+      const { container } = render(
+        <ReportChart viewType={ReportViewType.TABLE} data={data} groupBy={GroupByType.NONE} tableColumns={columns} />,
+      );
+      expect(container.querySelector('tfoot tr')?.children[1].textContent).toBe('');
+
+      const { exportToCsv } = await import('@/lib/csv-export');
+      (exportToCsv as any).mockClear();
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+      const csvRows = (exportToCsv as any).mock.calls[0][2];
+      expect(csvRows[2]).toEqual(['Total', '']);
     });
   });
 });
