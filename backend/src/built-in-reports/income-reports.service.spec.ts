@@ -788,6 +788,39 @@ describe("IncomeReportsService", () => {
       expect(result.totals.income).toBe(249.5049);
       expect(result.totals.expenses).toBe(0.0249);
     });
+
+    it("hands each month's income and expenses on as aggregates (issue #2407)", async () => {
+      scopedManager.query.mockResolvedValue(
+        ["2026-01-01", "2026-02-01"].map((periodStart) => ({
+          period_start: periodStart,
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          income: "100.01",
+          expenses: "0.01",
+        })),
+      );
+
+      const plain = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2026-01-01",
+        "2026-02-28",
+      );
+      const { response, periods } =
+        await service.getIncomeVsExpensesWithAggregates(
+          mockUserId,
+          "2026-01-01",
+          "2026-02-28",
+        );
+
+      // The response is the one the report answers; each month's figures are
+      // its aggregates' readings, and the aggregates are exact.
+      expect(response).toEqual(plain);
+      expect([...periods.keys()]).toEqual(["2026-01", "2026-02"]);
+      const january = periods.get("2026-01")!;
+      expect(january.income.unroundedSubtotal).toBe(124.752474);
+      expect(january.expenses.unroundedSubtotal).toBe(0.012474);
+      expect(january.income.knownSubtotal).toBe(response.data[0].income);
+    });
   });
 
   // ---------------------------------------------------------------------------

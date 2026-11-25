@@ -63,6 +63,12 @@ const INVESTMENT_EXCLUSION_NO_SPLITS = investmentExclusionSql({
   transactionAlias: "t",
 });
 
+/** One period's converted income and expenses, each before it is rounded. */
+export interface IncomeExpensePeriodAggregates {
+  income: FxAggregate;
+  expenses: FxAggregate;
+}
+
 interface RawTagValuePeriodAggregate extends RawRateBasis {
   period_start: string;
   currency_code: string;
@@ -292,6 +298,69 @@ export class IncomeReportsService {
       tagKey,
       transferScopeAccountIds,
     } = options;
+    const { response } = await this.incomeVsExpensesWindow(
+      userId,
+      startDate,
+      endDate,
+      { accountIds, bucket, weekStartsOn },
+    );
+
+    const trimmedTagKey = tagKey?.trim();
+    if (!trimmedTagKey) {
+      // I1: no tagKey -> exactly today's response, nothing added.
+      return response;
+    }
+
+    const buckets = await this.getTagKeyBuckets(
+      userId,
+      startDate,
+      endDate,
+      { accountIds, bucket, weekStartsOn, transferScopeAccountIds },
+      trimmedTagKey,
+      response.currency,
+    );
+
+    return { ...response, tagKey: trimmedTagKey, buckets };
+  }
+
+  /**
+   * The monthly Income vs Expenses response beside each month's income and
+   * expenses as aggregates, keyed by period, for a caller that works out a
+   * figure from two months (the Monthly Comparison's changes): the difference
+   * of the two months' aggregates is rounded once, where the difference of
+   * their readings can sit a unit off
+   * (`docs/specs/report-rounding-and-aggregation.md` rule 4). The response is
+   * the one `getIncomeVsExpenses` answers without options.
+   */
+  async getIncomeVsExpensesWithAggregates(
+    userId: string,
+    startDate: string | undefined,
+    endDate: string,
+  ): Promise<{
+    response: IncomeVsExpensesResponse;
+    periods: ReadonlyMap<string, IncomeExpensePeriodAggregates>;
+  }> {
+    return this.incomeVsExpensesWindow(userId, startDate, endDate, {
+      bucket: "month",
+      weekStartsOn: 1,
+    });
+  }
+
+  /** The All bucket of `getIncomeVsExpenses`, with its periods' aggregates. */
+  private async incomeVsExpensesWindow(
+    userId: string,
+    startDate: string | undefined,
+    endDate: string,
+    options: {
+      accountIds?: string[];
+      bucket: IncomeExpenseBucket;
+      weekStartsOn: WeekStartsOn;
+    },
+  ): Promise<{
+    response: IncomeVsExpensesResponse;
+    periods: ReadonlyMap<string, IncomeExpensePeriodAggregates>;
+  }> {
+    const { accountIds, bucket, weekStartsOn } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
 
@@ -380,7 +449,7 @@ export class IncomeReportsService {
         toMoneyNumber(row.expenses, MONEY_SCALE),
       ],
     );
-    const { data, totals, missingCurrencies, excludedCount } =
+    const { data, totals, missingCurrencies, excludedCount, periods } =
       this.summarizePeriodRows(
         rawResults,
         bucket,
@@ -397,23 +466,7 @@ export class IncomeReportsService {
       missingCurrencies,
       excludedCount,
     };
-
-    const trimmedTagKey = tagKey?.trim();
-    if (!trimmedTagKey) {
-      // I1: no tagKey -> exactly today's response, nothing added.
-      return response;
-    }
-
-    const buckets = await this.getTagKeyBuckets(
-      userId,
-      startDate,
-      endDate,
-      { accountIds, bucket, weekStartsOn, transferScopeAccountIds },
-      trimmedTagKey,
-      defaultCurrency,
-    );
-
-    return { ...response, tagKey: trimmedTagKey, buckets };
+    return { response, periods };
   }
 
   /**
@@ -448,11 +501,9 @@ export class IncomeReportsService {
     };
     missingCurrencies: string[];
     excludedCount: number;
+    periods: ReadonlyMap<string, IncomeExpensePeriodAggregates>;
   } {
-    const byPeriod = new Map<
-      string,
-      { income: FxAggregate; expenses: FxAggregate }
-    >();
+    const byPeriod = new Map<string, IncomeExpensePeriodAggregates>();
     /**
      * Currencies with no rate into the reporting currency, and how many
      * aggregate rows that cost.
@@ -548,6 +599,7 @@ export class IncomeReportsService {
       },
       missingCurrencies: gaps.missingCurrencies,
       excludedCount: gaps.excludedCount,
+      periods: byPeriod,
     };
   }
 

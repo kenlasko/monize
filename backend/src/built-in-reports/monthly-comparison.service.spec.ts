@@ -12,6 +12,7 @@ import {
   PortfolioPeriodResultService,
 } from "../net-worth/portfolio-period-result.service";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { FxAggregate } from "../common/fx-aggregate";
 import { todayYMD } from "../common/date-utils";
 import {
   Account,
@@ -160,6 +161,97 @@ const mockTopMovers = [
   },
 ];
 
+/** An aggregate of the given components, each already converted. */
+const aggregateOf = (...components: number[]): FxAggregate => {
+  const aggregate = new FxAggregate();
+  for (const component of components) aggregate.addConverted(component);
+  return aggregate;
+};
+
+/**
+ * What `getIncomeVsExpensesWithAggregates` answers for a response: each
+ * period's income and expenses as an aggregate of the figure it shows.
+ */
+const withIncomeAggregates = <
+  T extends { data: { period: string; income: number; expenses: number }[] },
+>(
+  response: T,
+) => ({
+  response,
+  periods: new Map(
+    response.data.map((d) => [
+      d.period,
+      { income: aggregateOf(d.income), expenses: aggregateOf(d.expenses) },
+    ]),
+  ),
+});
+
+/** One month whose exact income and expenses are the given components. */
+const incomeMonth = (
+  period: string,
+  income: number[],
+  expenses: number[] = [],
+) => {
+  const aggregates = {
+    income: aggregateOf(...income),
+    expenses: aggregateOf(...expenses),
+  };
+  return {
+    response: {
+      data: [
+        {
+          period,
+          income: aggregates.income.knownSubtotal,
+          expenses: aggregates.expenses.knownSubtotal,
+          net: FxAggregate.difference(aggregates.income, aggregates.expenses)
+            .knownSubtotal,
+        },
+      ],
+    },
+    periods: new Map([[period, aggregates]]),
+  };
+};
+
+/**
+ * What `getSpendingByCategoryWithAggregates` answers for a response: each
+ * listed category's aggregate of the figure it shows.
+ */
+const withSpendingAggregates = <
+  T extends { data: { categoryId: string | null; total: number }[] },
+>(
+  response: T,
+) => ({
+  response,
+  categories: new Map(
+    response.data.map((c) => [c.categoryId, aggregateOf(c.total)]),
+  ),
+});
+
+/** One window whose categories' exact spends are the given components. */
+const spendingWindow = (categories: Record<string, number[]>) => {
+  const aggregates = new Map(
+    Object.entries(categories).map(([id, parts]) => [
+      id,
+      aggregateOf(...parts),
+    ]),
+  );
+  const data = [...aggregates].map(([categoryId, aggregate]) => ({
+    categoryId,
+    categoryName: categoryId,
+    color: null,
+    total: aggregate.knownSubtotal,
+  }));
+  const knownSpending = FxAggregate.sum(aggregates.values()).knownSubtotal;
+  return {
+    response: { data, totalSpending: knownSpending, knownSpending },
+    categories: aggregates,
+  };
+};
+
+/** `getMonthlyNetWorthWithAggregates` for months whose net worth is exact. */
+const withNetWorthAggregates = <T extends { netWorth: number }>(months: T[]) =>
+  months.map((m) => ({ ...m, netWorthAggregate: aggregateOf(m.netWorth) }));
+
 describe("MonthlyComparisonService", () => {
   let scopedManager: ManagerMock;
   let scopedDataSource: DataSourceMock;
@@ -176,16 +268,16 @@ describe("MonthlyComparisonService", () => {
 
   beforeEach(async () => {
     mockSpendingReports = {
-      getSpendingByCategory: jest.fn(),
+      getSpendingByCategoryWithAggregates: jest.fn(),
     };
     mockIncomeReports = {
-      getIncomeVsExpenses: jest.fn(),
+      getIncomeVsExpensesWithAggregates: jest.fn(),
     };
     mockCurrencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("CAD"),
     };
     mockNetWorthService = {
-      getMonthlyNetWorth: jest.fn(),
+      getMonthlyNetWorthWithAggregates: jest.fn(),
     };
     mockPortfolioService = {
       getMonthOverMonthMovers: jest.fn(),
@@ -240,14 +332,18 @@ describe("MonthlyComparisonService", () => {
 
   describe("getMonthlyComparison()", () => {
     beforeEach(() => {
-      mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce(mockIncomeVsExpensesCurrentResponse)
-        .mockResolvedValueOnce(mockIncomeVsExpensesPreviousResponse);
-      mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce(mockCurrentSpending)
-        .mockResolvedValueOnce(mockPreviousSpending);
-      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue(
-        mockNetWorthHistory,
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(
+          withIncomeAggregates(mockIncomeVsExpensesCurrentResponse),
+        )
+        .mockResolvedValueOnce(
+          withIncomeAggregates(mockIncomeVsExpensesPreviousResponse),
+        );
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockResolvedValueOnce(withSpendingAggregates(mockCurrentSpending))
+        .mockResolvedValueOnce(withSpendingAggregates(mockPreviousSpending));
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        withNetWorthAggregates(mockNetWorthHistory),
       );
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue(
         mockTopMovers,
@@ -383,15 +479,17 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("withholds the net worth and its change when one compared month has no rate", async () => {
-      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([
-        mockNetWorthHistory[2],
-        {
-          ...mockNetWorthHistory[3],
-          fxComplete: false,
-          missingRatePairs: ["ZZZ->USD"],
-          assetsFxComplete: false,
-        },
-      ]);
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        withNetWorthAggregates([
+          mockNetWorthHistory[2],
+          {
+            ...mockNetWorthHistory[3],
+            fxComplete: false,
+            missingRatePairs: ["ZZZ->USD"],
+            assetsFxComplete: false,
+          },
+        ]),
+      );
 
       const result = await service.getMonthlyComparison(mockUserId, mockMonth);
 
@@ -424,34 +522,28 @@ describe("MonthlyComparisonService", () => {
       await service.getMonthlyComparison(mockUserId, mockMonth);
 
       // Current month
-      expect(mockIncomeReports.getIncomeVsExpenses).toHaveBeenCalledWith(
-        mockUserId,
-        "2026-01-01",
-        "2026-01-31",
-      );
+      expect(
+        mockIncomeReports.getIncomeVsExpensesWithAggregates,
+      ).toHaveBeenCalledWith(mockUserId, "2026-01-01", "2026-01-31");
       // Previous month
-      expect(mockIncomeReports.getIncomeVsExpenses).toHaveBeenCalledWith(
-        mockUserId,
-        "2025-12-01",
-        "2025-12-31",
-      );
+      expect(
+        mockIncomeReports.getIncomeVsExpensesWithAggregates,
+      ).toHaveBeenCalledWith(mockUserId, "2025-12-01", "2025-12-31");
     });
 
     it("fetches spending with rollupToParent false", async () => {
       await service.getMonthlyComparison(mockUserId, mockMonth);
 
-      expect(mockSpendingReports.getSpendingByCategory).toHaveBeenCalledWith(
-        mockUserId,
-        "2026-01-01",
-        "2026-01-31",
-        { rollupToParent: false },
-      );
-      expect(mockSpendingReports.getSpendingByCategory).toHaveBeenCalledWith(
-        mockUserId,
-        "2025-12-01",
-        "2025-12-31",
-        { rollupToParent: false },
-      );
+      expect(
+        mockSpendingReports.getSpendingByCategoryWithAggregates,
+      ).toHaveBeenCalledWith(mockUserId, "2026-01-01", "2026-01-31", {
+        rollupToParent: false,
+      });
+      expect(
+        mockSpendingReports.getSpendingByCategoryWithAggregates,
+      ).toHaveBeenCalledWith(mockUserId, "2025-12-01", "2025-12-31", {
+        rollupToParent: false,
+      });
     });
 
     it("fetches month-over-month movers with both month-end dates", async () => {
@@ -467,7 +559,9 @@ describe("MonthlyComparisonService", () => {
     it("fetches 12-month net worth history", async () => {
       await service.getMonthlyComparison(mockUserId, mockMonth);
 
-      expect(mockNetWorthService.getMonthlyNetWorth).toHaveBeenCalledWith(
+      expect(
+        mockNetWorthService.getMonthlyNetWorthWithAggregates,
+      ).toHaveBeenCalledWith(
         mockUserId,
         "2025-01-01", // 13 months back from Jan 2026 (monthNum - 13)
         "2026-01-31",
@@ -477,7 +571,9 @@ describe("MonthlyComparisonService", () => {
 
   describe("getMonthlyComparison() - figures rounded once (issue #2384)", () => {
     beforeEach(() => {
-      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        withNetWorthAggregates([]),
+      );
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
     });
 
@@ -485,72 +581,65 @@ describe("MonthlyComparisonService", () => {
       // 124.752474 in and 0.000049896 out net 124.7524, though the sides read
       // 124.7525 and 0; two 124.752474 categories total 249.5049, though their
       // rows read 124.7525 each.
-      mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({
-          data: [
-            { period: "2026-01", income: 124.7525, expenses: 0, net: 124.7524 },
-          ],
-          totals: { income: 124.7525, expenses: 0, net: 124.7524 },
-        })
-        .mockResolvedValueOnce({
-          data: [{ period: "2025-12", income: 0, expenses: 0, net: 0 }],
-          totals: { income: 0, expenses: 0, net: 0 },
-        });
-      const twoCategories = {
-        data: ["cat-1", "cat-2"].map((categoryId) => ({
-          categoryId,
-          categoryName: categoryId,
-          color: null,
-          total: 124.7525,
-        })),
-        totalSpending: 249.5049,
-        knownSpending: 249.5049,
-      };
-      mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce(twoCategories)
-        .mockResolvedValueOnce({
-          data: [],
-          totalSpending: 0,
-          knownSpending: 0,
-        });
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(
+          incomeMonth("2026-01", [124.752474], [0.000049896]),
+        )
+        .mockResolvedValueOnce(incomeMonth("2025-12", []));
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockResolvedValueOnce(
+          spendingWindow({ "cat-1": [124.752474], "cat-2": [124.752474] }),
+        )
+        .mockResolvedValueOnce(spendingWindow({}));
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
 
+      expect(result.incomeExpenses.currentIncome).toBe(124.7525);
+      expect(result.incomeExpenses.currentExpenses).toBe(0);
       expect(result.incomeExpenses.currentSavings).toBe(124.7524);
       expect(result.incomeExpenses.savingsChange).toBe(124.7524);
       expect(result.expenses.currentTotal).toBe(249.5049);
+      expect(result.expenses.comparison.map((c) => c.currentTotal)).toEqual([
+        124.7525, 124.7525,
+      ]);
     });
 
     it("leaves no float residue in a change", async () => {
       // 5000.1234 - 3000.5678 is 1999.5556000000006 in doubles.
-      mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({
-          data: [
-            {
-              period: "2026-01",
-              income: 5000.1234,
-              expenses: 0,
-              net: 5000.1234,
-            },
-          ],
-          totals: { income: 5000.1234, expenses: 0, net: 5000.1234 },
-        })
-        .mockResolvedValueOnce({
-          data: [
-            {
-              period: "2025-12",
-              income: 3000.5678,
-              expenses: 0,
-              net: 3000.5678,
-            },
-          ],
-          totals: { income: 3000.5678, expenses: 0, net: 3000.5678 },
-        });
-      mockSpendingReports.getSpendingByCategory.mockResolvedValue({
-        data: [],
-        totalSpending: 0,
-        knownSpending: 0,
-      });
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [
+              {
+                period: "2026-01",
+                income: 5000.1234,
+                expenses: 0,
+                net: 5000.1234,
+              },
+            ],
+            totals: { income: 5000.1234, expenses: 0, net: 5000.1234 },
+          }),
+        )
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [
+              {
+                period: "2025-12",
+                income: 3000.5678,
+                expenses: 0,
+                net: 3000.5678,
+              },
+            ],
+            totals: { income: 3000.5678, expenses: 0, net: 3000.5678 },
+          }),
+        );
+      mockSpendingReports.getSpendingByCategoryWithAggregates.mockResolvedValue(
+        withSpendingAggregates({
+          data: [],
+          totalSpending: 0,
+          knownSpending: 0,
+        }),
+      );
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
 
@@ -559,25 +648,181 @@ describe("MonthlyComparisonService", () => {
     });
   });
 
+  describe("getMonthlyComparison() - each change from the two months' aggregates (issue #2407)", () => {
+    // Exact figures of 100.00005 and 50.00004 read 100.0001 and 50.0000, so
+    // the difference of the readings is 50.0001; the exact change, 50.00001,
+    // reads 50.0000.
+    beforeEach(() => {
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        [],
+      );
+      mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
+      mockSpendingReports.getSpendingByCategoryWithAggregates.mockResolvedValue(
+        spendingWindow({}),
+      );
+    });
+
+    it.each([
+      {
+        figure: "income",
+        current: incomeMonth("2026-01", [100.00005]),
+        previous: incomeMonth("2025-12", [50.00004]),
+        shown: ["currentIncome", "previousIncome"],
+        change: "incomeChange",
+      },
+      {
+        figure: "expenses",
+        current: incomeMonth("2026-01", [], [100.00005]),
+        previous: incomeMonth("2025-12", [], [50.00004]),
+        shown: ["currentExpenses", "previousExpenses"],
+        change: "expensesChange",
+      },
+      {
+        // 150.00005 less 50 and 100.00004 less 50: the savings themselves
+        // read 100.0001 and 50.0000.
+        figure: "savings",
+        current: incomeMonth("2026-01", [150.00005], [50]),
+        previous: incomeMonth("2025-12", [100.00004], [50]),
+        shown: ["currentSavings", "previousSavings"],
+        change: "savingsChange",
+      },
+    ] as const)(
+      "reads the $figure change once from the exact change",
+      async ({ current, previous, shown, change }) => {
+        mockIncomeReports.getIncomeVsExpensesWithAggregates
+          .mockResolvedValueOnce(current)
+          .mockResolvedValueOnce(previous);
+
+        const result = await service.getMonthlyComparison(
+          mockUserId,
+          "2026-01",
+        );
+
+        const ie = result.incomeExpenses;
+        expect([ie[shown[0]], ie[shown[1]]]).toEqual([100.0001, 50]);
+        expect(ie[change]).toBe(50);
+      },
+    );
+
+    it("reads a category's change once from the exact change", async () => {
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockReset()
+        .mockResolvedValueOnce(
+          spendingWindow({ "cat-1": [100.00005], "cat-2": [0.00026] }),
+        )
+        .mockResolvedValueOnce(
+          spendingWindow({
+            "cat-1": [50.00004],
+            "cat-2": [0.00014],
+            "cat-3": [0.00005],
+          }),
+        );
+      mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
+        incomeMonth("2026-01", []),
+      );
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      const byId = new Map(
+        result.expenses.comparison.map((c) => [c.categoryId, c]),
+      );
+      expect(byId.get("cat-1")).toMatchObject({
+        currentTotal: 100.0001,
+        previousTotal: 50,
+        change: 50,
+      });
+      // 0.00026 against 0.00014 read 0.0003 and 0.0001: the readings make the
+      // change 200%, the exact values 85.71% (rule 8).
+      expect(byId.get("cat-2")).toMatchObject({
+        currentTotal: 0.0003,
+        previousTotal: 0.0001,
+        change: 0.0001,
+        changePercent: 85.71,
+      });
+      // A category only the previous month listed fell by all of it.
+      expect(byId.get("cat-3")).toMatchObject({
+        currentTotal: 0,
+        previousTotal: 0.0001,
+        change: -0.0001,
+        changePercent: -100,
+      });
+    });
+
+    it("reads the net worth change once from the exact change", async () => {
+      const month = (date: string, exact: number) => {
+        const netWorthAggregate = aggregateOf(exact);
+        return {
+          month: date,
+          assets: netWorthAggregate.knownSubtotal,
+          liabilities: 0,
+          netWorth: netWorthAggregate.knownSubtotal,
+          netWorthAggregate,
+          ...completeMonth,
+        };
+      };
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue([
+        month("2025-12-01", 50.00004),
+        month("2026-01-01", 100.00005),
+      ]);
+      mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
+        incomeMonth("2026-01", []),
+      );
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.netWorth.currentNetWorth).toBe(100.0001);
+      expect(result.netWorth.previousNetWorth).toBe(50);
+      expect(result.netWorth.netWorthChange).toBe(50);
+      expect(result.netWorth.netWorthChangePercent).toBe(100);
+    });
+
+    it("works a percent change out from the unrounded values", async () => {
+      // 0.00026 against 0.00014 read 0.0003 and 0.0001: 200% from the
+      // readings, 85.71% exactly.
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(incomeMonth("2026-01", [0.00026], [0.00026]))
+        .mockResolvedValueOnce(incomeMonth("2025-12", [0.00014], [0.00014]));
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.incomeExpenses.incomeChangePercent).toBe(85.71);
+      expect(result.incomeExpenses.expensesChangePercent).toBe(85.71);
+    });
+  });
+
   describe("getMonthlyComparison() - edge cases", () => {
     it("handles zero values without division errors", async () => {
-      mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({
-          data: [{ period: "2026-01", income: 0, expenses: 0, net: 0 }],
-          totals: { income: 0, expenses: 0, net: 0 },
-        })
-        .mockResolvedValueOnce({
-          data: [{ period: "2025-12", income: 0, expenses: 0, net: 0 }],
-          totals: { income: 0, expenses: 0, net: 0 },
-        });
-      mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
-        .mockResolvedValueOnce({
-          data: [],
-          totalSpending: 0,
-          knownSpending: 0,
-        });
-      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [{ period: "2026-01", income: 0, expenses: 0, net: 0 }],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        )
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [{ period: "2025-12", income: 0, expenses: 0, net: 0 }],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        );
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        )
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        );
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        withNetWorthAggregates([]),
+      );
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
@@ -589,23 +834,37 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("handles missing month data in income/expenses response", async () => {
-      mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({
-          data: [],
-          totals: { income: 0, expenses: 0, net: 0 },
-        })
-        .mockResolvedValueOnce({
-          data: [],
-          totals: { income: 0, expenses: 0, net: 0 },
-        });
-      mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
-        .mockResolvedValueOnce({
-          data: [],
-          totalSpending: 0,
-          knownSpending: 0,
-        });
-      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        )
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        );
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        )
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        );
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        withNetWorthAggregates([]),
+      );
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
@@ -615,23 +874,37 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("handles previous month correctly when current is January", async () => {
-      mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({
-          data: [],
-          totals: { income: 0, expenses: 0, net: 0 },
-        })
-        .mockResolvedValueOnce({
-          data: [],
-          totals: { income: 0, expenses: 0, net: 0 },
-        });
-      mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
-        .mockResolvedValueOnce({
-          data: [],
-          totalSpending: 0,
-          knownSpending: 0,
-        });
-      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        )
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        );
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        )
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        );
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        withNetWorthAggregates([]),
+      );
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
@@ -669,16 +942,22 @@ describe("MonthlyComparisonService", () => {
         }) as PortfolioPeriodResult;
 
       beforeEach(() => {
-        mockIncomeReports.getIncomeVsExpenses.mockResolvedValue({
-          data: [],
-          totals: { income: 0, expenses: 0, net: 0 },
-        });
-        mockSpendingReports.getSpendingByCategory.mockResolvedValue({
-          data: [],
-          totalSpending: 0,
-          knownSpending: 0,
-        });
-        mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+        mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
+          withIncomeAggregates({
+            data: [],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        );
+        mockSpendingReports.getSpendingByCategoryWithAggregates.mockResolvedValue(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        );
+        mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+          withNetWorthAggregates([]),
+        );
         mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
       });
 
@@ -883,23 +1162,37 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("percent change returns 100 when previous is 0 and current is non-zero", async () => {
-      mockIncomeReports.getIncomeVsExpenses
-        .mockResolvedValueOnce({
-          data: [{ period: "2026-01", income: 1000, expenses: 0, net: 1000 }],
-          totals: { income: 1000, expenses: 0, net: 1000 },
-        })
-        .mockResolvedValueOnce({
-          data: [{ period: "2025-12", income: 0, expenses: 0, net: 0 }],
-          totals: { income: 0, expenses: 0, net: 0 },
-        });
-      mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
-        .mockResolvedValueOnce({
-          data: [],
-          totalSpending: 0,
-          knownSpending: 0,
-        });
-      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [{ period: "2026-01", income: 1000, expenses: 0, net: 1000 }],
+            totals: { income: 1000, expenses: 0, net: 1000 },
+          }),
+        )
+        .mockResolvedValueOnce(
+          withIncomeAggregates({
+            data: [{ period: "2025-12", income: 0, expenses: 0, net: 0 }],
+            totals: { income: 0, expenses: 0, net: 0 },
+          }),
+        );
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        )
+        .mockResolvedValueOnce(
+          withSpendingAggregates({
+            data: [],
+            totalSpending: 0,
+            knownSpending: 0,
+          }),
+        );
+      mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
+        withNetWorthAggregates([]),
+      );
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");

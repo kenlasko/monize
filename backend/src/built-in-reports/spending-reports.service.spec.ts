@@ -1088,6 +1088,40 @@ describe("SpendingReportsService", () => {
       },
     );
 
+    it("hands each listed category on as an aggregate (issue #2407)", async () => {
+      scopedManager.query.mockResolvedValue([
+        eur({ category_id: "cat-child" }),
+        eur({ category_id: "cat-parent" }),
+        eur({ category_id: null, total: "-5" }),
+      ]);
+
+      const plain = await service.getSpendingByCategory(
+        mockUserId,
+        "2025-01-01",
+        "2026-12-31",
+        { rollupToParent: false },
+      );
+      const { response, categories } =
+        await service.getSpendingByCategoryWithAggregates(
+          mockUserId,
+          "2025-01-01",
+          "2026-12-31",
+          { rollupToParent: false },
+        );
+
+      // Keyed by the row's categoryId; a category that did not net to
+      // spending (the uncategorized refund) is neither a row nor a key.
+      expect(response).toEqual(plain);
+      expect([...categories.keys()].sort()).toEqual([
+        "cat-child",
+        "cat-parent",
+      ]);
+      expect(categories.get("cat-child")!.unroundedSubtotal).toBe(124.752474);
+      expect(categories.get("cat-child")!.knownSubtotal).toBe(
+        response.data.find((c) => c.categoryId === "cat-child")!.total,
+      );
+    });
+
     it("keeps a category that cost less than a ten-thousandth", async () => {
       // 100.00 EUR spent at 1.2000003 and refunded at 1.2 cost 0.00003 USD:
       // spending, though it reads 0.0000. Judged at four places it was not.
