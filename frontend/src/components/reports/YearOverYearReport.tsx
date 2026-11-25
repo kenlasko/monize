@@ -137,18 +137,18 @@ export function YearOverYearReport() {
 
   const chartData = useMemo(() => {
     return Array.from({ length: 12 }, (_, monthIndex) => {
-      const data: { name: string; monthIndex: number; [key: string]: number | string } = {
+      const data: { name: string; monthIndex: number; [key: string]: number | string | null } = {
         name: formatChartDate(new Date(2000, monthIndex, 1), 'MMM'),
         monthIndex,
       };
 
       yearData.forEach((yd) => {
+        // The server's figure as it arrives: the table and the CSV read it, so
+        // it is not rounded to whole units for the bars. A month the response
+        // does not carry is unknown, never a measured zero (spec rule 7): no
+        // bar, a marker in the table, an empty CSV cell.
         const monthData = yd.months.find((m) => m.month === monthIndex + 1);
-        if (monthData) {
-          data[`${yd.year}`] = Math.round(monthData[metric]);
-        } else {
-          data[`${yd.year}`] = 0;
-        }
+        data[`${yd.year}`] = monthData ? monthData[metric] : null;
       });
 
       return data;
@@ -260,11 +260,17 @@ export function YearOverYearReport() {
     });
   };
 
+  // A chart row's figure for one year, or `null` for a month it does not carry.
+  const monthCell = (row: (typeof chartData)[number], year: number): number | null => {
+    const value = row[`${year}`];
+    return typeof value === "number" ? value : null;
+  };
+
   const handleExportCsv = () => {
     const headers = [t('yearOverYear.colMonth'), ...years.map(String)];
     const rows = sortedTableData.map((row) => [
       row.name,
-      ...years.map((year) => Number(row[year]) || 0),
+      ...years.map((year) => monthCell(row, year)),
     ]);
     exportToCsv(`year-over-year-${metric}`, headers, rows);
   };
@@ -444,14 +450,14 @@ export function YearOverYearReport() {
                       {row.name}
                     </td>
                     {years.map((year) => {
-                      const value = Number(row[year]) || 0;
+                      const value = monthCell(row, year);
                       return (
                         <td
                           key={year}
                           className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100 cursor-pointer"
                           onClick={() => handleBarClick(year, row.monthIndex)}
                         >
-                          {formatCurrency(value)}
+                          {value === null ? tCommon("unknownAmount.marker") : formatCurrency(value)}
                         </td>
                       );
                     })}

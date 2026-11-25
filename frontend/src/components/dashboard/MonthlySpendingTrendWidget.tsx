@@ -70,8 +70,11 @@ export function MonthlySpendingTrendWidget({ isLoading }: MonthlySpendingTrendWi
       (response?.data ?? []).map((item: IncomeExpensePeriodItem) => ({
         name: item.period,
         fullName: formatChartDate(parseISO(item.periodStart), 'MMM yyyy'),
-        Expenses: Math.round(item.expenses),
-        Income: Math.round(item.income),
+        // The server's figures as they arrive: the tooltip prints them at the
+        // currency's places, so a whole-unit value would read "$1,235.00"
+        // for 1,234.56.
+        Expenses: item.expenses,
+        Income: item.income,
       })),
     [response, formatChartDate],
   );

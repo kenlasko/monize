@@ -220,7 +220,10 @@ export function PortfolioValueWidget({
               parsed,
               isDaily || boundary ? 'MMM d' : 'MMM yyyy',
             ),
-            value: row.value === null ? null : Math.round(row.value),
+            // The server's figure as it arrives: the tooltip prints it at the
+            // currency's places, so a whole-unit value would read
+            // "$1,235.00" for 1,234.56.
+            value: row.value,
           };
         }),
         openingSession,

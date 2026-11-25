@@ -64,7 +64,10 @@ export function AssetsVsLiabilities({ data, isLoading, error = false }: AssetsVs
 
   // Each side reads its own flag, falling back to the month's. A side that is a
   // subtotal says so in its name (text, not colour alone); net worth, which is
-  // partial when either side is, goes through `PartialTotal`.
+  // partial when either side is, goes through `PartialTotal`. Each slice is the
+  // server's figure as it arrives: rounded to whole units, a side under half a
+  // unit read 0 and lost its slice, and the shares were over rounded sides
+  // (docs/specs/report-rounding-and-aggregation.md rule 8).
   const chartData = useMemo<DonutCalloutSlice[]>(() => {
     if (!latest) return [];
     const partialName = (name: string, complete: boolean | undefined) =>
@@ -73,19 +76,20 @@ export function AssetsVsLiabilities({ data, isLoading, error = false }: AssetsVs
       {
         key: 'assets',
         name: partialName(t('assetsVsLiabilities.assets'), assetsFxComplete(latest)),
-        value: Math.round(latest.assets),
+        value: latest.assets,
         color: ASSET_COLOUR,
       },
       {
         key: 'liabilities',
         name: partialName(t('assetsVsLiabilities.liabilities'), liabilitiesFxComplete(latest)),
-        value: Math.round(latest.liabilities),
+        value: latest.liabilities,
         color: LIABILITY_COLOUR,
       },
     ].filter((d) => d.value > 0);
   }, [latest, t]);
 
-  const netWorth = latest ? Math.round(latest.netWorth) : 0;
+  // The month's own net worth, never the difference of the two slices.
+  const netWorth = latest ? latest.netWorth : 0;
   const netWorthTotal = partialTotalFor(
     netWorth,
     latest && netWorthIsPartial(latest) ? false : undefined,

@@ -82,6 +82,11 @@ vi.mock("@/components/ui/ChartViewToggle", () => ({
   ),
 }));
 
+const mockExportToCsv = vi.fn();
+vi.mock("@/lib/csv-export", () => ({
+  exportToCsv: (...args: any[]) => mockExportToCsv(...args),
+}));
+
 const mockExportToPdf = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/pdf-export", () => ({
   exportToPdf: (...args: any[]) => mockExportToPdf(...args),
@@ -344,12 +349,12 @@ describe("YearOverYearReport", () => {
     expect(screen.queryByText("Year-over-Year Change")).not.toBeInTheDocument();
   });
 
-  it("computes chart data with zero for missing months", async () => {
+  it("renders the chart when a year carries only some of its months", async () => {
     mockGetYearOverYear.mockResolvedValue({
       data: [
         {
           year: 2024,
-          // Only one month provided; others will default to 0
+          // Only one month provided; the others are unknown, not zero.
           months: [{ month: 6, expenses: 1500, income: 3000, savings: 1500 }],
           totals: { income: 36000, expenses: 18000, savings: 18000 },
         },
@@ -361,6 +366,43 @@ describe("YearOverYearReport", () => {
     });
     // Chart renders without error even though most months have no data
     expect(screen.getByTestId("bar-chart")).toBeInTheDocument();
+  });
+
+  describe("monthly cells from the server, and a missing month unknown (issue #2412)", () => {
+    // January's 10.60 rounded to a whole unit read 11; February is not in
+    // the response, which wrote it as 0.
+    const response = {
+      data: [
+        {
+          year: 2024,
+          months: [{ month: 1, expenses: 10.6, income: 20, savings: 9.4 }],
+          totals: { income: 20, expenses: 10.6, savings: 9.4, knownIncome: 20, knownExpenses: 10.6, knownSavings: 9.4 },
+        },
+      ],
+      currency: "USD",
+      missingCurrencies: [],
+      excludedCount: 0,
+    };
+
+    it("writes the server's monthly figure and leaves a missing month empty in the CSV", async () => {
+      mockGetYearOverYear.mockResolvedValue(response);
+      render(<YearOverYearReport />);
+      await waitFor(() => expect(screen.getByTestId("export-csv")).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId("export-csv")); });
+      const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+      expect(rows[0][1]).toBe(10.6);
+      expect(rows[1][1]).toBeNull();
+    });
+
+    it("marks a missing month in the table rather than printing 0", async () => {
+      mockGetYearOverYear.mockResolvedValue(response);
+      const { container } = render(<YearOverYearReport />);
+      await waitFor(() => expect(screen.getByTestId("toggle-table")).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId("toggle-table")); });
+      const rows = Array.from(container.querySelectorAll("tbody tr"));
+      expect(rows[0].querySelectorAll("td")[1].textContent).toBe("$11");
+      expect(rows[1].querySelectorAll("td")[1].textContent).toBe("\u2014");
+    });
   });
 
   it("renders year-over-year change with zero prevValue (avoids divide by zero)", async () => {
