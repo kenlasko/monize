@@ -43,7 +43,10 @@ describe("ReportsService", () => {
   let userPreferencesRepository: Record<string, jest.Mock>;
   let mockActionHistoryService: Record<string, jest.Mock>;
   let mockCurrencyService: jest.Mocked<
-    Pick<ReportCurrencyService, "getDefaultCurrency" | "buildConverter">
+    Pick<
+      ReportCurrencyService,
+      "getDefaultCurrency" | "buildConverter" | "getReportPlaces"
+    >
   >;
   /** `"FROM->TO"` -> a stored rate, observed on the first day the rows need. */
   let storedRates: Map<string, number>;
@@ -255,6 +258,11 @@ describe("ReportsService", () => {
         .fn()
         .mockImplementation((rows, currency) =>
           realCurrencyService.buildConverter(rows, currency),
+        ),
+      getReportPlaces: jest
+        .fn()
+        .mockImplementation((currency) =>
+          realCurrencyService.getReportPlaces(currency),
         ),
     };
 
@@ -2401,27 +2409,30 @@ describe("ReportsService", () => {
           ["one day", "2025-06-15"],
           ["two days", "2025-06-16"],
         ])(
-          "totals two 100.01 EUR receipts on %s as Income by Source does, 249.5049 USD",
+          "totals two 100.01 EUR receipts on %s as Income by Source does, 249.50 USD",
           async (_label, secondDate) => {
             // Each converts to 124.752474; rounded one by one they summed to
-            // 249.5050, where Income by Source converts their 200.02 sum.
+            // 249.5050, which showed as 249.51, where Income by Source
+            // converts their 200.02 sum, 249.504948.
             const result = await runIncome([
               receipt("tx-1", "2025-06-15"),
               receipt("tx-2", secondDate),
             ]);
 
             expect(result.data).toHaveLength(1);
-            expect(result.data[0].value).toBe(249.5049);
-            expect(result.summary.total).toBe(249.5049);
+            expect(result.data[0].value).toBe(249.5);
+            expect(result.summary.total).toBe(249.5);
           },
         );
       });
 
-      describe("rounded once, whatever the grouping (issue #2384)", () => {
+      describe("rounded once, whatever the grouping (issues #2384, #2410)", () => {
         // Two 100.01 EUR receipts at 1.2474 are 124.752474 USD each. A group
         // that read each cell at four places before adding it, or a headline
-        // that summed the rounded groups, totalled them 249.5050; their sum
-        // reads 249.5049.
+        // that summed the rounded groups, totalled them 249.5050, which showed
+        // as 249.51; their sum reads 249.50. Two 1.00 EUR receipts are 1.2474
+        // each, 1.25 alone: summing the groups' two-place readings would read
+        // 2.50 where their sum reads 2.49.
         const receipt = (id: string, overrides: Partial<Transaction> = {}) =>
           createMockTransaction({
             id,
@@ -2429,12 +2440,14 @@ describe("ReportsService", () => {
             currencyCode: "EUR",
             ...overrides,
           });
-        const twoReceipts = () => [
+        const twoReceipts = (amount = 100.01) => [
           receipt("tx-1", {
+            amount,
             transactionDate: "2025-06-15",
             tags: [{ id: "tag-1", name: "Work", color: null }],
           } as Partial<Transaction>),
           receipt("tx-2", {
+            amount,
             transactionDate: "2025-07-15",
             payeeId: "payee-2",
             payee: { id: "payee-2", name: "Employer" },
@@ -2476,12 +2489,14 @@ describe("ReportsService", () => {
           [GroupByType.TAG, 2],
           [GroupByType.NONE, 1],
         ])(
-          "totals two receipts from two payees in two months at 249.5049 grouped by %s",
+          "totals two receipts from two payees in two months once, grouped by %s",
           async (groupBy, rows) => {
             const result = await runIncome(groupBy, twoReceipts());
+            const small = await runIncome(groupBy, twoReceipts(1));
 
             expect(result.data).toHaveLength(rows);
-            expect(result.summary.total).toBe(249.5049);
+            expect(result.summary.total).toBe(249.5);
+            expect(small.summary.total).toBe(2.49);
           },
         );
 
@@ -2491,14 +2506,53 @@ describe("ReportsService", () => {
             twoReceipts(),
             MetricType.NONE,
           );
+          const small = await runIncome(
+            GroupByType.NONE,
+            twoReceipts(1),
+            MetricType.NONE,
+          );
 
           expect(result.data).toHaveLength(2);
-          expect(result.summary.total).toBe(249.5049);
+          expect(result.summary.total).toBe(249.5);
+          // Each row reads 1.25; the headline is their sum's single
+          // rounding, 2.49, not the 2.50 the rows add to (rule 4).
+          expect(small.data.map((d) => d.value)).toEqual([1.25, 1.25]);
+          expect(small.summary.total).toBe(2.49);
+        });
+
+        it("reads a 2.50498 figure as 2.50, in the headline and the transaction list (issue #2410)", async () => {
+          // 1.00 EUR at 2.50498 is 2.50498 USD. The list sent the value
+          // unrounded and the headline at 2.5050, which showed as 2.51.
+          storedRates.set("EUR->USD", 2.50498);
+          const one = [receipt("tx-1", { amount: 1 })];
+          const listed = await runIncome(
+            GroupByType.NONE,
+            one,
+            MetricType.NONE,
+          );
+          const grouped = await runIncome(GroupByType.CATEGORY, one);
+
+          expect(listed.data[0].value).toBe(2.5);
+          expect(listed.summary.total).toBe(2.5);
+          expect(grouped.data[0].value).toBe(2.5);
+          expect(grouped.summary.total).toBe(2.5);
+        });
+
+        it("reads whole yen for a JPY reader", async () => {
+          mockCurrencyService.getDefaultCurrency.mockResolvedValue("JPY");
+          storedRates.set("EUR->JPY", 162.3456);
+          const result = await runIncome(GroupByType.PAYEE, twoReceipts(1));
+
+          // 162.3456 each, 162 alone; 324.6912 together reads 325.
+          expect(result.currency).toBe("JPY");
+          expect(result.data.map((d) => d.value)).toEqual([162, 162]);
+          expect(result.summary.total).toBe(325);
         });
 
         it("averages before it rounds", async () => {
-          // 100.01 and 100.03 EUR are 249.529896 USD, a mean of 124.764948.
-          // Halving the four-place sum (249.5299) read 124.7650.
+          // 100.01 and 100.03 EUR are 249.529896 USD, a mean of 124.764948,
+          // which reads 124.76. Halving the two-place sum (249.53) would read
+          // 124.77; halving the four-place one (249.5299) read 124.7650.
           const result = await runIncome(
             GroupByType.CATEGORY,
             [
@@ -2511,9 +2565,9 @@ describe("ReportsService", () => {
             MetricType.AVERAGE,
           );
 
-          expect(result.data[0].value).toBe(124.7649);
-          expect(result.summary.total).toBe(124.7649);
-          expect(result.summary.average).toBe(124.7649);
+          expect(result.data[0].value).toBe(124.76);
+          expect(result.summary.total).toBe(124.76);
+          expect(result.summary.average).toBe(124.76);
         });
 
         it("shares the total out from unrounded values", async () => {
@@ -2532,10 +2586,10 @@ describe("ReportsService", () => {
           expect(result.data.map((d) => d.percentage)).toEqual([75, 25]);
         });
 
-        it("keeps a category whose income nets under a ten-thousandth", async () => {
+        it("keeps a category whose income nets under a cent", async () => {
           // -100.00 EUR at 1.2 and +100.00 EUR at 1.2000003 net 0.00003 USD:
-          // money in, though it reads 0.0000. Judged at four places it read
-          // as nothing and the category left the report.
+          // money in, though it reads 0.00. Judged on its reading it read as
+          // nothing and the category left the report.
           const rates: Record<string, number> = {
             "2025-06-05": 1.2,
             "2025-06-20": 1.2000003,
@@ -2639,7 +2693,7 @@ describe("ReportsService", () => {
                 ledger,
                 groupBy,
                 metric,
-                total: expected.knownSubtotal,
+                total: expected.knownSubtotalAt(2),
               });
             }
           }
@@ -4285,7 +4339,7 @@ describe("ReportsService", () => {
         expect(result.data[0].label).toBe("Transaction");
       });
 
-      it("rounds metric values to 4 decimal places (storage precision)", async () => {
+      it("rounds metric values once at the reporting currency's places", async () => {
         const transactions = [
           createMockTransaction({ id: "tx-1", amount: -33.33 }),
           createMockTransaction({ id: "tx-2", amount: -33.33 }),
@@ -4301,12 +4355,12 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        // Average of 33.33, 33.33, 33.34 = 33.3333...
-        // Rounded to 4 decimal places (storage precision); display layer trims to 2
+        // Average of 33.33, 33.33, 33.34 = 33.3333..., rounded once at USD's
+        // two places (issue #2410): the screen's rounding changes nothing.
         const value = result.data[0].value!;
-        expect(value).toBe(33.3333);
+        expect(value).toBe(33.33);
         const decimals = value.toString().split(".")[1] || "";
-        expect(decimals.length).toBeLessThanOrEqual(4);
+        expect(decimals.length).toBeLessThanOrEqual(2);
       });
 
       it("does not fetch categories or payees when groupBy is NONE", async () => {
@@ -4703,8 +4757,9 @@ describe("ReportsService", () => {
 
       it("sets the plan against the unrounded actual (issue #2384)", async () => {
         // 100.01 EUR at 1.2474 is 124.752474 USD; a third of a 100 budget is
-        // 33.3333...; the variance is 91.419141, which reads 91.4191. Taken
-        // from the actual's four-place reading it was 91.4192.
+        // 33.3333...; the variance is 91.419141, which reads 91.42, beside an
+        // actual of 124.75 and a plan of 33.33 (rule 4: a variance is rounded
+        // once, so it can sit a cent from actual less plan).
         mockCurrencyService.getDefaultCurrency.mockResolvedValue("USD");
         storedRates.set("EUR->USD", 1.2474);
         setupExecuteMocks(
@@ -4740,9 +4795,10 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data[0].actual).toBe(124.7525);
-        expect(result.data[0].value).toBe(91.4191);
-        expect(result.summary.total).toBe(91.4191);
+        expect(result.data[0].actual).toBe(124.75);
+        expect(result.data[0].budgeted).toBe(33.33);
+        expect(result.data[0].value).toBe(91.42);
+        expect(result.summary.total).toBe(91.42);
       });
 
       it("falls back to first budget when no active budget exists", async () => {
@@ -5410,9 +5466,9 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        // Value should be rounded to 4 decimal places (storage precision)
+        // The value is rounded once at USD's two places.
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].value).toBe(75.555);
+        expect(result.data[0].value).toBe(75.56);
       });
     });
 

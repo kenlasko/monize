@@ -46,7 +46,7 @@ import {
   ReportResult,
   ReportSummary,
 } from "./dto/execute-report.dto";
-import { roundMoney } from "../common/round.util";
+import { reportFigure, reportFigureOrNull } from "../common/report-figure";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   metricValue,
@@ -94,6 +94,12 @@ const REPORT_ROW_LIMIT = 50000;
  */
 interface RowConverter {
   readonly currency: string;
+  /**
+   * The places every money figure of the report leaves at, the reporting
+   * currency's own (`ReportCurrencyService.getReportPlaces`): each is rounded
+   * once there (docs/specs/report-rounding-and-aggregation.md section 6).
+   */
+  readonly places: number;
   readonly gaps: ConversionGaps;
   /**
    * `amount` of `row`, or of its `split` line when given, in the reporting
@@ -151,6 +157,7 @@ export class ReportsService {
     transactions: readonly Transaction[],
   ): Promise<RowConverter> {
     const currency = await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(currency);
     const atTransferAmounts = (
       amount: number,
       row: Transaction,
@@ -183,6 +190,7 @@ export class ReportsService {
     const gaps = new ConversionGaps();
     return {
       currency,
+      places,
       gaps,
       convert: (amount, row, split) => {
         // Zero converts to zero at any rate, so an empty row records no gap.
@@ -449,7 +457,7 @@ export class ReportsService {
     // Calculate summary
     const summary = this.calculateSummary(
       rows,
-      converter.gaps,
+      converter,
       report.config.metric,
       truncated,
     );
@@ -1105,7 +1113,8 @@ export class ReportsService {
             // so it can still be matched against a statement (issue #2342).
             const value = conv.convert(accountAmount, tx, split);
             result.push({
-              // The headline folds the unrounded conversion (rule 2).
+              // The headline folds the unrounded conversion (rule 2); the
+              // row shows it rounded once, at the currency's places.
               sum: sumOf(value),
               point: {
                 id: tx.id,
@@ -1115,7 +1124,7 @@ export class ReportsService {
                   transferLabel ||
                   tx.description ||
                   "Transaction",
-                value,
+                value: reportFigureOrNull(value, conv.places),
                 count: 1,
                 // Transaction-specific fields
                 date: tx.transactionDate,
@@ -1142,7 +1151,7 @@ export class ReportsService {
                 transferLabel ||
                 tx.description ||
                 "Transaction",
-              value,
+              value: reportFigureOrNull(value, conv.places),
               count: 1,
               // Transaction-specific fields
               date: tx.transactionDate,
@@ -1193,7 +1202,7 @@ export class ReportsService {
         point: {
           id: "total",
           label: "Total",
-          value: metricValue(bucket.agg, bucket.count, metric),
+          value: metricValue(bucket.agg, bucket.count, metric, conv.places),
           percentage: 100,
           count: bucket.count,
         },
@@ -1247,7 +1256,7 @@ export class ReportsService {
         point: {
           id: categoryId,
           label,
-          value: metricValue(data.agg, data.count, metric),
+          value: metricValue(data.agg, data.count, metric, conv.places),
           color: category?.color || undefined,
           percentage: shareOf(data.agg, whole),
           count: data.count,
@@ -1299,7 +1308,7 @@ export class ReportsService {
         point: {
           id: payeeId,
           label: payee?.name || payeeNames.get(payeeId) || "Unknown",
-          value: metricValue(data.agg, data.count, metric),
+          value: metricValue(data.agg, data.count, metric, conv.places),
           percentage: shareOf(data.agg, whole),
           count: data.count,
         },
@@ -1369,7 +1378,7 @@ export class ReportsService {
         point: {
           id: tagId,
           label: info?.tagName ?? "Untagged",
-          value: metricValue(data.agg, data.count, metric),
+          value: metricValue(data.agg, data.count, metric, conv.places),
           color: info?.color,
           percentage: shareOf(data.agg, whole),
           count: data.count,
@@ -1434,7 +1443,7 @@ export class ReportsService {
         point: {
           id: key,
           label: labels.get(key) ?? key,
-          value: metricValue(data.agg, data.count, metric),
+          value: metricValue(data.agg, data.count, metric, conv.places),
           count: data.count,
         },
         sum: data.agg,
@@ -1515,8 +1524,8 @@ export class ReportsService {
         return {
           point: {
             ...point,
-            value: variance.knownSubtotal,
-            budgeted: roundMoney(budgeted),
+            value: variance.knownSubtotalAt(conv.places),
+            budgeted: reportFigure(budgeted, conv.places),
             actual: point.value,
           },
           sum: variance,
@@ -1551,11 +1560,11 @@ export class ReportsService {
                   }
                 : category,
             ) as string,
-            value: sum.knownSubtotal,
+            value: sum.knownSubtotalAt(conv.places),
             color: category.color || undefined,
             percentage: 0,
             count: 0,
-            budgeted: roundMoney(budgeted),
+            budgeted: reportFigure(budgeted, conv.places),
             actual: 0,
           },
           sum,
@@ -1570,15 +1579,15 @@ export class ReportsService {
   /** The headline figures (`summarizeRows`), complete unless a row was left out. */
   private calculateSummary(
     rows: ReportRow[],
-    gaps: ConversionGaps,
+    conv: RowConverter,
     metric: MetricType,
     truncated: boolean,
   ): ReportSummary {
     // A listed row with no rate counts as listed but adds to no sum; its gap
     // is already in `gaps`, so the total is withheld.
     const complete =
-      !truncated && (this.keepsUnconverted(metric) || gaps.isComplete);
-    return summarizeRows(rows, metric, complete);
+      !truncated && (this.keepsUnconverted(metric) || conv.gaps.isComplete);
+    return summarizeRows(rows, metric, complete, conv.places);
   }
 
   private sortData(

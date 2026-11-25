@@ -1,4 +1,5 @@
 import { FxAggregate } from "../common/fx-aggregate";
+import { reportFigure } from "../common/report-figure";
 import { roundMoney } from "../common/round.util";
 import { MetricType } from "./entities/custom-report.entity";
 import type {
@@ -9,7 +10,8 @@ import type {
 /**
  * A custom report's row with the unrounded sum its money figure was read from.
  *
- * The figure on `point` is rounded once, for the row. Everything built from
+ * The figure on `point` is rounded once, for the row, at the reporting
+ * currency's places (section 6 of the same spec). Everything built from
  * the rows -- the headline, the average, a share, a budget variance -- folds
  * `sum`, never the rounded `point.value`: summing rounded group values made the
  * headline depend on the grouping, so two 100.01 EUR receipts at 1.2474 read
@@ -42,21 +44,25 @@ export function mergedSum(rows: readonly ReportRow[]): FxAggregate {
 }
 
 /**
- * A group's figure for `metric`, rounded once from its unrounded `sum`: a
- * mean divides first and rounds after, so it is not the mean of a rounded sum.
+ * A group's figure for `metric`, rounded once from its unrounded `sum` at
+ * `places`, the reporting currency's: a mean divides first and rounds after,
+ * so it is not the mean of a rounded sum.
  */
 export function metricValue(
   sum: FxAggregate,
   count: number,
   metric: MetricType,
+  places: number,
 ): number {
   switch (metric) {
     case MetricType.COUNT:
       return count;
     case MetricType.AVERAGE:
-      return count > 0 ? roundMoney(sum.unroundedSubtotal / count) : 0;
+      return count > 0
+        ? reportFigure(sum.unroundedSubtotal / count, places)
+        : 0;
     default:
-      return sum.knownSubtotal;
+      return sum.knownSubtotalAt(places);
   }
 }
 
@@ -78,12 +84,14 @@ export function shareOf(part: FxAggregate, whole: FxAggregate): number {
  * rate, but a truncated read counts only what it read. The average metric's
  * headline is the mean over every row (the groups' sums over their counts),
  * never the sum of the groups' means. Every money figure here is the single
- * rounding of the rows' folded sums.
+ * rounding of the rows' folded sums at `places`, the reporting currency's; the
+ * count metric's mean is a ratio of counts, not money, and keeps four places.
  */
 export function summarizeRows(
   rows: readonly ReportRow[],
   metric: MetricType,
   complete: boolean,
+  places: number,
 ): ReportSummary {
   const count = rows.reduce((acc, row) => acc + (row.point.count ?? 1), 0);
   let knownTotal: number;
@@ -93,8 +101,9 @@ export function summarizeRows(
     mean = count > 0 ? roundMoney(knownTotal / count) : 0;
   } else {
     const sum = mergedSum(rows);
-    mean = count > 0 ? roundMoney(sum.unroundedSubtotal / count) : 0;
-    knownTotal = metric === MetricType.AVERAGE ? mean : sum.knownSubtotal;
+    mean = count > 0 ? reportFigure(sum.unroundedSubtotal / count, places) : 0;
+    knownTotal =
+      metric === MetricType.AVERAGE ? mean : sum.knownSubtotalAt(places);
   }
   return {
     total: complete ? knownTotal : null,
