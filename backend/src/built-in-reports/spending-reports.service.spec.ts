@@ -8,6 +8,7 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { Currency } from "../currencies/entities/currency.entity";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -99,6 +100,15 @@ describe("SpendingReportsService", () => {
         [Category, categoriesRepository as never],
         [Payee, payeesRepository as never],
         [UserPreference, userPreferenceRepository as never],
+        // A coin's places come from its row, as the real service reads them.
+        [
+          Currency,
+          {
+            find: jest
+              .fn()
+              .mockResolvedValue([{ code: "BTC", decimalPlaces: 8 }]),
+          } as never,
+        ],
       ]));
 
     const module: TestingModule = await Test.createTestingModule({
@@ -1237,6 +1247,41 @@ describe("SpendingReportsService", () => {
 
       expect(result.data[0].total).toBe(2.5);
       expect(result.totalSpending).toBe(2.5);
+    });
+
+    it("reads a coin reader's figures at its row's eight places (issue #2410)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "BTC",
+      });
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "USD", toCurrency: "BTC", rate: 0.0000123457 },
+        ]),
+      );
+      const usd = (category_id: string) => ({
+        category_id,
+        currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
+        total: "1.0000",
+      });
+      scopedManager.query.mockResolvedValue([
+        usd("cat-child"),
+        usd("cat-parent"),
+      ]);
+
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        "2025-01-01",
+        "2026-12-31",
+        { rollupToParent: false },
+      );
+
+      // 0.0000123457 BTC each, 0.00001235 alone; 0.0000246914 together reads
+      // 0.00002469, where the two readings add to 0.0000247 and four places
+      // would read nothing at all.
+      expect(result.currency).toBe("BTC");
+      expect(result.data.map((d) => d.total)).toEqual([0.00001235, 0.00001235]);
+      expect(result.totalSpending).toBe(0.00002469);
     });
 
     it("reads whole yen for a JPY reader (issue #2410)", async () => {

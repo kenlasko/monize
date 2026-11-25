@@ -42,9 +42,12 @@ export function rateIndexOf(rates: readonly FixtureRate[]): RateIndex {
 /**
  * `ReportCurrencyService.getReportPlaces` for a spec that mocks the service:
  * an ISO code's minor unit, as the real service answers it without a read
- * (2 for USD, 0 for JPY), else 2.
+ * (2 for USD, 0 for JPY), and a coin's places from `coins`, as the real
+ * service reads them from its row (8 for BTC by default); else 2.
  */
-export const reportPlacesMock = (): jest.Mock =>
+export const reportPlacesMock = (
+  coins: Readonly<Record<string, number>> = { BTC: 8 },
+): jest.Mock =>
   jest.fn((currency: string) =>
-    Promise.resolve(reportPlacesFor(currency, new Map())),
+    Promise.resolve(reportPlacesFor(currency, new Map(Object.entries(coins)))),
   );

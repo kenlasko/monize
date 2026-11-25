@@ -20,7 +20,7 @@ import { moneyUnits } from "../common/round.util";
  *
  * What is asserted is computed from the LEDGER, not from the selected rows: the
  * closing identity in integer units of the reporting currency's minor unit
- * (cents for CAD, whole yen for JPY: issue #2410), and that a transfer contributes
+ * (cents for CAD, whole yen for JPY, satoshis for BTC: issue #2410), and that a transfer contributes
  * its amount once when exactly one side is in scope and nothing when both are,
  * whichever leg the selector happened to read. That the SQL selects as the
  * selector does is the integration suite's proof
@@ -36,6 +36,8 @@ interface Money {
 }
 const CAD: Money = { currency: "CAD", places: 2 };
 const JPY: Money = { currency: "JPY", places: 0 };
+/** A coin reader: its row's eight places, near the accumulator's twelve. */
+const BTC: Money = { currency: "BTC", places: 8 };
 const ACCOUNT_TYPES = [
   "CHEQUING",
   "SAVINGS",
@@ -265,7 +267,7 @@ function boundaryFlows(ledger: Ledger): { inflows: number; outflows: number } {
   return { inflows, outflows };
 }
 
-describe.each([CAD, JPY])(
+describe.each([CAD, JPY, BTC])(
   "Cash Flow Sankey over generated ledgers, in $currency",
   (money) => {
     const seeds = Array.from({ length: LEDGERS }, (_, i) => 1490 + i * 7919);
@@ -421,7 +423,7 @@ describe.each([CAD, JPY])(
  * side at the reporting currency's places (issue #2410), worked out here from
  * the rows rather than from the nodes.
  */
-describe.each([CAD, JPY])(
+describe.each([CAD, JPY, BTC])(
   "Cash Flow Sankey over generated ledgers in two currencies, reported in $currency (issues #2384, #2410)",
   (money) => {
     const seeds = Array.from({ length: LEDGERS }, (_, i) => 2384 + i * 7919);
