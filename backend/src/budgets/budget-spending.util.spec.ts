@@ -1,3 +1,4 @@
+import { FxAggregate } from "../common/fx-aggregate";
 import {
   budgetExcludedAccountIds,
   CategorySpending,
@@ -680,6 +681,7 @@ describe("resolveCategorySpentOrNull", () => {
       transferIncomeMap: new Map(),
       incompleteTransferIncomeAccountIds: new Set(),
       outsideTransferIncome: 0,
+      outsideTransferIncomeAggregate: new FxAggregate(),
       outsideTransferIncomeComplete: true,
       missingRatePairs: [],
       ...overrides,
