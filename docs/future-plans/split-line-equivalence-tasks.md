@@ -45,9 +45,10 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
   investment exclusion (`investmentExclusionSql`), so brokerage cash deposits
   count as income unless the account is excluded from the budget; a positive
   line in a budgeted expense category (a refund) lowers that category's
-  expenses and also counts as fallback income; the budget generator's history
-  queries (`budget-generator.service.ts`, the two `t.is_transfer = false`
-  reads) were not checked for the split-line defect.
+  expenses and also counts as fallback income, as a whole-row refund already
+  did. Checked and correct: the budget generator's history queries
+  (`budget-generator.service.ts`) read whole rows with a category and lines
+  with a category, so a transfer line, which has none, never enters them.
 
 ## T5 close
 

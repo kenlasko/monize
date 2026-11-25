@@ -29,6 +29,7 @@ import {
   budgetTransfersInAsIncome,
 } from "./budget-spending.util";
 import { FxAggregate } from "../common/fx-aggregate";
+import { investmentLinkedSplitExclusion } from "../common/investment-filter.util";
 import {
   joinSplitsForAnalytics,
   SPLIT_AMOUNT,
@@ -318,7 +319,9 @@ export class BudgetHealthReportsService {
               .andWhere("t.status != :void", { void: "VOID" }),
             excludedAccountIds,
           );
+          // An embedded investment line is the trade's cash side, not income.
           joinSplitsForAnalytics(qb)
+            .andWhere(investmentLinkedSplitExclusion("ts"))
             .groupBy(MONTH_SQL)
             .addGroupBy("t.currency_code");
           splitByRateBasis(qb, INCOME_RATE_BASIS, budget.currencyCode);

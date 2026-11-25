@@ -170,6 +170,22 @@ describe("budget health income fallback over splits (integration)", () => {
     expect(await income()).toBe(100);
   });
 
+  it("leaves an embedded investment line out of income", async () => {
+    // A SELL's cash side inside a chequing split is liquidated investment,
+    // not income; at line grain it would otherwise count in full.
+    const parent = await insertTransaction({ amount: 400, isSplit: true });
+    await insertCategoryLine(parent.id, groceriesId, -100);
+    await dataSource.manager.save(
+      dataSource.manager.create(TransactionSplit, {
+        transactionId: parent.id,
+        kind: SplitKind.INVESTMENT,
+        amount: 500,
+      } as Partial<TransactionSplit>),
+    );
+
+    expect(await income()).toBe(0);
+  });
+
   it("still counts a whole-row deposit", async () => {
     await insertTransaction({ amount: 250 });
 
