@@ -563,6 +563,7 @@
     "mnyJobNotFound": "Importtaak niet gevonden",
     "mnyFileTooLarge": "Dit Money-bestand is groter dan de importlimiet van {{ limit }} MB.",
     "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw.",
+    "noRateForTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: de andere rekening van de overboeking gebruikt een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw.",
     "duplicatesChanged": "De mogelijke duplicaten zijn gewijzigd sinds ze werden gecontroleerd. Er is niets geïmporteerd; controleer opnieuw.",
     "duplicateDecisionRepeated": "Een regel uit het bestand kan maar één beslissing over zijn mogelijke duplicaat hebben.",
     "duplicateActionNotAllowed": "Een afgestemde transactie kan niet worden samengevoegd of vervangen, en een overboeking of een gesplitste transactie kan niet worden vervangen. Er is niets geïmporteerd."

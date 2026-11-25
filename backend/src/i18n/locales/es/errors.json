@@ -563,6 +563,7 @@
     "mnyJobNotFound": "Tarea de importación no encontrada",
     "mnyFileTooLarge": "Ese archivo de Money supera el límite de importación de {{ limit }} MB.",
     "noRateForSplitTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: una línea dividida transfiere a una cuenta en otra moneda. Añade un tipo de cambio para ese par y esa fecha y vuelve a importar.",
+    "noRateForTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: la otra cuenta de la transferencia está en otra moneda. Añada un tipo de cambio para ese par y esa fecha y vuelva a importar.",
     "duplicatesChanged": "Los posibles duplicados cambiaron desde que se comprobaron. No se importó nada; vuelve a comprobarlos.",
     "duplicateDecisionRepeated": "Una fila del archivo solo puede tener una decisión sobre su posible duplicado.",
     "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada."

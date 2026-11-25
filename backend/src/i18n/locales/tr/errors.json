@@ -563,6 +563,7 @@
     "mnyJobNotFound": "İçe aktarma görevi bulunamadı",
     "mnyFileTooLarge": "Bu Money dosyası {{ limit }} MB içe aktarma sınırından büyük.",
     "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın.",
+    "noRateForTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: transferin diğer hesabı başka bir para biriminde. Bu çift ve tarih için bir döviz kuru ekleyin, sonra yeniden içe aktarın.",
     "duplicatesChanged": "Olası mükerrerler denetlendikten sonra değişti. Hiçbir şey içe aktarılmadı; yeniden denetleyin.",
     "duplicateDecisionRepeated": "Dosyanın bir satırı için olası mükerreriyle ilgili yalnızca bir karar verilebilir.",
     "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı."

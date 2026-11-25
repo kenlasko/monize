@@ -31,11 +31,16 @@ import {
   applyFxConversion,
   resolveFxRateOrNull,
 } from "../common/fx-entry.util";
-import { roundMoney } from "../common/round.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { tr } from "../i18n/translate";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
-import { PENDING_IMPORT_LIKE, PENDING_IMPORT_NOTE } from "./pending-import";
+import { PENDING_IMPORT_NOTE } from "./pending-import";
+
+/**
+ * The predicate every pending lookup matches a provisional leg with: the
+ * column, never the description (design P1).
+ */
+const PROVISIONAL_LEG_SQL = "t.amount_is_provisional = true";
 
 @Injectable()
 export class ImportRegularProcessorService {
@@ -287,9 +292,7 @@ export class ImportRegularProcessorService {
       })
       .andWhere("t.transaction_date = :date", { date: qifTx.date })
       .andWhere("t.is_transfer = true")
-      .andWhere("t.description LIKE :note", {
-        note: PENDING_IMPORT_LIKE,
-      })
+      .andWhere(PROVISIONAL_LEG_SQL)
       .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
       .andWhere("linked.account_id = :linkedAccountId", {
         linkedAccountId: mappedTransferAccountId,
@@ -302,8 +305,12 @@ export class ImportRegularProcessorService {
     const newAmount = qifTx.amount;
     const balanceDiff = newAmount - oldAmount;
 
+    // This account's own file states the amount, so the leg is confirmed:
+    // the estimate, its flag and its note go in one update, and the balance
+    // moves by the difference (design section 7, P6).
     await ctx.manager.update(Transaction, pendingTransfer.id, {
       amount: newAmount,
+      amountIsProvisional: false,
       description: qifTx.memo || null,
       payeeName: qifTx.payee || pendingTransfer.payeeName,
       referenceNumber: qifTx.number || pendingTransfer.referenceNumber,
@@ -536,11 +543,12 @@ export class ImportRegularProcessorService {
     baseTime: Date,
   ): Promise<void> {
     ctx.affectedAccountIds.add(splitTransferAccountId);
-    const leg = await this.splitTransferLeg(
+    const leg = await this.transferLeg(
       ctx,
       splitTransferAccountId,
       -split.amount,
       qifTx.date,
+      "split",
     );
     const linkedAmount = leg.amount;
 
@@ -582,22 +590,15 @@ export class ImportRegularProcessorService {
       return;
     }
 
-    // Check for pending cross-currency transfer
-    const expectedSign = linkedAmount >= 0 ? 1 : -1;
-    const pendingTransfer = await ctx.manager
-      .createQueryBuilder(Transaction, "t")
-      .where("t.user_id = :userId", { userId: ctx.userId })
-      .andWhere("t.account_id = :accountId", {
-        accountId: splitTransferAccountId,
-      })
-      .andWhere("t.transaction_date = :date", { date: qifTx.date })
-      .andWhere("t.is_transfer = true")
-      .andWhere("t.linked_transaction_id IS NULL")
-      .andWhere("t.description LIKE :note", {
-        note: PENDING_IMPORT_LIKE,
-      })
-      .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
-      .getOne();
+    // An orphaned provisional leg in the target account (its source gone) is
+    // re-linked and re-estimated; it stays provisional, since this file is
+    // the source's and still does not state the target's amount.
+    const pendingTransfer = await this.findOrphanedProvisionalLeg(
+      ctx,
+      splitTransferAccountId,
+      qifTx.date,
+      linkedAmount,
+    );
 
     if (pendingTransfer) {
       const oldAmount = Number(pendingTransfer.amount);
@@ -605,7 +606,8 @@ export class ImportRegularProcessorService {
 
       await ctx.manager.update(Transaction, pendingTransfer.id, {
         amount: linkedAmount,
-        description: split.memo || qifTx.memo || null,
+        exchangeRate: leg.exchangeRate,
+        description: this.provisionalLegDescription(split.memo || qifTx.memo),
         linkedTransactionId: savedTx.id,
       });
 
@@ -638,11 +640,12 @@ export class ImportRegularProcessorService {
         ? qifTx.payee || `Loan Payment from ${ctx.account.name}`
         : qifTx.payee || null,
       description: leg.crossCurrency
-        ? `${split.memo || qifTx.memo || ""} ${PENDING_IMPORT_NOTE}`.trim()
+        ? this.provisionalLegDescription(split.memo || qifTx.memo)
         : split.memo || qifTx.memo,
       status,
       currencyCode: leg.currencyCode,
       exchangeRate: leg.exchangeRate,
+      amountIsProvisional: leg.crossCurrency,
       isTransfer: true,
       createdAt: new Date(baseTime.getTime() + 0.1),
     });
@@ -666,21 +669,25 @@ export class ImportRegularProcessorService {
   }
 
   /**
-   * The split-transfer leg as the target account holds it (A26-M18,
-   * INV-CURRENCY-001): a row's currency is its account's, so a split line
-   * into an account in another currency is converted at the stored rate for
-   * the row's date and carries that rate. QIF carries no rate of its own, and
-   * the market rate is not the bank's, so the caller flags the row with the
-   * plain transfer path's `PENDING IMPORT` note. Without a rate the row is
-   * refused (its savepoint rolls back and the result names the pair): a
-   * balance moved by a number in the wrong currency is worse than a row the
-   * user can re-import once a rate exists.
+   * The other account's leg of a transfer as that account holds it (A26-M18,
+   * INV-CURRENCY-001): a row's currency is its account's, so a transfer into
+   * an account in another currency is converted at the stored rate for the
+   * row's date and carries that rate. The plain path and the split path share
+   * this one computation (design docs/future-plans/provisional-amounts.md,
+   * decision 2). The file carries no rate of its own and the market rate is
+   * not the bank's, so the caller writes the leg as provisional
+   * (`amountIsProvisional`), with the `PENDING IMPORT` note until task B4.
+   * Without a rate the row is refused (its savepoint rolls back and the
+   * result names the pair and the date, decision 3): a balance moved by a
+   * number in the wrong currency is worse than a row the user can re-import
+   * once a rate exists.
    */
-  private async splitTransferLeg(
+  private async transferLeg(
     ctx: ImportContext,
     targetAccountId: string,
     sourceAmount: number,
     date: string | Date,
+    line: "transfer" | "split",
   ): Promise<{
     amount: number;
     currencyCode: string;
@@ -717,11 +724,17 @@ export class ImportRegularProcessorService {
     if (rate === null) {
       const pair = `${sourceCurrency} -> ${targetCurrency}`;
       throw new BadRequestException(
-        tr(
-          "errors.import.noRateForSplitTransfer",
-          `No exchange rate for ${pair} on ${dateStr}: a split line transfers into an account in another currency. Add an exchange rate for that pair and date, then import again.`,
-          { pair, date: dateStr },
-        ),
+        line === "split"
+          ? tr(
+              "errors.import.noRateForSplitTransfer",
+              `No exchange rate for ${pair} on ${dateStr}: a split line transfers into an account in another currency. Add an exchange rate for that pair and date, then import again.`,
+              { pair, date: dateStr },
+            )
+          : tr(
+              "errors.import.noRateForTransfer",
+              `No exchange rate for ${pair} on ${dateStr}: the transfer's other account is in another currency. Add an exchange rate for that pair and date, then import again.`,
+              { pair, date: dateStr },
+            ),
       );
     }
     // The converted line is in the target account's currency, so it rounds at
@@ -736,6 +749,40 @@ export class ImportRegularProcessorService {
       crossCurrency: true,
       decimals,
     };
+  }
+
+  /**
+   * The description of a leg whose amount is provisional. The note is kept
+   * beside the column until task B4 retires it; nothing reads it here.
+   */
+  private provisionalLegDescription(memo: string | null | undefined): string {
+    return `${memo || ""} ${PENDING_IMPORT_NOTE}`.trim();
+  }
+
+  /**
+   * A provisional leg in the target account that lost its source (deleted;
+   * the link is ON DELETE SET NULL), of the row's date and sign, found by the
+   * column alone: a confirmed row whose description happens to say
+   * `PENDING IMPORT` is not one, and a provisional leg whose description was
+   * edited or cleared still is (design P1).
+   */
+  private async findOrphanedProvisionalLeg(
+    ctx: ImportContext,
+    targetAccountId: string,
+    date: string | Date,
+    legAmount: number,
+  ): Promise<Transaction | null> {
+    const expectedSign = legAmount >= 0 ? 1 : -1;
+    return ctx.manager
+      .createQueryBuilder(Transaction, "t")
+      .where("t.user_id = :userId", { userId: ctx.userId })
+      .andWhere("t.account_id = :accountId", { accountId: targetAccountId })
+      .andWhere("t.transaction_date = :date", { date })
+      .andWhere("t.is_transfer = true")
+      .andWhere("t.linked_transaction_id IS NULL")
+      .andWhere(PROVISIONAL_LEG_SQL)
+      .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
+      .getOne();
   }
 
   private async linkExistingSplitTransfer(
@@ -835,79 +882,77 @@ export class ImportRegularProcessorService {
   ): Promise<void> {
     ctx.affectedAccountIds.add(transferAccountId);
 
-    const targetAccount = await ctx.manager.findOne(Account, {
-      where: { id: transferAccountId },
-    });
+    // The leg as the target account holds it: the file's figure in the same
+    // currency, or the historical-rate estimate across currencies (refused
+    // without a rate, before anything is written for the other account).
+    const leg = await this.transferLeg(
+      ctx,
+      transferAccountId,
+      -qifTx.amount,
+      qifTx.date,
+      "transfer",
+    );
 
-    const isCrossCurrency =
-      targetAccount && targetAccount.currencyCode !== ctx.account.currencyCode;
+    // Same rule as the split path above: blank transfer payees stay blank
+    // (issue #1214); only the loan-payment stamp survives.
+    const linkedPayeeName = isLoanPaymentTx
+      ? qifTx.payee || `Loan Payment from ${ctx.account.name}`
+      : qifTx.payee || null;
 
-    // Check for existing pending transfer (cross-currency)
-    let existingPendingTransfer: Transaction | null = null;
-    if (isCrossCurrency) {
-      const expectedSign = qifTx.amount < 0 ? 1 : -1;
-      existingPendingTransfer = await ctx.manager
-        .createQueryBuilder(Transaction, "t")
-        .where("t.user_id = :userId", { userId: ctx.userId })
-        .andWhere("t.account_id = :accountId", {
-          accountId: transferAccountId,
-        })
-        .andWhere("t.transaction_date = :date", { date: qifTx.date })
-        .andWhere("t.is_transfer = true")
-        .andWhere("t.linked_transaction_id IS NULL")
-        .andWhere("t.description LIKE :note", {
-          note: PENDING_IMPORT_LIKE,
-        })
-        .andWhere(expectedSign > 0 ? "t.amount > 0" : "t.amount < 0")
-        .getOne();
-    }
+    // An orphaned provisional leg in the target account (its source gone) is
+    // re-linked and re-estimated at this row's rate; it stays provisional,
+    // since this file is the source's and still does not state the target's
+    // amount. Only a cross-currency leg is ever provisional.
+    const existingPendingTransfer = leg.crossCurrency
+      ? await this.findOrphanedProvisionalLeg(
+          ctx,
+          transferAccountId,
+          qifTx.date,
+          leg.amount,
+        )
+      : null;
 
     if (existingPendingTransfer) {
-      // Same rule as the split path above: blank transfer payees stay blank
-      // (issue #1214); only the loan-payment stamp survives.
-      const linkedPayeeName = isLoanPaymentTx
-        ? qifTx.payee || `Loan Payment from ${ctx.account.name}`
-        : qifTx.payee || null;
+      const balanceDiff = leg.amount - Number(existingPendingTransfer.amount);
       await ctx.manager.update(Transaction, existingPendingTransfer.id, {
+        amount: leg.amount,
+        exchangeRate: leg.exchangeRate,
         linkedTransactionId: savedTx.id,
         payeeName: linkedPayeeName,
-        description: qifTx.memo || null,
+        description: this.provisionalLegDescription(qifTx.memo),
       });
 
       await ctx.manager.update(Transaction, savedTx.id, {
         linkedTransactionId: existingPendingTransfer.id,
       });
+
+      if (balanceDiff !== 0) {
+        await updateAccountBalance(
+          ctx.manager,
+          transferAccountId,
+          balanceDiff,
+          leg.decimals,
+        );
+      }
       return;
     }
 
     // Create new linked transaction
     const linkedTime = new Date(baseTime.getTime() + 0.5);
-    const targetDecimals = await currencyMoneyDecimals(
-      ctx,
-      targetAccount?.currencyCode ?? ctx.account.currencyCode,
-    );
-    // A cross-currency leg carries the file's figure as a placeholder (flagged
-    // PENDING IMPORT), so it is held to the target currency's precision.
-    const linkedAmount = isCrossCurrency
-      ? roundMoney(-qifTx.amount, targetDecimals)
-      : -qifTx.amount;
-    const linkedDescription = isCrossCurrency
-      ? `${qifTx.memo || ""} ${PENDING_IMPORT_NOTE}`.trim()
-      : qifTx.memo;
-
-    const linkedPayeeName = isLoanPaymentTx
-      ? qifTx.payee || `Loan Payment from ${ctx.account.name}`
-      : qifTx.payee || null;
     const linkedTx = ctx.manager.create(Transaction, {
       userId: ctx.userId,
       accountId: transferAccountId,
       transactionDate: qifTx.date,
-      amount: linkedAmount,
+      amount: leg.amount,
       payeeName: linkedPayeeName,
-      description: linkedDescription,
+      description: leg.crossCurrency
+        ? this.provisionalLegDescription(qifTx.memo)
+        : qifTx.memo,
       referenceNumber: qifTx.number,
       status,
-      currencyCode: targetAccount?.currencyCode || ctx.account.currencyCode,
+      currencyCode: leg.currencyCode,
+      exchangeRate: leg.exchangeRate,
+      amountIsProvisional: leg.crossCurrency,
       isTransfer: true,
       linkedTransactionId: savedTx.id,
       createdAt: linkedTime,
@@ -922,8 +967,8 @@ export class ImportRegularProcessorService {
     await updateAccountBalance(
       ctx.manager,
       transferAccountId,
-      linkedAmount,
-      targetDecimals,
+      leg.amount,
+      leg.decimals,
     );
   }
 }

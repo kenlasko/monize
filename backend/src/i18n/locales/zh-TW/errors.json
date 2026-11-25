@@ -563,6 +563,7 @@
     "mnyJobNotFound": "找不到匯入工作",
     "mnyFileTooLarge": "這個 Money 檔案超過 {{ limit }} MB 的匯入上限。",
     "noRateForSplitTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：一筆分割行轉帳到另一種貨幣的帳戶。請為該貨幣對與日期新增匯率，然後重新匯入。",
+    "noRateForTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：轉帳的另一個帳戶使用另一種貨幣。請為該貨幣對和日期新增匯率，然後重新匯入。",
     "duplicatesChanged": "可能重複項目在檢查後已有變更。未匯入任何內容；請重新檢查。",
     "duplicateDecisionRepeated": "檔案中的一列對其可能重複項目只能有一個決定。",
     "duplicateActionNotAllowed": "已對帳的交易無法合併或取代，轉帳或分割交易無法取代。未匯入任何內容。"

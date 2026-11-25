@@ -563,6 +563,7 @@
     "mnyJobNotFound": "Attività di importazione non trovata",
     "mnyFileTooLarge": "Questo file Money supera il limite di importazione di {{ limit }} MB.",
     "noRateForSplitTransfer": "Nessun tasso di cambio per {{ pair }} il {{ date }}: una riga suddivisa trasferisce su un conto in un'altra valuta. Aggiungi un tasso di cambio per quella coppia e quella data, poi importa di nuovo.",
+    "noRateForTransfer": "Nessun tasso di cambio per {{ pair }} il {{ date }}: l'altro conto del trasferimento è in un'altra valuta. Aggiungi un tasso di cambio per quella coppia e quella data, poi importa di nuovo.",
     "duplicatesChanged": "I possibili duplicati sono cambiati da quando sono stati controllati. Non è stato importato nulla; controlla di nuovo.",
     "duplicateDecisionRepeated": "Una riga del file può avere una sola decisione sul suo possibile duplicato.",
     "duplicateActionNotAllowed": "Una transazione riconciliata non può essere unita o sostituita, e un trasferimento o una transazione suddivisa non può essere sostituito. Non è stato importato nulla."

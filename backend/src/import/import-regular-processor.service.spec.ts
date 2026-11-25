@@ -1694,6 +1694,7 @@ describe("ImportRegularProcessorService", () => {
         isTransfer: true,
         transferAccount: "USD Account",
       };
+      exchangeRateService.getRateForDate.mockResolvedValue(0.74);
 
       await service.processTransaction(ctx, qifTx);
 
@@ -1703,6 +1704,11 @@ describe("ImportRegularProcessorService", () => {
       );
       expect(linkedTxCreate).toBeDefined();
       expect(linkedTxCreate[1].description).toContain("PENDING IMPORT");
+      expect(linkedTxCreate[1]).toMatchObject({
+        amount: 370,
+        exchangeRate: 0.74,
+        amountIsProvisional: true,
+      });
     });
 
     it("should use loan payment payee name for loan transfers", async () => {
@@ -1834,6 +1840,7 @@ describe("ImportRegularProcessorService", () => {
           amount: 44.4,
           currencyCode: "USD",
           exchangeRate: 0.74,
+          amountIsProvisional: true,
         });
         expect(createdLeg(ctx).description).toContain("PENDING IMPORT");
       });
@@ -2013,6 +2020,7 @@ describe("ImportRegularProcessorService", () => {
         transferAccount: "EUR Account",
         memo: "FX transfer",
       };
+      exchangeRateService.getRateForDate.mockResolvedValue(0.68);
 
       await service.processTransaction(ctx, qifTx);
 
@@ -2057,6 +2065,7 @@ describe("ImportRegularProcessorService", () => {
         amount: -500,
         category: "Car Loan USD",
       };
+      exchangeRateService.getRateForDate.mockResolvedValue(0.74);
 
       await service.processTransaction(ctx, qifTx);
 
@@ -2732,6 +2741,339 @@ describe("ImportRegularProcessorService", () => {
       const saveCalls = managerOf(ctx).save.mock.calls;
       expect(saveCalls.length).toBeGreaterThanOrEqual(3); // transaction + 2 splits + linked tx
       expect(ctx.importResult.imported).toBe(1);
+    });
+  });
+
+  describe("provisional amounts (issue #2390, docs/future-plans/provisional-amounts.md)", () => {
+    /**
+     * Answers each lookup by the predicates it wrote on its query builder,
+     * so a case names the lookup it feeds instead of counting calls:
+     * `confirmable` is the leg in this account that the other account's row
+     * links to (`matchPendingTransfer`); `orphan` is an unlinked provisional
+     * leg in the target account (the plain and split paths' second lookup).
+     */
+    const routeLookups = (
+      ctx: ImportContext,
+      rows: { confirmable?: unknown; orphan?: unknown },
+    ) => {
+      managerOf(ctx).createQueryBuilder.mockImplementation(() => {
+        const qb = makeMockQueryBuilder(null);
+        qb.getOne.mockImplementation(() => {
+          const clauses = [
+            ...qb.where.mock.calls,
+            ...qb.andWhere.mock.calls,
+          ].map((call: unknown[]) => String(call[0]));
+          if (clauses.some((c) => c.includes("linked.account_id"))) {
+            return Promise.resolve(rows.confirmable ?? null);
+          }
+          if (
+            clauses.some((c) => c.includes("linked_transaction_id IS NULL")) &&
+            clauses.some((c) => c.includes("amount_is_provisional"))
+          ) {
+            return Promise.resolve(rows.orphan ?? null);
+          }
+          return Promise.resolve(null);
+        });
+        return qb;
+      });
+    };
+    /** Every predicate any lookup wrote during the row. */
+    const lookupClauses = (ctx: ImportContext): string[] =>
+      managerOf(ctx)
+        .createQueryBuilder.mock.results.map((r) => r.value)
+        .flatMap((qb) =>
+          [...qb.where.mock.calls, ...qb.andWhere.mock.calls].map(
+            (call: unknown[]) => String(call[0]),
+          ),
+        );
+    const balanceDeltas = (ctx: ImportContext) =>
+      (managerOf(ctx).query.mock.calls as unknown[][])
+        .filter(([sql]) => String(sql).includes("SET current_balance"))
+        .map(([, params]) => (params as unknown[])[0]);
+    const createdLeg = (ctx: ImportContext, account: string) =>
+      managerOf(ctx)
+        .create.mock.calls.map((call: any[]) => call[1])
+        .find((row: any) => row.accountId === account);
+    const updateOf = (ctx: ImportContext, id: string) =>
+      managerOf(ctx).update.mock.calls.find((call: any[]) => call[1] === id);
+
+    /** A CAD account whose file names a USD account; the USD side is `acc-usd`. */
+    const crossCurrency = () => {
+      const accountMap = new Map<string, string | null>();
+      accountMap.set("USD Account", "acc-usd");
+      const ctx = makeContext({ accountMap });
+      managerOf(ctx).findOne.mockImplementation((_entity: any, opts: any) =>
+        Promise.resolve(
+          opts?.where?.id === "acc-usd"
+            ? { id: "acc-usd", currencyCode: "USD" }
+            : null,
+        ),
+      );
+      routeLookups(ctx, {});
+      return ctx;
+    };
+
+    describe("the plain transfer path (design section 7, row 2)", () => {
+      it("estimates the other leg at the historical rate, stores the rate and writes it provisional", async () => {
+        const ctx = crossCurrency();
+        exchangeRateService.getRateForDate.mockResolvedValue(0.8);
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -100,
+          isTransfer: true,
+          transferAccount: "USD Account",
+          memo: "Savings",
+        });
+
+        expect(exchangeRateService.getRateForDate).toHaveBeenCalledWith(
+          "CAD",
+          "USD",
+          "2025-01-15",
+        );
+        expect(createdLeg(ctx, "acc-usd")).toMatchObject({
+          amount: 80,
+          currencyCode: "USD",
+          exchangeRate: 0.8,
+          amountIsProvisional: true,
+          isTransfer: true,
+        });
+        expect(createdLeg(ctx, "acc-usd").description).toContain(
+          "PENDING IMPORT",
+        );
+        // The USD balance moves by the estimate, not by the file's figure.
+        expect(balanceDeltas(ctx)).toEqual([-100, 80]);
+      });
+
+      it("writes a same-currency leg as the file's figure, confirmed, without asking for a rate", async () => {
+        const ctx = crossCurrency();
+        managerOf(ctx).findOne.mockImplementation((_entity: any, opts: any) =>
+          Promise.resolve(
+            opts?.where?.id === "acc-usd"
+              ? { id: "acc-usd", currencyCode: "CAD" }
+              : null,
+          ),
+        );
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -100,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        expect(exchangeRateService.getRateForDate).not.toHaveBeenCalled();
+        expect(createdLeg(ctx, "acc-usd")).toMatchObject({
+          amount: 100,
+          currencyCode: "CAD",
+          exchangeRate: 1,
+          amountIsProvisional: false,
+        });
+        expect(createdLeg(ctx, "acc-usd").description).toBeUndefined();
+      });
+
+      it("refuses the row, naming the pair and the date, when no rate covers it, and writes nothing for the other account (row 6)", async () => {
+        const ctx = crossCurrency();
+        exchangeRateService.getRateForDate.mockResolvedValue(null);
+
+        const run = service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -100,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        await expect(run).rejects.toThrow("CAD -> USD");
+        await expect(run).rejects.toThrow("2025-01-15");
+        await expect(run).rejects.toThrow("other account");
+        expect(createdLeg(ctx, "acc-usd")).toBeUndefined();
+        // Only this account's own row moved, and the caller's savepoint takes
+        // that back with the row.
+        expect(balanceDeltas(ctx)).toEqual([-100]);
+        expect(ctx.importResult.imported).toBe(0);
+      });
+
+      it("re-links and re-estimates an orphaned provisional leg in the target account, which stays provisional", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          orphan: {
+            id: "tx-orphan",
+            amount: 100,
+            amountIsProvisional: true,
+            payeeName: null,
+          },
+        });
+        exchangeRateService.getRateForDate.mockResolvedValue(0.8);
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -100,
+          isTransfer: true,
+          transferAccount: "USD Account",
+          memo: "Savings",
+        });
+
+        const update = updateOf(ctx, "tx-orphan");
+        expect(update[2]).toMatchObject({
+          amount: 80,
+          exchangeRate: 0.8,
+          linkedTransactionId: expect.any(String),
+        });
+        // This file is the source's; the USD amount is still an estimate.
+        expect(update[2].amountIsProvisional).toBeUndefined();
+        expect(update[2].description).toContain("PENDING IMPORT");
+        expect(createdLeg(ctx, "acc-usd")).toBeUndefined();
+        // The par placeholder of 100 becomes the estimate of 80.
+        expect(balanceDeltas(ctx)).toEqual([-100, -20]);
+      });
+    });
+
+    describe("confirmation by the other account's file (design section 7, row 3)", () => {
+      const confirmable = {
+        id: "tx-pending",
+        amount: 80,
+        amountIsProvisional: true,
+        payeeName: null,
+        referenceNumber: null,
+        externalId: null,
+        linkedTransaction: { accountId: "acc-usd" },
+      };
+
+      it("writes the file's amount and clears the flag in one update, moving the balance by the difference", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, { confirmable });
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 90,
+          isTransfer: true,
+          transferAccount: "USD Account",
+          memo: "Received",
+        });
+
+        expect(updateOf(ctx, "tx-pending")[2]).toMatchObject({
+          amount: 90,
+          amountIsProvisional: false,
+          description: "Received",
+        });
+        expect(balanceDeltas(ctx)).toEqual([10]);
+        expect(managerOf(ctx).create).not.toHaveBeenCalled();
+        expect(exchangeRateService.getRateForDate).not.toHaveBeenCalled();
+        expect(ctx.importResult.imported).toBe(1);
+      });
+
+      it("moves no balance when the file's amount is the estimate", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, { confirmable });
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 80,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        expect(updateOf(ctx, "tx-pending")[2]).toMatchObject({
+          amount: 80,
+          amountIsProvisional: false,
+        });
+        expect(balanceDeltas(ctx)).toEqual([]);
+      });
+    });
+
+    describe("the lookups read the column, never the description (design P1)", () => {
+      it("matches a leg to confirm by amount_is_provisional", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          confirmable: {
+            id: "tx-pending",
+            amount: 80,
+            linkedTransaction: { accountId: "acc-usd" },
+          },
+        });
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 90,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        const clauses = lookupClauses(ctx);
+        expect(clauses).toContain("t.amount_is_provisional = true");
+        expect(clauses.filter((c) => /description/i.test(c))).toEqual([]);
+      });
+
+      it("matches an orphaned leg by amount_is_provisional on the plain and the split path", async () => {
+        const plain = crossCurrency();
+        exchangeRateService.getRateForDate.mockResolvedValue(0.8);
+        await service.processTransaction(plain, {
+          date: "2025-01-15",
+          amount: -100,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        const split = crossCurrency();
+        await service.processTransaction(split, {
+          date: "2025-01-15",
+          amount: -100,
+          splits: [
+            { amount: -40, category: "Food" },
+            { amount: -60, isTransfer: true, transferAccount: "USD Account" },
+          ],
+        });
+
+        for (const ctx of [plain, split]) {
+          const clauses = lookupClauses(ctx);
+          expect(clauses).toContain("t.amount_is_provisional = true");
+          expect(clauses.filter((c) => /description/i.test(c))).toEqual([]);
+        }
+      });
+    });
+
+    describe("the split transfer path", () => {
+      const splitRow = {
+        date: "2025-01-15",
+        amount: -100,
+        memo: "Shop",
+        splits: [
+          { amount: -40, category: "Food" },
+          { amount: -60, isTransfer: true, transferAccount: "USD Account" },
+        ],
+      };
+
+      it("re-links and re-estimates an orphaned provisional leg, which stays provisional", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          orphan: { id: "tx-orphan", amount: 40, amountIsProvisional: true },
+        });
+        exchangeRateService.getRateForDate.mockResolvedValue(0.74);
+
+        await service.processTransaction(ctx, splitRow);
+
+        const update = updateOf(ctx, "tx-orphan");
+        expect(update[2]).toMatchObject({
+          amount: 44.4,
+          exchangeRate: 0.74,
+          linkedTransactionId: expect.any(String),
+        });
+        expect(update[2].amountIsProvisional).toBeUndefined();
+        expect(update[2].description).toContain("PENDING IMPORT");
+        expect(createdLeg(ctx, "acc-usd")).toBeUndefined();
+        expect(balanceDeltas(ctx)).toEqual([4.4, -100]);
+      });
+
+      it("refuses the row, naming the pair and the date, when no rate covers it", async () => {
+        const ctx = crossCurrency();
+        exchangeRateService.getRateForDate.mockResolvedValue(null);
+
+        const run = service.processTransaction(ctx, splitRow);
+
+        await expect(run).rejects.toThrow("CAD -> USD");
+        await expect(run).rejects.toThrow("split line");
+        expect(createdLeg(ctx, "acc-usd")).toBeUndefined();
+      });
     });
   });
 });

@@ -565,7 +565,8 @@
     "kmyExistingAccountCurrency": "The existing account \"{{ name }}\" uses {{ existing }}, but the KMyMoney file account uses {{ file }}. Rename one of them, then import again.",
     "mnyJobNotFound": "Import job not found",
     "mnyFileTooLarge": "That Money file is larger than the {{ limit }} MB import limit.",
-    "noRateForSplitTransfer": "No exchange rate for {{ pair }} on {{ date }}: a split line transfers into an account in another currency. Add an exchange rate for that pair and date, then import again."
+    "noRateForSplitTransfer": "No exchange rate for {{ pair }} on {{ date }}: a split line transfers into an account in another currency. Add an exchange rate for that pair and date, then import again.",
+    "noRateForTransfer": "No exchange rate for {{ pair }} on {{ date }}: the transfer's other account is in another currency. Add an exchange rate for that pair and date, then import again."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scenario {{ id }} not found",
