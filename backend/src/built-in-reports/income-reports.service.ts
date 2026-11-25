@@ -20,7 +20,7 @@ import {
   sumMoney,
   toMoneyNumber,
 } from "../common/round.util";
-import { FxAggregate } from "../common/fx-aggregate";
+import { FxAggregate, shareOf } from "../common/fx-aggregate";
 import {
   IncomeBySourceResponse,
   IncomeSourceItem,
@@ -248,10 +248,7 @@ export class IncomeReportsService {
         categoryName: category.name,
         color: category.color || null,
         total: agg.knownSubtotalAt(places),
-        percentage:
-          income.sign > 0
-            ? (agg.unroundedSubtotal / income.unroundedSubtotal) * 100
-            : 0,
+        percentage: shareOf(agg, income),
       }))
       .sort((a, b) => b.total - a.total);
 

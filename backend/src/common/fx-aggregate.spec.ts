@@ -1,4 +1,4 @@
-import { FxAggregate } from "./fx-aggregate";
+import { FxAggregate, shareOf } from "./fx-aggregate";
 import { moneyUnits, roundMoney } from "./round.util";
 
 /**
@@ -725,4 +725,21 @@ describe("FxAggregate", () => {
     a.merge(b);
     expect(a.total).toBe(3);
   });
+
+  describe("shareOf (issue #2414)", () => {
+    it("divides the unrounded aggregates, not their readings", () => {
+      // Two parts of 1.2474: each reads 1.25 over a whole that reads 2.49.
+      const part = new FxAggregate();
+      part.addConverted(1.2474);
+      const whole = FxAggregate.sum([part, part]);
+      expect(shareOf(part, whole)).toBe(50);
+    });
+
+    it("is 0 over a whole that is not positive", () => {
+      const part = new FxAggregate();
+      part.addConverted(1);
+      expect(shareOf(part, new FxAggregate())).toBe(0);
+    });
+  });
 });
+

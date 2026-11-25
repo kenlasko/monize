@@ -457,3 +457,18 @@ export class FxAggregate {
     return this.unknownComponents;
   }
 }
+
+/**
+ * `part`'s share of `whole` in percent, divided from the two unrounded
+ * aggregates before either is rounded; 0 unless the whole is positive. A share
+ * is not additive, so it is never a reading over a reading: two equal parts of
+ * 1.2474 read 1.25 each over 2.49, which is 50.2%, where each is half
+ * (`docs/specs/report-rounding-and-aggregation.md` rule 8). The one share every
+ * report divides: the custom report's rows, Income by Source's sources,
+ * Weekend vs Weekday's sides.
+ */
+export function shareOf(part: FxAggregate, whole: FxAggregate): number {
+  return whole.sign > 0
+    ? (part.unroundedSubtotal / whole.unroundedSubtotal) * 100
+    : 0;
+}

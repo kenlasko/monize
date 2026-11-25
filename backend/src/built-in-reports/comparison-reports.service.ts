@@ -10,7 +10,7 @@ import {
   wholeGroups,
   rateBasisColumnsSql,
 } from "./report-currency.service";
-import { FxAggregate } from "../common/fx-aggregate";
+import { FxAggregate, shareOf } from "../common/fx-aggregate";
 import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
 import { reportFigure } from "../common/report-figure";
 import {
@@ -396,12 +396,8 @@ export class ComparisonReportsService {
     // of the spending (docs/specs/report-rounding-and-aggregation.md rule 8).
     // Withheld with the totals while a row is left out; 0 over no spending.
     const whole = FxAggregate.sum([weekendSum, weekdaySum]);
-    const shareOf = (part: FxAggregate): number | null =>
-      !gaps.isComplete
-        ? null
-        : whole.sign > 0
-          ? (part.unroundedSubtotal / whole.unroundedSubtotal) * 100
-          : 0;
+    const sideShare = (part: FxAggregate): number | null =>
+      gaps.isComplete ? shareOf(part, whole) : null;
     const weekendCount = dayCounts[0] + dayCounts[6];
     const weekdayCount =
       dayCounts[1] + dayCounts[2] + dayCounts[3] + dayCounts[4] + dayCounts[5];
@@ -449,8 +445,8 @@ export class ComparisonReportsService {
         weekdayTotal: gaps.headline(knownWeekdayTotal),
         knownWeekendTotal,
         knownWeekdayTotal,
-        weekendShare: shareOf(weekendSum),
-        weekdayShare: shareOf(weekdaySum),
+        weekendShare: sideShare(weekendSum),
+        weekdayShare: sideShare(weekdaySum),
         weekendAverage: averageOf(weekendMean),
         weekdayAverage: averageOf(weekdayMean),
         averageDifference: averageOf(weekendMean - weekdayMean),
