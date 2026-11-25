@@ -51,6 +51,7 @@ Totals the client sums where the server has one, or has none to give:
 - [ ] `frontend/src/components/reports/PortfolioValueReport.tsx`: the tooltip total from bands; the CSV writes an unknown band as 0.
 - [ ] `frontend/src/components/reports/sankey-layout.ts`: merged links and the "Other" node are float sums (presentation only; INV-SANKEY-005 keeps them off the figures).
 - [ ] `frontend/src/components/reports/ForeignCurrencyFeesReport.tsx`: month and grand totals re-sum the rows' converted totals, which stay at four places until the server sends those totals.
+- [ ] `frontend/src/components/dashboard/dashboard-hero-figures.ts`: the month change reads the server's `netWorthChange`, but its percentage divides that by the previous month's reading rather than the unrounded two (rule 8).
 - [ ] `frontend/src/components/investments/GroupedHoldingsList.tsx`, `frontend/src/lib/portfolio-headline.ts`, `frontend/src/app/accounts/page.tsx`, the foreign-account view of `frontend/src/components/investments/PortfolioSummaryCard.tsx`: an account's market value or cost basis added to its cash balance, and accounts added together, on the client; the server's account totals stay at money precision until these read a server sum.
 - [ ] `frontend/src/components/reports/WeekendVsWeekdayReport.tsx`: the share denominator is a client sum of two server totals.
 - [x] `frontend/src/components/reports/UpcomingBillsReport.tsx`: totals through `sumEffectiveOccurrences` (fixed by the accumulator in stage 1).
