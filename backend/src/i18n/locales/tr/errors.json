@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "Desteklenmeyen eylem: {{ action }}",
     "unsupportedTableForReinsert": "Yeniden ekleme için desteklenmeyen tablo: {{ tableName }}",
     "undoConversion": "Bu değişiklik bir işlemi transfere veya transferden işleme dönüştürdü, bu nedenle otomatik olarak geri alınamaz. Bunun yerine geri dönüştürün.",
+    "undoConfirmedAmountChanged": "Bu tutar onaylandıktan sonra değiştirildi; artık bir tahmin değil ve onay geri alınamaz.",
     "customRecurrenceMissing": "Bu değişiklik geri alınamaz veya yinelenemez: planlanmış işlemin özel tekrar kuralı geçmişinde yok",
     "scheduledPostingRedo": "Kaydedilmiş zamanlanmış bir işlem yinelenemez. Bunun yerine Faturalar ve Mevduatlar sayfasından yeniden kaydedin",
     "scheduledPostingUndoLaterOccurrence": "Bu zamanlanmış işlemin daha sonraki bir tekrarı o zamandan beri kaydedildi, bu nedenle bu kayıt geri alınamaz. Önce sonrakini geri alın veya silin",

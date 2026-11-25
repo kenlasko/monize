@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "지원되지 않는 작업입니다: {{ action }}",
     "unsupportedTableForReinsert": "다시 삽입할 수 없는 테이블입니다: {{ tableName }}",
     "undoConversion": "이 변경은 거래를 이체로 또는 이체에서 거래로 변환했으므로 자동으로 실행 취소할 수 없습니다. 대신 다시 변환하세요.",
+    "undoConfirmedAmountChanged": "이 금액은 확인 후 변경되어 더 이상 추정치가 아니므로 확인을 실행 취소할 수 없습니다.",
     "customRecurrenceMissing": "이 변경은 실행 취소하거나 다시 실행할 수 없습니다. 예약 거래의 사용자 지정 반복 규칙이 기록에 없습니다",
     "scheduledPostingRedo": "게시된 예약 거래는 다시 실행할 수 없습니다. 대신 청구서 및 입금에서 다시 게시하세요",
     "scheduledPostingUndoLaterOccurrence": "이후 이 예약 거래의 나중 회차가 게시되었으므로 이 게시를 실행 취소할 수 없습니다. 먼저 나중 회차를 실행 취소하거나 삭제하세요",

@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "Tindakan tidak didukung: {{ action }}",
     "unsupportedTableForReinsert": "Tabel tidak didukung untuk penyisipan ulang: {{ tableName }}",
     "undoConversion": "Perubahan ini mengonversi transaksi ke atau dari transfer, sehingga tidak dapat dibatalkan secara otomatis. Konversikan kembali saja.",
+    "undoConfirmedAmountChanged": "Jumlah ini diubah setelah dikonfirmasi, jadi bukan lagi perkiraan dan konfirmasinya tidak dapat dibatalkan.",
     "customRecurrenceMissing": "Perubahan ini tidak dapat dibatalkan atau diulang: aturan pengulangan kustom transaksi terjadwal tidak ada dalam riwayatnya",
     "scheduledPostingRedo": "Transaksi terjadwal yang sudah diposting tidak dapat diulang. Posting lagi dari Tagihan & Setoran sebagai gantinya",
     "scheduledPostingUndoLaterOccurrence": "Kejadian berikutnya dari transaksi terjadwal ini telah diposting sejak itu, sehingga posting ini tidak dapat dibatalkan. Batalkan atau hapus yang berikutnya terlebih dahulu",

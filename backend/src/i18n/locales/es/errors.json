@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "Acción no admitida: {{ action }}",
     "unsupportedTableForReinsert": "Tabla no admitida para reinserción: {{ tableName }}",
     "undoConversion": "Este cambio convirtió una transacción en una transferencia o viceversa, por lo que no se puede deshacer automáticamente. Conviértala de nuevo en su lugar.",
+    "undoConfirmedAmountChanged": "Este importe se modificó después de confirmarlo, así que ya no es una estimación y la confirmación no se puede deshacer.",
     "customRecurrenceMissing": "Este cambio no se puede deshacer ni rehacer: falta en su historial la regla de repetición personalizada de la transacción programada",
     "scheduledPostingRedo": "Una transacción programada registrada no se puede rehacer. Vuelva a registrarla desde Facturas y depósitos",
     "scheduledPostingUndoLaterOccurrence": "Desde entonces se ha registrado una ocurrencia posterior de esta transacción programada, por lo que este registro no se puede deshacer. Deshaga o elimine primero la posterior",

@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "Hành động không được hỗ trợ: {{ action }}",
     "unsupportedTableForReinsert": "Bảng không được hỗ trợ để chèn lại: {{ tableName }}",
     "undoConversion": "Thay đổi này đã chuyển đổi một giao dịch thành chuyển khoản hoặc ngược lại, nên không thể hoàn tác tự động. Hãy chuyển đổi lại.",
+    "undoConfirmedAmountChanged": "Số tiền này đã được thay đổi sau khi xác nhận nên không còn là ước tính và không thể hoàn tác việc xác nhận.",
     "customRecurrenceMissing": "Không thể hoàn tác hoặc làm lại thay đổi này: lịch sử của giao dịch định kỳ không có quy tắc lặp lại tùy chỉnh",
     "scheduledPostingRedo": "Không thể làm lại giao dịch định kỳ đã đăng. Thay vào đó, hãy đăng lại từ Hóa đơn & Tiền gửi",
     "scheduledPostingUndoLaterOccurrence": "Một lần sau của giao dịch định kỳ này đã được đăng kể từ đó, vì vậy không thể hoàn tác lần đăng này. Hãy hoàn tác hoặc xóa lần sau trước",

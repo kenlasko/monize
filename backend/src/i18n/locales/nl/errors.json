@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "Niet-ondersteunde actie: {{ action }}",
     "unsupportedTableForReinsert": "Niet-ondersteunde tabel voor herplaatsing: {{ tableName }}",
     "undoConversion": "Deze wijziging heeft een transactie omgezet naar of van een overboeking en kan daarom niet automatisch ongedaan worden gemaakt. Zet hem in plaats daarvan terug.",
+    "undoConfirmedAmountChanged": "Dit bedrag is na de bevestiging gewijzigd, dus het is geen schatting meer en de bevestiging kan niet ongedaan worden gemaakt.",
     "customRecurrenceMissing": "Deze wijziging kan niet ongedaan worden gemaakt of opnieuw worden uitgevoerd: de aangepaste herhalingsregel van de geplande transactie ontbreekt in de geschiedenis",
     "scheduledPostingRedo": "Een geboekte geplande transactie kan niet opnieuw worden uitgevoerd. Boek deze in plaats daarvan opnieuw vanuit Facturen & stortingen",
     "scheduledPostingUndoLaterOccurrence": "Er is sindsdien een latere keer van deze geplande transactie geboekt, dus deze boeking kan niet ongedaan worden gemaakt. Maak eerst de latere ongedaan of verwijder die",

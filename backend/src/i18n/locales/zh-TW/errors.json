@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "不支援的操作：{{ action }}",
     "unsupportedTableForReinsert": "不支援重新插入的資料表：{{ tableName }}",
     "undoConversion": "此變更將交易轉換為轉帳或從轉帳轉換回交易，因此無法自動復原。請將其轉換回原狀。",
+    "undoConfirmedAmountChanged": "此金額在確認後已被變更，因此不再是估算值，無法復原確認。",
     "customRecurrenceMissing": "無法復原或重做此變更：排程交易的歷史記錄中缺少其自訂重複規則",
     "scheduledPostingRedo": "已過帳的排程交易無法重做。請改為在帳單與存款中重新過帳",
     "scheduledPostingUndoLaterOccurrence": "此排程交易的後續一期已在此後過帳，因此無法復原此次過帳。請先復原或刪除後續那一期",
