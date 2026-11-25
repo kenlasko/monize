@@ -985,8 +985,8 @@ export class NetWorthService {
   > {
     const months = await this.getMonthlyNetWorthWithAggregates(
       userId,
-      startDate,
-      endDate,
+      startDate || "1990-01-01",
+      endDate || new Date().toISOString().slice(0, 10),
       jointScope,
       options,
     );
@@ -1002,7 +1002,9 @@ export class NetWorthService {
    * the difference of the two aggregates is rounded once, where the
    * difference of the two readings can sit a unit off
    * (`docs/specs/report-rounding-and-aggregation.md` rule 4). An absent
-   * window is the whole history to today, as for `getMonthlyNetWorth`.
+   * end is today; an absent start is the reader's whole history, from the
+   * first month the snapshots hold, so the rows bound the window rather than
+   * a fixed epoch.
    */
   async getMonthlyNetWorthWithAggregates(
     userId: string,
@@ -1011,13 +1013,15 @@ export class NetWorthService {
     jointScope?: JointNetWorthScope,
     options?: SeriesFetchOptions,
   ): Promise<MonthlyNetWorthWithAggregate[]> {
-    const start = startDate || "1990-01-01";
-    const end = endDate || new Date().toISOString().slice(0, 10);
     await this.ensurePopulated(userId);
     const jointIds = jointScope?.accounts.map((a) => a.accountId) ?? [];
     if (jointScope && jointIds.length > 0) {
       await this.refreshStaleJointMonths(jointScope);
     }
+    const end = endDate || new Date().toISOString().slice(0, 10);
+    const start =
+      startDate ?? (await this.firstSnapshotMonth(userId, jointIds));
+    if (start === null) return [];
 
     const pref = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(UserPreference).findOne({ where: { userId } }),
@@ -1071,6 +1075,23 @@ export class NetWorthService {
         })),
       options,
     );
+  }
+
+  /**
+   * The first month `monthly_account_balances` holds for the reader, own or
+   * joint, or `null` with none: the start of a whole-history window.
+   */
+  private async firstSnapshotMonth(
+    userId: string,
+    jointIds: string[],
+  ): Promise<string | null> {
+    const rows: { month: string | Date | null }[] = await this.scopedQuery(
+      `SELECT MIN(month) AS month FROM monthly_account_balances
+        WHERE user_id = $1 OR account_id = ANY($2::UUID[])`,
+      [userId, jointIds],
+    );
+    const first = rows[0]?.month;
+    return first ? this.toDateString(first) : null;
   }
 
   /** The month-by-month fold of `getMonthlyNetWorth`, at one rate index. */

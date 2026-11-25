@@ -1953,6 +1953,33 @@ describe("NetWorthService", () => {
       expect(result.map((m) => m.netWorthChange)).toEqual([null, 0.01]);
     });
 
+    it("reads a whole-history aggregate series from the first stored month, not a fixed epoch (issue #2410)", async () => {
+      // The trivia asks for every month with its aggregate: the window opens
+      // at the first month the snapshots hold.
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery
+        .mockResolvedValueOnce([{ month: "2023-04-01" }])
+        .mockResolvedValueOnce([
+          {
+            month: "2023-04-01",
+            balance: "100",
+            market_value: null,
+            account_id: "chq",
+            account_type: AccountType.CHEQUING,
+            account_sub_type: null,
+            currency_code: "USD",
+          },
+        ]);
+
+      const result = await service.getMonthlyNetWorthWithAggregates("user-1");
+
+      expect(reportQuery.mock.calls[0][0]).toContain("MIN(month)");
+      expect(reportQuery.mock.calls[1][1][1]).toBe("2023-04-01");
+      expect(result.map((m) => m.netWorth)).toEqual([100]);
+      expect(result[0].netWorthAggregate.knownSubtotalAt(2)).toBe(100);
+    });
+
     it("counts a CRYPTO wallet as an asset, converted at the coin's rate, under its own type", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
