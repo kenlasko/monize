@@ -302,6 +302,28 @@ describe('SecurityPerformanceReport', () => {
     expect(card.textContent).toContain('$2.02');
   });
 
+  it('reads the total return as the exact difference of value and cost (issue #2414)', async () => {
+    // 1.0050 - 0.5000 is 0.5049999999999999 in doubles, which read $0.50; the
+    // exact 0.505 reads $0.51.
+    const [base] = mockHoldings;
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [{ ...base, marketValue: 1.005, costBasis: 0.5 }],
+    });
+    mockGetSecurityPrices.mockResolvedValue([]);
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+
+    render(<SecurityPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: SELECT_PLACEHOLDER })).toBeInTheDocument();
+    });
+    await selectSecurity('AAPL - Apple Inc.');
+
+    const card = (await screen.findByText('Total Return')).parentElement as HTMLElement;
+    expect(card.textContent).toContain('$0.51');
+    expect(card.textContent).not.toContain('$0.50');
+  });
+
   it('renders price chart with price data', async () => {
     mockGetSecurities.mockResolvedValue(mockSecurities);
     mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });

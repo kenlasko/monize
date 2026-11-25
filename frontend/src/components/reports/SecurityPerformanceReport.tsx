@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
-import { gainLossColor, sumMoney } from '@/lib/format';
+import { gainLossColor, moneyDecimalsForCurrency, sumMoney } from '@/lib/format';
 import {
   baseInvestmentAction,
   incomeBaseKind,
@@ -302,7 +302,17 @@ export function SecurityPerformanceReport() {
     const costBasis = selectedHolding.costBasis;
     // An unpriced holding has an unknown value, not a value of 0 and a -100% return.
     const currentValue = selectedHolding.marketValue ?? null;
-    const totalReturn = currentValue === null ? null : currentValue - costBasis;
+    // The single difference of the two figures the cards show, worked out
+    // exactly at the currency's money precision: 1.0050 less 0.5000 is
+    // 0.5049999999999999 in doubles, which reads $0.50, where it is 0.505 and
+    // reads $0.51 (issue #2414).
+    const totalReturn =
+      currentValue === null
+        ? null
+        : sumMoney(
+            [currentValue, -costBasis],
+            moneyDecimalsForCurrency(selectedHolding.currencyCode),
+          );
     const totalReturnPercent =
       totalReturn === null ? null : costBasis > 0 ? (totalReturn / costBasis) * 100 : 0;
 
