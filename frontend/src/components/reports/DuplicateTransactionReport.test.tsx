@@ -107,7 +107,11 @@ function group(overrides: Partial<DuplicateGroup> & { key: string; transactions:
   };
 }
 
-function response(groups: DuplicateGroup[], summary: Partial<DuplicateTransactionsResponse['summary']> = {}): DuplicateTransactionsResponse {
+function response(
+  groups: DuplicateGroup[],
+  summary: Partial<DuplicateTransactionsResponse['summary']> = {},
+  gaps: Partial<Pick<DuplicateTransactionsResponse, 'missingCurrencies' | 'excludedCount'>> = {},
+): DuplicateTransactionsResponse {
   const count = (level: DuplicateGroup['confidence']) => groups.filter((g) => g.confidence === level).length;
   return {
     groups,
@@ -118,8 +122,13 @@ function response(groups: DuplicateGroup[], summary: Partial<DuplicateTransactio
       mediumCount: count('medium'),
       lowCount: count('low'),
       potentialSavings: 0,
+      knownPotentialSavings: 0,
       ...summary,
     },
+    currency: 'USD',
+    missingCurrencies: [],
+    excludedCount: 0,
+    ...gaps,
   };
 }
 
@@ -178,6 +187,16 @@ describe('DuplicateTransactionReport', () => {
     expect(screen.getByText('High Confidence')).toBeInTheDocument();
     expect(screen.getByText('Medium Confidence')).toBeInTheDocument();
     expect(screen.getByText('Potential Impact')).toBeInTheDocument();
+  });
+
+  it('shows the potential impact in the reporting currency, marked as a subtotal while a rate is missing (issue #2410)', async () => {
+    mockGetDuplicateTransactions.mockResolvedValue(
+      response([veryHigh, high], { potentialSavings: null, knownPotentialSavings: 150.25 }, { missingCurrencies: ['JPY'], excludedCount: 1 }),
+    );
+    await renderReport();
+    const card = screen.getByText('Potential Impact').parentElement!;
+    expect(card).toHaveTextContent('$150.25');
+    expect(card).toHaveTextContent('*');
   });
 
   it('labels each group with its translated confidence and reason', async () => {

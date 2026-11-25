@@ -553,7 +553,68 @@ describe("DataQualityReportsService", () => {
         mediumCount: 0,
         lowCount: 0,
         potentialSavings: 0,
+        knownPotentialSavings: 0,
       });
+      expect(result.currency).toBe("USD");
+      expect(result.missingCurrencies).toEqual([]);
+    });
+
+    it("converts each group's extra copies into the reporting currency, at the currency's places (issue #2410)", async () => {
+      // 100 EUR twice (one extra copy) at 1.1 is 110 USD; 50.005 USD three
+      // times (two extra copies) is 100.01. Adding the rows' own amounts made
+      // 200.01 of no currency at all. A JPY pair with no rate is left out and
+      // named, so the total is withheld beside the part that converted.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "EUR" ? amount * 1.1 : from === "JPY" ? null : amount,
+      );
+      const row = (id: string, amount: string, currency: string) => ({
+        id,
+        transaction_date: "2025-06-15",
+        amount,
+        currency_code: currency,
+        payee_name: `Store ${currency}`,
+        description: null,
+        account_name: "Checking",
+        account_id: "acc-1",
+        category_id: null,
+        category_name: null,
+        is_split: false,
+        status: null,
+      });
+      scopedManager.query.mockResolvedValue([
+        row("e1", "-100.00", "EUR"),
+        row("e2", "-100.00", "EUR"),
+        row("u1", "-50.005", "USD"),
+        row("u2", "-50.005", "USD"),
+        row("u3", "-50.005", "USD"),
+      ]);
+
+      const result = await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.summary.potentialSavings).toBe(210.01);
+      expect(result.summary.knownPotentialSavings).toBe(210.01);
+      expect(result.currency).toBe("USD");
+
+      scopedManager.query.mockResolvedValue([
+        row("j1", "-1000", "JPY"),
+        row("j2", "-1000", "JPY"),
+        row("u1", "-50.005", "USD"),
+        row("u2", "-50.005", "USD"),
+      ]);
+      const partial = await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(partial.summary.potentialSavings).toBeNull();
+      expect(partial.summary.knownPotentialSavings).toBe(50.01);
+      expect(partial.missingCurrencies).toEqual(["JPY"]);
     });
 
     it("assigns high confidence when date, amount and payee match but the category differs", async () => {
@@ -1076,7 +1137,8 @@ describe("DataQualityReportsService", () => {
       );
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
+      // The reporting currency is bound for the rows' rate basis only.
+      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
     });
 
     it("uses default medium sensitivity", async () => {

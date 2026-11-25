@@ -10,12 +10,7 @@ import {
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
 import { reportFigure } from "../common/report-figure";
-import {
-  MONEY_SCALE,
-  roundMoney,
-  sumMoney,
-  toMoneyNumber,
-} from "../common/round.util";
+import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
 import {
   UncategorizedTransactionsResponse,
   UncategorizedTransactionItem,
@@ -288,6 +283,13 @@ export class DataQualityReportsService {
     const maxDaysDiff =
       sensitivity === "high" ? 3 : sensitivity === "medium" ? 1 : 0;
     const checkPayee = sensitivity !== "low";
+    // The potential impact is a figure in the reporting currency, each group's
+    // amount converted at its own row's rate or the market rate on its date
+    // and rounded once at the currency's places, never the rows' own amounts
+    // in their own currencies added together.
+    const defaultCurrency =
+      await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     const params: string[] = [userId, endDate];
     const paramIndex = 3;
@@ -297,6 +299,8 @@ export class DataQualityReportsService {
       dateFilter = `AND t.transaction_date >= $${paramIndex} AND t.transaction_date <= $2`;
       params.push(startDate);
     }
+    params.push(defaultCurrency);
+    const currencyParam = `$${params.length}`;
 
     const query = `
       SELECT
@@ -314,7 +318,8 @@ export class DataQualityReportsService {
           ELSE c.name
         END as category_name,
         COALESCE(t.is_split, false) as is_split,
-        t.status
+        t.status,
+        ${rateBasisColumnsSql(currencyParam)}
       FROM transactions t
       LEFT JOIN payees p ON p.id = t.payee_id
       LEFT JOIN accounts a ON a.id = t.account_id
@@ -341,7 +346,7 @@ export class DataQualityReportsService {
       ORDER BY t.transaction_date ASC, t.amount ASC
     `;
 
-    interface RawTx {
+    interface RawTx extends RawRateBasis {
       id: string;
       transaction_date: string;
       amount: string;
@@ -541,12 +546,32 @@ export class DataQualityReportsService {
     const countOf = (level: DuplicateConfidence) =>
       groups.filter((g) => g.confidence === level).length;
 
-    const potentialSavings = sumMoney(
-      groups.map((group) => {
-        const duplicateCount = group.transactions.length - 1;
-        return Math.abs(group.transactions[0].amount) * duplicateCount;
-      }),
+    // Each group's extra copies, converted from the group's first row at its
+    // own rate basis and folded exactly; a group with no rate is left out of
+    // the figure and named, so the total is withheld, not smaller.
+    const basisById = new Map(rows.map((row) => [row.id, row]));
+    const firstRows = groups.map((group) =>
+      basisById.get(group.transactions[0].id),
     );
+    const convert = await this.currencyService.buildConverter(
+      firstRows.filter((row): row is RawTx => row !== undefined),
+      defaultCurrency,
+    );
+    const savings = new FxAggregate();
+    const gaps = new ConversionGaps();
+    groups.forEach((group, i) => {
+      const row = firstRows[i];
+      if (!row) return;
+      const converted = convert(Math.abs(group.transactions[0].amount), row);
+      if (converted === null) {
+        gaps.record(row.currency_code);
+        return;
+      }
+      for (let k = 1; k < group.transactions.length; k++) {
+        savings.addConverted(converted);
+      }
+    });
+    const knownPotentialSavings = savings.knownSubtotalAt(places);
 
     return {
       groups,
@@ -556,8 +581,12 @@ export class DataQualityReportsService {
         highCount: countOf("high"),
         mediumCount: countOf("medium"),
         lowCount: countOf("low"),
-        potentialSavings: roundMoney(potentialSavings),
+        potentialSavings: gaps.headline(knownPotentialSavings),
+        knownPotentialSavings,
       },
+      currency: defaultCurrency,
+      missingCurrencies: gaps.missingCurrencies,
+      excludedCount: gaps.excludedCount,
     };
   }
 }
