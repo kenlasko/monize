@@ -42,7 +42,7 @@ before they were added:
 | Precision | Applies to | Rule |
 | --- | --- | --- |
 | Posted | a stored amount: a transaction's `amount`, a balance, a trade's `total_amount`, a transfer's two amounts, a row's own rate | `moneyDecimalsFor(currency.decimalPlaces)`, rounded by the write (`applyFxConversion`). Authoritative: a report never replaces it by an amount recomputed from a rate (INV-FX-002, INV-TRADE-001). |
-| Calculation | a reporting-only conversion, and every sum, difference and negation of them | `FxAggregate`: each component on its decimal digits at twelve places (`toScaledUnits`), summed in a `BigInt`. Nothing is rounded to money precision inside a calculation. |
+| Calculation | a reporting-only conversion, and every sum, difference and negation of them | `FxAggregate`: each component on its decimal digits (`toScaledUnits`), held at its fifteen significant digits and never at fewer than twelve places, summed in a `BigInt` that counts to 10^-20. A component whose exact value has at most fifteen significant digits is held exactly; the client's `sumConverted` holds its components the same way. Nothing is rounded to money precision inside a calculation. |
 | Output | a figure handed to a reader or a consumer | Rounded once, from its calculation-precision value, at the precision it is presented at, half away from zero for both signs (`roundMoney`). On the wire that is the reporting currency's own places (section 6): `FxAggregate.knownSubtotalAt(places)` / `totalAt(places)` for an aggregate, `reportFigure(value, places)` for anything else (`backend/src/common/report-figure.ts`). |
 
 ## 3. Rules
@@ -218,9 +218,12 @@ the wire; stage 2 removes the one-cent double rounding.
   `report-rounding.guard.spec.ts` fails a `knownSubtotal` read in the report
   engines (`backend/src/built-in-reports`, `backend/src/reports`) outside a sort
   comparator.
-  The accumulator stays at twelve places, so a reading at a coin's eight keeps
-  four guard digits: sixteen kept the float noise of `amount * rate` and moved
-  a custom report's share to 25.000000000000007.
+  The accumulator kept twelve places then, so a reading at a coin's eight
+  keeps four guard digits: sixteen fixed places kept the float noise of
+  `amount * rate` and moved a custom report's share to 25.000000000000007.
+  Issue #2414 found twelve fixed places too coarse for a small component
+  (section 7): each is now held at its fifteen significant digits, past which
+  a double's noise sits, and never at fewer than twelve places.
 - **Every report figure reads there.** The built-in reports (Spending by
   Category and by Payee, the Monthly Spending Trend, Income by Source, Income
   vs Expenses with its tag buckets, Year over Year, Weekend vs Weekday, the Tax
@@ -348,6 +351,48 @@ a subtotal (rule 7): its column's `total`, the grand `total` and the
 converted, and the chart marks the cards and the column partial. The fee
 summary's own converted rows then read at the currency's places.
 
+Issue #2414 (the investment reports). Their totals group rows the server
+sends one by one (a sale, a dividend, a holding) by a key only the page
+chooses (a security, a month, a security type, a currency, an exchange), so
+no response carries them: each is a page total. A page total is the exact
+sum of its rows' figures, accumulated as `sumConverted` does and read once at
+the display currency's places (`pageSum` in `frontend/src/lib/page-total.ts`);
+a total over groups folds the groups' exact sums (`foldPageSums`), and a
+share, a yield or a growth rate divides the exact sums (`pageRatio`, rule 8).
+Two rows of 1.0007 and 1.0143 add to 2.0149999999999997 in doubles, which
+read $2.01, where their sum, 2.015, reads $2.02. Realized Gains, Dividend
+Income, Dividend Yield Growth, Security Type Allocation, Currency Exposure and
+the geographic allocation build their totals this way; a security held in
+several accounts rolls up at money precision (`aggregateHoldingsBySecurity`,
+which Security Performance reads); Realized Gains marks a total partial when
+it leaves a sale out (rule 7). The rows themselves are what the server sends,
+at four places for a sale's figures and a holding's value (section 6's
+residuals), so a page total is the single rounding of those rows' exact sum.
+Portfolio Value's by-security tooltip prints the point's own `total` rather
+than adding its bands, and a band absent from a point the server could not
+finish is unknown: the table marks it, the CSV writes `N/A`, and the point's
+total is withheld with it.
+
+Two cases raised on the same issue. Income by Source divided a source's
+reading by the income's: two receipts of 1.00 EUR at 1.2474 in two categories
+read 1.25 each over 2.49 and showed 50.2% each. Each source now carries
+`percentage`, divided on the server from the unrounded aggregates, so each
+reads 50% (rule 8). And the accumulator held each converted component at
+twelve places, which rounded a small component's own digits away: 7.681 EUR
+at 1.2475589116 is exactly 9.5824999999996 USD, which twelve places read as
+9.5825, so two receipts on two dates (or in any report that converts row by
+row) summed to 19.165 and read 19.17, while one date's 15.362 EUR read 19.16
+(rule 4 broken by the grouping). Each component is now held at its fifteen
+significant digits, the most a double holds a decimal at (`DBL_DIG`), and
+never at fewer than twelve places: one whose exact value has at most fifteen
+significant digits is held exactly, the noise past them still drops, and a
+component of 100 or more is held as before. What it cannot reach: a
+component whose exact value needs more digits (a large amount at a rate of
+ten places), or one divided by a row's own rate, is held at the double's
+fifteen, so a sum within that of a midpoint can still read a unit off; only
+an exact product of the decimal amount and rate would close the first, and
+no decimal holds the second.
+
 ## 8. Test matrix
 
 | Rule | Test |
@@ -358,6 +403,7 @@ summary's own converted rows then read at the currency's places.
 | 7 | `mergeNegated` carries missing pairs and the unknown count |
 | client | `sumConverted` agrees with `FxAggregate` over the same converted components |
 | 6, stage 2 | `knownSubtotalAt`, `totalAt` and `apportionUnits` at 0, 2, 4 and 8 places; a 2.50498 figure reads 2.50 in Spending by Category, Income by Source, the custom report's headline and transaction list, the Sankey and `generate_report` over the real Spending by Category (`reports.tool.rounding.spec.ts`); a JPY report in whole yen and a JPY Sankey that closes; the Sankey property specs over CAD and JPY ledgers; the custom report's generated ledgers against one `FxAggregate` read at two places; the section 4 rows at two places |
+| 2, 4, 8, stage 3 | the investment reports' page totals over rows whose float sum drifts below a half-cent (1.0007 and 1.0143 read 2.02), folded groups of 0.005, shares of two equal 1.2474 parts at 50%; Portfolio Value's unknown band and tooltip total; Income by Source's two equal sources at 50%; two 7.681 EUR receipts at 1.2475589116 read 19.16 on one date and on two in `FxAggregate`, Income by Source, the custom report and `sumConverted`; the custom report's generated ledgers against an exact decimal reference (each amount times its rate in integers) under every grouping, and each category's share against its exact ratio |
 
 Each test is seen failing on the code before its stage
 (`docs/financial-calculation-contract.md` section 8.2).

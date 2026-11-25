@@ -3390,9 +3390,10 @@ Statement           A reporting-only money figure is rounded once, from the
                     up apportions them from the parent's single rounding. A
                     posted amount is the fact and is not re-derived.
 Source of truth     The converted components, accumulated in FxAggregate
-                    (backend/src/common/fx-aggregate.ts) at twelve places; the
-                    places a figure is read at, reportPlacesFor
-                    (backend/src/common/report-figure.ts).
+                    (backend/src/common/fx-aggregate.ts), each held at its
+                    fifteen significant digits and never at fewer than twelve
+                    places (issue #2414); the places a figure is read at,
+                    reportPlacesFor (backend/src/common/report-figure.ts).
 Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     FxAggregate.sign reads a direction; apportionUnits splits a
                     parent between its parts; knownSubtotalAt(places) /
@@ -3432,6 +3433,19 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     period's Balance and the Foreign Currency Fees totals
                     (fx-fee-totals.ts, GET /transactions/fx-fee-totals) are
                     the server's, each folded from aggregates and read once.
+                    Income by Source sends each source's percentage, divided
+                    from the unrounded aggregates. A total only an
+                    investment report's page can build (Realized Gains,
+                    Dividend Income, Dividend Yield Growth, the allocation
+                    reports and the geographic allocation) is the exact sum
+                    of its rows' figures through pageSum / foldPageSums, each
+                    share and yield through pageRatio
+                    (frontend/src/lib/page-total.ts); a security held in
+                    several accounts rolls up at money precision
+                    (aggregateHoldingsBySecurity); Portfolio Value's
+                    by-security tooltip reads the point's own total, and an
+                    unknown band is unknown in its table and CSV (issue
+                    #2414).
                     backend/src/common/report-rounding.guard.spec.ts fails an
                     addConverted, add, sumMoney, +=, -=, + or - over an
                     aggregate's knownSubtotal / unroundedSubtotal /
@@ -3480,7 +3494,16 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     getFxFeeTotals over three 2.50496 fees;
                     monthly-category-breakdown-totals.spec.ts and the
                     breakdown service's year fold; the tag bucket's period
-                    Balance in income-reports.service.spec.ts).
+                    Balance in income-reports.service.spec.ts); the "issue
+                    #2414" cases (two 7.681 EUR receipts at 1.2475589116 read
+                    19.16 on one date and on two in fx-aggregate.spec.ts,
+                    Income by Source, the custom report and
+                    currency-total.test.ts; Income by Source's two equal
+                    sources at 50%; the custom report's generated ledgers
+                    against an exact decimal reference and each category's
+                    share against its exact ratio; page-total.test.ts; each
+                    investment report's total of rows whose float sum drifts
+                    below a half-cent, and Portfolio Value's unknown band).
 Known gap           A holding's own value, cost and gain in the portfolio
                     summary and the Portfolio Value report's intraday (1D)
                     bars leave at four places, and so do an account's totals
@@ -3488,10 +3511,19 @@ Known gap           A holding's own value, cost and gain in the portfolio
                     precision); the Monthly Comparison's
                     investment figures come from PortfolioPeriodResultService
                     at four places and are read at two. The investment reports'
-                    client totals are still built from client-converted rows
+                    page totals are exact sums of rows the server sends at
+                    four places (a sale's figures, a holding's value) or the
+                    page converts, so each is the single rounding of those
+                    rows' exact sum rather than of the server's unrounded
+                    figures. The dashboard's month-change percentage divides
+                    by a reading, and the Investments and Accounts pages add
+                    an account's totals to its cash on the client
                     (docs/future-plans/report-rounding-and-aggregation-tasks.md,
-                    stage 3, issue #2414); the cash and spending reports' read
-                    the server's (issue #2413). Budget Health's income-line and expense sides,
+                    stage 3). A converted component whose exact value needs
+                    more than fifteen significant digits, or that divides by
+                    a row's own rate, is held at the double's fifteen, so a
+                    sum within that of a midpoint can still read a unit off.
+                    Budget Health's income-line and expense sides,
                     the other budget reports, and the budget summary's, period
                     close's and alerts' income, add each line's own four-place
                     actual (CategorySpending keeps a line's reading, not its
