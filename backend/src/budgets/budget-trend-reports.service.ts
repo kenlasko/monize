@@ -11,7 +11,8 @@ import {
   BudgetTrendPoint,
   CategoryTrendSeries,
 } from "./budget-reports.service";
-import { roundMoney, roundToDecimals, sumMoney } from "../common/round.util";
+import { roundToDecimals, sumMoney } from "../common/round.util";
+import { reportFigure, reportPlacesOf } from "../common/report-figure";
 import {
   CategorySpending,
   queryCategorySpending,
@@ -82,11 +83,19 @@ export class BudgetTrendReportsService {
     months: number,
   ): Promise<BudgetTrendPoint[]> {
     const budget = await this.budgetsService.findOne(userId, budgetId);
+    // Each figure leaves rounded once at the budget currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await reportPlacesOf(this.dataSource, budget.currencyCode);
 
     const periods = await this.getClosedPeriods(budget.id, months);
 
     if (periods.length === 0) {
-      return this.computeLiveTrendFromTransactions(userId, budget, months);
+      return this.computeLiveTrendFromTransactions(
+        userId,
+        budget,
+        months,
+        places,
+      );
     }
 
     const result: BudgetTrendPoint[] = periods.map((period) => {
@@ -98,9 +107,9 @@ export class BudgetTrendReportsService {
 
       return {
         monthKey: this.formatPeriodMonthKey(period.periodStart),
-        budgeted: roundMoney(budgeted),
-        actual: roundMoney(actual),
-        variance: roundMoney(variance),
+        budgeted: reportFigure(budgeted, places),
+        actual: reportFigure(actual, places),
+        variance: reportFigure(variance, places),
         percentUsed,
       };
     });
@@ -126,9 +135,9 @@ export class BudgetTrendReportsService {
 
       result.push({
         monthKey: this.formatPeriodMonthKey(currentPeriod.periodStart),
-        budgeted: roundMoney(budgeted),
-        actual: roundMoney(current.actual),
-        variance: roundMoney(variance),
+        budgeted: reportFigure(budgeted, places),
+        actual: reportFigure(current.actual, places),
+        variance: reportFigure(variance, places),
         percentUsed,
         valuationComplete: current.complete,
         missingRatePairs: current.complete
@@ -147,6 +156,7 @@ export class BudgetTrendReportsService {
     categoryIds?: string[],
   ): Promise<CategoryTrendSeries[]> {
     const budget = await this.budgetsService.findOne(userId, budgetId);
+    const places = await reportPlacesOf(this.dataSource, budget.currencyCode);
 
     // The newest `months` periods, read newest first so `take` keeps the
     // latest rather than the earliest, then put back in calendar order.
@@ -166,7 +176,13 @@ export class BudgetTrendReportsService {
     const periods = [...newestFirst].reverse();
 
     if (periods.length === 0) {
-      return this.computeLiveCategoryTrend(userId, budget, months, categoryIds);
+      return this.computeLiveCategoryTrend(
+        userId,
+        budget,
+        months,
+        places,
+        categoryIds,
+      );
     }
 
     // Build a map of category series
@@ -233,9 +249,9 @@ export class BudgetTrendReportsService {
 
         seriesMap.get(catId)!.data.push({
           monthKey: periodMonthKey,
-          budgeted: roundMoney(budgeted),
-          actual: roundMoney(actual),
-          variance: roundMoney(variance),
+          budgeted: reportFigure(budgeted, places),
+          actual: reportFigure(actual, places),
+          variance: reportFigure(variance, places),
           percentUsed,
           ...(completeness ?? {}),
         });
@@ -321,6 +337,7 @@ export class BudgetTrendReportsService {
     userId: string,
     budget: Budget,
     months: number,
+    places: number,
     categoryIds?: string[],
   ): Promise<CategoryTrendSeries[]> {
     const expenseCategories = (budget.categories || []).filter(
@@ -391,9 +408,9 @@ export class BudgetTrendReportsService {
 
         data.push({
           monthKey,
-          budgeted: roundMoney(budgeted),
-          actual: roundMoney(actual),
-          variance: roundMoney(variance),
+          budgeted: reportFigure(budgeted, places),
+          actual: reportFigure(actual, places),
+          variance: reportFigure(variance, places),
           percentUsed,
           ...(spending
             ? lineCompleteness(spending, catId)
@@ -411,6 +428,7 @@ export class BudgetTrendReportsService {
     userId: string,
     budget: Budget,
     months: number,
+    places: number,
   ): Promise<BudgetTrendPoint[]> {
     // When no closed periods exist, compute trend from transaction data
     const categories = (budget.categories || []).filter((bc) => !bc.isIncome);
@@ -465,9 +483,9 @@ export class BudgetTrendReportsService {
 
       result.push({
         monthKey,
-        budgeted: roundMoney(totalBudgeted),
-        actual: roundMoney(actual),
-        variance: roundMoney(variance),
+        budgeted: reportFigure(totalBudgeted, places),
+        actual: reportFigure(actual, places),
+        variance: reportFigure(variance, places),
         percentUsed,
         valuationComplete: complete,
         missingRatePairs:

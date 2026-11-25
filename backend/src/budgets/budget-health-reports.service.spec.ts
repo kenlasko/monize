@@ -729,8 +729,8 @@ describe("BudgetHealthReportsService", () => {
     /**
      * Savings is income less expenses worked out before either is rounded,
      * and the rate is the ratio of the unrounded figures (rules 2 and 8):
-     * 0.6250625 + 0.6250625 - 0.0001 = 1.250025 reads 1.2500, where the old
-     * 1.2502 - 0.0001 read 1.2501.
+     * 0.63125 + 0.63125 - 0.006 = 1.2565 reads 1.26 at USD's two places
+     * (issue #2410), where the two readings, 1.26 - 0.01, read 1.25.
      */
     it("works savings out as one difference of the unrounded income and expenses", async () => {
       const thisMonth = new Date();
@@ -741,7 +741,7 @@ describe("BudgetHealthReportsService", () => {
             {
               month,
               currencyCode: "EUR",
-              total: "1.0001",
+              total: "1.01",
               fx_day: `${month}-05`,
               fx_original_currency: "USD",
               fx_exchange_rate: "1.60000000",
@@ -750,17 +750,17 @@ describe("BudgetHealthReportsService", () => {
         }),
       );
       mockSpending({
-        ...spending({ "cat-essential": -0.0001 }),
-        ...outsideIncome(1.0001 / 1.6),
+        ...spending({ "cat-essential": -0.006 }),
+        ...outsideIncome(1.01 / 1.6),
       });
 
       const result = await service.getSavingsRate("user-1", "budget-1", 1);
 
       expect(result[0]).toMatchObject({
-        income: 1.2501,
-        expenses: 0.0001,
-        savings: 1.25,
-        savingsRate: roundTo2((1.250025 / 1.250125) * 100),
+        income: 1.26,
+        expenses: 0.01,
+        savings: 1.26,
+        savingsRate: roundTo2((1.2565 / 1.2625) * 100),
         valuationComplete: true,
       });
     });
@@ -785,7 +785,8 @@ describe("BudgetHealthReportsService", () => {
 
       const result = await service.getSavingsRate("user-1", "budget-1", 1);
 
-      expect(result[0].income).toBe(3000.6251);
+      // 3000 + 0.6250625, at USD's two places.
+      expect(result[0].income).toBe(3000.63);
       expect(result[0].valuationComplete).toBe(false);
     });
 

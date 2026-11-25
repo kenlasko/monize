@@ -14,7 +14,8 @@ import { formatDateYMD } from "../common/date-utils";
 import { queryCategorySpendingBuckets } from "./budget-spending.util";
 import { queryMonthlyCategorySpent } from "./budget-monthly-spending.util";
 import { enumerateDaysYMD } from "../net-worth/series-dates.util";
-import { roundMoney, roundToDecimals, sumMoney } from "../common/round.util";
+import { roundToDecimals, sumMoney } from "../common/round.util";
+import { reportFigure, reportPlacesOf } from "../common/report-figure";
 
 const MONTH_NAMES = [
   "January",
@@ -45,6 +46,9 @@ export class BudgetActivityReportsService {
     budgetId: string,
   ): Promise<SeasonalPattern[]> {
     const budget = await this.budgetsService.findOne(userId, budgetId);
+    // Each figure leaves rounded once at the budget currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await reportPlacesOf(this.dataSource, budget.currencyCode);
 
     const categories = (budget.categories || []).filter((bc) => !bc.isIncome);
     const categoryIds = categories
@@ -91,7 +95,7 @@ export class BudgetActivityReportsService {
         monthlyAverages.push({
           month: m,
           monthName: MONTH_NAMES[m - 1],
-          average: roundMoney(avg),
+          average: reportFigure(avg, places),
         });
       }
 
@@ -110,7 +114,7 @@ export class BudgetActivityReportsService {
         categoryName: categoryNameMap.get(catId) || "Unknown",
         monthlyAverages,
         highMonths,
-        typicalMonthlySpend: roundMoney(mean),
+        typicalMonthlySpend: reportFigure(mean, places),
         valuationComplete: !incompleteCategoryIds.has(catId),
       });
     }
@@ -125,6 +129,7 @@ export class BudgetActivityReportsService {
     Array<{ date: string; amount: number; valuationComplete: boolean }>
   > {
     const budget = await this.budgetsService.findOne(userId, budgetId);
+    const places = await reportPlacesOf(this.dataSource, budget.currencyCode);
 
     // Determine period range
     const currentPeriod = await this.getCurrentOpenPeriod(budget.id);
@@ -172,7 +177,7 @@ export class BudgetActivityReportsService {
           spending.incompleteTransferAccountIds.size === 0;
         out.push({
           date,
-          amount: roundMoney(
+          amount: reportFigure(
             sumMoney(
               categories.map((bc) =>
                 // Signed net, not the clamped `resolveCategorySpent`: a refund
@@ -185,6 +190,7 @@ export class BudgetActivityReportsService {
                       : 0),
               ),
             ),
+            places,
           ),
           complete,
         });
@@ -205,6 +211,7 @@ export class BudgetActivityReportsService {
   ): Promise<FlexGroupStatusResult[]> {
     const summary = await this.budgetsService.getSummary(userId, budgetId);
     const budget = summary.budget;
+    const places = await reportPlacesOf(this.dataSource, budget.currencyCode);
 
     // Build a map of budget categories by ID
     const bcMap = new Map<string, BudgetCategory>();
@@ -243,8 +250,8 @@ export class BudgetActivityReportsService {
       group.categories.push({
         categoryId: cat.categoryId || "",
         categoryName: cat.categoryName,
-        budgeted: cat.budgeted,
-        spent: cat.spent,
+        budgeted: reportFigure(cat.budgeted, places),
+        spent: reportFigure(cat.spent, places),
         percentUsed: cat.percentUsed,
       });
     }
@@ -260,9 +267,9 @@ export class BudgetActivityReportsService {
 
       results.push({
         groupName,
-        totalBudgeted: roundMoney(data.totalBudgeted),
-        totalSpent: roundMoney(data.totalSpent),
-        remaining: roundMoney(remaining),
+        totalBudgeted: reportFigure(data.totalBudgeted, places),
+        totalSpent: reportFigure(data.totalSpent, places),
+        remaining: reportFigure(remaining, places),
         percentUsed,
         categories: data.categories,
       });

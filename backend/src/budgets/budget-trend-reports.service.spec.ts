@@ -399,6 +399,32 @@ describe("BudgetTrendReportsService", () => {
       expect(result[1].variance).toBe(20);
     });
 
+    it("reads each figure once at the budget currency's places (issue #2410)", async () => {
+      // 50.005 spent against 100.0049 planned is -49.9999, which reads -50.00;
+      // the difference of the two readings, 50.01 - 100.00, would read -49.99.
+      periodsRepository.find.mockResolvedValueOnce([
+        {
+          id: "p-1",
+          budgetId: "budget-1",
+          periodStart: "2026-01-01",
+          periodEnd: "2026-01-31",
+          totalBudgeted: "100.0049",
+          actualExpenses: "50.005",
+          actualIncome: 0,
+          status: PeriodStatus.CLOSED,
+        },
+      ]);
+      periodsRepository.findOne.mockResolvedValueOnce(null);
+
+      const [point] = await service.getTrend("user-1", "budget-1", 6);
+
+      expect(point).toMatchObject({
+        budgeted: 100,
+        actual: 50.01,
+        variance: -50,
+      });
+    });
+
     it("should include current open period with computed actuals", async () => {
       const closedPeriods: Partial<BudgetPeriod>[] = [
         {

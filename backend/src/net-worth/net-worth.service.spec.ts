@@ -1955,16 +1955,17 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // 0.0125 BTC * 137250.1234567890 = 1715.6265 CAD (spec section 6), at
-      // money precision: the series is never rounded to whole units, which
-      // printed the dashboard's net worth without its cents. A coin that read
-      // as unconverted would be 0, and one read as a liability negative.
-      expect(result[0].assets).toBe(1715.6265);
+      // 0.0125 BTC * 137250.1234567890 = 1715.62654 CAD (spec section 6),
+      // at CAD's two places (issue #2410): the series is never rounded to
+      // whole units, which printed the dashboard's net worth without its
+      // cents. A coin that read as unconverted would be 0, and one read as a
+      // liability negative.
+      expect(result[0].assets).toBe(1715.63);
       expect(result[0].liabilities).toBe(0);
-      expect(result[0].netWorth).toBe(1715.6265);
+      expect(result[0].netWorth).toBe(1715.63);
       expect(result[0].fxComplete).toBe(true);
       expect(result[0].byAccountType).toEqual({
-        [AccountType.CRYPTO]: 1715.6265,
+        [AccountType.CRYPTO]: 1715.63,
       });
     });
 
@@ -1996,12 +1997,12 @@ describe("NetWorthService", () => {
       const result = await service.getMonthlyNetWorth("user-1");
 
       // 0.01249993 x 7,200,000 = 89,999.496 JPY, converted from the wallet's
-      // own eight places and summed at the reporting currency's four.
+      // own eight places and read in whole yen, JPY's places (issue #2410).
       // Rounding the wallet to four places first (0.0125 BTC) would report
       // 90,000.
-      expect(result[0].assets).toBe(89999.496);
+      expect(result[0].assets).toBe(89999);
       expect(result[0].byAccountType).toEqual({
-        [AccountType.CRYPTO]: 89999.496,
+        [AccountType.CRYPTO]: 89999,
       });
     });
 
@@ -2035,8 +2036,8 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // 1000 EUR / 0.92 = 1086.9565, at money precision rather than 1087.
-      expect(result[0].assets).toBe(1086.9565);
+      // 1000 EUR / 0.92 = 1086.9565..., at USD's places rather than 1087.
+      expect(result[0].assets).toBe(1086.96);
     });
 
     it("keeps the cents of every figure rather than rounding to whole units", async () => {
@@ -2239,7 +2240,7 @@ describe("NetWorthService", () => {
       expect(result[2].month).toBe("2024-03-01");
     });
 
-    it("rounds values to money precision, never to whole units", async () => {
+    it("rounds values once at the reporting currency's places, never to whole units", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
@@ -2259,16 +2260,16 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // Four places (FIAT_MONEY_DECIMALS) shed float noise; the cents stay.
-      expect(result[0].assets).toBe(1000.5679);
+      // USD's two places (issue #2410); the cents stay.
+      expect(result[0].assets).toBe(1000.57);
       expect(result[0].liabilities).toBe(0);
-      expect(result[0].netWorth).toBe(1000.5679);
+      expect(result[0].netWorth).toBe(1000.57);
     });
 
     it("nets assets and liabilities before either is rounded (issue #2384)", async () => {
-      // 1000.567849 of assets less 0.00005 owed is 1000.567799, which reads
-      // 1000.5678. The difference of the two readings, 1000.5678 - 0.0001,
-      // read 1000.5677.
+      // 1000.566 of assets less 0.004 owed is 1000.562, which reads 1000.56.
+      // The difference of the two readings, 1000.57 - 0.00, would read
+      // 1000.57.
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
@@ -2277,7 +2278,7 @@ describe("NetWorthService", () => {
       reportQuery.mockResolvedValueOnce([
         {
           month: "2024-01-01",
-          balance: 1000.567849,
+          balance: 1000.566,
           market_value: null,
           account_id: "a1",
           account_type: AccountType.CHEQUING,
@@ -2286,7 +2287,7 @@ describe("NetWorthService", () => {
         },
         {
           month: "2024-01-01",
-          balance: -0.00005,
+          balance: -0.004,
           market_value: null,
           account_id: "a2",
           account_type: AccountType.CREDIT_CARD,
@@ -2297,9 +2298,9 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      expect(result[0].assets).toBe(1000.5678);
-      expect(result[0].liabilities).toBe(0.0001);
-      expect(result[0].netWorth).toBe(1000.5678);
+      expect(result[0].assets).toBe(1000.57);
+      expect(result[0].liabilities).toBe(0);
+      expect(result[0].netWorth).toBe(1000.56);
       // The public series carries no aggregate.
       expect(result[0]).not.toHaveProperty("netWorthAggregate");
     });
@@ -2312,7 +2313,7 @@ describe("NetWorthService", () => {
       reportQuery.mockResolvedValueOnce([
         {
           month: "2024-01-01",
-          balance: 1000.567849,
+          balance: 1000.566,
           market_value: null,
           account_id: "a1",
           account_type: AccountType.CHEQUING,
@@ -2321,7 +2322,7 @@ describe("NetWorthService", () => {
         },
         {
           month: "2024-01-01",
-          balance: -0.00005,
+          balance: -0.004,
           market_value: null,
           account_id: "a2",
           account_type: AccountType.CREDIT_CARD,
@@ -2336,9 +2337,9 @@ describe("NetWorthService", () => {
         "2024-01-31",
       );
 
-      expect(result[0].netWorth).toBe(1000.5678);
-      expect(result[0].netWorthAggregate.unroundedSubtotal).toBe(1000.567799);
-      expect(result[0].netWorthAggregate.knownSubtotal).toBe(
+      expect(result[0].netWorth).toBe(1000.56);
+      expect(result[0].netWorthAggregate.unroundedSubtotal).toBe(1000.562);
+      expect(result[0].netWorthAggregate.knownSubtotalAt(2)).toBe(
         result[0].netWorth,
       );
     });

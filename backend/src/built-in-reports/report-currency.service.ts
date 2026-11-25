@@ -12,8 +12,7 @@ import {
 import { FxAggregate } from "../common/fx-aggregate";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { preferredCurrency } from "../common/default-currency.util";
-import { isIsoCurrencyCode } from "../common/format-currency.util";
-import { reportPlacesFor } from "../common/report-figure";
+import { reportPlacesOf } from "../common/report-figure";
 import { TransferLegs, transferRateSql } from "./transfer-rate-sql";
 
 export interface RawCategoryAggregate extends RawRateBasis {
@@ -230,13 +229,8 @@ export class ReportCurrencyService {
    * (`docs/specs/report-rounding-and-aggregation.md` section 6). An ISO code is
    * answered from its minor unit without a read.
    */
-  async getReportPlaces(currency: string): Promise<number> {
-    if (isIsoCurrencyCode(currency))
-      return reportPlacesFor(currency, new Map());
-    return reportPlacesFor(
-      currency,
-      await this.exchangeRateService.getCurrencyDecimalPlaces([currency]),
-    );
+  getReportPlaces(currency: string): Promise<number> {
+    return reportPlacesOf(this.dataSource, currency);
   }
 
   /**

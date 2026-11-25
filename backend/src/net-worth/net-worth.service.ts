@@ -62,6 +62,7 @@ import {
   dailyInvestmentsInFlight,
 } from "./daily-investments-in-flight";
 import { preferredCurrency } from "../common/default-currency.util";
+import { reportPlacesOf } from "../common/report-figure";
 import {
   DateColumn,
   DailyCashBalanceRow,
@@ -992,6 +993,9 @@ export class NetWorthService {
       m.getRepository(UserPreference).findOne({ where: { userId } }),
     );
     const defaultCurrency = preferredCurrency(pref);
+    // Each month's figures leave rounded once at the reporting currency's
+    // places (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
 
     // Own rows keep the owner-side exclude_from_net_worth predicate; joint
     // rows are governed solely by the pre-filtered scope (see
@@ -1025,6 +1029,7 @@ export class NetWorthService {
         this.foldMonthlyNetWorth(
           snapshots,
           defaultCurrency,
+          places,
           await this.buildRateIndex(currencies, defaultCurrency, start, end),
         ),
       // A monthly point's `month` is its month-first date, which is the month
@@ -1042,6 +1047,7 @@ export class NetWorthService {
   private foldMonthlyNetWorth(
     snapshots: MonthlySnapshotRow[],
     defaultCurrency: string,
+    places: number,
     rateIndex: RateIndex,
   ): MonthlyNetWorthWithAggregate[] {
     // Aggregate by month. Assets and liabilities each accumulate through an
@@ -1129,22 +1135,23 @@ export class NetWorthService {
             ...data.liabilities.missingPairs,
           ]),
         ].sort();
-        // Money precision, never whole units: the dashboard, the account
-        // summary and the assistant print these to the cent, and a chart that
-        // wants whole units rounds at its own surface (as the investment
-        // series below already do). Net worth is the difference of the two
-        // unrounded subtotals, rounded once (FxAggregate.difference): the
-        // difference of their four-place readings could sit a unit off
-        // (docs/specs/report-rounding-and-aggregation.md rule 2).
+        // The reporting currency's places, never whole units: the dashboard,
+        // the account summary and the assistant print these to the cent, and
+        // a chart that wants whole units rounds at its own surface (as the
+        // investment series below already do). Each figure is rounded once
+        // there (section 6 of docs/specs/report-rounding-and-aggregation.md).
+        // Net worth is the difference of the two unrounded subtotals, rounded
+        // once (FxAggregate.difference): the difference of their readings
+        // could sit a unit off (rule 2).
         const netWorthAggregate = FxAggregate.difference(
           data.assets,
           data.liabilities,
         );
         return {
           month,
-          assets: roundMoney(data.assets.knownSubtotal),
-          liabilities: roundMoney(data.liabilities.knownSubtotal),
-          netWorth: netWorthAggregate.knownSubtotal,
+          assets: data.assets.knownSubtotalAt(places),
+          liabilities: data.liabilities.knownSubtotalAt(places),
+          netWorth: netWorthAggregate.knownSubtotalAt(places),
           netWorthAggregate,
           // Stage 1 of docs/specs/fx-conversion-completeness.md: the three
           // figures above are the subtotal of what converted, and these two
@@ -1159,7 +1166,7 @@ export class NetWorthService {
           byAccountType: Object.fromEntries(
             [...data.byAccountType].map(([type, total]) => [
               type,
-              roundMoney(total.knownSubtotal),
+              total.knownSubtotalAt(places),
             ]),
           ),
         };

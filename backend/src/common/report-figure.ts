@@ -1,6 +1,7 @@
-import { EntityManager } from "typeorm";
+import { DataSource, EntityManager } from "typeorm";
 import { loadCurrencyDecimalPlaces } from "../currencies/currency-decimal-places";
-import { decimalPlacesFor } from "./format-currency.util";
+import { withScopedDb } from "./db/scoped-db";
+import { decimalPlacesFor, isIsoCurrencyCode } from "./format-currency.util";
 import { MONEY_SCALE, roundMoney } from "./round.util";
 
 /**
@@ -50,8 +51,8 @@ export function reportPlacesFor(
 
 /**
  * {@link reportPlacesFor} of `code`, its row read on `manager` when it is not
- * an ISO code (an ISO code needs no read), for a report figure computed
- * outside `ReportCurrencyService` (`getReportPlaces`).
+ * an ISO code (an ISO code needs no read), for a figure computed inside a
+ * caller's own transaction.
  */
 export async function loadReportPlaces(
   manager: EntityManager,
@@ -61,4 +62,17 @@ export async function loadReportPlaces(
     code,
     await loadCurrencyDecimalPlaces(manager, [code]),
   );
+}
+
+/**
+ * {@link loadReportPlaces} for a caller outside a transaction: an ISO code is
+ * answered from its minor unit without opening one, a coin's row is read in a
+ * scoped read of its own. `ReportCurrencyService.getReportPlaces` is this.
+ */
+export async function reportPlacesOf(
+  dataSource: DataSource,
+  code: string,
+): Promise<number> {
+  if (isIsoCurrencyCode(code)) return reportPlacesFor(code, new Map());
+  return withScopedDb(dataSource, (m) => loadReportPlaces(m, code));
 }

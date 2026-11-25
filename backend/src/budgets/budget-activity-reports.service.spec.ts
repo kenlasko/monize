@@ -502,6 +502,38 @@ describe("BudgetActivityReportsService", () => {
       expect(funMoney!.percentUsed).toBe(50);
     });
 
+    it("reads each figure once at the budget currency's places (issue #2410)", async () => {
+      budgetsService.getSummary.mockResolvedValueOnce({
+        budget: {
+          ...mockBudget,
+          categories: [mockBudgetCategory, mockIncomeCategory],
+        },
+        totalBudgeted: 500,
+        totalSpent: 350.005,
+        totalIncome: 5000,
+        remaining: 149.995,
+        percentUsed: 70,
+        categoryBreakdown: [
+          {
+            budgetCategoryId: "bc-1",
+            categoryId: "cat-1",
+            categoryName: "Groceries",
+            budgeted: 500,
+            spent: 350.005,
+            remaining: 149.995,
+            percentUsed: 70,
+            isIncome: false,
+          },
+        ],
+      });
+
+      const [group] = await service.getFlexGroupStatus("user-1", "budget-1");
+
+      expect(group.totalSpent).toBe(350.01);
+      expect(group.remaining).toBe(150);
+      expect(group.categories[0].spent).toBe(350.01);
+    });
+
     it("should skip income categories", async () => {
       const result = await service.getFlexGroupStatus("user-1", "budget-1");
 
@@ -683,7 +715,8 @@ describe("BudgetActivityReportsService", () => {
       expect(cat.monthlyAverages).toHaveLength(12);
       expect(cat.monthlyAverages[5].average).toBe(800);
       expect(cat.monthlyAverages[11].average).toBe(900);
-      expect(cat.typicalMonthlySpend).toBe(633.3333);
+      // (800 + 200 + 900) / 3, at the budget currency's two places.
+      expect(cat.typicalMonthlySpend).toBe(633.33);
       expect(cat.valuationComplete).toBe(true);
     });
 
