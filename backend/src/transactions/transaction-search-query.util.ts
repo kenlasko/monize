@@ -122,7 +122,7 @@ export const SEARCH_ENUM_VALUES: Readonly<
   Record<"status" | "is" | "has", readonly string[]>
 > = {
   status: ["cleared", "reconciled", "unreconciled", "void"],
-  is: ["transfer", "split", "uncategorized"],
+  is: ["transfer", "split", "uncategorized", "provisional"],
   has: ["attachment", "warranty", "ref", "memo", "tag"],
 };
 

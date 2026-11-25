@@ -116,6 +116,24 @@ describe("applyTransactionSearch", () => {
     expect(parsed?.terms[0].ignored).toBe("empty");
     expect(andWhere).not.toHaveBeenCalled();
   });
+
+  it.each([
+    [
+      "is:provisional",
+      "COALESCE(transaction.amount_is_provisional = true, FALSE)",
+    ],
+    [
+      "-is:provisional",
+      "NOT COALESCE(transaction.amount_is_provisional = true, FALSE)",
+    ],
+  ])("%s filters on the provisional column", async (input, fragment) => {
+    const { m } = managerWith(null);
+    const { qb, andWhere } = queryBuilder();
+    await applyTransactionSearch(m, qb, input, options);
+    expect(andWhere).toHaveBeenCalledTimes(1);
+    expect(andWhere.mock.calls[0][0]).toContain(fragment);
+    expect(andWhere.mock.calls[0][0]).not.toContain("PENDING IMPORT");
+  });
 });
 
 describe("searchInterpretation", () => {
@@ -186,6 +204,29 @@ describe("searchInterpretation", () => {
         raw: "-has:warranties",
         ignored: "malformed",
       }),
+    ]);
+  });
+
+  it("echoes is:provisional and its negation like is:transfer", () => {
+    const parsed = parseTransactionSearch("is:provisional -is:provisional", {
+      numberFormat: "en-US",
+      dateFormat: "YYYY-MM-DD",
+    });
+    expect(searchInterpretation(parsed).terms).toEqual([
+      {
+        field: "is",
+        op: "eq",
+        value: "provisional",
+        negated: false,
+        raw: "is:provisional",
+      },
+      {
+        field: "is",
+        op: "eq",
+        value: "provisional",
+        negated: true,
+        raw: "-is:provisional",
+      },
     ]);
   });
 });
