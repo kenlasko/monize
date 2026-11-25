@@ -214,7 +214,10 @@ the wire; stage 2 removes the one-cent double rounding.
   `ReportCurrencyService.getReportPlaces` answer the ISO minor unit, else the
   currency row's `decimal_places` (2 for USD, 0 for JPY, 8 for a coin), which is
   what `useNumberFormat().formatCurrency` formats at. `knownSubtotal` and
-  `total` keep reading four places for the figures that are not report figures.
+  `total` keep reading four places for the figures that are not report figures;
+  `report-rounding.guard.spec.ts` fails a `knownSubtotal` read in the report
+  engines (`backend/src/built-in-reports`, `backend/src/reports`) outside a sort
+  comparator.
   The accumulator stays at twelve places, so a reading at a coin's eight keeps
   four guard digits: sixteen kept the float noise of `amount * rate` and moved
   a custom report's share to 25.000000000000007.
@@ -236,7 +239,7 @@ the wire; stage 2 removes the one-cent double rounding.
 - **Rules 4, 5 and 8 at the new precision.** A difference of two readings is a
   visible cent off at two places, so `compare_periods` works each change out
   from the two periods' aggregates and each percentage from the unrounded
-  values, as the Monthly Comparison already did; Spending Anomalies folds its
+  values, over a first period that reads as money at those places; Spending Anomalies folds its
   mean, category spikes and new-payee totals as aggregates instead of adding
   floats. Every direction decision still reads `sign`, so a category netting
   0.003 reads 0.00 and keeps its row, and Budget Health gives a savings rate

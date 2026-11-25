@@ -148,6 +148,47 @@ export function roundedFoldFindings(
   return findings;
 }
 
+/**
+ * Every four-place reading (`.knownSubtotal`) in `source` outside a sort
+ * comparator: in a report engine a figure is read at its currency's places,
+ * `knownSubtotalAt(places)`, so a `knownSubtotal` there hands a reader a
+ * figure the screen rounds a second time (section 6, issue #2410).
+ */
+export function fourPlaceReadingFindings(
+  fileName: string,
+  source: string,
+): string[] {
+  const sf = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.ES2021,
+    true,
+  );
+  const findings: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      node.name.text === "knownSubtotal" &&
+      !inSortComparator(node)
+    ) {
+      const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line;
+      findings.push(`${line + 1}: ${node.getText(sf)}`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return findings;
+}
+
+/**
+ * The report engines, whose every figure is a report figure: the built-in
+ * reports (the Sankey among them) and the custom report. A surface elsewhere
+ * that hands out a report figure (the budget reports, the monthly net worth,
+ * the assistant's tools) reads at its places too, beside readings that are not
+ * report figures, so it is held by its specs rather than by this scan.
+ */
+const REPORT_ENGINE_DIRS = ["built-in-reports", "reports"];
+
 /** Every production `.ts` file under `dir`, relative to `SRC_ROOT`. */
 function productionFiles(dir: string = SRC_ROOT): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -177,6 +218,42 @@ describe("a part folds into a total as its aggregate (INV-REPORT-005)", () => {
           offenders.join("\n  "),
       );
     }
+  });
+
+  it("reads every figure of a report engine at its currency's places (issue #2410)", () => {
+    const offenders = REPORT_ENGINE_DIRS.flatMap((dir) =>
+      productionFiles(join(SRC_ROOT, dir)).flatMap((rel) =>
+        fourPlaceReadingFindings(
+          rel,
+          readFileSync(join(SRC_ROOT, rel), "utf8"),
+        ).map((finding) => `${rel}:${finding}`),
+      ),
+    );
+    if (offenders.length > 0) {
+      throw new Error(
+        "A report figure is read once at its currency's places: " +
+          "agg.knownSubtotalAt(places) / agg.totalAt(places), or " +
+          "reportFigure(value, places) for a figure that is not an " +
+          "aggregate, with places from ReportCurrencyService.getReportPlaces " +
+          "(docs/specs/report-rounding-and-aggregation.md section 6):\n  " +
+          offenders.join("\n  "),
+      );
+    }
+  });
+
+  it("flags a four-place reading, and not a sort or a reading at places", () => {
+    expect(
+      fourPlaceReadingFindings(
+        "sample.ts",
+        [
+          "const total = agg.knownSubtotal;",
+          "rows.sort((a, b) => b.agg.knownSubtotal - a.agg.knownSubtotal);",
+          "const shown = agg.knownSubtotalAt(places);",
+          "// agg.knownSubtotal in a comment",
+          "return { total: group.agg.knownSubtotal };",
+        ].join("\n"),
+      ),
+    ).toEqual(["1: agg.knownSubtotal", "5: group.agg.knownSubtotal"]);
   });
 
   it("sees what it is meant to see, and not prose or a fold", () => {

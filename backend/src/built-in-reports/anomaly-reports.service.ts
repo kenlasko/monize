@@ -48,13 +48,6 @@ interface ConvertedExpense extends RawExpense {
   converted: number;
 }
 
-/** An aggregate holding one converted amount. */
-function aggregateOf(amount: number): FxAggregate {
-  const agg = new FxAggregate();
-  agg.addConverted(amount);
-  return agg;
-}
-
 /** The z-score above which a transaction is unusual: the Reports page's default. */
 export const SPENDING_ANOMALY_DEFAULT_THRESHOLD = 2;
 
@@ -177,9 +170,9 @@ export class AnomalyReportsService {
     const amounts = converted.map((r) => r.converted);
     // The mean divides the exact sum of the converted rows, never a sum of
     // their four-place readings (rule 8).
-    const mean =
-      FxAggregate.sum(amounts.map(aggregateOf)).unroundedSubtotal /
-      amounts.length;
+    const sum = new FxAggregate();
+    for (const amount of amounts) sum.addConverted(amount);
+    const mean = sum.unroundedSubtotal / amounts.length;
     const variance =
       amounts.reduce((sum, a) => sum + Math.pow(a - mean, 2), 0) /
       amounts.length;
@@ -364,9 +357,11 @@ export class AnomalyReportsService {
           existing.total.addConverted(row.converted);
           existing.count++;
         } else {
+          const total = new FxAggregate();
+          total.addConverted(row.converted);
           payeeRecentSpending.set(payeeName, {
             name: row.payee_name || "Unknown",
-            total: aggregateOf(row.converted),
+            total,
             count: 1,
             txId: row.id,
           });

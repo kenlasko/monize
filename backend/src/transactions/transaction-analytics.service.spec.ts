@@ -3305,6 +3305,23 @@ describe("TransactionAnalyticsService", () => {
       });
     });
 
+    it("gives no percentage over a first period that reads 0.00 (issue #2410)", async () => {
+      // 0.003 shows as 0.00: a change over it is "new", not 3,333,233%.
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-food", total: "0.003", count: "1" }),
+        ])
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-food", total: "100", count: "1" }),
+        ]);
+
+      const result = await service.getLlmPeriodComparison(userId, periods);
+
+      expect(result.period1.total).toBe(0);
+      expect(result.comparison[0].changePercent).toBe(100);
+      expect(result.totalChangePercent).toBe(0);
+    });
+
     it("converts a part at its own rate, reading no rate history (INV-FX-002)", async () => {
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "EUR",

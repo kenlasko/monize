@@ -2248,8 +2248,8 @@ export class TransactionAnalyticsService {
     // change is the difference of the two periods' aggregates read once: the
     // difference of the two readings can sit a cent off the exact change
     // (docs/specs/report-rounding-and-aggregation.md rule 4, section 6). A
-    // percentage divides the unrounded values (rule 8), and whether the first
-    // period is zero reads its sign (rule 5).
+    // percentage divides the unrounded values (rule 8), and only over a first
+    // period that reads as money: dust shown as 0.00 has no percentage.
     const places = await reportPlacesOf(
       this.dataSource,
       period1.totalsCurrency,
@@ -2268,7 +2268,7 @@ export class TransactionAnalyticsService {
       const p2Amount = p2.knownSubtotalAt(places);
       const change = difference.knownSubtotalAt(places);
       const changePercent =
-        p1.sign !== 0 ? percentOf(difference, p1) : p2.sign !== 0 ? 100 : 0;
+        p1Amount !== 0 ? percentOf(difference, p1) : p2Amount !== 0 ? 100 : 0;
 
       return {
         label,
@@ -2297,7 +2297,7 @@ export class TransactionAnalyticsService {
     const totalChangePercent =
       totalChange === null
         ? null
-        : period1.total.sign !== 0
+        : p1Total !== 0
           ? percentOf(totalDifference, period1.total)
           : 0;
 

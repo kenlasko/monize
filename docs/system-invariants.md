@@ -3269,7 +3269,9 @@ to SANKEY-005; the catalog prefixes them like every other entry.
 
 ```text
 Statement           income + inflows + deficit = expenses + outflows + unspent,
-                    in integer ten-thousandths, with at most one of deficit /
+                    in integer units of the reporting currency's minor unit
+                    (10^-places: cents for USD, whole yen for JPY, issue
+                    #2410), with at most one of deficit /
                     unspent non-zero. The residual is arithmetic, never a
                     transaction, and a diagram that does not close is never
                     drawn.
@@ -3416,8 +3418,12 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     knownSubtotalAt(...) / totalAt(...) (a sort comparator
                     excepted), and an isNetSpending over a reading or a
                     roundMoney; a reading first stored in a variable and then
-                    folded passes it. Nothing checks that a new report surface
-                    reads at its currency's places rather than at four.
+                    folded passes it. The same spec fails a four-place
+                    knownSubtotal read in the report engines
+                    (backend/src/built-in-reports, backend/src/reports) outside
+                    a sort comparator; elsewhere (the budget reports, the
+                    monthly net worth, the assistant's tools) the places are
+                    held by each surface's specs.
 Concurrency scope   -- (read path)
 Retry semantics     -- (read path)
 Crash semantics     -- (read path)
