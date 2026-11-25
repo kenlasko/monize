@@ -7,9 +7,10 @@ import {
 } from "./trivia-calendar-facts";
 import type { TriviaNetWorthMonth } from "./trivia-facts";
 import type { TriviaFact } from "./trivia.types";
+import { triviaNetWorthMonth } from "./__fixtures__/trivia-net-worth-month.fixture";
 
 const month = (m: string, netWorth: number, fxComplete = true) =>
-  ({ month: m, netWorth, assets: netWorth, fxComplete }) as TriviaNetWorthMonth;
+  triviaNetWorthMonth(m, netWorth, { fxComplete });
 
 /** The full input with the sources not under test switched off. */
 function only(over: Partial<TriviaCalendarInput>): TriviaCalendarInput {
@@ -418,6 +419,20 @@ describe("buildCalendarTriviaFacts", () => {
       expect(down[0].id).toBe("netWorthYearAgoDown");
       expect(down[0].figures.yearAgoNetWorthChange).toMatchObject({
         value: 150,
+      });
+    });
+
+    it("reads the change once from the two months' aggregates (issue #2410)", () => {
+      // 800.006 and 1050.014 read 800.01 and 1050.01: the readings differ by
+      // 250.00, the change itself, 250.008, reads 250.01.
+      const up = run([
+        triviaNetWorthMonth("2025-11-01", 800.01, { exact: 800.006 }),
+        triviaNetWorthMonth("2026-11-01", 1050.01, { exact: 1050.014 }),
+      ]);
+      expect(up[0].figures.yearAgoNetWorthChange).toEqual({
+        kind: "money",
+        value: 250.01,
+        currency: "CAD",
       });
     });
 

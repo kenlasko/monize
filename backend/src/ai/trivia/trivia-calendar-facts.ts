@@ -1,9 +1,12 @@
 import { getMonthEndYMD } from "../../common/date-utils";
-import { roundMoney } from "../../common/round.util";
 import { daysBetween } from "../../common/time-series/price-boundary.util";
 import type { SpendingByCategoryResponse } from "../../built-in-reports/dto/spending-by-category.dto";
 import type { TriviaFact } from "./trivia.types";
-import { monthsBetween, type TriviaNetWorthMonth } from "./trivia-facts";
+import {
+  monthsBetween,
+  netWorthBetween,
+  type TriviaNetWorthMonth,
+} from "./trivia-facts";
 import type {
   TriviaRecordCounts,
   TriviaWarranties,
@@ -33,6 +36,8 @@ export interface TriviaCalendarInput {
   /** The reader's day. */
   today: string;
   currency: string;
+  /** The places a figure in `currency` is read at (`reportPlacesOf`). */
+  places: number;
   months: TriviaNetWorthMonth[];
   records: TriviaRecordCounts | null;
   warranties: TriviaWarranties | null;
@@ -229,14 +234,14 @@ function yearAgoSpendingFact(input: TriviaCalendarInput): TriviaFact[] {
 }
 
 function netWorthYearAgoFact(input: TriviaCalendarInput): TriviaFact[] {
-  const { months, currency } = input;
+  const { months, currency, places } = input;
   const latest = months[months.length - 1];
   if (!latest || latest.fxComplete === false) return [];
   const earlier = months.find(
     (m) => monthsBetween(m.month, latest.month) === 12,
   );
   if (!earlier || earlier.fxComplete === false) return [];
-  const change = roundMoney(latest.netWorth - earlier.netWorth);
+  const change = netWorthBetween(latest, earlier, places);
   if (change === 0) return [];
   return [
     fact(change > 0 ? "netWorthYearAgoUp" : "netWorthYearAgoDown", "netWorth", {

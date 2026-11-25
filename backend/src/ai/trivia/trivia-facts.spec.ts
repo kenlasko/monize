@@ -1,13 +1,10 @@
 import { buildTriviaFacts, TriviaFactsInput } from "./trivia-facts";
 import type { PortfolioSummary } from "../../securities/portfolio.service";
 import type { TriviaFact, TriviaFactId } from "./trivia.types";
+import { triviaNetWorthMonth } from "./__fixtures__/trivia-net-worth-month.fixture";
 
-const month = (m: string, netWorth: number, assets = netWorth) => ({
-  month: m,
-  netWorth,
-  assets,
-  fxComplete: true,
-});
+const month = (m: string, netWorth: number, assets = netWorth) =>
+  triviaNetWorthMonth(m, netWorth, { assets });
 
 const holding = (over: Record<string, unknown>) => ({
   id: "h",
@@ -59,6 +56,7 @@ function portfolio(over: Partial<PortfolioSummary> = {}): PortfolioSummary {
 
 const input = (over: Partial<TriviaFactsInput>): TriviaFactsInput => ({
   currency: "CAD",
+  places: 2,
   months: [],
   portfolio: null,
   otherAssets: null,
@@ -144,6 +142,43 @@ describe("buildTriviaFacts", () => {
       value: 10,
       currency: "CAD",
     });
+  });
+
+  it("reads a gain and a fall between two months once, from their aggregates (issue #2410)", () => {
+    // 100.006 reads 100.01 and 200.014 reads 200.01: the readings differ by
+    // 100.00, while the rise itself, 100.008, reads 100.01. The fall from
+    // 200.014 to 190.006, 10.008, reads 10.01, where the readings give 10.00.
+    const months = [
+      triviaNetWorthMonth("2025-01-01", 100.01, { exact: 100.006 }),
+      triviaNetWorthMonth("2025-02-01", 200.01, { exact: 200.014 }),
+      triviaNetWorthMonth("2025-03-01", 190.01, { exact: 190.006 }),
+    ];
+    const facts = buildTriviaFacts(input({ months }));
+    expect(byId(facts, "netWorthBiggestJump")?.figures.jumpAmount).toEqual({
+      kind: "money",
+      value: 100.01,
+      currency: "CAD",
+    });
+    expect(byId(facts, "netWorthHighPoint")?.figures.peakBelow).toEqual({
+      kind: "money",
+      value: 10.01,
+      currency: "CAD",
+    });
+  });
+
+  it("calls a fall that reads as nothing the high point, not 0.00 below it", () => {
+    // 200.004 and 200.001 both read 200.00, and the fall, 0.003, reads 0.00.
+    const facts = buildTriviaFacts(
+      input({
+        months: [
+          triviaNetWorthMonth("2025-01-01", 100),
+          triviaNetWorthMonth("2025-02-01", 200, { exact: 200.004 }),
+          triviaNetWorthMonth("2025-03-01", 200, { exact: 200.001 }),
+        ],
+      }),
+    );
+    expect(byId(facts, "netWorthAtHighPoint")).toBeDefined();
+    expect(byId(facts, "netWorthHighPoint")).toBeUndefined();
   });
 
   it("reports the distance below the high point", () => {

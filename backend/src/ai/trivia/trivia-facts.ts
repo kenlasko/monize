@@ -1,3 +1,4 @@
+import { FxAggregate } from "../../common/fx-aggregate";
 import { sumMoney } from "../../common/round.util";
 import type {
   HoldingWithMarketValue,
@@ -20,6 +21,11 @@ export interface TriviaNetWorthMonth {
   month: string;
   assets: number;
   netWorth: number;
+  /**
+   * What `netWorth` is read from (`getMonthlyNetWorthWithAggregates`): a gain
+   * or a fall between two months is the difference of the two, read once.
+   */
+  netWorthAggregate: FxAggregate;
   fxComplete: boolean;
 }
 
@@ -30,6 +36,8 @@ export interface TriviaAsset {
 
 export interface TriviaFactsInput {
   currency: string;
+  /** The places a figure in `currency` is read at (`reportPlacesOf`). */
+  places: number;
   months: TriviaNetWorthMonth[];
   /** `null` when the portfolio could not be read: no investment facts. */
   portfolio: PortfolioSummary | null;
@@ -56,8 +64,30 @@ export function monthsBetween(from: string, to: string): number {
   return (toYear - fromYear) * 12 + (toMonth - fromMonth);
 }
 
+/**
+ * `later`'s net worth less `earlier`'s: the difference of the two months'
+ * aggregates read once at `places`, where the difference of the two readings
+ * can sit a cent off it (docs/specs/report-rounding-and-aggregation.md rule
+ * 4).
+ */
+export function netWorthBetween(
+  later: TriviaNetWorthMonth,
+  earlier: TriviaNetWorthMonth,
+  places: number,
+): number {
+  return FxAggregate.difference(
+    later.netWorthAggregate,
+    earlier.netWorthAggregate,
+  ).knownSubtotalAt(places);
+}
+
+/** `part` over `whole` from the unrounded aggregates (rule 8). */
+function ratioOf(part: FxAggregate, whole: FxAggregate): number {
+  return part.unroundedSubtotal / whole.unroundedSubtotal;
+}
+
 function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
-  const { currency } = input;
+  const { currency, places } = input;
   const facts: TriviaFact[] = [];
   const complete = input.months.filter((m) => m.fxComplete !== false);
   if (complete.length < 2) return facts;
@@ -67,33 +97,40 @@ function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
   const latest = newest.fxComplete !== false ? newest : null;
 
   const first = complete.find((m) => m.netWorth > 0);
+  const startGain =
+    latest && first ? netWorthBetween(latest, first, places) : 0;
   if (
     latest &&
     first &&
     monthsBetween(first.month, latest.month) >= MIN_MONTHS_SINCE_START &&
-    latest.netWorth > first.netWorth
+    startGain > 0
   ) {
     facts.push(
       fact("netWorthSinceStart", "netWorth", {
         startMonth: month(first.month),
         startAmount: money(first.netWorth, currency),
-        startGain: money(latest.netWorth - first.netWorth, currency),
-        startMultiple: multiple(latest.netWorth / first.netWorth),
+        startGain: money(startGain, currency),
+        startMultiple: multiple(
+          ratioOf(latest.netWorthAggregate, first.netWorthAggregate),
+        ),
       }),
     );
   }
 
-  let jump: { from: TriviaNetWorthMonth; to: TriviaNetWorthMonth } | null =
-    null;
+  let jump: {
+    from: TriviaNetWorthMonth;
+    to: TriviaNetWorthMonth;
+    rise: number;
+  } | null = null;
   for (let i = 1; i < complete.length; i++) {
     const [from, to] = [complete[i - 1], complete[i]];
     // From a positive month only: the month a ledger begins is not a jump.
     if (monthsBetween(from.month, to.month) !== 1 || from.netWorth <= 0) {
       continue;
     }
-    const rise = to.netWorth - from.netWorth;
-    if (rise > 0 && (!jump || rise > jump.to.netWorth - jump.from.netWorth)) {
-      jump = { from, to };
+    const rise = netWorthBetween(to, from, places);
+    if (rise > 0 && (!jump || rise > jump.rise)) {
+      jump = { from, to, rise };
     }
   }
   if (jump) {
@@ -101,7 +138,7 @@ function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
       fact("netWorthBiggestJump", "netWorth", {
         jumpMonth: month(jump.to.month),
         jumpPreviousMonth: month(jump.from.month),
-        jumpAmount: money(jump.to.netWorth - jump.from.netWorth, currency),
+        jumpAmount: money(jump.rise, currency),
         jumpFrom: money(jump.from.netWorth, currency),
         jumpTo: money(jump.to.netWorth, currency),
       }),
@@ -110,8 +147,10 @@ function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
 
   const peak = complete.reduce((a, b) => (b.netWorth > a.netWorth ? b : a));
   if (latest && peak.netWorth > 0) {
-    // Level with an earlier high is still the high point: none is above it.
-    if (latest.netWorth >= peak.netWorth) {
+    // Level with an earlier high is still the high point: none is above it,
+    // and neither is one a fall that reads as nothing below it.
+    const belowPeak = netWorthBetween(peak, latest, places);
+    if (belowPeak <= 0) {
       facts.push(
         fact("netWorthAtHighPoint", "netWorth", {
           currentHigh: money(latest.netWorth, currency),
@@ -122,7 +161,7 @@ function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
         fact("netWorthHighPoint", "netWorth", {
           peakAmount: money(peak.netWorth, currency),
           peakMonth: month(peak.month),
-          peakBelow: money(peak.netWorth - latest.netWorth, currency),
+          peakBelow: money(belowPeak, currency),
         }),
       );
     }
@@ -130,14 +169,17 @@ function netWorthFacts(input: TriviaFactsInput): TriviaFact[] {
 
   const dip = biggestDip(complete);
   if (dip) {
-    const fall = dip.peak.netWorth - dip.trough.netWorth;
+    const fall = FxAggregate.difference(
+      dip.peak.netWorthAggregate,
+      dip.trough.netWorthAggregate,
+    );
     const figures: TriviaFigures = {
       dipFromMonth: month(dip.peak.month),
       dipFromAmount: money(dip.peak.netWorth, currency),
       dipToMonth: month(dip.trough.month),
       dipToAmount: money(dip.trough.netWorth, currency),
-      dipAmount: money(fall, currency),
-      dipPercent: percent((fall / dip.peak.netWorth) * 100),
+      dipAmount: money(fall.knownSubtotalAt(places), currency),
+      dipPercent: percent(ratioOf(fall, dip.peak.netWorthAggregate) * 100),
     };
     if (dip.recovered) {
       figures.dipRecoveredMonth = month(dip.recovered.month);

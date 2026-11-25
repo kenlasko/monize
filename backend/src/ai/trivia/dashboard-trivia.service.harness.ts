@@ -5,6 +5,7 @@ import { UserPreference } from "../../users/entities/user-preference.entity";
 import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
 import { TriviaPoolBuilder } from "./trivia-pool.builder";
 import { emptyWindowedReads } from "./trivia-windowed-reads";
+import { triviaNetWorthMonth } from "./__fixtures__/trivia-net-worth-month.fixture";
 
 /**
  * Spec support for the `dashboard-trivia.service.*.spec.ts` suites: the
@@ -58,8 +59,8 @@ export const aiReply = (text: string) =>
   JSON.stringify({ trivia: [{ topic: "netWorth", text }] });
 
 const months = [
-  { month: "2025-01-01", assets: 100, netWorth: 100, fxComplete: true },
-  { month: "2025-02-01", assets: 200, netWorth: 200, fxComplete: true },
+  triviaNetWorthMonth("2025-01-01", 100),
+  triviaNetWorthMonth("2025-02-01", 200),
 ];
 
 export interface ServiceHarness {
@@ -134,7 +135,9 @@ export function useServiceHarness(): ServiceHarness {
     );
     manager.createQueryBuilder = jest.fn(() => insertQb);
     accounts = { findAll: jest.fn().mockResolvedValue([]) };
-    netWorth = { getMonthlyNetWorth: jest.fn().mockResolvedValue(months) };
+    netWorth = {
+      getMonthlyNetWorthWithAggregates: jest.fn().mockResolvedValue(months),
+    };
     portfolio = { getPortfolioSummary: jest.fn().mockResolvedValue(null) };
     ai = {
       getStatus: jest

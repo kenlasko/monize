@@ -1775,6 +1775,7 @@ describe("NetWorthService", () => {
           assetsFxComplete: true,
           liabilitiesFxComplete: true,
           byAccountType: { [AccountType.CHEQUING]: 10 },
+          netWorthChange: null,
         },
       ]);
 
@@ -1924,6 +1925,32 @@ describe("NetWorthService", () => {
 
       // 1000 CAD * 0.75 = 750 USD
       expect(result[0].assets).toBe(750);
+    });
+
+    it("gives each month's change as the difference of the two months' aggregates, read once (issue #2410)", async () => {
+      // 100.006 and 100.014 both read 100.01, so the difference of the two
+      // readings is 0.00; the change itself, 0.008, reads 0.01.
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce(
+        [
+          ["2024-01-01", "100.006"],
+          ["2024-02-01", "100.014"],
+        ].map(([month, balance]) => ({
+          month,
+          balance,
+          market_value: null,
+          account_id: "chq",
+          account_type: AccountType.CHEQUING,
+          account_sub_type: null,
+          currency_code: "USD",
+        })),
+      );
+
+      const result = await service.getMonthlyNetWorth("user-1");
+
+      expect(result.map((m) => m.netWorth)).toEqual([100.01, 100.01]);
+      expect(result.map((m) => m.netWorthChange)).toEqual([null, 0.01]);
     });
 
     it("counts a CRYPTO wallet as an asset, converted at the coin's rate, under its own type", async () => {

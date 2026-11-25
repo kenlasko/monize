@@ -232,7 +232,10 @@ the wire; stage 2 removes the one-cent double rounding.
   `value`, which left unrounded; the Cash Flow Sankey, apportioned and closed in
   the currency's minor unit; the Foreign Currency Fees report's converted
   total; the monthly net worth and what reuses it (the account summary's
-  latest month, the assistant's net worth history); Budget Health's savings
+  latest month, the assistant's net worth history, each month's change from
+  the one before, `netWorthChange`, which the dashboard's month change reads,
+  and the dashboard trivia's gains and falls, each a difference of two months'
+  aggregates read once); Budget Health's savings
   figures, the budget trend and category trend, the seasonal patterns, the
   daily spending and the flex groups, at the budget currency's places; the
   portfolio summary (`PortfolioService.getPortfolioSummary`: the Investments

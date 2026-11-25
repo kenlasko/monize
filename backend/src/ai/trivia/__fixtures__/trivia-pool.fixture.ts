@@ -14,6 +14,7 @@ import {
   type TriviaPicks,
 } from "../trivia-windowed-reads";
 import { TRIVIA_WINDOWS, type TriviaWindow } from "../trivia.types";
+import { triviaNetWorthMonth } from "./trivia-net-worth-month.fixture";
 
 /**
  * Inputs that make each builder produce every id it can. Each phase that adds
@@ -22,12 +23,8 @@ import { TRIVIA_WINDOWS, type TriviaWindow } from "../trivia.types";
  * `alternateInputs()`.
  */
 
-const netWorthMonth = (month: string, netWorth: number) => ({
-  month,
-  netWorth,
-  assets: netWorth,
-  fxComplete: true,
-});
+const netWorthMonth = (month: string, netWorth: number) =>
+  triviaNetWorthMonth(month, netWorth);
 
 const holding = (over: Record<string, unknown>) => ({
   id: "h",
@@ -94,6 +91,7 @@ function portfolio(over: Partial<PortfolioSummary> = {}): PortfolioSummary {
 export function fullTriviaFactsInput(): TriviaFactsInput {
   return {
     currency: "CAD",
+    places: 2,
     months: [
       netWorthMonth("2024-11-01", 100),
       netWorthMonth("2024-12-01", 150),
@@ -379,6 +377,7 @@ export function fullCalendarInput(): TriviaCalendarInput {
   return {
     today: "2026-11-19",
     currency: "CAD",
+    places: 2,
     months: [
       netWorthMonth("2025-11-01", 800),
       netWorthMonth("2026-09-01", 950),
@@ -427,7 +426,7 @@ export function alternateCalendarInput(): TriviaCalendarInput {
   return {
     ...input,
     months: input.months.map((m) =>
-      m.month === "2025-11-01" ? { ...m, netWorth: 1200, assets: 1200 } : m,
+      m.month === "2025-11-01" ? triviaNetWorthMonth(m.month, 1200) : m,
     ),
   };
 }

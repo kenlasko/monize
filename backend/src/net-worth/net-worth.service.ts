@@ -931,6 +931,7 @@ export class NetWorthService {
         byAccountType: _byAccountType,
         assetsFxComplete: _assetsFxComplete,
         liabilitiesFxComplete: _liabilitiesFxComplete,
+        netWorthChange: _netWorthChange,
         ...month
       }) => month,
     );
@@ -971,12 +972,21 @@ export class NetWorthService {
        * Subtotals of what converted under the same `fxComplete` as the rest.
        */
       byAccountType: Partial<Record<AccountType, number>>;
+      /**
+       * `netWorth` less the previous month's in this series, the difference
+       * of the two months' aggregates read once at the reporting currency's
+       * places: the difference of the two readings can sit a unit off it
+       * (docs/specs/report-rounding-and-aggregation.md rule 4). `null` for the
+       * series' first month, which has nothing before it. A subtotal whenever
+       * either month's `fxComplete` is false.
+       */
+      netWorthChange: number | null;
     }[]
   > {
     const months = await this.getMonthlyNetWorthWithAggregates(
       userId,
-      startDate || "1990-01-01",
-      endDate || new Date().toISOString().slice(0, 10),
+      startDate,
+      endDate,
       jointScope,
       options,
     );
@@ -988,18 +998,21 @@ export class NetWorthService {
   /**
    * `getMonthlyNetWorth` with each month's net worth beside it as the
    * aggregate it is read from, for a caller that works out a figure from two
-   * months (the Monthly Comparison's change): the difference of the two
-   * aggregates is rounded once, where the difference of the two readings can
-   * sit a unit off (`docs/specs/report-rounding-and-aggregation.md` rule 4).
-   * The window is given in full: its defaults are `getMonthlyNetWorth`'s.
+   * months (the Monthly Comparison's change, the trivia's gains and falls):
+   * the difference of the two aggregates is rounded once, where the
+   * difference of the two readings can sit a unit off
+   * (`docs/specs/report-rounding-and-aggregation.md` rule 4). An absent
+   * window is the whole history to today, as for `getMonthlyNetWorth`.
    */
   async getMonthlyNetWorthWithAggregates(
     userId: string,
-    start: string,
-    end: string,
+    startDate?: string,
+    endDate?: string,
     jointScope?: JointNetWorthScope,
     options?: SeriesFetchOptions,
   ): Promise<MonthlyNetWorthWithAggregate[]> {
+    const start = startDate || "1990-01-01";
+    const end = endDate || new Date().toISOString().slice(0, 10);
     await this.ensurePopulated(userId);
     const jointIds = jointScope?.accounts.map((a) => a.accountId) ?? [];
     if (jointScope && jointIds.length > 0) {
@@ -1140,6 +1153,7 @@ export class NetWorthService {
       }
     }
 
+    let previousNetWorth: FxAggregate | null = null;
     return Array.from(monthMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => {
@@ -1164,6 +1178,14 @@ export class NetWorthService {
           data.assets,
           data.liabilities,
         );
+        const netWorthChange =
+          previousNetWorth === null
+            ? null
+            : FxAggregate.difference(
+                netWorthAggregate,
+                previousNetWorth,
+              ).knownSubtotalAt(places);
+        previousNetWorth = netWorthAggregate;
         return {
           month,
           assets: data.assets.knownSubtotalAt(places),
@@ -1186,6 +1208,7 @@ export class NetWorthService {
               total.knownSubtotalAt(places),
             ]),
           ),
+          netWorthChange,
         };
       });
   }

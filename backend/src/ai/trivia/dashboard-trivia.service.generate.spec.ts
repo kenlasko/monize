@@ -153,14 +153,14 @@ describe("DashboardTriviaService", () => {
         await service.generateForUser(userId, "UTC");
         expect(triviaRepo.delete).toHaveBeenCalledWith({ userId });
       }
-      expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
+      expect(netWorth.getMonthlyNetWorthWithAggregates).not.toHaveBeenCalled();
       expect(ai.complete).not.toHaveBeenCalled();
     });
 
     it("builds nothing and calls no provider with trivia switched off", async () => {
       prefRepo.findOne.mockResolvedValue({ aiTriviaEnabled: false });
       await service.generateForUser(userId, "UTC");
-      expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
+      expect(netWorth.getMonthlyNetWorthWithAggregates).not.toHaveBeenCalled();
       expect(ai.complete).not.toHaveBeenCalled();
       expect(triviaRepo.delete).toHaveBeenCalledWith({ userId });
     });
@@ -210,7 +210,7 @@ describe("DashboardTriviaService", () => {
       // The claim comes first: a tick that finds the day taken reads nothing else.
       expect(prefRepo.findOne).not.toHaveBeenCalled();
       expect(triviaRepo.findOne).not.toHaveBeenCalled();
-      expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
+      expect(netWorth.getMonthlyNetWorthWithAggregates).not.toHaveBeenCalled();
       expect(ai.complete).not.toHaveBeenCalled();
       expect(triviaRepo.upsert).not.toHaveBeenCalled();
     });
@@ -273,7 +273,7 @@ describe("DashboardTriviaService", () => {
     });
 
     it("skips the model and keeps no row when there are no facts", async () => {
-      netWorth.getMonthlyNetWorth.mockResolvedValue([]);
+      netWorth.getMonthlyNetWorthWithAggregates.mockResolvedValue([]);
       await service.generateForUser(userId, "UTC");
       expect(ai.getStatus).not.toHaveBeenCalled();
       expect(triviaRepo.upsert).not.toHaveBeenCalled();

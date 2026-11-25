@@ -61,6 +61,15 @@ describe('heroMonthChange', () => {
     expect(precise?.amount).toBe(12.5075);
   });
 
+  it("reads the server's change rather than the difference of two readings (issue #2410)", () => {
+    // 100.006 and 100.014 both read 100.01; the change itself, 0.008, reads 0.01.
+    const change = heroMonthChange(
+      [month('2026-10', 100.01, 0, { netWorthChange: null }), month('2026-11', 100.01, 0, { netWorthChange: 0.01 })],
+      4,
+    );
+    expect(change?.amount).toBe(0.01);
+  });
+
   it('has no percentage over a zero month', () => {
     expect(heroMonthChange([month('2026-10', 0, 0), month('2026-11', 50, 0)], 4)?.percent).toBeNull();
   });

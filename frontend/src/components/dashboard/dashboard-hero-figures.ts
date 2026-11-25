@@ -45,9 +45,11 @@ export interface HeroMonthChange {
 
 /**
  * Net worth's change this month: the newest month against the one before it,
- * rounded at the reporting currency's money precision (`moneyDecimalsForCurrency`)
- * only to shed float error -- never to whole units or to cents.
- * `null` with fewer than two months, where there is nothing to compare.
+ * as the server worked it out (`netWorthChange`, one rounding of the two
+ * months' unrounded difference). A response without it (an older backend)
+ * takes the difference of the two readings here, rounded at the reporting
+ * currency's money precision (`moneyDecimalsForCurrency`) only to shed float
+ * error. `null` with fewer than two months, where there is nothing to compare.
  */
 export function heroMonthChange(
   series: readonly MonthlyNetWorth[],
@@ -56,7 +58,7 @@ export function heroMonthChange(
   if (series.length < 2) return null;
   const last = series[series.length - 1];
   const previous = series[series.length - 2];
-  const amount = roundMoney(last.netWorth - previous.netWorth, moneyDecimals);
+  const amount = last.netWorthChange ?? roundMoney(last.netWorth - previous.netWorth, moneyDecimals);
   return {
     known: !netWorthIsPartial(last) && !netWorthIsPartial(previous),
     amount,
