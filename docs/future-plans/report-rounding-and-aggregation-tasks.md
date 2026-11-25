@@ -17,7 +17,7 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 - [x] `report-rounding.guard.spec.ts` holds rule 2's mechanical forms.
 - [x] The Monthly Comparison's changes from the months' aggregates rather than their rounded figures (the spec's rule 4 residual, issue #2407).
 - [x] The assistant's and MCP's flow totals (`convertedFlowFields`) and the portfolio summary's headline gain are single differences.
-- [ ] The transactions widget's net for a partial summary still subtracts the two rounded known sides: the server could send a known net beside `knownIncome` / `knownExpenses` (an additive field on the analytics summary and its MCP schema).
+- [x] A partial transactions summary carries its own net: `SummaryInReportingCurrency.knownNet` is `FxAggregate.difference` of the known sides, present complete or partial, and the widget reads it rather than subtracting the two rounded known sides (issue #2409). No MCP tool returns this summary, so no output schema changed.
 - [x] Budget Health (`backend/src/budgets/budget-health-reports.service.ts`): a month's income with no income line is one aggregate over its native rows and its converted foreign parts (`convertRatePartAggregates`), the toggle's transferred-in income folds in from its aggregate (`resolveOutsideTransferIncomeAggregate`), savings is `FxAggregate.difference` and the rate is worked out from the unrounded figures (issue #2408). The income-line and expense sides still add each line's own four-place actual.
 
 ## 2 the precision of a figure on the wire

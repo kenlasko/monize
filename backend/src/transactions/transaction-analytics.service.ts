@@ -702,6 +702,7 @@ export class TransactionAnalyticsService {
       netCashFlow: complete ? net.knownSubtotal : null,
       knownIncome: income.knownSubtotal,
       knownExpenses: expenses.knownSubtotal,
+      knownNet: net.knownSubtotal,
       includedTransactionCount,
       excludedTransactionCount,
       missingCurrencies: missing.sort(),
@@ -2677,12 +2678,6 @@ interface AnalyticsReadFilters {
   jointAccountIds?: string[];
 }
 
-/**
- * A transaction summary in the reader's reporting currency, each row converted
- * at its own rate or on its own date. `totalIncome`, `totalExpenses` and
- * `netCashFlow` are null while any bucket has no rate; the `known*` figures
- * carry what converted, and the transaction counts split on the same line.
- */
 /** One (key, currency) row of a grouped analytics read. */
 export interface GroupedTotalRow {
   id: string | null;
@@ -2696,6 +2691,16 @@ export interface GroupedTotalRow {
   convertedTotal: number | null;
 }
 
+/**
+ * A transaction summary in the reader's reporting currency, each row converted
+ * at its own rate or on its own date. `totalIncome`, `totalExpenses` and
+ * `netCashFlow` are null while any bucket has no rate; the `known*` figures
+ * carry what converted, and the transaction counts split on the same line.
+ * `knownNet` is the known income less the known expenses, rounded once and
+ * present whether or not the summary is complete (where it equals
+ * `netCashFlow`), so a partial net is never the difference of two rounded
+ * sides (docs/specs/report-rounding-and-aggregation.md rule 2).
+ */
 export interface SummaryInReportingCurrency {
   currency: string;
   totalIncome: number | null;
@@ -2703,6 +2708,7 @@ export interface SummaryInReportingCurrency {
   netCashFlow: number | null;
   knownIncome: number;
   knownExpenses: number;
+  knownNet: number;
   includedTransactionCount: number;
   excludedTransactionCount: number;
   missingCurrencies: string[];

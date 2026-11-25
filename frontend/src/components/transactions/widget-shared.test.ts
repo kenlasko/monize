@@ -55,6 +55,7 @@ describe('buildDisplayCurrencyStrategy', () => {
           netCashFlow: -3,
           knownIncome: 0,
           knownExpenses: 3,
+          knownNet: -3,
           includedTransactionCount: 2,
           excludedTransactionCount: 0,
           missingCurrencies: [],
@@ -98,6 +99,7 @@ describe('summarizeInDisplayCurrency', () => {
           netCashFlow: -75,
           knownIncome: 165,
           knownExpenses: 240,
+          knownNet: -75,
           includedTransactionCount: 8,
           excludedTransactionCount: 0,
           missingCurrencies: [],
@@ -131,6 +133,7 @@ describe('summarizeInDisplayCurrency', () => {
           netCashFlow: 249.5049,
           knownIncome: 249.5049,
           knownExpenses: 0.0001,
+          knownNet: 249.5049,
           includedTransactionCount: 3,
           excludedTransactionCount: 0,
           missingCurrencies: [],
@@ -139,6 +142,34 @@ describe('summarizeInDisplayCurrency', () => {
       converted('USD'),
     );
     expect(result.net).toBe(249.5049);
+  });
+
+  it("reads a partial summary's known net, not the difference of its rounded sides (issue #2409)", () => {
+    // 100.01 EUR in and 0.00004 EUR out at 1.2474 net 124.752424, which reads
+    // 124.7524; the rounded sides, 124.7525 and 0, differ by 124.7525.
+    const result = summarizeInDisplayCurrency(
+      summary(
+        {
+          EUR: { totalIncome: 100.01, totalExpenses: 0.00004, netCashFlow: 100.00996, transactionCount: 2 },
+          JPY: { totalIncome: 0, totalExpenses: 1000, netCashFlow: -1000, transactionCount: 1 },
+        },
+        {
+          currency: 'CAD',
+          totalIncome: null,
+          totalExpenses: null,
+          netCashFlow: null,
+          knownIncome: 124.7525,
+          knownExpenses: 0,
+          knownNet: 124.7524,
+          includedTransactionCount: 2,
+          excludedTransactionCount: 1,
+          missingCurrencies: ['JPY'],
+        },
+      ),
+      converted('CAD'),
+    );
+    expect(result.net).toBe(124.7524);
+    expect(result.missingCurrencies).toEqual(['JPY']);
   });
 
   it('carries the excluded bucket, its currency and its transaction count', () => {
@@ -155,6 +186,7 @@ describe('summarizeInDisplayCurrency', () => {
           netCashFlow: null,
           knownIncome: 100,
           knownExpenses: 200,
+          knownNet: -100,
           includedTransactionCount: 10,
           excludedTransactionCount: 5,
           missingCurrencies: ['EUR'],
@@ -183,6 +215,7 @@ describe('summarizeInDisplayCurrency', () => {
           netCashFlow: -110.1234,
           knownIncome: 0,
           knownExpenses: 110.1234,
+          knownNet: -110.1234,
           includedTransactionCount: 2,
           excludedTransactionCount: 0,
           missingCurrencies: [],

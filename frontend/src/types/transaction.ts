@@ -197,6 +197,8 @@ export interface SummaryInReportingCurrency {
   netCashFlow: number | null;
   knownIncome: number;
   knownExpenses: number;
+  /** Known income less known expenses, rounded once; present on a partial summary too. */
+  knownNet: number;
   includedTransactionCount: number;
   excludedTransactionCount: number;
   missingCurrencies: string[];
