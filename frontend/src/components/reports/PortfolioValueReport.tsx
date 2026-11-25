@@ -99,6 +99,8 @@ type SecuritiesBreakdown = {
      * `=== false`.
      */
     complete?: boolean;
+    /** The bands an incomplete point names as unknown (`unknownBandKeysOf`). */
+    unknownBandKeys?: string[];
   }>;
   kind: 'daily' | 'monthEnd' | 'intraday';
 };
@@ -189,16 +191,42 @@ function CustomTooltip({ active, payload, fmtFull, portfolioLabel }: {
 
 /**
  * A band's value at a point of the by-security breakdown. A band absent from a
- * complete point is a security not held there, a known zero; absent from a
+ * complete point is a security not held there, a known zero. Absent from a
  * point the server marked incomplete it may be the security it could not
- * price or convert, so it is unknown, never written as 0 (spec rule 7).
+ * price or convert, so it is unknown, never written as 0 (spec rule 7): only
+ * the bands the point names (`unknownBandKeys`) where it names them, and
+ * every absent band where it cannot (a missing rate, which names a pair and
+ * not a band, or a backend that names nothing), the conservative answer.
  */
 function breakdownBandValue(
-  point: { values: Record<string, number>; complete?: boolean },
+  point: { values: Record<string, number>; complete?: boolean; unknownBandKeys?: string[] },
   key: string,
 ): number | null {
   if (key in point.values) return point.values[key];
-  return point.complete === false ? null : 0;
+  if (point.complete !== false) return 0;
+  return point.unknownBandKeys === undefined || point.unknownBandKeys.includes(key) ? null : 0;
+}
+
+/**
+ * The bands an incomplete point leaves unknown, where the point says which:
+ * it is short only of prices (its own rate list is present and empty) and
+ * names the securities it could not price. Each named security's own band,
+ * and the rolled-up band when a named security has no band of its own.
+ * `undefined` where the point cannot say, so every absent band is unknown.
+ */
+function unknownBandKeysOf(
+  point: { unpricedSecurityIds?: string[]; missingRatePairs?: string[] },
+  series: readonly InvestmentBreakdownSeries[],
+): string[] | undefined {
+  const unpriced = point.unpricedSecurityIds;
+  if (!unpriced || !point.missingRatePairs || point.missingRatePairs.length > 0) {
+    return undefined;
+  }
+  const keys = new Set(series.map((band) => band.key));
+  const otherKey = series.find((band) => band.type === 'other')?.key;
+  const own = unpriced.filter((id) => keys.has(id));
+  const rolledUp = otherKey !== undefined && unpriced.some((id) => !keys.has(id));
+  return rolledUp ? [...own, otherKey] : own;
 }
 
 function SecuritiesTooltip({ active, payload, fmtFull, totalLabel, unknownReason }: {
@@ -528,6 +556,7 @@ export function PortfolioValueReport() {
           (p.missingRatePairs
             ? p.missingRatePairs.length === 0
             : data.fxComplete !== false),
+        unknownBandKeys: unknownBandKeysOf(p, data.series),
       }));
       setBreakdown({ series: data.series, points, kind: granularity });
       setIncompleteCauses(
@@ -1010,6 +1039,7 @@ export function PortfolioValueReport() {
       total: p.complete === false ? null : p.invested,
       values: p.values,
       complete: p.complete,
+      unknownBandKeys: p.unknownBandKeys,
     }));
     rows.sort((a, b) => {
       const comparison =

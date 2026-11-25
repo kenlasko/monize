@@ -2306,6 +2306,35 @@ describe('PortfolioValueReport', () => {
       expect(july.slice(1)).toEqual([900, 300, 500, 1200]);
     });
 
+    it('marks only the bands the point names, where it names them', async () => {
+      // June is short only of a price for sec-9, which has no band of its own
+      // and so sits in Other: Other is unknown, while AAPL, absent because it
+      // was not held, is a known zero.
+      mockSeriesMode = 'securities';
+      mockGetInvestmentsBreakdown.mockResolvedValue({
+        ...unpricedMonth,
+        points: [
+          {
+            ...unpricedMonth.points[0],
+            values: { cash: 500 },
+            unpricedSecurityIds: ['sec-9'],
+          },
+          unpricedMonth.points[1],
+        ],
+      });
+      mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<PortfolioValueReport />);
+      await waitFor(() => expect(screen.getByTestId('area-chart')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('export-csv')); });
+
+      const sections = mockExportCsvSections.mock.calls.at(-1)![1];
+      const rows = sections.at(-1).rows as unknown[][];
+      const june = rows.find((r) => r.includes(500) && !r.includes(900))!;
+      // [date, AAPL, other, cash, total]
+      expect(june.slice(1)).toEqual([0, 'N/A', 500, 'N/A']);
+    });
+
     it('marks an unknown band unknown in the table rather than printing $0.00', async () => {
       mockSeriesMode = 'securities';
       mockGetInvestmentsBreakdown.mockResolvedValue(unpricedMonth);
