@@ -278,6 +278,8 @@ The filter panel provides powerful options for finding specific transactions. **
 | **Attachments** | **Yes** or **No** to find transactions with or without attachments |
 | **Search** | Free text, or the [search syntax](#search-syntax) |
 
+Choosing **Transfers** in the category filter lists every transfer, including a split's transfer line: the split shows only that line and its amount, as a split filtered by category shows only its matching lines. A bulk edit of all matching transactions leaves such a split unchanged.
+
 > [!NOTE]
 > When the filter panel is collapsed, each active filter appears as a removable chip -- click the **x** on a chip to clear just that filter. If any of your accounts are marked as favourites, a **Favourites** row of quick-select buttons appears above the panel so you can limit the list to a favourite account in one tap.
 

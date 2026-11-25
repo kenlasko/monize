@@ -29,6 +29,13 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 - [x] Register: the same arm in `findAll`, `computeSplitAwareSum` and
   `buildFilteredIdsSubquery`, so only the transfer line hydrates.
 - [x] Restate the "+90" monthly-totals case to 0; add the register case.
+- [x] `website/docs/transactions.md`: the Transfers filter lists a split by its transfer line.
+- [ ] Decision for the maintainer: bulk update (`transaction-bulk-update.service.ts`,
+  `applyCategoryFilters`) still selects whole transfer rows only under the
+  Transfers filter. Selecting a split by its transfer line would let a
+  filter-mode recategorization rewrite the split's category lines
+  (`docs/specs/split-bulk-update.md` I2), so it waits for a rule on what a bulk
+  edit of such a split does. Until then "select all matching" skips it.
 
 ## T3 tag filters
 
