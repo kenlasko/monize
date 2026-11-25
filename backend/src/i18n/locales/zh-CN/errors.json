@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "该笔转账已被其他请求修改，请重新加载后再试。",
     "transferAmountNegative": "转账金额不能为负数",
     "notATransfer": "交易不是转账",
+    "amountNotProvisional": "此交易的金额不是估算值，因此无需确认。",
     "splitTransferLegAccountLocked": "此转账属于拆分交易的一部分。请改为在源交易中编辑拆分项以更改其账户。",
     "splitTransferLegStatusLocked": "此转账属于拆分交易的一部分。请编辑其所属的拆分交易来作废或恢复它，使两侧一并变更。",
     "splitTransferLegAmountIsParentTotal": "此金额是整个拆分的合计，而不是这一转账行的金额。要更改该行金额，请在来源交易中编辑拆分。",

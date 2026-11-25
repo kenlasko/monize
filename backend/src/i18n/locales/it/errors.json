@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Questo trasferimento è stato modificato da un'altra richiesta. Ricaricalo e riprova.",
     "transferAmountNegative": "L'importo del trasferimento non deve essere negativo",
     "notATransfer": "La transazione non è un trasferimento",
+    "amountNotProvisional": "L'importo di questa transazione non è una stima, quindi non c'è nulla da confermare.",
     "splitTransferLegAccountLocked": "Questo trasferimento fa parte di una transazione suddivisa. Per cambiarne i conti, modifica la suddivisione nella transazione di origine.",
     "splitTransferLegStatusLocked": "Questo trasferimento fa parte di una transazione suddivisa. Annullalo o ripristinalo modificando la transazione suddivisa a cui appartiene, in modo che entrambi i lati cambino insieme.",
     "splitTransferLegAmountIsParentTotal": "Questo importo è il totale dell'intera suddivisione, non quello di questa riga di trasferimento. Modifica la suddivisione nella transazione di origine per cambiare l'importo della riga.",

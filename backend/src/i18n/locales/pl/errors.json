@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Ten przelew został zmieniony przez inne żądanie. Odśwież i spróbuj ponownie.",
     "transferAmountNegative": "Kwota przelewu nie może być ujemna",
     "notATransfer": "Transakcja nie jest przelewem",
+    "amountNotProvisional": "Kwota tej transakcji nie jest szacunkiem, więc nie ma czego potwierdzać.",
     "splitTransferLegAccountLocked": "Ten przelew jest częścią transakcji podzielonej. Aby zmienić jego konta, edytuj podział w transakcji źródłowej.",
     "splitTransferLegStatusLocked": "Ten przelew jest częścią transakcji podzielonej. Anuluj go lub przywróć, edytując transakcję podzieloną, do której należy, aby obie strony zmieniły się razem.",
     "splitTransferLegAmountIsParentTotal": "Ta kwota jest sumą całego podziału, a nie tej linii przelewu. Edytuj podział w transakcji źródłowej, aby zmienić kwotę linii.",

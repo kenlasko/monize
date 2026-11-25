@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "다른 요청이 이 이체를 변경했습니다. 다시 불러온 후 시도하세요.",
     "transferAmountNegative": "이체 금액은 음수일 수 없습니다",
     "notATransfer": "거래가 이체가 아닙니다",
+    "amountNotProvisional": "이 거래의 금액은 추정치가 아니므로 확인할 내용이 없습니다.",
     "splitTransferLegAccountLocked": "이 이체는 분할 거래의 일부입니다. 계좌를 변경하려면 원본 거래의 분할을 편집하세요.",
     "splitTransferLegStatusLocked": "이 이체는 분할 거래의 일부입니다. 양쪽이 함께 변경되도록, 이 이체가 속한 분할 거래를 편집하여 무효화하거나 복원하세요.",
     "splitTransferLegAmountIsParentTotal": "이 금액은 분할 전체의 합계이며 이 이체 줄의 금액이 아닙니다. 줄 금액을 바꾸려면 원본 거래에서 분할을 편집하세요.",

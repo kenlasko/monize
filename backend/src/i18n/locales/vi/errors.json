@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Giao dịch chuyển tiền này đã bị một yêu cầu khác thay đổi. Hãy tải lại rồi thử lại.",
     "transferAmountNegative": "Số tiền chuyển không được âm",
     "notATransfer": "Giao tác không phải là chuyển tiền",
+    "amountNotProvisional": "Số tiền của giao dịch này không phải là ước tính nên không có gì để xác nhận.",
     "splitTransferLegAccountLocked": "Chuyển khoản này là một phần của giao tác chia nhỏ. Hãy thay đổi tài khoản bằng cách chỉnh sửa phần chia trên giao tác nguồn.",
     "splitTransferLegStatusLocked": "Giao dịch chuyển tiền này là một phần của giao dịch được chia nhỏ. Hãy hủy hoặc phục hồi nó bằng cách chỉnh sửa giao dịch được chia nhỏ mà nó thuộc về, để cả hai bên thay đổi cùng nhau.",
     "splitTransferLegAmountIsParentTotal": "Số tiền này là tổng của toàn bộ giao dịch chia, không phải của dòng chuyển khoản này. Hãy sửa phần chia trong giao dịch nguồn để đổi số tiền của dòng.",

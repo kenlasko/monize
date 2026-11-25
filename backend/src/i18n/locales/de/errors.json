@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Diese Übertragung wurde von einer anderen Anfrage geändert. Bitte neu laden und erneut versuchen.",
     "transferAmountNegative": "Überweisungsbetrag darf nicht negativ sein",
     "notATransfer": "Buchung ist keine Überweisung",
+    "amountNotProvisional": "Der Betrag dieser Buchung ist keine Schätzung, es gibt also nichts zu bestätigen.",
     "splitTransferLegAccountLocked": "Diese Überweisung ist Teil einer geteilten Buchung. Ändern Sie die Konten, indem Sie stattdessen den Buchungsteil in der Ursprungsbuchung bearbeiten.",
     "splitTransferLegStatusLocked": "Diese Übertragung ist Teil einer aufgeteilten Transaktion. Stornieren oder wiederherstellen Sie sie, indem Sie die zugehörige aufgeteilte Transaktion bearbeiten, damit sich beide Seiten gemeinsam ändern.",
     "splitTransferLegAmountIsParentTotal": "Dieser Betrag ist die Summe der gesamten Aufteilung, nicht dieser Übertragungszeile. Bearbeiten Sie die Aufteilung in der Quelltransaktion, um den Betrag der Zeile zu ändern.",

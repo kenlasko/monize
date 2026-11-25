@@ -127,6 +127,7 @@
       "deletedTransaction": "Удалена проводка {payee} {amount}",
       "convertedToTransfer": "Транзакция {payee} {amount} преобразована в перевод",
       "convertedToTransaction": "Перевод {payee} {amount} преобразован в транзакцию",
+      "confirmedTransactionAmount": "Подтверждена оценочная сумма {payee} {amount}",
       "bulkUpdatedTransactions": "{count, plural, one {Массово обновлена # проводка} other {Массово обновлено # проводок}}",
       "createdTransfer": "Создан перевод {amount} из {from} в {to}",
       "createdInvestmentTransaction": "Создана проводка {action}",

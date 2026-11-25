@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Ce transfert a été modifié par une autre requête. Rechargez-le puis réessayez.",
     "transferAmountNegative": "Le montant du virement ne doit pas être négatif",
     "notATransfer": "La transaction n'est pas un virement",
+    "amountNotProvisional": "Le montant de cette transaction n'est pas une estimation, il n'y a donc rien à confirmer.",
     "splitTransferLegAccountLocked": "Ce virement fait partie d'une transaction fractionnée. Pour changer ses comptes, modifiez la fraction sur la transaction d'origine.",
     "splitTransferLegStatusLocked": "Ce transfert fait partie d'une transaction ventilée. Annulez-le ou rétablissez-le en modifiant la transaction ventilée à laquelle il appartient, afin que les deux côtés changent ensemble.",
     "splitTransferLegAmountIsParentTotal": "Ce montant est le total de toute la ventilation, pas celui de cette ligne de virement. Modifiez la ventilation dans l'opération source pour changer le montant de la ligne.",

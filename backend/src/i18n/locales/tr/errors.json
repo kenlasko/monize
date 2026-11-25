@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Bu transfer başka bir istek tarafından değiştirildi. Yeniden yükleyip tekrar deneyin.",
     "transferAmountNegative": "Transfer tutarı negatif olmamalıdır",
     "notATransfer": "İşlem bir transfer değil",
+    "amountNotProvisional": "Bu işlemin tutarı bir tahmin değil, bu yüzden onaylanacak bir şey yok.",
     "splitTransferLegAccountLocked": "Bu transfer, bölünmüş bir işlemin parçasıdır. Hesaplarını değiştirmek için kaynak işlemdeki bölümü düzenleyin.",
     "splitTransferLegStatusLocked": "Bu transfer, bölünmüş bir işlemin parçasıdır. İki tarafın birlikte değişmesi için, ait olduğu bölünmüş işlemi düzenleyerek iptal edin veya geri yükleyin.",
     "splitTransferLegAmountIsParentTotal": "Bu tutar, bu aktarım satırının değil, bölmenin tamamının toplamıdır. Satırın tutarını değiştirmek için kaynak işlemdeki bölmeyi düzenleyin.",

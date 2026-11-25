@@ -127,6 +127,7 @@
       "deletedTransaction": "取引 {payee} {amount} を削除しました",
       "convertedToTransfer": "取引 {payee} {amount} を振替に変換",
       "convertedToTransaction": "振替 {payee} {amount} を取引に変換",
+      "confirmedTransactionAmount": "{payee} {amount} の見積金額を確認",
       "bulkUpdatedTransactions": "{count, plural, one {# 件の取引} other {# 件の取引}}を一括更新しました",
       "createdTransfer": "{from} から {to} への {amount} の振替を作成しました",
       "createdInvestmentTransaction": "{action} 取引を作成しました",

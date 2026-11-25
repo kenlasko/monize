@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Deze overboeking is door een ander verzoek gewijzigd. Laad opnieuw en probeer het nog eens.",
     "transferAmountNegative": "Overboekingsbedrag mag niet negatief zijn",
     "notATransfer": "Transactie is geen overboeking",
+    "amountNotProvisional": "Het bedrag van deze transactie is geen schatting, dus er valt niets te bevestigen.",
     "splitTransferLegAccountLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Wijzig de rekeningen door de splitsing op de brontransactie te bewerken.",
     "splitTransferLegStatusLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Maak deze ongeldig of herstel deze door de gesplitste transactie waartoe deze behoort te bewerken, zodat beide zijden samen wijzigen.",
     "splitTransferLegAmountIsParentTotal": "Dit bedrag is het totaal van de hele splitsing, niet van deze overboekingsregel. Bewerk de splitsing in de brontransactie om het bedrag van de regel te wijzigen.",

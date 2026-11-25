@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "這筆轉帳已被其他請求修改，請重新載入後再試。",
     "transferAmountNegative": "轉帳金額不得為負數",
     "notATransfer": "交易不是轉帳",
+    "amountNotProvisional": "此交易的金額不是估算值，因此無需確認。",
     "splitTransferLegAccountLocked": "此轉帳屬於分割交易的一部分。請改為在來源交易中編輯分割以變更其帳戶。",
     "splitTransferLegStatusLocked": "此轉帳屬於拆分交易的一部分。請編輯其所屬的拆分交易來作廢或還原它，使兩側一併變更。",
     "splitTransferLegAmountIsParentTotal": "此金額是整個拆分的合計，而不是這一轉帳列的金額。要變更該列金額，請在來源交易中編輯拆分。",

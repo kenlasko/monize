@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "Transfer ini diubah oleh permintaan lain. Muat ulang lalu coba lagi.",
     "transferAmountNegative": "Jumlah transfer tidak boleh negatif",
     "notATransfer": "Transaksi bukan merupakan transfer",
+    "amountNotProvisional": "Jumlah transaksi ini bukan perkiraan, jadi tidak ada yang perlu dikonfirmasi.",
     "splitTransferLegAccountLocked": "Transfer ini adalah bagian dari transaksi terbagi. Ubah akunnya dengan mengedit pembagian pada transaksi sumber.",
     "splitTransferLegStatusLocked": "Transfer ini merupakan bagian dari transaksi terpisah. Batalkan atau pulihkan dengan mengedit transaksi terpisah yang memuatnya, agar kedua sisi berubah bersama-sama.",
     "splitTransferLegAmountIsParentTotal": "Jumlah ini adalah total seluruh pemisahan, bukan total baris transfer ini. Ubah pemisahan di transaksi sumber untuk mengganti jumlah baris.",
