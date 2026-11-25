@@ -9,6 +9,7 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import { reportPlacesMock } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -30,6 +31,7 @@ describe("DataQualityReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
+      getReportPlaces: reportPlacesMock(),
       // The converter a report builds, per row; a test swaps its body.
       convertRow: jest.fn().mockImplementation((amount: number) => amount),
       buildConverter: jest.fn(),
@@ -253,6 +255,36 @@ describe("DataQualityReportsService", () => {
       expect(result.transactions[0].currencyCode).toBe("USD");
     });
 
+    it("rounds a converted amount once at the report currency's places (issue #2410)", async () => {
+      // -1.00 EUR at 2.50498 is -2.50498 USD, sent unrounded until now: it
+      // reads -2.50. A row left in its own currency keeps its posted places.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) =>
+          fromCurrency === "EUR" ? amount * 2.50498 : amount,
+      );
+      scopedManager.query.mockResolvedValueOnce([
+        {
+          id: "tx-1",
+          transaction_date: "2025-05-01",
+          currency_code: "EUR",
+          amount: "-1.00",
+          payee_name: "Euro Store",
+          description: null,
+          account_name: "Euro Account",
+          account_id: "acc-1",
+        },
+      ]);
+      scopedManager.query.mockResolvedValueOnce([]);
+
+      const result = await service.getUncategorizedTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.transactions[0].amount).toBe(-2.5);
+    });
+
     it("includes startDate filter when provided", async () => {
       scopedManager.query.mockResolvedValueOnce([]);
       scopedManager.query.mockResolvedValueOnce([]);
@@ -333,8 +365,9 @@ describe("DataQualityReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.summary.expenseTotal).toBe(33.337);
-      expect(result.summary.incomeTotal).toBe(66.663);
+      // USD's two places (issue #2410).
+      expect(result.summary.expenseTotal).toBe(33.34);
+      expect(result.summary.incomeTotal).toBe(66.66);
     });
 
     it("formats transaction dates as YYYY-MM-DD", async () => {

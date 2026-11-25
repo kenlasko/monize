@@ -15,6 +15,7 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import { reportPlacesMock } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -137,6 +138,7 @@ describe("TaxRecurringReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
+      getReportPlaces: reportPlacesMock(),
       // The converter a report builds, per row; a test swaps its body.
       convertRow: jest.fn().mockImplementation((amount: number) => amount),
       buildConverter: jest.fn(),
@@ -439,9 +441,10 @@ describe("TaxRecurringReportsService", () => {
 
       const result = await service.getTaxSummary(mockUserId, 2025);
 
-      expect(result.incomeBySource[0].total).toBe(3333.333);
-      expect(result.totals.income).toBe(3333.333);
-      expect(result.deductibleExpenses[0].total).toBe(111.115);
+      // USD's two places, half away from zero (issue #2410).
+      expect(result.incomeBySource[0].total).toBe(3333.33);
+      expect(result.totals.income).toBe(3333.33);
+      expect(result.deductibleExpenses[0].total).toBe(111.12);
     });
 
     it("passes correct year date range to the query", async () => {
@@ -743,8 +746,9 @@ describe("TaxRecurringReportsService", () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0].payeeName).toBe("Spotify");
       expect(result.data[0].occurrences).toBe(6);
-      // 30 USD + 27.27 EUR * 1.1 = 30 + 29.997 = 59.997 (4dp storage precision)
-      expect(result.data[0].totalAmount).toBe(59.997);
+      // 30 USD + 27.27 EUR * 1.1 = 30 + 29.997 = 59.997, rounded once at
+      // USD's two places
+      expect(result.data[0].totalAmount).toBe(60);
     });
 
     it("uses the most recent last_transaction_date when merging", async () => {
@@ -847,8 +851,8 @@ describe("TaxRecurringReportsService", () => {
 
       const result = await service.getRecurringExpenses(mockUserId);
 
-      expect(result.data[0].totalAmount).toBe(33.333);
-      expect(result.data[0].averageAmount).toBe(11.111);
+      expect(result.data[0].totalAmount).toBe(33.33);
+      expect(result.data[0].averageAmount).toBe(11.11);
     });
 
     it("keeps categoryName null when category_name is null", async () => {
@@ -1629,17 +1633,18 @@ describe("TaxRecurringReportsService", () => {
       );
 
       expect(result.billPayments[0].totalPaid).toBe(100);
-      expect(result.billPayments[0].averagePayment).toBe(33.3333);
+      expect(result.billPayments[0].averagePayment).toBe(33.33);
     });
   });
 
   // ---------------------------------------------------------------------------
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001)
   // ---------------------------------------------------------------------------
-  describe("rounded once, after the parts are folded (issue #2384)", () => {
-    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.7525 alone, and 249.504948
-    // for two, which reads 249.5049. A figure that rounded its running sum on
-    // every row, or added four-place readings, came to 249.5050.
+  describe("rounded once, after the parts are folded (issues #2384, #2410)", () => {
+    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.75 alone, and 249.504948
+    // for two, which reads 249.50. A figure that rounded its running sum on
+    // every row, or added four-place readings, came to 249.5050, which showed
+    // as 249.51.
     beforeEach(() => {
       currencyService.convertRow.mockImplementation(
         (amount: number, row: RawRateBasis) =>
@@ -1647,7 +1652,7 @@ describe("TaxRecurringReportsService", () => {
       );
     });
 
-    it("totals two income sources and two deductible categories at 249.5049", async () => {
+    it("totals two income sources and two deductible categories at 249.50", async () => {
       const bonus: Category = {
         ...mockSalaryCategory,
         id: "cat-bonus",
@@ -1682,14 +1687,14 @@ describe("TaxRecurringReportsService", () => {
       const result = await service.getTaxSummary(mockUserId, 2025);
 
       expect(result.incomeBySource.map((i) => i.total)).toEqual([
-        124.7525, 124.7525,
+        124.75, 124.75,
       ]);
-      expect(result.totals.income).toBe(249.5049);
-      expect(result.totals.expenses).toBe(249.5049);
-      expect(result.totals.deductible).toBe(249.5049);
+      expect(result.totals.income).toBe(249.5);
+      expect(result.totals.expenses).toBe(249.5);
+      expect(result.totals.deductible).toBe(249.5);
     });
 
-    it("totals two recurring payees at 249.5049 and estimates a month from the unrounded total", async () => {
+    it("totals two recurring payees at 249.50 and estimates a month from the unrounded total", async () => {
       scopedManager.query.mockResolvedValue(
         ["streaming", "music"].map((name) => ({
           payee_id: null,
@@ -1707,16 +1712,14 @@ describe("TaxRecurringReportsService", () => {
 
       const result = await service.getRecurringExpenses(mockUserId, 3);
 
-      expect(result.data.map((d) => d.totalAmount)).toEqual([
-        124.7525, 124.7525,
-      ]);
-      expect(result.summary.totalRecurring).toBe(249.5049);
+      expect(result.data.map((d) => d.totalAmount)).toEqual([124.75, 124.75]);
+      expect(result.summary.totalRecurring).toBe(249.5);
       expect(result.summary.monthlyEstimate).toBe(
-        roundMoney(249.504948 / result.summary.monthCount),
+        roundMoney(249.504948 / result.summary.monthCount, 2),
       );
     });
 
-    it("totals a bill's two payments at 249.5049", async () => {
+    it("totals a bill's two payments at 249.50", async () => {
       scopedManager.query
         .mockResolvedValueOnce([
           {
@@ -1744,11 +1747,11 @@ describe("TaxRecurringReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.billPayments[0].totalPaid).toBe(249.5049);
-      expect(result.billPayments[0].averagePayment).toBe(124.7525);
-      expect(result.summary.totalPaid).toBe(249.5049);
+      expect(result.billPayments[0].totalPaid).toBe(249.5);
+      expect(result.billPayments[0].averagePayment).toBe(124.75);
+      expect(result.summary.totalPaid).toBe(249.5);
       expect(result.monthlyTotals.map((m) => m.total)).toEqual([
-        124.7525, 124.7525,
+        124.75, 124.75,
       ]);
     });
   });

@@ -2,6 +2,7 @@ import {
   indexRateRows,
   RateIndex,
 } from "../common/time-series/rate-index.util";
+import { reportPlacesFor } from "../common/report-figure";
 
 /**
  * The day a report fixture's foreign rows are struck on, and the day its rates
@@ -37,3 +38,13 @@ export function rateIndexOf(rates: readonly FixtureRate[]): RateIndex {
       .sort((a, b) => a.rate_date.localeCompare(b.rate_date)),
   );
 }
+
+/**
+ * `ReportCurrencyService.getReportPlaces` for a spec that mocks the service:
+ * an ISO code's minor unit, as the real service answers it without a read
+ * (2 for USD, 0 for JPY), else 2.
+ */
+export const reportPlacesMock = (): jest.Mock =>
+  jest.fn((currency: string) =>
+    Promise.resolve(reportPlacesFor(currency, new Map())),
+  );

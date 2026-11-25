@@ -9,6 +9,7 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
+import { reportFigure } from "../common/report-figure";
 import {
   MONEY_SCALE,
   roundMoney,
@@ -65,6 +66,10 @@ export class DataQualityReportsService {
   ): Promise<UncategorizedTransactionsResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // A converted figure leaves rounded once at the reporting currency's
+    // places (docs/specs/report-rounding-and-aggregation.md section 6); a row
+    // left in its own currency is its posted amount and keeps its places.
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     let query = `
       SELECT
@@ -142,7 +147,10 @@ export class DataQualityReportsService {
       const shown =
         converted === null
           ? { amount, currencyCode: row.currency_code }
-          : { amount: converted, currencyCode: defaultCurrency };
+          : {
+              amount: reportFigure(converted, places),
+              currencyCode: defaultCurrency,
+            };
       return {
         id: row.id,
         transactionDate: new Date(row.transaction_date)
@@ -250,8 +258,8 @@ export class DataQualityReportsService {
       expenseTotal.addConverted(expense);
       incomeTotal.addConverted(income);
     }
-    const knownExpenseTotal = roundMoney(expenseTotal.knownSubtotal);
-    const knownIncomeTotal = roundMoney(incomeTotal.knownSubtotal);
+    const knownExpenseTotal = expenseTotal.knownSubtotalAt(places);
+    const knownIncomeTotal = incomeTotal.knownSubtotalAt(places);
 
     return {
       transactions,

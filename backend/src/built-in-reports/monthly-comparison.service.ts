@@ -7,7 +7,7 @@ import {
   IncomeReportsService,
 } from "./income-reports.service";
 import { ReportCurrencyService } from "./report-currency.service";
-import { roundMoney } from "../common/round.util";
+import { reportFigureOrNull } from "../common/report-figure";
 import { FxAggregate } from "../common/fx-aggregate";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import {
@@ -88,6 +88,10 @@ export class MonthlyComparisonService {
 
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every figure leaves rounded once at the reporting currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6), as the
+    // reports this one reads round theirs.
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     // Fetch all data in parallel
     const [
@@ -148,17 +152,17 @@ export class MonthlyComparisonService {
     const incomeExpenses: MonthlyComparisonIncomeExpenses = {
       currentMonth: month,
       previousMonth: previousMonthStr,
-      currentIncome: cur.income.knownSubtotal,
-      previousIncome: prev.income.knownSubtotal,
-      incomeChange: this.change(cur.income, prev.income),
+      currentIncome: cur.income.knownSubtotalAt(places),
+      previousIncome: prev.income.knownSubtotalAt(places),
+      incomeChange: this.change(cur.income, prev.income, places),
       incomeChangePercent: this.percentChange(prev.income, cur.income),
-      currentExpenses: cur.expenses.knownSubtotal,
-      previousExpenses: prev.expenses.knownSubtotal,
-      expensesChange: this.change(cur.expenses, prev.expenses),
+      currentExpenses: cur.expenses.knownSubtotalAt(places),
+      previousExpenses: prev.expenses.knownSubtotalAt(places),
+      expensesChange: this.change(cur.expenses, prev.expenses, places),
       expensesChangePercent: this.percentChange(prev.expenses, cur.expenses),
-      currentSavings: currentSavings.knownSubtotal,
-      previousSavings: previousSavings.knownSubtotal,
-      savingsChange: this.change(currentSavings, previousSavings),
+      currentSavings: currentSavings.knownSubtotalAt(places),
+      previousSavings: previousSavings.knownSubtotalAt(places),
+      savingsChange: this.change(currentSavings, previousSavings, places),
       savingsChangePercent: this.percentChange(previousSavings, currentSavings),
     };
 
@@ -185,6 +189,7 @@ export class MonthlyComparisonService {
     const expenses = this.buildExpenseComparison(
       currentSpending,
       previousSpending,
+      places,
     );
 
     // Build top 5 categories
@@ -208,6 +213,7 @@ export class MonthlyComparisonService {
       netWorthHistory,
       month,
       previousMonthStr,
+      places,
     );
 
     // Build investment performance
@@ -215,6 +221,7 @@ export class MonthlyComparisonService {
       userId,
       currentEnd,
       defaultCurrency,
+      places,
       topMovers,
     );
 
@@ -260,6 +267,7 @@ export class MonthlyComparisonService {
   private buildExpenseComparison(
     current: SpendingWithAggregates,
     previous: SpendingWithAggregates,
+    places: number,
   ): MonthlyComparisonExpenses {
     const currentData = current.response.data;
     const previousData = previous.response.data;
@@ -327,9 +335,9 @@ export class MonthlyComparisonService {
         categoryId: c.categoryId,
         categoryName: c.categoryName,
         color: c.color,
-        currentTotal: c.current.knownSubtotal,
-        previousTotal: c.previous.knownSubtotal,
-        change: this.change(c.current, c.previous),
+        currentTotal: c.current.knownSubtotalAt(places),
+        previousTotal: c.previous.knownSubtotalAt(places),
+        change: this.change(c.current, c.previous, places),
         changePercent: this.percentChange(c.previous, c.current),
       }))
       .sort((a, b) => b.currentTotal - a.currentTotal);
@@ -356,6 +364,7 @@ export class MonthlyComparisonService {
     >[],
     currentMonth: string,
     previousMonth: string,
+    places: number,
   ): MonthlyComparisonNetWorth {
     const monthlyHistory = history.map((h) => ({
       month: h.month,
@@ -412,7 +421,7 @@ export class MonthlyComparisonService {
       // The change is the difference of the two months' aggregates, read once
       // (rule 4).
       netWorthChange: bothComplete
-        ? this.change(cur.aggregate, prev.aggregate)
+        ? this.change(cur.aggregate, prev.aggregate, places)
         : null,
       netWorthChangePercent: bothComplete
         ? this.percentChange(prev.aggregate, cur.aggregate)
@@ -426,6 +435,7 @@ export class MonthlyComparisonService {
     userId: string,
     currentEnd: string,
     currency: string,
+    places: number,
     topMovers: TopMover[],
   ): Promise<MonthlyComparisonInvestments> {
     // Get investment accounts
@@ -480,18 +490,9 @@ export class MonthlyComparisonService {
       accountPerformance.push({
         accountId: account.id,
         accountName: (account.name || "").replace(" - Brokerage", ""),
-        currentValue:
-          result.investedValueEnd === null
-            ? null
-            : roundMoney(result.investedValueEnd),
-        startValue:
-          result.investedValueStart === null
-            ? null
-            : roundMoney(result.investedValueStart),
-        investmentPnl:
-          result.investmentPnl === null
-            ? null
-            : roundMoney(result.investmentPnl),
+        currentValue: reportFigureOrNull(result.investedValueEnd, places),
+        startValue: reportFigureOrNull(result.investedValueStart, places),
+        investmentPnl: reportFigureOrNull(result.investmentPnl, places),
         returnPercent:
           result.investmentReturnPercent === null
             ? null
@@ -527,12 +528,16 @@ export class MonthlyComparisonService {
   }
 
   /**
-   * `current` less `previous`, rounded once from the two aggregates: the
-   * difference of their four-place readings can sit a unit off the exact
+   * `current` less `previous`, rounded once from the two aggregates at
+   * `places`: the difference of their readings can sit a unit off the exact
    * change (docs/specs/report-rounding-and-aggregation.md rule 4).
    */
-  private change(current: FxAggregate, previous: FxAggregate): number {
-    return FxAggregate.difference(current, previous).knownSubtotal;
+  private change(
+    current: FxAggregate,
+    previous: FxAggregate,
+    places: number,
+  ): number {
+    return FxAggregate.difference(current, previous).knownSubtotalAt(places);
   }
 
   /**
