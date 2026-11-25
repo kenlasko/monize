@@ -98,6 +98,7 @@ implied.
 | INV-REPORT-003 | A transfer leg appears in a report only as a named flow, never inside income, expenses or net | enforced |
 | INV-REPORT-004 | A category's cost is its signed sum within the category, on every report surface | partial |
 | INV-REPORT-005 | A report figure is rounded once, from its own components: no part enters a total as its rounded reading | partial |
+| INV-REPORT-006 | A split line reads as the whole row it stands for: a transfer line is a leg, and a tag filter counts it once | partial |
 | INV-SANKEY-001 | The Cash Flow Sankey closes: income + inflows + deficit = expenses + outflows + unspent | enforced |
 | INV-SANKEY-002 | A Sankey transfer leg is counted at most once, by its own account's scope and its counterpart's class | enforced |
 | INV-SANKEY-003 | Investment linkage and VOID are excluded on every Sankey branch | enforced |
@@ -3543,6 +3544,41 @@ Known gap           A holding's own value, cost and gain in the portfolio
                     aggregate), so a budget report figure is the two-place
                     reading of a four-place one; the transfers-in toggle's
                     figure folds as its aggregate in Budget Health only.
+Status              partial
+```
+
+### INV-REPORT-006 -- a split line reads as the whole row it stands for
+
+```text
+Statement           A split line counts as the whole row it stands for: a
+                    transfer line is a transfer leg on its parent's account at
+                    the line's signed amount, and a transfers-only read counts
+                    it beside the whole transfer rows, once. A tag filter
+                    selects a line when its parent or the line carries a
+                    selected tag and counts it once, however many tags match.
+                    The parent is never counted beside its lines.
+Source of truth     transaction_splits.transfer_account_id for what a line is;
+                    the line's own signed amount.
+Enforcement         The Cash Flow Sankey (wholeTransferLegsQuery /
+                    splitTransferLegsQuery), Income vs Expenses' tagged flows,
+                    the budget transfer builders (budget-spending.util.ts) and
+                    the custom report (netLinesOf) read both shapes. The
+                    tag-key filter is an EXISTS (buildTagKeyFilterClause).
+Concurrency scope   -- (read path)
+Retry semantics     -- (read path)
+Crash semantics     -- (read path)
+Failure response    -- a report answers; it does not refuse.
+Required tests      report-transfer-fx-surfaces.integration.spec.ts: a whole
+                    transfer and the equivalent split line give one figure on
+                    each surface the spec's section 5 names; both accounts in
+                    scope net to zero; a line matching several tags counts
+                    once.
+Known gap           The Monthly Category Breakdown's transfer rows,
+                    getTransfersByAccount (AI and MCP list_transactions with
+                    transfersOnly), the analytics and register transfers
+                    filter, the analytics and register tag filters, and Budget
+                    Health's income fallback (docs/specs/split-line-equivalence.md
+                    section 5; tasks T1-T4).
 Status              partial
 ```
 
