@@ -2300,6 +2300,47 @@ describe("NetWorthService", () => {
       expect(result[0].assets).toBe(1000.5678);
       expect(result[0].liabilities).toBe(0.0001);
       expect(result[0].netWorth).toBe(1000.5678);
+      // The public series carries no aggregate.
+      expect(result[0]).not.toHaveProperty("netWorthAggregate");
+    });
+
+    it("hands each month's net worth on as an aggregate (issue #2407)", async () => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+      reportQuery.mockResolvedValueOnce([
+        {
+          month: "2024-01-01",
+          balance: 1000.567849,
+          market_value: null,
+          account_id: "a1",
+          account_type: AccountType.CHEQUING,
+          account_sub_type: null,
+          currency_code: "USD",
+        },
+        {
+          month: "2024-01-01",
+          balance: -0.00005,
+          market_value: null,
+          account_id: "a2",
+          account_type: AccountType.CREDIT_CARD,
+          account_sub_type: null,
+          currency_code: "USD",
+        },
+      ]);
+
+      const result = await service.getMonthlyNetWorthWithAggregates(
+        "user-1",
+        "2024-01-01",
+        "2024-01-31",
+      );
+
+      expect(result[0].netWorth).toBe(1000.5678);
+      expect(result[0].netWorthAggregate.unroundedSubtotal).toBe(1000.567799);
+      expect(result[0].netWorthAggregate.knownSubtotal).toBe(
+        result[0].netWorth,
+      );
     });
 
     it("classifies all liability types correctly", async () => {

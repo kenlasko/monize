@@ -2,16 +2,23 @@ import { Injectable } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { SpendingReportsService } from "./spending-reports.service";
-import { IncomeReportsService } from "./income-reports.service";
+import {
+  IncomeExpensePeriodAggregates,
+  IncomeReportsService,
+} from "./income-reports.service";
 import { ReportCurrencyService } from "./report-currency.service";
 import { roundMoney } from "../common/round.util";
+import { FxAggregate } from "../common/fx-aggregate";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import {
   NumberT,
   defaultNumberT,
   numberFormatterFor,
 } from "../common/number-locale.util";
-import { NetWorthService } from "../net-worth/net-worth.service";
+import {
+  MonthlyNetWorthWithAggregate,
+  NetWorthService,
+} from "../net-worth/net-worth.service";
 import { PortfolioService, TopMover } from "../securities/portfolio.service";
 import { PortfolioPeriodResultService } from "../net-worth/portfolio-period-result.service";
 import { todayYMD } from "../common/date-utils";
@@ -34,6 +41,18 @@ import {
   InvestmentTopMover,
   SpendingByCategoryResponse,
 } from "./dto";
+
+/** One window's Spending by Category, with each listed category's aggregate. */
+interface SpendingWithAggregates {
+  response: SpendingByCategoryResponse;
+  categories: ReadonlyMap<string | null, FxAggregate>;
+}
+
+/** A month with no rows earned and spent nothing: a known zero. */
+const emptyMonth = (): IncomeExpensePeriodAggregates => ({
+  income: new FxAggregate(),
+  expenses: new FxAggregate(),
+});
 
 @Injectable()
 export class MonthlyComparisonService {
@@ -79,25 +98,33 @@ export class MonthlyComparisonService {
       netWorthHistory,
       topMovers,
     ] = await Promise.all([
-      this.incomeReports.getIncomeVsExpenses(userId, currentStart, currentEnd),
-      this.incomeReports.getIncomeVsExpenses(
+      this.incomeReports.getIncomeVsExpensesWithAggregates(
+        userId,
+        currentStart,
+        currentEnd,
+      ),
+      this.incomeReports.getIncomeVsExpensesWithAggregates(
         userId,
         previousStart,
         previousEnd,
       ),
-      this.spendingReports.getSpendingByCategory(
+      this.spendingReports.getSpendingByCategoryWithAggregates(
         userId,
         currentStart,
         currentEnd,
         { rollupToParent: false },
       ),
-      this.spendingReports.getSpendingByCategory(
+      this.spendingReports.getSpendingByCategoryWithAggregates(
         userId,
         previousStart,
         previousEnd,
         { rollupToParent: false },
       ),
-      this.netWorthService.getMonthlyNetWorth(userId, historyStart, currentEnd),
+      this.netWorthService.getMonthlyNetWorthWithAggregates(
+        userId,
+        historyStart,
+        currentEnd,
+      ),
       this.portfolioService.getMonthOverMonthMovers(
         userId,
         currentEnd,
@@ -105,50 +132,33 @@ export class MonthlyComparisonService {
       ),
     ]);
 
-    // Extract single-month income/expenses from the responses. The bucket key
-    // for a month IS `YYYY-MM`, which is what this comparison asks for.
-    const curData = currentIncExp.data.find((d) => d.period === month);
-    const prevData = previousIncExp.data.find(
-      (d) => d.period === previousMonthStr,
-    );
+    // Each month's income and expenses as aggregates. The bucket key for a
+    // month IS `YYYY-MM`, which is what this comparison asks for.
+    const cur = currentIncExp.periods.get(month) ?? emptyMonth();
+    const prev = previousIncExp.periods.get(previousMonthStr) ?? emptyMonth();
+    // A month's savings is its own net, income less expenses before either is
+    // rounded (docs/specs/report-rounding-and-aggregation.md rule 2).
+    const currentSavings = FxAggregate.difference(cur.income, cur.expenses);
+    const previousSavings = FxAggregate.difference(prev.income, prev.expenses);
 
-    const currentIncome = curData?.income ?? 0;
-    const previousIncome = prevData?.income ?? 0;
-    const currentExpenses = curData?.expenses ?? 0;
-    const previousExpenses = prevData?.expenses ?? 0;
-    // A month's savings is its own net, rounded once from its rows, never the
-    // difference of its two rounded sides
-    // (docs/specs/report-rounding-and-aggregation.md rule 2).
-    const currentSavings = curData?.net ?? 0;
-    const previousSavings = prevData?.net ?? 0;
-
-    // A change is the difference of the two figures this report shows,
-    // rounded to drop the float residue that subtracting two four-place
-    // doubles leaves (1999.5556000000006). The months come from two other
-    // reports already rounded, so it can sit a unit from the exact change: a
-    // residual recorded in rule 4 of
-    // docs/specs/report-rounding-and-aggregation.md.
-    const change = (current: number, previous: number) =>
-      roundMoney(current - previous);
-
-    // Build income/expenses section
+    // Build income/expenses section. Each figure is its aggregate read once,
+    // and each change the difference of the two months' aggregates read once:
+    // the difference of the two readings could sit a unit off the exact
+    // change (rule 4).
     const incomeExpenses: MonthlyComparisonIncomeExpenses = {
       currentMonth: month,
       previousMonth: previousMonthStr,
-      currentIncome,
-      previousIncome,
-      incomeChange: change(currentIncome, previousIncome),
-      incomeChangePercent: this.percentChange(previousIncome, currentIncome),
-      currentExpenses,
-      previousExpenses,
-      expensesChange: change(currentExpenses, previousExpenses),
-      expensesChangePercent: this.percentChange(
-        previousExpenses,
-        currentExpenses,
-      ),
-      currentSavings,
-      previousSavings,
-      savingsChange: change(currentSavings, previousSavings),
+      currentIncome: cur.income.knownSubtotal,
+      previousIncome: prev.income.knownSubtotal,
+      incomeChange: this.change(cur.income, prev.income),
+      incomeChangePercent: this.percentChange(prev.income, cur.income),
+      currentExpenses: cur.expenses.knownSubtotal,
+      previousExpenses: prev.expenses.knownSubtotal,
+      expensesChange: this.change(cur.expenses, prev.expenses),
+      expensesChangePercent: this.percentChange(prev.expenses, cur.expenses),
+      currentSavings: currentSavings.knownSubtotal,
+      previousSavings: previousSavings.knownSubtotal,
+      savingsChange: this.change(currentSavings, previousSavings),
       savingsChangePercent: this.percentChange(previousSavings, currentSavings),
     };
 
@@ -179,13 +189,13 @@ export class MonthlyComparisonService {
 
     // Build top 5 categories
     const topCategories: TopCategoriesComparison = {
-      currentMonth: currentSpending.data.slice(0, 5).map((c) => ({
+      currentMonth: currentSpending.response.data.slice(0, 5).map((c) => ({
         categoryId: c.categoryId,
         categoryName: c.categoryName,
         color: c.color,
         total: c.total,
       })),
-      previousMonth: previousSpending.data.slice(0, 5).map((c) => ({
+      previousMonth: previousSpending.response.data.slice(0, 5).map((c) => ({
         categoryId: c.categoryId,
         categoryName: c.categoryName,
         color: c.color,
@@ -248,11 +258,11 @@ export class MonthlyComparisonService {
   }
 
   private buildExpenseComparison(
-    current: SpendingByCategoryResponse,
-    previous: SpendingByCategoryResponse,
+    current: SpendingWithAggregates,
+    previous: SpendingWithAggregates,
   ): MonthlyComparisonExpenses {
-    const currentData = current.data;
-    const previousData = previous.data;
+    const currentData = current.response.data;
+    const previousData = previous.response.data;
     const currentMonth: CategorySpendingSnapshot[] = currentData.map((c) => ({
       categoryId: c.categoryId,
       categoryName: c.categoryName,
@@ -273,10 +283,16 @@ export class MonthlyComparisonService {
         categoryId: string | null;
         categoryName: string;
         color: string | null;
-        currentTotal: number;
-        previousTotal: number;
+        current: FxAggregate;
+        previous: FxAggregate;
       }
     >();
+
+    // A category a month did not list spent nothing in it: a known zero.
+    const aggregateOf = (
+      window: SpendingWithAggregates,
+      categoryId: string | null,
+    ): FxAggregate => window.categories.get(categoryId) ?? new FxAggregate();
 
     for (const c of currentData) {
       const key = c.categoryId || c.categoryName;
@@ -284,22 +300,22 @@ export class MonthlyComparisonService {
         categoryId: c.categoryId,
         categoryName: c.categoryName,
         color: c.color,
-        currentTotal: c.total,
-        previousTotal: 0,
+        current: aggregateOf(current, c.categoryId),
+        previous: new FxAggregate(),
       });
     }
     for (const c of previousData) {
       const key = c.categoryId || c.categoryName;
       const existing = allCategories.get(key);
       if (existing) {
-        existing.previousTotal = c.total;
+        existing.previous = aggregateOf(previous, c.categoryId);
       } else {
         allCategories.set(key, {
           categoryId: c.categoryId,
           categoryName: c.categoryName,
           color: c.color,
-          currentTotal: 0,
-          previousTotal: c.total,
+          current: new FxAggregate(),
+          previous: aggregateOf(previous, c.categoryId),
         });
       }
     }
@@ -311,10 +327,10 @@ export class MonthlyComparisonService {
         categoryId: c.categoryId,
         categoryName: c.categoryName,
         color: c.color,
-        currentTotal: c.currentTotal,
-        previousTotal: c.previousTotal,
-        change: roundMoney(c.currentTotal - c.previousTotal),
-        changePercent: this.percentChange(c.previousTotal, c.currentTotal),
+        currentTotal: c.current.knownSubtotal,
+        previousTotal: c.previous.knownSubtotal,
+        change: this.change(c.current, c.previous),
+        changePercent: this.percentChange(c.previous, c.current),
       }))
       .sort((a, b) => b.currentTotal - a.currentTotal);
 
@@ -324,20 +340,20 @@ export class MonthlyComparisonService {
       currentMonth,
       previousMonth,
       comparison,
-      currentTotal: current.knownSpending,
-      previousTotal: previous.knownSpending,
+      currentTotal: current.response.knownSpending,
+      previousTotal: previous.response.knownSpending,
     };
   }
 
   private buildNetWorth(
-    history: {
-      month: string;
-      assets: number;
-      liabilities: number;
-      netWorth: number;
-      fxComplete: boolean;
-      missingRatePairs: string[];
-    }[],
+    history: Pick<
+      MonthlyNetWorthWithAggregate,
+      | "month"
+      | "netWorth"
+      | "netWorthAggregate"
+      | "fxComplete"
+      | "missingRatePairs"
+    >[],
     currentMonth: string,
     previousMonth: string,
   ): MonthlyComparisonNetWorth {
@@ -359,14 +375,25 @@ export class MonthlyComparisonService {
     // way the series treats an empty month, not an unknown one.
     const resolve = (
       month: typeof current,
-    ): { known: number; complete: boolean; pairs: string[] } =>
+    ): {
+      known: number;
+      aggregate: FxAggregate;
+      complete: boolean;
+      pairs: string[];
+    } =>
       month
         ? {
             known: month.netWorth,
+            aggregate: month.netWorthAggregate,
             complete: month.fxComplete,
             pairs: month.missingRatePairs,
           }
-        : { known: 0, complete: true, pairs: [] };
+        : {
+            known: 0,
+            aggregate: new FxAggregate(),
+            complete: true,
+            pairs: [],
+          };
     const cur = resolve(current);
     const prev = resolve(previous);
 
@@ -382,9 +409,13 @@ export class MonthlyComparisonService {
       previousNetWorth,
       knownCurrentNetWorth: cur.known,
       knownPreviousNetWorth: prev.known,
-      netWorthChange: bothComplete ? roundMoney(cur.known - prev.known) : null,
+      // The change is the difference of the two months' aggregates, read once
+      // (rule 4).
+      netWorthChange: bothComplete
+        ? this.change(cur.aggregate, prev.aggregate)
+        : null,
       netWorthChangePercent: bothComplete
-        ? this.percentChange(prev.known, cur.known)
+        ? this.percentChange(prev.aggregate, cur.aggregate)
         : null,
       fxComplete: bothComplete,
       missingRatePairs: [...new Set([...cur.pairs, ...prev.pairs])].sort(),
@@ -495,10 +526,28 @@ export class MonthlyComparisonService {
     };
   }
 
-  private percentChange(previous: number, current: number): number {
-    if (previous === 0) return current === 0 ? 0 : 100;
+  /**
+   * `current` less `previous`, rounded once from the two aggregates: the
+   * difference of their four-place readings can sit a unit off the exact
+   * change (docs/specs/report-rounding-and-aggregation.md rule 4).
+   */
+  private change(current: FxAggregate, previous: FxAggregate): number {
+    return FxAggregate.difference(current, previous).knownSubtotal;
+  }
+
+  /**
+   * The change as a percentage of `previous`, worked out from the unrounded
+   * values and rounded once (rule 8); whether `previous` is zero reads its
+   * sign, before rounding (rule 5).
+   */
+  private percentChange(previous: FxAggregate, current: FxAggregate): number {
+    if (previous.sign === 0) return current.sign === 0 ? 0 : 100;
+    const change = FxAggregate.difference(current, previous);
     return (
-      Math.round(((current - previous) / Math.abs(previous)) * 10000) / 100
+      Math.round(
+        (change.unroundedSubtotal / Math.abs(previous.unroundedSubtotal)) *
+          10000,
+      ) / 100
     );
   }
 

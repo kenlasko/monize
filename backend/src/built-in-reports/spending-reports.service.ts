@@ -122,6 +122,37 @@ export class SpendingReportsService {
       tagValue?: string;
     } = {},
   ): Promise<SpendingByCategoryResponse> {
+    const { response } = await this.getSpendingByCategoryWithAggregates(
+      userId,
+      startDate,
+      endDate,
+      options,
+    );
+    return response;
+  }
+
+  /**
+   * `getSpendingByCategory`'s response beside each listed category's net
+   * spend as an aggregate, keyed by the row's `categoryId` (`null` for
+   * Uncategorized), for a caller that works out a figure from two windows
+   * (the Monthly Comparison's change per category): the difference of the two
+   * aggregates is rounded once, where the difference of the rows' readings can
+   * sit a unit off (`docs/specs/report-rounding-and-aggregation.md` rule 4).
+   */
+  async getSpendingByCategoryWithAggregates(
+    userId: string,
+    startDate: string | undefined,
+    endDate: string,
+    options: {
+      rollupToParent?: boolean;
+      accountIds?: string[];
+      tagKey?: string;
+      tagValue?: string;
+    } = {},
+  ): Promise<{
+    response: SpendingByCategoryResponse;
+    categories: ReadonlyMap<string | null, FxAggregate>;
+  }> {
     const { rollupToParent = true, accountIds, tagKey, tagValue } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
@@ -307,12 +338,17 @@ export class SpendingReportsService {
     const knownSpending = spending.knownSubtotal;
 
     return {
-      data,
-      totalSpending: gaps.headline(knownSpending),
-      knownSpending,
-      currency: defaultCurrency,
-      missingCurrencies: gaps.missingCurrencies,
-      excludedCount: gaps.excludedCount,
+      response: {
+        data,
+        totalSpending: gaps.headline(knownSpending),
+        knownSpending,
+        currency: defaultCurrency,
+        missingCurrencies: gaps.missingCurrencies,
+        excludedCount: gaps.excludedCount,
+      },
+      categories: new Map(
+        spent.map(([id, { agg }]) => [id === "uncategorized" ? null : id, agg]),
+      ),
     };
   }
 

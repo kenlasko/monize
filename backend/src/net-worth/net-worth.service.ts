@@ -303,6 +303,14 @@ export interface InvestmentBreakdown {
 }
 
 /**
+ * One month of `getMonthlyNetWorth`, with the aggregate its `netWorth` is read
+ * from (`getMonthlyNetWorthWithAggregates`).
+ */
+export type MonthlyNetWorthWithAggregate = Awaited<
+  ReturnType<NetWorthService["getMonthlyNetWorth"]>
+>[number] & { netWorthAggregate: FxAggregate };
+
+/**
  * Account recomputes still running. Most callers start `recalculateAccount`
  * without awaiting it (the post-import pass, account edits, the debounce
  * timer), so a test teardown that truncates `transactions` can meet one
@@ -947,6 +955,33 @@ export class NetWorthService {
       byAccountType: Partial<Record<AccountType, number>>;
     }[]
   > {
+    const months = await this.getMonthlyNetWorthWithAggregates(
+      userId,
+      startDate || "1990-01-01",
+      endDate || new Date().toISOString().slice(0, 10),
+      jointScope,
+      options,
+    );
+    return months.map(
+      ({ netWorthAggregate: _netWorthAggregate, ...month }) => month,
+    );
+  }
+
+  /**
+   * `getMonthlyNetWorth` with each month's net worth beside it as the
+   * aggregate it is read from, for a caller that works out a figure from two
+   * months (the Monthly Comparison's change): the difference of the two
+   * aggregates is rounded once, where the difference of the two readings can
+   * sit a unit off (`docs/specs/report-rounding-and-aggregation.md` rule 4).
+   * The window is given in full: its defaults are `getMonthlyNetWorth`'s.
+   */
+  async getMonthlyNetWorthWithAggregates(
+    userId: string,
+    start: string,
+    end: string,
+    jointScope?: JointNetWorthScope,
+    options?: SeriesFetchOptions,
+  ): Promise<MonthlyNetWorthWithAggregate[]> {
     await this.ensurePopulated(userId);
     const jointIds = jointScope?.accounts.map((a) => a.accountId) ?? [];
     if (jointScope && jointIds.length > 0) {
@@ -957,9 +992,6 @@ export class NetWorthService {
       m.getRepository(UserPreference).findOne({ where: { userId } }),
     );
     const defaultCurrency = preferredCurrency(pref);
-
-    const start = startDate || "1990-01-01";
-    const end = endDate || new Date().toISOString().slice(0, 10);
 
     // Own rows keep the owner-side exclude_from_net_worth predicate; joint
     // rows are governed solely by the pre-filtered scope (see
@@ -1011,17 +1043,7 @@ export class NetWorthService {
     snapshots: MonthlySnapshotRow[],
     defaultCurrency: string,
     rateIndex: RateIndex,
-  ): {
-    month: string;
-    assets: number;
-    liabilities: number;
-    netWorth: number;
-    fxComplete: boolean;
-    missingRatePairs: string[];
-    assetsFxComplete: boolean;
-    liabilitiesFxComplete: boolean;
-    byAccountType: Partial<Record<AccountType, number>>;
-  }[] {
+  ): MonthlyNetWorthWithAggregate[] {
     // Aggregate by month. Assets and liabilities each accumulate through an
     // FxAggregate so a month containing a component with no available rate
     // reports an unknown total instead of a plausible wrong one (P5-009).
@@ -1114,12 +1136,16 @@ export class NetWorthService {
         // unrounded subtotals, rounded once (FxAggregate.difference): the
         // difference of their four-place readings could sit a unit off
         // (docs/specs/report-rounding-and-aggregation.md rule 2).
+        const netWorthAggregate = FxAggregate.difference(
+          data.assets,
+          data.liabilities,
+        );
         return {
           month,
           assets: roundMoney(data.assets.knownSubtotal),
           liabilities: roundMoney(data.liabilities.knownSubtotal),
-          netWorth: FxAggregate.difference(data.assets, data.liabilities)
-            .knownSubtotal,
+          netWorth: netWorthAggregate.knownSubtotal,
+          netWorthAggregate,
           // Stage 1 of docs/specs/fx-conversion-completeness.md: the three
           // figures above are the subtotal of what converted, and these two
           // fields say so. They are NOT yet nullable -- that is stage 2, with

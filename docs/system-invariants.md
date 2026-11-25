@@ -3394,7 +3394,9 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     (report-net-cells.ts, report-rows.ts), the built-in
                     reports ticked in stage 1 of
                     docs/future-plans/report-rounding-and-aggregation-tasks.md,
-                    convertDatedRows, the monthly net worth, the portfolio
+                    convertDatedRows, the monthly net worth, the Monthly
+                    Comparison's changes (each the difference of the two
+                    months' aggregates), the portfolio
                     gains (each account's and the summary's), the AI
                     insights, forecast and flow totals and the client's
                     sumConverted
@@ -3429,9 +3431,7 @@ Known gap           Report figures leave the server at four places and the
                     Several client totals are built from rounded rows (the
                     same task list, stage 3). Budget Health adds a month's
                     converted foreign income, rounded once, to its native
-                    income, and the Monthly Comparison's changes are
-                    differences of two rounded figures (stage 1's open
-                    items).
+                    income (a stage 1 open item).
 Status              partial
 ```
 

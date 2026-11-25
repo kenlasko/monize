@@ -73,10 +73,6 @@ before they were added:
    `actual` less its rounded `budgeted`. One definition keeps the sum of what it
    shows and says so where it is computed: a tag bucket's window flows are the
    sum of its per-period flows (I8 of `docs/specs/report-tag-key-breakdown.md`).
-   One residual is recorded rather than defined: the Monthly Comparison reads
-   each month's figures from Income vs Expenses and Spending by Category, so its
-   change is the difference of two rounded figures, rounded, and can sit a unit
-   from the exact change until those reports hand it their aggregates.
 5. **A direction or threshold decision reads the sign before rounding.** "Is this
    category spending", "is this net income", "is this figure zero" read
    `FxAggregate.sign`: a net of 0.00003 is money in though it reads 0.0000. A
