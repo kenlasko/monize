@@ -16,6 +16,7 @@ import {
   SavingsRatePoint,
 } from "./budget-reports.service";
 import { roundToDecimals, sumMoney } from "../common/round.util";
+import { reportPlacesOf } from "../common/report-figure";
 import {
   budgetExcludedAccountIds,
   CategorySpending,
@@ -244,6 +245,9 @@ export class BudgetHealthReportsService {
     months: number,
   ): Promise<SavingsRatePoint[]> {
     const budget = await this.budgetsService.findOne(userId, budgetId);
+    // Each figure leaves rounded once at the budget currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await reportPlacesOf(this.dataSource, budget.currencyCode);
 
     const incomeCategories = (budget.categories || []).filter(
       (bc) => bc.isIncome,
@@ -421,7 +425,7 @@ export class BudgetHealthReportsService {
       // A ratio of the unrounded figures, rounded once (rule 8), over an
       // income that reads as money: dust that shows as 0 has no rate.
       const savingsRate =
-        income.knownSubtotal > 0
+        income.knownSubtotalAt(places) > 0
           ? roundToDecimals(
               (savings.unroundedSubtotal / income.unroundedSubtotal) * 100,
               2,
@@ -430,9 +434,9 @@ export class BudgetHealthReportsService {
 
       result.push({
         monthKey,
-        income: income.knownSubtotal,
-        expenses: expenses.knownSubtotal,
-        savings: savings.knownSubtotal,
+        income: income.knownSubtotalAt(places),
+        expenses: expenses.knownSubtotalAt(places),
+        savings: savings.knownSubtotalAt(places),
         savingsRate,
         valuationComplete:
           !foreignIncomeMonths.has(monthKey) &&

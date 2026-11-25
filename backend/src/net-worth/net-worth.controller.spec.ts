@@ -36,6 +36,7 @@ describe("NetWorthController", () => {
       getMonthlyNetWorth: jest.fn(),
       getMonthlyInvestments: jest.fn(),
       getDailyInvestments: jest.fn(),
+      getDailyInvestmentsReport: jest.fn(),
       getSampledInvestments: jest.fn(),
       getInvestmentBreakdown: jest.fn(),
       recalculateAllAccounts: jest.fn(),
@@ -524,7 +525,7 @@ describe("NetWorthController", () => {
 
   describe("getDailyInvestments()", () => {
     it("delegates to netWorthService.getDailyInvestments with userId, dates, and parsed accountIds", async () => {
-      mockNetWorthService.getDailyInvestments!.mockReturnValue("daily");
+      mockNetWorthService.getDailyInvestmentsReport!.mockReturnValue("daily");
 
       const result = await controller.getDailyInvestments(
         mockReq,
@@ -535,7 +536,9 @@ describe("NetWorthController", () => {
       );
 
       expect(result).toBe("daily");
-      expect(mockNetWorthService.getDailyInvestments).toHaveBeenCalledWith(
+      expect(
+        mockNetWorthService.getDailyInvestmentsReport,
+      ).toHaveBeenCalledWith(
         "user-1",
         "2025-02-01",
         "2025-03-04",
@@ -545,7 +548,7 @@ describe("NetWorthController", () => {
     });
 
     it("passes undefined accountIds when not provided", async () => {
-      mockNetWorthService.getDailyInvestments!.mockReturnValue("daily");
+      mockNetWorthService.getDailyInvestmentsReport!.mockReturnValue("daily");
 
       await controller.getDailyInvestments(
         mockReq,
@@ -555,7 +558,9 @@ describe("NetWorthController", () => {
         undefined,
       );
 
-      expect(mockNetWorthService.getDailyInvestments).toHaveBeenCalledWith(
+      expect(
+        mockNetWorthService.getDailyInvestmentsReport,
+      ).toHaveBeenCalledWith(
         "user-1",
         "2025-02-01",
         "2025-03-04",
@@ -565,7 +570,7 @@ describe("NetWorthController", () => {
     });
 
     it("scopes accountIds to readable accounts for an acting delegate", async () => {
-      mockNetWorthService.getDailyInvestments!.mockReturnValue("ok");
+      mockNetWorthService.getDailyInvestmentsReport!.mockReturnValue("ok");
       delegationService.readableAccountIds.mockResolvedValue([UUID_A]);
       const actReq = {
         user: { id: "owner-1", isActing: true, delegationId: "d-1" },
@@ -579,7 +584,9 @@ describe("NetWorthController", () => {
         undefined,
       );
 
-      expect(mockNetWorthService.getDailyInvestments).toHaveBeenCalledWith(
+      expect(
+        mockNetWorthService.getDailyInvestmentsReport,
+      ).toHaveBeenCalledWith(
         "owner-1",
         undefined,
         undefined,
@@ -637,7 +644,9 @@ describe("NetWorthController", () => {
           displayCurrency: "CAD",
         },
       );
-      expect(mockNetWorthService.getDailyInvestments).not.toHaveBeenCalled();
+      expect(
+        mockNetWorthService.getDailyInvestmentsReport,
+      ).not.toHaveBeenCalled();
     });
 
     it("throws on an unknown sampling", async () => {
@@ -832,7 +841,7 @@ describe("NetWorthController", () => {
 
   describe("getDailyInvestments edge cases", () => {
     it("uppercases and slices currency to 3 chars", async () => {
-      mockNetWorthService.getDailyInvestments!.mockReturnValue("ok");
+      mockNetWorthService.getDailyInvestmentsReport!.mockReturnValue("ok");
       await controller.getDailyInvestments(
         mockReq,
         undefined,
@@ -840,13 +849,9 @@ describe("NetWorthController", () => {
         undefined,
         "eurmixed",
       );
-      expect(mockNetWorthService.getDailyInvestments).toHaveBeenCalledWith(
-        "user-1",
-        undefined,
-        undefined,
-        undefined,
-        "EUR",
-      );
+      expect(
+        mockNetWorthService.getDailyInvestmentsReport,
+      ).toHaveBeenCalledWith("user-1", undefined, undefined, undefined, "EUR");
     });
 
     it("throws on invalid endDate", async () => {

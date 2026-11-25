@@ -9,12 +9,19 @@ import {
 
 /**
  * The places a component is accumulated at: the fiat precision plus eight
- * guard digits, so the subtotal is rounded to `FIAT_MONEY_DECIMALS` once, when
- * it is read, never component by component (issue #2360). Rounding each
- * converted component to four places first made "convert each row, then sum"
- * and "sum the rows, then convert" disagree: two 100.01 EUR receipts at 1.2474
- * are 124.752474 USD each, which rounded to 124.7525 and summed to 249.5050,
- * while their 200.02 EUR sum converts to 249.504948 and reads 249.5049.
+ * guard digits, so a subtotal is rounded once, when it is read, at whatever
+ * places it is read at (four for a posted-precision reading, a currency's own
+ * for a report figure), never component by component (issue #2360). Rounding
+ * each converted component to four places first made "convert each row, then
+ * sum" and "sum the rows, then convert" disagree: two 100.01 EUR receipts at
+ * 1.2474 USD are 124.752474 USD each, which rounded to 124.7525 and summed to
+ * 249.5050, while their 200.02 EUR sum converts to 249.504948 and reads
+ * 249.5049.
+ *
+ * Twelve places is also about where a converted double's own noise sits (a
+ * product `amount * rate` near ten thousand carries an error near 10^-12), so
+ * the noise does not reach a mean or a share either. A reading at a coin's
+ * eight places keeps four guard digits.
  */
 const ACCUMULATION_DECIMALS = FIAT_MONEY_DECIMALS + 8;
 
@@ -41,8 +48,32 @@ const SIGN_THRESHOLD_UNITS =
  */
 const FLOAT_RESIDUE_SHIFT = 51n;
 
-/** One `10^-FIAT_MONEY_DECIMALS` unit, in accumulation units. */
-const FIAT_UNIT = 10n ** BigInt(ACCUMULATION_DECIMALS - FIAT_MONEY_DECIMALS);
+/**
+ * `places` checked as the places a subtotal can be read at: a whole number
+ * from 0 to `MONEY_SCALE`, the most any currency's money can have. A caller
+ * passing anything else has the currency's places wrong, and a reading at them
+ * would be silently coarse or throw deep inside `BigInt`.
+ */
+function readablePlaces(places: number): number {
+  if (!Number.isInteger(places) || places < 0 || places > MONEY_SCALE) {
+    throw new RangeError(
+      `FxAggregate: cannot read a subtotal at ${places} places`,
+    );
+  }
+  return places;
+}
+
+/**
+ * How finely a double must hold a reading, in units at its places, for
+ * `unitsAt` to read it through `knownSubtotalAt`: a hundredth of a unit, the
+ * bound `roundToDecimals` switches to its exact string path at.
+ */
+const UNIT_READ_LIMIT = 0.01;
+
+/** One `10^-places` unit, in accumulation units. */
+function unitAt(places: number): bigint {
+  return 10n ** BigInt(ACCUMULATION_DECIMALS - readablePlaces(places));
+}
 
 /**
  * `amount` as a whole count of `10^-ACCUMULATION_DECIMALS` units, shifted by
@@ -57,16 +88,17 @@ function toAccumulationUnits(amount: number): bigint {
 }
 
 /**
- * The subtotal `units` denotes, rounded to four places by `roundMoney` itself
- * (Discussion #2136): half away from zero, so `-0.00005` reads `-0.0001` where
- * a bare `Math.round` carried it toward zero, and with its one-ULP nudge, so a
- * float artefact just under a midpoint (`41919.852249999996`) reads up as
- * `roundMoney` answers it. Rounding the units in integers alone read it down.
+ * The subtotal `units` denotes, rounded to `places` by `roundMoney` itself
+ * (Discussion #2136): half away from zero, so `-0.00005` reads `-0.0001` at
+ * four places where a bare `Math.round` carried it toward zero, and with its
+ * one-ULP nudge, so a float artefact just under a midpoint
+ * (`41919.852249999996`) reads up as `roundMoney` answers it. Rounding the
+ * units in integers alone read it down.
  */
-function readSubtotal(units: bigint): number {
+function readSubtotal(units: bigint, places: number): number {
   return roundMoney(
     fromScaledUnits(units, ACCUMULATION_DECIMALS),
-    FIAT_MONEY_DECIMALS,
+    readablePlaces(places),
   );
 }
 
@@ -87,8 +119,8 @@ function readSubtotal(units: bigint): number {
  */
 export class FxAggregate {
   /**
-   * Accumulated in integer `10^-ACCUMULATION_DECIMALS` units and rounded to
-   * ten-thousandths (the resolution of `decimal(20,4)`) only when read, per the
+   * Accumulated in integer `10^-ACCUMULATION_DECIMALS` units and rounded only
+   * when read (`knownSubtotal`, `knownSubtotalAt`), per the
    * Financial Math rule in CLAUDE.md: `subtotal += converted` in floats
    * accumulates drift, and this class is the one accumulator every total folds
    * through, which is exactly where that drift would multiply. A `BigInt`, as
@@ -227,42 +259,49 @@ export class FxAggregate {
   }
 
   /**
-   * The known subtotals of `parts` in `10^-FIAT_MONEY_DECIMALS` units,
-   * apportioned so they sum to `target`: each part is its unrounded subtotal
-   * rounded down, and the units that leaves short go one each to the parts
-   * with the largest remainders (a tie to the earlier part). `target` defaults
-   * to the reading of the parts merged, which is the parent's own reading when
-   * the parent was built from the same components.
+   * The known subtotals of `parts` in `10^-places` units, apportioned so they
+   * sum to `target`: each part is its unrounded subtotal rounded down, and the
+   * units that leaves short go one each to the parts with the largest
+   * remainders (a tie to the earlier part). `target` defaults to the reading
+   * of the parts merged at `places`, which is the parent's own reading when the
+   * parent was built from the same components.
    *
    * For a presentation whose parts must add up to their parent, the Cash Flow
    * Sankey's closing identity: rounding each part on its own made two
    * 124.752474 children 124.7525 each under a 249.5049 parent. Each part stays
-   * within one unit of its own subtotal (rule 6). A non-finite part has no
-   * units to apportion, so then every part reads on its own. A `target` the
-   * parts cannot reach that way (more than one unit a part from their sum) is
-   * a caller's error and throws, rather than leaving parts that do not add up.
+   * within one unit of its own subtotal (rule 6). `places` is the unit the
+   * presentation closes in, the reporting currency's own (section 6): cents
+   * for USD, whole yen for JPY. A non-finite part has no units to apportion,
+   * so then every part reads on its own. A `target` the parts cannot reach
+   * that way (more than one unit a part from their sum) is a caller's error
+   * and throws, rather than leaving parts that do not add up.
    */
   static apportionUnits(
     parts: readonly FxAggregate[],
+    places: number,
     target?: number,
   ): number[] {
+    const unit = unitAt(places);
     if (parts.some((part) => part.nonFiniteSum !== 0)) {
       return parts.map((part) =>
-        moneyUnits(part.knownSubtotal, FIAT_MONEY_DECIMALS),
+        moneyUnits(part.knownSubtotalAt(places), places),
       );
     }
     const goal =
-      target ??
-      moneyUnits(FxAggregate.sum(parts).knownSubtotal, FIAT_MONEY_DECIMALS);
+      target === undefined
+        ? FxAggregate.sum(parts).unitsAt(places)
+        : BigInt(target);
     const floors = parts.map((part) => {
       const units = part.subtotalUnits;
-      const quotient = units / FIAT_UNIT;
-      return quotient * FIAT_UNIT > units ? quotient - 1n : quotient;
+      const quotient = units / unit;
+      return quotient * unit > units ? quotient - 1n : quotient;
     });
     const remainders = parts.map(
-      (part, index) => part.subtotalUnits - floors[index] * FIAT_UNIT,
+      (part, index) => part.subtotalUnits - floors[index] * unit,
     );
-    const short = goal - Number(floors.reduce((sum, f) => sum + f, 0n));
+    // In integers throughout: past 2^53 units (a coin's eight places above
+    // about 90 million) a `number` no longer holds the count exactly.
+    const short = goal - floors.reduce((sum, f) => sum + f, 0n);
     const order = parts
       .map((_, index) => index)
       .sort((a, b) =>
@@ -272,12 +311,12 @@ export class FxAggregate {
             ? 1
             : -1,
       );
-    if (short < 0 || short > parts.length) {
+    if (short < 0n || short > BigInt(parts.length)) {
       throw new RangeError(
         `apportionUnits: ${goal} is not within a unit a part of the parts' sum`,
       );
     }
-    const bonus = new Set(order.slice(0, short));
+    const bonus = new Set(order.slice(0, Number(short)));
     return floors.map((f, index) => Number(f) + (bonus.has(index) ? 1 : 0));
   }
 
@@ -287,23 +326,73 @@ export class FxAggregate {
    * Note that this is `0` -- not `null` -- for an aggregate nothing was ever
    * added to: an empty account holds zero, and reporting that as unknown tells
    * the user a settled question could not be worked out.
+   *
+   * Read at four places; a report figure reads `totalAt` its currency's places.
    */
   get total(): number | null {
-    return this.isComplete ? this.knownSubtotal : null;
+    return this.totalAt(FIAT_MONEY_DECIMALS);
+  }
+
+  /**
+   * `total` rounded once at `places`: the complete total as a report figure,
+   * at the reporting currency's own places
+   * (`docs/specs/report-rounding-and-aggregation.md` section 6), or `null`.
+   */
+  totalAt(places: number): number | null {
+    return this.isComplete ? this.knownSubtotalAt(places) : null;
   }
 
   /**
    * The sum of the components that did convert, rounded to four places once,
    * after they were summed. Safe to display beside the missing pairs, never
-   * under a field whose name says "total".
+   * under a field whose name says "total". A report figure reads
+   * `knownSubtotalAt` its currency's places instead: a four-place reading
+   * rounded again at two on the screen is two roundings in series (2.50498
+   * reads 2.5050 here and 2.51 there).
    */
   get knownSubtotal(): number {
-    return readSubtotal(this.subtotalUnits) + this.nonFiniteSum;
+    return this.knownSubtotalAt(FIAT_MONEY_DECIMALS);
+  }
+
+  /**
+   * The known subtotal rounded once at `places`, from its accumulated value:
+   * how a report figure leaves the server, at the reporting currency's own
+   * places (2 for USD, 0 for JPY, a coin's up to eight), so the screen's
+   * rounding of it changes nothing and the CSV, the PDF and the assistant read
+   * the same figure (`docs/specs/report-rounding-and-aggregation.md` section
+   * 6). A figure that is not an aggregate reads through `reportFigure`
+   * (`report-figure.ts`), the same rounding.
+   */
+  knownSubtotalAt(places: number): number {
+    return readSubtotal(this.subtotalUnits, places) + this.nonFiniteSum;
+  }
+
+  /**
+   * `knownSubtotalAt(places)` as an exact count of `10^-places` units, for a
+   * caller that apportions or closes in integers. Where a double holds the
+   * reading to well under a unit it is that reading, so it agrees with
+   * `knownSubtotalAt` (`roundMoney`'s nudge included); past that (a coin's
+   * eight places above about a hundred thousand) the double no longer can,
+   * and it is the accumulated sum rounded half away from zero in integers, as
+   * `roundToDecimals` switches to its exact path at the same bound. A finite
+   * subtotal only: a non-finite one has no units.
+   */
+  unitsAt(places: number): bigint {
+    const unit = unitAt(places);
+    const magnitude =
+      this.subtotalUnits < 0n ? -this.subtotalUnits : this.subtotalUnits;
+    if (Number(magnitude / unit) * Number.EPSILON < UNIT_READ_LIMIT) {
+      return BigInt(moneyUnits(this.knownSubtotalAt(places), places));
+    }
+    const quotient = magnitude / unit;
+    const rounded =
+      (magnitude - quotient * unit) * 2n >= unit ? quotient + 1n : quotient;
+    return this.subtotalUnits < 0n ? -rounded : rounded;
   }
 
   /**
    * The known subtotal before it is rounded to money precision: the double
-   * nearest its twelve-place sum. For a figure that is not a sum -- a mean, a
+   * nearest its accumulated sum. For a figure that is not a sum -- a mean, a
    * share of a total -- which is divided first and rounded once after
    * (`docs/specs/report-rounding-and-aggregation.md` rule 8). A sum folds the
    * aggregate itself (`merge`), never this number: past about nine thousand a

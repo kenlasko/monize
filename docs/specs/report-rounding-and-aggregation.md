@@ -2,8 +2,9 @@
 
 Status: approved on issue #2384 (2026-11-24; discussion #2382). Rules 1 to 8
 restate the contract the issue agreed; section 6 records the maintainer's
-choice of option (b). Stage 1 (section 5) lands on `claude/issue-2384`;
-stages 2 and 3 follow in their own PRs.
+choice of option (b). Stage 1 (section 5) landed with PR #2405; stage 2
+(section 6, issue #2410) lands on `claude/issue-2410`; stage 3 (section 7)
+follows in its own PRs.
 Governs: every reporting-only money figure -- the built-in reports, the custom
 report engine, the Cash Flow Sankey, the dashboard widgets and AI/MCP tools that
 read them -- and the screen, CSV and PDF outputs of each.
@@ -42,7 +43,7 @@ before they were added:
 | --- | --- | --- |
 | Posted | a stored amount: a transaction's `amount`, a balance, a trade's `total_amount`, a transfer's two amounts, a row's own rate | `moneyDecimalsFor(currency.decimalPlaces)`, rounded by the write (`applyFxConversion`). Authoritative: a report never replaces it by an amount recomputed from a rate (INV-FX-002, INV-TRADE-001). |
 | Calculation | a reporting-only conversion, and every sum, difference and negation of them | `FxAggregate`: each component on its decimal digits at twelve places (`toScaledUnits`), summed in a `BigInt`. Nothing is rounded to money precision inside a calculation. |
-| Output | a figure handed to a reader or a consumer | Rounded once, from its calculation-precision value, at the precision it is presented at, half away from zero for both signs (`roundMoney`). Section 6 decides what that precision is on the wire. |
+| Output | a figure handed to a reader or a consumer | Rounded once, from its calculation-precision value, at the precision it is presented at, half away from zero for both signs (`roundMoney`). On the wire that is the reporting currency's own places (section 6): `FxAggregate.knownSubtotalAt(places)` / `totalAt(places)` for an aggregate, `reportFigure(value, places)` for anything else (`backend/src/common/report-figure.ts`). |
 
 ## 3. Rules
 
@@ -87,10 +88,12 @@ before they were added:
    at most one unit, ties to the lower key. A total is never rebuilt as the sum
    of its rounded parts. This is a recorded choice with a cost: the Sankey
    apportions a whole side, so a category node can read one unit off its own
-   rounding, and so off the same category in Spending by Category (124.7524
-   against 124.7525). Under section 6's option (b) that unit is the currency's
-   minor unit, a visible cent; stage 2 keeps the choice (closure is the
-   diagram's invariant, INV-SANKEY-001) and says so beside the node.
+   rounding, and so off the same category in Spending by Category. The unit is
+   the reporting currency's minor unit (section 6), a visible cent: two
+   subcategories of 1.00 EUR at 1.2474 read 1.25 each in Spending by Category
+   and 1.25 and 1.24 under their 2.49 parent in the Sankey. The choice stands
+   (closure is the diagram's invariant, INV-SANKEY-001), and the page says so
+   beside the node (`sankey.roundingNote`).
 7. **Completeness travels with the aggregate.** `merge` and `mergeNegated` carry
    the missing pairs and the unknown count; a total withheld for a missing rate
    stays withheld whichever grouping folded it
@@ -102,24 +105,32 @@ before they were added:
 
 ## 4. Numerical examples
 
-USD reporting currency, EUR rows at 1.2474 unless stated.
+USD reporting currency, EUR rows at 1.2474 unless stated. "After" is the
+figure on the wire at USD's two places (section 6); "Before" is what left the
+server before stage 1, at four places, and in brackets what the screen then
+showed.
 
 | Case | Before | After |
 | --- | ---: | ---: |
-| Custom report, two 100.01 EUR receipts, one category, grouped by category | 249.5049 | 249.5049 |
-| The same rows, two payees, grouped by payee | 249.5050 | 249.5049 |
-| The same rows, two months, grouped by month | 249.5050 | 249.5049 |
-| Spending by Category, two subcategories of 100.01 EUR each, rolled up | 249.5049 | 249.5049 |
-| The same, subcategories shown | 249.5050 | 249.5049 (rows 124.7525 each) |
-| Sankey depth 2, the same two subcategories | 500 | parent 249.5049, children 124.7525 + 124.7524 |
-| Sankey, two such expense categories: expense total | 249.5050 | 249.5049 |
-| A category of -100.00 EUR at 1.2 and +100.00 EUR at 1.2000003 | dropped (reads 0) | kept on the income side, reads 0.0000 |
-| A lone component of -0.00005 | -0.0001 | -0.0001 (half away from zero, Discussion #2136) |
+| Custom report, two 100.01 EUR receipts, one category, grouped by category | 249.5049 (249.50) | 249.50 |
+| The same rows, two payees, grouped by payee | 249.5050 (249.51) | 249.50 |
+| The same rows, two months, grouped by month | 249.5050 (249.51) | 249.50 |
+| Two 1.00 EUR receipts, two payees, grouped by payee | 2.4948 (2.49) | 2.49 (rows 1.25 each) |
+| Spending by Category, two subcategories of 100.01 EUR each, rolled up | 249.5049 (249.50) | 249.50 |
+| The same, subcategories shown | 249.5050 (249.51) | 249.50 (rows 124.75 each) |
+| Sankey depth 2, the same two subcategories | 500 | parent 249.50, children 124.75 + 124.75 |
+| Sankey depth 2, two subcategories of 1.00 EUR each | parent 2.4948, children 1.2474 + 1.2474 | parent 2.49, children 1.25 + 1.24 |
+| Sankey, two 100.01 EUR expense categories: expense total | 249.5050 (249.51) | 249.50 |
+| A category of -100.00 EUR at 1.2 and +100.00 EUR at 1.2000003 | dropped (reads 0) | kept on the income side, reads 0.00 |
+| A lone component of -0.005 | -0.0050 (-0.01) | -0.01 (half away from zero, Discussion #2136) |
 | +300000000000.03 and -300000000000.03 | 0 | 0 (Discussion #2343) |
+| 1.00 EUR at 2.50498 | 2.5050 (2.51) | 2.50 |
+| JPY reader, two 1.00 EUR rows at 162.3456, two payees | 324.6912 (325) | 325 (rows 162 each); Sankey children 163 + 162 |
 
-The apportionment in row 6: each child is 124.752474, so each floors to
-124.7524 with a remainder of 0.000074; the parent reads 249.5049, one unit more
-than the floors' 249.5048, and the tie goes to the lower key.
+The apportionment in the 1.00 EUR Sankey row: each child is 1.2474, so each
+floors to 1.24 with a remainder of 0.0074; the parent reads 2.49, one cent more
+than the floors' 2.48, and the tie goes to the lower key. In yen each child of
+162.3456 floors to 162 and the parent, 324.6912, reads 325.
 
 ## 5. Stage 1: what this branch changes
 
@@ -190,9 +201,99 @@ reporting currency's own places, done on the server, so the screen's rounding
 of it is the identity and the CSV, the PDF and the AI tools read the same
 figure. Discussion #2382 also suggested two CSV modes (formatted and full
 precision); the issue as filed left that out, and (b) does not include it: a
-full-precision export would be its own proposal. Stage 1 keeps four places on
-the wire until stage 2 lands, so the one-cent double rounding above stands
-until then.
+full-precision export would be its own proposal. Stage 1 kept four places on
+the wire; stage 2 removes the one-cent double rounding.
+
+**Stage 2 (issue #2410).** What it changes:
+
+- **One read.** `FxAggregate.knownSubtotalAt(places)` and `totalAt(places)` read
+  an aggregate once at the places given, `reportFigure(value, places)` rounds a
+  figure that is not an aggregate (a mean, one converted row, a stored rollup)
+  the same way, and `apportionUnits(parts, places)` apportions in `10^-places`
+  units. The places are the screen's: `reportPlacesFor` / `reportPlacesOf` /
+  `ReportCurrencyService.getReportPlaces` answer the ISO minor unit, else the
+  currency row's `decimal_places` (2 for USD, 0 for JPY, 8 for a coin), which is
+  what `useNumberFormat().formatCurrency` formats at. `knownSubtotal` and
+  `total` keep reading four places for the figures that are not report figures;
+  `report-rounding.guard.spec.ts` fails a `knownSubtotal` read in the report
+  engines (`backend/src/built-in-reports`, `backend/src/reports`) outside a sort
+  comparator.
+  The accumulator stays at twelve places, so a reading at a coin's eight keeps
+  four guard digits: sixteen kept the float noise of `amount * rate` and moved
+  a custom report's share to 25.000000000000007.
+- **Every report figure reads there.** The built-in reports (Spending by
+  Category and by Payee, the Monthly Spending Trend, Income by Source, Income
+  vs Expenses with its tag buckets, Year over Year, Weekend vs Weekday, the Tax
+  Summary, Recurring Expenses, Bill Payment History, the Monthly Comparison,
+  the Monthly Category Breakdown, Spending Anomalies, the Uncategorized
+  Transactions summary, the Duplicate Transactions report's potential impact,
+  which added each group's amount in its own currency and now converts each
+  extra copy at its own row's rate basis); the custom report, including the transaction list's
+  `value`, which left unrounded; the Cash Flow Sankey, apportioned and closed in
+  the currency's minor unit; the monthly net worth and what reuses it (the account summary's
+  latest month, the assistant's net worth history, each month's change from
+  the one before, `netWorthChange`, which the dashboard's month change reads,
+  and the dashboard trivia's gains and falls, each a difference of two months'
+  aggregates read once); Budget Health's savings
+  figures, the budget trend and category trend, the seasonal patterns, the
+  daily spending and the flex groups, at the budget currency's places; the
+  portfolio summary (`PortfolioService.getPortfolioSummary`: the Investments
+  page, the Portfolio Value and Investment Performance reports,
+  `get_portfolio_summary`), whose reporting-currency totals and allocation read
+  at the reporting currency's places, whose Total Gain
+  (`totalGainOverNetInvested`) is the value less net invested read once, and
+  whose accounts' totals read once at each account currency's money precision
+  (four places for a fiat code, a coin's own), since the client still adds
+  them to the cash balance; the Portfolio Value report's series (the daily series it
+  and the dashboard draw, `getDailyInvestmentsReport`, the month-end sampled and
+  the monthly series, and the by-security breakdown, whose security bands are
+  apportioned from each point's securities subtotal as the Sankey's are and
+  whose cash band is the point's total less that subtotal, so the total less
+  the cash band is the invested value the daily series reports for the day);
+  and the assistant's and MCP's
+  report tools: `generate_report` hands out the reports' own figures, and the
+  flow totals, the grouped breakdown and `compare_periods` read at the
+  reporting currency's places, the summary lines of `compare_periods`,
+  `list_transactions` and `get_portfolio_summary` printing them at those
+  places.
+- **Rules 4, 5 and 8 at the new precision.** A difference of two readings is a
+  visible cent off at two places, so `compare_periods` works each change out
+  from the two periods' aggregates and each percentage from the unrounded
+  values, over a first period that reads as money at those places; Spending Anomalies folds its
+  mean, category spikes and new-payee totals as aggregates instead of adding
+  floats. The portfolio's value is its cash and its holdings folded before
+  either is rounded, where it added the two readings; an account's net
+  invested folds its parts; the gain's percentage, the allocation's shares and
+  the CAGR divide the unrounded figures; the exposure-by-tag views regroup the
+  allocation's shown slices and say so, summing them exactly. Every direction
+  decision still reads `sign`, so a category netting
+  0.003 reads 0.00 and keeps its row, and Budget Health gives a savings rate
+  only over an income that reads as money at the budget's places.
+- **Not report figures, unchanged.** Posted amounts, prices, quantities, rates
+  and percentages; the transactions page's grouped and monthly totals and a
+  category's or payee's detail breakdown, which keep four places; the AI
+  insights and forecast prompts, which a model reads and does not hand out; the
+  daily series the period result's P&L, TWR and MWR are worked out from
+  (`getDailyInvestments`), which keeps four places so the returns are
+  calculated, not read off rounded figures. The Foreign Currency Fees report's
+  converted rows keep four places too, while the page adds them into its
+  month and grand totals: read at two, three 2.50496 fees would total 7.50
+  where they come to 7.51 (stage 3 moves those totals to the server).
+- **Residuals.** A budget line's actual is a four-place reading
+  (`CategorySpending`, INV-REPORT-005's known gap), so a budget figure is the
+  two-place reading of a four-place one, as the screen read it before. The
+  Monthly Comparison's investment figures come from
+  `PortfolioPeriodResultService` at four places and are read at two. A
+  holding's own figures in the portfolio summary (its value, cost and gain in
+  the security's currency) are left as they were, and the Portfolio Value
+  report's intraday (1D) view sums four-place contributions per bar. An
+  account's totals stay at its currency's money precision while the
+  Investments page's account groups and headline and the Accounts page add
+  them to a cash balance on the client (stage 3): read at two places, that sum
+  of two readings sat a cent off. The Cash Flow Sankey's unspent or deficit
+  is the four side totals' readings netted in the minor unit, which closing
+  the diagram needs (rule 6), so it can sit a unit or two off the period's
+  net read once (Income vs Expenses' net for the same period).
 
 ## 7. Stage 3: the client and the exports
 
@@ -212,6 +313,7 @@ definition of what it counts.
 | 6 | the Sankey over generated two-currency ledgers: closes at depth 1 and 2, depth moves no total, each side's total equals one `FxAggregate` over that side's rows; the section 4 Sankey rows; `apportionUnits` keeps every part within one unit and sums to the whole's reading |
 | 7 | `mergeNegated` carries missing pairs and the unknown count |
 | client | `sumConverted` agrees with `FxAggregate` over the same converted components |
+| 6, stage 2 | `knownSubtotalAt`, `totalAt` and `apportionUnits` at 0, 2, 4 and 8 places; a 2.50498 figure reads 2.50 in Spending by Category, Income by Source, the custom report's headline and transaction list, the Sankey and `generate_report` over the real Spending by Category (`reports.tool.rounding.spec.ts`); a JPY report in whole yen and a JPY Sankey that closes; the Sankey property specs over CAD and JPY ledgers; the custom report's generated ledgers against one `FxAggregate` read at two places; the section 4 rows at two places |
 
-Each test is seen failing on the code before this branch
+Each test is seen failing on the code before its stage
 (`docs/financial-calculation-contract.md` section 8.2).

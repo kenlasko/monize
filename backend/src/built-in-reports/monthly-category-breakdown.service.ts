@@ -99,6 +99,9 @@ export class MonthlyCategoryBreakdownService {
     const { accountIds } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every figure leaves rounded once at the reporting currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     // Aggregate deposits (amount > 0) and withdrawals (amount < 0) per
     // category, month and currency. Transfers, voided rows, child rows of a
@@ -246,6 +249,7 @@ export class MonthlyCategoryBreakdownService {
       startDate,
       endDate,
       defaultCurrency,
+      places,
       monthSet,
       gaps,
       accountIds,
@@ -255,7 +259,7 @@ export class MonthlyCategoryBreakdownService {
 
     const data: MonthlyBreakdownCategoryRow[] = Array.from(
       accumulators.values(),
-    ).map((acc) => this.buildRow(acc, categoryMap));
+    ).map((acc) => this.buildRow(acc, categoryMap, places));
 
     return {
       months,
@@ -281,6 +285,7 @@ export class MonthlyCategoryBreakdownService {
     startDate: string | undefined,
     endDate: string,
     defaultCurrency: string,
+    places: number,
     monthSet: Set<string>,
     gaps: ConversionGaps,
     accountIds?: string[],
@@ -416,7 +421,7 @@ export class MonthlyCategoryBreakdownService {
             direction === "from"
               ? amount
               : FxAggregate.difference(new FxAggregate(), amount)
-          ).knownSubtotal;
+          ).knownSubtotalAt(places);
         }
         return { accountId, accountName: entry.name, direction, valuesByMonth };
       });
@@ -437,6 +442,7 @@ export class MonthlyCategoryBreakdownService {
   private buildRow(
     acc: CategoryAccumulator,
     categoryMap: Map<string, Category>,
+    places: number,
   ): MonthlyBreakdownCategoryRow {
     const category = acc.categoryId
       ? (categoryMap.get(acc.categoryId) ?? null)
@@ -462,7 +468,7 @@ export class MonthlyCategoryBreakdownService {
         isIncome
           ? FxAggregate.difference(deposits, withdrawals)
           : FxAggregate.difference(withdrawals, deposits)
-      ).knownSubtotal;
+      ).knownSubtotalAt(places);
     }
 
     return {
@@ -473,8 +479,8 @@ export class MonthlyCategoryBreakdownService {
       parentIsIncome: parent?.isIncome ?? null,
       isIncome,
       valuesByMonth,
-      depositTotal: acc.depositTotal.knownSubtotal,
-      withdrawalTotal: acc.withdrawalTotal.knownSubtotal,
+      depositTotal: acc.depositTotal.knownSubtotalAt(places),
+      withdrawalTotal: acc.withdrawalTotal.knownSubtotalAt(places),
     };
   }
 }

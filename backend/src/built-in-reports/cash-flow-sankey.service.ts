@@ -260,6 +260,7 @@ export class CashFlowSankeyService {
   ): Promise<CashFlowSankeyResponse> {
     const depth: SankeyDepth = options.depth === 2 ? 2 : 1;
     const currency = await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(currency);
     const scopeAccountIds = await this.resolveScope(userId, options.accountIds);
 
     const scope: SankeyQueryScope = {
@@ -339,6 +340,7 @@ export class CashFlowSankeyService {
         startDate: effectiveStart,
         endDate,
         currency,
+        places,
         scopeAccountIds,
         depth,
         categories: categories.map((c) => ({

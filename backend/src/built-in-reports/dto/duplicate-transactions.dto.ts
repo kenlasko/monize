@@ -104,8 +104,19 @@ export class DuplicateTransactionsSummary {
   @ApiProperty()
   lowCount: number;
 
-  @ApiProperty()
-  potentialSavings: number;
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description:
+      "What the extra copies come to in the reporting currency (`currency`), each copy converted at the rate its own row recorded, else the market rate on its date. Null while a copy's currency has no rate; the converted part is knownPotentialSavings.",
+  })
+  potentialSavings: number | null;
+
+  @ApiProperty({
+    description:
+      "The part of potentialSavings that converted; equal to it when complete.",
+  })
+  knownPotentialSavings: number;
 }
 
 export class DuplicateTransactionsResponse {
@@ -114,4 +125,13 @@ export class DuplicateTransactionsResponse {
 
   @ApiProperty({ type: DuplicateTransactionsSummary })
   summary: DuplicateTransactionsSummary;
+
+  @ApiProperty({ description: "The reporting currency of the summary figures" })
+  currency: string;
+
+  @ApiProperty({ type: [String] })
+  missingCurrencies: string[];
+
+  @ApiProperty()
+  excludedCount: number;
 }

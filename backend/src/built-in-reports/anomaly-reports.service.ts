@@ -16,12 +16,9 @@ import {
   AnomalySeverity,
 } from "./dto";
 import { formatDateYMD } from "../common/date-utils";
-import {
-  MONEY_SCALE,
-  roundMoney,
-  sumMoney,
-  toMoneyNumber,
-} from "../common/round.util";
+import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
+import { FxAggregate } from "../common/fx-aggregate";
+import { reportFigure } from "../common/report-figure";
 import { investmentExclusionSql } from "../common/investment-filter.util";
 
 /**
@@ -77,6 +74,9 @@ export class AnomalyReportsService {
   ): Promise<SpendingAnomaliesResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every money figure leaves rounded once at the reporting currency's
+    // places (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
     // The anomaly descriptions are read by this user, so the figures in them
     // follow their number locale (issue #1316).
     const prefs = await withScopedDb(this.dataSource, (m) =>
@@ -168,7 +168,11 @@ export class AnomalyReportsService {
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
     const amounts = converted.map((r) => r.converted);
-    const mean = sumMoney(amounts) / amounts.length;
+    // The mean divides the exact sum of the converted rows, never a sum of
+    // their four-place readings (rule 8).
+    const sum = new FxAggregate();
+    for (const amount of amounts) sum.addConverted(amount);
+    const mean = sum.unroundedSubtotal / amounts.length;
     const variance =
       amounts.reduce((sum, a) => sum + Math.pow(a - mean, 2), 0) /
       amounts.length;
@@ -194,7 +198,7 @@ export class AnomalyReportsService {
           severity,
           title: "Unusually large transaction",
           description: `${row.payee_name || "Unknown payee"} - ${txDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
-          amount: roundMoney(amount),
+          amount: reportFigure(amount, places),
           transactionId: row.id,
           transactionDate: row.transaction_date.toString().split("T")[0],
           payeeName: row.payee_name || undefined,
@@ -203,10 +207,17 @@ export class AnomalyReportsService {
     });
 
     // 2. Category spending spikes (current month vs previous month)
-    this.detectCategorySpikes(converted, now, categoryMap, anomalies, n);
+    this.detectCategorySpikes(
+      converted,
+      now,
+      categoryMap,
+      anomalies,
+      n,
+      places,
+    );
 
     // 3. New payees with significant spending
-    this.detectNewPayees(converted, now, anomalies);
+    this.detectNewPayees(converted, now, anomalies, places);
 
     // Sort by severity and amount
     const severityOrder: Record<AnomalySeverity, number> = {
@@ -223,8 +234,8 @@ export class AnomalyReportsService {
 
     return {
       statistics: {
-        mean: roundMoney(mean),
-        stdDev: roundMoney(stdDev),
+        mean: reportFigure(mean, places),
+        stdDev: reportFigure(stdDev, places),
       },
       anomalies,
       counts: {
@@ -246,13 +257,25 @@ export class AnomalyReportsService {
     categoryMap: Map<string, Category>,
     anomalies: SpendingAnomaly[],
     n: NumberT,
+    places: number,
   ): void {
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    const currentMonthByCategory = new Map<string, number>();
-    const previousMonthByCategory = new Map<string, number>();
+    // Each month's category spending as an aggregate of its converted rows,
+    // read once where it is shown (rule 2).
+    const currentMonthByCategory = new Map<string, FxAggregate>();
+    const previousMonthByCategory = new Map<string, FxAggregate>();
+    const addTo = (
+      map: Map<string, FxAggregate>,
+      categoryId: string,
+      amount: number,
+    ) => {
+      const agg = map.get(categoryId) ?? new FxAggregate();
+      agg.addConverted(amount);
+      map.set(categoryId, agg);
+    };
 
     rows.forEach((row) => {
       const txDate = new Date(row.transaction_date);
@@ -260,20 +283,16 @@ export class AnomalyReportsService {
       const categoryId = row.category_id || "uncategorized";
 
       if (txDate >= currentMonthStart) {
-        currentMonthByCategory.set(
-          categoryId,
-          (currentMonthByCategory.get(categoryId) || 0) + amount,
-        );
+        addTo(currentMonthByCategory, categoryId, amount);
       } else if (txDate >= prevMonthStart && txDate <= prevMonthEnd) {
-        previousMonthByCategory.set(
-          categoryId,
-          (previousMonthByCategory.get(categoryId) || 0) + amount,
-        );
+        addTo(previousMonthByCategory, categoryId, amount);
       }
     });
 
-    currentMonthByCategory.forEach((currentAmount, categoryId) => {
-      const previousAmount = previousMonthByCategory.get(categoryId) || 0;
+    currentMonthByCategory.forEach((currentMonth, categoryId) => {
+      const previousMonth = previousMonthByCategory.get(categoryId);
+      const currentAmount = currentMonth.unroundedSubtotal;
+      const previousAmount = previousMonth?.unroundedSubtotal ?? 0;
       if (previousAmount < 50) return;
 
       const percentChange =
@@ -291,8 +310,8 @@ export class AnomalyReportsService {
           description: `${n.formatPercent(Math.round(percentChange), 0)} increase from last month`,
           categoryId: categoryId === "uncategorized" ? undefined : categoryId,
           categoryName: category?.name || "Uncategorized",
-          currentPeriodAmount: roundMoney(currentAmount),
-          previousPeriodAmount: roundMoney(previousAmount),
+          currentPeriodAmount: currentMonth.knownSubtotalAt(places),
+          previousPeriodAmount: previousMonth!.knownSubtotalAt(places),
           percentChange: Math.round(percentChange),
         });
       }
@@ -308,6 +327,7 @@ export class AnomalyReportsService {
     }[],
     now: Date,
     anomalies: SpendingAnomaly[],
+    places: number,
   ): void {
     const oneMonthAgo = new Date(now);
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -315,7 +335,7 @@ export class AnomalyReportsService {
     const payeeFirstSeen = new Map<string, Date>();
     const payeeRecentSpending = new Map<
       string,
-      { name: string; total: number; count: number; txId: string }
+      { name: string; total: FxAggregate; count: number; txId: string }
     >();
 
     rows.forEach((row) => {
@@ -334,12 +354,14 @@ export class AnomalyReportsService {
       if (txDate >= oneMonthAgo) {
         const existing = payeeRecentSpending.get(payeeName);
         if (existing) {
-          existing.total += row.converted;
+          existing.total.addConverted(row.converted);
           existing.count++;
         } else {
+          const total = new FxAggregate();
+          total.addConverted(row.converted);
           payeeRecentSpending.set(payeeName, {
             name: row.payee_name || "Unknown",
-            total: row.converted,
+            total,
             count: 1,
             txId: row.id,
           });
@@ -350,15 +372,16 @@ export class AnomalyReportsService {
     payeeFirstSeen.forEach((firstSeen, payeeName) => {
       if (firstSeen >= oneMonthAgo) {
         const recent = payeeRecentSpending.get(payeeName);
-        if (recent && recent.total > 100) {
+        const total = recent?.total.unroundedSubtotal ?? 0;
+        if (recent && total > 100) {
           const severity: AnomalySeverity =
-            recent.total > 500 ? "high" : recent.total > 200 ? "medium" : "low";
+            total > 500 ? "high" : total > 200 ? "medium" : "low";
           anomalies.push({
             type: "unusual_payee",
             severity,
             title: "New payee detected",
             description: `${recent.name} - ${recent.count} transaction(s)`,
-            amount: roundMoney(recent.total),
+            amount: recent.total.knownSubtotalAt(places),
             transactionId: recent.txId,
             payeeName: recent.name,
           });

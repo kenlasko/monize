@@ -62,6 +62,8 @@ import {
   dailyInvestmentsInFlight,
 } from "./daily-investments-in-flight";
 import { preferredCurrency } from "../common/default-currency.util";
+import { reportPlacesOf } from "../common/report-figure";
+import { dailyInvestmentsAtPlaces } from "./daily-investments-report.util";
 import {
   DateColumn,
   DailyCashBalanceRow,
@@ -224,6 +226,22 @@ export interface DailyInvestmentsWithPositions {
   positions: DailyPositions[];
   /** Every security the replay touched, keyed by id. */
   securities: Map<string, Security>;
+  /** The currency the series is in: the display currency, or the preference. */
+  currency: string;
+  /**
+   * One entry per day of `series`, same order: the aggregates its `value` and
+   * `securitiesValue` are read from, for a report endpoint that reads them at
+   * the currency's places (`getDailyInvestmentsReport`). The series itself
+   * keeps four places, because the period result's P&L, TWR and MWR are
+   * worked out from it.
+   */
+  readings: DailyInvestmentReading[];
+}
+
+/** What one day of the daily fold reads its two figures from. */
+export interface DailyInvestmentReading {
+  value: FxAggregate;
+  securitiesValue: FxAggregate;
 }
 
 /**
@@ -913,6 +931,7 @@ export class NetWorthService {
         byAccountType: _byAccountType,
         assetsFxComplete: _assetsFxComplete,
         liabilitiesFxComplete: _liabilitiesFxComplete,
+        netWorthChange: _netWorthChange,
         ...month
       }) => month,
     );
@@ -953,6 +972,15 @@ export class NetWorthService {
        * Subtotals of what converted under the same `fxComplete` as the rest.
        */
       byAccountType: Partial<Record<AccountType, number>>;
+      /**
+       * `netWorth` less the previous month's in this series, the difference
+       * of the two months' aggregates read once at the reporting currency's
+       * places: the difference of the two readings can sit a unit off it
+       * (docs/specs/report-rounding-and-aggregation.md rule 4). `null` for the
+       * series' first month, which has nothing before it. A subtotal whenever
+       * either month's `fxComplete` is false.
+       */
+      netWorthChange: number | null;
     }[]
   > {
     const months = await this.getMonthlyNetWorthWithAggregates(
@@ -970,15 +998,18 @@ export class NetWorthService {
   /**
    * `getMonthlyNetWorth` with each month's net worth beside it as the
    * aggregate it is read from, for a caller that works out a figure from two
-   * months (the Monthly Comparison's change): the difference of the two
-   * aggregates is rounded once, where the difference of the two readings can
-   * sit a unit off (`docs/specs/report-rounding-and-aggregation.md` rule 4).
-   * The window is given in full: its defaults are `getMonthlyNetWorth`'s.
+   * months (the Monthly Comparison's change, the trivia's gains and falls):
+   * the difference of the two aggregates is rounded once, where the
+   * difference of the two readings can sit a unit off
+   * (`docs/specs/report-rounding-and-aggregation.md` rule 4). An absent
+   * end is today; an absent start is the reader's whole history, from the
+   * first month the snapshots hold, so the rows bound the window rather than
+   * a fixed epoch.
    */
   async getMonthlyNetWorthWithAggregates(
     userId: string,
-    start: string,
-    end: string,
+    startDate?: string,
+    endDate?: string,
     jointScope?: JointNetWorthScope,
     options?: SeriesFetchOptions,
   ): Promise<MonthlyNetWorthWithAggregate[]> {
@@ -987,11 +1018,18 @@ export class NetWorthService {
     if (jointScope && jointIds.length > 0) {
       await this.refreshStaleJointMonths(jointScope);
     }
+    const end = endDate || new Date().toISOString().slice(0, 10);
+    const start =
+      startDate ?? (await this.firstSnapshotMonth(userId, jointIds));
+    if (start === null) return [];
 
     const pref = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(UserPreference).findOne({ where: { userId } }),
     );
     const defaultCurrency = preferredCurrency(pref);
+    // Each month's figures leave rounded once at the reporting currency's
+    // places (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
 
     // Own rows keep the owner-side exclude_from_net_worth predicate; joint
     // rows are governed solely by the pre-filtered scope (see
@@ -1025,6 +1063,7 @@ export class NetWorthService {
         this.foldMonthlyNetWorth(
           snapshots,
           defaultCurrency,
+          places,
           await this.buildRateIndex(currencies, defaultCurrency, start, end),
         ),
       // A monthly point's `month` is its month-first date, which is the month
@@ -1038,10 +1077,28 @@ export class NetWorthService {
     );
   }
 
+  /**
+   * The first month `monthly_account_balances` holds for the reader, own or
+   * joint, or `null` with none: the start of a whole-history window.
+   */
+  private async firstSnapshotMonth(
+    userId: string,
+    jointIds: string[],
+  ): Promise<string | null> {
+    const rows: { month: string | Date | null }[] = await this.scopedQuery(
+      `SELECT MIN(month) AS month FROM monthly_account_balances
+        WHERE user_id = $1 OR account_id = ANY($2::UUID[])`,
+      [userId, jointIds],
+    );
+    const first = rows[0]?.month;
+    return first ? this.toDateString(first) : null;
+  }
+
   /** The month-by-month fold of `getMonthlyNetWorth`, at one rate index. */
   private foldMonthlyNetWorth(
     snapshots: MonthlySnapshotRow[],
     defaultCurrency: string,
+    places: number,
     rateIndex: RateIndex,
   ): MonthlyNetWorthWithAggregate[] {
     // Aggregate by month. Assets and liabilities each accumulate through an
@@ -1117,6 +1174,7 @@ export class NetWorthService {
       }
     }
 
+    let previousNetWorth: FxAggregate | null = null;
     return Array.from(monthMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => {
@@ -1129,22 +1187,31 @@ export class NetWorthService {
             ...data.liabilities.missingPairs,
           ]),
         ].sort();
-        // Money precision, never whole units: the dashboard, the account
-        // summary and the assistant print these to the cent, and a chart that
-        // wants whole units rounds at its own surface (as the investment
-        // series below already do). Net worth is the difference of the two
-        // unrounded subtotals, rounded once (FxAggregate.difference): the
-        // difference of their four-place readings could sit a unit off
-        // (docs/specs/report-rounding-and-aggregation.md rule 2).
+        // The reporting currency's places, never whole units: the dashboard,
+        // the account summary and the assistant print these to the cent, and
+        // a chart that wants whole units rounds at its own surface (as the
+        // investment series below already do). Each figure is rounded once
+        // there (section 6 of docs/specs/report-rounding-and-aggregation.md).
+        // Net worth is the difference of the two unrounded subtotals, rounded
+        // once (FxAggregate.difference): the difference of their readings
+        // could sit a unit off (rule 2).
         const netWorthAggregate = FxAggregate.difference(
           data.assets,
           data.liabilities,
         );
+        const netWorthChange =
+          previousNetWorth === null
+            ? null
+            : FxAggregate.difference(
+                netWorthAggregate,
+                previousNetWorth,
+              ).knownSubtotalAt(places);
+        previousNetWorth = netWorthAggregate;
         return {
           month,
-          assets: roundMoney(data.assets.knownSubtotal),
-          liabilities: roundMoney(data.liabilities.knownSubtotal),
-          netWorth: netWorthAggregate.knownSubtotal,
+          assets: data.assets.knownSubtotalAt(places),
+          liabilities: data.liabilities.knownSubtotalAt(places),
+          netWorth: netWorthAggregate.knownSubtotalAt(places),
           netWorthAggregate,
           // Stage 1 of docs/specs/fx-conversion-completeness.md: the three
           // figures above are the subtotal of what converted, and these two
@@ -1159,9 +1226,10 @@ export class NetWorthService {
           byAccountType: Object.fromEntries(
             [...data.byAccountType].map(([type, total]) => [
               type,
-              roundMoney(total.knownSubtotal),
+              total.knownSubtotalAt(places),
             ]),
           ),
+          netWorthChange,
         };
       });
   }
@@ -1300,6 +1368,9 @@ export class NetWorthService {
       }
     }
 
+    // A chart's series: each month read once at the currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
     return this.computeWithRateFill(
       () =>
         this.foldMonthlyInvestments(
@@ -1309,6 +1380,7 @@ export class NetWorthService {
           currencies,
           start,
           end,
+          places,
         ),
       (months) =>
         months.map((m) => ({
@@ -1333,6 +1405,7 @@ export class NetWorthService {
     currencies: Set<string>,
     start: string,
     end: string,
+    places: number,
   ): Promise<
     {
       month: string;
@@ -1463,13 +1536,10 @@ export class NetWorthService {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, aggregate]) => ({
         month,
-        // 4dp money precision, not whole units: the value carries into the
-        // period-result P&L and TWR, so the grosze must survive the fold and be
-        // rounded only for display at the surface.
-        value: roundMoney(aggregate.knownSubtotal),
-        securitiesValue: roundMoney(
-          securitiesMap.get(month)?.knownSubtotal ?? 0,
-        ),
+        // The currency's places, never whole units: the grosze survive, and
+        // a chart that wants whole units rounds at its own surface.
+        value: aggregate.knownSubtotalAt(places),
+        securitiesValue: securitiesMap.get(month)?.knownSubtotalAt(places) ?? 0,
         fxComplete: aggregate.isComplete,
         missingRatePairs: aggregate.missingPairs,
       }));
@@ -1688,6 +1758,40 @@ export class NetWorthService {
   }
 
   /**
+   * `getDailyInvestments` as the Portfolio Value report and the dashboard read
+   * it: each day's `value` and `securitiesValue` rounded once at the display
+   * currency's places from the day's own aggregates
+   * (`docs/specs/report-rounding-and-aggregation.md` section 6), not from the
+   * four-place figures the period result is worked out from.
+   */
+  async getDailyInvestmentsReport(
+    userId: string,
+    startDate?: string,
+    endDate?: string,
+    accountIds?: string[],
+    displayCurrency?: string,
+  ): Promise<DailyInvestmentValue[]> {
+    const loaded = await this.loadDailyInvestments(
+      userId,
+      { startDate, endDate, accountIds, displayCurrency },
+      false,
+    );
+    return this.readDailyAtPlaces(loaded);
+  }
+
+  /** Each day of `loaded` (those in `keep`, when given) read once at its currency's places. */
+  private async readDailyAtPlaces(
+    loaded: DailyInvestmentsWithPositions,
+    keep?: ReadonlySet<string>,
+  ): Promise<DailyInvestmentValue[]> {
+    return dailyInvestmentsAtPlaces(
+      loaded,
+      await reportPlacesOf(this.dataSource, loaded.currency),
+      keep,
+    );
+  }
+
+  /**
    * The daily series sampled for a long-range chart: the window's first day,
    * each month-end strictly inside it, and its last day
    * (`monthEndSampleDates`).
@@ -1703,6 +1807,9 @@ export class NetWorthService {
    *
    * "All time" (no `startDate`) opens where the period result's `all` window
    * does: the day before the scope's first investment transaction.
+   *
+   * A chart's series, so each point is read once at the display currency's
+   * places, as `getDailyInvestmentsReport` reads a day.
    */
   async getSampledInvestments(
     userId: string,
@@ -1727,7 +1834,7 @@ export class NetWorthService {
         end,
       );
     }
-    const { series } = await this.loadDailyInvestments(
+    const loaded = await this.loadDailyInvestments(
       userId,
       {
         startDate,
@@ -1738,11 +1845,12 @@ export class NetWorthService {
       },
       false,
     );
+    const { series } = loaded;
     if (series.length === 0) return series;
     const keep = new Set(
       monthEndSampleDates(series[0].date, series[series.length - 1].date),
     );
-    return series.filter((point) => keep.has(point.date));
+    return this.readDailyAtPlaces(loaded, keep);
   }
 
   /**
@@ -1839,6 +1947,8 @@ export class NetWorthService {
       series: [],
       positions: [],
       securities: new Map(),
+      currency: defaultCurrency,
+      readings: [],
     };
 
     let accountFilter: string;
@@ -1991,7 +2101,7 @@ export class NetWorthService {
       (result) => result.series,
       options,
     );
-    return { ...folded, securities: securityMap };
+    return { ...folded, securities: securityMap, currency: defaultCurrency };
   }
 
   /** The day-by-day fold of `getDailyInvestments`, at one rate index. */
@@ -2010,7 +2120,11 @@ export class NetWorthService {
       /** Also record what each day was folded from; see `DailyPositions`. */
       collectPositions?: boolean;
     },
-  ): { series: DailyInvestmentValue[]; positions: DailyPositions[] } {
+  ): {
+    series: DailyInvestmentValue[];
+    positions: DailyPositions[];
+    readings: DailyInvestmentReading[];
+  } {
     const {
       dates,
       invTxs,
@@ -2031,6 +2145,7 @@ export class NetWorthService {
 
     const result: DailyInvestmentValue[] = [];
     const positions: DailyPositions[] = [];
+    const readings: DailyInvestmentReading[] = [];
 
     for (const dateStr of dates) {
       // Process investment transactions up to this date
@@ -2136,7 +2251,7 @@ export class NetWorthService {
       // Everything above is the invested part; everything below is cash. The
       // aggregate is snapshotted here rather than accumulated twice, so the two
       // figures are one walk over one set of positions.
-      const securitiesSubtotal = dayValue.knownSubtotal;
+      const securitiesValue = FxAggregate.sum([dayValue]);
 
       // Add cash balances for INVESTMENT_CASH and standalone accounts. The walk
       // is over the accounts in scope, not over the maps the query returned: an
@@ -2168,6 +2283,7 @@ export class NetWorthService {
       }
       if (dayPositions) positions.push(dayPositions);
 
+      readings.push({ value: dayValue, securitiesValue });
       result.push({
         date: dateStr,
         // Carried at the money pipeline's 4dp precision, never whole units:
@@ -2178,7 +2294,7 @@ export class NetWorthService {
         // The securities-only subtotal of the very same fold, rounded the same
         // way `value` is, so `value - securitiesValue` is the cash the walk
         // above added and the two cannot disagree about a position.
-        securitiesValue: roundMoney(securitiesSubtotal),
+        securitiesValue: roundMoney(securitiesValue.knownSubtotal),
         fxComplete: dayValue.isComplete,
         missingRatePairs: dayValue.missingPairs,
         pricesComplete: unpricedSecurityIds.size === 0,
@@ -2188,7 +2304,7 @@ export class NetWorthService {
       });
     }
 
-    return { series: result, positions };
+    return { series: result, positions, readings };
   }
 
   /**
@@ -2353,6 +2469,10 @@ export class NetWorthService {
     const acctCurrency = new Map<string, string>();
     for (const a of investAccounts) acctCurrency.set(a.id, a.currency_code);
 
+    // Each point is read once at the currency's places, its bands apportioned
+    // from its total (docs/specs/report-rounding-and-aggregation.md rule 6,
+    // section 6).
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
     return this.computeWithRateFill(
       async () =>
         this.foldInvestmentBreakdown(
@@ -2360,6 +2480,7 @@ export class NetWorthService {
           {
             granularity,
             limit,
+            places,
             defaultCurrency,
             sampleDates,
             invTxs,
@@ -2382,6 +2503,7 @@ export class NetWorthService {
     input: {
       granularity: InvestmentBreakdownGranularity;
       limit: number;
+      places: number;
       defaultCurrency: string;
       sampleDates: string[];
       invTxs: ReplayTransactionRow[];
@@ -2396,6 +2518,7 @@ export class NetWorthService {
     const {
       granularity,
       limit,
+      places,
       defaultCurrency,
       sampleDates,
       invTxs,
@@ -2413,8 +2536,8 @@ export class NetWorthService {
 
     const ungrouped: Array<{
       date: string;
-      valuesBySec: Map<string, number>;
-      cash: number;
+      valuesBySec: Map<string, FxAggregate>;
+      cash: FxAggregate;
       /** Scoped cash accounts with no balance for this point; see the point. */
       unknownCashAccountIds: string[];
       /** Securities held at this point that nothing could price; see the point. */
@@ -2455,7 +2578,7 @@ export class NetWorthService {
         txIdx++;
       }
 
-      const valuesBySec = new Map<string, number>();
+      const valuesBySec = new Map<string, FxAggregate>();
       // What this point alone is short of, so the reader learns WHICH security
       // and WHICH pair over WHICH dates rather than that "something" was
       // missing somewhere in the range (#1389). The whole-response
@@ -2491,7 +2614,9 @@ export class NetWorthService {
           pointMissingPairs.add(`${secCurrency}->${defaultCurrency}`);
           continue;
         }
-        valuesBySec.set(secId, (valuesBySec.get(secId) ?? 0) + value);
+        const held = valuesBySec.get(secId) ?? new FxAggregate();
+        held.addConverted(value);
+        valuesBySec.set(secId, held);
       }
 
       // Cash maps are keyed by the sample date itself: day strings for daily,
@@ -2530,7 +2655,7 @@ export class NetWorthService {
       ungrouped.push({
         date: sampleDate,
         valuesBySec,
-        cash: cashAggregate.knownSubtotal,
+        cash: cashAggregate,
         unknownCashAccountIds: [...unknownCashAccountIds].sort(),
         unpricedSecurityIds: [...unpricedSecurityIds].sort(),
         missingRatePairs: [...pointMissingPairs].sort(),
@@ -2541,6 +2666,7 @@ export class NetWorthService {
       ungrouped,
       securityMap,
       limit,
+      places,
     );
     return {
       granularity,
@@ -2784,35 +2910,48 @@ export class NetWorthService {
   /**
    * Rank securities by peak contribution, keep the top `limit` as their own
    * bands, roll the remainder into a single "other" band, and append a cash
-   * band when any cash is present. Each band value is rounded to whole units so
-   * the stacked bands add up exactly to the point total shown to the user.
+   * band when any cash is present. Each point's total is rounded once at
+   * `places`, the currency's own, and so is its securities subtotal; the
+   * security and "other" bands are apportioned from the securities subtotal
+   * (`FxAggregate.apportionUnits`, largest remainder) and the cash band is the
+   * total less it, so the stacked bands add up exactly to the total shown, no
+   * band is more than one unit off its own value
+   * (docs/specs/report-rounding-and-aggregation.md rule 6), and the total less
+   * the cash band is the securities' own rounding, the invested value the
+   * daily series reports for the same day (INV-PORTRESULT-002).
    */
   private groupSecurityBreakdown(
     ungrouped: Array<{
       date: string;
-      valuesBySec: Map<string, number>;
-      cash: number;
+      valuesBySec: Map<string, FxAggregate>;
+      cash: FxAggregate;
       unknownCashAccountIds: string[];
       unpricedSecurityIds: string[];
       missingRatePairs: string[];
     }>,
     securityMap: Map<string, Security>,
     limit: number,
+    places: number,
   ): {
     series: InvestmentBreakdownSeries[];
     points: InvestmentBreakdownPoint[];
   } {
     const peak = new Map<string, number>();
     for (const pt of ungrouped) {
-      for (const [secId, val] of pt.valuesBySec) {
+      for (const [secId, agg] of pt.valuesBySec) {
+        const val = agg.unroundedSubtotal;
         if (Math.abs(val) > Math.abs(peak.get(secId) ?? 0)) {
           peak.set(secId, val);
         }
       }
     }
 
+    // A band that reads as nothing at the currency's places all window long is
+    // not drawn: half a unit at `places` (half a cent for USD, half a yen for
+    // JPY, half a satoshi for a coin).
+    const halfUnit = 0.5 * 10 ** -places;
     const rankedSecIds = [...peak.entries()]
-      .filter(([, v]) => Math.abs(v) >= 0.005)
+      .filter(([, v]) => Math.abs(v) >= halfUnit)
       .sort((a, b) => {
         const diff = Math.abs(b[1]) - Math.abs(a[1]);
         if (diff !== 0) return diff;
@@ -2825,7 +2964,9 @@ export class NetWorthService {
     const topIds = rankedSecIds.slice(0, limit);
     const otherIds = new Set(rankedSecIds.slice(limit));
     const hasOther = otherIds.size > 0;
-    const hasCash = ungrouped.some((pt) => Math.abs(pt.cash) >= 0.005);
+    const hasCash = ungrouped.some(
+      (pt) => Math.abs(pt.cash.unroundedSubtotal) >= halfUnit,
+    );
 
     const series: InvestmentBreakdownSeries[] = topIds.map((secId) => {
       const sec = securityMap.get(secId);
@@ -2841,35 +2982,46 @@ export class NetWorthService {
     if (hasCash)
       series.push({ key: "cash", type: "cash", symbol: null, name: "" });
 
+    const unit = 10 ** places;
     const points: InvestmentBreakdownPoint[] = ungrouped.map((pt) => {
-      const values: Record<string, number> = {};
-      let total = 0;
-      // Each band and the cash band carry 4dp money precision, not whole units:
-      // the bands stack into `total`, so rounding each one lost grosze from the
-      // stacked total. Whole-unit rounding is a presentation step at the chart.
-      for (const secId of topIds) {
-        const v = roundMoney(pt.valuesBySec.get(secId) ?? 0);
-        values[secId] = v;
-        total += v;
-      }
+      // The bands as aggregates, in the order the series lists them; a
+      // security below the cutoff joins "other" before anything is rounded.
+      const bands: Array<[string, FxAggregate]> = topIds.map((secId) => [
+        secId,
+        pt.valuesBySec.get(secId) ?? new FxAggregate(),
+      ]);
       if (hasOther) {
-        let otherSum = 0;
-        for (const secId of otherIds)
-          otherSum += pt.valuesBySec.get(secId) ?? 0;
-        const v = roundMoney(otherSum);
-        values.other = v;
-        total += v;
+        const other = FxAggregate.sum(
+          [...otherIds].flatMap((secId) => {
+            const agg = pt.valuesBySec.get(secId);
+            return agg ? [agg] : [];
+          }),
+        );
+        bands.push(["other", other]);
       }
+      // Cash is not apportioned with the securities: a unit it gave up or
+      // took would move the invested value (the total less the cash band) a
+      // unit off the securities' own rounding.
+      const securities = FxAggregate.sum(bands.map(([, agg]) => agg));
+      const units = FxAggregate.apportionUnits(
+        bands.map(([, agg]) => agg),
+        places,
+      );
+      const securityUnits = securities.unitsAt(places);
+      const totalUnits = hasCash
+        ? FxAggregate.sum([securities, pt.cash]).unitsAt(places)
+        : securityUnits;
+      const values: Record<string, number> = {};
+      bands.forEach(([key], i) => {
+        values[key] = units[i] === 0 ? 0 : units[i] / unit;
+      });
       if (hasCash) {
-        const v = roundMoney(pt.cash);
-        values.cash = v;
-        total += v;
+        const cashUnits = Number(totalUnits - securityUnits);
+        values.cash = cashUnits === 0 ? 0 : cashUnits / unit;
       }
       return {
         date: pt.date,
-        // Rounded once after summing the 4dp bands so float drift does not leak
-        // into the stacked total.
-        total: roundMoney(total),
+        total: totalUnits === 0n ? 0 : Number(totalUnits) / unit,
         values,
         cashComplete: pt.unknownCashAccountIds.length === 0,
         unknownCashAccountIds: pt.unknownCashAccountIds,

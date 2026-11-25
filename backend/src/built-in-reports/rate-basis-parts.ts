@@ -256,9 +256,10 @@ export function foldRateParts(
  * {@link splitByRateBasis}, keyed by `keyOf`: each part at the rate it settled
  * at where that reaches the reporting currency (INV-FX-002), else at the
  * market rate on its own date (INV-FX-001). A figure is `null` while any of its
- * parts has no admissible rate. The parts come from the caller's own read; only
- * the rate history is loaded here, through `query`, and only when a part needs
- * it. `currencyName` is the alias the read selects its currency under.
+ * parts has no admissible rate, and is read once at `places`. The parts come
+ * from the caller's own read; only the rate history is loaded here, through
+ * `query`, and only when a part needs it. `currencyName` is the alias the read
+ * selects its currency under.
  */
 export async function convertRateParts(
   query: RateIndexQuery,
@@ -266,6 +267,7 @@ export async function convertRateParts(
   reporting: string,
   keyOf: (row: RatePartRow) => string,
   names: { sums: readonly string[]; currency: string },
+  places: number,
   logger?: RateIndexLogger,
 ): Promise<Map<string, Record<string, number | null>>> {
   return readAggregates(
@@ -277,6 +279,7 @@ export async function convertRateParts(
       names,
       logger,
     ),
+    places,
   );
 }
 

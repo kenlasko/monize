@@ -39,7 +39,7 @@ describe("DashboardTriviaService", () => {
       }
       expect(result.generatedAt).toBe("2026-11-19T06:30:00.000Z");
       expect(result.items).toHaveLength(1);
-      expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
+      expect(netWorth.getMonthlyNetWorthWithAggregates).not.toHaveBeenCalled();
       expect(ai.complete).not.toHaveBeenCalled();
     });
 
@@ -79,7 +79,7 @@ describe("DashboardTriviaService", () => {
       triviaRepo.findOne.mockResolvedValue(aiRow("fr"));
       const result = await service.getTrivia(userId);
       expect(result.items[0].source).toBe("ai");
-      expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
+      expect(netWorth.getMonthlyNetWorthWithAggregates).not.toHaveBeenCalled();
     });
 
     it("replaces a model's list worded in another language with calculated sentences", async () => {
@@ -126,7 +126,7 @@ describe("DashboardTriviaService", () => {
       const result = await service.getTrivia(userId);
       expect(result.items).toEqual([]);
       expect(triviaRepo.findOne).not.toHaveBeenCalled();
-      expect(netWorth.getMonthlyNetWorth).not.toHaveBeenCalled();
+      expect(netWorth.getMonthlyNetWorthWithAggregates).not.toHaveBeenCalled();
       expect(ledger.load).not.toHaveBeenCalled();
     });
   });
@@ -223,7 +223,7 @@ describe("DashboardTriviaService", () => {
 
   describe("getTrivia with nothing to say", () => {
     it("does not store an empty list, so a first import shows on the next load", async () => {
-      netWorth.getMonthlyNetWorth.mockResolvedValue([]);
+      netWorth.getMonthlyNetWorthWithAggregates.mockResolvedValue([]);
       const result = await service.getTrivia(userId);
       expect(result.items).toEqual([]);
       expect(insertQb.execute).not.toHaveBeenCalled();

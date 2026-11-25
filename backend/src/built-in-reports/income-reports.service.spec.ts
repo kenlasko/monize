@@ -479,7 +479,7 @@ describe("IncomeReportsService", () => {
           category_id: "cat-income",
           currency_code: "USD",
           tx_date: FIXTURE_TX_DATE,
-          total: "33.333",
+          total: "33.335",
         },
       ]);
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
@@ -490,7 +490,8 @@ describe("IncomeReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.data[0].total).toBe(33.333);
+      // USD's two places, half away from zero (issue #2410).
+      expect(result.data[0].total).toBe(33.34);
     });
 
     it("filters out the asset value change category in the SQL query", async () => {
@@ -610,7 +611,7 @@ describe("IncomeReportsService", () => {
       categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
     });
 
-    it("converts two 100.01 EUR receipts on one day to 249.5049 USD", async () => {
+    it("converts two 100.01 EUR receipts on one day to 249.50 USD", async () => {
       scopedManager.query.mockResolvedValue([
         {
           category_id: "cat-income",
@@ -626,13 +627,13 @@ describe("IncomeReportsService", () => {
         "2026-01-31",
       );
 
-      expect(result.data[0].total).toBe(249.5049);
-      expect(result.totalIncome).toBe(249.5049);
+      expect(result.data[0].total).toBe(249.5);
+      expect(result.totalIncome).toBe(249.5);
     });
 
     it("gives the same figure when the receipts fall on two days", async () => {
       // Each day's part converts to 124.752474; rounded one by one they summed
-      // to 249.5050.
+      // to 249.5050, which showed as 249.51.
       scopedManager.query.mockResolvedValue([
         {
           category_id: "cat-income",
@@ -654,25 +655,29 @@ describe("IncomeReportsService", () => {
         "2026-01-31",
       );
 
-      expect(result.data[0].total).toBe(249.5049);
-      expect(result.totalIncome).toBe(249.5049);
+      expect(result.data[0].total).toBe(249.5);
+      expect(result.totalIncome).toBe(249.5);
     });
   });
 
   // ---------------------------------------------------------------------------
   // Rounded once, after the parts are folded (issue #2384)
   // ---------------------------------------------------------------------------
-  describe("totals rounded once, after the parts are folded (issue #2384)", () => {
-    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.7525 alone, and 249.504948
-    // for two, which reads 249.5049. A total that added two four-place
-    // readings came to 249.5050.
+  describe("totals rounded once, after the parts are folded (issues #2384, #2410)", () => {
+    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.75 alone, and 249.504948
+    // for two, which reads 249.50. A total that added two four-place
+    // readings came to 249.5050, which showed as 249.51. 1.00 EUR is 1.2474,
+    // 1.25 alone; two are 2.4948, 2.49.
     beforeEach(() => {
       exchangeRateService.getRateIndex.mockResolvedValue(
         rateIndexOf([{ fromCurrency: "EUR", toCurrency: "USD", rate: 1.2474 }]),
       );
     });
 
-    it("totals two sources at 249.5049", async () => {
+    it.each([
+      ["100.01000000", 124.75, 249.5],
+      ["1.00000000", 1.25, 2.49],
+    ])("totals two sources of %s EUR once", async (total, row, headline) => {
       categoriesRepository.find.mockResolvedValue([
         mockIncomeCategory,
         { ...mockIncomeCategory, id: "cat-bonus", name: "Bonus" },
@@ -682,7 +687,7 @@ describe("IncomeReportsService", () => {
           category_id: categoryId,
           currency_code: "EUR",
           tx_date: FIXTURE_TX_DATE,
-          total: "100.01000000",
+          total,
         })),
       );
 
@@ -692,11 +697,37 @@ describe("IncomeReportsService", () => {
         "2026-01-31",
       );
 
-      expect(result.data.map((d) => d.total)).toEqual([124.7525, 124.7525]);
-      expect(result.totalIncome).toBe(249.5049);
+      expect(result.data.map((d) => d.total)).toEqual([row, row]);
+      expect(result.totalIncome).toBe(headline);
     });
 
-    it("keeps a source that earned less than a ten-thousandth", async () => {
+    it("reads a 2.50498 source as 2.50, not through 2.5050 as 2.51 (issue #2410)", async () => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "EUR", toCurrency: "USD", rate: 2.50498 },
+        ]),
+      );
+      categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: "cat-income",
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "1.00000000",
+        },
+      ]);
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.data[0].total).toBe(2.5);
+      expect(result.totalIncome).toBe(2.5);
+    });
+
+    it("keeps a source that earned less than a cent", async () => {
       exchangeRateService.getRateIndex.mockResolvedValue(
         rateIndexOf([
           {
@@ -739,34 +770,41 @@ describe("IncomeReportsService", () => {
       expect(result.data[0].total).toBe(0);
     });
 
-    it("totals two months of income and net at 249.5049", async () => {
-      scopedManager.query.mockResolvedValue(
-        ["2026-01-01", "2026-02-01"].map((periodStart) => ({
-          period_start: periodStart,
-          currency_code: "EUR",
-          tx_date: FIXTURE_TX_DATE,
-          income: "100.01",
-          expenses: "0",
-        })),
-      );
+    it.each([
+      ["100.01", 124.75, 249.5],
+      ["1", 1.25, 2.49],
+    ])(
+      "totals two months of %s EUR of income and their net once",
+      async (income, row, headline) => {
+        scopedManager.query.mockResolvedValue(
+          ["2026-01-01", "2026-02-01"].map((periodStart) => ({
+            period_start: periodStart,
+            currency_code: "EUR",
+            tx_date: FIXTURE_TX_DATE,
+            income,
+            expenses: "0",
+          })),
+        );
 
-      const result = await service.getIncomeVsExpenses(
-        mockUserId,
-        "2026-01-01",
-        "2026-02-28",
-      );
+        const result = await service.getIncomeVsExpenses(
+          mockUserId,
+          "2026-01-01",
+          "2026-02-28",
+        );
 
-      expect(result.data.map((d) => d.income)).toEqual([124.7525, 124.7525]);
-      expect(result.totals).toMatchObject({
-        income: 249.5049,
-        expenses: 0,
-        net: 249.5049,
-      });
-    });
+        expect(result.data.map((d) => d.income)).toEqual([row, row]);
+        expect(result.totals).toMatchObject({
+          income: headline,
+          expenses: 0,
+          net: headline,
+        });
+      },
+    );
 
     it("nets each period and the window from unrounded income and expenses", async () => {
       // 100.01 EUR in and 0.01 EUR out at 1.2474 net 124.74 USD exactly in
-      // each month, though the sides read 124.7525 and 0.0125.
+      // each month; the sides read 124.75 and 0.01, the window's 249.50 and
+      // 0.02 (249.504948 and 0.024948).
       scopedManager.query.mockResolvedValue(
         ["2026-01-01", "2026-02-01"].map((periodStart) => ({
           period_start: periodStart,
@@ -785,8 +823,8 @@ describe("IncomeReportsService", () => {
 
       expect(result.data.map((d) => d.net)).toEqual([124.74, 124.74]);
       expect(result.totals.net).toBe(249.48);
-      expect(result.totals.income).toBe(249.5049);
-      expect(result.totals.expenses).toBe(0.0249);
+      expect(result.totals.income).toBe(249.5);
+      expect(result.totals.expenses).toBe(0.02);
     });
 
     it("hands each month's income and expenses on as aggregates (issue #2407)", async () => {
@@ -819,7 +857,7 @@ describe("IncomeReportsService", () => {
       const january = periods.get("2026-01")!;
       expect(january.income.unroundedSubtotal).toBe(124.752474);
       expect(january.expenses.unroundedSubtotal).toBe(0.012474);
-      expect(january.income.knownSubtotal).toBe(response.data[0].income);
+      expect(january.income.knownSubtotalAt(2)).toBe(response.data[0].income);
     });
   });
 
@@ -984,8 +1022,8 @@ describe("IncomeReportsService", () => {
       expect(result.totals.net).toBe(-500);
     });
 
-    it("rounds every monetary value to money precision", async () => {
-      // Money is decimal(20,4), so `roundMoney` keeps four places, not two.
+    it("rounds every monetary value once at the reporting currency's places", async () => {
+      // USD's two places (issue #2410), from the stored figures' own digits.
       scopedManager.query.mockResolvedValue([
         row("2025-01-01", "1000.55555", "500.44444"),
       ]);
@@ -996,8 +1034,8 @@ describe("IncomeReportsService", () => {
         "2025-01-31",
       );
 
-      expect(result.data[0].income).toBe(1000.5556);
-      expect(result.data[0].expenses).toBe(500.4444);
+      expect(result.data[0].income).toBe(1000.56);
+      expect(result.data[0].expenses).toBe(500.44);
     });
 
     it("passes startDate as a parameter when provided", async () => {

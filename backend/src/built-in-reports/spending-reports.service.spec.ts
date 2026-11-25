@@ -8,6 +8,7 @@ import { Category } from "../categories/entities/category.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { Currency } from "../currencies/entities/currency.entity";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -99,6 +100,15 @@ describe("SpendingReportsService", () => {
         [Category, categoriesRepository as never],
         [Payee, payeesRepository as never],
         [UserPreference, userPreferenceRepository as never],
+        // A coin's places come from its row, as the real service reads them.
+        [
+          Currency,
+          {
+            find: jest
+              .fn()
+              .mockResolvedValue([{ code: "BTC", decimalPlaces: 8 }]),
+          } as never,
+        ],
       ]));
 
     const module: TestingModule = await Test.createTestingModule({
@@ -1043,10 +1053,11 @@ describe("SpendingReportsService", () => {
   // ---------------------------------------------------------------------------
   // Rounded once (issue #2384)
   // ---------------------------------------------------------------------------
-  describe("rounded once, after the parts are folded (issue #2384)", () => {
-    // 100.01 EUR at 1.2474 is 124.752474 USD: two such rows read 124.7525
-    // each, and 249.504948 together, which reads 249.5049. A total that added
-    // the rows' four-place readings came to 249.5050.
+  describe("rounded once, after the parts are folded (issues #2384, #2410)", () => {
+    // 100.01 EUR at 1.2474 is 124.752474 USD: two such rows read 124.75 each,
+    // and 249.504948 together, which reads 249.50. A total that added the
+    // rows' four-place readings came to 249.5050 and showed as 249.51. Two
+    // 1.00 EUR rows are 1.2474 each, 1.25 alone, and 2.4948 together, 2.49.
     const eur = (row: Record<string, unknown>) => ({
       currency_code: "EUR",
       tx_date: FIXTURE_TX_DATE,
@@ -1068,7 +1079,7 @@ describe("SpendingReportsService", () => {
       ["rolled up", true, 1],
       ["with subcategories", false, 2],
     ])(
-      "totals two subcategories %s at 249.5049",
+      "totals two subcategories %s at 249.50",
       async (_label, rollupToParent, rows) => {
         scopedManager.query.mockResolvedValue([
           eur({ category_id: "cat-child" }),
@@ -1083,8 +1094,8 @@ describe("SpendingReportsService", () => {
         );
 
         expect(result.data).toHaveLength(rows);
-        expect(result.totalSpending).toBe(249.5049);
-        expect(result.knownSpending).toBe(249.5049);
+        expect(result.totalSpending).toBe(249.5);
+        expect(result.knownSpending).toBe(249.5);
       },
     );
 
@@ -1117,14 +1128,14 @@ describe("SpendingReportsService", () => {
         "cat-parent",
       ]);
       expect(categories.get("cat-child")!.unroundedSubtotal).toBe(124.752474);
-      expect(categories.get("cat-child")!.knownSubtotal).toBe(
+      expect(categories.get("cat-child")!.knownSubtotalAt(2)).toBe(
         response.data.find((c) => c.categoryId === "cat-child")!.total,
       );
     });
 
-    it("keeps a category that cost less than a ten-thousandth", async () => {
+    it("keeps a category that cost less than a cent", async () => {
       // 100.00 EUR spent at 1.2000003 and refunded at 1.2 cost 0.00003 USD:
-      // spending, though it reads 0.0000. Judged at four places it was not.
+      // spending, though it reads 0.00. Judged on its reading it was not.
       exchangeRateService.getRateIndex.mockResolvedValue(
         rateIndexOf([
           {
@@ -1161,45 +1172,143 @@ describe("SpendingReportsService", () => {
       expect(result.totalSpending).toBe(0);
     });
 
-    it("totals the listed payees at 249.5049", async () => {
+    it.each([
+      ["100.0100", 124.75, 249.5],
+      ["1.0000", 1.25, 2.49],
+    ])(
+      "totals the listed payees of %s EUR each once",
+      async (total, row, headline) => {
+        scopedManager.query.mockResolvedValue([
+          eur({ payee_id: null, payee_name: "Cafe", total }),
+          eur({ payee_id: null, payee_name: "Bakery", total }),
+        ]);
+
+        const result = await service.getSpendingByPayee(
+          mockUserId,
+          "2025-01-01",
+          "2026-12-31",
+        );
+
+        expect(result.data.map((d) => d.total)).toEqual([row, row]);
+        expect(result.totalSpending).toBe(headline);
+      },
+    );
+
+    it.each([
+      ["100.0100", 124.75, 249.5],
+      ["1.0000", 1.25, 2.49],
+    ])(
+      "totals a month's categories of %s EUR each once",
+      async (total, row, headline) => {
+        const other: Category = {
+          ...mockParentCategory,
+          id: "cat-other",
+          name: "Other",
+        };
+        categoriesRepository.find.mockResolvedValue([
+          mockParentCategory,
+          other,
+        ]);
+        scopedManager.query.mockResolvedValue([
+          eur({ month: "2026-01", category_id: "cat-parent", total }),
+          eur({ month: "2026-01", category_id: "cat-other", total }),
+        ]);
+
+        const result = await service.getMonthlySpendingTrend(
+          mockUserId,
+          "2025-01-01",
+          "2026-12-31",
+        );
+
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].categories.map((c) => c.total)).toEqual([
+          row,
+          row,
+        ]);
+        expect(result.data[0].totalSpending).toBe(headline);
+      },
+    );
+
+    it("reads a 2.50498 figure as 2.50, not through 2.5050 as 2.51 (issue #2410)", async () => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "EUR", toCurrency: "USD", rate: 2.50498 },
+        ]),
+      );
       scopedManager.query.mockResolvedValue([
-        eur({ payee_id: null, payee_name: "Cafe" }),
-        eur({ payee_id: null, payee_name: "Bakery" }),
+        eur({ category_id: "cat-parent", total: "1.0000" }),
       ]);
 
-      const result = await service.getSpendingByPayee(
+      const result = await service.getSpendingByCategory(
         mockUserId,
         "2025-01-01",
         "2026-12-31",
       );
 
-      expect(result.data.map((d) => d.total)).toEqual([124.7525, 124.7525]);
-      expect(result.totalSpending).toBe(249.5049);
+      expect(result.data[0].total).toBe(2.5);
+      expect(result.totalSpending).toBe(2.5);
     });
 
-    it("totals a month's categories at 249.5049, and keeps a category the months net to spending", async () => {
-      const other: Category = {
-        ...mockParentCategory,
-        id: "cat-other",
-        name: "Other",
-      };
-      categoriesRepository.find.mockResolvedValue([mockParentCategory, other]);
+    it("reads a coin reader's figures at its row's eight places (issue #2410)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "BTC",
+      });
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "USD", toCurrency: "BTC", rate: 0.0000123457 },
+        ]),
+      );
+      const usd = (category_id: string) => ({
+        category_id,
+        currency_code: "USD",
+        tx_date: FIXTURE_TX_DATE,
+        total: "1.0000",
+      });
       scopedManager.query.mockResolvedValue([
-        eur({ month: "2026-01", category_id: "cat-parent" }),
-        eur({ month: "2026-01", category_id: "cat-other" }),
+        usd("cat-child"),
+        usd("cat-parent"),
       ]);
 
-      const result = await service.getMonthlySpendingTrend(
+      const result = await service.getSpendingByCategory(
         mockUserId,
         "2025-01-01",
         "2026-12-31",
+        { rollupToParent: false },
       );
 
-      expect(result.data).toHaveLength(1);
-      expect(result.data[0].categories.map((c) => c.total)).toEqual([
-        124.7525, 124.7525,
+      // 0.0000123457 BTC each, 0.00001235 alone; 0.0000246914 together reads
+      // 0.00002469, where the two readings add to 0.0000247 and four places
+      // would read nothing at all.
+      expect(result.currency).toBe("BTC");
+      expect(result.data.map((d) => d.total)).toEqual([0.00001235, 0.00001235]);
+      expect(result.totalSpending).toBe(0.00002469);
+    });
+
+    it("reads whole yen for a JPY reader (issue #2410)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "JPY",
+      });
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "EUR", toCurrency: "JPY", rate: 162.3456 },
+        ]),
+      );
+      scopedManager.query.mockResolvedValue([
+        eur({ category_id: "cat-child", total: "1.0000" }),
+        eur({ category_id: "cat-parent", total: "1.0000" }),
       ]);
-      expect(result.data[0].totalSpending).toBe(249.5049);
+
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        "2025-01-01",
+        "2026-12-31",
+        { rollupToParent: false },
+      );
+
+      // 162.3456 each, 162 alone; 324.6912 together reads 325.
+      expect(result.currency).toBe("JPY");
+      expect(result.data.map((d) => d.total)).toEqual([162, 162]);
+      expect(result.totalSpending).toBe(325);
     });
   });
 
@@ -1897,7 +2006,7 @@ describe("SpendingReportsService", () => {
       expect(result.excludedCount).toBe(0);
     });
 
-    it("keeps a fiat total exactly as it was at four places", async () => {
+    it("reads a fiat total once, at the reporting currency's places", async () => {
       scopedManager.query.mockResolvedValue([
         {
           category_id: "cat-parent",
@@ -1913,11 +2022,9 @@ describe("SpendingReportsService", () => {
         "2025-12-31",
       );
 
-      // 12.345678 USD x 1.36 = 16.79012208, rounded once at four places. The
-      // fiat row now reads at eight places before converting; the result is the
-      // same figure the four-place read gave because the stored column holds at
-      // most four fiat places.
-      expect(result.data[0].total).toBe(16.7901);
+      // 12.345678 USD x 1.36 = 16.79012208, rounded once at CAD's two places
+      // (issue #2410). The fiat row reads at eight places before converting.
+      expect(result.data[0].total).toBe(16.79);
     });
   });
 });

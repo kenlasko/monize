@@ -3,6 +3,7 @@ import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { returnedRows } from "../common/db/query-result";
 import { FxAggregate } from "../common/fx-aggregate";
+import { reportPlacesOf } from "../common/report-figure";
 import {
   FALLBACK_DEFAULT_CURRENCY,
   preferredCurrency,
@@ -22,6 +23,7 @@ import {
   PortfolioCalculationService,
   DailyRateIndex,
   FxRateCache,
+  netInvestedParts,
 } from "./portfolio-calculation.service";
 import {
   SectorWeightingService,
@@ -240,6 +242,14 @@ export interface PortfolioSummary {
   totalNetInvested: number;
   totalPortfolioValue: number;
   /**
+   * `totalPortfolioValue` less `totalNetInvested`, the Investments page's
+   * Total Gain: the difference of the two aggregates read once at the
+   * reporting currency's places, never the difference of the two readings,
+   * which can sit a unit off it (docs/specs/report-rounding-and-aggregation.md
+   * rule 4). A partial figure whenever `valuationComplete` is false.
+   */
+  totalGainOverNetInvested: number;
+  /**
    * The gain over the holdings that joined `totalHoldingsValue` and whose cost
    * converted: their value less THEIR cost, never less every holding's cost
    * (A26-M38). A partial figure whenever `valuationComplete` is false.
@@ -350,6 +360,11 @@ interface PortfolioValuationWork {
   holdingsAccountIds: string[];
   /** Whether every input of the CAGR ratio converted and was priced. */
   cagrInputsComplete: boolean;
+  /**
+   * The CAGR ratio's two inputs before they are rounded: a ratio divides the
+   * unrounded figures (docs/specs/report-rounding-and-aggregation.md rule 8).
+   */
+  cagrInputs: { netInvested: number; portfolioValue: number };
 }
 
 export interface AllocationItem {
@@ -433,6 +448,8 @@ export interface LlmAccountHoldings {
 
 export interface LlmPortfolioSummary {
   holdingCount: number;
+  /** The reporting currency every total and the allocation are in. */
+  currency: string;
   /**
    * Same meaning as `PortfolioSummary.fxComplete`, and present for the same
    * reason: this shape is what the AI Assistant and the MCP server quote back to
@@ -980,8 +997,13 @@ export class PortfolioService {
     defaultCurrency: string,
     accountIds?: string[],
   ): Promise<PortfolioSummary> {
-    const { valuation, accounts, holdingsAccountIds, cagrInputsComplete } =
-      await this.memoizedValuation(userId, defaultCurrency, accountIds);
+    const {
+      valuation,
+      accounts,
+      holdingsAccountIds,
+      cagrInputsComplete,
+      cagrInputs,
+    } = await this.memoizedValuation(userId, defaultCurrency, accountIds);
 
     // The time-weighted return, over the same measure "Portfolio performance"
     // reports and by the same code path: the invested part's TWR since the
@@ -1045,8 +1067,8 @@ export class PortfolioService {
       ? await this.calculationService.calculateCAGR(
           userId,
           holdingsAccountIds,
-          valuation.totalNetInvested,
-          valuation.totalPortfolioValue,
+          cagrInputs.netInvested,
+          cagrInputs.portfolioValue,
         )
       : null;
 
@@ -1100,12 +1122,18 @@ export class PortfolioService {
         cashAndStandaloneIds,
       );
 
+    // Every reporting-currency figure below is read once at the reporting
+    // currency's places (docs/specs/report-rounding-and-aggregation.md
+    // section 6), and every ratio divides the unrounded figures (rule 8).
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
+
     // Calculate total cash value (converted to default currency)
     const cashResult = await this.calculationService.computeTotalCashValue(
       [...categorised.cashAccounts, ...categorised.standaloneAccounts],
       effectiveBalances,
       defaultCurrency,
       rateCache,
+      places,
     );
     const totalCashValue = cashResult.total;
 
@@ -1124,6 +1152,7 @@ export class PortfolioService {
         defaultCurrency,
         rateCache,
         (ids) => this.getLatestPrices(ids),
+        places,
       );
 
     // Group holdings by account
@@ -1136,16 +1165,29 @@ export class PortfolioService {
         rateCache,
       );
 
-    const totalPortfolioValue =
-      totalCashValue + holdingsResult.totalHoldingsValue;
+    const holdingsAggregates = holdingsResult.aggregates;
+    // Cash and holdings folded before either is rounded, so the portfolio's
+    // value is one rounding; adding the two readings could sit a cent off
+    // (rule 2).
+    const portfolioValue = FxAggregate.sum([
+      cashResult.aggregate,
+      holdingsAggregates.holdingsValue,
+    ]);
+    const totalPortfolioValue = portfolioValue.knownSubtotalAt(places);
     // Value less cost of the SAME holdings (A26-M38): `totalCostBasis` carries
     // every holding's cost, `totalHoldingsValue` only the priced ones. The
     // difference is taken before either side is rounded (`gainLoss`), as each
-    // account's gain is.
+    // account's gain is, and its percentage divides the unrounded figures over
+    // a cost that reads as money.
     const totalGainLoss = holdingsResult.gainLoss;
     const totalGainLossPercent =
       holdingsResult.gainCostBasis > 0
-        ? (totalGainLoss / holdingsResult.gainCostBasis) * 100
+        ? (FxAggregate.difference(
+            holdingsAggregates.gainValue,
+            holdingsAggregates.gainCost,
+          ).unroundedSubtotal /
+            holdingsAggregates.gainCost.unroundedSubtotal) *
+          100
         : 0;
 
     // Total net invested in the default currency. The cash is today's balance,
@@ -1165,7 +1207,13 @@ export class PortfolioService {
     const netInvestedAgg = new FxAggregate();
     for (const acct of holdingsByAccount) {
       if (acct.currencyCode === defaultCurrency) {
-        netInvestedAgg.addConverted(acct.netInvested);
+        // Its parts, never the account's own rounded net invested (rule 2).
+        for (const part of netInvestedParts(
+          acct.cashBalance,
+          investmentFlows.get(acct.accountId),
+        )) {
+          netInvestedAgg.addConverted(part);
+        }
         continue;
       }
       const cash = await this.calculationService.convertToDefault(
@@ -1186,7 +1234,7 @@ export class PortfolioService {
         `Net invested omits accounts with no exchange rate (${netInvestedAgg.missingPairs.join(", ")})`,
       );
     }
-    const totalNetInvested = netInvestedAgg.knownSubtotal;
+    const totalNetInvested = netInvestedAgg.knownSubtotalAt(places);
 
     // Sort holdings by market value
     const sortedHoldings = [...holdingsResult.holdingsWithValues].sort(
@@ -1202,9 +1250,10 @@ export class PortfolioService {
     const allocation = await this.calculationService.buildAllocation(
       sortedHoldings,
       holdingsResult.holdings,
-      totalCashValue,
+      cashResult.aggregate.unroundedSubtotal,
       defaultCurrency,
       rateCache,
+      places,
     );
 
     // Whether every component of these totals could be converted into the
@@ -1233,6 +1282,10 @@ export class PortfolioService {
         totalCostBasis: holdingsResult.totalCostBasis,
         totalNetInvested,
         totalPortfolioValue,
+        totalGainOverNetInvested: FxAggregate.difference(
+          portfolioValue,
+          netInvestedAgg,
+        ).knownSubtotalAt(places),
         totalGainLoss,
         totalGainLossPercent,
         gainCostBasis: holdingsResult.gainCostBasis,
@@ -1254,6 +1307,10 @@ export class PortfolioService {
         holdingsResult.fxComplete &&
         holdingsResult.pricesComplete &&
         cashResult.fxComplete,
+      cagrInputs: {
+        netInvested: netInvestedAgg.unroundedSubtotal,
+        portfolioValue: portfolioValue.unroundedSubtotal,
+      },
     };
   }
 
@@ -1318,8 +1375,12 @@ export class PortfolioService {
   /**
    * Compact portfolio summary for LLM / AI consumers. Called by both the AI
    * Assistant's tool executor and the MCP server's `get_portfolio_summary`
-   * tool so the two surfaces return the same shape. Monetary values are
-   * rounded to 4 decimal places; percentages to 2.
+   * tool so the two surfaces return the same shape. The totals and the
+   * allocation arrive from the summary rounded once at the reporting
+   * currency's places (docs/specs/report-rounding-and-aggregation.md section
+   * 6), so the model reads the figures the screen shows, and an account's
+   * totals once at its own currency's money precision (`asShown` keeps both);
+   * a holding's own figures are rounded to 4 decimal places. Percentages to 2.
    *
    * `includeLookThrough` adds the country and asset-class breakdowns for
    * exposure questions ("how much am I in the US?", "what's my equity/bond
@@ -1341,6 +1402,12 @@ export class PortfolioService {
       v === null || v === undefined ? null : roundMoney(Number(v));
     const roundPct = (v: number | null | undefined): number | null =>
       v === null || v === undefined ? null : Math.round(Number(v) * 100) / 100;
+    // A figure the summary already read once: the totals and the allocation
+    // at the reporting currency's places, an account's at its own currency's
+    // money precision (a coin's eight). Rounding it again at four would cut a
+    // coin's and could move a total off the one the screen shows.
+    const asShown = (v: number | null | undefined): number =>
+      v === null || v === undefined ? 0 : Number(v);
 
     const toLlmHolding = (h: HoldingWithMarketValue): LlmPortfolioHolding => ({
       securityId: h.securityId,
@@ -1363,12 +1430,12 @@ export class PortfolioService {
         accountName: acct.accountName,
         currency: acct.currencyCode,
         cashBalance: roundMoneyValue(acct.cashBalance),
-        totalCostBasis: roundMoneyValue(acct.totalCostBasis),
-        totalMarketValue: roundMoneyValue(acct.totalMarketValue),
-        totalGainLoss: roundMoneyValue(acct.totalGainLoss),
+        totalCostBasis: asShown(acct.totalCostBasis),
+        totalMarketValue: asShown(acct.totalMarketValue),
+        totalGainLoss: asShown(acct.totalGainLoss),
         totalGainLossPercent: roundPct(acct.totalGainLossPercent) ?? 0,
-        gainCostBasis: roundMoneyValue(acct.gainCostBasis),
-        unpricedCostBasis: roundMoneyValue(acct.unpricedCostBasis),
+        gainCostBasis: asShown(acct.gainCostBasis),
+        unpricedCostBasis: asShown(acct.unpricedCostBasis),
         fxComplete: acct.fxComplete,
         missingRatePairs: acct.missingRatePairs,
         pricesComplete: acct.pricesComplete,
@@ -1381,21 +1448,22 @@ export class PortfolioService {
         name: a.name,
         symbol: a.symbol,
         type: a.type,
-        value: roundMoneyValue(a.value),
+        value: asShown(a.value),
         percentage: roundPct(a.percentage) ?? 0,
       }),
     );
 
     return {
       holdingCount: holdings.length,
-      totalCashValue: roundMoneyValue(summary.totalCashValue),
-      totalHoldingsValue: roundMoneyValue(summary.totalHoldingsValue),
-      totalCostBasis: roundMoneyValue(summary.totalCostBasis),
-      totalPortfolioValue: roundMoneyValue(summary.totalPortfolioValue),
-      totalGainLoss: roundMoneyValue(summary.totalGainLoss),
+      currency: await this.resolveDefaultCurrency(userId),
+      totalCashValue: asShown(summary.totalCashValue),
+      totalHoldingsValue: asShown(summary.totalHoldingsValue),
+      totalCostBasis: asShown(summary.totalCostBasis),
+      totalPortfolioValue: asShown(summary.totalPortfolioValue),
+      totalGainLoss: asShown(summary.totalGainLoss),
       totalGainLossPercent: roundPct(summary.totalGainLossPercent) ?? 0,
-      gainCostBasis: roundMoneyValue(summary.gainCostBasis),
-      unpricedCostBasis: roundMoneyValue(summary.unpricedCostBasis),
+      gainCostBasis: asShown(summary.gainCostBasis),
+      unpricedCostBasis: asShown(summary.unpricedCostBasis),
       timeWeightedReturn: roundPct(summary.timeWeightedReturn),
       timeWeightedReturnReasons: summary.timeWeightedReturnReasons,
       timeWeightedReturnSince: summary.timeWeightedReturnSince,

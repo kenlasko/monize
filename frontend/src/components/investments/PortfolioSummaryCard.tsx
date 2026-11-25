@@ -280,6 +280,12 @@ export function PortfolioSummaryCard({
   const gainDisplayCurrency = foreignCurrency ?? defaultCurrency;
 
   const gainLossVal = converted?.gainLoss ?? summary.totalGainLoss;
+  // The server's one rounding of value less net invested; a difference of the
+  // two readings can sit a cent off it. A foreign account's view and an older
+  // backend take the difference here.
+  const totalGainVal = converted
+    ? converted.portfolio - converted.netInvested
+    : (summary.totalGainOverNetInvested ?? summary.totalPortfolioValue - summary.totalNetInvested);
   const gainLossPercentVal = converted?.gainLossPercent ?? summary.totalGainLossPercent;
   const twr = summary.timeWeightedReturn;
   // A withheld return names its cause, as the chart's does: "n/a" with no cause
@@ -393,8 +399,8 @@ export function PortfolioSummaryCard({
                   learnMore="investmentCashVsReturns"
                 />
               </div>
-              <div data-sign={signOf((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}`}>
-                {fmtVal((converted?.portfolio ?? summary.totalPortfolioValue) - (converted?.netInvested ?? summary.totalNetInvested))}
+              <div data-sign={signOf(totalGainVal)} className={`ui-sum-fig ui-gain text-base sm:text-lg font-semibold ${returnColorClass(totalGainVal)}`}>
+                {fmtVal(totalGainVal)}
               </div>
             </div>
             <div>

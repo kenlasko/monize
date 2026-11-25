@@ -7,7 +7,7 @@ import {
   IncomeReportsService,
 } from "./income-reports.service";
 import { ReportCurrencyService } from "./report-currency.service";
-import { roundMoney } from "../common/round.util";
+import { reportFigureOrNull } from "../common/report-figure";
 import { FxAggregate } from "../common/fx-aggregate";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import {
@@ -88,6 +88,10 @@ export class MonthlyComparisonService {
 
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every figure leaves rounded once at the reporting currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6), as the
+    // reports this one reads round theirs.
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     // Fetch all data in parallel
     const [
@@ -148,18 +152,26 @@ export class MonthlyComparisonService {
     const incomeExpenses: MonthlyComparisonIncomeExpenses = {
       currentMonth: month,
       previousMonth: previousMonthStr,
-      currentIncome: cur.income.knownSubtotal,
-      previousIncome: prev.income.knownSubtotal,
-      incomeChange: this.change(cur.income, prev.income),
-      incomeChangePercent: this.percentChange(prev.income, cur.income),
-      currentExpenses: cur.expenses.knownSubtotal,
-      previousExpenses: prev.expenses.knownSubtotal,
-      expensesChange: this.change(cur.expenses, prev.expenses),
-      expensesChangePercent: this.percentChange(prev.expenses, cur.expenses),
-      currentSavings: currentSavings.knownSubtotal,
-      previousSavings: previousSavings.knownSubtotal,
-      savingsChange: this.change(currentSavings, previousSavings),
-      savingsChangePercent: this.percentChange(previousSavings, currentSavings),
+      currentIncome: cur.income.knownSubtotalAt(places),
+      previousIncome: prev.income.knownSubtotalAt(places),
+      incomeChange: this.change(cur.income, prev.income, places),
+      incomeChangePercent: this.percentChange(prev.income, cur.income, places),
+      currentExpenses: cur.expenses.knownSubtotalAt(places),
+      previousExpenses: prev.expenses.knownSubtotalAt(places),
+      expensesChange: this.change(cur.expenses, prev.expenses, places),
+      expensesChangePercent: this.percentChange(
+        prev.expenses,
+        cur.expenses,
+        places,
+      ),
+      currentSavings: currentSavings.knownSubtotalAt(places),
+      previousSavings: previousSavings.knownSubtotalAt(places),
+      savingsChange: this.change(currentSavings, previousSavings, places),
+      savingsChangePercent: this.percentChange(
+        previousSavings,
+        currentSavings,
+        places,
+      ),
     };
 
     // Build month labels
@@ -173,8 +185,14 @@ export class MonthlyComparisonService {
     const prefs = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(UserPreference).findOne({ where: { userId } }),
     );
+    // Each note's "more" or "less" reads the change's sign before it is
+    // rounded (rule 5): a fall of 0.004 is less, though it reads 0.00.
     const notes = this.buildNotes(
       incomeExpenses,
+      {
+        savings: FxAggregate.difference(currentSavings, previousSavings).sign,
+        income: FxAggregate.difference(cur.income, prev.income).sign,
+      },
       currentMonthLabel,
       previousMonthLabel,
       defaultCurrency,
@@ -185,6 +203,7 @@ export class MonthlyComparisonService {
     const expenses = this.buildExpenseComparison(
       currentSpending,
       previousSpending,
+      places,
     );
 
     // Build top 5 categories
@@ -208,6 +227,7 @@ export class MonthlyComparisonService {
       netWorthHistory,
       month,
       previousMonthStr,
+      places,
     );
 
     // Build investment performance
@@ -215,6 +235,7 @@ export class MonthlyComparisonService {
       userId,
       currentEnd,
       defaultCurrency,
+      places,
       topMovers,
     );
 
@@ -235,6 +256,7 @@ export class MonthlyComparisonService {
 
   private buildNotes(
     ie: MonthlyComparisonIncomeExpenses,
+    direction: { savings: number; income: number },
     currentLabel: string,
     previousLabel: string,
     currency: string,
@@ -243,13 +265,13 @@ export class MonthlyComparisonService {
     const fmt = (amount: number) => n.formatCurrency(amount, currency);
 
     const savingsDirection =
-      ie.savingsChange >= 0
+      direction.savings >= 0
         ? `${n.formatPercent(Math.abs(ie.savingsChangePercent), 1)} more`
         : `${n.formatPercent(Math.abs(ie.savingsChangePercent), 1)} less`;
     const savingsNote = `In ${currentLabel}, you saved ${savingsDirection} than ${previousLabel} for a total of ${fmt(ie.currentSavings)}`;
 
     const incomeDirection =
-      ie.incomeChange >= 0
+      direction.income >= 0
         ? `${fmt(Math.abs(ie.incomeChange))} more`
         : `${fmt(Math.abs(ie.incomeChange))} less`;
     const incomeNote = `Your total income in ${currentLabel} was ${fmt(ie.currentIncome)} which is ${incomeDirection} than ${previousLabel}`;
@@ -260,6 +282,7 @@ export class MonthlyComparisonService {
   private buildExpenseComparison(
     current: SpendingWithAggregates,
     previous: SpendingWithAggregates,
+    places: number,
   ): MonthlyComparisonExpenses {
     const currentData = current.response.data;
     const previousData = previous.response.data;
@@ -327,10 +350,10 @@ export class MonthlyComparisonService {
         categoryId: c.categoryId,
         categoryName: c.categoryName,
         color: c.color,
-        currentTotal: c.current.knownSubtotal,
-        previousTotal: c.previous.knownSubtotal,
-        change: this.change(c.current, c.previous),
-        changePercent: this.percentChange(c.previous, c.current),
+        currentTotal: c.current.knownSubtotalAt(places),
+        previousTotal: c.previous.knownSubtotalAt(places),
+        change: this.change(c.current, c.previous, places),
+        changePercent: this.percentChange(c.previous, c.current, places),
       }))
       .sort((a, b) => b.currentTotal - a.currentTotal);
 
@@ -356,6 +379,7 @@ export class MonthlyComparisonService {
     >[],
     currentMonth: string,
     previousMonth: string,
+    places: number,
   ): MonthlyComparisonNetWorth {
     const monthlyHistory = history.map((h) => ({
       month: h.month,
@@ -412,10 +436,10 @@ export class MonthlyComparisonService {
       // The change is the difference of the two months' aggregates, read once
       // (rule 4).
       netWorthChange: bothComplete
-        ? this.change(cur.aggregate, prev.aggregate)
+        ? this.change(cur.aggregate, prev.aggregate, places)
         : null,
       netWorthChangePercent: bothComplete
-        ? this.percentChange(prev.aggregate, cur.aggregate)
+        ? this.percentChange(prev.aggregate, cur.aggregate, places)
         : null,
       fxComplete: bothComplete,
       missingRatePairs: [...new Set([...cur.pairs, ...prev.pairs])].sort(),
@@ -426,6 +450,7 @@ export class MonthlyComparisonService {
     userId: string,
     currentEnd: string,
     currency: string,
+    places: number,
     topMovers: TopMover[],
   ): Promise<MonthlyComparisonInvestments> {
     // Get investment accounts
@@ -480,18 +505,9 @@ export class MonthlyComparisonService {
       accountPerformance.push({
         accountId: account.id,
         accountName: (account.name || "").replace(" - Brokerage", ""),
-        currentValue:
-          result.investedValueEnd === null
-            ? null
-            : roundMoney(result.investedValueEnd),
-        startValue:
-          result.investedValueStart === null
-            ? null
-            : roundMoney(result.investedValueStart),
-        investmentPnl:
-          result.investmentPnl === null
-            ? null
-            : roundMoney(result.investmentPnl),
+        currentValue: reportFigureOrNull(result.investedValueEnd, places),
+        startValue: reportFigureOrNull(result.investedValueStart, places),
+        investmentPnl: reportFigureOrNull(result.investmentPnl, places),
         returnPercent:
           result.investmentReturnPercent === null
             ? null
@@ -527,21 +543,33 @@ export class MonthlyComparisonService {
   }
 
   /**
-   * `current` less `previous`, rounded once from the two aggregates: the
-   * difference of their four-place readings can sit a unit off the exact
+   * `current` less `previous`, rounded once from the two aggregates at
+   * `places`: the difference of their readings can sit a unit off the exact
    * change (docs/specs/report-rounding-and-aggregation.md rule 4).
    */
-  private change(current: FxAggregate, previous: FxAggregate): number {
-    return FxAggregate.difference(current, previous).knownSubtotal;
+  private change(
+    current: FxAggregate,
+    previous: FxAggregate,
+    places: number,
+  ): number {
+    return FxAggregate.difference(current, previous).knownSubtotalAt(places);
   }
 
   /**
    * The change as a percentage of `previous`, worked out from the unrounded
-   * values and rounded once (rule 8); whether `previous` is zero reads its
-   * sign, before rounding (rule 5).
+   * values and rounded once (rule 8), over a `previous` that reads as money at
+   * `places`, as `compare_periods` takes its base: 0.004 USD reads 0.00 and is
+   * no base, where a cent over it read as a 2,499,900% change. Without a base
+   * the change is 100, or 0 when `current` reads as nothing too.
    */
-  private percentChange(previous: FxAggregate, current: FxAggregate): number {
-    if (previous.sign === 0) return current.sign === 0 ? 0 : 100;
+  private percentChange(
+    previous: FxAggregate,
+    current: FxAggregate,
+    places: number,
+  ): number {
+    if (previous.knownSubtotalAt(places) === 0) {
+      return current.knownSubtotalAt(places) === 0 ? 0 : 100;
+    }
     const change = FxAggregate.difference(current, previous);
     return (
       Math.round(

@@ -26,6 +26,13 @@ export interface MonthlyNetWorth {
    * response from an older backend mid-deploy does not carry it.
    */
   byAccountType?: Partial<Record<AccountType, number>>;
+  /**
+   * `netWorth` less the previous month's, worked out on the server from the
+   * two months' unrounded figures and rounded once, where the difference of
+   * the two rounded `netWorth`s can sit a cent off it. `null` for the series'
+   * first month; absent from an older backend mid-deploy.
+   */
+  netWorthChange?: number | null;
 }
 
 export interface MonthlyInvestmentValue {

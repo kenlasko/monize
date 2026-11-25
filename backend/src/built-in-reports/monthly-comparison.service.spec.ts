@@ -24,6 +24,7 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import { reportPlacesMock } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -186,7 +187,10 @@ const withIncomeAggregates = <
   ),
 });
 
-/** One month whose exact income and expenses are the given components. */
+/**
+ * One month whose exact income and expenses are the given components, its
+ * figures read at CAD's two places as the report reads them (issue #2410).
+ */
 const incomeMonth = (
   period: string,
   income: number[],
@@ -201,10 +205,12 @@ const incomeMonth = (
       data: [
         {
           period,
-          income: aggregates.income.knownSubtotal,
-          expenses: aggregates.expenses.knownSubtotal,
-          net: FxAggregate.difference(aggregates.income, aggregates.expenses)
-            .knownSubtotal,
+          income: aggregates.income.knownSubtotalAt(2),
+          expenses: aggregates.expenses.knownSubtotalAt(2),
+          net: FxAggregate.difference(
+            aggregates.income,
+            aggregates.expenses,
+          ).knownSubtotalAt(2),
         },
       ],
     },
@@ -227,7 +233,7 @@ const withSpendingAggregates = <
   ),
 });
 
-/** One window whose categories' exact spends are the given components. */
+/** One window whose categories' exact spends are the given components, read at two places. */
 const spendingWindow = (categories: Record<string, number[]>) => {
   const aggregates = new Map(
     Object.entries(categories).map(([id, parts]) => [
@@ -239,9 +245,9 @@ const spendingWindow = (categories: Record<string, number[]>) => {
     categoryId,
     categoryName: categoryId,
     color: null,
-    total: aggregate.knownSubtotal,
+    total: aggregate.knownSubtotalAt(2),
   }));
-  const knownSpending = FxAggregate.sum(aggregates.values()).knownSubtotal;
+  const knownSpending = FxAggregate.sum(aggregates.values()).knownSubtotalAt(2);
   return {
     response: { data, totalSpending: knownSpending, knownSpending },
     categories: aggregates,
@@ -275,6 +281,7 @@ describe("MonthlyComparisonService", () => {
     };
     mockCurrencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("CAD"),
+      getReportPlaces: reportPlacesMock(),
     };
     mockNetWorthService = {
       getMonthlyNetWorthWithAggregates: jest.fn(),
@@ -569,7 +576,7 @@ describe("MonthlyComparisonService", () => {
     });
   });
 
-  describe("getMonthlyComparison() - figures rounded once (issue #2384)", () => {
+  describe("getMonthlyComparison() - figures rounded once (issues #2384, #2410)", () => {
     beforeEach(() => {
       mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
         withNetWorthAggregates([]),
@@ -578,46 +585,44 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("reads a month's savings as its own net and its expense total as reported", async () => {
-      // 124.752474 in and 0.000049896 out net 124.7524, though the sides read
-      // 124.7525 and 0; two 124.752474 categories total 249.5049, though their
-      // rows read 124.7525 each.
+      // 1.2474 in and 0.0049896 out net 1.24, though the sides read 1.25
+      // and 0.00; two 1.2474 categories total 2.49, though their rows read
+      // 1.25 each.
       mockIncomeReports.getIncomeVsExpensesWithAggregates
-        .mockResolvedValueOnce(
-          incomeMonth("2026-01", [124.752474], [0.000049896]),
-        )
+        .mockResolvedValueOnce(incomeMonth("2026-01", [1.2474], [0.0049896]))
         .mockResolvedValueOnce(incomeMonth("2025-12", []));
       mockSpendingReports.getSpendingByCategoryWithAggregates
         .mockResolvedValueOnce(
-          spendingWindow({ "cat-1": [124.752474], "cat-2": [124.752474] }),
+          spendingWindow({ "cat-1": [1.2474], "cat-2": [1.2474] }),
         )
         .mockResolvedValueOnce(spendingWindow({}));
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
 
-      expect(result.incomeExpenses.currentIncome).toBe(124.7525);
+      expect(result.incomeExpenses.currentIncome).toBe(1.25);
       expect(result.incomeExpenses.currentExpenses).toBe(0);
-      expect(result.incomeExpenses.currentSavings).toBe(124.7524);
-      expect(result.incomeExpenses.savingsChange).toBe(124.7524);
-      expect(result.expenses.currentTotal).toBe(249.5049);
+      expect(result.incomeExpenses.currentSavings).toBe(1.24);
+      expect(result.incomeExpenses.savingsChange).toBe(1.24);
+      expect(result.expenses.currentTotal).toBe(2.49);
       expect(result.expenses.comparison.map((c) => c.currentTotal)).toEqual([
-        124.7525, 124.7525,
+        1.25, 1.25,
       ]);
     });
 
     it("leaves no float residue in a change", async () => {
-      // 5000.1234 - 3000.5678 is 1999.5556000000006 in doubles.
+      // 5000.12 - 3000.57 is 1999.5499999999997 in doubles.
       mockIncomeReports.getIncomeVsExpensesWithAggregates
         .mockResolvedValueOnce(
           withIncomeAggregates({
             data: [
               {
                 period: "2026-01",
-                income: 5000.1234,
+                income: 5000.12,
                 expenses: 0,
-                net: 5000.1234,
+                net: 5000.12,
               },
             ],
-            totals: { income: 5000.1234, expenses: 0, net: 5000.1234 },
+            totals: { income: 5000.12, expenses: 0, net: 5000.12 },
           }),
         )
         .mockResolvedValueOnce(
@@ -625,12 +630,12 @@ describe("MonthlyComparisonService", () => {
             data: [
               {
                 period: "2025-12",
-                income: 3000.5678,
+                income: 3000.57,
                 expenses: 0,
-                net: 3000.5678,
+                net: 3000.57,
               },
             ],
-            totals: { income: 3000.5678, expenses: 0, net: 3000.5678 },
+            totals: { income: 3000.57, expenses: 0, net: 3000.57 },
           }),
         );
       mockSpendingReports.getSpendingByCategoryWithAggregates.mockResolvedValue(
@@ -643,15 +648,15 @@ describe("MonthlyComparisonService", () => {
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
 
-      expect(result.incomeExpenses.incomeChange).toBe(1999.5556);
-      expect(result.incomeExpenses.savingsChange).toBe(1999.5556);
+      expect(result.incomeExpenses.incomeChange).toBe(1999.55);
+      expect(result.incomeExpenses.savingsChange).toBe(1999.55);
     });
   });
 
   describe("getMonthlyComparison() - each change from the two months' aggregates (issue #2407)", () => {
-    // Exact figures of 100.00005 and 50.00004 read 100.0001 and 50.0000, so
-    // the difference of the readings is 50.0001; the exact change, 50.00001,
-    // reads 50.0000.
+    // Exact figures of 100.005 and 50.004 read 100.01 and 50.00, so the
+    // difference of the readings is 50.01; the exact change, 50.001, reads
+    // 50.00.
     beforeEach(() => {
       mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue(
         [],
@@ -665,24 +670,24 @@ describe("MonthlyComparisonService", () => {
     it.each([
       {
         figure: "income",
-        current: incomeMonth("2026-01", [100.00005]),
-        previous: incomeMonth("2025-12", [50.00004]),
+        current: incomeMonth("2026-01", [100.005]),
+        previous: incomeMonth("2025-12", [50.004]),
         shown: ["currentIncome", "previousIncome"],
         change: "incomeChange",
       },
       {
         figure: "expenses",
-        current: incomeMonth("2026-01", [], [100.00005]),
-        previous: incomeMonth("2025-12", [], [50.00004]),
+        current: incomeMonth("2026-01", [], [100.005]),
+        previous: incomeMonth("2025-12", [], [50.004]),
         shown: ["currentExpenses", "previousExpenses"],
         change: "expensesChange",
       },
       {
-        // 150.00005 less 50 and 100.00004 less 50: the savings themselves
-        // read 100.0001 and 50.0000.
+        // 150.005 less 50 and 100.004 less 50: the savings themselves read
+        // 100.01 and 50.00.
         figure: "savings",
-        current: incomeMonth("2026-01", [150.00005], [50]),
-        previous: incomeMonth("2025-12", [100.00004], [50]),
+        current: incomeMonth("2026-01", [150.005], [50]),
+        previous: incomeMonth("2025-12", [100.004], [50]),
         shown: ["currentSavings", "previousSavings"],
         change: "savingsChange",
       },
@@ -699,7 +704,7 @@ describe("MonthlyComparisonService", () => {
         );
 
         const ie = result.incomeExpenses;
-        expect([ie[shown[0]], ie[shown[1]]]).toEqual([100.0001, 50]);
+        expect([ie[shown[0]], ie[shown[1]]]).toEqual([100.01, 50]);
         expect(ie[change]).toBe(50);
       },
     );
@@ -708,13 +713,13 @@ describe("MonthlyComparisonService", () => {
       mockSpendingReports.getSpendingByCategoryWithAggregates
         .mockReset()
         .mockResolvedValueOnce(
-          spendingWindow({ "cat-1": [100.00005], "cat-2": [0.00026] }),
+          spendingWindow({ "cat-1": [100.005], "cat-2": [0.026] }),
         )
         .mockResolvedValueOnce(
           spendingWindow({
-            "cat-1": [50.00004],
-            "cat-2": [0.00014],
-            "cat-3": [0.00005],
+            "cat-1": [50.004],
+            "cat-2": [0.014],
+            "cat-3": [0.005],
           }),
         );
       mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
@@ -727,23 +732,23 @@ describe("MonthlyComparisonService", () => {
         result.expenses.comparison.map((c) => [c.categoryId, c]),
       );
       expect(byId.get("cat-1")).toMatchObject({
-        currentTotal: 100.0001,
+        currentTotal: 100.01,
         previousTotal: 50,
         change: 50,
       });
-      // 0.00026 against 0.00014 read 0.0003 and 0.0001: the readings make the
-      // change 200%, the exact values 85.71% (rule 8).
+      // 0.026 against 0.014 read 0.03 and 0.01: the readings make the change
+      // 200%, the exact values 85.71% (rule 8).
       expect(byId.get("cat-2")).toMatchObject({
-        currentTotal: 0.0003,
-        previousTotal: 0.0001,
-        change: 0.0001,
+        currentTotal: 0.03,
+        previousTotal: 0.01,
+        change: 0.01,
         changePercent: 85.71,
       });
       // A category only the previous month listed fell by all of it.
       expect(byId.get("cat-3")).toMatchObject({
         currentTotal: 0,
-        previousTotal: 0.0001,
-        change: -0.0001,
+        previousTotal: 0.01,
+        change: -0.01,
         changePercent: -100,
       });
     });
@@ -753,16 +758,16 @@ describe("MonthlyComparisonService", () => {
         const netWorthAggregate = aggregateOf(exact);
         return {
           month: date,
-          assets: netWorthAggregate.knownSubtotal,
+          assets: netWorthAggregate.knownSubtotalAt(2),
           liabilities: 0,
-          netWorth: netWorthAggregate.knownSubtotal,
+          netWorth: netWorthAggregate.knownSubtotalAt(2),
           netWorthAggregate,
           ...completeMonth,
         };
       };
       mockNetWorthService.getMonthlyNetWorthWithAggregates.mockResolvedValue([
-        month("2025-12-01", 50.00004),
-        month("2026-01-01", 100.00005),
+        month("2025-12-01", 50.004),
+        month("2026-01-01", 100.005),
       ]);
       mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
         incomeMonth("2026-01", []),
@@ -770,23 +775,52 @@ describe("MonthlyComparisonService", () => {
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
 
-      expect(result.netWorth.currentNetWorth).toBe(100.0001);
+      expect(result.netWorth.currentNetWorth).toBe(100.01);
       expect(result.netWorth.previousNetWorth).toBe(50);
       expect(result.netWorth.netWorthChange).toBe(50);
-      expect(result.netWorth.netWorthChangePercent).toBe(100);
+      // 50.001 of 50.004, from the unrounded values (rule 8).
+      expect(result.netWorth.netWorthChangePercent).toBe(99.99);
     });
 
     it("works a percent change out from the unrounded values", async () => {
-      // 0.00026 against 0.00014 read 0.0003 and 0.0001: 200% from the
-      // readings, 85.71% exactly.
+      // 0.026 against 0.014 read 0.03 and 0.01: 200% from the readings,
+      // 85.71% exactly.
       mockIncomeReports.getIncomeVsExpensesWithAggregates
-        .mockResolvedValueOnce(incomeMonth("2026-01", [0.00026], [0.00026]))
-        .mockResolvedValueOnce(incomeMonth("2025-12", [0.00014], [0.00014]));
+        .mockResolvedValueOnce(incomeMonth("2026-01", [0.026], [0.026]))
+        .mockResolvedValueOnce(incomeMonth("2025-12", [0.014], [0.014]));
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
 
       expect(result.incomeExpenses.incomeChangePercent).toBe(85.71);
       expect(result.incomeExpenses.expensesChangePercent).toBe(85.71);
+    });
+
+    it("takes no percentage over a previous month that reads as nothing (issue #2410)", async () => {
+      // 0.004 USD reads 0.00 and is no base, as compare_periods takes it: a
+      // cent over it read as a 2,499,900% rise. 100 when the current month
+      // reads as money, 0 when it reads as nothing too.
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(incomeMonth("2026-01", [100], [0.003]))
+        .mockResolvedValueOnce(incomeMonth("2025-12", [0.004], [0.004]));
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.incomeExpenses.incomeChangePercent).toBe(100);
+      expect(result.incomeExpenses.expensesChangePercent).toBe(0);
+    });
+
+    it("says less for a fall that reads as nothing, from the change's sign (issue #2410)", async () => {
+      // Income 100.006 against 100.009: both read 100.01 and the change
+      // -0.003 reads 0.00, but it is a fall, so the note says less.
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(incomeMonth("2026-01", [100.006], [0]))
+        .mockResolvedValueOnce(incomeMonth("2025-12", [100.009], [0]));
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.incomeExpenses.incomeChange).toBe(0);
+      expect(result.notes.incomeNote).toContain("less than");
+      expect(result.notes.savingsNote).toContain("less than");
     });
   });
 
@@ -1016,7 +1050,7 @@ describe("MonthlyComparisonService", () => {
             accountName: "My RRSP",
             currentValue: 22500,
             startValue: 500,
-            investmentPnl: 812.3457,
+            investmentPnl: 812.35,
             returnPercent: 7.46,
             returnReasons: [],
             periodStart: "2025-01-31",

@@ -26,7 +26,9 @@ describe("TriviaPoolBuilder", () => {
   const userId = "user-1";
   const prefs = { defaultCurrency: "CAD" } as UserPreference;
   let accounts: jest.Mocked<Pick<AccountsService, "findAll">>;
-  let netWorth: jest.Mocked<Pick<NetWorthService, "getMonthlyNetWorth">>;
+  let netWorth: jest.Mocked<
+    Pick<NetWorthService, "getMonthlyNetWorthWithAggregates">
+  >;
   let portfolio: jest.Mocked<Pick<PortfolioService, "getPortfolioSummary">>;
   let ledger: jest.Mocked<Pick<TriviaLedgerLoader, "load">>;
   let daily: jest.Mocked<Pick<TriviaDailyLoader, "load">>;
@@ -40,7 +42,9 @@ describe("TriviaPoolBuilder", () => {
     );
     (getEffectiveTimezoneOfUser as jest.Mock).mockResolvedValue("Asia/Tokyo");
     accounts = { findAll: jest.fn().mockResolvedValue([]) };
-    netWorth = { getMonthlyNetWorth: jest.fn().mockResolvedValue([]) };
+    netWorth = {
+      getMonthlyNetWorthWithAggregates: jest.fn().mockResolvedValue([]),
+    };
     portfolio = { getPortfolioSummary: jest.fn().mockResolvedValue(null) };
     ledger = { load: jest.fn().mockResolvedValue(fullLedgerLoad()) };
     daily = { load: jest.fn().mockResolvedValue(fullDailyInput()) };

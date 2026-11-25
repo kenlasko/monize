@@ -48,6 +48,9 @@ export class ComparisonReportsService {
   ): Promise<YearOverYearResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every figure leaves rounded once at the reporting currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     const currentYear = new Date().getFullYear();
     const oldestYear = currentYear - yearsToCompare + 1;
@@ -189,19 +192,19 @@ export class ComparisonReportsService {
     // two four-place readings, could miss its year by a unit
     // (docs/specs/report-rounding-and-aggregation.md rules 2 and 4).
     const savingsOf = (income: FxAggregate, expenses: FxAggregate): number =>
-      FxAggregate.difference(income, expenses).knownSubtotal;
+      FxAggregate.difference(income, expenses).knownSubtotalAt(places);
     yearMap.forEach((yearData, year) => {
       const aggregate = yearAggregates.get(year)!;
       aggregate.months.forEach((month, index) => {
         yearData.months[index] = {
           month: index + 1,
-          income: month.income.knownSubtotal,
-          expenses: month.expenses.knownSubtotal,
+          income: month.income.knownSubtotalAt(places),
+          expenses: month.expenses.knownSubtotalAt(places),
           savings: savingsOf(month.income, month.expenses),
         };
       });
-      const knownIncome = aggregate.income.knownSubtotal;
-      const knownExpenses = aggregate.expenses.knownSubtotal;
+      const knownIncome = aggregate.income.knownSubtotalAt(places);
+      const knownExpenses = aggregate.expenses.knownSubtotalAt(places);
       const knownSavings = savingsOf(aggregate.income, aggregate.expenses);
       yearData.totals = {
         income: aggregate.complete ? knownIncome : null,
@@ -228,6 +231,7 @@ export class ComparisonReportsService {
   ): Promise<WeekendVsWeekdayResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     let query = `
       SELECT
@@ -380,7 +384,7 @@ export class ComparisonReportsService {
     const totalOfDays = (days: number[]): number => {
       const sum = new FxAggregate();
       for (const day of days) sum.merge(dayTotals[day]);
-      return sum.knownSubtotal;
+      return sum.knownSubtotalAt(places);
     };
     const knownWeekendTotal = totalOfDays([0, 6]);
     const knownWeekdayTotal = totalOfDays([1, 2, 3, 4, 5]);
@@ -390,7 +394,7 @@ export class ComparisonReportsService {
 
     const byDay: DaySpending[] = dayTotals.map((total, index) => ({
       dayOfWeek: index,
-      total: total.knownSubtotal,
+      total: total.knownSubtotalAt(places),
       count: dayCounts[index],
     }));
 
@@ -405,8 +409,8 @@ export class ComparisonReportsService {
         return {
           categoryId: catId === "uncategorized" ? null : catId,
           categoryName: weekend?.name || weekday?.name || "Unknown",
-          weekendTotal: weekend?.total.knownSubtotal ?? 0,
-          weekdayTotal: weekday?.total.knownSubtotal ?? 0,
+          weekendTotal: weekend?.total.knownSubtotalAt(places) ?? 0,
+          weekdayTotal: weekday?.total.knownSubtotalAt(places) ?? 0,
         };
       })
       .sort(

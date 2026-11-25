@@ -28,6 +28,8 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DuplicateGroupCard } from '@/components/reports/DuplicateGroupCard';
 import { useDuplicateLabels } from '@/components/reports/useDuplicateLabels';
+import { PartialTotal } from '@/components/ui/PartialTotal';
+import { isComplete, reportTotal } from '@/lib/currency-total';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import {
   DUPLICATE_CONFIDENCE_LEVELS,
@@ -44,7 +46,7 @@ export function DuplicateTransactionReport() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
   const router = useRouter();
-  const { formatCurrency } = useNumberFormat();
+  const { formatCurrency, defaultCurrency } = useNumberFormat();
   const { dateRange, setDateRange, resolvedRange } = useDateRange({ defaultRange: '3m', alignment: 'day' });
   const [sensitivity, setSensitivity] = useState<'high' | 'medium' | 'low'>('medium');
   const [selected, setSelected] = useState<ReadonlySet<string>>(EMPTY_SELECTION);
@@ -93,7 +95,17 @@ export function DuplicateTransactionReport() {
     mediumCount: 0,
     lowCount: 0,
     potentialSavings: 0,
+    knownPotentialSavings: 0,
   };
+  // The impact is a figure in the reporting currency; while a group's currency
+  // has no rate it is withheld and the part that converted is shown, marked as
+  // a subtotal, never a mix of currencies added together.
+  const impactCurrency = reportData?.currency ?? defaultCurrency;
+  const impact = reportTotal(
+    summary.potentialSavings ?? summary.knownPotentialSavings ?? 0,
+    reportData,
+  );
+  const impactText = `${formatCurrency(impact.value, impactCurrency)}${isComplete(impact) ? '' : '*'}`;
 
   const duplicateGroups = useMemo(() => reportData?.groups ?? [], [reportData]);
 
@@ -175,13 +187,13 @@ export function DuplicateTransactionReport() {
     const { headers, rows } = getExportData();
     await exportToPdf({
       title: t('duplicateTransactions.pdfTitle'),
-      subtitle: `${summary.totalGroups} ${t('duplicateTransactions.groupsFound')} | ${t('duplicateTransactions.potentialImpact')}: ${formatCurrency(summary.potentialSavings)}`,
+      subtitle: `${summary.totalGroups} ${t('duplicateTransactions.groupsFound')} | ${t('duplicateTransactions.potentialImpact')}: ${impactText}`,
       summaryCards: [
         { label: t('duplicateTransactions.potentialDuplicates'), value: String(summary.totalGroups), color: '#ea580c' },
         { label: t('duplicateTransactions.veryHighConfidence'), value: String(summary.veryHighCount), color: '#9333ea' },
         { label: t('duplicateTransactions.highConfidence'), value: String(summary.highCount), color: '#dc2626' },
         { label: t('duplicateTransactions.mediumConfidence'), value: String(summary.mediumCount), color: '#ea580c' },
-        { label: t('duplicateTransactions.potentialImpact'), value: formatCurrency(summary.potentialSavings), color: '#111827' },
+        { label: t('duplicateTransactions.potentialImpact'), value: impactText, color: '#111827' },
       ],
       tableData: { headers, rows },
       filename: 'duplicate-transactions',
@@ -229,7 +241,9 @@ export function DuplicateTransactionReport() {
         <Card padding="sm">
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('duplicateTransactions.potentialImpact')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(summary.potentialSavings)}
+            <PartialTotal total={impact} displayCurrency={impactCurrency}>
+              {formatCurrency(impact.value, impactCurrency)}
+            </PartialTotal>
           </div>
         </Card>
       </div>

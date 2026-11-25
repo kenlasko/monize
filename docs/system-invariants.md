@@ -3269,7 +3269,9 @@ to SANKEY-005; the catalog prefixes them like every other entry.
 
 ```text
 Statement           income + inflows + deficit = expenses + outflows + unspent,
-                    in integer ten-thousandths, with at most one of deficit /
+                    in integer units of the reporting currency's minor unit
+                    (10^-places: cents for USD, whole yen for JPY, issue
+                    #2410), with at most one of deficit /
                     unspent non-zero. The residual is arithmetic, never a
                     transaction, and a diagram that does not close is never
                     drawn.
@@ -3378,7 +3380,9 @@ Status              partial
 ```text
 Statement           A reporting-only money figure is rounded once, from the
                     exact sum of its converted components, at the precision
-                    it is presented at. No part (a cell, a category, a month,
+                    it is presented at: on the wire, its currency's own
+                    places, so the screen, the CSV, the PDF and the assistant
+                    read one figure. No part (a cell, a category, a month,
                     a node) enters the figure above it as its rounded reading,
                     so an additive total is the same for every grouping that
                     holds each component once; a direction decision reads the
@@ -3386,10 +3390,18 @@ Statement           A reporting-only money figure is rounded once, from the
                     up apportions them from the parent's single rounding. A
                     posted amount is the fact and is not re-derived.
 Source of truth     The converted components, accumulated in FxAggregate
-                    (backend/src/common/fx-aggregate.ts) at twelve places.
+                    (backend/src/common/fx-aggregate.ts) at twelve places; the
+                    places a figure is read at, reportPlacesFor
+                    (backend/src/common/report-figure.ts).
 Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     FxAggregate.sign reads a direction; apportionUnits splits a
-                    parent between its parts. Applied in the Cash Flow Sankey
+                    parent between its parts; knownSubtotalAt(places) /
+                    totalAt(places) and reportFigure read a report figure at
+                    its currency's places (issue #2410: the built-in and
+                    custom reports, the Sankey, the budget reports, the
+                    monthly net worth, the portfolio summary and the
+                    Portfolio Value series, the assistant's and MCP's report
+                    tools). Applied in the Cash Flow Sankey
                     (cash-flow-sankey-assembly.ts), the custom report
                     (report-net-cells.ts, report-rows.ts), the built-in
                     reports ticked in stage 1 of
@@ -3403,10 +3415,16 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     (frontend/src/lib/currency-total.ts).
                     backend/src/common/report-rounding.guard.spec.ts fails an
                     addConverted, add, sumMoney, +=, -=, + or - over an
-                    aggregate's knownSubtotal / unroundedSubtotal (a sort
-                    comparator excepted), and an isNetSpending over a reading
-                    or a roundMoney; a reading first stored in a variable and
-                    then folded passes it.
+                    aggregate's knownSubtotal / unroundedSubtotal /
+                    knownSubtotalAt(...) / totalAt(...) (a sort comparator
+                    excepted), and an isNetSpending over a reading or a
+                    roundMoney; a reading first stored in a variable and then
+                    folded passes it. The same spec fails a four-place
+                    knownSubtotal read in the report engines
+                    (backend/src/built-in-reports, backend/src/reports) outside
+                    a sort comparator; elsewhere (the budget reports, the
+                    monthly net worth, the assistant's tools) the places are
+                    held by each surface's specs.
 Concurrency scope   -- (read path)
 Retry semantics     -- (read path)
 Crash semantics     -- (read path)
@@ -3421,20 +3439,29 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     grouping" (generated three-currency ledgers under seven
                     groupings against one FxAggregate over the rows); an
                     "issue #2384" case in each built-in report's spec, the AI
-                    aggregators' and frontend/src/lib/currency-total.test.ts.
-Known gap           Report figures leave the server at four places and the
-                    screen rounds them again at the currency's places, so a
-                    figure under half a ten-thousandth below a cent's midpoint
-                    shows one cent high until stage 2 rounds each figure on
-                    the server at its currency's places (section 6 of
-                    docs/specs/report-rounding-and-aggregation.md, option (b)).
-                    Several client totals are built from rounded rows (the
-                    same task list, stage 3). Budget Health's income-line and
-                    expense sides, and the budget summary's, period close's
-                    and alerts' income, add each line's own four-place actual
-                    (CategorySpending keeps a line's reading, not its
-                    aggregate); the transfers-in toggle's figure folds as its
-                    aggregate in Budget Health only.
+                    aggregators' and frontend/src/lib/currency-total.test.ts;
+                    the "issue #2410" cases (a 2.50498 figure reads 2.50 in
+                    the built-in reports, the custom report's headline and
+                    transaction list, the Sankey and generate_report over the
+                    real Spending by Category; a JPY report and Sankey in
+                    whole yen), fx-aggregate.spec.ts at 0, 2, 4 and 8 places
+                    and the Sankey property specs over CAD and JPY ledgers.
+Known gap           A holding's own value, cost and gain in the portfolio
+                    summary and the Portfolio Value report's intraday (1D)
+                    bars leave at four places, and so do an account's totals
+                    in the portfolio summary (at its currency's money
+                    precision) and the Foreign Currency Fees rows, which the
+                    client adds together (stage 3); the Monthly Comparison's
+                    investment figures come from PortfolioPeriodResultService
+                    at four places and are read at two. Several client totals are built from rounded rows
+                    (docs/future-plans/report-rounding-and-aggregation-tasks.md,
+                    stage 3). Budget Health's income-line and expense sides,
+                    the other budget reports, and the budget summary's, period
+                    close's and alerts' income, add each line's own four-place
+                    actual (CategorySpending keeps a line's reading, not its
+                    aggregate), so a budget report figure is the two-place
+                    reading of a four-place one; the transfers-in toggle's
+                    figure folds as its aggregate in Budget Health only.
 Status              partial
 ```
 

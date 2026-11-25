@@ -1775,6 +1775,7 @@ describe("NetWorthService", () => {
           assetsFxComplete: true,
           liabilitiesFxComplete: true,
           byAccountType: { [AccountType.CHEQUING]: 10 },
+          netWorthChange: null,
         },
       ]);
 
@@ -1926,6 +1927,59 @@ describe("NetWorthService", () => {
       expect(result[0].assets).toBe(750);
     });
 
+    it("gives each month's change as the difference of the two months' aggregates, read once (issue #2410)", async () => {
+      // 100.006 and 100.014 both read 100.01, so the difference of the two
+      // readings is 0.00; the change itself, 0.008, reads 0.01.
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce(
+        [
+          ["2024-01-01", "100.006"],
+          ["2024-02-01", "100.014"],
+        ].map(([month, balance]) => ({
+          month,
+          balance,
+          market_value: null,
+          account_id: "chq",
+          account_type: AccountType.CHEQUING,
+          account_sub_type: null,
+          currency_code: "USD",
+        })),
+      );
+
+      const result = await service.getMonthlyNetWorth("user-1");
+
+      expect(result.map((m) => m.netWorth)).toEqual([100.01, 100.01]);
+      expect(result.map((m) => m.netWorthChange)).toEqual([null, 0.01]);
+    });
+
+    it("reads a whole-history aggregate series from the first stored month, not a fixed epoch (issue #2410)", async () => {
+      // The trivia asks for every month with its aggregate: the window opens
+      // at the first month the snapshots hold.
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery
+        .mockResolvedValueOnce([{ month: "2023-04-01" }])
+        .mockResolvedValueOnce([
+          {
+            month: "2023-04-01",
+            balance: "100",
+            market_value: null,
+            account_id: "chq",
+            account_type: AccountType.CHEQUING,
+            account_sub_type: null,
+            currency_code: "USD",
+          },
+        ]);
+
+      const result = await service.getMonthlyNetWorthWithAggregates("user-1");
+
+      expect(reportQuery.mock.calls[0][0]).toContain("MIN(month)");
+      expect(reportQuery.mock.calls[1][1][1]).toBe("2023-04-01");
+      expect(result.map((m) => m.netWorth)).toEqual([100]);
+      expect(result[0].netWorthAggregate.knownSubtotalAt(2)).toBe(100);
+    });
+
     it("counts a CRYPTO wallet as an asset, converted at the coin's rate, under its own type", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
@@ -1955,16 +2009,17 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // 0.0125 BTC * 137250.1234567890 = 1715.6265 CAD (spec section 6), at
-      // money precision: the series is never rounded to whole units, which
-      // printed the dashboard's net worth without its cents. A coin that read
-      // as unconverted would be 0, and one read as a liability negative.
-      expect(result[0].assets).toBe(1715.6265);
+      // 0.0125 BTC * 137250.1234567890 = 1715.62654 CAD (spec section 6),
+      // at CAD's two places (issue #2410): the series is never rounded to
+      // whole units, which printed the dashboard's net worth without its
+      // cents. A coin that read as unconverted would be 0, and one read as a
+      // liability negative.
+      expect(result[0].assets).toBe(1715.63);
       expect(result[0].liabilities).toBe(0);
-      expect(result[0].netWorth).toBe(1715.6265);
+      expect(result[0].netWorth).toBe(1715.63);
       expect(result[0].fxComplete).toBe(true);
       expect(result[0].byAccountType).toEqual({
-        [AccountType.CRYPTO]: 1715.6265,
+        [AccountType.CRYPTO]: 1715.63,
       });
     });
 
@@ -1996,12 +2051,12 @@ describe("NetWorthService", () => {
       const result = await service.getMonthlyNetWorth("user-1");
 
       // 0.01249993 x 7,200,000 = 89,999.496 JPY, converted from the wallet's
-      // own eight places and summed at the reporting currency's four.
+      // own eight places and read in whole yen, JPY's places (issue #2410).
       // Rounding the wallet to four places first (0.0125 BTC) would report
       // 90,000.
-      expect(result[0].assets).toBe(89999.496);
+      expect(result[0].assets).toBe(89999);
       expect(result[0].byAccountType).toEqual({
-        [AccountType.CRYPTO]: 89999.496,
+        [AccountType.CRYPTO]: 89999,
       });
     });
 
@@ -2035,8 +2090,8 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // 1000 EUR / 0.92 = 1086.9565, at money precision rather than 1087.
-      expect(result[0].assets).toBe(1086.9565);
+      // 1000 EUR / 0.92 = 1086.9565..., at USD's places rather than 1087.
+      expect(result[0].assets).toBe(1086.96);
     });
 
     it("keeps the cents of every figure rather than rounding to whole units", async () => {
@@ -2239,7 +2294,7 @@ describe("NetWorthService", () => {
       expect(result[2].month).toBe("2024-03-01");
     });
 
-    it("rounds values to money precision, never to whole units", async () => {
+    it("rounds values once at the reporting currency's places, never to whole units", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
@@ -2259,16 +2314,16 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      // Four places (FIAT_MONEY_DECIMALS) shed float noise; the cents stay.
-      expect(result[0].assets).toBe(1000.5679);
+      // USD's two places (issue #2410); the cents stay.
+      expect(result[0].assets).toBe(1000.57);
       expect(result[0].liabilities).toBe(0);
-      expect(result[0].netWorth).toBe(1000.5679);
+      expect(result[0].netWorth).toBe(1000.57);
     });
 
     it("nets assets and liabilities before either is rounded (issue #2384)", async () => {
-      // 1000.567849 of assets less 0.00005 owed is 1000.567799, which reads
-      // 1000.5678. The difference of the two readings, 1000.5678 - 0.0001,
-      // read 1000.5677.
+      // 1000.566 of assets less 0.004 owed is 1000.562, which reads 1000.56.
+      // The difference of the two readings, 1000.57 - 0.00, would read
+      // 1000.57.
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
@@ -2277,7 +2332,7 @@ describe("NetWorthService", () => {
       reportQuery.mockResolvedValueOnce([
         {
           month: "2024-01-01",
-          balance: 1000.567849,
+          balance: 1000.566,
           market_value: null,
           account_id: "a1",
           account_type: AccountType.CHEQUING,
@@ -2286,7 +2341,7 @@ describe("NetWorthService", () => {
         },
         {
           month: "2024-01-01",
-          balance: -0.00005,
+          balance: -0.004,
           market_value: null,
           account_id: "a2",
           account_type: AccountType.CREDIT_CARD,
@@ -2297,9 +2352,9 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyNetWorth("user-1");
 
-      expect(result[0].assets).toBe(1000.5678);
-      expect(result[0].liabilities).toBe(0.0001);
-      expect(result[0].netWorth).toBe(1000.5678);
+      expect(result[0].assets).toBe(1000.57);
+      expect(result[0].liabilities).toBe(0);
+      expect(result[0].netWorth).toBe(1000.56);
       // The public series carries no aggregate.
       expect(result[0]).not.toHaveProperty("netWorthAggregate");
     });
@@ -2312,7 +2367,7 @@ describe("NetWorthService", () => {
       reportQuery.mockResolvedValueOnce([
         {
           month: "2024-01-01",
-          balance: 1000.567849,
+          balance: 1000.566,
           market_value: null,
           account_id: "a1",
           account_type: AccountType.CHEQUING,
@@ -2321,7 +2376,7 @@ describe("NetWorthService", () => {
         },
         {
           month: "2024-01-01",
-          balance: -0.00005,
+          balance: -0.004,
           market_value: null,
           account_id: "a2",
           account_type: AccountType.CREDIT_CARD,
@@ -2336,9 +2391,9 @@ describe("NetWorthService", () => {
         "2024-01-31",
       );
 
-      expect(result[0].netWorth).toBe(1000.5678);
-      expect(result[0].netWorthAggregate.unroundedSubtotal).toBe(1000.567799);
-      expect(result[0].netWorthAggregate.knownSubtotal).toBe(
+      expect(result[0].netWorth).toBe(1000.56);
+      expect(result[0].netWorthAggregate.unroundedSubtotal).toBe(1000.562);
+      expect(result[0].netWorthAggregate.knownSubtotalAt(2)).toBe(
         result[0].netWorth,
       );
     });
@@ -2818,10 +2873,10 @@ describe("NetWorthService", () => {
       expect(result[1].month).toBe("2024-03-01");
     });
 
-    it("carries values at 4dp money precision, not whole units (P7)", async () => {
-      // The fold used to Math.round to whole units here; it now carries the
-      // money pipeline's 4dp precision so the value that feeds the period-result
-      // P&L and TWR keeps its grosze. Rounding to whole units is a presentation
+    it("carries values at the currency's places, not whole units (P7, issue #2410)", async () => {
+      // The fold used to Math.round to whole units here; it carries the
+      // grosze, read once at the reporting currency's places, so the chart and
+      // its export show one figure. Rounding to whole units is a presentation
       // step at the surface, not part of the calculation.
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({
@@ -2841,7 +2896,7 @@ describe("NetWorthService", () => {
 
       const result = await service.getMonthlyInvestments("user-1");
 
-      expect(result[0].value).toBe(1234.567);
+      expect(result[0].value).toBe(1234.57);
     });
 
     it("defaults to filtering INVESTMENT_CASH and INVESTMENT_BROKERAGE sub types when no accountIds", async () => {
@@ -3423,6 +3478,67 @@ describe("NetWorthService", () => {
         String(sql).includes("FROM accounts a"),
       );
       expect(accountQueries).toHaveLength(1);
+    });
+
+    it("reads a report's day once at the currency's places, and keeps four for the period result (issue #2410)", async () => {
+      // 10 shares at 10.000498 are 100.00498 USD: the series the period result
+      // reads keeps 100.0050, the report's reading of the same day is 100.00
+      // (rounded once), where 100.0050 rounded again on the screen read 100.01.
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      const fixture = () => {
+        reportQuery.mockResolvedValueOnce([
+          {
+            id: "brok-1",
+            account_type: "INVESTMENT",
+            account_sub_type: "INVESTMENT_BROKERAGE",
+            currency_code: "USD",
+            opening_balance: 0,
+          },
+        ]);
+        reportQuery.mockResolvedValueOnce([
+          {
+            account_id: "brok-1",
+            security_id: "sec-1",
+            action: "BUY",
+            quantity: "10",
+            transaction_date: "2025-02-01",
+          },
+        ]);
+        securityRepository.findByIds.mockResolvedValue([
+          { id: "sec-1", skipPriceUpdates: false },
+        ]);
+        reportQuery.mockResolvedValueOnce([
+          {
+            security_id: "sec-1",
+            price_date: "2025-03-01",
+            close_price: "10.000498",
+          },
+        ]);
+      };
+
+      fixture();
+      const series = await service.getDailyInvestments(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+      fixture();
+      const report = await service.getDailyInvestmentsReport(
+        "user-1",
+        "2025-03-01",
+        "2025-03-01",
+      );
+
+      expect(series[0]).toMatchObject({
+        value: 100.005,
+        securitiesValue: 100.005,
+      });
+      expect(report[0]).toMatchObject({
+        date: "2025-03-01",
+        value: 100,
+        securitiesValue: 100,
+        fxComplete: true,
+      });
     });
 
     it("returns daily values for brokerage accounts with security prices", async () => {
@@ -5061,6 +5177,48 @@ describe("NetWorthService", () => {
       expect(sampled[sampled.length - 1].securitiesValue).toBe(1110);
     });
 
+    it("reads each point once at the currency's places (issue #2410)", async () => {
+      // 10 shares at 10.000498 are 100.00498: the daily series the period
+      // result reads keeps 100.0050; the chart's point reads 100.00.
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2025-02-01",
+        },
+      ]);
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-1", skipPriceUpdates: false },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2025-03-01",
+          close_price: "10.000498",
+        },
+      ]);
+
+      const sampled = await service.getSampledInvestments("user-1", {
+        startDate: "2025-03-01",
+        endDate: "2025-03-01",
+      });
+
+      expect(sampled).toHaveLength(1);
+      expect(sampled[0]).toMatchObject({ value: 100, securitiesValue: 100 });
+    });
+
     it("opens 'all time' on the day before the first investment transaction", async () => {
       // The period result's `all` window is measured from that day, so the
       // chart must open on it too, not on the account's own inception.
@@ -5224,6 +5382,135 @@ describe("NetWorthService", () => {
         pricesComplete: true,
         unpricedSecurityIds: [],
         missingRatePairs: [],
+      });
+    });
+
+    it("apportions a point's bands from its total, at the currency's places (issue #2410)", async () => {
+      // AAPL is worth 100.006 and cash 50.006: each reads .01 alone, so the
+      // bands read on their own (100.01 + 50.01) would stack past the
+      // 150.012 point's single rounding, 150.01. The cent the floors leave
+      // short goes to the earlier band on a tie (rule 6).
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+        {
+          id: "cash-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_CASH",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2024-05-15",
+        },
+      ]);
+      securityRepository.findByIds.mockResolvedValue([
+        {
+          id: "sec-1",
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          currencyCode: "USD",
+          skipPriceUpdates: false,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2024-05-31",
+          close_price: "10.0006",
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([]);
+      reportQuery.mockResolvedValueOnce([
+        { account_id: "cash-1", month: "2024-05-01", balance: "50.006" },
+      ]);
+
+      const result = await service.getInvestmentBreakdown("user-1", {
+        granularity: "monthly",
+        startDate: "2024-05-01",
+        endDate: "2024-05-31",
+      });
+
+      expect(result.points[0]).toMatchObject({
+        total: 150.01,
+        values: { "sec-1": 100.01, cash: 50 },
+      });
+    });
+
+    it("leaves the total less the cash band at the securities' own rounding (issue #2410)", async () => {
+      // AAPL is worth 100.004 and cash 50.004: the point reads 150.01 and the
+      // securities alone 100.00. Apportioned with the securities, the cent the
+      // floors left short went to AAPL on the tie, so the total less the cash
+      // band (the invested value the Portfolio Value report plots) read
+      // 100.01 against the daily series' 100.00. The cash band takes it.
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+        {
+          id: "cash-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_CASH",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2024-05-15",
+        },
+      ]);
+      securityRepository.findByIds.mockResolvedValue([
+        {
+          id: "sec-1",
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          currencyCode: "USD",
+          skipPriceUpdates: false,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2024-05-31",
+          close_price: "10.0004",
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([]);
+      reportQuery.mockResolvedValueOnce([
+        { account_id: "cash-1", month: "2024-05-01", balance: "50.004" },
+      ]);
+
+      const result = await service.getInvestmentBreakdown("user-1", {
+        granularity: "monthly",
+        startDate: "2024-05-01",
+        endDate: "2024-05-31",
+      });
+
+      expect(result.points[0]).toMatchObject({
+        total: 150.01,
+        values: { "sec-1": 100, cash: 50.01 },
       });
     });
 

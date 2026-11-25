@@ -644,8 +644,19 @@ export interface DuplicateTransactionsResponse {
     highCount: number;
     mediumCount: number;
     lowCount: number;
-    potentialSavings: number;
+    /**
+     * What the extra copies come to in `currency`, each copy converted at the
+     * rate its own row recorded, else its date's market rate; `null` while a
+     * copy's currency has no rate, `knownPotentialSavings` carrying what
+     * converted.
+     */
+    potentialSavings: number | null;
+    knownPotentialSavings: number;
   };
+  /** The reporting currency of the summary's figures. */
+  currency: string;
+  missingCurrencies: string[];
+  excludedCount: number;
 }
 
 // Cash Flow Sankey types (docs/specs/sankey-cash-flow.md section 6)

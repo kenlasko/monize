@@ -994,8 +994,8 @@ describe("BuiltInReportsService", () => {
 
       const result = await service.getYearOverYear(mockUserId, 1);
 
-      expect(yearData(result, currentYear).totals.income).toBe(100.333);
-      expect(yearData(result, currentYear).totals.expenses).toBe(50.666);
+      expect(yearData(result, currentYear).totals.income).toBe(100.33);
+      expect(yearData(result, currentYear).totals.expenses).toBe(50.67);
     });
 
     it("sorts year data in ascending order", async () => {
@@ -1637,8 +1637,8 @@ describe("BuiltInReportsService", () => {
       // USD: 100 + EUR: 50 * 1.1 = 155
       expect(result.data[0].totalAmount).toBe(155);
       expect(result.data[0].occurrences).toBe(6);
-      // Average: 155 / 6 = 25.8333 (4dp storage precision)
-      expect(result.data[0].averageAmount).toBe(25.8333);
+      // Average: 155 / 6 = 25.8333..., rounded once at USD's two places
+      expect(result.data[0].averageAmount).toBe(25.83);
     });
 
     it("calculates summary correctly", async () => {
@@ -2200,6 +2200,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-1",
           transaction_date: "2025-06-15",
           amount: "-100.00",
+          currency_code: "USD",
           payee_name: "Store",
           description: null,
           account_name: "Checking",
@@ -2208,6 +2209,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-2",
           transaction_date: "2025-06-15",
           amount: "-100.00",
+          currency_code: "USD",
           payee_name: "Store",
           description: null,
           account_name: "Credit Card",
@@ -2216,6 +2218,7 @@ describe("BuiltInReportsService", () => {
           id: "tx-3",
           transaction_date: "2025-06-15",
           amount: "-100.00",
+          currency_code: "USD",
           payee_name: "Store",
           description: null,
           account_name: "Other",

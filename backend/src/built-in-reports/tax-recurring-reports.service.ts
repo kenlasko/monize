@@ -26,12 +26,8 @@ import {
 } from "./dto/recurring-expenses.dto";
 import { isNetSpending } from "./spending-reports.service";
 import { formatDateYMD } from "../common/date-utils";
-import {
-  MONEY_SCALE,
-  roundMoney,
-  sumMoney,
-  toMoneyNumber,
-} from "../common/round.util";
+import { MONEY_SCALE, sumMoney, toMoneyNumber } from "../common/round.util";
+import { reportFigure } from "../common/report-figure";
 import {
   investmentExclusionSql,
   investmentLinkedSplitExclusion,
@@ -149,6 +145,9 @@ export class TaxRecurringReportsService {
   ): Promise<TaxSummaryResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every figure leaves rounded once at the reporting currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
@@ -313,12 +312,12 @@ export class TaxRecurringReportsService {
 
     const deductible = new FxAggregate();
     for (const sum of deductibleExpenses.values()) deductible.merge(sum);
-    const knownIncome = totalIncome.knownSubtotal;
-    const knownExpenses = totalExpenses.knownSubtotal;
-    const knownDeductible = deductible.knownSubtotal;
+    const knownIncome = totalIncome.knownSubtotalAt(places);
+    const knownExpenses = totalExpenses.knownSubtotalAt(places);
+    const knownDeductible = deductible.knownSubtotalAt(places);
     const listOf = (map: Map<string, FxAggregate>) =>
       Array.from(map.entries())
-        .map(([name, sum]) => ({ name, total: sum.knownSubtotal }))
+        .map(([name, sum]) => ({ name, total: sum.knownSubtotalAt(places) }))
         .sort((a, b) => b.total - a.total);
 
     return {
@@ -346,6 +345,7 @@ export class TaxRecurringReportsService {
   ): Promise<RecurringExpensesResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     const now = new Date();
     const endDate = formatDateYMD(now);
@@ -525,9 +525,10 @@ export class TaxRecurringReportsService {
           payeeName: row.payeeName,
           payeeId: row.payeeId,
           occurrences,
-          totalAmount: totalAmount.knownSubtotal,
-          averageAmount: roundMoney(
+          totalAmount: totalAmount.knownSubtotalAt(places),
+          averageAmount: reportFigure(
             totalAmount.unroundedSubtotal / occurrences,
+            places,
           ),
           lastTransactionDate: formatDateYMD(row.lastTransactionDate),
           frequency,
@@ -544,9 +545,10 @@ export class TaxRecurringReportsService {
     // and 8).
     const recurring = new FxAggregate();
     for (const row of payeeMerged.values()) recurring.merge(row.totalAmount);
-    const knownTotalRecurring = recurring.knownSubtotal;
-    const knownMonthlyEstimate = roundMoney(
+    const knownTotalRecurring = recurring.knownSubtotalAt(places);
+    const knownMonthlyEstimate = reportFigure(
       recurring.unroundedSubtotal / monthCount,
+      places,
     );
 
     return {
@@ -572,6 +574,7 @@ export class TaxRecurringReportsService {
   ): Promise<BillPaymentHistoryResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     const scheduledQuery = `
       SELECT
@@ -788,10 +791,11 @@ export class TaxRecurringReportsService {
           scheduledTransactionId: bp.id,
           scheduledTransactionName: bp.name,
           payeeName: bp.payeeName,
-          totalPaid: bp.paid.knownSubtotal,
+          totalPaid: bp.paid.knownSubtotalAt(places),
           paymentCount: bp.payments.length,
-          averagePayment: roundMoney(
+          averagePayment: reportFigure(
             bp.paid.unroundedSubtotal / bp.payments.length,
+            places,
           ),
           lastPaymentDate: sortedPayments[0]
             ? formatDateYMD(sortedPayments[0].date)
@@ -823,11 +827,11 @@ export class TaxRecurringReportsService {
     const monthlyTotals: MonthlyBillTotal[] = Array.from(monthlyMap.entries())
       .map(([month, total]) => ({
         month,
-        total: total.knownSubtotal,
+        total: total.knownSubtotalAt(places),
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    const knownTotalPaid = paid.knownSubtotal;
+    const knownTotalPaid = paid.knownSubtotalAt(places);
     const totalPayments = billPayments.reduce(
       (sum, bp) => sum + bp.paymentCount,
       0,
@@ -843,9 +847,12 @@ export class TaxRecurringReportsService {
         totalPayments,
         uniqueBills: billPayments.length,
         monthlyAverage: gaps.headline(
-          roundMoney(paid.unroundedSubtotal / monthCount),
+          reportFigure(paid.unroundedSubtotal / monthCount, places),
         ),
-        knownMonthlyAverage: roundMoney(paid.unroundedSubtotal / monthCount),
+        knownMonthlyAverage: reportFigure(
+          paid.unroundedSubtotal / monthCount,
+          places,
+        ),
       },
       currency: defaultCurrency,
       missingCurrencies: gaps.missingCurrencies,

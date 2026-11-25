@@ -321,7 +321,8 @@ export class NetWorthController {
         displayCurrency: safeCurrency,
       });
     }
-    return this.netWorthService.getDailyInvestments(
+    // A chart's series: each point read once at the currency's places.
+    return this.netWorthService.getDailyInvestmentsReport(
       req.user.id,
       sd,
       ed,

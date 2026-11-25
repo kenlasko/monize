@@ -9,6 +9,7 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import { reportPlacesMock } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -30,6 +31,7 @@ describe("DataQualityReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
+      getReportPlaces: reportPlacesMock(),
       // The converter a report builds, per row; a test swaps its body.
       convertRow: jest.fn().mockImplementation((amount: number) => amount),
       buildConverter: jest.fn(),
@@ -253,6 +255,43 @@ describe("DataQualityReportsService", () => {
       expect(result.transactions[0].currencyCode).toBe("USD");
     });
 
+    it("rounds a converted amount once at the report currency's places (issue #2410)", async () => {
+      // -1.00 EUR at 2.50498 is -2.50498 USD, sent unrounded until now: it
+      // reads -2.50. A row already in USD is its posted amount: 124.7525 and
+      // -0.004 stay as stored, so neither reads 124.75 or a zero that the
+      // page's income and expense filters would both drop.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) =>
+          fromCurrency === "EUR" ? amount * 2.50498 : amount,
+      );
+      const row = (id: string, currency_code: string, amount: string) => ({
+        id,
+        transaction_date: "2025-05-01",
+        currency_code,
+        amount,
+        payee_name: "Store",
+        description: null,
+        account_name: "Account",
+        account_id: "acc-1",
+      });
+      scopedManager.query.mockResolvedValueOnce([
+        row("tx-1", "EUR", "-1.00"),
+        row("tx-2", "USD", "124.7525"),
+        row("tx-3", "USD", "-0.004"),
+      ]);
+      scopedManager.query.mockResolvedValueOnce([]);
+
+      const result = await service.getUncategorizedTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.transactions.map((t) => t.amount)).toEqual([
+        -2.5, 124.7525, -0.004,
+      ]);
+    });
+
     it("includes startDate filter when provided", async () => {
       scopedManager.query.mockResolvedValueOnce([]);
       scopedManager.query.mockResolvedValueOnce([]);
@@ -333,8 +372,9 @@ describe("DataQualityReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.summary.expenseTotal).toBe(33.337);
-      expect(result.summary.incomeTotal).toBe(66.663);
+      // USD's two places (issue #2410).
+      expect(result.summary.expenseTotal).toBe(33.34);
+      expect(result.summary.incomeTotal).toBe(66.66);
     });
 
     it("formats transaction dates as YYYY-MM-DD", async () => {
@@ -520,7 +560,124 @@ describe("DataQualityReportsService", () => {
         mediumCount: 0,
         lowCount: 0,
         potentialSavings: 0,
+        knownPotentialSavings: 0,
       });
+      expect(result.currency).toBe("USD");
+      expect(result.missingCurrencies).toEqual([]);
+    });
+
+    it("converts each group's extra copies into the reporting currency, at the currency's places (issue #2410)", async () => {
+      // 100 EUR twice (one extra copy) at 1.1 is 110 USD; 50.005 USD three
+      // times (two extra copies) is 100.01. Adding the rows' own amounts made
+      // 200.01 of no currency at all. A JPY pair with no rate is left out and
+      // named, so the total is withheld beside the part that converted.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "EUR" ? amount * 1.1 : from === "JPY" ? null : amount,
+      );
+      const row = (id: string, amount: string, currency: string) => ({
+        id,
+        transaction_date: "2025-06-15",
+        amount,
+        currency_code: currency,
+        payee_name: `Store ${currency}`,
+        description: null,
+        account_name: "Checking",
+        account_id: "acc-1",
+        category_id: null,
+        category_name: null,
+        is_split: false,
+        status: null,
+      });
+      scopedManager.query.mockResolvedValue([
+        row("e1", "-100.00", "EUR"),
+        row("e2", "-100.00", "EUR"),
+        row("u1", "-50.005", "USD"),
+        row("u2", "-50.005", "USD"),
+        row("u3", "-50.005", "USD"),
+      ]);
+
+      const result = await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.summary.potentialSavings).toBe(210.01);
+      expect(result.summary.knownPotentialSavings).toBe(210.01);
+      expect(result.currency).toBe("USD");
+
+      scopedManager.query.mockResolvedValue([
+        row("j1", "-1000", "JPY"),
+        row("j2", "-1000", "JPY"),
+        row("u1", "-50.005", "USD"),
+        row("u2", "-50.005", "USD"),
+      ]);
+      const partial = await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(partial.summary.potentialSavings).toBeNull();
+      expect(partial.summary.knownPotentialSavings).toBe(50.01);
+      expect(partial.missingCurrencies).toEqual(["JPY"]);
+    });
+
+    it("converts each extra copy at its own row's currency, not the group's first (issue #2410)", async () => {
+      // 100.00 USD and 100.00 EUR on one day to one payee match as copies.
+      // The EUR copy is 110 USD at 1.1, not 100 at the first row's currency.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "EUR" ? amount * 1.1 : amount,
+      );
+      const row = (id: string, currency: string) => ({
+        id,
+        transaction_date: "2025-06-15",
+        amount: "-100.00",
+        currency_code: currency,
+        payee_name: "Store",
+        description: null,
+        account_name: currency,
+        account_id: `acc-${currency}`,
+        category_id: null,
+        category_name: null,
+        is_split: false,
+        status: null,
+      });
+      scopedManager.query.mockResolvedValue([
+        row("u1", "USD"),
+        row("e1", "EUR"),
+      ]);
+
+      const result = await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.groups).toHaveLength(1);
+      expect(result.groups[0].transactions.map((t) => t.id)).toEqual([
+        "u1",
+        "e1",
+      ]);
+      expect(result.summary.potentialSavings).toBe(110);
+    });
+
+    it("orders rows that tie on date and amount by id, so a group's first copy is always the same row (issue #2410)", async () => {
+      // With copies in two currencies the first row is the one the impact
+      // leaves out: on a tie with no further key, 110 or 100 by row order.
+      scopedManager.query.mockResolvedValue([]);
+
+      await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(scopedManager.query.mock.calls[0][0]).toMatch(
+        /ORDER BY t\.transaction_date ASC, t\.amount ASC, t\.id ASC/,
+      );
     });
 
     it("assigns high confidence when date, amount and payee match but the category differs", async () => {
@@ -1043,7 +1200,8 @@ describe("DataQualityReportsService", () => {
       );
 
       const queryCall = scopedManager.query.mock.calls[0];
-      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31"]);
+      // The reporting currency is bound for the rows' rate basis only.
+      expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
     });
 
     it("uses default medium sensitivity", async () => {

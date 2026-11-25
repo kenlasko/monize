@@ -11,6 +11,7 @@ import {
   wholeGroups,
 } from "./report-currency.service";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { Currency } from "../currencies/entities/currency.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import {
   createScopedDbMocks,
@@ -27,6 +28,7 @@ describe("ReportCurrencyService", () => {
   let service: ReportCurrencyService;
   let userPreferenceRepository: Record<string, jest.Mock>;
   let exchangeRateService: { getRateIndex: jest.Mock };
+  let currencyRepository: { find: jest.Mock };
 
   const mockUserId = "user-1";
 
@@ -38,9 +40,11 @@ describe("ReportCurrencyService", () => {
     exchangeRateService = {
       getRateIndex: jest.fn().mockResolvedValue(new Map()),
     };
+    currencyRepository = { find: jest.fn().mockResolvedValue([]) };
 
     ({ dataSource: scopedDataSource } = createScopedDbMocks([
       [UserPreference, userPreferenceRepository as never],
+      [Currency, currencyRepository as never],
     ]));
 
     const module: TestingModule = await Test.createTestingModule({
@@ -56,6 +60,35 @@ describe("ReportCurrencyService", () => {
     }).compile();
 
     service = module.get<ReportCurrencyService>(ReportCurrencyService);
+  });
+
+  // ---------------------------------------------------------------------------
+  // getReportPlaces (issue #2410)
+  // ---------------------------------------------------------------------------
+  describe("getReportPlaces", () => {
+    it.each([
+      ["USD", 2],
+      ["JPY", 0],
+      ["BHD", 3],
+    ])(
+      "answers %s at its ISO minor unit, %p, without a read",
+      async (code, places) => {
+        expect(await service.getReportPlaces(code)).toBe(places);
+        expect(currencyRepository.find).not.toHaveBeenCalled();
+      },
+    );
+
+    it("answers a coin at its own row's places", async () => {
+      currencyRepository.find.mockResolvedValue([
+        { code: "BTC", decimalPlaces: 8 },
+      ]);
+      expect(await service.getReportPlaces("BTC")).toBe(8);
+      expect(currencyRepository.find).toHaveBeenCalledTimes(1);
+    });
+
+    it("answers a code with no row at two places", async () => {
+      expect(await service.getReportPlaces("QQQ")).toBe(2);
+    });
   });
 
   // ---------------------------------------------------------------------------

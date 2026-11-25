@@ -11,6 +11,7 @@ import {
   DataSourceMock,
   ManagerMock,
 } from "../test-helpers/scoped-db-testing";
+import { reportPlacesMock } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -108,6 +109,7 @@ describe("AnomalyReportsService", () => {
 
     currencyService = {
       getDefaultCurrency: jest.fn().mockResolvedValue("USD"),
+      getReportPlaces: reportPlacesMock(),
       // The converter a report builds, per row; a test swaps its body.
       convertRow: jest.fn().mockImplementation((amount: number) => amount),
       buildConverter: jest.fn(),
@@ -612,6 +614,29 @@ describe("AnomalyReportsService", () => {
 
       // Mean should be 50 * 1.1 = 55
       expect(result.statistics.mean).toBe(55);
+    });
+
+    it("reads each money figure once at the reporting currency's places (issue #2410)", async () => {
+      // 100 EUR at 5.0050498 is 500.50498 USD: 500.50, where its four-place
+      // reading 500.5050 showed as 500.51.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: fromCurrency }: RawRateBasis) =>
+          fromCurrency === "EUR" ? amount * 5.0050498 : amount,
+      );
+      const raw = buildRawExpenses(20, 50, [
+        { id: "tx-big", amount: 100, payee_name: "Big Purchase" },
+      ]).map((row) =>
+        row.id === "tx-big" ? { ...row, currency_code: "EUR" } : row,
+      );
+      scopedManager.query.mockResolvedValue(raw);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getSpendingAnomalies(mockUserId);
+
+      const big = result.anomalies.find((a) => a.transactionId === "tx-big");
+      expect(big!.amount).toBe(500.5);
+      // (20 x 50 + 500.50498) / 21 = 71.45261...
+      expect(result.statistics.mean).toBe(71.45);
     });
 
     it("calls currency service with correct user id", async () => {

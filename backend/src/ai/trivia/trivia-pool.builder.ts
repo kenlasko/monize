@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { preferredCurrency } from "../../common/default-currency.util";
+import { reportPlacesOf } from "../../common/report-figure";
 import { getEffectiveTimezoneOfUser } from "../../common/users-by-timezone.util";
 import { AccountsService } from "../../accounts/accounts.service";
 import { accountCarriesBalance } from "../../accounts/account-carries-balance";
@@ -65,13 +66,17 @@ export class TriviaPoolBuilder {
     const { today, mode } = options;
     const currency = preferredCurrency(preferences);
 
-    const months = await this.netWorthService.getMonthlyNetWorth(
+    // With each month's aggregate, so a gain or a fall between two months is
+    // read once at the currency's places rather than as the difference of
+    // two readings.
+    const months = await this.netWorthService.getMonthlyNetWorthWithAggregates(
       userId,
       undefined,
       undefined,
       undefined,
       { fetchMissing: false },
     );
+    const places = await reportPlacesOf(this.dataSource, currency);
     const portfolio = await this.loadPortfolio(userId);
     // Closed accounts too: a closed asset still carrying a value ranks, as it
     // counts in net worth. The portfolio flag reads the open accounts.
@@ -91,6 +96,7 @@ export class TriviaPoolBuilder {
     const facts = [
       ...buildTriviaFacts({
         currency,
+        places,
         months,
         portfolio,
         otherAssets: this.otherAssets(allAccounts, currency),
@@ -114,6 +120,7 @@ export class TriviaPoolBuilder {
       ...buildCalendarTriviaFacts({
         today,
         currency,
+        places,
         months,
         records: ledger.records,
         warranties: ledger.warranties,

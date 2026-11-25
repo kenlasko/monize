@@ -2,7 +2,7 @@ import { EntityManager, SelectQueryBuilder } from "typeorm";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { preferredCurrency } from "../common/default-currency.util";
-import { roundMoney } from "../common/round.util";
+import { FIAT_MONEY_DECIMALS, roundMoney } from "../common/round.util";
 import {
   loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
@@ -98,6 +98,9 @@ export async function readAccountTotalsInReportingCurrency(
     reportingCurrency,
     keyOf,
     { sums: ["total"], currency: "currencyCode" },
+    // A detail page's breakdown, not a report figure: four places, as the
+    // page's own totals are.
+    FIAT_MONEY_DECIMALS,
   );
   const places = await loadCurrencyPlacesForRead(
     m,

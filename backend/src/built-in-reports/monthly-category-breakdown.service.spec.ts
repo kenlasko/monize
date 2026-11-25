@@ -392,6 +392,37 @@ describe("MonthlyCategoryBreakdownService", () => {
     expect(result.data[0].withdrawalTotal).toBe(110);
   });
 
+  it("reads each figure once at the reporting currency's places (issue #2410)", async () => {
+    // 1.00 EUR at 2.50498 is 2.50498 USD: 2.50, where its four-place reading
+    // 2.5050 showed as 2.51.
+    exchangeRateService.getRateIndex.mockResolvedValue(
+      rateIndexOf([{ fromCurrency: "EUR", toCurrency: "USD", rate: 2.50498 }]),
+    );
+    scopedManager.query.mockResolvedValueOnce([
+      {
+        month: "2025-01",
+        category_id: "cat-child",
+        currency_code: "EUR",
+        tx_date: FIXTURE_TX_DATE,
+        deposits: "0.00",
+        withdrawals: "1.00",
+      },
+    ]);
+    categoriesRepository.find.mockResolvedValue([
+      mockParentCategory,
+      mockChildCategory,
+    ]);
+
+    const result = await service.getMonthlyCategoryBreakdown(
+      mockUserId,
+      "2025-01-01",
+      "2025-12-31",
+    );
+
+    expect(result.data[0].valuesByMonth["2025-01"]).toBe(2.5);
+    expect(result.data[0].withdrawalTotal).toBe(2.5);
+  });
+
   it("passes startDate parameter when provided and omits it otherwise", async () => {
     await service.getMonthlyCategoryBreakdown(
       mockUserId,

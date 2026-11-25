@@ -400,6 +400,24 @@ describe('PortfolioSummaryCard', () => {
     expect(screen.getByText('$15000.00')).toBeInTheDocument();
   });
 
+  it("reads the server's Total Gain rather than the difference of two readings (issue #2410)", () => {
+    // Value 100.004 and net invested 99.996 read 100.00 each; their difference
+    // of readings is 0.00 and neutral, the server's one rounding 0.01.
+    render(
+      <PortfolioSummaryCard
+        summary={makeSummary({
+          totalPortfolioValue: 100,
+          totalNetInvested: 100,
+          totalGainOverNetInvested: 0.01,
+        })}
+        isLoading={false}
+      />,
+    );
+    const gain = screen.getByText('$0.01');
+    expect(gain.className).toContain('text-green-600');
+    expect(gain.getAttribute('data-sign')).toBe('up');
+  });
+
   it('renders CAGR when available', () => {
     render(<PortfolioSummaryCard summary={makeSummary({ cagr: 10.5 })} isLoading={false} />);
     expect(screen.getByText('+10.50%')).toBeInTheDocument();

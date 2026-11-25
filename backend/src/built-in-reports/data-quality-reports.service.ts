@@ -9,12 +9,8 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
-import {
-  MONEY_SCALE,
-  roundMoney,
-  sumMoney,
-  toMoneyNumber,
-} from "../common/round.util";
+import { reportFigure } from "../common/report-figure";
+import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
 import {
   UncategorizedTransactionsResponse,
   UncategorizedTransactionItem,
@@ -65,6 +61,10 @@ export class DataQualityReportsService {
   ): Promise<UncategorizedTransactionsResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // A converted figure leaves rounded once at the reporting currency's
+    // places (docs/specs/report-rounding-and-aggregation.md section 6); a row
+    // left in its own currency is its posted amount and keeps its places.
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     let query = `
       SELECT
@@ -138,11 +138,18 @@ export class DataQualityReportsService {
       const amount = toMoneyNumber(row.amount, MONEY_SCALE);
       const converted = convertRow(amount, row);
       // The amount and its label move together: either both converted, or
-      // both the row's own.
+      // both the row's own. A row already in the reporting currency is its
+      // posted amount, never rounded; only a converted amount is a report
+      // figure, read at the currency's places.
       const shown =
         converted === null
           ? { amount, currencyCode: row.currency_code }
-          : { amount: converted, currencyCode: defaultCurrency };
+          : row.currency_code === defaultCurrency
+            ? { amount, currencyCode: defaultCurrency }
+            : {
+                amount: reportFigure(converted, places),
+                currencyCode: defaultCurrency,
+              };
       return {
         id: row.id,
         transactionDate: new Date(row.transaction_date)
@@ -250,8 +257,8 @@ export class DataQualityReportsService {
       expenseTotal.addConverted(expense);
       incomeTotal.addConverted(income);
     }
-    const knownExpenseTotal = roundMoney(expenseTotal.knownSubtotal);
-    const knownIncomeTotal = roundMoney(incomeTotal.knownSubtotal);
+    const knownExpenseTotal = expenseTotal.knownSubtotalAt(places);
+    const knownIncomeTotal = incomeTotal.knownSubtotalAt(places);
 
     return {
       transactions,
@@ -280,6 +287,13 @@ export class DataQualityReportsService {
     const maxDaysDiff =
       sensitivity === "high" ? 3 : sensitivity === "medium" ? 1 : 0;
     const checkPayee = sensitivity !== "low";
+    // The potential impact is a figure in the reporting currency, each group's
+    // amount converted at its own row's rate or the market rate on its date
+    // and rounded once at the currency's places, never the rows' own amounts
+    // in their own currencies added together.
+    const defaultCurrency =
+      await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     const params: string[] = [userId, endDate];
     const paramIndex = 3;
@@ -289,6 +303,8 @@ export class DataQualityReportsService {
       dateFilter = `AND t.transaction_date >= $${paramIndex} AND t.transaction_date <= $2`;
       params.push(startDate);
     }
+    params.push(defaultCurrency);
+    const currencyParam = `$${params.length}`;
 
     const query = `
       SELECT
@@ -306,7 +322,8 @@ export class DataQualityReportsService {
           ELSE c.name
         END as category_name,
         COALESCE(t.is_split, false) as is_split,
-        t.status
+        t.status,
+        ${rateBasisColumnsSql(currencyParam)}
       FROM transactions t
       LEFT JOIN payees p ON p.id = t.payee_id
       LEFT JOIN accounts a ON a.id = t.account_id
@@ -330,10 +347,10 @@ export class DataQualityReportsService {
         -- and the remedy is deleting one whole transaction -- a per-child figure
         -- would name a row nobody can delete. Which is also why it needs no
         -- split-provenance clause: a row it admits is one the user owns.
-      ORDER BY t.transaction_date ASC, t.amount ASC
+      ORDER BY t.transaction_date ASC, t.amount ASC, t.id ASC
     `;
 
-    interface RawTx {
+    interface RawTx extends RawRateBasis {
       id: string;
       transaction_date: string;
       amount: string;
@@ -533,12 +550,33 @@ export class DataQualityReportsService {
     const countOf = (level: DuplicateConfidence) =>
       groups.filter((g) => g.confidence === level).length;
 
-    const potentialSavings = sumMoney(
-      groups.map((group) => {
-        const duplicateCount = group.transactions.length - 1;
-        return Math.abs(group.transactions[0].amount) * duplicateCount;
+    // Each group's extra copies (every row after its first), each converted
+    // at its own row's rate basis -- a group can hold copies in two
+    // currencies, the matcher comparing amounts alone -- and folded exactly.
+    // A copy with no rate is left out and named, so the figure is withheld,
+    // not smaller.
+    const basisById = new Map(rows.map((row) => [row.id, row]));
+    const copies = groups.flatMap((group) =>
+      group.transactions.slice(1).flatMap((tx) => {
+        const row = basisById.get(tx.id);
+        return row ? [{ amount: Math.abs(tx.amount), row }] : [];
       }),
     );
+    const convert = await this.currencyService.buildConverter(
+      copies.map((copy) => copy.row),
+      defaultCurrency,
+    );
+    const savings = new FxAggregate();
+    const gaps = new ConversionGaps();
+    for (const { amount, row } of copies) {
+      const converted = convert(amount, row);
+      if (converted === null) {
+        gaps.record(row.currency_code);
+        continue;
+      }
+      savings.addConverted(converted);
+    }
+    const knownPotentialSavings = savings.knownSubtotalAt(places);
 
     return {
       groups,
@@ -548,8 +586,12 @@ export class DataQualityReportsService {
         highCount: countOf("high"),
         mediumCount: countOf("medium"),
         lowCount: countOf("low"),
-        potentialSavings: roundMoney(potentialSavings),
+        potentialSavings: gaps.headline(knownPotentialSavings),
+        knownPotentialSavings,
       },
+      currency: defaultCurrency,
+      missingCurrencies: gaps.missingCurrencies,
+      excludedCount: gaps.excludedCount,
     };
   }
 }

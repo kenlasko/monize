@@ -880,11 +880,13 @@ describe("CashFlowSankeyService", () => {
     });
   });
 
-  describe("rounds each figure once (issue #2384)", () => {
-    // Two 100.01 EUR rows at 1.2474 are 124.752474 CAD each: 124.7525 alone,
-    // 249.504948 together, which reads 249.5049. Rounding each node on its
-    // own read the parent as 249.5049 and its children as 249.5050, so the
-    // diagram did not close and the report answered a 500.
+  describe("rounds each figure once, in cents (issues #2384, #2410)", () => {
+    // Two 1.00 EUR rows at 1.2474 are 1.2474 CAD each: 1.25 alone, 2.4948
+    // together, which reads 2.49. Rounding each node on its own read the
+    // parent as 2.49 and its children as 2.50, so the diagram did not close
+    // and the report answered a 500. The diagram closes in the reporting
+    // currency's minor unit, cents here (section 6 of
+    // docs/specs/report-rounding-and-aggregation.md).
     const EUR_RATE: RateFixture = {
       from_currency: "EUR",
       to_currency: "CAD",
@@ -911,8 +913,8 @@ describe("CashFlowSankeyService", () => {
       ]);
       const ledger: Ledger = {
         categorized: [
-          eur({ category_id: groceries.id, negative: "-100.0100" }),
-          eur({ category_id: restaurants.id, negative: "-100.0100" }),
+          eur({ category_id: groceries.id, negative: "-1.0000" }),
+          eur({ category_id: restaurants.id, negative: "-1.0000" }),
         ],
         rates: [EUR_RATE],
       };
@@ -932,15 +934,17 @@ describe("CashFlowSankeyService", () => {
       );
 
       for (const result of [shallow, deep]) {
-        expect(node(result, "expense:cat-food")?.total).toBe(249.5049);
-        expect(result.totals.expenses).toBe(249.5049);
-        expect(result.totals.deficit).toBe(249.5049);
+        expect(node(result, "expense:cat-food")?.total).toBe(2.49);
+        expect(result.totals.expenses).toBe(2.49);
+        expect(result.totals.deficit).toBe(2.49);
       }
+      // Each child is 1.2474, which reads 1.25 on its own: one gives up its
+      // cent so the parent passes through what it got (rule 6).
       const children = [
         link(deep, "expense:cat-food", "child:cat-food-groc")?.amount,
         link(deep, "expense:cat-food", "child:cat-rest")?.amount,
       ];
-      expect(children).toEqual([124.7525, 124.7524]);
+      expect(children).toEqual([1.25, 1.24]);
     });
 
     it("splits a class's single rounding between its accounts at depth 2", async () => {
@@ -951,14 +955,14 @@ describe("CashFlowSankeyService", () => {
             counterpart_type: "SAVINGS",
             counterpart_name: "Savings",
             currency_code: "EUR",
-            outflow: "-100.0100",
+            outflow: "-1.0000",
           },
           {
             counterpart_account_id: "tfsa",
             counterpart_type: "INVESTMENT",
             counterpart_name: "TFSA",
             currency_code: "EUR",
-            outflow: "-100.0100",
+            outflow: "-1.0000",
           },
         ],
         rates: [EUR_RATE],
@@ -971,19 +975,19 @@ describe("CashFlowSankeyService", () => {
         { depth: 2 },
       );
 
-      expect(link(result, "hub", "class:savings")?.amount).toBe(249.5049);
-      expect(result.totals.outflows).toBe(249.5049);
+      expect(link(result, "hub", "class:savings")?.amount).toBe(2.49);
+      expect(result.totals.outflows).toBe(2.49);
       expect([
         link(result, "class:savings", `account:${SAVINGS}`)?.amount,
         link(result, "class:savings", "account:tfsa")?.amount,
-      ]).toEqual([124.7525, 124.7524]);
+      ]).toEqual([1.25, 1.24]);
     });
 
     it("rounds a side's total once, not as a sum of its rounded categories", async () => {
       useLedger({
         categorized: [
-          eur({ category_id: GROCERIES.id, negative: "-100.0100" }),
-          eur({ category_id: DINING.id, negative: "-100.0100" }),
+          eur({ category_id: GROCERIES.id, negative: "-1.0000" }),
+          eur({ category_id: DINING.id, negative: "-1.0000" }),
           { category_id: SALARY.id, positive: "1000.0000" },
         ],
         rates: [EUR_RATE],
@@ -995,19 +999,19 @@ describe("CashFlowSankeyService", () => {
         "2026-09-30",
       );
 
-      expect(result.totals.expenses).toBe(249.5049);
-      expect(result.totals.unspent).toBe(750.4951);
+      expect(result.totals.expenses).toBe(2.49);
+      expect(result.totals.unspent).toBe(997.51);
       expect(
         [
           node(result, `expense:${GROCERIES.id}`)?.total,
           node(result, `expense:${DINING.id}`)?.total,
         ].sort(),
-      ).toEqual([124.7524, 124.7525]);
+      ).toEqual([1.24, 1.25]);
     });
 
-    it("keeps a category whose net is under a ten-thousandth on the side it nets to", async () => {
+    it("keeps a category whose net is under a cent on the side it nets to", async () => {
       // 100.00 EUR out on one rate and back in on another nets 0.00003 CAD:
-      // money in, though it reads 0.0000 at four places.
+      // money in, though it reads 0.00 at two places.
       useLedger({
         categorized: [
           eur({
@@ -1035,6 +1039,80 @@ describe("CashFlowSankeyService", () => {
 
       expect(node(result, `income:${GROCERIES.id}`)?.total).toBe(0);
       expect(node(result, `expense:${GROCERIES.id}`)).toBeUndefined();
+    });
+
+    it("reads a figure of 2.50498 as 2.50, not through 2.5050 as 2.51", async () => {
+      useLedger({
+        categorized: [eur({ category_id: GROCERIES.id, negative: "-1.0000" })],
+        rates: [{ ...EUR_RATE, rate: "2.50498" }],
+      });
+
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+      );
+
+      expect(node(result, `expense:${GROCERIES.id}`)?.total).toBe(2.5);
+      expect(link(result, "hub", `expense:${GROCERIES.id}`)?.amount).toBe(2.5);
+      expect(result.totals.expenses).toBe(2.5);
+      expect(result.totals.deficit).toBe(2.5);
+    });
+
+    it("closes in whole yen for a JPY reader", async () => {
+      // Two 1.00 EUR rows at 162.3456 are 162.3456 JPY each: 162 alone, 324.6912
+      // together, which reads 325, so one child takes the yen the floors
+      // leave short.
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "JPY",
+      });
+      const food = category("cat-food", "Food");
+      const restaurants = category("cat-rest", "Restaurants", {
+        parentId: "cat-food",
+      });
+      const groceries = category("cat-food-groc", "Groceries", {
+        parentId: "cat-food",
+      });
+      categoriesRepository.find.mockResolvedValue([
+        food,
+        restaurants,
+        groceries,
+        SALARY,
+      ]);
+      useLedger({
+        categorized: [
+          eur({ category_id: groceries.id, negative: "-1.0000" }),
+          eur({ category_id: restaurants.id, negative: "-1.0000" }),
+          {
+            category_id: SALARY.id,
+            currency_code: "JPY",
+            positive: "1000.0000",
+          },
+        ],
+        rates: [{ ...EUR_RATE, to_currency: "JPY", rate: "162.3456" }],
+      });
+
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+        { depth: 2 },
+      );
+
+      expect(result.currency).toBe("JPY");
+      expect(result.totals.expenses).toBe(325);
+      expect(result.totals.income).toBe(1000);
+      expect(result.totals.unspent).toBe(675);
+      expect([
+        link(result, "expense:cat-food", "child:cat-food-groc")?.amount,
+        link(result, "expense:cat-food", "child:cat-rest")?.amount,
+      ]).toEqual([163, 162]);
+      for (const figure of [
+        ...result.nodes.map((n) => n.total),
+        ...result.links.map((l) => l.amount),
+      ]) {
+        expect(Number.isInteger(figure)).toBe(true);
+      }
     });
   });
 
@@ -1064,6 +1142,7 @@ describe("CashFlowSankeyService", () => {
             unspent: 0,
             deficit: 0,
           },
+          2,
         ),
       ).toThrow(SankeyIdentityError);
     });
@@ -1099,6 +1178,7 @@ describe("CashFlowSankeyService", () => {
             unspent: 0,
             deficit: 0,
           },
+          2,
         ),
       ).toThrow(/does not balance/);
     });

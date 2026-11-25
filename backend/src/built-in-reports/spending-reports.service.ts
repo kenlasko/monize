@@ -156,6 +156,9 @@ export class SpendingReportsService {
     const { rollupToParent = true, accountIds, tagKey, tagValue } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every figure leaves rounded once at the reporting currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     let query = `
       SELECT
@@ -323,7 +326,7 @@ export class SpendingReportsService {
         categoryId: id === "uncategorized" ? null : id,
         categoryName: category?.name || "Uncategorized",
         color: category?.color || null,
-        total: agg.knownSubtotal,
+        total: agg.knownSubtotalAt(places),
       }))
       .sort((a, b) => b.total - a.total);
 
@@ -335,7 +338,7 @@ export class SpendingReportsService {
     // up, read 249.5049 (rule 2).
     const spending = new FxAggregate();
     for (const [, { agg }] of spent) spending.merge(agg);
-    const knownSpending = spending.knownSubtotal;
+    const knownSpending = spending.knownSubtotalAt(places);
 
     return {
       response: {
@@ -359,6 +362,7 @@ export class SpendingReportsService {
   ): Promise<SpendingByPayeeResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     let query = `
       SELECT
@@ -446,13 +450,13 @@ export class SpendingReportsService {
     const data: PayeeSpendingItem[] = top.map((row) => ({
       payeeId: row.payeeId,
       payeeName: row.payeeName,
-      total: row.agg.knownSubtotal,
+      total: row.agg.knownSubtotalAt(places),
     }));
 
     // The listed payees' aggregates, folded and rounded once (rule 2).
     const spending = new FxAggregate();
     for (const row of top) spending.merge(row.agg);
-    const knownSpending = spending.knownSubtotal;
+    const knownSpending = spending.knownSubtotalAt(places);
 
     return {
       data,
@@ -471,6 +475,7 @@ export class SpendingReportsService {
   ): Promise<MonthlySpendingTrendResponse> {
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     let query = `
       SELECT
@@ -627,7 +632,7 @@ export class SpendingReportsService {
               categoryId: catId === "uncategorized" ? null : catId,
               categoryName: category?.name || "Uncategorized",
               color: category?.color || null,
-              total: catData?.agg.knownSubtotal ?? 0,
+              total: catData?.agg.knownSubtotalAt(places) ?? 0,
             };
           },
         );
@@ -642,7 +647,7 @@ export class SpendingReportsService {
         return {
           month,
           categories,
-          totalSpending: monthSpending.knownSubtotal,
+          totalSpending: monthSpending.knownSubtotalAt(places),
         };
       });
 

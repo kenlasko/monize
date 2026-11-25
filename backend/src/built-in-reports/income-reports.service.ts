@@ -14,12 +14,7 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { ownTransferLegs } from "./transfer-rate-sql";
-import {
-  MONEY_SCALE,
-  roundMoney,
-  sumMoney,
-  toMoneyNumber,
-} from "../common/round.util";
+import { MONEY_SCALE, sumMoney, toMoneyNumber } from "../common/round.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   IncomeBySourceResponse,
@@ -105,6 +100,9 @@ export class IncomeReportsService {
     const { accountIds } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    // Every figure leaves rounded once at the reporting currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6).
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     let query = `
       SELECT
@@ -233,7 +231,7 @@ export class IncomeReportsService {
         categoryId: id,
         categoryName: category.name,
         color: category.color || null,
-        total: agg.knownSubtotal,
+        total: agg.knownSubtotalAt(places),
       }))
       .sort((a, b) => b.total - a.total);
 
@@ -242,7 +240,7 @@ export class IncomeReportsService {
     // as aggregates, so the total is rounded once (rule 2).
     const income = new FxAggregate();
     for (const [, { agg }] of earned) income.merge(agg);
-    const knownIncome = income.knownSubtotal;
+    const knownIncome = income.knownSubtotalAt(places);
 
     return {
       data,
@@ -363,6 +361,7 @@ export class IncomeReportsService {
     const { accountIds, bucket, weekStartsOn } = options;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
 
     // The week-start offset is a parameter so the grouping expression stays a
     // constant string: see `weekTruncOffsetDays` for what it shifts. It is bound
@@ -457,6 +456,7 @@ export class IncomeReportsService {
         endDate,
         weekStartsOn,
         convert,
+        places,
       );
 
     const response: IncomeVsExpensesResponse = {
@@ -488,6 +488,7 @@ export class IncomeReportsService {
     endDate: string,
     weekStartsOn: WeekStartsOn,
     convert: ReportConverter,
+    places: number,
     extraPeriodStarts: string[] = [],
   ): {
     data: IncomeExpensePeriodItem[];
@@ -557,8 +558,8 @@ export class IncomeReportsService {
           }));
 
     // Each figure, a period's or the window's, is the single rounding of its
-    // own rows: the window folds the periods' aggregates rather than adding
-    // their four-place readings (docs/specs/report-rounding-and-aggregation.md
+    // own rows at `places`: the window folds the periods' aggregates rather
+    // than adding their readings (docs/specs/report-rounding-and-aggregation.md
     // rules 2 and 4), and a net is income less expenses before either is
     // rounded.
     const windowIncome = new FxAggregate();
@@ -571,20 +572,23 @@ export class IncomeReportsService {
       }
       return {
         ...period,
-        income: found?.income.knownSubtotal ?? 0,
-        expenses: found?.expenses.knownSubtotal ?? 0,
+        income: found?.income.knownSubtotalAt(places) ?? 0,
+        expenses: found?.expenses.knownSubtotalAt(places) ?? 0,
         net: found
-          ? FxAggregate.difference(found.income, found.expenses).knownSubtotal
+          ? FxAggregate.difference(
+              found.income,
+              found.expenses,
+            ).knownSubtotalAt(places)
           : 0,
       };
     });
 
-    const knownIncome = windowIncome.knownSubtotal;
-    const knownExpenses = windowExpenses.knownSubtotal;
+    const knownIncome = windowIncome.knownSubtotalAt(places);
+    const knownExpenses = windowExpenses.knownSubtotalAt(places);
     const knownNet = FxAggregate.difference(
       windowIncome,
       windowExpenses,
-    ).knownSubtotal;
+    ).knownSubtotalAt(places);
     const complete = gaps.isComplete;
 
     return {
@@ -637,6 +641,7 @@ export class IncomeReportsService {
   ): Promise<IncomeExpenseTagBucket[]> {
     const { accountIds, bucket, weekStartsOn, transferScopeAccountIds } =
       windowOptions;
+    const places = await this.currencyService.getReportPlaces(defaultCurrency);
     // The accounts a tagged transfer is judged against (spec 10.8 and 10.8.1):
     // the account filter when there is one; otherwise the boundary the client
     // names for "All Accounts" (the accounts its picker offers), so the default
@@ -951,6 +956,7 @@ export class IncomeReportsService {
         endDate,
         weekStartsOn,
         convert,
+        places,
       ),
     );
   }
@@ -965,6 +971,7 @@ export class IncomeReportsService {
     endDate: string,
     weekStartsOn: WeekStartsOn,
     convert: ReportConverter,
+    places: number,
   ): IncomeExpenseTagBucket {
     const { data, totals, missingCurrencies, excludedCount } =
       this.summarizePeriodRows(
@@ -974,6 +981,7 @@ export class IncomeReportsService {
         endDate,
         weekStartsOn,
         convert,
+        places,
         flowRows.map((row) => row.period_start),
       );
 
@@ -1017,8 +1025,8 @@ export class IncomeReportsService {
       const flows = flowsByPeriod.get(item.period);
       return {
         ...item,
-        taggedInflows: flows?.inflows.knownSubtotal ?? 0,
-        taggedOutflows: flows?.outflows.knownSubtotal ?? 0,
+        taggedInflows: flows?.inflows.knownSubtotalAt(places) ?? 0,
+        taggedOutflows: flows?.outflows.knownSubtotalAt(places) ?? 0,
       };
     });
 
@@ -1036,11 +1044,14 @@ export class IncomeReportsService {
       isUntagged: value === UNTAGGED_TAG_BUCKET_ID,
       data: periodData,
       totals: bucketTotals,
-      taggedInflows: roundMoney(
-        sumMoney(periodData.map((item) => item.taggedInflows)),
+      // Exact at `places`: each period's flow is already a figure there.
+      taggedInflows: sumMoney(
+        periodData.map((item) => item.taggedInflows),
+        places,
       ),
-      taggedOutflows: roundMoney(
-        sumMoney(periodData.map((item) => item.taggedOutflows)),
+      taggedOutflows: sumMoney(
+        periodData.map((item) => item.taggedOutflows),
+        places,
       ),
       missingCurrencies: [...missing].sort(),
       excludedCount: excludedCountTotal,

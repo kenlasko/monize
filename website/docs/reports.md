@@ -65,7 +65,7 @@ Amounts in another currency are converted to your default currency at the exchan
 
 When a figure cannot be worked out completely -- for example an amount in a currency with no exchange rate for its date -- the report says which figures are partial and what is missing (such as the currency to add a rate for on the [Currencies](currency-management.md) page) instead of showing a wrong total.
 
-A report's headline totals are worked out from the converted amounts themselves and rounded once, rather than by adding up rounded rows, so a headline total can differ by a fraction of a cent from the sum of the rows shown above it. A category whose net is smaller than the smallest amount shown, for example a purchase and its refund struck at two slightly different exchange rates, still appears, at 0.00, rather than disappearing.
+The figures a report receives are worked out from the converted amounts themselves and rounded once, to your currency's smallest unit (a cent, or a whole yen), so the screen and the AI Assistant read the same figure. A few totals are still added up on the page from the rows it shows, and some exports write whole units, so these can differ by a cent from the report's own figure for now. A headline total is rounded once from the amounts behind it rather than by adding up rounded rows, so it can differ by a cent from the sum of the rows shown above it. A category whose net is smaller than a cent, for example a purchase and its refund struck at two slightly different exchange rates, still appears, at 0.00, rather than disappearing.
 
 ---
 
@@ -204,7 +204,7 @@ The **GEM Strategy** report follows the Global Equities Momentum strategy: at ea
 | **Spending Anomalies** | Detect unusually large transactions and spending spikes that need attention |
 | **Weekend vs Weekday Spending** | Analyze your spending patterns based on day of week to understand habits |
 | **Monthly Comparison** | Compare any month to the previous month across income, expenses, net worth, and investments |
-| **Cash Flow Sankey** | See where your money came from and where it went: income flowing into spending, savings, investments and debt payments, with what was left over or drawn from your balances. The **Detail** switch shows categories or subcategories; click a flow to open its transactions |
+| **Cash Flow Sankey** | See where your money came from and where it went: income flowing into spending, savings, investments and debt payments, with what was left over or drawn from your balances. The **Detail** switch shows categories or subcategories; click a flow to open its transactions. Each side's total is shared out between its flows so the diagram adds up exactly, which can leave a category a cent off the same category in Spending by Category or Income by Source; the report says so under the diagram |
 | **Foreign Currency Transaction Fees** | Track the foreign-transaction fees charged by accounts that apply a conversion fee. See [Currency Management](currency-management.md#foreign-transaction-fees) |
 
 ![The Cash Flow Sankey report](images/report-cash-flow-sankey.png)
@@ -228,6 +228,8 @@ The **Duplicate Transaction Finder** groups transactions that look like copies o
 - **Low** -- same amount within a few days
 
 Each transaction shows its date, payee, description, category, account and amount, and whether it is **Cleared** or **Reconciled**. Click a transaction to open it on the Transactions page.
+
+**Potential Impact** is what the extra copies add up to in your default currency, each copy converted at the rate its foreign-currency entry recorded, or else at the exchange rate of its own date. When a copy is in a currency with no exchange rate for that date, the figure shows what could be converted, marked with an asterisk.
 
 To remove duplicates without leaving the report:
 

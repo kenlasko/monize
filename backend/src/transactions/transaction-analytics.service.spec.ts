@@ -2707,10 +2707,10 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
-    it("nets income and expenses before either is rounded (issue #2384)", async () => {
-      // 100.01 EUR in and 0.00004 EUR out at 1.2474 are 124.752474 and
-      // 0.000049896 CAD: a net of 124.752424104, which reads 124.7524. The
-      // difference of the two readings, 124.7525 and 0, was 124.7525.
+    it("nets income and expenses before either is rounded (issues #2384, #2410)", async () => {
+      // 1.00 EUR in and 0.004 EUR out at 1.2474 are 1.2474 and 0.0049896
+      // CAD: a net of 1.2424104, which reads 1.24 at CAD's two places. The
+      // difference of the two readings, 1.25 and 0.00, was 1.25.
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "CAD",
       });
@@ -2720,8 +2720,8 @@ describe("TransactionAnalyticsService", () => {
           txDate: "2026-01-12",
           fx_original_currency: null,
           fx_exchange_rate: "1",
-          totalIncome: "100.01",
-          totalExpenses: "0.00004",
+          totalIncome: "1.00",
+          totalExpenses: "0.004",
         },
       ]);
       managerMock.query.mockResolvedValue([
@@ -2733,9 +2733,9 @@ describe("TransactionAnalyticsService", () => {
         endDate: "2026-01-31",
       });
 
-      expect(result.totalIncome).toBe(124.7525);
+      expect(result.totalIncome).toBe(1.25);
       expect(result.totalExpenses).toBe(0);
-      expect(result.netCashFlow).toBe(124.7524);
+      expect(result.netCashFlow).toBe(1.24);
     });
 
     it("leaves every transfer out by default", async () => {
@@ -3024,6 +3024,14 @@ describe("TransactionAnalyticsService", () => {
       return result.breakdown as any[];
     }
 
+    it("reads each group's figure once at the reporting currency's places (issue #2410)", async () => {
+      const rows = await runWithGroupBy("month", [
+        { period: "2026-01", total: "-12.345", count: "5" },
+      ]);
+
+      expect(rows[0].total).toBe(-12.35);
+    });
+
     it("groups by category and sorts by total descending", async () => {
       const rows = await runWithGroupBy("category", [
         { categoryId: "cat-food", total: "100", count: "5" },
@@ -3272,6 +3280,51 @@ describe("TransactionAnalyticsService", () => {
       expect(result.missingRatePairs).toEqual([]);
       expect(result.comparison[0].label).toBe("Food");
       expect(result.comparison[0].change).toBe(50);
+    });
+
+    it("reads each figure and each change once at the reporting currency's places (issue #2410)", async () => {
+      // 100.004 and 150.005 read 100.00 and 150.01; their exact change,
+      // 50.001, reads 50.00, where the difference of the readings is 50.01.
+      // Its percentage is 50.001 over 100.004, 50.00 (rule 8); the two
+      // readings' 50.01 over 100.00 would be 50.01.
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-food", total: "100.004", count: "5" }),
+        ])
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-food", total: "150.005", count: "8" }),
+        ]);
+
+      const result = await service.getLlmPeriodComparison(userId, periods);
+
+      expect(result.period1.total).toBe(100);
+      expect(result.period2.total).toBe(150.01);
+      expect(result.totalChange).toBe(50);
+      expect(result.totalChangePercent).toBe(50);
+      expect(result.comparison[0]).toMatchObject({
+        period1Amount: 100,
+        period2Amount: 150.01,
+        change: 50,
+        changePercent: 50,
+      });
+    });
+
+    it("divides nothing by a first period that reads 0.00: the row is new (100) and the total 0 (issue #2410)", async () => {
+      // 0.003 shows as 0.00 and is no base: a change over it is "new", not
+      // 3,333,233%.
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-food", total: "0.003", count: "1" }),
+        ])
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-food", total: "100", count: "1" }),
+        ]);
+
+      const result = await service.getLlmPeriodComparison(userId, periods);
+
+      expect(result.period1.total).toBe(0);
+      expect(result.comparison[0].changePercent).toBe(100);
+      expect(result.totalChangePercent).toBe(0);
     });
 
     it("converts a part at its own rate, reading no rate history (INV-FX-002)", async () => {
@@ -4782,6 +4835,44 @@ describe("TransactionAnalyticsService", () => {
           convertedFeeTotal: 14.25,
         },
       ]);
+    });
+
+    it("keeps a converted fee total at four places while the page adds the rows (issue #2410)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          {
+            month: "2026-01",
+            currencyCode: "EUR",
+            feeTotal: "3.1312",
+            count: "1",
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            month: "2026-01",
+            currencyCode: "EUR",
+            txDate: "2026-01-05",
+            exchangeRate: "1.5",
+            feeTotal: "3.1312",
+          },
+        ]);
+      managerMock.query.mockResolvedValue([
+        storedRate("USD", "CAD", 1.25, "2026-01-04"),
+      ]);
+
+      const result = await service.getFxFeeSummary(userId, "acc-1");
+
+      // 3.1312 CAD at 1.25 is 2.50496 USD, read at four places: 2.505. The
+      // Foreign Currency Fees page sums these rows into its month and grand
+      // totals, so three of them read at two places (2.50 each) would total
+      // 7.50 where the fees come to 7.51; they move to the currency's places
+      // with those totals (stage 3). The fee in the account's own currency is
+      // the posted figure and keeps its precision.
+      expect(result[0].convertedFeeTotal).toBe(2.505);
+      expect(result[0].feeTotal).toBe(3.1312);
     });
 
     it("scopes to the user and account and excludes void and child rows", async () => {
