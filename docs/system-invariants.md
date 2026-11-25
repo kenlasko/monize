@@ -3436,8 +3436,7 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     Income by Source sends each source's percentage, divided
                     from the unrounded aggregates, which the report, its
                     dashboard widget and the dashboard trivia read. A total
-                    only an
-                    investment report's page can build (Realized Gains,
+                    only an investment report's page can build (Realized Gains,
                     Dividend Income, Dividend Yield Growth, the allocation
                     reports, their dashboard widgets and the geographic
                     allocation) is the exact sum
@@ -3522,7 +3521,11 @@ Known gap           A holding's own value, cost and gain in the portfolio
                     by a reading, and the Investments and Accounts pages add
                     an account's totals to its cash on the client
                     (docs/future-plans/report-rounding-and-aggregation-tasks.md,
-                    stage 3). A converted component whose exact value needs
+                    stage 3). The sector, country and asset-class weightings
+                    (sector-weighting.service.ts) are float sums over the
+                    holdings read at four places, and the country view's
+                    "Other" share divides two readings on the client. A
+                    converted component whose exact value needs
                     more than fifteen significant digits, or that divides by
                     a row's own rate, is held at the double's own digits, so
                     a sum within their error of a midpoint can still read a

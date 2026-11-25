@@ -42,7 +42,7 @@ before they were added:
 | Precision | Applies to | Rule |
 | --- | --- | --- |
 | Posted | a stored amount: a transaction's `amount`, a balance, a trade's `total_amount`, a transfer's two amounts, a row's own rate | `moneyDecimalsFor(currency.decimalPlaces)`, rounded by the write (`applyFxConversion`). Authoritative: a report never replaces it by an amount recomputed from a rate (INV-FX-002, INV-TRADE-001). |
-| Calculation | a reporting-only conversion, and every sum, difference and negation of them | `FxAggregate`: each component on its decimal digits (`toScaledUnits`), held at its fifteen significant digits and never at fewer than twelve places, summed in a `BigInt` that counts to 10^-20. A component under 1,000 whose exact value has at most fifteen significant digits is held exactly; a larger one keeps the double's own digits at twelve places, its noise included; the client's `sumConverted` holds its components the same way. Nothing is rounded to money precision inside a calculation. |
+| Calculation | a reporting-only conversion, and every sum, difference and negation of them | `FxAggregate`: each component on its decimal digits (`toScaledUnits`), held at its fifteen significant digits and never at fewer than twelve places, summed in a `BigInt` that counts to 10^-20. A component under 1,000 whose exact value has at most fifteen significant digits is held exactly; a larger one keeps the double's own digits at twelve places, its noise included. The client's `sumConverted` holds its components by the same rule, with its floor at the target's places plus eight guard places (twelve for a fiat's four, ten at two), so from 1,000 up the two layers can keep a different count of the double's own digits. Nothing is rounded to money precision inside a calculation. |
 | Output | a figure handed to a reader or a consumer | Rounded once, from its calculation-precision value, at the precision it is presented at, half away from zero for both signs (`roundMoney`). On the wire that is the reporting currency's own places (section 6): `FxAggregate.knownSubtotalAt(places)` / `totalAt(places)` for an aggregate, `reportFigure(value, places)` for anything else (`backend/src/common/report-figure.ts`). |
 
 ## 3. Rules
@@ -389,13 +389,11 @@ never at fewer than twelve places: one under 1,000 whose exact value has at
 most fifteen significant digits is held exactly, the noise past them still
 drops, and a component of 100 or more is held as before (from 1,000 up,
 twelve places keep the double's own digits, its noise included). What it
-cannot reach: a
-component whose exact value needs more digits (a large amount at a rate of
-ten places), or one divided by a row's own rate, is held at the double's
-own digits, so a sum within their error of a midpoint can still read a unit
-off; only
-an exact product of the decimal amount and rate would close the first, and
-no decimal holds the second.
+cannot reach: a component whose exact value needs more digits (a large
+amount at a rate of ten places), or one divided by a row's own rate, is held
+at the double's own digits, so a sum within their error of a midpoint can
+still read a unit off; only an exact product of the decimal amount and rate
+would close the first, and no decimal holds the second.
 
 ## 8. Test matrix
 
