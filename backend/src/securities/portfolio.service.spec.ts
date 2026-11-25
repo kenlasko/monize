@@ -1931,16 +1931,19 @@ describe("PortfolioService", () => {
       expect(result.lookThrough?.byAssetClass.unclassifiedPercentage).toBe(40);
     });
 
-    it("maps raw holdings into the compact LLM shape and rounds monetary and percentage values", async () => {
+    it("maps raw holdings into the compact LLM shape and rounds a holding's own figures and the percentages", async () => {
+      // The summary's totals and allocation arrive read once at the
+      // reporting currency's places (issue #2410): the LLM shape hands them on
+      // as they are, so the model reads what the screen shows.
       const getPortfolioSummary = jest
         .spyOn(service, "getPortfolioSummary")
         .mockResolvedValue({
-          totalCashValue: 100.12345,
-          totalHoldingsValue: 9900.56789,
-          totalCostBasis: 9000.1234,
+          totalCashValue: 100.12,
+          totalHoldingsValue: 9900.57,
+          totalCostBasis: 9000.12,
           totalNetInvested: 9000,
-          totalPortfolioValue: 10000.6913,
-          totalGainLoss: 900.5544,
+          totalPortfolioValue: 10000.69,
+          totalGainLoss: 900.55,
           totalGainLossPercent: 10.123456,
           gainCostBasis: 9000.1234,
           unpricedCostBasis: 0,
@@ -1983,7 +1986,7 @@ describe("PortfolioService", () => {
               name: "AAPL",
               symbol: "AAPL",
               type: "security",
-              value: 1800.12345,
+              value: 1800.12,
               percentage: 18.56789,
             },
           ],
@@ -1996,10 +1999,10 @@ describe("PortfolioService", () => {
       expect(sectorWeightingService.getLlmLookThrough).not.toHaveBeenCalled();
       expect(result.lookThrough).toBeUndefined();
       expect(result.holdingCount).toBe(1);
-      expect(result.totalCashValue).toBe(100.1235);
-      expect(result.totalHoldingsValue).toBe(9900.5679);
-      expect(result.totalPortfolioValue).toBe(10000.6913);
-      expect(result.totalGainLoss).toBe(900.5544);
+      expect(result.totalCashValue).toBe(100.12);
+      expect(result.totalHoldingsValue).toBe(9900.57);
+      expect(result.totalPortfolioValue).toBe(10000.69);
+      expect(result.totalGainLoss).toBe(900.55);
       expect(result.totalGainLossPercent).toBe(10.12);
       expect(result.timeWeightedReturn).toBe(8.57);
       expect(result.cagr).toBeNull();
@@ -2022,9 +2025,65 @@ describe("PortfolioService", () => {
         name: "AAPL",
         symbol: "AAPL",
         type: "security",
-        value: 1800.1235,
+        value: 1800.12,
         percentage: 18.57,
       });
+    });
+
+    it("keeps a coin account's eight places rather than rounding them to four (issue #2410)", async () => {
+      jest.spyOn(service, "getPortfolioSummary").mockResolvedValue({
+        totalCashValue: 0,
+        totalHoldingsValue: 0,
+        totalCostBasis: 0,
+        totalNetInvested: 0,
+        totalPortfolioValue: 0,
+        totalGainLoss: 0,
+        totalGainLossPercent: 0,
+        gainCostBasis: 0,
+        unpricedCostBasis: 0,
+        fxComplete: true,
+        missingRatePairs: [],
+        pricesComplete: true,
+        unpricedSecurityIds: [],
+        valuationComplete: true,
+        timeWeightedReturn: null,
+        timeWeightedReturnReasons: [],
+        timeWeightedReturnSince: null,
+        moneyWeightedReturn: null,
+        moneyWeightedReturnReasons: [],
+        returnDiagnostics: EMPTY_RETURN_DIAGNOSTICS,
+        cagr: null,
+        holdings: [],
+        holdingsByAccount: [
+          {
+            accountId: "btc",
+            accountName: "Exchange",
+            currencyCode: "BTC",
+            cashAccountId: null,
+            cashBalance: 0,
+            holdings: [],
+            totalCostBasis: 0.1,
+            totalMarketValue: 0.12345678,
+            unpricedHoldingsCount: 0,
+            totalGainLoss: 0.02345678,
+            totalGainLossPercent: 23.45678,
+            gainCostBasis: 0.1,
+            unpricedCostBasis: 0,
+            fxComplete: true,
+            missingRatePairs: [],
+            pricesComplete: true,
+            unpricedSecurityIds: [],
+            valuationComplete: true,
+            netInvested: 0.1,
+          },
+        ],
+        allocation: [],
+      } as never);
+
+      const result = await service.getLlmSummary("user-1");
+
+      expect(result.holdingsByAccount[0].totalMarketValue).toBe(0.12345678);
+      expect(result.holdingsByAccount[0].totalGainLoss).toBe(0.02345678);
     });
 
     it("passes accountIds filter through to getPortfolioSummary", async () => {

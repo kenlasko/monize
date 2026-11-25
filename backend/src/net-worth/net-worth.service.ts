@@ -63,6 +63,7 @@ import {
 } from "./daily-investments-in-flight";
 import { preferredCurrency } from "../common/default-currency.util";
 import { reportPlacesOf } from "../common/report-figure";
+import { dailyInvestmentsAtPlaces } from "./daily-investments-report.util";
 import {
   DateColumn,
   DailyCashBalanceRow,
@@ -1739,18 +1740,10 @@ export class NetWorthService {
     loaded: DailyInvestmentsWithPositions,
     keep?: ReadonlySet<string>,
   ): Promise<DailyInvestmentValue[]> {
-    const places = await reportPlacesOf(this.dataSource, loaded.currency);
-    return loaded.series.flatMap((point, i) =>
-      keep && !keep.has(point.date)
-        ? []
-        : [
-            {
-              ...point,
-              value: loaded.readings[i].value.knownSubtotalAt(places),
-              securitiesValue:
-                loaded.readings[i].securitiesValue.knownSubtotalAt(places),
-            },
-          ],
+    return dailyInvestmentsAtPlaces(
+      loaded,
+      await reportPlacesOf(this.dataSource, loaded.currency),
+      keep,
     );
   }
 
@@ -2905,8 +2898,12 @@ export class NetWorthService {
       }
     }
 
+    // A band that reads as nothing at the currency's places all window long is
+    // not drawn: half a unit at `places` (half a cent for USD, half a yen for
+    // JPY, half a satoshi for a coin).
+    const halfUnit = 0.5 * 10 ** -places;
     const rankedSecIds = [...peak.entries()]
-      .filter(([, v]) => Math.abs(v) >= 0.005)
+      .filter(([, v]) => Math.abs(v) >= halfUnit)
       .sort((a, b) => {
         const diff = Math.abs(b[1]) - Math.abs(a[1]);
         if (diff !== 0) return diff;
@@ -2920,7 +2917,7 @@ export class NetWorthService {
     const otherIds = new Set(rankedSecIds.slice(limit));
     const hasOther = otherIds.size > 0;
     const hasCash = ungrouped.some(
-      (pt) => Math.abs(pt.cash.unroundedSubtotal) >= 0.005,
+      (pt) => Math.abs(pt.cash.unroundedSubtotal) >= halfUnit,
     );
 
     const series: InvestmentBreakdownSeries[] = topIds.map((secId) => {

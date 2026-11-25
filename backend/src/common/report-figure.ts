@@ -76,3 +76,21 @@ export async function reportPlacesOf(
   if (isIsoCurrencyCode(code)) return reportPlacesFor(code, new Map());
   return withScopedDb(dataSource, (m) => loadReportPlaces(m, code));
 }
+
+/**
+ * {@link reportPlacesOf} for several codes at once: the ISO codes from their
+ * minor units, every other code's row in one scoped read (none when every code
+ * is ISO). Keyed by the code as given.
+ */
+export async function reportPlacesOfCodes(
+  dataSource: DataSource,
+  codes: Iterable<string>,
+): Promise<Map<string, number>> {
+  const unique = [...new Set(codes)];
+  const rows = unique.every((code) => isIsoCurrencyCode(code))
+    ? new Map<string, number>()
+    : await withScopedDb(dataSource, (m) =>
+        loadCurrencyDecimalPlaces(m, unique),
+      );
+  return new Map(unique.map((code) => [code, reportPlacesFor(code, rows)]));
+}

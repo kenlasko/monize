@@ -23,6 +23,7 @@ import {
   PortfolioCalculationService,
   DailyRateIndex,
   FxRateCache,
+  netInvestedParts,
 } from "./portfolio-calculation.service";
 import {
   SectorWeightingService,
@@ -1111,18 +1112,20 @@ export class PortfolioService {
         cashAndStandaloneIds,
       );
 
+    // Every reporting-currency figure below is read once at the reporting
+    // currency's places (docs/specs/report-rounding-and-aggregation.md
+    // section 6), and every ratio divides the unrounded figures (rule 8).
+    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
+
     // Calculate total cash value (converted to default currency)
     const cashResult = await this.calculationService.computeTotalCashValue(
       [...categorised.cashAccounts, ...categorised.standaloneAccounts],
       effectiveBalances,
       defaultCurrency,
       rateCache,
+      places,
     );
-    // Every reporting-currency figure below is read once at the reporting
-    // currency's places (docs/specs/report-rounding-and-aggregation.md
-    // section 6), and every ratio divides the unrounded figures (rule 8).
-    const places = await reportPlacesOf(this.dataSource, defaultCurrency);
-    const totalCashValue = cashResult.aggregate.knownSubtotalAt(places);
+    const totalCashValue = cashResult.total;
 
     // Compute per-account investment transaction sums for Net Invested
     const investmentFlows =
@@ -1139,6 +1142,7 @@ export class PortfolioService {
         defaultCurrency,
         rateCache,
         (ids) => this.getLatestPrices(ids),
+        places,
       );
 
     // Group holdings by account
@@ -1160,21 +1164,18 @@ export class PortfolioService {
       holdingsAggregates.holdingsValue,
     ]);
     const totalPortfolioValue = portfolioValue.knownSubtotalAt(places);
-    const totalHoldingsValue =
-      holdingsAggregates.holdingsValue.knownSubtotalAt(places);
     // Value less cost of the SAME holdings (A26-M38): `totalCostBasis` carries
     // every holding's cost, `totalHoldingsValue` only the priced ones. The
-    // difference is taken before either side is rounded, as each account's
-    // gain is.
-    const gain = FxAggregate.difference(
-      holdingsAggregates.gainValue,
-      holdingsAggregates.gainCost,
-    );
-    const totalGainLoss = gain.knownSubtotalAt(places);
-    const gainCostBasis = holdingsAggregates.gainCost.knownSubtotalAt(places);
+    // difference is taken before either side is rounded (`gainLoss`), as each
+    // account's gain is, and its percentage divides the unrounded figures over
+    // a cost that reads as money.
+    const totalGainLoss = holdingsResult.gainLoss;
     const totalGainLossPercent =
-      gainCostBasis > 0
-        ? (gain.unroundedSubtotal /
+      holdingsResult.gainCostBasis > 0
+        ? (FxAggregate.difference(
+            holdingsAggregates.gainValue,
+            holdingsAggregates.gainCost,
+          ).unroundedSubtotal /
             holdingsAggregates.gainCost.unroundedSubtotal) *
           100
         : 0;
@@ -1197,17 +1198,10 @@ export class PortfolioService {
     for (const acct of holdingsByAccount) {
       if (acct.currencyCode === defaultCurrency) {
         // Its parts, never the account's own rounded net invested (rule 2).
-        const flows = investmentFlows.get(acct.accountId) ?? {
-          buys: 0,
-          sells: 0,
-          income: 0,
-        };
-        for (const part of [
+        for (const part of netInvestedParts(
           acct.cashBalance,
-          flows.buys,
-          -flows.sells,
-          -flows.income,
-        ]) {
+          investmentFlows.get(acct.accountId),
+        )) {
           netInvestedAgg.addConverted(part);
         }
         continue;
@@ -1274,15 +1268,14 @@ export class PortfolioService {
     return {
       valuation: {
         totalCashValue,
-        totalHoldingsValue,
-        totalCostBasis: holdingsAggregates.costBasis.knownSubtotalAt(places),
+        totalHoldingsValue: holdingsResult.totalHoldingsValue,
+        totalCostBasis: holdingsResult.totalCostBasis,
         totalNetInvested,
         totalPortfolioValue,
         totalGainLoss,
         totalGainLossPercent,
-        gainCostBasis,
-        unpricedCostBasis:
-          holdingsAggregates.unpricedCost.knownSubtotalAt(places),
+        gainCostBasis: holdingsResult.gainCostBasis,
+        unpricedCostBasis: holdingsResult.unpricedCostBasis,
         fxComplete: missingRatePairs.length === 0,
         missingRatePairs,
         pricesComplete: holdingsResult.pricesComplete,
@@ -1372,9 +1365,8 @@ export class PortfolioService {
    * allocation arrive from the summary rounded once at the reporting
    * currency's places, an account's totals at its own currency's
    * (docs/specs/report-rounding-and-aggregation.md section 6), so the model
-   * reads the figures the screen shows; `roundMoneyValue` leaves them as they
-   * are and rounds a holding's own figures to 4 decimal places. Percentages
-   * to 2.
+   * reads the figures the screen shows (`asShown`); a holding's own figures
+   * are rounded to 4 decimal places. Percentages to 2.
    *
    * `includeLookThrough` adds the country and asset-class breakdowns for
    * exposure questions ("how much am I in the US?", "what's my equity/bond
@@ -1396,6 +1388,12 @@ export class PortfolioService {
       v === null || v === undefined ? null : roundMoney(Number(v));
     const roundPct = (v: number | null | undefined): number | null =>
       v === null || v === undefined ? null : Math.round(Number(v) * 100) / 100;
+    // A figure the summary already read once at its currency's places: the
+    // totals and the allocation at the reporting currency's, an account's at
+    // its own (a coin's eight). Rounding it again at four would cut a coin's
+    // and could move a figure off the one the screen shows.
+    const asShown = (v: number | null | undefined): number =>
+      v === null || v === undefined ? 0 : Number(v);
 
     const toLlmHolding = (h: HoldingWithMarketValue): LlmPortfolioHolding => ({
       securityId: h.securityId,
@@ -1418,12 +1416,12 @@ export class PortfolioService {
         accountName: acct.accountName,
         currency: acct.currencyCode,
         cashBalance: roundMoneyValue(acct.cashBalance),
-        totalCostBasis: roundMoneyValue(acct.totalCostBasis),
-        totalMarketValue: roundMoneyValue(acct.totalMarketValue),
-        totalGainLoss: roundMoneyValue(acct.totalGainLoss),
+        totalCostBasis: asShown(acct.totalCostBasis),
+        totalMarketValue: asShown(acct.totalMarketValue),
+        totalGainLoss: asShown(acct.totalGainLoss),
         totalGainLossPercent: roundPct(acct.totalGainLossPercent) ?? 0,
-        gainCostBasis: roundMoneyValue(acct.gainCostBasis),
-        unpricedCostBasis: roundMoneyValue(acct.unpricedCostBasis),
+        gainCostBasis: asShown(acct.gainCostBasis),
+        unpricedCostBasis: asShown(acct.unpricedCostBasis),
         fxComplete: acct.fxComplete,
         missingRatePairs: acct.missingRatePairs,
         pricesComplete: acct.pricesComplete,
@@ -1436,21 +1434,21 @@ export class PortfolioService {
         name: a.name,
         symbol: a.symbol,
         type: a.type,
-        value: roundMoneyValue(a.value),
+        value: asShown(a.value),
         percentage: roundPct(a.percentage) ?? 0,
       }),
     );
 
     return {
       holdingCount: holdings.length,
-      totalCashValue: roundMoneyValue(summary.totalCashValue),
-      totalHoldingsValue: roundMoneyValue(summary.totalHoldingsValue),
-      totalCostBasis: roundMoneyValue(summary.totalCostBasis),
-      totalPortfolioValue: roundMoneyValue(summary.totalPortfolioValue),
-      totalGainLoss: roundMoneyValue(summary.totalGainLoss),
+      totalCashValue: asShown(summary.totalCashValue),
+      totalHoldingsValue: asShown(summary.totalHoldingsValue),
+      totalCostBasis: asShown(summary.totalCostBasis),
+      totalPortfolioValue: asShown(summary.totalPortfolioValue),
+      totalGainLoss: asShown(summary.totalGainLoss),
       totalGainLossPercent: roundPct(summary.totalGainLossPercent) ?? 0,
-      gainCostBasis: roundMoneyValue(summary.gainCostBasis),
-      unpricedCostBasis: roundMoneyValue(summary.unpricedCostBasis),
+      gainCostBasis: asShown(summary.gainCostBasis),
+      unpricedCostBasis: asShown(summary.unpricedCostBasis),
       timeWeightedReturn: roundPct(summary.timeWeightedReturn),
       timeWeightedReturnReasons: summary.timeWeightedReturnReasons,
       timeWeightedReturnSince: summary.timeWeightedReturnSince,

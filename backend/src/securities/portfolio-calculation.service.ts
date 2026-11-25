@@ -30,7 +30,7 @@ import {
 } from "../common/date-utils";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { FxAggregate } from "../common/fx-aggregate";
-import { reportFigure, reportPlacesOf } from "../common/report-figure";
+import { reportFigure, reportPlacesOfCodes } from "../common/report-figure";
 import {
   BondValuationService,
   SecurityValueByAccount,
@@ -73,10 +73,23 @@ const LIVE_FX_FETCH_CONCURRENCY = 6;
 export type { ReplayedBasisGap };
 
 /**
- * An account's net invested -- its cash plus what it bought, less what it sold
- * and the income it took -- read once at `places`, its currency's own, from the
- * exact sum of its parts (docs/specs/report-rounding-and-aggregation.md section
- * 6).
+ * The parts of an account's net invested, in its own currency: its cash plus
+ * what it bought, less what it sold and the income it took. The one spelling
+ * of the formula: the account's figure (`netInvestedFigure`) and the
+ * portfolio's total fold the same parts.
+ */
+export function netInvestedParts(
+  cashBalance: number,
+  flows: { buys: number; sells: number; income: number } | undefined,
+): number[] {
+  const { buys, sells, income } = flows ?? { buys: 0, sells: 0, income: 0 };
+  return [cashBalance, buys, -sells, -income];
+}
+
+/**
+ * An account's net invested read once at `places`, its currency's own, from
+ * the exact sum of its parts (docs/specs/report-rounding-and-aggregation.md
+ * section 6).
  */
 function netInvestedFigure(parts: readonly number[], places: number): number {
   const sum = new FxAggregate();
@@ -724,11 +737,13 @@ export class PortfolioCalculationService {
     effectiveBalances: Map<string, number>,
     defaultCurrency: string,
     rateCache: FxRateCache,
+    places: number,
   ): Promise<{
+    /** The cash, read once at `places`, the reporting currency's own. */
     total: number;
     /**
-     * The cash as the aggregate `total` reads, for a caller that reads it at
-     * the reporting currency's places or folds it into the portfolio value.
+     * The cash as the aggregate `total` reads, for a caller that folds it into
+     * the portfolio value or divides it before anything is rounded.
      */
     aggregate: FxAggregate;
     fxComplete: boolean;
@@ -758,7 +773,7 @@ export class PortfolioCalculationService {
       );
     }
     return {
-      total: cash.knownSubtotal,
+      total: cash.knownSubtotalAt(places),
       aggregate: cash,
       fxComplete: cash.isComplete,
       missingRatePairs: cash.missingPairs,
@@ -2256,6 +2271,8 @@ export class PortfolioCalculationService {
     defaultCurrency: string,
     rateCache: FxRateCache,
     getLatestPrices: (securityIds: string[]) => Promise<Map<string, number>>,
+    /** The reporting currency's places, which every total below is read at. */
+    places: number,
   ): Promise<{
     holdings: Holding[];
     holdingsWithValues: HoldingWithMarketValue[];
@@ -2305,11 +2322,10 @@ export class PortfolioCalculationService {
      */
     unpricedCostBasis: number;
     /**
-     * The aggregates the five figures above are read from, for a caller that
-     * reads them at the reporting currency's places, folds them into a total
-     * of its own (the portfolio value: cash and holdings, one rounding) or
-     * divides them (the gain's percentage) before anything is rounded
-     * (docs/specs/report-rounding-and-aggregation.md rules 2 and 8, section 6).
+     * The aggregates the figures above are read from, for a caller that folds
+     * them into a total of its own (the portfolio value: cash and holdings,
+     * one rounding) or divides them (the gain's percentage) before anything is
+     * rounded (docs/specs/report-rounding-and-aggregation.md rules 2 and 8).
      */
     aggregates: {
       costBasis: FxAggregate;
@@ -2572,17 +2588,19 @@ export class PortfolioCalculationService {
     return {
       holdings,
       holdingsWithValues,
-      totalCostBasis: costBasisTotal.knownSubtotal,
-      totalHoldingsValue: holdingsValueTotal.knownSubtotal,
+      totalCostBasis: costBasisTotal.knownSubtotalAt(places),
+      totalHoldingsValue: holdingsValueTotal.knownSubtotalAt(places),
       fxComplete: missingRatePairs.length === 0,
       missingRatePairs,
       pricesComplete: unpricedSecurityIds.size === 0,
       unpricedSecurityIds: [...unpricedSecurityIds].sort(),
-      gainCostBasis: gainCostTotal.knownSubtotal,
-      gainMarketValue: gainValueTotal.knownSubtotal,
-      gainLoss: FxAggregate.difference(gainValueTotal, gainCostTotal)
-        .knownSubtotal,
-      unpricedCostBasis: unpricedCostTotal.knownSubtotal,
+      gainCostBasis: gainCostTotal.knownSubtotalAt(places),
+      gainMarketValue: gainValueTotal.knownSubtotalAt(places),
+      gainLoss: FxAggregate.difference(
+        gainValueTotal,
+        gainCostTotal,
+      ).knownSubtotalAt(places),
+      unpricedCostBasis: unpricedCostTotal.knownSubtotalAt(places),
       aggregates: {
         costBasis: costBasisTotal,
         holdingsValue: holdingsValueTotal,
@@ -2765,18 +2783,12 @@ export class PortfolioCalculationService {
     // Each account's figures are read once at its own currency's places
     // (docs/specs/report-rounding-and-aggregation.md section 6): an ISO code's
     // minor unit, a coin's row.
-    const placesByCurrency = new Map<string, number>();
-    for (const account of [
-      ...categorised.brokerageAccounts,
-      ...categorised.standaloneAccounts,
-    ]) {
-      if (!placesByCurrency.has(account.currencyCode)) {
-        placesByCurrency.set(
-          account.currencyCode,
-          await reportPlacesOf(this.dataSource, account.currencyCode),
-        );
-      }
-    }
+    const placesByCurrency = await reportPlacesOfCodes(
+      this.dataSource,
+      [...categorised.brokerageAccounts, ...categorised.standaloneAccounts].map(
+        (account) => account.currencyCode,
+      ),
+    );
     const placesOf = (code: string): number => placesByCurrency.get(code)!;
 
     const holdingsByAccount: AccountHoldings[] = [];
@@ -2837,7 +2849,7 @@ export class PortfolioCalculationService {
         unpricedSecurityIds: acctTotals.unpricedSecurityIds,
         valuationComplete: acctTotals.valuationComplete,
         netInvested: netInvestedFigure(
-          [cashBalance, flows.buys, -flows.sells, -flows.income],
+          netInvestedParts(cashBalance, flows),
           placesOf(brokerageAccount.currencyCode),
         ),
       });
@@ -2886,12 +2898,7 @@ export class PortfolioCalculationService {
         unpricedSecurityIds: acctTotals.unpricedSecurityIds,
         valuationComplete: acctTotals.valuationComplete,
         netInvested: netInvestedFigure(
-          [
-            standaloneCashBalance,
-            standaloneFlows.buys,
-            -standaloneFlows.sells,
-            -standaloneFlows.income,
-          ],
+          netInvestedParts(standaloneCashBalance, standaloneFlows),
           placesOf(standaloneAccount.currencyCode),
         ),
       });

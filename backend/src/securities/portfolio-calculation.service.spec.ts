@@ -13,6 +13,7 @@ import { HoldingWithMarketValue } from "./portfolio.service";
 import { SecurityValueByAccount } from "../bonds/bond-valuation.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { Currency } from "../currencies/entities/currency.entity";
 import { rateIndexOf } from "../test-helpers/report-rate-testing";
 
 jest.mock("../common/db/scoped-db", () =>
@@ -2840,6 +2841,7 @@ describe("PortfolioCalculationService.primeLiveRates", () => {
       new Map<string, number>(),
       "CAD",
       rateCache,
+      2,
     );
 
     // The refusal is cached as an absence, never as a number.
@@ -3655,6 +3657,40 @@ describe("PortfolioCalculationService.buildHoldingsByAccount", () => {
 
     expect(result.unpricedHoldingsCount).toBe(1);
     expect(result.totalMarketValue).toBe(900);
+  });
+
+  it("reads each account's totals at its own currency's places, a coin's eight (issue #2410)", async () => {
+    // A BTC account's row says eight places; a CAD account's are its ISO two.
+    // 0.123456785 BTC reads 0.12345679 there, where four places cut it to
+    // 0.1235; 100.005 CAD reads 100.01.
+    const currencies = {
+      find: jest.fn().mockResolvedValue([{ code: "BTC", decimalPlaces: 8 }]),
+    };
+    const coinService = buildService([[Currency, currencies]], {});
+    const btc = {
+      ...account("brok-btc", AccountSubType.INVESTMENT_BROKERAGE),
+      currencyCode: "BTC",
+    } as Account;
+    const cad = account("brok-cad", AccountSubType.INVESTMENT_BROKERAGE);
+    const coin = {
+      ...holding("h-btc", "brok-btc", 0.123456785),
+      currencyCode: "BTC",
+      costBasisAccountCurrency: 0.1,
+    } as HoldingWithMarketValue;
+
+    const results = await coinService.buildHoldingsByAccount(
+      categorised({ brokerageAccounts: [btc, cad] }),
+      [coin, holding("h-cad", "brok-cad", 100.005)],
+      new Map<string, number>(),
+      new Map(),
+      new Map<string, number>(),
+    );
+
+    const byId = new Map(results.map((r) => [r.accountId, r]));
+    expect(byId.get("brok-btc")!.totalMarketValue).toBe(0.12345679);
+    expect(byId.get("brok-btc")!.totalGainLoss).toBe(0.02345679);
+    expect(byId.get("brok-cad")!.totalMarketValue).toBe(100.01);
+    expect(currencies.find).toHaveBeenCalledTimes(1);
   });
 
   it("reports zero unpriced holdings when every position is priced", async () => {
@@ -4587,6 +4623,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
       "PLN",
       new Map(),
       async () => new Map([["sec-a", 50]]),
+      2,
     );
   };
 
@@ -4654,6 +4691,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
       "CAD",
       new Map(),
       async () => new Map([["sec-a", 100]]),
+      2,
     );
 
     expect(result.holdingsWithValues[0].costBasisAccountCurrency).toBe(900);
@@ -4710,6 +4748,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
       "CAD",
       new Map(),
       async () => new Map([["sec-a", 100]]),
+      2,
     );
 
     // The account-currency lots and the dated reporting-currency replay both
@@ -4764,6 +4803,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
       "CAD",
       new Map(),
       async () => new Map([["sec-a", 100]]),
+      2,
     );
 
     // Not 900 at today's 0.40: unknown, with the pair the purchase needed.
@@ -4835,6 +4875,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
       "CAD",
       new Map(),
       async () => new Map([["sec-a", 100]]),
+      2,
     );
 
     // Not 900 PLN at today's 0.40: unknown, naming the source's pair.
@@ -4948,6 +4989,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues", () => {
       "PLN",
       new Map(),
       async () => new Map([["sec-a", 50]]),
+      2,
     );
 
     expect(result.holdingsWithValues[0].costBasisAccountCurrency).toBeNull();
@@ -5047,6 +5089,7 @@ describe("PortfolioCalculationService gain over the priced holdings (A26-M38)", 
       "PLN",
       new Map(),
       async () => new Map(prices),
+      2,
     );
   };
 
@@ -5082,17 +5125,17 @@ describe("PortfolioCalculationService gain over the priced holdings (A26-M38)", 
     expect(result.missingRatePairs).toContain("USD->PLN");
   });
 
-  it("takes the gain from value less cost before either is rounded (issue #2384)", async () => {
-    // A holding worth 124.752474 on a cost of 0.000049 gains 124.752425,
-    // which reads 124.7524; the two readings, 124.7525 less 0, gave 124.7525.
+  it("takes the gain from value less cost before either is rounded, at the currency's places (issues #2384, #2410)", async () => {
+    // A holding worth 1.006 PLN on a cost of 0.004 gains 1.002, which reads
+    // 1.00; the two readings, 1.01 less 0.00, would give 1.01.
     const result = await run(
-      [row("h-a", "sec-a", 1, 0.000049)],
-      [["sec-a", 124.752474]],
+      [row("h-a", "sec-a", 1, 0.004)],
+      [["sec-a", 1.006]],
     );
 
-    expect(result.gainMarketValue).toBe(124.7525);
+    expect(result.gainMarketValue).toBe(1.01);
     expect(result.gainCostBasis).toBe(0);
-    expect(result.gainLoss).toBe(124.7524);
+    expect(result.gainLoss).toBe(1);
   });
 
   it("leaves a complete portfolio's gain as value less cost", async () => {
@@ -5282,6 +5325,7 @@ describe("PortfolioCalculationService.calculateHoldingsWithValues (bond-linked)"
       "PLN",
       new Map(),
       async () => new Map(prices),
+      2,
     );
   };
 

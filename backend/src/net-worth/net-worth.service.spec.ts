@@ -5123,6 +5123,48 @@ describe("NetWorthService", () => {
       expect(sampled[sampled.length - 1].securitiesValue).toBe(1110);
     });
 
+    it("reads each point once at the currency's places (issue #2410)", async () => {
+      // 10 shares at 10.000498 are 100.00498: the daily series the period
+      // result reads keeps 100.0050; the chart's point reads 100.00.
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2025-02-01",
+        },
+      ]);
+      securityRepository.findByIds.mockResolvedValue([
+        { id: "sec-1", skipPriceUpdates: false },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2025-03-01",
+          close_price: "10.000498",
+        },
+      ]);
+
+      const sampled = await service.getSampledInvestments("user-1", {
+        startDate: "2025-03-01",
+        endDate: "2025-03-01",
+      });
+
+      expect(sampled).toHaveLength(1);
+      expect(sampled[0]).toMatchObject({ value: 100, securitiesValue: 100 });
+    });
+
     it("opens 'all time' on the day before the first investment transaction", async () => {
       // The period result's `all` window is measured from that day, so the
       // chart must open on it too, not on the account's own inception.
