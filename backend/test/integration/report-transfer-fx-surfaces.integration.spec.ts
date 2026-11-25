@@ -321,6 +321,10 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
         accountName: "US Chequing",
         direction: "from",
         valuesByMonth: { "2026-03": 90 },
+        // Issue #2413: the server folds the row's total and its average over
+        // the one-month window from the same unrounded leg.
+        total: 90,
+        average: 90,
       },
     ]);
     expect(result.missingCurrencies).toEqual([]);
