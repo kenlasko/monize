@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm";
 import { FxAggregate } from "../common/fx-aggregate";
+import { investmentLinkedSplitExclusion } from "../common/investment-filter.util";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BudgetHealthReportsService } from "./budget-health-reports.service";
@@ -671,6 +672,9 @@ describe("BudgetHealthReportsService", () => {
       );
       expect(qb.andWhere).toHaveBeenCalledWith(
         "COALESCE(ts.amount, t.amount) > 0",
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        investmentLinkedSplitExclusion("ts"),
       );
     });
 
