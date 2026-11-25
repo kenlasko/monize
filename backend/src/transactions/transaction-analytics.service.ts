@@ -1834,8 +1834,12 @@ export class TransactionAnalyticsService {
     return {
       totalIncome: fxComplete ? income : null,
       totalExpenses: fxComplete ? expenses : null,
+      // Income less expenses before either is rounded, rounded once: the
+      // difference of the two readings could sit a unit off the summary's
+      // own net (docs/specs/report-rounding-and-aggregation.md rule 2).
       netCashFlow: fxComplete
-        ? roundMoney(income - expenses, FIAT_MONEY_DECIMALS)
+        ? FxAggregate.difference(converted.income, converted.expenses)
+            .knownSubtotal
         : null,
       knownIncomeSubtotal: income,
       knownExpensesSubtotal: expenses,

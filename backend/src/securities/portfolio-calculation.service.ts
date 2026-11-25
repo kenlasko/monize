@@ -2273,6 +2273,13 @@ export class PortfolioCalculationService {
     gainCostBasis: number;
     gainMarketValue: number;
     /**
+     * `gainMarketValue` less `gainCostBasis`, taken before either is rounded
+     * and rounded once (docs/specs/report-rounding-and-aggregation.md rule 2),
+     * so it is the single rounding of the gain, never the difference of two
+     * readings.
+     */
+    gainLoss: number;
+    /**
      * The converted cost of the holdings left out of the gain because they have
      * no value. The knownSubtotal of what converted; a holding whose cost could
      * not be converted is named by `missingRatePairs`.
@@ -2540,6 +2547,8 @@ export class PortfolioCalculationService {
       unpricedSecurityIds: [...unpricedSecurityIds].sort(),
       gainCostBasis: gainCostTotal.knownSubtotal,
       gainMarketValue: gainValueTotal.knownSubtotal,
+      gainLoss: FxAggregate.difference(gainValueTotal, gainCostTotal)
+        .knownSubtotal,
       unpricedCostBasis: unpricedCostTotal.knownSubtotal,
     };
   }
