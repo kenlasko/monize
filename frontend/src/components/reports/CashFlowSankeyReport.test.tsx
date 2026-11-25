@@ -602,6 +602,23 @@ describe('CashFlowSankeyReport', () => {
     expect(screen.getByText(/Leave a savings account out of the account filter/)).toBeInTheDocument();
     expect(screen.getByText(/A credit card payment is never a debt payment/)).toBeInTheDocument();
   });
+
+  it('says beside the nodes, in both views, that a category can read a cent off Spending by Category (issue #2410)', async () => {
+    await renderReport();
+    const note = /can therefore differ by one cent, or the smallest unit of your currency, from the same category in Spending by Category/;
+    expect(screen.getByTestId('sankey-rounding-note')).toHaveTextContent(note);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Table'));
+    });
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getByTestId('sankey-rounding-note')).toHaveTextContent(note);
+  });
+
+  it('says nothing about rounding over an empty period', async () => {
+    await renderReport({ ...example(), nodes: [], links: [] });
+    expect(screen.queryByTestId('sankey-rounding-note')).not.toBeInTheDocument();
+  });
 });
 
 describe('the report remembers how it was left', () => {

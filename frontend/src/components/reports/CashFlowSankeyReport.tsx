@@ -428,6 +428,15 @@ export function CashFlowSankeyReport() {
             </table>
           </div>
         )}
+        {/* Beside the nodes, in both views: a side is rounded once and shared
+            out between its nodes so the diagram closes, which can leave a
+            category a cent off its own rounding in Spending by Category
+            (docs/specs/report-rounding-and-aggregation.md rule 6). */}
+        {data && !error && !isLoading && (
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-400" data-testid="sankey-rounding-note">
+            {t('sankey.roundingNote')}
+          </p>
+        )}
       </div>
     </div>
   );
