@@ -30,7 +30,7 @@ const DASH = '—';
  * inflows, Expenses, Tagged outflows (only when a shown month has some),
  * Balance and Balance %, from the Income vs Expenses answer for the same window
  * and accounts, per month or per year as the table above is. The category rows above it never include a transfer. Renders
- * nothing unless the funding view is on.
+ * nothing unless the funding view is on and the page asks for a window.
  */
 export function MonthlyTaggedBalanceSummary({
   controls,
@@ -50,7 +50,9 @@ export function MonthlyTaggedBalanceSummary({
     [funding.response, filter.tagValue, months],
   );
 
-  if (!filter.include) return null;
+  // `off`: the page asks for no window (only the column in progress is in
+  // it), so there is nothing to load and nothing to show, never a skeleton.
+  if (!filter.include || funding.status === 'off') return null;
 
   const currency = funding.response?.currency;
   const money = (value: number | null) =>
