@@ -22,11 +22,15 @@ import type {
   SankeyNodeKind,
 } from "./dto/cash-flow-sankey.dto";
 
-/** Integer ten-thousandths, the resolution of `decimal(20,4)`. */
-const SCALE = 10000;
-
-/** `-0` is not a figure anyone should read, so it leaves as `0`. */
-const fromMinor = (minor: number): number => (minor === 0 ? 0 : minor / SCALE);
+/**
+ * A figure of `minor` units of `10^-places`, the reporting currency's minor
+ * unit (cents for USD, whole yen for JPY): the diagram is apportioned and
+ * closes in that unit, so every figure leaves rounded once at the currency's
+ * own places (docs/specs/report-rounding-and-aggregation.md section 6). `-0`
+ * is not a figure anyone should read, so it leaves as `0`.
+ */
+const fromMinor = (minor: number, places: number): number =>
+  minor === 0 ? 0 : minor / 10 ** places;
 
 /**
  * Categorized, non-transfer rows of in-scope accounts, one per
@@ -86,6 +90,11 @@ export interface SankeyAssemblyInput {
   startDate: string;
   endDate: string;
   currency: string;
+  /**
+   * The reporting currency's places (`ReportCurrencyService.getReportPlaces`):
+   * the diagram's unit is `10^-places`.
+   */
+  places: number;
   scopeAccountIds: string[];
   depth: SankeyDepth;
   categories: SankeyCategory[];
@@ -214,7 +223,7 @@ function categoryPath(
 export function assembleCashFlowSankey(
   input: SankeyAssemblyInput,
 ): CashFlowSankeyResponse {
-  const { currency, convert, depth } = input;
+  const { currency, convert, depth, places } = input;
   const byId = new Map(input.categories.map((c) => [c.id, c]));
 
   const missingCurrencies = new Set<string>();
@@ -370,6 +379,7 @@ export function assembleCashFlowSankey(
     ] as Array<[FxAggregate, "income" | "expense"]>
   ).filter(([agg]) => !(agg.isComplete && agg.sign === 0));
   const figures = sideFigures(
+    places,
     rootViews,
     uncategorized,
     [...inflowClasses].map(([flowClass, bucket]) => [
@@ -417,6 +427,7 @@ export function assembleCashFlowSankey(
         spent.mergeNegated(childBucket.agg);
         return [childId, spent];
       }),
+      places,
       knownMinor,
     );
     for (const [childId, childBucket] of childMap) {
@@ -535,6 +546,7 @@ export function assembleCashFlowSankey(
         accountKey,
         entry.bucket.agg,
       ]),
+      places,
       knownMinor,
     );
     for (const [accountKey, entry] of accounts) {
@@ -628,39 +640,44 @@ export function assembleCashFlowSankey(
   }
 
   if (allComplete) {
-    assertClosingIdentity(links, {
-      income: sideTotals.income.minor,
-      inflows: sideTotals.inflows.minor,
-      expenses: sideTotals.expenses.minor,
-      outflows: sideTotals.outflows.minor,
-      unspent: unspentMinor ?? 0,
-      deficit: deficitMinor ?? 0,
-    });
+    assertClosingIdentity(
+      links,
+      {
+        income: sideTotals.income.minor,
+        inflows: sideTotals.inflows.minor,
+        expenses: sideTotals.expenses.minor,
+        outflows: sideTotals.outflows.minor,
+        unspent: unspentMinor ?? 0,
+        deficit: deficitMinor ?? 0,
+      },
+      places,
+    );
   }
 
+  const figure = (minor: number) => fromMinor(minor, places);
   const totalOf = (side: Side) =>
-    sideTotals[side].complete ? fromMinor(sideTotals[side].minor) : null;
+    sideTotals[side].complete ? figure(sideTotals[side].minor) : null;
 
   return {
     startDate: input.startDate,
     endDate: input.endDate,
     currency,
     scopeAccountIds: input.scopeAccountIds,
-    nodes: sortNodes(nodes).map(finishNode),
-    links: links.map(finishLink),
+    nodes: sortNodes(nodes).map((node) => finishNode(node, places)),
+    links: links.map((link) => finishLink(link, places)),
     totals: {
       income: totalOf("income"),
       inflows: totalOf("inflows"),
       expenses: totalOf("expenses"),
       outflows: totalOf("outflows"),
-      unspent: unspentMinor === null ? null : fromMinor(unspentMinor),
-      deficit: deficitMinor === null ? null : fromMinor(deficitMinor),
+      unspent: unspentMinor === null ? null : figure(unspentMinor),
+      deficit: deficitMinor === null ? null : figure(deficitMinor),
     },
     knownTotals: {
-      income: fromMinor(sideTotals.income.minor),
-      inflows: fromMinor(sideTotals.inflows.minor),
-      expenses: fromMinor(sideTotals.expenses.minor),
-      outflows: fromMinor(sideTotals.outflows.minor),
+      income: figure(sideTotals.income.minor),
+      inflows: figure(sideTotals.inflows.minor),
+      expenses: figure(sideTotals.expenses.minor),
+      outflows: figure(sideTotals.outflows.minor),
     },
     missingCurrencies: [...missingCurrencies].sort(),
     excludedCount,
@@ -668,10 +685,11 @@ export function assembleCashFlowSankey(
 }
 
 /**
- * SANKEY-001 in scaled integers, read off the links actually returned rather
- * than off the totals they were built from: what enters the hub equals what
- * leaves it, both equal the totals' two sides, and every depth-2 parent's
- * child links sum (signed) to its own link.
+ * SANKEY-001 in scaled integers, units of `10^-places` (the reporting
+ * currency's minor unit), read off the links actually returned rather than off
+ * the totals they were built from: what enters the hub equals what leaves it,
+ * both equal the totals' two sides, and every depth-2 parent's child links sum
+ * (signed) to its own link.
  */
 export function assertClosingIdentity(
   links: ReadonlyArray<DraftLink>,
@@ -683,7 +701,9 @@ export function assertClosingIdentity(
     unspent: number;
     deficit: number;
   },
+  places: number,
 ): void {
+  const unit = `units of 10^-${places}`;
   let intoHub = 0;
   let outOfHub = 0;
   for (const link of links) {
@@ -694,7 +714,7 @@ export function assertClosingIdentity(
   const right = totals.expenses + totals.outflows + totals.unspent;
   if (left !== right || intoHub !== left || outOfHub !== right) {
     throw new SankeyIdentityError(
-      `Cash flow Sankey does not close: income ${totals.income} + inflows ${totals.inflows} + deficit ${totals.deficit} = ${left}, expenses ${totals.expenses} + outflows ${totals.outflows} + unspent ${totals.unspent} = ${right}, links into hub ${intoHub}, out of hub ${outOfHub} (ten-thousandths)`,
+      `Cash flow Sankey does not close: income ${totals.income} + inflows ${totals.inflows} + deficit ${totals.deficit} = ${left}, expenses ${totals.expenses} + outflows ${totals.outflows} + unspent ${totals.unspent} = ${right}, links into hub ${intoHub}, out of hub ${outOfHub} (${unit})`,
       left - right || intoHub - outOfHub,
     );
   }
@@ -720,7 +740,7 @@ export function assertClosingIdentity(
     if (!hasOut.has(id) || !hasIn.has(id)) continue;
     if (inMinor !== outMinor) {
       throw new SankeyIdentityError(
-        `Cash flow Sankey node ${id} does not balance: in ${inMinor}, out ${outMinor} (ten-thousandths)`,
+        `Cash flow Sankey node ${id} does not balance: in ${inMinor}, out ${outMinor} (${unit})`,
         inMinor - outMinor,
       );
     }
@@ -749,7 +769,7 @@ function sortNodes(nodes: DraftNode[]): DraftNode[] {
   );
 }
 
-function finishNode(node: DraftNode): CashFlowSankeyNode {
+function finishNode(node: DraftNode, places: number): CashFlowSankeyNode {
   return {
     id: node.id,
     kind: node.kind,
@@ -758,16 +778,16 @@ function finishNode(node: DraftNode): CashFlowSankeyNode {
     parentCategoryId: node.parentCategoryId,
     accountId: node.accountId,
     color: node.color,
-    total: node.complete ? fromMinor(node.knownMinor) : null,
-    knownTotal: fromMinor(node.knownMinor),
+    total: node.complete ? fromMinor(node.knownMinor, places) : null,
+    knownTotal: fromMinor(node.knownMinor, places),
   };
 }
 
-function finishLink(link: DraftLink): CashFlowSankeyLink {
+function finishLink(link: DraftLink, places: number): CashFlowSankeyLink {
   return {
     source: link.source,
     target: link.target,
-    amount: link.complete ? fromMinor(link.knownMinor) : null,
-    knownAmount: fromMinor(link.knownMinor),
+    amount: link.complete ? fromMinor(link.knownMinor, places) : null,
+    knownAmount: fromMinor(link.knownMinor, places),
   };
 }

@@ -19,7 +19,8 @@ import { moneyUnits } from "../common/round.util";
  * linkage excluded -- and the assembly turns the rows into a response.
  *
  * What is asserted is computed from the LEDGER, not from the selected rows: the
- * closing identity in integer ten-thousandths, and that a transfer contributes
+ * closing identity in integer units of the reporting currency's minor unit
+ * (cents for CAD, whole yen for JPY: issue #2410), and that a transfer contributes
  * its amount once when exactly one side is in scope and nothing when both are,
  * whichever leg the selector happened to read. That the SQL selects as the
  * selector does is the integration suite's proof
@@ -27,7 +28,14 @@ import { moneyUnits } from "../common/round.util";
  */
 
 const LEDGERS = 200;
-const CURRENCY = "CAD";
+
+/** A reporting currency and the places its figures are rounded at. */
+interface Money {
+  currency: string;
+  places: number;
+}
+const CAD: Money = { currency: "CAD", places: 2 };
+const JPY: Money = { currency: "JPY", places: 0 };
 const ACCOUNT_TYPES = [
   "CHEQUING",
   "SAVINGS",
@@ -63,7 +71,7 @@ interface LedgerAccount {
 interface LedgerLine {
   accountId: string;
   categoryId: string | null;
-  /** Ten-thousandths. */
+  /** Units of the currency's minor unit, as the ledger posts them. */
   minor: number;
   void: boolean;
   investmentLinked: boolean;
@@ -90,11 +98,11 @@ interface Ledger {
   scope: Set<string>;
 }
 
-function generate(seed: number): Ledger {
+function generate(seed: number, places: number): Ledger {
   const random = prng(seed);
   const pick = <T>(items: readonly T[]): T =>
     items[Math.floor(random() * items.length)];
-  const amount = () => Math.round(random() * 500_0000) + 1;
+  const amount = () => Math.round(random() * 500 * 10 ** places) + 1;
   const date = () =>
     `2026-09-${String(1 + Math.floor(random() * 28)).padStart(2, "0")}`;
 
@@ -164,22 +172,26 @@ function generate(seed: number): Ledger {
  * and whose counterpart is not. VOID and investment linkage are out of all
  * three.
  */
-function select(ledger: Ledger): {
+function select(
+  ledger: Ledger,
+  { currency, places }: Money,
+): {
   categorized: SankeyCategorizedRow[];
   transfers: SankeyTransferRow[];
 } {
   const typeOf = new Map(ledger.accounts.map((a) => [a.id, a.type]));
+  const value = (units: number) => units / 10 ** places;
   const categorized = ledger.lines
     .filter(
       (l) => ledger.scope.has(l.accountId) && !l.void && !l.investmentLinked,
     )
     .map((l) => ({
       categoryId: l.categoryId,
-      currency: CURRENCY,
+      currency,
       date: l.date,
       ownRate: null,
-      positive: l.minor > 0 ? l.minor / 10000 : 0,
-      negative: l.minor < 0 ? l.minor / 10000 : 0,
+      positive: l.minor > 0 ? value(l.minor) : 0,
+      negative: l.minor < 0 ? value(l.minor) : 0,
     }));
 
   const transfers: SankeyTransferRow[] = [];
@@ -197,23 +209,28 @@ function select(ledger: Ledger): {
         counterpartAccountId: leg.counterpart,
         counterpartType: typeOf.get(leg.counterpart) ?? null,
         counterpartName: leg.counterpart,
-        currency: CURRENCY,
+        currency,
         date: t.date,
         ownRate: null,
-        inflow: leg.minor > 0 ? leg.minor / 10000 : 0,
-        outflow: leg.minor < 0 ? leg.minor / 10000 : 0,
+        inflow: leg.minor > 0 ? value(leg.minor) : 0,
+        outflow: leg.minor < 0 ? value(leg.minor) : 0,
       });
     }
   }
   return { categorized, transfers };
 }
 
-function assemble(ledger: Ledger, depth: 1 | 2 = 1): CashFlowSankeyResponse {
-  const { categorized, transfers } = select(ledger);
+function assemble(
+  ledger: Ledger,
+  money: Money,
+  depth: 1 | 2 = 1,
+): CashFlowSankeyResponse {
+  const { categorized, transfers } = select(ledger, money);
   return assembleCashFlowSankey({
     startDate: "2026-09-01",
     endDate: "2026-09-30",
-    currency: CURRENCY,
+    currency: money.currency,
+    places: money.places,
     scopeAccountIds: [...ledger.scope],
     depth,
     categories: ledger.categories,
@@ -223,10 +240,16 @@ function assemble(ledger: Ledger, depth: 1 | 2 = 1): CashFlowSankeyResponse {
   });
 }
 
-const minor = (value: number | null): number => {
-  if (value === null) throw new Error("expected a complete figure");
-  return Math.round(value * 10000);
-};
+/** A complete figure in units of `10^-places`. */
+const unitsOf =
+  (places: number) =>
+  (value: number | null): number => {
+    if (value === null) throw new Error("expected a complete figure");
+    // Every figure leaves at the currency's places: reading it at them is
+    // exact, and a figure with a finer digit would not be.
+    expect(moneyUnits(value, places + 2)).toBe(moneyUnits(value, places) * 100);
+    return moneyUnits(value, places);
+  };
 
 /** What the transfers moved across the scope boundary, from the ledger. */
 function boundaryFlows(ledger: Ledger): { inflows: number; outflows: number } {
@@ -242,139 +265,151 @@ function boundaryFlows(ledger: Ledger): { inflows: number; outflows: number } {
   return { inflows, outflows };
 }
 
-describe("Cash Flow Sankey over generated ledgers", () => {
-  const seeds = Array.from({ length: LEDGERS }, (_, i) => 1490 + i * 7919);
+describe.each([CAD, JPY])(
+  "Cash Flow Sankey over generated ledgers, in $currency",
+  (money) => {
+    const seeds = Array.from({ length: LEDGERS }, (_, i) => 1490 + i * 7919);
+    const minor = unitsOf(money.places);
+    const generated = (seed: number) => generate(seed, money.places);
 
-  it("closes every diagram: income + inflows + deficit = expenses + outflows + unspent (SANKEY-001)", () => {
-    for (const seed of seeds) {
-      for (const depth of [1, 2] as const) {
-        const result = assemble(generate(seed), depth);
-        const t = result.totals;
-        const left = minor(t.income) + minor(t.inflows) + minor(t.deficit);
-        const right = minor(t.expenses) + minor(t.outflows) + minor(t.unspent);
-        expect({ seed, depth, diff: left - right }).toEqual({
-          seed,
-          depth,
-          diff: 0,
-        });
-        // At most one residual is non-zero.
-        expect(minor(t.unspent) > 0 && minor(t.deficit) > 0).toBe(false);
-        // The hub's links carry the same identity.
-        const into = result.links
-          .filter((l) => l.target === "hub")
-          .reduce((s, l) => s + minor(l.amount), 0);
-        const out = result.links
-          .filter((l) => l.source === "hub")
-          .reduce((s, l) => s + minor(l.amount), 0);
-        expect(into).toBe(left);
-        expect(out).toBe(right);
+    it("closes every diagram: income + inflows + deficit = expenses + outflows + unspent (SANKEY-001)", () => {
+      for (const seed of seeds) {
+        for (const depth of [1, 2] as const) {
+          const result = assemble(generated(seed), money, depth);
+          const t = result.totals;
+          const left = minor(t.income) + minor(t.inflows) + minor(t.deficit);
+          const right =
+            minor(t.expenses) + minor(t.outflows) + minor(t.unspent);
+          expect({ seed, depth, diff: left - right }).toEqual({
+            seed,
+            depth,
+            diff: 0,
+          });
+          // At most one residual is non-zero.
+          expect(minor(t.unspent) > 0 && minor(t.deficit) > 0).toBe(false);
+          // The hub's links carry the same identity.
+          const into = result.links
+            .filter((l) => l.target === "hub")
+            .reduce((s, l) => s + minor(l.amount), 0);
+          const out = result.links
+            .filter((l) => l.source === "hub")
+            .reduce((s, l) => s + minor(l.amount), 0);
+          expect(into).toBe(left);
+          expect(out).toBe(right);
+        }
       }
-    }
-  });
+    });
 
-  it("nets the categorized rows to what the ledger says they moved", () => {
-    for (const seed of seeds) {
-      const ledger = generate(seed);
-      const result = assemble(ledger);
-      const expected = ledger.lines
-        .filter(
-          (l) =>
-            ledger.scope.has(l.accountId) && !l.void && !l.investmentLinked,
-        )
-        .reduce((s, l) => s + l.minor, 0);
-      const t = result.totals;
-      expect({ seed, net: minor(t.income) - minor(t.expenses) }).toEqual({
-        seed,
-        net: expected,
-      });
-    }
-  });
+    it("nets the categorized rows to what the ledger says they moved", () => {
+      for (const seed of seeds) {
+        const ledger = generated(seed);
+        const result = assemble(ledger, money);
+        const expected = ledger.lines
+          .filter(
+            (l) =>
+              ledger.scope.has(l.accountId) && !l.void && !l.investmentLinked,
+          )
+          .reduce((s, l) => s + l.minor, 0);
+        const t = result.totals;
+        expect({ seed, net: minor(t.income) - minor(t.expenses) }).toEqual({
+          seed,
+          net: expected,
+        });
+      }
+    });
 
-  it("counts a transfer once when one side is in scope and never when both are (SANKEY-002)", () => {
-    for (const seed of seeds) {
-      const ledger = generate(seed);
-      const result = assemble(ledger);
-      const { inflows, outflows } = boundaryFlows(ledger);
-      expect({ seed, inflows: minor(result.totals.inflows) }).toEqual({
-        seed,
-        inflows,
-      });
-      expect({ seed, outflows: minor(result.totals.outflows) }).toEqual({
-        seed,
-        outflows,
-      });
-    }
-  });
+    it("counts a transfer once when one side is in scope and never when both are (SANKEY-002)", () => {
+      for (const seed of seeds) {
+        const ledger = generated(seed);
+        const result = assemble(ledger, money);
+        const { inflows, outflows } = boundaryFlows(ledger);
+        expect({ seed, inflows: minor(result.totals.inflows) }).toEqual({
+          seed,
+          inflows,
+        });
+        expect({ seed, outflows: minor(result.totals.outflows) }).toEqual({
+          seed,
+          outflows,
+        });
+      }
+    });
 
-  it("makes a transfer internal, not doubled, when its counterpart joins the scope", () => {
-    for (const seed of seeds) {
-      const ledger = generate(seed);
-      const crossing = ledger.transfers.find(
-        (t) =>
-          !t.void &&
-          !t.investmentLinked &&
-          ledger.scope.has(t.fromId) &&
-          !ledger.scope.has(t.toId),
-      );
-      if (!crossing) continue;
+    it("makes a transfer internal, not doubled, when its counterpart joins the scope", () => {
+      for (const seed of seeds) {
+        const ledger = generated(seed);
+        const crossing = ledger.transfers.find(
+          (t) =>
+            !t.void &&
+            !t.investmentLinked &&
+            ledger.scope.has(t.fromId) &&
+            !ledger.scope.has(t.toId),
+        );
+        if (!crossing) continue;
 
-      const widened: Ledger = {
-        ...ledger,
-        scope: new Set([...ledger.scope, crossing.toId]),
-      };
-      const before = assemble(ledger);
-      const after = assemble(widened);
-      const { inflows, outflows } = boundaryFlows(widened);
+        const widened: Ledger = {
+          ...ledger,
+          scope: new Set([...ledger.scope, crossing.toId]),
+        };
+        const before = assemble(ledger, money);
+        const after = assemble(widened, money);
+        const { inflows, outflows } = boundaryFlows(widened);
 
-      expect(minor(after.totals.outflows)).toBe(outflows);
-      expect(minor(after.totals.inflows)).toBe(inflows);
-      // The now-internal transfer contributes nothing on either side: the
-      // widened answer is the one the ledger gives without it at all.
-      const without = assemble({
-        ...widened,
-        transfers: widened.transfers.filter((t) => t !== crossing),
-      });
-      expect(minor(after.totals.outflows)).toBe(minor(without.totals.outflows));
-      expect(minor(after.totals.inflows)).toBe(minor(without.totals.inflows));
-      // Before widening it was counted, once, as an outflow.
-      expect(minor(before.totals.outflows)).toBeGreaterThanOrEqual(
-        crossing.minor,
-      );
-    }
-  });
+        expect(minor(after.totals.outflows)).toBe(outflows);
+        expect(minor(after.totals.inflows)).toBe(inflows);
+        // The now-internal transfer contributes nothing on either side: the
+        // widened answer is the one the ledger gives without it at all.
+        const without = assemble(
+          {
+            ...widened,
+            transfers: widened.transfers.filter((t) => t !== crossing),
+          },
+          money,
+        );
+        expect(minor(after.totals.outflows)).toBe(
+          minor(without.totals.outflows),
+        );
+        expect(minor(after.totals.inflows)).toBe(minor(without.totals.inflows));
+        // Before widening it was counted, once, as an outflow.
+        expect(minor(before.totals.outflows)).toBeGreaterThanOrEqual(
+          crossing.minor,
+        );
+      }
+    });
 
-  it("withholds the totals and the residual while a link cannot convert (SANKEY-004)", () => {
-    for (const seed of seeds.slice(0, 40)) {
-      const ledger = generate(seed);
-      const { categorized, transfers } = select(ledger);
-      if (categorized.length === 0) continue;
-      const foreign = categorized.map((row, i) =>
-        i === 0 ? { ...row, currency: "USD" } : row,
-      );
-      const result = assembleCashFlowSankey({
-        startDate: "2026-09-01",
-        endDate: "2026-09-30",
-        currency: CURRENCY,
-        scopeAccountIds: [...ledger.scope],
-        depth: 1,
-        categories: ledger.categories,
-        categorized: foreign,
-        transfers,
-        convert: (value, from) => (from === CURRENCY ? value : null),
-      });
-      const first = foreign[0];
-      if (first.positive === 0 && first.negative === 0) continue;
+    it("withholds the totals and the residual while a link cannot convert (SANKEY-004)", () => {
+      for (const seed of seeds.slice(0, 40)) {
+        const ledger = generated(seed);
+        const { categorized, transfers } = select(ledger, money);
+        if (categorized.length === 0) continue;
+        const foreign = categorized.map((row, i) =>
+          i === 0 ? { ...row, currency: "USD" } : row,
+        );
+        const result = assembleCashFlowSankey({
+          startDate: "2026-09-01",
+          endDate: "2026-09-30",
+          currency: money.currency,
+          places: money.places,
+          scopeAccountIds: [...ledger.scope],
+          depth: 1,
+          categories: ledger.categories,
+          categorized: foreign,
+          transfers,
+          convert: (value, from) => (from === money.currency ? value : null),
+        });
+        const first = foreign[0];
+        if (first.positive === 0 && first.negative === 0) continue;
 
-      expect(result.missingCurrencies).toEqual(["USD"]);
-      expect(result.excludedCount).toBe(1);
-      expect(result.totals.unspent).toBeNull();
-      expect(result.totals.deficit).toBeNull();
-      expect(
-        result.totals.income === null || result.totals.expenses === null,
-      ).toBe(true);
-    }
-  });
-});
+        expect(result.missingCurrencies).toEqual(["USD"]);
+        expect(result.excludedCount).toBe(1);
+        expect(result.totals.unspent).toBeNull();
+        expect(result.totals.deficit).toBeNull();
+        expect(
+          result.totals.income === null || result.totals.expenses === null,
+        ).toBe(true);
+      }
+    });
+  },
+);
 
 /**
  * The same ledgers with every other row in EUR, each converted at its own
@@ -383,125 +418,137 @@ describe("Cash Flow Sankey over generated ledgers", () => {
  * by a unit and the diagram did not close (issue #2384). What is asserted is
  * that it closes at both depths, that depth (a presentation) moves no total,
  * and that each total is the single rounding of the converted rows on its
- * side, worked out here from the rows rather than from the nodes.
+ * side at the reporting currency's places (issue #2410), worked out here from
+ * the rows rather than from the nodes.
  */
-describe("Cash Flow Sankey over generated ledgers in two currencies (issue #2384)", () => {
-  const seeds = Array.from({ length: LEDGERS }, (_, i) => 2384 + i * 7919);
+describe.each([CAD, JPY])(
+  "Cash Flow Sankey over generated ledgers in two currencies, reported in $currency (issues #2384, #2410)",
+  (money) => {
+    const seeds = Array.from({ length: LEDGERS }, (_, i) => 2384 + i * 7919);
+    const minor = unitsOf(money.places);
+    const CURRENCY = money.currency;
 
-  function inTwoCurrencies(seed: number) {
-    const ledger = generate(seed);
-    const random = prng(seed ^ 0x2384);
-    const rates = new Map<string, number>();
-    const rateOn = (date: string): number => {
-      let rate = rates.get(date);
-      if (rate === undefined) {
-        rate = Number((0.6 + random() * 0.9).toFixed(10));
-        rates.set(date, rate);
+    function inTwoCurrencies(seed: number) {
+      const ledger = generate(seed, money.places);
+      const random = prng(seed ^ 0x2384);
+      const rates = new Map<string, number>();
+      const rateOn = (date: string): number => {
+        let rate = rates.get(date);
+        if (rate === undefined) {
+          rate = Number((0.6 + random() * 0.9).toFixed(10));
+          rates.set(date, rate);
+        }
+        return rate;
+      };
+      const selected = select(ledger, money);
+      const categorized = selected.categorized.map((row, i) =>
+        i % 2 === 0 ? { ...row, currency: "EUR" } : row,
+      );
+      const transfers = selected.transfers.map((row, i) =>
+        i % 2 === 0 ? { ...row, currency: "EUR" } : row,
+      );
+      const convert = (amount: number, currency: string, date: string) =>
+        currency === CURRENCY ? amount : amount * rateOn(date);
+      return { ledger, categorized, transfers, convert };
+    }
+
+    const reading = (agg: FxAggregate): number =>
+      moneyUnits(agg.knownSubtotalAt(money.places), money.places);
+
+    it("closes at both depths, and depth moves no total", () => {
+      for (const seed of seeds) {
+        const { ledger, categorized, transfers, convert } =
+          inTwoCurrencies(seed);
+        const run = (depth: 1 | 2) =>
+          assembleCashFlowSankey({
+            startDate: "2026-09-01",
+            endDate: "2026-09-30",
+            currency: CURRENCY,
+            places: money.places,
+            scopeAccountIds: [...ledger.scope],
+            depth,
+            categories: ledger.categories,
+            categorized,
+            transfers,
+            convert,
+          });
+        const shallow = run(1);
+        const deep = run(2);
+        expect({ seed, totals: deep.totals }).toEqual({
+          seed,
+          totals: shallow.totals,
+        });
       }
-      return rate;
-    };
-    const selected = select(ledger);
-    const categorized = selected.categorized.map((row, i) =>
-      i % 2 === 0 ? { ...row, currency: "EUR" } : row,
-    );
-    const transfers = selected.transfers.map((row, i) =>
-      i % 2 === 0 ? { ...row, currency: "EUR" } : row,
-    );
-    const convert = (amount: number, currency: string, date: string) =>
-      currency === CURRENCY ? amount : amount * rateOn(date);
-    return { ledger, categorized, transfers, convert };
-  }
+    });
 
-  const reading = (agg: FxAggregate): number =>
-    moneyUnits(agg.knownSubtotal, 4);
-
-  it("closes at both depths, and depth moves no total", () => {
-    for (const seed of seeds) {
-      const { ledger, categorized, transfers, convert } = inTwoCurrencies(seed);
-      const run = (depth: 1 | 2) =>
-        assembleCashFlowSankey({
+    it("rounds each side's total once, from the rows on that side", () => {
+      for (const seed of seeds) {
+        const { ledger, categorized, transfers, convert } =
+          inTwoCurrencies(seed);
+        const result = assembleCashFlowSankey({
           startDate: "2026-09-01",
           endDate: "2026-09-30",
           currency: CURRENCY,
+          places: money.places,
           scopeAccountIds: [...ledger.scope],
-          depth,
+          depth: 2,
           categories: ledger.categories,
           categorized,
           transfers,
           convert,
         });
-      const shallow = run(1);
-      const deep = run(2);
-      expect({ seed, totals: deep.totals }).toEqual({
-        seed,
-        totals: shallow.totals,
-      });
-    }
-  });
 
-  it("rounds each side's total once, from the rows on that side", () => {
-    for (const seed of seeds) {
-      const { ledger, categorized, transfers, convert } = inTwoCurrencies(seed);
-      const result = assembleCashFlowSankey({
-        startDate: "2026-09-01",
-        endDate: "2026-09-30",
-        currency: CURRENCY,
-        scopeAccountIds: [...ledger.scope],
-        depth: 2,
-        categories: ledger.categories,
-        categorized,
-        transfers,
-        convert,
-      });
-
-      const byId = new Map(ledger.categories.map((c) => [c.id, c]));
-      const nets = new Map<string, FxAggregate>();
-      const income = new FxAggregate();
-      const expenses = new FxAggregate();
-      for (const row of categorized) {
-        const halves = [row.positive, row.negative]
-          .filter((half) => half !== 0)
-          .map((half) => convert(half, row.currency, row.date));
-        if (row.categoryId === null) {
-          for (const half of halves) {
-            if (half > 0) income.addConverted(half);
-            else expenses.addConverted(-half);
+        const byId = new Map(ledger.categories.map((c) => [c.id, c]));
+        const nets = new Map<string, FxAggregate>();
+        const income = new FxAggregate();
+        const expenses = new FxAggregate();
+        for (const row of categorized) {
+          const halves = [row.positive, row.negative]
+            .filter((half) => half !== 0)
+            .map((half) => convert(half, row.currency, row.date));
+          if (row.categoryId === null) {
+            for (const half of halves) {
+              if (half > 0) income.addConverted(half);
+              else expenses.addConverted(-half);
+            }
+            continue;
           }
-          continue;
+          const root = byId.get(row.categoryId)!.parentId ?? row.categoryId;
+          const net = nets.get(root) ?? new FxAggregate();
+          for (const half of halves) net.addConverted(half);
+          nets.set(root, net);
         }
-        const root = byId.get(row.categoryId)!.parentId ?? row.categoryId;
-        const net = nets.get(root) ?? new FxAggregate();
-        for (const half of halves) net.addConverted(half);
-        nets.set(root, net);
-      }
-      for (const [root, net] of nets) {
-        const isIncome =
-          net.sign > 0 || (net.sign === 0 && byId.get(root)!.isIncome);
-        if (isIncome) income.merge(net);
-        else expenses.mergeNegated(net);
-      }
-      const inflows = new FxAggregate();
-      const outflows = new FxAggregate();
-      for (const row of transfers) {
-        if (row.inflow !== 0)
-          inflows.addConverted(convert(row.inflow, row.currency, row.date));
-        if (row.outflow !== 0)
-          outflows.addConverted(-convert(row.outflow, row.currency, row.date));
-      }
+        for (const [root, net] of nets) {
+          const isIncome =
+            net.sign > 0 || (net.sign === 0 && byId.get(root)!.isIncome);
+          if (isIncome) income.merge(net);
+          else expenses.mergeNegated(net);
+        }
+        const inflows = new FxAggregate();
+        const outflows = new FxAggregate();
+        for (const row of transfers) {
+          if (row.inflow !== 0)
+            inflows.addConverted(convert(row.inflow, row.currency, row.date));
+          if (row.outflow !== 0)
+            outflows.addConverted(
+              -convert(row.outflow, row.currency, row.date),
+            );
+        }
 
-      expect({
-        seed,
-        income: minor(result.totals.income),
-        expenses: minor(result.totals.expenses),
-        inflows: minor(result.totals.inflows),
-        outflows: minor(result.totals.outflows),
-      }).toEqual({
-        seed,
-        income: reading(income),
-        expenses: reading(expenses),
-        inflows: reading(inflows),
-        outflows: reading(outflows),
-      });
-    }
-  });
-});
+        expect({
+          seed,
+          income: minor(result.totals.income),
+          expenses: minor(result.totals.expenses),
+          inflows: minor(result.totals.inflows),
+          outflows: minor(result.totals.outflows),
+        }).toEqual({
+          seed,
+          income: reading(income),
+          expenses: reading(expenses),
+          inflows: reading(inflows),
+          outflows: reading(outflows),
+        });
+      }
+    });
+  },
+);
