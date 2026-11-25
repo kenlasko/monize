@@ -617,6 +617,46 @@ describe("DataQualityReportsService", () => {
       expect(partial.missingCurrencies).toEqual(["JPY"]);
     });
 
+    it("converts each extra copy at its own row's currency, not the group's first (issue #2410)", async () => {
+      // 100.00 USD and 100.00 EUR on one day to one payee match as copies.
+      // The EUR copy is 110 USD at 1.1, not 100 at the first row's currency.
+      currencyService.convertRow.mockImplementation(
+        (amount: number, { currency_code: from }: RawRateBasis) =>
+          from === "EUR" ? amount * 1.1 : amount,
+      );
+      const row = (id: string, currency: string) => ({
+        id,
+        transaction_date: "2025-06-15",
+        amount: "-100.00",
+        currency_code: currency,
+        payee_name: "Store",
+        description: null,
+        account_name: currency,
+        account_id: `acc-${currency}`,
+        category_id: null,
+        category_name: null,
+        is_split: false,
+        status: null,
+      });
+      scopedManager.query.mockResolvedValue([
+        row("u1", "USD"),
+        row("e1", "EUR"),
+      ]);
+
+      const result = await service.getDuplicateTransactions(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.groups).toHaveLength(1);
+      expect(result.groups[0].transactions.map((t) => t.id)).toEqual([
+        "u1",
+        "e1",
+      ]);
+      expect(result.summary.potentialSavings).toBe(110);
+    });
+
     it("assigns high confidence when date, amount and payee match but the category differs", async () => {
       scopedManager.query.mockResolvedValue([
         {

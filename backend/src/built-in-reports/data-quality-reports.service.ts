@@ -546,31 +546,32 @@ export class DataQualityReportsService {
     const countOf = (level: DuplicateConfidence) =>
       groups.filter((g) => g.confidence === level).length;
 
-    // Each group's extra copies, converted from the group's first row at its
-    // own rate basis and folded exactly; a group with no rate is left out of
-    // the figure and named, so the total is withheld, not smaller.
+    // Each group's extra copies (every row after its first), each converted
+    // at its own row's rate basis -- a group can hold copies in two
+    // currencies, the matcher comparing amounts alone -- and folded exactly.
+    // A copy with no rate is left out and named, so the figure is withheld,
+    // not smaller.
     const basisById = new Map(rows.map((row) => [row.id, row]));
-    const firstRows = groups.map((group) =>
-      basisById.get(group.transactions[0].id),
+    const copies = groups.flatMap((group) =>
+      group.transactions.slice(1).flatMap((tx) => {
+        const row = basisById.get(tx.id);
+        return row ? [{ amount: Math.abs(tx.amount), row }] : [];
+      }),
     );
     const convert = await this.currencyService.buildConverter(
-      firstRows.filter((row): row is RawTx => row !== undefined),
+      copies.map((copy) => copy.row),
       defaultCurrency,
     );
     const savings = new FxAggregate();
     const gaps = new ConversionGaps();
-    groups.forEach((group, i) => {
-      const row = firstRows[i];
-      if (!row) return;
-      const converted = convert(Math.abs(group.transactions[0].amount), row);
+    for (const { amount, row } of copies) {
+      const converted = convert(amount, row);
       if (converted === null) {
         gaps.record(row.currency_code);
-        return;
+        continue;
       }
-      for (let k = 1; k < group.transactions.length; k++) {
-        savings.addConverted(converted);
-      }
-    });
+      savings.addConverted(converted);
+    }
     const knownPotentialSavings = savings.knownSubtotalAt(places);
 
     return {
