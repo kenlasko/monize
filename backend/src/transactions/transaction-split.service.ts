@@ -17,6 +17,10 @@ import {
   createBondWriteGuard,
 } from "../bonds/bond-write-guard";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
+import {
+  carryProvisionalSplitLegs,
+  readProvisionalSplitLegs,
+} from "./provisional-split-legs";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { SplitKind } from "./entities/split-kind.enum";
 import { Category } from "../categories/entities/category.entity";
@@ -1237,6 +1241,10 @@ export class TransactionSplitService {
         moneyDecimalsFor(currency.decimalPlaces),
       );
 
+      // And whether a counterpart's amount is still the importer's estimate:
+      // resending the lines is not a statement about it.
+      const provisionalLegs = await readProvisionalSplitLegs(m, parent.id);
+
       // One guard for the whole replacement: the old embedded rows are removed
       // and their successors written before it verifies, so a replacement that
       // leaves the lots as they were is not refused half way, and one that
@@ -1287,6 +1295,7 @@ export class TransactionSplitService {
         affectedAccountIds,
       );
 
+      await carryProvisionalSplitLegs(m, parent.id, provisionalLegs);
       await bondGuard.verify();
 
       await m.update(Transaction, transaction.id, {

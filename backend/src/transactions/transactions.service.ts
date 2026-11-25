@@ -21,6 +21,10 @@ import {
   WhereExpressionBuilder,
 } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
+import {
+  carryProvisionalSplitLegs,
+  readProvisionalSplitLegs,
+} from "./provisional-split-legs";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
@@ -3936,6 +3940,10 @@ export class TransactionsService {
           // One guard for the replacement: verified after the successors are
           // written, so a replacement that leaves the lots as they were is not
           // refused half way (INV-BOND-007).
+          // And whether a counterpart's amount is still the importer's
+          // estimate: resending the lines is not a statement about it.
+          const provisionalLegs = await readProvisionalSplitLegs(m, id);
+
           const replacementGuard = createBondWriteGuard(m, userId);
           for (const acc of await this.splitService.deleteSplitSideEffects(
             id,
@@ -3974,6 +3982,7 @@ export class TransactionsService {
             },
             counterpartAccountIds,
           );
+          await carryProvisionalSplitLegs(m, id, provisionalLegs);
           await replacementGuard.verify();
 
           // Set split-level tags (and mirror them onto any transfer counterpart)
@@ -4663,9 +4672,21 @@ export class TransactionsService {
    * is not provisional is refused with nothing written.
    */
   async confirmAmount(userId: string, id: string): Promise<Transaction> {
-    // Owner-scoped: another owner's row is a 404 here, like any single-row read.
-    await this.findOne(userId, id);
-    await withScopedDb(this.dataSource, async (m) => {
+    // The owner-scoped lock, the conditional write and the read of what was
+    // written are one transaction: a row that is not the caller's, or gone, is
+    // a 404, and under the lock a write that matched nothing can only mean
+    // the row is not provisional.
+    const confirmed = await withScopedDb(this.dataSource, async (m) => {
+      const locked = await lockTransactionRow(m, id, userId);
+      if (!locked) {
+        throw new NotFoundException(
+          tr(
+            "errors.transactions.notFoundById",
+            `Transaction with ID ${id} not found`,
+            { id },
+          ),
+        );
+      }
       const result = await m.update(
         Transaction,
         { id, userId, amountIsProvisional: true },
@@ -4679,17 +4700,20 @@ export class TransactionsService {
           ),
         );
       }
+      return this.findOne(userId, id);
     });
-    const confirmed = await this.findOne(userId, id);
-    // The entry holds the flag alone: undo and redo put back only what this
-    // action wrote, never a stale copy of the leg's amount or date (the
+    // The entry restores the flag alone: undo and redo put back only what
+    // this action wrote, never a stale copy of the leg's amount or date (the
     // transfer edit that may follow records no entry of its own).
+    // `confirmedLegAmount` is compared, never restored: undo refuses once the
+    // leg holds another amount, which the reader stated and is no estimate.
+    const confirmedLegAmount = Number(confirmed.amount);
     this.actionHistoryService.record(userId, {
       entityType: "transaction",
       entityId: id,
       action: "update",
-      beforeData: { amountIsProvisional: true },
-      afterData: { amountIsProvisional: false },
+      beforeData: { amountIsProvisional: true, confirmedLegAmount },
+      afterData: { amountIsProvisional: false, confirmedLegAmount },
       description: `Confirmed amount of transaction ${confirmed.payeeName || ""} ${formatCurrency(Number(confirmed.amount), confirmed.currencyCode)}`,
       descriptionKey: "confirmedTransactionAmount",
       descriptionParams: {

@@ -111,6 +111,7 @@
     "unsupportedSimpleAction": "[XX-Unsupported action: {{ action }}-XX]",
     "unsupportedTableForReinsert": "[XX-Unsupported table for re-insert: {{ tableName }}-XX]",
     "undoConversion": "[XX-This change converted a transaction to or from a transfer, so it cannot be undone automatically. Convert it back instead.-XX]",
+    "undoConfirmedAmountChanged": "[XX-This amount was changed after it was confirmed, so it is no longer an estimate and the confirmation cannot be undone.-XX]",
     "customRecurrenceMissing": "[XX-This change cannot be undone or redone: the scheduled transaction's custom schedule rule is missing from its history-XX]",
     "scheduledPostingRedo": "[XX-A posted scheduled transaction cannot be redone. Post it again from Bills & Deposits instead-XX]",
     "scheduledPostingUndoLaterOccurrence": "[XX-A later occurrence of this scheduled transaction has been posted since, so this posting cannot be undone. Undo or delete the later one first-XX]",

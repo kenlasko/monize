@@ -1430,6 +1430,76 @@ describe("ActionHistoryService", () => {
         expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
       });
 
+      // "Confirm amount" (TransactionsService.confirmAmount): the entry
+      // restores the flag alone and carries the confirmed figure to compare.
+      describe("the undo of a confirmed provisional amount", () => {
+        const confirmAction = {
+          ...splitAction(undefined, undefined),
+          beforeData: { amountIsProvisional: true, confirmedLegAmount: 80 },
+          afterData: { amountIsProvisional: false, confirmedLegAmount: 80 },
+        };
+        const arrangeLeg = (leg: Record<string, unknown>) => {
+          arrange(confirmAction);
+          mockQueryRunner.manager.findOne.mockResolvedValue({
+            id: "tx-1",
+            userId,
+            accountId: "acc-1",
+            currencyCode: "EUR",
+            ...leg,
+          });
+        };
+
+        it("restores the flag and nothing else while the leg still holds that amount", async () => {
+          arrangeLeg({ amount: "80.00000000", isTransfer: true });
+
+          await service.undo(userId);
+
+          expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+            Transaction,
+            "tx-1",
+            { amountIsProvisional: true },
+          );
+        });
+
+        it.each([
+          [
+            "the reader has since stated another amount",
+            { amount: 90, isTransfer: true },
+          ],
+          [
+            "the leg has since become an ordinary transaction",
+            { amount: 80, isTransfer: false },
+          ],
+        ])("refuses when %s, writing nothing", async (_label, leg) => {
+          arrangeLeg(leg);
+
+          await expect(service.undo(userId)).rejects.toMatchObject({
+            response: { errorCode: "UNDO_CONFIRMED_AMOUNT_CHANGED" },
+          });
+          expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+        });
+
+        it("redoes the confirmation whatever the leg holds now", async () => {
+          arrange({ ...confirmAction, isUndone: true });
+          mockQueryRunner.manager.findOne.mockResolvedValue({
+            id: "tx-1",
+            userId,
+            accountId: "acc-1",
+            currencyCode: "EUR",
+            amount: 90,
+            isTransfer: true,
+          });
+
+          await service.redo(userId);
+
+          expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+            Transaction,
+            "tx-1",
+            { amountIsProvisional: false },
+          );
+        });
+      });
+
       it("still undoes a VOID of a row without legs", async () => {
         const action = {
           ...splitAction(undefined, undefined),

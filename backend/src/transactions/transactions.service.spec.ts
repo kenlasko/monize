@@ -3418,8 +3418,9 @@ describe("TransactionsService", () => {
           action: "update",
           // Undo restores exactly this; a snapshot of the amount would write
           // a stale figure back over a later transfer edit.
-          beforeData: { amountIsProvisional: true },
-          afterData: { amountIsProvisional: false },
+          // `confirmedLegAmount` is compared by the undo, never restored.
+          beforeData: { amountIsProvisional: true, confirmedLegAmount: 80 },
+          afterData: { amountIsProvisional: false, confirmedLegAmount: 80 },
           descriptionKey: "confirmedTransactionAmount",
           descriptionParams: expect.objectContaining({
             amountValue: 80,
@@ -3446,7 +3447,8 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
-    it("is a 404 for a row that is not the caller's, writing nothing", async () => {
+    it("is a 404 for a row that is not the caller's or is gone, writing nothing", async () => {
+      // The owner-scoped row lock finds nothing.
       transactionsRepository.findOne.mockResolvedValue(null);
 
       await expect(service.confirmAmount("user-2", "tx-1")).rejects.toThrow(

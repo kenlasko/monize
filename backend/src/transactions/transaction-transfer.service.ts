@@ -232,17 +232,28 @@ export type TransferEditHook = (
  * server computed from the other side is still an estimate, and a form
  * resending the stored figure changed nothing, so both leave the flag
  * (docs/future-plans/provisional-amounts.md, decision 4 and section 6).
+ *
+ * `next` is the pair the edit leaves behind, where an account can move (the
+ * same-owner path). An amount is compared with its currency: a figure
+ * supplied for a leg that now sits in another currency is a different amount
+ * even when the number is the same. And a pair left in one currency has no
+ * estimate in it at all -- the two legs conserve -- so the leg is confirmed
+ * whatever was supplied.
  */
 export function confirmedBySuppliedAmount(
-  leg: Pick<Transaction, "amount" | "amountIsProvisional">,
+  leg: Pick<Transaction, "amount" | "amountIsProvisional" | "currencyCode">,
   suppliedAmount: number | undefined,
   /** The leg currency's money precision, which the amounts compare at. */
   decimals: number,
+  next?: { currencyCode: string; pairIsSameCurrency: boolean },
 ): Partial<Transaction> {
-  if (!leg.amountIsProvisional || suppliedAmount === undefined) return {};
+  if (!leg.amountIsProvisional) return {};
+  if (next?.pairIsSameCurrency) return { amountIsProvisional: false };
+  if (suppliedAmount === undefined) return {};
   const differs =
+    (next !== undefined && next.currencyCode !== leg.currencyCode) ||
     roundMoney(Math.abs(Number(suppliedAmount)), decimals) !==
-    roundMoney(Math.abs(Number(leg.amount)), decimals);
+      roundMoney(Math.abs(Number(leg.amount)), decimals);
   return differs ? { amountIsProvisional: false } : {};
 }
 
@@ -2184,6 +2195,11 @@ export class TransactionTransferService {
         fromTransaction,
         updateDto.amount,
         moneyDecimalsForCode(places, updateFx.fromCurrencyCode),
+        {
+          currencyCode: updateFx.fromCurrencyCode,
+          pairIsSameCurrency:
+            updateFx.fromCurrencyCode === updateFx.toCurrencyCode,
+        },
       ),
     );
 
@@ -2208,6 +2224,11 @@ export class TransactionTransferService {
         toTransaction,
         updateDto.toAmount,
         moneyDecimalsForCode(places, updateFx.toCurrencyCode),
+        {
+          currencyCode: updateFx.toCurrencyCode,
+          pairIsSameCurrency:
+            updateFx.fromCurrencyCode === updateFx.toCurrencyCode,
+        },
       ),
     );
 
@@ -3236,9 +3257,13 @@ export class TransactionTransferService {
     if (updateDto.payeeName !== undefined)
       legData.payeeName = updateDto.payeeName || null;
     if (legChanged) legData.amount = newCounterpartAmount;
-    // The reader stated a different amount for this leg: it is no longer the
-    // importer's estimate. An explicit source amount alone, or the same figure
-    // resent, leaves the flag (design decision 4).
+    // The request stated a different amount for this leg, so the row no
+    // longer holds the importer's estimate. `legChanged` is exactly that: the
+    // figure this path reads as the leg's own (`toAmount` on a cross-currency
+    // pair, else `amount` -- which, sent alone, this path has always written
+    // onto the leg) differs from the stored one. The same figure resent, or a
+    // source amount restated beside an unchanged `toAmount`, leaves the flag
+    // (design decision 4).
     if (legChanged && counterpart.amountIsProvisional) {
       legData.amountIsProvisional = false;
     }

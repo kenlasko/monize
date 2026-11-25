@@ -78,9 +78,12 @@ Proposed for `docs/system-invariants.md` under the next free ids of the FX famil
 
 A provisional leg is never a recorded transfer to the importer's duplicate check (`import-transfer-dedupe.ts`), so the account's own file confirms it even when it states exactly the estimate. A zero transfer across currencies needs no rate: its other leg is a confirmed zero and is never provisional.
 
-The confirm action's history entry holds the flag alone, so undo and redo restore the flag and never an amount a later transfer edit replaced. A row the shared-expense ledger protects (`shared_protect_ledger_transaction`) is not exempted: the column stays off the trigger's ignore list, so confirming such a row is refused with the trigger's own message until it is unlinked in Shared expenses (decided in issue #2392).
+Decided in issue #2392:
 
-Not covered by issue #2392, awaiting the maintainer: an edit of a split parent that resends its lines deletes and recreates each transfer line's counterpart (`TransactionsService.update`, `TransactionSplitService.updateSplits`), and the recreated row is written with the default, confirmed. Carrying the flag across that replacement would be a fifth writer that sets `true`.
+- The confirm action's history entry restores the flag alone and records the confirmed amount only to compare. Undo is refused once the leg holds another amount or is no longer a transfer leg: that figure is the reader's, and decision 5 lets nobody mark an amount provisional.
+- A row the shared-expense ledger protects (`shared_protect_ledger_transaction`) is not exempted: the column stays off the trigger's ignore list, so confirming such a row is refused with the trigger's own message until it is unlinked in Shared expenses.
+- An amount is compared with its currency. A transfer edit that leaves the pair in one currency confirms the leg (a conserving pair holds no estimate), and an amount stated for a leg the edit moves into another currency confirms it even when the number is unchanged.
+- An edit of a split parent replaces its lines and recreates each transfer line's counterpart. The flag is carried onto a recreated counterpart in the same account holding the same amount (`backend/src/transactions/provisional-split-legs.ts`). This preserves a state across a row replacement, as the received amount already is; it is not a fifth writer, because it never sets the flag on an amount that was not provisional. A line whose own amount changed is repriced and written confirmed: a replace-all write cannot tell which old line it continues.
 
 A transfer edit that reprices the provisional leg without a supplied amount (the reader changed only the other side, and the server computed the rest from the market rate) leaves it provisional: the new figure is still an estimate.
 

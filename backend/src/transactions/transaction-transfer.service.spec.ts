@@ -2701,7 +2701,26 @@ describe("TransactionTransferService", () => {
           expect(accountsService.updateBalance).not.toHaveBeenCalled();
         });
 
-        it("leaves the flag when only the source amount is restated", async () => {
+        it("clears the flag when `amount` is sent alone, which this path writes onto the leg", async () => {
+          // With no `toAmount`, a split counterpart reads `amount` as its own
+          // figure (the pre-existing reading the AI and MCP edits rely on):
+          // the row then holds what the request stated, not the estimate.
+          await service.updateTransfer(
+            "user-1",
+            "leg-tx",
+            { amount: 250 } as any,
+            mockFindOne,
+          );
+
+          expect(legWrites()).toEqual(
+            expect.objectContaining({
+              amount: 250,
+              amountIsProvisional: false,
+            }),
+          );
+        });
+
+        it("leaves the flag when the source amount is restated beside the unchanged leg amount", async () => {
           // The reader corrected what left the PLN account; the 232 EUR is
           // still the importer's estimate.
           await service.updateTransfer(
@@ -3254,6 +3273,65 @@ describe("TransactionTransferService", () => {
           expect.objectContaining({ amount: -110, amountIsProvisional: false }),
         );
         expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+      });
+
+      describe("when the edit moves the leg to another account", () => {
+        const accounts = (extra: Record<string, unknown>) =>
+          accountsService.findOne.mockImplementation((_u: string, id: string) =>
+            Promise.resolve(
+              id === "to-account"
+                ? eurTo
+                : id === "from-account"
+                  ? mockFromAccount
+                  : { id, name: "Moved", ...extra },
+            ),
+          );
+
+        it("confirms it when the pair is left in one currency: nothing is estimated there", async () => {
+          accounts({ currencyCode: "USD" });
+
+          await edit([usdFromTx, provisionalEurTx], { toAccountId: "usd-2" });
+
+          expect(writtenTo("to-tx")).toEqual(
+            expect.objectContaining({
+              accountId: "usd-2",
+              currencyCode: "USD",
+              amount: 100,
+              amountIsProvisional: false,
+            }),
+          );
+        });
+
+        it("leaves it when the server reprices the leg in the new currency", async () => {
+          accounts({ currencyCode: "GBP" });
+          exchangeRateService.getRateForDate.mockResolvedValue(0.7);
+
+          await edit([usdFromTx, provisionalEurTx], { toAccountId: "gbp-1" });
+
+          expect(writtenTo("to-tx")).toEqual(
+            expect.objectContaining({ currencyCode: "GBP", amount: 70 }),
+          );
+          expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+        });
+
+        it("confirms it when an amount is stated for it in the new currency, even the same number", async () => {
+          // 80 GBP is not the 80 EUR the importer estimated.
+          accounts({ currencyCode: "GBP" });
+
+          await edit([usdFromTx, provisionalEurTx], {
+            toAccountId: "gbp-1",
+            amount: 100,
+            toAmount: 80,
+          });
+
+          expect(writtenTo("to-tx")).toEqual(
+            // The stored 80 is kept as the number; its currency is what moved.
+            expect.objectContaining({
+              currencyCode: "GBP",
+              amountIsProvisional: false,
+            }),
+          );
+        });
       });
 
       it("does not write the flag on a transfer that has no provisional leg", async () => {

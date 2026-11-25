@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import {
@@ -250,21 +254,24 @@ describe("Confirming a provisional amount (integration)", () => {
       expect(await balance(foreignId)).toBe(80);
     });
 
-    it("undoing a confirmation does not put back an amount a later transfer edit replaced", async () => {
+    it("refuses to undo a confirmation once the reader has stated another amount for the leg", async () => {
       const { to } = await provisionalTransfer();
       await asUser(() => transactions.confirmAmount(userId, to));
       await settlePendingHistoryWrites();
       // A transfer edit records no history entry, so the confirmation is
-      // still the newest undoable action.
+      // still the newest undoable action; the 90 is the reader's figure and
+      // no undo may call it an estimate (design decision 4).
       await asUser(() =>
         transactions.updateTransfer(userId, to, { amount: 100, toAmount: 90 }),
       );
 
-      await asUser(() => history.undo(userId));
+      await expect(asUser(() => history.undo(userId))).rejects.toBeInstanceOf(
+        ConflictException,
+      );
 
       const leg = await row(to);
       expect(Number(leg.amount)).toBe(90);
-      expect(leg.amountIsProvisional).toBe(true);
+      expect(leg.amountIsProvisional).toBe(false);
       expect(await balance(foreignId)).toBe(90);
     });
 
@@ -312,6 +319,50 @@ describe("Confirming a provisional amount (integration)", () => {
     });
   });
 
+  it("a provisional source leg is confirmed by a different amount stated for it, and only then", async () => {
+    // The other account's file came first: the USD source is the estimate.
+    const { from, to } = await provisionalTransfer();
+    await db.query(
+      `UPDATE transactions SET amount_is_provisional = (id = $1) WHERE id IN ($1, $2)`,
+      [from, to],
+    );
+
+    await asUser(() =>
+      transactions.updateTransfer(userId, from, { amount: 100, toAmount: 85 }),
+    );
+    expect((await row(from)).amountIsProvisional).toBe(true);
+
+    await asUser(() =>
+      transactions.updateTransfer(userId, from, { amount: 105, toAmount: 85 }),
+    );
+    const source = await row(from);
+    expect(Number(source.amount)).toBe(-105);
+    expect(source.amountIsProvisional).toBe(false);
+    expect(await balance(usdId)).toBe(895);
+  });
+
+  it("a leg moved into a same-currency pair is confirmed: nothing there is estimated", async () => {
+    const { to } = await provisionalTransfer();
+    const savings = (
+      await createTestAccount(db, userId, {
+        name: "USD Savings",
+        openingBalance: 0,
+        currentBalance: 0,
+      })
+    ).id;
+
+    await asUser(() =>
+      transactions.updateTransfer(userId, to, { toAccountId: savings }),
+    );
+
+    const leg = await row(to);
+    expect(leg.accountId).toBe(savings);
+    expect(Number(leg.amount)).toBe(100);
+    expect(leg.amountIsProvisional).toBe(false);
+    expect(await balance(savings)).toBe(100);
+    expect(await balance(foreignId)).toBe(0);
+  });
+
   it("P3: a leg converted to an ordinary transaction is no longer provisional", async () => {
     const { from, to } = await provisionalTransfer();
 
@@ -344,6 +395,83 @@ describe("Confirming a provisional amount (integration)", () => {
       expect(after.description).toBe("Edited");
       expect(after.amountIsProvisional).toBe(true);
       expect(await balance(foreignId)).toBe(35.5);
+    });
+
+    // Row 6 crossed with row 10: a split write replaces every line and
+    // recreates each counterpart, and the form resends the lines on every
+    // save of the parent.
+    it("stays provisional when the split parent is edited and its lines are resent", async () => {
+      const leg = await provisionalSplitLeg();
+      const parent = (await row(leg)).linkedTransactionId as string;
+      const lines = [
+        { categoryId, amount: -60 },
+        { transferAccountId: foreignId, amount: -40, memo: "Imported" },
+      ];
+
+      // The generic update, memo and payee only, lines resent without the
+      // received amount (it is carried).
+      await asUser(() =>
+        transactions.update(userId, parent, {
+          description: "Edited",
+          payeeName: "Someone",
+          splits: lines,
+        }),
+      );
+      // PUT /transactions/:id/splits, resending the received amount as stored.
+      await asUser(() =>
+        transactions.updateSplits(userId, parent, [
+          lines[0],
+          { ...lines[1], transferTargetAmount: 35.5 },
+        ]),
+      );
+
+      const recreated = await db.manager.findOneOrFail(Transaction, {
+        where: { accountId: foreignId },
+      });
+      expect(recreated.id).not.toBe(leg);
+      expect(Number(recreated.amount)).toBe(35.5);
+      expect(recreated.amountIsProvisional).toBe(true);
+      expect(await balance(foreignId)).toBe(35.5);
+    });
+
+    it("is confirmed when the split parent's line states a different received amount", async () => {
+      const leg = await provisionalSplitLeg();
+      const parent = (await row(leg)).linkedTransactionId as string;
+
+      await asUser(() =>
+        transactions.updateSplits(userId, parent, [
+          { categoryId, amount: -60 },
+          {
+            transferAccountId: foreignId,
+            amount: -40,
+            transferTargetAmount: 36,
+          },
+        ]),
+      );
+
+      const recreated = await db.manager.findOneOrFail(Transaction, {
+        where: { accountId: foreignId },
+      });
+      expect(Number(recreated.amount)).toBe(36);
+      expect(recreated.amountIsProvisional).toBe(false);
+    });
+
+    it("a confirmed counterpart is not made provisional by a resend", async () => {
+      const leg = await provisionalSplitLeg();
+      const parent = (await row(leg)).linkedTransactionId as string;
+      await asUser(() => transactions.confirmAmount(userId, leg));
+
+      await asUser(() =>
+        transactions.updateSplits(userId, parent, [
+          { categoryId, amount: -60 },
+          { transferAccountId: foreignId, amount: -40 },
+        ]),
+      );
+
+      const recreated = await db.manager.findOneOrFail(Transaction, {
+        where: { accountId: foreignId },
+      });
+      expect(recreated.amountIsProvisional).toBe(false);
     });
 
     it("is confirmed by a different amount stated for it, moving its balance by the difference", async () => {
