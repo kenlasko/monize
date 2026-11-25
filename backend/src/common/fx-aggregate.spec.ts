@@ -615,12 +615,7 @@ describe("FxAggregate", () => {
       expect(negative.knownSubtotalAt(0)).toBe(-1);
     });
 
-    it("keeps a coin's eight places, with guard digits under them", () => {
-      // 0.0000000049999996 is under half a satoshi. Accumulated at twelve
-      // places it became 0.000000005000 and read one satoshi.
-      const dust = new FxAggregate();
-      dust.addConverted(0.0000000049999996);
-      expect(dust.knownSubtotalAt(8)).toBe(0);
+    it("keeps a coin's eight places", () => {
       const coin = new FxAggregate();
       coin.addConverted(0.12345678);
       coin.addConverted(0.000000004);

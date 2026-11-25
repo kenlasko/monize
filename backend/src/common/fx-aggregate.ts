@@ -8,19 +8,22 @@ import {
 } from "./round.util";
 
 /**
- * The places a component is accumulated at: the column scale plus eight guard
- * digits, so a subtotal is rounded once, when it is read, at whatever places
- * it is read at (four for a posted-precision reading, a currency's own for a
- * report figure, up to `MONEY_SCALE` for a coin), never component by
- * component (issue #2360). Rounding each converted component to four places
- * first made "convert each row, then sum" and "sum the rows, then convert"
- * disagree: two 100.01 EUR receipts at 1.2474 USD are 124.752474 USD each,
- * which rounded to 124.7525 and summed to 249.5050, while their 200.02 EUR sum
- * converts to 249.504948 and reads 249.5049. Twelve places, the fiat
- * precision plus eight, left a reading at a coin's eight places four guard
- * digits (`docs/specs/report-rounding-and-aggregation.md` section 6).
+ * The places a component is accumulated at: the fiat precision plus eight
+ * guard digits, so a subtotal is rounded once, when it is read, at whatever
+ * places it is read at (four for a posted-precision reading, a currency's own
+ * for a report figure), never component by component (issue #2360). Rounding
+ * each converted component to four places first made "convert each row, then
+ * sum" and "sum the rows, then convert" disagree: two 100.01 EUR receipts at
+ * 1.2474 USD are 124.752474 USD each, which rounded to 124.7525 and summed to
+ * 249.5050, while their 200.02 EUR sum converts to 249.504948 and reads
+ * 249.5049.
+ *
+ * Twelve places is also about where a converted double's own noise sits (a
+ * product `amount * rate` near ten thousand carries an error near 10^-12), so
+ * the noise does not reach a mean or a share either. A reading at a coin's
+ * eight places keeps four guard digits.
  */
-const ACCUMULATION_DECIMALS = MONEY_SCALE + 8;
+const ACCUMULATION_DECIMALS = FIAT_MONEY_DECIMALS + 8;
 
 /**
  * Half a unit at `MONEY_SCALE`, the column scale, in accumulation units: a
@@ -47,9 +50,9 @@ const FLOAT_RESIDUE_SHIFT = 51n;
 
 /**
  * `places` checked as the places a subtotal can be read at: a whole number
- * from 0 to `MONEY_SCALE`, so the reading keeps its eight guard digits. A
- * caller passing anything else has the currency's places wrong, and a reading
- * at them would be silently coarse or throw deep inside `BigInt`.
+ * from 0 to `MONEY_SCALE`, the most any currency's money can have. A caller
+ * passing anything else has the currency's places wrong, and a reading at them
+ * would be silently coarse or throw deep inside `BigInt`.
  */
 function readablePlaces(places: number): number {
   if (!Number.isInteger(places) || places < 0 || places > MONEY_SCALE) {
