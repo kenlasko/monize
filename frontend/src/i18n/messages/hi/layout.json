@@ -127,6 +127,7 @@
       "deletedTransaction": "लेनदेन {payee} {amount} हटाया गया",
       "convertedToTransfer": "लेन-देन {payee} {amount} को स्थानांतरण में बदला गया",
       "convertedToTransaction": "स्थानांतरण {payee} {amount} को लेन-देन में बदला गया",
+      "confirmedTransactionAmount": "{payee} {amount} की अनुमानित राशि की पुष्टि की गई",
       "bulkUpdatedTransactions": "{count, plural, one {# लेनदेन बल्क अपडेट किया गया} other {# लेनदेन बल्क अपडेट किए गए}}",
       "createdTransfer": "{from} से {to} को {amount} का स्थानांतरण बनाया गया",
       "createdInvestmentTransaction": "{action} लेनदेन बनाया गया",

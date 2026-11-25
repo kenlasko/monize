@@ -127,6 +127,7 @@
       "deletedTransaction": "Видалено транзакцію {payee} {amount}",
       "convertedToTransfer": "Транзакцію {payee} {amount} перетворено на переказ",
       "convertedToTransaction": "Переказ {payee} {amount} перетворено на транзакцію",
+      "confirmedTransactionAmount": "Підтверджено оціночну суму {payee} {amount}",
       "bulkUpdatedTransactions": "Масово оновлено {count, plural, one {# транзакцію} other {# транзакцій}}",
       "createdTransfer": "Створено переказ {amount} з {from} на {to}",
       "createdInvestmentTransaction": "Створено транзакцію {action}",

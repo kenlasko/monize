@@ -127,6 +127,7 @@
       "deletedTransaction": "Buchung {payee} {amount} gelöscht",
       "convertedToTransfer": "Transaktion {payee} {amount} in eine Überweisung umgewandelt",
       "convertedToTransaction": "Überweisung {payee} {amount} in eine Transaktion umgewandelt",
+      "confirmedTransactionAmount": "Geschätzten Betrag von {payee} {amount} bestätigt",
       "bulkUpdatedTransactions": "{count, plural, one {# Buchung} other {# Buchungen}} massenweise aktualisiert",
       "createdTransfer": "Überweisung {amount} von {from} nach {to} erstellt",
       "createdInvestmentTransaction": "{action}-Transaktion erstellt",

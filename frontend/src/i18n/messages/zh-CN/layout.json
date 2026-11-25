@@ -127,6 +127,7 @@
       "deletedTransaction": "已删除交易 {payee} {amount}",
       "convertedToTransfer": "已将交易 {payee} {amount} 转换为转账",
       "convertedToTransaction": "已将转账 {payee} {amount} 转换为交易",
+      "confirmedTransactionAmount": "已确认 {payee} {amount} 的估算金额",
       "bulkUpdatedTransactions": "已批量更新 {count, plural, one {# 笔交易} other {# 笔交易}}",
       "createdTransfer": "已创建从 {from} 到 {to} 的转账 {amount}",
       "createdInvestmentTransaction": "已创建 {action} 交易",

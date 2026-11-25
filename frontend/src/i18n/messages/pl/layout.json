@@ -127,6 +127,7 @@
       "deletedTransaction": "Usunięto transakcję {payee} {amount}",
       "convertedToTransfer": "Transakcja {payee} {amount} przekonwertowana na przelew",
       "convertedToTransaction": "Przelew {payee} {amount} przekonwertowany na transakcję",
+      "confirmedTransactionAmount": "Potwierdzono szacowaną kwotę {payee} {amount}",
       "bulkUpdatedTransactions": "Zbiorczo zaktualizowano {count, plural, one {# transakcję} few {# transakcje} many {# transakcji} other {# transakcji}}",
       "createdTransfer": "Utworzono przelew {amount} z {from} do {to}",
       "createdInvestmentTransaction": "Utworzono transakcję {action}",

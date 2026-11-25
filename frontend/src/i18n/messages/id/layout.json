@@ -127,6 +127,7 @@
       "deletedTransaction": "Transaksi {payee} {amount} dihapus",
       "convertedToTransfer": "Transaksi {payee} {amount} dikonversi menjadi transfer",
       "convertedToTransaction": "Transfer {payee} {amount} dikonversi menjadi transaksi",
+      "confirmedTransactionAmount": "Jumlah perkiraan {payee} {amount} dikonfirmasi",
       "bulkUpdatedTransactions": "{count, plural, one {# transaksi} other {# transaksi}} diperbarui secara massal",
       "createdTransfer": "Transfer {amount} dari {from} ke {to} dibuat",
       "createdInvestmentTransaction": "Transaksi {action} dibuat",

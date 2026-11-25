@@ -21,6 +21,10 @@ import {
   WhereExpressionBuilder,
 } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
+import {
+  carryProvisionalSplitLegs,
+  readProvisionalSplitLegs,
+} from "./provisional-split-legs";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
@@ -3936,6 +3940,10 @@ export class TransactionsService {
           // One guard for the replacement: verified after the successors are
           // written, so a replacement that leaves the lots as they were is not
           // refused half way (INV-BOND-007).
+          // And whether a counterpart's amount is still the importer's
+          // estimate: resending the lines is not a statement about it.
+          const provisionalLegs = await readProvisionalSplitLegs(m, id);
+
           const replacementGuard = createBondWriteGuard(m, userId);
           for (const acc of await this.splitService.deleteSplitSideEffects(
             id,
@@ -3974,6 +3982,7 @@ export class TransactionsService {
             },
             counterpartAccountIds,
           );
+          await carryProvisionalSplitLegs(m, id, provisionalLegs);
           await replacementGuard.verify();
 
           // Set split-level tags (and mirror them onto any transfer counterpart)
@@ -4652,6 +4661,74 @@ export class TransactionsService {
       id,
       this.findOne.bind(this),
     );
+  }
+
+  /**
+   * Confirm a provisional amount as it stands (design decision 4 of
+   * docs/future-plans/provisional-amounts.md): the flag is cleared and nothing
+   * else is written, so no amount and no balance moves. The refusal and the
+   * write are one conditional `UPDATE` keyed on the owner and on the flag
+   * still being set, so two confirmations cannot both succeed and a row that
+   * is not provisional is refused with nothing written.
+   */
+  async confirmAmount(userId: string, id: string): Promise<Transaction> {
+    // The owner-scoped lock, the conditional write and the read of what was
+    // written are one transaction: a row that is not the caller's, or gone, is
+    // a 404, and under the lock a write that matched nothing can only mean
+    // the row is not provisional.
+    const confirmed = await withScopedDb(this.dataSource, async (m) => {
+      const locked = await lockTransactionRow(m, id, userId);
+      if (!locked) {
+        throw new NotFoundException(
+          tr(
+            "errors.transactions.notFoundById",
+            `Transaction with ID ${id} not found`,
+            { id },
+          ),
+        );
+      }
+      const result = await m.update(
+        Transaction,
+        { id, userId, amountIsProvisional: true },
+        { amountIsProvisional: false },
+      );
+      if (!result.affected) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.amountNotProvisional",
+            "This transaction's amount is not an estimate, so there is nothing to confirm.",
+          ),
+        );
+      }
+      return this.findOne(userId, id);
+    });
+    // The entry restores the flag alone: undo and redo put back only what
+    // this action wrote, never a stale copy of the leg's amount or date (the
+    // transfer edit that may follow records no entry of its own).
+    // `confirmedLegAmount` is compared, never restored: undo refuses once the
+    // leg holds another amount, which the reader stated and is no estimate.
+    const confirmedLegAmount = Number(confirmed.amount);
+    this.actionHistoryService.record(userId, {
+      entityType: "transaction",
+      entityId: id,
+      action: "update",
+      beforeData: { amountIsProvisional: true, confirmedLegAmount },
+      afterData: { amountIsProvisional: false, confirmedLegAmount },
+      description: `Confirmed amount of transaction ${confirmed.payeeName || ""} ${formatCurrency(Number(confirmed.amount), confirmed.currencyCode)}`,
+      descriptionKey: "confirmedTransactionAmount",
+      descriptionParams: {
+        payee: confirmed.payeeName || "",
+        // See `update`: English fallback plus the structured pair the client
+        // formats in the reader's number locale.
+        amount: formatCurrency(
+          Number(confirmed.amount),
+          confirmed.currencyCode,
+        ),
+        amountValue: Number(confirmed.amount),
+        amountCurrency: confirmed.currencyCode,
+      },
+    });
+    return confirmed;
   }
 
   async getStaleUnreconciled(userId: string) {

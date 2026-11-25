@@ -127,6 +127,7 @@
       "deletedTransaction": "거래 삭제됨 {payee} {amount}",
       "convertedToTransfer": "거래 {payee} {amount}을(를) 이체로 변환함",
       "convertedToTransaction": "이체 {payee} {amount}을(를) 거래로 변환함",
+      "confirmedTransactionAmount": "{payee} {amount}의 추정 금액 확인됨",
       "bulkUpdatedTransactions": "{count, plural, one {# 건의 거래} other {# 건의 거래}} 일괄 업데이트됨",
       "createdTransfer": "이체 생성됨 {from}에서 {to}으로 {amount}",
       "createdInvestmentTransaction": "{action} 거래 생성됨",
