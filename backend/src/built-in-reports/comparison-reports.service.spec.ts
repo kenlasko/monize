@@ -978,10 +978,10 @@ describe("ComparisonReportsService", () => {
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001)
   // ---------------------------------------------------------------------------
   describe("rounded once, after the parts are folded (issues #2384, #2410)", () => {
-    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.75 alone, and 249.504948
-    // for two, which reads 249.50. A figure that rounded its running sum on
-    // every row, or added four-place readings, came to 249.5050, which showed
-    // as 249.51.
+    // 1.93 EUR at 1.2474 is 2.407482 USD: 2.41 alone, and 4.814964 for two,
+    // which reads 4.81. Adding the two-place readings (issue #2410) gives
+    // 4.82, and so does adding the four-place ones, 2.4075 each, read at two
+    // (issue #2384).
     beforeEach(() => {
       currencyService.convertRow.mockImplementation(
         (amount: number, row: RawRateBasis) =>
@@ -989,7 +989,7 @@ describe("ComparisonReportsService", () => {
       );
     });
 
-    it("totals a month's two days of income at 249.50", async () => {
+    it("totals a month's two days of income at 4.81", async () => {
       const currentYear = new Date().getFullYear();
       scopedManager.query.mockResolvedValue(
         ["2026-01-05", "2026-01-06"].map((txDate) => ({
@@ -998,7 +998,7 @@ describe("ComparisonReportsService", () => {
           currency_code: "EUR",
           tx_date: txDate,
           own_rate: null,
-          income: "100.01",
+          income: "1.93",
           expenses: "0",
         })),
       );
@@ -1006,9 +1006,9 @@ describe("ComparisonReportsService", () => {
       const result = await service.getYearOverYear(mockUserId, 1);
 
       const yearData = result.data[0];
-      expect(yearData.months[0].income).toBe(249.5);
-      expect(yearData.months[0].savings).toBe(249.5);
-      expect(yearData.totals.income).toBe(249.5);
+      expect(yearData.months[0].income).toBe(4.81);
+      expect(yearData.months[0].savings).toBe(4.81);
+      expect(yearData.totals.income).toBe(4.81);
     });
 
     it("takes savings from income and expenses before either is rounded", async () => {
@@ -1036,7 +1036,7 @@ describe("ComparisonReportsService", () => {
       expect(yearData.totals.savings).toBe(1.24);
     });
 
-    it("totals a Saturday's two categories at 249.50", async () => {
+    it("totals a Saturday's two categories at 4.81", async () => {
       scopedManager.query.mockResolvedValue(
         ["cat-parent", "cat-standalone"].map((categoryId) => ({
           day_of_week: 6,
@@ -1045,7 +1045,7 @@ describe("ComparisonReportsService", () => {
           tx_date: "2025-06-07",
           own_rate: null,
           tx_count: 1,
-          total: "100.01",
+          total: "1.93",
         })),
       );
       categoriesRepository.find.mockResolvedValue([
@@ -1059,10 +1059,10 @@ describe("ComparisonReportsService", () => {
         "2025-06-30",
       );
 
-      expect(result.byDay[6].total).toBe(249.5);
-      expect(result.summary.weekendTotal).toBe(249.5);
+      expect(result.byDay[6].total).toBe(4.81);
+      expect(result.summary.weekendTotal).toBe(4.81);
       expect(result.byCategory.map((c) => c.weekendTotal)).toEqual([
-        124.75, 124.75,
+        2.41, 2.41,
       ]);
     });
   });

@@ -1641,10 +1641,10 @@ describe("TaxRecurringReportsService", () => {
   // A missing exchange rate is unknown, never 1:1 (INV-FX-001)
   // ---------------------------------------------------------------------------
   describe("rounded once, after the parts are folded (issues #2384, #2410)", () => {
-    // 100.01 EUR at 1.2474 is 124.752474 USD: 124.75 alone, and 249.504948
-    // for two, which reads 249.50. A figure that rounded its running sum on
-    // every row, or added four-place readings, came to 249.5050, which showed
-    // as 249.51.
+    // 1.93 EUR at 1.2474 is 2.407482 USD: 2.41 alone, and 4.814964 for two,
+    // which reads 4.81. Adding the two-place readings (issue #2410) gives
+    // 4.82, and so does adding the four-place ones, 2.4075 each, read at two
+    // (issue #2384).
     beforeEach(() => {
       currencyService.convertRow.mockImplementation(
         (amount: number, row: RawRateBasis) =>
@@ -1652,7 +1652,7 @@ describe("TaxRecurringReportsService", () => {
       );
     });
 
-    it("totals two income sources and two deductible categories at 249.50", async () => {
+    it("totals two income sources and two deductible categories at 4.81", async () => {
       const bonus: Category = {
         ...mockSalaryCategory,
         id: "cat-bonus",
@@ -1674,27 +1674,25 @@ describe("TaxRecurringReportsService", () => {
           category_id: categoryId,
           currency_code: "EUR",
           tx_date: "2025-03-01",
-          amount: "100.01",
+          amount: "1.93",
         })),
         ...["cat-medical", "cat-dental"].map((categoryId) => ({
           category_id: categoryId,
           currency_code: "EUR",
           tx_date: "2025-03-01",
-          amount: "-100.01",
+          amount: "-1.93",
         })),
       ]);
 
       const result = await service.getTaxSummary(mockUserId, 2025);
 
-      expect(result.incomeBySource.map((i) => i.total)).toEqual([
-        124.75, 124.75,
-      ]);
-      expect(result.totals.income).toBe(249.5);
-      expect(result.totals.expenses).toBe(249.5);
-      expect(result.totals.deductible).toBe(249.5);
+      expect(result.incomeBySource.map((i) => i.total)).toEqual([2.41, 2.41]);
+      expect(result.totals.income).toBe(4.81);
+      expect(result.totals.expenses).toBe(4.81);
+      expect(result.totals.deductible).toBe(4.81);
     });
 
-    it("totals two recurring payees at 249.50 and estimates a month from the unrounded total", async () => {
+    it("totals two recurring payees at 4.81 and estimates a month from the unrounded total", async () => {
       scopedManager.query.mockResolvedValue(
         ["streaming", "music"].map((name) => ({
           payee_id: null,
@@ -1704,7 +1702,7 @@ describe("TaxRecurringReportsService", () => {
           currency_code: "EUR",
           tx_date: "2025-06-01",
           occurrences: 3,
-          total_amount: "100.01",
+          total_amount: "1.93",
           last_transaction_date: new Date("2025-06-01"),
           history_start: "2025-04-01",
         })),
@@ -1712,20 +1710,20 @@ describe("TaxRecurringReportsService", () => {
 
       const result = await service.getRecurringExpenses(mockUserId, 3);
 
-      expect(result.data.map((d) => d.totalAmount)).toEqual([124.75, 124.75]);
-      expect(result.summary.totalRecurring).toBe(249.5);
+      expect(result.data.map((d) => d.totalAmount)).toEqual([2.41, 2.41]);
+      expect(result.summary.totalRecurring).toBe(4.81);
       expect(result.summary.monthlyEstimate).toBe(
-        roundMoney(249.504948 / result.summary.monthCount, 2),
+        roundMoney(4.814964 / result.summary.monthCount, 2),
       );
     });
 
-    it("totals a bill's two payments at 249.50", async () => {
+    it("totals a bill's two payments at 4.81", async () => {
       scopedManager.query
         .mockResolvedValueOnce([
           {
             id: "st-1",
             name: "Rent",
-            amount: "-125.00",
+            amount: "-2.41",
             payee_name: "Landlord",
           },
         ])
@@ -1736,7 +1734,7 @@ describe("TaxRecurringReportsService", () => {
             currency_code: "EUR",
             tx_date: date,
             own_rate: null,
-            amount: "100.01",
+            amount: "1.93",
             payee_name_normalized: "landlord",
           })),
         );
@@ -1747,12 +1745,10 @@ describe("TaxRecurringReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.billPayments[0].totalPaid).toBe(249.5);
-      expect(result.billPayments[0].averagePayment).toBe(124.75);
-      expect(result.summary.totalPaid).toBe(249.5);
-      expect(result.monthlyTotals.map((m) => m.total)).toEqual([
-        124.75, 124.75,
-      ]);
+      expect(result.billPayments[0].totalPaid).toBe(4.81);
+      expect(result.billPayments[0].averagePayment).toBe(2.41);
+      expect(result.summary.totalPaid).toBe(4.81);
+      expect(result.monthlyTotals.map((m) => m.total)).toEqual([2.41, 2.41]);
     });
   });
 
