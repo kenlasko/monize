@@ -3430,7 +3430,11 @@ Known gap           Report figures leave the server at four places and the
                     docs/specs/report-rounding-and-aggregation.md, option (b)).
                     Several client totals are built from rounded rows (the
                     same task list, stage 3). Budget Health's income-line and
-                    expense sides add each line's own four-place actual.
+                    expense sides, and the budget summary's, period close's
+                    and alerts' income, add each line's own four-place actual
+                    (CategorySpending keeps a line's reading, not its
+                    aggregate); the transfers-in toggle's figure folds as its
+                    aggregate in Budget Health only.
 Status              partial
 ```
 
