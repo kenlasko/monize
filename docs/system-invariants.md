@@ -3394,9 +3394,10 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     (report-net-cells.ts, report-rows.ts), the built-in
                     reports ticked in stage 1 of
                     docs/future-plans/report-rounding-and-aggregation-tasks.md,
-                    convertDatedRows, the monthly net worth, an account's
-                    portfolio gain, the AI insights and forecast aggregators
-                    and the client's sumConverted
+                    convertDatedRows, the monthly net worth, the portfolio
+                    gains (each account's and the summary's), the AI
+                    insights, forecast and flow totals and the client's
+                    sumConverted
                     (frontend/src/lib/currency-total.ts).
                     backend/src/common/report-rounding.guard.spec.ts fails an
                     addConverted, add, sumMoney, +=, -=, + or - over an
