@@ -1,5 +1,5 @@
 import { rowAffectsBalance, type RunningBalanceRow } from '@/lib/running-balance';
-import { moneyDecimalsForCurrency } from '@/lib/format';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { combineTotals, sumConverted, type ConvertedTotal } from '@/lib/currency-total';
 
 /**
@@ -78,7 +78,8 @@ function sumInto(
     (item) => item.amount,
     (item) => item.row.currencyCode,
     (amount, _from, item) => rowAmountIn(item.row, amount, currency),
-    moneyDecimalsForCurrency(currency),
+    // Rounded once, at the places the register shows `currency` in.
+    getDecimalPlacesForCurrency(currency),
   );
 }
 

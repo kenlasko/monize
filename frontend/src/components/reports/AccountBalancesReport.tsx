@@ -43,7 +43,7 @@ import {
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { CARD_CLASS } from '@/components/ui/Card';
-import { FIAT_MONEY_DECIMALS, roundMoney } from '@/lib/format';
+import { getDecimalPlacesForCurrency, roundMoney } from '@/lib/format';
 
 const ACCOUNT_TYPE_KEYS = [
   'CHEQUING',
@@ -178,6 +178,9 @@ export function AccountBalancesReport() {
     () => asOfConverter(displayCurrency, response?.balances.displayRates ?? {}),
     [displayCurrency, response],
   );
+  // Every total here is rounded once, at the places the display currency is
+  // shown in (docs/specs/report-rounding-and-aggregation.md section 2).
+  const displayPlaces = getDecimalPlacesForCurrency(displayCurrency);
 
   /** Ledger balance per account id at the measured date. */
   const ledgerBalances = useMemo(() => {
@@ -443,6 +446,7 @@ export function AccountBalancesReport() {
         (entry) => entry.combinedValue ?? Number.NaN,
         (entry) => entry.primary.currencyCode,
         convertToDisplay,
+        displayPlaces,
       );
     const assets = split(false);
     // A liability is stored negative and reported as what is owed.
@@ -458,9 +462,10 @@ export function AccountBalancesReport() {
       (entry) => entry.combinedValue ?? Number.NaN,
       (entry) => entry.primary.currencyCode,
       convertToDisplay,
+      displayPlaces,
     );
     return { assets, liabilities, netWorth, all };
-  }, [visibleAccounts, convertToDisplay]);
+  }, [visibleAccounts, convertToDisplay, displayPlaces]);
 
   const groupTotal = useCallback(
     (entries: LogicalAccount[]) =>
@@ -469,8 +474,9 @@ export function AccountBalancesReport() {
         (entry) => entry.combinedValue ?? Number.NaN,
         (entry) => entry.primary.currencyCode,
         convertToDisplay,
+        displayPlaces,
       ),
-    [convertToDisplay],
+    [convertToDisplay, displayPlaces],
   );
 
   /**
@@ -489,9 +495,9 @@ export function AccountBalancesReport() {
     let assetIdx = 0;
     let liabilityIdx = 0;
     const push = (name: string, rawSignedValue: number) => {
-      // At the storage precision: a group netting to a floating-point epsilon
-      // is a zero, not a sliver of a slice with a $0.00 legend row.
-      const signedValue = roundMoney(rawSignedValue, FIAT_MONEY_DECIMALS);
+      // At the places the legend shows: a group netting to a floating-point
+      // epsilon is a zero, not a sliver of a slice with a $0.00 legend row.
+      const signedValue = roundMoney(rawSignedValue, displayPlaces);
       // A zero-size slice reads as a measured zero, so it is not drawn.
       if (signedValue === 0) return;
       const color =
@@ -518,7 +524,7 @@ export function AccountBalancesReport() {
       }
     }
     return data.sort((a, b) => b.value - a.value);
-  }, [groupBy, groups, visibleAccounts, signedDisplayValue, groupLabel, groupTotal]);
+  }, [groupBy, groups, visibleAccounts, signedDisplayValue, groupLabel, groupTotal, displayPlaces]);
 
   /**
    * The pie's denominator: the sum of slice magnitudes, which is what each

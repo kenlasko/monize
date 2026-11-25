@@ -56,19 +56,19 @@ describe('register style data', () => {
     });
   });
 
-  // Each side's converted rows round up on their own: deposits of 1.00008
-  // read 1.0001 and payments of 1.00004 read 1.0000, so the difference of the
-  // two readings was 0.0001 where the net, 0.00004, reads 0.0000 (issue #2413).
-  it('nets the two sides before rounding, not their readings', () => {
+  // Deposits of 1.005 read 1.01 and payments of 1.004 read 1.00 at CAD's two
+  // places, so the difference of the two readings is 0.01 where the net,
+  // 0.001, reads 0.00; at four places the net was 0.001, a figure the footer
+  // then rounded again (issue #2413).
+  it('nets the two sides before rounding, once at the currency\'s places', () => {
     const mixed = [
       { id: 'c1', transactionDate: '2024-01-15', amount: 1, currencyCode: 'CAD' },
       { id: 'c2', transactionDate: '2024-01-15', amount: -1, currencyCode: 'CAD' },
-      { id: 'u1', transactionDate: '2024-01-15', amount: 0.0001, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
-      { id: 'u2', transactionDate: '2024-01-15', amount: 0.0001, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
-      { id: 'u3', transactionDate: '2024-01-15', amount: -0.0001, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
+      { id: 'u1', transactionDate: '2024-01-15', amount: 0.0125, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
+      { id: 'u2', transactionDate: '2024-01-15', amount: -0.01, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
     ];
     const totals = pageTotals(mixed, new Map(), 'CAD');
-    expect(totals.deposits.value).toBe(1.0001);
+    expect(totals.deposits.value).toBe(1.01);
     expect(totals.payments.value).toBe(1);
     expect(totals.net.value).toBe(0);
   });

@@ -58,6 +58,7 @@ import { loadFutureTransactions } from '@/lib/future-transactions';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { combineTotals, isComplete, sumConverted } from '@/lib/currency-total';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { Modal } from '@/components/ui/Modal';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { useFormModal } from '@/hooks/useFormModal';
@@ -678,17 +679,21 @@ function BillsContent() {
     // Converted into ONE currency -- the reader's default, which is also what
     // the card's `formatCurrency` labels a bare amount with -- and a pair with
     // no rate withholds the net rather than shrinking it.
+    // Each rounded once, at the places the card shows the reader's currency in.
+    const places = getDecimalPlacesForCurrency(defaultCurrency);
     const bills = sumConverted(
       billComponents,
       (c) => c.monthly,
       (c) => c.currencyCode,
       convertToDefault,
+      places,
     );
     const deposits = sumConverted(
       depositComponents,
       (c) => c.monthly,
       (c) => c.currencyCode,
       convertToDefault,
+      places,
     );
     // Incompleteness is the union: a complete deposits total beside a partial
     // bills total makes the net partial.
@@ -708,7 +713,7 @@ function BillsContent() {
       monthlyHasUnpriceable: !amountsResolved,
       dueCount,
     };
-  }, [scheduledTransactions, convertToDefault, financialToday]);
+  }, [scheduledTransactions, convertToDefault, defaultCurrency, financialToday]);
 
   /**
    * Why the Monthly Net is withheld, or `undefined` when it is not.

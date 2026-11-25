@@ -30,6 +30,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { AccountsSummary } from '@/components/accounts/variants/AccountsSummary';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { accountCarriesBalance } from '@/lib/account-carries-balance';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CARD_CLASS } from '@/components/ui/Card';
@@ -296,11 +297,13 @@ function AccountsContent() {
       const contributions = accts.map((a) => ({ account: a, value: contributedBalance(a) }));
       const known = contributions.filter((c): c is { account: Account; value: number } => c.value !== null);
       const unknownCount = contributions.length - known.length;
+      // Rounded once, at the places the cards show the reporting currency in.
       const converted = sumConverted(
         known,
         (c) => c.value,
         (c) => c.account.currencyCode,
         convert,
+        getDecimalPlacesForCurrency(defaultCurrency),
       );
       return { ...converted, excludedCount: converted.excludedCount + unknownCount };
     };
@@ -323,7 +326,7 @@ function AccountsContent() {
       accountCount: countLogicalAccounts(activeAccounts),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, convertToDefault]);
+  }, [accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, convertToDefault, defaultCurrency]);
 
   // Back to the list puts the reader where they left it.
   useRetainScrollPosition(!isLoading);

@@ -1296,6 +1296,27 @@ describe('BillsPage', () => {
       });
     });
 
+    // Read at four places a deposit total of 0.12496 was 0.1250 and printed
+    // $0.13; read once at the dollar's two places it is $0.12 (issue #2413).
+    it("rounds the net once, at the reader's currency's places", async () => {
+      mockRates.set('CAD->USD', 0.6);
+      const schedule = (id: string, currencyCode: string, amount: number) => ({
+        id,
+        currencyCode,
+        name: id,
+        amount,
+        frequency: 'MONTHLY',
+        nextDueDate: '2026-03-01',
+        isActive: true,
+        isTransfer: false,
+      });
+      mockGetAll.mockResolvedValue([schedule('pay-usd', 'USD', 0.1249), schedule('pay-cad', 'CAD', 0.0001)]);
+      render(<BillsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('summary-Monthly Net')).toHaveTextContent('USD $0.12');
+      });
+    });
+
     it('withholds the net and names the currency when a rate is missing', async () => {
       // No CAD->USD rate: the honest answer is that the net is not known, with
       // the reason on screen. A blank where a number belongs is indistinguishable

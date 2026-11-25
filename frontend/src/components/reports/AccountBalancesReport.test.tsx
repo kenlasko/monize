@@ -278,10 +278,10 @@ describe("AccountBalancesReport", () => {
     ).toBeInTheDocument();
   });
 
-  // Each card rounds on its own: assets of 0.12495 read 0.1250 and
-  // liabilities of 0.00004 read 0.0000, so the difference of the two cards
-  // printed $0.13 where the net, 0.12491, is $0.12 (issue #2413).
-  it("nets the two sides before rounding, not the two cards", async () => {
+  // Each card was read at four places and shown at two: assets of 0.12495
+  // read 0.1250 and printed $0.13, and so did the net of the two readings,
+  // where the assets are $0.12 and the net, 0.12491, is $0.12 (issue #2413).
+  it("nets the two sides before rounding, once at the places shown", async () => {
     mockGetAll.mockResolvedValue([
       acc(),
       acc({ id: "acc-2", name: "Euro Savings", accountType: "SAVINGS", currencyCode: "EUR" }),
@@ -302,7 +302,7 @@ describe("AccountBalancesReport", () => {
     await waitFor(() => {
       expect(screen.getByText("Total Assets")).toBeInTheDocument();
     });
-    expect(within(screen.getByTestId("summary-assets")).getByText("$0.13")).toBeInTheDocument();
+    expect(within(screen.getByTestId("summary-assets")).getByText("$0.12")).toBeInTheDocument();
     expect(within(screen.getByTestId("summary-liabilities")).getByText("$0.00")).toBeInTheDocument();
     expect(within(screen.getByTestId("summary-networth")).getByText("$0.12")).toBeInTheDocument();
   });

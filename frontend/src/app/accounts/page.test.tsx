@@ -817,10 +817,11 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('summary-Total Assets')).not.toHaveTextContent('partial total');
     });
 
-    // Each side rounds on its own: assets of 0.12495 read 0.1250 and
-    // liabilities of 0.00004 read 0.0000, so the difference of the two
-    // readings printed $0.13 where the net, 0.12491, is $0.12 (issue #2413).
-    it('nets the two sides before rounding, not the two cards', async () => {
+    // Each side was read at four places and then shown at two: assets of
+    // 0.12495 read 0.1250 and printed $0.13, and the net of the two readings
+    // printed $0.13 too, where the assets are $0.12 and the net, 0.12491, is
+    // $0.12 (issue #2413).
+    it('nets the two sides before rounding, once at the places shown', async () => {
       mockRates = { USD: 1, EUR: 0.5, GBP: 0.4 };
       mockGetAll.mockResolvedValue([
         { id: 'acc-1', name: 'Checking', accountType: 'CHECKING', accountSubType: null, currencyCode: 'USD', currentBalance: 0.1249, isClosed: false, canDelete: true },
@@ -830,7 +831,7 @@ describe('AccountsPage', () => {
       render(<AccountsPage />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('$0.13');
+        expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('$0.12');
       });
       expect(screen.getByTestId('summary-Total Liabilities')).toHaveTextContent('$0.00');
       expect(screen.getByTestId('summary-Net Worth')).toHaveTextContent('$0.12');
