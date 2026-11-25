@@ -3448,7 +3448,10 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     and the Sankey property specs over CAD and JPY ledgers.
 Known gap           A holding's own value, cost and gain in the portfolio
                     summary and the Portfolio Value report's intraday (1D)
-                    bars leave at four places; the Monthly Comparison's
+                    bars leave at four places, and so do an account's totals
+                    in the portfolio summary (at its currency's money
+                    precision) and the Foreign Currency Fees rows, which the
+                    client adds together (stage 3); the Monthly Comparison's
                     investment figures come from PortfolioPeriodResultService
                     at four places and are read at two. Several client totals are built from rounded rows
                     (docs/future-plans/report-rounding-and-aggregation-tasks.md,
