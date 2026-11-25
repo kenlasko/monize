@@ -108,7 +108,7 @@ The figures a report receives are worked out from the converted amounts themselv
 | Report | Description |
 |--------|-------------|
 | **Net Worth Over Time** | Track your total net worth including all accounts, assets, and liabilities. The **Bar style** switch shows each month as one **Net worth** bar or stacked **By account type** |
-| **Account Balances** | See what every account was worth on any date you pick (**Balance as of**), grouped by assets and liabilities, account type, institution, open or closed, or favourite, and sorted by name or balance. Filters narrow it to some institutions, account types, or statuses |
+| **Account Balances** | See what every account was worth on any date you pick (**Balance as of**), grouped by assets and liabilities, account type, institution, open or closed, or favourite, and sorted by name or balance. Filters narrow it to some institutions, account types, or statuses. The CSV export writes each balance as a number in its account's own currency, with the currency in a column beside it |
 
 ![The Net Worth Over Time report](images/report-net-worth.png)
 

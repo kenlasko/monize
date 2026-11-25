@@ -3426,7 +3426,12 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     totals, Weekend vs Weekday's weekendShare /
                     weekdayShare), and a page total folds its parts' exact
                     sums: combineTotals rounds the signed sum of
-                    ConvertedTotal.exact once (issue #2413).
+                    ConvertedTotal.exact once (issue #2413). The Monthly &
+                    Yearly Breakdown's totals
+                    (monthly-category-breakdown-totals.ts), a tag-bucket
+                    period's Balance and the Foreign Currency Fees totals
+                    (fx-fee-totals.ts, GET /transactions/fx-fee-totals) are
+                    the server's, each folded from aggregates and read once.
                     backend/src/common/report-rounding.guard.spec.ts fails an
                     addConverted, add, sumMoney, +=, -=, + or - over an
                     aggregate's knownSubtotal / unroundedSubtotal /
@@ -3470,18 +3475,23 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     custom report chart's share under an average metric and
                     over a listed row's headline; the Cash Flow PDF's
                     category totals; comparison-reports.service.spec.ts's
-                    weekend share from the unrounded sums; the Sankey's
-                    merged figures).
+                    weekend share and means from the unrounded sums; the
+                    Sankey's merged figures; fx-fee-totals.spec.ts and
+                    getFxFeeTotals over three 2.50496 fees;
+                    monthly-category-breakdown-totals.spec.ts and the
+                    breakdown service's year fold; the tag bucket's period
+                    Balance in income-reports.service.spec.ts).
 Known gap           A holding's own value, cost and gain in the portfolio
                     summary and the Portfolio Value report's intraday (1D)
                     bars leave at four places, and so do an account's totals
                     in the portfolio summary (at its currency's money
-                    precision) and the Foreign Currency Fees rows, which the
-                    client adds together (stage 3); the Monthly Comparison's
+                    precision); the Monthly Comparison's
                     investment figures come from PortfolioPeriodResultService
-                    at four places and are read at two. Several client totals are built from rounded rows
+                    at four places and are read at two. The investment reports'
+                    client totals are still built from client-converted rows
                     (docs/future-plans/report-rounding-and-aggregation-tasks.md,
-                    stage 3). Budget Health's income-line and expense sides,
+                    stage 3, issue #2414); the cash and spending reports' read
+                    the server's (issue #2413). Budget Health's income-line and expense sides,
                     the other budget reports, and the budget summary's, period
                     close's and alerts' income, add each line's own four-place
                     actual (CategorySpending keeps a line's reading, not its
