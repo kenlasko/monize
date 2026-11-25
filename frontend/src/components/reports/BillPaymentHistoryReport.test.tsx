@@ -351,6 +351,38 @@ describe('BillPaymentHistoryReport', () => {
     );
   });
 
+  it('formats the PDF table amounts as the table does, keeping the CSV numbers raw', async () => {
+    mockGetBillPaymentHistory.mockResolvedValue({
+      billPayments: [
+        {
+          scheduledTransactionId: 'st-1',
+          scheduledTransactionName: 'Fee',
+          payeeName: 'Bank',
+          paymentCount: 2,
+          // 2.50498 read once at two places, as the server sends it.
+          averagePayment: 2.5,
+          totalPaid: 5.01,
+          lastPaymentDate: '2025-01-01',
+        },
+      ],
+      monthlyTotals: [],
+      summary: { totalPaid: 5.01, monthlyAverage: 2.5, uniqueBills: 1, totalPayments: 2 },
+    });
+    render(<BillPaymentHistoryReport />);
+    await waitFor(() => expect(screen.getByTestId('export-pdf')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('export-pdf'));
+    });
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledTimes(1));
+    const pdfRow = mockExportToPdf.mock.calls[0][0].tableData.rows[0];
+    expect(pdfRow[3]).toBe('$2.50');
+    expect(pdfRow[4]).toBe('$5.01');
+    fireEvent.click(screen.getByTestId('export-csv'));
+    const csvRow = mockExportToCsv.mock.calls[0][2][0];
+    expect(csvRow[3]).toBe(2.5);
+    expect(csvRow[4]).toBe(5.01);
+  });
+
   it('export does nothing when billData is null', async () => {
     mockGetBillPaymentHistory.mockReturnValue(new Promise(() => {}));
     render(<BillPaymentHistoryReport />);

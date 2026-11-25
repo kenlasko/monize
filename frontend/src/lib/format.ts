@@ -64,6 +64,17 @@ export function getDecimalPlacesForCurrency(currencyCode: string): number {
 }
 
 /**
+ * A money figure rounded once at the places the screen shows `currencyCode` in
+ * (`getDecimalPlacesForCurrency`: 2 for USD, 0 for JPY, a coin's own): the
+ * figure an export writes when the client works it out itself, such as a
+ * native value times a rate. `docs/frontend/financial-figures.md`, "An export
+ * writes the screen's figure".
+ */
+export function roundToCurrencyPlaces(value: number, currencyCode: string): number {
+  return roundToDecimals(value, getDecimalPlacesForCurrency(currencyCode));
+}
+
+/**
  * Scale a number by a power of ten using its string form, so the decimal
  * shift introduces no IEEE 754 multiplication error.
  *

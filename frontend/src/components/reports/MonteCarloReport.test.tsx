@@ -1434,6 +1434,46 @@ describe('MonteCarloReport', () => {
     });
   });
 
+  describe('CSV export precision', () => {
+    it('writes each percentile as a number at the currency places the table shows', async () => {
+      const captured: Blob[] = [];
+      const origCreate = global.URL.createObjectURL;
+      const origRevoke = global.URL.revokeObjectURL;
+      global.URL.createObjectURL = ((b: Blob) => {
+        captured.push(b);
+        return 'blob:url';
+      }) as never;
+      global.URL.revokeObjectURL = (() => undefined) as never;
+      // 1.005 reads 1.01 on screen, where `toFixed(2)` wrote 1.00; 2.50498
+      // reads 2.50, written as the number 2.5 rather than the text "2.50".
+      const result = simResult({
+        percentiles: {
+          p10: [1.005, 120, 130],
+          p25: [2.50498, 130, 145],
+          p50: [120, 140, 160],
+          p75: [125, 150, 175],
+          p90: [130, 160, 190],
+        },
+      });
+      mockApi.run.mockResolvedValue(result);
+      mockApi.runSaved.mockResolvedValue(result);
+      await renderReport();
+      await screen.findByText('Contribution phase');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Run simulation/i }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Export/i }));
+      const csvOption = await screen.findByRole('button', { name: /^CSV$/ });
+      await act(async () => {
+        fireEvent.click(csvOption);
+      });
+      const text = await captured[0].text();
+      expect(text).toMatch(/,1\.01,2\.5,120,125,130,/);
+      global.URL.createObjectURL = origCreate;
+      global.URL.revokeObjectURL = origRevoke;
+    });
+  });
+
   describe('CSV export with cash flows', () => {
     it('encodes both one-time and recurring events in the CSV blob', async () => {
       const captured: Blob[] = [];

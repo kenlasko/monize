@@ -59,7 +59,7 @@ Totals the client sums where the server has one, or has none to give:
 
 Exports:
 
-- [ ] `frontend/src/components/reports/BillPaymentHistoryReport.tsx`, `RecurringExpensesReport.tsx`, `DuplicateTransactionReport.tsx`, `RealizedGainsReport.tsx`: the PDF prints raw numbers (`frontend/src/lib/pdf-export-tables.ts` formats nothing).
-- [ ] `frontend/src/components/reports/MonteCarloReport.tsx`: the CSV writes `toFixed(2)` strings.
-- [ ] `frontend/src/components/reports/InvestmentReportViewer.tsx`: the CSV writes an unrounded product.
-- [ ] One documented export precision in `docs/frontend/financial-figures.md`, following section 6.
+- [x] `frontend/src/components/reports/BillPaymentHistoryReport.tsx`, `RecurringExpensesReport.tsx`, `DuplicateTransactionReport.tsx`, `RealizedGainsReport.tsx`: the PDF prints raw numbers (`frontend/src/lib/pdf-export-tables.ts` formats nothing). Fixed in issue #2411: each builds its export rows per surface and formats the PDF's money cells, total row included, with the formatter its on-screen cell uses.
+- [x] `frontend/src/components/reports/MonteCarloReport.tsx`: the CSV writes `toFixed(2)` strings. Fixed in issue #2411: it writes numbers through `roundToCurrencyPlaces` at the reporting currency's places.
+- [x] `frontend/src/components/reports/InvestmentReportViewer.tsx`: the CSV writes an unrounded product. Fixed in issue #2411: the base-currency product is rounded once at the base currency's places (`roundToCurrencyPlaces`).
+- [x] One documented export precision in `docs/frontend/financial-figures.md`, following section 6: "An export writes the screen's figure, at one export precision" (issue #2411).

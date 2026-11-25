@@ -157,7 +157,9 @@ export function DuplicateTransactionReport() {
     }
   };
 
-  const getExportData = () => {
+  // The CSV writes each amount as the server's number; the PDF is read by a
+  // person and formats it as the group card does, in the row's own currency.
+  const getExportData = (surface: 'csv' | 'pdf') => {
     const headers = [t('duplicateTransactions.colDate'), t('duplicateTransactions.colPayee'), t('duplicateTransactions.colDescription'), t('duplicateTransactions.colCategory'), t('duplicateTransactions.colAccount'), t('duplicateTransactions.colAmount'), t('duplicateTransactions.colConfidence'), t('duplicateTransactions.colReason')];
     const rows: (string | number)[][] = [];
     for (const group of duplicateGroups) {
@@ -168,7 +170,7 @@ export function DuplicateTransactionReport() {
           tx.description || '',
           categoryLabel(tx),
           tx.accountName || '',
-          tx.amount,
+          surface === 'pdf' ? formatCurrency(tx.amount, tx.currencyCode) : tx.amount,
           confidenceLabel(group.confidence),
           reasonLabel(group),
         ]);
@@ -178,13 +180,13 @@ export function DuplicateTransactionReport() {
   };
 
   const handleExportCsv = () => {
-    const { headers, rows } = getExportData();
+    const { headers, rows } = getExportData('csv');
     exportToCsv('duplicate-transactions', headers, rows);
   };
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    const { headers, rows } = getExportData();
+    const { headers, rows } = getExportData('pdf');
     await exportToPdf({
       title: t('duplicateTransactions.pdfTitle'),
       subtitle: `${summary.totalGroups} ${t('duplicateTransactions.groupsFound')} | ${t('duplicateTransactions.potentialImpact')}: ${impactText}`,

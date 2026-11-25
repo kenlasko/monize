@@ -304,11 +304,6 @@ describe('a figure is not formatted with toFixed in UI code', () => {
 
   /** Not a readout: the call produces a value a machine or a table reads. */
   const CLASSIFIED: Record<string, Entry> = {
-    '/src/components/reports/MonteCarloReport.tsx': {
-      count: 5,
-      reason:
-        'CSV export rows (p10..p90): machine output with a fixed "." decimal, not a figure on screen',
-    },
     '/src/components/securities/detail/SecurityBondScenarioPanel.tsx': {
       count: 1,
       reason:
@@ -410,6 +405,6 @@ describe('a figure is not formatted with toFixed in UI code', () => {
   it('still finds toFixed in UI code, so the scan is not vacuous', () => {
     const found = actualCounts();
     expect(found.size).toBeGreaterThan(0);
-    expect(found.get('/src/components/reports/MonteCarloReport.tsx')?.length).toBeGreaterThanOrEqual(5);
+    expect(found.get('/src/components/reports/MonteCarloReport.tsx')?.length).toBeGreaterThanOrEqual(2);
   });
 });

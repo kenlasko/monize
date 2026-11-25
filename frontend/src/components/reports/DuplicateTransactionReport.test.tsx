@@ -46,6 +46,25 @@ vi.mock('@/components/ui/DateRangeSelector', () => ({
   },
 }));
 
+vi.mock('@/components/ui/ExportDropdown', () => ({
+  ExportDropdown: ({ onExportCsv, onExportPdf }: { onExportCsv?: () => void; onExportPdf?: () => void }) => (
+    <div data-testid="export-dropdown">
+      <button data-testid="export-csv" onClick={onExportCsv}>CSV</button>
+      <button data-testid="export-pdf" onClick={onExportPdf}>PDF</button>
+    </div>
+  ),
+}));
+
+const mockExportToCsv = vi.fn();
+vi.mock('@/lib/csv-export', () => ({
+  exportToCsv: (...args: unknown[]) => mockExportToCsv(...args),
+}));
+
+const mockExportToPdf = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/lib/pdf-export', () => ({
+  exportToPdf: (...args: unknown[]) => mockExportToPdf(...args),
+}));
+
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -197,6 +216,25 @@ describe('DuplicateTransactionReport', () => {
     const card = screen.getByText('Potential Impact').parentElement!;
     expect(card).toHaveTextContent('$150.25');
     expect(card).toHaveTextContent('*');
+  });
+
+  it('formats each amount in the PDF as the group card does, keeping the CSV numbers raw', async () => {
+    // 2.50498 read once at two places, as the server sends it.
+    const pair = group({
+      key: 'g-fee',
+      transactions: [tx({ id: 'f-1', amount: -2.5 }), tx({ id: 'f-2', amount: -2.5 })],
+    });
+    mockGetDuplicateTransactions.mockResolvedValue(response([pair]));
+    await renderReport();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('export-pdf'));
+    });
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledTimes(1));
+    const pdfRows = mockExportToPdf.mock.calls[0][0].tableData.rows as unknown[][];
+    expect(pdfRows.map((row) => row[5])).toEqual(['$-2.50', '$-2.50']);
+    fireEvent.click(screen.getByTestId('export-csv'));
+    const csvRows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+    expect(csvRows.map((row) => row[5])).toEqual([-2.5, -2.5]);
   });
 
   it('labels each group with its translated confidence and reason', async () => {
