@@ -97,10 +97,7 @@ function getColumnMap(
     [TableColumn.ORIGINAL_AMOUNT]: { header: originalAmountHeader, getValue: (item) => item.originalAmount ?? '' },
     [TableColumn.PERCENTAGE]: {
       header: '%',
-      getValue: (item) => {
-        const share = signed ? null : shareOf(item);
-        return share === null ? '' : (item.percentage ?? Number(share.toFixed(1)));
-      },
+      getValue: (item) => (signed ? null : shareOf(item)) ?? '',
     },
     [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
     [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.tags || '' },
@@ -166,24 +163,15 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     [chartData],
   );
 
-  // A row's share is the server's (`percentage`, worked out from the
-  // unrounded aggregates). A row the server gave none (a listed transaction)
-  // is a share of the server's headline where that headline is the sum of
-  // the rows, never of the rows' rounded figures added up here, and none at
-  // all under an average or a budget variance, whose headline is not a sum
-  // of the rows (docs/specs/report-rounding-and-aggregation.md rule 8).
-  const shareBase =
-    totalRowValue !== undefined &&
-    metric !== MetricType.AVERAGE &&
-    metric !== MetricType.BUDGET_VARIANCE
-      ? totalRowValue
-      : null;
-  const shareOf: ShareOf = (item) => {
-    if (item.value === null) return null;
-    if (item.percentage !== undefined) return item.percentage;
-    if (shareBase === null) return null;
-    return shareBase > 0 ? (item.value / shareBase) * 100 : 0;
-  };
+  // A row's share is the server's (`percentage`, divided from the unrounded
+  // aggregates), a listed transaction's included. A row the server gave none
+  // (an average or a budget variance, whose headline is not a sum of the rows)
+  // has no share, never one divided here from rounded figures
+  // (docs/specs/report-rounding-and-aggregation.md rule 8).
+  const shareOf: ShareOf = (item) =>
+    item.value === null ? null : (item.percentage ?? null);
+  // The Total row's 100% only over rows that carry a share.
+  const showsShares = !signed && chartData.some((item) => shareOf(item) !== null);
   const formatValue = (value: number) =>
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // The Total row prints the headline the server settled for the metric (a mean
@@ -248,7 +236,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
         if (totalRowValue === undefined) return '';
         return partialTotal ? cellFor(String(totalRowValue), partialTotal) : totalRowValue;
       }
-      if (col === TableColumn.PERCENTAGE) return signed ? '' : 100;
+      if (col === TableColumn.PERCENTAGE) return showsShares ? 100 : '';
       if (col === TableColumn.COUNT) return totalCount || '';
       return '';
     });
@@ -276,7 +264,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const totalRow = columns.map((col) => {
       if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return totalLabel;
       if (col === TableColumn.VALUE) return totalCell();
-      if (col === TableColumn.PERCENTAGE) return signed ? '' : formatPercent(100, 1);
+      if (col === TableColumn.PERCENTAGE) return showsShares ? formatPercent(100, 1) : '';
       if (col === TableColumn.COUNT) return totalCount ? formatNumber(totalCount, 0) : '';
       return '';
     });
@@ -607,7 +595,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                 )}
                 {columns.includes(TableColumn.PERCENTAGE) && (
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                    {signed ? '' : '100%'}
+                    {showsShares ? formatPercent(100, 1) : ''}
                   </td>
                 )}
                 {columns.includes(TableColumn.COUNT) && (
