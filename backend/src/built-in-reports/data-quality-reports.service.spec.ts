@@ -257,22 +257,27 @@ describe("DataQualityReportsService", () => {
 
     it("rounds a converted amount once at the report currency's places (issue #2410)", async () => {
       // -1.00 EUR at 2.50498 is -2.50498 USD, sent unrounded until now: it
-      // reads -2.50. A row left in its own currency keeps its posted places.
+      // reads -2.50. A row already in USD is its posted amount: 124.7525 and
+      // -0.004 stay as stored, so neither reads 124.75 or a zero that the
+      // page's income and expense filters would both drop.
       currencyService.convertRow.mockImplementation(
         (amount: number, { currency_code: fromCurrency }: RawRateBasis) =>
           fromCurrency === "EUR" ? amount * 2.50498 : amount,
       );
+      const row = (id: string, currency_code: string, amount: string) => ({
+        id,
+        transaction_date: "2025-05-01",
+        currency_code,
+        amount,
+        payee_name: "Store",
+        description: null,
+        account_name: "Account",
+        account_id: "acc-1",
+      });
       scopedManager.query.mockResolvedValueOnce([
-        {
-          id: "tx-1",
-          transaction_date: "2025-05-01",
-          currency_code: "EUR",
-          amount: "-1.00",
-          payee_name: "Euro Store",
-          description: null,
-          account_name: "Euro Account",
-          account_id: "acc-1",
-        },
+        row("tx-1", "EUR", "-1.00"),
+        row("tx-2", "USD", "124.7525"),
+        row("tx-3", "USD", "-0.004"),
       ]);
       scopedManager.query.mockResolvedValueOnce([]);
 
@@ -282,7 +287,9 @@ describe("DataQualityReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.transactions[0].amount).toBe(-2.5);
+      expect(result.transactions.map((t) => t.amount)).toEqual([
+        -2.5, 124.7525, -0.004,
+      ]);
     });
 
     it("includes startDate filter when provided", async () => {

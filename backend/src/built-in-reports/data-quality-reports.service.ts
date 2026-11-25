@@ -138,14 +138,18 @@ export class DataQualityReportsService {
       const amount = toMoneyNumber(row.amount, MONEY_SCALE);
       const converted = convertRow(amount, row);
       // The amount and its label move together: either both converted, or
-      // both the row's own.
+      // both the row's own. A row already in the reporting currency is its
+      // posted amount, never rounded; only a converted amount is a report
+      // figure, read at the currency's places.
       const shown =
         converted === null
           ? { amount, currencyCode: row.currency_code }
-          : {
-              amount: reportFigure(converted, places),
-              currencyCode: defaultCurrency,
-            };
+          : row.currency_code === defaultCurrency
+            ? { amount, currencyCode: defaultCurrency }
+            : {
+                amount: reportFigure(converted, places),
+                currencyCode: defaultCurrency,
+              };
       return {
         id: row.id,
         transactionDate: new Date(row.transaction_date)
