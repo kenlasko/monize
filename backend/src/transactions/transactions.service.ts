@@ -4654,6 +4654,59 @@ export class TransactionsService {
     );
   }
 
+  /**
+   * Confirm a provisional amount as it stands (design decision 4 of
+   * docs/future-plans/provisional-amounts.md): the flag is cleared and nothing
+   * else is written, so no amount and no balance moves. The refusal and the
+   * write are one conditional `UPDATE` keyed on the owner and on the flag
+   * still being set, so two confirmations cannot both succeed and a row that
+   * is not provisional is refused with nothing written.
+   */
+  async confirmAmount(userId: string, id: string): Promise<Transaction> {
+    // Owner-scoped: another owner's row is a 404 here, like any single-row read.
+    await this.findOne(userId, id);
+    await withScopedDb(this.dataSource, async (m) => {
+      const result = await m.update(
+        Transaction,
+        { id, userId, amountIsProvisional: true },
+        { amountIsProvisional: false },
+      );
+      if (!result.affected) {
+        throw new BadRequestException(
+          tr(
+            "errors.transactions.amountNotProvisional",
+            "This transaction's amount is not an estimate, so there is nothing to confirm.",
+          ),
+        );
+      }
+    });
+    const confirmed = await this.findOne(userId, id);
+    // The entry holds the flag alone: undo and redo put back only what this
+    // action wrote, never a stale copy of the leg's amount or date (the
+    // transfer edit that may follow records no entry of its own).
+    this.actionHistoryService.record(userId, {
+      entityType: "transaction",
+      entityId: id,
+      action: "update",
+      beforeData: { amountIsProvisional: true },
+      afterData: { amountIsProvisional: false },
+      description: `Confirmed amount of transaction ${confirmed.payeeName || ""} ${formatCurrency(Number(confirmed.amount), confirmed.currencyCode)}`,
+      descriptionKey: "confirmedTransactionAmount",
+      descriptionParams: {
+        payee: confirmed.payeeName || "",
+        // See `update`: English fallback plus the structured pair the client
+        // formats in the reader's number locale.
+        amount: formatCurrency(
+          Number(confirmed.amount),
+          confirmed.currencyCode,
+        ),
+        amountValue: Number(confirmed.amount),
+        amountCurrency: confirmed.currencyCode,
+      },
+    });
+    return confirmed;
+  }
+
   async getStaleUnreconciled(userId: string) {
     return this.reconciliationService.getStaleUnreconciled(userId);
   }

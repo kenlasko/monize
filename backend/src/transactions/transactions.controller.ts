@@ -1924,6 +1924,23 @@ export class TransactionsController {
     return this.transactionsService.unreconcile(req.user.id, id);
   }
 
+  @Post(":id/confirm-amount")
+  @ApiOperation({
+    summary:
+      "Confirm a provisional (estimated) amount as it stands; changes no amount and no balance",
+  })
+  @ApiParam({ name: "id", description: "Transaction UUID" })
+  @ApiResponse({ status: 200, description: "Amount confirmed" })
+  @ApiResponse({
+    status: 400,
+    description: "The transaction's amount is not provisional",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 404, description: "Transaction not found" })
+  confirmAmount(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
+    return this.transactionsService.confirmAmount(req.user.id, id);
+  }
+
   @Patch(":id/status")
   @ApiOperation({ summary: "Update transaction status" })
   @ApiParam({ name: "id", description: "Transaction UUID" })

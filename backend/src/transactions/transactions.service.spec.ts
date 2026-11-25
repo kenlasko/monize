@@ -3356,6 +3356,108 @@ describe("TransactionsService", () => {
     });
   });
 
+  // Design decision 4 and P6 of docs/future-plans/provisional-amounts.md.
+  describe("confirmAmount", () => {
+    const provisionalLeg = {
+      id: "tx-1",
+      userId: "user-1",
+      accountId: "account-1",
+      amount: 80,
+      currencyCode: "EUR",
+      payeeName: "Transfer from Checking",
+      isTransfer: true,
+      linkedTransactionId: "tx-2",
+      status: TransactionStatus.UNRECONCILED,
+      amountIsProvisional: true,
+      splits: [],
+    };
+    let history: { record: jest.Mock };
+
+    beforeEach(() => {
+      history = (service as any).actionHistoryService;
+      history.record.mockClear();
+    });
+
+    it("clears the flag with one conditional write and moves no amount and no balance", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({ ...provisionalLeg })
+        .mockResolvedValueOnce({
+          ...provisionalLeg,
+          amountIsProvisional: false,
+        });
+      transactionsRepository.update.mockResolvedValueOnce({ affected: 1 });
+
+      const result = await service.confirmAmount("user-1", "tx-1");
+
+      // Keyed on the owner and on the flag still being set: the refusal and
+      // the write are the same statement.
+      expect(transactionsRepository.update.mock.calls).toEqual([
+        [
+          { id: "tx-1", userId: "user-1", amountIsProvisional: true },
+          { amountIsProvisional: false },
+        ],
+      ]);
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      expect(accountsService.recalculateCurrentBalance).not.toHaveBeenCalled();
+      expect(result.amountIsProvisional).toBe(false);
+      expect(result.amount).toBe(80);
+    });
+
+    it("records an undoable entry that holds the flag and nothing else", async () => {
+      transactionsRepository.findOne.mockResolvedValue({ ...provisionalLeg });
+      transactionsRepository.update.mockResolvedValueOnce({ affected: 1 });
+
+      await service.confirmAmount("user-1", "tx-1");
+
+      expect(history.record).toHaveBeenCalledTimes(1);
+      expect(history.record).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
+          entityType: "transaction",
+          entityId: "tx-1",
+          action: "update",
+          // Undo restores exactly this; a snapshot of the amount would write
+          // a stale figure back over a later transfer edit.
+          beforeData: { amountIsProvisional: true },
+          afterData: { amountIsProvisional: false },
+          descriptionKey: "confirmedTransactionAmount",
+          descriptionParams: expect.objectContaining({
+            amountValue: 80,
+            amountCurrency: "EUR",
+          }),
+        }),
+      );
+    });
+
+    it("refuses a row that is not provisional, with no history entry", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        ...provisionalLeg,
+        amountIsProvisional: false,
+      });
+      // The conditional write matched nothing: confirmed already, or by a
+      // concurrent request that won.
+      transactionsRepository.update.mockResolvedValueOnce({ affected: 0 });
+
+      await expect(service.confirmAmount("user-1", "tx-1")).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(history.record).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
+    it("is a 404 for a row that is not the caller's, writing nothing", async () => {
+      transactionsRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.confirmAmount("user-2", "tx-1")).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(transactionsRepository.update).not.toHaveBeenCalled();
+      expect(history.record).not.toHaveBeenCalled();
+    });
+  });
+
   describe("markCleared", () => {
     it("marks unreconciled transaction as cleared", async () => {
       const mockTx = {

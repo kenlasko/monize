@@ -225,6 +225,27 @@ export type TransferEditHook = (
   target: { legIds: string[]; parentSplitId: string | null },
 ) => Promise<void>;
 
+/**
+ * The write that confirms a provisional leg through a transfer edit: the
+ * request supplied an amount for THAT leg (`amount` for the source, `toAmount`
+ * for the destination) and it differs from the stored one. A reprice the
+ * server computed from the other side is still an estimate, and a form
+ * resending the stored figure changed nothing, so both leave the flag
+ * (docs/future-plans/provisional-amounts.md, decision 4 and section 6).
+ */
+export function confirmedBySuppliedAmount(
+  leg: Pick<Transaction, "amount" | "amountIsProvisional">,
+  suppliedAmount: number | undefined,
+  /** The leg currency's money precision, which the amounts compare at. */
+  decimals: number,
+): Partial<Transaction> {
+  if (!leg.amountIsProvisional || suppliedAmount === undefined) return {};
+  const differs =
+    roundMoney(Math.abs(Number(suppliedAmount)), decimals) !==
+    roundMoney(Math.abs(Number(leg.amount)), decimals);
+  return differs ? { amountIsProvisional: false } : {};
+}
+
 @Injectable()
 export class TransactionTransferService {
   private readonly logger = new Logger(TransactionTransferService.name);
@@ -2157,6 +2178,14 @@ export class TransactionTransferService {
       oldFromAmount,
       moneyDecimalsForCode(places, updateFx.fromCurrencyCode),
     );
+    Object.assign(
+      fromUpdateData,
+      confirmedBySuppliedAmount(
+        fromTransaction,
+        updateDto.amount,
+        moneyDecimalsForCode(places, updateFx.fromCurrencyCode),
+      ),
+    );
 
     const toUpdateData = this.buildToUpdateData(
       updateDto,
@@ -2172,6 +2201,14 @@ export class TransactionTransferService {
       toTransaction.exchangeRate,
       updateFx.repriced,
       oldToAmount,
+    );
+    Object.assign(
+      toUpdateData,
+      confirmedBySuppliedAmount(
+        toTransaction,
+        updateDto.toAmount,
+        moneyDecimalsForCode(places, updateFx.toCurrencyCode),
+      ),
     );
 
     // Both legs' field updates and the four possible balance adjustments
@@ -2694,6 +2731,20 @@ export class TransactionTransferService {
       updateFx.repriced,
       oldToAmount,
     );
+    // The flag is a fact about the amount, which this path mirrors across the
+    // ownership boundary, so it is cleared on whichever leg was restated.
+    Object.assign(
+      fromUpdateData,
+      confirmedBySuppliedAmount(
+        fromTransaction,
+        updateDto.amount,
+        fromDecimals,
+      ),
+    );
+    Object.assign(
+      toUpdateData,
+      confirmedBySuppliedAmount(toTransaction, updateDto.toAmount, toDecimals),
+    );
 
     // Per-user reference data and per-ledger reconciliation state never cross
     // an ownership boundary.
@@ -3185,6 +3236,12 @@ export class TransactionTransferService {
     if (updateDto.payeeName !== undefined)
       legData.payeeName = updateDto.payeeName || null;
     if (legChanged) legData.amount = newCounterpartAmount;
+    // The reader stated a different amount for this leg: it is no longer the
+    // importer's estimate. An explicit source amount alone, or the same figure
+    // resent, leaves the flag (design decision 4).
+    if (legChanged && counterpart.amountIsProvisional) {
+      legData.amountIsProvisional = false;
+    }
 
     // The split row on the source transaction is kept in step with the leg: its
     // memo mirrors the leg's description (they are seeded from each other on

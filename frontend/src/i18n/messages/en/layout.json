@@ -127,6 +127,7 @@
       "deletedTransaction": "Deleted transaction {payee} {amount}",
       "convertedToTransfer": "Converted transaction {payee} {amount} to a transfer",
       "convertedToTransaction": "Converted transfer {payee} {amount} to a transaction",
+      "confirmedTransactionAmount": "Confirmed the estimated amount of {payee} {amount}",
       "bulkUpdatedTransactions": "Bulk updated {count, plural, one {# transaction} other {# transactions}}",
       "createdTransfer": "Created transfer {amount} from {from} to {to}",
       "createdInvestmentTransaction": "Created {action} transaction",

@@ -78,6 +78,10 @@ Proposed for `docs/system-invariants.md` under the next free ids of the FX famil
 
 A provisional leg is never a recorded transfer to the importer's duplicate check (`import-transfer-dedupe.ts`), so the account's own file confirms it even when it states exactly the estimate. A zero transfer across currencies needs no rate: its other leg is a confirmed zero and is never provisional.
 
+The confirm action's history entry holds the flag alone, so undo and redo restore the flag and never an amount a later transfer edit replaced. A row the shared-expense ledger protects (`shared_protect_ledger_transaction`) is not exempted: the column stays off the trigger's ignore list, so confirming such a row is refused with the trigger's own message until it is unlinked in Shared expenses (decided in issue #2392).
+
+Not covered by issue #2392, awaiting the maintainer: an edit of a split parent that resends its lines deletes and recreates each transfer line's counterpart (`TransactionsService.update`, `TransactionSplitService.updateSplits`), and the recreated row is written with the default, confirmed. Carrying the flag across that replacement would be a fifth writer that sets `true`.
+
 A transfer edit that reprices the provisional leg without a supplied amount (the reader changed only the other side, and the server computed the rest from the market rate) leaves it provisional: the new figure is still an estimate.
 
 **Read shape.** The transaction entity is the response, so `amountIsProvisional` appears on every transaction read. The model-facing row `LlmTransactionRow` carries it too. It is never accepted on a create or update body.

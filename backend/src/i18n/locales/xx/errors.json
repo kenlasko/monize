@@ -882,6 +882,7 @@
     "transferChangedConcurrently": "[XX-This transfer was changed by another request. Reload it and try again.-XX]",
     "transferAmountNegative": "[XX-Transfer amount must not be negative-XX]",
     "notATransfer": "[XX-Transaction is not a transfer-XX]",
+    "amountNotProvisional": "[XX-This transaction's amount is not an estimate, so there is nothing to confirm.-XX]",
     "splitTransferLegAccountLocked": "[XX-This transfer is part of a split transaction. Change its accounts by editing the split on the source transaction instead.-XX]",
     "splitTransferLegStatusLocked": "[XX-This transfer is part of a split transaction. Void or restore it by editing the split transaction it belongs to, so both sides change together.-XX]",
     "splitTransferLegAmountIsParentTotal": "[XX-This amount is the total of the whole split, not of this transfer line. Edit the split on the source transaction to change the line's amount.-XX]",

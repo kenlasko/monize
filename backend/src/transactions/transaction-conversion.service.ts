@@ -373,11 +373,18 @@ export class TransactionConversionService {
       }
       // The destination leg stores the pair's rate (source -> destination
       // currency); a plain row's rate belongs to a foreign-currency entry it
-      // does not have, so it goes back to 1 with the flag.
+      // does not have, so it goes back to 1 with the flag. A provisional
+      // amount is a transfer leg's (design P3): the row leaves that state in
+      // the write that ends its life as a leg.
       await m.update(
         Transaction,
         { id: transactionId, userId },
-        { isTransfer: false, linkedTransactionId: null, exchangeRate: 1 },
+        {
+          isTransfer: false,
+          linkedTransactionId: null,
+          exchangeRate: 1,
+          amountIsProvisional: false,
+        },
       );
 
       // The generic update, on the detached row, in this same transaction
