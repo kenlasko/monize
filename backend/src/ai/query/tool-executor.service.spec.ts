@@ -419,6 +419,7 @@ describe("ToolExecutorService", () => {
     portfolio = {
       getLlmSummary: jest.fn().mockResolvedValue({
         holdingCount: 0,
+        currency: "USD",
         // The real method always returns these two: they are what tells the
         // model whether the totals beside them are complete (recheck RR2-007).
         // A mock without them describes a shape the service cannot produce.
@@ -1232,6 +1233,28 @@ describe("ToolExecutorService", () => {
       expect(result.summary).not.toContain("withheld");
     });
 
+    it("list_transactions prints its totals at the currency's places (issue #2410)", async () => {
+      // BHD has three places: 1.005 printed at two read 1.00, a second
+      // rounding of a figure the server already rounded once.
+      analytics.getLlmListTransactions.mockResolvedValueOnce({
+        totalIncome: 1.005,
+        totalExpenses: 0,
+        netCashFlow: 1.005,
+        knownIncomeSubtotal: 1.005,
+        knownExpensesSubtotal: 0,
+        totalsCurrency: "BHD",
+        fxComplete: true,
+        missingRatePairs: [],
+        transactionCount: 1,
+        groupedBy: "none",
+      });
+
+      const result = await service.execute(userId, "list_transactions", {});
+
+      expect(result.summary).toContain("Income: 1.005 BHD");
+      expect(result.summary).toContain("Net: 1.005 BHD");
+    });
+
     it("list_transactions says the totals are withheld, naming the pair and the fix", async () => {
       analytics.getLlmListTransactions.mockResolvedValueOnce({
         totalIncome: null,
@@ -1371,9 +1394,39 @@ describe("ToolExecutorService", () => {
       expect(result.sources[0].type).toBe("portfolio");
     });
 
+    it("get_portfolio_summary names the reporting currency and prints its places (issue #2410)", async () => {
+      portfolio.getLlmSummary.mockResolvedValueOnce({
+        holdingCount: 1,
+        currency: "JPY",
+        fxComplete: true,
+        missingRatePairs: [],
+        pricesComplete: true,
+        unpricedSymbols: [],
+        valuationComplete: true,
+        totalCashValue: 0,
+        totalHoldingsValue: 1234,
+        totalCostBasis: 1000,
+        totalPortfolioValue: 1234,
+        totalGainLoss: 234,
+        totalGainLossPercent: 23.4,
+        timeWeightedReturn: null,
+        cagr: null,
+        holdings: [],
+        holdingsByAccount: [],
+        allocation: [],
+      });
+
+      const result = await service.execute(userId, "get_portfolio_summary", {});
+
+      expect(result.summary).toContain("total portfolio value 1234 JPY");
+      expect(result.summary).toContain("unrealized gain/loss +234 JPY");
+      expect(result.summary).not.toContain(".00");
+    });
+
     it("get_portfolio_summary requests the look-through when asked", async () => {
       portfolio.getLlmSummary.mockResolvedValueOnce({
         holdingCount: 1,
+        currency: "USD",
         fxComplete: true,
         missingRatePairs: [],
         pricesComplete: true,
@@ -1417,6 +1470,7 @@ describe("ToolExecutorService", () => {
       // the assistant quote a subtotal as a settled balance (recheck RR2-007).
       portfolio.getLlmSummary.mockResolvedValueOnce({
         holdingCount: 2,
+        currency: "USD",
         fxComplete: false,
         missingRatePairs: ["EUR->USD"],
         pricesComplete: true,
@@ -1447,6 +1501,7 @@ describe("ToolExecutorService", () => {
     it("get_portfolio_summary says the gain is over the priced holdings only, naming the symbol and the excluded cost (A26-M38)", async () => {
       portfolio.getLlmSummary.mockResolvedValueOnce({
         holdingCount: 2,
+        currency: "USD",
         fxComplete: true,
         missingRatePairs: [],
         pricesComplete: false,

@@ -597,14 +597,17 @@ export class ToolExecutorService {
     // The totals are in `totalsCurrency` and are `null` while a pair has no
     // rate: say which currency, or say they are withheld and what to add. A
     // bare number is what let 4,000 PLN and 1,000 USD read as 5,000.
+    // Each total arrives rounded at the currency's places and is printed at
+    // them (`figureIn`), never at two, which rounded a BHD figure again.
     const cur = data.totalsCurrency;
+    const fig = await this.figureIn(cur);
     const flow =
       data.fxComplete === false ||
       data.totalIncome === null ||
       data.totalExpenses === null ||
       data.netCashFlow === null
-        ? `Totals withheld: no exchange rate for ${data.missingRatePairs.join(", ")}; add it under Currencies. Converted so far: income ${data.knownIncomeSubtotal.toFixed(2)} ${cur}, expenses ${data.knownExpensesSubtotal.toFixed(2)} ${cur}`
-        : `Income: ${data.totalIncome.toFixed(2)} ${cur}, Expenses: ${data.totalExpenses.toFixed(2)} ${cur}, Net: ${data.netCashFlow.toFixed(2)} ${cur}`;
+        ? `Totals withheld: no exchange rate for ${data.missingRatePairs.join(", ")}; add it under Currencies. Converted so far: income ${fig(data.knownIncomeSubtotal)} ${cur}, expenses ${fig(data.knownExpensesSubtotal)} ${cur}`
+        : `Income: ${fig(data.totalIncome)} ${cur}, Expenses: ${fig(data.totalExpenses)} ${cur}, Net: ${fig(data.netCashFlow)} ${cur}`;
     const summaryParts = [
       `${data.transactionCount} transactions from ${startDate} to ${endDate}. ${flow}`,
     ];
@@ -2642,13 +2645,7 @@ export class ToolExecutorService {
     // Each figure arrives rounded at that currency's places (whole yen, three
     // places for BHD), and the line prints it at them, as the data says it.
     const cur = data.totalsCurrency;
-    const places = reportPlacesFor(
-      cur,
-      isIsoCurrencyCode(cur)
-        ? new Map()
-        : await this.exchangeRateService.getCurrencyDecimalPlaces([cur]),
-    );
-    const fig = (amount: number) => amount.toFixed(places);
+    const fig = await this.figureIn(cur);
     const periods = `Period 1 (${period1Start} to ${period1End})`;
     const periods2 = `Period 2 (${period2Start} to ${period2End})`;
     const summary =
@@ -2673,6 +2670,24 @@ export class ToolExecutorService {
     };
   }
 
+  /**
+   * A printer for a figure in `currency` at its report places (whole yen,
+   * three places for BHD, a coin's own), for a summary line the model
+   * quotes: the figure arrives rounded there, and `toFixed(2)` rounded it a
+   * second time (docs/specs/report-rounding-and-aggregation.md section 6).
+   */
+  private async figureIn(
+    currency: string,
+  ): Promise<(amount: number) => string> {
+    const places = reportPlacesFor(
+      currency,
+      isIsoCurrencyCode(currency)
+        ? new Map()
+        : await this.exchangeRateService.getCurrencyDecimalPlaces([currency]),
+    );
+    return (amount) => amount.toFixed(places);
+  }
+
   private async getPortfolioSummary(
     userId: string,
     input: Record<string, unknown>,
@@ -2690,8 +2705,12 @@ export class ToolExecutorService {
     });
 
     const sign = data.totalGainLoss >= 0 ? "+" : "";
+    // The totals are in the reporting currency and arrive rounded at its
+    // places; the line names it and prints them there (`figureIn`).
+    const cur = data.currency;
+    const fig = await this.figureIn(cur);
     const lookThroughNote = data.lookThrough
-      ? ` Look-through: ${data.lookThrough.byCountry.items.length} countr${data.lookThrough.byCountry.items.length === 1 ? "y" : "ies"}, ${data.lookThrough.byAssetClass.items.length} asset class${data.lookThrough.byAssetClass.items.length === 1 ? "" : "es"}.${data.lookThrough.valuationComplete === false ? ` Look-through percentages cover only the priced and converted holdings (${data.lookThrough.knownSubtotal.toFixed(2)}); left out: ${[...data.lookThrough.unpricedSymbols.map((s) => `${s} (no price)`), ...data.lookThrough.missingRatePairs.map((p) => `${p} (no rate)`)].join(", ")}.` : ""}`
+      ? ` Look-through: ${data.lookThrough.byCountry.items.length} countr${data.lookThrough.byCountry.items.length === 1 ? "y" : "ies"}, ${data.lookThrough.byAssetClass.items.length} asset class${data.lookThrough.byAssetClass.items.length === 1 ? "" : "es"}.${data.lookThrough.valuationComplete === false ? ` Look-through percentages cover only the priced and converted holdings (${fig(data.lookThrough.knownSubtotal)} ${cur}); left out: ${[...data.lookThrough.unpricedSymbols.map((s) => `${s} (no price)`), ...data.lookThrough.missingRatePairs.map((p) => `${p} (no rate)`)].join(", ")}.` : ""}`
       : "";
     // The model reads this line before the payload, so an incomplete total has to
     // be described as incomplete here and not only flagged in `data`. Without it
@@ -2724,7 +2743,7 @@ export class ToolExecutorService {
       ? ""
       : ` The unrealized gain/loss is over the priced holdings only; it leaves out ${
           gainLeftOut.length > 0 ? gainLeftOut.join("; ") : "unvalued holdings"
-        }, and the cost of the unpriced holdings excluded from it is ${data.unpricedCostBasis.toFixed(2)}.`;
+        }, and the cost of the unpriced holdings excluded from it is ${fig(data.unpricedCostBasis)} ${cur}.`;
     // An account whose own totals could not be worked out is separately worth
     // saying: its figures are in its own currency, so the flags above do not
     // cover it (recheck RR3-005).
@@ -2737,7 +2756,7 @@ export class ToolExecutorService {
         : "";
     return {
       data,
-      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, total portfolio value ${data.totalPortfolioValue.toFixed(2)}, unrealized gain/loss ${sign}${data.totalGainLoss.toFixed(2)} (${sign}${data.totalGainLossPercent.toFixed(2)}%).${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
+      summary: `${data.holdingCount} holding${data.holdingCount === 1 ? "" : "s"}, total portfolio value ${fig(data.totalPortfolioValue)} ${cur}, unrealized gain/loss ${sign}${fig(data.totalGainLoss)} ${cur} (${sign}${data.totalGainLossPercent.toFixed(2)}%).${lookThroughNote}${incompleteNote}${gainNote}${incompleteAccountsNote}`,
       sources: [
         {
           type: "portfolio",

@@ -1993,9 +1993,13 @@ describe("PortfolioService", () => {
           ],
         });
 
+      prefRepository.findOne.mockResolvedValue(mockPref);
       const result = await service.getLlmSummary("user-1");
 
       expect(getPortfolioSummary).toHaveBeenCalledWith("user-1", undefined);
+      // The totals name the currency they are in, so a summary line can
+      // print it and its places (issue #2410).
+      expect(result.currency).toBe("CAD");
       // Not requested, so the extra holdings/FX pass is skipped entirely.
       expect(sectorWeightingService.getLlmLookThrough).not.toHaveBeenCalled();
       expect(result.lookThrough).toBeUndefined();

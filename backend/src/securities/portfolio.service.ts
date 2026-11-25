@@ -448,6 +448,8 @@ export interface LlmAccountHoldings {
 
 export interface LlmPortfolioSummary {
   holdingCount: number;
+  /** The reporting currency every total and the allocation are in. */
+  currency: string;
   /**
    * Same meaning as `PortfolioSummary.fxComplete`, and present for the same
    * reason: this shape is what the AI Assistant and the MCP server quote back to
@@ -1453,6 +1455,7 @@ export class PortfolioService {
 
     return {
       holdingCount: holdings.length,
+      currency: await this.resolveDefaultCurrency(userId),
       totalCashValue: asShown(summary.totalCashValue),
       totalHoldingsValue: asShown(summary.totalHoldingsValue),
       totalCostBasis: asShown(summary.totalCostBasis),
