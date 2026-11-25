@@ -278,6 +278,30 @@ describe('SecurityPerformanceReport', () => {
     expect(screen.getByText('Annualized Return')).toBeInTheDocument();
   });
 
+  it("reads a security held in two accounts as the exact sum of the two (issue #2414)", async () => {
+    // 1.0007 + 1.0143 is 2.0149999999999997 in doubles, which read $2.01; the
+    // exact sum, 2.015, reads $2.02.
+    const [base] = mockHoldings;
+    mockGetSecurities.mockResolvedValue(mockSecurities);
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [
+        { ...base, marketValue: 1.0007, costBasis: 0.5 },
+        { ...base, id: 'h-2', accountId: 'acc-2', marketValue: 1.0143, costBasis: 0.5 },
+      ],
+    });
+    mockGetSecurityPrices.mockResolvedValue([]);
+    mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
+
+    render(<SecurityPerformanceReport />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: SELECT_PLACEHOLDER })).toBeInTheDocument();
+    });
+    await selectSecurity('AAPL - Apple Inc.');
+
+    const card = (await screen.findByText('Current Value')).parentElement as HTMLElement;
+    expect(card.textContent).toContain('$2.02');
+  });
+
   it('renders price chart with price data', async () => {
     mockGetSecurities.mockResolvedValue(mockSecurities);
     mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
