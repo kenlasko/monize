@@ -1,7 +1,5 @@
 import { taggedBalance } from './tagged-balance';
 import { findFundingBucket, fundingCompleteness } from './tagged-funding';
-import { periodKeyOf, type BreakdownPeriod } from './breakdown-period';
-import { sumMoney } from './format';
 import type { IncomeVsExpensesResponse } from '@/types/built-in-reports';
 
 export interface MonthlyFundsColumn {
@@ -29,48 +27,31 @@ export interface MonthlyFundsSummary {
 /**
  * The per-month Balance block under the Monthly Breakdown table
  * (`docs/specs/report-tag-key-breakdown.md` section 11.5), from the Income vs
- * Expenses answer for the same window. Each month goes through `taggedBalance`,
- * the one Balance formula. A month the answer does not cover is unknown, never
- * 0; a month the chosen bucket has no row for had no tagged transfer, which is
- * a known zero. Under a gap (a missing rate) Balance is a subtotal and Balance %
- * is withheld.
- *
- * A yearly summary (`period` 'year', `months` holding `YYYY` keys) sums the
- * answer's months that fall in each year before the one Balance formula runs:
- * a year is known when the answer covers at least one of its months, and its
- * figures are those months' totals.
+ * Expenses answer for the same window, asked for in the table's own period
+ * (`bucket` month or year). Every figure is the server's: each period's
+ * income, expenses and tagged flows, and its Balance and Balance %, which the
+ * server folds from the four aggregates before it reads them. Built here from
+ * the four readings, or a year from its twelve months' readings, a Balance sat
+ * a unit off (issue #2413); a backend that predates the server's Balance gets
+ * `taggedBalance` over the readings. A column the answer does not cover is
+ * unknown, never 0; a period the chosen bucket has no row for had no tagged
+ * transfer, which is a known zero. Under a gap (a missing rate) Balance is a
+ * subtotal and Balance % is withheld.
  */
 export function monthlyFundsSummary(
   response: IncomeVsExpensesResponse,
   tagValue: string,
   months: readonly string[],
-  period: BreakdownPeriod = 'month',
 ): MonthlyFundsSummary {
   const bucket = findFundingBucket(response, tagValue);
   const { complete, missingCurrencies } = fundingCompleteness(response, tagValue);
 
-  const flowsByKey = new Map<string, { taggedInflows: number[]; taggedOutflows: number[] }>();
-  for (const d of bucket?.data ?? []) {
-    const key = periodKeyOf(d.period, period);
-    const prev = flowsByKey.get(key) ?? { taggedInflows: [], taggedOutflows: [] };
-    flowsByKey.set(key, {
-      taggedInflows: [...prev.taggedInflows, d.taggedInflows],
-      taggedOutflows: [...prev.taggedOutflows, d.taggedOutflows],
-    });
-  }
-  const itemsByKey = new Map<string, { income: number[]; expenses: number[] }>();
-  for (const d of response.data) {
-    const key = periodKeyOf(d.period, period);
-    const prev = itemsByKey.get(key) ?? { income: [], expenses: [] };
-    itemsByKey.set(key, {
-      income: [...prev.income, d.income],
-      expenses: [...prev.expenses, d.expenses],
-    });
-  }
+  const flowsByKey = new Map((bucket?.data ?? []).map((d) => [d.period, d]));
+  const itemsByKey = new Map(response.data.map((d) => [d.period, d]));
 
   const columns = months.map<MonthlyFundsColumn>((month) => {
-    const parts = itemsByKey.get(month);
-    if (!parts) {
+    const item = itemsByKey.get(month);
+    if (!item) {
       return {
         month,
         known: false,
@@ -83,22 +64,23 @@ export function monthlyFundsSummary(
       };
     }
     const flows = flowsByKey.get(month);
-    const income = sumMoney(parts.income);
-    const expenses = sumMoney(parts.expenses);
-    const taggedInflows = flows ? sumMoney(flows.taggedInflows) : 0;
-    const taggedOutflows = flows ? sumMoney(flows.taggedOutflows) : 0;
-    const { balance, balancePercent } = taggedBalance({
-      income,
-      expenses,
+    const taggedInflows = flows?.taggedInflows ?? 0;
+    const taggedOutflows = flows?.taggedOutflows ?? 0;
+    const served = flows?.balance !== undefined;
+    const fallback = taggedBalance({
+      income: item.income,
+      expenses: item.expenses,
       taggedInflows,
       taggedOutflows,
     });
+    const balance = served ? flows.balance! : fallback.balance;
+    const balancePercent = served ? (flows.balancePercent ?? null) : fallback.balancePercent;
     return {
       month,
       known: true,
-      income,
+      income: item.income,
       taggedInflows,
-      expenses,
+      expenses: item.expenses,
       taggedOutflows,
       balance,
       balancePercent: complete ? balancePercent : null,

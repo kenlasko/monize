@@ -157,6 +157,14 @@ export interface IncomeExpenseTagPeriodItem extends IncomeExpensePeriodItem {
   taggedInflows: number;
   /** Tagged transfer legs in this period, negative side, as a positive magnitude. */
   taggedOutflows: number;
+  /**
+   * The period's Balance with this bucket's flows (the All income and
+   * expenses), the four aggregates folded and read once by the server; absent
+   * from an older backend.
+   */
+  balance?: number;
+  /** `balance` over what came in, two places; `null` when nothing came in. */
+  balancePercent?: number | null;
 }
 
 export interface IncomeExpenseTotals {
@@ -243,7 +251,7 @@ export interface IncomeVsExpensesParams extends ReportQueryParams {
   /** Restrict to these accounts; omit or leave empty for every account. */
   accountIds?: string[];
   /** Width of one bar. Defaults to month. */
-  bucket?: 'month' | 'week';
+  bucket?: 'month' | 'week' | 'year';
   /** Day a week bucket starts on, 0 = Sunday through 6 = Saturday. */
   weekStartsOn?: number;
   /**
@@ -293,6 +301,26 @@ export interface CashFlowParams extends ReportQueryParams {
 export interface MonthlyCategoryBreakdownParams extends ReportQueryParams {
   /** Restrict to these accounts; omit or leave empty for every account. */
   accountIds?: string[];
+  /** Column width; the server folds a year's months before it reads them. Defaults to month. */
+  period?: 'month' | 'year';
+}
+
+/**
+ * A line of the breakdown's figures: one per column, the window's total and
+ * its average, each read once by the server from the cells' aggregates (issue
+ * #2413). Never rebuilt from the cells: a sum of rounded cells sits a unit off.
+ */
+export interface MonthlyBreakdownFigures {
+  valuesByMonth: Record<string, number>;
+  total: number;
+  /** The total over the columns listed, divided before it is read. */
+  average: number;
+}
+
+/** A section: the rows sharing a `sectionKey`, in the section's own sign convention. */
+export interface MonthlyBreakdownSection extends MonthlyBreakdownFigures {
+  key: string;
+  isIncome: boolean;
 }
 
 // Monthly category breakdown types
@@ -306,6 +334,12 @@ export interface MonthlyBreakdownCategoryRow {
   valuesByMonth: Record<string, number>;
   depositTotal: number;
   withdrawalTotal: number;
+  /** The section the row draws under (`MonthlyBreakdownSection.key`). */
+  sectionKey: string;
+  /** The row's columns summed once by the server, in the row's own convention. */
+  total: number;
+  /** `total` over the columns listed, divided before it is read. */
+  average: number;
 }
 
 export interface MonthlyBreakdownTransferRow {
@@ -313,12 +347,28 @@ export interface MonthlyBreakdownTransferRow {
   accountName: string;
   direction: 'from' | 'to';
   valuesByMonth: Record<string, number>;
+  /** The row's columns summed once by the server, signed as its cells are. */
+  total: number;
+  average: number;
 }
 
 export interface MonthlyCategoryBreakdownResponse {
+  /** The column width; `months` holds `YYYY-MM` or `YYYY` keys. */
+  period: 'month' | 'year';
   months: string[];
   data: MonthlyBreakdownCategoryRow[];
   transfers: MonthlyBreakdownTransferRow[];
+  sections: MonthlyBreakdownSection[];
+  /** The bottom lines, each folded from the sections' aggregates. */
+  summary: {
+    /** Money in positive. */
+    income: MonthlyBreakdownFigures;
+    /** Money out positive. */
+    expenses: MonthlyBreakdownFigures;
+    balance: MonthlyBreakdownFigures;
+    transfers: MonthlyBreakdownFigures;
+    overall: MonthlyBreakdownFigures;
+  };
   /** Reporting currency every figure is expressed in. */
   currency: string;
   /** Source currencies with no rate into `currency`. Empty when complete. */

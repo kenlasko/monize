@@ -45,9 +45,9 @@ export function MonthlyTaggedBalanceSummary({
   const summary = useMemo(
     () =>
       funding.response
-        ? monthlyFundsSummary(funding.response, filter.tagValue, months, period)
+        ? monthlyFundsSummary(funding.response, filter.tagValue, months)
         : null,
-    [funding.response, filter.tagValue, months, period],
+    [funding.response, filter.tagValue, months],
   );
 
   if (!filter.include) return null;

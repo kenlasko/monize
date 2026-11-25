@@ -49,12 +49,19 @@ vi.mock('@/components/ui/DateRangeSelector', () => ({
 }));
 
 const mockGetMonthlyCategoryBreakdown = vi.fn();
-vi.mock('@/lib/built-in-reports', () => ({
-  builtInReportsApi: {
-    getMonthlyCategoryBreakdown: (...args: unknown[]) =>
-      mockGetMonthlyCategoryBreakdown(...args),
-  },
-}));
+// The fixtures write monthly cells; `serveBreakdown` answers them as the
+// server does, folded to the period asked for and with its totals.
+vi.mock('@/lib/built-in-reports', async () => {
+  const { serveBreakdown } = await import('@/test/monthly-breakdown-fixture');
+  return {
+    builtInReportsApi: {
+      getMonthlyCategoryBreakdown: (...args: unknown[]) =>
+        Promise.resolve(mockGetMonthlyCategoryBreakdown(...args)).then((fixture) =>
+          serveBreakdown(fixture, args[0] as never),
+        ),
+    },
+  };
+});
 
 vi.mock('@/lib/accounts', () => ({
   accountsApi: { getAll: () => Promise.resolve([]) },

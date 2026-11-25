@@ -55,11 +55,19 @@ vi.mock('@/components/ui/DateRangeSelector', () => ({
 }));
 
 const mockGetMonthlyCategoryBreakdown = vi.fn();
-vi.mock('@/lib/built-in-reports', () => ({
-  builtInReportsApi: {
-    getMonthlyCategoryBreakdown: (...args: unknown[]) => mockGetMonthlyCategoryBreakdown(...args),
-  },
-}));
+// The fixtures write monthly cells; `serveBreakdown` answers them as the
+// server does, folded to the period asked for and with its totals.
+vi.mock('@/lib/built-in-reports', async () => {
+  const { serveBreakdown } = await import('@/test/monthly-breakdown-fixture');
+  return {
+    builtInReportsApi: {
+      getMonthlyCategoryBreakdown: (...args: unknown[]) =>
+        Promise.resolve(mockGetMonthlyCategoryBreakdown(...args)).then((fixture) =>
+          serveBreakdown(fixture, args[0] as never),
+        ),
+    },
+  };
+});
 vi.mock('@/lib/accounts', () => ({
   accountsApi: { getAll: () => Promise.resolve([]) },
 }));
@@ -74,18 +82,6 @@ const mockExportToCsv = vi.fn();
 vi.mock('@/lib/csv-export', () => ({
   exportToCsv: (...args: unknown[]) => mockExportToCsv(...args),
 }));
-
-const breakdownByPeriodSpy = vi.fn();
-vi.mock('@/lib/breakdown-period', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/breakdown-period')>();
-  return {
-    ...actual,
-    breakdownByPeriod: (...args: Parameters<typeof actual.breakdownByPeriod>) => {
-      breakdownByPeriodSpy();
-      return actual.breakdownByPeriod(...args);
-    },
-  };
-});
 
 const PERIOD_KEY = 'monize-reports-monthly-category-breakdown-period';
 const SORT_COLUMN_KEY = 'monize-reports-monthly-category-breakdown-sort-column';
@@ -214,6 +210,10 @@ describe('MonthlyCategoryBreakdownReport yearly view', () => {
 
   it('hides the current year until Include current year is on', async () => {
     const year = new Date().getFullYear();
+    // The window runs to today: the year in progress is left out by ending the
+    // request on the last day of the year before.
+    const savedEnd = mockResolvedRange.end;
+    mockResolvedRange.end = `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
     mockGetMonthlyCategoryBreakdown.mockResolvedValue({
       ...response,
       months: [`${year - 1}-06`, `${year}-01`],
@@ -229,11 +229,17 @@ describe('MonthlyCategoryBreakdownReport yearly view', () => {
     await renderReport();
 
     expect(screen.queryAllByText('- $900.00')).toHaveLength(0);
+    expect(mockGetMonthlyCategoryBreakdown).toHaveBeenLastCalledWith(
+      expect.objectContaining({ endDate: `${year - 1}-12-31`, period: 'year' }),
+    );
     expect(screen.queryByLabelText('Include current month')).not.toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Include current year'));
     });
-    expect(screen.getAllByText('- $900.00').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getAllByText('- $900.00').length).toBeGreaterThan(0);
+    });
+    mockResolvedRange.end = savedEnd;
   });
 
   it('drops a sort on a month column when switching to years', async () => {
@@ -245,14 +251,19 @@ describe('MonthlyCategoryBreakdownReport yearly view', () => {
     expect(window.localStorage.getItem(SORT_COLUMN_KEY)).toBe('"category"');
   });
 
-  it('re-sorts the folded years without folding every month again', async () => {
+  // The page added each year's monthly readings into its cell; the server now
+  // folds a year's months before it reads them (issue #2413).
+  it('asks the server for years, and a sort click asks for nothing again', async () => {
     window.localStorage.setItem(PERIOD_KEY, '"year"');
     await renderReport();
-    const folds = breakdownByPeriodSpy.mock.calls.length;
+    expect(mockGetMonthlyCategoryBreakdown).toHaveBeenLastCalledWith(
+      expect.objectContaining({ period: 'year' }),
+    );
+    const calls = mockGetMonthlyCategoryBreakdown.mock.calls.length;
     await act(async () => {
       fireEvent.click(screen.getByText('Total'));
     });
-    expect(breakdownByPeriodSpy.mock.calls.length).toBe(folds);
+    expect(mockGetMonthlyCategoryBreakdown.mock.calls.length).toBe(calls);
   });
 
   it('exports the yearly columns under a yearly file name', async () => {

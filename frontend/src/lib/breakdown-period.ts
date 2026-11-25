@@ -1,15 +1,11 @@
-import { sumMoney } from './format';
-import type { MonthlyCategoryBreakdownResponse } from '@/types/built-in-reports';
 
 /**
  * The column width of the Monthly & Yearly Breakdown report: one calendar
  * month or one calendar year.
  *
- * The server answers in months only. A year column is the sum of the twelve
- * (or fewer) month figures already converted into the reporting currency, so a
- * yearly cell equals the total of the monthly cells it replaces, to the cent:
- * each month figure is converted at its own rows' rates before it is summed,
- * and summing converted figures is what the monthly Total column already does.
+ * The server answers in either width (`period`), folding a year's months as
+ * aggregates before it reads the year, so a yearly cell is one rounding of its
+ * rows rather than the sum of twelve monthly readings (issue #2413).
  */
 export type BreakdownPeriod = 'month' | 'year';
 
@@ -65,35 +61,30 @@ export function periodBounds(key: string, period: BreakdownPeriod): { start: str
   return { start: `${key}-01`, end: `${key}-${String(lastDay).padStart(2, '0')}` };
 }
 
-function rollUp(values: Record<string, number>, period: BreakdownPeriod): Record<string, number> {
-  const parts = new Map<string, number[]>();
-  for (const [month, value] of Object.entries(values)) {
-    const key = periodKeyOf(month, period);
-    const list = parts.get(key);
-    if (list) list.push(value);
-    else parts.set(key, [value]);
-  }
-  return Object.fromEntries(Array.from(parts, ([key, list]) => [key, sumMoney(list)]));
+/** The day before a `YYYY-MM-DD` date, as `YYYY-MM-DD`. */
+function dayBefore(ymd: string): string {
+  const [year, month, day] = ymd.split('-').map(Number);
+  const date = new Date(year, month - 1, day - 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 /**
- * The breakdown answer re-keyed by column. Monthly returns the answer as it
- * came; yearly folds every row's months into years. The field names stay the
- * server's (`months`, `valuesByMonth`) so one table model draws both: in a
- * yearly answer they hold `YYYY` keys.
+ * The last day the breakdown asks the server for. The column in progress is
+ * left out unless the reader includes it, by ending the window the day before
+ * it opens rather than dropping its column from the answer: the server's row,
+ * section and group totals and its averages are then over exactly the columns
+ * shown (issue #2413). `null` when nothing before the column in progress is in
+ * the window, so there is nothing to ask for.
  */
-export function breakdownByPeriod(
-  response: MonthlyCategoryBreakdownResponse,
+export function breakdownRequestEnd(
+  rangeEnd: string,
+  start: string,
   period: BreakdownPeriod,
-): MonthlyCategoryBreakdownResponse {
-  if (period === 'month') return response;
-  return {
-    ...response,
-    months: Array.from(new Set(response.months.map((m) => periodKeyOf(m, period)))).sort(),
-    data: response.data.map((row) => ({ ...row, valuesByMonth: rollUp(row.valuesByMonth, period) })),
-    transfers: (response.transfers ?? []).map((row) => ({
-      ...row,
-      valuesByMonth: rollUp(row.valuesByMonth, period),
-    })),
-  };
+  includeCurrentPeriod: boolean,
+  now: Date,
+): string | null {
+  if (includeCurrentPeriod) return rangeEnd;
+  const lastFinished = dayBefore(periodBounds(currentPeriodKey(period, now), period).start);
+  const end = rangeEnd < lastFinished ? rangeEnd : lastFinished;
+  return start && end < start ? null : end;
 }

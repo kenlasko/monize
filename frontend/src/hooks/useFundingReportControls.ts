@@ -24,6 +24,8 @@ export function useFundingReportControls(params: {
   endDate: string;
   /** False while the report's own window is not a valid request. */
   enabled: boolean;
+  /** The funding answer's period width; the report's own columns'. Defaults to month. */
+  bucket?: 'month' | 'year';
 }): FundingReportControls {
   const scope = useReportAccountScope(`monize-reports-${params.reportKey}-accounts`);
   // The value here only picks whose transfers the funding view shows.
@@ -37,6 +39,7 @@ export function useFundingReportControls(params: {
     tagValue: filter.tagValue,
     startDate: params.startDate,
     endDate: params.endDate,
+    bucket: params.bucket,
     accountIds: scope.selectedAccountIds,
     transferScope: scope.transferScope,
   });
