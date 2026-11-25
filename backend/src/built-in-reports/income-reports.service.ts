@@ -20,7 +20,7 @@ import {
   sumMoney,
   toMoneyNumber,
 } from "../common/round.util";
-import { FxAggregate } from "../common/fx-aggregate";
+import { FxAggregate, shareOf } from "../common/fx-aggregate";
 import {
   IncomeBySourceResponse,
   IncomeSourceItem,
@@ -231,21 +231,26 @@ export class IncomeReportsService {
     const earned = Array.from(categoryTotals.entries()).filter(
       ([, { agg }]) => agg.sign > 0,
     );
-    const data: IncomeSourceItem[] = earned
-      .map(([id, { agg, category }]) => ({
-        categoryId: id,
-        categoryName: category.name,
-        color: category.color || null,
-        total: agg.knownSubtotalAt(places),
-      }))
-      .sort((a, b) => b.total - a.total);
-
     // Every source, not a top-N: the caller decides how many to draw. Cutting
     // here made `totalIncome` the sum of the largest fifteen. The sources fold
     // as aggregates, so the total is rounded once (rule 2).
     const income = new FxAggregate();
     for (const [, { agg }] of earned) income.merge(agg);
     const knownIncome = income.knownSubtotalAt(places);
+
+    // Each source's share of the income, divided from the two unrounded
+    // aggregates before either is rounded (rule 8): two equal sources of
+    // 1.2474 read 1.25 each over 2.49, and 1.25 / 2.49 is 50.2% where each is
+    // half. Over the income that converted, the figure the page shows.
+    const data: IncomeSourceItem[] = earned
+      .map(([id, { agg, category }]) => ({
+        categoryId: id,
+        categoryName: category.name,
+        color: category.color || null,
+        total: agg.knownSubtotalAt(places),
+        percentage: shareOf(agg, income),
+      }))
+      .sort((a, b) => b.total - a.total);
 
     return {
       data,

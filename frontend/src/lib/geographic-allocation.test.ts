@@ -43,6 +43,7 @@ describe('computeGeographicAllocation', () => {
       holdings,
       exchangeMap,
       noConvert,
+      2,
     );
 
     expect(totalValue).toBe(500);
@@ -66,13 +67,14 @@ describe('computeGeographicAllocation', () => {
       [holding('mystery', 50)],
       new Map(),
       noConvert,
+      2,
     );
     expect(regionData[0].region).toBe('Other');
     expect(regionData[0].marketValue).toBe(50);
   });
 
   it('returns empty structures and zero total for no holdings', () => {
-    const result = computeGeographicAllocation([], new Map(), noConvert);
+    const result = computeGeographicAllocation([], new Map(), noConvert, 2);
     expect(result).toEqual({
       exchangeData: [],
       regionData: [],
@@ -94,6 +96,7 @@ describe('computeGeographicAllocation', () => {
       [holding('s-nyse', 100), eur],
       exchangeMap,
       (v, currency) => (currency === 'EUR' ? null : v),
+      2,
     );
     expect(result.totalValue).toBe(100);
     expect(result.missingCurrencies).toEqual(['EUR']);
@@ -110,9 +113,50 @@ describe('computeGeographicAllocation', () => {
       [holding('s-tsx', 300), unpriced],
       exchangeMap,
       noConvert,
+      2,
     );
     expect(result.totalValue).toBe(300);
     expect(result.excludedCount).toBe(1);
     expect(result.missingCurrencies).toEqual([]);
+  });
+
+  describe('the totals the page builds (issue #2414)', () => {
+    it('reads each figure once from the exact sum of its holdings', () => {
+      // 1.0007 + 1.0143 is 2.0149999999999997 in doubles; the exact sum, 2.015,
+      // reads 2.02 where the float read 2.01 on screen.
+      const { exchangeData, regionData, totalValue } = computeGeographicAllocation(
+        [holding('s-nyse', 1.0007), holding('s-nyse', 1.0143)],
+        exchangeMap,
+        noConvert,
+        2,
+      );
+      expect(exchangeData[0].marketValue).toBe(2.02);
+      expect(regionData[0].marketValue).toBe(2.02);
+      expect(totalValue).toBe(2.02);
+    });
+
+    it('folds a region from its exchanges exact sums, not their readings', () => {
+      // NYSE and TSX each hold 0.005, which reads 0.01; North America holds 0.01.
+      const { regionData, totalValue } = computeGeographicAllocation(
+        [holding('s-nyse', 0.005), holding('s-tsx', 0.005)],
+        exchangeMap,
+        noConvert,
+        2,
+      );
+      expect(regionData[0].marketValue).toBe(0.01);
+      expect(totalValue).toBe(0.01);
+    });
+
+    it('divides each share from the exact sums', () => {
+      // Two exchanges of 1.2474 each read 1.25 over a total that reads 2.49,
+      // and each is half of it, not 50.2%.
+      const { exchangeData } = computeGeographicAllocation(
+        [holding('s-nyse', 1.2474), holding('s-lse', 1.2474)],
+        exchangeMap,
+        noConvert,
+        2,
+      );
+      expect(exchangeData.map((e) => e.percentage)).toEqual([50, 50]);
+    });
   });
 });

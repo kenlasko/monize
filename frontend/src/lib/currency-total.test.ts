@@ -42,6 +42,20 @@ describe('sumConverted', () => {
       expect(sumEur(rows([100.01, 'EUR'], [100.01, 'EUR'])).value).toBe(249.5049);
     });
 
+    it("holds a small component at its own digits, as the server does (issue #2414)", () => {
+      // 7.681 EUR at 1.2475589116 is exactly 9.5824999999996; two are
+      // 19.1649999999992, which reads 19.16. Twelve places read each as
+      // 9.5825, so the two read 19.17.
+      const total = sumConverted(
+        rows([7.681, 'EUR'], [7.681, 'EUR']),
+        (r) => r.amount,
+        (r) => r.currency,
+        (amount) => amount * 1.2475589116,
+        2,
+      );
+      expect(total.value).toBe(19.16);
+    });
+
     it('lets components under a ten-thousandth add up to one', () => {
       const total = sumEur(rows([0.00004, 'USD'], [0.00004, 'USD'], [0.00004, 'USD']));
       expect(total.value).toBe(0.0001);

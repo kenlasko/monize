@@ -661,6 +661,55 @@ describe("IncomeReportsService", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // A component's own digits are not rounded away (issue #2414)
+  // ---------------------------------------------------------------------------
+  describe("getIncomeBySource holds each converted part at its own digits", () => {
+    // 7.681 EUR at 1.2475589116 is exactly 9.5824999999996 USD; two are
+    // 19.1649999999992, which reads 19.16. Held at twelve places each day's
+    // part read 9.5825, so two days summed to 19.165 and read 19.17 while
+    // one day's 15.362 EUR read 19.16.
+    beforeEach(() => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "EUR", toCurrency: "USD", rate: 1.2475589116 },
+        ]),
+      );
+      categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
+    });
+
+    it.each([
+      ["one day", [{ tx_date: FIXTURE_TX_DATE, total: "15.36200000" }]],
+      [
+        "two days",
+        [
+          { tx_date: FIXTURE_TX_DATE, total: "7.68100000" },
+          { tx_date: "2026-01-16", total: "7.68100000" },
+        ],
+      ],
+    ])(
+      "totals two 7.681 EUR receipts on %s at 19.16",
+      async (_label, parts) => {
+        scopedManager.query.mockResolvedValue(
+          parts.map((part) => ({
+            category_id: "cat-income",
+            currency_code: "EUR",
+            ...part,
+          })),
+        );
+
+        const result = await service.getIncomeBySource(
+          mockUserId,
+          "2026-01-01",
+          "2026-01-31",
+        );
+
+        expect(result.data[0].total).toBe(19.16);
+        expect(result.totalIncome).toBe(19.16);
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
   // Rounded once, after the parts are folded (issue #2384)
   // ---------------------------------------------------------------------------
   describe("totals rounded once, after the parts are folded (issues #2384, #2410)", () => {
@@ -699,6 +748,34 @@ describe("IncomeReportsService", () => {
 
       expect(result.data.map((d) => d.total)).toEqual([row, row]);
       expect(result.totalIncome).toBe(headline);
+    });
+
+    it("divides each source's share from the unrounded figures (issue #2414)", async () => {
+      // Two receipts of 1.00 EUR at 1.2474 in two income categories: each
+      // reads 1.25 over an income of 2.49, and 1.25 / 2.49 is 50.2%. Each is
+      // half of the income: 1.2474 / 2.4948.
+      categoriesRepository.find.mockResolvedValue([
+        mockIncomeCategory,
+        { ...mockIncomeCategory, id: "cat-bonus", name: "Bonus" },
+      ]);
+      scopedManager.query.mockResolvedValue(
+        ["cat-income", "cat-bonus"].map((categoryId) => ({
+          category_id: categoryId,
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "1.00000000",
+        })),
+      );
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.data.map((d) => d.total)).toEqual([1.25, 1.25]);
+      expect(result.knownIncome).toBe(2.49);
+      expect(result.data.map((d) => d.percentage)).toEqual([50, 50]);
     });
 
     it("reads a 2.50498 source as 2.50, not through 2.5050 as 2.51 (issue #2410)", async () => {

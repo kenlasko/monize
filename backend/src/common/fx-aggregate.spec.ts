@@ -1,4 +1,4 @@
-import { FxAggregate } from "./fx-aggregate";
+import { FxAggregate, shareOf } from "./fx-aggregate";
 import { moneyUnits, roundMoney } from "./round.util";
 
 /**
@@ -81,6 +81,33 @@ describe("FxAggregate", () => {
       b.addConverted(124.752474);
       a.merge(b);
       expect(a.knownSubtotal).toBe(249.5049);
+    });
+
+    it("holds a small component at its own digits, not twelve places (issue #2414)", () => {
+      // 7.681 EUR at 1.2475589116 is exactly 9.5824999999996, and two are
+      // 19.1649999999992, which reads 19.16. Twelve places read each as
+      // 9.5825, so the two summed to 19.165 and read 19.17; converting their
+      // 15.362 sum read 19.16, so the figure moved with the grouping.
+      const rate = 1.2475589116;
+      const perRow = new FxAggregate();
+      perRow.add(7.681 * rate, "EUR", "USD");
+      perRow.add(7.681 * rate, "EUR", "USD");
+      const summed = new FxAggregate();
+      summed.add(15.362 * rate, "EUR", "USD");
+      expect(perRow.knownSubtotalAt(2)).toBe(19.16);
+      expect(summed.knownSubtotalAt(2)).toBe(19.16);
+    });
+
+    it("still drops a double's own noise, past its fifteen digits", () => {
+      // 100.01 * 1.2474 carries float noise below 124.752474's last digit; a
+      // share of two equal parts is still exactly a half.
+      const part = new FxAggregate();
+      part.add(100.01 * 1.2474, "EUR", "USD");
+      const whole = new FxAggregate();
+      whole.merge(part);
+      whole.merge(part);
+      expect(part.unroundedSubtotal / whole.unroundedSubtotal).toBe(0.5);
+      expect(part.unroundedSubtotal).toBe(124.752474);
     });
 
     it("lets sub-unit components add up to a unit", () => {
@@ -698,4 +725,21 @@ describe("FxAggregate", () => {
     a.merge(b);
     expect(a.total).toBe(3);
   });
+
+  describe("shareOf (issue #2414)", () => {
+    it("divides the unrounded aggregates, not their readings", () => {
+      // Two parts of 1.2474: each reads 1.25 over a whole that reads 2.49.
+      const part = new FxAggregate();
+      part.addConverted(1.2474);
+      const whole = FxAggregate.sum([part, part]);
+      expect(shareOf(part, whole)).toBe(50);
+    });
+
+    it("is 0 over a whole that is not positive", () => {
+      const part = new FxAggregate();
+      part.addConverted(1);
+      expect(shareOf(part, new FxAggregate())).toBe(0);
+    });
+  });
 });
+

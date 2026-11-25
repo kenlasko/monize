@@ -242,6 +242,112 @@ describe('RealizedGainsReport', () => {
     });
   });
 
+  describe('totals the page builds (issue #2414)', () => {
+    // Two sales of one security whose proceeds add to 2.0149999999999997 in
+    // doubles: the float sum read $2.01 where the exact sum, 2.015, reads $2.02.
+    const driftingSales = () => [
+      gainEntry({ proceeds: 1.0007, costBasis: 0.5, realizedGain: 0.5007 }),
+      gainEntry({ transactionId: 'sell-2', proceeds: 1.0143, costBasis: 0.5, realizedGain: 0.5143 }),
+    ];
+
+    it('reads each total once from the exact sum of the sales', async () => {
+      mockGetRealizedGains.mockResolvedValue(driftingSales());
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<RealizedGainsReport />);
+      const card = (await screen.findByText('Total Proceeds')).parentElement as HTMLElement;
+      expect(within(card).getByText('$2.02')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(screen.getByTitle('Table'));
+      });
+      // The security's row and the footer both read the single rounding.
+      expect(screen.getAllByText('$2.02').length).toBeGreaterThanOrEqual(3);
+      expect(screen.queryByText('$2.01')).not.toBeInTheDocument();
+    });
+
+    it('folds the securities by their exact sums, not their readings', async () => {
+      // Each security gains 0.005, which reads $0.01; the two together are 0.01.
+      mockGetRealizedGains.mockResolvedValue([
+        gainEntry({ proceeds: 1.005, costBasis: 1, realizedGain: 0.005 }),
+        gainEntry({
+          transactionId: 'sell-2',
+          symbol: 'MSFT',
+          securityName: 'Microsoft Corp.',
+          proceeds: 1.005,
+          costBasis: 1,
+          realizedGain: 0.005,
+        }),
+      ]);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<RealizedGainsReport />);
+      await screen.findByText('Total Proceeds');
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('export-pdf'));
+      });
+      await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledTimes(1));
+      const { tableData } = mockExportToPdf.mock.calls[0][0];
+      expect(tableData.totalRow.slice(3, 6)).toEqual(['$2.01', '$2.00', '$0.01']);
+    });
+
+    it("marks a security's own row partial when one of its sales had no rate", async () => {
+      mockGetRealizedGains.mockResolvedValue([
+        gainEntry(),
+        gainEntry({
+          transactionId: 'sell-2',
+          inReportingCurrency: {
+            currency: 'CAD',
+            proceeds: null,
+            costBasis: null,
+            realizedGain: null,
+            missingRatePairs: ['EUR->CAD'],
+          },
+        }),
+        gainEntry({
+          transactionId: 'sell-3',
+          symbol: 'MSFT',
+          securityName: 'Microsoft Corp.',
+        }),
+      ]);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<RealizedGainsReport />);
+      await screen.findByText('Total Proceeds');
+      await act(async () => {
+        fireEvent.click(screen.getByTitle('Table'));
+      });
+      const row = (symbol: string) =>
+        screen.getAllByText(symbol).map((el) => el.closest('tr')).find((tr) => tr?.closest('tbody'))!;
+      // AAPL left a sale out: each of its three figures is marked.
+      expect(within(row('AAPL')).getAllByTestId('partial-total-marker')).toHaveLength(3);
+      // MSFT is whole.
+      expect(within(row('MSFT')).queryByTestId('partial-total-marker')).not.toBeInTheDocument();
+    });
+
+    it('marks the totals partial when a sale had no rate', async () => {
+      mockGetRealizedGains.mockResolvedValue([
+        gainEntry(),
+        gainEntry({
+          transactionId: 'sell-2',
+          inReportingCurrency: {
+            currency: 'CAD',
+            proceeds: null,
+            costBasis: null,
+            realizedGain: null,
+            missingRatePairs: ['EUR->CAD'],
+          },
+        }),
+      ]);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<RealizedGainsReport />);
+      const card = (await screen.findByText('Total Proceeds')).parentElement as HTMLElement;
+      expect(within(card).getByTestId('partial-total-marker')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('export-pdf'));
+      });
+      await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledTimes(1));
+      const { tableData } = mockExportToPdf.mock.calls[0][0];
+      expect(tableData.totalRow[3]).toBe('$5500.00 (partial total)');
+    });
+  });
+
   it('renders view type toggle buttons', async () => {
     mockGetRealizedGains.mockResolvedValue([]);
     mockGetInvestmentAccounts.mockResolvedValue([]);

@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Quanto hanno guadagnato i tuoi investimenti: la variazione del valore dei titoli, al netto di acquisti, vendite, depositi, prelievi e liquidità non investita, e al lordo di dividendi e interessi.",
     "investmentReturnTooltip": "Un rendimento ponderato nel tempo riferito solo ai titoli. Il denaro versato o prelevato in un giorno non lo sposta, e la liquidità non investita non rientra né nel risultato né in ciò rispetto a cui viene misurato.",
     "incompleteTooltip": "Alcuni giorni di questo periodo non hanno un prezzo, un tasso di cambio o un saldo di liquidità, quindi i dati che dipendono da ogni giorno non vengono mostrati.",
+    "pointIncomplete": "A questo punto manca un prezzo o un tasso di cambio, quindi questo dato non può essere calcolato. Dati incompleti nel periodo selezionato, sotto il grafico, indica cosa manca.",
     "measuredFromClose": "Dalla chiusura delle contrattazioni del {date}",
     "notAvailable": "N/D",
     "intradayUnavailableTitle": "Vista intraday non disponibile per questa combinazione di conti",

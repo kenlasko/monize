@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Berapa yang dihasilkan investasi Anda: perubahan nilai sekuritas, dikurangi pembelian, penjualan, setoran, penarikan, dan tunai yang belum diinvestasikan, dan ditambah dividen serta bunga.",
     "investmentReturnTooltip": "Imbal hasil yang dibobot berdasarkan waktu hanya untuk sekuritas. Uang yang disetorkan atau ditarik pada suatu hari tidak mengubahnya, dan tunai yang belum diinvestasikan tidak termasuk dalam hasil maupun dalam nilai yang dijadikan pembandingnya.",
     "incompleteTooltip": "Beberapa hari dalam periode ini tidak memiliki harga, kurs, atau saldo kas, sehingga angka yang bergantung pada setiap hari tidak ditampilkan.",
+    "pointIncomplete": "Titik ini tidak memiliki harga atau kurs, sehingga angka ini tidak dapat dihitung. Data tidak lengkap pada periode yang dipilih, di bawah grafik, menyebutkan apa yang kurang.",
     "measuredFromClose": "Sejak penutupan perdagangan pada {date}",
     "notAvailable": "T/A",
     "intradayUnavailableTitle": "Tampilan intraday tidak tersedia untuk campuran akun ini",

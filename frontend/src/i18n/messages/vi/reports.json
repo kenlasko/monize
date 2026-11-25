@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Số tiền khoản đầu tư của bạn kiếm được: thay đổi giá trị của chứng khoán, đã trừ đi mua, bán, nạp, rút và tiền mặt chưa đầu tư, và cộng thêm cổ tức cùng lãi.",
     "investmentReturnTooltip": "Lợi nhuận tính theo trọng số thời gian chỉ tính trên chứng khoán. Tiền nạp vào hoặc rút ra trong một ngày không làm thay đổi con số này, và tiền mặt chưa đầu tư không nằm trong kết quả cũng như trong giá trị dùng để đo lường nó.",
     "incompleteTooltip": "Một số ngày trong khoảng thời gian này thiếu giá, tỷ giá hối đoái hoặc số dư tiền mặt, nên các số liệu phụ thuộc vào từng ngày sẽ không được hiển thị.",
+    "pointIncomplete": "Điểm này thiếu giá hoặc tỷ giá hối đoái, nên không thể tính được số liệu này. Mục Dữ liệu không đầy đủ trong khoảng thời gian đã chọn, bên dưới biểu đồ, cho biết những gì còn thiếu.",
     "measuredFromClose": "Kể từ khi đóng cửa phiên giao dịch ngày {date}",
     "notAvailable": "N/A",
     "intradayUnavailableTitle": "Chế độ xem nội ngày không khả dụng cho kết hợp tài khoản này",

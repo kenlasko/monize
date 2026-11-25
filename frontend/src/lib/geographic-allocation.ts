@@ -1,5 +1,7 @@
 import { HoldingWithMarketValue } from '@/types/investment';
 import { chartColors, CHART_SERIES } from '@/lib/chart-colors';
+import type { ConvertedTotal } from '@/lib/currency-total';
+import { foldPageSums, pageRatio, pageSum, pageSumSign } from '@/lib/page-total';
 
 export interface ExchangeAllocation {
   exchange: string;
@@ -146,11 +148,18 @@ export const COUNTRY_COLOURS = CHART_SERIES;
  * Roll holdings up into per-exchange and per-region allocations, all converted
  * into the user's display currency via `convertToDefault`. `securityExchangeMap`
  * maps securityId -> exchange code (from the securities list).
+ *
+ * The groupings exist only on the page, so each exchange's value is the exact
+ * sum of its converted holdings read once at `places` (the display currency's),
+ * a region and the total fold the exchanges' exact sums rather than their
+ * readings, and each share is divided from the exact sums
+ * (`docs/specs/report-rounding-and-aggregation.md` rules 2 and 8, section 7).
  */
 export function computeGeographicAllocation(
   holdings: HoldingWithMarketValue[],
   securityExchangeMap: Map<string, string>,
   convertToDefault: (value: number, currency: string) => number | null,
+  places: number,
 ): {
   exchangeData: ExchangeAllocation[];
   regionData: RegionAllocation[];
@@ -162,7 +171,7 @@ export function computeGeographicAllocation(
 } {
   const exchangeMap = new Map<
     string,
-    { country: string; region: string; count: number; value: number }
+    { country: string; region: string; values: number[] }
   >();
   // A missing price or rate leaves a holding out of every figure below, so
   // `totalValue` is a subtotal whenever either happens -- tracked here so the
@@ -191,52 +200,62 @@ export function computeGeographicAllocation(
       exchangeMap.get(exchange) || {
         country: info.country,
         region: info.region,
-        count: 0,
-        value: 0,
+        values: [],
       };
     exchangeMap.set(exchange, {
       ...existing,
-      count: existing.count + 1,
-      value: existing.value + marketValue,
+      values: [...existing.values, marketValue],
     });
   });
 
-  const total = Array.from(exchangeMap.values()).reduce((sum, v) => sum + v.value, 0);
+  const exchanges = Array.from(exchangeMap.entries()).map(([exchange, data]) => ({
+    exchange,
+    country: data.country,
+    region: data.region,
+    count: data.values.length,
+    sum: pageSum(data.values, places),
+  }));
+  const total = foldPageSums(exchanges.map((e) => e.sum), places);
+  const shareOf = (sum: ConvertedTotal): number =>
+    pageSumSign(total) > 0 ? (pageRatio(sum, total) ?? 0) * 100 : 0;
 
-  const exchangeData: ExchangeAllocation[] = Array.from(exchangeMap.entries())
-    .map(([exchange, data]) => ({
-      exchange,
-      country: data.country,
-      region: data.region,
-      count: data.count,
-      marketValue: data.value,
-      percentage: total > 0 ? (data.value / total) * 100 : 0,
+  const exchangeData: ExchangeAllocation[] = exchanges
+    .map((e) => ({
+      exchange: e.exchange,
+      country: e.country,
+      region: e.region,
+      count: e.count,
+      marketValue: e.sum.value,
+      percentage: shareOf(e.sum),
     }))
     .sort((a, b) => b.marketValue - a.marketValue);
 
-  const regionMap = new Map<string, { value: number; count: number }>();
-  exchangeData.forEach((e) => {
-    const existing = regionMap.get(e.region) || { value: 0, count: 0 };
+  const regionMap = new Map<string, { sums: ConvertedTotal[]; count: number }>();
+  exchanges.forEach((e) => {
+    const existing = regionMap.get(e.region) || { sums: [], count: 0 };
     regionMap.set(e.region, {
-      value: existing.value + e.marketValue,
+      sums: [...existing.sums, e.sum],
       count: existing.count + e.count,
     });
   });
 
   const regionData: RegionAllocation[] = Array.from(regionMap.entries())
-    .map(([region, data]) => ({
-      region,
-      marketValue: data.value,
-      percentage: total > 0 ? (data.value / total) * 100 : 0,
-      count: data.count,
-      color: REGION_COLOURS[region] || chartColors.axis,
-    }))
+    .map(([region, data]) => {
+      const sum = foldPageSums(data.sums, places);
+      return {
+        region,
+        marketValue: sum.value,
+        percentage: shareOf(sum),
+        count: data.count,
+        color: REGION_COLOURS[region] || chartColors.axis,
+      };
+    })
     .sort((a, b) => b.marketValue - a.marketValue);
 
   return {
     exchangeData,
     regionData,
-    totalValue: total,
+    totalValue: total.value,
     missingCurrencies: [...missing],
     excludedCount,
   };

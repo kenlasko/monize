@@ -2428,6 +2428,53 @@ describe("ReportsService", () => {
         );
       });
 
+      describe("a component's own digits are not rounded away (issue #2414)", () => {
+        // 7.681 EUR at 1.2475589116 is exactly 9.5824999999996 USD, and two
+        // are 19.1649999999992, which reads 19.16. Held at twelve places each
+        // receipt read 9.5825, so the two summed to 19.165 and read 19.17.
+        beforeEach(() => {
+          mockCurrencyService.getDefaultCurrency.mockResolvedValue("USD");
+          storedRates.set("EUR->USD", 1.2475589116);
+        });
+
+        it.each([
+          ["one day", "2025-06-15"],
+          ["two days", "2025-06-16"],
+        ])(
+          "totals two 7.681 EUR receipts on %s at 19.16 USD",
+          async (_label, secondDate) => {
+            setupExecuteMocks(
+              {
+                groupBy: GroupByType.CATEGORY,
+                config: {
+                  ...defaultConfig,
+                  direction: DirectionFilter.INCOME_ONLY,
+                },
+              },
+              [
+                createMockTransaction({
+                  id: "tx-1",
+                  amount: 7.681,
+                  currencyCode: "EUR",
+                  transactionDate: "2025-06-15",
+                }),
+                createMockTransaction({
+                  id: "tx-2",
+                  amount: 7.681,
+                  currencyCode: "EUR",
+                  transactionDate: secondDate,
+                }),
+              ],
+            );
+            categoriesRepository.find.mockResolvedValue([mockCategory]);
+            const result = await service.execute("user-1", "report-1");
+
+            expect(result.data[0].value).toBe(19.16);
+            expect(result.summary.total).toBe(19.16);
+          },
+        );
+      });
+
       describe("rounded once, whatever the grouping (issues #2384, #2410)", () => {
         // Two 100.01 EUR receipts at 1.2474 are 124.752474 USD each. A group
         // that read each cell at four places before adding it, or a headline
@@ -2621,6 +2668,22 @@ describe("ReportsService", () => {
           // places, amounts from a cent to ten million. Every row is income,
           // so no grouping changes what nets (rule 4): the headline must be
           // the single rounding of every converted row, under every grouping.
+          // The reference is worked out apart from the accumulator too, in
+          // exact decimals: each amount times its rate as integers at
+          // fourteen places, summed, rounded half away from zero at two
+          // (issue #2414), and each category's share is that exact ratio.
+          const decimalUnits = (value: number, places: number): bigint =>
+            BigInt(value.toFixed(places).replace(".", ""));
+          const readAt2 = (units: bigint): number => {
+            const unit = 10n ** 12n;
+            const magnitude = units < 0n ? -units : units;
+            const quotient = magnitude / unit;
+            const rounded =
+              (magnitude - quotient * unit) * 2n >= unit
+                ? quotient + 1n
+                : quotient;
+            return Number(units < 0n ? -rounded : rounded) / 100;
+          };
           let seed = 2384;
           const random = () => {
             seed = (seed * 1103515245 + 12345) % 2147483648;
@@ -2680,6 +2743,20 @@ describe("ReportsService", () => {
                   rateOf(tx.currencyCode, tx.transactionDate);
             const expected = new FxAggregate();
             for (const tx of transactions) expected.addConverted(converted(tx));
+            // Amount at four places times rate at ten: units at fourteen.
+            const exactUnits = (tx: Transaction): bigint =>
+              decimalUnits(Number(tx.amount), 4) *
+              (tx.currencyCode === "USD"
+                ? 10n ** 10n
+                : decimalUnits(
+                    rateOf(tx.currencyCode, tx.transactionDate),
+                    10,
+                  ));
+            const exactTotal = transactions.reduce(
+              (sum, tx) => sum + exactUnits(tx),
+              0n,
+            );
+            expect(expected.knownSubtotalAt(2)).toBe(readAt2(exactTotal));
             mockCurrencyService.buildConverter.mockImplementation(
               async (_rows, currency) => (amount, basis) =>
                 basis.currency_code === currency
@@ -2700,6 +2777,18 @@ describe("ReportsService", () => {
                 metric,
                 total: expected.knownSubtotalAt(2),
               });
+              if (groupBy === GroupByType.CATEGORY) {
+                // Each share is the category's exact sum over the total's.
+                for (const row of result.data) {
+                  const categoryUnits = transactions
+                    .filter((tx) => tx.categoryId === row.id)
+                    .reduce((sum, tx) => sum + exactUnits(tx), 0n);
+                  expect(row.percentage).toBeCloseTo(
+                    (Number(categoryUnits) / Number(exactTotal)) * 100,
+                    9,
+                  );
+                }
+              }
             }
           }
         });

@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "What your investments earned: the change in what the securities are worth, with purchases, sales, deposits, withdrawals and uninvested cash taken out, and dividends and interest counted in.",
     "investmentReturnTooltip": "A time-weighted return on the securities alone. Money paid in or taken out on a day does not move it, and uninvested cash is in neither the result nor what it is measured against.",
     "incompleteTooltip": "Some days in this window are missing a price, an exchange rate or a cash balance, so the figures that depend on every day are not shown.",
+    "pointIncomplete": "This point is missing a price or an exchange rate, so this figure cannot be worked out. Incomplete data in the selected period, below the chart, names what is missing.",
     "measuredFromClose": "Since the close of trading on {date}",
     "notAvailable": "N/A",
     "intradayUnavailableTitle": "Intraday view unavailable for this account mix",

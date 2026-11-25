@@ -87,4 +87,22 @@ describe('IncomeBySourceWidget', () => {
     expect(slices.reduce((s: number, x: { value: number }) => s + x.value, 0)).toBe(2000);
     expect(screen.getByText('$2000')).toBeInTheDocument();
   });
+
+  it("carries each source's server share to its slice, and the merged slice's as their sum (issue #2414)", async () => {
+    // Two equal sources of 1.2474 read 1.25 over 2.49 (50.2% by the readings);
+    // the server's share of each is 50, which the tooltip reads.
+    const data = Array.from({ length: 17 }, (_, i) => ({
+      categoryId: `c${i}`,
+      categoryName: `Source ${i}`,
+      color: null,
+      total: 1.25,
+      percentage: i < 15 ? 5 : 12.5,
+    }));
+    getIncomeBySource.mockResolvedValue({ data, totalIncome: 21.21 });
+    await renderWidget();
+    const slices = JSON.parse(screen.getByTestId('pie-data').dataset.slices!);
+    expect(slices[0].percentage).toBe(5);
+    expect(slices[15]).toMatchObject({ name: 'Other', percentage: 25 });
+  });
 });
+

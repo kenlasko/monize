@@ -47,12 +47,11 @@ import {
   ReportSummary,
 } from "./dto/execute-report.dto";
 import { reportFigure, reportFigureOrNull } from "../common/report-figure";
-import { FxAggregate } from "../common/fx-aggregate";
+import { FxAggregate, shareOf } from "../common/fx-aggregate";
 import {
   mergedSum,
   metricValue,
   ReportRow,
-  shareOf,
   sumOf,
   summarizeRows,
 } from "./report-rows";

@@ -28,7 +28,8 @@ import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { useReportData } from '@/hooks/useReportData';
 import { usePersistedAccountFilter } from '@/hooks/usePersistedAccountFilter';
 import { ReportError } from '@/components/reports/ReportError';
-import { FX_RATE_DISPLAY_DECIMALS } from '@/lib/format';
+import { FX_RATE_DISPLAY_DECIMALS, getDecimalPlacesForCurrency } from '@/lib/format';
+import { foldPageSums, pageRatio, pageSum, pageSumSign } from '@/lib/page-total';
 import { CHART_SERIES } from '@/lib/chart-colors';
 import { createLogger } from '@/lib/logger';
 import { useTranslations } from 'next-intl';
@@ -246,8 +247,16 @@ export function CurrencyExposureReport() {
     [response],
   );
 
-  const allocationData = useMemo((): CurrencyAllocation[] => {
-    const currencyMap = new Map<string, { nativeValue: number; convertedValue: number; count: number }>();
+  // The page groups the holdings by currency, so each currency's figures and
+  // the total exist only here: the exact sum of the holdings read once (the
+  // native value at its own currency's places, the converted one at the
+  // display currency's), the total folding the currencies' exact sums, and
+  // each share divided from the exact sums (rule 8), never from the readings
+  // (`docs/specs/report-rounding-and-aggregation.md` section 7).
+  const places = getDecimalPlacesForCurrency(defaultCurrency);
+
+  const { allocationData, totalSum, foreignSum } = useMemo(() => {
+    const currencyMap = new Map<string, { native: number[]; converted: number[] }>();
 
     holdings.forEach((h) => {
       const currency = h.currencyCode;
@@ -260,34 +269,41 @@ export function CurrencyExposureReport() {
       const convertedValue = convertToDefault(nativeValue, currency);
       if (convertedValue === null) return;
 
-      const existing = currencyMap.get(currency) || { nativeValue: 0, convertedValue: 0, count: 0 };
+      const existing = currencyMap.get(currency) ?? { native: [], converted: [] };
       currencyMap.set(currency, {
-        nativeValue: existing.nativeValue + nativeValue,
-        convertedValue: existing.convertedValue + convertedValue,
-        count: existing.count + 1,
+        native: [...existing.native, nativeValue],
+        converted: [...existing.converted, convertedValue],
       });
     });
 
-    const totalConverted = Array.from(currencyMap.values()).reduce((sum, v) => sum + v.convertedValue, 0);
+    const groups = Array.from(currencyMap.entries()).map(([currency, data]) => ({
+      currency,
+      native: pageSum(data.native, getDecimalPlacesForCurrency(currency)),
+      converted: pageSum(data.converted, places),
+      count: data.converted.length,
+    }));
+    const total = foldPageSums(groups.map((g) => g.converted), places);
+    const foreign = foldPageSums(
+      groups.filter((g) => g.currency !== defaultCurrency).map((g) => g.converted),
+      places,
+    );
     let colorIndex = 0;
 
-    return Array.from(currencyMap.entries())
-      .map(([currency, data]) => ({
-        currency,
-        nativeValue: data.nativeValue,
-        convertedValue: data.convertedValue,
-        percentage: totalConverted > 0 ? (data.convertedValue / totalConverted) * 100 : 0,
-        count: data.count,
-        color: CURRENCY_COLOURS[currency] || FALLBACK_COLOURS[colorIndex++ % FALLBACK_COLOURS.length],
-        rate: getRate(currency),
+    const rows: CurrencyAllocation[] = groups
+      .map((g) => ({
+        currency: g.currency,
+        nativeValue: g.native.value,
+        convertedValue: g.converted.value,
+        percentage: pageSumSign(total) > 0 ? (pageRatio(g.converted, total) ?? 0) * 100 : 0,
+        count: g.count,
+        color: CURRENCY_COLOURS[g.currency] || FALLBACK_COLOURS[colorIndex++ % FALLBACK_COLOURS.length],
+        rate: getRate(g.currency),
       }))
       .sort((a, b) => b.convertedValue - a.convertedValue);
-  }, [holdings, convertToDefault, getRate]);
+    return { allocationData: rows, totalSum: total, foreignSum: foreign };
+  }, [holdings, convertToDefault, getRate, places, defaultCurrency]);
 
-  const totalPortfolioValue = useMemo(
-    () => allocationData.reduce((sum, a) => sum + a.convertedValue, 0),
-    [allocationData],
-  );
+  const totalPortfolioValue = totalSum.value;
 
   // Holdings allocationData had to leave out (mirrors its exclusion rules): an
   // unpriced holding, and -- worse for an exposure report -- a currency with no
@@ -338,10 +354,10 @@ export function CurrencyExposureReport() {
     return sorted;
   }, [allocationData, sortField, sortDirection]);
 
-  const foreignCurrencyExposure = useMemo(
-    () => allocationData.filter((a) => a.currency !== defaultCurrency).reduce((sum, a) => sum + a.convertedValue, 0),
-    [allocationData, defaultCurrency],
-  );
+  const foreignCurrencyExposure = foreignSum.value;
+  // The home currency's share, from the exact sums.
+  const homeShare =
+    pageSumSign(totalSum) > 0 ? (1 - (pageRatio(foreignSum, totalSum) ?? 0)) * 100 : 0;
 
   // Exhaustive over the sort field union, so a new field is a compile error
   // rather than a column with no control in either header -- and each entry
@@ -469,12 +485,7 @@ export function CurrencyExposureReport() {
         <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('currencyExposure.homeCurrency', { defaultCurrency })}</p>
           <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
-            {formatPercent(
-              totalPortfolioValue > 0
-                ? (1 - foreignCurrencyExposure / totalPortfolioValue) * 100
-                : 0,
-              1,
-            )}
+            {formatPercent(homeShare, 1)}
           </p>
         </div>
         <div className={`${CARD_CLASS} ui-rep-tile p-3 sm:p-4`}>

@@ -306,6 +306,70 @@ describe('DividendIncomeReport', () => {
     expect(screen.getByText('Total Income')).toBeInTheDocument();
   });
 
+  describe('figures the page builds (issue #2414)', () => {
+    // Two USD dividends of 1.00, converted at the server's factors for their
+    // own dates (1.0007 and 1.0143 CAD), add to 2.0149999999999997 in doubles,
+    // which read $2.01; the exact sum, 2.015, reads $2.02.
+    const driftingDividends = () => ({
+      data: [
+        {
+          id: 'tx-1',
+          transactionDate: '2024-06-10',
+          action: 'DIVIDEND',
+          totalAmount: 1,
+          amountCurrencyCode: 'USD',
+          reportingRate: 1.0007,
+          accountId: 'acc-1',
+          securityId: 'sec-a',
+          security: { symbol: 'AAA', name: 'Alpha' },
+        },
+        {
+          id: 'tx-2',
+          transactionDate: '2024-06-20',
+          action: 'DIVIDEND',
+          totalAmount: 1,
+          amountCurrencyCode: 'USD',
+          reportingRate: 1.0143,
+          accountId: 'acc-1',
+          securityId: 'sec-a',
+          security: { symbol: 'AAA', name: 'Alpha' },
+        },
+      ],
+      pagination: { hasMore: false },
+    });
+
+    it('reads the cards once from the exact sum of the converted rows', async () => {
+      mockGetTransactions.mockResolvedValue(driftingDividends());
+      mockGetInvestmentAccounts.mockResolvedValue([
+        { id: 'acc-1', name: 'US', currencyCode: 'USD', accountSubType: 'INVESTMENT_CASH' },
+        { id: 'acc-2', name: 'RRSP', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+      ]);
+      mockGetCapitalGains.mockResolvedValue([]);
+      render(<DividendIncomeReport />);
+      const card = (await screen.findByText('Total Income')).parentElement as HTMLElement;
+      expect(card.textContent).toContain('$2.02');
+      expect(screen.queryByText('$2.01')).not.toBeInTheDocument();
+    });
+
+    it("writes the month's figure as the screen reads it, not a four-place float", async () => {
+      mockGetTransactions.mockResolvedValue(driftingDividends());
+      mockGetInvestmentAccounts.mockResolvedValue([
+        { id: 'acc-1', name: 'US', currencyCode: 'USD', accountSubType: 'INVESTMENT_CASH' },
+        { id: 'acc-2', name: 'RRSP', currencyCode: 'CAD', accountSubType: 'INVESTMENT_CASH' },
+      ]);
+      mockGetCapitalGains.mockResolvedValue([]);
+      render(<DividendIncomeReport />);
+      await screen.findByText('Total Income');
+      fireEvent.click(screen.getByRole('button', { name: 'Table' }));
+      fireEvent.click(await screen.findByRole('button', { name: /^export$/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'CSV' }));
+      const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+      const june = rows.find((r) => r[0] === '2024-06')!;
+      expect(june[3]).toBe(2.02); // Dividends
+      expect(june[6]).toBe(2.02); // Total
+    });
+  });
+
   it('counts a reinvested distribution as income of its kind, at its shares\' cost', async () => {
     // Discussion #1670. A reinvest created in the app stores no total, so the
     // report values it at quantity x price + commission.

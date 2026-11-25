@@ -13,6 +13,8 @@ import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { useAssetClassLabel } from '@/hooks/useAssetClassLabel';
 import { chartColors, CHART_SERIES, chartSeriesColor } from '@/lib/chart-colors';
 import { aggregateHoldingsBySecurity } from '@/lib/aggregate-holdings';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
+import { foldPageSums, pageRatio, pageSum, pageSumSign } from '@/lib/page-total';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { collapseLookThrough } from '@/lib/look-through-allocation';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
@@ -135,7 +137,7 @@ export function SecurityTypeAllocationWidget({
 
   const { typeData, typeCompleteness } = useMemo(() => {
     const aggregated = aggregateHoldingsBySecurity(holdings);
-    const typeMap = new Map<string, number>();
+    const typeMap = new Map<string, number[]>();
     const unpricedSymbols: string[] = [];
     const missingRatePairs: string[] = [];
     aggregated.forEach((h) => {
@@ -155,18 +157,24 @@ export function SecurityTypeAllocationWidget({
         if (!missingRatePairs.includes(pair)) missingRatePairs.push(pair);
         return;
       }
-      typeMap.set(type, (typeMap.get(type) ?? 0) + converted);
+      typeMap.set(type, [...(typeMap.get(type) ?? []), converted]);
     });
 
-    const totalValue = Array.from(typeMap.values()).reduce((sum, v) => sum + v, 0);
+    // As the Security Type Allocation report builds them: each type the exact
+    // sum of its holdings read once, each share from the exact sums (rule 8).
+    const places = getDecimalPlacesForCurrency(defaultCurrency);
+    const typeSums = Array.from(typeMap.entries()).map(
+      ([type, values]) => [type, pageSum(values, places)] as const,
+    );
+    const total = foldPageSums(typeSums.map(([, sum]) => sum), places);
     let colorIndex = 0;
 
-    const typeData: TypeAllocation[] = Array.from(typeMap.entries())
-      .map(([type, value]) => ({
+    const typeData: TypeAllocation[] = typeSums
+      .map(([type, sum]) => ({
         type,
         label: typeLabel(type),
-        totalValue: value,
-        percentage: totalValue > 0 ? (value / totalValue) * 100 : 0,
+        totalValue: sum.value,
+        percentage: pageSumSign(total) > 0 ? (pageRatio(sum, total) ?? 0) * 100 : 0,
         color: TYPE_COLOURS[type] || chartSeriesColor(colorIndex++),
       }))
       .sort((a, b) => b.totalValue - a.totalValue);

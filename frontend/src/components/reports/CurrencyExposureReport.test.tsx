@@ -239,6 +239,22 @@ describe('CurrencyExposureReport', () => {
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
+  it('reads each currency and the total once from the exact sum (issue #2414)', async () => {
+    // Two CAD holdings of 1.0007 and 1.0143 add to 2.0149999999999997 in
+    // doubles, which read $2.01; the exact sum, 2.015, reads $2.02.
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [
+        { ...mockHoldings[1], marketValue: 1.0007 },
+        { ...mockHoldings[2], marketValue: 1.0143 },
+      ],
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    const { container } = render(<CurrencyExposureReport />);
+    await waitFor(() => expect(screen.getByText('Total')).toBeInTheDocument());
+    expect(container.querySelector('tfoot')?.textContent).toContain('$2.02');
+    expect(screen.queryByText('$2.01')).not.toBeInTheDocument();
+  });
+
   it('hides cash accounts from account filter dropdown', async () => {
     mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
     mockGetInvestmentAccounts.mockResolvedValue(mockAccounts);

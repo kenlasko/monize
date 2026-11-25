@@ -8,7 +8,7 @@ import {
 } from "./round.util";
 
 /**
- * The places a component is accumulated at: the fiat precision plus eight
+ * The fewest places a component is held at: the fiat precision plus eight
  * guard digits, so a subtotal is rounded once, when it is read, at whatever
  * places it is read at (four for a posted-precision reading, a currency's own
  * for a report figure), never component by component (issue #2360). Rounding
@@ -23,7 +23,21 @@ import {
  * the noise does not reach a mean or a share either. A reading at a coin's
  * eight places keeps four guard digits.
  */
-const ACCUMULATION_DECIMALS = FIAT_MONEY_DECIMALS + 8;
+const GUARDED_DECIMALS = FIAT_MONEY_DECIMALS + 8;
+
+/**
+ * The significant digits a double holds any decimal at (`DBL_DIG`): a decimal
+ * of at most fifteen digits converts to a double and back unchanged, and a
+ * converted double's own noise sits in the sixteenth and seventeenth.
+ */
+const DOUBLE_DECIMAL_DIGITS = 15;
+
+/**
+ * The places the accumulator counts in: room for a component's fifteen
+ * significant digits down to 10^-8, the column scale (`MONEY_SCALE`), with
+ * the twelve guard places below it. Anything finer is not money.
+ */
+const ACCUMULATION_DECIMALS = MONEY_SCALE + 12;
 
 /**
  * Half a unit at `MONEY_SCALE`, the column scale, in accumulation units: a
@@ -82,9 +96,29 @@ function unitAt(places: number): bigint {
  * (`300000000000.03 * 10000` is `3000000000000300.5`), and `Math.round` then
  * carried `+x` up and `-x` toward zero, so adding an amount and its negation
  * left `0.0001`.
+ *
+ * It is held at its fifteen significant digits, the most a double holds a
+ * decimal at, and never at fewer places than the twelve guarded ones
+ * (`GUARDED_DECIMALS`), so a component under 1,000 whose exact value has at
+ * most fifteen significant digits is held exactly; from 1,000 up, twelve
+ * places keep the double's own digits, its noise included, as before.
+ * Twelve places alone rounded a small
+ * component's own digits away: 7.681 EUR at 1.2475589116 is 9.5824999999996
+ * USD, which twelve places read as 9.5825, so two such receipts on two dates
+ * summed to 19.165 and read 19.17 where their sum, 19.1649999999992, reads
+ * 19.16 (issue #2414).
  */
 function toAccumulationUnits(amount: number): bigint {
-  return toScaledUnits(amount, ACCUMULATION_DECIMALS);
+  if (amount === 0) return 0n;
+  const magnitude = Math.floor(Math.log10(Math.abs(amount)));
+  const places = Math.min(
+    ACCUMULATION_DECIMALS,
+    Math.max(GUARDED_DECIMALS, DOUBLE_DECIMAL_DIGITS - 1 - magnitude),
+  );
+  return (
+    toScaledUnits(amount, places) *
+    10n ** BigInt(ACCUMULATION_DECIMALS - places)
+  );
 }
 
 /**
@@ -422,4 +456,19 @@ export class FxAggregate {
   get unknownCount(): number {
     return this.unknownComponents;
   }
+}
+
+/**
+ * `part`'s share of `whole` in percent, divided from the two unrounded
+ * aggregates before either is rounded; 0 unless the whole is positive. A share
+ * is not additive, so it is never a reading over a reading: two equal parts of
+ * 1.2474 read 1.25 each over 2.49, which is 50.2%, where each is half
+ * (`docs/specs/report-rounding-and-aggregation.md` rule 8). The one share every
+ * report divides: the custom report's rows, Income by Source's sources,
+ * Weekend vs Weekday's sides.
+ */
+export function shareOf(part: FxAggregate, whole: FxAggregate): number {
+  return whole.sign > 0
+    ? (part.unroundedSubtotal / whole.unroundedSubtotal) * 100
+    : 0;
 }

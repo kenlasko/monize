@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "你的投资赚取的金额：证券价值的变化，扣除买入、卖出、存入、取出资金和未投资现金，计入股息和利息。",
     "investmentReturnTooltip": "仅针对证券的按时间加权回报率。某一天存入或取出的资金不会影响它，未投资现金既不计入结果，也不计入用于衡量它的基准。",
     "incompleteTooltip": "此时间段内有些天缺少价格、汇率或现金余额，因此依赖每一天数据的数字不会显示。",
+    "pointIncomplete": "此时间点缺少价格或汇率，因此无法计算此数字。图表下方的“所选期间的数据不完整”会列出缺少的内容。",
     "measuredFromClose": "自 {date} 收盘起",
     "notAvailable": "不适用",
     "intradayUnavailableTitle": "此账户组合不支持日内视图",

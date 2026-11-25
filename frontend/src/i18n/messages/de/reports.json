@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Was Ihre Investitionen erwirtschaftet haben: die Wertänderung der Wertpapiere, ohne Käufe, Verkäufe, Einzahlungen, Auszahlungen und nicht investierte Barmittel, aber einschließlich Dividenden und Zinsen.",
     "investmentReturnTooltip": "Eine zeitgewichtete Rendite allein für die Wertpapiere. Geld, das an einem Tag ein- oder ausgezahlt wird, bewegt sie nicht, und nicht investierte Barmittel gehören weder zum Ergebnis noch zu der Grundlage, an der es gemessen wird.",
     "incompleteTooltip": "Für einige Tage in diesem Zeitraum fehlt ein Kurs, ein Wechselkurs oder ein Kassenbestand, daher werden die davon abhängigen Zahlen nicht angezeigt.",
+    "pointIncomplete": "Für diesen Zeitpunkt fehlt ein Kurs oder ein Wechselkurs, daher lässt sich diese Zahl nicht ermitteln. Unvollständige Daten im ausgewählten Zeitraum, unter dem Diagramm, nennt, was fehlt.",
     "measuredFromClose": "Seit dem Handelsschluss am {date}",
     "notAvailable": "k. A.",
     "intradayUnavailableTitle": "Intraday-Ansicht für diese Kontokombination nicht verfügbar",

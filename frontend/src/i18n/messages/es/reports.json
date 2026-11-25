@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Lo que ganaron sus inversiones: el cambio en el valor de los títulos, descontando compras, ventas, depósitos, retiros y efectivo sin invertir, y sumando dividendos e intereses.",
     "investmentReturnTooltip": "Una rentabilidad ponderada por tiempo solo de los títulos. El dinero que entra o sale en un día no la mueve, y el efectivo sin invertir no forma parte ni del resultado ni de aquello frente a lo que se mide.",
     "incompleteTooltip": "A algunos días de este período les falta un precio, un tipo de cambio o un saldo de efectivo, por lo que no se muestran las cifras que dependen de todos los días.",
+    "pointIncomplete": "A este punto le falta un precio o un tipo de cambio, por lo que esta cifra no se puede calcular. Datos incompletos en el período seleccionado, debajo del gráfico, indica qué falta.",
     "measuredFromClose": "Desde el cierre de la sesión del {date}",
     "notAvailable": "N/A",
     "intradayUnavailableTitle": "Vista intradía no disponible para esta combinación de cuentas",

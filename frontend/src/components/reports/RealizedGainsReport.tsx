@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { gainLossColor } from '@/lib/format';
+import { gainLossColor, getDecimalPlacesForCurrency } from '@/lib/format';
+import { isComplete, type ConvertedTotal } from '@/lib/currency-total';
+import { foldPageSums, pageSum, pageSumSign } from '@/lib/page-total';
+import { PartialTotal } from '@/components/ui/PartialTotal';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useReportData } from '@/hooks/useReportData';
 import { usePersistedAccountFilter } from '@/hooks/usePersistedAccountFilter';
@@ -80,9 +83,17 @@ interface SecurityGain {
   totalProceeds: number;
   totalCostBasis: number;
   realizedGain: number;
+  /** The three figures' exact sums, which the grand totals fold. */
+  sums: { proceeds: ConvertedTotal; costBasis: ConvertedTotal; realizedGain: ConvertedTotal };
   transactionCount: number;
   /** Sales of unknown cost, left out of the figures above, which are then a subtotal. */
   unknownCount: number;
+  /**
+   * What the row's figures leave out: its sales of unknown cost and those a
+   * side of which had no rate, with the currencies to add. Non-empty marks
+   * the row's figures as a subtotal (spec rule 7).
+   */
+  gap: ConvertedTotal;
 }
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-realized-gains-accounts';
@@ -210,8 +221,27 @@ export function RealizedGainsReport() {
 
   const entries = useMemo<RealizedGainEntry[]>(() => response ?? [], [response]);
 
+  // The page groups the sales by security, so the per-security and grand
+  // totals exist only here: each is the exact sum of the sales' own figures,
+  // read once at the display currency's places, and a grand total folds the
+  // securities' exact sums, never their readings
+  // (`docs/specs/report-rounding-and-aggregation.md` section 7).
+  const places = getDecimalPlacesForCurrency(displayCurrency);
+
   const securityGains = useMemo((): SecurityGain[] => {
-    const map = new Map<string, SecurityGain>();
+    const map = new Map<
+      string,
+      {
+        name: string;
+        proceeds: number[];
+        costBasis: number[];
+        realizedGain: number[];
+        transactionCount: number;
+        unknownCount: number;
+        missing: Set<string>;
+        noRateCount: number;
+      }
+    >();
 
     entries.forEach((entry) => {
       const symbol = entry.symbol || 'Unknown';
@@ -220,13 +250,14 @@ export function RealizedGainsReport() {
       let bucket = map.get(symbol);
       if (!bucket) {
         bucket = {
-          symbol,
           name,
-          totalProceeds: 0,
-          totalCostBasis: 0,
-          realizedGain: 0,
+          proceeds: [],
+          costBasis: [],
+          realizedGain: [],
           transactionCount: 0,
           unknownCount: 0,
+          missing: new Set<string>(),
+          noRateCount: 0,
         };
         map.set(symbol, bucket);
       }
@@ -242,15 +273,47 @@ export function RealizedGainsReport() {
       // A gain is proceeds minus basis: if either side cannot be converted the
       // gain is unknown, and adding the half that converted would report a
       // profit or loss that never happened.
-      if (proceeds === null || costBasis === null || realizedGain === null) return;
-      bucket.totalProceeds += proceeds;
-      bucket.totalCostBasis += costBasis;
-      bucket.realizedGain += realizedGain;
+      if (proceeds === null || costBasis === null || realizedGain === null) {
+        // The pair the server could not resolve names the currency to add; a
+        // backend that names none falls back to the holding account's.
+        const pairs = entry.inReportingCurrency?.missingRatePairs ?? [];
+        const currencies =
+          pairs.length > 0
+            ? pairs.map((pair) => pair.split('->')[0])
+            : [entry.accountCurrencyCode || defaultCurrency];
+        for (const currency of currencies) bucket.missing.add(currency);
+        bucket.noRateCount += 1;
+        return;
+      }
+      bucket.proceeds.push(proceeds);
+      bucket.costBasis.push(costBasis);
+      bucket.realizedGain.push(realizedGain);
       bucket.transactionCount += 1;
     });
 
-    return Array.from(map.values());
-  }, [entries, toDisplay]);
+    return Array.from(map.entries()).map(([symbol, bucket]) => {
+      const sums = {
+        proceeds: pageSum(bucket.proceeds, places),
+        costBasis: pageSum(bucket.costBasis, places),
+        realizedGain: pageSum(bucket.realizedGain, places),
+      };
+      return {
+        symbol,
+        name: bucket.name,
+        totalProceeds: sums.proceeds.value,
+        totalCostBasis: sums.costBasis.value,
+        realizedGain: sums.realizedGain.value,
+        sums,
+        transactionCount: bucket.transactionCount,
+        unknownCount: bucket.unknownCount,
+        gap: {
+          value: 0,
+          missingCurrencies: [...bucket.missing],
+          excludedCount: bucket.noRateCount + bucket.unknownCount,
+        },
+      };
+    });
+  }, [entries, toDisplay, places, defaultCurrency]);
 
   // Lots securityGains had to drop because a side could not be converted
   // (mirrors its exclusion rule), so the per-symbol and grand totals are
@@ -304,29 +367,52 @@ export function RealizedGainsReport() {
     return sorted;
   }, [securityGains, securityGainsSort.sortField, securityGainsSort.sortDirection]);
 
+  // A security's gain is drawn as its own single rounding, and a gain that
+  // reads 0.00 while its sign says it moved money keeps its bar (rule 8).
   const chartData = useMemo(() => {
     return securityGains
-      .filter((sg) => sg.unknownCount === 0 && sg.realizedGain !== 0)
+      .filter((sg) => sg.unknownCount === 0 && pageSumSign(sg.sums.realizedGain) !== 0)
       .map((sg) => ({
         symbol: sg.symbol,
-        gain: Math.round(sg.realizedGain * 100) / 100,
+        gain: sg.realizedGain,
       }));
   }, [securityGains]);
 
   const totals = useMemo(() => {
-    let totalProceeds = 0, totalCostBasis = 0, totalGain = 0, totalTransactions = 0, gainers = 0, losers = 0, unknownCount = 0;
+    let totalTransactions = 0, gainers = 0, losers = 0, unknownCount = 0;
     for (const sg of securityGains) {
       unknownCount += sg.unknownCount;
-      totalProceeds += sg.totalProceeds;
-      totalCostBasis += sg.totalCostBasis;
-      totalGain += sg.realizedGain;
       totalTransactions += sg.transactionCount;
       if (sg.unknownCount > 0) continue;
-      if (sg.realizedGain > 0) gainers++;
-      else if (sg.realizedGain < 0) losers++;
+      const sign = pageSumSign(sg.sums.realizedGain);
+      if (sign > 0) gainers++;
+      else if (sign < 0) losers++;
     }
-    return { totalProceeds, totalCostBasis, totalGain, totalTransactions, gainers, losers, unknownCount };
-  }, [securityGains]);
+    const proceeds = foldPageSums(securityGains.map((sg) => sg.sums.proceeds), places);
+    const costBasis = foldPageSums(securityGains.map((sg) => sg.sums.costBasis), places);
+    const gain = foldPageSums(securityGains.map((sg) => sg.sums.realizedGain), places);
+    return {
+      totalProceeds: proceeds.value,
+      totalCostBasis: costBasis.value,
+      totalGain: gain.value,
+      totalTransactions,
+      gainers,
+      losers,
+      unknownCount,
+    };
+  }, [securityGains, places]);
+
+  // What the three totals leave out: the sales of unknown cost, and the sales
+  // a side of which had no rate. Non-empty marks each total a subtotal.
+  const totalsGap = useMemo(
+    (): ConvertedTotal => ({
+      value: 0,
+      missingCurrencies: gainsGaps.missingCurrencies,
+      excludedCount: gainsGaps.excludedCount + totals.unknownCount,
+    }),
+    [gainsGaps, totals.unknownCount],
+  );
+  const partialSuffix = isComplete(totalsGap) ? '' : ` ${tCommon('partialTotal.srSuffix')}`;
 
   const sortedEntries = useMemo(() => {
     const sorted = [...entries];
@@ -404,20 +490,21 @@ export function RealizedGainsReport() {
     const { exportToPdf } = await import('@/lib/pdf-export');
     const { headers, rows } = getExportData('pdf');
     const unknownGain = t('realizedGains.csvUnknownCost');
-    const totalRow: (string | number)[] = [t('realizedGains.total'), '', '', fmtValue(totals.totalProceeds), fmtValue(totals.totalCostBasis), totals.unknownCount > 0 ? unknownGain : fmtValue(totals.totalGain), ''];
+    // A subtotal is marked as one in the document too.
+    const totalRow: (string | number)[] = [t('realizedGains.total'), '', '', `${fmtValue(totals.totalProceeds)}${partialSuffix}`, `${fmtValue(totals.totalCostBasis)}${partialSuffix}`, totals.unknownCount > 0 ? unknownGain : `${fmtValue(totals.totalGain)}${partialSuffix}`, ''];
     await exportToPdf({
       title: t('realizedGains.pdfTitle'),
       subtitle: t('realizedGains.pdfSubtitle', { count: securityGains.length, gain: totals.unknownCount > 0 ? unknownGain : fmtValue(totals.totalGain) }),
       summaryCards: [
-        { label: t('realizedGains.totalProceeds'), value: fmtValue(totals.totalProceeds), color: '#111827' },
-        { label: t('realizedGains.costBasis'), value: fmtValue(totals.totalCostBasis), color: '#111827' },
-        { label: t('realizedGains.realizedGainLoss'), value: totals.unknownCount > 0 ? unknownGain : `${totals.totalGain >= 0 ? '+' : ''}${fmtValue(totals.totalGain)}`, color: totals.unknownCount > 0 || totals.totalGain >= 0 ? '#16a34a' : '#dc2626' },
+        { label: t('realizedGains.totalProceeds'), value: `${fmtValue(totals.totalProceeds)}${partialSuffix}`, color: '#111827' },
+        { label: t('realizedGains.costBasis'), value: `${fmtValue(totals.totalCostBasis)}${partialSuffix}`, color: '#111827' },
+        { label: t('realizedGains.realizedGainLoss'), value: totals.unknownCount > 0 ? unknownGain : `${totals.totalGain >= 0 ? '+' : ''}${fmtValue(totals.totalGain)}${partialSuffix}`, color: totals.unknownCount > 0 || totals.totalGain >= 0 ? '#16a34a' : '#dc2626' },
       ],
       tableData: { headers, rows, totalRow },
       filename: 'realized-gains',
     });
    
-  }, [getExportData, securityGains.length, fmtValue, totals, t]);
+  }, [getExportData, securityGains.length, fmtValue, totals, partialSuffix, t]);
 
   if (error) {
     return <ReportError onRetry={reload} />;
@@ -441,13 +528,17 @@ export function RealizedGainsReport() {
         <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('realizedGains.totalProceeds')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {fmtValue(totals.totalProceeds)}
+            <PartialTotal total={totalsGap} displayCurrency={displayCurrency}>
+              {fmtValue(totals.totalProceeds)}
+            </PartialTotal>
           </div>
         </div>
         <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
           <div className="text-sm text-gray-500 dark:text-gray-400">{t('realizedGains.costBasis')}</div>
           <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            {fmtValue(totals.totalCostBasis)}
+            <PartialTotal total={totalsGap} displayCurrency={displayCurrency}>
+              {fmtValue(totals.totalCostBasis)}
+            </PartialTotal>
           </div>
         </div>
         <div className={`${CARD_CLASS} ui-rep-tile p-4`}>
@@ -463,7 +554,9 @@ export function RealizedGainsReport() {
             </>
           ) : (
             <div className={`text-xl font-bold ${gainLossColor(totals.totalGain)}`}>
-              {totals.totalGain >= 0 ? '+' : ''}{fmtValue(totals.totalGain)}
+              <PartialTotal total={totalsGap} displayCurrency={displayCurrency}>
+                {totals.totalGain >= 0 ? '+' : ''}{fmtValue(totals.totalGain)}
+              </PartialTotal>
             </div>
           )}
         </div>
@@ -620,11 +713,15 @@ export function RealizedGainsReport() {
                     </td>
                     <td role="cell" className={`col-start-1 row-start-2 text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{securityGainColumns.totalProceeds.label}</CellLabel>
-                      {fmtValue(sg.totalProceeds)}
+                      <PartialTotal total={sg.gap} displayCurrency={displayCurrency}>
+                        {fmtValue(sg.totalProceeds)}
+                      </PartialTotal>
                     </td>
                     <td role="cell" className={`col-start-2 row-start-2 text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{securityGainColumns.totalCostBasis.label}</CellLabel>
-                      {fmtValue(sg.totalCostBasis)}
+                      <PartialTotal total={sg.gap} displayCurrency={displayCurrency}>
+                        {fmtValue(sg.totalCostBasis)}
+                      </PartialTotal>
                     </td>
                     <td role="cell" className={`col-start-1 col-span-2 row-start-3 font-medium ${gainLossColor(sg.realizedGain)} ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{securityGainColumns.realizedGain.label}</CellLabel>
@@ -636,7 +733,9 @@ export function RealizedGainsReport() {
                           </span>
                         </>
                       ) : (
-                        <>{sg.realizedGain >= 0 ? '+' : ''}{fmtValue(sg.realizedGain)}</>
+                        <PartialTotal total={sg.gap} displayCurrency={displayCurrency}>
+                          {sg.realizedGain >= 0 ? '+' : ''}{fmtValue(sg.realizedGain)}
+                        </PartialTotal>
                       )}
                     </td>
                   </tr>
@@ -653,11 +752,15 @@ export function RealizedGainsReport() {
                   </td>
                   <td role="cell" className={`col-start-1 row-start-2 font-semibold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{securityGainColumns.totalProceeds.label}</CellLabel>
-                    {fmtValue(totals.totalProceeds)}
+                    <PartialTotal total={totalsGap} displayCurrency={displayCurrency}>
+                      {fmtValue(totals.totalProceeds)}
+                    </PartialTotal>
                   </td>
                   <td role="cell" className={`col-start-2 row-start-2 font-semibold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{securityGainColumns.totalCostBasis.label}</CellLabel>
-                    {fmtValue(totals.totalCostBasis)}
+                    <PartialTotal total={totalsGap} displayCurrency={displayCurrency}>
+                      {fmtValue(totals.totalCostBasis)}
+                    </PartialTotal>
                   </td>
                   <td role="cell" className={`col-start-1 col-span-2 row-start-3 font-bold ${gainLossColor(totals.totalGain)} ${FIGURE_CELL}`}>
                     <CellLabel className={CAPTION_CLASS}>{securityGainColumns.realizedGain.label}</CellLabel>
@@ -669,7 +772,9 @@ export function RealizedGainsReport() {
                         </span>
                       </>
                     ) : (
-                      <>{totals.totalGain >= 0 ? '+' : ''}{fmtValue(totals.totalGain)}</>
+                      <PartialTotal total={totalsGap} displayCurrency={displayCurrency}>
+                        {totals.totalGain >= 0 ? '+' : ''}{fmtValue(totals.totalGain)}
+                      </PartialTotal>
                     )}
                   </td>
                 </tr>

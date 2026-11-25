@@ -41,7 +41,14 @@ import {
 } from '@/components/ui/Table';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { exportToCsv } from '@/lib/csv-export';
-import { roundMoney, balanceColor } from '@/lib/format';
+import { balanceColor, getDecimalPlacesForCurrency } from '@/lib/format';
+import {
+  foldPageSums,
+  pageSum,
+  pageSumSign,
+  pageSumValue,
+  type PageSum,
+} from '@/lib/page-total';
 import { chartColors, CHART_SERIES } from '@/lib/chart-colors';
 import { useTranslations } from 'next-intl';
 import { useMainAccountName } from '@/hooks/useMainAccountName';
@@ -63,35 +70,82 @@ type SecurityIncomeSortField = 'symbol' | 'dividends' | 'interest' | 'capitalGai
  * an unknown component is unknown, never the partial sum under the same name.
  * `dividends`/`interest` come from transaction rows and stay known.
  */
-interface MonthlyIncome {
+interface MonthlyIncome extends IncomeFigures {
   month: string;
   label: string;
-  startValue: number | null;
-  endValue: number | null;
-  dividends: number | null;
-  interest: number | null;
-  capitalGains: number | null;
-  total: number | null;
 }
 
-interface SecurityIncome {
+interface SecurityIncome extends IncomeFigures {
   symbol: string;
   name: string;
-  dividends: number | null;
-  interest: number | null;
-  capitalGains: number | null;
-  total: number | null;
 }
 
-interface DailyIncome {
+interface DailyIncome extends IncomeFigures {
   date: string;
   label: string;
+}
+
+/**
+ * Every bucket here (a month, a day, a security) and the report's totals are
+ * built on the page from rows it converted, so each figure is the exact sum
+ * of its components read once at the display currency's places, and a total
+ * over the series folds their exact sums, never their readings
+ * (`docs/specs/report-rounding-and-aggregation.md` section 7). Two dividends
+ * of 1.0007 and 1.0143 added to 2.0149999999999997 in doubles and read $2.01,
+ * where their sum, 2.015, reads $2.02.
+ */
+type IncomeSeries = 'dividends' | 'interest' | 'capitalGains';
+
+/** One bucket's components, unrounded until the bucket is read. */
+type IncomeParts = Record<IncomeSeries | 'startValue' | 'endValue', (number | null)[]>;
+
+/** A bucket's figures: each series' exact sum, and the readings shown. */
+interface IncomeFigures {
+  sums: Record<IncomeSeries, PageSum>;
   startValue: number | null;
   endValue: number | null;
   dividends: number | null;
   interest: number | null;
   capitalGains: number | null;
   total: number | null;
+}
+
+const INCOME_SERIES: readonly IncomeSeries[] = ['dividends', 'interest', 'capitalGains'];
+
+function emptyIncomeParts(): IncomeParts {
+  return { dividends: [], interest: [], capitalGains: [], startValue: [], endValue: [] };
+}
+
+/** The series a transaction's income belongs to, or `null` for no income. */
+function incomeSeriesOf(tx: InvestmentTransaction): IncomeSeries | null {
+  switch (incomeBaseKind(tx.action)) {
+    case 'DIVIDEND':
+      return 'dividends';
+    case 'INTEREST':
+      return 'interest';
+    case 'CAPITAL_GAIN':
+      return 'capitalGains';
+    default:
+      return null;
+  }
+}
+
+/** A bucket's figures, each read once from its components. */
+function readIncomeParts(parts: IncomeParts, places: number): IncomeFigures {
+  const sums = {
+    dividends: pageSum(parts.dividends, places),
+    interest: pageSum(parts.interest, places),
+    capitalGains: pageSum(parts.capitalGains, places),
+  };
+  return {
+    sums,
+    startValue: pageSumValue(pageSum(parts.startValue, places)),
+    endValue: pageSumValue(pageSum(parts.endValue, places)),
+    dividends: pageSumValue(sums.dividends),
+    interest: pageSumValue(sums.interest),
+    capitalGains: pageSumValue(sums.capitalGains),
+    total: pageSumValue(foldPageSums(INCOME_SERIES.map((series) => sums[series]), places)),
+  };
 }
 
 const SERIES_COLORS: Record<SeriesKey, { positive: string; negative: string }> = {
@@ -440,10 +494,8 @@ export function DividendIncomeReport() {
     [isSingleAccount],
   );
 
-  // A sum with an unknown component is unknown. Used everywhere a nullable
-  // entry value folds into a bucket, so `+=` cannot coerce null to 0.
-  const addOrUnknown = (a: number | null, b: number | null): number | null =>
-    a === null || b === null ? null : a + b;
+  // The places every figure is read at: the display currency's.
+  const places = getDecimalPlacesForCurrency(displayCurrency);
 
   /**
    * The one place this report decides unknown-versus-zero, so a cell renders
@@ -479,121 +531,64 @@ export function DividendIncomeReport() {
       ? eachMonthOfInterval({ start: startDate, end: endDate })
       : [];
 
-    // Initialize month buckets
-    const monthMap = new Map<string, MonthlyIncome>();
+    // Initialize month buckets: a month with nothing in it holds known zeros.
+    const monthMap = new Map<string, { label: string; parts: IncomeParts }>();
     months.forEach((month) => {
       const key = format(month, 'yyyy-MM');
-      monthMap.set(key, {
-        month: key,
-        label: formatChartDate(month, 'MMM yyyy'),
-        startValue: 0,
-        endValue: 0,
-        dividends: 0,
-        interest: 0,
-        capitalGains: 0,
-        total: 0,
-      });
+      monthMap.set(key, { label: formatChartDate(month, 'MMM yyyy'), parts: emptyIncomeParts() });
     });
 
-    const getOrCreateBucket = (txDate: Date): MonthlyIncome => {
+    const partsFor = (txDate: Date): IncomeParts => {
       const monthKey = format(txDate, 'yyyy-MM');
       let bucket = monthMap.get(monthKey);
       if (!bucket) {
-        bucket = {
-          month: monthKey,
-          label: formatChartDate(txDate, 'MMM yyyy'),
-          startValue: 0,
-          endValue: 0,
-          dividends: 0,
-          interest: 0,
-          capitalGains: 0,
-          total: 0,
-        };
+        bucket = { label: formatChartDate(txDate, 'MMM yyyy'), parts: emptyIncomeParts() };
         monthMap.set(monthKey, bucket);
       }
-      return bucket;
+      return bucket.parts;
     };
 
     filteredTransactions.forEach((tx) => {
-      const bucket = getOrCreateBucket(parseLocalDate(tx.transactionDate));
-      const contribution = getTxAmount(tx);
-      switch (incomeBaseKind(tx.action)) {
-        case 'DIVIDEND':
-          bucket.dividends = addOrUnknown(bucket.dividends, contribution);
-          break;
-        case 'INTEREST':
-          bucket.interest = addOrUnknown(bucket.interest, contribution);
-          break;
-        case 'CAPITAL_GAIN':
-          bucket.capitalGains = addOrUnknown(bucket.capitalGains, contribution);
-          break;
-      }
-      bucket.total = addOrUnknown(bucket.total, contribution);
+      const series = incomeSeriesOf(tx);
+      if (series === null) return;
+      partsFor(parseLocalDate(tx.transactionDate))[series].push(getTxAmount(tx));
     });
 
     filteredCapitalGains.forEach((entry) => {
       // entry.month is YYYY-MM; create a date in the middle of the month so
       // local-timezone parsing puts it in the right bucket.
-      const monthDate = parseLocalDate(`${entry.month}-15`);
-      const bucket = getOrCreateBucket(monthDate);
-      const gain = convertCapitalGain(entry);
-      bucket.capitalGains = addOrUnknown(bucket.capitalGains, gain);
-      bucket.total = addOrUnknown(bucket.total, gain);
+      const parts = partsFor(parseLocalDate(`${entry.month}-15`));
+      parts.capitalGains.push(convertCapitalGain(entry));
       // Start/end market values sum across securities to give a portfolio
       // mark-to-market snapshot at each month boundary.
-      bucket.startValue = addOrUnknown(
-        bucket.startValue,
-        convertFromAccountCurrency(entry, 'startValue'),
-      );
-      bucket.endValue = addOrUnknown(
-        bucket.endValue,
-        convertFromAccountCurrency(entry, 'endValue'),
-      );
+      parts.startValue.push(convertFromAccountCurrency(entry, 'startValue'));
+      parts.endValue.push(convertFromAccountCurrency(entry, 'endValue'));
     });
 
-    return Array.from(monthMap.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [filteredTransactions, filteredCapitalGains, dateRange, resolvedRange, getTxAmount, convertCapitalGain, convertFromAccountCurrency, formatChartDate]);
+    return Array.from(monthMap.entries())
+      .map(([month, bucket]) => ({ month, label: bucket.label, ...readIncomeParts(bucket.parts, places) }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+  }, [filteredTransactions, filteredCapitalGains, dateRange, resolvedRange, getTxAmount, convertCapitalGain, convertFromAccountCurrency, formatChartDate, places]);
 
   // Daily view: mirrors monthlyData but at daily granularity, combining
   // transaction-level income (DIVIDEND, INTEREST, CAPITAL_GAIN) with the
   // daily capital gains from the backend (realized + unrealized per day).
   const dailyData = useMemo((): DailyIncome[] => {
-    const dayMap = new Map<string, DailyIncome>();
+    const dayMap = new Map<string, { label: string; parts: IncomeParts }>();
 
-    const getOrCreateBucket = (dateKey: string, txDate: Date): DailyIncome => {
+    const partsFor = (dateKey: string, txDate: Date): IncomeParts => {
       let bucket = dayMap.get(dateKey);
       if (!bucket) {
-        bucket = {
-          date: dateKey,
-          label: formatChartDate(txDate, 'MMM d, yyyy'),
-          startValue: 0,
-          endValue: 0,
-          dividends: 0,
-          interest: 0,
-          capitalGains: 0,
-          total: 0,
-        };
+        bucket = { label: formatChartDate(txDate, 'MMM d, yyyy'), parts: emptyIncomeParts() };
         dayMap.set(dateKey, bucket);
       }
-      return bucket;
+      return bucket.parts;
     };
 
     filteredTransactions.forEach((tx) => {
-      const txDate = parseLocalDate(tx.transactionDate);
-      const bucket = getOrCreateBucket(tx.transactionDate, txDate);
-      const contribution = getTxAmount(tx);
-      switch (incomeBaseKind(tx.action)) {
-        case 'DIVIDEND':
-          bucket.dividends = addOrUnknown(bucket.dividends, contribution);
-          break;
-        case 'INTEREST':
-          bucket.interest = addOrUnknown(bucket.interest, contribution);
-          break;
-        case 'CAPITAL_GAIN':
-          bucket.capitalGains = addOrUnknown(bucket.capitalGains, contribution);
-          break;
-      }
-      bucket.total = addOrUnknown(bucket.total, contribution);
+      const series = incomeSeriesOf(tx);
+      if (series === null) return;
+      partsFor(tx.transactionDate, parseLocalDate(tx.transactionDate))[series].push(getTxAmount(tx));
     });
 
     filteredDailyCapitalGains.forEach((entry) => {
@@ -601,23 +596,16 @@ export function DividendIncomeReport() {
       // doesn't match (e.g. an older backend echoing monthly entries) so
       // parseLocalDate / format() don't blow up on a partial date.
       if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.month)) return;
-      const txDate = parseLocalDate(entry.month);
-      const bucket = getOrCreateBucket(entry.month, txDate);
-      const gain = convertCapitalGain(entry);
-      bucket.capitalGains = addOrUnknown(bucket.capitalGains, gain);
-      bucket.total = addOrUnknown(bucket.total, gain);
-      bucket.startValue = addOrUnknown(
-        bucket.startValue,
-        convertFromAccountCurrency(entry, 'startValue'),
-      );
-      bucket.endValue = addOrUnknown(
-        bucket.endValue,
-        convertFromAccountCurrency(entry, 'endValue'),
-      );
+      const parts = partsFor(entry.month, parseLocalDate(entry.month));
+      parts.capitalGains.push(convertCapitalGain(entry));
+      parts.startValue.push(convertFromAccountCurrency(entry, 'startValue'));
+      parts.endValue.push(convertFromAccountCurrency(entry, 'endValue'));
     });
 
-    return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredTransactions, filteredDailyCapitalGains, getTxAmount, convertCapitalGain, convertFromAccountCurrency, formatChartDate]);
+    return Array.from(dayMap.entries())
+      .map(([date, bucket]) => ({ date, label: bucket.label, ...readIncomeParts(bucket.parts, places) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredTransactions, filteredDailyCapitalGains, getTxAmount, convertCapitalGain, convertFromAccountCurrency, formatChartDate, places]);
 
   // When hideInactiveDays is enabled, drop rows with no income and no price
   // movement. On weekends/holidays the market is closed, so capital gains are
@@ -627,11 +615,13 @@ export function DividendIncomeReport() {
   const displayedDailyData = useMemo(
     () =>
       hideInactiveDays
-        ? dailyData.filter(
-            (row) =>
-              row.dividends !== 0 ||
-              row.interest !== 0 ||
-              row.capitalGains !== 0,
+        ? dailyData.filter((row) =>
+            // A series that reads 0.00 but moved money keeps its day (rule 8);
+            // an unknown one is not a quiet day either.
+            INCOME_SERIES.some((series) => {
+              const sum = row.sums[series];
+              return sum === null || pageSumSign(sum) !== 0;
+            }),
           )
         : dailyData,
     [dailyData, hideInactiveDays],
@@ -667,66 +657,52 @@ export function DividendIncomeReport() {
   );
 
   const securityData = useMemo((): SecurityIncome[] => {
-    const securityMap = new Map<string, SecurityIncome>();
+    const securityMap = new Map<string, { name: string; parts: IncomeParts }>();
 
-    const getOrCreateBucket = (symbol: string, name: string): SecurityIncome => {
+    const partsFor = (symbol: string, name: string): IncomeParts => {
       let bucket = securityMap.get(symbol);
       if (!bucket) {
-        bucket = { symbol, name, dividends: 0, interest: 0, capitalGains: 0, total: 0 };
+        bucket = { name, parts: emptyIncomeParts() };
         securityMap.set(symbol, bucket);
       }
-      return bucket;
+      return bucket.parts;
     };
 
     filteredTransactions.forEach((tx) => {
+      const series = incomeSeriesOf(tx);
+      if (series === null) return;
       const symbol = tx.security?.symbol || 'Unknown';
       const name = tx.security?.name || 'Unknown Security';
-      const bucket = getOrCreateBucket(symbol, name);
-      const contribution = getTxAmount(tx);
-      switch (incomeBaseKind(tx.action)) {
-        case 'DIVIDEND':
-          bucket.dividends = addOrUnknown(bucket.dividends, contribution);
-          break;
-        case 'INTEREST':
-          bucket.interest = addOrUnknown(bucket.interest, contribution);
-          break;
-        case 'CAPITAL_GAIN':
-          bucket.capitalGains = addOrUnknown(bucket.capitalGains, contribution);
-          break;
-      }
-      bucket.total = addOrUnknown(bucket.total, contribution);
+      partsFor(symbol, name)[series].push(getTxAmount(tx));
     });
 
     filteredCapitalGains.forEach((entry) => {
       const symbol = entry.symbol || 'Unknown';
       const name = entry.securityName || 'Unknown Security';
-      const bucket = getOrCreateBucket(symbol, name);
-      const gain = convertCapitalGain(entry);
-      bucket.capitalGains = addOrUnknown(bucket.capitalGains, gain);
-      bucket.total = addOrUnknown(bucket.total, gain);
+      partsFor(symbol, name).capitalGains.push(convertCapitalGain(entry));
     });
 
-    return Array.from(securityMap.values());
-  }, [filteredTransactions, filteredCapitalGains, getTxAmount, convertCapitalGain]);
+    return Array.from(securityMap.entries()).map(([symbol, bucket]) => ({
+      symbol,
+      name: bucket.name,
+      ...readIncomeParts(bucket.parts, places),
+    }));
+  }, [filteredTransactions, filteredCapitalGains, getTxAmount, convertCapitalGain, places]);
 
   // The row total restricted to the visible series. Unknown-aware: with the
   // capital-gains series visible, a row whose gains are unknown has an unknown
   // total (sorted last by compareValues, rendered as the unknown marker).
   const visibleTotal = useCallback(
-    (
-      dividends: number | null,
-      interest: number | null,
-      capitalGains: number | null,
-    ): number | null => {
-      // Sum only the visible series, and let a single unknown component make the
-      // visible total unknown rather than a silent subtotal.
-      let sum: number | null = 0;
-      if (visibleSeries.dividends) sum = addOrUnknown(sum, dividends);
-      if (visibleSeries.interest) sum = addOrUnknown(sum, interest);
-      if (visibleSeries.capitalGains) sum = addOrUnknown(sum, capitalGains);
-      return sum;
-    },
-    [visibleSeries],
+    (sums: Record<IncomeSeries, PageSum>): number | null =>
+      // Fold only the visible series' exact sums, and let a single unknown one
+      // make the visible total unknown rather than a silent subtotal.
+      pageSumValue(
+        foldPageSums(
+          INCOME_SERIES.filter((series) => visibleSeries[series]).map((series) => sums[series]),
+          places,
+        ),
+      ),
+    [visibleSeries, places],
   );
 
   const sortedMonthlyData = useMemo(() => {
@@ -754,8 +730,8 @@ export function DividendIncomeReport() {
           break;
         case 'total':
           comparison = compareValues(
-            visibleTotal(a.dividends, a.interest, a.capitalGains),
-            visibleTotal(b.dividends, b.interest, b.capitalGains),
+            visibleTotal(a.sums),
+            visibleTotal(b.sums),
           );
           break;
       }
@@ -789,8 +765,8 @@ export function DividendIncomeReport() {
           break;
         case 'total':
           comparison = compareValues(
-            visibleTotal(a.dividends, a.interest, a.capitalGains),
-            visibleTotal(b.dividends, b.interest, b.capitalGains),
+            visibleTotal(a.sums),
+            visibleTotal(b.sums),
           );
           break;
       }
@@ -828,28 +804,16 @@ export function DividendIncomeReport() {
   const totals = useMemo(() => {
     // A headline figure goes unknown (null), not silently short, when any of its
     // components could not be converted -- one missing rate makes the whole
-    // figure unknown, the same rule the monthly and daily buckets follow.
-    const dividends = filteredTransactions
-      .filter((t) => incomeBaseKind(t.action) === 'DIVIDEND')
-      .reduce<number | null>((sum, t) => addOrUnknown(sum, getTxAmount(t)), 0);
-    const interest = filteredTransactions
-      .filter((t) => incomeBaseKind(t.action) === 'INTEREST')
-      .reduce<number | null>((sum, t) => addOrUnknown(sum, getTxAmount(t)), 0);
-    const manualCapitalGains = filteredTransactions
-      .filter((t) => incomeBaseKind(t.action) === 'CAPITAL_GAIN')
-      .reduce<number | null>((sum, t) => addOrUnknown(sum, getTxAmount(t)), 0);
-    const periodCapitalGains = filteredCapitalGains.reduce<number | null>(
-      (sum, entry) => addOrUnknown(sum, convertCapitalGain(entry)),
-      0,
-    );
-    const totalGains = addOrUnknown(manualCapitalGains, periodCapitalGains);
-    return {
-      dividends,
-      interest,
-      capitalGains: totalGains,
-      total: addOrUnknown(addOrUnknown(dividends, interest), totalGains),
-    };
-  }, [filteredTransactions, filteredCapitalGains, getTxAmount, convertCapitalGain]);
+    // figure unknown, the same rule the monthly and daily buckets follow. Each
+    // is the exact sum of the window's own components, read once.
+    const parts = emptyIncomeParts();
+    filteredTransactions.forEach((tx) => {
+      const series = incomeSeriesOf(tx);
+      if (series !== null) parts[series].push(getTxAmount(tx));
+    });
+    filteredCapitalGains.forEach((entry) => parts.capitalGains.push(convertCapitalGain(entry)));
+    return readIncomeParts(parts, places);
+  }, [filteredTransactions, filteredCapitalGains, getTxAmount, convertCapitalGain, places]);
 
   // CSV is only offered when the user is looking at a table. Raw numeric
   // values (no currency formatting) are written so spreadsheets can sum and
@@ -861,8 +825,7 @@ export function DividendIncomeReport() {
 
   // '' (an empty cell), not 0, for an unknown value: a spreadsheet summing the
   // column must not absorb an unknown as a zero.
-  const csvMoney = (n: number | null): number | '' =>
-    n === null ? '' : roundMoney(n);
+  const csvMoney = (n: number | null): number | '' => (n === null ? '' : n);
 
   const handleExportCsv = () => {
     const accountLabel = selectedAccount
@@ -907,7 +870,7 @@ export function DividendIncomeReport() {
         if (visibleSeries.interest) out.push(csvMoney(row.interest));
         if (visibleSeries.capitalGains) out.push(csvMoney(row.capitalGains));
         out.push(
-          csvMoney(visibleTotal(row.dividends, row.interest, row.capitalGains)),
+          csvMoney(visibleTotal(row.sums)),
           currencyCode,
         );
         return out;
@@ -934,7 +897,7 @@ export function DividendIncomeReport() {
       if (visibleSeries.interest) out.push(csvMoney(row.interest));
       if (visibleSeries.capitalGains) out.push(csvMoney(row.capitalGains));
       out.push(
-        csvMoney(visibleTotal(row.dividends, row.interest, row.capitalGains)),
+        csvMoney(visibleTotal(row.sums)),
         currencyCode,
       );
       return out;
@@ -988,33 +951,28 @@ export function DividendIncomeReport() {
         if (visibleSeries.interest) out.push(fmtValue(row.interest));
         if (visibleSeries.capitalGains) out.push(fmtValue(row.capitalGains));
         out.push(
-          fmtValue(visibleTotal(row.dividends, row.interest, row.capitalGains)),
+          fmtValue(visibleTotal(row.sums)),
         );
         return out;
       });
-      const dailyTotals = displayedDailyData.reduce(
-        (acc, row) => ({
-          dividends: addOrUnknown(acc.dividends, row.dividends),
-          interest: addOrUnknown(acc.interest, row.interest),
-          capitalGains: addOrUnknown(acc.capitalGains, row.capitalGains),
-        }),
-        {
-          dividends: 0 as number | null,
-          interest: 0 as number | null,
-          capitalGains: 0 as number | null,
-        },
-      );
+      // The shown days' exact sums folded per series, never their readings.
+      const dailySums = {
+        dividends: foldPageSums(displayedDailyData.map((row) => row.sums.dividends), places),
+        interest: foldPageSums(displayedDailyData.map((row) => row.sums.interest), places),
+        capitalGains: foldPageSums(displayedDailyData.map((row) => row.sums.capitalGains), places),
+      };
+      const dailyTotals = {
+        dividends: pageSumValue(dailySums.dividends),
+        interest: pageSumValue(dailySums.interest),
+        capitalGains: pageSumValue(dailySums.capitalGains),
+      };
       const totalRow: (string | number)[] = [t('dividendIncome.colTotal'), '', ''];
       if (visibleSeries.dividends) totalRow.push(fmtValue(dailyTotals.dividends));
       if (visibleSeries.interest) totalRow.push(fmtValue(dailyTotals.interest));
       if (visibleSeries.capitalGains) totalRow.push(fmtValue(dailyTotals.capitalGains));
       totalRow.push(
         fmtValue(
-          visibleTotal(
-            dailyTotals.dividends,
-            dailyTotals.interest,
-            dailyTotals.capitalGains,
-          ),
+          visibleTotal(dailySums),
         ),
       );
       tableData = { headers, rows, totalRow };
@@ -1034,7 +992,7 @@ export function DividendIncomeReport() {
         if (visibleSeries.interest) out.push(fmtValue(row.interest));
         if (visibleSeries.capitalGains) out.push(fmtValue(row.capitalGains));
         out.push(
-          fmtValue(visibleTotal(row.dividends, row.interest, row.capitalGains)),
+          fmtValue(visibleTotal(row.sums)),
         );
         return out;
       });
@@ -1047,7 +1005,7 @@ export function DividendIncomeReport() {
       if (visibleSeries.capitalGains) totalRow.push(fmtValue(totals.capitalGains));
       totalRow.push(
         fmtValue(
-          visibleTotal(totals.dividends, totals.interest, totals.capitalGains),
+          visibleTotal(totals.sums),
         ),
       );
       tableData = { headers, rows, totalRow };
@@ -1446,11 +1404,7 @@ export function DividendIncomeReport() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {sortedMonthlyData.map((row) => {
-                  const rowTotal = visibleTotal(
-                    row.dividends,
-                    row.interest,
-                    row.capitalGains,
-                  );
+                  const rowTotal = visibleTotal(row.sums);
                   return (
                     <tr key={row.month} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -1649,11 +1603,7 @@ export function DividendIncomeReport() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {sortedDailyData.map((row) => {
-                    const rowTotal = visibleTotal(
-                      row.dividends,
-                      row.interest,
-                      row.capitalGains,
-                    );
+                    const rowTotal = visibleTotal(row.sums);
                     return (
                       <tr key={row.date} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">

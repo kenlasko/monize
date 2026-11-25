@@ -60,7 +60,20 @@ type ChartDataItem = ChartDatum & {
   colour: string;
   /** The funding entry: a transfer figure, never an income source (spec 11.3). */
   isTagged?: boolean;
+  /** The server's share of the income; absent on the funding entry and from an older backend. */
+  percentage?: number;
 };
+
+/**
+ * A source's share of the income: the server's, divided from the unrounded
+ * figures (`docs/specs/report-rounding-and-aggregation.md` rule 8), never the
+ * row's reading over the total's. Two equal sources of 1.2474 read 1.25 each
+ * over 2.49, and 1.25 / 2.49 is 50.2% where each is half. A backend that
+ * predates the field still gets the readings' ratio.
+ */
+function sourceShare(item: { value: number; percentage?: number }, totalIncome: number): number {
+  return item.percentage ?? (totalIncome > 0 ? (item.value / totalIncome) * 100 : 0);
+}
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-income-by-source-accounts';
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-income-by-source-include-transfers';
@@ -120,7 +133,9 @@ const IDENTITY_CELL =
 
 interface IncomeSourceTooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: { id: string; name: string; value: number; isTagged?: boolean } }>;
+  payload?: Array<{
+    payload: { id: string; name: string; value: number; isTagged?: boolean; percentage?: number };
+  }>;
   totalIncome: number;
   formatCurrency: (value: number) => string;
   formatPercent: (value: number, decimals?: number) => string;
@@ -138,7 +153,7 @@ function IncomeSourceTooltip({
 }: IncomeSourceTooltipProps) {
   if (!active || !payload || !payload.length) return null;
   const data = payload[0].payload;
-  const percentage = totalIncome > 0 ? (data.value / totalIncome) * 100 : 0;
+  const percentage = sourceShare(data, totalIncome);
   return (
     <ChartTooltipPanel>
       <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
@@ -210,6 +225,7 @@ export function IncomeBySourceReport() {
         name: item.categoryName,
         value: item.total,
         colour,
+        percentage: item.percentage,
       };
     });
   }, [response]);
@@ -266,8 +282,8 @@ export function IncomeBySourceReport() {
           comparison = compareValues(a.value, b.value);
           break;
         case 'percentage': {
-          const pa = totalIncome > 0 ? (a.value / totalIncome) * 100 : 0;
-          const pb = totalIncome > 0 ? (b.value / totalIncome) * 100 : 0;
+          const pa = sourceShare(a, totalIncome);
+          const pb = sourceShare(b, totalIncome);
           comparison = compareValues(pa, pb);
           break;
         }
@@ -303,7 +319,7 @@ export function IncomeBySourceReport() {
       if (item.isTagged) {
         return { color: item.colour, label: `${item.name} - ${formatCurrency(item.value)}` };
       }
-      const percentage = totalIncome > 0 ? (item.value / totalIncome) * 100 : 0;
+      const percentage = sourceShare(item, totalIncome);
       return {
         color: item.colour,
         label: `${item.name} - ${formatCurrency(item.value)} (${formatPercent(percentage, 1)})`,
@@ -334,7 +350,7 @@ export function IncomeBySourceReport() {
   const handleExportCsv = () => {
     const headers = [t('incomeBySource.colSource'), t('incomeBySource.colAmount'), t('incomeBySource.colPercentOfTotal')];
     const rows = sortedTableData.map((item) => {
-      const percentage = totalIncome > 0 ? (item.value / totalIncome) * 100 : 0;
+      const percentage = sourceShare(item, totalIncome);
       return [item.name, item.value, formatPercent(percentage, 2)];
     });
     // The funding rows follow the sources with an empty share: they are not income.
@@ -483,7 +499,7 @@ export function IncomeBySourceReport() {
                 </thead>
                 <tbody role="rowgroup" className="block divide-y divide-gray-200 dark:divide-gray-700 sm:table-row-group">
                   {sortedTableData.map((item) => {
-                    const percentage = totalIncome > 0 ? (item.value / totalIncome) * 100 : 0;
+                    const percentage = sourceShare(item, totalIncome);
                     // The row is the click target where it names a category, so
                     // it is also a KEYBOARD target there (WCAG 2.1.1) --
                     // `tabIndex`, the focus ring and the key handler only when
@@ -648,7 +664,7 @@ export function IncomeBySourceReport() {
               className="mt-6"
               columnsClassName="sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
               items={plotData.map((item, index) => {
-                const percentage = totalIncome > 0 ? (item.value / totalIncome) * 100 : 0;
+                const percentage = sourceShare(item, totalIncome);
                 return {
                   key: String(index),
                   name: item.name,

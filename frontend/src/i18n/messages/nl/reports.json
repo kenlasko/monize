@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Wat uw beleggingen hebben opgeleverd: de waardeverandering van de waardepapieren, zonder aan- en verkopen, stortingen, opnames en niet-belegd geld, maar met dividenden en rente meegeteld.",
     "investmentReturnTooltip": "Een tijdgewogen rendement uitsluitend over de waardepapieren. Geld dat op een dag wordt gestort of opgenomen beïnvloedt het niet, en niet-belegd geld maakt geen deel uit van het resultaat noch van waaraan het wordt afgemeten.",
     "incompleteTooltip": "Voor sommige dagen in deze periode ontbreekt een koers, een wisselkoers of een liquide saldo, waardoor de cijfers die van elke dag afhangen niet worden weergegeven.",
+    "pointIncomplete": "Voor dit punt ontbreekt een koers of een wisselkoers, waardoor dit cijfer niet kan worden berekend. Onvolledige gegevens in de geselecteerde periode, onder de grafiek, noemt wat er ontbreekt.",
     "measuredFromClose": "Sinds de slotkoers van {date}",
     "notAvailable": "N/B",
     "intradayUnavailableTitle": "Intraday-weergave niet beschikbaar voor deze rekeningcombinatie",

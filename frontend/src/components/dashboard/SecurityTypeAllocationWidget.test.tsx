@@ -5,7 +5,18 @@ import { Account } from '@/types/account';
 import { HoldingWithMarketValue } from '@/types/investment';
 import { SecurityTypeAllocationWidget } from './SecurityTypeAllocationWidget';
 
-vi.mock('recharts', async () => (await import('@/test/recharts-mock')).rechartsMock());
+vi.mock('recharts', async () => {
+  const base = (await import('@/test/recharts-mock')).rechartsMock();
+  return {
+    ...base,
+    // The slices the chart is handed, so a test can read their figures.
+    Pie: ({ data, children }: { data: unknown[]; children?: React.ReactNode }) => (
+      <div data-testid="pie-data" data-slices={JSON.stringify(data)}>
+        {children}
+      </div>
+    ),
+  };
+});
 
 // Stable config reference across renders (mirrors the real memoized hook), so
 // useReportData's [config.accountIds] dependency does not change every render.
@@ -105,6 +116,18 @@ describe('SecurityTypeAllocationWidget', () => {
     expect(screen.getByText('Stocks')).toBeInTheDocument();
     expect(screen.getByText('ETFs')).toBeInTheDocument();
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+  });
+
+  it('totals each type once from the exact sum of its holdings (issue #2414)', async () => {
+    // 1.0007 + 1.0143 is 2.0149999999999997 in doubles; the exact sum is 2.015,
+    // which reads 2.02, as the Security Type Allocation report reads it.
+    getPortfolioValuation.mockResolvedValue({
+      holdings: [holding('s1', 'STOCK', 1.0007), holding('s2', 'STOCK', 1.0143)],
+      holdingsByAccount: [],
+    });
+    await renderWidget();
+    const slices = JSON.parse(screen.getByTestId('pie-data').dataset.slices!);
+    expect(slices[0]).toMatchObject({ type: 'STOCK', totalValue: 2.02, percentage: 100 });
   });
 
   it('asks for the valuation again when the dashboard refreshed prices, keeping the chart meanwhile', async () => {

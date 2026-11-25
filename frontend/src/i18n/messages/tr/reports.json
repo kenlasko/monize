@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Yatırımlarınızın kazandığı tutar: alım, satım, para yatırma, para çekme ve yatırıma dönüştürülmemiş nakit çıkarılıp, temettü ve faiz eklenerek hesaplanan menkul kıymet değerindeki değişim.",
     "investmentReturnTooltip": "Yalnızca menkul kıymetler üzerinden hesaplanan, zaman ağırlıklı bir getiri. Bir gün yatırılan veya çekilen para onu değiştirmez; yatırıma dönüştürülmemiş nakit ne sonuca ne de karşılaştırıldığı değere dahildir.",
     "incompleteTooltip": "Bu dönemdeki bazı günlerde fiyat, döviz kuru veya nakit bakiyesi eksik, bu yüzden her güne bağlı olan rakamlar gösterilmiyor.",
+    "pointIncomplete": "Bu noktada fiyat veya döviz kuru eksik, bu yüzden bu rakam hesaplanamıyor. Grafiğin altındaki Seçilen dönemde eksik veri bölümü neyin eksik olduğunu belirtir.",
     "measuredFromClose": "{date} tarihli işlem kapanışından bu yana",
     "notAvailable": "Y/A",
     "intradayUnavailableTitle": "Bu hesap kombinasyonu için gün içi görünüm mevcut değil",

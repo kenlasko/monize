@@ -22,7 +22,15 @@ import { InvestmentTransaction, HoldingWithMarketValue } from '@/types/investmen
 import { Account } from '@/types/account';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { gainLossColor } from '@/lib/format';
+import { gainLossColor, getDecimalPlacesForCurrency } from '@/lib/format';
+import type { ConvertedTotal } from '@/lib/currency-total';
+import {
+  foldPageSums,
+  pageDifference,
+  pageRatio,
+  pageSum,
+  pageSumSign,
+} from '@/lib/page-total';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
@@ -57,12 +65,19 @@ interface SecurityYield {
   marketValue: number;
   yield: number;
   frequency: string;
+  /** The trailing dividends' exact sum, which a frequency bucket folds. */
+  dividendsSum: ConvertedTotal;
 }
 
 interface AnnualDividend {
   year: string;
   amount: number;
   growth: number | null;
+}
+
+/** `part` over `whole` as a percentage, or 0 while `whole` is not above zero. */
+function percentOf(part: ConvertedTotal, whole: ConvertedTotal): number {
+  return pageSumSign(whole) > 0 ? (pageRatio(part, whole) ?? 0) * 100 : 0;
 }
 
 interface FrequencyBucket {
@@ -248,30 +263,39 @@ export function DividendYieldGrowthReport() {
     [response],
   );
 
+  // Every total here is built on the page from rows it converted, so each is
+  // the exact sum of its components read once at the display currency's
+  // places, and a yield or a growth rate divides the exact sums (rule 8),
+  // never their readings (`docs/specs/report-rounding-and-aggregation.md`
+  // section 7).
+  const places = getDecimalPlacesForCurrency(displayCurrency);
+
   // Trailing 12-month portfolio yield
-  const trailing12mTotal = useMemo(() => {
+  const trailing12mSum = useMemo(() => {
     const cutoff = subYears(new Date(), 1);
-    return transactions
+    const amounts = transactions
       .filter((tx) => parseLocalDate(tx.transactionDate) >= cutoff)
-      .reduce((sum, tx) => {
-        const amount = getTxAmount(tx);
-        return amount === null ? sum : sum + amount;
-      }, 0);
-  }, [transactions, getTxAmount]);
+      .map(getTxAmount)
+      .filter((amount): amount is number => amount !== null);
+    return pageSum(amounts, places);
+  }, [transactions, getTxAmount, places]);
 
-  const totalPortfolioValue = useMemo(
-    () =>
-      holdings.reduce((sum, h) => {
-        // An unpriced holding and an unconvertible one both leave the
-        // denominator: `?? 0` would shrink it and inflate the yield.
-        if (h.marketValue === null || h.marketValue === undefined) return sum;
-        const converted = toDisplay(h.marketValue, h.currencyCode);
-        return converted === null ? sum : sum + converted;
-      }, 0),
-    [holdings, toDisplay],
-  );
+  const portfolioValueSum = useMemo(() => {
+    // An unpriced holding and an unconvertible one both leave the
+    // denominator: `?? 0` would shrink it and inflate the yield.
+    const values = holdings
+      .map((h) =>
+        h.marketValue === null || h.marketValue === undefined
+          ? null
+          : toDisplay(h.marketValue, h.currencyCode),
+      )
+      .filter((value): value is number => value !== null);
+    return pageSum(values, places);
+  }, [holdings, toDisplay, places]);
 
-  const portfolioYield = totalPortfolioValue > 0 ? (trailing12mTotal / totalPortfolioValue) * 100 : 0;
+  const trailing12mTotal = trailing12mSum.value;
+  const totalPortfolioValue = portfolioValueSum.value;
+  const portfolioYield = percentOf(trailing12mSum, portfolioValueSum);
 
   // Components the yield's two inputs had to drop (mirrors their exclusion
   // rules): an unpriced or unconvertible holding out of the value, and an
@@ -310,31 +334,31 @@ export function DividendYieldGrowthReport() {
     const recentTx = transactions.filter((tx) => parseLocalDate(tx.transactionDate) >= cutoff);
 
     // Aggregate dividends by security (skip transactions without a security)
-    const dividendMap = new Map<string, { total: number; dates: Date[] }>();
+    const dividendMap = new Map<string, { amounts: number[]; dates: Date[] }>();
     recentTx.forEach((tx) => {
       if (!tx.securityId) return;
       let existing = dividendMap.get(tx.securityId);
       if (!existing) {
-        existing = { total: 0, dates: [] };
+        existing = { amounts: [], dates: [] };
         dividendMap.set(tx.securityId, existing);
       }
       const amount = getTxAmount(tx);
       if (amount === null) return;
-      existing.total += amount;
+      existing.amounts.push(amount);
       existing.dates.push(parseLocalDate(tx.transactionDate));
     });
 
     // Aggregate market value across all accounts holding each security
-    const holdingMap = new Map<string, { symbol: string; name: string; marketValue: number }>();
+    const holdingMap = new Map<string, { symbol: string; name: string; values: number[] }>();
     holdings.forEach((h) => {
       if (h.marketValue === null || h.marketValue === undefined) return;
       const mv = toDisplay(h.marketValue, h.currencyCode);
       if (mv === null) return;
       const existing = holdingMap.get(h.securityId);
       if (existing) {
-        existing.marketValue += mv;
+        existing.values.push(mv);
       } else {
-        holdingMap.set(h.securityId, { symbol: h.symbol, name: h.name, marketValue: mv });
+        holdingMap.set(h.securityId, { symbol: h.symbol, name: h.name, values: [mv] });
       }
     });
 
@@ -342,19 +366,22 @@ export function DividendYieldGrowthReport() {
     dividendMap.forEach((data, secId) => {
       const holding = holdingMap.get(secId);
       if (!holding) return;
+      const dividendsSum = pageSum(data.amounts, places);
+      const valueSum = pageSum(holding.values, places);
       results.push({
         symbol: holding.symbol,
         name: holding.name,
-        trailing12mDividends: data.total,
-        marketValue: holding.marketValue,
-        yield: holding.marketValue > 0 ? (data.total / holding.marketValue) * 100 : 0,
+        trailing12mDividends: dividendsSum.value,
+        marketValue: valueSum.value,
+        yield: percentOf(dividendsSum, valueSum),
         frequency: detectFrequency(data.dates),
+        dividendsSum,
       });
     });
 
     return results;
      
-  }, [transactions, holdings, getTxAmount, toDisplay, detectFrequency]);
+  }, [transactions, holdings, getTxAmount, toDisplay, detectFrequency, places]);
 
   const sortedSecurityYields = useMemo(() => {
     const sorted = [...securityYields];
@@ -399,45 +426,42 @@ export function DividendYieldGrowthReport() {
 
   // Year-over-year growth
   const annualData = useMemo((): AnnualDividend[] => {
-    const yearMap = new Map<string, number>();
+    const yearMap = new Map<string, number[]>();
     transactions.forEach((tx) => {
       const year = tx.transactionDate.substring(0, 4);
       const amount = getTxAmount(tx);
       // An unconvertible amount is not a zero contribution to the year; it is
       // simply not part of the comparable series.
       if (amount === null) return;
-      yearMap.set(year, (yearMap.get(year) || 0) + amount);
+      yearMap.set(year, [...(yearMap.get(year) ?? []), amount]);
     });
 
     const years = Array.from(yearMap.keys()).sort();
+    const sums = years.map((year) => pageSum(yearMap.get(year) ?? [], places));
     return years.map((year, idx) => {
-      const amount = yearMap.get(year) || 0;
-      const prevAmount = idx > 0 ? yearMap.get(years[idx - 1]) || 0 : null;
-      const growth = prevAmount !== null && prevAmount > 0
-        ? ((amount - prevAmount) / prevAmount) * 100
-        : null;
-      return { year, amount, growth };
+      const sum = sums[idx];
+      const prev = idx > 0 ? sums[idx - 1] : null;
+      // The change over the year before, divided from the two exact sums.
+      const growth =
+        prev !== null && pageSumSign(prev) > 0
+          ? (pageRatio(pageDifference(sum, prev, places), prev) ?? 0) * 100
+          : null;
+      return { year, amount: sum.value, growth };
     });
-  }, [transactions, getTxAmount]);
+  }, [transactions, getTxAmount, places]);
 
   // Frequency analysis
   const frequencyData = useMemo((): FrequencyBucket[] => {
-    const freqMap = new Map<string, { count: number; total: number }>();
+    const freqMap = new Map<string, ConvertedTotal[]>();
     securityYields.forEach((sy) => {
-      const existing = freqMap.get(sy.frequency) || { count: 0, total: 0 };
-      freqMap.set(sy.frequency, {
-        count: existing.count + 1,
-        total: existing.total + sy.trailing12mDividends,
-      });
+      freqMap.set(sy.frequency, [...(freqMap.get(sy.frequency) ?? []), sy.dividendsSum]);
     });
-    return Array.from(freqMap.entries())
-      .map(([frequency, data]) => ({
-        frequency,
-        count: data.count,
-        totalDividends: data.total,
-      }))
-      ;
-  }, [securityYields]);
+    return Array.from(freqMap.entries()).map(([frequency, sums]) => ({
+      frequency,
+      count: sums.length,
+      totalDividends: foldPageSums(sums, places).value,
+    }));
+  }, [securityYields, places]);
 
   const sortedAnnualData = useMemo(() => {
     const sorted = [...annualData];

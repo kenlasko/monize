@@ -223,6 +223,23 @@ describe("IncomeBySourceReport", () => {
     expect(screen.getByText("$2000.00 (20.0%)")).toBeInTheDocument();
   });
 
+  it("reads each share from the server, divided from the unrounded figures (issue #2414)", async () => {
+    // Two receipts of 1.00 EUR at 1.2474 in two categories: each reads 1.25
+    // over 2.49, and 1.25 / 2.49 is 50.2%. The server's share is 50.
+    mockGetIncomeBySource.mockResolvedValue({
+      data: [
+        { categoryId: "cat-1", categoryName: "Salary", total: 1.25, percentage: 50, color: "" },
+        { categoryId: "cat-2", categoryName: "Bonus", total: 1.25, percentage: 50, color: "" },
+      ],
+      totalIncome: 2.49,
+    });
+    render(<IncomeBySourceReport />);
+    await waitFor(() => {
+      expect(screen.getAllByText("$1.25 (50.0%)")).toHaveLength(2);
+    });
+    expect(screen.queryByText(/50\.2%/)).not.toBeInTheDocument();
+  });
+
   it("surfaces a retryable error state when the API fails", async () => {
     mockGetIncomeBySource.mockRejectedValue(new Error("Network error"));
     render(<IncomeBySourceReport />);

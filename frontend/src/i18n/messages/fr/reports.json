@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Ce que vos investissements ont rapporté : la variation de la valeur des titres, achats, ventes, dépôts, retraits et liquidités non investies exclus, dividendes et intérêts inclus.",
     "investmentReturnTooltip": "Un rendement pondéré dans le temps portant uniquement sur les titres. L'argent versé ou retiré un jour donné ne le fait pas bouger, et les liquidités non investies ne font partie ni du résultat ni de ce contre quoi il est mesuré.",
     "incompleteTooltip": "Certains jours de cette période manquent d'un cours, d'un taux de change ou d'un solde de trésorerie, les chiffres qui dépendent de chaque jour ne sont donc pas affichés.",
+    "pointIncomplete": "Il manque un cours ou un taux de change à ce point, ce chiffre ne peut donc pas être calculé. Données incomplètes pour la période sélectionnée, sous le graphique, indique ce qui manque.",
     "measuredFromClose": "Depuis la clôture de la séance du {date}",
     "notAvailable": "N/A",
     "intradayUnavailableTitle": "Vue intraday indisponible pour cette combinaison de comptes",

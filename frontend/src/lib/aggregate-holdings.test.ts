@@ -115,4 +115,26 @@ describe('aggregateHoldingsBySecurity', () => {
     expect(result[0].name).toBe('Apple Inc.');
     expect(result[0].currencyCode).toBe('USD');
   });
+
+  it('adds the accounts exactly, so the rollup is not a float sum (issue #2414)', () => {
+    // 1.0007 + 1.0143 is 2.0149999999999997 in doubles; the exact sum is 2.015.
+    const [rolled] = aggregateHoldingsBySecurity([
+      holding({ securityId: 'AAPL', marketValue: 1.0007, costBasis: 0.5, costBasisAccountCurrency: 0.5 }),
+      holding({ securityId: 'AAPL', accountId: 'acc-2', marketValue: 1.0143, costBasis: 0.5, costBasisAccountCurrency: 0.5 }),
+    ]);
+    expect(rolled.marketValue).toBe(2.015);
+    expect(rolled.costBasis).toBe(1);
+    expect(rolled.costBasisAccountCurrency).toBe(1);
+    expect(rolled.gainLoss).toBe(1.015);
+  });
+
+  it("adds the account-currency basis at the column scale, not the security's places", () => {
+    // A USD security in two BTC accounts: each basis has eight places.
+    const [rolled] = aggregateHoldingsBySecurity([
+      holding({ securityId: 'AAPL', currencyCode: 'USD', costBasisAccountCurrency: 0.00012345 }),
+      holding({ securityId: 'AAPL', accountId: 'acc-2', currencyCode: 'USD', costBasisAccountCurrency: 0.00000001 }),
+    ]);
+    expect(rolled.costBasisAccountCurrency).toBe(0.00012346);
+  });
 });
+

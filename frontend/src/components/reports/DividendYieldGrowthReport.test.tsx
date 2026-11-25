@@ -160,6 +160,32 @@ describe('DividendYieldGrowthReport', () => {
     expect(screen.getByText('Dividend Payers')).toBeInTheDocument();
   });
 
+  it('reads the trailing dividends once from their exact sum (issue #2414)', async () => {
+    // 1.0007 + 1.0143 is 2.0149999999999997 in doubles, which read $2.01; the
+    // exact sum, 2.015, reads $2.02.
+    const dividend = (id: string, totalAmount: number) => ({
+      id,
+      transactionDate: '2025-09-15',
+      action: 'DIVIDEND',
+      totalAmount,
+      amountCurrencyCode: 'CAD',
+      accountId: 'acc-1',
+      securityId: 's-1',
+      security: { symbol: 'VFV', name: 'Vanguard S&P 500' },
+    });
+    mockGetTransactions.mockImplementation(({ action }: { action: string }) =>
+      Promise.resolve({
+        data: action === 'DIVIDEND' ? [dividend('tx-1', 1.0007), dividend('tx-2', 1.0143)] : [],
+        pagination: { hasMore: false },
+      }),
+    );
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    mockGetPortfolioSummary.mockResolvedValue({ holdings: mockHoldings });
+    render(<DividendYieldGrowthReport />);
+    const card = (await screen.findByText('Trailing 12M Dividends')).parentElement as HTMLElement;
+    expect(card.textContent).toContain('$2.02');
+  });
+
   it('renders view type buttons', async () => {
     mockGetTransactions.mockResolvedValue({ data: [], pagination: { hasMore: false } });
     mockGetInvestmentAccounts.mockResolvedValue([]);

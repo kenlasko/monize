@@ -67,17 +67,6 @@ export function metricValue(
 }
 
 /**
- * `part`'s share of `whole` in percent, from the unrounded values; 0 unless the
- * whole is positive. A share is not additive, so it is divided before anything
- * is rounded (rule 8).
- */
-export function shareOf(part: FxAggregate, whole: FxAggregate): number {
-  return whole.sign > 0
-    ? (part.unroundedSubtotal / whole.unroundedSubtotal) * 100
-    : 0;
-}
-
-/**
  * The headline figures. A money total is withheld (`null`) while any row was
  * left out for want of a rate or by the row limit, and `knownTotal` carries
  * the part that did convert. The count metric sums counts, which need no
