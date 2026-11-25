@@ -30,6 +30,10 @@ import {
 } from "./budget-spending.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
+  joinSplitsForAnalytics,
+  SPLIT_AMOUNT,
+} from "../common/transaction-split-query.util";
+import {
   convertRatePartAggregates,
   RatePartRow,
   splitByRateBasis,
@@ -296,21 +300,24 @@ export class BudgetHealthReportsService {
       const { rows, converted } = await withScopedDb(
         this.dataSource,
         async (m) => {
+          // Line grain: a split reads its lines, not its net, and its
+          // transfer lines are left out (spec split-line-equivalence rule 1).
           const qb = excludeBudgetAccounts(
             m
               .getRepository(Transaction)
               .createQueryBuilder("t")
               .select(MONTH_SQL, "month")
               .addSelect("t.currency_code", "currencyCode")
-              .addSelect("COALESCE(SUM(t.amount), 0)", "total")
+              .addSelect(`COALESCE(SUM(${SPLIT_AMOUNT}), 0)`, "total")
               .where("t.user_id = :userId", { userId })
-              .andWhere("t.amount > 0")
+              .andWhere(`${SPLIT_AMOUNT} > 0`)
               .andWhere("t.is_transfer = false")
               .andWhere("t.transaction_date >= :start", { start: rangeStart })
               .andWhere("t.transaction_date <= :end", { end: rangeEnd })
               .andWhere("t.status != :void", { void: "VOID" }),
             excludedAccountIds,
-          )
+          );
+          joinSplitsForAnalytics(qb)
             .groupBy(MONTH_SQL)
             .addGroupBy("t.currency_code");
           splitByRateBasis(qb, INCOME_RATE_BASIS, budget.currencyCode);

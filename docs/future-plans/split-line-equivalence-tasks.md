@@ -9,7 +9,7 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 | T1 | Transfer rollups read the split transfer line | S0 | visible | sonnet, medium | open |
 | T2 | The transfers filter reads the split transfer line, in analytics and the register | S0 | visible | opus, high | open |
 | T3 | Tag filters select a line once (`EXISTS`) | S0 | visible | sonnet, high | open |
-| T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | open |
+| T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | done |
 | T5 | Close: INV-REPORT-006 status, user guide, plan retired | T1-T4 | none | sonnet, medium | open |
 
 ## T1 transfer rollups
@@ -38,9 +38,9 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 
 ## T4 Budget Health
 
-- [ ] `getSavingsRate` income fallback (`backend/src/budgets/budget-health-reports.service.ts`):
+- [x] `getSavingsRate` income fallback (`backend/src/budgets/budget-health-reports.service.ts`):
   read at line grain and drop the split transfer line.
-- [ ] A split with a positive transfer line adds nothing to income.
+- [x] A split with a positive transfer line adds nothing to income.
 
 ## T5 close
 

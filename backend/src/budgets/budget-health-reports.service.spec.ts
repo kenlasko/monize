@@ -154,6 +154,7 @@ describe("BudgetHealthReportsService", () => {
     select: jest.fn().mockReturnThis(),
     addSelect: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     innerJoin: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
@@ -655,6 +656,21 @@ describe("BudgetHealthReportsService", () => {
       expect(qb.setParameter).toHaveBeenCalledWith(
         "fxReportingCurrency",
         "USD",
+      );
+    });
+
+    it("reads the income fallback at line grain, without split transfer lines", async () => {
+      const qb = createMockQueryBuilder();
+      transactionsRepository.createQueryBuilder.mockReturnValueOnce(qb);
+
+      await service.getSavingsRate("user-1", "budget-1", 1);
+
+      expect(qb.leftJoin).toHaveBeenCalledWith("t.splits", "ts");
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "(ts.transferAccountId IS NULL OR ts.id IS NULL)",
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "COALESCE(ts.amount, t.amount) > 0",
       );
     });
 
