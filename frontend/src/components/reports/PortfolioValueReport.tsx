@@ -479,7 +479,7 @@ export function PortfolioValueReport() {
             : formatChartDate(p.date, 'MMM d, yyyy'),
         iso: p.date,
         total: p.total,
-        invested: breakdownInvestedValue(p, cashKey),
+        invested: breakdownInvestedValue(p, cashKey, data.currency),
         values: p.values,
         // A point missing a price or a rate is a subtotal of the INVESTED
         // value: the KPI cards refuse to call it a high or a low and the chart
@@ -560,7 +560,7 @@ export function PortfolioValueReport() {
         name: formatIntradayLabel(p.timestamp, dateRange),
         iso: p.timestamp,
         total: p.total,
-        invested: breakdownInvestedValue(p, cashKey),
+        invested: breakdownInvestedValue(p, cashKey, data.currency),
         values: p.values,
         // A bar short of a price or a rate is a subtotal of the INVESTED
         // value, exactly as on the daily path; `cashComplete` is not read for

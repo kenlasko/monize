@@ -5395,6 +5395,71 @@ describe("NetWorthService", () => {
       });
     });
 
+    it("leaves the total less the cash band at the securities' own rounding (issue #2410)", async () => {
+      // AAPL is worth 100.004 and cash 50.004: the point reads 150.01 and the
+      // securities alone 100.00. Apportioned with the securities, the cent the
+      // floors left short went to AAPL on the tie, so the total less the cash
+      // band (the invested value the Portfolio Value report plots) read
+      // 100.01 against the daily series' 100.00. The cash band takes it.
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce([
+        {
+          id: "brok-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_BROKERAGE",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+        {
+          id: "cash-1",
+          account_type: "INVESTMENT",
+          account_sub_type: "INVESTMENT_CASH",
+          currency_code: "USD",
+          opening_balance: 0,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          account_id: "brok-1",
+          security_id: "sec-1",
+          action: "BUY",
+          quantity: "10",
+          transaction_date: "2024-05-15",
+        },
+      ]);
+      securityRepository.findByIds.mockResolvedValue([
+        {
+          id: "sec-1",
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          currencyCode: "USD",
+          skipPriceUpdates: false,
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([
+        {
+          security_id: "sec-1",
+          price_date: "2024-05-31",
+          close_price: "10.0004",
+        },
+      ]);
+      reportQuery.mockResolvedValueOnce([]);
+      reportQuery.mockResolvedValueOnce([
+        { account_id: "cash-1", month: "2024-05-01", balance: "50.004" },
+      ]);
+
+      const result = await service.getInvestmentBreakdown("user-1", {
+        granularity: "monthly",
+        startDate: "2024-05-01",
+        endDate: "2024-05-31",
+      });
+
+      expect(result.points[0]).toMatchObject({
+        total: 150.01,
+        values: { "sec-1": 100, cash: 50.01 },
+      });
+    });
+
     it("samples a monthEnd breakdown on the window's own first and last days", async () => {
       // The monthly bucket above values 2024-05-01 at the month end, holding a
       // purchase made on the 15th. A monthEnd point is valued on its own day:

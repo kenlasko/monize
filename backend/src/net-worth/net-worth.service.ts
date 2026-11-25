@@ -2867,10 +2867,14 @@ export class NetWorthService {
    * Rank securities by peak contribution, keep the top `limit` as their own
    * bands, roll the remainder into a single "other" band, and append a cash
    * band when any cash is present. Each point's total is rounded once at
-   * `places`, the currency's own, and its bands are apportioned from it
-   * (`FxAggregate.apportionUnits`, largest remainder), so the stacked bands add
-   * up exactly to the total shown and no band is more than one unit off its own
-   * value (docs/specs/report-rounding-and-aggregation.md rule 6).
+   * `places`, the currency's own, and so is its securities subtotal; the
+   * security and "other" bands are apportioned from the securities subtotal
+   * (`FxAggregate.apportionUnits`, largest remainder) and the cash band is the
+   * total less it, so the stacked bands add up exactly to the total shown, no
+   * band is more than one unit off its own value
+   * (docs/specs/report-rounding-and-aggregation.md rule 6), and the total less
+   * the cash band is the securities' own rounding, the invested value the
+   * daily series reports for the same day (INV-PORTRESULT-002).
    */
   private groupSecurityBreakdown(
     ungrouped: Array<{
@@ -2951,20 +2955,29 @@ export class NetWorthService {
         );
         bands.push(["other", other]);
       }
-      if (hasCash) bands.push(["cash", pt.cash]);
+      // Cash is not apportioned with the securities: a unit it gave up or
+      // took would move the invested value (the total less the cash band) a
+      // unit off the securities' own rounding.
+      const securities = FxAggregate.sum(bands.map(([, agg]) => agg));
       const units = FxAggregate.apportionUnits(
         bands.map(([, agg]) => agg),
         places,
       );
+      const securityUnits = securities.unitsAt(places);
+      const totalUnits = hasCash
+        ? FxAggregate.sum([securities, pt.cash]).unitsAt(places)
+        : securityUnits;
       const values: Record<string, number> = {};
       bands.forEach(([key], i) => {
         values[key] = units[i] === 0 ? 0 : units[i] / unit;
       });
+      if (hasCash) {
+        const cashUnits = Number(totalUnits - securityUnits);
+        values.cash = cashUnits === 0 ? 0 : cashUnits / unit;
+      }
       return {
         date: pt.date,
-        total: FxAggregate.sum(bands.map(([, agg]) => agg)).knownSubtotalAt(
-          places,
-        ),
+        total: totalUnits === 0n ? 0 : Number(totalUnits) / unit,
         values,
         cashComplete: pt.unknownCashAccountIds.length === 0,
         unknownCashAccountIds: pt.unknownCashAccountIds,

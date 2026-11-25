@@ -241,8 +241,11 @@ the wire; stage 2 removes the one-cent double rounding.
   at the reporting currency's places and whose accounts' totals read at each
   account currency's; the Portfolio Value report's series (the daily series it
   and the dashboard draw, `getDailyInvestmentsReport`, the month-end sampled and
-  the monthly series, and the by-security breakdown, whose bands are apportioned
-  from each point's total as the Sankey's are); and the assistant's and MCP's
+  the monthly series, and the by-security breakdown, whose security bands are
+  apportioned from each point's securities subtotal as the Sankey's are and
+  whose cash band is the point's total less that subtotal, so the total less
+  the cash band is the invested value the daily series reports for the day);
+  and the assistant's and MCP's
   report tools: `generate_report` hands out the reports' own figures, and the
   flow totals, the grouped breakdown and `compare_periods` read at the
   reporting currency's places, `compare_periods`' summary line printing them at

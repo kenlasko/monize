@@ -49,6 +49,7 @@ describe('breakdownInvestedValue', () => {
       breakdownInvestedValue(
         { total: 1500, values: { 'sec-1': 800, other: 200, cash: 500 } },
         'cash',
+        'USD',
       ),
     ).toBe(1000);
   });
@@ -58,6 +59,7 @@ describe('breakdownInvestedValue', () => {
       breakdownInvestedValue(
         { total: 1000, values: { 'sec-1': 1000 } },
         null,
+        'USD',
       ),
     ).toBe(1000);
   });
@@ -68,7 +70,30 @@ describe('breakdownInvestedValue', () => {
       breakdownInvestedValue(
         { total: 1000, values: { 'sec-1': 1000 } },
         'cash',
+        'USD',
       ),
     ).toBe(1000);
+  });
+
+  it('takes the difference of two cent figures exactly (issue #2410)', () => {
+    // 150.01 - 50.00 is 100.00999999999999 in floats; the server's securities
+    // subtotal for the point is 100.01.
+    expect(
+      breakdownInvestedValue(
+        { total: 150.01, values: { 'sec-1': 100.01, cash: 50 } },
+        'cash',
+        'USD',
+      ),
+    ).toBe(100.01);
+  });
+
+  it("keeps a coin's eight places", () => {
+    expect(
+      breakdownInvestedValue(
+        { total: 0.30000001, values: { 'sec-1': 0.1, cash: 0.20000001 } },
+        'cash',
+        'BTC',
+      ),
+    ).toBe(0.1);
   });
 });

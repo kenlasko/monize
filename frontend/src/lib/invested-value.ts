@@ -1,3 +1,5 @@
+import { moneyDecimalsForCurrency, sumMoney } from '@/lib/format';
+
 /**
  * The INVESTED part of a portfolio value point, for the surfaces that draw it.
  *
@@ -48,13 +50,21 @@ export function breakdownCashKey(
  * (INV-PORTRESULT-002). Deriving here, rather than adding a per-point backend
  * field, keeps the cash band available to draw as its own labelled band.
  *
- * `total` and each band are whole rounded units, so this subtraction of two
- * integers introduces no float drift.
+ * The server rounds `total` and the securities subtotal once each at the
+ * currency's places and makes the cash band their difference, so `total` less
+ * the cash band is the securities' own rounding, the figure the daily series
+ * reports for the day. Both are decimals rather than whole units (150.01 less
+ * 50.00 is 100.00999999999999 in floats), so the difference is taken in
+ * `currencyCode`'s money units (`sumMoney`), which is exact.
  */
 export function breakdownInvestedValue(
   point: { total: number; values: Record<string, number> },
   cashKey: string | null,
+  currencyCode: string,
 ): number {
   if (cashKey === null) return point.total;
-  return point.total - (point.values[cashKey] ?? 0);
+  return sumMoney(
+    [point.total, -(point.values[cashKey] ?? 0)],
+    moneyDecimalsForCurrency(currencyCode),
+  );
 }
