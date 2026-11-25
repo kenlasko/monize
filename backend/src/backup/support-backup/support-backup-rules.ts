@@ -307,6 +307,7 @@ export const RULES: Record<string, TableRules> = {
     external_id: drop, // the API caller's key, often a bank's own row id
     created_at: keep,
     updated_at: keep,
+    amount_is_provisional: keep, // a flag; the amount itself is scaled
   },
   transaction_splits: {
     id: keep,

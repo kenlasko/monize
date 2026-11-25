@@ -1194,6 +1194,9 @@ export class ActionHistoryService {
       "referenceNumber",
       "status",
       "isSplit",
+      // An edit that confirmed an estimated amount is undone with its flag
+      // (design P7, docs/future-plans/provisional-amounts.md).
+      "amountIsProvisional",
     ];
     for (const key of fieldKeys) {
       if (key in before) {
@@ -1420,8 +1423,8 @@ export class ActionHistoryService {
       `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
         payee_id, payee_name, category_id, description, reference_number, status, is_split,
         parent_transaction_id, is_transfer, linked_transaction_id, reconciled_date, created_at,
-        original_amount, original_currency_code)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+        original_amount, original_currency_code, amount_is_provisional)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
       [
         before.id,
         action.userId,
@@ -1444,6 +1447,7 @@ export class ActionHistoryService {
         before.createdAt ?? new Date(),
         before.originalAmount ?? null,
         before.originalCurrencyCode ?? null,
+        before.amountIsProvisional ?? false,
       ],
     );
 
@@ -1578,8 +1582,9 @@ export class ActionHistoryService {
       await manager.query(
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
-          is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL, $16, $17, $18)`,
+          is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code,
+          amount_is_provisional)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL, $16, $17, $18, $19)`,
         [
           txData.id,
           action.userId,
@@ -1599,6 +1604,7 @@ export class ActionHistoryService {
           txData.createdAt ?? new Date(),
           txData.originalAmount ?? null,
           txData.originalCurrencyCode ?? null,
+          txData.amountIsProvisional ?? false,
         ],
       );
     }
@@ -1854,8 +1860,9 @@ export class ActionHistoryService {
       const cashTx = before.linkedCashTransaction;
       await manager.query(
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
-          description, status, is_transfer, created_at, original_amount, original_currency_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          description, status, is_transfer, created_at, original_amount, original_currency_code,
+          amount_is_provisional)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           cashTx.id,
           action.userId,
@@ -1870,6 +1877,7 @@ export class ActionHistoryService {
           cashTx.createdAt ?? new Date(),
           cashTx.originalAmount ?? null,
           cashTx.originalCurrencyCode ?? null,
+          cashTx.amountIsProvisional ?? false,
         ],
       );
       await this.recalculateBalance(action.userId, cashTx.accountId, manager);
@@ -2001,8 +2009,9 @@ export class ActionHistoryService {
       await manager.query(
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
-          is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+          is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code,
+          amount_is_provisional)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
          ON CONFLICT (id) DO NOTHING`,
         [
           txData.id,
@@ -2024,6 +2033,7 @@ export class ActionHistoryService {
           txData.createdAt ?? new Date(),
           txData.originalAmount ?? null,
           txData.originalCurrencyCode ?? null,
+          txData.amountIsProvisional ?? false,
         ],
       );
       accountIds.add(txData.accountId);

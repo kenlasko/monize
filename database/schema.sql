@@ -408,8 +408,12 @@ CREATE TABLE transactions (
     linked_transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL, -- links the paired transfer transaction
     external_id VARCHAR(255), -- caller-supplied idempotency key for an API create; unique per account (below)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    amount_is_provisional BOOLEAN NOT NULL DEFAULT false -- the importer's estimate for a cross-currency transfer leg, until the other account's file confirms it
 );
+
+COMMENT ON COLUMN transactions.amount_is_provisional IS
+  'The amount is the importer''s estimate for the other account''s leg of a cross-currency transfer, not yet confirmed by that account''s own file or by the reader. The only source of truth for the state (docs/future-plans/provisional-amounts.md).';
 
 CREATE INDEX idx_transactions_user ON transactions(user_id);
 CREATE INDEX idx_transactions_account ON transactions(account_id);
@@ -419,6 +423,9 @@ CREATE INDEX idx_transactions_category ON transactions(category_id);
 CREATE INDEX idx_transactions_parent ON transactions(parent_transaction_id);
 CREATE INDEX idx_transactions_linked ON transactions(linked_transaction_id);
 CREATE INDEX idx_transactions_original_currency ON transactions(original_currency_code);
+-- The importer's pending lookups and the provisional counts read only the
+-- flagged rows, a handful per account.
+CREATE INDEX idx_transactions_provisional ON transactions(user_id, account_id) WHERE amount_is_provisional;
 -- Trigram indexes accelerate the register/report search (ILIKE '%term%')
 CREATE INDEX idx_transactions_payee_name_trgm ON transactions USING gin (payee_name gin_trgm_ops);
 CREATE INDEX idx_transactions_description_trgm ON transactions USING gin (description gin_trgm_ops);

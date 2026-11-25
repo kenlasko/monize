@@ -5240,6 +5240,8 @@ export class TransactionsService {
       parentTransactionId: tx.parentTransactionId,
       reconciledDate: tx.reconciledDate,
       createdAt: tx.createdAt,
+      // Undo puts the flag back with the row (design P7).
+      amountIsProvisional: tx.amountIsProvisional,
       splits: tx.splits?.map((s) => ({
         id: s.id,
         kind: s.kind,

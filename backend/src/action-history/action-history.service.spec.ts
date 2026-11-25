@@ -704,12 +704,13 @@ describe("ActionHistoryService", () => {
       await run("transaction", "delete", { id: "tx-1", ...txBase, ...fx });
       const insert = insertFor("transactions")!;
       expect(insert[0]).toContain("original_amount, original_currency_code");
-      expect(insert[1].slice(-2)).toEqual([100, "EUR"]);
+      // amount_is_provisional follows the foreign entry in every column list.
+      expect(insert[1].slice(-3, -1)).toEqual([100, "EUR"]);
     });
 
     it("single transaction from a snapshot recorded before the fields existed", async () => {
       await run("transaction", "delete", { id: "tx-1", ...txBase });
-      expect(insertFor("transactions")![1].slice(-2)).toEqual([null, null]);
+      expect(insertFor("transactions")![1].slice(-3, -1)).toEqual([null, null]);
     });
 
     it("transfer legs", async () => {
@@ -722,8 +723,8 @@ describe("ActionHistoryService", () => {
           typeof c[0] === "string" &&
           c[0].includes("INSERT INTO transactions "),
       );
-      expect(inserts[0][1].slice(-2)).toEqual([100, "EUR"]);
-      expect(inserts[1][1].slice(-2)).toEqual([null, null]);
+      expect(inserts[0][1].slice(-3, -1)).toEqual([100, "EUR"]);
+      expect(inserts[1][1].slice(-3, -1)).toEqual([null, null]);
     });
 
     it("investment linked cash transaction", async () => {
@@ -735,14 +736,148 @@ describe("ActionHistoryService", () => {
         transactionDate: "2024-01-15",
         linkedCashTransaction: { id: "cash-1", ...txBase, ...fx },
       });
-      expect(insertFor("transactions")![1].slice(-2)).toEqual([100, "EUR"]);
+      expect(insertFor("transactions")![1].slice(-3, -1)).toEqual([100, "EUR"]);
     });
 
     it("bulk delete", async () => {
       await run("bulk_transaction", "bulk_delete", {
         transactions: [{ id: "tx-1", ...txBase, ...fx }],
       });
-      expect(insertFor("transactions")![1].slice(-2)).toEqual([100, "EUR"]);
+      expect(insertFor("transactions")![1].slice(-3, -1)).toEqual([100, "EUR"]);
+    });
+  });
+
+  describe("undo restores amount_is_provisional (design P7)", () => {
+    const leg = {
+      accountId: "acc-1",
+      transactionDate: "2024-01-15",
+      amount: 80,
+      currencyCode: "EUR",
+      exchangeRate: 0.8,
+      isTransfer: true,
+      amountIsProvisional: true,
+    };
+
+    const transactionInserts = () =>
+      mockQueryRunner.query.mock.calls.filter(
+        (call: any[]) =>
+          typeof call[0] === "string" &&
+          call[0].includes("INSERT INTO transactions "),
+      ) as [string, unknown[]][];
+
+    const run = async (
+      entityType: string,
+      action: string,
+      beforeData: Record<string, any>,
+    ) => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType,
+        action,
+        entityId: "tx-1",
+        beforeData,
+        afterData: null,
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        id: "acc-1",
+        userId,
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([
+        { opening_balance: "0", tx_sum: "0" },
+      ]);
+      await service.undo(userId);
+    };
+
+    it("a deleted provisional row comes back provisional", async () => {
+      await run("transaction", "delete", { id: "tx-1", ...leg });
+      const [insert] = transactionInserts();
+      expect(insert[0]).toMatch(/amount_is_provisional\)\s+VALUES/);
+      expect(insert[1].slice(-1)[0]).toBe(true);
+    });
+
+    it("a snapshot recorded before the column existed comes back confirmed", async () => {
+      const { amountIsProvisional: _omitted, ...legBefore } = leg;
+      await run("transaction", "delete", { id: "tx-1", ...legBefore });
+      expect(transactionInserts()[0][1].slice(-1)[0]).toBe(false);
+    });
+
+    it("transfer legs keep their own flags", async () => {
+      await run("transfer", "delete", {
+        fromTransaction: {
+          id: "tx-2",
+          ...leg,
+          amount: -100,
+          currencyCode: "USD",
+          amountIsProvisional: false,
+        },
+        toTransaction: { id: "tx-1", ...leg },
+      });
+      const inserts = transactionInserts();
+      expect(inserts).toHaveLength(2);
+      expect(inserts[0][0]).toContain("amount_is_provisional");
+      expect(inserts[0][1].slice(-1)[0]).toBe(false);
+      expect(inserts[1][1].slice(-1)[0]).toBe(true);
+    });
+
+    it("investment linked cash transaction", async () => {
+      await run("investment_transaction", "delete", {
+        id: "inv-1",
+        accountId: "acc-1",
+        securityId: "sec-1",
+        action: "BUY",
+        transactionDate: "2024-01-15",
+        linkedCashTransaction: { id: "cash-1", ...leg },
+      });
+      const [insert] = transactionInserts();
+      expect(insert[0]).toContain("amount_is_provisional");
+      expect(insert[1].slice(-1)[0]).toBe(true);
+    });
+
+    it("bulk delete", async () => {
+      await run("bulk_transaction", "bulk_delete", {
+        transactions: [{ id: "tx-1", ...leg }],
+      });
+      const [insert] = transactionInserts();
+      expect(insert[0]).toContain("amount_is_provisional");
+      expect(insert[1].slice(-1)[0]).toBe(true);
+    });
+
+    it("an edit that confirmed the amount is undone with its flag", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "transaction",
+        action: "update",
+        entityId: "tx-1",
+        beforeData: {
+          accountId: "acc-1",
+          amount: 80,
+          amountIsProvisional: true,
+        },
+        afterData: {
+          accountId: "acc-1",
+          amount: 90,
+          amountIsProvisional: false,
+        },
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId,
+        accountId: "acc-1",
+        currencyCode: "EUR",
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockResolvedValue([
+        { opening_balance: "0", tx_sum: "80" },
+      ]);
+
+      await service.undo(userId);
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        expect.any(Function),
+        "tx-1",
+        expect.objectContaining({ amount: 80, amountIsProvisional: true }),
+      );
     });
   });
 
