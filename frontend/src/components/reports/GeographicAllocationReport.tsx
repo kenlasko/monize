@@ -34,6 +34,7 @@ import { usePersistedAccountFilter } from '@/hooks/usePersistedAccountFilter';
 import { ReportError } from '@/components/reports/ReportError';
 import { WeightingPartialNote } from '@/components/reports/WeightingPartialNote';
 import { chartColors } from '@/lib/chart-colors';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import {
   COUNTRY_COLOURS,
   computeGeographicAllocation,
@@ -298,8 +299,13 @@ export function GeographicAllocationReport() {
   }, [securities]);
 
   const { exchangeData, regionData, totalValue, missingCurrencies, excludedCount } = useMemo(
-    () => computeGeographicAllocation(holdings, securityExchangeMap, convertToDefault),
-    [holdings, convertToDefault, securityExchangeMap],
+    () => computeGeographicAllocation(
+        holdings,
+        securityExchangeMap,
+        convertToDefault,
+        getDecimalPlacesForCurrency(defaultCurrency),
+      ),
+    [holdings, convertToDefault, securityExchangeMap, defaultCurrency],
   );
 
   const sortedRegionData = useMemo(() => {

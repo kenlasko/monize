@@ -248,6 +248,22 @@ describe('SecurityTypeAllocationReport', () => {
     });
   });
 
+  it('reads the total once from the exact sum of the types (issue #2414)', async () => {
+    // 1.0007 + 1.0143 is 2.0149999999999997 in doubles, which read $2.01; the
+    // exact sum, 2.015, reads $2.02.
+    mockGetPortfolioSummary.mockResolvedValue({
+      holdings: [
+        { ...mockHoldings[0], marketValue: 1.0007 },
+        { ...mockHoldings[1], marketValue: 1.0143 },
+      ],
+    });
+    mockGetInvestmentAccounts.mockResolvedValue([]);
+    const { container } = render(<SecurityTypeAllocationReport />);
+    await waitFor(() => expect(screen.getByText('Total')).toBeInTheDocument());
+    expect(container.querySelector('tfoot')?.textContent).toContain('$2.02');
+    expect(screen.queryByText('$2.01')).not.toBeInTheDocument();
+  });
+
   describe('the footer total carries the marker the summary card carries', () => {
     const unpriced = {
       ...mockHoldings[0],

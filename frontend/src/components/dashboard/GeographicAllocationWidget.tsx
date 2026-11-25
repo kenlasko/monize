@@ -22,6 +22,7 @@ import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useReportData } from '@/hooks/useReportData';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { chartSeriesColor } from '@/lib/chart-colors';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { computeGeographicAllocation } from '@/lib/geographic-allocation';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
@@ -107,8 +108,13 @@ export function GeographicAllocationWidget({
   }, [securities]);
 
   const { exchangeData, regionData, missingCurrencies, excludedCount } = useMemo(
-    () => computeGeographicAllocation(holdings, securityExchangeMap, convertToDefault),
-    [holdings, securityExchangeMap, convertToDefault],
+    () => computeGeographicAllocation(
+        holdings,
+        securityExchangeMap,
+        convertToDefault,
+        getDecimalPlacesForCurrency(defaultCurrency),
+      ),
+    [holdings, securityExchangeMap, convertToDefault, defaultCurrency],
   );
 
   const regionSlices = useMemo<SimpleSlice[]>(

@@ -34,6 +34,8 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
 import { createLogger } from '@/lib/logger';
 import { aggregateHoldingsBySecurity, AggregatedHolding } from '@/lib/aggregate-holdings';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
+import { foldPageSums, pageRatio, pageSum, pageSumSign } from '@/lib/page-total';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { CARD_CLASS } from '@/components/ui/Card';
@@ -280,12 +282,19 @@ export function SecurityTypeAllocationReport() {
     [summaryData],
   );
 
-  const allocationData = useMemo((): TypeAllocation[] => {
+  // The page groups the holdings by type, so each type's value and the total
+  // exist only here: the exact sum of the converted holdings read once at the
+  // display currency's places, the total folding the types' exact sums, and
+  // each share divided from the exact sums (rule 8), never from the readings
+  // (`docs/specs/report-rounding-and-aggregation.md` section 7).
+  const places = getDecimalPlacesForCurrency(defaultCurrency);
+
+  const { allocationData, totalSum } = useMemo(() => {
     // Aggregate holdings by security first so the same symbol held across
     // multiple accounts appears as a single row under its security type.
     const aggregated = aggregateHoldingsBySecurity(holdings);
 
-    const typeMap = new Map<string, { totalValue: number; holdings: AggregatedHolding[] }>();
+    const typeMap = new Map<string, { values: number[]; holdings: AggregatedHolding[] }>();
     aggregated.forEach((h) => {
       const type = h.securityType || 'OTHER';
       // An unpriced holding and an unconvertible one both leave the allocation:
@@ -296,48 +305,56 @@ export function SecurityTypeAllocationReport() {
 
       let existing = typeMap.get(type);
       if (!existing) {
-        existing = { totalValue: 0, holdings: [] };
+        existing = { values: [], holdings: [] };
         typeMap.set(type, existing);
       }
-      existing.totalValue += converted;
+      existing.values.push(converted);
       existing.holdings.push(h);
     });
 
-    const totalValue = Array.from(typeMap.values()).reduce((sum, v) => sum + v.totalValue, 0);
+    const typeSums = new Map(
+      Array.from(typeMap.entries()).map(([type, data]) => [type, pageSum(data.values, places)]),
+    );
+    const total = foldPageSums(Array.from(typeSums.values()), places);
     let colorIndex = 0;
 
-    return Array.from(typeMap.entries())
-      .map(([type, data]) => ({
-        type,
-        label: isKnownSecurityType(type)
-          ? tDashboard(`securityTypeAllocation.types.${type}`)
-          : type,
-        totalValue: data.totalValue,
-        percentage: totalValue > 0 ? (data.totalValue / totalValue) * 100 : 0,
-        count: data.holdings.length,
-        color: getColor(type, colorIndex++),
-        holdings: [...data.holdings].sort((a, b) => {
-          // An unpriced or unconvertible holding has an unknown value, not a
-          // zero: it sorts after every known one rather than as the smallest.
-          const value = (h: (typeof data.holdings)[number]) =>
-            h.marketValue === null || h.marketValue === undefined
-              ? null
-              : convertToDefault(h.marketValue, h.currencyCode);
-          const va = value(a);
-          const vb = value(b);
-          if (va === null && vb === null) return 0;
-          if (va === null) return 1;
-          if (vb === null) return -1;
-          return vb - va;
-        }),
-      }))
+    const rows: TypeAllocation[] = Array.from(typeMap.entries())
+      .map(([type, data]) => {
+        const sum = typeSums.get(type) ?? pageSum([], places);
+        return {
+          type,
+          label: isKnownSecurityType(type)
+            ? tDashboard(`securityTypeAllocation.types.${type}`)
+            : type,
+          totalValue: sum.value,
+          percentage: pageSumSign(total) > 0 ? (pageRatio(sum, total) ?? 0) * 100 : 0,
+          count: data.holdings.length,
+          color: getColor(type, colorIndex++),
+          holdings: [...data.holdings].sort((a, b) => {
+            // An unpriced or unconvertible holding has an unknown value, not a
+            // zero: it sorts after every known one rather than as the smallest.
+            const value = (h: (typeof data.holdings)[number]) =>
+              h.marketValue === null || h.marketValue === undefined
+                ? null
+                : convertToDefault(h.marketValue, h.currencyCode);
+            const va = value(a);
+            const vb = value(b);
+            if (va === null && vb === null) return 0;
+            if (va === null) return 1;
+            if (vb === null) return -1;
+            return vb - va;
+          }),
+        };
+      })
       .sort((a, b) => b.totalValue - a.totalValue);
-  }, [holdings, convertToDefault, tDashboard]);
+    return { allocationData: rows, totalSum: total };
+  }, [holdings, convertToDefault, tDashboard, places]);
 
-  const totalPortfolioValue = useMemo(
-    () => allocationData.reduce((sum, a) => sum + a.totalValue, 0),
-    [allocationData],
-  );
+  const totalPortfolioValue = totalSum.value;
+
+  /** A holding's share of the total, from the exact sums (rule 8). */
+  const holdingShare = (value: number): number | null =>
+    pageSumSign(totalSum) > 0 ? (pageRatio(pageSum([value], places), totalSum) ?? 0) * 100 : null;
 
   // The footer, the summary card and the PDF all report this one number, and
   // each of the three used to sum it for itself.
@@ -709,6 +726,7 @@ export function SecurityTypeAllocationReport() {
                       h.marketValue === null || h.marketValue === undefined
                         ? null
                         : convertToDefault(h.marketValue, h.currencyCode);
+                    const share = value === null ? null : holdingShare(value);
                     return (
                     <tr
                       key={h.securityId}
@@ -740,9 +758,7 @@ export function SecurityTypeAllocationReport() {
                       </td>
                       <td role="cell" className={`${CHILD_CELL_PLACEMENT.percentage} text-gray-500 dark:text-gray-500 ${CHILD_FIGURE_CELL}`}>
                         <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
-                        {value === null || totalPortfolioValue <= 0
-                          ? '-'
-                          : formatPercent((value / totalPortfolioValue) * 100, 1)}
+                        {share === null ? '-' : formatPercent(share, 1)}
                       </td>
                       {/* This cell holds a share quantity rather than the type
                           row's count of holdings, so its phone caption names
