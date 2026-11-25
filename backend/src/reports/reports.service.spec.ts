@@ -3230,8 +3230,8 @@ describe("ReportsService", () => {
       });
 
       describe("while the incoming leg is pending the EUR file's import (issue #2338)", () => {
-        // The USD file's import wrote a +100 EUR placeholder, flagged in its
-        // description, until the EUR account's own file says what arrived.
+        // The USD file's import wrote a +100 EUR estimate, flagged
+        // provisional, until the EUR account's own file says what arrived.
         const pendingIn = {
           id: "tx-in",
           amount: 100,
@@ -3239,8 +3239,8 @@ describe("ReportsService", () => {
           exchangeRate: 1,
           isSplit: false,
           linkedTransactionId: "tx-out",
-          description:
-            "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+          description: null,
+          amountIsProvisional: true,
           account: { id: "acc-eur", name: "Euro Savings" },
         } as never;
 
@@ -3283,11 +3283,30 @@ describe("ReportsService", () => {
               linkedTransaction: {
                 ...(pendingIn as object),
                 amount: 90,
-                description: null,
+                amountIsProvisional: false,
               } as never,
             }),
           ]);
 
+          expect(result.data[0].value).toBe(-90);
+        });
+
+        it("reads a confirmed counterpart whose description still carries the old note", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [
+            outLeg({
+              linkedTransaction: {
+                ...(pendingIn as object),
+                amount: 90,
+                description:
+                  "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+                amountIsProvisional: false,
+              } as never,
+            }),
+          ]);
+
+          // The column is the only signal (design P4).
           expect(result.data[0].value).toBe(-90);
         });
       });
@@ -3410,7 +3429,7 @@ describe("ReportsService", () => {
           "splitLinkedTransaction.amount",
           "splitLinkedTransaction.currencyCode",
           "splitLinkedTransaction.linkedTransactionId",
-          "splitLinkedTransaction.description",
+          "splitLinkedTransaction.amountIsProvisional",
         ]);
       });
     });
