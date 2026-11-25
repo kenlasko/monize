@@ -157,6 +157,7 @@
     "pdfTitle": "Saldi dei conti",
     "colAccount": "Conto",
     "colBalance": "Saldo",
+    "colCurrency": "Valuta",
     "scopeLabel": "Mostra",
     "scopeAll": "Attività e passività",
     "scopeAssets": "Solo attività",

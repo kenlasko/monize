@@ -157,6 +157,7 @@
     "pdfTitle": "계정 잔액",
     "colAccount": "계정",
     "colBalance": "잔액",
+    "colCurrency": "통화",
     "scopeLabel": "표시",
     "scopeAll": "자산과 부채",
     "scopeAssets": "자산만",

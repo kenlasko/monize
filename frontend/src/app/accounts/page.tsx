@@ -30,7 +30,6 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { AccountsSummary } from '@/components/accounts/variants/AccountsSummary';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
-import { sumMoney } from '@/lib/format';
 import { accountCarriesBalance } from '@/lib/account-carries-balance';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CARD_CLASS } from '@/components/ui/Card';
@@ -313,12 +312,9 @@ function AccountsContent() {
     });
     // Net worth inherits the incompleteness of both sides: a hole in either
     // makes the difference partial too.
-    const totalBalance = combineTotals(
-      [totalAssets, totalLiabilities],
-      // The difference of two 4dp values is not itself 4dp: round it so the
-      // stored value and the sign test do not carry sub-cent float drift.
-      ([a, l]) => sumMoney([a, -l]),
-    );
+    // The two sides' exact sums, netted and rounded once: the difference of
+    // their two readings can sit a unit off it.
+    const totalBalance = combineTotals([totalAssets, totalLiabilities], [1, -1]);
 
     return {
       totalBalance,

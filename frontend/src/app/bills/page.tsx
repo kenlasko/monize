@@ -692,10 +692,7 @@ function BillsContent() {
     );
     // Incompleteness is the union: a complete deposits total beside a partial
     // bills total makes the net partial.
-    const monthlyNet = combineTotals(
-      [deposits, bills],
-      ([depositTotal, billTotal]) => depositTotal - billTotal,
-    );
+    const monthlyNet = combineTotals([deposits, bills], [1, -1]);
 
     return {
       totalBills,

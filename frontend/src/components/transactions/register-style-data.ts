@@ -1,5 +1,5 @@
 import { rowAffectsBalance, type RunningBalanceRow } from '@/lib/running-balance';
-import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
+import { moneyDecimalsForCurrency } from '@/lib/format';
 import { combineTotals, sumConverted, type ConvertedTotal } from '@/lib/currency-total';
 
 /**
@@ -129,12 +129,12 @@ export function pageTotals(
   }
   const payments = sumInto(out, currency);
   const deposits = sumInto(into, currency);
-  const decimals = moneyDecimalsForCurrency(currency);
   return {
     currency,
     payments,
     deposits,
-    net: combineTotals([deposits, payments], ([d, p]) => roundMoney(d - p, decimals)),
+    // The two sides' exact sums netted, then rounded once.
+    net: combineTotals([deposits, payments], [1, -1]),
     count: rows.length,
   };
 }

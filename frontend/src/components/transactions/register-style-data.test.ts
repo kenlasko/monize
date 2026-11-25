@@ -27,9 +27,9 @@ describe('register style data', () => {
   it('totals payments, deposits and the difference in the page currency', () => {
     const totals = pageTotals(rows, new Map(), 'USD');
     expect(totals.currency).toBe('CAD');
-    expect(totals.payments).toEqual({ value: 75.1, missingCurrencies: [], excludedCount: 0 });
-    expect(totals.deposits).toEqual({ value: 200, missingCurrencies: [], excludedCount: 0 });
-    expect(totals.net).toEqual({ value: 124.9, missingCurrencies: [], excludedCount: 0 });
+    expect(totals.payments).toMatchObject({ value: 75.1, missingCurrencies: [], excludedCount: 0 });
+    expect(totals.deposits).toMatchObject({ value: 200, missingCurrencies: [], excludedCount: 0 });
+    expect(totals.net).toMatchObject({ value: 124.9, missingCurrencies: [], excludedCount: 0 });
     expect(totals.count).toBe(4);
   });
 
@@ -50,10 +50,27 @@ describe('register style data', () => {
     expect(totals.payments.value).toBe(180);
     expect(totals.deposits.value).toBe(12.5);
     expect(totals.net.value).toBe(-167.5);
-    expect(netByDate(mixed, new Map(), 'CAD').get('2024-01-15')).toEqual({
+    expect(netByDate(mixed, new Map(), 'CAD').get('2024-01-15')).toMatchObject({
       total: { value: -167.5, missingCurrencies: [], excludedCount: 0 },
       currency: 'CAD',
     });
+  });
+
+  // Each side's converted rows round up on their own: deposits of 1.00008
+  // read 1.0001 and payments of 1.00004 read 1.0000, so the difference of the
+  // two readings was 0.0001 where the net, 0.00004, reads 0.0000 (issue #2413).
+  it('nets the two sides before rounding, not their readings', () => {
+    const mixed = [
+      { id: 'c1', transactionDate: '2024-01-15', amount: 1, currencyCode: 'CAD' },
+      { id: 'c2', transactionDate: '2024-01-15', amount: -1, currencyCode: 'CAD' },
+      { id: 'u1', transactionDate: '2024-01-15', amount: 0.0001, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
+      { id: 'u2', transactionDate: '2024-01-15', amount: 0.0001, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
+      { id: 'u3', transactionDate: '2024-01-15', amount: -0.0001, currencyCode: 'USD', reportingCurrencyCode: 'CAD', reportingRate: 0.4 },
+    ];
+    const totals = pageTotals(mixed, new Map(), 'CAD');
+    expect(totals.deposits.value).toBe(1.0001);
+    expect(totals.payments.value).toBe(1);
+    expect(totals.net.value).toBe(0);
   });
 
   it('leaves out and names a currency with no rate rather than adding it unconverted', () => {
@@ -64,7 +81,7 @@ describe('register style data', () => {
       { id: 'e', transactionDate: '2024-01-15', amount: -10, currencyCode: 'EUR' },
     ];
     const totals = pageTotals(mixed, new Map(), 'CAD');
-    expect(totals.payments).toEqual({ value: 30, missingCurrencies: ['JPY', 'EUR'], excludedCount: 2 });
+    expect(totals.payments).toMatchObject({ value: 30, missingCurrencies: ['JPY', 'EUR'], excludedCount: 2 });
     expect(totals.net.missingCurrencies).toEqual(['JPY', 'EUR']);
     expect(netByDate(mixed, new Map(), 'CAD').get('2024-01-15')?.total.excludedCount).toBe(2);
   });

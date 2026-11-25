@@ -157,6 +157,7 @@
     "pdfTitle": "Баланси рахунків",
     "colAccount": "Рахунок",
     "colBalance": "Баланс",
+    "colCurrency": "Валюта",
     "scopeLabel": "Показувати",
     "scopeAll": "Активи та пасиви",
     "scopeAssets": "Лише активи",

@@ -157,6 +157,7 @@
     "pdfTitle": "Kontosalden",
     "colAccount": "Konto",
     "colBalance": "Saldo",
+    "colCurrency": "Währung",
     "scopeLabel": "Anzeigen",
     "scopeAll": "Aktiva und Verbindlichkeiten",
     "scopeAssets": "Nur Aktiva",

@@ -157,6 +157,7 @@
     "pdfTitle": "Account Balances",
     "colAccount": "Account",
     "colBalance": "Balance",
+    "colCurrency": "Currency",
     "scopeLabel": "Show",
     "scopeAll": "Assets and liabilities",
     "scopeAssets": "Assets only",
