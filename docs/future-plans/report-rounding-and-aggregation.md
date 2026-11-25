@@ -13,10 +13,12 @@ Executes [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-round
 - `sumMoney` (both layers) rounds every input to four places before it sums;
   it is right for posted amounts at their own precision and wrong for a sum of
   reporting-only conversions or of rounded parts.
-- The backend rounds no report figure at a currency's display places: the wire
-  carries four places (`FIAT_MONEY_DECIMALS`), except the custom report's
-  transaction list, whose `value` is the unrounded conversion. The client rounds
-  once more for display (`useNumberFormat().formatCurrency`).
+- Until stage 2 the backend rounded no report figure at a currency's display
+  places: the wire carried four places (`FIAT_MONEY_DECIMALS`), except the
+  custom report's transaction list, whose `value` was the unrounded conversion,
+  and the client rounded once more for display
+  (`useNumberFormat().formatCurrency`). Stage 2 (issue #2410) rounds each report
+  figure once on the server at the currency's places.
 - No report CSV or PDF is built on the server; the client writes them
   (`frontend/src/lib/csv-export.ts`, `frontend/src/lib/pdf-export-tables.ts`).
 - The instruction files are at their byte ceilings
@@ -31,8 +33,9 @@ Executes [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-round
    in the spec's section 8.
 2. **The precision of a figure on the wire.** The spec's section 6: option
    (b), each report figure rounded once on the server at the reporting
-   currency's own places, chosen on issue #2384. Observable: a figure 0.00002
-   under a cent's midpoint reads the same on screen, in the CSV and in the PDF.
+   currency's own places, chosen on issue #2384, landed by issue #2410.
+   Observable: a figure 0.00002 under a cent's midpoint reads the same on
+   screen, in the CSV and in the PDF.
 3. **Client surfaces.** One PR per group in the task list: each total the client
    builds from rounded rows reads the server's total, chart values rounded to
    whole units stay in the chart, and every export writes the figure the screen

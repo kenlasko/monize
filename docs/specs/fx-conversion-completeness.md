@@ -66,9 +66,11 @@ interface FxTotal {
 `FxAggregate` (`backend/src/common/fx-aggregate.ts`) accumulates this. Callers
 add signed amounts and read the quadruple at the end; they never branch on `null`
 themselves, which is what kept the old code's `?? amount` out of sight. A
-component is accumulated at twelve places and the sum is rounded to four places
-once, when `knownSubtotal` or `total` is read, never component by component
-(issue #2360): rounding each converted row first made "convert each row, then
+component is accumulated at twelve places and the sum is rounded once, when it
+is read -- to four places through `knownSubtotal` or `total`, to a report
+figure's currency places through `knownSubtotalAt(places)` or `totalAt(places)`
+(`docs/specs/report-rounding-and-aggregation.md` section 6) -- never component
+by component (issue #2360): rounding each converted row first made "convert each row, then
 sum" and "sum the rows, then convert" disagree, so the Custom Report totalled
 two 100.01 EUR receipts at 1.2474 as 124.7525 + 124.7525 = 249.5050 USD while
 Income by Source converted their 200.02 sum to 249.504948 and read 249.5049.

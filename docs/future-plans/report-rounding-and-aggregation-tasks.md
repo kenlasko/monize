@@ -23,7 +23,8 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 ## 2 the precision of a figure on the wire
 
 - [x] The maintainer's choice of the spec's section 6 option: (b), a report figure rounded on the server at the reporting currency's own places (issue #2384, 2026-11-24).
-- [ ] Its implementation, in its own PR: every report figure (built-in, custom, Sankey, AI/MCP report tools) rounded once at `currency.decimal_places` on the server; the Sankey's unit becomes the currency's minor unit, and a category node apportioned from its side can then read a cent off the same category in Spending by Category (the spec's rule 6 choice, to be said beside the node); fixtures and the section 4 examples restated at currency places.
+- [x] Its implementation, in its own PR (issue #2410): every report figure (built-in, custom including the transaction list's `value`, Sankey, Foreign Currency Fees, Budget Health and the other budget reports, the monthly net worth, AI/MCP report tools) rounded once on the server at the currency's places (`FxAggregate.knownSubtotalAt`, `reportFigure`, `reportPlacesFor`); the Sankey's unit is the currency's minor unit and the page says beside the node that a category can read a cent off Spending by Category (`sankey.roundingNote`); `compare_periods` takes each change from the two periods' aggregates; fixtures and the section 4 examples restated at currency places.
+- [ ] The portfolio summary (`PortfolioService.getPortfolioSummary`): still four places on the wire. Its totals feed the Investments page, the Portfolio Value and Investment Performance reports, `get_portfolio_summary`, the Monte Carlo seed and the movement alerts, and `totalPortfolioValue` adds two four-place readings (cash and holdings).
 
 ## 3 client surfaces
 

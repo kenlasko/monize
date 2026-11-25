@@ -150,9 +150,11 @@ and its children were each read on their own (issue #2384). A direction decision
 value, so a net of 0.00003 keeps its row; a presentation whose parts must add up
 apportions them from the parent's single rounding (`FxAggregate.apportionUnits`).
 A posted amount is not a reporting figure: it is the fact, rounded by the write.
+A report figure leaves the server rounded once at its currency's own places
+(`FxAggregate.knownSubtotalAt(places)`, `reportFigure`), so the screen, the CSV,
+the PDF and the assistant read one figure.
 `docs/specs/report-rounding-and-aggregation.md` has the three precisions, the
-rules, the numerical examples and the decision on wire precision (each figure
-rounded on the server at its currency's own places, stage 2).
+rules, the numerical examples and the decision on wire precision (section 6).
 INV-REPORT-005.
 
 ## 2. Cost basis and tax

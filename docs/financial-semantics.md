@@ -116,7 +116,8 @@ transfer leg as a flow. Its rules, from `docs/specs/sankey-cash-flow.md`:
 6. **Investment-generated cash legs are not flows.** `investmentExclusionSql` is
    on every branch, the transfer branches included (SANKEY-003).
 7. **The diagram closes:** `income + inflows + deficit = expenses + outflows +
-   unspent` in integer ten-thousandths, with at most one of `deficit` /
+   unspent` in integer units of the reporting currency's minor unit (cents for
+   USD, whole yen for JPY), with at most one of `deficit` /
    `unspent` non-zero. Both are the arithmetic residual, never a transaction; a
    response where the identity fails is a 500, never a drawing (SANKEY-001).
 8. **Uncategorized is a node.** Uncategorized income and uncategorized spending
@@ -304,11 +305,13 @@ referencing it stay `VARCHAR(3)`.
   (`errors.transactions.amountPrecisionExceeded`), never rounded
   (INV-MONEY-001, section 4). The rate itself is an ordinary
   `NUMERIC(20,10)` rate (section 4).
-- **A coin is never the reporting currency.** Every converted figure is
-  `roundMoney` in the reporting currency, which stays at four places, and
-  four places of a coin are too coarse for a total (0.0001 BTC is about 14 CAD); the preferences update
-  refuses one (`errors.preferences.defaultCurrencyCrypto`, decision 11 of the
-  spec).
+- **A coin is never the reporting currency.** A converted figure outside a
+  report (an account list's total, the budget page) is `roundMoney` in the
+  reporting currency at four places, and four places of a coin are too coarse
+  for a total (0.0001 BTC is about 14 CAD); the preferences update refuses one
+  (`errors.preferences.defaultCurrencyCrypto`, decision 11 of the spec). A
+  report figure is read at its currency's own places (section 4), so a coin's
+  reaches its eight.
 - **A coin's re-pointed ticker is a kind-sized change.** On a code data
   references, a new fiat leg in `quote_symbol` is allowed and a new coin
   ticker is refused (`quoteSymbolInUse`), because `currencies` is shared.
@@ -325,6 +328,19 @@ rounded at `moneyDecimalsFor(currency.decimalPlaces)` (`backend/src/common/round
 four for every fiat currency and the coin's own places, up to eight, for a
 cryptocurrency (INV-MONEY-001). Everything below is a deliberate exception; a
 value whose column is wider must not be rounded to money precision on the way in.
+
+A **report figure** -- a reporting-only conversion, or a sum, difference or
+mean of them, that a built-in report, the custom report, the Cash Flow Sankey,
+a budget report, the monthly net worth or an assistant or MCP report tool hands
+out -- is not stored and is not rounded at money precision. It is rounded once,
+on the server, at its currency's own places: `reportPlacesFor` (the ISO minor
+unit, else the currency row's `decimal_places`: 2 for USD, 0 for JPY, 8 for a
+coin), read through `FxAggregate.knownSubtotalAt(places)` / `totalAt(places)`
+or `reportFigure(value, places)` (`backend/src/common/report-figure.ts`). The
+screen formats it at the same places, so its rounding changes nothing, and the
+CSV, the PDF and the assistant read the figure the screen shows
+(`docs/specs/report-rounding-and-aggregation.md` section 6). A posted amount, a
+price, a quantity, a rate and a percentage keep their own precision.
 
 | Field | Precision | Note |
 | --- | --- | --- |
