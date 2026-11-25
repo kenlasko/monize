@@ -30,6 +30,7 @@ import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import {
   applyFxConversion,
   resolveFxRateOrNull,
+  roundFxRate,
 } from "../common/fx-entry.util";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { tr } from "../i18n/translate";
@@ -308,9 +309,15 @@ export class ImportRegularProcessorService {
     // This account's own file states the amount, so the leg is confirmed:
     // the estimate, its flag and its note go in one update, and the balance
     // moves by the difference (design section 7, P6).
+    const settlement = await this.confirmedSettlementRates(
+      ctx,
+      pendingTransfer,
+      newAmount,
+    );
     await ctx.manager.update(Transaction, pendingTransfer.id, {
       amount: newAmount,
       amountIsProvisional: false,
+      ...(settlement ? { exchangeRate: settlement.confirmedLegRate } : {}),
       description: qifTx.memo || null,
       payeeName: qifTx.payee || pendingTransfer.payeeName,
       referenceNumber: qifTx.number || pendingTransfer.referenceNumber,
@@ -319,6 +326,12 @@ export class ImportRegularProcessorService {
       // row already holds is kept.
       ...(externalId && !pendingTransfer.externalId ? { externalId } : {}),
     });
+
+    if (settlement && settlement.otherLegRate !== null) {
+      await ctx.manager.update(Transaction, settlement.otherLegId, {
+        exchangeRate: settlement.otherLegRate,
+      });
+    }
 
     if (balanceDiff !== 0) {
       await updateAccountBalance(
@@ -333,6 +346,59 @@ export class ImportRegularProcessorService {
     }
 
     return true;
+  }
+
+  /**
+   * The rates a transfer's legs hold once both amounts are stated. Until then
+   * the provisional leg carries the market rate its estimate was struck at;
+   * left there after confirmation it would be a plausible and wrong settlement
+   * rate (a transfer edit scales a resent amount by the destination leg's
+   * rate). The legs take the convention every other transfer writer follows
+   * (`transfer-leg-columns.ts`): the source leg holds 1, the destination leg
+   * holds destination units per source unit, here the two stated amounts'
+   * ratio.
+   *
+   * The other side is the linked row, or, when that row is a split parent,
+   * the split line that points at this leg; a split parent's own rate is not
+   * a transfer rate and is left alone (`otherLegRate` null). `null` when the
+   * other side is unknown or either amount is zero: no ratio exists, and the
+   * stored rates stay as they are.
+   */
+  private async confirmedSettlementRates(
+    ctx: ImportContext,
+    leg: Transaction,
+    confirmedAmount: number,
+  ): Promise<{
+    confirmedLegRate: number;
+    otherLegId: string;
+    otherLegRate: number | null;
+  } | null> {
+    const other = leg.linkedTransaction;
+    if (!other) return null;
+    const otherAmount = other.isSplit
+      ? (
+          await ctx.manager.findOne(TransactionSplit, {
+            where: { transactionId: other.id, linkedTransactionId: leg.id },
+          })
+        )?.amount
+      : other.amount;
+    const otherAbs = Math.abs(Number(otherAmount));
+    const confirmedAbs = Math.abs(confirmedAmount);
+    if (!Number.isFinite(otherAbs) || otherAbs === 0 || confirmedAbs === 0) {
+      return null;
+    }
+    const legIsDestination = confirmedAmount > 0;
+    return {
+      confirmedLegRate: legIsDestination
+        ? roundFxRate(confirmedAbs / otherAbs)
+        : 1,
+      otherLegId: other.id,
+      otherLegRate: other.isSplit
+        ? null
+        : legIsDestination
+          ? 1
+          : roundFxRate(otherAbs / confirmedAbs),
+    };
   }
 
   private async resolvePayee(
@@ -692,6 +758,10 @@ export class ImportRegularProcessorService {
     amount: number;
     currencyCode: string;
     exchangeRate: number;
+    /**
+     * The amount is an estimate in another currency, so the caller writes the
+     * leg provisional. False for a same-currency leg and for a zero one.
+     */
     crossCurrency: boolean;
     /** The money precision of the target account's currency. */
     decimals: number;
@@ -708,6 +778,18 @@ export class ImportRegularProcessorService {
         exchangeRate: 1,
         crossCurrency: false,
         decimals: importMoneyDecimals(ctx),
+      };
+    }
+    // Zero needs no rate: nothing moves in either currency, so the leg is a
+    // known zero, written confirmed without a lookup and never refused (a
+    // Money "VOID" export imports as zero).
+    if (sourceAmount === 0) {
+      return {
+        amount: 0,
+        currencyCode: targetCurrency,
+        exchangeRate: 1,
+        crossCurrency: false,
+        decimals: await currencyMoneyDecimals(ctx, targetCurrency),
       };
     }
 

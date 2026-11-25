@@ -2979,6 +2979,176 @@ describe("ImportRegularProcessorService", () => {
         });
         expect(balanceDeltas(ctx)).toEqual([]);
       });
+
+      it("writes the stated amounts' ratio on the destination leg and 1 on the source leg", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          confirmable: {
+            ...confirmable,
+            linkedTransaction: {
+              id: "tx-source",
+              accountId: "acc-usd",
+              amount: -100,
+              isSplit: false,
+            },
+          },
+        });
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 90,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        expect(updateOf(ctx, "tx-pending")[2]).toMatchObject({
+          exchangeRate: 0.9,
+        });
+        expect(updateOf(ctx, "tx-source")[2]).toEqual({ exchangeRate: 1 });
+      });
+
+      it("writes 1 on a confirmed source leg and the ratio on its destination", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          confirmable: {
+            ...confirmable,
+            amount: -112.5,
+            linkedTransaction: {
+              id: "tx-dest",
+              accountId: "acc-usd",
+              amount: 90,
+              isSplit: false,
+            },
+          },
+        });
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: -100,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        expect(updateOf(ctx, "tx-pending")[2]).toMatchObject({
+          amount: -100,
+          exchangeRate: 1,
+        });
+        expect(updateOf(ctx, "tx-dest")[2]).toEqual({ exchangeRate: 0.9 });
+      });
+
+      it("reads a split parent's side from the split line and leaves the parent's rate alone", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          confirmable: {
+            ...confirmable,
+            linkedTransaction: {
+              id: "tx-parent",
+              accountId: "acc-usd",
+              amount: -250,
+              isSplit: true,
+            },
+          },
+        });
+        managerOf(ctx).findOne.mockImplementation((_entity: any, opts: any) =>
+          Promise.resolve(
+            opts?.where?.linkedTransactionId === "tx-pending"
+              ? { amount: -100 }
+              : null,
+          ),
+        );
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 90,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        expect(updateOf(ctx, "tx-pending")[2]).toMatchObject({
+          exchangeRate: 0.9,
+        });
+        expect(updateOf(ctx, "tx-parent")).toBeUndefined();
+      });
+
+      it("leaves the stored rates alone when the other side's amount is zero", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          confirmable: {
+            ...confirmable,
+            linkedTransaction: {
+              id: "tx-source",
+              accountId: "acc-usd",
+              amount: 0,
+              isSplit: false,
+            },
+          },
+        });
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 90,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        expect(updateOf(ctx, "tx-pending")[2]).not.toHaveProperty(
+          "exchangeRate",
+        );
+        expect(updateOf(ctx, "tx-source")).toBeUndefined();
+      });
+    });
+
+    describe("a zero transfer across currencies", () => {
+      it("writes a confirmed zero leg in the target currency without asking for a rate", async () => {
+        const ctx = crossCurrency();
+        exchangeRateService.getRateForDate.mockResolvedValue(null);
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 0,
+          isTransfer: true,
+          transferAccount: "USD Account",
+          memo: "Voided",
+        });
+
+        expect(exchangeRateService.getRateForDate).not.toHaveBeenCalled();
+        expect(createdLeg(ctx, "acc-usd")).toMatchObject({
+          amount: 0,
+          currencyCode: "USD",
+          amountIsProvisional: false,
+          description: "Voided",
+        });
+      });
+    });
+
+    describe("a provisional leg is not a recorded transfer", () => {
+      it("keeps provisional rows out of every dedupe count", async () => {
+        const ctx = crossCurrency();
+        routeLookups(ctx, {
+          confirmable: {
+            id: "tx-pending",
+            amount: 80,
+            linkedTransaction: { accountId: "acc-usd" },
+          },
+        });
+
+        await service.processTransaction(ctx, {
+          date: "2025-01-15",
+          amount: 80,
+          isTransfer: true,
+          transferAccount: "USD Account",
+        });
+
+        const counted = managerOf(ctx)
+          .createQueryBuilder.mock.results.map((r) => r.value)
+          .filter((qb) => qb.getCount.mock.calls.length > 0);
+        expect(counted.length).toBeGreaterThan(0);
+        for (const qb of counted) {
+          expect(
+            qb.andWhere.mock.calls.map((call: unknown[]) => String(call[0])),
+          ).toContain("t.amount_is_provisional = false");
+        }
+      });
     });
 
     describe("the lookups read the column, never the description (design P1)", () => {

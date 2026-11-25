@@ -201,6 +201,63 @@ describe("QIF plain transfer across currencies (integration)", () => {
     // 80 at import, then a further 10 on confirmation.
     expect(await balanceOf(eurId)).toBe(90);
     expect(await balanceOf(usdId)).toBe(900);
+    // Both amounts are stated now, so the legs hold the settlement rate they
+    // imply (source 1, destination 90 / 100), not the estimate's 0.8.
+    expect(Number(eurLeg.exchange_rate)).toBeCloseTo(0.9, 8);
+    expect(Number((await onlyLegOf(usdId)).exchange_rate)).toBe(1);
+  });
+
+  it("confirms the leg when the other file states exactly the estimate: imported, not skipped as a duplicate, no balance move", async () => {
+    await storeRate();
+    await importUsdFile();
+
+    const result = await importInto(
+      eurId,
+      "!Type:Bank\nD01/15/2025\nT80.00\nPWire\nMReceived\nL[Checking]\n^\n",
+      { originalName: "Checking", accountId: usdId },
+    );
+
+    expect(result.imported).toBe(1);
+    expect(result.skipped).toBe(0);
+    expect(await rowCount()).toBe(2);
+    const eurLeg = await onlyLegOf(eurId);
+    expect(Number(eurLeg.amount)).toBe(80);
+    expect(eurLeg.amount_is_provisional).toBe(false);
+    expect(eurLeg.description).toBe("Received");
+    expect(Number(eurLeg.exchange_rate)).toBeCloseTo(0.8, 8);
+    expect(await balanceOf(eurId)).toBe(80);
+    expect(await balanceOf(usdId)).toBe(900);
+
+    // The confirmed leg is now a recorded transfer: the same file again is a
+    // duplicate and changes nothing.
+    const again = await importInto(
+      eurId,
+      "!Type:Bank\nD01/15/2025\nT80.00\nPWire\nMReceived\nL[Checking]\n^\n",
+      { originalName: "Checking", accountId: usdId },
+    );
+    expect(again.imported).toBe(0);
+    expect(again.skipped).toBe(1);
+    expect(await rowCount()).toBe(2);
+    expect(await balanceOf(eurId)).toBe(80);
+  });
+
+  it("writes a zero transfer's other leg as a confirmed zero without a rate", async () => {
+    // No rate is stored: zero needs none.
+    const result = await importInto(
+      usdId,
+      "!Type:Bank\nD01/15/2025\nT0.00\nPWire\nMVoided\nL[Savings EUR]\n^\n",
+      { originalName: "Savings EUR", accountId: eurId },
+    );
+
+    expect(result.errors).toBe(0);
+    expect(result.imported).toBe(1);
+    const eurLeg = await onlyLegOf(eurId);
+    expect(Number(eurLeg.amount)).toBe(0);
+    expect(eurLeg.currency_code).toBe("EUR");
+    expect(eurLeg.amount_is_provisional).toBe(false);
+    expect(eurLeg.description).toBe("Voided");
+    expect(await balanceOf(eurId)).toBe(0);
+    expect(await balanceOf(usdId)).toBe(1000);
   });
 
   it("holds in the other file order: the EUR file estimates the USD leg at the inverse rate and the USD file confirms it", async () => {
@@ -223,7 +280,11 @@ describe("QIF plain transfer across currencies (integration)", () => {
     expect(Number(usdLeg.amount)).toBe(-100);
     expect(usdLeg.amount_is_provisional).toBe(false);
     expect(await balanceOf(usdId)).toBe(900);
-    expect((await onlyLegOf(eurId)).amount_is_provisional).toBe(false);
+    const eurLeg = await onlyLegOf(eurId);
+    expect(eurLeg.amount_is_provisional).toBe(false);
+    // The source leg holds 1 and the destination leg the stated ratio.
+    expect(Number(usdLeg.exchange_rate)).toBe(1);
+    expect(Number(eurLeg.exchange_rate)).toBeCloseTo(0.9, 8);
   });
 
   it("refuses the row, naming the pair and the date, when no rate covers it, and writes nothing (row 6)", async () => {
