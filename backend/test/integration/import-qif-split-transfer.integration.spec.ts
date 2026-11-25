@@ -18,10 +18,12 @@ import { createTestAccount } from "../helpers/test-factories";
  *
  * The split-transfer leg lives in the target account, so it is denominated
  * there: converted at the stored rate for the row's date, labelled with the
- * target's currency and carrying that rate, and flagged with the same
- * `PENDING IMPORT` note the plain transfer path writes (the market rate is not
- * the bank's). Without a rate the row is refused, naming the pair, rather than
- * moving the target's balance by a number in the wrong currency.
+ * target's currency and carrying that rate, and written provisional in
+ * `amount_is_provisional` with the `PENDING IMPORT` note the plain transfer
+ * path writes (the market rate is not the bank's; issue #2390, design
+ * docs/future-plans/provisional-amounts.md). The target's own file confirms
+ * it. Without a rate the row is refused, naming the pair, rather than moving
+ * the target's balance by a number in the wrong currency.
  */
 describe("QIF split transfer across currencies (integration)", () => {
   jest.setTimeout(180000);
@@ -50,6 +52,20 @@ describe("QIF split transfer across currencies (integration)", () => {
         accountMappings: [
           { originalName: "Savings CAD", accountId: savingsId },
         ],
+        dateFormat: "MM/DD/YYYY",
+      } as never),
+    );
+
+  // The CAD savings statement for the same transfer: the bank credited 85.00.
+  const SAVINGS_QIF =
+    "!Type:Bank\nD01/15/2025\nT85.00\nMFrom chequing\nL[Checking]\n^\n";
+  const importSavingsQif = () =>
+    withUserContext(aliceId, () =>
+      importer.importQifFile(aliceId, {
+        content: SAVINGS_QIF,
+        accountId: savingsId,
+        categoryMappings: [],
+        accountMappings: [{ originalName: "Checking", accountId: checkingId }],
         dateFormat: "MM/DD/YYYY",
       } as never),
     );
@@ -130,7 +146,8 @@ describe("QIF split transfer across currencies (integration)", () => {
     await importQif();
 
     const legs = (await db.query(
-      `SELECT amount, currency_code, exchange_rate, description
+      `SELECT amount, currency_code, exchange_rate, description,
+              amount_is_provisional
          FROM transactions WHERE account_id = $1`,
       [savingsId],
     )) as Array<{
@@ -138,14 +155,44 @@ describe("QIF split transfer across currencies (integration)", () => {
       currency_code: string;
       exchange_rate: string;
       description: string | null;
+      amount_is_provisional: boolean;
     }>;
     expect(legs).toHaveLength(1);
     const [cadLeg] = legs;
     expect(cadLeg.currency_code).toBe("CAD");
     expect(Number(cadLeg.amount)).toBe(81);
     expect(Number(cadLeg.exchange_rate)).toBeCloseTo(1.35, 8);
+    expect(cadLeg.amount_is_provisional).toBe(true);
     expect(cadLeg.description).toContain("PENDING IMPORT");
     expect(await balanceOf(savingsId)).toBe(81);
+    expect(await balanceOf(checkingId)).toBe(900);
+  });
+
+  it("the target's own file confirms the leg: the file's amount, the flag cleared, the balance moved by the difference", async () => {
+    await db.query(
+      `INSERT INTO exchange_rates (from_currency, to_currency, rate_date, rate, source)
+       VALUES ('USD', 'CAD', '2025-01-15'::DATE, 1.35, 'test')`,
+    );
+    await importQif();
+
+    const result = await importSavingsQif();
+
+    expect(result.imported).toBe(1);
+    const legs = (await db.query(
+      `SELECT amount, description, amount_is_provisional
+         FROM transactions WHERE account_id = $1`,
+      [savingsId],
+    )) as Array<{
+      amount: string;
+      description: string | null;
+      amount_is_provisional: boolean;
+    }>;
+    expect(legs).toHaveLength(1);
+    expect(Number(legs[0].amount)).toBe(85);
+    expect(legs[0].amount_is_provisional).toBe(false);
+    expect(legs[0].description).toBe("From chequing");
+    // 81 at import, then a further 4 on confirmation.
+    expect(await balanceOf(savingsId)).toBe(85);
     expect(await balanceOf(checkingId)).toBe(900);
   });
 
