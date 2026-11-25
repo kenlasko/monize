@@ -935,7 +935,9 @@ export class TransactionAnalyticsService {
             if (hasTransfer) {
               const method = hasCondition ? "orWhere" : "where";
               hasCondition = true;
-              qb[method]("transaction.isTransfer = true");
+              qb[method](
+                "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
+              );
             }
             if (uniqueCategoryIds.length > 0) {
               const method = hasCondition ? "orWhere" : "where";

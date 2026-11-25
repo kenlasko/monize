@@ -2545,7 +2545,12 @@ export class TransactionsService {
           if (hasTransfer) {
             const method = hasCondition ? "orWhere" : "where";
             hasCondition = true;
-            qb[method]("transaction.isTransfer = true");
+            // The outgoing line of a split is a split row carrying
+            // `transferAccountId`; matching it on the main "splits" alias
+            // hydrates only that line, as a category match does.
+            qb[method](
+              "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
+            );
           }
           if (uniqueCategoryIds.length > 0) {
             const method = hasCondition ? "orWhere" : "where";
@@ -3035,7 +3040,12 @@ export class TransactionsService {
     const hasUncategorized = !!filters.categoryIds?.includes("uncategorized");
     const hasTransferCategory = !!filters.categoryIds?.includes("transfer");
 
-    if (!hasRegularCategories && !hasTags && !hasUncategorized) {
+    if (
+      !hasRegularCategories &&
+      !hasTags &&
+      !hasUncategorized &&
+      !hasTransferCategory
+    ) {
       const result = await onlyBalanceAffecting(
         m
           .getRepository(Transaction)
@@ -3093,7 +3103,11 @@ export class TransactionsService {
       );
     }
     if (hasTransferCategory) {
-      categoryArms.push((qb) => qb.orWhere("sa.isTransfer = true"));
+      categoryArms.push((qb) =>
+        qb.orWhere(
+          "(sa.isTransfer = true OR saSplits.transferAccountId IS NOT NULL)",
+        ),
+      );
     }
     if (expandedCategoryIds.length > 0) {
       categoryArms.push((qb) =>
@@ -3258,8 +3272,7 @@ export class TransactionsService {
     // split parent's children).
     const needsSplitsJoin = !!(
       searchNarrows(filters.search) ||
-      (filters.categoryIds &&
-        filters.categoryIds.some((id) => id !== "transfer")) ||
+      (filters.categoryIds && filters.categoryIds.length > 0) ||
       (filters.tagIds && filters.tagIds.length > 0)
     );
 
@@ -3323,7 +3336,9 @@ export class TransactionsService {
           }
           if (hasTransfer) {
             const method = hasCondition ? "orWhere" : "where";
-            outer[method]("bf.isTransfer = true");
+            outer[method](
+              "(bf.isTransfer = true OR bfSplits.transferAccountId IS NOT NULL)",
+            );
             hasCondition = true;
           }
           if (expandedIds.length > 0) {

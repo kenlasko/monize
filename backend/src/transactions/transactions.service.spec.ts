@@ -4409,7 +4409,7 @@ describe("TransactionsService", () => {
       // Transfer condition is now inside a Brackets callback
       expect(mockQb.andWhere).toHaveBeenCalledWith(expect.any(Brackets));
       expect(mockQb.where).toHaveBeenCalledWith(
-        "transaction.isTransfer = true",
+        "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
       );
     });
 
@@ -4434,7 +4434,7 @@ describe("TransactionsService", () => {
         expect.stringContaining("transaction.categoryId IS NULL"),
       );
       expect(mockQb.orWhere).toHaveBeenCalledWith(
-        "transaction.isTransfer = true",
+        "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
       );
     });
 
@@ -6859,7 +6859,7 @@ describe("TransactionsService", () => {
       // Transfer condition is now inside a Brackets callback
       expect(mockQb.andWhere).toHaveBeenCalledWith(expect.any(Brackets));
       expect(mockQb.where).toHaveBeenCalledWith(
-        "transaction.isTransfer = true",
+        "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
       );
     });
 

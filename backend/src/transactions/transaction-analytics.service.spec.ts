@@ -1110,7 +1110,7 @@ describe("TransactionAnalyticsService", () => {
           expect.any(Brackets),
         );
         expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-          "transaction.isTransfer = true",
+          "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
         );
       });
 
@@ -1135,7 +1135,7 @@ describe("TransactionAnalyticsService", () => {
         );
         // Transfer and category conditions use orWhere
         expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
-          "transaction.isTransfer = true",
+          "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
         );
 
         // Splits join for regular categories
