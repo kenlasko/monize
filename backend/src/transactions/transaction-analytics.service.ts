@@ -42,7 +42,11 @@ import {
 } from "../common/currency-places.util";
 import { Account } from "../accounts/entities/account.entity";
 import { FxAggregate } from "../common/fx-aggregate";
-import { loadReportPlaces, reportFigure } from "../common/report-figure";
+import {
+  loadReportPlaces,
+  reportFigure,
+  reportPlacesOf,
+} from "../common/report-figure";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
   buildRateIndex,
@@ -1351,7 +1355,8 @@ export class TransactionAnalyticsService {
         .map((g) => ({
           month: g.first.month as string,
           currency: reporting,
-          ...totalFields(g.agg),
+          // The transactions page's monthly totals, not a report figure.
+          ...totalFields(g.agg, FIAT_MONEY_DECIMALS),
           count: g.count + (splitIds.get(g.first.month)?.size ?? 0),
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
@@ -1803,7 +1808,12 @@ export class TransactionAnalyticsService {
           this.logger,
         );
       }
-      return { income, expenses, totalsCurrency: reporting };
+      return {
+        income,
+        expenses,
+        totalsCurrency: reporting,
+        places: await loadReportPlaces(m, reporting),
+      };
     });
   }
 
@@ -1839,17 +1849,23 @@ export class TransactionAnalyticsService {
     all.merge(converted.expenses);
     if (breakdownFx) all.merge(breakdownFx);
     const fxComplete = all.isComplete;
-    const income = converted.income.knownSubtotal;
-    const expenses = converted.expenses.knownSubtotal;
+    // Each figure rounded once at the reporting currency's places, as the
+    // reports round theirs (docs/specs/report-rounding-and-aggregation.md
+    // section 6).
+    const { places } = converted;
+    const income = converted.income.knownSubtotalAt(places);
+    const expenses = converted.expenses.knownSubtotalAt(places);
     return {
       totalIncome: fxComplete ? income : null,
       totalExpenses: fxComplete ? expenses : null,
       // Income less expenses before either is rounded, rounded once: the
       // difference of the two readings could sit a unit off the summary's
-      // own net (docs/specs/report-rounding-and-aggregation.md rule 2).
+      // own net (rule 2).
       netCashFlow: fxComplete
-        ? FxAggregate.difference(converted.income, converted.expenses)
-            .knownSubtotal
+        ? FxAggregate.difference(
+            converted.income,
+            converted.expenses,
+          ).knownSubtotalAt(places)
         : null,
       knownIncomeSubtotal: income,
       knownExpensesSubtotal: expenses,
@@ -1939,6 +1955,9 @@ export class TransactionAnalyticsService {
         this.dataSource,
         userId,
       );
+      // Each group's figure is read once at the reporting currency's places
+      // (docs/specs/report-rounding-and-aggregation.md section 6).
+      const places = await loadReportPlaces(m, reporting);
       const qb = m
         .getRepository(Transaction)
         .createQueryBuilder("t")
@@ -2063,7 +2082,7 @@ export class TransactionAnalyticsService {
           finish(groups);
           // Without a direction the figure is the magnitude of the net.
           const shown = (g: FoldedGroup) => {
-            const f = totalFields(g.agg);
+            const f = totalFields(g.agg, places);
             if (direction) return f;
             return {
               total: f.total === null ? null : Math.abs(f.total),
@@ -2131,6 +2150,7 @@ export class TransactionAnalyticsService {
                 agg: g.agg,
                 count: g.count,
               })),
+              places,
             ),
           };
         }
@@ -2171,7 +2191,7 @@ export class TransactionAnalyticsService {
               .sort((a, b) => (a.first.period < b.first.period ? -1 : 1))
               .map((g) => ({
                 [groupBy]: g.first.period,
-                ...totalFields(g.agg),
+                ...totalFields(g.agg, places),
                 count: g.count,
               })),
           };
@@ -2224,24 +2244,31 @@ export class TransactionAnalyticsService {
       ...period2.items.map((i) => i.label),
     ]);
 
-    const p1Map = new Map(
-      period1.items.map((i) => [i.label, i.agg.knownSubtotal]),
+    // Each figure is read once at the reporting currency's places, and each
+    // change is the difference of the two periods' aggregates read once: the
+    // difference of the two readings can sit a cent off the exact change
+    // (docs/specs/report-rounding-and-aggregation.md rule 4, section 6). A
+    // percentage divides the unrounded values (rule 8), and whether the first
+    // period is zero reads its sign (rule 5).
+    const places = await reportPlacesOf(
+      this.dataSource,
+      period1.totalsCurrency,
     );
-    const p2Map = new Map(
-      period2.items.map((i) => [i.label, i.agg.knownSubtotal]),
-    );
+    const p1Map = new Map(period1.items.map((i) => [i.label, i.agg]));
+    const p2Map = new Map(period2.items.map((i) => [i.label, i.agg]));
+    const none = new FxAggregate();
+    const percentOf = (difference: FxAggregate, base: FxAggregate): number =>
+      percentToTwoPlaces(difference.unroundedSubtotal / base.unroundedSubtotal);
 
     const comparison = Array.from(allLabels).map((label) => {
-      // Converted into the reporting currency: fiat precision.
-      const p1Amount = roundMoney(p1Map.get(label) || 0, FIAT_MONEY_DECIMALS);
-      const p2Amount = roundMoney(p2Map.get(label) || 0, FIAT_MONEY_DECIMALS);
-      const change = roundMoney(p2Amount - p1Amount, FIAT_MONEY_DECIMALS);
+      const p1 = p1Map.get(label) ?? none;
+      const p2 = p2Map.get(label) ?? none;
+      const difference = FxAggregate.difference(p2, p1);
+      const p1Amount = p1.knownSubtotalAt(places);
+      const p2Amount = p2.knownSubtotalAt(places);
+      const change = difference.knownSubtotalAt(places);
       const changePercent =
-        p1Amount !== 0
-          ? percentToTwoPlaces(change / p1Amount)
-          : p2Amount !== 0
-            ? 100
-            : 0;
+        p1.sign !== 0 ? percentOf(difference, p1) : p2.sign !== 0 ? 100 : 0;
 
       return {
         label,
@@ -2257,30 +2284,34 @@ export class TransactionAnalyticsService {
     const both = new FxAggregate();
     both.merge(period1.total);
     both.merge(period2.total);
-    const p1Total = period1.total.knownSubtotal;
-    const p2Total = period2.total.knownSubtotal;
+    const p1Total = period1.total.knownSubtotalAt(places);
+    const p2Total = period2.total.knownSubtotalAt(places);
     const fxComplete = both.isComplete;
+    const totalDifference = FxAggregate.difference(
+      period2.total,
+      period1.total,
+    );
     const totalChange = fxComplete
-      ? roundMoney(p2Total - p1Total, FIAT_MONEY_DECIMALS)
+      ? totalDifference.knownSubtotalAt(places)
       : null;
     const totalChangePercent =
       totalChange === null
         ? null
-        : p1Total !== 0
-          ? percentToTwoPlaces(totalChange / p1Total)
+        : period1.total.sign !== 0
+          ? percentOf(totalDifference, period1.total)
           : 0;
 
     return {
       period1: {
         start: input.period1Start,
         end: input.period1End,
-        total: period1.total.total,
+        total: period1.total.totalAt(places),
         knownSubtotal: p1Total,
       },
       period2: {
         start: input.period2Start,
         end: input.period2End,
-        total: period2.total.total,
+        total: period2.total.totalAt(places),
         knownSubtotal: p2Total,
       },
       totalChange,
@@ -2735,6 +2766,8 @@ interface ConvertedFlowTotals {
   income: FxAggregate;
   expenses: FxAggregate;
   totalsCurrency: string;
+  /** `totalsCurrency`'s places, the ones its figures are read at. */
+  places: number;
 }
 
 /** A grouped breakdown with the conversion gaps its rows carry. */
@@ -2828,17 +2861,17 @@ function byOwnRate(
  * A group's figure: `total` only when every part converted, otherwise `null`
  * with the converted part under `knownSubtotal`.
  */
-function totalFields(agg: FxAggregate): {
+function totalFields(
+  agg: FxAggregate,
+  places: number,
+): {
   total: number | null;
   knownSubtotal?: number;
 } {
-  // A converted, reporting-currency figure: fiat precision.
+  // A converted, reporting-currency figure, read once at `places`.
   return agg.isComplete
-    ? { total: roundMoney(agg.knownSubtotal, FIAT_MONEY_DECIMALS) }
-    : {
-        total: null,
-        knownSubtotal: roundMoney(agg.knownSubtotal, FIAT_MONEY_DECIMALS),
-      };
+    ? { total: agg.knownSubtotalAt(places) }
+    : { total: null, knownSubtotal: agg.knownSubtotalAt(places) };
 }
 
 /** Largest first, by what converted (a withheld total still ranks). */
@@ -2861,7 +2894,7 @@ interface PayeeGroup {
   count: number;
 }
 
-function enforcePayeeAggregationThreshold(rows: PayeeGroup[]) {
+function enforcePayeeAggregationThreshold(rows: PayeeGroup[], places: number) {
   const above = rows.filter((r) => r.count >= MIN_AGGREGATION_COUNT);
   const below = rows.filter((r) => r.count < MIN_AGGREGATION_COUNT);
 
@@ -2882,7 +2915,7 @@ function enforcePayeeAggregationThreshold(rows: PayeeGroup[]) {
     above.map((r) => ({
       payee: r.payee,
       payeeId: r.payeeId,
-      ...totalFields(r.agg),
+      ...totalFields(r.agg, places),
       count: r.count,
     })),
   );
