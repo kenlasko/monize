@@ -51,6 +51,12 @@ interface IncomeSlice {
   name: string;
   value: number;
   colour: string;
+  /**
+   * The server's share of the income, divided from the unrounded figures
+   * (rule 8); the merged slice's is the sum of its sources'. Absent from an
+   * older backend, which still gets the readings' ratio.
+   */
+  percentage?: number;
 }
 
 export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
@@ -91,6 +97,7 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
         name: item.categoryName,
         value: item.total,
         colour,
+        percentage: item.percentage,
       };
     });
     // The server returns every source; the chart keeps the largest and merges
@@ -104,6 +111,9 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
         name: t('expensesPieChart.other'),
         value: sumMoney(rest.map((item) => item.value)),
         colour: chartColors.neutral,
+        percentage: rest.every((item) => item.percentage !== undefined)
+          ? rest.reduce((sum, item) => sum + (item.percentage as number), 0)
+          : undefined,
       },
     ];
   }, [response, t]);
@@ -118,7 +128,9 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
     const payload = rawPayload as Array<{ payload: IncomeSlice }> | undefined;
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
-    const pct = totalIncome > 0 ? (d.value / totalIncome) * 100 : 0;
+    // The server's share, never the slice's reading over the income's: two
+    // equal sources of 1.2474 read 1.25 over 2.49, 50.2%, and are each half.
+    const pct = d.percentage ?? (totalIncome > 0 ? (d.value / totalIncome) * 100 : 0);
     return (
       <ChartTooltipPanel>
         <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>

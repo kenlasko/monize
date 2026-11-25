@@ -121,6 +121,39 @@ describe("buildRankedTriviaFacts", () => {
     );
   });
 
+  it("states a source's share as the report divides it, not its reading over the income's (issue #2414)", () => {
+    // Two equal sources of 1.2474 read 1.25 each over 2.49: 50.2% each by the
+    // readings, half each by the report's unrounded share.
+    const equal = withReport(rankedInput("d90", 2), "d90", {
+      source: {
+        data: [
+          {
+            categoryId: "s1",
+            categoryName: "Salary",
+            color: null,
+            total: 1.25,
+            percentage: 50,
+          },
+          {
+            categoryId: "s2",
+            categoryName: "Bonus",
+            color: null,
+            total: 1.25,
+            percentage: 50,
+          },
+        ],
+        totalIncome: 2.49,
+        knownIncome: 2.49,
+      },
+    });
+    expect(
+      byId(equal, "incomeTopSourceWindow")?.figures.topSourcePercent,
+    ).toEqual({ kind: "percent", value: 50 });
+    expect(
+      byId(equal, "incomeRankedSource")?.figures.rankedSourcePercent,
+    ).toEqual({ kind: "percent", value: 50 });
+  });
+
   it("gives no rank 3 fact when only two rows exist", () => {
     const two = withReport(rankedInput("d90", 3), "d90", {
       category: {

@@ -42,7 +42,7 @@ before they were added:
 | Precision | Applies to | Rule |
 | --- | --- | --- |
 | Posted | a stored amount: a transaction's `amount`, a balance, a trade's `total_amount`, a transfer's two amounts, a row's own rate | `moneyDecimalsFor(currency.decimalPlaces)`, rounded by the write (`applyFxConversion`). Authoritative: a report never replaces it by an amount recomputed from a rate (INV-FX-002, INV-TRADE-001). |
-| Calculation | a reporting-only conversion, and every sum, difference and negation of them | `FxAggregate`: each component on its decimal digits (`toScaledUnits`), held at its fifteen significant digits and never at fewer than twelve places, summed in a `BigInt` that counts to 10^-20. A component whose exact value has at most fifteen significant digits is held exactly; the client's `sumConverted` holds its components the same way. Nothing is rounded to money precision inside a calculation. |
+| Calculation | a reporting-only conversion, and every sum, difference and negation of them | `FxAggregate`: each component on its decimal digits (`toScaledUnits`), held at its fifteen significant digits and never at fewer than twelve places, summed in a `BigInt` that counts to 10^-20. A component under 1,000 whose exact value has at most fifteen significant digits is held exactly; a larger one keeps the double's own digits at twelve places, its noise included; the client's `sumConverted` holds its components the same way. Nothing is rounded to money precision inside a calculation. |
 | Output | a figure handed to a reader or a consumer | Rounded once, from its calculation-precision value, at the precision it is presented at, half away from zero for both signs (`roundMoney`). On the wire that is the reporting currency's own places (section 6): `FxAggregate.knownSubtotalAt(places)` / `totalAt(places)` for an aggregate, `reportFigure(value, places)` for anything else (`backend/src/common/report-figure.ts`). |
 
 ## 3. Rules
@@ -377,19 +377,23 @@ Two cases raised on the same issue. Income by Source divided a source's
 reading by the income's: two receipts of 1.00 EUR at 1.2474 in two categories
 read 1.25 each over 2.49 and showed 50.2% each. Each source now carries
 `percentage`, divided on the server from the unrounded aggregates, so each
-reads 50% (rule 8). And the accumulator held each converted component at
+reads 50% (rule 8), in the report, its dashboard widget and the dashboard
+trivia alike. And the accumulator held each converted component at
 twelve places, which rounded a small component's own digits away: 7.681 EUR
 at 1.2475589116 is exactly 9.5824999999996 USD, which twelve places read as
 9.5825, so two receipts on two dates (or in any report that converts row by
 row) summed to 19.165 and read 19.17, while one date's 15.362 EUR read 19.16
 (rule 4 broken by the grouping). Each component is now held at its fifteen
 significant digits, the most a double holds a decimal at (`DBL_DIG`), and
-never at fewer than twelve places: one whose exact value has at most fifteen
-significant digits is held exactly, the noise past them still drops, and a
-component of 100 or more is held as before. What it cannot reach: a
+never at fewer than twelve places: one under 1,000 whose exact value has at
+most fifteen significant digits is held exactly, the noise past them still
+drops, and a component of 100 or more is held as before (from 1,000 up,
+twelve places keep the double's own digits, its noise included). What it
+cannot reach: a
 component whose exact value needs more digits (a large amount at a rate of
 ten places), or one divided by a row's own rate, is held at the double's
-fifteen, so a sum within that of a midpoint can still read a unit off; only
+own digits, so a sum within their error of a midpoint can still read a unit
+off; only
 an exact product of the decimal amount and rate would close the first, and
 no decimal holds the second.
 

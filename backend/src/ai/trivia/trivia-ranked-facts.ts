@@ -82,16 +82,27 @@ function payeeRows(
   };
 }
 
+/**
+ * A source with the report's own share of the income, divided on the server
+ * from the unrounded figures: two equal sources are 50% each, where their
+ * readings over the income's (1.25 over 2.49) are 50.2% (issue #2414).
+ */
+type SourceRow = Row & { percentage: number };
+
 function sourceRows(
   report: IncomeBySourceResponse | null,
-): { rows: Row[]; total: number } | null {
+): { rows: SourceRow[]; total: number } | null {
   const total = report?.totalIncome ?? null;
   if (!report || total === null || total <= 0) return null;
   return {
     total,
     rows: report.data
       .filter((r) => r.categoryId !== null && r.total > 0)
-      .map((r) => ({ name: r.categoryName, total: r.total }))
+      .map((r) => ({
+        name: r.categoryName,
+        total: r.total,
+        percentage: r.percentage,
+      }))
       .sort((a, b) => b.total - a.total),
   };
 }
@@ -206,7 +217,7 @@ function incomeFacts(input: TriviaRankedInput): TriviaFact[] {
         "income",
         {
           topSourceName: text(top.name),
-          topSourcePercent: percent((top.total / sources.total) * 100),
+          topSourcePercent: percent(top.percentage),
         },
         paramsOf(topSource.window),
       ),
@@ -225,9 +236,7 @@ function incomeFacts(input: TriviaRankedInput): TriviaFact[] {
         {
           rankedSourceName: text(pickedSource.name),
           rankedSourceRank: count(sourceRank),
-          rankedSourcePercent: percent(
-            (pickedSource.total / rankedSources.total) * 100,
-          ),
+          rankedSourcePercent: percent(pickedSource.percentage),
         },
         { window: rankedSource.window },
       ),

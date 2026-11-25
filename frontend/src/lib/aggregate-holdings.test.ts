@@ -127,5 +127,14 @@ describe('aggregateHoldingsBySecurity', () => {
     expect(rolled.costBasisAccountCurrency).toBe(1);
     expect(rolled.gainLoss).toBe(1.015);
   });
+
+  it("adds the account-currency basis at the column scale, not the security's places", () => {
+    // A USD security in two BTC accounts: each basis has eight places.
+    const [rolled] = aggregateHoldingsBySecurity([
+      holding({ securityId: 'AAPL', currencyCode: 'USD', costBasisAccountCurrency: 0.00012345 }),
+      holding({ securityId: 'AAPL', accountId: 'acc-2', currencyCode: 'USD', costBasisAccountCurrency: 0.00000001 }),
+    ]);
+    expect(rolled.costBasisAccountCurrency).toBe(0.00012346);
+  });
 });
 

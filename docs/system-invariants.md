@@ -3434,10 +3434,13 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     (fx-fee-totals.ts, GET /transactions/fx-fee-totals) are
                     the server's, each folded from aggregates and read once.
                     Income by Source sends each source's percentage, divided
-                    from the unrounded aggregates. A total only an
+                    from the unrounded aggregates, which the report, its
+                    dashboard widget and the dashboard trivia read. A total
+                    only an
                     investment report's page can build (Realized Gains,
                     Dividend Income, Dividend Yield Growth, the allocation
-                    reports and the geographic allocation) is the exact sum
+                    reports, their dashboard widgets and the geographic
+                    allocation) is the exact sum
                     of its rows' figures through pageSum / foldPageSums, each
                     share and yield through pageRatio
                     (frontend/src/lib/page-total.ts); a security held in
@@ -3521,8 +3524,9 @@ Known gap           A holding's own value, cost and gain in the portfolio
                     (docs/future-plans/report-rounding-and-aggregation-tasks.md,
                     stage 3). A converted component whose exact value needs
                     more than fifteen significant digits, or that divides by
-                    a row's own rate, is held at the double's fifteen, so a
-                    sum within that of a midpoint can still read a unit off.
+                    a row's own rate, is held at the double's own digits, so
+                    a sum within their error of a midpoint can still read a
+                    unit off.
                     Budget Health's income-line and expense sides,
                     the other budget reports, and the budget summary's, period
                     close's and alerts' income, add each line's own four-place

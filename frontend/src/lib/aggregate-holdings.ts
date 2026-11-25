@@ -1,5 +1,5 @@
 import { HoldingWithMarketValue } from '@/types/investment';
-import { moneyDecimalsForCurrency, sumMoney } from '@/lib/format';
+import { MONEY_SCALE, moneyDecimalsForCurrency, sumMoney } from '@/lib/format';
 
 export interface AggregatedHolding extends HoldingWithMarketValue {
   /** Per-account breakdown for this security across the filtered account set. */
@@ -45,7 +45,9 @@ export function aggregateHoldingsBySecurity(
       existing.costBasisAccountCurrency === null ||
       h.costBasisAccountCurrency === null
         ? null
-        : add(existing.costBasisAccountCurrency, h.costBasisAccountCurrency);
+        : // In the account's currency, which the row does not name: added at
+          // the column scale, which holds any currency's money exactly.
+          sumMoney([existing.costBasisAccountCurrency, h.costBasisAccountCurrency], MONEY_SCALE);
     const existingMv = existing.marketValue;
     const addMv = h.marketValue;
     // Same rule for market value: one unpriced account makes the security's

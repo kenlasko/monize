@@ -99,8 +99,10 @@ function unitAt(places: number): bigint {
  *
  * It is held at its fifteen significant digits, the most a double holds a
  * decimal at, and never at fewer places than the twelve guarded ones
- * (`GUARDED_DECIMALS`), so a component whose exact value has at most fifteen
- * significant digits is held exactly. Twelve places alone rounded a small
+ * (`GUARDED_DECIMALS`), so a component under 1,000 whose exact value has at
+ * most fifteen significant digits is held exactly; from 1,000 up, twelve
+ * places keep the double's own digits, its noise included, as before.
+ * Twelve places alone rounded a small
  * component's own digits away: 7.681 EUR at 1.2475589116 is 9.5824999999996
  * USD, which twelve places read as 9.5825, so two such receipts on two dates
  * summed to 19.165 and read 19.17 where their sum, 19.1649999999992, reads

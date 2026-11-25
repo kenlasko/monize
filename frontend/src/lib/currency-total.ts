@@ -22,8 +22,9 @@ const SMALL_COMPONENT_DECIMALS = 8;
 /**
  * A converted component in `10^-scale` units, held at its fifteen significant
  * digits and never at fewer than `guarded` places, as the server's
- * `FxAggregate` holds it: a component whose exact value has at most fifteen
- * significant digits is then held exactly. The guarded places alone rounded a
+ * `FxAggregate` holds it: a component under 1,000 whose exact value has at
+ * most fifteen significant digits is then held exactly, and a larger one at
+ * the guarded places, as before. The guarded places alone rounded a
  * small one's digits away: 7.681 EUR at 1.2475589116 is 9.5824999999996,
  * which twelve places read as 9.5825, so two of them read 19.17 where their
  * sum, 19.1649999999992, reads 19.16 (issue #2414).
