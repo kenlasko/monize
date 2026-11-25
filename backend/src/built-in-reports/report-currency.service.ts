@@ -12,6 +12,8 @@ import {
 import { FxAggregate } from "../common/fx-aggregate";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { preferredCurrency } from "../common/default-currency.util";
+import { isIsoCurrencyCode } from "../common/format-currency.util";
+import { reportPlacesFor } from "../common/report-figure";
 import { TransferLegs, transferRateSql } from "./transfer-rate-sql";
 
 export interface RawCategoryAggregate extends RawRateBasis {
@@ -222,6 +224,22 @@ export class ReportCurrencyService {
   }
 
   /**
+   * The places a report figure in `currency` leaves the server at
+   * (`reportPlacesFor`): 2 for USD, 0 for JPY, a coin's row's own. Each figure
+   * is rounded once there, from its calculated value
+   * (`docs/specs/report-rounding-and-aggregation.md` section 6). An ISO code is
+   * answered from its minor unit without a read.
+   */
+  async getReportPlaces(currency: string): Promise<number> {
+    if (isIsoCurrencyCode(currency))
+      return reportPlacesFor(currency, new Map());
+    return reportPlacesFor(
+      currency,
+      await this.exchangeRateService.getCurrencyDecimalPlaces([currency]),
+    );
+  }
+
+  /**
    * The only conversion door a report has: each row at its own rate.
    *
    * A row in the reporting currency is its own amount. A row that settled into
@@ -318,26 +336,30 @@ export interface DatedAmountRow {
  * `null` while any part has no admissible rate. The history is loaded once,
  * through `query`, for the days the market-rate parts cover.
  *
- * Each figure is the single rounding of its converted parts
+ * Each figure is the single rounding of its converted parts at `places`
  * (`convertDatedRowAggregates` carries them unrounded, for a caller that folds
- * the figures further): summing the parts' four-place readings read two days
- * of 124.752474 as 249.5050 (docs/specs/report-rounding-and-aggregation.md
- * rule 2).
+ * the figures further): summing the parts' readings read two days of
+ * 124.752474 as 249.5050 at four places
+ * (docs/specs/report-rounding-and-aggregation.md rule 2). A report figure
+ * passes the reporting currency's places (`getReportPlaces`, section 6).
  */
 export async function convertDatedRows(
   query: RateIndexQuery,
   rows: readonly DatedAmountRow[],
   reportingCurrency: string,
+  places: number,
   logger?: RateIndexLogger,
 ): Promise<Map<string, Record<string, number | null>>> {
   return readAggregates(
     await convertDatedRowAggregates(query, rows, reportingCurrency, logger),
+    places,
   );
 }
 
-/** Each figure of `aggregates` read once, `null` kept. */
+/** Each figure of `aggregates` read once at `places`, `null` kept. */
 export function readAggregates(
   aggregates: ReadonlyMap<string, Record<string, FxAggregate | null>>,
+  places: number,
 ): Map<string, Record<string, number | null>> {
   return new Map(
     [...aggregates].map(([key, figures]) => [
@@ -345,7 +367,7 @@ export function readAggregates(
       Object.fromEntries(
         Object.entries(figures).map(([name, agg]) => [
           name,
-          agg === null ? null : agg.knownSubtotal,
+          agg === null ? null : agg.knownSubtotalAt(places),
         ]),
       ),
     ]),

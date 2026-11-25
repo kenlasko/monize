@@ -38,8 +38,9 @@ describe("FxAggregate", () => {
     });
 
     it("rounds a float artefact just under a midpoint up, as roundMoney does", () => {
-      // 41919.85225 computed in floats; read back from twelve places without
-      // roundMoney's one-ULP nudge it came back 41919.8522 (issue #2360).
+      // 41919.85225 computed in floats; read back from its accumulated units
+      // without roundMoney's one-ULP nudge it came back 41919.8522 (issue
+      // #2360).
       const agg = new FxAggregate();
       agg.addConverted(41919.852249999996);
       expect(agg.total).toBe(roundMoney(41919.852249999996, 4));
@@ -361,7 +362,7 @@ describe("FxAggregate", () => {
   });
 
   describe("unroundedSubtotal (issue #2384)", () => {
-    it("reads the twelve-place sum a mean or a share divides", () => {
+    it("reads the accumulated sum a mean or a share divides", () => {
       const agg = new FxAggregate();
       agg.addConverted(100.01 * 1.2474);
       agg.addConverted(100.03 * 1.2474);
@@ -473,10 +474,10 @@ describe("FxAggregate", () => {
     it("splits the parent's single rounding between two equal children", () => {
       // 124.752474 + 124.752474 = 249.504948, which reads 249.5049; each child
       // alone reads 124.7525, so one of them gives up its unit.
-      const units = FxAggregate.apportionUnits([
-        part(100.01 * 1.2474),
-        part(100.01 * 1.2474),
-      ]);
+      const units = FxAggregate.apportionUnits(
+        [part(100.01 * 1.2474), part(100.01 * 1.2474)],
+        4,
+      );
       expect(units).toEqual([1247525, 1247524]);
       expect(units[0] + units[1]).toBe(2495049);
     });
@@ -485,7 +486,7 @@ describe("FxAggregate", () => {
       // 0.00004 + 0.00007 = 0.00011, which reads 0.0001: the 0.00007 part
       // keeps the unit.
       expect(
-        FxAggregate.apportionUnits([part(0.00004), part(0.00007)]),
+        FxAggregate.apportionUnits([part(0.00004), part(0.00007)], 4),
       ).toEqual([0, 1]);
     });
 
@@ -494,68 +495,158 @@ describe("FxAggregate", () => {
       // and 0 with remainders 0.6 and 0.7, so the one unit short goes to the
       // 0.00007 part: each part stays within a unit of its value.
       expect(
-        FxAggregate.apportionUnits([part(-0.00004), part(0.00007)]),
+        FxAggregate.apportionUnits([part(-0.00004), part(0.00007)], 4),
       ).toEqual([-1, 1]);
     });
 
     it("apportions to a given target", () => {
       expect(
-        FxAggregate.apportionUnits([part(0.00005), part(0.00005)], 1),
+        FxAggregate.apportionUnits([part(0.00005), part(0.00005)], 4, 1),
       ).toEqual([1, 0]);
     });
 
     it("leaves parts already at four places unchanged", () => {
       expect(
-        FxAggregate.apportionUnits([part(12.3456), part(-7.0001), part(0)]),
+        FxAggregate.apportionUnits([part(12.3456), part(-7.0001), part(0)], 4),
       ).toEqual([123456, -70001, 0]);
     });
 
     it("refuses a target the parts cannot reach within a unit each", () => {
       expect(() =>
-        FxAggregate.apportionUnits([part(1), part(2)], 30003),
+        FxAggregate.apportionUnits([part(1), part(2)], 4, 30003),
       ).toThrow(RangeError);
       expect(() =>
-        FxAggregate.apportionUnits([part(1), part(2)], 29999),
+        FxAggregate.apportionUnits([part(1), part(2)], 4, 29999),
       ).toThrow(RangeError);
     });
 
     it("reads each part on its own once one is non-finite", () => {
       expect(
-        FxAggregate.apportionUnits([part(0.00005), part(Infinity)]),
+        FxAggregate.apportionUnits([part(0.00005), part(Infinity)], 4),
       ).toEqual([1, Infinity]);
     });
 
     it("answers nothing for no parts", () => {
-      expect(FxAggregate.apportionUnits([])).toEqual([]);
+      expect(FxAggregate.apportionUnits([], 2)).toEqual([]);
     });
 
-    it("keeps every part within one unit of its value and sums to the whole's reading", () => {
-      let seed = 2384;
-      const next = () => {
-        seed = (seed * 1103515245 + 12345) % 2147483648;
-        return seed / 2147483648;
-      };
-      for (let round = 0; round < 500; round++) {
-        const parts = Array.from({ length: 1 + Math.floor(next() * 6) }, () =>
-          part(
-            ...Array.from(
-              { length: 1 + Math.floor(next() * 3) },
-              () => (next() - 0.4) * 10 ** Math.floor(next() * 7),
+    it.each([0, 2, 4, 8])(
+      "keeps every part within one unit of its value and sums to the whole's reading, at %p places",
+      (places) => {
+        let seed = 2384 + places;
+        const next = () => {
+          seed = (seed * 1103515245 + 12345) % 2147483648;
+          return seed / 2147483648;
+        };
+        const unit = 10 ** -places;
+        for (let round = 0; round < 500; round++) {
+          const parts = Array.from({ length: 1 + Math.floor(next() * 6) }, () =>
+            part(
+              ...Array.from(
+                { length: 1 + Math.floor(next() * 3) },
+                () => (next() - 0.4) * 10 ** Math.floor(next() * 7),
+              ),
             ),
-          ),
-        );
-        const units = FxAggregate.apportionUnits(parts);
-        const whole = new FxAggregate();
-        for (const p of parts) whole.merge(p);
-        expect(units.reduce((a, b) => a + b, 0)).toBe(
-          moneyUnits(whole.knownSubtotal, 4),
-        );
-        units.forEach((u, i) => {
-          expect(
-            Math.abs(u / 10000 - parts[i].knownSubtotal),
-          ).toBeLessThanOrEqual(0.0001 + 1e-9);
-        });
-      }
+          );
+          const units = FxAggregate.apportionUnits(parts, places);
+          const whole = new FxAggregate();
+          for (const p of parts) whole.merge(p);
+          expect(units.reduce((a, b) => a + b, 0)).toBe(
+            moneyUnits(whole.knownSubtotalAt(places), places),
+          );
+          units.forEach((u, i) => {
+            expect(
+              Math.abs(u * unit - parts[i].knownSubtotalAt(places)),
+            ).toBeLessThanOrEqual(unit * (1 + 1e-6) + 1e-9);
+          });
+        }
+      },
+    );
+
+    it("apportions in the currency's own unit (issue #2410)", () => {
+      // Two 124.752474 children under a 249.504948 parent: the parent reads
+      // 249.50 at two places and each child floors to 124.75, so neither
+      // takes a cent. In whole yen, two 0.6 children under a 1.2 parent read
+      // 1 between them, the tie to the earlier part.
+      expect(
+        FxAggregate.apportionUnits(
+          [part(100.01 * 1.2474), part(100.01 * 1.2474)],
+          2,
+        ),
+      ).toEqual([12475, 12475]);
+      expect(FxAggregate.apportionUnits([part(0.6), part(0.6)], 0)).toEqual([
+        1, 0,
+      ]);
+    });
+
+    it("refuses places a subtotal cannot be read at", () => {
+      expect(() => FxAggregate.apportionUnits([part(1)], 9)).toThrow(
+        RangeError,
+      );
+    });
+  });
+
+  describe("reads a report figure once, at its currency's places (issue #2410)", () => {
+    it("rounds 2.50498 to 2.50, not through 2.5050 to 2.51", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(2 * 1.25249);
+      expect(agg.knownSubtotal).toBe(2.505);
+      expect(agg.knownSubtotalAt(2)).toBe(2.5);
+      expect(agg.totalAt(2)).toBe(2.5);
+      expect(roundMoney(agg.knownSubtotal, 2)).toBe(2.51);
+    });
+
+    it("rounds the summed components once, at the places asked for", () => {
+      // Two 100.01 EUR receipts at 1.2474 USD: 249.504948 reads 249.50, where
+      // the two rows alone read 124.75 each.
+      const agg = new FxAggregate();
+      agg.addConverted(100.01 * 1.2474);
+      agg.addConverted(100.01 * 1.2474);
+      expect(agg.knownSubtotalAt(2)).toBe(249.5);
+      expect(agg.knownSubtotalAt(4)).toBe(249.5049);
+    });
+
+    it("reads whole yen, half away from zero for both signs", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(1234.5);
+      expect(agg.knownSubtotalAt(0)).toBe(1235);
+      const negative = new FxAggregate();
+      negative.addConverted(-0.5);
+      expect(negative.knownSubtotalAt(0)).toBe(-1);
+    });
+
+    it("keeps a coin's eight places, with guard digits under them", () => {
+      // 0.0000000049999996 is under half a satoshi. Accumulated at twelve
+      // places it became 0.000000005000 and read one satoshi.
+      const dust = new FxAggregate();
+      dust.addConverted(0.0000000049999996);
+      expect(dust.knownSubtotalAt(8)).toBe(0);
+      const coin = new FxAggregate();
+      coin.addConverted(0.12345678);
+      coin.addConverted(0.000000004);
+      expect(coin.knownSubtotalAt(8)).toBe(0.12345678);
+      expect(coin.knownSubtotal).toBe(0.1235);
+    });
+
+    it("withholds a total with a gap at any places", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(2.50498);
+      agg.add(null, "EUR", "USD");
+      expect(agg.totalAt(2)).toBeNull();
+      expect(agg.knownSubtotalAt(2)).toBe(2.5);
+    });
+
+    it("carries a non-finite component", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(1);
+      agg.addConverted(Infinity);
+      expect(agg.knownSubtotalAt(2)).toBe(Infinity);
+    });
+
+    it.each([-1, 1.5, 9, NaN])("refuses to read at %p places", (places) => {
+      expect(() => new FxAggregate().knownSubtotalAt(places)).toThrow(
+        RangeError,
+      );
     });
   });
 

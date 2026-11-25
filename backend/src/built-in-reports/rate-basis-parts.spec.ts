@@ -316,6 +316,7 @@ describe("rate-basis-parts", () => {
         "CAD",
         (row) => `${row.key}|${row.currencyCode}`,
         { sums: ["total"], currency: "currencyCode" },
+        2,
       );
 
       // 100 USD at 1.25 plus 100 USD at its own 1.30; the CAD part is not
@@ -343,6 +344,7 @@ describe("rate-basis-parts", () => {
         "EUR",
         (row) => String(row.key),
         { sums: ["total"], currency: "currencyCode" },
+        2,
       );
 
       expect([...converted.entries()]).toEqual([["a", { total: -90 }]]);
@@ -379,9 +381,42 @@ describe("rate-basis-parts", () => {
           "USD",
           (row) => String(row.key),
           { sums: ["total"], currency: "currencyCode" },
+          4,
         );
 
         expect(converted.get("a")).toEqual({ total: 249.5049 });
+      });
+
+      it("reads it at the places it is asked for, once (issue #2410)", async () => {
+        // 1.00 EUR at 2.50498 is 2.50498 USD: 2.50 at two places, where its
+        // four-place reading 2.5050, rounded again on the screen, read 2.51.
+        const rate = () =>
+          jest.fn().mockResolvedValue([
+            {
+              from_currency: "EUR",
+              to_currency: "USD",
+              rate: "2.50498",
+              rate_date: "2026-01-10",
+            },
+          ]);
+        const oneDay = twoDays()
+          .slice(0, 1)
+          .map((row) => ({ ...row, total: "1" }));
+        const [atTwo, atFour] = await Promise.all(
+          [2, 4].map((places) =>
+            convertRateParts(
+              rate(),
+              oneDay,
+              "USD",
+              (row) => String(row.key),
+              { sums: ["total"], currency: "currencyCode" },
+              places,
+            ),
+          ),
+        );
+
+        expect(atTwo.get("a")).toEqual({ total: 2.5 });
+        expect(atFour.get("a")).toEqual({ total: 2.505 });
       });
 
       it("hands a caller the figure unrounded, to fold into a total of its own", async () => {

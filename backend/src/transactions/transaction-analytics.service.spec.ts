@@ -4784,6 +4784,41 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
+    it("rounds a converted fee total once, at the reporting currency's places (issue #2410)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          {
+            month: "2026-01",
+            currencyCode: "EUR",
+            feeTotal: "3.1312",
+            count: "1",
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            month: "2026-01",
+            currencyCode: "EUR",
+            txDate: "2026-01-05",
+            exchangeRate: "1.5",
+            feeTotal: "3.1312",
+          },
+        ]);
+      managerMock.query.mockResolvedValue([
+        storedRate("USD", "CAD", 1.25, "2026-01-04"),
+      ]);
+
+      const result = await service.getFxFeeSummary(userId, "acc-1");
+
+      // 3.1312 CAD at 1.25 is 2.50496 USD: 2.50, where its four-place
+      // reading 2.5050 showed as 2.51. The fee in the account's own currency
+      // is the posted figure and keeps its precision.
+      expect(result[0].convertedFeeTotal).toBe(2.5);
+      expect(result[0].feeTotal).toBe(3.1312);
+    });
+
     it("scopes to the user and account and excludes void and child rows", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([]);
 

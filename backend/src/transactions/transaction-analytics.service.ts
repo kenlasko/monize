@@ -42,6 +42,7 @@ import {
 } from "../common/currency-places.util";
 import { Account } from "../accounts/entities/account.entity";
 import { FxAggregate } from "../common/fx-aggregate";
+import { loadReportPlaces, reportFigure } from "../common/report-figure";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
   buildRateIndex,
@@ -1124,6 +1125,9 @@ export class TransactionAnalyticsService {
       reporting,
       keyOf,
       { sums: ["total"], currency: "currencyCode" },
+      // A widget's breakdown beside its own four-place summary, not a report
+      // figure.
+      FIAT_MONEY_DECIMALS,
       this.logger,
     );
     // Per-currency rows, each rounded at its currency's precision.
@@ -1423,6 +1427,10 @@ export class TransactionAnalyticsService {
         userId,
       );
       const accountCurrency = account?.currencyCode;
+      // The Foreign Currency Fees report's figure in the reporting currency is
+      // rounded once, at that currency's places
+      // (docs/specs/report-rounding-and-aggregation.md section 6).
+      const reportPlaces = await loadReportPlaces(m, reporting);
       const converted =
         accountCurrency && accountCurrency !== reporting && rows.length > 0
           ? await convertDatedRows(
@@ -1451,6 +1459,7 @@ export class TransactionAnalyticsService {
                 amounts: { feeTotal: Number(row.feeTotal) || 0 },
               })),
               reporting,
+              reportPlaces,
               this.logger,
             )
           : null;
@@ -1466,7 +1475,7 @@ export class TransactionAnalyticsService {
           convertedFeeTotal:
             converted === null
               ? accountCurrency === reporting
-                ? feeTotal
+                ? reportFigure(Number(row.feeTotal) || 0, reportPlaces)
                 : null
               : (converted.get(`${row.month}|${row.currencyCode}`)?.feeTotal ??
                 null),
@@ -2603,6 +2612,8 @@ export class TransactionAnalyticsService {
       (sql, params) => m.query(sql, params),
       parts,
       reporting,
+      // One occurrence each, for the insights and forecast prompts.
+      FIAT_MONEY_DECIMALS,
       this.logger,
     );
     return charges.map((entry, i) => {

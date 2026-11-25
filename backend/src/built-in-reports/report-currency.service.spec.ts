@@ -26,7 +26,10 @@ describe("ReportCurrencyService", () => {
   let scopedDataSource: DataSourceMock;
   let service: ReportCurrencyService;
   let userPreferenceRepository: Record<string, jest.Mock>;
-  let exchangeRateService: { getRateIndex: jest.Mock };
+  let exchangeRateService: {
+    getRateIndex: jest.Mock;
+    getCurrencyDecimalPlaces: jest.Mock;
+  };
 
   const mockUserId = "user-1";
 
@@ -37,6 +40,7 @@ describe("ReportCurrencyService", () => {
 
     exchangeRateService = {
       getRateIndex: jest.fn().mockResolvedValue(new Map()),
+      getCurrencyDecimalPlaces: jest.fn().mockResolvedValue(new Map()),
     };
 
     ({ dataSource: scopedDataSource } = createScopedDbMocks([
@@ -56,6 +60,39 @@ describe("ReportCurrencyService", () => {
     }).compile();
 
     service = module.get<ReportCurrencyService>(ReportCurrencyService);
+  });
+
+  // ---------------------------------------------------------------------------
+  // getReportPlaces (issue #2410)
+  // ---------------------------------------------------------------------------
+  describe("getReportPlaces", () => {
+    it.each([
+      ["USD", 2],
+      ["JPY", 0],
+      ["BHD", 3],
+    ])(
+      "answers %s at its ISO minor unit, %p, without a read",
+      async (code, places) => {
+        expect(await service.getReportPlaces(code)).toBe(places);
+        expect(
+          exchangeRateService.getCurrencyDecimalPlaces,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it("answers a coin at its own row's places", async () => {
+      exchangeRateService.getCurrencyDecimalPlaces.mockResolvedValue(
+        new Map([["BTC", 8]]),
+      );
+      expect(await service.getReportPlaces("BTC")).toBe(8);
+      expect(exchangeRateService.getCurrencyDecimalPlaces).toHaveBeenCalledWith(
+        ["BTC"],
+      );
+    });
+
+    it("answers a code with no row at two places", async () => {
+      expect(await service.getReportPlaces("QQQ")).toBe(2);
+    });
   });
 
   // ---------------------------------------------------------------------------

@@ -12,7 +12,9 @@ import * as ts from "typescript";
  *
  * Flagged, where the argument or right-hand side reads an `FxAggregate`'s
  * `knownSubtotal` or `unroundedSubtotal` (a double past about nine thousand
- * holds fewer places than the accumulator):
+ * holds fewer places than the accumulator), or a report figure's reading at
+ * its currency's places, `knownSubtotalAt(places)` / `totalAt(places)`
+ * (section 6, issue #2410):
  * - `agg.addConverted(...)` / `agg.add(...)`: fold the part with `merge` or
  *   `mergeNegated`;
  * - `sumMoney(...)`: fold the parts' aggregates instead;
@@ -30,9 +32,19 @@ const SRC_ROOT = join(__dirname, "..");
 
 const READINGS = new Set(["knownSubtotal", "unroundedSubtotal"]);
 
+/** The readings that are method calls, taking the places to read at. */
+const CALL_READINGS = new Set(["knownSubtotalAt", "totalAt"]);
+
+/** `true` when `node` is `<x>.knownSubtotalAt(...)` or `<x>.totalAt(...)`. */
+const isCallReading = (node: ts.Node): boolean =>
+  ts.isCallExpression(node) &&
+  ts.isPropertyAccessExpression(node.expression) &&
+  CALL_READINGS.has(node.expression.name.text);
+
 /** `true` when `node` reads an aggregate's subtotal anywhere inside it. */
 const readsSubtotal = (node: ts.Node): boolean =>
   (ts.isPropertyAccessExpression(node) && READINGS.has(node.name.text)) ||
+  isCallReading(node) ||
   ts.forEachChild(node, (child) => readsSubtotal(child) || undefined) === true;
 
 /** `true` when `node` is itself a reading, under parentheses or a minus. */
@@ -44,7 +56,10 @@ const isReading = (node: ts.Expression): boolean => {
   ) {
     return isReading(node.operand);
   }
-  return ts.isPropertyAccessExpression(node) && READINGS.has(node.name.text);
+  return (
+    (ts.isPropertyAccessExpression(node) && READINGS.has(node.name.text)) ||
+    isCallReading(node)
+  );
 };
 
 /** `true` when `node` sits in a function handed to a `.sort(...)` call. */
@@ -179,6 +194,11 @@ describe("a part folds into a total as its aggregate (INV-REPORT-005)", () => {
         "const net = roundMoney(a.knownSubtotal - b.knownSubtotal);",
         "const gain = value.knownSubtotal - cost;",
         "const both = (x.unroundedSubtotal) + -(y.knownSubtotal);",
+        "group.addConverted(cell.knownSubtotalAt(places));",
+        "overall += agg.totalAt(2) ?? 0;",
+        "const t = sumMoney(rows.map((r) => r.agg.knownSubtotalAt(2)), 2);",
+        "const net = a.knownSubtotalAt(places) - b.knownSubtotalAt(places);",
+        "if (isNetSpending(agg.knownSubtotalAt(places))) keep();",
       ].join("\n"),
     );
     expect(flagged).toEqual([
@@ -193,6 +213,11 @@ describe("a part folds into a total as its aggregate (INV-REPORT-005)", () => {
       "9: a.knownSubtotal - b.knownSubtotal",
       "10: value.knownSubtotal - cost",
       "11: (x.unroundedSubtotal) + -(y.knownSubtotal)",
+      "12: group.addConverted(cell.knownSubtotalAt(places))",
+      "13: overall += agg.totalAt(2) ?? 0",
+      "14: sumMoney(rows.map((r) => r.agg.knownSubtotalAt(2)), 2)",
+      "15: a.knownSubtotalAt(places) - b.knownSubtotalAt(places)",
+      "16: isNetSpending(agg.knownSubtotalAt(places))",
     ]);
 
     const clean = roundedFoldFindings(
@@ -214,6 +239,9 @@ describe("a part folds into a total as its aggregate (INV-REPORT-005)", () => {
         "rows.sort(function (a, b) { return b.knownSubtotal - a.knownSubtotal; });",
         "const share = (part.unroundedSubtotal / whole.unroundedSubtotal) * 100;",
         "const total = readSubtotal(units) + this.nonFiniteSum;",
+        "const value = agg.knownSubtotalAt(places);",
+        "const total = agg.totalAt(places);",
+        "rows.sort((a, b) => b.agg.knownSubtotalAt(2) - a.agg.knownSubtotalAt(2));",
       ].join("\n"),
     );
     expect(clean).toEqual([]);
