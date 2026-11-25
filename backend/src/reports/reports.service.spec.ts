@@ -23,6 +23,7 @@ import { ActionHistoryService } from "../action-history/action-history.service";
 import { ReportCurrencyService } from "../built-in-reports/report-currency.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { rateIndexOf } from "../test-helpers/report-rate-testing";
+import { FxAggregate } from "../common/fx-aggregate";
 import {
   createScopedDbMocks,
   DataSourceMock,
@@ -2416,6 +2417,235 @@ describe("ReportsService", () => {
         );
       });
 
+      describe("rounded once, whatever the grouping (issue #2384)", () => {
+        // Two 100.01 EUR receipts at 1.2474 are 124.752474 USD each. A group
+        // that read each cell at four places before adding it, or a headline
+        // that summed the rounded groups, totalled them 249.5050; their sum
+        // reads 249.5049.
+        const receipt = (id: string, overrides: Partial<Transaction> = {}) =>
+          createMockTransaction({
+            id,
+            amount: 100.01,
+            currencyCode: "EUR",
+            ...overrides,
+          });
+        const twoReceipts = () => [
+          receipt("tx-1", {
+            transactionDate: "2025-06-15",
+            tags: [{ id: "tag-1", name: "Work", color: null }],
+          } as Partial<Transaction>),
+          receipt("tx-2", {
+            transactionDate: "2025-07-15",
+            payeeId: "payee-2",
+            payee: { id: "payee-2", name: "Employer" },
+            payeeName: "Employer",
+            tags: [{ id: "tag-2", name: "Side", color: null }],
+          } as Partial<Transaction>),
+        ];
+
+        beforeEach(() => {
+          mockCurrencyService.getDefaultCurrency.mockResolvedValue("USD");
+          storedRates.set("EUR->USD", 1.2474);
+        });
+
+        const runIncome = async (
+          groupBy: GroupByType,
+          transactions: Transaction[],
+          metric: MetricType = MetricType.TOTAL_AMOUNT,
+        ) => {
+          setupExecuteMocks(
+            {
+              groupBy,
+              config: {
+                ...defaultConfig,
+                metric,
+                direction: DirectionFilter.INCOME_ONLY,
+              },
+            },
+            transactions,
+          );
+          categoriesRepository.find.mockResolvedValue([mockCategory]);
+          return service.execute("user-1", "report-1");
+        };
+
+        it.each([
+          [GroupByType.CATEGORY, 1],
+          [GroupByType.PAYEE, 2],
+          [GroupByType.MONTH, 2],
+          [GroupByType.DAY, 2],
+          [GroupByType.TAG, 2],
+          [GroupByType.NONE, 1],
+        ])(
+          "totals two receipts from two payees in two months at 249.5049 grouped by %s",
+          async (groupBy, rows) => {
+            const result = await runIncome(groupBy, twoReceipts());
+
+            expect(result.data).toHaveLength(rows);
+            expect(result.summary.total).toBe(249.5049);
+          },
+        );
+
+        it("totals the transaction list from its unrounded rows", async () => {
+          const result = await runIncome(
+            GroupByType.NONE,
+            twoReceipts(),
+            MetricType.NONE,
+          );
+
+          expect(result.data).toHaveLength(2);
+          expect(result.summary.total).toBe(249.5049);
+        });
+
+        it("averages before it rounds", async () => {
+          // 100.01 and 100.03 EUR are 249.529896 USD, a mean of 124.764948.
+          // Halving the four-place sum (249.5299) read 124.7650.
+          const result = await runIncome(
+            GroupByType.CATEGORY,
+            [
+              receipt("tx-1"),
+              receipt("tx-2", {
+                amount: 100.03,
+                transactionDate: "2025-06-16",
+              }),
+            ],
+            MetricType.AVERAGE,
+          );
+
+          expect(result.data[0].value).toBe(124.7649);
+          expect(result.summary.total).toBe(124.7649);
+          expect(result.summary.average).toBe(124.7649);
+        });
+
+        it("shares the total out from unrounded values", async () => {
+          const result = await runIncome(GroupByType.PAYEE, [
+            receipt("tx-1"),
+            receipt("tx-2", {
+              amount: 300.03,
+              payeeId: "payee-2",
+              payee: { id: "payee-2", name: "Employer" },
+              payeeName: "Employer",
+            } as Partial<Transaction>),
+          ]);
+
+          // 300.03 of 400.04 EUR is three quarters exactly. Read from the
+          // four-place groups (374.2574 of 499.0099) it was 74.99998.
+          expect(result.data.map((d) => d.percentage)).toEqual([75, 25]);
+        });
+
+        it("keeps a category whose income nets under a ten-thousandth", async () => {
+          // -100.00 EUR at 1.2 and +100.00 EUR at 1.2000003 net 0.00003 USD:
+          // money in, though it reads 0.0000. Judged at four places it read
+          // as nothing and the category left the report.
+          const rates: Record<string, number> = {
+            "2025-06-05": 1.2,
+            "2025-06-20": 1.2000003,
+          };
+          mockCurrencyService.buildConverter.mockImplementation(
+            async (_rows, currency) => (amount, basis) =>
+              basis.currency_code === currency
+                ? amount
+                : amount * rates[basis.tx_date!],
+          );
+          const result = await runIncome(GroupByType.CATEGORY, [
+            receipt("tx-1", { amount: -100, transactionDate: "2025-06-05" }),
+            receipt("tx-2", { amount: 100, transactionDate: "2025-06-20" }),
+          ]);
+
+          expect(result.data).toHaveLength(1);
+          expect(result.data[0].value).toBe(0);
+          expect(result.data[0].count).toBe(2);
+          expect(result.summary.total).toBe(0);
+        });
+
+        it("totals generated ledgers the same under every grouping, as one FxAggregate over the rows", async () => {
+          // Income in three currencies at a rate per date carried to ten
+          // places, amounts from a cent to ten million. Every row is income,
+          // so no grouping changes what nets (rule 4): the headline must be
+          // the single rounding of every converted row, under every grouping.
+          let seed = 2384;
+          const random = () => {
+            seed = (seed * 1103515245 + 12345) % 2147483648;
+            return seed / 2147483648;
+          };
+          const pick = <T>(items: readonly T[]): T =>
+            items[Math.floor(random() * items.length)];
+          const groupings: Array<[GroupByType, MetricType]> = [
+            [GroupByType.CATEGORY, MetricType.TOTAL_AMOUNT],
+            [GroupByType.PAYEE, MetricType.TOTAL_AMOUNT],
+            [GroupByType.MONTH, MetricType.TOTAL_AMOUNT],
+            [GroupByType.DAY, MetricType.TOTAL_AMOUNT],
+            [GroupByType.TAG, MetricType.TOTAL_AMOUNT],
+            [GroupByType.NONE, MetricType.TOTAL_AMOUNT],
+            [GroupByType.NONE, MetricType.NONE],
+          ];
+          for (let ledger = 0; ledger < 60; ledger++) {
+            const rates = new Map<string, number>();
+            const rateOf = (currency: string, date: string): number => {
+              const key = `${currency}:${date}`;
+              if (!rates.has(key)) {
+                rates.set(key, Number((0.5 + random()).toFixed(10)));
+              }
+              return rates.get(key)!;
+            };
+            const transactions = Array.from(
+              { length: 2 + Math.floor(random() * 10) },
+              (_, i) => {
+                const payee = pick(["payee-1", "payee-2", "payee-3"]);
+                const day = String(1 + Math.floor(random() * 28)).padStart(
+                  2,
+                  "0",
+                );
+                return createMockTransaction({
+                  id: `tx-${i}`,
+                  amount: Number(
+                    (random() * 10 ** Math.floor(random() * 8) + 0.01).toFixed(
+                      pick([2, 4]),
+                    ),
+                  ),
+                  currencyCode: pick(["USD", "EUR", "GBP"]),
+                  transactionDate: `2025-0${6 + Math.floor(random() * 3)}-${day}`,
+                  payeeId: payee,
+                  payee: { id: payee, name: payee },
+                  payeeName: payee,
+                  categoryId: pick(["cat-1", "cat-2", "cat-3"]),
+                  tags: [
+                    { id: pick(["tag-1", "tag-2"]), name: "T", color: null },
+                  ],
+                } as Partial<Transaction>);
+              },
+            );
+            const converted = (tx: Transaction): number =>
+              tx.currencyCode === "USD"
+                ? Number(tx.amount)
+                : Number(tx.amount) *
+                  rateOf(tx.currencyCode, tx.transactionDate);
+            const expected = new FxAggregate();
+            for (const tx of transactions) expected.addConverted(converted(tx));
+            mockCurrencyService.buildConverter.mockImplementation(
+              async (_rows, currency) => (amount, basis) =>
+                basis.currency_code === currency
+                  ? amount
+                  : amount * rateOf(basis.currency_code, basis.tx_date!),
+            );
+
+            for (const [groupBy, metric] of groupings) {
+              const result = await runIncome(groupBy, transactions, metric);
+              expect({
+                ledger,
+                groupBy,
+                metric,
+                total: result.summary.total,
+              }).toEqual({
+                ledger,
+                groupBy,
+                metric,
+                total: expected.knownSubtotal,
+              });
+            }
+          }
+        });
+      });
+
       describe("without a rate", () => {
         it("withholds the total and names the currency, by category", async () => {
           const result = await run(GroupByType.CATEGORY, groceries);
@@ -4470,6 +4700,50 @@ describe("ReportsService", () => {
           expect(groceries!.budgeted).toBe(expected);
         },
       );
+
+      it("sets the plan against the unrounded actual (issue #2384)", async () => {
+        // 100.01 EUR at 1.2474 is 124.752474 USD; a third of a 100 budget is
+        // 33.3333...; the variance is 91.419141, which reads 91.4191. Taken
+        // from the actual's four-place reading it was 91.4192.
+        mockCurrencyService.getDefaultCurrency.mockResolvedValue("USD");
+        storedRates.set("EUR->USD", 1.2474);
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.CATEGORY,
+            timeframeType: TimeframeType.CUSTOM,
+            config: {
+              ...defaultConfig,
+              metric: MetricType.BUDGET_VARIANCE,
+              customStartDate: "2025-04-01",
+              customEndDate: "2025-04-10",
+            },
+          },
+          [
+            createMockTransaction({
+              id: "tx-1",
+              categoryId: "cat-1",
+              amount: -100.01,
+              currencyCode: "EUR",
+              transactionDate: "2025-04-05",
+            }),
+          ],
+        );
+        categoriesRepository.find.mockResolvedValue([mockCategory]);
+        budgetsService.findAll.mockResolvedValue([
+          { id: "budget-1", isActive: true },
+        ]);
+        budgetsService.findOne.mockResolvedValue({
+          id: "budget-1",
+          currencyCode: "USD",
+          categories: [{ categoryId: "cat-1", amount: 100, isIncome: false }],
+        });
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.data[0].actual).toBe(124.7525);
+        expect(result.data[0].value).toBe(91.4191);
+        expect(result.summary.total).toBe(91.4191);
+      });
 
       it("falls back to first budget when no active budget exists", async () => {
         const transactions = [

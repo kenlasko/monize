@@ -5054,6 +5054,19 @@ describe("PortfolioCalculationService gain over the priced holdings (A26-M38)", 
     expect(result.missingRatePairs).toContain("USD->PLN");
   });
 
+  it("takes the gain from value less cost before either is rounded (issue #2384)", async () => {
+    // A holding worth 124.752474 on a cost of 0.000049 gains 124.752425,
+    // which reads 124.7524; the two readings, 124.7525 less 0, gave 124.7525.
+    const result = await run(
+      [row("h-a", "sec-a", 1, 0.000049)],
+      [["sec-a", 124.752474]],
+    );
+
+    expect(result.gainMarketValue).toBe(124.7525);
+    expect(result.gainCostBasis).toBe(0);
+    expect(result.gainLoss).toBe(124.7524);
+  });
+
   it("leaves a complete portfolio's gain as value less cost", async () => {
     const result = await run(
       [row("h-a", "sec-a", 1000, 80), row("h-b", "sec-b", 500, 100)],
@@ -5142,6 +5155,20 @@ describe("PortfolioCalculationService gain over the priced holdings (A26-M38)", 
       expect(result.gainCostBasis).toBe(130000);
       expect(result.unpricedCostBasis).toBe(0);
       expect(result.valuationComplete).toBe(true);
+    });
+
+    it("takes the gain from value less cost before either is rounded (issue #2384)", async () => {
+      // Two holdings worth 124.752474 each on a cost of 0.00005: the gain is
+      // 249.504898, which reads 249.5049. The four-place readings, 249.5049
+      // less 0.0001, made it 249.5048.
+      const result = await build([
+        held("a", 124.752474, 0.00005),
+        held("b", 124.752474, 0),
+      ]);
+
+      expect(result.totalMarketValue).toBe(249.5049);
+      expect(result.gainCostBasis).toBe(0.0001);
+      expect(result.totalGainLoss).toBe(249.5049);
     });
 
     it("reports a zero percent over a zero matched cost", async () => {

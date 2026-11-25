@@ -133,6 +133,40 @@ describe("InsightsAggregatorService", () => {
       expect(dining.transactionCount).toBe(10);
     });
 
+    it("rounds the average completed month once, from the months' sum (issue #2384)", async () => {
+      // Three completed months of 100, 100 and 100.01 average 100.00333...,
+      // which reads 100.0033; the mean of the rounded months went out as an
+      // unrounded quotient.
+      const now = new Date();
+      const monthsBack = (n: number) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - n, 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      };
+      withRows(
+        [1, 2, 3].map((n) =>
+          row({ month: monthsBack(n), net: n === 3 ? "100.01" : "100" }),
+        ),
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.averageMonthlySpending).toBe(100.0033);
+    });
+
+    it("rounds a category's monthly average once, from its months' sum (issue #2384)", async () => {
+      // 100 + 100 + 100.01 over three months is 100.00333..., which reads
+      // 100.0033.
+      withRows(
+        ["2026-01", "2026-02", "2026-03"].map((month, i) =>
+          row({ month, net: i === 2 ? "100.01" : "100" }),
+        ),
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.categorySpending[0].averageMonthlyTotal).toBe(100.0033);
+    });
+
     it("nets refunds within a category and drops a category that nets to a credit", async () => {
       withRows([
         row({ month: "2026-01", net: "500" }),
@@ -211,6 +245,43 @@ describe("InsightsAggregatorService", () => {
       expect(result.monthlySpending[0].total).toBe(200);
       expect(result.fxComplete).toBe(false);
       expect(result.missingRatePairs).toEqual(["GBP->USD"]);
+    });
+
+    it("rounds a month's total once, from its categories (issue #2384)", async () => {
+      // Two categories of 100.01 EUR at 1.2474 are 124.752474 USD each:
+      // 249.504948 together, which reads 249.5049. Adding the categories'
+      // four-place readings came to 249.5050.
+      withRows(
+        ["cat-1", "cat-2"].map((categoryId) =>
+          row({
+            month: "2026-01",
+            categoryId,
+            categoryName: categoryId,
+            net: "100.01",
+            currencyCode: "EUR",
+            fx_day: "2026-01-25",
+          }),
+        ),
+      );
+      managerQuery.mockImplementation(async (sql: string) =>
+        /exchange_rates/.test(sql)
+          ? [
+              {
+                from_currency: "EUR",
+                to_currency: "USD",
+                rate: "1.2474",
+                rate_date: "2026-01-20",
+              },
+            ]
+          : [],
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(
+        result.monthlySpending[0].categoryBreakdown.map((c) => c.total),
+      ).toEqual([124.7525, 124.7525]);
+      expect(result.monthlySpending[0].total).toBe(249.5049);
     });
 
     describe("each row at its own rate or on its own date (issue #2130)", () => {

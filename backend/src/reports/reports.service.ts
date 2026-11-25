@@ -44,11 +44,17 @@ import { UpdateCustomReportDto } from "./dto/update-custom-report.dto";
 import {
   ExecuteReportDto,
   ReportResult,
-  AggregatedDataPoint,
-  KnownDataPoint,
   ReportSummary,
 } from "./dto/execute-report.dto";
-import { roundMoney, sumMoney } from "../common/round.util";
+import { roundMoney } from "../common/round.util";
+import { FxAggregate } from "../common/fx-aggregate";
+import {
+  metricValue,
+  ReportRow,
+  shareOf,
+  sumOf,
+  summarizeRows,
+} from "./report-rows";
 import {
   ConversionGaps,
   ReportCurrencyService,
@@ -124,6 +130,11 @@ export function windowMonthFraction(
     fraction += (last - first + 1) / daysInMonth;
   }
   return fraction;
+}
+
+/** Rows by their figure, largest first (every grouped row has one). */
+function byValueDescending(rows: ReportRow[]): ReportRow[] {
+  return rows.sort((a, b) => (b.point.value ?? 0) - (a.point.value ?? 0));
 }
 
 @Injectable()
@@ -401,7 +412,7 @@ export class ReportsService {
     const converter = await this.createConverter(userId, transactions);
 
     // Aggregate data based on groupBy type
-    let data = this.aggregateData(
+    let rows = this.aggregateData(
       transactions,
       report.groupBy,
       report.config,
@@ -415,9 +426,9 @@ export class ReportsService {
       report.config.metric === MetricType.BUDGET_VARIANCE &&
       report.groupBy === GroupByType.CATEGORY
     ) {
-      data = await this.enrichWithBudgetVariance(
+      rows = await this.enrichWithBudgetVariance(
         userId,
-        data,
+        rows,
         startDate,
         endDate,
         categoryMap,
@@ -428,8 +439,8 @@ export class ReportsService {
 
     // Apply custom sorting if configured
     if (report.config.sortBy) {
-      data = this.sortData(
-        data,
+      rows = this.sortData(
+        rows,
         report.config.sortBy,
         report.config.sortDirection || SortDirection.DESC,
       );
@@ -437,11 +448,12 @@ export class ReportsService {
 
     // Calculate summary
     const summary = this.calculateSummary(
-      data,
+      rows,
       converter.gaps,
       report.config.metric,
       truncated,
     );
+    const data = rows.map((row) => row.point);
 
     return {
       reportId: report.id,
@@ -985,7 +997,7 @@ export class ReportsService {
     categoryMap: Map<string, Category>,
     payeeMap: Map<string, Payee>,
     conv: RowConverter,
-  ): AggregatedDataPoint[] {
+  ): ReportRow[] {
     const metric = config.metric;
     switch (groupBy) {
       case GroupByType.NONE:
@@ -1054,10 +1066,10 @@ export class ReportsService {
     metric: MetricType,
     config: ReportConfig,
     conv: RowConverter,
-  ): AggregatedDataPoint[] {
+  ): ReportRow[] {
     // For NONE metric, return individual transactions as data points
     if (metric === MetricType.NONE) {
-      const result: AggregatedDataPoint[] = [];
+      const result: ReportRow[] = [];
       // A one-direction list holds rows of one sign and shows their magnitude.
       // BOTH lists rows of either sign, so each keeps its own: money in is
       // positive, money out negative, and the headline is the signed net of
@@ -1093,9 +1105,39 @@ export class ReportsService {
             // so it can still be matched against a statement (issue #2342).
             const value = conv.convert(accountAmount, tx, split);
             result.push({
+              // The headline folds the unrounded conversion (rule 2).
+              sum: sumOf(value),
+              point: {
+                id: tx.id,
+                label:
+                  split.memo ||
+                  tx.payeeName ||
+                  transferLabel ||
+                  tx.description ||
+                  "Transaction",
+                value,
+                count: 1,
+                // Transaction-specific fields
+                date: tx.transactionDate,
+                payee: tx.payeeName || tx.payee?.name || transferLabel,
+                description: tx.description || undefined,
+                memo: split.memo || undefined,
+                category: this.formatCategoryLabel(split.category),
+                account: tx.account?.name || undefined,
+                tags: this.formatLineTags(tx, split.tags),
+                accountAmount,
+                accountCurrency: tx.currencyCode,
+              },
+            });
+          }
+        } else {
+          const accountAmount = lineAmount(tx.amount);
+          const value = conv.convert(accountAmount, tx);
+          result.push({
+            sum: sumOf(value),
+            point: {
               id: tx.id,
               label:
-                split.memo ||
                 tx.payeeName ||
                 transferLabel ||
                 tx.description ||
@@ -1106,44 +1148,24 @@ export class ReportsService {
               date: tx.transactionDate,
               payee: tx.payeeName || tx.payee?.name || transferLabel,
               description: tx.description || undefined,
-              memo: split.memo || undefined,
-              category: this.formatCategoryLabel(split.category),
+              memo: undefined, // Transactions don't have memo, only splits do
+              category: this.formatCategoryLabel(tx.category),
               account: tx.account?.name || undefined,
-              tags: this.formatLineTags(tx, split.tags),
+              tags: this.formatLineTags(tx),
               accountAmount,
               accountCurrency: tx.currencyCode,
-            });
-          }
-        } else {
-          const accountAmount = lineAmount(tx.amount);
-          const value = conv.convert(accountAmount, tx);
-          result.push({
-            id: tx.id,
-            label:
-              tx.payeeName || transferLabel || tx.description || "Transaction",
-            value,
-            count: 1,
-            // Transaction-specific fields
-            date: tx.transactionDate,
-            payee: tx.payeeName || tx.payee?.name || transferLabel,
-            description: tx.description || undefined,
-            memo: undefined, // Transactions don't have memo, only splits do
-            category: this.formatCategoryLabel(tx.category),
-            account: tx.account?.name || undefined,
-            tags: this.formatLineTags(tx),
-            accountAmount,
-            accountCurrency: tx.currencyCode,
-            // Only a row entered in a foreign currency has one; it is stored
-            // with the amount's sign, so it is signed as the amount is. A split
-            // line has none: only the whole transaction was entered in it.
-            ...(tx.originalAmount !== null &&
-            tx.originalAmount !== undefined &&
-            tx.originalCurrencyCode
-              ? {
-                  originalAmount: lineAmount(tx.originalAmount),
-                  originalCurrency: tx.originalCurrencyCode,
-                }
-              : {}),
+              // Only a row entered in a foreign currency has one; it is stored
+              // with the amount's sign, so it is signed as the amount is. A split
+              // line has none: only the whole transaction was entered in it.
+              ...(tx.originalAmount !== null &&
+              tx.originalAmount !== undefined &&
+              tx.originalCurrencyCode
+                ? {
+                    originalAmount: lineAmount(tx.originalAmount),
+                    originalCurrency: tx.originalCurrencyCode,
+                  }
+                : {}),
+            },
           });
         }
       }
@@ -1168,15 +1190,14 @@ export class ReportsService {
 
     return [
       {
-        id: "total",
-        label: "Total",
-        value: this.calculateMetricValue(
-          bucket.agg.knownSubtotal,
-          bucket.count,
-          metric,
-        ),
-        percentage: 100,
-        count: bucket.count,
+        point: {
+          id: "total",
+          label: "Total",
+          value: metricValue(bucket.agg, bucket.count, metric),
+          percentage: 100,
+          count: bucket.count,
+        },
+        sum: bucket.agg,
       },
     ];
   }
@@ -1187,7 +1208,7 @@ export class ReportsService {
     config: ReportConfig,
     categoryMap: Map<string, Category>,
     conv: RowConverter,
-  ): AggregatedDataPoint[] {
+  ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
@@ -1209,11 +1230,9 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const totalSum = sumMoney(
-      Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
-    );
+    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
 
-    const result: KnownDataPoint[] = [];
+    const result: ReportRow[] = [];
     for (const [categoryId, data] of dataMap) {
       const category = categoryMap.get(categoryId);
       const parent = category?.parentId
@@ -1225,21 +1244,19 @@ export class ReportsService {
           : category.name
         : "Uncategorized";
       result.push({
-        id: categoryId,
-        label,
-        value: this.calculateMetricValue(
-          data.agg.knownSubtotal,
-          data.count,
-          metric,
-        ),
-        color: category?.color || undefined,
-        percentage:
-          totalSum > 0 ? (data.agg.knownSubtotal / totalSum) * 100 : 0,
-        count: data.count,
+        point: {
+          id: categoryId,
+          label,
+          value: metricValue(data.agg, data.count, metric),
+          color: category?.color || undefined,
+          percentage: shareOf(data.agg, whole),
+          count: data.count,
+        },
+        sum: data.agg,
       });
     }
 
-    return result.sort((a, b) => b.value - a.value);
+    return byValueDescending(result);
   }
 
   private aggregateByPayee(
@@ -1248,7 +1265,7 @@ export class ReportsService {
     config: ReportConfig,
     payeeMap: Map<string, Payee>,
     conv: RowConverter,
-  ): AggregatedDataPoint[] {
+  ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
@@ -1273,28 +1290,24 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const totalSum = sumMoney(
-      Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
-    );
+    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
 
-    const result: KnownDataPoint[] = [];
+    const result: ReportRow[] = [];
     for (const [payeeId, data] of dataMap) {
       const payee = payeeMap.get(payeeId);
       result.push({
-        id: payeeId,
-        label: payee?.name || payeeNames.get(payeeId) || "Unknown",
-        value: this.calculateMetricValue(
-          data.agg.knownSubtotal,
-          data.count,
-          metric,
-        ),
-        percentage:
-          totalSum > 0 ? (data.agg.knownSubtotal / totalSum) * 100 : 0,
-        count: data.count,
+        point: {
+          id: payeeId,
+          label: payee?.name || payeeNames.get(payeeId) || "Unknown",
+          value: metricValue(data.agg, data.count, metric),
+          percentage: shareOf(data.agg, whole),
+          count: data.count,
+        },
+        sum: data.agg,
       });
     }
 
-    return result.sort((a, b) => b.value - a.value);
+    return byValueDescending(result);
   }
 
   private aggregateByTag(
@@ -1302,7 +1315,7 @@ export class ReportsService {
     metric: MetricType,
     config: ReportConfig,
     conv: RowConverter,
-  ): AggregatedDataPoint[] {
+  ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
@@ -1347,29 +1360,25 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const totalSum = sumMoney(
-      Array.from(dataMap.values()).map((v) => v.agg.knownSubtotal),
-    );
+    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
 
-    const result: KnownDataPoint[] = [];
+    const result: ReportRow[] = [];
     for (const [tagId, data] of dataMap) {
       const info = tagInfo.get(tagId);
       result.push({
-        id: tagId,
-        label: info?.tagName ?? "Untagged",
-        value: this.calculateMetricValue(
-          data.agg.knownSubtotal,
-          data.count,
-          metric,
-        ),
-        color: info?.color,
-        percentage:
-          totalSum > 0 ? (data.agg.knownSubtotal / totalSum) * 100 : 0,
-        count: data.count,
+        point: {
+          id: tagId,
+          label: info?.tagName ?? "Untagged",
+          value: metricValue(data.agg, data.count, metric),
+          color: info?.color,
+          percentage: shareOf(data.agg, whole),
+          count: data.count,
+        },
+        sum: data.agg,
       });
     }
 
-    return result.sort((a, b) => b.value - a.value);
+    return byValueDescending(result);
   }
 
   private aggregateByTime(
@@ -1378,7 +1387,7 @@ export class ReportsService {
     config: ReportConfig,
     period: "year" | "month" | "week" | "day",
     conv: RowConverter,
-  ): AggregatedDataPoint[] {
+  ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
       this.keepsUnconverted(metric),
@@ -1419,55 +1428,32 @@ export class ReportsService {
     }
     const dataMap = cells.settle();
 
-    const result: KnownDataPoint[] = [];
+    const result: ReportRow[] = [];
     for (const [key, data] of dataMap) {
       result.push({
-        id: key,
-        label: labels.get(key) ?? key,
-        value: this.calculateMetricValue(
-          data.agg.knownSubtotal,
-          data.count,
-          metric,
-        ),
-        count: data.count,
+        point: {
+          id: key,
+          label: labels.get(key) ?? key,
+          value: metricValue(data.agg, data.count, metric),
+          count: data.count,
+        },
+        sum: data.agg,
       });
     }
 
     // Sort by date key for time-based groupings
-    return result.sort((a, b) => a.id!.localeCompare(b.id!));
-  }
-
-  private calculateMetricValue(
-    sum: number,
-    count: number,
-    metric: MetricType,
-  ): number {
-    switch (metric) {
-      case MetricType.NONE:
-        return roundMoney(sum);
-      case MetricType.TOTAL_AMOUNT:
-        return roundMoney(sum);
-      case MetricType.COUNT:
-        return count;
-      case MetricType.AVERAGE:
-        return count > 0 ? roundMoney(sum / count) : 0;
-      case MetricType.BUDGET_VARIANCE:
-        // For budget variance, sum contains the variance (actual - budgeted)
-        return roundMoney(sum);
-      default:
-        return sum;
-    }
+    return result.sort((a, b) => a.point.id!.localeCompare(b.point.id!));
   }
 
   private async enrichWithBudgetVariance(
     userId: string,
-    data: AggregatedDataPoint[],
+    data: ReportRow[],
     startDate: string,
     endDate: string,
     categoryMap: Map<string, Category>,
     conv: RowConverter,
     filters: CustomReport["filters"],
-  ): Promise<AggregatedDataPoint[]> {
+  ): Promise<ReportRow[]> {
     try {
       const budgets = await this.budgetsService.findAll(userId);
       const activeBudget = budgets.find((b) => b.isActive) || budgets[0];
@@ -1514,15 +1500,26 @@ export class ReportsService {
         }
       }
 
-      const enriched = data.map((point) => {
+      // The variance is the actual's unrounded sum less the plan, rounded
+      // once, so the headline folds the same figure the row shows (rule 2).
+      const enriched = data.map((row): ReportRow => {
+        const { point, sum } = row;
         const id = point.id || "";
-        if (unconvertible.has(id) || point.value === null) return point;
+        if (unconvertible.has(id) || point.value === null || sum === null) {
+          return row;
+        }
         const budgeted = budgetMap.get(id) ?? 0;
+        const variance = new FxAggregate();
+        variance.merge(sum);
+        variance.addConverted(-budgeted);
         return {
-          ...point,
-          value: roundMoney(point.value - budgeted),
-          budgeted: roundMoney(budgeted),
-          actual: roundMoney(point.value),
+          point: {
+            ...point,
+            value: variance.knownSubtotal,
+            budgeted: roundMoney(budgeted),
+            actual: point.value,
+          },
+          sum: variance,
         };
       });
 
@@ -1536,27 +1533,32 @@ export class ReportsService {
         !!filters?.searchText ||
         (filters?.filterGroups?.length ?? 0) > 0;
       const inScope = new Set(filters?.categoryIds ?? []);
-      const seen = new Set(data.map((point) => point.id));
+      const seen = new Set(data.map((row) => row.point.id));
       for (const [categoryId, budgeted] of narrowed ? [] : budgetMap) {
         const category = categoryMap.get(categoryId);
         if (seen.has(categoryId) || !category) continue;
         if (inScope.size > 0 && !inScope.has(categoryId)) continue;
+        const sum = new FxAggregate();
+        sum.addConverted(-budgeted);
         enriched.push({
-          id: categoryId,
-          label: this.formatCategoryLabel(
-            category.parentId
-              ? {
-                  ...category,
-                  parent: categoryMap.get(category.parentId) ?? null,
-                }
-              : category,
-          ) as string,
-          value: roundMoney(-budgeted),
-          color: category.color || undefined,
-          percentage: 0,
-          count: 0,
-          budgeted: roundMoney(budgeted),
-          actual: 0,
+          point: {
+            id: categoryId,
+            label: this.formatCategoryLabel(
+              category.parentId
+                ? {
+                    ...category,
+                    parent: categoryMap.get(category.parentId) ?? null,
+                  }
+                : category,
+            ) as string,
+            value: sum.knownSubtotal,
+            color: category.color || undefined,
+            percentage: 0,
+            count: 0,
+            budgeted: roundMoney(budgeted),
+            actual: 0,
+          },
+          sum,
         });
       }
       return enriched;
@@ -1565,57 +1567,28 @@ export class ReportsService {
     }
   }
 
-  /**
-   * The headline figures. A money total is withheld (`null`) while any row was
-   * left out for want of a rate or by the row limit, and `knownTotal` carries
-   * the part that did convert. The count metric sums counts, which need no
-   * rate, but a truncated read counts only what it read. The average metric's
-   * headline is the mean over every row (each group's mean weighted by its
-   * row count), never the sum of the groups' means.
-   */
+  /** The headline figures (`summarizeRows`), complete unless a row was left out. */
   private calculateSummary(
-    data: AggregatedDataPoint[],
+    rows: ReportRow[],
     gaps: ConversionGaps,
     metric: MetricType,
     truncated: boolean,
   ): ReportSummary {
-    const count = data.reduce((acc, d) => acc + (d.count ?? 1), 0);
     // A listed row with no rate counts as listed but adds to no sum; its gap
     // is already in `gaps`, so the total is withheld.
-    const known = data.filter((d): d is KnownDataPoint => d.value !== null);
-    const knownTotal =
-      metric === MetricType.AVERAGE
-        ? roundMoney(
-            count > 0
-              ? sumMoney(known.map((d) => d.value * (d.count ?? 1))) / count
-              : 0,
-          )
-        : roundMoney(sumMoney(known.map((d) => d.value)));
-    const average =
-      metric === MetricType.AVERAGE
-        ? knownTotal
-        : count > 0
-          ? knownTotal / count
-          : 0;
     const complete =
       !truncated && (this.keepsUnconverted(metric) || gaps.isComplete);
-
-    return {
-      total: complete ? knownTotal : null,
-      knownTotal,
-      count,
-      average: complete ? roundMoney(average) : null,
-    };
+    return summarizeRows(rows, metric, complete);
   }
 
   private sortData(
-    data: AggregatedDataPoint[],
+    rows: ReportRow[],
     sortBy: TableColumn,
     sortDirection: SortDirection,
-  ): AggregatedDataPoint[] {
+  ): ReportRow[] {
     const multiplier = sortDirection === SortDirection.ASC ? 1 : -1;
 
-    return [...data].sort((a, b) => {
+    return [...rows].sort(({ point: a }, { point: b }) => {
       switch (sortBy) {
         case TableColumn.LABEL:
           return multiplier * a.label.localeCompare(b.label);

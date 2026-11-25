@@ -880,6 +880,164 @@ describe("CashFlowSankeyService", () => {
     });
   });
 
+  describe("rounds each figure once (issue #2384)", () => {
+    // Two 100.01 EUR rows at 1.2474 are 124.752474 CAD each: 124.7525 alone,
+    // 249.504948 together, which reads 249.5049. Rounding each node on its
+    // own read the parent as 249.5049 and its children as 249.5050, so the
+    // diagram did not close and the report answered a 500.
+    const EUR_RATE: RateFixture = {
+      from_currency: "EUR",
+      to_currency: "CAD",
+      rate: "1.2474",
+      rate_date: "2026-09-01",
+    };
+    const eur = (row: CategorizedFixture): CategorizedFixture => ({
+      currency_code: "EUR",
+      ...row,
+    });
+
+    it("splits a parent's single rounding between its subcategories at depth 2", async () => {
+      const food = category("cat-food", "Food");
+      const restaurants = category("cat-rest", "Restaurants", {
+        parentId: "cat-food",
+      });
+      const groceries = category("cat-food-groc", "Groceries", {
+        parentId: "cat-food",
+      });
+      categoriesRepository.find.mockResolvedValue([
+        food,
+        restaurants,
+        groceries,
+      ]);
+      const ledger: Ledger = {
+        categorized: [
+          eur({ category_id: groceries.id, negative: "-100.0100" }),
+          eur({ category_id: restaurants.id, negative: "-100.0100" }),
+        ],
+        rates: [EUR_RATE],
+      };
+
+      useLedger(ledger);
+      const shallow = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+      );
+      useLedger(ledger);
+      const deep = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+        { depth: 2 },
+      );
+
+      for (const result of [shallow, deep]) {
+        expect(node(result, "expense:cat-food")?.total).toBe(249.5049);
+        expect(result.totals.expenses).toBe(249.5049);
+        expect(result.totals.deficit).toBe(249.5049);
+      }
+      const children = [
+        link(deep, "expense:cat-food", "child:cat-food-groc")?.amount,
+        link(deep, "expense:cat-food", "child:cat-rest")?.amount,
+      ];
+      expect(children).toEqual([124.7525, 124.7524]);
+    });
+
+    it("splits a class's single rounding between its accounts at depth 2", async () => {
+      useLedger({
+        whole: [
+          {
+            counterpart_account_id: SAVINGS,
+            counterpart_type: "SAVINGS",
+            counterpart_name: "Savings",
+            currency_code: "EUR",
+            outflow: "-100.0100",
+          },
+          {
+            counterpart_account_id: "tfsa",
+            counterpart_type: "INVESTMENT",
+            counterpart_name: "TFSA",
+            currency_code: "EUR",
+            outflow: "-100.0100",
+          },
+        ],
+        rates: [EUR_RATE],
+      });
+
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+        { depth: 2 },
+      );
+
+      expect(link(result, "hub", "class:savings")?.amount).toBe(249.5049);
+      expect(result.totals.outflows).toBe(249.5049);
+      expect([
+        link(result, "class:savings", `account:${SAVINGS}`)?.amount,
+        link(result, "class:savings", "account:tfsa")?.amount,
+      ]).toEqual([124.7525, 124.7524]);
+    });
+
+    it("rounds a side's total once, not as a sum of its rounded categories", async () => {
+      useLedger({
+        categorized: [
+          eur({ category_id: GROCERIES.id, negative: "-100.0100" }),
+          eur({ category_id: DINING.id, negative: "-100.0100" }),
+          { category_id: SALARY.id, positive: "1000.0000" },
+        ],
+        rates: [EUR_RATE],
+      });
+
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+      );
+
+      expect(result.totals.expenses).toBe(249.5049);
+      expect(result.totals.unspent).toBe(750.4951);
+      expect(
+        [
+          node(result, `expense:${GROCERIES.id}`)?.total,
+          node(result, `expense:${DINING.id}`)?.total,
+        ].sort(),
+      ).toEqual([124.7524, 124.7525]);
+    });
+
+    it("keeps a category whose net is under a ten-thousandth on the side it nets to", async () => {
+      // 100.00 EUR out on one rate and back in on another nets 0.00003 CAD:
+      // money in, though it reads 0.0000 at four places.
+      useLedger({
+        categorized: [
+          eur({
+            category_id: GROCERIES.id,
+            tx_date: "2026-09-05",
+            negative: "-100.0000",
+          }),
+          eur({
+            category_id: GROCERIES.id,
+            tx_date: "2026-09-20",
+            positive: "100.0000",
+          }),
+        ],
+        rates: [
+          { ...EUR_RATE, rate: "1.2", rate_date: "2026-09-01" },
+          { ...EUR_RATE, rate: "1.2000003", rate_date: "2026-09-15" },
+        ],
+      });
+
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+      );
+
+      expect(node(result, `income:${GROCERIES.id}`)?.total).toBe(0);
+      expect(node(result, `expense:${GROCERIES.id}`)).toBeUndefined();
+    });
+  });
+
   describe("the closing identity (SANKEY-001)", () => {
     it("refuses links that do not close", () => {
       expect(() =>

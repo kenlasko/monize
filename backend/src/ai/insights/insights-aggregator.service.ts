@@ -129,7 +129,8 @@ export class InsightsAggregatorService {
         { reportingCurrency: currency },
       ),
     ]);
-    const { categorySpending, monthlySpending, missingRatePairs } = spending;
+    const { categorySpending, monthlySpending, monthTotals, missingRatePairs } =
+      spending;
 
     const currentMonth = monthlySpending.find(
       (m) => m.month === currentMonthStart.substring(0, 7),
@@ -142,13 +143,15 @@ export class InsightsAggregatorService {
     const totalSpendingCurrentMonth = currentMonth?.total ?? 0;
     const totalSpendingPreviousMonth = previousMonth?.total ?? 0;
 
-    const completedMonths = monthlySpending.filter(
-      (m) => m.month !== currentMonthStart.substring(0, 7),
+    // A mean over the completed months' folded sum, divided and then rounded
+    // once (docs/specs/report-rounding-and-aggregation.md rule 8).
+    const completed = [...monthTotals].filter(
+      ([month]) => month !== currentMonthStart.substring(0, 7),
     );
+    const completedSum = FxAggregate.sum(completed.map(([, total]) => total));
     const averageMonthlySpending =
-      completedMonths.length > 0
-        ? completedMonths.reduce((sum, m) => sum + m.total, 0) /
-          completedMonths.length
+      completed.length > 0
+        ? roundMoney(completedSum.unroundedSubtotal / completed.length)
         : 0;
 
     const daysElapsedInMonth = Number(today.slice(8, 10));
@@ -189,6 +192,8 @@ export class InsightsAggregatorService {
   ): Promise<{
     categorySpending: CategorySpending[];
     monthlySpending: MonthlySpending[];
+    /** Each month's total before rounding, for a figure built over months. */
+    monthTotals: Map<string, FxAggregate>;
     missingRatePairs: string[];
   }> {
     const rows: SpendingRow[] = await withScopedDb(
@@ -297,17 +302,20 @@ export class InsightsAggregatorService {
     const months = new Map<
       string,
       {
-        total: number;
+        total: FxAggregate;
         breakdown: Array<{ categoryName: string; total: number }>;
       }
     >();
     for (const [categoryId, cat] of categories) {
-      let overall = 0;
+      // The months fold as aggregates and the category is judged on the sign
+      // of the whole before rounding; a month's total folds its categories the
+      // same way (docs/specs/report-rounding-and-aggregation.md rules 2 and 5).
+      const overall = new FxAggregate();
       for (const agg of cat.byMonth.values()) {
-        overall += agg.knownSubtotal;
+        overall.merge(agg);
         for (const pair of agg.missingPairs) missing.add(pair);
       }
-      if (!isNetSpending(roundMoney(overall))) continue;
+      if (!isNetSpending(overall.sign)) continue;
 
       const monthCount = cat.byMonth.size;
       categorySpending.push({
@@ -315,14 +323,20 @@ export class InsightsAggregatorService {
         categoryId,
         currentMonthTotal: cat.byMonth.get(currentMonth)?.knownSubtotal ?? 0,
         previousMonthTotal: cat.byMonth.get(previousMonth)?.knownSubtotal ?? 0,
-        averageMonthlyTotal: monthCount > 0 ? overall / monthCount : 0,
+        averageMonthlyTotal:
+          monthCount > 0
+            ? roundMoney(overall.unroundedSubtotal / monthCount)
+            : 0,
         monthCount,
         transactionCount: cat.txnCount,
       });
       for (const [month, agg] of cat.byMonth) {
-        const entry = months.get(month) ?? { total: 0, breakdown: [] };
+        const entry = months.get(month) ?? {
+          total: new FxAggregate(),
+          breakdown: [],
+        };
         months.set(month, entry);
-        entry.total += agg.knownSubtotal;
+        entry.total.merge(agg);
         entry.breakdown.push({
           categoryName: cat.name,
           total: agg.knownSubtotal,
@@ -339,13 +353,16 @@ export class InsightsAggregatorService {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => ({
         month,
-        total: roundMoney(data.total),
+        total: data.total.knownSubtotal,
         categoryBreakdown: data.breakdown.sort((a, b) => b.total - a.total),
       }));
 
     return {
       categorySpending,
       monthlySpending,
+      monthTotals: new Map(
+        [...months].map(([month, data]) => [month, data.total]),
+      ),
       missingRatePairs: [...missing].sort(),
     };
   }

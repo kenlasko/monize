@@ -65,6 +65,8 @@ Amounts in another currency are converted to your default currency at the exchan
 
 When a figure cannot be worked out completely -- for example an amount in a currency with no exchange rate for its date -- the report says which figures are partial and what is missing (such as the currency to add a rate for on the [Currencies](currency-management.md) page) instead of showing a wrong total.
 
+A report's headline totals are worked out from the converted amounts themselves and rounded once, rather than by adding up rounded rows, so a headline total can differ by a fraction of a cent from the sum of the rows shown above it. A category whose net is smaller than the smallest amount shown, for example a purchase and its refund struck at two slightly different exchange rates, still appears, at 0.00, rather than disappearing.
+
 ---
 
 ## Built-In Reports

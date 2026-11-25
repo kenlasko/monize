@@ -55,6 +55,7 @@ import {
 } from "../built-in-reports/report-currency.service";
 import {
   compareGroupKeys,
+  convertRatePartAggregates,
   convertRateParts,
   foldRateParts,
   partRateBasis,
@@ -654,7 +655,7 @@ export class TransactionAnalyticsService {
     >,
     reporting: string,
   ): Promise<SummaryInReportingCurrency> {
-    const foreign = await convertRateParts(
+    const foreign = await convertRatePartAggregates(
       (sql, params) => m.query(sql, params),
       parts,
       reporting,
@@ -663,44 +664,44 @@ export class TransactionAnalyticsService {
       this.logger,
     );
 
-    const incomeParts: number[] = [];
-    const expenseParts: number[] = [];
+    // Each currency's converted figures fold as aggregates, so the totals and
+    // the net are each rounded once: adding the currencies' four-place
+    // readings read two 124.752474 halves as 249.5050
+    // (docs/specs/report-rounding-and-aggregation.md rule 2).
+    const income = new FxAggregate();
+    const expenses = new FxAggregate();
     let includedTransactionCount = 0;
     let excludedTransactionCount = 0;
     const missing: string[] = [];
     for (const [code, bucket] of Object.entries(byCurrency)) {
-      const converted =
-        code === reporting
-          ? {
-              totalIncome: bucket.totalIncome,
-              totalExpenses: bucket.totalExpenses,
-            }
-          : (foreign.get(code) ?? { totalIncome: 0, totalExpenses: 0 });
-      const parts = {
-        income: converted.totalIncome,
-        expenses: converted.totalExpenses,
-      };
-      if (parts.income === null || parts.expenses === null) {
+      if (code === reporting) {
+        income.addConverted(bucket.totalIncome);
+        expenses.addConverted(bucket.totalExpenses);
+        includedTransactionCount += bucket.transactionCount;
+        continue;
+      }
+      const converted = foreign.get(code);
+      if (
+        converted &&
+        (converted.totalIncome === null || converted.totalExpenses === null)
+      ) {
         missing.push(code);
         excludedTransactionCount += bucket.transactionCount;
         continue;
       }
-      incomeParts.push(parts.income);
-      expenseParts.push(parts.expenses);
+      if (converted?.totalIncome) income.merge(converted.totalIncome);
+      if (converted?.totalExpenses) expenses.merge(converted.totalExpenses);
       includedTransactionCount += bucket.transactionCount;
     }
-    const income = sumMoney(incomeParts, FIAT_MONEY_DECIMALS);
-    const expenses = sumMoney(expenseParts, FIAT_MONEY_DECIMALS);
+    const net = FxAggregate.difference(income, expenses);
     const complete = missing.length === 0;
     return {
       currency: reporting,
-      totalIncome: complete ? income : null,
-      totalExpenses: complete ? expenses : null,
-      netCashFlow: complete
-        ? roundMoney(income - expenses, FIAT_MONEY_DECIMALS)
-        : null,
-      knownIncome: income,
-      knownExpenses: expenses,
+      totalIncome: complete ? income.knownSubtotal : null,
+      totalExpenses: complete ? expenses.knownSubtotal : null,
+      netCashFlow: complete ? net.knownSubtotal : null,
+      knownIncome: income.knownSubtotal,
+      knownExpenses: expenses.knownSubtotal,
       includedTransactionCount,
       excludedTransactionCount,
       missingCurrencies: missing.sort(),
@@ -1833,8 +1834,12 @@ export class TransactionAnalyticsService {
     return {
       totalIncome: fxComplete ? income : null,
       totalExpenses: fxComplete ? expenses : null,
+      // Income less expenses before either is rounded, rounded once: the
+      // difference of the two readings could sit a unit off the summary's
+      // own net (docs/specs/report-rounding-and-aggregation.md rule 2).
       netCashFlow: fxComplete
-        ? roundMoney(income - expenses, FIAT_MONEY_DECIMALS)
+        ? FxAggregate.difference(converted.income, converted.expenses)
+            .knownSubtotal
         : null,
       knownIncomeSubtotal: income,
       knownExpensesSubtotal: expenses,
@@ -2039,13 +2044,11 @@ export class TransactionAnalyticsService {
             // A group with a part still unconverted is kept: its net is
             // unknown, not spent-in-nothing.
             groups = groups.filter(
-              (g) => isNetSpending(g.agg.knownSubtotal) || !g.agg.isComplete,
+              (g) => isNetSpending(g.agg.sign) || !g.agg.isComplete,
             );
           } else if (direction === "income") {
             // Salary +5000 / -200 correction is 4800 income, like the report.
-            groups = groups.filter(
-              (g) => g.agg.knownSubtotal > 0 || !g.agg.isComplete,
-            );
+            groups = groups.filter((g) => g.agg.sign > 0 || !g.agg.isComplete);
           }
           finish(groups);
           // Without a direction the figure is the magnitude of the net.
@@ -2375,7 +2378,7 @@ export class TransactionAnalyticsService {
         // A group with a part still unconverted is kept: its net is unknown,
         // not spent-in-nothing.
         items = items.filter(
-          (i) => isNetSpending(i.agg.knownSubtotal) || !i.agg.isComplete,
+          (i) => isNetSpending(i.agg.sign) || !i.agg.isComplete,
         );
       }
 

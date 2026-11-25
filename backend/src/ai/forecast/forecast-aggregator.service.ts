@@ -11,11 +11,11 @@ import { Transaction } from "../../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledOccurrenceService } from "../../scheduled-transactions/scheduled-occurrence.service";
 import { addDaysYMD, todayYMD } from "../../common/date-utils";
-import { roundMoney } from "../../common/round.util";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
 import { RecurringCharge } from "../../transactions/recurring-charges.util";
 import { FxAggregate } from "../../common/fx-aggregate";
+import { roundMoney } from "../../common/round.util";
 import {
   buildRateIndex,
   convertAtDate,
@@ -414,11 +414,15 @@ export class ForecastAggregatorService {
       const breakdown: MonthlyHistoryEntry["categoryBreakdown"] = [];
       for (const cat of data.categories.values()) {
         for (const pair of cat.net.missingPairs) missing.add(pair);
+        // A category folds into its month as an aggregate and is listed when
+        // the sign of its net before rounding says it moved money its way
+        // (docs/specs/report-rounding-and-aggregation.md rules 2 and 5).
         const net = cat.net.knownSubtotal;
-        if (cat.isIncome) data.income.addConverted(net);
-        else data.expenses.addConverted(-net);
-        const total = cat.isIncome ? net : -net;
-        if (total > 0) {
+        if (cat.isIncome) data.income.merge(cat.net);
+        else data.expenses.mergeNegated(cat.net);
+        // `0 - net`, not `-net`: a net that reads 0 is listed as 0, never -0.
+        const total = cat.isIncome ? net : 0 - net;
+        if (cat.isIncome ? cat.net.sign > 0 : cat.net.sign < 0) {
           breakdown.push({
             categoryName: cat.categoryName,
             total,
@@ -428,13 +432,12 @@ export class ForecastAggregatorService {
       }
       for (const pair of data.income.missingPairs) missing.add(pair);
       for (const pair of data.expenses.missingPairs) missing.add(pair);
-      const totalIncome = data.income.knownSubtotal;
-      const totalExpenses = data.expenses.knownSubtotal;
       return {
         month,
-        totalIncome,
-        totalExpenses,
-        netCashFlow: roundMoney(totalIncome - totalExpenses),
+        totalIncome: data.income.knownSubtotal,
+        totalExpenses: data.expenses.knownSubtotal,
+        netCashFlow: FxAggregate.difference(data.income, data.expenses)
+          .knownSubtotal,
         categoryBreakdown: breakdown.sort((a, b) => b.total - a.total),
       };
     });
@@ -614,23 +617,28 @@ export class ForecastAggregatorService {
     });
 
     const totals = monthlyIncome.map((m) => m.total);
-    const averageMonthlyIncome =
-      totals.length > 0
-        ? totals.reduce((sum, t) => sum + t, 0) / totals.length
-        : 0;
+    // A mean over the months' folded sum, divided before anything is rounded
+    // and rounded once for the reader; the variability ratio divides by the
+    // unrounded mean (docs/specs/report-rounding-and-aggregation.md rule 8).
+    const income = new FxAggregate();
+    for (const m of byMonth.values()) income.merge(m.total);
+    const mean =
+      totals.length > 0 ? income.unroundedSubtotal / totals.length : 0;
 
     let incomeVariability = 0;
-    if (totals.length > 1 && averageMonthlyIncome > 0) {
+    if (totals.length > 1 && mean > 0) {
       const variance =
-        totals.reduce(
-          (sum, t) => sum + Math.pow(t - averageMonthlyIncome, 2),
-          0,
-        ) / totals.length;
-      incomeVariability = Math.sqrt(variance) / averageMonthlyIncome;
+        totals.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) /
+        totals.length;
+      incomeVariability = Math.sqrt(variance) / mean;
     }
 
     return {
-      patterns: { monthlyIncome, averageMonthlyIncome, incomeVariability },
+      patterns: {
+        monthlyIncome,
+        averageMonthlyIncome: roundMoney(mean),
+        incomeVariability,
+      },
       missingPairs: [...missing].sort(),
     };
   }

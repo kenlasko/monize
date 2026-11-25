@@ -5,10 +5,12 @@ import {
   RateIndexQuery,
 } from "../common/time-series/rate-index.util";
 import {
-  convertDatedRows,
+  convertDatedRowAggregates,
   RawRateBasis,
+  readAggregates,
   transactionRateBasis,
 } from "./report-currency.service";
+import { FxAggregate } from "../common/fx-aggregate";
 import { transferRateReader, transferRateSql } from "./transfer-rate-sql";
 
 /** A raw row of a read split by {@link splitByRateBasis}. */
@@ -258,7 +260,7 @@ export function foldRateParts(
  * the rate history is loaded here, through `query`, and only when a part needs
  * it. `currencyName` is the alias the read selects its currency under.
  */
-export function convertRateParts(
+export async function convertRateParts(
   query: RateIndexQuery,
   parts: readonly RatePartRow[],
   reporting: string,
@@ -266,7 +268,32 @@ export function convertRateParts(
   names: { sums: readonly string[]; currency: string },
   logger?: RateIndexLogger,
 ): Promise<Map<string, Record<string, number | null>>> {
-  return convertDatedRows(
+  return readAggregates(
+    await convertRatePartAggregates(
+      query,
+      parts,
+      reporting,
+      keyOf,
+      names,
+      logger,
+    ),
+  );
+}
+
+/**
+ * {@link convertRateParts}, each figure left as the aggregate of its converted
+ * parts, for a caller that folds the figures into a total of its own
+ * (docs/specs/report-rounding-and-aggregation.md rule 2).
+ */
+export function convertRatePartAggregates(
+  query: RateIndexQuery,
+  parts: readonly RatePartRow[],
+  reporting: string,
+  keyOf: (row: RatePartRow) => string,
+  names: { sums: readonly string[]; currency: string },
+  logger?: RateIndexLogger,
+): Promise<Map<string, Record<string, FxAggregate | null>>> {
+  return convertDatedRowAggregates(
     query,
     parts
       .filter((row) => row[names.currency] !== reporting)

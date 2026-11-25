@@ -1,5 +1,5 @@
 import { FxAggregate } from "./fx-aggregate";
-import { roundMoney } from "./round.util";
+import { moneyUnits, roundMoney } from "./round.util";
 
 /**
  * The numerical examples in docs/specs/fx-conversion-completeness.md section 4,
@@ -311,6 +311,251 @@ describe("FxAggregate", () => {
       expect(agg.unknownCount).toBe(0);
       expect(agg.isComplete).toBe(true);
       expect(agg.total).toBe(100);
+    });
+  });
+
+  describe("folds a part exactly, never its rounded reading (issue #2384)", () => {
+    it("subtracts a negated part before rounding", () => {
+      // Two expense cells of -124.752474 read 124.7525 each; their sum is
+      // 249.504948, which reads 249.5049.
+      const total = new FxAggregate();
+      for (let i = 0; i < 2; i++) {
+        const cell = new FxAggregate();
+        cell.addConverted(-100.01 * 1.2474);
+        total.mergeNegated(cell);
+      }
+      expect(total.total).toBe(249.5049);
+    });
+
+    it("carries a negated part's gaps", () => {
+      const part = new FxAggregate();
+      part.addConverted(10);
+      part.add(null, "EUR", "USD");
+      part.addUnknown();
+      const total = new FxAggregate();
+      total.mergeNegated(part);
+      expect(total.total).toBeNull();
+      expect(total.knownSubtotal).toBe(-10);
+      expect(total.missingPairs).toEqual(["EUR->USD"]);
+      expect(total.unknownCount).toBe(1);
+    });
+
+    it("cancels a part merged and merged negated", () => {
+      const part = new FxAggregate();
+      part.addConverted(300000000000.03);
+      part.addConverted(0.00004);
+      const total = new FxAggregate();
+      total.merge(part);
+      total.mergeNegated(part);
+      expect(total.total).toBe(0);
+      expect(total.sign).toBe(0);
+    });
+
+    it("negates a non-finite part", () => {
+      const part = new FxAggregate();
+      part.addConverted(Infinity);
+      const total = new FxAggregate();
+      total.mergeNegated(part);
+      expect(total.knownSubtotal).toBe(-Infinity);
+    });
+  });
+
+  describe("unroundedSubtotal (issue #2384)", () => {
+    it("reads the twelve-place sum a mean or a share divides", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(100.01 * 1.2474);
+      agg.addConverted(100.03 * 1.2474);
+      expect(agg.knownSubtotal).toBe(249.5299);
+      expect(agg.unroundedSubtotal).toBe(249.529896);
+      expect(roundMoney(agg.unroundedSubtotal / 2)).toBe(124.7649);
+    });
+
+    it("carries a non-finite component", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(1);
+      agg.addConverted(-Infinity);
+      expect(agg.unroundedSubtotal).toBe(-Infinity);
+    });
+  });
+
+  describe("sign is judged before rounding (issue #2384)", () => {
+    it.each([
+      [0.00003, 1],
+      [-0.00003, -1],
+      [0.00000001, 1],
+      [-0.00000001, -1],
+      [0.000000005, 1],
+      [0.000000004, 0],
+      [-0.000000004, 0],
+      [0, 0],
+      [1234.5, 1],
+    ])("%p has sign %p", (amount, expected) => {
+      const agg = new FxAggregate();
+      agg.addConverted(amount);
+      expect(agg.sign).toBe(expected);
+    });
+
+    it("reads a small net that rounds to zero as a sign, not as nothing", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(-100);
+      agg.addConverted(100.00003);
+      expect(agg.knownSubtotal).toBe(0);
+      expect(agg.sign).toBe(1);
+    });
+
+    it("reads the float residue of large cancelling components as zero", () => {
+      // 16,768.69 spent at 9731.4245182213 and refunded as 4,012.32 and
+      // 12,756.37 at the same rate: three doubles near 163 million whose sum
+      // is -0.00000002, residue over half a unit at eight places, not money.
+      const rate = 9731.4245182213;
+      const agg = new FxAggregate();
+      agg.addConverted(16768.69 * rate);
+      agg.addConverted(-4012.32 * rate);
+      agg.addConverted(-12756.37 * rate);
+      expect(agg.unroundedSubtotal).toBe(-0.00000002);
+      expect(agg.knownSubtotal).toBe(0);
+      expect(agg.sign).toBe(0);
+    });
+
+    it("carries the components' size through merge and mergeNegated", () => {
+      const rate = 9731.4245182213;
+      const spent = new FxAggregate();
+      spent.addConverted(16768.69 * rate);
+      const refunds = new FxAggregate();
+      refunds.addConverted(4012.32 * rate);
+      refunds.addConverted(12756.37 * rate);
+      expect(FxAggregate.difference(spent, refunds).sign).toBe(0);
+      const net = new FxAggregate();
+      net.merge(spent);
+      net.mergeNegated(refunds);
+      expect(net.sign).toBe(0);
+    });
+
+    it("ignores a missing component, as the subtotal does", () => {
+      const agg = new FxAggregate();
+      agg.add(null, "EUR", "USD");
+      agg.addConverted(-5);
+      expect(agg.sign).toBe(-1);
+    });
+
+    it("is NaN once a NaN component was added", () => {
+      const agg = new FxAggregate();
+      agg.addConverted(NaN);
+      expect(agg.sign).toBeNaN();
+    });
+  });
+
+  describe("difference (issue #2384)", () => {
+    it("nets two aggregates before either is rounded, with both's gaps", () => {
+      const income = new FxAggregate();
+      income.addConverted(124.752474);
+      income.add(null, "EUR", "USD");
+      const expenses = new FxAggregate();
+      expenses.addConverted(0.000049896);
+      expenses.addUnknown();
+      const net = FxAggregate.difference(income, expenses);
+      expect(income.knownSubtotal - expenses.knownSubtotal).toBe(124.7525);
+      expect(net.knownSubtotal).toBe(124.7524);
+      expect(net.total).toBeNull();
+      expect(net.missingPairs).toEqual(["EUR->USD"]);
+      expect(net.unknownCount).toBe(1);
+      expect(income.knownSubtotal).toBe(124.7525);
+    });
+  });
+
+  describe("apportionUnits (issue #2384)", () => {
+    const part = (...amounts: number[]): FxAggregate => {
+      const agg = new FxAggregate();
+      for (const amount of amounts) agg.addConverted(amount);
+      return agg;
+    };
+
+    it("splits the parent's single rounding between two equal children", () => {
+      // 124.752474 + 124.752474 = 249.504948, which reads 249.5049; each child
+      // alone reads 124.7525, so one of them gives up its unit.
+      const units = FxAggregate.apportionUnits([
+        part(100.01 * 1.2474),
+        part(100.01 * 1.2474),
+      ]);
+      expect(units).toEqual([1247525, 1247524]);
+      expect(units[0] + units[1]).toBe(2495049);
+    });
+
+    it("gives a unit to the largest remainder first", () => {
+      // 0.00004 + 0.00007 = 0.00011, which reads 0.0001: the 0.00007 part
+      // keeps the unit.
+      expect(
+        FxAggregate.apportionUnits([part(0.00004), part(0.00007)]),
+      ).toEqual([0, 1]);
+    });
+
+    it("rounds a negative part down before it adds a unit back", () => {
+      // -0.00004 + 0.00007 = 0.00003, which reads 0.0000. The floors are -1
+      // and 0 with remainders 0.6 and 0.7, so the one unit short goes to the
+      // 0.00007 part: each part stays within a unit of its value.
+      expect(
+        FxAggregate.apportionUnits([part(-0.00004), part(0.00007)]),
+      ).toEqual([-1, 1]);
+    });
+
+    it("apportions to a given target", () => {
+      expect(
+        FxAggregate.apportionUnits([part(0.00005), part(0.00005)], 1),
+      ).toEqual([1, 0]);
+    });
+
+    it("leaves parts already at four places unchanged", () => {
+      expect(
+        FxAggregate.apportionUnits([part(12.3456), part(-7.0001), part(0)]),
+      ).toEqual([123456, -70001, 0]);
+    });
+
+    it("refuses a target the parts cannot reach within a unit each", () => {
+      expect(() =>
+        FxAggregate.apportionUnits([part(1), part(2)], 30003),
+      ).toThrow(RangeError);
+      expect(() =>
+        FxAggregate.apportionUnits([part(1), part(2)], 29999),
+      ).toThrow(RangeError);
+    });
+
+    it("reads each part on its own once one is non-finite", () => {
+      expect(
+        FxAggregate.apportionUnits([part(0.00005), part(Infinity)]),
+      ).toEqual([1, Infinity]);
+    });
+
+    it("answers nothing for no parts", () => {
+      expect(FxAggregate.apportionUnits([])).toEqual([]);
+    });
+
+    it("keeps every part within one unit of its value and sums to the whole's reading", () => {
+      let seed = 2384;
+      const next = () => {
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+        return seed / 2147483648;
+      };
+      for (let round = 0; round < 500; round++) {
+        const parts = Array.from({ length: 1 + Math.floor(next() * 6) }, () =>
+          part(
+            ...Array.from(
+              { length: 1 + Math.floor(next() * 3) },
+              () => (next() - 0.4) * 10 ** Math.floor(next() * 7),
+            ),
+          ),
+        );
+        const units = FxAggregate.apportionUnits(parts);
+        const whole = new FxAggregate();
+        for (const p of parts) whole.merge(p);
+        expect(units.reduce((a, b) => a + b, 0)).toBe(
+          moneyUnits(whole.knownSubtotal, 4),
+        );
+        units.forEach((u, i) => {
+          expect(
+            Math.abs(u / 10000 - parts[i].knownSubtotal),
+          ).toBeLessThanOrEqual(0.0001 + 1e-9);
+        });
+      }
     });
   });
 

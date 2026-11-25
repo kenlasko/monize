@@ -11,7 +11,8 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { ownTransferLegs } from "./transfer-rate-sql";
-import { MONEY_SCALE, roundMoney, toMoneyNumber } from "../common/round.util";
+import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
+import { FxAggregate } from "../common/fx-aggregate";
 import {
   MonthlyCategoryBreakdownResponse,
   MonthlyBreakdownCategoryRow,
@@ -57,17 +58,29 @@ interface RawTransferAggregate extends RawRateBasis {
   inflow: string;
 }
 
+/** Adds `amount` to `month`'s aggregate in `byMonth`. */
+function addTo(
+  byMonth: Map<string, FxAggregate>,
+  month: string,
+  amount: number,
+): void {
+  const sum = byMonth.get(month) ?? new FxAggregate();
+  sum.addConverted(amount);
+  byMonth.set(month, sum);
+}
+
 /**
  * Mutable accumulator for a single category while merging the raw rows. Money
- * is accumulated in floating numbers but every read-out is rounded with the
- * shared money helpers so the response never carries IEEE 754 drift.
+ * is accumulated in `FxAggregate`s, never added in floats, and each figure is
+ * read once when the row is built, so the response is the single rounding of
+ * the converted rows (docs/specs/report-rounding-and-aggregation.md rule 2).
  */
 interface CategoryAccumulator {
   categoryId: string | null;
-  depositByMonth: Map<string, number>;
-  withdrawalByMonth: Map<string, number>;
-  depositTotal: number;
-  withdrawalTotal: number;
+  depositByMonth: Map<string, FxAggregate>;
+  withdrawalByMonth: Map<string, FxAggregate>;
+  depositTotal: FxAggregate;
+  withdrawalTotal: FxAggregate;
 }
 
 @Injectable()
@@ -214,22 +227,18 @@ export class MonthlyCategoryBreakdownService {
           categoryId,
           depositByMonth: new Map(),
           withdrawalByMonth: new Map(),
-          depositTotal: 0,
-          withdrawalTotal: 0,
+          depositTotal: new FxAggregate(),
+          withdrawalTotal: new FxAggregate(),
         };
         accumulators.set(key, acc);
       }
 
-      acc.depositByMonth.set(
-        month,
-        (acc.depositByMonth.get(month) ?? 0) + deposits,
-      );
-      acc.withdrawalByMonth.set(
-        month,
-        (acc.withdrawalByMonth.get(month) ?? 0) + withdrawals,
-      );
-      acc.depositTotal += deposits;
-      acc.withdrawalTotal += withdrawals;
+      // Accumulated, never added in floats, and rounded once when the row is
+      // built (docs/specs/report-rounding-and-aggregation.md rule 2).
+      addTo(acc.depositByMonth, month, deposits);
+      addTo(acc.withdrawalByMonth, month, withdrawals);
+      acc.depositTotal.addConverted(deposits);
+      acc.withdrawalTotal.addConverted(withdrawals);
     }
 
     const transfers = await this.getTransferRows(
@@ -335,15 +344,18 @@ export class MonthlyCategoryBreakdownService {
     // Accumulate the signed flow per (account, direction) across currencies.
     const fromByAccount = new Map<
       string,
-      { name: string; valuesByMonth: Map<string, number> }
+      { name: string; valuesByMonth: Map<string, FxAggregate> }
     >();
     const toByAccount = new Map<
       string,
-      { name: string; valuesByMonth: Map<string, number> }
+      { name: string; valuesByMonth: Map<string, FxAggregate> }
     >();
 
     const addFlow = (
-      store: Map<string, { name: string; valuesByMonth: Map<string, number> }>,
+      store: Map<
+        string,
+        { name: string; valuesByMonth: Map<string, FxAggregate> }
+      >,
       accountId: string,
       accountName: string,
       month: string,
@@ -354,10 +366,7 @@ export class MonthlyCategoryBreakdownService {
         entry = { name: accountName, valuesByMonth: new Map() };
         store.set(accountId, entry);
       }
-      entry.valuesByMonth.set(
-        month,
-        (entry.valuesByMonth.get(month) ?? 0) + amount,
-      );
+      addTo(entry.valuesByMonth, month, amount);
     };
 
     for (const row of rawResults) {
@@ -392,7 +401,10 @@ export class MonthlyCategoryBreakdownService {
     }
 
     const buildTransferRows = (
-      store: Map<string, { name: string; valuesByMonth: Map<string, number> }>,
+      store: Map<
+        string,
+        { name: string; valuesByMonth: Map<string, FxAggregate> }
+      >,
       direction: "from" | "to",
     ): MonthlyBreakdownTransferRow[] =>
       Array.from(store.entries()).map(([accountId, entry]) => {
@@ -400,9 +412,11 @@ export class MonthlyCategoryBreakdownService {
         for (const [month, amount] of entry.valuesByMonth) {
           // "from" rows are a source of funds (positive); "to" rows are a use
           // of funds (negative).
-          valuesByMonth[month] = roundMoney(
-            direction === "from" ? amount : -amount,
-          );
+          valuesByMonth[month] = (
+            direction === "from"
+              ? amount
+              : FxAggregate.difference(new FxAggregate(), amount)
+          ).knownSubtotal;
         }
         return { accountId, accountName: entry.name, direction, valuesByMonth };
       });
@@ -433,18 +447,22 @@ export class MonthlyCategoryBreakdownService {
 
     const isIncome = category
       ? category.isIncome
-      : acc.depositTotal > acc.withdrawalTotal;
+      : FxAggregate.difference(acc.depositTotal, acc.withdrawalTotal).sign > 0;
 
     const valuesByMonth: Record<string, number> = {};
     const allMonths = new Set<string>([
       ...acc.depositByMonth.keys(),
       ...acc.withdrawalByMonth.keys(),
     ]);
+    const none = new FxAggregate();
     for (const month of allMonths) {
-      const deposits = acc.depositByMonth.get(month) ?? 0;
-      const withdrawals = acc.withdrawalByMonth.get(month) ?? 0;
-      const net = isIncome ? deposits - withdrawals : withdrawals - deposits;
-      valuesByMonth[month] = roundMoney(net);
+      const deposits = acc.depositByMonth.get(month) ?? none;
+      const withdrawals = acc.withdrawalByMonth.get(month) ?? none;
+      valuesByMonth[month] = (
+        isIncome
+          ? FxAggregate.difference(deposits, withdrawals)
+          : FxAggregate.difference(withdrawals, deposits)
+      ).knownSubtotal;
     }
 
     return {
@@ -455,8 +473,8 @@ export class MonthlyCategoryBreakdownService {
       parentIsIncome: parent?.isIncome ?? null,
       isIncome,
       valuesByMonth,
-      depositTotal: roundMoney(acc.depositTotal),
-      withdrawalTotal: roundMoney(acc.withdrawalTotal),
+      depositTotal: acc.depositTotal.knownSubtotal,
+      withdrawalTotal: acc.withdrawalTotal.knownSubtotal,
     };
   }
 }

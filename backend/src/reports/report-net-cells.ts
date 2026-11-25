@@ -185,21 +185,26 @@ export function createNetCells(
           return [];
         });
         if (parts.length === 0) continue;
-        const sum = new FxAggregate();
-        for (const part of parts) sum.merge(part.agg);
-        const net = sum.knownSubtotal;
-        let value: number;
+        const net = new FxAggregate();
+        for (const part of parts) net.merge(part.agg);
+        // Judged on the net's sign before rounding, and folded into the group
+        // unrounded: reading the cell at four places first made the group's
+        // sum depend on how its rows fell into cells, so two 124.752474 cells
+        // summed to 249.5050 where one cell of both read 249.5049
+        // (docs/specs/report-rounding-and-aggregation.md rules 2 and 5).
+        let spent: boolean;
         if (direction === DirectionFilter.EXPENSES_ONLY) {
-          value = -net;
-          if (!isNetSpending(value)) continue;
+          if (!isNetSpending(-net.sign)) continue;
+          spent = true;
         } else if (direction === DirectionFilter.INCOME_ONLY) {
-          value = net;
-          if (!(value > 0)) continue;
+          if (!(net.sign > 0)) continue;
+          spent = false;
         } else {
-          value = Math.abs(net);
+          spent = net.sign < 0;
         }
         kept = true;
-        agg.addConverted(value);
+        if (spent) agg.mergeNegated(net);
+        else agg.merge(net);
         for (const part of parts) {
           for (const unit of part.units) units.add(unit);
         }

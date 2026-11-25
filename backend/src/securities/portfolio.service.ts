@@ -1139,9 +1139,10 @@ export class PortfolioService {
     const totalPortfolioValue =
       totalCashValue + holdingsResult.totalHoldingsValue;
     // Value less cost of the SAME holdings (A26-M38): `totalCostBasis` carries
-    // every holding's cost, `totalHoldingsValue` only the priced ones.
-    const totalGainLoss =
-      holdingsResult.gainMarketValue - holdingsResult.gainCostBasis;
+    // every holding's cost, `totalHoldingsValue` only the priced ones. The
+    // difference is taken before either side is rounded (`gainLoss`), as each
+    // account's gain is.
+    const totalGainLoss = holdingsResult.gainLoss;
     const totalGainLossPercent =
       holdingsResult.gainCostBasis > 0
         ? (totalGainLoss / holdingsResult.gainCostBasis) * 100

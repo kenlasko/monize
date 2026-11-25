@@ -25,6 +25,49 @@ const sum = (items: Row[]) =>
   );
 
 describe('sumConverted', () => {
+  describe('rounds once, after the components are added (issue #2384)', () => {
+    const eur = (amount: number, currency: string): number | null =>
+      currency === 'EUR' ? amount * 1.2474 : currency === 'USD' ? amount : null;
+    const sumEur = (items: Row[]) =>
+      sumConverted(
+        items,
+        (r) => r.amount,
+        (r) => r.currency,
+        eur,
+      );
+
+    it('reads two 124.752474 components as 249.5049, as the server does', () => {
+      // Each rounds to 124.7525 alone; rounded one by one they summed to
+      // 249.5050, a ten-thousandth off the server's FxAggregate.
+      expect(sumEur(rows([100.01, 'EUR'], [100.01, 'EUR'])).value).toBe(249.5049);
+    });
+
+    it('lets components under a ten-thousandth add up to one', () => {
+      const total = sumEur(rows([0.00004, 'USD'], [0.00004, 'USD'], [0.00004, 'USD']));
+      expect(total.value).toBe(0.0001);
+    });
+
+    it('rounds a negative midpoint away from zero', () => {
+      expect(sumEur(rows([-0.00005, 'USD'])).value).toBe(-0.0001);
+    });
+
+    it("rounds once at a coin's eight places", () => {
+      // 0.000000004 BTC three times is 0.000000012, which reads 0.00000001.
+      const btc = sumConverted(
+        rows([0.000000004, 'BTC'], [0.000000004, 'BTC'], [0.000000004, 'BTC']),
+        (r) => r.amount,
+        (r) => r.currency,
+        (amount) => amount,
+        8,
+      );
+      expect(btc.value).toBe(0.00000001);
+    });
+
+    it('cancels a large amount and its negation exactly', () => {
+      expect(sumEur(rows([300000000000.03, 'USD'], [-300000000000.03, 'USD'])).value).toBe(0);
+    });
+  });
+
   it('adds converted components and reports the total complete', () => {
     const total = sum(rows([100, 'CAD'], [100, 'USD']));
     expect(total.value).toBe(235);

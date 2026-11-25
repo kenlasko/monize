@@ -9,7 +9,11 @@
  * SQL's job and the integration suite's proof.
  */
 import { FxAggregate } from "../common/fx-aggregate";
-import { FIAT_MONEY_DECIMALS, moneyUnits } from "../common/round.util";
+import {
+  apportionByKey,
+  placeRoots,
+  sideFigures,
+} from "./cash-flow-sankey-figures";
 import type {
   CashFlowSankeyLink,
   CashFlowSankeyNode,
@@ -21,8 +25,6 @@ import type {
 /** Integer ten-thousandths, the resolution of `decimal(20,4)`. */
 const SCALE = 10000;
 
-const toMinor = (value: number): number =>
-  moneyUnits(value, FIAT_MONEY_DECIMALS);
 /** `-0` is not a figure anyone should read, so it leaves as `0`. */
 const fromMinor = (minor: number): number => (minor === 0 ? 0 : minor / SCALE);
 
@@ -357,21 +359,33 @@ export function assembleCashFlowSankey(
     links.push(link);
   };
 
+  // ---- Every figure is rounded once, from its own components, and the
+  // parts of a node are apportioned from it (cash-flow-sankey-figures.ts).
+  const rootViews = placeRoots(roots, byId);
+  // A complete uncategorized side that nets to nothing is not a node.
+  const uncategorized = (
+    [
+      [uncategorizedIncome, "income"],
+      [uncategorizedExpense, "expense"],
+    ] as Array<[FxAggregate, "income" | "expense"]>
+  ).filter(([agg]) => !(agg.isComplete && agg.sign === 0));
+  const figures = sideFigures(
+    rootViews,
+    uncategorized,
+    [...inflowClasses].map(([flowClass, bucket]) => [
+      INFLOW_ID[flowClass],
+      bucket.agg,
+    ]),
+    [...outflowClasses].map(([flowClass, bucket]) => [
+      `class:${flowClass}`,
+      bucket.agg,
+    ]),
+  );
+
   // ---- Categories: one node per top-level category, on the side it nets to.
-  const rootEntries = [...roots.entries()];
-  for (const [rootId, bucket] of rootEntries) {
-    const category = byId.get(rootId)!;
-    const signedMinor = toMinor(bucket.agg.knownSubtotal);
-    const complete = bucket.agg.isComplete;
-    // A complete category sits where it nets (the isNetSpending rule, both
-    // ways); one whose net is unknown sits where its own type says, since the
-    // sign that would move it is the figure that is missing.
-    const isIncomeSide = complete
-      ? signedMinor > 0 || (signedMinor === 0 && category.isIncome)
-      : category.isIncome;
-    const kind: SankeyNodeKind = isIncomeSide ? "income" : "expense";
-    const id = `${kind}:${rootId}`;
-    const knownMinor = isIncomeSide ? signedMinor : -signedMinor;
+  for (const root of rootViews) {
+    const { rootId, category, complete, isIncomeSide, id, kind } = root;
+    const knownMinor = figures.get(id)!;
     pushNode({
       id,
       kind,
@@ -395,12 +409,20 @@ export function assembleCashFlowSankey(
     const childMap = children.get(rootId)!;
     const hasSubcategory = [...childMap.keys()].some((key) => key !== rootId);
     if (!hasSubcategory) continue;
+    // In the parent's direction: what each child spent, signed, apportioned
+    // from the parent's own figure so the parent passes through what it got.
+    const spentUnits = apportionByKey(
+      [...childMap].map(([childId, childBucket]): [string, FxAggregate] => {
+        const spent = new FxAggregate();
+        spent.mergeNegated(childBucket.agg);
+        return [childId, spent];
+      }),
+      knownMinor,
+    );
     for (const [childId, childBucket] of childMap) {
       const child = byId.get(childId)!;
-      const childSigned = toMinor(childBucket.agg.knownSubtotal);
       const childComplete = childBucket.agg.isComplete;
-      // In the parent's direction: what the child spent.
-      const spentMinor = -childSigned;
+      const spentMinor = spentUnits.get(childId)!;
       const nodeId = `child:${childId}`;
       pushNode({
         id: nodeId,
@@ -435,14 +457,9 @@ export function assembleCashFlowSankey(
   }
 
   // ---- Uncategorized, each sign on its own side.
-  const uncategorized: Array<[FxAggregate, "income" | "expense"]> = [
-    [uncategorizedIncome, "income"],
-    [uncategorizedExpense, "expense"],
-  ];
   for (const [agg, side] of uncategorized) {
-    const knownMinor = toMinor(agg.knownSubtotal);
-    if (agg.isComplete && knownMinor === 0) continue;
     const id = `uncategorized:${side}`;
+    const knownMinor = figures.get(id)!;
     pushNode({
       id,
       kind: "uncategorized",
@@ -476,7 +493,7 @@ export function assembleCashFlowSankey(
   // ---- Transfer classes: inflows on the source side, outflows on the other.
   for (const [flowClass, bucket] of inflowClasses) {
     const id = INFLOW_ID[flowClass];
-    const knownMinor = toMinor(bucket.agg.knownSubtotal);
+    const knownMinor = figures.get(id)!;
     const complete = bucket.agg.isComplete;
     pushNode({
       id,
@@ -495,7 +512,7 @@ export function assembleCashFlowSankey(
 
   for (const [flowClass, bucket] of outflowClasses) {
     const id = `class:${flowClass}`;
-    const knownMinor = toMinor(bucket.agg.knownSubtotal);
+    const knownMinor = figures.get(id)!;
     const complete = bucket.agg.isComplete;
     pushNode({
       id,
@@ -512,9 +529,17 @@ export function assembleCashFlowSankey(
     pushLink({ source: "hub", target: id, knownMinor, complete });
 
     if (depth !== 2) continue;
-    for (const [accountKey, entry] of classAccounts.get(flowClass) ?? []) {
+    const accounts = classAccounts.get(flowClass) ?? new Map();
+    const accountUnits = apportionByKey(
+      [...accounts].map(([accountKey, entry]): [string, FxAggregate] => [
+        accountKey,
+        entry.bucket.agg,
+      ]),
+      knownMinor,
+    );
+    for (const [accountKey, entry] of accounts) {
       const accountNodeId = `account:${accountKey}`;
-      const accountMinor = toMinor(entry.bucket.agg.knownSubtotal);
+      const accountMinor = accountUnits.get(accountKey)!;
       const accountComplete = entry.bucket.agg.isComplete;
       const unlinked = accountKey === "unlinked";
       pushNode({

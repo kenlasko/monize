@@ -2265,6 +2265,43 @@ describe("NetWorthService", () => {
       expect(result[0].netWorth).toBe(1000.5679);
     });
 
+    it("nets assets and liabilities before either is rounded (issue #2384)", async () => {
+      // 1000.567849 of assets less 0.00005 owed is 1000.567799, which reads
+      // 1000.5678. The difference of the two readings, 1000.5678 - 0.0001,
+      // read 1000.5677.
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({
+        defaultCurrency: "USD",
+      });
+
+      reportQuery.mockResolvedValueOnce([
+        {
+          month: "2024-01-01",
+          balance: 1000.567849,
+          market_value: null,
+          account_id: "a1",
+          account_type: AccountType.CHEQUING,
+          account_sub_type: null,
+          currency_code: "USD",
+        },
+        {
+          month: "2024-01-01",
+          balance: -0.00005,
+          market_value: null,
+          account_id: "a2",
+          account_type: AccountType.CREDIT_CARD,
+          account_sub_type: null,
+          currency_code: "USD",
+        },
+      ]);
+
+      const result = await service.getMonthlyNetWorth("user-1");
+
+      expect(result[0].assets).toBe(1000.5678);
+      expect(result[0].liabilities).toBe(0.0001);
+      expect(result[0].netWorth).toBe(1000.5678);
+    });
+
     it("classifies all liability types correctly", async () => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({

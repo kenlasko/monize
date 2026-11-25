@@ -75,6 +75,7 @@ const mockCurrentSpending = {
     },
   ],
   totalSpending: 3000,
+  knownSpending: 3000,
 };
 
 const mockPreviousSpending = {
@@ -105,6 +106,7 @@ const mockPreviousSpending = {
     },
   ],
   totalSpending: 2750,
+  knownSpending: 2750,
 };
 
 const completeMonth = {
@@ -473,6 +475,90 @@ describe("MonthlyComparisonService", () => {
     });
   });
 
+  describe("getMonthlyComparison() - figures rounded once (issue #2384)", () => {
+    beforeEach(() => {
+      mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
+      mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
+    });
+
+    it("reads a month's savings as its own net and its expense total as reported", async () => {
+      // 124.752474 in and 0.000049896 out net 124.7524, though the sides read
+      // 124.7525 and 0; two 124.752474 categories total 249.5049, though their
+      // rows read 124.7525 each.
+      mockIncomeReports.getIncomeVsExpenses
+        .mockResolvedValueOnce({
+          data: [
+            { period: "2026-01", income: 124.7525, expenses: 0, net: 124.7524 },
+          ],
+          totals: { income: 124.7525, expenses: 0, net: 124.7524 },
+        })
+        .mockResolvedValueOnce({
+          data: [{ period: "2025-12", income: 0, expenses: 0, net: 0 }],
+          totals: { income: 0, expenses: 0, net: 0 },
+        });
+      const twoCategories = {
+        data: ["cat-1", "cat-2"].map((categoryId) => ({
+          categoryId,
+          categoryName: categoryId,
+          color: null,
+          total: 124.7525,
+        })),
+        totalSpending: 249.5049,
+        knownSpending: 249.5049,
+      };
+      mockSpendingReports.getSpendingByCategory
+        .mockResolvedValueOnce(twoCategories)
+        .mockResolvedValueOnce({
+          data: [],
+          totalSpending: 0,
+          knownSpending: 0,
+        });
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.incomeExpenses.currentSavings).toBe(124.7524);
+      expect(result.incomeExpenses.savingsChange).toBe(124.7524);
+      expect(result.expenses.currentTotal).toBe(249.5049);
+    });
+
+    it("leaves no float residue in a change", async () => {
+      // 5000.1234 - 3000.5678 is 1999.5556000000006 in doubles.
+      mockIncomeReports.getIncomeVsExpenses
+        .mockResolvedValueOnce({
+          data: [
+            {
+              period: "2026-01",
+              income: 5000.1234,
+              expenses: 0,
+              net: 5000.1234,
+            },
+          ],
+          totals: { income: 5000.1234, expenses: 0, net: 5000.1234 },
+        })
+        .mockResolvedValueOnce({
+          data: [
+            {
+              period: "2025-12",
+              income: 3000.5678,
+              expenses: 0,
+              net: 3000.5678,
+            },
+          ],
+          totals: { income: 3000.5678, expenses: 0, net: 3000.5678 },
+        });
+      mockSpendingReports.getSpendingByCategory.mockResolvedValue({
+        data: [],
+        totalSpending: 0,
+        knownSpending: 0,
+      });
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.incomeExpenses.incomeChange).toBe(1999.5556);
+      expect(result.incomeExpenses.savingsChange).toBe(1999.5556);
+    });
+  });
+
   describe("getMonthlyComparison() - edge cases", () => {
     it("handles zero values without division errors", async () => {
       mockIncomeReports.getIncomeVsExpenses
@@ -485,8 +571,12 @@ describe("MonthlyComparisonService", () => {
           totals: { income: 0, expenses: 0, net: 0 },
         });
       mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 })
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 });
+        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
+        .mockResolvedValueOnce({
+          data: [],
+          totalSpending: 0,
+          knownSpending: 0,
+        });
       mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 
@@ -509,8 +599,12 @@ describe("MonthlyComparisonService", () => {
           totals: { income: 0, expenses: 0, net: 0 },
         });
       mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 })
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 });
+        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
+        .mockResolvedValueOnce({
+          data: [],
+          totalSpending: 0,
+          knownSpending: 0,
+        });
       mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 
@@ -531,8 +625,12 @@ describe("MonthlyComparisonService", () => {
           totals: { income: 0, expenses: 0, net: 0 },
         });
       mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 })
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 });
+        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
+        .mockResolvedValueOnce({
+          data: [],
+          totalSpending: 0,
+          knownSpending: 0,
+        });
       mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 
@@ -578,6 +676,7 @@ describe("MonthlyComparisonService", () => {
         mockSpendingReports.getSpendingByCategory.mockResolvedValue({
           data: [],
           totalSpending: 0,
+          knownSpending: 0,
         });
         mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
         mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
@@ -794,8 +893,12 @@ describe("MonthlyComparisonService", () => {
           totals: { income: 0, expenses: 0, net: 0 },
         });
       mockSpendingReports.getSpendingByCategory
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 })
-        .mockResolvedValueOnce({ data: [], totalSpending: 0 });
+        .mockResolvedValueOnce({ data: [], totalSpending: 0, knownSpending: 0 })
+        .mockResolvedValueOnce({
+          data: [],
+          totalSpending: 0,
+          knownSpending: 0,
+        });
       mockNetWorthService.getMonthlyNetWorth.mockResolvedValue([]);
       mockPortfolioService.getMonthOverMonthMovers.mockResolvedValue([]);
 

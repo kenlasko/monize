@@ -78,15 +78,19 @@ export interface ReportTimeframe {
 
 export interface ReportSummary {
   /**
-   * Sum of `data`, or `null` when any row could not be converted into
-   * {@link ReportResult.currency} -- a missing rate makes the total unknowable,
-   * never smaller. `knownTotal` carries the part that did convert. The count
-   * metric sums counts, which need no rate, so it is never `null`.
+   * What `data` adds up to, rounded once from the rows' unrounded sums (so it
+   * can sit a ten-thousandth from the sum of the rounded values,
+   * docs/specs/report-rounding-and-aggregation.md rule 4), or `null` when any
+   * row could not be converted into {@link ReportResult.currency} -- a missing
+   * rate makes the total unknowable, never smaller. `knownTotal` carries the
+   * part that did convert. The count metric sums counts, which need no rate,
+   * so it is `null` only for a truncated read.
    */
   total: number | null;
   /**
-   * Sum of `data`'s known values. Equals `total` when nothing was excluded; otherwise it is a
-   * subtotal and must be labelled as one, never under "Total".
+   * What `data`'s known values add up to, rounded once. Equals `total` when
+   * nothing was excluded; otherwise it is a subtotal and must be labelled as
+   * one, never under "Total".
    */
   knownTotal: number;
   /**

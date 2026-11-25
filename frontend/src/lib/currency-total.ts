@@ -1,4 +1,14 @@
-import { sumMoney } from './format';
+import { FIAT_MONEY_DECIMALS, fromMoneyUnits, roundMoney, toMoneyUnits } from './format';
+
+/**
+ * Guard places a converted component is accumulated at beyond the target's
+ * money precision, so the sum is rounded once, after the components are
+ * added: the server's `FxAggregate` holds four plus eight
+ * (`docs/specs/report-rounding-and-aggregation.md` rule 2). Rounding each
+ * component to four places first read two 124.752474 rows as 249.5050 where
+ * the server, and their sum, read 249.5049.
+ */
+const GUARD_DECIMALS = 8;
 
 /**
  * Summing amounts that each need converting, while keeping track of the ones
@@ -58,7 +68,9 @@ export function sumConverted<T>(
   convert: (amount: number, fromCurrency: string, item: T) => number | null,
   decimals?: number,
 ): ConvertedTotal {
-  const converted: number[] = [];
+  const places = decimals ?? FIAT_MONEY_DECIMALS;
+  const accumulation = places + GUARD_DECIMALS;
+  let units = BigInt(0);
   const missing = new Set<string>();
   let excludedCount = 0;
 
@@ -84,11 +96,11 @@ export function sumConverted<T>(
       excludedCount += 1;
       continue;
     }
-    converted.push(value);
+    units += toMoneyUnits(value, accumulation);
   }
 
   return {
-    value: sumMoney(converted, decimals),
+    value: roundMoney(fromMoneyUnits(units, accumulation), places),
     missingCurrencies: [...missing],
     excludedCount,
   };

@@ -1,6 +1,7 @@
 import { SelectQueryBuilder } from "typeorm";
 import {
   compareGroupKeys,
+  convertRatePartAggregates,
   convertRateParts,
   foldRateParts,
   partRateBasis,
@@ -346,6 +347,54 @@ describe("rate-basis-parts", () => {
 
       expect([...converted.entries()]).toEqual([["a", { total: -90 }]]);
       expect(query).not.toHaveBeenCalled();
+    });
+
+    describe("rounded once, after the parts are folded (issue #2384)", () => {
+      // Two days of 100.01 EUR at 1.2474 are 124.752474 USD each: 124.7525
+      // alone, 249.504948 together, which reads 249.5049. Summing the days'
+      // four-place readings came to 249.5050.
+      const twoDays = () =>
+        ["2026-01-12", "2026-01-13"].map((day) => ({
+          key: "a",
+          currencyCode: "EUR",
+          fx_day: day,
+          fx_original_currency: null,
+          fx_exchange_rate: "1",
+          total: "100.01",
+        }));
+      const query = () =>
+        jest.fn().mockResolvedValue([
+          {
+            from_currency: "EUR",
+            to_currency: "USD",
+            rate: "1.2474",
+            rate_date: "2026-01-10",
+          },
+        ]);
+
+      it("reads a figure once, from its days' parts", async () => {
+        const converted = await convertRateParts(
+          query(),
+          twoDays(),
+          "USD",
+          (row) => String(row.key),
+          { sums: ["total"], currency: "currencyCode" },
+        );
+
+        expect(converted.get("a")).toEqual({ total: 249.5049 });
+      });
+
+      it("hands a caller the figure unrounded, to fold into a total of its own", async () => {
+        const converted = await convertRatePartAggregates(
+          query(),
+          twoDays(),
+          "USD",
+          (row) => String(row.key),
+          { sums: ["total"], currency: "currencyCode" },
+        );
+
+        expect(converted.get("a")?.total?.unroundedSubtotal).toBe(249.504948);
+      });
     });
   });
 });

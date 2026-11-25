@@ -41,8 +41,11 @@ export class SpendingByCategoryResponse {
   totalSpending: number | null;
 
   /**
-   * Sum of `data`. Equals `totalSpending` when nothing was excluded; otherwise
-   * it is a subtotal and must be labelled as one, never under "Total".
+   * What `data`'s rows add up to, rounded once from their unrounded sums, so
+   * it can sit a ten-thousandth from the sum of the rounded rows
+   * (docs/specs/report-rounding-and-aggregation.md rule 4). Equals
+   * `totalSpending` when nothing was excluded; otherwise it is a subtotal and
+   * must be labelled as one, never under "Total".
    */
   @ApiProperty({ example: 5000.0 })
   knownSpending: number;

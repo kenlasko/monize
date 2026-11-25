@@ -321,6 +321,43 @@ describe("ForecastAggregatorService", () => {
       });
     });
 
+    it("rounds a month's totals once, from its categories (issue #2384)", async () => {
+      // Two expense categories of 100.01 EUR at 1.2474 are 124.752474 USD
+      // each: 249.504948 together, which reads 249.5049. Adding the
+      // categories' four-place readings came to 249.5050.
+      mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
+        mockQueryBuilder(
+          ["cat-dining", "cat-groceries"].map((categoryId) => ({
+            month: "2025-06",
+            categoryId,
+            categoryName: categoryId,
+            isIncome: false,
+            currencyCode: "EUR",
+            fx_day: "2025-06-20",
+            income: "0",
+            expenses: "100.01",
+          })),
+        ),
+      );
+      scoped.manager.query.mockResolvedValue([
+        {
+          from_currency: "EUR",
+          to_currency: "USD",
+          rate: "1.2474",
+          rate_date: "2025-06-20",
+        },
+      ]);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      const june = result.monthlyHistory[0];
+      expect(june.categoryBreakdown.map((c) => c.total)).toEqual([
+        124.7525, 124.7525,
+      ]);
+      expect(june.totalExpenses).toBe(249.5049);
+      expect(june.netCashFlow).toBe(-249.5049);
+    });
+
     describe("a row carrying its own rate (INV-FX-002)", () => {
       // EUR 100 charged to a USD card as USD 125 (1 EUR = 1.25 USD) on a day
       // the market said 1.175: Spending by Category reads EUR 100, and so must
@@ -697,6 +734,24 @@ describe("ForecastAggregatorService", () => {
       expect(result.scheduledTransactions[0].amount).toBe(150);
       // The stored -200 would have made this an expense in the model's summary.
       expect(result.scheduledTransactions[0].isIncome).toBe(true);
+    });
+
+    it("rounds the mean monthly income once, from the months' sum (issue #2384)", async () => {
+      // 100 + 100 + 100.01 over three months is 100.00333..., which reads
+      // 100.0033; the unrounded quotient used to reach the model as it was.
+      mockTransactionRepo.createQueryBuilder.mockImplementation(() =>
+        mockQueryBuilder(
+          [
+            ["2025-04", "100"],
+            ["2025-05", "100"],
+            ["2025-06", "100.01"],
+          ].map(([month, total]) => ({ month, total, payees: ["Source 1"] })),
+        ),
+      );
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.incomePatterns.averageMonthlyIncome).toBe(100.0033);
     });
 
     it("computes income patterns and variability", async () => {
