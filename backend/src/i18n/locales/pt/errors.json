@@ -563,6 +563,7 @@
     "mnyJobNotFound": "Tarefa de importação não encontrada",
     "mnyFileTooLarge": "Este ficheiro do Money excede o limite de importação de {{ limit }} MB.",
     "noRateForSplitTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: uma linha dividida transfere para uma conta noutra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente.",
+    "noRateForTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: a outra conta da transferência está em outra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente.",
     "duplicatesChanged": "Os possíveis duplicados mudaram desde que foram verificados. Nada foi importado; verifique novamente.",
     "duplicateDecisionRepeated": "Uma linha do ficheiro só pode ter uma decisão sobre o seu possível duplicado.",
     "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser unida nem substituída, e uma transferência ou uma transação com parcelas não pode ser substituída. Nada foi importado."

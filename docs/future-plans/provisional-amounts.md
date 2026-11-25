@@ -70,10 +70,13 @@ Proposed for `docs/system-invariants.md` under the next free ids of the FX famil
 | Writer | Effect |
 | --- | --- |
 | The importer creating the other account's leg of a cross-currency transfer (plain and split paths) | `true` |
-| The importer's three pending lookups, on a match | `false`, with the new amount |
+| The importer's lookup for this account's own file (`matchPendingTransfer`), on a match | `false`, with the file's amount; the two legs take the settlement rate the stated amounts imply (source 1, destination the ratio) |
+| The importer's two lookups for an orphaned leg (source deleted; the plain and split creation paths), on a match | stays `true`: the leg is re-linked and re-estimated at the row's rate, because the file being imported is the source's and still does not state this leg's amount (changed in issue #2390 from "`false`, with the new amount"; awaiting the maintainer's agreement on that issue's PR) |
 | The confirm action, `POST /transactions/:id/confirm-amount` | `false`, amount unchanged |
 | `updateTransfer`, when the request supplies an amount for the provisional leg that differs from the stored one | `false` |
 | Convert to an ordinary transaction, unlink, or any path that ends the leg's life as a transfer leg | `false` |
+
+A provisional leg is never a recorded transfer to the importer's duplicate check (`import-transfer-dedupe.ts`), so the account's own file confirms it even when it states exactly the estimate. A zero transfer across currencies needs no rate: its other leg is a confirmed zero and is never provisional.
 
 A transfer edit that reprices the provisional leg without a supplied amount (the reader changed only the other side, and the server computed the rest from the market rate) leaves it provisional: the new figure is still an estimate.
 

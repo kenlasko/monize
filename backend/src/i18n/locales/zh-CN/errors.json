@@ -563,6 +563,7 @@
     "mnyJobNotFound": "未找到导入任务",
     "mnyFileTooLarge": "该 Money 文件超过 {{ limit }} MB 的导入上限。",
     "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。",
+    "noRateForTransfer": "{{ date }} 没有 {{ pair }} 的汇率：转账的另一账户使用另一种货币。请为该货币对和日期添加汇率，然后重新导入。",
     "duplicatesChanged": "可能重复项在检查后已发生变化。未导入任何内容；请重新检查。",
     "duplicateDecisionRepeated": "文件中的一行对其可能重复项只能有一个决定。",
     "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容。"

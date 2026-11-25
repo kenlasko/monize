@@ -563,6 +563,7 @@
     "mnyJobNotFound": "Không tìm thấy tác vụ nhập",
     "mnyFileTooLarge": "Tệp Money đó lớn hơn giới hạn nhập {{ limit }} MB.",
     "noRateForSplitTransfer": "Không có tỷ giá cho {{ pair }} vào ngày {{ date }}: một dòng chia tách chuyển sang tài khoản bằng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
+    "noRateForTransfer": "Không có tỷ giá cho {{ pair }} vào {{ date }}: tài khoản bên kia của giao dịch chuyển khoản dùng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
     "duplicatesChanged": "Các giao dịch có thể trùng lặp đã thay đổi kể từ khi được kiểm tra. Chưa có gì được nhập; hãy kiểm tra lại.",
     "duplicateDecisionRepeated": "Mỗi dòng của tệp chỉ có thể có một quyết định về giao dịch có thể trùng lặp của nó.",
     "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập."

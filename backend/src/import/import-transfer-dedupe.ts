@@ -18,7 +18,16 @@ import { MONEY_SCALE, roundMoney } from "../common/round.util";
  * on one recorded transfer that has none (`adoptKeyOnRecordedTransfer`), so
  * each line claims its own row whatever order the file lists them in, and its
  * next download is skipped by the key.
+ *
+ * A leg whose amount is provisional (`amount_is_provisional`, the importer's
+ * estimate of a cross-currency leg) is never a recorded transfer here, even
+ * when the file states exactly the estimate: the line is this account's own
+ * statement of the amount, so it goes on to confirm the leg
+ * (`matchPendingTransfer`) instead of being skipped with the flag left set.
  */
+
+/** A row whose amount a file has stated; a provisional estimate is not one. */
+const CONFIRMED_AMOUNT_SQL = "t.amount_is_provisional = false";
 
 /** The account a transfer line names, by name and then case-insensitively. */
 function transferAccountIdOf(
@@ -102,6 +111,7 @@ export async function isDuplicateTransfer(
         .andWhere("t.is_transfer = true")
         .andWhere("t.transaction_date = :date", { date: qifTx.date })
         .andWhere("t.amount = :amount", { amount: qifTx.amount })
+        .andWhere(CONFIRMED_AMOUNT_SQL)
         .andWhere("linked.account_id = :linkedAccountId", {
           linkedAccountId: mappedTransferAccountId,
         })
@@ -138,6 +148,7 @@ export async function isDuplicateTransfer(
       .andWhere("t.is_transfer = true")
       .andWhere("t.transaction_date = :date", { date: qifTx.date })
       .andWhere("t.amount = :amount", { amount: qifTx.amount })
+      .andWhere(CONFIRMED_AMOUNT_SQL)
       .getCount();
 
     // Always count (same rationale as linked transfers above)
@@ -231,6 +242,7 @@ async function recordedTransferWithoutKey(
       .andWhere("t.is_transfer = true")
       .andWhere("t.transaction_date = :date", { date: qifTx.date })
       .andWhere("t.amount = :amount", { amount: qifTx.amount })
+      .andWhere(CONFIRMED_AMOUNT_SQL)
       .andWhere("t.external_id IS NULL")
       .andWhere("t.created_at < :importStartTime", {
         importStartTime: ctx.importStartTime,
