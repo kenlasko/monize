@@ -1,4 +1,3 @@
-import { isPendingImportAmount } from "../import/pending-import";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 
@@ -25,11 +24,13 @@ export interface TransferCounterpart {
  * that does not point back is not trusted. Read as conversion context only;
  * the counterpart is never a row of the report.
  *
- * A counterpart row still flagged `PENDING IMPORT` has no figure to read: its
- * amount is the QIF importer's placeholder until the other account's file
+ * A counterpart row whose `amountIsProvisional` is set has no figure to read:
+ * its amount is the importer's estimate until the other account's file
  * arrives, so the leg converts at the market rate meanwhile, and is reported
- * missing without one (issue #2338). A split parent's line is the file's own
- * figure and is never a placeholder.
+ * missing without one (issue #2338, design P4 of
+ * `docs/future-plans/provisional-amounts.md`). The column is the only signal;
+ * the description's text decides nothing. A split parent's line is the file's
+ * own figure and is never provisional.
  */
 export function transferCounterpartOf(
   tx: Transaction,
@@ -39,7 +40,7 @@ export function transferCounterpartOf(
     if (split.transferAccountId == null) return null;
     const leg = split.linkedTransaction;
     if (!leg || leg.linkedTransactionId !== tx.id) return null;
-    if (isPendingImportAmount(leg.description)) return null;
+    if (leg.amountIsProvisional) return null;
     return { amount: Number(leg.amount), currencyCode: leg.currencyCode };
   }
   if (!tx.isTransfer || tx.isSplit) return null;
@@ -55,7 +56,7 @@ export function transferCounterpartOf(
     return { amount: Number(line.amount), currencyCode: linked.currencyCode };
   }
   if (linked.linkedTransactionId !== tx.id) return null;
-  if (isPendingImportAmount(linked.description)) return null;
+  if (linked.amountIsProvisional) return null;
   return { amount: Number(linked.amount), currencyCode: linked.currencyCode };
 }
 

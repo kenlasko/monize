@@ -149,39 +149,41 @@ describe("transferCounterpartOf", () => {
     expect(transferCounterpartOf(parent, line({}))).toBeNull();
   });
 
-  describe("a counterpart still pending the other account's import (issue #2338)", () => {
-    const PENDING =
+  describe("a provisional counterpart (issue #2338, design P4)", () => {
+    const NOTE =
       "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.";
 
-    it("has none for a plain leg whose mirror leg holds the importer's placeholder", () => {
+    it("has none for a plain leg whose mirror leg holds the importer's estimate", () => {
       const tx = row({
         linkedTransaction: {
           amount: 100,
           currencyCode: "EUR",
           isSplit: false,
           linkedTransactionId: "tx-out",
-          description: `Rent ${PENDING}`,
+          description: "Rent",
+          amountIsProvisional: true,
         } as never,
       });
 
       expect(transferCounterpartOf(tx)).toBeNull();
     });
 
-    it("has none for a split transfer line whose counterpart row holds the placeholder", () => {
+    it("has none for a split transfer line whose counterpart row is provisional", () => {
       const parent = row({ id: "tx-split", isSplit: true, isTransfer: false });
       const split = line({
         linkedTransaction: {
           amount: 100,
           currencyCode: "EUR",
           linkedTransactionId: "tx-split",
-          description: PENDING,
+          description: null,
+          amountIsProvisional: true,
         } as never,
       });
 
       expect(transferCounterpartOf(parent, split)).toBeNull();
     });
 
-    it("reads the mirror leg again once its import replaced the placeholder", () => {
+    it("reads the mirror leg again once its import confirmed the amount", () => {
       const tx = row({
         linkedTransaction: {
           amount: 90,
@@ -189,6 +191,7 @@ describe("transferCounterpartOf", () => {
           isSplit: false,
           linkedTransactionId: "tx-out",
           description: "Rent",
+          amountIsProvisional: false,
         } as never,
       });
 
@@ -198,21 +201,55 @@ describe("transferCounterpartOf", () => {
       });
     });
 
-    it("still reads the posted side for the placeholder leg itself", () => {
-      // The pending EUR leg read in USD converts at what actually left the
-      // USD account: that side is the file's own figure.
+    it("reads a confirmed counterpart whose description still carries the old note", () => {
+      // The column is the only signal: the text decides nothing.
+      const tx = row({
+        linkedTransaction: {
+          amount: 90,
+          currencyCode: "EUR",
+          isSplit: false,
+          linkedTransactionId: "tx-out",
+          description: `Rent ${NOTE}`,
+          amountIsProvisional: false,
+        } as never,
+      });
+      const parent = row({ id: "tx-split", isSplit: true, isTransfer: false });
+      const split = line({
+        linkedTransaction: {
+          amount: 90,
+          currencyCode: "EUR",
+          linkedTransactionId: "tx-split",
+          description: NOTE,
+          amountIsProvisional: false,
+        } as never,
+      });
+
+      expect(transferCounterpartOf(tx)).toEqual({
+        amount: 90,
+        currencyCode: "EUR",
+      });
+      expect(transferCounterpartOf(parent, split)).toEqual({
+        amount: 90,
+        currencyCode: "EUR",
+      });
+    });
+
+    it("still reads the posted side for the provisional leg itself", () => {
+      // The provisional EUR leg read in USD converts at what actually left
+      // the USD account: that side is the file's own figure.
       const tx = row({
         id: "tx-in",
         amount: 100,
         currencyCode: "EUR",
         linkedTransactionId: "tx-out",
-        description: PENDING,
+        amountIsProvisional: true,
         linkedTransaction: {
           amount: -100,
           currencyCode: "USD",
           isSplit: false,
           linkedTransactionId: "tx-in",
           description: null,
+          amountIsProvisional: false,
         } as never,
       });
 

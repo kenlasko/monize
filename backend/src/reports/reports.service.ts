@@ -726,7 +726,7 @@ export class ReportsService {
           "splitLinkedTransaction.amount",
           "splitLinkedTransaction.currencyCode",
           "splitLinkedTransaction.linkedTransactionId",
-          "splitLinkedTransaction.description",
+          "splitLinkedTransaction.amountIsProvisional",
         ])
         .where("transaction.userId = :userId", { userId })
         .andWhere("transaction.transactionDate >= :startDate", { startDate })

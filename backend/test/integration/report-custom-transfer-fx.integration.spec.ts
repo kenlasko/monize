@@ -135,7 +135,9 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
   }
 
   /** -160 USD: 60 of groceries and a 100 USD line that arrived as 90 EUR. */
-  async function insertSplitTransfer(): Promise<void> {
+  async function insertSplitTransfer(
+    incoming: Partial<Transaction> = {},
+  ): Promise<void> {
     const parent = await insertRow({
       accountId: usdId,
       amount: -160,
@@ -149,6 +151,7 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
       currencyCode: "EUR",
       exchangeRate: 0.9,
       linkedTransactionId: parent.id,
+      ...incoming,
     });
     await dataSource.manager.save(
       dataSource.manager.create(TransactionSplit, {
@@ -201,14 +204,13 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
     expect(result.excludedCount).toBe(0);
   });
 
-  it("reads no figure off a placeholder still pending the EUR file's import (issue #2338)", async () => {
+  it("reads no figure off a provisional leg still pending the EUR file's import (issue #2338)", async () => {
     await preferring("EUR");
-    // What the USD file's import writes: the file's 100 as a placeholder.
+    // A provisional incoming leg: its amount is not yet what arrived.
     await insertPlainTransfer({
       amount: 100,
       exchangeRate: 1,
-      description:
-        "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+      amountIsProvisional: true,
     });
 
     const result = await run(usdId);
@@ -221,6 +223,23 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
     expect(result.summary.total).toBeNull();
     expect(result.missingCurrencies).toEqual(["USD"]);
     expect(result.excludedCount).toBe(1);
+  });
+
+  it("reads a confirmed leg whose description still carries the old note (design P4)", async () => {
+    await preferring("EUR");
+    await insertPlainTransfer({
+      description:
+        "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+      amountIsProvisional: false,
+    });
+
+    const result = await run(usdId);
+
+    // The column is the only signal: the posted 90 EUR is what arrived.
+    expect(result.data.map((d) => [d.account, d.value])).toEqual([
+      ["US Chequing", -90],
+    ]);
+    expect(result.missingCurrencies).toEqual([]);
   });
 
   it("reads the incoming leg alone in USD at what was sent", async () => {
@@ -254,6 +273,27 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
     expect(result.summary.knownTotal).toBe(-90);
     expect(result.missingCurrencies).toEqual(["USD"]);
     expect(result.excludedCount).toBe(1);
+  });
+
+  it("reads no figure off a split line's provisional counterpart (issue #2338)", async () => {
+    await preferring("EUR");
+    await insertSplitTransfer({ amountIsProvisional: true });
+
+    const result = await run(usdId);
+
+    // No rate is on file: both lines stay listed under their own amounts,
+    // with no converted value.
+    expect(
+      result.data
+        .map((d) => [d.accountAmount, d.value])
+        .sort((a, b) => Number(a[0]) - Number(b[0])),
+    ).toEqual([
+      [-100, null],
+      [-60, null],
+    ]);
+    expect(result.summary.total).toBeNull();
+    expect(result.missingCurrencies).toEqual(["USD"]);
+    expect(result.excludedCount).toBe(2);
   });
 
   it("reads a split transfer's counterpart at its own line, not the parent", async () => {

@@ -278,17 +278,13 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     expect(result.missingCurrencies).toEqual([]);
   });
 
-  it("keeps the market rate while the EUR legs hold the QIF importer's placeholder (issue #2338)", async () => {
+  it("keeps the market rate while the EUR legs are provisional (issue #2338)", async () => {
     await seed("EUR");
     await dataSource.query(
       `UPDATE transactions
-          SET description = $3
+          SET amount_is_provisional = true
         WHERE user_id = $1 AND account_id = $2`,
-      [
-        userId,
-        euId,
-        "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
-      ],
+      [userId, euId],
     );
 
     const flows = await asUser(() =>
@@ -302,6 +298,32 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     expect(flows.nodes.find((n) => n.id === "class:savings")?.total).toBe(160);
     expect(summary.converted).toMatchObject({
       totalExpenses: 208,
+      missingCurrencies: [],
+    });
+  });
+
+  it("reads confirmed EUR legs at 90 EUR whatever their description says (design P4)", async () => {
+    await seed("EUR");
+    await dataSource.query(
+      `UPDATE transactions
+          SET description = $3, amount_is_provisional = false
+        WHERE user_id = $1 AND account_id = $2`,
+      [
+        userId,
+        euId,
+        "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.",
+      ],
+    );
+
+    const flows = await asUser(() =>
+      sankey.getCashFlowSankey(userId, START, END, { accountIds: [usId] }),
+    );
+    const summary = await summaryOf([usId]);
+
+    // The column is the only signal: the old note's text decides nothing.
+    expect(flows.nodes.find((n) => n.id === "class:savings")?.total).toBe(180);
+    expect(summary.converted).toMatchObject({
+      totalExpenses: 228,
       missingCurrencies: [],
     });
   });
