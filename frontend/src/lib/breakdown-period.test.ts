@@ -2,61 +2,34 @@ import { describe, it, expect } from 'vitest';
 import {
   alignPeriodStart,
   asBreakdownPeriod,
-  breakdownByPeriod,
+  breakdownRequestEnd,
   currentPeriodKey,
   periodBounds,
   periodKeyOf,
   yearlyWindowStart,
 } from './breakdown-period';
-import type { MonthlyCategoryBreakdownResponse } from '@/types/built-in-reports';
 
-const response: MonthlyCategoryBreakdownResponse = {
-  currency: 'USD',
-  months: ['2024-11', '2024-12', '2025-01', '2025-02'],
-  data: [
-    {
-      categoryId: 'cat-groceries',
-      categoryName: 'Groceries',
-      parentId: null,
-      parentName: null,
-      parentIsIncome: null,
-      isIncome: false,
-      // 0.1 + 0.2 in floats is 0.30000000000000004; the year must be 0.3.
-      valuesByMonth: { '2024-11': 0.1, '2024-12': 0.2, '2025-01': 300, '2025-02': 400.55 },
-      depositTotal: 0,
-      withdrawalTotal: 700.85,
-    },
-  ],
-  transfers: [
-    {
-      accountId: 'acc-1',
-      accountName: 'Chequing',
-      direction: 'from',
-      valuesByMonth: { '2024-12': 50, '2025-02': 25 },
-    },
-  ],
-  missingCurrencies: [],
-  excludedCount: 0,
-};
+// The column in progress is left out by ending the window the day before it
+// opens, so the server's totals are over the columns shown (issue #2413).
+describe('breakdownRequestEnd', () => {
+  const now = new Date(2026, 10, 25); // 25 November 2026
 
-describe('breakdownByPeriod', () => {
-  it('returns the monthly answer untouched', () => {
-    expect(breakdownByPeriod(response, 'month')).toBe(response);
+  it('ends the window before the current month unless it is included', () => {
+    expect(breakdownRequestEnd('2026-11-25', '2026-05-01', 'month', false, now)).toBe('2026-10-31');
+    expect(breakdownRequestEnd('2026-11-25', '2026-05-01', 'month', true, now)).toBe('2026-11-25');
   });
 
-  it('folds every month into its calendar year, in integer money units', () => {
-    const yearly = breakdownByPeriod(response, 'year');
-    expect(yearly.months).toEqual(['2024', '2025']);
-    expect(yearly.data[0].valuesByMonth).toEqual({ '2024': 0.3, '2025': 700.55 });
-    expect(yearly.transfers[0].valuesByMonth).toEqual({ '2024': 50, '2025': 25 });
-    // Everything that is not a per-column figure is carried over as it came.
-    expect(yearly.data[0].withdrawalTotal).toBe(700.85);
-    expect(yearly.currency).toBe('USD');
+  it('ends a yearly window before the current year', () => {
+    expect(breakdownRequestEnd('2026-11-25', '2021-01-01', 'year', false, now)).toBe('2025-12-31');
   });
 
-  it('sorts the years even when the months arrive out of order', () => {
-    const yearly = breakdownByPeriod({ ...response, months: ['2025-01', '2023-05', '2024-02'] }, 'year');
-    expect(yearly.months).toEqual(['2023', '2024', '2025']);
+  it('keeps a window that ends before the current column as it is', () => {
+    expect(breakdownRequestEnd('2026-03-31', '2026-01-01', 'month', false, now)).toBe('2026-03-31');
+  });
+
+  it('asks for nothing when the whole window is the column in progress', () => {
+    expect(breakdownRequestEnd('2026-11-25', '2026-11-01', 'month', false, now)).toBeNull();
+    expect(breakdownRequestEnd('2026-11-25', '', 'month', false, now)).toBe('2026-10-31');
   });
 });
 

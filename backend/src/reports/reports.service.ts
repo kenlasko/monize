@@ -49,6 +49,7 @@ import {
 import { reportFigure, reportFigureOrNull } from "../common/report-figure";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
+  mergedSum,
   metricValue,
   ReportRow,
   shareOf,
@@ -1179,7 +1180,21 @@ export class ReportsService {
         }
       }
 
-      return result;
+      // A one-direction list's rows are shares of their own sum, divided here
+      // from the unrounded conversions: two 1.2474 rows read 1.25 each under a
+      // 2.49 headline and are 50% each, never 1.25 / 2.49 (rule 8, issue
+      // #2413). A signed (BOTH) list is no share of its net and gets none; a
+      // row with no rate has no share, and the whole is what converted.
+      if (config.direction === DirectionFilter.BOTH) return result;
+      const whole = mergedSum(result);
+      return result.map((row) =>
+        row.sum === null
+          ? row
+          : {
+              ...row,
+              point: { ...row.point, percentage: shareOf(row.sum, whole) },
+            },
+      );
     }
 
     // For other metrics, aggregate into a single total

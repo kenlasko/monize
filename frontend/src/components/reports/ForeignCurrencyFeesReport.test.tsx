@@ -9,11 +9,13 @@ vi.mock('@/lib/accounts', () => ({
 }));
 
 const mockGetFxFeeSummary = vi.fn();
+const mockGetFxFeeTotals = vi.fn();
 const mockGetAll = vi.fn();
 const mockGetById = vi.fn();
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
     getFxFeeSummary: (...a: unknown[]) => mockGetFxFeeSummary(...a),
+    getFxFeeTotals: (...a: unknown[]) => mockGetFxFeeTotals(...a),
     getAll: (...a: unknown[]) => mockGetAll(...a),
     getById: (...a: unknown[]) => mockGetById(...a),
   },
@@ -81,6 +83,32 @@ vi.mock('@/components/ui/MultiSelect', () => ({
   ),
 }));
 
+/** The server's totals over one month's fees. */
+function feeTotals(
+  currency: string,
+  total: number,
+  count: number,
+  gap: { missingCurrencies: string[]; excludedCount: number } = { missingCurrencies: [], excludedCount: 0 },
+) {
+  // A fee left out makes every figure over its month a subtotal: null, with
+  // the known part beside it.
+  const figure = gap.missingCurrencies.length === 0 ? total : null;
+  const bucket = (key: string, periodStart: string) => ({ key, periodStart, total: figure, knownTotal: total, count });
+  const average = { periodAverage: figure, knownPeriodAverage: total };
+  return {
+    currency,
+    total: figure,
+    knownTotal: total,
+    count,
+    byGranularity: {
+      month: { buckets: [bucket('2026-01', '2026-01-01')], ...average },
+      quarter: { buckets: [bucket('2026-Q1', '2026-01-01')], ...average },
+      year: { buckets: [bucket('2026', '2026-01-01')], ...average },
+    },
+    ...gap,
+  };
+}
+
 const accounts = [
   { id: 'cad-1', name: 'CAD Travel', currencyCode: 'CAD', fxFeePercent: 2.5 },
   { id: 'usd-1', name: 'USD Card', currencyCode: 'USD', fxFeePercent: 1.5 },
@@ -106,6 +134,11 @@ describe('ForeignCurrencyFeesReport', () => {
           : // 5 USD of fees, converted at each fee's own date to 7 CAD.
             [{ month: '2026-01', currencyCode: 'USD', feeTotal: 5, count: 1, convertedCurrency: 'CAD', convertedFeeTotal: 7 }],
       ),
+    );
+    // Mixed currencies total in CAD: 10 (CAD acct) + the server's 7 for the
+    // USD acct; the USD account alone totals its own 5 USD.
+    mockGetFxFeeTotals.mockImplementation((ids: string[]) =>
+      Promise.resolve(ids.length === 1 && ids[0] === 'usd-1' ? feeTotals('USD', 5, 1) : feeTotals('CAD', 17, 2)),
     );
     mockGetAll.mockResolvedValue({
       data: [],
@@ -144,25 +177,94 @@ describe('ForeignCurrencyFeesReport', () => {
     // Both eligible accounts fetched (default = all eligible).
     expect(mockGetFxFeeSummary).toHaveBeenCalledWith('cad-1');
     expect(mockGetFxFeeSummary).toHaveBeenCalledWith('usd-1');
-    // Mixed currencies -> CAD: 10 (CAD acct) + the server's 7 for the USD acct.
+    // The totals are asked of the server over both accounts, in CAD.
+    expect(mockGetFxFeeTotals).toHaveBeenCalledWith(['cad-1', 'usd-1'], []);
     expect(chartProps.current.currencyCode).toBe('CAD');
-    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 17, count: 2 }]);
+    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 17, knownSubtotal: 17, count: 2 }]);
+  });
+
+  // The page added each account's four-place conversions into its months, and
+  // the chart added those into its quarters and total: three fees of 2.50496
+  // read 7.50 where they come to 7.51. Every figure is now the server's
+  // (issue #2413).
+  it("hands the chart the server's columns, total and averages, never a sum of rows", async () => {
+    const served = {
+      currency: 'CAD',
+      total: 7.51,
+      knownTotal: 7.51,
+      count: 3,
+      byGranularity: {
+        month: {
+          buckets: [
+            { key: '2026-01', periodStart: '2026-01-01', total: 2.5, knownTotal: 2.5, count: 1 },
+            { key: '2026-02', periodStart: '2026-02-01', total: 2.5, knownTotal: 2.5, count: 1 },
+            { key: '2026-03', periodStart: '2026-03-01', total: 2.5, knownTotal: 2.5, count: 1 },
+          ],
+          periodAverage: 2.5,
+          knownPeriodAverage: 2.5,
+        },
+        quarter: {
+          buckets: [{ key: '2026-Q1', periodStart: '2026-01-01', total: 7.51, knownTotal: 7.51, count: 3 }],
+          periodAverage: 7.51,
+          knownPeriodAverage: 7.51,
+        },
+        year: {
+          buckets: [{ key: '2026', periodStart: '2026-01-01', total: 7.51, knownTotal: 7.51, count: 3 }],
+          periodAverage: 7.51,
+          knownPeriodAverage: 7.51,
+        },
+      },
+      missingCurrencies: [],
+      excludedCount: 0,
+    };
+    mockGetFxFeeTotals.mockResolvedValue(served);
+    await renderReport();
+
+    await waitFor(() => {
+      expect(chartProps.current?.totals).toEqual(served);
+    });
+    expect(chartProps.current.data).toEqual([
+      { month: '2026-01', total: 2.5, knownSubtotal: 2.5, count: 1 },
+      { month: '2026-02', total: 2.5, knownSubtotal: 2.5, count: 1 },
+      { month: '2026-03', total: 2.5, knownSubtotal: 2.5, count: 1 },
+    ]);
+  });
+
+  it('asks the server again with the paid currencies chosen', async () => {
+    await renderReport();
+    await waitFor(() => {
+      expect(screen.getByText('ccy-EUR')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('ccy-EUR'));
+    });
+    await waitFor(() => {
+      expect(mockGetFxFeeTotals).toHaveBeenLastCalledWith(['cad-1', 'usd-1'], ['EUR']);
+    });
+  });
+
+  it('says the totals failed rather than drawing no fees', async () => {
+    mockGetFxFeeTotals.mockRejectedValue(new Error('down'));
+    await renderReport();
+    await waitFor(() => {
+      expect(screen.getByText(/failed to load report data/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('fee-chart')).not.toBeInTheDocument();
   });
 
   it('leaves out a fee the server had no rate for on its date, never at face value', async () => {
-    mockGetFxFeeSummary.mockImplementation((id: string) =>
-      Promise.resolve(
-        id === 'cad-1'
-          ? [{ month: '2026-01', currencyCode: 'EUR', feeTotal: 10, count: 1, convertedCurrency: 'CAD', convertedFeeTotal: 10 }]
-          : [{ month: '2026-01', currencyCode: 'USD', feeTotal: 5, count: 1, convertedCurrency: 'CAD', convertedFeeTotal: null }],
-      ),
+    mockGetFxFeeTotals.mockResolvedValue(
+      feeTotals('CAD', 10, 1, { missingCurrencies: ['USD'], excludedCount: 1 }),
     );
     await renderReport();
 
     await waitFor(() => {
       expect(chartProps.current?.isLoading).toBe(false);
     });
-    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 10, count: 1 }]);
+    // The month lost a fee: its total withheld, the known 10 beside it.
+    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: null, knownSubtotal: 10, count: 1 }]);
+    expect(chartProps.current.totals.missingCurrencies).toEqual(['USD']);
+    expect(document.body).toHaveTextContent('USD');
   });
 
   it('shows native currency (no conversion) for a single-account selection', async () => {
@@ -179,7 +281,7 @@ describe('ForeignCurrencyFeesReport', () => {
       expect(chartProps.current.currencyCode).toBe('USD');
     });
     // Native USD, no 1.4 conversion applied.
-    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 5, count: 1 }]);
+    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 5, knownSubtotal: 5, count: 1 }]);
   });
 
   it('exports across the effective accounts and paid currencies', async () => {

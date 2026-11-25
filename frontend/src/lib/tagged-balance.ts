@@ -108,17 +108,25 @@ export function taggedBalanceWindow(
 }
 
 /**
- * One period's chart/table fields in the Balance view. The period's own income
- * and expenses go through `taggedBalance`; a period the active bucket has no
- * row for had no tagged transfer in it, which is a known zero. Balance keeps
- * the money precision `taggedBalance` sums at, since the table, the tooltip and
- * the CSV read it beside the chart (a whole-unit Balance was a CSV figure the
- * screen never showed); the percentage keeps its two decimals.
+ * One period's chart/table fields in the Balance view. The server's period
+ * Balance and Balance % where the bucket's period carries them, the four
+ * aggregates folded before they are read; `taggedBalance` over the four
+ * readings, which can sit a unit off, only for a backend that predates them
+ * (issue #2413). A period the active bucket has no row for had no tagged
+ * transfer in it, which is a known zero. Balance keeps the money precision,
+ * since the table, the tooltip and the CSV read it beside the chart (a
+ * whole-unit Balance was a CSV figure the screen never showed); the
+ * percentage keeps its two decimals.
  */
 export function periodBalanceFields(
   period: { income: number; expenses: number },
-  flows: { taggedInflows: number; taggedOutflows: number } | undefined,
+  flows:
+    | { taggedInflows: number; taggedOutflows: number; balance?: number; balancePercent?: number | null }
+    | undefined,
 ): { Balance?: number; BalancePercent: number | null } {
+  if (flows?.balance !== undefined) {
+    return { Balance: flows.balance, BalancePercent: flows.balancePercent ?? null };
+  }
   const { balance, balancePercent } = taggedBalance({
     income: period.income,
     expenses: period.expenses,

@@ -50,12 +50,20 @@ vi.mock('@/components/ui/DateRangeSelector', () => ({
 
 const mockGetMonthly = vi.fn();
 const mockGetIncomeVsExpenses = vi.fn();
-vi.mock('@/lib/built-in-reports', () => ({
-  builtInReportsApi: {
-    getMonthlyCategoryBreakdown: (...args: unknown[]) => mockGetMonthly(...args),
-    getIncomeVsExpenses: (...args: unknown[]) => mockGetIncomeVsExpenses(...args),
-  },
-}));
+// The fixtures write monthly cells; `serveBreakdown` answers them as the
+// server does, folded to the period asked for and with its totals.
+vi.mock('@/lib/built-in-reports', async () => {
+  const { serveBreakdown } = await import('@/test/monthly-breakdown-fixture');
+  return {
+    builtInReportsApi: {
+      getMonthlyCategoryBreakdown: (...args: unknown[]) =>
+        Promise.resolve(mockGetMonthly(...args)).then((fixture) =>
+          serveBreakdown(fixture, args[0] as never),
+        ),
+      getIncomeVsExpenses: (...args: unknown[]) => mockGetIncomeVsExpenses(...args),
+    },
+  };
+});
 
 const mockGetAllAccounts = vi.fn();
 vi.mock('@/lib/accounts', () => ({
@@ -161,7 +169,7 @@ describe('MonthlyCategoryBreakdownReport funding view', () => {
   it("is today's request with no key: no account scope, no funding call, no summary", async () => {
     mockGetAllTags.mockResolvedValue([]);
     await renderReport();
-    expect(mockGetMonthly).toHaveBeenCalledWith({ startDate: '2025-01-01', endDate: '2025-06-30' });
+    expect(mockGetMonthly).toHaveBeenCalledWith({ startDate: '2025-01-01', endDate: '2025-06-30', period: 'month' });
     expect(mockGetIncomeVsExpenses).not.toHaveBeenCalled();
     expect(screen.queryByTestId('monthly-tagged-balance')).not.toBeInTheDocument();
   });
@@ -169,7 +177,7 @@ describe('MonthlyCategoryBreakdownReport funding view', () => {
   it('changes nothing with a key and a value chosen but the switch off', async () => {
     await renderReport();
     await chooseScopeHousehold();
-    expect(mockGetMonthly).toHaveBeenLastCalledWith({ startDate: '2025-01-01', endDate: '2025-06-30' });
+    expect(mockGetMonthly).toHaveBeenLastCalledWith({ startDate: '2025-01-01', endDate: '2025-06-30', period: 'month' });
     expect(mockGetIncomeVsExpenses).not.toHaveBeenCalled();
     expect(screen.queryByTestId('monthly-tagged-balance')).not.toBeInTheDocument();
   });
@@ -204,7 +212,19 @@ describe('MonthlyCategoryBreakdownReport funding view', () => {
 
   it('shows the Balance block per year in the yearly view: 6,279 + 4,516 - 8,586 = 2,209', async () => {
     window.localStorage.setItem('monize-reports-monthly-category-breakdown-period', '"year"');
-    mockGetIncomeVsExpenses.mockResolvedValue(funding());
+    // Asked for years, the server answers one period per year, its months
+    // folded before it is read (issue #2413).
+    const year = (income: number, expenses: number) => ({
+      ...period('2025', income, expenses),
+      periodStart: '2025-01-01',
+      periodEnd: '2025-12-31',
+    });
+    mockGetIncomeVsExpenses.mockResolvedValue(
+      funding(
+        { data: [year(6279, 8586)] },
+        { data: [{ ...year(0, 0), taggedInflows: 4516, taggedOutflows: 0 }] },
+      ),
+    );
     await renderReport();
     await chooseScopeHousehold();
     await turnSwitchOn();
@@ -220,6 +240,9 @@ describe('MonthlyCategoryBreakdownReport funding view', () => {
     expect(row('Balance')).toHaveTextContent('$2209.00');
     // 2,209 / (6,279 + 4,516).
     expect(row('Balance %')).toHaveTextContent('20.46%');
+    expect(mockGetIncomeVsExpenses).toHaveBeenLastCalledWith(
+      expect.objectContaining({ bucket: 'year' }),
+    );
   });
 
   it('draws the Tagged outflows row once a shown month has some', async () => {
@@ -292,6 +315,7 @@ describe('MonthlyCategoryBreakdownReport funding view', () => {
     expect(mockGetMonthly).toHaveBeenLastCalledWith({
       startDate: '2025-01-01',
       endDate: '2025-06-30',
+      period: 'month',
       accountIds: [ACCOUNT],
     });
     await chooseScopeHousehold();

@@ -14,6 +14,11 @@ export interface TaggedFundingParams {
   tagValue: string;
   startDate: string | undefined;
   endDate: string;
+  /**
+   * The period width: a yearly report asks for years, which the server folds
+   * from their months before it reads them. Defaults to month.
+   */
+  bucket?: 'month' | 'year';
   /** The page's account scope; empty = every account. */
   accountIds: string[];
   /**
@@ -34,7 +39,7 @@ export interface TaggedFunding {
 
 /**
  * The one funding fetch of the other reports (spec section 11.1, F3): Income vs
- * Expenses by month for the page's window and account scope, broken down by the
+ * Expenses by month (or by year) for the page's window and account scope, broken down by the
  * chosen tag key. Makes no request while `enabled` is false.
  */
 export function useTaggedFunding({
@@ -43,6 +48,7 @@ export function useTaggedFunding({
   tagValue,
   startDate,
   endDate,
+  bucket = 'month',
   accountIds,
   transferScope,
 }: TaggedFundingParams): TaggedFunding {
@@ -58,7 +64,7 @@ export function useTaggedFunding({
         ? builtInReportsApi.getIncomeVsExpenses({
             startDate,
             endDate,
-            bucket: 'month',
+            bucket,
             tagKey,
             ...(accountIds.length > 0
               ? { accountIds }
@@ -67,7 +73,7 @@ export function useTaggedFunding({
                 : {}),
           })
         : Promise.resolve(null),
-    [fetching, tagKey, startDate, endDate, accountIdsKey, scopeKey],
+    [fetching, tagKey, startDate, endDate, bucket, accountIdsKey, scopeKey],
   );
 
   const window = useMemo(

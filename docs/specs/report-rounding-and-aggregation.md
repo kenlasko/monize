@@ -275,7 +275,8 @@ the wire; stage 2 removes the one-cent double rounding.
   insights and forecast prompts, which a model reads and does not hand out; the
   daily series the period result's P&L, TWR and MWR are worked out from
   (`getDailyInvestments`), which keeps four places so the returns are
-  calculated, not read off rounded figures. The Foreign Currency Fees report's
+  calculated, not read off rounded figures. Until stage 3 (issue #2413, which
+  moved those totals to the server), the Foreign Currency Fees report's
   converted rows keep four places too, while the page adds them into its
   month and grand totals: read at two, three 2.50496 fees would total 7.50
   where they come to 7.51 (stage 3 moves those totals to the server).
@@ -311,6 +312,41 @@ net worth gains `netWorthChangeFromStart`, each month less the series' first,
 the two aggregates' difference read once, for the window's change the Net
 Worth report and widget show: the difference of the two end readings sat a
 unit off it as the month-on-month change did (rule 4).
+
+Issue #2413 (totals the client summed from rounded rows): a total the
+response carries is read, never rebuilt. The custom report's chart reads each
+row's server `percentage`, and its Total row the server's headline. The Cash
+Flow PDF totals each category table from its own report. Weekend vs Weekday
+gains `weekendShare` / `weekdayShare`, divided from the two sides' unrounded
+sums (rule 8). A total only the page can build, over the accounts or
+schedules the reader's filters chose, folds the exact sums of its parts:
+`ConvertedTotal.exact` carries what `sumConverted` accumulated, and
+`combineTotals(totals, signs)` rounds the signed sum once. Before that, a net
+worth was the assets' reading less the liabilities' reading, so 0.12495 of
+assets and 0.00004 of liabilities read 0.1250 and 0.0000 and netted to
+0.1250, where the net, 0.12491, reads 0.1249 (rule 2). Account Balances' chart
+total and the Sankey's merged figures are summed once in the same way, and
+those page totals round once at the currency's own places, where they read
+four places and showed two. Weekend vs Weekday also sends each side's mean and
+the gap between them (`weekendAverage`, `weekdayAverage`,
+`averageDifference`).
+
+Two reports had no server total to read, and gain one. The Monthly & Yearly
+Breakdown takes `period=month|year` and the window the page shows, folds a
+year's months as aggregates, and sends every row, section, group, balance,
+transfer and overall figure and each average, read once
+(`monthly-category-breakdown-totals.ts`); three 0.005 months total 0.02, where
+the page's sum of the three readings was 0.03. Its funds block asks Income vs
+Expenses for `bucket=year`, and each tag-bucket period carries its Balance
+from the four aggregates. The Foreign Currency Fees report reads
+`GET /transactions/fx-fee-totals`, which folds the chosen accounts' fees and
+reads each month, quarter and year, the total and each average once: three
+fees of 2.50496 total 7.51, where the four-place rows summed to 7.50 at two
+places. A month that lost a fee for want of a rate makes every figure over it
+a subtotal (rule 7): its column's `total`, the grand `total` and the
+`periodAverage` are `null`, `knownTotal` and `knownPeriodAverage` carry what
+converted, and the chart marks the cards and the column partial. The fee
+summary's own converted rows then read at the currency's places.
 
 ## 8. Test matrix
 

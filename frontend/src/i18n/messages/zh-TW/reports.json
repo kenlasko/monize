@@ -157,6 +157,7 @@
     "pdfTitle": "科目結餘",
     "colAccount": "科目",
     "colBalance": "結餘",
+    "colCurrency": "貨幣",
     "scopeLabel": "顯示",
     "scopeAll": "資產與負債",
     "scopeAssets": "僅資產",

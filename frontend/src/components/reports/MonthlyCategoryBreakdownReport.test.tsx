@@ -64,12 +64,19 @@ vi.mock('@/components/reports/ReportError', () => ({
 }));
 
 const mockGetMonthlyCategoryBreakdown = vi.fn();
-vi.mock('@/lib/built-in-reports', () => ({
-  builtInReportsApi: {
-    getMonthlyCategoryBreakdown: (...args: unknown[]) =>
-      mockGetMonthlyCategoryBreakdown(...args),
-  },
-}));
+// The fixtures write monthly cells; `serveBreakdown` answers them as the
+// server does, folded to the period asked for and with its totals.
+vi.mock('@/lib/built-in-reports', async () => {
+  const { serveBreakdown } = await import('@/test/monthly-breakdown-fixture');
+  return {
+    builtInReportsApi: {
+      getMonthlyCategoryBreakdown: (...args: unknown[]) =>
+        Promise.resolve(mockGetMonthlyCategoryBreakdown(...args)).then((fixture) =>
+          serveBreakdown(fixture, args[0] as never),
+        ),
+    },
+  };
+});
 
 // The account filter and the tag controls read these on mount; the report is
 // the unchanged one while no key is chosen.
@@ -149,6 +156,7 @@ describe('MonthlyCategoryBreakdownReport', () => {
     expect(mockGetMonthlyCategoryBreakdown).toHaveBeenCalledWith({
       startDate: '2025-03-01',
       endDate: '2025-06-30',
+      period: 'month',
     });
   });
 
@@ -411,6 +419,66 @@ describe('MonthlyCategoryBreakdownReport', () => {
     expect(rows.some((r: unknown[]) => r[1] === 'Balance')).toBe(true);
   });
 
+  // Three months of 0.005 groceries read 0.01 each: the page added them into
+  // a row total, a section subtotal and the expense group's total of 0.03,
+  // and a balance of 0.03, where the months come to 0.015, read 0.02. Every
+  // total is now the server's (issue #2413).
+  it("prints the server's totals and averages, never the cells added up", async () => {
+    const line = (values: Record<string, number>, total: number, average: number) => ({
+      valuesByMonth: values,
+      total,
+      average,
+    });
+    const cells = { '2025-01': 0.01, '2025-02': 0.01, '2025-03': 0.01 };
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({
+      period: 'month',
+      currency: 'USD',
+      months: ['2025-01', '2025-02', '2025-03'],
+      data: [
+        {
+          categoryId: 'cat-groceries',
+          categoryName: 'Groceries',
+          parentId: 'cat-food',
+          parentName: 'Food & Dining',
+          parentIsIncome: false,
+          isIncome: false,
+          valuesByMonth: cells,
+          depositTotal: 0,
+          withdrawalTotal: 0.02,
+          sectionKey: 'cat-food',
+          total: 0.02,
+          average: 0.01,
+        },
+      ],
+      transfers: [],
+      sections: [{ key: 'cat-food', isIncome: false, ...line(cells, 0.02, 0.01) }],
+      summary: {
+        income: line({ '2025-01': 0, '2025-02': 0, '2025-03': 0 }, 0, 0),
+        expenses: line(cells, 0.02, 0.01),
+        balance: line({ '2025-01': -0.01, '2025-02': -0.01, '2025-03': -0.01 }, -0.02, -0.01),
+        transfers: line({ '2025-01': 0, '2025-02': 0, '2025-03': 0 }, 0, 0),
+        overall: line({ '2025-01': -0.01, '2025-02': -0.01, '2025-03': -0.01 }, -0.02, -0.01),
+      },
+      missingCurrencies: [],
+      excludedCount: 0,
+    });
+    render(<MonthlyCategoryBreakdownReport />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Groceries')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Groceries').closest('tr')).toHaveTextContent('- $0.02');
+    expect(document.body).not.toHaveTextContent('$0.03');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export CSV'));
+    });
+    const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+    expect(rows.find((r) => r[1] === 'Groceries')).toEqual(['Food & Dining', 'Groceries', -0.01, -0.01, -0.01, -0.02, -0.01]);
+    expect(rows.find((r) => r[1] === 'Total expenses')).toEqual(['', 'Total expenses', -0.01, -0.01, -0.01, -0.02, -0.01]);
+    expect(rows.find((r) => r[1] === 'Balance')).toEqual(['', 'Balance', -0.01, -0.01, -0.01, -0.02, -0.01]);
+  });
+
   it('applies deviation highlighting when a category has 3+ non-zero months', async () => {
     mockGetMonthlyCategoryBreakdown.mockResolvedValue(sampleResponse);
     const { container } = render(<MonthlyCategoryBreakdownReport />);
@@ -633,6 +701,11 @@ describe('MonthlyCategoryBreakdownReport', () => {
     const prevMonth = `${prev.getFullYear()}-${String(
       prev.getMonth() + 1,
     ).padStart(2, '0')}`;
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    // The window runs into the month in progress, which the request leaves
+    // out by ending on the last day of the month before (issue #2413).
+    mockResolvedRange.start = `${prevMonth}-01`;
+    mockResolvedRange.end = `${currentMonth}-01`;
 
     mockGetMonthlyCategoryBreakdown.mockResolvedValue({
       currency: 'USD',
@@ -661,6 +734,11 @@ describe('MonthlyCategoryBreakdownReport', () => {
     // By default the current (in-progress) month column is hidden, so its
     // value (500) does not appear anywhere.
     expect(screen.queryAllByText('+ $500.00').length).toBe(0);
+    expect(mockGetMonthlyCategoryBreakdown).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        endDate: `${prevMonth}-${String(prevMonthEnd.getDate()).padStart(2, '0')}`,
+      }),
+    );
 
     // Opting in brings the current month back.
     await act(async () => {

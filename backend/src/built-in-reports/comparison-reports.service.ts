@@ -12,6 +12,7 @@ import {
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
 import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
+import { reportFigure } from "../common/report-figure";
 import {
   YearOverYearResponse,
   YearData,
@@ -381,16 +382,39 @@ export class ComparisonReportsService {
       targetMap.set(displayId, existing);
     });
 
-    const totalOfDays = (days: number[]): number => {
+    const sumOfDays = (days: number[]): FxAggregate => {
       const sum = new FxAggregate();
       for (const day of days) sum.merge(dayTotals[day]);
-      return sum.knownSubtotalAt(places);
+      return sum;
     };
-    const knownWeekendTotal = totalOfDays([0, 6]);
-    const knownWeekdayTotal = totalOfDays([1, 2, 3, 4, 5]);
+    const weekendSum = sumOfDays([0, 6]);
+    const weekdaySum = sumOfDays([1, 2, 3, 4, 5]);
+    const knownWeekendTotal = weekendSum.knownSubtotalAt(places);
+    const knownWeekdayTotal = weekdaySum.knownSubtotalAt(places);
+    // Each side's share of the week's spending, divided from the unrounded
+    // sums: a share over the two rounded totals is a ratio of readings, not
+    // of the spending (docs/specs/report-rounding-and-aggregation.md rule 8).
+    // Withheld with the totals while a row is left out; 0 over no spending.
+    const whole = FxAggregate.sum([weekendSum, weekdaySum]);
+    const shareOf = (part: FxAggregate): number | null =>
+      !gaps.isComplete
+        ? null
+        : whole.sign > 0
+          ? (part.unroundedSubtotal / whole.unroundedSubtotal) * 100
+          : 0;
     const weekendCount = dayCounts[0] + dayCounts[6];
     const weekdayCount =
       dayCounts[1] + dayCounts[2] + dayCounts[3] + dayCounts[4] + dayCounts[5];
+    // A side's mean per transaction, and how far the weekend's sits above the
+    // weekday's, divided and subtracted before anything is rounded: a mean of
+    // a rounded total, or the difference of two rounded means, can sit a unit
+    // off (docs/specs/report-rounding-and-aggregation.md rules 4 and 8).
+    const meanOf = (sum: FxAggregate, count: number): number =>
+      count > 0 ? sum.unroundedSubtotal / count : 0;
+    const weekendMean = meanOf(weekendSum, weekendCount);
+    const weekdayMean = meanOf(weekdaySum, weekdayCount);
+    const averageOf = (mean: number): number | null =>
+      gaps.isComplete ? reportFigure(mean, places) : null;
 
     const byDay: DaySpending[] = dayTotals.map((total, index) => ({
       dayOfWeek: index,
@@ -425,6 +449,11 @@ export class ComparisonReportsService {
         weekdayTotal: gaps.headline(knownWeekdayTotal),
         knownWeekendTotal,
         knownWeekdayTotal,
+        weekendShare: shareOf(weekendSum),
+        weekdayShare: shareOf(weekdaySum),
+        weekendAverage: averageOf(weekendMean),
+        weekdayAverage: averageOf(weekdayMean),
+        averageDifference: averageOf(weekendMean - weekdayMean),
         weekendCount,
         weekdayCount,
       },

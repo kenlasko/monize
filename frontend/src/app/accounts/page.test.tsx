@@ -817,6 +817,26 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('summary-Total Assets')).not.toHaveTextContent('partial total');
     });
 
+    // Each side was read at four places and then shown at two: assets of
+    // 0.12495 read 0.1250 and printed $0.13, and the net of the two readings
+    // printed $0.13 too, where the assets are $0.12 and the net, 0.12491, is
+    // $0.12 (issue #2413).
+    it('nets the two sides before rounding, once at the places shown', async () => {
+      mockRates = { USD: 1, EUR: 0.5, GBP: 0.4 };
+      mockGetAll.mockResolvedValue([
+        { id: 'acc-1', name: 'Checking', accountType: 'CHECKING', accountSubType: null, currencyCode: 'USD', currentBalance: 0.1249, isClosed: false, canDelete: true },
+        { id: 'acc-eur', name: 'Euro', accountType: 'SAVINGS', accountSubType: null, currencyCode: 'EUR', currentBalance: 0.0001, isClosed: false, canDelete: true },
+        { id: 'acc-gbp', name: 'Sterling card', accountType: 'CREDIT_CARD', accountSubType: null, currencyCode: 'GBP', currentBalance: -0.0001, isClosed: false, canDelete: true },
+      ]);
+      render(<AccountsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('$0.12');
+      });
+      expect(screen.getByTestId('summary-Total Liabilities')).toHaveTextContent('$0.00');
+      expect(screen.getByTestId('summary-Net Worth')).toHaveTextContent('$0.12');
+    });
+
     // Net worth is assets minus liabilities, so a hole in the liability side
     // makes the difference partial too.
     it('propagates incompleteness from liabilities into net worth', async () => {

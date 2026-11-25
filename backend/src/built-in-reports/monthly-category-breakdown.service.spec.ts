@@ -167,6 +167,101 @@ describe("MonthlyCategoryBreakdownService", () => {
     expect(result.missingCurrencies).toEqual(["EUR"]);
   });
 
+  // Two months of 0.005 groceries read 0.01 each: the page added the two
+  // readings into a year cell, a row total and the section's and group's
+  // totals of 0.02, where the months come to 0.01 (issue #2413).
+  describe("totals read once from the cells' aggregates", () => {
+    const grocery = (month: string) => ({
+      month,
+      category_id: "cat-child",
+      currency_code: "USD",
+      tx_date: `${month}-10`,
+      own_rate: null,
+      deposits: "0",
+      withdrawals: "0.005",
+    });
+
+    beforeEach(() => {
+      categoriesRepository.find.mockResolvedValue([
+        mockParentCategory,
+        mockChildCategory,
+        mockIncomeCategory,
+      ]);
+    });
+
+    it("folds a year's months before reading its cell", async () => {
+      scopedManager.query
+        .mockResolvedValueOnce([grocery("2025-01"), grocery("2025-02")])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.getMonthlyCategoryBreakdown(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+        { period: "year" },
+      );
+
+      expect(result.period).toBe("year");
+      expect(result.months).toEqual(["2025"]);
+      expect(result.data[0].valuesByMonth).toEqual({ "2025": 0.01 });
+      expect(result.data[0]).toMatchObject({
+        sectionKey: "cat-parent",
+        total: 0.01,
+        average: 0.01,
+      });
+      expect(result.sections).toEqual([
+        {
+          key: "cat-parent",
+          isIncome: false,
+          valuesByMonth: { "2025": 0.01 },
+          total: 0.01,
+          average: 0.01,
+        },
+      ]);
+      expect(result.summary.expenses.total).toBe(0.01);
+      expect(result.summary.balance.total).toBe(-0.01);
+    });
+
+    it("reads a monthly row's total and the groups once", async () => {
+      scopedManager.query
+        .mockResolvedValueOnce([grocery("2025-01"), grocery("2025-02")])
+        .mockResolvedValueOnce([
+          {
+            month: "2025-02",
+            account_id: "acc-chequing",
+            account_name: "Chequing",
+            currency_code: "USD",
+            tx_date: "2025-02-03",
+            outflow: "0.005",
+            inflow: "0",
+          },
+        ]);
+
+      const result = await service.getMonthlyCategoryBreakdown(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.period).toBe("month");
+      expect(result.data[0].valuesByMonth).toEqual({
+        "2025-01": 0.01,
+        "2025-02": 0.01,
+      });
+      // 0.010 over two months, read once: 0.01, its mean 0.005 reads 0.01.
+      expect(result.data[0]).toMatchObject({ total: 0.01, average: 0.01 });
+      // 0.005 over two months: its mean, 0.0025, reads 0.00.
+      expect(result.transfers[0]).toMatchObject({ total: 0.01, average: 0 });
+      // February's 0.005 of spending and 0.005 transferred net to zero, and
+      // the window's -0.010 + 0.005 is -0.005, read once: -0.01.
+      expect(result.summary.overall.valuesByMonth).toEqual({
+        "2025-01": -0.01,
+        "2025-02": 0,
+      });
+      expect(result.summary.overall.total).toBe(-0.01);
+    });
+  });
+
   it("returns empty data when no transactions exist", async () => {
     const result = await service.getMonthlyCategoryBreakdown(
       mockUserId,

@@ -157,6 +157,7 @@
     "pdfTitle": "खाता शेष",
     "colAccount": "खाता",
     "colBalance": "शेष",
+    "colCurrency": "मुद्रा",
     "scopeLabel": "दिखाएँ",
     "scopeAll": "संपत्तियाँ और देनदारियाँ",
     "scopeAssets": "केवल संपत्तियाँ",

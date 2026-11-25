@@ -448,6 +448,75 @@ describe("ComparisonReportsService", () => {
   // getWeekendVsWeekday
   // ---------------------------------------------------------------------------
   describe("getWeekendVsWeekday", () => {
+    // 0.0049 on a Saturday and 0.0051 on a Tuesday read 0.00 and 0.01, so a
+    // share over the two totals read 0% and 100% where the spending splits
+    // 49% and 51% (docs/specs/report-rounding-and-aggregation.md rule 8,
+    // issue #2413).
+    it("divides each side's share from the unrounded sums, not the two totals", async () => {
+      scopedManager.query.mockResolvedValue([
+        {
+          day_of_week: 6,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 1,
+          total: "0.0049",
+        },
+        {
+          day_of_week: 2,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 1,
+          total: "0.0051",
+        },
+      ]);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getWeekendVsWeekday(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.summary.weekendTotal).toBe(0);
+      expect(result.summary.weekdayTotal).toBe(0.01);
+      expect(result.summary.weekendShare).toBeCloseTo(49, 10);
+      expect(result.summary.weekdayShare).toBeCloseTo(51, 10);
+    });
+
+    // 10.01 over two weekend transactions and 5.004 over one weekday one. The
+    // page divided the two read totals (10.01 and 5.00), so the means' gap was
+    // 5.005 - 5.00 = 0.005, shown as a cent; the gap of the unrounded means,
+    // 5.005 - 5.004 = 0.001, reads 0.00 (issue #2413).
+    it("divides each mean and the means' difference before reading them", async () => {
+      scopedManager.query.mockResolvedValue([
+        {
+          day_of_week: 0,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 2,
+          total: "10.01",
+        },
+        {
+          day_of_week: 3,
+          category_id: null,
+          currency_code: "USD",
+          tx_count: 1,
+          total: "5.004",
+        },
+      ]);
+      categoriesRepository.find.mockResolvedValue([]);
+
+      const result = await service.getWeekendVsWeekday(
+        mockUserId,
+        "2025-01-01",
+        "2025-12-31",
+      );
+
+      expect(result.summary.weekendAverage).toBe(5.01);
+      expect(result.summary.weekdayAverage).toBe(5);
+      expect(result.summary.averageDifference).toBe(0);
+    });
+
     it("returns zeroed summary when no transactions exist", async () => {
       scopedManager.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
@@ -1164,6 +1233,11 @@ describe("ComparisonReportsService", () => {
       expect(result.summary.weekdayTotal).toBeNull();
       expect(result.summary.knownWeekendTotal).toBe(50);
       expect(result.summary.knownWeekdayTotal).toBe(0);
+      // A share or a mean of a withheld week is withheld with it.
+      expect(result.summary.weekendShare).toBeNull();
+      expect(result.summary.weekdayShare).toBeNull();
+      expect(result.summary.weekendAverage).toBeNull();
+      expect(result.summary.averageDifference).toBeNull();
       expect(result.summary.weekendCount).toBe(1);
       expect(result.currency).toBe("USD");
       expect(result.missingCurrencies).toEqual(["JPY"]);
@@ -1182,6 +1256,10 @@ describe("ComparisonReportsService", () => {
 
       expect(result.summary.weekendTotal).toBe(0);
       expect(result.summary.weekdayTotal).toBe(0);
+      expect(result.summary.weekendShare).toBe(0);
+      expect(result.summary.weekdayShare).toBe(0);
+      expect(result.summary.weekendAverage).toBe(0);
+      expect(result.summary.weekdayAverage).toBe(0);
       expect(result.missingCurrencies).toEqual([]);
       expect(result.excludedCount).toBe(0);
     });

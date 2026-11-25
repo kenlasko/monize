@@ -157,6 +157,7 @@
     "pdfTitle": "Soldes des comptes",
     "colAccount": "Compte",
     "colBalance": "Solde",
+    "colCurrency": "Devise",
     "scopeLabel": "Afficher",
     "scopeAll": "Actifs et passifs",
     "scopeAssets": "Actifs uniquement",

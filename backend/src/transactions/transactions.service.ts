@@ -4820,6 +4820,18 @@ export class TransactionsService {
     return this.analyticsService.getFxFeeSummary(userId, accountId);
   }
 
+  async getFxFeeTotals(
+    userId: string,
+    accountIds: readonly string[],
+    currencyCodes?: readonly string[],
+  ) {
+    return this.analyticsService.getFxFeeTotals(
+      userId,
+      accountIds,
+      currencyCodes,
+    );
+  }
+
   async getSplits(userId: string, transactionId: string) {
     await this.findOne(userId, transactionId);
     return this.splitService.getSplits(transactionId);

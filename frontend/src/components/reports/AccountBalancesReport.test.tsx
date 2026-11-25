@@ -278,6 +278,35 @@ describe("AccountBalancesReport", () => {
     ).toBeInTheDocument();
   });
 
+  // Each card was read at four places and shown at two: assets of 0.12495
+  // read 0.1250 and printed $0.13, and so did the net of the two readings,
+  // where the assets are $0.12 and the net, 0.12491, is $0.12 (issue #2413).
+  it("nets the two sides before rounding, once at the places shown", async () => {
+    mockGetAll.mockResolvedValue([
+      acc(),
+      acc({ id: "acc-2", name: "Euro Savings", accountType: "SAVINGS", currencyCode: "EUR" }),
+      acc({ id: "acc-3", name: "Visa", accountType: "CREDIT_CARD", currencyCode: "USD" }),
+    ]);
+    mockGetBalancesAsOf.mockResolvedValue(
+      balancesFor(
+        [
+          balance("acc-1", 0.1249),
+          balance("acc-2", 0.0001, { currencyCode: "EUR" }),
+          balance("acc-3", -0.0001, { currencyCode: "USD" }),
+        ],
+        TODAY,
+        { CAD: 1, EUR: 0.5, USD: 0.4 },
+      ),
+    );
+    render(<AccountBalancesReport />);
+    await waitFor(() => {
+      expect(screen.getByText("Total Assets")).toBeInTheDocument();
+    });
+    expect(within(screen.getByTestId("summary-assets")).getByText("$0.12")).toBeInTheDocument();
+    expect(within(screen.getByTestId("summary-liabilities")).getByText("$0.00")).toBeInTheDocument();
+    expect(within(screen.getByTestId("summary-networth")).getByText("$0.12")).toBeInTheDocument();
+  });
+
   it("navigates to the register on an account click", async () => {
     mockGetAll.mockResolvedValue([acc()]);
     mockGetBalancesAsOf.mockResolvedValue(balancesFor([balance("acc-1", 5000)]));
@@ -920,6 +949,63 @@ describe("AccountBalancesReport", () => {
       expect(screen.queryByTestId("chart-net-worth")).not.toBeInTheDocument();
     });
 
+    // Each slice is read at four places on its own: two of 0.00005 read 0.0001
+    // each, so the slices summed to 0.1250 ($0.13) where the accounts come to
+    // 0.1249 ($0.12), and an account with no rate left the "Total" unmarked
+    // (issue #2413).
+    it("prints the accounts summed once under Total, not the slices' sum", async () => {
+      mockGetAll.mockResolvedValue([
+        acc({ currentBalance: 0.1248 }),
+        acc({ id: "acc-2", name: "Euro Savings", accountType: "SAVINGS", currencyCode: "EUR" }),
+        acc({ id: "acc-3", name: "Euro Cash", accountType: "CASH", currencyCode: "EUR" }),
+      ]);
+      mockGetBalancesAsOf.mockResolvedValue(
+        balancesFor(
+          [
+            balance("acc-1", 0.1248),
+            balance("acc-2", 0.0001, { currencyCode: "EUR" }),
+            balance("acc-3", 0.0001, { currencyCode: "EUR" }),
+          ],
+          TODAY,
+          { CAD: 1, EUR: 0.5 },
+        ),
+      );
+      render(<AccountBalancesReport />);
+      await waitFor(() => {
+        expect(screen.getByText("Total Assets")).toBeInTheDocument();
+      });
+      await act(async () => { fireEvent.click(chartViewButton()); });
+      await waitFor(() => {
+        expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
+      });
+      expect(screen.getByTestId("chart-total")).toHaveTextContent("$0.12");
+      expect(
+        within(screen.getByTestId("chart-total")).queryByTestId("partial-total-marker"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("marks the chart's Total partial when an account has no rate", async () => {
+      mockGetAll.mockResolvedValue([
+        acc({ currentBalance: 3000 }),
+        acc({ id: "acc-2", name: "Yen Savings", accountType: "SAVINGS", currencyCode: "JPY" }),
+      ]);
+      mockGetBalancesAsOf.mockResolvedValue(
+        balancesFor([balance("acc-1", 3000), balance("acc-2", 7000, { currencyCode: "JPY" })]),
+      );
+      render(<AccountBalancesReport />);
+      await waitFor(() => {
+        expect(screen.getByText("Total Assets")).toBeInTheDocument();
+      });
+      await act(async () => { fireEvent.click(chartViewButton()); });
+      await waitFor(() => {
+        expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
+      });
+      expect(screen.getByTestId("chart-total")).toHaveTextContent("$3000.00");
+      expect(
+        within(screen.getByTestId("chart-total")).getByTestId("partial-total-marker"),
+      ).toBeInTheDocument();
+    });
+
     it("draws each ungrouped account signed, liabilities on their own palette", async () => {
       mockGetAll.mockResolvedValue([
         acc(),
@@ -999,8 +1085,52 @@ describe("AccountBalancesReport", () => {
     });
     const [filename, headers, rows] = mockExportToCsv.mock.calls[0];
     expect(filename).toBe("account-balances-2024-03-31");
-    expect(headers).toEqual(["Account", "Group", "Balance"]);
-    expect(rows).toEqual([["Chequing", "Chequing", "$5000.00"]]);
+    expect(headers).toEqual(["Account", "Group", "Balance", "Currency"]);
+    expect(rows).toEqual([["Chequing", "Chequing", 5000, "CAD"]]);
+  });
+
+  // A CSV money cell is the number in its own currency, named beside it, never
+  // the screen's formatted text; an unknown balance is the screen's cause text,
+  // never 0 (docs/frontend/financial-figures.md, issue #2413).
+  it("exports each balance as a number in its own currency, and an unknown one as its cause", async () => {
+    mockGetAll.mockResolvedValue([
+      acc({ id: "acc-1", currencyCode: "EUR" }),
+      acc({
+        id: "acc-inv",
+        name: "Brokerage",
+        accountType: "INVESTMENT",
+        accountSubType: "INVESTMENT_BROKERAGE",
+      }),
+    ]);
+    mockGetBalancesAsOf.mockResolvedValue(
+      balancesFor(
+        [
+          balance("acc-1", 2.505, { currencyCode: "EUR" }),
+          balance("acc-inv", 0, { unpricedHoldingsCount: 1, valuationComplete: false }),
+        ],
+        "2024-03-31",
+        { CAD: 1, EUR: 1.5 },
+      ),
+    );
+    render(<AccountBalancesReport />);
+    await waitFor(() => {
+      expect(screen.getByTestId("export-csv")).toBeInTheDocument();
+    });
+    await act(async () => { fireEvent.click(screen.getByTestId("export-csv")); });
+    await waitFor(() => {
+      expect(mockExportToCsv).toHaveBeenCalled();
+    });
+    const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
+    expect(rows.find((row) => row[0] === "Chequing")).toEqual(["Chequing", "Chequing", 2.505, "EUR"]);
+    const brokerage = rows.find((row) => row[0] === "Brokerage")!;
+    expect(typeof brokerage[2]).toBe("string");
+    expect(brokerage[2]).not.toBe("0");
+
+    const { exportToPdf } = await import("@/lib/pdf-export");
+    (exportToPdf as any).mockClear();
+    await act(async () => { fireEvent.click(screen.getByTestId("export-pdf")); });
+    const pdfRows = (exportToPdf as any).mock.calls[0][0].tableData.rows as string[][];
+    expect(pdfRows.find((row) => row[0] === "Chequing")).toEqual(["Chequing", "Chequing", "$2.50"]);
   });
 
   it("shows the report error state when a fetch fails", async () => {

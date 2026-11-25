@@ -1027,6 +1027,8 @@ describe("ReportsService", () => {
           1000, -300, 30, -60, 500,
         ]);
         expect(result.summary.total).toBe(1170);
+        // A signed row is no share of the net.
+        expect(result.data.every((d) => d.percentage === undefined)).toBe(true);
       });
 
       it("nets both legs of an in-scope transfer to zero in a BOTH list", async () => {
@@ -2518,6 +2520,9 @@ describe("ReportsService", () => {
           // rounding, 2.49, not the 2.50 the rows add to (rule 4).
           expect(small.data.map((d) => d.value)).toEqual([1.25, 1.25]);
           expect(small.summary.total).toBe(2.49);
+          // Each row's share is divided from the unrounded amounts: 50%, not
+          // 1.25 / 2.49 = 50.2%, which would add to 100.4% (issue #2413).
+          expect(small.data.map((d) => d.percentage)).toEqual([50, 50]);
         });
 
         it("reads a 2.50498 figure as 2.50, in the headline and the transaction list (issue #2410)", async () => {
@@ -2771,6 +2776,12 @@ describe("ReportsService", () => {
             ["tx-1", 200, 200],
             ["tx-3", null, 6000],
             ["tx-3", null, 4000],
+          ]);
+          // A share is of what converted; a row with no rate has none.
+          expect(result.data.map((d) => d.percentage)).toEqual([
+            100,
+            undefined,
+            undefined,
           ]);
           expect(result.summary.knownTotal).toBe(200);
           expect(result.excludedCount).toBe(2);

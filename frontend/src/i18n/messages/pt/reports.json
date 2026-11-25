@@ -157,6 +157,7 @@
     "pdfTitle": "Saldos de Contas",
     "colAccount": "Conta",
     "colBalance": "Saldo",
+    "colCurrency": "Moeda",
     "scopeLabel": "Mostrar",
     "scopeAll": "Ativos e passivos",
     "scopeAssets": "Apenas ativos",

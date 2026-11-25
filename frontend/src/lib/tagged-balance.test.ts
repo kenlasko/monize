@@ -92,6 +92,17 @@ describe('taggedBalanceWindow', () => {
 });
 
 describe('periodBalanceFields', () => {
+  // 0.015 + 0.005 - 0.005 - 0.004 read as 0.02 + 0.01 - 0.01 - 0.00 was 0.02;
+  // the server's period Balance, folded first, is 0.01 (issue #2413).
+  it("reads the server's period Balance where the bucket carries one", () => {
+    expect(
+      periodBalanceFields(
+        { income: 0.02, expenses: 0.01 },
+        { taggedInflows: 0.01, taggedOutflows: 0, balance: 0.01, balancePercent: 55 },
+      ),
+    ).toEqual({ Balance: 0.01, BalancePercent: 55 });
+  });
+
   it('rounds the balance to whole units and keeps the percentage', () => {
     expect(
       periodBalanceFields({ income: 3279, expenses: 8486 }, { taggedInflows: 4516, taggedOutflows: 0 }),

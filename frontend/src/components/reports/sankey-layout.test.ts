@@ -223,6 +223,37 @@ describe('toRechartsSankey', () => {
   });
 });
 
+// The merged figures are the server's apportioned parts added up; in floats
+// 0.1 + 0.2 drew 0.30000000000000004 (issue #2413).
+describe('toRechartsSankey merged figures', () => {
+  function smallCategories(): CashFlowSankeyResponse {
+    // Ten categories of 10 keep their nodes; 0.1 and 0.2 merge into Other.
+    const kept = Array.from({ length: MAX_NODES_PER_COLUMN }, (_, i) => node(`expense:k${i}`, 10));
+    const small = [node('expense:a', 0.1), node('expense:b', 0.2)];
+    return response(
+      [node('income:salary', 100.3), node('hub', 100.3), ...kept, ...small],
+      [
+        link('income:salary', 'hub', 100.3),
+        ...[...kept, ...small].map((e) => link('hub', e.id, e.total)),
+      ],
+    );
+  }
+
+  it("adds the Other node's members at the currency's places", () => {
+    const drawing = toRechartsSankey(smallCategories(), OPTIONS);
+    const other = drawing.nodes.find((n) => n.kind === 'other');
+    expect(other?.value).toBe(0.3);
+  });
+
+  it('adds the links merged into one at the currency\'s places', () => {
+    const drawing = toRechartsSankey(smallCategories(), OPTIONS);
+    const otherIndex = drawing.nodes.findIndex((n) => n.kind === 'other');
+    const merged = drawing.links.filter((l) => l.target === otherIndex);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].value).toBe(0.3);
+  });
+});
+
 describe('toRechartsSankey with a net-refund subcategory', () => {
   /** True when the drawn links hold no cycle, which recharts cannot lay out. */
   function acyclic(links: Array<{ source: number; target: number }>): boolean {

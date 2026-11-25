@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sumConverted, combineTotals, isComplete, reportTotal } from './currency-total';
+import { absoluteTotal, sumConverted, combineTotals, isComplete, reportTotal } from './currency-total';
 
 interface Row {
   amount: number;
@@ -131,7 +131,7 @@ describe('combineTotals', () => {
   it('subtracts values and keeps both totals complete', () => {
     const assets = sum(rows([100, 'CAD']));
     const liabilities = sum(rows([40, 'CAD']));
-    const net = combineTotals([assets, liabilities], ([a, l]) => a - l);
+    const net = combineTotals([assets, liabilities], [1, -1]);
     expect(net.value).toBe(60);
     expect(isComplete(net)).toBe(true);
   });
@@ -141,18 +141,67 @@ describe('combineTotals', () => {
   it('inherits incompleteness from either side', () => {
     const assets = sum(rows([100, 'CAD']));
     const liabilities = sum(rows([40, 'CAD'], [5, 'EUR']));
-    const net = combineTotals([assets, liabilities], ([a, l]) => a - l);
+    const net = combineTotals([assets, liabilities], [1, -1]);
     expect(net.value).toBe(60);
     expect(net.missingCurrencies).toEqual(['EUR']);
     expect(isComplete(net)).toBe(false);
   });
 
+  // Each side's components round up on their own: assets of 0.00008 read
+  // 0.0001 and liabilities of 0.00004 read 0.0000, so the difference of the
+  // two readings was 0.0001 where the net, 0.00004, reads 0.0000 (issue #2413).
+  it('nets the two exact sums and rounds once, not the two readings', () => {
+    const assets = sum(rows([0.00004, 'CAD'], [0.00004, 'CAD']));
+    const liabilities = sum(rows([0.00004, 'CAD']));
+    expect(assets.value).toBe(0.0001);
+    expect(liabilities.value).toBe(0);
+    expect(combineTotals([assets, liabilities], [1, -1]).value).toBe(0);
+  });
+
+  it('nets at the places it is given, from the exact sums', () => {
+    const at2 = (...items: [number, string][]) =>
+      sumConverted(rows(...items), (r) => r.amount, (r) => r.currency, convert, 2);
+    const deposits = at2([0.004, 'CAD'], [0.004, 'CAD']);
+    const bills = at2([0.004, 'CAD']);
+    expect(deposits.value).toBe(0.01);
+    expect(bills.value).toBe(0);
+    expect(combineTotals([deposits, bills], [1, -1]).value).toBe(0);
+  });
+
+  it('folds a total read off a response as its value', () => {
+    const known = sum(rows([10.00006, 'CAD']));
+    const server = reportTotal(2.5, { missingCurrencies: ['JPY'], excludedCount: 1 });
+    const net = combineTotals([known, server], [1, -1]);
+    expect(net.value).toBe(7.5001);
+    expect(net.missingCurrencies).toEqual(['JPY']);
+  });
+
+  it('refuses a sign list that does not match its totals', () => {
+    expect(() => combineTotals([sum(rows([1, 'CAD']))], [1, -1])).toThrow();
+  });
+
   it('unions the missing currencies of both sides', () => {
     const assets = sum(rows([100, 'CAD'], [1, 'GBP']));
     const liabilities = sum(rows([40, 'CAD'], [5, 'EUR']));
-    const net = combineTotals([assets, liabilities], ([a, l]) => a - l);
+    const net = combineTotals([assets, liabilities], [1, -1]);
     expect(net.missingCurrencies.sort()).toEqual(['EUR', 'GBP']);
     expect(net.excludedCount).toBe(2);
+  });
+});
+
+describe('absoluteTotal', () => {
+  it('negates a negative total exactly, so a net built from it rounds once', () => {
+    const owed = absoluteTotal(sum(rows([-0.00004, 'CAD'], [-0.00004, 'CAD'])));
+    expect(owed.value).toBe(0.0001);
+    const held = sum(rows([0.00004, 'CAD']));
+    // 0.00004 less 0.00008 is -0.00004, which reads 0.0000; the readings'
+    // difference was -0.0001.
+    expect(combineTotals([held, owed], [1, -1]).value).toBeCloseTo(0, 10);
+  });
+
+  it('keeps a total that is not negative as it is', () => {
+    const total = sum(rows([5, 'CAD']));
+    expect(absoluteTotal(total)).toBe(total);
   });
 });
 

@@ -157,6 +157,7 @@
     "pdfTitle": "Saldo Akun",
     "colAccount": "Akun",
     "colBalance": "Saldo",
+    "colCurrency": "Mata Uang",
     "scopeLabel": "Tampilkan",
     "scopeAll": "Aset dan liabilitas",
     "scopeAssets": "Hanya aset",

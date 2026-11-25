@@ -180,7 +180,7 @@ The register can show such transactions in the account's currency or the origina
 
 ### Foreign Transaction Fees
 
-Many credit cards add a fee to purchases in a foreign currency. Set the account's **Foreign Currency Conversion Fee (optional)** in the account's settings, and Monize includes the fee in the converted total of each foreign purchase ("Includes a 2.5% foreign transaction fee"). The account's page then shows a **Foreign Currency Transaction Fees** section, and the **Foreign Currency Transaction Fees** report totals the fees across your accounts over time. See [Accounts](accounts.md) for the account settings.
+Many credit cards add a fee to purchases in a foreign currency. Set the account's **Foreign Currency Conversion Fee (optional)** in the account's settings, and Monize includes the fee in the converted total of each foreign purchase ("Includes a 2.5% foreign transaction fee"). The account's page then shows a **Foreign Currency Transaction Fees** section, and the **Foreign Currency Transaction Fees** report totals the fees across your accounts over time. When the accounts you choose use different currencies, the report shows the fees in your default currency, each one converted at its own transaction's rate. If a currency has no rate, its fees are left out and the total is marked as partial. See [Accounts](accounts.md) for the account settings.
 
 ![The Foreign Currency Transaction Fees report](images/report-foreign-currency-fees.png)
 

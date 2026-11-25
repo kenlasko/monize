@@ -22,7 +22,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { CHART_COLOURS } from '@/lib/chart-colours';
 import { chartColors } from '@/lib/chart-colors';
 import { exportToCsv } from '@/lib/csv-export';
-import { getDecimalPlacesForCurrency, sumMoney } from '@/lib/format';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
@@ -54,7 +54,11 @@ interface ReportChartProps {
   reportSubtitle?: string;
   /** The report's metric: a count is a number, every other metric money. */
   metric?: MetricType;
-  /** The server's headline for the Total row; absent = the sum of the rows. */
+  /**
+   * The server's headline for the Total row. Absent leaves the Total row's
+   * figure blank: the sum of the rounded rows is not the total, and under an
+   * average metric it is a sum of means.
+   */
   totalRowValue?: number;
   /** Set when the headline is a subtotal, so the Total row is marked as one. */
   partialTotal?: ConvertedTotal | null;
@@ -69,11 +73,14 @@ interface ReportChartProps {
   signed?: boolean;
 }
 
+/** A row's share in percent, or `null` when none can be given for it. */
+type ShareOf = (item: AggregatedDataPoint) => number | null;
+
 function getColumnMap(
   labelHeader: string,
   accountAmountHeader: string,
   originalAmountHeader: string,
-  total: number,
+  shareOf: ShareOf,
   signed: boolean,
 ): Record<TableColumn, { header: string; getValue: (item: AggregatedDataPoint) => string | number }> {
   return {
@@ -90,10 +97,7 @@ function getColumnMap(
     [TableColumn.ORIGINAL_AMOUNT]: { header: originalAmountHeader, getValue: (item) => item.originalAmount ?? '' },
     [TableColumn.PERCENTAGE]: {
       header: '%',
-      getValue: (item) =>
-        signed || item.value === null
-          ? ''
-          : (item.percentage ?? (total > 0 ? Number(((item.value / total) * 100).toFixed(1)) : 0)),
+      getValue: (item) => (signed ? null : shareOf(item)) ?? '',
     },
     [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
     [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.tags || '' },
@@ -103,23 +107,23 @@ function getColumnMap(
 interface ReportChartTooltipProps {
   active?: boolean;
   payload?: Array<{ payload: PlottedDataPoint }>;
-  total: number;
+  shareOf: ShareOf;
   formatCurrency: (value: number) => string;
   formatPercent: (value: number, decimals?: number) => string;
   /** Leaves the share out: a signed row is no share of a net total. */
   signed?: boolean;
 }
 
-function ReportChartTooltip({ active, payload, total, formatCurrency, formatPercent, signed }: ReportChartTooltipProps) {
+function ReportChartTooltip({ active, payload, shareOf, formatCurrency, formatPercent, signed }: ReportChartTooltipProps) {
   if (active && payload && payload.length) {
     const item = payload[0].payload;
-    const percentage = total > 0 ? (item.value / total) * 100 : 0;
+    const percentage = signed ? null : shareOf(item);
     return (
       <div className={CHART_TOOLTIP_CLASS}>
         <p className="font-medium text-gray-900 dark:text-gray-100">{item.label}</p>
         <p className="text-gray-600 dark:text-gray-400">
           {formatCurrency(item.value)}
-          {!signed && <> ({formatPercent(percentage, 1)})</>}
+          {percentage !== null && <> ({formatPercent(percentage, 1)})</>}
         </p>
         {item.count !== undefined && (
           <p className="text-sm text-gray-500 dark:text-gray-500">
@@ -159,13 +163,22 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     [chartData],
   );
 
-  const total = sumMoney(plottedData.map((item) => item.value));
+  // A row's share is the server's (`percentage`, divided from the unrounded
+  // aggregates), a listed transaction's included. A row the server gave none
+  // (an average or a budget variance, whose headline is not a sum of the rows)
+  // has no share, never one divided here from rounded figures
+  // (docs/specs/report-rounding-and-aggregation.md rule 8).
+  const shareOf: ShareOf = (item) =>
+    item.value === null ? null : (item.percentage ?? null);
+  // The Total row's 100% only over rows that carry a share.
+  const showsShares = !signed && chartData.some((item) => shareOf(item) !== null);
   const formatValue = (value: number) =>
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // The Total row prints the headline the server settled for the metric (a mean
   // is not the sum of its groups' means), marked when it is a subtotal.
   const totalCell = () => {
-    const text = formatValue(totalRowValue ?? total);
+    if (totalRowValue === undefined) return '';
+    const text = formatValue(totalRowValue);
     return partialTotal ? cellFor(text, partialTotal) : text;
   };
   // An unconverted amount reads as its number and its code, exactly once on
@@ -194,7 +207,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                       groupBy === GroupByType.NONE ? 'Item' : 'Period';
 
   const handleExportCsv = () => {
-    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, total, signed);
+    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, shareOf, signed);
     // An account- or original-currency amount is a raw number in a
     // spreadsheet, so its currency travels in a column of its own beside it.
     const csvColumns = columns.flatMap((col): CsvColumn[] => {
@@ -220,10 +233,10 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const totalRow = csvColumns.map((col) => {
       if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return totalLabel;
       if (col === TableColumn.VALUE) {
-        const value = totalRowValue ?? total;
-        return partialTotal ? cellFor(String(value), partialTotal) : value;
+        if (totalRowValue === undefined) return '';
+        return partialTotal ? cellFor(String(totalRowValue), partialTotal) : totalRowValue;
       }
-      if (col === TableColumn.PERCENTAGE) return signed ? '' : 100;
+      if (col === TableColumn.PERCENTAGE) return showsShares ? 100 : '';
       if (col === TableColumn.COUNT) return totalCount || '';
       return '';
     });
@@ -232,7 +245,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, total, signed);
+    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, shareOf, signed);
     const headers = columns.map((col) => columnMap[col]?.header || col);
     // The PDF prints what the screen prints: formatted figures, never raw numbers.
     const pdfCell = (col: TableColumn, item: AggregatedDataPoint) => {
@@ -251,7 +264,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     const totalRow = columns.map((col) => {
       if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return totalLabel;
       if (col === TableColumn.VALUE) return totalCell();
-      if (col === TableColumn.PERCENTAGE) return signed ? '' : formatPercent(100, 1);
+      if (col === TableColumn.PERCENTAGE) return showsShares ? formatPercent(100, 1) : '';
       if (col === TableColumn.COUNT) return totalCount ? formatNumber(totalCount, 0) : '';
       return '';
     });
@@ -298,7 +311,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
+                <Tooltip content={<ReportChartTooltip shareOf={shareOf} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -327,7 +340,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   tickFormatter={(value) => formatNumber(value, 0)}
                   className="text-gray-600 dark:text-gray-400"
                 />
-                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
+                <Tooltip content={<ReportChartTooltip shareOf={shareOf} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
                 <Bar radius={CHART_BAR_RADIUS}
                   dataKey="value"
                   cursor={onDataPointClick ? 'pointer' : 'default'}
@@ -365,7 +378,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   tickFormatter={(value) => formatNumber(value, 0)}
                   className="text-gray-600 dark:text-gray-400"
                 />
-                <Tooltip content={<ReportChartTooltip total={total} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
+                <Tooltip content={<ReportChartTooltip shareOf={shareOf} formatCurrency={formatValue} formatPercent={formatPercent} signed={signed} />} />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -520,13 +533,10 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.PERCENTAGE) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                      {signed || item.value === null
-                        ? '-'
-                        : formatPercent(
-                            item.percentage ??
-                              (total > 0 ? (item.value / total) * 100 : 0),
-                            1,
-                          )}
+                      {(() => {
+                        const share = signed ? null : shareOf(item);
+                        return share === null ? '-' : formatPercent(share, 1);
+                      })()}
                     </td>
                   )}
                   {columns.includes(TableColumn.COUNT) && (
@@ -585,7 +595,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                 )}
                 {columns.includes(TableColumn.PERCENTAGE) && (
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                    {signed ? '' : '100%'}
+                    {showsShares ? formatPercent(100, 1) : ''}
                   </td>
                 )}
                 {columns.includes(TableColumn.COUNT) && (

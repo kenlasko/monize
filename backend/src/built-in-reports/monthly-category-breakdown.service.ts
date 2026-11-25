@@ -19,6 +19,14 @@ import {
   MonthlyBreakdownTransferRow,
 } from "./dto";
 import { investmentExclusionSql } from "../common/investment-filter.util";
+import {
+  breakdownTotals,
+  BreakdownTransferFlows,
+  sectionKeyOf,
+} from "./monthly-category-breakdown-totals";
+
+/** The breakdown's column width: one calendar month or one calendar year. */
+export type BreakdownPeriod = "month" | "year";
 
 /**
  * Investment scope is LINKAGE, never account type (INV-REPORT-001, issue #1257):
@@ -94,9 +102,14 @@ export class MonthlyCategoryBreakdownService {
     userId: string,
     startDate: string | undefined,
     endDate: string,
-    options: { accountIds?: string[] } = {},
+    options: { accountIds?: string[]; period?: BreakdownPeriod } = {},
   ): Promise<MonthlyCategoryBreakdownResponse> {
-    const { accountIds } = options;
+    const { accountIds, period = "month" } = options;
+    // The column a `YYYY-MM` month falls in. A year folds its months'
+    // aggregates before it is read, so a yearly cell is one rounding of its
+    // rows, never the sum of twelve monthly readings.
+    const columnOf = (month: string): string =>
+      period === "year" ? month.slice(0, 4) : month;
     const defaultCurrency =
       await this.currencyService.getDefaultCurrency(userId);
     // Every figure leaves rounded once at the reporting currency's places
@@ -214,7 +227,8 @@ export class MonthlyCategoryBreakdownService {
         );
         continue;
       }
-      monthSet.add(month);
+      const column = columnOf(month);
+      monthSet.add(column);
 
       // Treat an unknown category_id (e.g. the row references a category that
       // no longer exists) the same as no category at all.
@@ -238,13 +252,13 @@ export class MonthlyCategoryBreakdownService {
 
       // Accumulated, never added in floats, and rounded once when the row is
       // built (docs/specs/report-rounding-and-aggregation.md rule 2).
-      addTo(acc.depositByMonth, month, deposits);
-      addTo(acc.withdrawalByMonth, month, withdrawals);
+      addTo(acc.depositByMonth, column, deposits);
+      addTo(acc.withdrawalByMonth, column, withdrawals);
       acc.depositTotal.addConverted(deposits);
       acc.withdrawalTotal.addConverted(withdrawals);
     }
 
-    const transfers = await this.getTransferRows(
+    const transferRows = await this.getTransferRows(
       userId,
       startDate,
       endDate,
@@ -252,19 +266,38 @@ export class MonthlyCategoryBreakdownService {
       places,
       monthSet,
       gaps,
+      columnOf,
       accountIds,
     );
 
     const months = Array.from(monthSet).sort();
 
-    const data: MonthlyBreakdownCategoryRow[] = Array.from(
-      accumulators.values(),
-    ).map((acc) => this.buildRow(acc, categoryMap, places));
+    const built = Array.from(accumulators.values()).map((acc) =>
+      this.buildRow(acc, categoryMap, places),
+    );
+    // Every total the page shows, from the cells' aggregates (issue #2413).
+    const totals = breakdownTotals(
+      built.map(({ row, netByColumn }) => ({ row, netByColumn })),
+      transferRows.map(({ flows }) => flows),
+      months,
+      places,
+    );
+    const data: MonthlyBreakdownCategoryRow[] = built.map(({ row }, i) => ({
+      ...row,
+      sectionKey: sectionKeyOf(row),
+      ...totals.rows[i],
+    }));
+    const transfers: MonthlyBreakdownTransferRow[] = transferRows.map(
+      ({ row }, i) => ({ ...row, ...totals.transfers[i] }),
+    );
 
     return {
+      period,
       months,
       data,
       transfers,
+      sections: totals.sections,
+      summary: totals.summary,
       currency: defaultCurrency,
       missingCurrencies: gaps.missingCurrencies,
       excludedCount: gaps.excludedCount,
@@ -288,8 +321,14 @@ export class MonthlyCategoryBreakdownService {
     places: number,
     monthSet: Set<string>,
     gaps: ConversionGaps,
+    columnOf: (month: string) => string,
     accountIds?: string[],
-  ): Promise<MonthlyBreakdownTransferRow[]> {
+  ): Promise<
+    {
+      row: Omit<MonthlyBreakdownTransferRow, "total" | "average">;
+      flows: BreakdownTransferFlows;
+    }[]
+  > {
     let query = `
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
@@ -384,24 +423,19 @@ export class MonthlyCategoryBreakdownService {
         );
         continue;
       }
-      monthSet.add(row.month);
+      const column = columnOf(row.month);
+      monthSet.add(column);
       if (outflow !== 0) {
         addFlow(
           fromByAccount,
           row.account_id,
           row.account_name,
-          row.month,
+          column,
           outflow,
         );
       }
       if (inflow !== 0) {
-        addFlow(
-          toByAccount,
-          row.account_id,
-          row.account_name,
-          row.month,
-          inflow,
-        );
+        addFlow(toByAccount, row.account_id, row.account_name, column, inflow);
       }
     }
 
@@ -411,19 +445,24 @@ export class MonthlyCategoryBreakdownService {
         { name: string; valuesByMonth: Map<string, FxAggregate> }
       >,
       direction: "from" | "to",
-    ): MonthlyBreakdownTransferRow[] =>
+    ) =>
       Array.from(store.entries()).map(([accountId, entry]) => {
         const valuesByMonth: Record<string, number> = {};
+        const flows = new Map<string, FxAggregate>();
         for (const [month, amount] of entry.valuesByMonth) {
           // "from" rows are a source of funds (positive); "to" rows are a use
           // of funds (negative).
-          valuesByMonth[month] = (
+          const signed =
             direction === "from"
               ? amount
-              : FxAggregate.difference(new FxAggregate(), amount)
-          ).knownSubtotalAt(places);
+              : FxAggregate.difference(new FxAggregate(), amount);
+          flows.set(month, signed);
+          valuesByMonth[month] = signed.knownSubtotalAt(places);
         }
-        return { accountId, accountName: entry.name, direction, valuesByMonth };
+        return {
+          row: { accountId, accountName: entry.name, direction, valuesByMonth },
+          flows,
+        };
       });
 
     return [
@@ -443,7 +482,11 @@ export class MonthlyCategoryBreakdownService {
     acc: CategoryAccumulator,
     categoryMap: Map<string, Category>,
     places: number,
-  ): MonthlyBreakdownCategoryRow {
+  ): {
+    row: Omit<MonthlyBreakdownCategoryRow, "sectionKey" | "total" | "average">;
+    /** Deposits less withdrawals per column, for the totals. */
+    netByColumn: Map<string, FxAggregate>;
+  } {
     const category = acc.categoryId
       ? (categoryMap.get(acc.categoryId) ?? null)
       : null;
@@ -461,9 +504,11 @@ export class MonthlyCategoryBreakdownService {
       ...acc.withdrawalByMonth.keys(),
     ]);
     const none = new FxAggregate();
+    const netByColumn = new Map<string, FxAggregate>();
     for (const month of allMonths) {
       const deposits = acc.depositByMonth.get(month) ?? none;
       const withdrawals = acc.withdrawalByMonth.get(month) ?? none;
+      netByColumn.set(month, FxAggregate.difference(deposits, withdrawals));
       valuesByMonth[month] = (
         isIncome
           ? FxAggregate.difference(deposits, withdrawals)
@@ -471,7 +516,7 @@ export class MonthlyCategoryBreakdownService {
       ).knownSubtotalAt(places);
     }
 
-    return {
+    const row = {
       categoryId: acc.categoryId,
       categoryName: category?.name ?? "Uncategorized",
       parentId: parent?.id ?? null,
@@ -482,5 +527,6 @@ export class MonthlyCategoryBreakdownService {
       depositTotal: acc.depositTotal.knownSubtotalAt(places),
       withdrawalTotal: acc.withdrawalTotal.knownSubtotalAt(places),
     };
+    return { row, netByColumn };
   }
 }

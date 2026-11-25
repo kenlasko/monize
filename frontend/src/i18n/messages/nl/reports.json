@@ -157,6 +157,7 @@
     "pdfTitle": "Rekeningsaldi",
     "colAccount": "Rekening",
     "colBalance": "Saldo",
+    "colCurrency": "Valuta",
     "scopeLabel": "Tonen",
     "scopeAll": "Activa en passiva",
     "scopeAssets": "Alleen activa",

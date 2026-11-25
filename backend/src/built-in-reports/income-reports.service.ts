@@ -14,7 +14,12 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { ownTransferLegs } from "./transfer-rate-sql";
-import { MONEY_SCALE, sumMoney, toMoneyNumber } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  roundToDecimals,
+  sumMoney,
+  toMoneyNumber,
+} from "../common/round.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   IncomeBySourceResponse,
@@ -296,7 +301,7 @@ export class IncomeReportsService {
       tagKey,
       transferScopeAccountIds,
     } = options;
-    const { response } = await this.incomeVsExpensesWindow(
+    const { response, periods } = await this.incomeVsExpensesWindow(
       userId,
       startDate,
       endDate,
@@ -316,6 +321,7 @@ export class IncomeReportsService {
       { accountIds, bucket, weekStartsOn, transferScopeAccountIds },
       trimmedTagKey,
       response.currency,
+      periods,
     );
 
     return { ...response, tagKey: trimmedTagKey, buckets };
@@ -553,8 +559,18 @@ export class IncomeReportsService {
           .sort()
           .map((period) => ({
             period,
-            periodStart: bucket === "month" ? `${period}-01` : period,
-            periodEnd: bucket === "month" ? `${period}-01` : period,
+            periodStart:
+              bucket === "month"
+                ? `${period}-01`
+                : bucket === "year"
+                  ? `${period}-01-01`
+                  : period,
+            periodEnd:
+              bucket === "month"
+                ? `${period}-01`
+                : bucket === "year"
+                  ? `${period}-12-31`
+                  : period,
           }));
 
     // Each figure, a period's or the window's, is the single rounding of its
@@ -638,6 +654,7 @@ export class IncomeReportsService {
     },
     tagKey: string,
     defaultCurrency: string,
+    allPeriods: ReadonlyMap<string, IncomeExpensePeriodAggregates>,
   ): Promise<IncomeExpenseTagBucket[]> {
     const { accountIds, bucket, weekStartsOn, transferScopeAccountIds } =
       windowOptions;
@@ -957,6 +974,7 @@ export class IncomeReportsService {
         weekStartsOn,
         convert,
         places,
+        allPeriods,
       ),
     );
   }
@@ -972,6 +990,7 @@ export class IncomeReportsService {
     weekStartsOn: WeekStartsOn,
     convert: ReportConverter,
     places: number,
+    allPeriods: ReadonlyMap<string, IncomeExpensePeriodAggregates>,
   ): IncomeExpenseTagBucket {
     const { data, totals, missingCurrencies, excludedCount } =
       this.summarizePeriodRows(
@@ -1023,10 +1042,34 @@ export class IncomeReportsService {
     // keeps over rule 4 of docs/specs/report-rounding-and-aggregation.md).
     const periodData: IncomeExpenseTagPeriodItem[] = data.map((item) => {
       const flows = flowsByPeriod.get(item.period);
+      const all = allPeriods.get(item.period);
+      // The period's Balance with this bucket's flows (spec section 10.9 of
+      // docs/specs/report-tag-key-breakdown.md): the All income plus the
+      // tagged inflows, less the All expenses and the tagged outflows, the four
+      // aggregates folded before it is read, and its percentage over what came
+      // in divided from the unrounded figures. Built on the page from the four
+      // readings, it could sit a unit off (issue #2413).
+      const received = FxAggregate.sum([
+        all?.income ?? new FxAggregate(),
+        flows?.inflows ?? new FxAggregate(),
+      ]);
+      const paid = FxAggregate.sum([
+        all?.expenses ?? new FxAggregate(),
+        flows?.outflows ?? new FxAggregate(),
+      ]);
+      const balance = FxAggregate.difference(received, paid);
       return {
         ...item,
         taggedInflows: flows?.inflows.knownSubtotalAt(places) ?? 0,
         taggedOutflows: flows?.outflows.knownSubtotalAt(places) ?? 0,
+        balance: balance.knownSubtotalAt(places),
+        balancePercent:
+          received.knownSubtotalAt(places) > 0
+            ? roundToDecimals(
+                (balance.unroundedSubtotal / received.unroundedSubtotal) * 100,
+                2,
+              )
+            : null,
       };
     });
 

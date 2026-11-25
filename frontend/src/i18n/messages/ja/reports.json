@@ -157,6 +157,7 @@
     "pdfTitle": "口座残高",
     "colAccount": "口座",
     "colBalance": "残高",
+    "colCurrency": "通貨",
     "scopeLabel": "表示",
     "scopeAll": "資産と負債",
     "scopeAssets": "資産のみ",

@@ -579,6 +579,50 @@ describe("CashFlowReport", () => {
       expect(cards.every((c) => c.note === undefined)).toBe(true);
     });
 
+    // The category tables print Income by Source's and Spending by Category's
+    // rows, so each total row is that report's own total, partial marker
+    // included: the cash-flow total of the same window read 2.50 under two
+    // rows of 1.2474 whose total is 2.49 (issue #2413).
+    it("totals each PDF category table from its own report, marked when that report is partial", async () => {
+      mockGetCashFlow.mockResolvedValue({
+        data: [],
+        totals: { income: 2.5, expenses: 3000, net: -2997.5, knownIncome: 2.5, knownExpenses: 3000, knownNet: -2997.5 },
+        currency: "CAD",
+        missingCurrencies: [],
+        excludedCount: 0,
+      });
+      mockGetIncomeBySource.mockResolvedValue({
+        data: [
+          { categoryId: "c-1", categoryName: "Interest", total: 1.25 },
+          { categoryId: "c-2", categoryName: "Refunds", total: 1.25 },
+        ],
+        totalIncome: 2.49,
+        knownIncome: 2.49,
+        missingCurrencies: [],
+        excludedCount: 0,
+      });
+      mockGetSpendingByCategory.mockResolvedValue({
+        data: [{ categoryId: "c-3", categoryName: "Rent", total: 1000 }],
+        totalSpending: null,
+        knownSpending: 1000,
+        missingCurrencies: ["EUR"],
+        excludedCount: 1,
+      });
+      mockExportToPdf.mockResolvedValue(undefined);
+      await act(async () => {
+        render(<CashFlowReport />);
+      });
+      await screen.findByText("Total Inflows");
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("export-pdf"));
+      });
+      const tables = mockExportToPdf.mock.calls[0][0].additionalTables as Array<{ rows: string[][]; totalRow: string[] }>;
+      expect(tables[0].rows).toEqual([["Interest", "$1"], ["Refunds", "$1"]]);
+      expect(tables[0].totalRow[1]).toBe("$2");
+      expect(tables[1].totalRow[1]).toContain("$1000");
+      expect(tables[1].totalRow[1]).not.toBe("$1000");
+    });
+
     it("disables the export while the data is loading", async () => {
       mockGetCashFlow.mockReturnValue(new Promise(() => {}));
       mockGetIncomeBySource.mockReturnValue(new Promise(() => {}));

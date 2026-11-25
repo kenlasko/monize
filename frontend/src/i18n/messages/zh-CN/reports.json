@@ -157,6 +157,7 @@
     "pdfTitle": "账户余额",
     "colAccount": "账户",
     "colBalance": "余额",
+    "colCurrency": "货币",
     "scopeLabel": "显示",
     "scopeAll": "资产与负债",
     "scopeAssets": "仅资产",

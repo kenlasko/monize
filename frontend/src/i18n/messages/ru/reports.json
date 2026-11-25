@@ -157,6 +157,7 @@
     "pdfTitle": "Остатки по счетам",
     "colAccount": "Счёт",
     "colBalance": "Остаток",
+    "colCurrency": "Валюта",
     "scopeLabel": "Показывать",
     "scopeAll": "Активы и обязательства",
     "scopeAssets": "Только активы",

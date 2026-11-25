@@ -61,6 +61,22 @@ export class IncomeExpenseTagPeriodItem extends IncomeExpensePeriodItem {
   /** Tagged transfer legs in this period, negative side, as a positive magnitude. */
   @ApiProperty({ example: 1000.0 })
   taggedOutflows: number;
+
+  /**
+   * The period's Balance with this bucket's flows: the All figure's income +
+   * taggedInflows - the All figure's expenses - taggedOutflows, the four
+   * aggregates folded before it is read; the known part while a row was left
+   * out.
+   */
+  @ApiProperty({ example: 500.0 })
+  balance: number;
+
+  /**
+   * The balance over income + taggedInflows in percent, two places, divided
+   * from the unrounded figures; `null` when nothing came in.
+   */
+  @ApiProperty({ example: 12.5, nullable: true })
+  balancePercent: number | null;
 }
 
 export class IncomeExpenseTotals {

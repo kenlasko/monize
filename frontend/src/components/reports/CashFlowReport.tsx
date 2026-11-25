@@ -280,6 +280,27 @@ export function CashFlowReport() {
       net: figure(cashFlow.totals.net, cashFlow.totals.knownNet),
     };
   }, [response]);
+  // The PDF's two category tables each total their own rows, so each total is
+  // the one its own endpoint settled over those rows, with that endpoint's
+  // completeness: the cash-flow totals come from another read and can sit a
+  // unit off the rows printed above them.
+  const categoryTotals = useMemo(() => {
+    if (!response) return null;
+    const figure = (
+      value: number | null,
+      known: number,
+      report: { missingCurrencies?: readonly string[]; excludedCount?: number },
+    ): ConvertedTotal => {
+      if (value !== null) return { value, missingCurrencies: [], excludedCount: 0 };
+      const withheld = reportTotal(known, report);
+      return isComplete(withheld) ? { ...withheld, excludedCount: 1 } : withheld;
+    };
+    const { incomeResponse, spendingResponse } = response;
+    return {
+      income: figure(incomeResponse.totalIncome, incomeResponse.knownIncome, incomeResponse),
+      expenses: figure(spendingResponse.totalSpending, spendingResponse.knownSpending, spendingResponse),
+    };
+  }, [response]);
   const { noteFor, cellFor } = usePartialTotalNote();
   const reportingCurrency = response?.cashFlowResponse.currency ?? defaultCurrency;
   // The Balance view's window figure and what it is built from: the part of the
@@ -313,7 +334,7 @@ export function CashFlowReport() {
   const handleExportPdf = async () => {
     // The toolbar is disabled without a response; this is the same refusal for a
     // caller that gets here another way, so no document carries three zeros.
-    if (!totals) return;
+    if (!totals || !categoryTotals) return;
     const { exportToPdf } = await import("@/lib/pdf-export");
 
     const inflowRows = incomeItems.map((item) => [item.categoryName, formatCurrency(item.total)]);
@@ -343,13 +364,13 @@ export function CashFlowReport() {
           title: t('cashFlow.inflowsByCategory'),
           headers: ["Category", "Amount"],
           rows: inflowRows,
-          totalRow: [t('cashFlow.totalInflows'), cellFor(formatCurrency(totals.income.value), totals.income)],
+          totalRow: [t('cashFlow.totalInflows'), cellFor(formatCurrency(categoryTotals.income.value), categoryTotals.income)],
         }] : []),
         ...(outflowRows.length > 0 ? [{
           title: t('cashFlow.outflowsByCategory'),
           headers: ["Category", "Amount"],
           rows: outflowRows,
-          totalRow: [t('cashFlow.totalOutflows'), cellFor(formatCurrency(totals.expenses.value), totals.expenses)],
+          totalRow: [t('cashFlow.totalOutflows'), cellFor(formatCurrency(categoryTotals.expenses.value), categoryTotals.expenses)],
         }] : []),
       ],
       filename: "cash-flow",

@@ -14,7 +14,7 @@ import { buildLogicalAccounts, type LogicalAccount } from '@/lib/logical-account
 import { useMainAccountName } from '@/hooks/useMainAccountName';
 import { useNumberFormat, type NumberFormatters } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
-import { sumConverted, combineTotals } from '@/lib/currency-total';
+import { absoluteTotal, combineTotals, sumConverted } from '@/lib/currency-total';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { useReportData } from '@/hooks/useReportData';
@@ -43,7 +43,7 @@ import {
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CHART_TOOLTIP_CLASS } from '@/lib/chart-style';
 import { CARD_CLASS } from '@/components/ui/Card';
-import { FIAT_MONEY_DECIMALS, roundMoney } from '@/lib/format';
+import { getDecimalPlacesForCurrency, roundMoney } from '@/lib/format';
 
 const ACCOUNT_TYPE_KEYS = [
   'CHEQUING',
@@ -178,6 +178,9 @@ export function AccountBalancesReport() {
     () => asOfConverter(displayCurrency, response?.balances.displayRates ?? {}),
     [displayCurrency, response],
   );
+  // Every total here is rounded once, at the places the display currency is
+  // shown in (docs/specs/report-rounding-and-aggregation.md section 2).
+  const displayPlaces = getDecimalPlacesForCurrency(displayCurrency);
 
   /** Ledger balance per account id at the measured date. */
   const ledgerBalances = useMemo(() => {
@@ -443,17 +446,26 @@ export function AccountBalancesReport() {
         (entry) => entry.combinedValue ?? Number.NaN,
         (entry) => entry.primary.currencyCode,
         convertToDisplay,
+        displayPlaces,
       );
     const assets = split(false);
-    const rawLiabilities = split(true);
     // A liability is stored negative and reported as what is owed.
-    const liabilities = { ...rawLiabilities, value: Math.abs(rawLiabilities.value) };
-    const netWorth = combineTotals(
-      [assets, liabilities],
-      ([assetValue, liabilityValue]) => assetValue - liabilityValue,
+    const liabilities = absoluteTotal(split(true));
+    // The two sides' exact sums netted and rounded once, never the difference
+    // of the two cards' readings (docs/specs/report-rounding-and-aggregation.md
+    // rule 2).
+    const netWorth = combineTotals([assets, liabilities], [1, -1]);
+    // The chart's "Total" when nothing on it is owed: every visible account
+    // summed once, marked as the cards are when a figure was left out.
+    const all = sumConverted(
+      visibleAccounts,
+      (entry) => entry.combinedValue ?? Number.NaN,
+      (entry) => entry.primary.currencyCode,
+      convertToDisplay,
+      displayPlaces,
     );
-    return { assets, liabilities, netWorth };
-  }, [visibleAccounts, convertToDisplay]);
+    return { assets, liabilities, netWorth, all };
+  }, [visibleAccounts, convertToDisplay, displayPlaces]);
 
   const groupTotal = useCallback(
     (entries: LogicalAccount[]) =>
@@ -462,8 +474,9 @@ export function AccountBalancesReport() {
         (entry) => entry.combinedValue ?? Number.NaN,
         (entry) => entry.primary.currencyCode,
         convertToDisplay,
+        displayPlaces,
       ),
-    [convertToDisplay],
+    [convertToDisplay, displayPlaces],
   );
 
   /**
@@ -482,9 +495,9 @@ export function AccountBalancesReport() {
     let assetIdx = 0;
     let liabilityIdx = 0;
     const push = (name: string, rawSignedValue: number) => {
-      // At the storage precision: a group netting to a floating-point epsilon
-      // is a zero, not a sliver of a slice with a $0.00 legend row.
-      const signedValue = roundMoney(rawSignedValue, FIAT_MONEY_DECIMALS);
+      // At the places the legend shows: a group netting to a floating-point
+      // epsilon is a zero, not a sliver of a slice with a $0.00 legend row.
+      const signedValue = roundMoney(rawSignedValue, displayPlaces);
       // A zero-size slice reads as a measured zero, so it is not drawn.
       if (signedValue === 0) return;
       const color =
@@ -505,22 +518,20 @@ export function AccountBalancesReport() {
       for (const group of groups) {
         // A group can hold both signs (an institution with a chequing account
         // and a mortgage), so its slice is the signed net -- the same figure
-        // the table prints for that group -- never the sum of magnitudes.
-        const signedTotal = group.entries.reduce((sum, entry) => {
-          const converted = signedDisplayValue(entry);
-          return converted === null ? sum : sum + converted;
-        }, 0);
-        push(groupLabel(group.key), signedTotal);
+        // the table prints for that group, its accounts summed once -- never
+        // the sum of magnitudes and never a float sum of the accounts.
+        push(groupLabel(group.key), groupTotal(group.entries).value);
       }
     }
     return data.sort((a, b) => b.value - a.value);
-  }, [groupBy, groups, visibleAccounts, signedDisplayValue, groupLabel]);
+  }, [groupBy, groups, visibleAccounts, signedDisplayValue, groupLabel, groupTotal, displayPlaces]);
 
   /**
    * The pie's denominator: the sum of slice magnitudes, which is what each
    * percentage is a share of. With liabilities on screen this is gross
    * exposure, not a total of anything -- the footer prints the signed net
-   * worth instead, and this figure stays internal.
+   * worth instead -- and without them the footer prints `totals.all`, the
+   * accounts summed once. Either way this figure stays internal.
    */
   const chartTotal = useMemo(
     () => chartData.reduce((sum, d) => sum + d.value, 0),
@@ -543,26 +554,36 @@ export function AccountBalancesReport() {
     [visibleAccounts, signedDisplayValue],
   );
 
+  // One row per account in each surface: the CSV writes the balance as a
+  // number in the account's own currency, named in a column of its own, and
+  // the PDF the screen's formatted figure (docs/frontend/financial-figures.md,
+  // "An export writes the screen's figure, at one export precision").
   const exportRows = useCallback(
-    () =>
+    (surface: 'csv' | 'pdf') =>
       groups.flatMap((group) =>
-        group.entries.map((entry) => [
-          entry.displayName,
-          groupLabel(group.key),
+        group.entries.map((entry) => {
+          const currency = entry.primary.currencyCode;
           // An unknown total is exported as unknown, not as the part we do know.
-          entry.combinedValue === null
-            ? tAccounts('row.combinedUnknown')
-            : formatCurrency(entry.combinedValue, entry.primary.currencyCode),
-        ]),
+          const balance =
+            entry.combinedValue === null
+              ? tAccounts('row.combinedUnknown')
+              : surface === 'csv'
+                ? entry.combinedValue
+                : formatCurrency(entry.combinedValue, currency);
+          return surface === 'csv'
+            ? [entry.displayName, groupLabel(group.key), balance, currency]
+            : [entry.displayName, groupLabel(group.key), balance];
+        }),
       ),
     [groups, groupLabel, formatCurrency, tAccounts],
   );
 
-  const exportHeaders = useMemo(
-    () => [
+  const exportHeaders = useCallback(
+    (surface: 'csv' | 'pdf') => [
       t('accountBalances.colAccount'),
       t('accountBalances.colGroup'),
       t('accountBalances.colBalance'),
+      ...(surface === 'csv' ? [t('accountBalances.colCurrency')] : []),
     ],
     [t],
   );
@@ -575,7 +596,7 @@ export function AccountBalancesReport() {
 
   const handleExportCsv = useCallback(async () => {
     const { exportToCsv } = await import('@/lib/csv-export');
-    exportToCsv(`account-balances-${measuredDate}`, exportHeaders, exportRows());
+    exportToCsv(`account-balances-${measuredDate}`, exportHeaders('csv'), exportRows('csv'));
   }, [exportHeaders, exportRows, measuredDate]);
 
   const handleExportPdf = useCallback(async () => {
@@ -617,7 +638,7 @@ export function AccountBalancesReport() {
         },
       ],
       chartContainer: chartRef.current,
-      tableData: { headers: exportHeaders, rows: exportRows() },
+      tableData: { headers: exportHeaders('pdf'), rows: exportRows('pdf') },
       filename: `account-balances-${measuredDate}`,
     });
   }, [
@@ -818,7 +839,9 @@ export function AccountBalancesReport() {
                       className="font-semibold text-gray-900 dark:text-gray-100"
                       data-testid="chart-total"
                     >
-                      {formatCurrency(chartTotal, displayCurrency)}
+                      <PartialTotal total={totals.all} displayCurrency={displayCurrency}>
+                        {formatCurrency(totals.all.value, displayCurrency)}
+                      </PartialTotal>
                     </div>
                   </>
                 )}

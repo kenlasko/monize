@@ -271,6 +271,44 @@ export interface FxFeeMonthlyTotal {
   convertedFeeTotal?: number | null;
 }
 
+/** The fee chart's column width. */
+export type FxFeeGranularity = 'month' | 'quarter' | 'year';
+
+/** One column of the fee chart, its fees read once by the server. */
+export interface FxFeeBucket {
+  /** `YYYY-MM`, `YYYY-Qn` or `YYYY`. */
+  key: string;
+  /** First day of the period, `YYYY-MM-DD`. */
+  periodStart: string;
+  /** The period's fees read once; null while a fee of it was left out. */
+  total: number | null;
+  /** The fees of the period that converted. */
+  knownTotal: number;
+  count: number;
+}
+
+/**
+ * The Foreign Currency Fees report's figures over the accounts and paid
+ * currencies chosen (`GET /transactions/fx-fee-totals`): each column, the grand
+ * total and each period average, read once from the fees' aggregates, never
+ * summed here (issue #2413).
+ */
+export interface FxFeeTotals {
+  /** The accounts' shared currency, else the reporting currency. */
+  currency: string;
+  /** Every fee read once; null while a fee was left out for want of a rate. */
+  total: number | null;
+  /** The fees that converted. */
+  knownTotal: number;
+  count: number;
+  byGranularity: Record<
+    FxFeeGranularity,
+    { buckets: FxFeeBucket[]; periodAverage: number | null; knownPeriodAverage: number }
+  >;
+  missingCurrencies: string[];
+  excludedCount: number;
+}
+
 export interface TransactionFilters {
   accountId?: string;
   startDate?: string;

@@ -1,6 +1,12 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsOptional, IsUUID } from "class-validator";
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsUUID,
+} from "class-validator";
 import { splitCsv } from "../../common/helpers/split-csv";
 import { ReportQueryDto } from "./report-query.dto";
 
@@ -22,4 +28,13 @@ export class MonthlyCategoryBreakdownQueryDto extends ReportQueryDto {
   @ArrayMaxSize(200)
   @IsUUID("4", { each: true })
   accountIds?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      "Column width: one calendar month or one calendar year. Defaults to month.",
+    enum: ["month", "year"],
+  })
+  @IsOptional()
+  @IsIn(["month", "year"])
+  period?: "month" | "year";
 }

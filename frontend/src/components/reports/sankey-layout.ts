@@ -1,3 +1,4 @@
+import { getDecimalPlacesForCurrency, sumMoney } from '@/lib/format';
 import type {
   CashFlowSankeyNode,
   CashFlowSankeyNodeKind,
@@ -107,12 +108,20 @@ const drawnAmount = (amount: number | null, known: number): number =>
  * table and the cards read are the server's whole answer. A link whose amount
  * is unknown is drawn at its known part and flagged; a node with nothing
  * drawable to it is left out of the drawing (the table still lists it).
+ *
+ * A merged link and an "Other" node are sums of the server's figures, which
+ * arrive at the reporting currency's places, apportioned so a side's parts add
+ * up to it (`docs/specs/report-rounding-and-aggregation.md` rule 6). They are
+ * summed exactly at those places, never in floats: 0.1 + 0.2 is
+ * 0.30000000000000004. They are presentation only, on the tooltip and the
+ * band; no total, card, table or export reads them (INV-SANKEY-005).
  */
 export function toRechartsSankey(
   response: CashFlowSankeyResponse,
   options: SankeyLayoutOptions,
 ): SankeyDrawing {
   const max = options.maxNodesPerColumn ?? MAX_NODES_PER_COLUMN;
+  const places = getDecimalPlacesForCurrency(response.currency);
   const byId = new Map(response.nodes.map((node) => [node.id, node]));
 
   // A child -> parent link is a net refund. Drawn as the response has it, the
@@ -254,7 +263,7 @@ export function toRechartsSankey(
       const previous = drawLinks[at];
       drawLinks[at] = {
         ...previous,
-        value: previous.value + value,
+        value: sumMoney([previous.value, value], places),
         incomplete: previous.incomplete || incomplete,
         netRefund: previous.netRefund || link.netRefund,
       };
@@ -278,9 +287,9 @@ export function toRechartsSankey(
     return {
       ...drawNode,
       members: members.map((node) => options.labelFor(node)),
-      value: members.reduce(
-        (sum, node) => sum + drawnAmount(node.total, node.knownTotal),
-        0,
+      value: sumMoney(
+        members.map((node) => drawnAmount(node.total, node.knownTotal)),
+        places,
       ),
       unknown: members.some((node) => node.total === null),
     };

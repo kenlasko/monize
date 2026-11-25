@@ -61,11 +61,11 @@ export class IncomeVsExpensesQueryDto extends ReportQueryDto {
 
   @ApiPropertyOptional({
     description: "Width of one bar. Defaults to month.",
-    enum: ["month", "week"],
+    enum: ["month", "week", "year"],
   })
   @IsOptional()
-  @IsIn(["month", "week"])
-  bucket?: "month" | "week";
+  @IsIn(["month", "week", "year"])
+  bucket?: "month" | "week" | "year";
 
   @ApiPropertyOptional({
     description:

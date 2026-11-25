@@ -62,6 +62,7 @@ describe("TransactionsController", () => {
       bulkUpdate: jest.fn(),
       getRecent: jest.fn(),
       getFxFeeSummary: jest.fn(),
+      getFxFeeTotals: jest.fn(),
       getRegisterFilterOptions: jest.fn().mockResolvedValue({
         payees: [],
         categories: [],
@@ -2436,6 +2437,41 @@ describe("TransactionsController", () => {
 
       expect(result).toEqual([]);
       expect(mockService.getFxFeeSummary).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getFxFeeTotals()", () => {
+    it("delegates to the service with the selection", async () => {
+      mockService.getFxFeeTotals.mockResolvedValue({ total: 7.51 });
+
+      const result = await controller.getFxFeeTotals(mockReq, {
+        accountIds: [uuid1, uuid2],
+        currencyCodes: ["EUR"],
+      });
+
+      expect(result).toEqual({ total: 7.51 });
+      expect(mockService.getFxFeeTotals).toHaveBeenCalledWith(
+        "user-1",
+        [uuid1, uuid2],
+        ["EUR"],
+      );
+    });
+
+    it("totals only the accounts a delegate can READ", async () => {
+      mockDelegationService.readableAccountIds.mockResolvedValue([uuid2]);
+      const delegateReq = {
+        user: { id: "user-1", isActing: true, delegationId: "delegation-1" },
+      };
+
+      await controller.getFxFeeTotals(delegateReq, {
+        accountIds: [uuid1, uuid2],
+      });
+
+      expect(mockService.getFxFeeTotals).toHaveBeenCalledWith(
+        "user-1",
+        [uuid2],
+        undefined,
+      );
     });
   });
 

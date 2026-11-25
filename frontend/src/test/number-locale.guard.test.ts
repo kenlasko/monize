@@ -309,11 +309,6 @@ describe('a figure is not formatted with toFixed in UI code', () => {
       reason:
         'percentToFraction builds the fraction string the API takes, a wire value and not a readout',
     },
-    '/src/components/reports/ReportChart.tsx': {
-      count: 1,
-      reason:
-        'Number((x / total * 100).toFixed(1)) rounds to a NUMBER for a table cell that is formatted later',
-    },
   };
 
   /**

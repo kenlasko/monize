@@ -38,6 +38,23 @@ export interface ConvertedTotal {
   missingCurrencies: string[];
   /** Number of components excluded from `value`. */
   excludedCount: number;
+  /**
+   * The unrounded sum `value` was read from. Present on a total
+   * `sumConverted` accumulated, so `combineTotals` can fold it before it is
+   * rounded; absent on a figure read off a response, which arrives rounded
+   * once and folds as its `value`.
+   */
+  exact?: ExactSum;
+}
+
+/** The exact sum of a total's converted components, before it was rounded. */
+export interface ExactSum {
+  /** The components' sum, in `10^-scale` units. */
+  units: bigint;
+  /** The places `units` counts in: `places` plus the guard places. */
+  scale: number;
+  /** The places `value` was rounded at. */
+  places: number;
 }
 
 /**
@@ -103,6 +120,7 @@ export function sumConverted<T>(
     value: roundMoney(fromMoneyUnits(units, accumulation), places),
     missingCurrencies: [...missing],
     excludedCount,
+    exact: { units, scale: accumulation, places },
   };
 }
 
@@ -110,25 +128,60 @@ export function sumConverted<T>(
  * Merge totals that were accumulated separately -- assets and liabilities, say,
  * where a missing rate in either makes the net figure partial too.
  *
- * `combine` gets the values in the order given, so a caller can subtract as well
- * as add. Incompleteness is the union: a net worth built from a complete asset
+ * Each total enters with its sign in `signs` (`[1, -1]` for the first less the
+ * second), and the result is the single rounding of the signed sum of the
+ * totals' exact sums, never a sum or difference of their rounded values:
+ * assets of 0.008 read 0.01 and liabilities of 0.004 read 0.00, so the
+ * difference of the readings is 0.01 where the net, 0.004, reads 0.00
+ * (`docs/specs/report-rounding-and-aggregation.md` rule 2). A total without
+ * an exact sum (`reportTotal`, a server figure) folds as its value. The
+ * result is rounded at `decimals`, else at the places its totals were read
+ * at. Incompleteness is the union: a net worth built from a complete asset
  * total and a partial liability total is partial.
  */
 export function combineTotals(
   totals: readonly ConvertedTotal[],
-  combine: (values: number[]) => number,
+  signs: readonly (1 | -1)[],
+  decimals?: number,
 ): ConvertedTotal {
+  if (signs.length !== totals.length) {
+    throw new Error('combineTotals: one sign per total');
+  }
+  const readAt = totals.flatMap((total) => (total.exact ? [total.exact.places] : []));
+  const places =
+    decimals ?? (readAt.length > 0 ? Math.max(...readAt) : FIAT_MONEY_DECIMALS);
+  const scale = Math.max(
+    places + GUARD_DECIMALS,
+    ...totals.map((total) => total.exact?.scale ?? 0),
+  );
   const missing = new Set<string>();
   let excludedCount = 0;
-  for (const total of totals) {
+  let units = BigInt(0);
+  totals.forEach((total, index) => {
     for (const currency of total.missingCurrencies) missing.add(currency);
     excludedCount += total.excludedCount;
-  }
+    const exact = total.exact;
+    const own = exact
+      ? exact.units * BigInt(10) ** BigInt(scale - exact.scale)
+      : toMoneyUnits(total.value, scale);
+    units += signs[index] === -1 ? -own : own;
+  });
   return {
-    value: combine(totals.map((total) => total.value)),
+    value: roundMoney(fromMoneyUnits(units, scale), places),
     missingCurrencies: [...missing],
     excludedCount,
+    exact: { units, scale, places },
   };
+}
+
+/**
+ * `total` as a magnitude: a liability side summed from negative balances and
+ * reported as what is owed. Negated exactly, so a net built from it is still
+ * the single rounding of its components.
+ */
+export function absoluteTotal(total: ConvertedTotal): ConvertedTotal {
+  const negative = total.exact ? total.exact.units < BigInt(0) : total.value < 0;
+  return negative ? combineTotals([total], [-1]) : total;
 }
 
 /**

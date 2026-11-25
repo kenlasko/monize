@@ -16,7 +16,9 @@ import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { builtInReportsApi } from '@/lib/built-in-reports';
 import {
   MonthlyBreakdownCategoryRow,
+  MonthlyBreakdownSection,
   MonthlyBreakdownTransferRow,
+  MonthlyCategoryBreakdownResponse,
 } from '@/types/built-in-reports';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -30,7 +32,7 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ReportError } from '@/components/reports/ReportError';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { exportToCsv } from '@/lib/csv-export';
-import { roundMoney, sumMoney, gainLossColor } from '@/lib/format';
+import { gainLossColor } from '@/lib/format';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { FundingReportControls } from '@/components/reports/FundingReportControls';
 import { MonthlyTaggedBalanceSummary } from '@/components/reports/MonthlyTaggedBalanceSummary';
@@ -41,8 +43,7 @@ import {
   BREAKDOWN_PERIODS,
   alignPeriodStart,
   asBreakdownPeriod,
-  breakdownByPeriod,
-  currentPeriodKey,
+  breakdownRequestEnd,
   periodBounds,
   yearlyWindowStart,
   type BreakdownPeriod,
@@ -247,11 +248,18 @@ function compareKeys(
   return dir === 'asc' ? cmp : -cmp;
 }
 
+/**
+ * A section's rows in the section's sign convention, sorted, beside the
+ * section's own figures. Every figure is the server's (issue #2413): a row's
+ * cells and its total and average are its own, negated where the row runs
+ * against its section (a refund-heavy expense subcategory whose net is income
+ * still subtracts from the expense subtotal), and the subtotals are the
+ * section's, never the rows added up here.
+ */
 function processGroup(
   rows: MonthlyBreakdownCategoryRow[],
   months: string[],
-  monthCount: number,
-  sectionIsIncome: boolean,
+  section: MonthlyBreakdownSection,
   sortColumn: string,
   sortDir: SortDir,
 ): Omit<
@@ -260,30 +268,21 @@ function processGroup(
 > {
   const processed: ProcessedRow[] = rows
     .map((row) => {
-      // Re-express every month value in the section's sign convention so the
-      // subtotal is correct even when a subcategory's net runs against the
-      // section (e.g. a refund-heavy expense subcategory whose net is
-      // positive must still subtract from the expense subtotal). The raw net
-      // (deposits - withdrawals) is recovered from the row's own convention,
-      // then re-signed for the section.
+      const against = row.isIncome !== section.isIncome;
+      const inSection = (own: number) => (against && own !== 0 ? -own : own);
       const values: Record<string, number> = {};
-      for (const m of months) {
-        const own = row.valuesByMonth[m] || 0;
-        const rawNet = row.isIncome ? own : -own;
-        values[m] = roundMoney(sectionIsIncome ? rawNet : -rawNet);
-      }
-      const total = sumMoney(months.map((m) => values[m] || 0));
-      const nonZeroCount = months.filter((m) => (values[m] || 0) !== 0).length;
-      const avg = nonZeroCount > 0 ? total / monthCount : 0;
-      const nonZeroAvg = nonZeroCount > 0 ? total / nonZeroCount : 0;
+      for (const m of months) values[m] = inSection(row.valuesByMonth[m] || 0);
+      const total = inSection(row.total);
+      const nonZeroCount = months.filter((m) => values[m] !== 0).length;
       return {
         categoryId: row.categoryId,
         displayName: row.categoryName,
-        isIncome: sectionIsIncome,
+        isIncome: section.isIncome,
         values,
-        total: roundMoney(total),
-        avg: roundMoney(avg),
-        nonZeroAvg,
+        total,
+        avg: inSection(row.average),
+        // Shading only: how far a month sits from the row's usual month.
+        nonZeroAvg: nonZeroCount > 0 ? total / nonZeroCount : 0,
         nonZeroCount,
       };
     })
@@ -297,17 +296,17 @@ function processGroup(
       return primary !== 0 ? primary : a.displayName.localeCompare(b.displayName);
     });
 
-  const subtotals: Record<string, number> = {};
-  for (const m of months) {
-    subtotals[m] = sumMoney(processed.map((r) => r.values[m] || 0));
-  }
-  const subtotalSum = sumMoney(processed.map((r) => r.total));
-  const subtotalAvg = roundMoney(subtotalSum / monthCount);
   const allCategoryIds = processed
     .map((r) => r.categoryId)
     .filter((id): id is string => id != null);
 
-  return { rows: processed, subtotals, subtotalSum, subtotalAvg, allCategoryIds };
+  return {
+    rows: processed,
+    subtotals: section.valuesByMonth,
+    subtotalSum: section.total,
+    subtotalAvg: section.average,
+    allCategoryIds,
+  };
 }
 
 function transferSortKey(row: TransferRow, column: string): number | string {
@@ -317,30 +316,21 @@ function transferSortKey(row: TransferRow, column: string): number | string {
   return row.values[column] || 0;
 }
 
-// Process the signed transfer rows: re-key by month, compute totals/averages
-// and order by the active sort. Values keep their backend sign ("from" rows
-// positive, "to" rows negative) so they sum into a meaningful net.
+// The signed transfer rows, ordered by the active sort. Values keep their
+// backend sign ("from" rows positive, "to" rows negative); each row's total and
+// average are the server's.
 function processTransfers(
   transfers: MonthlyBreakdownTransferRow[],
   months: string[],
-  monthCount: number,
   fromLabel: (name: string) => string,
   toLabel: (name: string) => string,
   sortColumn: string,
   sortDir: SortDir,
-): {
-  rows: TransferRow[];
-  monthly: Record<string, number>;
-  totalSum: number;
-  totalAvg: number;
-} {
-  const rows: TransferRow[] = transfers
+): TransferRow[] {
+  return transfers
     .map((tr) => {
       const values: Record<string, number> = {};
-      for (const m of months) values[m] = roundMoney(tr.valuesByMonth[m] || 0);
-      const total = sumMoney(months.map((m) => values[m] || 0));
-      const nonZeroCount = months.filter((m) => (values[m] || 0) !== 0).length;
-      const avg = nonZeroCount > 0 ? total / monthCount : 0;
+      for (const m of months) values[m] = tr.valuesByMonth[m] || 0;
       return {
         accountId: tr.accountId,
         direction: tr.direction,
@@ -349,8 +339,8 @@ function processTransfers(
             ? fromLabel(tr.accountName)
             : toLabel(tr.accountName),
         values,
-        total: roundMoney(total),
-        avg: roundMoney(avg),
+        total: tr.total,
+        avg: tr.average,
       };
     })
     .sort((a, b) => {
@@ -361,12 +351,6 @@ function processTransfers(
       );
       return primary !== 0 ? primary : a.displayName.localeCompare(b.displayName);
     });
-
-  const monthly: Record<string, number> = {};
-  for (const m of months) monthly[m] = sumMoney(rows.map((r) => r.values[m] || 0));
-  const totalSum = sumMoney(rows.map((r) => r.total));
-  const totalAvg = roundMoney(totalSum / monthCount);
-  return { rows, monthly, totalSum, totalAvg };
 }
 
 function deviationClass(
@@ -390,6 +374,22 @@ function deviationClass(
   if (deviation < -DEVIATION_LEVEL_2) return DEVIATION_CLASS[`${below}-2`];
   if (deviation < -DEVIATION_LEVEL_1) return DEVIATION_CLASS[`${below}-1`];
   return '';
+}
+
+/** The answer for a window holding only the column in progress, left out: no columns. */
+function emptyBreakdown(period: BreakdownPeriod): MonthlyCategoryBreakdownResponse {
+  const none = { valuesByMonth: {}, total: 0, average: 0 };
+  return {
+    period,
+    months: [],
+    data: [],
+    transfers: [],
+    sections: [],
+    summary: { income: none, expenses: none, balance: none, transfers: none, overall: none },
+    currency: '',
+    missingCurrencies: [],
+    excludedCount: 0,
+  };
 }
 
 export function MonthlyCategoryBreakdownReport() {
@@ -540,10 +540,6 @@ export function MonthlyCategoryBreakdownReport() {
     e.stopPropagation();
   };
 
-  // The current calendar month (YYYY-MM) or year (YYYY); the latest column is
-  // in progress and excluded by default unless the user opts to include it.
-  const currentPeriod = currentPeriodKey(period, new Date());
-
   // Toggle the sort column/direction. Selecting a new column defaults to
   // ascending for the category name and descending for value columns.
   const handleSort = (column: string) => {
@@ -603,103 +599,107 @@ export function MonthlyCategoryBreakdownReport() {
     ? yearlyWindowStart(dateRange, rangeStart, new Date())
     : alignPeriodStart(rangeStart, period);
 
+  // The window asked for: the column in progress is left out by ending it the
+  // day before, so every server total is over the columns shown. `null` when
+  // only the column in progress is in the window: nothing to ask for.
+  const requestEnd = breakdownRequestEnd(
+    rangeEnd,
+    reportStart,
+    period,
+    includeCurrentPeriod,
+    new Date(),
+  );
+
   // Account filter, tag controls and the funding fetch (spec section 11.5).
   const funds = useFundingReportControls({
     reportKey: 'monthly-category-breakdown',
     startDate: reportStart || undefined,
-    endDate: rangeEnd,
-    enabled: isValid,
+    endDate: requestEnd ?? rangeEnd,
+    enabled: isValid && requestEnd !== null,
+    bucket: period,
   });
   const accountIds = funds.scope.selectedAccountIds;
 
   const { data, isLoading, error, reload } = useReportData(
     () =>
-      isValid
-        ? builtInReportsApi.getMonthlyCategoryBreakdown({
-            startDate: reportStart || undefined,
-            endDate: rangeEnd,
-            ...(accountIds.length > 0 ? { accountIds } : {}),
-          })
-        : Promise.resolve(null),
-    [isValid, reportStart, rangeEnd, funds.scope.accountIdsKey],
+      !isValid
+        ? Promise.resolve(null)
+        : requestEnd === null
+          ? Promise.resolve(emptyBreakdown(period))
+          : builtInReportsApi.getMonthlyCategoryBreakdown({
+              startDate: reportStart || undefined,
+              endDate: requestEnd,
+              period,
+              ...(accountIds.length > 0 ? { accountIds } : {}),
+            }),
+    [isValid, reportStart, requestEnd, period, funds.scope.accountIdsKey],
   );
 
   const currency = data?.currency;
 
-  // The server answers in months; a yearly table folds them into years. From
-  // here on a "month" is a column key: YYYY-MM, or YYYY in a yearly table. Its
-  // own memo, so a sort click re-sorts the folded answer instead of folding
-  // every month of history again.
-  const columns = useMemo(() => (data ? breakdownByPeriod(data, period) : null), [data, period]);
+  // The server answers in the period asked for, so from here on a "month" is
+  // a column key: YYYY-MM, or YYYY in a yearly table. An answer for the other
+  // width (a toggle while the new request is in flight) is not drawn under
+  // this one's headers.
+  const columns = data && data.period === period ? data : null;
 
   const model = useMemo(() => {
     if (!columns) return null;
-    // Drop the in-progress (current) column unless the user opts in. It is
-    // removed wherever it appears so the toggle always takes effect.
-    const months = includeCurrentPeriod
-      ? columns.months
-      : columns.months.filter((m) => m !== currentPeriod);
-    const monthCount = months.length || 1;
+    // The columns the server answered for: the in-progress one is already
+    // out of the window unless the reader included it.
+    const months = columns.months;
     const rows = columns.data;
+    const sectionFigures = new Map(columns.sections.map((section) => [section.key, section]));
 
-    // Group categories by parent. A category with a parent forms (or joins) a
-    // section keyed by that parent, and a top-level category keys its own
-    // section, so a parent's direct spending sits beside its subcategories and
-    // a category with none stands as a line of its own. Only the uncategorized
-    // row collects into the "Other income" / "Other expenses" bucket by its
-    // type. The whole section is classified income or expense from the parent's
-    // flag (falling back to the row's own flag when the parent is unknown).
+    // Rows draw under the section the server filed them in (`sectionKey`):
+    // a category with a parent under its parent, a top-level category under
+    // its own key, so a parent's direct spending sits beside its
+    // subcategories and a category with none stands as a line of its own, and
+    // the uncategorized row in the "Other income" / "Other expenses" bucket by
+    // its type. The section's income flag and figures are the server's too.
     interface RawGroup {
       key: string;
       title: string;
-      isIncome: boolean;
+      section: MonthlyBreakdownSection;
       list: MonthlyBreakdownCategoryRow[];
     }
+    const titleOf = (key: string, row: MonthlyBreakdownCategoryRow): string =>
+      key === OTHER_INCOME_KEY
+        ? otherIncomeLabel
+        : key === OTHER_EXPENSE_KEY
+          ? otherExpensesLabel
+          : row.parentId === key && row.parentName
+            ? row.parentName
+            : row.categoryName;
     const groups = new Map<string, RawGroup>();
-    const addRow = (
-      key: string,
-      title: string,
-      isIncome: boolean,
-      row: MonthlyBreakdownCategoryRow,
-    ) => {
+    for (const row of rows) {
+      const section = sectionFigures.get(row.sectionKey);
+      if (!section) continue;
       // The groups are this memo's own objects, so a row is pushed into its
       // list rather than copying the list per row.
-      const existing = groups.get(key);
-      if (existing) existing.list.push(row);
-      else groups.set(key, { key, title, isIncome, list: [row] });
-    };
-    for (const row of rows) {
-      if (row.parentId && row.parentName) {
-        addRow(
-          row.parentId,
-          row.parentName,
-          row.parentIsIncome ?? row.isIncome,
-          row,
-        );
-      } else if (row.categoryId) {
-        addRow(row.categoryId, row.categoryName, row.isIncome, row);
-      } else if (row.isIncome) {
-        addRow(OTHER_INCOME_KEY, otherIncomeLabel, true, row);
+      const existing = groups.get(row.sectionKey);
+      if (existing) {
+        existing.list.push(row);
+        // A parent's own row names the section as well as a child does.
+        if (row.categoryId === row.sectionKey) existing.title = row.categoryName;
       } else {
-        addRow(OTHER_EXPENSE_KEY, otherExpensesLabel, false, row);
+        groups.set(row.sectionKey, {
+          key: row.sectionKey,
+          title: titleOf(row.sectionKey, row),
+          section,
+          list: [row],
+        });
       }
     }
 
     // Build a Section from a raw group; palette is assigned later in display
     // order. Rows are sorted inside processGroup by the active column.
     const buildSection = (g: RawGroup): Section => {
-      const group = processGroup(
-        g.list,
-        months,
-        monthCount,
-        g.isIncome,
-        sortColumn,
-        sortDir,
-      );
+      const group = processGroup(g.list, months, g.section, sortColumn, sortDir);
       return {
         title: g.title,
         paletteClass: '',
-        isIncome: g.isIncome,
+        isIncome: g.section.isIncome,
         isOther: isOtherKey(g.key),
         // Its only row is the category the section is keyed by: no
         // subcategory of it has activity in the report.
@@ -722,10 +722,10 @@ export function MonthlyCategoryBreakdownReport() {
 
     const rawGroups = Array.from(groups.values());
     const incomeSectionsRaw = sortSections(
-      rawGroups.filter((g) => g.isIncome).map(buildSection),
+      rawGroups.filter((g) => g.section.isIncome).map(buildSection),
     );
     const expenseSectionsRaw = sortSections(
-      rawGroups.filter((g) => !g.isIncome).map(buildSection),
+      rawGroups.filter((g) => !g.section.isIncome).map(buildSection),
     );
 
     // Assign the rotating palette across the combined display order (income
@@ -745,45 +745,40 @@ export function MonthlyCategoryBreakdownReport() {
     const sections = [...incomeSections, ...expenseSections];
 
     // Transfers form their own group (signed: "from" positive, "to" negative).
-    const transfers = processTransfers(
+    const transferRows = processTransfers(
       columns.transfers || [],
       months,
-      monthCount,
       (name) => `${t('monthlyCategoryBreakdown.transferFrom')} ${name}`,
       (name) => `${t('monthlyCategoryBreakdown.transferTo')} ${name}`,
       sortColumn,
       sortDir,
     );
+    const { summary } = columns;
+    const transfers = {
+      rows: transferRows,
+      monthly: summary.transfers.valuesByMonth,
+      totalSum: summary.transfers.total,
+      totalAvg: summary.transfers.average,
+    };
     const hasTransfers = transfers.rows.length > 0;
 
-    // Group totals are the sum of section subtotals (already positive
-    // magnitudes in each section's own convention).
-    const monthlyExpenses: Record<string, number> = {};
-    const monthlyIncome: Record<string, number> = {};
-    for (const m of months) {
-      monthlyIncome[m] = sumMoney(incomeSections.map((s) => s.subtotals[m] || 0));
-      monthlyExpenses[m] = sumMoney(
-        expenseSections.map((s) => s.subtotals[m] || 0),
-      );
-    }
-    const totalIncomeSum = sumMoney(incomeSections.map((s) => s.subtotalSum));
-    const totalExpensesSum = sumMoney(expenseSections.map((s) => s.subtotalSum));
-    const totalExpensesAvg = roundMoney(totalExpensesSum / monthCount);
-    const totalIncomeAvg = roundMoney(totalIncomeSum / monthCount);
-
-    // Balance is income minus expenses; the overall total folds transfers in
-    // too (matching a Microsoft Money banking summary's bottom line).
-    const monthlyBalance: Record<string, number> = {};
-    const monthlyOverall: Record<string, number> = {};
-    for (const m of months) {
-      const bal = roundMoney((monthlyIncome[m] || 0) - (monthlyExpenses[m] || 0));
-      monthlyBalance[m] = bal;
-      monthlyOverall[m] = roundMoney(bal + (transfers.monthly[m] || 0));
-    }
-    const balanceSum = roundMoney(totalIncomeSum - totalExpensesSum);
-    const balanceAvg = roundMoney(balanceSum / monthCount);
-    const overallSum = roundMoney(balanceSum + transfers.totalSum);
-    const overallAvg = roundMoney(overallSum / monthCount);
+    // The group totals, the balance (income less expenses) and the overall
+    // line (the balance with the transfers, a Microsoft Money banking
+    // summary's bottom line) are the server's, each folded from the sections'
+    // aggregates and read once: added up here from the rounded subtotals they
+    // sat a unit off (issue #2413).
+    const monthlyIncome = summary.income.valuesByMonth;
+    const monthlyExpenses = summary.expenses.valuesByMonth;
+    const totalIncomeSum = summary.income.total;
+    const totalExpensesSum = summary.expenses.total;
+    const totalIncomeAvg = summary.income.average;
+    const totalExpensesAvg = summary.expenses.average;
+    const monthlyBalance = summary.balance.valuesByMonth;
+    const balanceSum = summary.balance.total;
+    const balanceAvg = summary.balance.average;
+    const monthlyOverall = summary.overall.valuesByMonth;
+    const overallSum = summary.overall.total;
+    const overallAvg = summary.overall.average;
 
     // Category id collections for the summary drill-throughs.
     const incomeCategoryIds = incomeSections.flatMap((s) => s.allCategoryIds);
@@ -821,8 +816,6 @@ export function MonthlyCategoryBreakdownReport() {
     otherIncomeLabel,
     sortColumn,
     sortDir,
-    includeCurrentPeriod,
-    currentPeriod,
     t,
   ]);
 
@@ -912,8 +905,10 @@ export function MonthlyCategoryBreakdownReport() {
   // sign convention as the table (expenses negative, income positive).
   const handleExportCsv = () => {
     if (!model) return;
+    // The server's figures, signed as the table shows them; a negation is
+    // exact, so nothing is rounded again here.
     const signed = (isIncome: boolean, value: number) =>
-      roundMoney(isIncome ? value : -value);
+      isIncome || value === 0 ? value : -value;
     const headers = [
       t('monthlyCategoryBreakdown.csvParentColumn'),
       t('monthlyCategoryBreakdown.category'),
@@ -937,16 +932,16 @@ export function MonthlyCategoryBreakdownReport() {
     rows.push([
       '',
       t('monthlyCategoryBreakdown.totalExpenses'),
-      ...model.months.map((m) => roundMoney(-(model.monthlyExpenses[m] || 0))),
-      roundMoney(-model.totalExpensesSum),
-      roundMoney(-model.totalExpensesAvg),
+      ...model.months.map((m) => signed(false, model.monthlyExpenses[m] || 0)),
+      signed(false, model.totalExpensesSum),
+      signed(false, model.totalExpensesAvg),
     ]);
     rows.push([
       '',
       t('monthlyCategoryBreakdown.totalIncome'),
-      ...model.months.map((m) => roundMoney(model.monthlyIncome[m] || 0)),
-      roundMoney(model.totalIncomeSum),
-      roundMoney(model.totalIncomeAvg),
+      ...model.months.map((m) => model.monthlyIncome[m] || 0),
+      model.totalIncomeSum,
+      model.totalIncomeAvg,
     ]);
     // Transfer rows carry their own sign already ("from" positive, "to"
     // negative), so they are exported as-is.

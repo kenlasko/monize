@@ -30,7 +30,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { AccountsSummary } from '@/components/accounts/variants/AccountsSummary';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
-import { sumMoney } from '@/lib/format';
+import { getDecimalPlacesForCurrency } from '@/lib/format';
 import { accountCarriesBalance } from '@/lib/account-carries-balance';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CARD_CLASS } from '@/components/ui/Card';
@@ -297,11 +297,13 @@ function AccountsContent() {
       const contributions = accts.map((a) => ({ account: a, value: contributedBalance(a) }));
       const known = contributions.filter((c): c is { account: Account; value: number } => c.value !== null);
       const unknownCount = contributions.length - known.length;
+      // Rounded once, at the places the cards show the reporting currency in.
       const converted = sumConverted(
         known,
         (c) => c.value,
         (c) => c.account.currencyCode,
         convert,
+        getDecimalPlacesForCurrency(defaultCurrency),
       );
       return { ...converted, excludedCount: converted.excludedCount + unknownCount };
     };
@@ -313,12 +315,9 @@ function AccountsContent() {
     });
     // Net worth inherits the incompleteness of both sides: a hole in either
     // makes the difference partial too.
-    const totalBalance = combineTotals(
-      [totalAssets, totalLiabilities],
-      // The difference of two 4dp values is not itself 4dp: round it so the
-      // stored value and the sign test do not carry sub-cent float drift.
-      ([a, l]) => sumMoney([a, -l]),
-    );
+    // The two sides' exact sums, netted and rounded once: the difference of
+    // their two readings can sit a unit off it.
+    const totalBalance = combineTotals([totalAssets, totalLiabilities], [1, -1]);
 
     return {
       totalBalance,
@@ -327,7 +326,7 @@ function AccountsContent() {
       accountCount: countLogicalAccounts(activeAccounts),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, convertToDefault]);
+  }, [accounts, brokerageMarketValues, unpricedHoldingCounts, incompleteHoldingAccountIds, portfolioFailed, convertToDefault, defaultCurrency]);
 
   // Back to the list puts the reader where they left it.
   useRetainScrollPosition(!isLoading);

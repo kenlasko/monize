@@ -157,6 +157,7 @@
     "pdfTitle": "Hesap Bakiyeleri",
     "colAccount": "Hesap",
     "colBalance": "Bakiye",
+    "colCurrency": "Para Birimi",
     "scopeLabel": "Göster",
     "scopeAll": "Varlıklar ve yükümlülükler",
     "scopeAssets": "Yalnızca varlıklar",

@@ -157,6 +157,7 @@
     "pdfTitle": "Số dư tài khoản",
     "colAccount": "Tài khoản",
     "colBalance": "Số dư",
+    "colCurrency": "Tiền tệ",
     "scopeLabel": "Hiển thị",
     "scopeAll": "Tài sản và nợ phải trả",
     "scopeAssets": "Chỉ tài sản",
