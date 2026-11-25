@@ -63,6 +63,13 @@ function readablePlaces(places: number): number {
   return places;
 }
 
+/**
+ * How finely a double must hold a reading, in units at its places, for
+ * `unitsAt` to read it through `knownSubtotalAt`: a hundredth of a unit, the
+ * bound `roundToDecimals` switches to its exact string path at.
+ */
+const UNIT_READ_LIMIT = 0.01;
+
 /** One `10^-places` unit, in accumulation units. */
 function unitAt(places: number): bigint {
   return 10n ** BigInt(ACCUMULATION_DECIMALS - readablePlaces(places));
@@ -281,8 +288,9 @@ export class FxAggregate {
       );
     }
     const goal =
-      target ??
-      moneyUnits(FxAggregate.sum(parts).knownSubtotalAt(places), places);
+      target === undefined
+        ? FxAggregate.sum(parts).unitsAt(places)
+        : BigInt(target);
     const floors = parts.map((part) => {
       const units = part.subtotalUnits;
       const quotient = units / unit;
@@ -291,7 +299,9 @@ export class FxAggregate {
     const remainders = parts.map(
       (part, index) => part.subtotalUnits - floors[index] * unit,
     );
-    const short = goal - Number(floors.reduce((sum, f) => sum + f, 0n));
+    // In integers throughout: past 2^53 units (a coin's eight places above
+    // about 90 million) a `number` no longer holds the count exactly.
+    const short = goal - floors.reduce((sum, f) => sum + f, 0n);
     const order = parts
       .map((_, index) => index)
       .sort((a, b) =>
@@ -301,12 +311,12 @@ export class FxAggregate {
             ? 1
             : -1,
       );
-    if (short < 0 || short > parts.length) {
+    if (short < 0n || short > BigInt(parts.length)) {
       throw new RangeError(
         `apportionUnits: ${goal} is not within a unit a part of the parts' sum`,
       );
     }
-    const bonus = new Set(order.slice(0, short));
+    const bonus = new Set(order.slice(0, Number(short)));
     return floors.map((f, index) => Number(f) + (bonus.has(index) ? 1 : 0));
   }
 
@@ -355,6 +365,29 @@ export class FxAggregate {
    */
   knownSubtotalAt(places: number): number {
     return readSubtotal(this.subtotalUnits, places) + this.nonFiniteSum;
+  }
+
+  /**
+   * `knownSubtotalAt(places)` as an exact count of `10^-places` units, for a
+   * caller that apportions or closes in integers. Where a double holds the
+   * reading to well under a unit it is that reading, so it agrees with
+   * `knownSubtotalAt` (`roundMoney`'s nudge included); past that (a coin's
+   * eight places above about a hundred thousand) the double no longer can,
+   * and it is the accumulated sum rounded half away from zero in integers, as
+   * `roundToDecimals` switches to its exact path at the same bound. A finite
+   * subtotal only: a non-finite one has no units.
+   */
+  unitsAt(places: number): bigint {
+    const unit = unitAt(places);
+    const magnitude =
+      this.subtotalUnits < 0n ? -this.subtotalUnits : this.subtotalUnits;
+    if (Number(magnitude / unit) * Number.EPSILON < UNIT_READ_LIMIT) {
+      return BigInt(moneyUnits(this.knownSubtotalAt(places), places));
+    }
+    const quotient = magnitude / unit;
+    const rounded =
+      (magnitude - quotient * unit) * 2n >= unit ? quotient + 1n : quotient;
+    return this.subtotalUnits < 0n ? -rounded : rounded;
   }
 
   /**

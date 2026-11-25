@@ -563,6 +563,40 @@ describe("FxAggregate", () => {
       },
     );
 
+    it("apportions a coin's eight places past 2^53 units without refusing its own total (issue #2410)", () => {
+      // Three parts summing to 50 to 90 million at eight places: the reading
+      // through a double can land a unit off the exact floors, which threw.
+      let seed = 2410;
+      const next = () => {
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+        return seed / 2147483648;
+      };
+      for (let round = 0; round < 20000; round++) {
+        const parts = Array.from({ length: 3 }, () =>
+          part(Number((1.6e7 + next() * 1.4e7).toFixed(9))),
+        );
+        const units = FxAggregate.apportionUnits(parts, 8);
+        expect(BigInt(units.reduce((a, b) => a + b, 0))).toBe(
+          FxAggregate.sum(parts).unitsAt(8),
+        );
+      }
+    });
+
+    it("reads units exactly as knownSubtotalAt where a double holds them", () => {
+      for (const value of [2.50498, -0.005, 41919.852249999996, 1234.5]) {
+        for (const places of [0, 2, 4]) {
+          const agg = part(value);
+          expect(agg.unitsAt(places)).toBe(
+            BigInt(moneyUnits(agg.knownSubtotalAt(places), places)),
+          );
+        }
+      }
+      // Past what a double holds at eight places, the exact rounding: the
+      // two parts accumulate to 75061223.834708825 exactly, a half unit.
+      const big = part(75061223, 0.834708825);
+      expect(big.unitsAt(8)).toBe(7506122383470883n);
+    });
+
     it("apportions in the currency's own unit (issue #2410)", () => {
       // Two 124.752474 children under a 249.504948 parent: the parent reads
       // 249.50 at two places and each child floors to 124.75, so neither
