@@ -1,3 +1,4 @@
+import { cloneElement, type ReactElement } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import { NetWorthReport } from './NetWorthReport';
@@ -68,10 +69,14 @@ vi.mock('@/components/ui/DateRangeSelector', () => ({
   ),
 }));
 
+// The composition view's tooltip element, so a case can render it over a row
+// the chart was given.
+let lastCompositionTooltip: ReactElement | null = null;
+
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   AreaChart: ({ children, data }: any) => <div data-testid="area-chart" data-points={JSON.stringify(data)}>{children}</div>,
-  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children, data }: any) => <div data-testid="bar-chart" data-points={JSON.stringify(data)}>{children}</div>,
   ComposedChart: ({ children, data }: any) => <div data-testid="composed-chart" data-points={JSON.stringify(data)}>{children}</div>,
   Line: ({ children }: any) => <div>{children}</div>,
   Area: () => null,
@@ -90,6 +95,7 @@ vi.mock('recharts', () => ({
   YAxis: ({ tickFormatter }: any) => <div>{tickFormatter ? tickFormatter(1000) : ''}</div>,
   CartesianGrid: () => null,
   Tooltip: ({ content, formatter }: any) => {
+    if (content?.type?.name === 'CompositionTooltip') lastCompositionTooltip = content;
     // `content` is a React element (e.g. <NetWorthTooltip formatCurrency={...} />);
     // invoke its function component with the element's own props, as Recharts
     // does, so the tooltip's render branches are exercised in tests.
@@ -713,6 +719,75 @@ describe('NetWorthReport completeness', () => {
   });
 });
 
+
+describe('NetWorthReport: figures from the server, not from whole units (issue #2412)', () => {
+  // Each figure sits a fraction off a whole unit: rounded to whole units, the
+  // first month read 100 and the last 101, a change of 1; the server's change
+  // is 0.20. The last month's sides, 10.60 and 0.40, read 11 and 0, a net of
+  // 11 where the month's own net worth is 10.20.
+  const first = { month: '2024-11-01', assets: 100.4, liabilities: 0, netWorth: 100.4, fxComplete: true, missingRatePairs: [] };
+  const last = {
+    month: '2024-12-01', assets: 100.6, liabilities: 0, netWorth: 100.6,
+    fxComplete: true, missingRatePairs: [], netWorthChange: 0.2, netWorthChangeFromStart: 0.2,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    dateRangeMock.value = '1y';
+    rangeMock.end = '2025-01-01';
+    setMobile(false);
+  });
+
+  async function renderReport(months: unknown[]) {
+    mockGetMonthly.mockResolvedValue(months);
+    await act(async () => {
+      render(<NetWorthReport />);
+    });
+    await waitFor(() => expect(screen.getByText('Current Net Worth')).toBeInTheDocument());
+  }
+
+  const card = (label: string) => screen.getByText(label).parentElement as HTMLElement;
+
+  it("reads the window's change from the server", async () => {
+    // 100.404 and 100.898 read 100.40 and 100.90, half a unit apart; the
+    // change itself, 0.494, reads 0.49.
+    await renderReport([first, { ...last, assets: 100.9, netWorth: 100.9, netWorthChangeFromStart: 0.49 }]);
+    expect(card('Change')).toHaveTextContent('+$0');
+    expect(card('Change')).not.toHaveTextContent('+$1');
+  });
+
+  it('takes the difference of the two readings from an older backend, not of whole units', async () => {
+    const { netWorthChangeFromStart: _omitted, ...older } = last;
+    await renderReport([first, older]);
+    expect(card('Change')).toHaveTextContent('+$0');
+  });
+
+  it("prints the month's own net worth in the composition tooltip", async () => {
+    await renderReport([first, { ...last, assets: 10.6, liabilities: 0.4, netWorth: 10.2 }]);
+    await act(async () => { fireEvent.click(screen.getByText('stacked')); });
+    const rows = JSON.parse(screen.getByTestId('bar-chart').getAttribute('data-points')!);
+    render(cloneElement(lastCompositionTooltip as ReactElement<any>, { active: true, payload: [{ payload: rows[1] }] }));
+    const lines = Array.from(document.querySelectorAll('p')).map((p) => p.textContent);
+    expect(lines).toContain('Net Worth: $10');
+  });
+
+  it("writes each month's server figures to the CSV", async () => {
+    const { exportToCsv } = await import('@/lib/csv-export');
+    await renderReport([first, { ...last, assets: 10.6, liabilities: 0.4, netWorth: 10.2 }]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /export/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/CSV/i));
+    });
+    const [, , rows] = (exportToCsv as any).mock.calls[0] as [string, string[], unknown[][]];
+    expect(rows.map((r) => r.slice(1, 4))).toEqual([
+      [100.4, 0, 100.4],
+      [10.6, 0.4, 10.2],
+    ]);
+  });
+});
 
 describe('NetWorthReport: a reload is not the previous answer', () => {
   const answer = [

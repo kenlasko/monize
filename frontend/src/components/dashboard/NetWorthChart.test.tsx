@@ -1,3 +1,4 @@
+import { cloneElement, type ReactElement } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act } from '@testing-library/react';
 import { render, screen, fireEvent, within } from '@/test/render';
@@ -16,6 +17,10 @@ const getMonthly = vi.fn();
 vi.mock('@/lib/net-worth', () => ({
   netWorthApi: { getMonthly: (...a: unknown[]) => getMonthly(...a) },
 }));
+
+// The last tooltip element the chart was given, so a case can render it over
+// a row the chart was handed.
+let lastTooltip: ReactElement | null = null;
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
@@ -38,6 +43,7 @@ vi.mock('recharts', () => ({
     <div data-testid="y-axis" data-domain={JSON.stringify(domain)} />
   ),
   Tooltip: ({ content }: any) => {
+    lastTooltip = content;
     // `content` is a React element; invoke its function component so the
     // tooltip's render branches are exercised.
     const fn = content?.type;
@@ -317,6 +323,32 @@ describe('NetWorthChart', () => {
     // Single data point: change = 0, percent = 0
     expect(screen.getByText('$10000')).toBeInTheDocument();
     expect(screen.getByTestId('composed-chart')).toBeInTheDocument();
+  });
+
+  describe('figures from the server, not from whole units (issue #2412)', () => {
+    // 100.404 and 100.898 read 100.40 and 100.90: rounded to whole units they
+    // were 100 and 101, a change of 1, and half a unit apart as readings; the
+    // server's change, 0.494, reads 0.49. The last month's sides, 10.60 and
+    // 0.40, read 11 and 0 in whole units, where its own net worth is 10.20.
+    const months = [
+      { month: '2024-01-01', assets: 100.4, liabilities: 0, netWorth: 100.4, netWorthChangeFromStart: 0 },
+      { month: '2024-06-01', assets: 10.6, liabilities: 0.4, netWorth: 100.9, netWorthChangeFromStart: 0.49 },
+    ];
+
+    it("reads the window's change from the server", async () => {
+      await renderWidget(months);
+      expect(screen.getByText(/\+\$0 /)).toBeInTheDocument();
+      expect(screen.queryByText(/\+\$1 /)).not.toBeInTheDocument();
+    });
+
+    it("prints the month's own net worth in the composition tooltip", async () => {
+      await renderWidget([months[0], { ...months[1], netWorth: 10.2 }]);
+      fireEvent.click(screen.getByTitle('100% Stacked Bar'));
+      const rows = JSON.parse(screen.getByTestId('bar-chart').getAttribute('data-points')!);
+      render(cloneElement(lastTooltip as ReactElement<any>, { active: true, payload: [{ payload: rows[1] }] }));
+      const lines = Array.from(document.querySelectorAll('p')).map((p) => p.textContent);
+      expect(lines).toContain('Net Worth: $10');
+    });
   });
 
   describe('a month the server could not fully convert', () => {

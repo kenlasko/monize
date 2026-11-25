@@ -23,6 +23,8 @@ import { ChartViewIcon } from '@/components/ui/ChartViewToggle';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { partialTotalFor } from '@/lib/net-worth-completeness';
+import { netWorthWindowChange } from '@/lib/net-worth-change';
+import { moneyDecimalsForCurrency } from '@/lib/format';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { NetWorthByAccountTypeChart } from '@/components/reports/NetWorthByAccountTypeChart';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
@@ -41,7 +43,9 @@ function NetWorthCompositionTooltip({
   labels,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: { name: string; assets: number | null; liabilities: number | null } }>;
+  payload?: Array<{
+    payload: { name: string; assets: number | null; liabilities: number | null; netWorth: number | null };
+  }>;
   formatCurrency: (v: number) => string;
   labels: { assets: string; liabilities: string; netWorth: string; partialMonth: string };
 }) {
@@ -49,7 +53,7 @@ function NetWorthCompositionTooltip({
   if (active && payload && payload.length) {
     const d = payload[0].payload;
     // A month the server could not fully convert has no split to print.
-    if (d.assets === null || d.liabilities === null) {
+    if (d.assets === null || d.liabilities === null || d.netWorth === null) {
       return (
         <div className={CHART_TOOLTIP_CLASS}>
           <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
@@ -69,7 +73,10 @@ function NetWorthCompositionTooltip({
           {labels.liabilities}: {formatCurrency(d.liabilities)} ({pct(d.liabilities)})
         </p>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 pt-1 border-t border-gray-100 dark:border-gray-700">
-          {labels.netWorth}: {formatCurrency(d.assets - d.liabilities)}
+          {/* The month's own net worth, never the difference of the two
+              sides above it (docs/specs/report-rounding-and-aggregation.md
+              rule 4). */}
+          {labels.netWorth}: {formatCurrency(d.netWorth)}
         </p>
       </div>
     );
@@ -129,32 +136,32 @@ export function NetWorthChart({ isLoading, refreshKey = 0 }: NetWorthChartProps)
         month: d.month,
         key: d.month,
         name: formatChartDate(`${d.month}-01`, 'MMM yyyy'),
-        netWorth: partial ? null : Math.round(d.netWorth),
-        assets: partial ? null : Math.round(d.assets),
-        liabilities: partial ? null : Math.round(d.liabilities),
+        // The server's figures as they arrive: the tooltip reads them, so
+        // they are not rounded to whole units for the bars.
+        netWorth: partial ? null : d.netWorth,
+        assets: partial ? null : d.assets,
+        liabilities: partial ? null : d.liabilities,
         byAccountType: partial ? undefined : d.byAccountType,
       };
     }),
   [data, formatChartDate]);
 
   const summary = useMemo(() => {
-    if (!data || data.length === 0) return null;
+    // The server's change from the first month, not a difference of readings.
+    const windowChange = netWorthWindowChange(data ?? [], moneyDecimalsForCurrency(defaultCurrency));
+    if (!data || windowChange === null) return null;
     const last = data[data.length - 1];
-    const first = data[0];
-    const current = Math.round(last.netWorth);
-    const initial = Math.round(first.netWorth);
-    const change = current - initial;
-    const changePercent = initial !== 0 ? (change / Math.abs(initial)) * 100 : 0;
+    const current = last.netWorth;
     return {
       current,
-      change,
-      changePercent,
+      change: windowChange.amount,
+      changePercent: windowChange.percent,
       // The headline is the latest month's: marked when it is a subtotal.
       currentTotal: partialTotalFor(current, last.fxComplete, last.missingRatePairs),
       // A change measured from or to a subtotal is not a change.
-      changeKnown: last.fxComplete !== false && first.fxComplete !== false,
+      changeKnown: windowChange.known,
     };
-  }, [data]);
+  }, [data, defaultCurrency]);
 
   // A long window names each January by its year; a shorter one each month.
   const yearTicks = chartData.length > YEAR_TICKS_AFTER;

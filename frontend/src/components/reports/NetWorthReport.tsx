@@ -23,7 +23,8 @@ import { netWorthApi } from '@/lib/net-worth';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
-import { gainLossColor } from '@/lib/format';
+import { gainLossColor, moneyDecimalsForCurrency } from '@/lib/format';
+import { netWorthWindowChange } from '@/lib/net-worth-change';
 import { useDateRange } from '@/hooks/useDateRange';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useSortableTable, compareValues } from '@/hooks/useSortableTable';
@@ -82,7 +83,9 @@ function NetWorthTooltip({ active, payload, formatCurrency }: NetWorthTooltipPro
 
 interface CompositionTooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: { name: string; Assets: number | null; Liabilities: number | null } }>;
+  payload?: Array<{
+    payload: { name: string; Assets: number | null; Liabilities: number | null; NetWorth: number | null };
+  }>;
   formatCurrency: (value: number) => string;
   formatPercent: (value: number, decimals?: number) => string;
   t: ReturnType<typeof useTranslations<'reports'>>;
@@ -92,7 +95,7 @@ function CompositionTooltip({ active, payload, formatCurrency, formatPercent, t 
   if (active && payload && payload.length) {
     const data = payload[0]?.payload;
     // A withheld month has no split to print: a subtotal would read as a total.
-    if (data?.Assets == null || data?.Liabilities == null) {
+    if (data?.Assets == null || data?.Liabilities == null || data?.NetWorth == null) {
       return (
         <div className={CHART_TOOLTIP_CLASS}>
           <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{data?.name}</p>
@@ -100,6 +103,9 @@ function CompositionTooltip({ active, payload, formatCurrency, formatPercent, t 
         </div>
       );
     }
+    // The server's figures. Net worth is the month's own, one rounding of the
+    // exact difference, never the difference of the two sides printed above it
+    // (docs/specs/report-rounding-and-aggregation.md rule 4).
     const assets = data.Assets;
     const liabilities = data.Liabilities;
     const total = assets + liabilities;
@@ -114,7 +120,7 @@ function CompositionTooltip({ active, payload, formatCurrency, formatPercent, t 
           {t('netWorth.colLiabilities')}: {formatCurrency(liabilities)} ({pct(liabilities)})
         </p>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 pt-1 border-t border-gray-100 dark:border-gray-700">
-          {t('netWorth.seriesNetWorth')}: {formatCurrency(assets - liabilities)}
+          {t('netWorth.seriesNetWorth')}: {formatCurrency(data.NetWorth)}
         </p>
       </div>
     );
@@ -189,13 +195,16 @@ export function NetWorthReport() {
       sortKey: d.month,
       partial,
       // What the table prints: the subtotal, marked, where the chart has a gap.
-      assetsValue: Math.round(d.assets),
-      liabilitiesValue: Math.round(d.liabilities),
-      netWorthValue: Math.round(d.netWorth),
+      // The server's figures as they arrive, at the reporting currency's
+      // places: the table, the tooltip and the CSV read them, so nothing here
+      // is rounded to whole units for the chart.
+      assetsValue: d.assets,
+      liabilitiesValue: d.liabilities,
+      netWorthValue: d.netWorth,
       pairs: d.missingRatePairs ?? [],
-      Assets: partial ? null : Math.round(d.assets),
-      Liabilities: partial ? null : Math.round(d.liabilities),
-      NetWorth: partial ? null : Math.round(d.netWorth),
+      Assets: partial ? null : d.assets,
+      Liabilities: partial ? null : d.liabilities,
+      NetWorth: partial ? null : d.netWorth,
     };
     }),
   [monthlyData, formatChartDate]);
@@ -218,28 +227,25 @@ export function NetWorthReport() {
   // being a subtotal makes the change unknown (the other end cannot vouch for
   // it); the current figure is the latest month's, marked when it is partial.
   const summary = useMemo(() => {
-    if (monthlyData.length === 0) {
+    // The server's change from the first month, not a difference of readings.
+    const windowChange = netWorthWindowChange(monthlyData, moneyDecimalsForCurrency(defaultCurrency));
+    if (windowChange === null) {
       return { current: 0, change: 0, changePercent: 0, currentTotal: partialTotalFor(0, undefined), pairs: [] as string[], currentPairs: [] as string[], anyPartial: false, changeKnown: true };
     }
     const last = monthlyData[monthlyData.length - 1];
-    const first = monthlyData[0];
-    const current = Math.round(last.netWorth);
-    const initial = Math.round(first.netWorth);
-    const change = current - initial;
-    const changePercent = initial !== 0 ? (change / Math.abs(initial)) * 100 : 0;
-    const changeKnown = last.fxComplete !== false && first.fxComplete !== false;
+    const current = last.netWorth;
     return {
       current,
-      change,
-      changePercent,
+      change: windowChange.amount,
+      changePercent: windowChange.percent,
       currentTotal: partialTotalFor(current, last.fxComplete, last.missingRatePairs),
       currentPairs: last.missingRatePairs ?? [],
       // Every pair either end month could not convert, for the notice.
       pairs: unionPairs(monthlyData.filter((m) => m.fxComplete === false)),
       anyPartial: monthlyData.some((m) => m.fxComplete === false),
-      changeKnown,
+      changeKnown: windowChange.known,
     };
-  }, [monthlyData]);
+  }, [monthlyData, defaultCurrency]);
 
   const sortedTableData = useMemo(() => {
     const sorted = [...chartData];
