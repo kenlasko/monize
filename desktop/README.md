@@ -552,7 +552,9 @@ builds:
   - a release dispatch on `main`, after `prepare-release`, stamped with the
     release version;
   - a push to `main` (a beta), after `prepare-preview`, stamped
-    `<next patch>-beta.<run number>`;
+    `<next patch>-beta.<run number>`. **Temporarily disabled**: this leg is
+    removed from the job's `if:` and `windows-beta` is gated off with
+    `false &&`, so no beta is built or published until both are restored;
   - a manual dispatch on any other branch, at once, with the version in
     `package.json`: `gh workflow run "CI Pipeline" --ref <branch>`, then
     fetch the `monize-windows-installer` artifact. This is how a branch's
@@ -574,7 +576,7 @@ builds:
 - **`release`** needs `desktop-windows`, checks that the artifact carries the
   release version, and attaches the three files to the GitHub release. A
   failed Windows build stops the release before the bump commit and the tag.
-- **`windows-beta`** (a push to `main`) publishes the beta as a GitHub
+- **`windows-beta`** (a push to `main`; temporarily disabled, see above) publishes the beta as a GitHub
   prerelease tagged `v<version>` and then deletes every older Windows beta
   prerelease and its tag, so there is only ever one. `/releases/latest` never
   returns a prerelease, so the website, the backend's update check and a

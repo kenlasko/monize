@@ -1112,10 +1112,14 @@ jobs:
     name: Desktop Windows Installer
     runs-on: windows-latest
     needs: [desktop, prepare-release, prepare-preview]
+    # TEMPORARILY DISABLED: the Windows beta. The push-to-main leg
+    # (`needs.prepare-preview.result == 'success' ||`) is removed, so a merge
+    # no longer builds a beta installer; releases and branch dispatches still
+    # build. To re-enable, restore that line here and drop `false &&` from
+    # windows-beta's `if:`.
     if: >-
       !cancelled() && needs.desktop.result == 'success' && (
         needs.prepare-release.result == 'success' ||
-        needs.prepare-preview.result == 'success' ||
         (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
       )
     # About 35 minutes of build and smoke test, plus up to 20 for each of the
@@ -2070,8 +2074,9 @@ jobs:
     name: Publish Windows Beta
     runs-on: ubuntu-latest
     needs: [prepare-preview, desktop-windows]
+    # TEMPORARILY DISABLED (see desktop-windows): `false &&` skips the publish.
     if: >-
-      !cancelled() &&
+      false && !cancelled() &&
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.prepare-preview.result == 'success' &&
       needs.desktop-windows.result == 'success'
