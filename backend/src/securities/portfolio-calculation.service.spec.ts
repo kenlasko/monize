@@ -3520,6 +3520,7 @@ describe("PortfolioCalculationService.buildAllocation", () => {
       -280,
       "CAD",
       new Map<string, number>(),
+      2,
     );
 
     expect(result.some((r) => r.type === "cash")).toBe(false);
@@ -3543,6 +3544,7 @@ describe("PortfolioCalculationService.buildAllocation", () => {
       60,
       "CAD",
       new Map<string, number>(),
+      2,
     );
 
     // base = 140 + 60 = 200
@@ -3553,6 +3555,32 @@ describe("PortfolioCalculationService.buildAllocation", () => {
     expect(result.find((r) => r.symbol === "AKC")?.percentage).toBeCloseTo(
       70,
       5,
+    );
+  });
+
+  it("reads each slice once at the reporting currency's places, the share from the unrounded values (issue #2410)", async () => {
+    // AKC held in two accounts: 50.004 + 50.004 = 100.008, which reads
+    // 100.01; each lot alone reads 50.00. Cash of 10.005 reads 10.01.
+    const sortedHoldings = [
+      holdingWithValue("h1", "s1", "AKC", 50.004),
+      { ...holdingWithValue("h2", "s1", "AKC", 50.004), accountId: "acct-2" },
+    ];
+    const holdings = [holdingRow("h1", "s1"), holdingRow("h2", "s1")];
+
+    const result = await service.buildAllocation(
+      sortedHoldings,
+      holdings,
+      10.005,
+      "CAD",
+      new Map<string, number>(),
+      2,
+    );
+
+    expect(result.find((r) => r.symbol === "AKC")?.value).toBe(100.01);
+    expect(result.find((r) => r.type === "cash")?.value).toBe(10.01);
+    expect(result.find((r) => r.symbol === "AKC")?.percentage).toBeCloseTo(
+      (100.008 / 110.013) * 100,
+      10,
     );
   });
 });
@@ -5157,18 +5185,19 @@ describe("PortfolioCalculationService gain over the priced holdings (A26-M38)", 
       expect(result.valuationComplete).toBe(true);
     });
 
-    it("takes the gain from value less cost before either is rounded (issue #2384)", async () => {
-      // Two holdings worth 124.752474 each on a cost of 0.00005: the gain is
-      // 249.504898, which reads 249.5049. The four-place readings, 249.5049
-      // less 0.0001, made it 249.5048.
+    it("takes the gain from value less cost before either is rounded, at the account currency's places (issues #2384, #2410)", async () => {
+      // Two holdings worth 1.006 each on a cost of 0.005: the gain is 2.007,
+      // which reads 2.01. The two-place readings, 2.01 less 0.01, would make
+      // it 2.00.
       const result = await build([
-        held("a", 124.752474, 0.00005),
-        held("b", 124.752474, 0),
+        held("a", 1.006, 0.005),
+        held("b", 1.006, 0),
       ]);
 
-      expect(result.totalMarketValue).toBe(249.5049);
-      expect(result.gainCostBasis).toBe(0.0001);
-      expect(result.totalGainLoss).toBe(249.5049);
+      expect(result.totalMarketValue).toBe(2.01);
+      expect(result.gainCostBasis).toBe(0.01);
+      expect(result.totalGainLoss).toBe(2.01);
+      expect(result.totalGainLossPercent).toBeCloseTo((2.007 / 0.005) * 100, 8);
     });
 
     it("reports a zero percent over a zero matched cost", async () => {

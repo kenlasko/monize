@@ -14,7 +14,7 @@ import {
   AccountHoldings,
   AllocationItem,
 } from "./portfolio.service";
-import { roundMoney } from "../common/round.util";
+import { MONEY_SCALE, roundMoney, sumMoney } from "../common/round.util";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { investmentRowRateInto } from "./investment-row-fx.util";
 import {
@@ -30,6 +30,7 @@ import {
 } from "../common/date-utils";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { FxAggregate } from "../common/fx-aggregate";
+import { reportFigure, reportPlacesOf } from "../common/report-figure";
 import {
   BondValuationService,
   SecurityValueByAccount,
@@ -70,6 +71,18 @@ const LIVE_FX_FETCH_CONCURRENCY = 6;
  * that bar's own date rather than a single near-current rate.
  */
 export type { ReplayedBasisGap };
+
+/**
+ * An account's net invested -- its cash plus what it bought, less what it sold
+ * and the income it took -- read once at `places`, its currency's own, from the
+ * exact sum of its parts (docs/specs/report-rounding-and-aggregation.md section
+ * 6).
+ */
+function netInvestedFigure(parts: readonly number[], places: number): number {
+  const sum = new FxAggregate();
+  for (const part of parts) sum.addConverted(part);
+  return sum.knownSubtotalAt(places);
+}
 
 /** A position rebuilt from its transactions: what is held, and what it cost. */
 export interface ReplayedLot {
@@ -713,6 +726,11 @@ export class PortfolioCalculationService {
     rateCache: FxRateCache,
   ): Promise<{
     total: number;
+    /**
+     * The cash as the aggregate `total` reads, for a caller that reads it at
+     * the reporting currency's places or folds it into the portfolio value.
+     */
+    aggregate: FxAggregate;
     fxComplete: boolean;
     missingRatePairs: string[];
   }> {
@@ -741,6 +759,7 @@ export class PortfolioCalculationService {
     }
     return {
       total: cash.knownSubtotal,
+      aggregate: cash,
       fxComplete: cash.isComplete,
       missingRatePairs: cash.missingPairs,
     };
@@ -2285,6 +2304,20 @@ export class PortfolioCalculationService {
      * not be converted is named by `missingRatePairs`.
      */
     unpricedCostBasis: number;
+    /**
+     * The aggregates the five figures above are read from, for a caller that
+     * reads them at the reporting currency's places, folds them into a total
+     * of its own (the portfolio value: cash and holdings, one rounding) or
+     * divides them (the gain's percentage) before anything is rounded
+     * (docs/specs/report-rounding-and-aggregation.md rules 2 and 8, section 6).
+     */
+    aggregates: {
+      costBasis: FxAggregate;
+      holdingsValue: FxAggregate;
+      gainCost: FxAggregate;
+      gainValue: FxAggregate;
+      unpricedCost: FxAggregate;
+    };
   }> {
     let holdings: Holding[] = [];
     if (holdingsAccountIds.length > 0) {
@@ -2550,6 +2583,13 @@ export class PortfolioCalculationService {
       gainLoss: FxAggregate.difference(gainValueTotal, gainCostTotal)
         .knownSubtotal,
       unpricedCostBasis: unpricedCostTotal.knownSubtotal,
+      aggregates: {
+        costBasis: costBasisTotal,
+        holdingsValue: holdingsValueTotal,
+        gainCost: gainCostTotal,
+        gainValue: gainValueTotal,
+        unpricedCost: unpricedCostTotal,
+      },
     };
   }
 
@@ -2589,11 +2629,16 @@ export class PortfolioCalculationService {
    * conversion path -- so a portfolio can be complete at the top while a JPY
    * account's own total is missing EUR->JPY entirely, and a consumer reading the
    * nested figure has no way to know from the global flag.
+   *
+   * Each figure is read once at `places`, the account currency's own
+   * (docs/specs/report-rounding-and-aggregation.md section 6), and the gain's
+   * percentage divides the unrounded figures (rule 8).
    */
   private async accountTotals(
     accountHoldings: HoldingWithMarketValue[],
     accountCurrency: string,
     rateCache: FxRateCache,
+    places: number,
   ): Promise<{
     totalCostBasis: number;
     totalMarketValue: number;
@@ -2671,26 +2716,25 @@ export class PortfolioCalculationService {
       );
     }
 
-    const totalCostBasis = costBasisAgg.knownSubtotal;
-    const totalMarketValue = marketValueAgg.knownSubtotal;
+    const totalCostBasis = costBasisAgg.knownSubtotalAt(places);
+    const totalMarketValue = marketValueAgg.knownSubtotalAt(places);
     // Value less cost of the SAME holdings (A26-M38): the unpriced holdings' cost
     // is not charged against a value that never included them.
-    const gainCostBasis = gainCostAgg.knownSubtotal;
+    const gainCostBasis = gainCostAgg.knownSubtotalAt(places);
     // Value less cost before either is rounded, rounded once
     // (docs/specs/report-rounding-and-aggregation.md rule 2).
-    const totalGainLoss = FxAggregate.difference(
-      gainValueAgg,
-      gainCostAgg,
-    ).knownSubtotal;
+    const gain = FxAggregate.difference(gainValueAgg, gainCostAgg);
 
     return {
       totalCostBasis,
       totalMarketValue,
-      totalGainLoss,
+      totalGainLoss: gain.knownSubtotalAt(places),
       totalGainLossPercent:
-        gainCostBasis > 0 ? (totalGainLoss / gainCostBasis) * 100 : 0,
+        gainCostBasis > 0
+          ? (gain.unroundedSubtotal / gainCostAgg.unroundedSubtotal) * 100
+          : 0,
       gainCostBasis,
-      unpricedCostBasis: unpricedCostAgg.knownSubtotal,
+      unpricedCostBasis: unpricedCostAgg.knownSubtotalAt(places),
       fxComplete: missingRatePairs.length === 0,
       missingRatePairs,
       pricesComplete: unpriced.size === 0,
@@ -2718,6 +2762,23 @@ export class PortfolioCalculationService {
       holdingsByAccountMap.set(holding.accountId, existing);
     }
 
+    // Each account's figures are read once at its own currency's places
+    // (docs/specs/report-rounding-and-aggregation.md section 6): an ISO code's
+    // minor unit, a coin's row.
+    const placesByCurrency = new Map<string, number>();
+    for (const account of [
+      ...categorised.brokerageAccounts,
+      ...categorised.standaloneAccounts,
+    ]) {
+      if (!placesByCurrency.has(account.currencyCode)) {
+        placesByCurrency.set(
+          account.currencyCode,
+          await reportPlacesOf(this.dataSource, account.currencyCode),
+        );
+      }
+    }
+    const placesOf = (code: string): number => placesByCurrency.get(code)!;
+
     const holdingsByAccount: AccountHoldings[] = [];
 
     // Process brokerage accounts (paired with cash accounts)
@@ -2740,6 +2801,7 @@ export class PortfolioCalculationService {
         accountHoldings,
         brokerageAccount.currencyCode,
         rateCache,
+        placesOf(brokerageAccount.currencyCode),
       );
 
       // Get display name (remove the localized " - Brokerage" suffix if present)
@@ -2754,8 +2816,6 @@ export class PortfolioCalculationService {
         sells: 0,
         income: 0,
       };
-      const accountNetInvested =
-        cashBalance + flows.buys - flows.sells - flows.income;
 
       holdingsByAccount.push({
         accountId: brokerageAccount.id,
@@ -2776,7 +2836,10 @@ export class PortfolioCalculationService {
         pricesComplete: acctTotals.pricesComplete,
         unpricedSecurityIds: acctTotals.unpricedSecurityIds,
         valuationComplete: acctTotals.valuationComplete,
-        netInvested: roundMoney(accountNetInvested),
+        netInvested: netInvestedFigure(
+          [cashBalance, flows.buys, -flows.sells, -flows.income],
+          placesOf(brokerageAccount.currencyCode),
+        ),
       });
     }
 
@@ -2791,6 +2854,7 @@ export class PortfolioCalculationService {
         accountHoldings,
         standaloneAccount.currencyCode,
         rateCache,
+        placesOf(standaloneAccount.currencyCode),
       );
 
       const standaloneCashBalance =
@@ -2801,11 +2865,6 @@ export class PortfolioCalculationService {
         sells: 0,
         income: 0,
       };
-      const standaloneNetInvested =
-        standaloneCashBalance +
-        standaloneFlows.buys -
-        standaloneFlows.sells -
-        standaloneFlows.income;
 
       holdingsByAccount.push({
         accountId: standaloneAccount.id,
@@ -2826,7 +2885,15 @@ export class PortfolioCalculationService {
         pricesComplete: acctTotals.pricesComplete,
         unpricedSecurityIds: acctTotals.unpricedSecurityIds,
         valuationComplete: acctTotals.valuationComplete,
-        netInvested: roundMoney(standaloneNetInvested),
+        netInvested: netInvestedFigure(
+          [
+            standaloneCashBalance,
+            standaloneFlows.buys,
+            -standaloneFlows.sells,
+            -standaloneFlows.income,
+          ],
+          placesOf(standaloneAccount.currencyCode),
+        ),
       });
     }
 
@@ -2842,6 +2909,11 @@ export class PortfolioCalculationService {
 
   /**
    * Build the portfolio allocation breakdown from sorted holdings and cash.
+   *
+   * `totalCashValue` is the cash's unrounded value in the reporting currency.
+   * Each slice's value is read once at `places`, the reporting currency's own,
+   * from the exact sum of its holdings, and each share divides the unrounded
+   * values (docs/specs/report-rounding-and-aggregation.md rule 8, section 6).
    */
   async buildAllocation(
     sortedHoldings: HoldingWithMarketValue[],
@@ -2849,6 +2921,7 @@ export class PortfolioCalculationService {
     totalCashValue: number,
     defaultCurrency: string,
     rateCache: FxRateCache,
+    places: number,
   ): Promise<AllocationItem[]> {
     const allocation: AllocationItem[] = [];
     const colors = [
@@ -2870,7 +2943,7 @@ export class PortfolioCalculationService {
         name: string;
         symbol: string;
         currencyCode: string;
-        value: number;
+        value: FxAggregate;
       }
     >();
 
@@ -2891,19 +2964,21 @@ export class PortfolioCalculationService {
       if (convertedValue === null) continue;
       const existing = consolidated.get(holding.securityId);
       if (existing) {
-        existing.value += convertedValue;
+        existing.value.addConverted(convertedValue);
       } else {
+        const value = new FxAggregate();
+        value.addConverted(convertedValue);
         consolidated.set(holding.securityId, {
           name: holding.name,
           symbol: holding.symbol,
           currencyCode: holdingCurrency,
-          value: convertedValue,
+          value,
         });
       }
     }
 
     const consolidatedItems = [...consolidated.values()].sort(
-      (a, b) => b.value - a.value,
+      (a, b) => b.value.unroundedSubtotal - a.value.unroundedSubtotal,
     );
 
     // Percentages are measured against the sum of the slices actually drawn
@@ -2911,10 +2986,10 @@ export class PortfolioCalculationService {
     // value. Using the net value would let a negative cash balance (margin /
     // loan) or a short position shrink the denominator and inflate every
     // slice past 100%; the drawn total always reconciles to ~100%.
-    const positiveCash = totalCashValue > 0 ? totalCashValue : 0;
-    const drawnTotal =
-      consolidatedItems.reduce((sum, item) => sum + item.value, 0) +
-      positiveCash;
+    const drawn = new FxAggregate();
+    for (const item of consolidatedItems) drawn.merge(item.value);
+    if (totalCashValue > 0) drawn.addConverted(totalCashValue);
+    const drawnTotal = drawn.unroundedSubtotal;
     const pct = (value: number) =>
       drawnTotal > 0 ? (value / drawnTotal) * 100 : 0;
 
@@ -2923,7 +2998,7 @@ export class PortfolioCalculationService {
         name: "Cash",
         symbol: null,
         type: "cash",
-        value: roundMoney(totalCashValue),
+        value: reportFigure(totalCashValue, places),
         percentage: pct(totalCashValue),
         color: "#6b7280",
         currencyCode: defaultCurrency,
@@ -2936,8 +3011,8 @@ export class PortfolioCalculationService {
         name: item.name,
         symbol: item.symbol,
         type: "security",
-        value: roundMoney(item.value),
-        percentage: pct(item.value),
+        value: item.value.knownSubtotalAt(places),
+        percentage: pct(item.value.unroundedSubtotal),
         color: colors[colorIndex % colors.length],
         currencyCode: item.currencyCode,
       });
@@ -2985,41 +3060,44 @@ export class PortfolioCalculationService {
       "#ef4444",
     ];
 
-    // Accumulate value per tag (overlapping) and the untagged remainder.
+    // Accumulate value per tag (overlapping) and the untagged remainder. A
+    // bucket regroups the slices the allocation shows, so it is the exact sum
+    // of their values (`sumMoney`), never a float running total.
     const tagBuckets = new Map<
       string,
-      { name: string; color: string | null; value: number }
+      { name: string; color: string | null; values: number[] }
     >();
-    let untaggedValue = 0;
-    // Sum of every security slice that lands on the chart (tagged or not).
-    // This, plus positive cash, is the denominator so tag and Untagged slices
-    // share one base and reconcile to ~100%.
-    let includedSecuritiesValue = 0;
+    const untaggedValues: number[] = [];
+    // Every security slice that lands on the chart (tagged or not). Their sum,
+    // plus positive cash, is the denominator so tag and Untagged slices share
+    // one base and reconcile to ~100%.
+    const includedValues: number[] = [];
 
     for (const item of securityItems) {
       if (item.type !== "security" || item.value <= 0) continue;
-      includedSecuritiesValue += item.value;
+      includedValues.push(item.value);
       const tags = item.symbol ? (tagsBySymbol.get(item.symbol) ?? []) : [];
       if (tags.length === 0) {
-        untaggedValue += item.value;
+        untaggedValues.push(item.value);
         continue;
       }
       for (const tag of tags) {
         const existing = tagBuckets.get(tag.id);
         if (existing) {
-          existing.value += item.value;
+          existing.values.push(item.value);
         } else {
           tagBuckets.set(tag.id, {
             name: tag.name,
             color: tag.color,
-            value: item.value,
+            values: [item.value],
           });
         }
       }
     }
 
     const positiveCash = totalCashValue > 0 ? totalCashValue : 0;
-    const drawnTotal = includedSecuritiesValue + positiveCash;
+    const drawnTotal = sumMoney([...includedValues, positiveCash], MONEY_SCALE);
+    const untaggedValue = sumMoney(untaggedValues, MONEY_SCALE);
     const pct = (value: number) =>
       drawnTotal > 0 ? (value / drawnTotal) * 100 : 0;
 
@@ -3037,9 +3115,12 @@ export class PortfolioCalculationService {
       });
     }
 
-    const sortedTags = [...tagBuckets.values()].sort(
-      (a, b) => b.value - a.value,
-    );
+    const sortedTags = [...tagBuckets.values()]
+      .map(({ values, ...bucket }) => ({
+        ...bucket,
+        value: sumMoney(values, MONEY_SCALE),
+      }))
+      .sort((a, b) => b.value - a.value);
     let colorIndex = 0;
     for (const bucket of sortedTags) {
       allocation.push({
@@ -3107,17 +3188,18 @@ export class PortfolioCalculationService {
     ];
     const normalizedKey = key.trim().toLowerCase();
 
-    // valueKey (case-folded) -> { display value, colour, accumulated value }
+    // valueKey (case-folded) -> { display value, colour, the slice values it
+    // regroups }, summed exactly (`sumMoney`), as `buildAllocationByTag` does.
     const valueBuckets = new Map<
       string,
-      { name: string; color: string | null; value: number }
+      { name: string; color: string | null; values: number[] }
     >();
-    let unassignedValue = 0;
-    let includedSecuritiesValue = 0;
+    const unassignedValues: number[] = [];
+    const includedValues: number[] = [];
 
     for (const item of securityItems) {
       if (item.type !== "security" || item.value <= 0) continue;
-      includedSecuritiesValue += item.value;
+      includedValues.push(item.value);
       const tags = item.symbol ? (tagsBySymbol.get(item.symbol) ?? []) : [];
 
       // Distinct concrete values this security carries under the key.
@@ -3138,25 +3220,26 @@ export class PortfolioCalculationService {
       }
 
       if (matched.size === 0) {
-        unassignedValue += item.value;
+        unassignedValues.push(item.value);
         continue;
       }
       for (const [valueKey, meta] of matched) {
         const existing = valueBuckets.get(valueKey);
         if (existing) {
-          existing.value += item.value;
+          existing.values.push(item.value);
         } else {
           valueBuckets.set(valueKey, {
             name: meta.display,
             color: meta.color,
-            value: item.value,
+            values: [item.value],
           });
         }
       }
     }
 
     const positiveCash = totalCashValue > 0 ? totalCashValue : 0;
-    const drawnTotal = includedSecuritiesValue + positiveCash;
+    const drawnTotal = sumMoney([...includedValues, positiveCash], MONEY_SCALE);
+    const unassignedValue = sumMoney(unassignedValues, MONEY_SCALE);
     const pct = (value: number) =>
       drawnTotal > 0 ? (value / drawnTotal) * 100 : 0;
 
@@ -3174,9 +3257,12 @@ export class PortfolioCalculationService {
       });
     }
 
-    const sortedValues = [...valueBuckets.values()].sort(
-      (a, b) => b.value - a.value,
-    );
+    const sortedValues = [...valueBuckets.values()]
+      .map(({ values, ...bucket }) => ({
+        ...bucket,
+        value: sumMoney(values, MONEY_SCALE),
+      }))
+      .sort((a, b) => b.value - a.value);
     let colorIndex = 0;
     for (const bucket of sortedValues) {
       allocation.push({

@@ -498,6 +498,34 @@ describe("PortfolioService", () => {
         );
       });
 
+      it("reads each total once at the reporting currency's places (issue #2410)", async () => {
+        // AAPL at 175.000369 USD: 10 x 175.000369 x 1.35 = 2362.5049815 CAD,
+        // which reads 2362.50, where its four-place reading 2362.5050 showed
+        // as 2362.51. The portfolio is cash and holdings folded before either
+        // is rounded: 5000 + 2362.5049815 + 4750 = 12112.5049815, 12112.50.
+        securityPriceRepository.query.mockResolvedValue([
+          {
+            security_id: "sec-1",
+            close_price: "175.000369",
+            price_date: "2026-02-07",
+          },
+          { security_id: "sec-2", close_price: "95", price_date: "2026-02-07" },
+        ]);
+
+        const result = await service.getPortfolioSummary(userId);
+
+        expect(result.totalHoldingsValue).toBe(7112.5);
+        expect(result.totalPortfolioValue).toBe(12112.5);
+        expect(result.totalGainLoss).toBe(1087.5);
+        expect(result.allocation.find((a) => a.symbol === "AAPL")?.value).toBe(
+          2362.5,
+        );
+        expect(result.totalGainLossPercent).toBeCloseTo(
+          (1087.5049815 / 6025) * 100,
+          10,
+        );
+      });
+
       it("returns holdings with calculated market values", async () => {
         const result = await service.getPortfolioSummary(userId);
 
