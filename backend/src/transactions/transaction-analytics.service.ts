@@ -42,11 +42,7 @@ import {
 } from "../common/currency-places.util";
 import { Account } from "../accounts/entities/account.entity";
 import { FxAggregate } from "../common/fx-aggregate";
-import {
-  loadReportPlaces,
-  reportFigure,
-  reportPlacesOf,
-} from "../common/report-figure";
+import { loadReportPlaces, reportPlacesOf } from "../common/report-figure";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import {
   buildRateIndex,
@@ -1432,10 +1428,11 @@ export class TransactionAnalyticsService {
         userId,
       );
       const accountCurrency = account?.currencyCode;
-      // The Foreign Currency Fees report's figure in the reporting currency is
-      // rounded once, at that currency's places
+      // Four places, not the reporting currency's: the Foreign Currency Fees
+      // page adds these rows into its month and grand totals, and a sum of
+      // two-place readings sits a cent off the sum read once. They move to
+      // the currency's places with those totals, in stage 3
       // (docs/specs/report-rounding-and-aggregation.md section 6).
-      const reportPlaces = await loadReportPlaces(m, reporting);
       const converted =
         accountCurrency && accountCurrency !== reporting && rows.length > 0
           ? await convertDatedRows(
@@ -1464,7 +1461,7 @@ export class TransactionAnalyticsService {
                 amounts: { feeTotal: Number(row.feeTotal) || 0 },
               })),
               reporting,
-              reportPlaces,
+              FIAT_MONEY_DECIMALS,
               this.logger,
             )
           : null;
@@ -1480,7 +1477,7 @@ export class TransactionAnalyticsService {
           convertedFeeTotal:
             converted === null
               ? accountCurrency === reporting
-                ? reportFigure(Number(row.feeTotal) || 0, reportPlaces)
+                ? feeTotal
                 : null
               : (converted.get(`${row.month}|${row.currencyCode}`)?.feeTotal ??
                 null),

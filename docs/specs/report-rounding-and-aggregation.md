@@ -230,8 +230,7 @@ the wire; stage 2 removes the one-cent double rounding.
   which added each group's amount in its own currency and now converts each
   extra copy at its own row's rate basis); the custom report, including the transaction list's
   `value`, which left unrounded; the Cash Flow Sankey, apportioned and closed in
-  the currency's minor unit; the Foreign Currency Fees report's converted
-  total; the monthly net worth and what reuses it (the account summary's
+  the currency's minor unit; the monthly net worth and what reuses it (the account summary's
   latest month, the assistant's net worth history, each month's change from
   the one before, `netWorthChange`, which the dashboard's month change reads,
   and the dashboard trivia's gains and falls, each a difference of two months'
@@ -275,7 +274,10 @@ the wire; stage 2 removes the one-cent double rounding.
   insights and forecast prompts, which a model reads and does not hand out; the
   daily series the period result's P&L, TWR and MWR are worked out from
   (`getDailyInvestments`), which keeps four places so the returns are
-  calculated, not read off rounded figures.
+  calculated, not read off rounded figures. The Foreign Currency Fees report's
+  converted rows keep four places too, while the page adds them into its
+  month and grand totals: read at two, three 2.50496 fees would total 7.50
+  where they come to 7.51 (stage 3 moves those totals to the server).
 - **Residuals.** A budget line's actual is a four-place reading
   (`CategorySpending`, INV-REPORT-005's known gap), so a budget figure is the
   two-place reading of a four-place one, as the screen read it before. The
@@ -307,7 +309,7 @@ definition of what it counts.
 | 6 | the Sankey over generated two-currency ledgers: closes at depth 1 and 2, depth moves no total, each side's total equals one `FxAggregate` over that side's rows; the section 4 Sankey rows; `apportionUnits` keeps every part within one unit and sums to the whole's reading |
 | 7 | `mergeNegated` carries missing pairs and the unknown count |
 | client | `sumConverted` agrees with `FxAggregate` over the same converted components |
-| 6, stage 2 | `knownSubtotalAt`, `totalAt` and `apportionUnits` at 0, 2, 4 and 8 places; a 2.50498 figure reads 2.50 in Spending by Category, Income by Source, the custom report's headline and transaction list, the Sankey, the Foreign Currency Fees report and `generate_report` over the real Spending by Category (`reports.tool.rounding.spec.ts`); a JPY report in whole yen and a JPY Sankey that closes; the Sankey property specs over CAD and JPY ledgers; the custom report's generated ledgers against one `FxAggregate` read at two places; the section 4 rows at two places |
+| 6, stage 2 | `knownSubtotalAt`, `totalAt` and `apportionUnits` at 0, 2, 4 and 8 places; a 2.50498 figure reads 2.50 in Spending by Category, Income by Source, the custom report's headline and transaction list, the Sankey and `generate_report` over the real Spending by Category (`reports.tool.rounding.spec.ts`); a JPY report in whole yen and a JPY Sankey that closes; the Sankey property specs over CAD and JPY ledgers; the custom report's generated ledgers against one `FxAggregate` read at two places; the section 4 rows at two places |
 
 Each test is seen failing on the code before its stage
 (`docs/financial-calculation-contract.md` section 8.2).

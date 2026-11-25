@@ -4832,7 +4832,7 @@ describe("TransactionAnalyticsService", () => {
       ]);
     });
 
-    it("rounds a converted fee total once, at the reporting currency's places (issue #2410)", async () => {
+    it("keeps a converted fee total at four places while the page adds the rows (issue #2410)", async () => {
       userPreferenceRepository.findOne.mockResolvedValue({
         defaultCurrency: "USD",
       });
@@ -4860,10 +4860,13 @@ describe("TransactionAnalyticsService", () => {
 
       const result = await service.getFxFeeSummary(userId, "acc-1");
 
-      // 3.1312 CAD at 1.25 is 2.50496 USD: 2.50, where its four-place
-      // reading 2.5050 showed as 2.51. The fee in the account's own currency
-      // is the posted figure and keeps its precision.
-      expect(result[0].convertedFeeTotal).toBe(2.5);
+      // 3.1312 CAD at 1.25 is 2.50496 USD, read at four places: 2.505. The
+      // Foreign Currency Fees page sums these rows into its month and grand
+      // totals, so three of them read at two places (2.50 each) would total
+      // 7.50 where the fees come to 7.51; they move to the currency's places
+      // with those totals (stage 3). The fee in the account's own currency is
+      // the posted figure and keeps its precision.
+      expect(result[0].convertedFeeTotal).toBe(2.505);
       expect(result[0].feeTotal).toBe(3.1312);
     });
 
