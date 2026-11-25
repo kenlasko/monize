@@ -391,6 +391,11 @@ export interface WeekendVsWeekdayResponse {
      */
     weekendShare?: number | null;
     weekdayShare?: number | null;
+    /** Each side's mean per transaction from the unrounded sum; `null` with the totals. */
+    weekendAverage?: number | null;
+    weekdayAverage?: number | null;
+    /** The weekend's mean less the weekday's, subtracted before it is read. */
+    averageDifference?: number | null;
     weekendCount: number;
     weekdayCount: number;
   };

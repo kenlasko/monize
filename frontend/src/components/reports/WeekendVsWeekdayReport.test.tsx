@@ -309,6 +309,38 @@ describe('WeekendVsWeekdayReport', () => {
     expect(legend[1].label).toContain('(51.0%)');
   });
 
+  // The page divided the two read totals (10.01 over two, 5.00 over one), so
+  // the means' gap was 0.005 and read as a cent; the server's, from the
+  // unrounded sums, is 0.001 and reads 0.00 (issue #2413).
+  it("prints the server's means and their gap, not means of the two rounded totals", async () => {
+    mockGetWeekendVsWeekday.mockResolvedValue({
+      summary: {
+        weekendTotal: 10.01,
+        weekdayTotal: 5,
+        knownWeekendTotal: 10.01,
+        knownWeekdayTotal: 5,
+        weekendShare: 66.7,
+        weekdayShare: 33.3,
+        weekendAverage: 5.01,
+        weekdayAverage: 5,
+        averageDifference: 0,
+        weekendCount: 2,
+        weekdayCount: 1,
+      },
+      byDay: [],
+      byCategory: [],
+      currency: 'CAD',
+      missingCurrencies: [],
+      excludedCount: 0,
+    });
+    render(<WeekendVsWeekdayReport />);
+    await waitFor(() => {
+      expect(screen.getByText('Avg Weekend Transaction').parentElement).toHaveTextContent('$5.01');
+    });
+    expect(screen.getByText('Avg Weekday Transaction').parentElement).toHaveTextContent('$5.00');
+    expect(screen.getByText(/more per transaction on weekdays/)).toHaveTextContent('$0.00');
+  });
+
   it('marks the null totals as subtotals and withholds every ratio over them', async () => {
     mockGetWeekendVsWeekday.mockResolvedValue({
       summary: {

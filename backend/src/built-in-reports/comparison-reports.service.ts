@@ -12,6 +12,7 @@ import {
 } from "./report-currency.service";
 import { FxAggregate } from "../common/fx-aggregate";
 import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
+import { reportFigure } from "../common/report-figure";
 import {
   YearOverYearResponse,
   YearData,
@@ -404,6 +405,16 @@ export class ComparisonReportsService {
     const weekendCount = dayCounts[0] + dayCounts[6];
     const weekdayCount =
       dayCounts[1] + dayCounts[2] + dayCounts[3] + dayCounts[4] + dayCounts[5];
+    // A side's mean per transaction, and how far the weekend's sits above the
+    // weekday's, divided and subtracted before anything is rounded: a mean of
+    // a rounded total, or the difference of two rounded means, can sit a unit
+    // off (docs/specs/report-rounding-and-aggregation.md rules 4 and 8).
+    const meanOf = (sum: FxAggregate, count: number): number =>
+      count > 0 ? sum.unroundedSubtotal / count : 0;
+    const weekendMean = meanOf(weekendSum, weekendCount);
+    const weekdayMean = meanOf(weekdaySum, weekdayCount);
+    const averageOf = (mean: number): number | null =>
+      gaps.isComplete ? reportFigure(mean, places) : null;
 
     const byDay: DaySpending[] = dayTotals.map((total, index) => ({
       dayOfWeek: index,
@@ -440,6 +451,9 @@ export class ComparisonReportsService {
         knownWeekdayTotal,
         weekendShare: shareOf(weekendSum),
         weekdayShare: shareOf(weekdaySum),
+        weekendAverage: averageOf(weekendMean),
+        weekdayAverage: averageOf(weekdayMean),
+        averageDifference: averageOf(weekendMean - weekdayMean),
         weekendCount,
         weekdayCount,
       },

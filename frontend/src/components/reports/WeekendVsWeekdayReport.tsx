@@ -158,8 +158,19 @@ export function WeekendVsWeekdayReport() {
   const weekdayTotal = weekdayKnown.value;
   const reportingCurrency = reportData?.currency ?? defaultCurrency;
   const shareKnown = summary?.weekendTotal != null && summary?.weekdayTotal != null;
-  const weekendAvg = isComplete(weekendKnown) ? (weekendCount > 0 ? weekendTotal / weekendCount : 0) : null;
-  const weekdayAvg = isComplete(weekdayKnown) ? (weekdayCount > 0 ? weekdayTotal / weekdayCount : 0) : null;
+  // Each mean, and the gap between them, is the server's, divided and
+  // subtracted from the unrounded sums; a backend that predates the fields
+  // gets them from its two totals.
+  const legacyWeekendAvg = isComplete(weekendKnown) ? (weekendCount > 0 ? weekendTotal / weekendCount : 0) : null;
+  const legacyWeekdayAvg = isComplete(weekdayKnown) ? (weekdayCount > 0 ? weekdayTotal / weekdayCount : 0) : null;
+  const weekendAvg = summary?.weekendAverage !== undefined ? summary.weekendAverage : legacyWeekendAvg;
+  const weekdayAvg = summary?.weekdayAverage !== undefined ? summary.weekdayAverage : legacyWeekdayAvg;
+  const avgDifference =
+    summary?.averageDifference !== undefined
+      ? summary.averageDifference
+      : legacyWeekendAvg === null || legacyWeekdayAvg === null
+        ? null
+        : legacyWeekendAvg - legacyWeekdayAvg;
   const totalSpending = weekendTotal + weekdayTotal;
   // Each side's share is the server's, divided from the unrounded sums; a
   // share over the two rounded totals read 0.0049 against 0.0051 as 0% and
@@ -364,13 +375,13 @@ export function WeekendVsWeekdayReport() {
                 </div>
               </div>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                {weekendAvg === null || weekdayAvg === null ? null : weekendAvg > weekdayAvg ? (
+                {avgDifference === null ? null : avgDifference > 0 ? (
                   <p className="text-sm text-purple-600 dark:text-purple-400">
-                    {t('weekendVsWeekday.spendMoreWeekend', { amount: formatCurrency(weekendAvg - weekdayAvg) })}
+                    {t('weekendVsWeekday.spendMoreWeekend', { amount: formatCurrency(avgDifference) })}
                   </p>
                 ) : (
                   <p className="text-sm text-blue-600 dark:text-blue-400">
-                    {t('weekendVsWeekday.spendMoreWeekday', { amount: formatCurrency(weekdayAvg - weekendAvg) })}
+                    {t('weekendVsWeekday.spendMoreWeekday', { amount: formatCurrency(Math.abs(avgDifference)) })}
                   </p>
                 )}
               </div>

@@ -29,6 +29,17 @@ export class WeekendWeekdaySummary {
    */
   weekendShare: number | null;
   weekdayShare: number | null;
+  /**
+   * Each side's mean per transaction, divided from the unrounded sum and read
+   * once; 0 over no transactions, `null` with the totals.
+   */
+  weekendAverage: number | null;
+  weekdayAverage: number | null;
+  /**
+   * The weekend's mean less the weekday's, subtracted before it is read:
+   * positive when weekends cost more per transaction. `null` with the totals.
+   */
+  averageDifference: number | null;
   /** Transactions that converted; an excluded row is in no count either. */
   weekendCount: number;
   weekdayCount: number;
