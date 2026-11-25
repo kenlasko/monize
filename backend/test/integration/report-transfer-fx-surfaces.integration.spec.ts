@@ -557,6 +557,36 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     expect(page.startingBalance).toBe(-200);
   });
 
+  it("walks the register's later pages under the transfer filter at the line's amount", async () => {
+    await seed("EUR");
+
+    const pageAt = (page: number) =>
+      asUser(() =>
+        transactionsService.findAll(
+          userId,
+          [usId],
+          undefined,
+          undefined,
+          ["transfer"],
+          undefined,
+          page,
+          1,
+        ),
+      );
+    const first = await pageAt(1);
+    const second = await pageAt(2);
+
+    // The split row counts only its hydrated transfer line, as the register
+    // draws it; a plain row counts its own amount.
+    const [row] = first.data;
+    const shown = row.isSplit
+      ? row.splits!.reduce((sum, l) => sum + Number(l.amount), 0)
+      : Number(row.amount);
+    expect(shown).toBe(-100);
+    expect(first.startingBalance).toBe(-200);
+    expect(second.startingBalance).toBe(first.startingBalance! - shown);
+  });
+
   it("agrees on a payee's split transfer in the summary and the monthly totals", async () => {
     await seed("EUR");
     // The split and its counterpart row share a payee, as the split service
