@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { chartColors } from '@/lib/chart-colors';
+import { moneyDecimalsForCurrency, sumMoney } from '@/lib/format';
 import { MonthlyNetWorth } from '@/types/net-worth';
 import { useNumberFormat, type NumberFormatters } from '@/hooks/useNumberFormat';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
@@ -95,7 +96,11 @@ export function AssetsVsLiabilities({ data, isLoading, error = false }: AssetsVs
     latest && netWorthIsPartial(latest) ? false : undefined,
     latest?.missingRatePairs,
   );
-  const total = chartData.reduce((sum, item) => sum + item.value, 0);
+  // The base each share is over: the two server figures summed in money units.
+  const total = sumMoney(
+    chartData.map((item) => item.value),
+    moneyDecimalsForCurrency(defaultCurrency),
+  );
   const netWorthClass = netWorth >= 0 ? undefined : 'text-red-600 dark:text-red-400';
 
   const configControls = (

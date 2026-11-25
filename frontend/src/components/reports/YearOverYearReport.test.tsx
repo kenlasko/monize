@@ -1,3 +1,4 @@
+import { cloneElement, type ReactElement } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@/test/render";
 import { YearOverYearReport, monthClickRange } from "./YearOverYearReport";
@@ -41,9 +42,15 @@ vi.mock("recharts", () => ({
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: any) => {
+    lastTooltip = content;
+    return null;
+  },
   Legend: () => null,
 }));
+
+// The tooltip element the chart was last given, so a case can render it.
+let lastTooltip: ReactElement | null = null;
 
 const mockGetYearOverYear = vi.fn();
 
@@ -392,6 +399,20 @@ describe("YearOverYearReport", () => {
       const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
       expect(rows[0][1]).toBe(10.6);
       expect(rows[1][1]).toBeNull();
+    });
+
+    it("marks a missing month in the tooltip rather than printing 0", async () => {
+      mockGetYearOverYear.mockResolvedValue(response);
+      render(<YearOverYearReport />);
+      await waitFor(() => expect(screen.getByTestId("bar-chart")).toBeInTheDocument());
+      render(
+        cloneElement(lastTooltip as ReactElement<any>, {
+          active: true,
+          label: "Feb",
+          payload: [{ name: "2024", value: null, color: "#000" }],
+        }),
+      );
+      expect(screen.getByText("2024: \u2014")).toBeInTheDocument();
     });
 
     it("marks a missing month in the table rather than printing 0", async () => {

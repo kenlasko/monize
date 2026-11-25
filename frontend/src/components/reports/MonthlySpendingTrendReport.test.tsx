@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@/test/render";
 import { MonthlySpendingTrendReport } from "./MonthlySpendingTrendReport";
 
+vi.mock("@/lib/pdf-export", () => ({
+  exportToPdf: vi.fn().mockResolvedValue(undefined),
+}));
+
 const mockExportToCsv = vi.fn();
 vi.mock("@/lib/csv-export", () => ({
   exportToCsv: (...args: unknown[]) => mockExportToCsv(...args),
@@ -271,6 +275,23 @@ describe("MonthlySpendingTrendReport: totals and the CSV read the server's figur
     await act(async () => { fireEvent.click(screen.getByTestId("toggle-table")); });
     const footer = container.querySelectorAll("tfoot td");
     expect([...footer].map((td) => td.textContent)).toEqual(["Total", "$21", "$1", "$20"]);
+  });
+
+  it("marks the totals as subtotals, on the screen and in the PDF, when the server left a row out", async () => {
+    mockGetIncomeVsExpenses.mockResolvedValue({
+      data: months,
+      totals: { income: null, expenses: null, net: null, knownIncome: 21.2, knownExpenses: 1.2, knownNet: 20 },
+      currency: "USD",
+      missingCurrencies: ["JPY"],
+      excludedCount: 1,
+    });
+    const { exportToPdf } = await import("@/lib/pdf-export");
+    render(<MonthlySpendingTrendReport />);
+    const income = await screen.findByText("Total Income");
+    expect(income.nextElementSibling?.querySelector('[data-testid="partial-total"]')).not.toBeNull();
+    await act(async () => { fireEvent.click(screen.getByTestId("export-pdf")); });
+    const cards = (exportToPdf as ReturnType<typeof vi.fn>).mock.calls[0][0].summaryCards as Array<{ note?: string }>;
+    expect(cards.every((card) => card.note?.includes("JPY"))).toBe(true);
   });
 
   it("writes each month's server figure to the CSV, not its whole units", async () => {

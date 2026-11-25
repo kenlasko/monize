@@ -85,12 +85,14 @@ export function monthClickRange(
 
 interface YearOverYearTooltipProps {
   active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string }>;
+  /** `value` is `null` for a month the response does not carry. */
+  payload?: Array<{ name: string; value: number | null; color: string }>;
   label?: string;
   formatCurrency: (value: number) => string;
 }
 
 function YearOverYearTooltip({ active, payload, label, formatCurrency }: YearOverYearTooltipProps) {
+  const tCommon = useTranslations('common');
   if (active && payload && payload.length) {
     return (
       <div className={CHART_TOOLTIP_CLASS}>
@@ -99,7 +101,8 @@ function YearOverYearTooltip({ active, payload, label, formatCurrency }: YearOve
         </p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {formatCurrency(entry.value)}
+            {entry.name}:{' '}
+            {typeof entry.value === 'number' ? formatCurrency(entry.value) : tCommon('unknownAmount.marker')}
           </p>
         ))}
       </div>

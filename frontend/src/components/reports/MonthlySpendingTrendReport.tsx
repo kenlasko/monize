@@ -30,6 +30,8 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ChartTooltip } from "@/components/reports/ChartTooltip";
 import { ReportError } from "@/components/reports/ReportError";
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
+import { PartialTotal } from '@/components/ui/PartialTotal';
+import { usePartialTotalNote } from '@/hooks/usePartialTotalNote';
 import { exportToCsv } from "@/lib/csv-export";
 import { chartColors } from "@/lib/chart-colors";
 import { resolvePdfColor } from '@/components/reports/resolve-pdf-color';
@@ -78,7 +80,7 @@ export function MonthlySpendingTrendReport() {
   const t = useTranslations('reports');
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
-  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis } =
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, defaultCurrency } =
     useNumberFormat();
   const formatChartDate = useChartDateFormat();
   const [viewType, setViewType] = useState<'line' | 'table'>('line');
@@ -172,15 +174,33 @@ export function MonthlySpendingTrendReport() {
     return { totalExpenses, totalIncome, totalNet, avgExpenses, avgIncome };
   }, [response, chartData.length]);
 
+  // A total over a window with a row left out is a subtotal, and every figure
+  // above (and the averages of them) says so, on the screen and in the PDF.
+  const completeness = useMemo(
+    () => ({
+      missingCurrencies: response?.missingCurrencies ?? [],
+      excludedCount: response?.excludedCount ?? 0,
+    }),
+    [response],
+  );
+  const reportingCurrency = response?.currency ?? defaultCurrency;
+  const { noteFor } = usePartialTotalNote();
+  const marked = (value: number) => (
+    <PartialTotal total={{ value, ...completeness }} displayCurrency={reportingCurrency}>
+      {formatCurrency(value)}
+    </PartialTotal>
+  );
+
   const handleExportPdf = async () => {
     const { exportToPdf } = await import("@/lib/pdf-export");
+    const note = noteFor({ value: totals.totalIncome, ...completeness });
     await exportToPdf({
       title: t('monthlySpendingTrend.pdfTitle'),
       summaryCards: [
-        { label: t('monthlySpendingTrend.totalIncome'), value: formatCurrency(totals.totalIncome), color: '#16a34a' },
-        { label: t('monthlySpendingTrend.totalExpenses'), value: formatCurrency(totals.totalExpenses), color: '#dc2626' },
-        { label: t('monthlySpendingTrend.avgMonthlyIncome'), value: formatCurrency(totals.avgIncome), color: '#16a34a' },
-        { label: t('monthlySpendingTrend.avgMonthlyExpenses'), value: formatCurrency(totals.avgExpenses), color: '#dc2626' },
+        { label: t('monthlySpendingTrend.totalIncome'), value: formatCurrency(totals.totalIncome), color: '#16a34a', note },
+        { label: t('monthlySpendingTrend.totalExpenses'), value: formatCurrency(totals.totalExpenses), color: '#dc2626', note },
+        { label: t('monthlySpendingTrend.avgMonthlyIncome'), value: formatCurrency(totals.avgIncome), color: '#16a34a', note },
+        { label: t('monthlySpendingTrend.avgMonthlyExpenses'), value: formatCurrency(totals.avgExpenses), color: '#dc2626', note },
       ],
       chartContainer: chartRef.current,
       chartLegend: [
@@ -334,15 +354,15 @@ export function MonthlySpendingTrendReport() {
                   <tr>
                     <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-100">{t('monthlySpendingTrend.total')}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold text-green-600 dark:text-green-400">
-                      {formatCurrency(totals.totalIncome)}
+                      {marked(totals.totalIncome)}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-bold text-red-600 dark:text-red-400">
-                      {formatCurrency(totals.totalExpenses)}
+                      {marked(totals.totalExpenses)}
                     </td>
                     <td
                       className={`px-4 py-3 text-right text-sm font-bold ${gainLossColor(totals.totalNet)}`}
                     >
-                      {formatCurrency(totals.totalNet)}
+                      {marked(totals.totalNet)}
                     </td>
                   </tr>
                 </tfoot>
@@ -400,7 +420,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.totalIncome')}
                 </div>
                 <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                  {formatCurrency(totals.totalIncome)}
+                  {marked(totals.totalIncome)}
                 </div>
               </div>
               <div>
@@ -408,7 +428,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.totalExpenses')}
                 </div>
                 <div className="text-lg font-semibold text-red-600 dark:text-red-400">
-                  {formatCurrency(totals.totalExpenses)}
+                  {marked(totals.totalExpenses)}
                 </div>
               </div>
               <div>
@@ -416,7 +436,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.avgMonthlyIncome')}
                 </div>
                 <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                  {formatCurrency(totals.avgIncome)}
+                  {marked(totals.avgIncome)}
                 </div>
               </div>
               <div>
@@ -424,7 +444,7 @@ export function MonthlySpendingTrendReport() {
                   {t('monthlySpendingTrend.avgMonthlyExpenses')}
                 </div>
                 <div className="text-lg font-semibold text-red-600 dark:text-red-400">
-                  {formatCurrency(totals.avgExpenses)}
+                  {marked(totals.avgExpenses)}
                 </div>
               </div>
             </div>
