@@ -331,8 +331,9 @@ value whose column is wider must not be rounded to money precision on the way in
 
 A **report figure** -- a reporting-only conversion, or a sum, difference or
 mean of them, that a built-in report, the custom report, the Cash Flow Sankey,
-a budget report, the monthly net worth or an assistant or MCP report tool hands
-out -- is not stored and is not rounded at money precision. It is rounded once,
+a budget report, the monthly net worth, the portfolio summary, the Portfolio
+Value report's series or an assistant or MCP report tool hands out -- is not
+stored and is not rounded at money precision. It is rounded once,
 on the server, at its currency's own places: `reportPlacesFor` (the ISO minor
 unit, else the currency row's `decimal_places`: 2 for USD, 0 for JPY, 8 for a
 coin), read through `FxAggregate.knownSubtotalAt(places)` / `totalAt(places)`

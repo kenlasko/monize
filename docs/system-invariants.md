@@ -3399,7 +3399,8 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     totalAt(places) and reportFigure read a report figure at
                     its currency's places (issue #2410: the built-in and
                     custom reports, the Sankey, the budget reports, the
-                    monthly net worth, the assistant's and MCP's report
+                    monthly net worth, the portfolio summary and the
+                    Portfolio Value series, the assistant's and MCP's report
                     tools). Applied in the Cash Flow Sankey
                     (cash-flow-sankey-assembly.ts), the custom report
                     (report-net-cells.ts, report-rows.ts), the built-in
@@ -3445,14 +3446,11 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     real Spending by Category; a JPY report and Sankey in
                     whole yen), fx-aggregate.spec.ts at 0, 2, 4 and 8 places
                     and the Sankey property specs over CAD and JPY ledgers.
-Known gap           The portfolio summary (PortfolioService.
-                    getPortfolioSummary: the Investments page, the Portfolio
-                    Value and Investment Performance reports,
-                    get_portfolio_summary) still leaves at four places, and
-                    its totalPortfolioValue adds two four-place readings; the
-                    Monthly Comparison's investment figures come from
-                    PortfolioPeriodResultService at four places and are read
-                    at two. Several client totals are built from rounded rows
+Known gap           A holding's own value, cost and gain in the portfolio
+                    summary and the Portfolio Value report's intraday (1D)
+                    bars leave at four places; the Monthly Comparison's
+                    investment figures come from PortfolioPeriodResultService
+                    at four places and are read at two. Several client totals are built from rounded rows
                     (docs/future-plans/report-rounding-and-aggregation-tasks.md,
                     stage 3). Budget Health's income-line and expense sides,
                     the other budget reports, and the budget summary's, period

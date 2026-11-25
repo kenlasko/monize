@@ -232,31 +232,47 @@ the wire; stage 2 removes the one-cent double rounding.
   total; the monthly net worth and what reuses it (the account summary's
   latest month, the assistant's net worth history); Budget Health's savings
   figures, the budget trend and category trend, the seasonal patterns, the
-  daily spending and the flex groups, at the budget currency's places; and the
-  assistant's and MCP's report tools: `generate_report` hands out the reports'
-  own figures, and the flow totals, the grouped breakdown and `compare_periods`
-  read at the reporting currency's places.
+  daily spending and the flex groups, at the budget currency's places; the
+  portfolio summary (`PortfolioService.getPortfolioSummary`: the Investments
+  page, the Portfolio Value and Investment Performance reports,
+  `get_portfolio_summary`), whose reporting-currency totals and allocation read
+  at the reporting currency's places and whose accounts' totals read at each
+  account currency's; the Portfolio Value report's series (the daily series it
+  and the dashboard draw, `getDailyInvestmentsReport`, the month-end sampled and
+  the monthly series, and the by-security breakdown, whose bands are apportioned
+  from each point's total as the Sankey's are); and the assistant's and MCP's
+  report tools: `generate_report` hands out the reports' own figures, and the
+  flow totals, the grouped breakdown and `compare_periods` read at the
+  reporting currency's places, `compare_periods`' summary line printing them at
+  those places.
 - **Rules 4, 5 and 8 at the new precision.** A difference of two readings is a
   visible cent off at two places, so `compare_periods` works each change out
   from the two periods' aggregates and each percentage from the unrounded
   values, over a first period that reads as money at those places; Spending Anomalies folds its
   mean, category spikes and new-payee totals as aggregates instead of adding
-  floats. Every direction decision still reads `sign`, so a category netting
+  floats. The portfolio's value is its cash and its holdings folded before
+  either is rounded, where it added the two readings; an account's net
+  invested folds its parts; the gain's percentage, the allocation's shares and
+  the CAGR divide the unrounded figures; the exposure-by-tag views regroup the
+  allocation's shown slices and say so, summing them exactly. Every direction
+  decision still reads `sign`, so a category netting
   0.003 reads 0.00 and keeps its row, and Budget Health gives a savings rate
   only over an income that reads as money at the budget's places.
 - **Not report figures, unchanged.** Posted amounts, prices, quantities, rates
   and percentages; the transactions page's grouped and monthly totals and a
   category's or payee's detail breakdown, which keep four places; the AI
-  insights and forecast prompts, which a model reads and does not hand out.
+  insights and forecast prompts, which a model reads and does not hand out; the
+  daily series the period result's P&L, TWR and MWR are worked out from
+  (`getDailyInvestments`), which keeps four places so the returns are
+  calculated, not read off rounded figures.
 - **Residuals.** A budget line's actual is a four-place reading
   (`CategorySpending`, INV-REPORT-005's known gap), so a budget figure is the
   two-place reading of a four-place one, as the screen read it before. The
   Monthly Comparison's investment figures come from
-  `PortfolioPeriodResultService` at four places and are read at two. The
-  portfolio summary (`PortfolioService.getPortfolioSummary`, which the
-  Investments page, the Portfolio Value and Investment Performance reports, the
-  assistant's and MCP's `get_portfolio_summary`, the Monte Carlo seed and the
-  movement alerts read) still leaves at four places.
+  `PortfolioPeriodResultService` at four places and are read at two. A
+  holding's own figures in the portfolio summary (its value, cost and gain in
+  the security's currency) are left as they were, and the Portfolio Value
+  report's intraday (1D) view sums four-place contributions per bar.
 
 ## 7. Stage 3: the client and the exports
 

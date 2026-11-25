@@ -24,7 +24,8 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 
 - [x] The maintainer's choice of the spec's section 6 option: (b), a report figure rounded on the server at the reporting currency's own places (issue #2384, 2026-11-24).
 - [x] Its implementation, in its own PR (issue #2410): every report figure (built-in, custom including the transaction list's `value`, Sankey, Foreign Currency Fees, Budget Health and the other budget reports, the monthly net worth, AI/MCP report tools) rounded once on the server at the currency's places (`FxAggregate.knownSubtotalAt`, `reportFigure`, `reportPlacesFor`); the Sankey's unit is the currency's minor unit and the page says beside the node that a category can read a cent off Spending by Category (`sankey.roundingNote`); `compare_periods` takes each change from the two periods' aggregates; fixtures and the section 4 examples restated at currency places.
-- [ ] The portfolio summary (`PortfolioService.getPortfolioSummary`): still four places on the wire. Its totals feed the Investments page, the Portfolio Value and Investment Performance reports, `get_portfolio_summary`, the Monte Carlo seed and the movement alerts, and `totalPortfolioValue` adds two four-place readings (cash and holdings).
+- [x] The portfolio summary (`PortfolioService.getPortfolioSummary`, issue #2410): its reporting-currency totals and allocation at the reporting currency's places, an account's totals at its own currency's, `totalPortfolioValue` one rounding of cash and holdings, ratios from the unrounded figures; the Portfolio Value report's daily, sampled and monthly series and its by-security breakdown (bands apportioned from each point's total) at the currency's places, the series the period result reads left at four.
+- [ ] Left at four places: a holding's own value, cost and gain in the portfolio summary, and the Portfolio Value report's intraday (1D) bars.
 
 ## 3 client surfaces
 
