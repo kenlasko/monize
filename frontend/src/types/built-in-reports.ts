@@ -74,6 +74,12 @@ export interface IncomeSourceItem {
   categoryName: string;
   color: string | null;
   total: number;
+  /**
+   * The source's share of the income that converted, in percent, divided on
+   * the server from the unrounded figures (rule 8). Optional: an older backend
+   * mid-deploy sends none.
+   */
+  percentage?: number;
 }
 
 export interface IncomeBySourceResponse {

@@ -171,7 +171,15 @@ export function fullLedgerInput(): TriviaLedgerInput {
       excludedCount: 0,
     },
     incomeBySource: {
-      data: [{ categoryId: "s", categoryName: "S", color: null, total: 30 }],
+      data: [
+        {
+          categoryId: "s",
+          categoryName: "S",
+          color: null,
+          total: 30,
+          percentage: 100,
+        },
+      ],
       totalIncome: 30,
       knownIncome: 30,
       currency: "CAD",
@@ -219,9 +227,27 @@ const rankedReports = () => ({
   },
   incomeBySource: {
     data: [
-      { categoryId: "s1", categoryName: "Salary", color: null, total: 80 },
-      { categoryId: "s2", categoryName: "Interest", color: null, total: 15 },
-      { categoryId: "s3", categoryName: "Gifts", color: null, total: 5 },
+      {
+        categoryId: "s1",
+        categoryName: "Salary",
+        color: null,
+        total: 80,
+        percentage: 80,
+      },
+      {
+        categoryId: "s2",
+        categoryName: "Interest",
+        color: null,
+        total: 15,
+        percentage: 15,
+      },
+      {
+        categoryId: "s3",
+        categoryName: "Gifts",
+        color: null,
+        total: 5,
+        percentage: 5,
+      },
     ],
     totalIncome: 100,
     knownIncome: 100,

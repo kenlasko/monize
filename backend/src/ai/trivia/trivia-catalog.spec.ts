@@ -99,7 +99,15 @@ describe("trivia catalog", () => {
         excludedCount: 0,
       },
       incomeBySource: {
-        data: [{ categoryId: "s", categoryName: "S", color: null, total: 30 }],
+        data: [
+          {
+            categoryId: "s",
+            categoryName: "S",
+            color: null,
+            total: 30,
+            percentage: 100,
+          },
+        ],
         totalIncome: 30,
         knownIncome: 30,
         currency: "CAD",

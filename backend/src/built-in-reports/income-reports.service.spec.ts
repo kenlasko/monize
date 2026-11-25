@@ -701,6 +701,34 @@ describe("IncomeReportsService", () => {
       expect(result.totalIncome).toBe(headline);
     });
 
+    it("divides each source's share from the unrounded figures (issue #2414)", async () => {
+      // Two receipts of 1.00 EUR at 1.2474 in two income categories: each
+      // reads 1.25 over an income of 2.49, and 1.25 / 2.49 is 50.2%. Each is
+      // half of the income: 1.2474 / 2.4948.
+      categoriesRepository.find.mockResolvedValue([
+        mockIncomeCategory,
+        { ...mockIncomeCategory, id: "cat-bonus", name: "Bonus" },
+      ]);
+      scopedManager.query.mockResolvedValue(
+        ["cat-income", "cat-bonus"].map((categoryId) => ({
+          category_id: categoryId,
+          currency_code: "EUR",
+          tx_date: FIXTURE_TX_DATE,
+          total: "1.00000000",
+        })),
+      );
+
+      const result = await service.getIncomeBySource(
+        mockUserId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(result.data.map((d) => d.total)).toEqual([1.25, 1.25]);
+      expect(result.knownIncome).toBe(2.49);
+      expect(result.data.map((d) => d.percentage)).toEqual([50, 50]);
+    });
+
     it("reads a 2.50498 source as 2.50, not through 2.5050 as 2.51 (issue #2410)", async () => {
       exchangeRateService.getRateIndex.mockResolvedValue(
         rateIndexOf([
