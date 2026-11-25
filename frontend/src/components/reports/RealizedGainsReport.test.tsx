@@ -288,6 +288,39 @@ describe('RealizedGainsReport', () => {
       expect(tableData.totalRow.slice(3, 6)).toEqual(['$2.01', '$2.00', '$0.01']);
     });
 
+    it("marks a security's own row partial when one of its sales had no rate", async () => {
+      mockGetRealizedGains.mockResolvedValue([
+        gainEntry(),
+        gainEntry({
+          transactionId: 'sell-2',
+          inReportingCurrency: {
+            currency: 'CAD',
+            proceeds: null,
+            costBasis: null,
+            realizedGain: null,
+            missingRatePairs: ['EUR->CAD'],
+          },
+        }),
+        gainEntry({
+          transactionId: 'sell-3',
+          symbol: 'MSFT',
+          securityName: 'Microsoft Corp.',
+        }),
+      ]);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<RealizedGainsReport />);
+      await screen.findByText('Total Proceeds');
+      await act(async () => {
+        fireEvent.click(screen.getByTitle('Table'));
+      });
+      const row = (symbol: string) =>
+        screen.getAllByText(symbol).map((el) => el.closest('tr')).find((tr) => tr?.closest('tbody'))!;
+      // AAPL left a sale out: each of its three figures is marked.
+      expect(within(row('AAPL')).getAllByTestId('partial-total-marker')).toHaveLength(3);
+      // MSFT is whole.
+      expect(within(row('MSFT')).queryByTestId('partial-total-marker')).not.toBeInTheDocument();
+    });
+
     it('marks the totals partial when a sale had no rate', async () => {
       mockGetRealizedGains.mockResolvedValue([
         gainEntry(),

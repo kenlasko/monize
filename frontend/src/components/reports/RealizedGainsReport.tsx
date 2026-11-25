@@ -88,6 +88,12 @@ interface SecurityGain {
   transactionCount: number;
   /** Sales of unknown cost, left out of the figures above, which are then a subtotal. */
   unknownCount: number;
+  /**
+   * What the row's figures leave out: its sales of unknown cost and those a
+   * side of which had no rate, with the currencies to add. Non-empty marks
+   * the row's figures as a subtotal (spec rule 7).
+   */
+  gap: ConvertedTotal;
 }
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-realized-gains-accounts';
@@ -232,6 +238,8 @@ export function RealizedGainsReport() {
         realizedGain: number[];
         transactionCount: number;
         unknownCount: number;
+        missing: Set<string>;
+        noRateCount: number;
       }
     >();
 
@@ -248,6 +256,8 @@ export function RealizedGainsReport() {
           realizedGain: [],
           transactionCount: 0,
           unknownCount: 0,
+          missing: new Set<string>(),
+          noRateCount: 0,
         };
         map.set(symbol, bucket);
       }
@@ -263,7 +273,18 @@ export function RealizedGainsReport() {
       // A gain is proceeds minus basis: if either side cannot be converted the
       // gain is unknown, and adding the half that converted would report a
       // profit or loss that never happened.
-      if (proceeds === null || costBasis === null || realizedGain === null) return;
+      if (proceeds === null || costBasis === null || realizedGain === null) {
+        // The pair the server could not resolve names the currency to add; a
+        // backend that names none falls back to the holding account's.
+        const pairs = entry.inReportingCurrency?.missingRatePairs ?? [];
+        const currencies =
+          pairs.length > 0
+            ? pairs.map((pair) => pair.split('->')[0])
+            : [entry.accountCurrencyCode || defaultCurrency];
+        for (const currency of currencies) bucket.missing.add(currency);
+        bucket.noRateCount += 1;
+        return;
+      }
       bucket.proceeds.push(proceeds);
       bucket.costBasis.push(costBasis);
       bucket.realizedGain.push(realizedGain);
@@ -285,9 +306,14 @@ export function RealizedGainsReport() {
         sums,
         transactionCount: bucket.transactionCount,
         unknownCount: bucket.unknownCount,
+        gap: {
+          value: 0,
+          missingCurrencies: [...bucket.missing],
+          excludedCount: bucket.noRateCount + bucket.unknownCount,
+        },
       };
     });
-  }, [entries, toDisplay, places]);
+  }, [entries, toDisplay, places, defaultCurrency]);
 
   // Lots securityGains had to drop because a side could not be converted
   // (mirrors its exclusion rule), so the per-symbol and grand totals are
@@ -687,11 +713,15 @@ export function RealizedGainsReport() {
                     </td>
                     <td role="cell" className={`col-start-1 row-start-2 text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{securityGainColumns.totalProceeds.label}</CellLabel>
-                      {fmtValue(sg.totalProceeds)}
+                      <PartialTotal total={sg.gap} displayCurrency={displayCurrency}>
+                        {fmtValue(sg.totalProceeds)}
+                      </PartialTotal>
                     </td>
                     <td role="cell" className={`col-start-2 row-start-2 text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{securityGainColumns.totalCostBasis.label}</CellLabel>
-                      {fmtValue(sg.totalCostBasis)}
+                      <PartialTotal total={sg.gap} displayCurrency={displayCurrency}>
+                        {fmtValue(sg.totalCostBasis)}
+                      </PartialTotal>
                     </td>
                     <td role="cell" className={`col-start-1 col-span-2 row-start-3 font-medium ${gainLossColor(sg.realizedGain)} ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{securityGainColumns.realizedGain.label}</CellLabel>
@@ -703,7 +733,9 @@ export function RealizedGainsReport() {
                           </span>
                         </>
                       ) : (
-                        <>{sg.realizedGain >= 0 ? '+' : ''}{fmtValue(sg.realizedGain)}</>
+                        <PartialTotal total={sg.gap} displayCurrency={displayCurrency}>
+                          {sg.realizedGain >= 0 ? '+' : ''}{fmtValue(sg.realizedGain)}
+                        </PartialTotal>
                       )}
                     </td>
                   </tr>
