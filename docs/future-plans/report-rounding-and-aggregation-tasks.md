@@ -33,13 +33,15 @@ Found by the sweep of 2026-11-24; each is confirmed and fixed in its own PR.
 
 Totals built from rows the client rounded to whole units, and CSVs that write those whole units:
 
-- [ ] `frontend/src/components/reports/MonthlySpendingTrendReport.tsx`: the table footer, cards and PDF cards sum `Math.round` rows; the response carries `totals`.
-- [ ] `frontend/src/components/reports/IncomeVsExpensesReport.tsx` and `IncomeVsExpensesTable.tsx`: savings and the CSVs from `Math.round` values; the response carries `net` and `totals`.
-- [ ] `frontend/src/components/reports/NetWorthReport.tsx`, `frontend/src/components/dashboard/NetWorthChart.tsx`: the tooltip's net and the change from rounded parts; the CSV writes whole units.
-- [ ] `frontend/src/components/dashboard/AssetsVsLiabilities.tsx`: a slice under 0.50 is dropped and the share denominator sums rounded slices.
-- [ ] `frontend/src/components/reports/TaggedBalanceTooltip.tsx`: a tagged outflow under 0.50 disappears from the tooltip.
-- [ ] `frontend/src/components/reports/YearOverYearReport.tsx`: the CSV writes rounded monthly cells, a missing month as 0.
-- [ ] `frontend/src/components/dashboard/MonthlySpendingTrendWidget.tsx`, `frontend/src/components/dashboard/PortfolioValueWidget.tsx`: a whole-unit value shown through a full-precision formatter.
+- [x] `frontend/src/components/reports/MonthlySpendingTrendReport.tsx`: the table footer, cards and PDF cards sum `Math.round` rows; the response carries `totals`. Fixed in issue #2412: the cards, the footer and its net read `totals.knownIncome` / `knownExpenses` / `knownNet`, the rows carry the server's figures and the CSV writes them.
+- [x] `frontend/src/components/reports/IncomeVsExpensesReport.tsx` and `IncomeVsExpensesTable.tsx`: savings and the CSVs from `Math.round` values; the response carries `net` and `totals`. Fixed in issue #2412: each month's savings is its `net`, the window's is `totals.knownNet` (the table only prints what the report hands it), the rows and so both CSVs carry the server's figures, and a period's Balance (`periodBalanceFields`) keeps money precision.
+- [x] `frontend/src/components/reports/NetWorthReport.tsx`, `frontend/src/components/dashboard/NetWorthChart.tsx`: the tooltip's net and the change from rounded parts; the CSV writes whole units. Fixed in issue #2412: the server gains `netWorthChangeFromStart` (each month less the series' first, the two aggregates' difference read once), both read it through `netWorthWindowChange` (`frontend/src/lib/net-worth-change.ts`), the composition tooltips print the month's own `netWorth`, and the rows and the CSV carry the server's figures.
+- [x] `frontend/src/components/dashboard/AssetsVsLiabilities.tsx`: a slice under 0.50 is dropped and the share denominator sums rounded slices. Fixed in issue #2412: each slice is the server's figure, so a side of 0.40 keeps its slice and a share is over the two server figures; the centre reads the month's own `netWorth`.
+- [x] `frontend/src/components/reports/TaggedBalanceTooltip.tsx`: a tagged outflow under 0.50 disappears from the tooltip. Fixed in issue #2412 where its rows are built: the tooltip rightly hides a zero outflow, and Income vs Expenses and Cash Flow handed it a 0.40 outflow rounded to 0; their rows now carry the server's flows.
+- [x] `frontend/src/components/reports/YearOverYearReport.tsx`: the CSV writes rounded monthly cells, a missing month as 0. Fixed in issue #2412: each cell is the server's figure, and a month the response does not carry is `null`: no bar, the unknown marker in the table, an empty CSV cell.
+- [x] `frontend/src/components/dashboard/MonthlySpendingTrendWidget.tsx`, `frontend/src/components/dashboard/PortfolioValueWidget.tsx`: a whole-unit value shown through a full-precision formatter. Fixed in issue #2412: the rows carry the server's figures, so the tooltip's full-precision figure is the server's.
+- Checked in issue #2412 and left as they are: `frontend/src/components/reports/TagKeyBreakdownBuckets.tsx`, `frontend/src/components/dashboard/IncomeExpensesBarChart.tsx` and the Monthly Comparison's net worth chart round their bars to whole units, but only the bars and a compact (whole-unit) tooltip read them; their totals read the server's.
+
 
 Totals the client sums where the server has one, or has none to give:
 
