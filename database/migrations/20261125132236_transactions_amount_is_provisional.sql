@@ -10,8 +10,10 @@
 -- the partial index the importer's pending lookups and the provisional counts
 -- read.
 --
--- Backfill: a transfer leg (is_transfer, still linked to its other side)
--- whose description holds the marker text is flagged. A non-transfer row that
+-- Backfill: a transfer leg (is_transfer) whose description holds the marker
+-- text is flagged, linked or not: the importer's pending lookups match an
+-- unlinked marked leg too (its source deleted, ON DELETE SET NULL), and once
+-- the note is stripped such a leg would be findable by the column alone. A non-transfer row that
 -- happens to carry the text is not, and nothing else changes: the description
 -- keeps its note until a later migration strips it (task B4), and nothing
 -- reads the column yet. The marker is matched exactly as the importer's
@@ -37,7 +39,6 @@ UPDATE transactions
 SET amount_is_provisional = true
 WHERE amount_is_provisional = false
   AND is_transfer = true
-  AND linked_transaction_id IS NOT NULL
   AND description LIKE '%PENDING IMPORT%'
   AND shared_expense_posting_id IS NULL
   AND NOT EXISTS (

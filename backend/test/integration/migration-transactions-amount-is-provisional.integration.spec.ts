@@ -180,6 +180,77 @@ describe("migration 20261125132236 backfills amount_is_provisional", () => {
     expect((await rowOf(sourceId)).amount_is_provisional).toBe(false);
   });
 
+  it("flags a marked transfer leg whose other side is gone", async () => {
+    // The importer's pending lookups match an unlinked marked leg; after B4
+    // strips the note only the column can find it.
+    const id = await insertRow({
+      accountId: eurAccountId,
+      amount: 100,
+      currencyCode: "EUR",
+      description: PENDING_IMPORT_NOTE,
+      isTransfer: true,
+    });
+
+    await applyMigration();
+
+    expect((await rowOf(id)).amount_is_provisional).toBe(true);
+  });
+
+  it("skips shared-expense ledger rows, which the protect trigger would refuse", async () => {
+    // shared_protect_ledger_transaction raises PSE01 on any change to such a
+    // row's financial columns, so the update would abort the migration and
+    // crash-loop the deployment. Seeded the way a restore writes it
+    // (app.preserve_timestamps), in one implicit transaction so SET LOCAL
+    // holds for every statement.
+    const group = "70000000-0000-4000-8000-000000000001";
+    const payer = "70000000-0000-4000-8000-000000000002";
+    const payee = "70000000-0000-4000-8000-000000000003";
+    const entry = "70000000-0000-4000-8000-000000000004";
+    const integration = "70000000-0000-4000-8000-000000000005";
+    const posting = "70000000-0000-4000-8000-000000000006";
+    const settlement = "70000000-0000-4000-8000-000000000007";
+    const posted = "70000000-0000-4000-8000-000000000008";
+    const onSettlement = "70000000-0000-4000-8000-000000000009";
+    await dataSource.query(`
+      SET LOCAL app.preserve_timestamps = 'on';
+      INSERT INTO shared_groups (id, owner_user_id, name, currency_code)
+        VALUES ('${group}', '${userId}', 'Trip', 'EUR');
+      INSERT INTO shared_participants (id, group_id, name)
+        VALUES ('${payer}', '${group}', 'Me'), ('${payee}', '${group}', 'Friend');
+      INSERT INTO shared_entries
+          (id, group_id, type, title, entry_date, original_amount,
+           original_currency_code, group_amount, fx_rate, rounding_seed,
+           from_participant_id, to_participant_id)
+        VALUES ('${entry}', '${group}', 'REPAYMENT', 'Settle up', '2026-08-14',
+                100, 'EUR', 100, 1, 'seed', '${payer}', '${payee}');
+      INSERT INTO shared_integrations (id, user_id, group_id, participant_id, account_id)
+        VALUES ('${integration}', '${userId}', '${group}', '${payer}', '${eurAccountId}');
+      INSERT INTO shared_postings
+          (id, user_id, group_id, entry_id, integration_id, accepted_revision,
+           input_fingerprint, accepted_snapshot)
+        VALUES ('${posting}', '${userId}', '${group}', '${entry}',
+                '${integration}', 1, 'fp', '{}');
+      INSERT INTO accounts
+          (id, user_id, account_type, name, currency_code, opening_balance,
+           managed_purpose, shared_expense_group_id)
+        VALUES ('${settlement}', '${userId}', 'OTHER', 'Trip settlement', 'EUR', 0,
+                'SHARED_SETTLEMENT', '${group}');
+      INSERT INTO transactions
+          (id, user_id, account_id, transaction_date, amount, currency_code,
+           description, is_transfer, shared_expense_posting_id)
+        VALUES
+          ('${posted}', '${userId}', '${eurAccountId}', '2026-08-14', 100,
+           'EUR', '${PENDING_IMPORT_NOTE}', true, '${posting}'),
+          ('${onSettlement}', '${userId}', '${settlement}', '2026-08-14', 100,
+           'EUR', '${PENDING_IMPORT_NOTE}', true, NULL);
+    `);
+
+    await expect(applyMigration()).resolves.not.toThrow();
+
+    expect((await rowOf(posted)).amount_is_provisional).toBe(false);
+    expect((await rowOf(onSettlement)).amount_is_provisional).toBe(false);
+  });
+
   it("is a no-op on a second run", async () => {
     const { legId } = await seedTransfer(PENDING_IMPORT_NOTE);
     const unmarked = await seedTransfer(null);
