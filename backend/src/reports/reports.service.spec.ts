@@ -2428,6 +2428,53 @@ describe("ReportsService", () => {
         );
       });
 
+      describe("a component's own digits are not rounded away (issue #2414)", () => {
+        // 7.681 EUR at 1.2475589116 is exactly 9.5824999999996 USD, and two
+        // are 19.1649999999992, which reads 19.16. Held at twelve places each
+        // receipt read 9.5825, so the two summed to 19.165 and read 19.17.
+        beforeEach(() => {
+          mockCurrencyService.getDefaultCurrency.mockResolvedValue("USD");
+          storedRates.set("EUR->USD", 1.2475589116);
+        });
+
+        it.each([
+          ["one day", "2025-06-15"],
+          ["two days", "2025-06-16"],
+        ])(
+          "totals two 7.681 EUR receipts on %s at 19.16 USD",
+          async (_label, secondDate) => {
+            setupExecuteMocks(
+              {
+                groupBy: GroupByType.CATEGORY,
+                config: {
+                  ...defaultConfig,
+                  direction: DirectionFilter.INCOME_ONLY,
+                },
+              },
+              [
+                createMockTransaction({
+                  id: "tx-1",
+                  amount: 7.681,
+                  currencyCode: "EUR",
+                  transactionDate: "2025-06-15",
+                }),
+                createMockTransaction({
+                  id: "tx-2",
+                  amount: 7.681,
+                  currencyCode: "EUR",
+                  transactionDate: secondDate,
+                }),
+              ],
+            );
+            categoriesRepository.find.mockResolvedValue([mockCategory]);
+            const result = await service.execute("user-1", "report-1");
+
+            expect(result.data[0].value).toBe(19.16);
+            expect(result.summary.total).toBe(19.16);
+          },
+        );
+      });
+
       describe("rounded once, whatever the grouping (issues #2384, #2410)", () => {
         // Two 100.01 EUR receipts at 1.2474 are 124.752474 USD each. A group
         // that read each cell at four places before adding it, or a headline

@@ -11,6 +11,31 @@ import { FIAT_MONEY_DECIMALS, fromMoneyUnits, roundMoney, toMoneyUnits } from '.
 const GUARD_DECIMALS = 8;
 
 /**
+ * The significant digits a double holds any decimal at (`DBL_DIG`); a
+ * converted double's own noise sits beyond them.
+ */
+const DOUBLE_DECIMAL_DIGITS = 15;
+
+/** Places past the guarded ones the accumulator counts in, for a small component's own digits. */
+const SMALL_COMPONENT_DECIMALS = 8;
+
+/**
+ * A converted component in `10^-scale` units, held at its fifteen significant
+ * digits and never at fewer than `guarded` places, as the server's
+ * `FxAggregate` holds it: a component whose exact value has at most fifteen
+ * significant digits is then held exactly. The guarded places alone rounded a
+ * small one's digits away: 7.681 EUR at 1.2475589116 is 9.5824999999996,
+ * which twelve places read as 9.5825, so two of them read 19.17 where their
+ * sum, 19.1649999999992, reads 19.16 (issue #2414).
+ */
+function accumulationUnits(value: number, guarded: number, scale: number): bigint {
+  if (value === 0) return BigInt(0);
+  const magnitude = Math.floor(Math.log10(Math.abs(value)));
+  const at = Math.min(scale, Math.max(guarded, DOUBLE_DECIMAL_DIGITS - 1 - magnitude));
+  return toMoneyUnits(value, at) * BigInt(10) ** BigInt(scale - at);
+}
+
+/**
  * Summing amounts that each need converting, while keeping track of the ones
  * that could not be.
  *
@@ -51,7 +76,7 @@ export interface ConvertedTotal {
 export interface ExactSum {
   /** The components' sum, in `10^-scale` units. */
   units: bigint;
-  /** The places `units` counts in: `places` plus the guard places. */
+  /** The places `units` counts in: `places` plus the guard places and room for a small component's digits. */
   scale: number;
   /** The places `value` was rounded at. */
   places: number;
@@ -86,7 +111,8 @@ export function sumConverted<T>(
   decimals?: number,
 ): ConvertedTotal {
   const places = decimals ?? FIAT_MONEY_DECIMALS;
-  const accumulation = places + GUARD_DECIMALS;
+  const guarded = places + GUARD_DECIMALS;
+  const accumulation = guarded + SMALL_COMPONENT_DECIMALS;
   let units = BigInt(0);
   const missing = new Set<string>();
   let excludedCount = 0;
@@ -113,7 +139,7 @@ export function sumConverted<T>(
       excludedCount += 1;
       continue;
     }
-    units += toMoneyUnits(value, accumulation);
+    units += accumulationUnits(value, guarded, accumulation);
   }
 
   return {

@@ -661,6 +661,55 @@ describe("IncomeReportsService", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // A component's own digits are not rounded away (issue #2414)
+  // ---------------------------------------------------------------------------
+  describe("getIncomeBySource holds each converted part at its own digits", () => {
+    // 7.681 EUR at 1.2475589116 is exactly 9.5824999999996 USD; two are
+    // 19.1649999999992, which reads 19.16. Held at twelve places each day's
+    // part read 9.5825, so two days summed to 19.165 and read 19.17 while
+    // one day's 15.362 EUR read 19.16.
+    beforeEach(() => {
+      exchangeRateService.getRateIndex.mockResolvedValue(
+        rateIndexOf([
+          { fromCurrency: "EUR", toCurrency: "USD", rate: 1.2475589116 },
+        ]),
+      );
+      categoriesRepository.find.mockResolvedValue([mockIncomeCategory]);
+    });
+
+    it.each([
+      ["one day", [{ tx_date: FIXTURE_TX_DATE, total: "15.36200000" }]],
+      [
+        "two days",
+        [
+          { tx_date: FIXTURE_TX_DATE, total: "7.68100000" },
+          { tx_date: "2026-01-16", total: "7.68100000" },
+        ],
+      ],
+    ])(
+      "totals two 7.681 EUR receipts on %s at 19.16",
+      async (_label, parts) => {
+        scopedManager.query.mockResolvedValue(
+          parts.map((part) => ({
+            category_id: "cat-income",
+            currency_code: "EUR",
+            ...part,
+          })),
+        );
+
+        const result = await service.getIncomeBySource(
+          mockUserId,
+          "2026-01-01",
+          "2026-01-31",
+        );
+
+        expect(result.data[0].total).toBe(19.16);
+        expect(result.totalIncome).toBe(19.16);
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
   // Rounded once, after the parts are folded (issue #2384)
   // ---------------------------------------------------------------------------
   describe("totals rounded once, after the parts are folded (issues #2384, #2410)", () => {

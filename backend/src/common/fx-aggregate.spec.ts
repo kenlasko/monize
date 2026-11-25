@@ -83,6 +83,33 @@ describe("FxAggregate", () => {
       expect(a.knownSubtotal).toBe(249.5049);
     });
 
+    it("holds a small component at its own digits, not twelve places (issue #2414)", () => {
+      // 7.681 EUR at 1.2475589116 is exactly 9.5824999999996, and two are
+      // 19.1649999999992, which reads 19.16. Twelve places read each as
+      // 9.5825, so the two summed to 19.165 and read 19.17; converting their
+      // 15.362 sum read 19.16, so the figure moved with the grouping.
+      const rate = 1.2475589116;
+      const perRow = new FxAggregate();
+      perRow.add(7.681 * rate, "EUR", "USD");
+      perRow.add(7.681 * rate, "EUR", "USD");
+      const summed = new FxAggregate();
+      summed.add(15.362 * rate, "EUR", "USD");
+      expect(perRow.knownSubtotalAt(2)).toBe(19.16);
+      expect(summed.knownSubtotalAt(2)).toBe(19.16);
+    });
+
+    it("still drops a double's own noise, past its fifteen digits", () => {
+      // 100.01 * 1.2474 carries float noise below 124.752474's last digit; a
+      // share of two equal parts is still exactly a half.
+      const part = new FxAggregate();
+      part.add(100.01 * 1.2474, "EUR", "USD");
+      const whole = new FxAggregate();
+      whole.merge(part);
+      whole.merge(part);
+      expect(part.unroundedSubtotal / whole.unroundedSubtotal).toBe(0.5);
+      expect(part.unroundedSubtotal).toBe(124.752474);
+    });
+
     it("lets sub-unit components add up to a unit", () => {
       // Each rounds to 0.0000 alone; together they are 0.0002.
       const agg = new FxAggregate();
