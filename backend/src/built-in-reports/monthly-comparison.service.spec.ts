@@ -783,16 +783,44 @@ describe("MonthlyComparisonService", () => {
     });
 
     it("works a percent change out from the unrounded values", async () => {
-      // 0.00026 against 0.00014 read 0.0003 and 0.0001: 200% from the
-      // readings, 85.71% exactly.
+      // 0.026 against 0.014 read 0.03 and 0.01: 200% from the readings,
+      // 85.71% exactly.
       mockIncomeReports.getIncomeVsExpensesWithAggregates
-        .mockResolvedValueOnce(incomeMonth("2026-01", [0.00026], [0.00026]))
-        .mockResolvedValueOnce(incomeMonth("2025-12", [0.00014], [0.00014]));
+        .mockResolvedValueOnce(incomeMonth("2026-01", [0.026], [0.026]))
+        .mockResolvedValueOnce(incomeMonth("2025-12", [0.014], [0.014]));
 
       const result = await service.getMonthlyComparison(mockUserId, "2026-01");
 
       expect(result.incomeExpenses.incomeChangePercent).toBe(85.71);
       expect(result.incomeExpenses.expensesChangePercent).toBe(85.71);
+    });
+
+    it("takes no percentage over a previous month that reads as nothing (issue #2410)", async () => {
+      // 0.004 USD reads 0.00 and is no base, as compare_periods takes it: a
+      // cent over it read as a 2,499,900% rise. 100 when the current month
+      // reads as money, 0 when it reads as nothing too.
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(incomeMonth("2026-01", [100], [0.003]))
+        .mockResolvedValueOnce(incomeMonth("2025-12", [0.004], [0.004]));
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.incomeExpenses.incomeChangePercent).toBe(100);
+      expect(result.incomeExpenses.expensesChangePercent).toBe(0);
+    });
+
+    it("says less for a fall that reads as nothing, from the change's sign (issue #2410)", async () => {
+      // Income 100.006 against 100.009: both read 100.01 and the change
+      // -0.003 reads 0.00, but it is a fall, so the note says less.
+      mockIncomeReports.getIncomeVsExpensesWithAggregates
+        .mockResolvedValueOnce(incomeMonth("2026-01", [100.006], [0]))
+        .mockResolvedValueOnce(incomeMonth("2025-12", [100.009], [0]));
+
+      const result = await service.getMonthlyComparison(mockUserId, "2026-01");
+
+      expect(result.incomeExpenses.incomeChange).toBe(0);
+      expect(result.notes.incomeNote).toContain("less than");
+      expect(result.notes.savingsNote).toContain("less than");
     });
   });
 

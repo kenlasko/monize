@@ -155,15 +155,23 @@ export class MonthlyComparisonService {
       currentIncome: cur.income.knownSubtotalAt(places),
       previousIncome: prev.income.knownSubtotalAt(places),
       incomeChange: this.change(cur.income, prev.income, places),
-      incomeChangePercent: this.percentChange(prev.income, cur.income),
+      incomeChangePercent: this.percentChange(prev.income, cur.income, places),
       currentExpenses: cur.expenses.knownSubtotalAt(places),
       previousExpenses: prev.expenses.knownSubtotalAt(places),
       expensesChange: this.change(cur.expenses, prev.expenses, places),
-      expensesChangePercent: this.percentChange(prev.expenses, cur.expenses),
+      expensesChangePercent: this.percentChange(
+        prev.expenses,
+        cur.expenses,
+        places,
+      ),
       currentSavings: currentSavings.knownSubtotalAt(places),
       previousSavings: previousSavings.knownSubtotalAt(places),
       savingsChange: this.change(currentSavings, previousSavings, places),
-      savingsChangePercent: this.percentChange(previousSavings, currentSavings),
+      savingsChangePercent: this.percentChange(
+        previousSavings,
+        currentSavings,
+        places,
+      ),
     };
 
     // Build month labels
@@ -177,8 +185,14 @@ export class MonthlyComparisonService {
     const prefs = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(UserPreference).findOne({ where: { userId } }),
     );
+    // Each note's "more" or "less" reads the change's sign before it is
+    // rounded (rule 5): a fall of 0.004 is less, though it reads 0.00.
     const notes = this.buildNotes(
       incomeExpenses,
+      {
+        savings: FxAggregate.difference(currentSavings, previousSavings).sign,
+        income: FxAggregate.difference(cur.income, prev.income).sign,
+      },
       currentMonthLabel,
       previousMonthLabel,
       defaultCurrency,
@@ -242,6 +256,7 @@ export class MonthlyComparisonService {
 
   private buildNotes(
     ie: MonthlyComparisonIncomeExpenses,
+    direction: { savings: number; income: number },
     currentLabel: string,
     previousLabel: string,
     currency: string,
@@ -250,13 +265,13 @@ export class MonthlyComparisonService {
     const fmt = (amount: number) => n.formatCurrency(amount, currency);
 
     const savingsDirection =
-      ie.savingsChange >= 0
+      direction.savings >= 0
         ? `${n.formatPercent(Math.abs(ie.savingsChangePercent), 1)} more`
         : `${n.formatPercent(Math.abs(ie.savingsChangePercent), 1)} less`;
     const savingsNote = `In ${currentLabel}, you saved ${savingsDirection} than ${previousLabel} for a total of ${fmt(ie.currentSavings)}`;
 
     const incomeDirection =
-      ie.incomeChange >= 0
+      direction.income >= 0
         ? `${fmt(Math.abs(ie.incomeChange))} more`
         : `${fmt(Math.abs(ie.incomeChange))} less`;
     const incomeNote = `Your total income in ${currentLabel} was ${fmt(ie.currentIncome)} which is ${incomeDirection} than ${previousLabel}`;
@@ -338,7 +353,7 @@ export class MonthlyComparisonService {
         currentTotal: c.current.knownSubtotalAt(places),
         previousTotal: c.previous.knownSubtotalAt(places),
         change: this.change(c.current, c.previous, places),
-        changePercent: this.percentChange(c.previous, c.current),
+        changePercent: this.percentChange(c.previous, c.current, places),
       }))
       .sort((a, b) => b.currentTotal - a.currentTotal);
 
@@ -424,7 +439,7 @@ export class MonthlyComparisonService {
         ? this.change(cur.aggregate, prev.aggregate, places)
         : null,
       netWorthChangePercent: bothComplete
-        ? this.percentChange(prev.aggregate, cur.aggregate)
+        ? this.percentChange(prev.aggregate, cur.aggregate, places)
         : null,
       fxComplete: bothComplete,
       missingRatePairs: [...new Set([...cur.pairs, ...prev.pairs])].sort(),
@@ -542,11 +557,19 @@ export class MonthlyComparisonService {
 
   /**
    * The change as a percentage of `previous`, worked out from the unrounded
-   * values and rounded once (rule 8); whether `previous` is zero reads its
-   * sign, before rounding (rule 5).
+   * values and rounded once (rule 8), over a `previous` that reads as money at
+   * `places`, as `compare_periods` takes its base: 0.004 USD reads 0.00 and is
+   * no base, where a cent over it read as a 2,499,900% change. Without a base
+   * the change is 100, or 0 when `current` reads as nothing too.
    */
-  private percentChange(previous: FxAggregate, current: FxAggregate): number {
-    if (previous.sign === 0) return current.sign === 0 ? 0 : 100;
+  private percentChange(
+    previous: FxAggregate,
+    current: FxAggregate,
+    places: number,
+  ): number {
+    if (previous.knownSubtotalAt(places) === 0) {
+      return current.knownSubtotalAt(places) === 0 ? 0 : 100;
+    }
     const change = FxAggregate.difference(current, previous);
     return (
       Math.round(
