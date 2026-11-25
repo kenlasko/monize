@@ -1284,6 +1284,36 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("Change: +7250.00 PLN (+1812.5%)");
     });
 
+    it("compare_periods prints its figures at the currency's places (issue #2410)", async () => {
+      analytics.getLlmPeriodComparison.mockResolvedValueOnce({
+        period1: {
+          start: "2026-08-01",
+          end: "2026-08-31",
+          total: 1234,
+          knownSubtotal: 1234,
+        },
+        period2: {
+          start: "2026-09-01",
+          end: "2026-09-30",
+          total: 1500,
+          knownSubtotal: 1500,
+        },
+        totalChange: 266,
+        totalChangePercent: 21.56,
+        totalsCurrency: "JPY",
+        fxComplete: true,
+        missingRatePairs: [],
+        comparison: [],
+      });
+
+      const result = await service.execute(userId, "compare_periods", {});
+
+      // Whole yen, as the data carries it: never "1234.00 JPY".
+      expect(result.summary).toContain("1234 JPY");
+      expect(result.summary).toContain("Change: +266 JPY (+21.56%)");
+      expect(result.summary).not.toContain(".00 JPY");
+    });
+
     it("compare_periods says the totals are withheld, naming the pair and the fix", async () => {
       analytics.getLlmPeriodComparison.mockResolvedValueOnce({
         period1: {

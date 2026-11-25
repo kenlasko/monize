@@ -119,6 +119,7 @@ import {
   decimalPlacesFor,
   isIsoCurrencyCode,
 } from "../../common/format-currency.util";
+import { reportPlacesFor } from "../../common/report-figure";
 import { sanitizePromptValue } from "../../common/sanitization.util";
 import { formatDidYouMean } from "../../common/name-suggestions.util";
 import {
@@ -2638,7 +2639,16 @@ export class ToolExecutorService {
 
     // Totals are in `totalsCurrency`; while a pair has no rate they are
     // withheld (`null`), so the line says so instead of printing a subtotal.
+    // Each figure arrives rounded at that currency's places (whole yen, three
+    // places for BHD), and the line prints it at them, as the data says it.
     const cur = data.totalsCurrency;
+    const places = reportPlacesFor(
+      cur,
+      isIsoCurrencyCode(cur)
+        ? new Map()
+        : await this.exchangeRateService.getCurrencyDecimalPlaces([cur]),
+    );
+    const fig = (amount: number) => amount.toFixed(places);
     const periods = `Period 1 (${period1Start} to ${period1End})`;
     const periods2 = `Period 2 (${period2Start} to ${period2End})`;
     const summary =
@@ -2647,8 +2657,8 @@ export class ToolExecutorService {
       data.period2.total === null ||
       data.totalChange === null ||
       data.totalChangePercent === null
-        ? `Totals withheld: no exchange rate for ${data.missingRatePairs.join(", ")}; add it under Currencies. Converted so far: ${periods} ${data.period1.knownSubtotal.toFixed(2)} ${cur}, ${periods2} ${data.period2.knownSubtotal.toFixed(2)} ${cur}`
-        : `${periods}: ${data.period1.total.toFixed(2)} ${cur}, ${periods2}: ${data.period2.total.toFixed(2)} ${cur}, Change: ${data.totalChange >= 0 ? "+" : ""}${data.totalChange.toFixed(2)} ${cur} (${data.totalChangePercent >= 0 ? "+" : ""}${data.totalChangePercent}%)`;
+        ? `Totals withheld: no exchange rate for ${data.missingRatePairs.join(", ")}; add it under Currencies. Converted so far: ${periods} ${fig(data.period1.knownSubtotal)} ${cur}, ${periods2} ${fig(data.period2.knownSubtotal)} ${cur}`
+        : `${periods}: ${fig(data.period1.total)} ${cur}, ${periods2}: ${fig(data.period2.total)} ${cur}, Change: ${data.totalChange >= 0 ? "+" : ""}${fig(data.totalChange)} ${cur} (${data.totalChangePercent >= 0 ? "+" : ""}${data.totalChangePercent}%)`;
 
     return {
       data,
