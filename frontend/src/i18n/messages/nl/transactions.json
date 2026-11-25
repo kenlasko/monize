@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Overboekingen",
         "split": "Gesplitste transacties",
-        "uncategorized": "Zonder categorie"
+        "uncategorized": "Zonder categorie",
+        "provisional": "Geschatte bedragen"
       },
       "has": {
         "attachment": "Heeft een bijlage",

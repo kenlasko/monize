@@ -710,7 +710,8 @@
       "is": {
         "transfer": "转账",
         "split": "拆分交易",
-        "uncategorized": "未分类"
+        "uncategorized": "未分类",
+        "provisional": "估算金额"
       },
       "has": {
         "attachment": "有附件",

@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Umbuchungen",
         "split": "Aufgeteilte Buchungen",
-        "uncategorized": "Ohne Kategorie"
+        "uncategorized": "Ohne Kategorie",
+        "provisional": "Geschätzte Beträge"
       },
       "has": {
         "attachment": "Hat einen Anhang",

@@ -710,7 +710,8 @@
       "is": {
         "transfer": "이체",
         "split": "분할 거래",
-        "uncategorized": "미분류"
+        "uncategorized": "미분류",
+        "provisional": "추정 금액"
       },
       "has": {
         "attachment": "첨부 파일 있음",

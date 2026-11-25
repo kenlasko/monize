@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Transferler",
         "split": "Bölünmüş işlemler",
-        "uncategorized": "Kategorisiz"
+        "uncategorized": "Kategorisiz",
+        "provisional": "Tahmini tutarlar"
       },
       "has": {
         "attachment": "Eki var",

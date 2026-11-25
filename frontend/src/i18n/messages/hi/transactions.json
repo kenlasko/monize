@@ -710,7 +710,8 @@
       "is": {
         "transfer": "स्थानांतरण",
         "split": "विभाजित लेन-देन",
-        "uncategorized": "बिना श्रेणी"
+        "uncategorized": "बिना श्रेणी",
+        "provisional": "अनुमानित राशियाँ"
       },
       "has": {
         "attachment": "अनुलग्नक है",

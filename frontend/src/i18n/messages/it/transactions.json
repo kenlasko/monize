@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Trasferimenti",
         "split": "Transazioni suddivise",
-        "uncategorized": "Senza categoria"
+        "uncategorized": "Senza categoria",
+        "provisional": "Importi stimati"
       },
       "has": {
         "attachment": "Ha un allegato",
