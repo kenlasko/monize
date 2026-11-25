@@ -1776,6 +1776,7 @@ describe("NetWorthService", () => {
           liabilitiesFxComplete: true,
           byAccountType: { [AccountType.CHEQUING]: 10 },
           netWorthChange: null,
+          netWorthChangeFromStart: 0,
         },
       ]);
 
@@ -1951,6 +1952,37 @@ describe("NetWorthService", () => {
 
       expect(result.map((m) => m.netWorth)).toEqual([100.01, 100.01]);
       expect(result.map((m) => m.netWorthChange)).toEqual([null, 0.01]);
+    });
+
+    it("gives each month's change from the first month as the difference of the two aggregates, read once (issue #2412)", async () => {
+      // 100.006 reads 100.01 and 100.014 reads 100.01, 100.022 reads 100.02:
+      // the difference of the first and last readings is 0.01, the change
+      // itself, 0.016, reads 0.02. The window's change is that one figure,
+      // never the difference of the end months' readings.
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      reportQuery.mockResolvedValueOnce(
+        [
+          ["2024-01-01", "100.006"],
+          ["2024-02-01", "100.014"],
+          ["2024-03-01", "100.022"],
+        ].map(([month, balance]) => ({
+          month,
+          balance,
+          market_value: null,
+          account_id: "chq",
+          account_type: AccountType.CHEQUING,
+          account_sub_type: null,
+          currency_code: "USD",
+        })),
+      );
+
+      const result = await service.getMonthlyNetWorth("user-1");
+
+      expect(result.map((m) => m.netWorth)).toEqual([100.01, 100.01, 100.02]);
+      expect(result.map((m) => m.netWorthChangeFromStart)).toEqual([
+        0, 0.01, 0.02,
+      ]);
     });
 
     it("reads a whole-history aggregate series from the first stored month, not a fixed epoch (issue #2410)", async () => {
