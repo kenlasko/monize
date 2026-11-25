@@ -147,6 +147,7 @@ describe("bond-linked holding value (integration, audit H2)", () => {
         "PLN",
         new Map(),
         async () => new Map([[sec, blend / 100]]),
+        2,
       ),
     );
 
@@ -215,6 +216,7 @@ describe("bond-linked holding value (integration, audit H2)", () => {
           "USD",
           new Map(),
           async () => new Map([[sec, 99.75]]),
+          2,
         ),
       );
       expect(result.holdingsWithValues).toHaveLength(1);
@@ -231,6 +233,7 @@ describe("bond-linked holding value (integration, audit H2)", () => {
           "USD",
           new Map(),
           async () => new Map(),
+          2,
         ),
       );
       expect(result.holdingsWithValues[0].marketValue).toBeNull();
