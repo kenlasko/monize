@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "O que os seus investimentos renderam: a variação do valor dos títulos, excluindo compras, vendas, depósitos, levantamentos e numerário não investido, e incluindo dividendos e juros.",
     "investmentReturnTooltip": "Uma rentabilidade ponderada no tempo apenas sobre os títulos. O dinheiro depositado ou levantado num dia não a move, e o numerário não investido não faz parte nem do resultado nem daquilo em relação ao qual é medida.",
     "incompleteTooltip": "Alguns dias deste período não têm um preço, uma taxa de câmbio ou um saldo de tesouraria, pelo que os valores que dependem de todos os dias não são apresentados.",
+    "pointIncomplete": "Falta um preço ou uma taxa de câmbio neste ponto, pelo que este valor não pode ser calculado. Dados incompletos no período selecionado, abaixo do gráfico, indica o que falta.",
     "measuredFromClose": "Desde o fecho da sessão de {date}",
     "notAvailable": "N/D",
     "intradayUnavailableTitle": "Vista intradiária indisponível para esta combinação de contas",

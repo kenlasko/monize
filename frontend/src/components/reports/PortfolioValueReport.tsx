@@ -187,19 +187,43 @@ function CustomTooltip({ active, payload, fmtFull, portfolioLabel }: {
   );
 }
 
-function SecuritiesTooltip({ active, payload, fmtFull, totalLabel }: {
+/**
+ * A band's value at a point of the by-security breakdown. A band absent from a
+ * complete point is a security not held there, a known zero; absent from a
+ * point the server marked incomplete it may be the security it could not
+ * price or convert, so it is unknown, never written as 0 (spec rule 7).
+ */
+function breakdownBandValue(
+  point: { values: Record<string, number>; complete?: boolean },
+  key: string,
+): number | null {
+  if (key in point.values) return point.values[key];
+  return point.complete === false ? null : 0;
+}
+
+function SecuritiesTooltip({ active, payload, fmtFull, totalLabel, unknownReason }: {
   active?: boolean;
-  payload?: Array<{ name?: string; value?: number; color?: string; payload?: { name: string } }>;
+  payload?: Array<{
+    name?: string;
+    value?: number | null;
+    color?: string;
+    payload?: { name: string; total?: number | string | null };
+  }>;
   fmtFull: (v: number) => string;
   totalLabel: string;
+  unknownReason: string;
 }) {
   if (!active || !payload?.length) return null;
-  const name = payload[0]?.payload?.name;
+  const point = payload[0]?.payload;
+  const name = point?.name;
   // Largest contribution first, so the tooltip reads top-down like the stack.
   const entries = payload
-    .filter((e) => typeof e.value === 'number' && e.value !== 0)
-    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
-  const total = payload.reduce((sum, e) => sum + (e.value ?? 0), 0);
+    .filter((e): e is typeof e & { value: number } => typeof e.value === 'number' && e.value !== 0)
+    .sort((a, b) => b.value - a.value);
+  // The point's own total, the server's single reading of it, never the bands
+  // added up again: each band is apportioned from it, so their sum can sit a
+  // unit off. A point the server could not finish has no total to show.
+  const total = typeof point?.total === 'number' ? point.total : null;
   return (
     <div className={`${CHART_TOOLTIP_CLASS} max-h-72 overflow-y-auto`}>
       <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{name}</p>
@@ -207,12 +231,14 @@ function SecuritiesTooltip({ active, payload, fmtFull, totalLabel }: {
         <p key={i} className="text-sm flex items-center gap-2" style={{ color: e.color }}>
           <span className="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: e.color }} />
           <span className="text-gray-600 dark:text-gray-300">{e.name}</span>
-          <span className="ml-auto text-gray-900 dark:text-gray-100 whitespace-nowrap">{fmtFull(e.value ?? 0)}</span>
+          <span className="ml-auto text-gray-900 dark:text-gray-100 whitespace-nowrap">{fmtFull(e.value)}</span>
         </p>
       ))}
       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1 pt-1 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2">
         <span>{totalLabel}</span>
-        <span className="ml-auto whitespace-nowrap">{fmtFull(total)}</span>
+        <span className="ml-auto whitespace-nowrap">
+          {total === null ? <UnknownAmount reasonText={unknownReason} /> : fmtFull(total)}
+        </span>
       </p>
     </div>
   );
@@ -979,9 +1005,11 @@ export function PortfolioValueReport() {
       index: idx,
       name: p.name,
       // The report's measure: securities, no cash. The cash band still has its
-      // own column, but the total column is the invested value.
-      total: p.invested,
+      // own column, but the total column is the invested value, unknown at a
+      // point the server could not finish (a subtotal is not a total).
+      total: p.complete === false ? null : p.invested,
       values: p.values,
+      complete: p.complete,
     }));
     rows.sort((a, b) => {
       const comparison =
@@ -1196,10 +1224,13 @@ export function PortfolioValueReport() {
         ...securitiesSeries.map((s) => s.label),
         t('portfolioValue.colTotal'),
       ];
+      // An unknown band or total writes the words the screen prints, never 0.
+      const csvCell = (value: number | null) =>
+        value === null ? t('portfolioValue.notAvailable') : value;
       const rows = sortedBreakdownRows.map((row) => [
         row.name,
-        ...securitiesSeries.map((s) => row.values[s.key] ?? 0),
-        row.total,
+        ...securitiesSeries.map((s) => csvCell(breakdownBandValue(row, s.key))),
+        csvCell(row.total),
       ]);
       exportCsvSections('portfolio-value-by-security', [
         periodSummarySection(),
@@ -1538,13 +1569,16 @@ export function PortfolioValueReport() {
                   {sortedBreakdownRows.map((row) => (
                     <tr key={`${row.index}-${row.name}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{row.name}</td>
-                      {securitiesSeries.map((s) => (
-                        <td key={s.key} className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                          {fmtFull(row.values[s.key] ?? 0)}
-                        </td>
-                      ))}
+                      {securitiesSeries.map((s) => {
+                        const value = breakdownBandValue(row, s.key);
+                        return (
+                          <td key={s.key} className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                            {value === null ? <UnknownAmount reasonText={t('portfolioValue.pointIncomplete')} /> : fmtFull(value)}
+                          </td>
+                        );
+                      })}
                       <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        {fmtFull(row.total)}
+                        {row.total === null ? <UnknownAmount reasonText={t('portfolioValue.pointIncomplete')} /> : fmtFull(row.total)}
                       </td>
                     </tr>
                   ))}
@@ -1567,7 +1601,7 @@ export function PortfolioValueReport() {
                     tickFormatter={formatXAxisTick}
                   />
                   <YAxis domain={yAxisDomain} tickFormatter={fmtAxis} tick={{ fontSize: 12 }} />
-                  <Tooltip content={<SecuritiesTooltip fmtFull={fmtFull} totalLabel={t('portfolioValue.colTotal')} />} />
+                  <Tooltip content={<SecuritiesTooltip fmtFull={fmtFull} totalLabel={t('portfolioValue.colTotal')} unknownReason={t('portfolioValue.pointIncomplete')} />} />
                   <Legend />
                   {securitiesSeries.map((s) => (
                     <Area

@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "Ile zarobiły Twoje inwestycje: zmiana wartości papierów wartościowych, z pominięciem zakupów, sprzedaży, wpłat, wypłat i niezainwestowanej gotówki, a z uwzględnieniem dywidend i odsetek.",
     "investmentReturnTooltip": "Stopa zwrotu ważona czasem liczona tylko dla papierów wartościowych. Pieniądze wpłacone lub wypłacone danego dnia jej nie zmieniają, a niezainwestowana gotówka nie wchodzi ani w skład wyniku, ani w skład wartości, do której się go odnosi.",
     "incompleteTooltip": "W niektórych dniach tego okresu brakuje ceny, kursu wymiany lub salda gotówkowego, dlatego wartości zależne od każdego dnia nie są wyświetlane.",
+    "pointIncomplete": "W tym punkcie brakuje ceny lub kursu wymiany, dlatego nie można obliczyć tej wartości. Sekcja Niekompletne dane w wybranym okresie pod wykresem wskazuje, czego brakuje.",
     "measuredFromClose": "Od zamknięcia notowań {date}",
     "notAvailable": "Brak",
     "intradayUnavailableTitle": "Widok śróddzienny niedostępny dla tego zestawu kont",

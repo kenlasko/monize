@@ -1328,6 +1328,7 @@
     "investmentResultTooltip": "你的投資賺取的金額：證券價值的變化，扣除買進、賣出、存入、提出資金與未投資現金，計入股利與利息。",
     "investmentReturnTooltip": "僅針對證券的按時間加權報酬率。某一天存入或提出的資金不會影響它，未投資現金既不計入結果，也不計入用於衡量它的基準。",
     "incompleteTooltip": "此期間內有些天缺少價格、匯率或現金餘額，因此依賴每一天資料的數字不會顯示。",
+    "pointIncomplete": "此時間點缺少價格或匯率，因此無法計算此數字。圖表下方的「所選期間的資料不完整」會列出缺少的內容。",
     "measuredFromClose": "自 {date} 收盤起",
     "notAvailable": "不適用",
     "intradayUnavailableTitle": "此科目組合無法使用盤中檢視",

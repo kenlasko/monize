@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@/test/render';
 import { PortfolioValueReport } from './PortfolioValueReport';
 import { renderChartFlagDot } from '@/components/investments/portfolio-chart-utils';
@@ -72,6 +72,8 @@ function mockCustomResolvedRange() {
 }
 
 let mockSeriesMode = 'total';
+// The payload a test hands the stacked chart's tooltip element; null renders none.
+let mockTooltipPayload: unknown[] | null = null;
 // Stateful stand-in for the real hook: seed `mockStoredValues` to simulate a
 // previous visit, and read it back to assert what the report persisted.
 const mockStoredValues = new Map<string, unknown>();
@@ -126,7 +128,9 @@ vi.mock('@/components/ui/ExportDropdown', () => ({
   ),
 }));
 
-vi.mock('recharts', () => ({
+vi.mock('recharts', async () => {
+  const { cloneElement, isValidElement } = await import('react');
+  return {
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   // `data-points` carries the rows the chart was actually handed, so a test can
   // see what is plotted rather than only what the KPI cards say (#1389).
@@ -166,9 +170,16 @@ vi.mock('recharts', () => ({
         </div>
       );
     }
+    if (mockTooltipPayload && isValidElement(content)) {
+      return cloneElement(content as any, {
+        active: true,
+        payload: mockTooltipPayload,
+      });
+    }
     return null;
   },
-}));
+  };
+});
 
 vi.mock('@/components/investments/portfolio-chart-utils', async (importActual) => ({
   ...(await importActual<typeof import('@/components/investments/portfolio-chart-utils')>()),
@@ -2239,6 +2250,107 @@ describe('PortfolioValueReport', () => {
       // Not the invested high of the whole month -- one incomplete point leaves
       // both extremes unknown.
       expect(kpi('Highest Value')).not.toContain('$1200');
+    });
+  });
+
+  describe('the by-security breakdown reads what the server knows (issue #2414)', () => {
+    // A month the server could not price: AAPL's band is absent, so it is
+    // unknown there, not a zero; the other bands it did send are figures.
+    const unpricedMonth = {
+      granularity: 'monthEnd' as const,
+      currency: 'CAD',
+      series: [
+        { key: 'sec-1', type: 'security' as const, symbol: 'AAPL', name: 'Apple Inc.' },
+        { key: 'other', type: 'other' as const, symbol: null, name: '' },
+        { key: 'cash', type: 'cash' as const, symbol: null, name: '' },
+      ],
+      points: [
+        {
+          date: '2024-06-01',
+          total: 700,
+          values: { other: 200, cash: 500 },
+          pricesComplete: false,
+          unpricedSecurityIds: ['sec-1'],
+          missingRatePairs: [],
+        },
+        {
+          date: '2024-07-01',
+          total: 1700,
+          values: { 'sec-1': 900, other: 300, cash: 500 },
+          pricesComplete: true,
+          unpricedSecurityIds: [],
+          missingRatePairs: [],
+        },
+      ],
+    };
+
+    afterEach(() => {
+      mockTooltipPayload = null;
+    });
+
+    it('writes an unknown band and its total as N/A in the CSV, never as 0', async () => {
+      mockSeriesMode = 'securities';
+      mockGetInvestmentsBreakdown.mockResolvedValue(unpricedMonth);
+      mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<PortfolioValueReport />);
+      await waitFor(() => expect(screen.getByTestId('area-chart')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTestId('export-csv')); });
+
+      const sections = mockExportCsvSections.mock.calls.at(-1)![1];
+      const rows = sections.at(-1).rows as unknown[][];
+      const june = rows.find((r) => r.includes(200))!;
+      // [date, AAPL, other, cash, total]
+      expect(june.slice(1)).toEqual(['N/A', 200, 500, 'N/A']);
+      const july = rows.find((r) => r.includes(900))!;
+      expect(july.slice(1)).toEqual([900, 300, 500, 1200]);
+    });
+
+    it('marks an unknown band unknown in the table rather than printing $0.00', async () => {
+      mockSeriesMode = 'securities';
+      mockGetInvestmentsBreakdown.mockResolvedValue(unpricedMonth);
+      mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      render(<PortfolioValueReport />);
+      await waitFor(() => expect(screen.getByTitle('Table')).toBeInTheDocument());
+      await act(async () => { fireEvent.click(screen.getByTitle('Table')); });
+      await waitFor(() => expect(screen.getByText('AAPL')).toBeInTheDocument());
+      const juneRow = screen.getByText('$200.00').closest('tr')!;
+      expect(within(juneRow).getAllByTestId('unknown-amount')).toHaveLength(2);
+      expect(within(juneRow).queryByText('$0.00')).not.toBeInTheDocument();
+    });
+
+    it("totals the tooltip with the point's own figure, unknown where the server has none", async () => {
+      mockSeriesMode = 'securities';
+      mockGetInvestmentsBreakdown.mockResolvedValue(unpricedMonth);
+      mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      // The incomplete month draws no band, so the bands it hands the tooltip are null.
+      mockTooltipPayload = [
+        { name: 'AAPL', value: null, payload: { name: 'Jun 2024', total: null } },
+        { name: 'Cash', value: null, payload: { name: 'Jun 2024', total: null } },
+      ];
+      const { container } = render(<PortfolioValueReport />);
+      await waitFor(() => expect(screen.getByTestId('area-chart')).toBeInTheDocument());
+      const tooltip = container.querySelector('.max-h-72') as HTMLElement;
+      expect(within(tooltip).getByTestId('unknown-amount')).toBeInTheDocument();
+      expect(tooltip.textContent).not.toContain('$0.00');
+    });
+
+    it("prints the point's own total in the tooltip, not the bands added up again", async () => {
+      mockSeriesMode = 'securities';
+      mockGetInvestmentsBreakdown.mockResolvedValue(unpricedMonth);
+      mockGetPortfolioSummary.mockResolvedValue(emptyPortfolio);
+      mockGetInvestmentAccounts.mockResolvedValue([]);
+      mockTooltipPayload = [
+        { name: 'AAPL', value: 900, payload: { name: 'Jul 2024', total: 1700 } },
+        { name: 'Cash', value: 500, payload: { name: 'Jul 2024', total: 1700 } },
+      ];
+      const { container } = render(<PortfolioValueReport />);
+      await waitFor(() => expect(screen.getByTestId('area-chart')).toBeInTheDocument());
+      const tooltip = container.querySelector('.max-h-72') as HTMLElement;
+      expect(tooltip.textContent).toContain('$1700.00');
+      expect(tooltip.textContent).not.toContain('$1400.00');
     });
   });
 
