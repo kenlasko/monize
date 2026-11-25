@@ -65,7 +65,7 @@ Amounts in another currency are converted to your default currency at the exchan
 
 When a figure cannot be worked out completely -- for example an amount in a currency with no exchange rate for its date -- the report says which figures are partial and what is missing (such as the currency to add a rate for on the [Currencies](currency-management.md) page) instead of showing a wrong total.
 
-Every figure in a report is worked out from the converted amounts themselves and rounded once, to your currency's smallest unit (a cent, or a whole yen), so the screen, the CSV and PDF exports and the AI Assistant all show the same figure. A headline total is rounded once from the amounts behind it rather than by adding up rounded rows, so it can differ by a cent from the sum of the rows shown above it. A category whose net is smaller than a cent, for example a purchase and its refund struck at two slightly different exchange rates, still appears, at 0.00, rather than disappearing.
+The figures a report receives are worked out from the converted amounts themselves and rounded once, to your currency's smallest unit (a cent, or a whole yen), so the screen and the AI Assistant read the same figure. A few totals are still added up on the page from the rows it shows, and some exports write whole units, so these can differ by a cent from the report's own figure for now. A headline total is rounded once from the amounts behind it rather than by adding up rounded rows, so it can differ by a cent from the sum of the rows shown above it. A category whose net is smaller than a cent, for example a purchase and its refund struck at two slightly different exchange rates, still appears, at 0.00, rather than disappearing.
 
 ---
 
