@@ -1,3 +1,4 @@
+import { FxAggregate } from "../common/fx-aggregate";
 import { PortfolioService } from "./portfolio.service";
 import { PortfolioCalculationService } from "./portfolio-calculation.service";
 import { Holding } from "./entities/holding.entity";
@@ -5582,6 +5583,14 @@ describe("PortfolioService", () => {
         cashByCurrency: new Map(Object.entries(d.cash ?? {})),
       })),
       securities: new Map(securities.map((sec) => [sec.id, sec])),
+      currency: "CAD",
+      readings: days.map((d) => {
+        const value = new FxAggregate();
+        value.addConverted(d.value);
+        const securitiesValue = new FxAggregate();
+        securitiesValue.addConverted(d.securitiesValue);
+        return { value, securitiesValue };
+      }),
     });
 
     const bar = (iso: string, close: number) => ({
