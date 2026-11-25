@@ -3119,14 +3119,11 @@ export class TransactionsService {
     }
 
     if (hasTags) {
-      sumQb.leftJoin("sa.tags", "saTags");
-      sumQb.leftJoin("saSplits.tags", "saSplitTags");
+      // EXISTS, not joins: a join per tag multiplies a line in the SUM.
       sumQb.andWhere(
-        new Brackets((qb) => {
-          qb.where("saTags.id IN (:...saTagIds)", {
-            saTagIds: filters.tagIds,
-          }).orWhere("saSplitTags.id IN (:...saTagIds)");
-        }),
+        `(EXISTS (SELECT 1 FROM transaction_tags satt WHERE satt.transaction_id = sa.id AND satt.tag_id IN (:...saTagIds)) ` +
+          `OR (saSplits.id IS NOT NULL AND EXISTS (SELECT 1 FROM transaction_split_tags sast WHERE sast.transaction_split_id = saSplits.id AND sast.tag_id IN (:...saTagIds))))`,
+        { saTagIds: filters.tagIds },
       );
     }
 

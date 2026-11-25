@@ -985,16 +985,12 @@ export class TransactionAnalyticsService {
     }
 
     if (tagIds && tagIds.length > 0) {
-      queryBuilder.leftJoin("transaction.tags", "filterTags");
-      queryBuilder.leftJoin("splits.tags", "filterSplitTags");
+      // EXISTS, not joins: a join per tag multiplies a line, and SUM then
+      // counts it once per matching tag.
       queryBuilder.andWhere(
-        new Brackets((qb) => {
-          qb.where("filterTags.id IN (:...summaryTagIds)", {
-            summaryTagIds: tagIds,
-          }).orWhere("filterSplitTags.id IN (:...summaryTagIds)", {
-            summaryTagIds: tagIds,
-          });
-        }),
+        `(EXISTS (SELECT 1 FROM transaction_tags ftt WHERE ftt.transaction_id = transaction.id AND ftt.tag_id IN (:...summaryTagIds)) ` +
+          `OR (splits.id IS NOT NULL AND EXISTS (SELECT 1 FROM transaction_split_tags fst WHERE fst.transaction_split_id = splits.id AND fst.tag_id IN (:...summaryTagIds))))`,
+        { summaryTagIds: tagIds },
       );
     }
 
