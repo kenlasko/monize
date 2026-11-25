@@ -1943,6 +1943,7 @@ describe("PortfolioService", () => {
           totalCostBasis: 9000.12,
           totalNetInvested: 9000,
           totalPortfolioValue: 10000.69,
+          totalGainOverNetInvested: 1000.69,
           totalGainLoss: 900.55,
           totalGainLossPercent: 10.123456,
           gainCostBasis: 9000.1234,
@@ -2093,6 +2094,7 @@ describe("PortfolioService", () => {
         totalCostBasis: 0,
         totalNetInvested: 0,
         totalPortfolioValue: 0,
+        totalGainOverNetInvested: 0,
         totalGainLoss: 0,
         totalGainLossPercent: 0,
         gainCostBasis: 0,
@@ -2131,6 +2133,7 @@ describe("PortfolioService", () => {
         totalCostBasis: 0,
         totalNetInvested: 0,
         totalPortfolioValue: 100,
+        totalGainOverNetInvested: 100,
         totalGainLoss: 0,
         totalGainLossPercent: 0,
         gainCostBasis: 0,
@@ -2165,6 +2168,7 @@ describe("PortfolioService", () => {
         totalCostBasis: 0,
         totalNetInvested: 0,
         totalPortfolioValue: 100,
+        totalGainOverNetInvested: 100,
         totalGainLoss: 0,
         totalGainLossPercent: 0,
         gainCostBasis: 0,
@@ -2220,6 +2224,7 @@ describe("PortfolioService", () => {
         totalCostBasis: 1500,
         totalNetInvested: 1500,
         totalPortfolioValue: 1800,
+        totalGainOverNetInvested: 300,
         totalGainLoss: 300,
         totalGainLossPercent: 20,
         gainCostBasis: 1500,
@@ -3629,6 +3634,79 @@ describe("PortfolioService", () => {
       // netInvested = cashBalance(2000) + buys(5000) - sells(1000) - income(500) = 5500
       expect(result.holdingsByAccount[0].netInvested).toBe(5500);
       expect(result.totalNetInvested).toBe(5500);
+    });
+
+    it("folds net invested, the portfolio value and their difference from unrounded parts (issue #2410)", async () => {
+      // Cash 2000.006 and buys 5000.006 read 2000.01 and 5000.01 on their
+      // own; net invested is their exact sum, 6000.012, read once: 6000.01.
+      // The portfolio is 4750 + 2000.006 = 6750.006, 6750.01, and Total Gain
+      // is 6750.006 - 6000.012 = 749.994, 749.99, where the difference of the
+      // two readings is 750.00. CAGR divides the unrounded two.
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        { ...mockCashAccount, currentBalance: 2000.006 },
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+      securityPriceRepository.query.mockResolvedValue([
+        { security_id: "sec-2", close_price: "95", price_date: "2026-02-07" },
+      ]);
+      let queryCallCount = 0;
+      accountsRepository.query.mockImplementation(() => {
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          return [
+            {
+              account_id: "acct-brokerage-1",
+              buys: "5000.006",
+              sells: "1000",
+              income: "0",
+            },
+          ];
+        }
+        return [{ earliest: "2024-01-15" }];
+      });
+      const cagr = jest.spyOn(
+        (
+          service as unknown as {
+            calculationService: PortfolioCalculationService;
+          }
+        ).calculationService,
+        "calculateCAGR",
+      );
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.totalNetInvested).toBe(6000.01);
+      expect(result.totalCashValue).toBe(2000.01);
+      expect(result.totalPortfolioValue).toBe(6750.01);
+      expect(result.totalGainOverNetInvested).toBe(749.99);
+      const [, , netInvested, portfolioValue] = cagr.mock.calls[0];
+      expect(netInvested).toBeCloseTo(6000.012, 9);
+      expect(portfolioValue).toBeCloseTo(6750.006, 9);
+    });
+
+    it("reads the portfolio value once over sub-cent cash and holdings (issue #2410)", async () => {
+      // Cash 5000.004 and holdings 7112.504 read 5000.00 and 7112.50; their
+      // sum of readings is 12112.50, the folded value 12112.508 is 12112.51.
+      accountsRepository.find.mockResolvedValue([
+        mockBrokerageAccount,
+        { ...mockCashAccount, currentBalance: 5000.004 },
+      ]);
+      holdingsRepository.find.mockResolvedValue([mockHoldingVFV]);
+      securityPriceRepository.query.mockResolvedValue([
+        {
+          security_id: "sec-2",
+          close_price: "142.25008",
+          price_date: "2026-02-07",
+        },
+      ]);
+      accountsRepository.query.mockResolvedValue([]);
+
+      const result = await service.getPortfolioSummary(userId);
+
+      expect(result.totalCashValue).toBe(5000);
+      expect(result.totalHoldingsValue).toBe(7112.5);
+      expect(result.totalPortfolioValue).toBe(12112.51);
     });
 
     it("returns 0 netInvested when no investment flows exist", async () => {
@@ -5200,6 +5278,7 @@ describe("PortfolioService", () => {
         totalCostBasis: 0,
         totalNetInvested: 0,
         totalPortfolioValue: 200,
+        totalGainOverNetInvested: 200,
         totalGainLoss: 0,
         totalGainLossPercent: 0,
         gainCostBasis: 0,

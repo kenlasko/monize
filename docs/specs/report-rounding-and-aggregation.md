@@ -238,8 +238,11 @@ the wire; stage 2 removes the one-cent double rounding.
   portfolio summary (`PortfolioService.getPortfolioSummary`: the Investments
   page, the Portfolio Value and Investment Performance reports,
   `get_portfolio_summary`), whose reporting-currency totals and allocation read
-  at the reporting currency's places and whose accounts' totals read at each
-  account currency's; the Portfolio Value report's series (the daily series it
+  at the reporting currency's places, whose Total Gain
+  (`totalGainOverNetInvested`) is the value less net invested read once, and
+  whose accounts' totals read once at each account currency's money precision
+  (four places for a fiat code, a coin's own), since the client still adds
+  them to the cash balance; the Portfolio Value report's series (the daily series it
   and the dashboard draw, `getDailyInvestmentsReport`, the month-end sampled and
   the monthly series, and the by-security breakdown, whose security bands are
   apportioned from each point's securities subtotal as the Sankey's are and
@@ -277,7 +280,11 @@ the wire; stage 2 removes the one-cent double rounding.
   `PortfolioPeriodResultService` at four places and are read at two. A
   holding's own figures in the portfolio summary (its value, cost and gain in
   the security's currency) are left as they were, and the Portfolio Value
-  report's intraday (1D) view sums four-place contributions per bar.
+  report's intraday (1D) view sums four-place contributions per bar. An
+  account's totals stay at its currency's money precision while the
+  Investments page's account groups and headline and the Accounts page add
+  them to a cash balance on the client (stage 3): read at two places, that sum
+  of two readings sat a cent off.
 
 ## 7. Stage 3: the client and the exports
 

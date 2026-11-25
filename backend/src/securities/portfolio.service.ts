@@ -242,6 +242,14 @@ export interface PortfolioSummary {
   totalNetInvested: number;
   totalPortfolioValue: number;
   /**
+   * `totalPortfolioValue` less `totalNetInvested`, the Investments page's
+   * Total Gain: the difference of the two aggregates read once at the
+   * reporting currency's places, never the difference of the two readings,
+   * which can sit a unit off it (docs/specs/report-rounding-and-aggregation.md
+   * rule 4). A partial figure whenever `valuationComplete` is false.
+   */
+  totalGainOverNetInvested: number;
+  /**
    * The gain over the holdings that joined `totalHoldingsValue` and whose cost
    * converted: their value less THEIR cost, never less every holding's cost
    * (A26-M38). A partial figure whenever `valuationComplete` is false.
@@ -1272,6 +1280,10 @@ export class PortfolioService {
         totalCostBasis: holdingsResult.totalCostBasis,
         totalNetInvested,
         totalPortfolioValue,
+        totalGainOverNetInvested: FxAggregate.difference(
+          portfolioValue,
+          netInvestedAgg,
+        ).knownSubtotalAt(places),
         totalGainLoss,
         totalGainLossPercent,
         gainCostBasis: holdingsResult.gainCostBasis,
@@ -1363,10 +1375,10 @@ export class PortfolioService {
    * Assistant's tool executor and the MCP server's `get_portfolio_summary`
    * tool so the two surfaces return the same shape. The totals and the
    * allocation arrive from the summary rounded once at the reporting
-   * currency's places, an account's totals at its own currency's
-   * (docs/specs/report-rounding-and-aggregation.md section 6), so the model
-   * reads the figures the screen shows (`asShown`); a holding's own figures
-   * are rounded to 4 decimal places. Percentages to 2.
+   * currency's places (docs/specs/report-rounding-and-aggregation.md section
+   * 6), so the model reads the figures the screen shows, and an account's
+   * totals once at its own currency's money precision (`asShown` keeps both);
+   * a holding's own figures are rounded to 4 decimal places. Percentages to 2.
    *
    * `includeLookThrough` adds the country and asset-class breakdowns for
    * exposure questions ("how much am I in the US?", "what's my equity/bond
@@ -1388,10 +1400,10 @@ export class PortfolioService {
       v === null || v === undefined ? null : roundMoney(Number(v));
     const roundPct = (v: number | null | undefined): number | null =>
       v === null || v === undefined ? null : Math.round(Number(v) * 100) / 100;
-    // A figure the summary already read once at its currency's places: the
-    // totals and the allocation at the reporting currency's, an account's at
-    // its own (a coin's eight). Rounding it again at four would cut a coin's
-    // and could move a figure off the one the screen shows.
+    // A figure the summary already read once: the totals and the allocation
+    // at the reporting currency's places, an account's at its own currency's
+    // money precision (a coin's eight). Rounding it again at four would cut a
+    // coin's and could move a total off the one the screen shows.
     const asShown = (v: number | null | undefined): number =>
       v === null || v === undefined ? 0 : Number(v);
 

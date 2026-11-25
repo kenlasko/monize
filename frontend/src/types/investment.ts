@@ -366,6 +366,13 @@ export interface PortfolioSummary {
   totalNetInvested: number;
   totalPortfolioValue: number;
   /**
+   * `totalPortfolioValue` less `totalNetInvested`, the Total Gain, worked out
+   * on the server before either is rounded, so it is one rounding rather than
+   * a difference of two. Optional: an older backend mid-deploy sends none, and
+   * the card then takes the difference itself.
+   */
+  totalGainOverNetInvested?: number;
+  /**
    * Value less cost over the holdings that have a value; a partial figure while
    * `valuationComplete` is `false`, which `PartialTotal` marks.
    */

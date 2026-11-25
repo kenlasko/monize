@@ -14,7 +14,12 @@ import {
   AccountHoldings,
   AllocationItem,
 } from "./portfolio.service";
-import { MONEY_SCALE, roundMoney, sumMoney } from "../common/round.util";
+import {
+  MONEY_SCALE,
+  moneyDecimalsFor,
+  roundMoney,
+  sumMoney,
+} from "../common/round.util";
 import { resolveUserDefaultCurrency } from "../common/default-currency.util";
 import { investmentRowRateInto } from "./investment-row-fx.util";
 import {
@@ -87,9 +92,9 @@ export function netInvestedParts(
 }
 
 /**
- * An account's net invested read once at `places`, its currency's own, from
- * the exact sum of its parts (docs/specs/report-rounding-and-aggregation.md
- * section 6).
+ * An account's net invested read once at `places`, its currency's money
+ * precision, from the exact sum of its parts
+ * (docs/specs/report-rounding-and-aggregation.md rule 2).
  */
 function netInvestedFigure(parts: readonly number[], places: number): number {
   const sum = new FxAggregate();
@@ -2648,9 +2653,9 @@ export class PortfolioCalculationService {
    * account's own total is missing EUR->JPY entirely, and a consumer reading the
    * nested figure has no way to know from the global flag.
    *
-   * Each figure is read once at `places`, the account currency's own
-   * (docs/specs/report-rounding-and-aggregation.md section 6), and the gain's
-   * percentage divides the unrounded figures (rule 8).
+   * Each figure is read once at `places`, the account currency's money
+   * precision (`buildHoldingsByAccount` says why not its display places), and
+   * the gain's percentage divides the unrounded figures (rule 8).
    */
   private async accountTotals(
     accountHoldings: HoldingWithMarketValue[],
@@ -2780,16 +2785,21 @@ export class PortfolioCalculationService {
       holdingsByAccountMap.set(holding.accountId, existing);
     }
 
-    // Each account's figures are read once at its own currency's places
-    // (docs/specs/report-rounding-and-aggregation.md section 6): an ISO code's
-    // minor unit, a coin's row.
+    // Each account's figures are read once at its own currency's money
+    // precision (four for a fiat code, a coin's own places), not at its
+    // display places: the client still adds them to the stored cash balance
+    // and to each other (the Investments page's account groups and headline,
+    // the Accounts page), and a sum of two-place readings sits a cent off the
+    // sum read once. They move to the display places with those sums, in
+    // stage 3 (docs/specs/report-rounding-and-aggregation.md section 6).
     const placesByCurrency = await reportPlacesOfCodes(
       this.dataSource,
       [...categorised.brokerageAccounts, ...categorised.standaloneAccounts].map(
         (account) => account.currencyCode,
       ),
     );
-    const placesOf = (code: string): number => placesByCurrency.get(code)!;
+    const placesOf = (code: string): number =>
+      moneyDecimalsFor(placesByCurrency.get(code));
 
     const holdingsByAccount: AccountHoldings[] = [];
 

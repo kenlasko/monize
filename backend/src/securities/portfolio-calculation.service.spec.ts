@@ -3659,10 +3659,11 @@ describe("PortfolioCalculationService.buildHoldingsByAccount", () => {
     expect(result.totalMarketValue).toBe(900);
   });
 
-  it("reads each account's totals at its own currency's places, a coin's eight (issue #2410)", async () => {
-    // A BTC account's row says eight places; a CAD account's are its ISO two.
-    // 0.123456785 BTC reads 0.12345679 there, where four places cut it to
-    // 0.1235; 100.005 CAD reads 100.01.
+  it("reads each account's totals at its currency's money precision, a coin's eight (issue #2410)", async () => {
+    // A BTC account's row says eight places; a CAD account keeps a fiat
+    // code's four, not its two display places, since the client still adds
+    // its figures to the cash balance. 0.123456785 BTC reads 0.12345679,
+    // where four places cut it to 0.1235; 100.00006 CAD reads 100.0001.
     const currencies = {
       find: jest.fn().mockResolvedValue([{ code: "BTC", decimalPlaces: 8 }]),
     };
@@ -3680,7 +3681,7 @@ describe("PortfolioCalculationService.buildHoldingsByAccount", () => {
 
     const results = await coinService.buildHoldingsByAccount(
       categorised({ brokerageAccounts: [btc, cad] }),
-      [coin, holding("h-cad", "brok-cad", 100.005)],
+      [coin, holding("h-cad", "brok-cad", 100.00006)],
       new Map<string, number>(),
       new Map(),
       new Map<string, number>(),
@@ -3689,7 +3690,7 @@ describe("PortfolioCalculationService.buildHoldingsByAccount", () => {
     const byId = new Map(results.map((r) => [r.accountId, r]));
     expect(byId.get("brok-btc")!.totalMarketValue).toBe(0.12345679);
     expect(byId.get("brok-btc")!.totalGainLoss).toBe(0.02345679);
-    expect(byId.get("brok-cad")!.totalMarketValue).toBe(100.01);
+    expect(byId.get("brok-cad")!.totalMarketValue).toBe(100.0001);
     expect(currencies.find).toHaveBeenCalledTimes(1);
   });
 
@@ -5228,19 +5229,22 @@ describe("PortfolioCalculationService gain over the priced holdings (A26-M38)", 
       expect(result.valuationComplete).toBe(true);
     });
 
-    it("takes the gain from value less cost before either is rounded, at the account currency's places (issues #2384, #2410)", async () => {
-      // Two holdings worth 1.006 each on a cost of 0.005: the gain is 2.007,
-      // which reads 2.01. The two-place readings, 2.01 less 0.01, would make
-      // it 2.00.
+    it("takes the gain from value less cost before either is rounded, at the account currency's money precision (issues #2384, #2410)", async () => {
+      // Two holdings worth 1.00006 each on a cost of 0.00005: the gain is
+      // 2.00007, which reads 2.0001. The four-place readings, 2.0001 less
+      // 0.0001, would make it 2.0000.
       const result = await build([
-        held("a", 1.006, 0.005),
-        held("b", 1.006, 0),
+        held("a", 1.00006, 0.00005),
+        held("b", 1.00006, 0),
       ]);
 
-      expect(result.totalMarketValue).toBe(2.01);
-      expect(result.gainCostBasis).toBe(0.01);
-      expect(result.totalGainLoss).toBe(2.01);
-      expect(result.totalGainLossPercent).toBeCloseTo((2.007 / 0.005) * 100, 8);
+      expect(result.totalMarketValue).toBe(2.0001);
+      expect(result.gainCostBasis).toBe(0.0001);
+      expect(result.totalGainLoss).toBe(2.0001);
+      expect(result.totalGainLossPercent).toBeCloseTo(
+        (2.00007 / 0.00005) * 100,
+        6,
+      );
     });
 
     it("reports a zero percent over a zero matched cost", async () => {
