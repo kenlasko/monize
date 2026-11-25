@@ -81,41 +81,44 @@ export interface BreakdownTotals {
   };
 }
 
-/** `parts` folded into one aggregate per column, each part with its sign. */
-class ColumnSums {
-  private readonly byColumn = new Map<string, FxAggregate>();
+/** One aggregate per column. */
+type ColumnSums = Map<string, FxAggregate>;
 
-  add(parts: ReadonlyMap<string, FxAggregate>, negate = false): void {
-    for (const [column, part] of parts) {
-      const sum = this.byColumn.get(column) ?? new FxAggregate();
-      if (negate) sum.mergeNegated(part);
-      else sum.merge(part);
-      this.byColumn.set(column, sum);
-    }
+/** `parts` folded into `sums` column by column, negated when asked. */
+function addColumns(
+  sums: ColumnSums,
+  parts: ReadonlyMap<string, FxAggregate>,
+  negate = false,
+): void {
+  for (const [column, part] of parts) {
+    const sum = sums.get(column) ?? new FxAggregate();
+    if (negate) sum.mergeNegated(part);
+    else sum.merge(part);
+    sums.set(column, sum);
   }
+}
 
-  merge(other: ColumnSums, negate = false): void {
-    this.add(other.byColumn, negate);
+/** `sums` read once per column, its total and its average over `columns`. */
+function figuresOf(
+  sums: ColumnSums,
+  columns: readonly string[],
+  places: number,
+): BreakdownFigures {
+  const valuesByMonth: Record<string, number> = {};
+  for (const column of columns) {
+    valuesByMonth[column] = sums.get(column)?.knownSubtotalAt(places) ?? 0;
   }
-
-  figures(columns: readonly string[], places: number): BreakdownFigures {
-    const valuesByMonth: Record<string, number> = {};
-    for (const column of columns) {
-      valuesByMonth[column] =
-        this.byColumn.get(column)?.knownSubtotalAt(places) ?? 0;
-    }
-    const whole = FxAggregate.sum(
-      columns.flatMap((column) => {
-        const sum = this.byColumn.get(column);
-        return sum ? [sum] : [];
-      }),
-    );
-    return {
-      valuesByMonth,
-      total: whole.knownSubtotalAt(places),
-      average: averageOf(whole, columns.length, places),
-    };
-  }
+  const whole = FxAggregate.sum(
+    columns.flatMap((column) => {
+      const sum = sums.get(column);
+      return sum ? [sum] : [];
+    }),
+  );
+  return {
+    valuesByMonth,
+    total: whole.knownSubtotalAt(places),
+    average: averageOf(whole, columns.length, places),
+  };
 }
 
 function averageOf(whole: FxAggregate, columns: number, places: number) {
@@ -160,39 +163,39 @@ export function breakdownTotals(
   places: number,
 ): BreakdownTotals {
   const sections = new Map<string, { isIncome: boolean; sums: ColumnSums }>();
-  const income = new ColumnSums();
-  const expenses = new ColumnSums();
+  const income: ColumnSums = new Map();
+  const expenses: ColumnSums = new Map();
 
   const rows = categoryRows.map(({ row, netByColumn }) => {
     const key = sectionKeyOf(row);
     const section = sections.get(key) ?? {
       isIncome: sectionIsIncomeOf(row),
-      sums: new ColumnSums(),
+      sums: new Map(),
     };
     // Deposits less withdrawals is money in, so an expense section reads it
     // negated: positive is what it cost.
-    section.sums.add(netByColumn, !section.isIncome);
+    addColumns(section.sums, netByColumn, !section.isIncome);
     sections.set(key, section);
     return rowFigures(netByColumn, columns, places, !row.isIncome);
   });
 
   for (const section of sections.values()) {
-    (section.isIncome ? income : expenses).merge(section.sums);
+    addColumns(section.isIncome ? income : expenses, section.sums);
   }
 
-  const balance = new ColumnSums();
-  balance.merge(income);
-  balance.merge(expenses, true);
+  const balance: ColumnSums = new Map();
+  addColumns(balance, income);
+  addColumns(balance, expenses, true);
 
-  const transferSum = new ColumnSums();
+  const transferSum: ColumnSums = new Map();
   const transfers = transferRows.map((flows) => {
-    transferSum.add(flows);
+    addColumns(transferSum, flows);
     return rowFigures(flows, columns, places, false);
   });
 
-  const overall = new ColumnSums();
-  overall.merge(balance);
-  overall.merge(transferSum);
+  const overall: ColumnSums = new Map();
+  addColumns(overall, balance);
+  addColumns(overall, transferSum);
 
   return {
     rows,
@@ -200,14 +203,14 @@ export function breakdownTotals(
     sections: [...sections].map(([key, section]) => ({
       key,
       isIncome: section.isIncome,
-      ...section.sums.figures(columns, places),
+      ...figuresOf(section.sums, columns, places),
     })),
     summary: {
-      income: income.figures(columns, places),
-      expenses: expenses.figures(columns, places),
-      balance: balance.figures(columns, places),
-      transfers: transferSum.figures(columns, places),
-      overall: overall.figures(columns, places),
+      income: figuresOf(income, columns, places),
+      expenses: figuresOf(expenses, columns, places),
+      balance: figuresOf(balance, columns, places),
+      transfers: figuresOf(transferSum, columns, places),
+      overall: figuresOf(overall, columns, places),
     },
   };
 }
