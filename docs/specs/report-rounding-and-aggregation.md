@@ -312,6 +312,20 @@ the two aggregates' difference read once, for the window's change the Net
 Worth report and widget show: the difference of the two end readings sat a
 unit off it as the month-on-month change did (rule 4).
 
+Issue #2413 (totals the client summed from rounded rows): a total the
+response carries is read, never rebuilt. The custom report's chart reads each
+row's server `percentage`, and its Total row the server's headline. The Cash
+Flow PDF totals each category table from its own report. Weekend vs Weekday
+gains `weekendShare` / `weekdayShare`, divided from the two sides' unrounded
+sums (rule 8). A total only the page can build, over the accounts or
+schedules the reader's filters chose, folds the exact sums of its parts:
+`ConvertedTotal.exact` carries what `sumConverted` accumulated, and
+`combineTotals(totals, signs)` rounds the signed sum once. Before that, a net
+worth was the assets' reading less the liabilities' reading, so 0.12495 of
+assets and 0.00004 of liabilities read 0.1250 and 0.0000 and netted to
+0.1250, where the net, 0.12491, reads 0.1249 (rule 2). Account Balances' chart
+total and the Sankey's merged figures are summed once in the same way.
+
 ## 8. Test matrix
 
 | Rule | Test |

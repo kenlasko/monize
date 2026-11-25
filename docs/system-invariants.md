@@ -3420,7 +3420,13 @@ Enforcement         FxAggregate.merge / mergeNegated fold a part exactly;
                     (frontend/src/lib/net-worth-change.ts); the client's
                     charts of report figures carry the server's figures
                     rather than whole units into their tables, tooltips,
-                    cards and CSVs (issue #2412).
+                    cards and CSVs (issue #2412). A total the response
+                    carries is read rather than rebuilt (the custom report's
+                    shares and headline, the Cash Flow PDF's category
+                    totals, Weekend vs Weekday's weekendShare /
+                    weekdayShare), and a page total folds its parts' exact
+                    sums: combineTotals rounds the signed sum of
+                    ConvertedTotal.exact once (issue #2413).
                     backend/src/common/report-rounding.guard.spec.ts fails an
                     addConverted, add, sumMoney, +=, -=, + or - over an
                     aggregate's knownSubtotal / unroundedSubtotal /
@@ -3458,7 +3464,14 @@ Required tests      backend/src/common/fx-aggregate.spec.ts (mergeNegated, sign,
                     change from the first month; the client's totals of
                     months that each round up, a slice and a tagged outflow
                     of 0.40, a Year over Year month the response does not
-                    carry).
+                    carry); the "issue #2413" cases (currency-total.test.ts's
+                    two sides that each round up; the accounts page's,
+                    bills page's, register's and Account Balances' nets; the
+                    custom report chart's share under an average metric and
+                    over a listed row's headline; the Cash Flow PDF's
+                    category totals; comparison-reports.service.spec.ts's
+                    weekend share from the unrounded sums; the Sankey's
+                    merged figures).
 Known gap           A holding's own value, cost and gain in the portfolio
                     summary and the Portfolio Value report's intraday (1D)
                     bars leave at four places, and so do an account's totals
