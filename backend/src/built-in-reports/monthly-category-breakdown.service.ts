@@ -58,11 +58,6 @@ interface RawTransferAggregate extends RawRateBasis {
   inflow: string;
 }
 
-/**
- * Mutable accumulator for a single category while merging the raw rows. Money
- * is accumulated in floating numbers but every read-out is rounded with the
- * shared money helpers so the response never carries IEEE 754 drift.
- */
 /** Adds `amount` to `month`'s aggregate in `byMonth`. */
 function addTo(
   byMonth: Map<string, FxAggregate>,
@@ -74,6 +69,12 @@ function addTo(
   byMonth.set(month, sum);
 }
 
+/**
+ * Mutable accumulator for a single category while merging the raw rows. Money
+ * is accumulated in `FxAggregate`s, never added in floats, and each figure is
+ * read once when the row is built, so the response is the single rounding of
+ * the converted rows (docs/specs/report-rounding-and-aggregation.md rule 2).
+ */
 interface CategoryAccumulator {
   categoryId: string | null;
   depositByMonth: Map<string, FxAggregate>;

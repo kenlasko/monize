@@ -89,7 +89,12 @@ before they were added:
    parts are apportioned from it by largest remainder
    (`FxAggregate.apportionUnits`): each part is its value rounded down or up by
    at most one unit, ties to the lower key. A total is never rebuilt as the sum
-   of its rounded parts.
+   of its rounded parts. This is a recorded choice with a cost: the Sankey
+   apportions a whole side, so a category node can read one unit off its own
+   rounding, and so off the same category in Spending by Category (124.7524
+   against 124.7525). Under section 6's option (b) that unit is the currency's
+   minor unit, a visible cent; stage 2 keeps the choice (closure is the
+   diagram's invariant, INV-SANKEY-001) and says so beside the node.
 7. **Completeness travels with the aggregate.** `merge` and `mergeNegated` carry
    the missing pairs and the unknown count; a total withheld for a missing rate
    stays withheld whichever grouping folded it
@@ -179,12 +184,18 @@ rounding happens on another machine. The options:
   Sankey needs no apportionment; client code that adds wire values must
   accumulate as `FxAggregate` does.
 
-**Decided (issue #2384): option (b), in its own PR (stage 2).** Each report
-figure is the single rounding of its calculated value at the reporting
-currency's own places, done on the server, so the screen's rounding of it is
-the identity and the CSV, the PDF and the AI tools read the same figure. Stage 1
-keeps four places on the wire until stage 2 lands, so the one-cent double
-rounding above stands until then.
+**Decided on issue #2384: option (b), in its own PR (stage 2).** The question
+posted on the issue on 2026-11-24 laid out (a), (b) and (c), recommended (b) in
+its own PR, and recommended opening stage 1 as "Part of #2384" with stages 2
+and 3 to follow; the maintainer replied "Go with the recommendations". Each
+report figure is then the single rounding of its calculated value at the
+reporting currency's own places, done on the server, so the screen's rounding
+of it is the identity and the CSV, the PDF and the AI tools read the same
+figure. Discussion #2382 also suggested two CSV modes (formatted and full
+precision); the issue as filed left that out, and (b) does not include it: a
+full-precision export would be its own proposal. Stage 1 keeps four places on
+the wire until stage 2 lands, so the one-cent double rounding above stands
+until then.
 
 ## 7. Stage 3: the client and the exports
 

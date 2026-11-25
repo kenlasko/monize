@@ -16,12 +16,14 @@ Spec: [`docs/specs/report-rounding-and-aggregation.md`](../specs/report-rounding
 - [x] Monthly Category Breakdown accumulates as aggregates; the monthly net worth and an account's portfolio gain are single differences (`FxAggregate.difference`); the transactions widget reads the server's net.
 - [x] `report-rounding.guard.spec.ts` holds rule 2's mechanical forms.
 - [ ] The Monthly Comparison's changes from the months' aggregates rather than their rounded figures (the spec's rule 4 residual).
+- [x] The assistant's and MCP's flow totals (`convertedFlowFields`) and the portfolio summary's headline gain are single differences.
+- [ ] The transactions widget's net for a partial summary still subtracts the two rounded known sides: the server could send a known net beside `knownIncome` / `knownExpenses` (an additive field on the analytics summary and its MCP schema).
 - [ ] Budget Health (`backend/src/budgets/budget-health-reports.service.ts`) adds a month's converted foreign income, read once at four places, to its native income; its other sides are sums of four-place budget-currency amounts, exact.
 
 ## 2 the precision of a figure on the wire
 
 - [x] The maintainer's choice of the spec's section 6 option: (b), a report figure rounded on the server at the reporting currency's own places (issue #2384, 2026-11-24).
-- [ ] Its implementation, in its own PR: every report figure (built-in, custom, Sankey, AI/MCP report tools) rounded once at `currency.decimal_places` on the server; the Sankey's unit becomes the currency's minor unit; fixtures and the section 4 examples restated at currency places.
+- [ ] Its implementation, in its own PR: every report figure (built-in, custom, Sankey, AI/MCP report tools) rounded once at `currency.decimal_places` on the server; the Sankey's unit becomes the currency's minor unit, and a category node apportioned from its side can then read a cent off the same category in Spending by Category (the spec's rule 6 choice, to be said beside the node); fixtures and the section 4 examples restated at currency places.
 
 ## 3 client surfaces
 
