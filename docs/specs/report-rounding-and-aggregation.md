@@ -342,8 +342,11 @@ from the four aggregates. The Foreign Currency Fees report reads
 `GET /transactions/fx-fee-totals`, which folds the chosen accounts' fees and
 reads each month, quarter and year, the total and each average once: three
 fees of 2.50496 total 7.51, where the four-place rows summed to 7.50 at two
-places. The fee summary's own converted rows then read at the currency's
-places.
+places. A month that lost a fee for want of a rate makes every figure over it
+a subtotal (rule 7): its column's `total`, the grand `total` and the
+`periodAverage` are `null`, `knownTotal` and `knownPeriodAverage` carry what
+converted, and the chart marks the cards and the column partial. The fee
+summary's own converted rows then read at the currency's places.
 
 ## 8. Test matrix
 

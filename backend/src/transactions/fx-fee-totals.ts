@@ -29,7 +29,10 @@ export interface FxFeeBucket {
   key: string;
   /** First day of the period, `YYYY-MM-DD`. */
   periodStart: string;
-  total: number;
+  /** The period's fees read once; `null` while a fee of it was left out. */
+  total: number | null;
+  /** The fees of the period that converted. */
+  knownTotal: number;
   count: number;
 }
 
@@ -38,15 +41,20 @@ export interface FxFeeGranularityTotals {
   buckets: FxFeeBucket[];
   /**
    * The window's fees over the periods from the first populated one to the
-   * last, the empty ones between included, divided before it is read.
+   * last, the empty ones between included, divided before it is read;
+   * `null` while a fee of the window was left out.
    */
-  periodAverage: number;
+  periodAverage: number | null;
+  /** The same average over the fees that converted. */
+  knownPeriodAverage: number;
 }
 
 /** One month's fees, folded across accounts and paid currencies. */
 export interface FxFeeMonthPart {
   sum: FxAggregate;
   count: number;
+  /** True when a fee of the month had no rate and was left out of `sum`. */
+  partial: boolean;
 }
 
 function periodOf(
@@ -85,19 +93,30 @@ export function foldFxFeeTotals(
   months: ReadonlyMap<string, FxFeeMonthPart>,
   places: number,
 ): {
-  total: number;
+  total: number | null;
+  knownTotal: number;
   count: number;
   byGranularity: Record<FxFeeGranularity, FxFeeGranularityTotals>;
 } {
   const whole = FxAggregate.sum([...months.values()].map((part) => part.sum));
   let count = 0;
   for (const part of months.values()) count += part.count;
+  // A figure over a month that lost a fee is a subtotal: `null` under its
+  // own name, the known part beside it (AGENTS.md, "A subtotal is not a
+  // total").
+  const complete = [...months.values()].every((part) => !part.partial);
   const sorted = [...months.keys()].sort();
 
   const at = (granularity: FxFeeGranularity): FxFeeGranularityTotals => {
     const columns = new Map<
       string,
-      { periodStart: string; index: number; sum: FxAggregate; count: number }
+      {
+        periodStart: string;
+        index: number;
+        sum: FxAggregate;
+        count: number;
+        partial: boolean;
+      }
     >();
     for (const month of sorted) {
       const part = months.get(month)!;
@@ -107,9 +126,11 @@ export function foldFxFeeTotals(
         index,
         sum: new FxAggregate(),
         count: 0,
+        partial: false,
       };
       column.sum.merge(part.sum);
       column.count += part.count;
+      column.partial = column.partial || part.partial;
       columns.set(key, column);
     }
     const indexes = [...columns.values()].map((column) => column.index);
@@ -117,22 +138,28 @@ export function foldFxFeeTotals(
       indexes.length === 0
         ? 0
         : Math.max(...indexes) - Math.min(...indexes) + 1;
+    const knownPeriodAverage =
+      periods > 0 ? reportFigure(whole.unroundedSubtotal / periods, places) : 0;
     return {
-      buckets: [...columns].map(([key, column]) => ({
-        key,
-        periodStart: column.periodStart,
-        total: column.sum.knownSubtotalAt(places),
-        count: column.count,
-      })),
-      periodAverage:
-        periods > 0
-          ? reportFigure(whole.unroundedSubtotal / periods, places)
-          : 0,
+      buckets: [...columns].map(([key, column]) => {
+        const knownTotal = column.sum.knownSubtotalAt(places);
+        return {
+          key,
+          periodStart: column.periodStart,
+          total: column.partial ? null : knownTotal,
+          knownTotal,
+          count: column.count,
+        };
+      }),
+      periodAverage: complete ? knownPeriodAverage : null,
+      knownPeriodAverage,
     };
   };
 
+  const knownTotal = whole.knownSubtotalAt(places);
   return {
-    total: whole.knownSubtotalAt(places),
+    total: complete ? knownTotal : null,
+    knownTotal,
     count,
     byGranularity: {
       month: at("month"),

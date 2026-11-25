@@ -110,20 +110,29 @@ describe('ForeignCurrencyFeeChart', () => {
       { month: '2026-02', total: 2.5, count: 1 },
       { month: '2026-03', total: 2.5, count: 1 },
     ];
-    const totals = (gap = { missingCurrencies: [] as string[], excludedCount: 0 }) => ({
-      currency: 'CAD',
-      total: 7.51,
-      count: 3,
-      byGranularity: {
-        month: {
-          buckets: months.map((m) => ({ key: m.month, periodStart: `${m.month}-01`, total: m.total, count: m.count })),
-          periodAverage: 2.5,
+    const totals = (gap = { missingCurrencies: [] as string[], excludedCount: 0 }) => {
+      const complete = gap.missingCurrencies.length === 0;
+      const column = (key: string, periodStart: string, known: number, count: number) => ({
+        key,
+        periodStart,
+        total: complete ? known : null,
+        knownTotal: known,
+        count,
+      });
+      const average = (known: number) => ({ periodAverage: complete ? known : null, knownPeriodAverage: known });
+      return {
+        currency: 'CAD',
+        total: complete ? 7.51 : null,
+        knownTotal: 7.51,
+        count: 3,
+        byGranularity: {
+          month: { buckets: months.map((m) => column(m.month, `${m.month}-01`, m.total, m.count)), ...average(2.5) },
+          quarter: { buckets: [column('2026-Q1', '2026-01-01', 7.51, 3)], ...average(7.51) },
+          year: { buckets: [column('2026', '2026-01-01', 7.51, 3)], ...average(7.51) },
         },
-        quarter: { buckets: [{ key: '2026-Q1', periodStart: '2026-01-01', total: 7.51, count: 3 }], periodAverage: 7.51 },
-        year: { buckets: [{ key: '2026', periodStart: '2026-01-01', total: 7.51, count: 3 }], periodAverage: 7.51 },
-      },
-      ...gap,
-    });
+        ...gap,
+      };
+    };
 
     it('prints the total and a quarter as the server read them', () => {
       render(
@@ -147,6 +156,9 @@ describe('ForeignCurrencyFeeChart', () => {
         />,
       );
       expect(screen.getByText('Total Fees').parentElement!.querySelector('[data-testid="partial-total"]')).not.toBeNull();
+      // The average is over the same subtotal, so it carries the marker too.
+      expect(screen.getByText('Monthly Avg').parentElement!.querySelector('[data-testid="partial-total"]')).not.toBeNull();
+      expect(screen.getByText('Monthly Avg').parentElement).toHaveTextContent('CAD 2.50');
     });
   });
 

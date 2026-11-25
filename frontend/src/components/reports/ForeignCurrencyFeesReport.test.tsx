@@ -90,15 +90,20 @@ function feeTotals(
   count: number,
   gap: { missingCurrencies: string[]; excludedCount: number } = { missingCurrencies: [], excludedCount: 0 },
 ) {
-  const bucket = (key: string, periodStart: string) => ({ key, periodStart, total, count });
+  // A fee left out makes every figure over its month a subtotal: null, with
+  // the known part beside it.
+  const figure = gap.missingCurrencies.length === 0 ? total : null;
+  const bucket = (key: string, periodStart: string) => ({ key, periodStart, total: figure, knownTotal: total, count });
+  const average = { periodAverage: figure, knownPeriodAverage: total };
   return {
     currency,
-    total,
+    total: figure,
+    knownTotal: total,
     count,
     byGranularity: {
-      month: { buckets: [bucket('2026-01', '2026-01-01')], periodAverage: total },
-      quarter: { buckets: [bucket('2026-Q1', '2026-01-01')], periodAverage: total },
-      year: { buckets: [bucket('2026', '2026-01-01')], periodAverage: total },
+      month: { buckets: [bucket('2026-01', '2026-01-01')], ...average },
+      quarter: { buckets: [bucket('2026-Q1', '2026-01-01')], ...average },
+      year: { buckets: [bucket('2026', '2026-01-01')], ...average },
     },
     ...gap,
   };
@@ -175,7 +180,7 @@ describe('ForeignCurrencyFeesReport', () => {
     // The totals are asked of the server over both accounts, in CAD.
     expect(mockGetFxFeeTotals).toHaveBeenCalledWith(['cad-1', 'usd-1'], []);
     expect(chartProps.current.currencyCode).toBe('CAD');
-    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 17, count: 2 }]);
+    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 17, knownSubtotal: 17, count: 2 }]);
   });
 
   // The page added each account's four-place conversions into its months, and
@@ -186,18 +191,28 @@ describe('ForeignCurrencyFeesReport', () => {
     const served = {
       currency: 'CAD',
       total: 7.51,
+      knownTotal: 7.51,
       count: 3,
       byGranularity: {
         month: {
           buckets: [
-            { key: '2026-01', periodStart: '2026-01-01', total: 2.5, count: 1 },
-            { key: '2026-02', periodStart: '2026-02-01', total: 2.5, count: 1 },
-            { key: '2026-03', periodStart: '2026-03-01', total: 2.5, count: 1 },
+            { key: '2026-01', periodStart: '2026-01-01', total: 2.5, knownTotal: 2.5, count: 1 },
+            { key: '2026-02', periodStart: '2026-02-01', total: 2.5, knownTotal: 2.5, count: 1 },
+            { key: '2026-03', periodStart: '2026-03-01', total: 2.5, knownTotal: 2.5, count: 1 },
           ],
           periodAverage: 2.5,
+          knownPeriodAverage: 2.5,
         },
-        quarter: { buckets: [{ key: '2026-Q1', periodStart: '2026-01-01', total: 7.51, count: 3 }], periodAverage: 7.51 },
-        year: { buckets: [{ key: '2026', periodStart: '2026-01-01', total: 7.51, count: 3 }], periodAverage: 7.51 },
+        quarter: {
+          buckets: [{ key: '2026-Q1', periodStart: '2026-01-01', total: 7.51, knownTotal: 7.51, count: 3 }],
+          periodAverage: 7.51,
+          knownPeriodAverage: 7.51,
+        },
+        year: {
+          buckets: [{ key: '2026', periodStart: '2026-01-01', total: 7.51, knownTotal: 7.51, count: 3 }],
+          periodAverage: 7.51,
+          knownPeriodAverage: 7.51,
+        },
       },
       missingCurrencies: [],
       excludedCount: 0,
@@ -209,9 +224,9 @@ describe('ForeignCurrencyFeesReport', () => {
       expect(chartProps.current?.totals).toEqual(served);
     });
     expect(chartProps.current.data).toEqual([
-      { month: '2026-01', total: 2.5, count: 1 },
-      { month: '2026-02', total: 2.5, count: 1 },
-      { month: '2026-03', total: 2.5, count: 1 },
+      { month: '2026-01', total: 2.5, knownSubtotal: 2.5, count: 1 },
+      { month: '2026-02', total: 2.5, knownSubtotal: 2.5, count: 1 },
+      { month: '2026-03', total: 2.5, knownSubtotal: 2.5, count: 1 },
     ]);
   });
 
@@ -246,7 +261,8 @@ describe('ForeignCurrencyFeesReport', () => {
     await waitFor(() => {
       expect(chartProps.current?.isLoading).toBe(false);
     });
-    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 10, count: 1 }]);
+    // The month lost a fee: its total withheld, the known 10 beside it.
+    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: null, knownSubtotal: 10, count: 1 }]);
     expect(chartProps.current.totals.missingCurrencies).toEqual(['USD']);
     expect(document.body).toHaveTextContent('USD');
   });
@@ -265,7 +281,7 @@ describe('ForeignCurrencyFeesReport', () => {
       expect(chartProps.current.currencyCode).toBe('USD');
     });
     // Native USD, no 1.4 conversion applied.
-    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 5, count: 1 }]);
+    expect(chartProps.current.data).toEqual([{ month: '2026-01', total: 5, knownSubtotal: 5, count: 1 }]);
   });
 
   it('exports across the effective accounts and paid currencies', async () => {

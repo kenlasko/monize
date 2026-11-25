@@ -231,6 +231,7 @@ export function ForeignCurrencyFeesReport() {
       (totals?.byGranularity.month.buckets ?? []).map((bucket) => ({
         month: bucket.key,
         total: bucket.total,
+        knownSubtotal: bucket.knownTotal,
         count: bucket.count,
       })),
     [totals],

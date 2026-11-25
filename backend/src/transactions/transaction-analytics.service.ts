@@ -98,7 +98,10 @@ function percentToTwoPlaces(ratio: number): number {
 export interface FxFeeTotals {
   /** The accounts' shared currency, else the reader's reporting currency. */
   currency: string;
-  total: number;
+  /** Every fee read once; `null` while a fee was left out for want of a rate. */
+  total: number | null;
+  /** The fees that converted. */
+  knownTotal: number;
   count: number;
   byGranularity: Record<FxFeeGranularity, FxFeeGranularityTotals>;
   /** Account currencies with no rate into `currency`; their fees are in no figure. */
@@ -1549,11 +1552,19 @@ export class TransactionAnalyticsService {
       const places = await loadReportPlaces(m, currency);
 
       const months = new Map<string, FxFeeMonthPart>();
+      const partOf = (month: string): FxFeeMonthPart => {
+        const part = months.get(month) ?? {
+          sum: new FxAggregate(),
+          count: 0,
+          partial: false,
+        };
+        months.set(month, part);
+        return part;
+      };
       const addPart = (month: string, sum: FxAggregate, count: number) => {
-        const part = months.get(month) ?? { sum: new FxAggregate(), count: 0 };
+        const part = partOf(month);
         part.sum.merge(sum);
         part.count += count;
-        months.set(month, part);
       };
       const missing = new Set<string>();
       let excludedCount = 0;
@@ -1638,6 +1649,8 @@ export class TransactionAnalyticsService {
           if (sum === null) {
             missing.add(account.currencyCode);
             excludedCount += count;
+            // The month stays a column, marked: its figure is a subtotal.
+            partOf(key.split("|")[0]).partial = true;
             continue;
           }
           addPart(key.split("|")[0], sum, count);

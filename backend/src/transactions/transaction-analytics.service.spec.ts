@@ -5020,7 +5020,13 @@ describe("TransactionAnalyticsService", () => {
       expect(result.currency).toBe("CAD");
       expect(result.total).toBe(2.01);
       expect(result.byGranularity.month.buckets).toEqual([
-        { key: "2026-01", periodStart: "2026-01-01", total: 2.01, count: 2 },
+        {
+          key: "2026-01",
+          periodStart: "2026-01-01",
+          total: 2.01,
+          knownTotal: 2.01,
+          count: 2,
+        },
       ]);
       expect(managerMock.query).not.toHaveBeenCalled();
     });
@@ -5042,10 +5048,17 @@ describe("TransactionAnalyticsService", () => {
         "acc-usd",
       ]);
 
-      expect(result.total).toBe(2);
+      // The USD fee alone is a subtotal: no figure over January is a total.
+      expect(result.total).toBeNull();
+      expect(result.knownTotal).toBe(2);
+      expect(result.byGranularity.month.buckets).toEqual([
+        expect.objectContaining({ key: "2026-01", total: null, knownTotal: 2 }),
+      ]);
+      expect(result.byGranularity.month.periodAverage).toBeNull();
+      expect(result.byGranularity.month.knownPeriodAverage).toBe(2);
       expect(result.missingCurrencies).toEqual(["CAD"]);
       expect(result.excludedCount).toBe(1);
-      expect(JSON.stringify(result)).not.toContain('"total":7');
+      expect(JSON.stringify(result)).not.toContain('"knownTotal":7');
     });
 
     it("narrows to the paid currencies asked for and scopes to the user", async () => {

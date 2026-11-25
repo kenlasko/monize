@@ -280,7 +280,10 @@ export interface FxFeeBucket {
   key: string;
   /** First day of the period, `YYYY-MM-DD`. */
   periodStart: string;
-  total: number;
+  /** The period's fees read once; null while a fee of it was left out. */
+  total: number | null;
+  /** The fees of the period that converted. */
+  knownTotal: number;
   count: number;
 }
 
@@ -293,10 +296,15 @@ export interface FxFeeBucket {
 export interface FxFeeTotals {
   /** The accounts' shared currency, else the reporting currency. */
   currency: string;
-  /** The fees that converted; a subtotal while `missingCurrencies` is non-empty. */
-  total: number;
+  /** Every fee read once; null while a fee was left out for want of a rate. */
+  total: number | null;
+  /** The fees that converted. */
+  knownTotal: number;
   count: number;
-  byGranularity: Record<FxFeeGranularity, { buckets: FxFeeBucket[]; periodAverage: number }>;
+  byGranularity: Record<
+    FxFeeGranularity,
+    { buckets: FxFeeBucket[]; periodAverage: number | null; knownPeriodAverage: number }
+  >;
   missingCurrencies: string[];
   excludedCount: number;
 }

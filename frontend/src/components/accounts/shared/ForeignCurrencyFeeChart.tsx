@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import type { FxFeeTotals, MonthlyTotal } from '@/types/transaction';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import type { ConvertedTotal } from '@/lib/currency-total';
 import {
   bucketMonthlyTotals,
   selectGranularity,
@@ -120,6 +121,7 @@ function FeeTooltip({
         </p>
         <p className={`text-lg font-semibold ${feeColorClass(data.total)}`}>
           {formatCurrency(data.total)}
+          {data.partial ? '*' : ''}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {t('chart.tooltip', { count: data.count })}
@@ -206,9 +208,11 @@ export function ForeignCurrencyFeeChart({
     const served = new Map(
       totals.byGranularity[granularity].buckets.map((bucket) => [bucket.key, bucket]),
     );
+    // A column the server withheld (a fee of it had no rate) draws its known
+    // part; `data` carries that month's null total, so it is laid out partial.
     return laidOut.map((bucket) => {
       const figure = served.get(bucket.key);
-      return { ...bucket, total: figure?.total ?? 0, count: figure?.count ?? 0 };
+      return { ...bucket, total: figure?.knownTotal ?? 0, count: figure?.count ?? 0 };
     });
   }, [data, granularity, totals]);
 
@@ -231,9 +235,9 @@ export function ForeignCurrencyFeeChart({
     if (chartData.length === 0) return null;
     if (totals) {
       return {
-        total: totals.total,
+        total: totals.knownTotal,
         totalCount: totals.count,
-        periodAvg: totals.byGranularity[granularity].periodAverage,
+        periodAvg: totals.byGranularity[granularity].knownPeriodAverage,
       };
     }
     const total = sumMoney(chartData.map((d) => d.total));
@@ -242,6 +246,16 @@ export function ForeignCurrencyFeeChart({
     const periodAvg = periodsElapsed > 0 ? total / periodsElapsed : 0;
     return { total, totalCount, periodAvg };
   }, [chartData, totals, granularity]);
+
+  // The server's total and averages are subtotals while a fee had no rate:
+  // each card carries the marker, never a bare figure.
+  const partialTotal: ConvertedTotal | null = totals
+    ? {
+        value: totals.knownTotal,
+        missingCurrencies: totals.missingCurrencies,
+        excludedCount: totals.excludedCount,
+      }
+    : null;
 
   // The same figures as the on-screen summary cards, drawn under the chart in
   // the exported PNG.
@@ -427,14 +441,20 @@ export function ForeignCurrencyFeeChart({
               {t(`chart.${AVG_LABEL_KEY[granularity]}`)}
             </div>
             <div className={`font-semibold ${feeColorClass(summary.periodAvg)}`}>
-              {formatFee(summary.periodAvg)}
+              {partialTotal ? (
+                <PartialTotal total={partialTotal} displayCurrency={currencyCode}>
+                  {formatFee(summary.periodAvg)}
+                </PartialTotal>
+              ) : (
+                formatFee(summary.periodAvg)
+              )}
             </div>
           </div>
           <div>
             <div className="text-sm text-gray-500 dark:text-gray-400">{t('chart.total')}</div>
             <div className={`font-semibold ${feeColorClass(summary.total)}`}>
-              {totals ? (
-                <PartialTotal total={{ value: totals.total, missingCurrencies: totals.missingCurrencies, excludedCount: totals.excludedCount }} displayCurrency={currencyCode}>
+              {partialTotal ? (
+                <PartialTotal total={partialTotal} displayCurrency={currencyCode}>
                   {formatFee(summary.total)}
                 </PartialTotal>
               ) : (
