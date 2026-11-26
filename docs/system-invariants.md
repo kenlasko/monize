@@ -9542,9 +9542,10 @@ Statement           No category row holds a category whose type is transfer.
                     one. A transfer row (a transfer leg, a split's transfer
                     line and the row it links, and their scheduled forms)
                     accepts a category of any type. A payee's default
-                    category, an asset account's asset category and a loan's
-                    interest and fee categories are never a Transfer
-                    category.
+                    category, an asset account's asset category, a payroll
+                    deduction rule's category and a loan's interest and fee
+                    categories are never a Transfer category, and are refused
+                    from the release that can first create one (PR 2).
 Source of truth     The category's type (categories.category_type, added in
                     PR 2) against the row's own kind: transactions.is_transfer,
                     transaction_splits.transfer_account_id, their scheduled
@@ -9553,7 +9554,8 @@ Source of truth     The category's type (categories.category_type, added in
 Enforcement         None today. Planned: one server fit helper called by every
                     path that writes a category (PR 3), a source scan that
                     fails a category write bypassing it, and a BEFORE row
-                    trigger locking the category FOR SHARE on transactions,
+                    trigger under an advisory lock per category owner on
+                    transactions,
                     transaction_splits, scheduled_transactions and
                     scheduled_transaction_splits, and an override's
                     category_id checked against its schedule, shipped with
@@ -9561,13 +9563,16 @@ Enforcement         None today. Planned: one server fit helper called by every
                     cost is measured in section 13.1). The override's split
                     JSON is held by the service and refused at the post at
                     the latest.
-Concurrency scope   category: a type change and a row write serialize on the
-                    category's row lock (specification section 12).
+Concurrency scope   category owner: every category write takes the owner's
+                    advisory lock shared and a type change takes it
+                    exclusive (specification section 12; the mechanism is the
+                    Q2 proposal asked on issue #2452).
 Retry semantics     A refused write wrote nothing, and a retry is refused
                     again.
 Crash semantics     -- (the check and the write share one transaction)
-Failure response    400 from the service; SQLSTATE 23514 from the backstop,
-                    answered as 400.
+Failure response    400 from the service; from the backstop, SQLSTATE 23514
+                    with constraint name category_fits_row, which alone is
+                    answered as 400 (every other 23514 stays a 500).
 Required tests      The entry-point integration matrix of specification
                     section 4; the backstop on each table; a two-connection
                     race of a type change against a row write.
@@ -9588,8 +9593,8 @@ Statement           A category write on a transfer sets both of its legs to
                     that category in one transaction, and a split's transfer
                     line together with the row it links. Across two owners it
                     sets the writer's leg only: a category belongs to one
-                    person. A request that resends a leg's stored category is
-                    not a write. Legs that differ before this work keep their
+                    person. A request whose category both legs already hold is
+                    not a write; one that differs from either leg's is. Legs that differ before this work keep their
                     values until the next category write.
 Source of truth     transactions.category_id on both legs (linked by
                     linked_transaction_id); transaction_splits.category_id and
@@ -9623,9 +9628,9 @@ split into a transfer. No constraint keeps the legs equal.
 
 ```text
 Statement           A category's type is income, expense or transfer and
-                    equals its parent's type. While categories.is_income
-                    exists (nullable today), it is true exactly when the type
-                    is income.
+                    equals its parent's type, for every category written from
+                    PR 2 on. While categories.is_income exists (nullable
+                    today), it is true exactly when the type is income.
 Source of truth     categories.category_type (PR 2), categories.parent_id.
 Enforcement         None in the database. Today only is_income exists, and
                     backend/src/categories/categories.service.ts gives a new
@@ -9648,6 +9653,13 @@ Required tests      Integration: the backfill makes income exactly the
                     write that sets is_income alone or moves a category.
 Status              unenforced
 ```
+
+The violation exists in today's data: a moved category is re-typed alone and
+its children keep their flag (`CategoriesService.update`), and the Money
+importer stores each category's own flag. The backfill keeps each child's own
+type, because re-typing it would move figures (no migration, decision 3), and
+the migration counts the mismatches (specification section 11). A mismatch
+lasts until the category or an ancestor is next moved or re-typed.
 
 ### INV-CATEGORY-004 -- an expense is a category of type expense
 

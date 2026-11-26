@@ -252,7 +252,7 @@ settled all three; the reasoning and the Q2 measurement are in
 | # | Question | Default | Settled in PR 1 |
 |---|---|---|---|
 | Q1 | Must a Transfer category live under one "Transfer" parent? | No. Type is a field; the default set for new users happens to sit under one parent | Confirmed |
-| Q2 | Is FIT also enforced in the database? | Yes, as a constraint trigger on the tables that hold a category for a category row, if its cost on bulk imports measures acceptably in PR 1; otherwise service-level only, with the guard and the matrix | Confirmed yes, as a `BEFORE` row trigger that locks the category `FOR SHARE` instead of a constraint trigger: about 2% of a chunked import's insert time and 8% of a single-row one, against 24% and 27% for a constraint trigger made safe against a concurrent type change. It ships with the type in PR 2 |
+| Q2 | Is FIT also enforced in the database? | Yes, as a constraint trigger on the tables that hold a category for a category row, if its cost on bulk imports measures acceptably in PR 1; otherwise service-level only, with the guard and the matrix | Replaced, proposed and asked on #2452: yes, in the database, as a `BEFORE` row trigger serialized against a type change by an advisory lock per category owner, instead of a constraint trigger, shipped with the type in PR 2 with the settings' refusals. Measured: a few percent of a chunked or single-row import's insert time for the `BEFORE` variants, against 24% and 27% for a constraint trigger made safe against a concurrent type change. The default stands until answered |
 | Q3 | How are people told? | A "What's new" entry and release notes | Confirmed |
 
 ## 13. Risks

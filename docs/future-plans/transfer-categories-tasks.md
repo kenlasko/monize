@@ -40,8 +40,8 @@ Done when the maintainer has approved it and every default in the plan's section
 
 Backend and frontend know the third type; nothing can use it on a row yet.
 
-- [ ] Schema: `category_type` column, check, backfill, the `is_income` mirror trigger; both split constraints relaxed; the FIT backstop triggers and the categories trigger (`docs/specs/transfer-categories.md` sections 11 and 13), with SQLSTATE 23514 answered as 400; `schema.sql`; entity; support-backup and undo column lists.
-- [ ] Category service and API: `type` in and out, derived `isIncome`, inheritance, type-change refusal, type filter, stats; a loan's interest and fee categories refuse a Transfer category; `list_categories` in the assistant and MCP.
+- [ ] Schema: `category_type` column, check, backfill from each category's own flag with a count of mismatched children, the categories trigger (type mirror, a child's type from its parent, the subtree cascade); both split constraints relaxed; the FIT backstop triggers under the category-owner advisory lock, raising `category_fits_row` (`docs/specs/transfer-categories.md` sections 11 to 13; the Q2 proposal asked on #2452); `schema.sql`; entity; support-backup and undo column lists, the category's history recording `type`.
+- [ ] Category service and API: `type` in and out, derived `isIncome`, inheritance, type-change refusal under the category-owner lock (and its entry in `docs/concurrency-and-idempotency.md` section 5), type filter, stats; `category_fits_row` answered as 400; a loan's interest and fee categories, a payee's default, an asset account's asset category and a payroll deduction rule refuse a Transfer category, and a stored one is skipped where applied; `list_categories` in the assistant and MCP.
 - [ ] Backend reader sweep: every `isIncome` read moves to a typed helper; the READ guard.
 - [ ] Frontend: types, typed helper and reader sweep; category form, list and detail.
 - [ ] Default Transfer set and its translations in the default import.
