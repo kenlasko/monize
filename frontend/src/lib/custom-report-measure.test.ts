@@ -18,8 +18,16 @@ describe('customReportMeasure', () => {
     expect(customReportMeasure(report(MetricType.NONE, DirectionFilter.BOTH, true))).toBe('netCashMovement');
   });
 
-  it('names a both-direction aggregate as unsigned category amounts', () => {
+  it.each(Object.values(GroupByType))('names the signed Both / Total Amount for %s', (groupBy) => {
+    expect(customReportMeasure(report(MetricType.TOTAL_AMOUNT, DirectionFilter.BOTH, false, groupBy), true)).toBe('netAmount');
+    expect(customReportMeasure(report(MetricType.TOTAL_AMOUNT, DirectionFilter.BOTH, true, groupBy), true)).toBe('netCashMovement');
+  });
+
+  it('keeps a legacy Both / Total Amount unsigned when the response has no signed-total marker', () => {
     expect(customReportMeasure(report(MetricType.TOTAL_AMOUNT, DirectionFilter.BOTH))).toBe('unsignedTotal');
+  });
+
+  it('keeps the Both / Average measure unsigned', () => {
     expect(customReportMeasure(report(MetricType.AVERAGE, DirectionFilter.BOTH))).toBe('unsignedAverage');
   });
 

@@ -60,15 +60,15 @@ interface ReportChartProps {
    * average metric it is a sum of means.
    */
   totalRowValue?: number;
+  /** A signed total counts the underlying postings once, even when tags overlap. */
+  totalRowCount?: number;
   /** Set when the headline is a subtotal, so the Total row is marked as one. */
   partialTotal?: ConvertedTotal | null;
   /** The Total row's caption when "Total" alone would not say what it sums. */
   totalLabel?: string;
   /**
-   * The rows keep their signs (a list of transactions in both directions), so
-   * a share of the net total means nothing: the % column, if chosen, is left
-   * blank, the tooltip shows no share, and a pie slice is sized by the row's
-   * magnitude.
+   * For a signed net measure, leave shares blank in every view and size pie
+   * slices by magnitude. Labels and tooltips keep the signed amount.
    */
   signed?: boolean;
 }
@@ -136,7 +136,7 @@ function ReportChartTooltip({ active, payload, shareOf, formatCurrency, formatPe
   return null;
 }
 
-export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, partialTotal, totalLabel = 'Total', signed = false }: ReportChartProps) {
+export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, totalRowCount, partialTotal, totalLabel = 'Total', signed = false }: ReportChartProps) {
   const t = useTranslations('reports');
   const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
   const { cellFor } = usePartialTotalNote();
@@ -172,6 +172,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     item.value === null ? null : (item.percentage ?? null);
   // The Total row's 100% only over rows that carry a share.
   const showsShares = !signed && chartData.some((item) => shareOf(item) !== null);
+  const totalCount = totalRowCount ?? (chartData.reduce((sum, item) => sum + (item.count ?? 0), 0) || null);
   const formatValue = (value: number) =>
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // The Total row prints the headline the server settled for the metric (a mean
@@ -227,9 +228,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
         return columnMap[col]?.getValue(item) ?? '';
       }),
     );
-    // The same Total row as the PDF: the metric-aware headline (raw number, marked
-    // when it is a subtotal), 100% and the summed count.
-    const totalCount = chartData.reduce((sum, item) => sum + (item.count || 0), 0);
+    // CSV keeps the same headline, share and count as the table and PDF.
     const totalRow = csvColumns.map((col) => {
       if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return totalLabel;
       if (col === TableColumn.VALUE) {
@@ -237,7 +236,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
         return partialTotal ? cellFor(String(totalRowValue), partialTotal) : totalRowValue;
       }
       if (col === TableColumn.PERCENTAGE) return showsShares ? 100 : '';
-      if (col === TableColumn.COUNT) return totalCount || '';
+      if (col === TableColumn.COUNT) return totalCount ?? '';
       return '';
     });
     exportToCsv(exportFilename || 'report', headers, [...rows, totalRow]);
@@ -260,12 +259,11 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       return value;
     };
     const rows = chartData.map((item) => columns.map((col) => pdfCell(col, item)));
-    const totalCount = chartData.reduce((sum, item) => sum + (item.count || 0), 0);
     const totalRow = columns.map((col) => {
       if (col === TableColumn.LABEL || (col === TableColumn.DATE && !columns.includes(TableColumn.LABEL))) return totalLabel;
       if (col === TableColumn.VALUE) return totalCell();
       if (col === TableColumn.PERCENTAGE) return showsShares ? formatPercent(100, 1) : '';
-      if (col === TableColumn.COUNT) return totalCount ? formatNumber(totalCount, 0) : '';
+      if (col === TableColumn.COUNT) return totalCount === null ? '' : formatNumber(totalCount, 0);
       return '';
     });
     await exportToPdf({
@@ -395,8 +393,6 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
 
     case ReportViewType.TABLE:
     default: {
-      const totalCount = chartData.reduce((sum, item) => sum + (item.count || 0), 0);
-
       return (
         <div className="overflow-x-auto">
           {exportBar}
@@ -600,7 +596,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                 )}
                 {columns.includes(TableColumn.COUNT) && (
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                    {totalCount || '-'}
+                    {totalCount ?? '-'}
                   </td>
                 )}
                 {columns.includes(TableColumn.TAG) && (

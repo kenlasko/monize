@@ -1,5 +1,5 @@
 import { Transaction } from "../transactions/entities/transaction.entity";
-import { DirectionFilter } from "./entities/custom-report.entity";
+import { DirectionFilter, MetricType } from "./entities/custom-report.entity";
 import { createNetCells, netLinesOf } from "./report-net-cells";
 
 const tx = (overrides: Record<string, unknown>): Transaction =>
@@ -97,7 +97,10 @@ describe("NetCells", () => {
   });
 
   it("nets a refund inside one category for EXPENSES_ONLY", () => {
-    const cells = createNetCells(DirectionFilter.EXPENSES_ONLY, false);
+    const cells = createNetCells(
+      DirectionFilter.EXPENSES_ONLY,
+      MetricType.TOTAL_AMOUNT,
+    );
     cells.add("g", line("food", "a"), -100);
     cells.add("g", line("food", "b"), 30);
     cells.add("g", line("pay", "c"), 5000);
@@ -107,41 +110,61 @@ describe("NetCells", () => {
   });
 
   it("drops a group whose categories net to income or zero", () => {
-    const cells = createNetCells(DirectionFilter.EXPENSES_ONLY, false);
+    const cells = createNetCells(
+      DirectionFilter.EXPENSES_ONLY,
+      MetricType.TOTAL_AMOUNT,
+    );
     cells.add("g", line("food", "a"), -30);
     cells.add("g", line("food", "b"), 30);
     expect(cells.settle().has("g")).toBe(false);
   });
 
   it("keeps only positive nets for INCOME_ONLY", () => {
-    const cells = createNetCells(DirectionFilter.INCOME_ONLY, false);
+    const cells = createNetCells(
+      DirectionFilter.INCOME_ONLY,
+      MetricType.TOTAL_AMOUNT,
+    );
     cells.add("g", line("pay", "a"), 100);
     cells.add("g", line("pay", "b"), -30);
     cells.add("g", line("food", "c"), -50);
     expect(cells.settle().get("g")!.agg.knownSubtotal).toBe(70);
   });
 
-  it("sums the magnitude of each category's net for BOTH", () => {
-    const cells = createNetCells(DirectionFilter.BOTH, false);
-    cells.add("g", line("food", "a"), -100);
-    cells.add("g", line("food", "b"), 30);
-    cells.add("g", line("pay", "c"), 5000);
-    expect(cells.settle().get("g")!.agg.knownSubtotal).toBe(5070);
-  });
+  it.each([
+    [MetricType.TOTAL_AMOUNT, 4930],
+    [MetricType.AVERAGE, 5070],
+    [MetricType.NONE, 5070],
+    [MetricType.BUDGET_VARIANCE, 5070],
+  ])(
+    "settles Both %s with the sign convention for the metric",
+    (metric, sum) => {
+      const cells = createNetCells(DirectionFilter.BOTH, metric);
+      cells.add("g", line("food", "a"), -100);
+      cells.add("g", line("food", "b"), 30);
+      cells.add("g", line("pay", "c"), 5000);
+      expect(cells.settle().get("g")!.agg.knownSubtotal).toBe(sum);
+    },
+  );
 
   it("counts a unit once however many lines it adds", () => {
-    const cells = createNetCells(DirectionFilter.EXPENSES_ONLY, false);
+    const cells = createNetCells(
+      DirectionFilter.EXPENSES_ONLY,
+      MetricType.TOTAL_AMOUNT,
+    );
     cells.add("g", line("a", "tx"), -10);
     cells.add("g", line("b", "tx"), -10);
     expect(cells.settle().get("g")!.count).toBe(1);
   });
 
   it("leaves an unconverted line out unless the metric keeps it", () => {
-    const money = createNetCells(DirectionFilter.EXPENSES_ONLY, false);
+    const money = createNetCells(
+      DirectionFilter.EXPENSES_ONLY,
+      MetricType.TOTAL_AMOUNT,
+    );
     money.add("g", line("a", "x"), null);
     expect(money.settle().size).toBe(0);
 
-    const count = createNetCells(DirectionFilter.BOTH, true);
+    const count = createNetCells(DirectionFilter.BOTH, MetricType.COUNT);
     count.add("g", line("a", "x"), null);
     expect(count.settle().get("g")!.count).toBe(1);
   });
@@ -150,7 +173,7 @@ describe("NetCells", () => {
     const leftOut: string[] = [];
     const cells = createNetCells(
       DirectionFilter.EXPENSES_ONLY,
-      false,
+      MetricType.TOTAL_AMOUNT,
       (currency, unit) => leftOut.push(`${currency}:${unit}`),
     );
     // Food in USD: a -100 debit that converted and a +30 refund struck on a
@@ -171,7 +194,7 @@ describe("NetCells", () => {
     const leftOut: string[] = [];
     const cells = createNetCells(
       DirectionFilter.EXPENSES_ONLY,
-      false,
+      MetricType.TOTAL_AMOUNT,
       (currency, unit) => leftOut.push(`${currency}:${unit}`),
     );
     // Row "a" sits under two tags: tag A also holds "b", which has no rate,
@@ -237,7 +260,7 @@ describe("NetCells", () => {
   });
 
   it("keeps a whole part's lines for the count metric", () => {
-    const cells = createNetCells(DirectionFilter.BOTH, true);
+    const cells = createNetCells(DirectionFilter.BOTH, MetricType.COUNT);
     cells.add("g", line("food", "a", 0, "USD"), -125);
     cells.add("g", line("food", "b", 0, "USD"), null);
     expect(cells.settle().get("g")!.count).toBe(2);

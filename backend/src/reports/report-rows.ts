@@ -2,6 +2,7 @@ import { FxAggregate } from "../common/fx-aggregate";
 import { reportFigure } from "../common/report-figure";
 import { roundMoney } from "../common/round.util";
 import { MetricType } from "./entities/custom-report.entity";
+import type { NetGroup } from "./report-net-cells";
 import type {
   AggregatedDataPoint,
   ReportSummary,
@@ -77,21 +78,26 @@ export function metricValue(
  * count metric's mean is a ratio of counts, not money, and keeps four places.
  * The provisional count is the report's own (`ReportsService`), read off the
  * rows it converted rather than off these figures.
+ * For overlapping groups, `uniquePopulation` supplies the unduplicated signed
+ * total and its count. The group rows themselves can count one line repeatedly.
  */
 export function summarizeRows(
   rows: readonly ReportRow[],
   metric: MetricType,
   complete: boolean,
   places: number,
+  uniquePopulation?: NetGroup,
 ): Omit<ReportSummary, "provisionalCount"> {
-  const count = rows.reduce((acc, row) => acc + (row.point.count ?? 1), 0);
+  const count =
+    uniquePopulation?.count ??
+    rows.reduce((acc, row) => acc + (row.point.count ?? 1), 0);
   let knownTotal: number;
   let mean: number;
   if (metric === MetricType.COUNT) {
     knownTotal = rows.reduce((acc, row) => acc + (row.point.value ?? 0), 0);
     mean = count > 0 ? roundMoney(knownTotal / count) : 0;
   } else {
-    const sum = mergedSum(rows);
+    const sum = uniquePopulation?.agg ?? mergedSum(rows);
     mean = count > 0 ? reportFigure(sum.unroundedSubtotal / count, places) : 0;
     knownTotal =
       metric === MetricType.AVERAGE ? mean : sum.knownSubtotalAt(places);

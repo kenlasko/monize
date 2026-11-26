@@ -9,6 +9,8 @@ import {
   MetricType,
   ReportViewType,
   TimeframeType,
+  SortDirection,
+  TableColumn,
 } from "@/reports/entities/custom-report.entity";
 import {
   Transaction,
@@ -115,13 +117,15 @@ describe("custom report: signed category sums and escaped search (integration)",
     );
   }
 
-  async function run(overrides: {
+  async function saveReport(overrides: {
     groupBy?: GroupByType;
     direction?: DirectionFilter;
     metric?: MetricType;
     filters?: CustomReport["filters"];
+    sortBy?: TableColumn;
+    sortDirection?: SortDirection;
   }) {
-    const report = await dataSource.manager.save(
+    return dataSource.manager.save(
       dataSource.manager.create(CustomReport, {
         userId,
         name: "Report",
@@ -135,9 +139,15 @@ describe("custom report: signed category sums and escaped search (integration)",
           direction: overrides.direction ?? DirectionFilter.EXPENSES_ONLY,
           customStartDate: START,
           customEndDate: END,
+          sortBy: overrides.sortBy,
+          sortDirection: overrides.sortDirection,
         },
       } as Partial<CustomReport>),
     );
+  }
+
+  async function run(overrides: Parameters<typeof saveReport>[0]) {
+    const report = await saveReport(overrides);
     return withUserContext(userId, () => reports.execute(userId, report.id));
   }
 
@@ -162,15 +172,95 @@ describe("custom report: signed category sums and escaped search (integration)",
     expect(result.summary.total).toBe(70);
   });
 
-  it("nets a refund within its category when both directions are shown", async () => {
+  it("reopens an existing Both / Total Amount configuration as a signed net", async () => {
     await insertGroceriesWithRefund();
+    // This is the pre-change saved shape; there is no version field or re-save.
+    const saved = await saveReport({
+      direction: DirectionFilter.BOTH,
+      sortBy: TableColumn.VALUE,
+      sortDirection: SortDirection.ASC,
+    });
+    for (let read = 0; read < 2; read++) {
+      const result = await withUserContext(userId, () =>
+        reports.execute(userId, saved.id),
+      );
+      expect(result.data.map(({ id, value }) => [id, value])).toEqual([
+        [groceriesId, -70],
+        [salaryId, 5000],
+      ]);
+      expect(result.summary.total).toBe(4930);
+    }
+    expect(
+      (await dataSource.manager.findOneByOrFail(CustomReport, { id: saved.id }))
+        .config,
+    ).toEqual(saved.config);
+  });
 
-    const result = await run({ direction: DirectionFilter.BOTH });
+  it.each([
+    { amounts: [-700], expected: -700 },
+    { amounts: [-100, 150], expected: 50 },
+    { amounts: [100, -150], expected: -50 },
+  ])(
+    "totals the signed movements $amounts as $expected",
+    async ({ amounts, expected }) => {
+      const categoryId = amounts[0] > 0 ? salaryId : groceriesId;
+      for (const amount of amounts)
+        await insertTransaction({ categoryId, amount });
+      for (const groupBy of [
+        GroupByType.NONE,
+        GroupByType.CATEGORY,
+        GroupByType.MONTH,
+      ]) {
+        const result = await run({ groupBy, direction: DirectionFilter.BOTH });
+        expect(result.summary.total).toBe(expected);
+        expect(result.data[0].value).toBe(expected);
+      }
+    },
+  );
 
-    const groceries = result.data.find((d) => d.id === groceriesId);
-    expect(groceries?.value).toBe(70);
-    const salary = result.data.find((d) => d.id === salaryId);
-    expect(salary?.value).toBe(5000);
+  it("keeps both transactions and their signed months visible when a complete refund nets to zero", async () => {
+    const debit = await insertTransaction({
+      categoryId: groceriesId,
+      amount: -100,
+    });
+    const credit = await insertTransaction({
+      categoryId: groceriesId,
+      amount: 100,
+      transactionDate: "2026-04-10",
+    });
+    const execute = async (
+      groupBy: GroupByType,
+      metric = MetricType.TOTAL_AMOUNT,
+    ) => {
+      const report = await saveReport({
+        groupBy,
+        direction: DirectionFilter.BOTH,
+        metric,
+      });
+      return withUserContext(userId, () =>
+        reports.execute(userId, report.id, {
+          timeframeType: TimeframeType.CUSTOM,
+          startDate: START,
+          endDate: "2026-04-30",
+        }),
+      );
+    };
+    const listed = await execute(GroupByType.NONE, MetricType.NONE);
+    expect(listed.data.map(({ id, value }) => [id, value])).toEqual([
+      [debit.id, -100],
+      [credit.id, 100],
+    ]);
+    const category = await execute(GroupByType.CATEGORY);
+    expect(category.data).toEqual([
+      expect.objectContaining({ id: groceriesId, value: 0, count: 2 }),
+    ]);
+    const months = await execute(GroupByType.MONTH);
+    expect(months.data.map(({ id, value }) => [id, value])).toEqual([
+      ["2026-03", -100],
+      ["2026-04", 100],
+    ]);
+    for (const result of [listed, category, months])
+      expect(result.summary.total).toBe(0);
   });
 
   // Discussion #1978: one chronological list of both directions, each row

@@ -170,7 +170,7 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
     );
   }
 
-  async function run(accountId: string) {
+  async function run(accountId?: string, metric = MetricType.NONE) {
     const report = await dataSource.manager.save(
       dataSource.manager.create(CustomReport, {
         userId,
@@ -178,9 +178,9 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
         viewType: ReportViewType.TABLE,
         timeframeType: TimeframeType.CUSTOM,
         groupBy: GroupByType.NONE,
-        filters: { accountIds: [accountId] },
+        filters: accountId ? { accountIds: [accountId] } : {},
         config: {
-          metric: MetricType.NONE,
+          metric,
           includeTransfers: true,
           direction: DirectionFilter.BOTH,
           customStartDate: START,
@@ -190,6 +190,29 @@ describe("custom report: a transfer leg converts at the amounts moved (integrati
     );
     return withUserContext(userId, () => reports.execute(userId, report.id));
   }
+
+  it("nets both linked legs and preserves the sign of either selected account under Total Amount", async () => {
+    await preferring("USD");
+    await insertPlainTransfer();
+    // The actual transfer exchanged 100 USD for 90 EUR. Both legs are worth
+    // 100 USD, including when the counterpart is outside the account filter.
+    for (const [accountId, expected, count] of [
+      [undefined, 0, 2],
+      [usdId, -100, 1],
+      [eurId, 100, 1],
+    ] as const) {
+      const result = await run(accountId, MetricType.TOTAL_AMOUNT);
+      expect(result.summary).toMatchObject({
+        total: expected,
+        knownTotal: expected,
+        count,
+      });
+      expect(result.data).toEqual([
+        expect.objectContaining({ value: expected, count }),
+      ]);
+      expect(result.excludedCount).toBe(0);
+    }
+  });
 
   it("reads the outgoing leg alone in EUR at what arrived", async () => {
     await preferring("EUR");

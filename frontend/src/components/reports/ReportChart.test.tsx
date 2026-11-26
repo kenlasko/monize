@@ -32,8 +32,8 @@ vi.mock('recharts', () => ({
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
-  Pie: ({ onClick, data }: any) => (
-    <div data-testid="pie">
+  Pie: ({ onClick, data, dataKey }: any) => (
+    <div data-testid="pie" data-sizes={data.map((row: Record<string, number>) => row[dataKey]).join(',')}>
       <button data-testid="pie-click-with-id" onClick={() => onClick && onClick(data[0])}>click-id</button>
       <button data-testid="pie-click-no-id" onClick={() => onClick && onClick({ value: 1 })}>click-no-id</button>
     </div>
@@ -641,6 +641,55 @@ describe('ReportChart', () => {
       const { tableData } = (exportToPdf as any).mock.calls[0][0];
       expect(tableData.rows[1]).toEqual(['Rent', '$-300.00', '', '1']);
       expect(tableData.totalRow).toEqual(['Net amount', '$700.00', '', '2']);
+    });
+
+    it('sizes signed pie slices by magnitude and shows the signed amount on hover', () => {
+      tooltipItems.current = signedData;
+      render(<ReportChart viewType={ReportViewType.PIE_CHART} data={signedData} groupBy={GroupByType.CATEGORY} signed />);
+
+      expect(screen.getByTestId('pie')).toHaveAttribute('data-sizes', '1000,300');
+      expect(screen.getByTestId('tooltip')).toHaveTextContent('$-300.00');
+    });
+
+    it('uses the unique posting count and net total for overlapping tags in the table, CSV and PDF', async () => {
+      const { exportToCsv } = await import('@/lib/csv-export');
+      const { exportToPdf } = await import('@/lib/pdf-export');
+      // A -50 expense has both tags. Its +30 refund has only the Travel tag.
+      const data = [
+        { label: 'Travel', value: -20, count: 2 },
+        { label: 'Summer', value: -50, count: 1 },
+      ];
+      const { container } = render(
+        <ReportChart
+          viewType={ReportViewType.TABLE}
+          data={data}
+          groupBy={GroupByType.TAG}
+          metric={MetricType.TOTAL_AMOUNT}
+          tableColumns={columns}
+          totalRowValue={-20}
+          totalRowCount={2}
+          totalLabel="Net amount"
+          signed
+        />
+      );
+
+      expect(Array.from(container.querySelectorAll('tfoot td'), cell => cell.textContent)).toEqual([
+        'Net amount', '$-20.00', '', '2',
+      ]);
+
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+      expect(vi.mocked(exportToCsv).mock.lastCall?.[2]).toEqual([
+        ['Travel', -20, '', 2],
+        ['Summer', -50, '', 1],
+        ['Net amount', -20, '', 2],
+      ]);
+
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+      await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
+      expect(vi.mocked(exportToPdf).mock.lastCall?.[0].tableData?.totalRow).toEqual([
+        'Net amount', '$-20.00', '', '2',
+      ]);
     });
 
     it('leaves the share out of the chart tooltip', () => {

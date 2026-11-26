@@ -29,7 +29,7 @@ import { PartialTotal } from '@/components/ui/PartialTotal';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
-import { customReportMeasure, isSignedTransactionList } from '@/lib/custom-report-measure';
+import { customReportMeasure } from '@/lib/custom-report-measure';
 import { customReportDrillDownHref } from '@/lib/custom-report-links';
 import { CARD_CLASS } from '@/components/ui/Card';
 
@@ -165,7 +165,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
         ...item,
         color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
       }))
-      .filter((item) => item.value !== null);
+      .filter((item): item is typeof item & { value: number } => item.value !== null);
   }, [result]);
 
   // The headline, per metric: a count is a number, every other metric money. A
@@ -175,7 +175,12 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // A plain "Total" does not say whether a both-direction figure is a signed
   // net or a sum of unsigned category amounts, so the headline names it.
-  const measure = report ? customReportMeasure(report) : null;
+  const measure = report ? customReportMeasure(report, result?.signedTotal) : null;
+  const signed = measure === 'netAmount' || measure === 'netCashMovement';
+  const signedTotal = signed && metric === MetricType.TOTAL_AMOUNT;
+  // A pie encodes only magnitudes, and a zero has no slice to hover or select.
+  const signedPie = signedTotal && result?.viewType === ReportViewType.PIE_CHART;
+  const legendRows = signedPie ? legendData : legendData.slice(0, 15);
   const measureLabel = measure ? t(`customReportViewer.measure.${measure}`) : null;
   const summaryTotal: ConvertedTotal | null = result
     ? (() => {
@@ -356,9 +361,10 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               tableColumns={result.tableColumns}
               metric={metric}
               totalRowValue={summaryTotal?.value}
+              totalRowCount={signedTotal ? result.summary.count : undefined}
               partialTotal={partialTotal}
               totalLabel={measureLabel ?? undefined}
-              signed={isSignedTransactionList(report)}
+              signed={signed}
               reportTitle={report.name}
               exportFilename={report.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}
             />
@@ -373,7 +379,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
             legendData.length > 0 && (
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                  {legendData.slice(0, 15).map((item, index) => (
+                  {legendRows.map((item, index) => (
                     <button
                       key={index}
                       onClick={() => item.id && handleDataPointClick(item.id)}
@@ -385,7 +391,8 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
                       />
                       <span className="text-gray-600 dark:text-gray-400 truncate">
                         {item.label}
-                      </span>
+                      </span>{' '}
+                      {signedPie && <span className="shrink-0 tabular-nums">{formatValue(item.value)}</span>}
                     </button>
                   ))}
                 </div>
