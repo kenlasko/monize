@@ -278,7 +278,8 @@
         "interestCategory": "Kategoria odsetek (opcjonalnie)",
         "interestCategoryPlaceholder": "Własna kategoria odsetek kredytu",
         "autoPostTitle": "Zaplanowana płatność kredytu księguje się sama",
-        "autoPostBody": "Automatyczne księgowanie jest włączone dla zaplanowanej płatności tego kredytu, więc ono i obciążenie bankowe rozliczane przez tę regułę zapłaciłyby tę samą ratę. Wyłącz automatyczne księgowanie zaplanowanej płatności."
+        "autoPostBody": "Automatyczne księgowanie jest włączone dla zaplanowanej płatności tego kredytu, więc ono i obciążenie bankowe rozliczane przez tę regułę zapłaciłyby tę samą ratę. Wyłącz automatyczne księgowanie zaplanowanej płatności.",
+        "autoPostBodyOccurrence": "Nadchodząca rata zaplanowanej płatności tego kredytu jest ustawiona na automatyczne księgowanie, więc ona i obciążenie bankowe rozliczane przez tę regułę mogą ją obie zapłacić. Wyłącz automatyczne księgowanie tej raty w oknie Edytuj wystąpienie."
       }
     },
     "actionTypes": {

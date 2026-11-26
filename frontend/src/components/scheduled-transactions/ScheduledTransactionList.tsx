@@ -246,7 +246,9 @@ function ScheduledAutoMarker({
       </span>
     );
   }
-  return transaction.autoPost ? (
+  // The schedule's own setting as the cron reads it: an estimated schedule
+  // never auto-posts, whatever a legacy `auto_post` says.
+  return scheduleAutoPosts ? (
     <Badge variant="green" className={badgePadding}>
       {t('list.autoPostBadge')}
     </Badge>

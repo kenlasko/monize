@@ -158,7 +158,6 @@ import {
 } from "./custom-recurrence-write";
 import { tr } from "../i18n/translate";
 import {
-  assertOverrideAutoPostAllowed,
   OCCURRENCE_AUTO_POSTS_SQL,
   occurrenceAutoPosts,
 } from "./occurrence-auto-post";
@@ -221,8 +220,14 @@ export interface LlmScheduledItem {
   nextDueDate: string;
   daysUntilDue: number;
   isActive: boolean;
-  /** This occurrence is posted automatically once due (`occurrenceAutoPosts`). */
+  /** The schedule's own auto-post setting. */
   autoPost: boolean;
+  /**
+   * Whether the auto-post cron will post THIS occurrence (`occurrenceAutoPosts`):
+   * differs from `autoPost` when the occurrence opted in or out on its own, or
+   * the schedule is inactive or estimated.
+   */
+  occurrenceAutoPosts: boolean;
   kind: LlmScheduledKind;
   description: string | null;
 }
@@ -2312,6 +2317,36 @@ export class ScheduledTransactionsService {
     }
 
     return scheduled;
+  }
+
+  /**
+   * `findOne` for the client, plus whether anything about this schedule will
+   * post itself: the schedule's own `auto_post`, or an upcoming occurrence
+   * whose override opts in (`auto_post = true` on a slot at or after
+   * `next_due_date`). A loan bill with a payment-matching rule warns on it,
+   * since the bill and the matched bank debit would both pay that
+   * installment.
+   */
+  async findOneForClient(
+    userId: string,
+    id: string,
+  ): Promise<ScheduledTransaction & { anyOccurrenceAutoPosts: boolean }> {
+    const scheduled = await this.findOne(userId, id);
+    const optedIn = await withScopedDb(this.dataSource, (m) =>
+      m
+        .getRepository(ScheduledTransactionOverride)
+        .createQueryBuilder("o")
+        .where("o.scheduledTransactionId = :id", { id })
+        .andWhere("o.originalDate >= :next", {
+          next: ensureYMD(scheduled.nextDueDate),
+        })
+        .andWhere("o.autoPost = :on", { on: true })
+        .getCount(),
+    );
+    return {
+      ...scheduled,
+      anyOccurrenceAutoPosts: scheduled.autoPost || optedIn > 0,
+    };
   }
 
   /**
@@ -5377,7 +5412,6 @@ export class ScheduledTransactionsService {
       this.buildSplitProvenanceSource(scheduled.splits ?? []),
       createDto.splits,
     );
-    assertOverrideAutoPostAllowed(scheduled, createDto);
     return this.overrideService.createOverride(
       scheduledTransactionId,
       createDto,
@@ -5443,17 +5477,6 @@ export class ScheduledTransactionsService {
       this.buildOverrideProvenanceSource(existing.splits),
       updateDto.splits,
     );
-    // Judged on the override as this update leaves it.
-    assertOverrideAutoPostAllowed(scheduled, {
-      autoPost:
-        updateDto.autoPost !== undefined
-          ? updateDto.autoPost
-          : existing.autoPost,
-      amount:
-        updateDto.amount !== undefined ? updateDto.amount : existing.amount,
-      isSplit:
-        updateDto.isSplit !== undefined ? updateDto.isSplit : existing.isSplit,
-    });
     return this.overrideService.updateOverride(
       scheduledTransactionId,
       overrideId,
@@ -5585,9 +5608,8 @@ function toLlmScheduledItem(
     nextDueDate: occurrence.dueDate,
     daysUntilDue: daysBetweenYMD(todayYMDStr, occurrence.dueDate),
     isActive: row.isActive,
-    // This occurrence's own answer: an occurrence opted in or out of the
-    // schedule's setting is reported as what the cron will do with it.
-    autoPost: occurrence.autoPosts,
+    autoPost: row.autoPost,
+    occurrenceAutoPosts: occurrence.autoPosts,
     kind: classifyScheduledKind(occurrence),
     description: row.description ?? null,
   };

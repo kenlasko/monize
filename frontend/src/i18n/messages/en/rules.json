@@ -278,7 +278,8 @@
         "interestCategory": "Interest category (optional)",
         "interestCategoryPlaceholder": "The loan's own interest category",
         "autoPostTitle": "The loan's scheduled payment posts itself",
-        "autoPostBody": "Automatic posting is on for this loan's scheduled payment, so it and the bank debit this rule settles would both pay the same installment. Turn off automatic posting on the scheduled payment."
+        "autoPostBody": "Automatic posting is on for this loan's scheduled payment, so it and the bank debit this rule settles would both pay the same installment. Turn off automatic posting on the scheduled payment.",
+        "autoPostBodyOccurrence": "An upcoming installment of this loan's scheduled payment is set to post itself, so it and the bank debit this rule settles could both pay it. Turn off automatic posting for that installment in Edit Occurrence."
       }
     },
     "actionTypes": {

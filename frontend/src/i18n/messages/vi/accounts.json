@@ -695,7 +695,8 @@
       "retry": "Thử lại",
       "autoPost": {
         "title": "Khoản thanh toán định kỳ vẫn tự đăng",
-        "body": "Tự động đăng đang bật cho hóa đơn của khoản vay này, vì vậy một kỳ trả góp mà quy tắc tất toán từ khoản ghi nợ của ngân hàng cũng sẽ bị hóa đơn đăng thêm. Hãy tắt tự động đăng cho hóa đơn trong Hóa đơn & Tiền gửi."
+        "body": "Tự động đăng đang bật cho hóa đơn của khoản vay này, vì vậy một kỳ trả góp mà quy tắc tất toán từ khoản ghi nợ của ngân hàng cũng sẽ bị hóa đơn đăng thêm. Hãy tắt tự động đăng cho hóa đơn trong Hóa đơn & Tiền gửi.",
+        "bodyOccurrence": "Một kỳ trả góp sắp tới của hóa đơn khoản vay này được đặt tự đăng, vì vậy hóa đơn và khoản ghi nợ ngân hàng mà quy tắc tất toán đều có thể trả kỳ đó. Hãy tắt tự động đăng cho kỳ đó trong Chỉnh sửa lần xuất hiện, ở Hóa đơn & Tiền gửi."
       },
       "preconditions": {
         "openingBalance": "Số dư đầu kỳ của khoản vay phải là số nợ tại thời điểm bắt đầu phần lịch sử được xử lý; lãi của mọi kỳ trả góp đều được tính dựa trên số dư này.",

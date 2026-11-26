@@ -526,6 +526,18 @@ describe('ScheduledTransactionList', () => {
     expect(screen.queryByText('Next off')).not.toBeInTheDocument();
   });
 
+  it('shows no auto-post chip for an estimated bill, whatever its legacy flag says', () => {
+    render(
+      <ScheduledTransactionList
+        transactions={[
+          createTransaction({ autoPost: true, amountIsEstimated: true, nextOccurrenceAutoPosts: false }),
+        ]}
+      />,
+    );
+    expect(screen.queryByText('On')).not.toBeInTheDocument();
+    expect(screen.queryByText('Next off')).not.toBeInTheDocument();
+  });
+
   it("shows an inactive bill's own setting, not a next-occurrence marker", () => {
     render(
       <ScheduledTransactionList

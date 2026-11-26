@@ -32,6 +32,7 @@ describe("ScheduledTransactionsController", () => {
       findUpcoming: jest.fn(),
       findEffectiveOccurrences: jest.fn(),
       findOne: jest.fn(),
+      findOneForClient: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
       post: jest.fn(),
@@ -317,14 +318,21 @@ describe("ScheduledTransactionsController", () => {
   });
 
   describe("findOne()", () => {
-    it("delegates to service.findOne with userId and id", async () => {
-      const expected = { id: "st-1", payeeId: "p1" };
-      mockService.findOne.mockResolvedValue(expected);
+    it("delegates to service.findOneForClient with userId and id", async () => {
+      const expected = {
+        id: "st-1",
+        payeeId: "p1",
+        anyOccurrenceAutoPosts: false,
+      };
+      mockService.findOneForClient.mockResolvedValue(expected);
 
       const result = await controller.findOne(mockReq, "st-1");
 
       expect(result).toEqual(expected);
-      expect(mockService.findOne).toHaveBeenCalledWith("user-1", "st-1");
+      expect(mockService.findOneForClient).toHaveBeenCalledWith(
+        "user-1",
+        "st-1",
+      );
     });
   });
 

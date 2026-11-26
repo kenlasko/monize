@@ -278,7 +278,8 @@
         "interestCategory": "Categoria de juros (opcional)",
         "interestCategoryPlaceholder": "A categoria de juros do próprio empréstimo",
         "autoPostTitle": "O pagamento agendado do empréstimo se registra automaticamente",
-        "autoPostBody": "O registro automático está ativado para o pagamento agendado deste empréstimo, então ele e o débito bancário que esta regra liquida pagariam a mesma parcela. Desative o registro automático do pagamento agendado."
+        "autoPostBody": "O registro automático está ativado para o pagamento agendado deste empréstimo, então ele e o débito bancário que esta regra liquida pagariam a mesma parcela. Desative o registro automático do pagamento agendado.",
+        "autoPostBodyOccurrence": "Uma parcela próxima do pagamento agendado deste empréstimo está configurada para se lançar sozinha, então ela e o débito bancário que esta regra liquida poderiam pagá-la. Desative o registro automático dessa parcela em Editar Ocorrência."
       }
     },
     "actionTypes": {

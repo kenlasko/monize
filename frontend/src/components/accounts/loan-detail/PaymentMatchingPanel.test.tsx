@@ -206,6 +206,13 @@ describe('PaymentMatchingPanel', () => {
     expect(screen.getByText('The scheduled payment still posts itself')).toBeInTheDocument();
   });
 
+  it('warns, naming the installment, when only an upcoming installment posts itself', async () => {
+    mockGetSchedule.mockResolvedValue({ ...SCHEDULE, autoPost: false, anyOccurrenceAutoPosts: true });
+    await renderPanel();
+    expect(screen.getByText('The scheduled payment still posts itself')).toBeInTheDocument();
+    expect(screen.getByText(/An upcoming installment of this loan's bill is set to post itself/)).toBeInTheDocument();
+  });
+
   it('does not warn when the bill does not post itself', async () => {
     await renderPanel();
     expect(screen.queryByText('The scheduled payment still posts itself')).not.toBeInTheDocument();

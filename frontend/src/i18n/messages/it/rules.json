@@ -278,7 +278,8 @@
         "interestCategory": "Categoria interessi (facoltativa)",
         "interestCategoryPlaceholder": "La categoria interessi propria del prestito",
         "autoPostTitle": "Il pagamento programmato del prestito si registra da solo",
-        "autoPostBody": "La registrazione automatica è attiva per il pagamento programmato di questo prestito, quindi esso e l'addebito bancario che questa regola salda pagherebbero entrambi la stessa rata. Disattiva la registrazione automatica del pagamento programmato."
+        "autoPostBody": "La registrazione automatica è attiva per il pagamento programmato di questo prestito, quindi esso e l'addebito bancario che questa regola salda pagherebbero entrambi la stessa rata. Disattiva la registrazione automatica del pagamento programmato.",
+        "autoPostBodyOccurrence": "Una rata imminente del pagamento programmato di questo prestito è impostata per registrarsi da sola, quindi essa e l'addebito bancario che questa regola salda potrebbero pagarla entrambi. Disattiva la registrazione automatica di quella rata in Modifica occorrenza."
       }
     },
     "actionTypes": {

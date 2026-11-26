@@ -278,7 +278,8 @@
         "interestCategory": "Kategori bunga (opsional)",
         "interestCategoryPlaceholder": "Kategori bunga milik pinjaman itu sendiri",
         "autoPostTitle": "Pembayaran terjadwal pinjaman memposting dirinya sendiri",
-        "autoPostBody": "Posting otomatis aktif untuk pembayaran terjadwal pinjaman ini, sehingga keduanya, pembayaran itu dan debit bank yang dilunasi aturan ini, akan membayar angsuran yang sama. Matikan posting otomatis pada pembayaran terjadwal."
+        "autoPostBody": "Posting otomatis aktif untuk pembayaran terjadwal pinjaman ini, sehingga keduanya, pembayaran itu dan debit bank yang dilunasi aturan ini, akan membayar angsuran yang sama. Matikan posting otomatis pada pembayaran terjadwal.",
+        "autoPostBodyOccurrence": "Angsuran mendatang dari pembayaran terjadwal pinjaman ini diatur untuk diposting sendiri, sehingga angsuran itu dan debit bank yang dilunasi aturan ini bisa sama-sama membayarnya. Matikan posting otomatis angsuran itu di Edit Kemunculan."
       }
     },
     "actionTypes": {

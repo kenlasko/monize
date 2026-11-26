@@ -471,4 +471,18 @@ describe('RuleEditor: a loan settlement action', () => {
     });
     expect(screen.queryByText("The loan's scheduled payment posts itself")).not.toBeInTheDocument();
   });
+
+  it('warns, naming the installment, when only an upcoming installment of the bill posts itself', async () => {
+    mocks.bill.mockResolvedValue({ id: BILL, autoPost: false, anyOccurrenceAutoPosts: true });
+    await renderEditor();
+    startRule();
+    const action = addAction('settle_loan_installment', 0);
+    await act(async () => {
+      fireEvent.change(nativeSelectOf(within(action).getByLabelText('Loan account')), { target: { value: MORTGAGE } });
+    });
+    expect(screen.getByText("The loan's scheduled payment posts itself")).toBeInTheDocument();
+    expect(
+      screen.getByText(/An upcoming installment of this loan's scheduled payment is set to post itself/),
+    ).toBeInTheDocument();
+  });
 });

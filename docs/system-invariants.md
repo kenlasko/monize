@@ -6160,7 +6160,11 @@ Enforcement         ScheduledOccurrenceService.expand prices each estimated slot
                     amount_is_estimated; the under-lock requireActiveAutoPost
                     check and the posting undo's wouldAutoPost call
                     occurrenceAutoPosts; assertOverrideAutoPostAllowed refuses
-                    an override opting in while it follows the estimate.
+                    an override opting in while it follows the estimate,
+                    inside the override write's transaction with the schedule
+                    read under a share lock. Bill reminders (the daily email
+                    and the budget bell's manualOnly read) keep an occurrence
+                    only when autoPosts is false.
 Concurrency scope   schedule; the estimate is read-only.
 Retry semantics     a read; a retried post recomputes the same estimate from the
                     same ledger.

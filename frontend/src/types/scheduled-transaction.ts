@@ -248,6 +248,10 @@ export interface ScheduledTransaction {
   // once due, by the schedule's setting or that occurrence's own choice. Read
   // it through `nextOccurrenceAutoPosts`; absent on an older backend.
   nextOccurrenceAutoPosts?: boolean;
+  // Read-only, on the single-bill read only: the bill auto-posts, or an
+  // upcoming occurrence's override opts in. Absent elsewhere and on an older
+  // backend: read the bill's `autoPost` then.
+  anyOccurrenceAutoPosts?: boolean;
   futureOverrides?: ScheduledTransactionOverride[];
   createdAt: string;
   updatedAt: string;

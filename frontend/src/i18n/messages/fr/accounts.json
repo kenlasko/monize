@@ -695,7 +695,8 @@
       "retry": "Réessayer",
       "autoPost": {
         "title": "Le paiement programmé s'enregistre encore lui-même",
-        "body": "L'enregistrement automatique est activé sur la facture de ce prêt : une échéance que la règle impute à partir du prélèvement de la banque serait donc aussi enregistrée par la facture. Désactivez l'enregistrement automatique de la facture dans Factures et dépôts."
+        "body": "L'enregistrement automatique est activé sur la facture de ce prêt : une échéance que la règle impute à partir du prélèvement de la banque serait donc aussi enregistrée par la facture. Désactivez l'enregistrement automatique de la facture dans Factures et dépôts.",
+        "bodyOccurrence": "Une échéance à venir de la facture de ce prêt est réglée pour s'enregistrer seule : la facture et le prélèvement de la banque que la règle impute pourraient donc tous deux la payer. Désactivez l'enregistrement automatique de cette échéance dans Modifier l'occurrence, dans Factures et dépôts."
       },
       "preconditions": {
         "openingBalance": "Le solde d'ouverture du prêt doit correspondre à la dette au début de l'historique traité ; les intérêts de chaque échéance sont calculés sur ce montant.",

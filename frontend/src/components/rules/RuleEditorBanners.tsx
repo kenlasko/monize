@@ -92,9 +92,13 @@ export function RuleEditorBanners({
           </Button>
         </Banner>
       )}
-      {billAutoPosts && (
+      {billAutoPosts !== null && (
         <Banner tone="amber" title={t('editor.action.loan.autoPostTitle')}>
-          <p>{t('editor.action.loan.autoPostBody')}</p>
+          <p>
+            {billAutoPosts === 'bill'
+              ? t('editor.action.loan.autoPostBody')
+              : t('editor.action.loan.autoPostBodyOccurrence')}
+          </p>
         </Banner>
       )}
       {(refused || message !== null) && (

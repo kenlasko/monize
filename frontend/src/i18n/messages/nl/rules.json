@@ -278,7 +278,8 @@
         "interestCategory": "Rentecategorie (optioneel)",
         "interestCategoryPlaceholder": "De eigen rentecategorie van de lening",
         "autoPostTitle": "De geplande betaling van de lening boekt zichzelf",
-        "autoPostBody": "Automatisch boeken staat aan voor de geplande betaling van deze lening, waardoor die en de bankafschrijving die deze regel afhandelt beide dezelfde termijn zouden betalen. Schakel automatisch boeken uit voor de geplande betaling."
+        "autoPostBody": "Automatisch boeken staat aan voor de geplande betaling van deze lening, waardoor die en de bankafschrijving die deze regel afhandelt beide dezelfde termijn zouden betalen. Schakel automatisch boeken uit voor de geplande betaling.",
+        "autoPostBodyOccurrence": "Een komende termijn van de geplande betaling van deze lening staat op automatisch boeken, waardoor die en de bankafschrijving die deze regel afhandelt hem allebei kunnen betalen. Schakel automatisch boeken voor die termijn uit via Herhaling bewerken."
       }
     },
     "actionTypes": {

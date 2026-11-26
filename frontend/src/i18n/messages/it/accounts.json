@@ -695,7 +695,8 @@
       "retry": "Riprova",
       "autoPost": {
         "title": "Il pagamento programmato si registra ancora da solo",
-        "body": "La registrazione automatica è attiva sulla fattura di questo prestito, quindi una rata che la regola imputa dall'addebito della banca verrebbe registrata anche dalla fattura. Disattiva la registrazione automatica della fattura in Fatture & Versamenti."
+        "body": "La registrazione automatica è attiva sulla fattura di questo prestito, quindi una rata che la regola imputa dall'addebito della banca verrebbe registrata anche dalla fattura. Disattiva la registrazione automatica della fattura in Fatture & Versamenti.",
+        "bodyOccurrence": "Una rata imminente della fattura di questo prestito è impostata per registrarsi da sola, quindi la fattura e l'addebito della banca che la regola imputa potrebbero pagarla entrambi. Disattiva la registrazione automatica di quella rata in Modifica occorrenza, in Fatture & Versamenti."
       },
       "preconditions": {
         "openingBalance": "Il saldo iniziale del prestito deve essere il debito all'inizio della cronologia elaborata; gli interessi di ogni rata sono calcolati su di esso.",

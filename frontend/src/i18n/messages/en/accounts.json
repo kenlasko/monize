@@ -782,7 +782,8 @@
       "retry": "Try again",
       "autoPost": {
         "title": "The scheduled payment still posts itself",
-        "body": "Auto-post is on for this loan's bill, so an installment the rule settles from the bank's debit would also be posted by the bill. Turn auto-post off on the bill in Bills."
+        "body": "Auto-post is on for this loan's bill, so an installment the rule settles from the bank's debit would also be posted by the bill. Turn auto-post off on the bill in Bills.",
+        "bodyOccurrence": "An upcoming installment of this loan's bill is set to post itself, so the bill and the bank debit the rule settles could both pay it. Turn auto-post off for that installment in Edit Occurrence, in Bills."
       },
       "preconditions": {
         "openingBalance": "The loan's opening balance must be the debt at the start of the history being processed; every installment's interest is priced on it.",

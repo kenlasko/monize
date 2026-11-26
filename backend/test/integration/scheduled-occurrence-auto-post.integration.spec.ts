@@ -5,6 +5,7 @@ import { ScheduledTransaction } from "@/scheduled-transactions/entities/schedule
 import { ScheduledTransactionOverride } from "@/scheduled-transactions/entities/scheduled-transaction-override.entity";
 import { ScheduledTransactionsModule } from "@/scheduled-transactions/scheduled-transactions.module";
 import { ScheduledTransactionsService } from "@/scheduled-transactions/scheduled-transactions.service";
+import { ScheduledOccurrenceService } from "@/scheduled-transactions/scheduled-occurrence.service";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { todayInTimezone } from "@/common/date-utils";
 import { withUserContext } from "@/common/db/with-context";
@@ -30,6 +31,7 @@ describe("Per-occurrence auto-post (integration)", () => {
 
   let module: TestingModule;
   let service: ScheduledTransactionsService;
+  let occurrenceService: ScheduledOccurrenceService;
   let dataSource: DataSource;
   let userId: string;
   let accountId: string;
@@ -42,6 +44,7 @@ describe("Per-occurrence auto-post (integration)", () => {
       ScheduledTransactionsModule,
     ]);
     service = module.get(ScheduledTransactionsService);
+    occurrenceService = module.get(ScheduledOccurrenceService);
     dataSource = module.get(DataSource);
   });
 
@@ -153,6 +156,28 @@ describe("Per-occurrence auto-post (integration)", () => {
     expect(autoPosts.get(optedIn)).toBe(true);
     expect(autoPosts.get(optedOut)).toBe(false);
     expect(autoPosts.get(plain)).toBe(true);
+  });
+
+  it("lists for reminders only the occurrences a person posts, by each occurrence's own answer", async () => {
+    const optedIn = await schedule({ name: "Hydro", autoPost: false });
+    await override(optedIn, { autoPost: true });
+    const optedOut = await schedule({ name: "Gym", autoPost: true });
+    await override(optedOut, { autoPost: false });
+    const manual = await schedule({ name: "Rent", autoPost: false });
+    const automatic = await schedule({ name: "Netflix", autoPost: true });
+
+    const reminders = await withUserContext(userId, () =>
+      occurrenceService.findOccurrences(
+        userId,
+        { through: due, maxOccurrences: 1 },
+        { manualOnly: true },
+      ),
+    );
+
+    const ids = reminders.map((o) => o.scheduledTransactionId).sort();
+    expect(ids).toEqual([manual, optedOut].sort());
+    expect(ids).not.toContain(optedIn);
+    expect(ids).not.toContain(automatic);
   });
 
   it("posts an opted-in occurrence of a schedule that does not auto-post", async () => {

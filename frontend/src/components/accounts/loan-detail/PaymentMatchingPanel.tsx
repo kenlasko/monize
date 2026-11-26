@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { invalidateBalanceCaches } from '@/lib/apiCache';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
+import { loanBillAutoPostOf } from '@/components/rules/use-loan-bill-auto-post';
 import { transactionRulesApi } from '@/lib/transaction-rules-api';
 import type { Account } from '@/types/account';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
@@ -174,14 +175,19 @@ export function PaymentMatchingPanel({ account, settlements, onChanged }: Paymen
     );
   }
 
+  // What on the loan's bill posts itself, so the matched bank debit could pay
+  // the same installment twice.
+  const billAutoPost =
+    ruleId !== null && schedule.status === 'ready' ? loanBillAutoPostOf(schedule.value) : null;
+
   return (
     <PanelCard title={t('title')} description={t('description')}>
       <div className="space-y-4">
         {ruleLine}
         {scheduleLine}
-        {ruleId !== null && schedule.status === 'ready' && schedule.value.autoPost && (
+        {billAutoPost !== null && (
           <Banner tone="amber" title={t('autoPost.title')}>
-            <p>{t('autoPost.body')}</p>
+            <p>{billAutoPost === 'bill' ? t('autoPost.body') : t('autoPost.bodyOccurrence')}</p>
           </Banner>
         )}
 

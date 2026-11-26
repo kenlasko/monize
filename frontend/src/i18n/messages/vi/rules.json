@@ -278,7 +278,8 @@
         "interestCategory": "Danh mục lãi (không bắt buộc)",
         "interestCategoryPlaceholder": "Danh mục lãi riêng của khoản vay",
         "autoPostTitle": "Khoản thanh toán theo lịch của khoản vay tự đăng",
-        "autoPostBody": "Tự động đăng đang được bật cho khoản thanh toán theo lịch của khoản vay này, vì vậy nó và khoản ghi nợ ngân hàng mà quy tắc này thanh toán sẽ cùng trả cho một kỳ trả góp. Hãy tắt tự động đăng trên khoản thanh toán theo lịch."
+        "autoPostBody": "Tự động đăng đang được bật cho khoản thanh toán theo lịch của khoản vay này, vì vậy nó và khoản ghi nợ ngân hàng mà quy tắc này thanh toán sẽ cùng trả cho một kỳ trả góp. Hãy tắt tự động đăng trên khoản thanh toán theo lịch.",
+        "autoPostBodyOccurrence": "Một kỳ trả góp sắp tới của khoản thanh toán theo lịch của khoản vay này được đặt tự đăng, vì vậy nó và khoản ghi nợ ngân hàng mà quy tắc này thanh toán đều có thể trả kỳ đó. Hãy tắt tự động đăng cho kỳ đó trong Chỉnh sửa lần xuất hiện."
       }
     },
     "actionTypes": {

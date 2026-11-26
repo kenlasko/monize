@@ -278,7 +278,8 @@
         "interestCategory": "Catégorie d'intérêts (facultative)",
         "interestCategoryPlaceholder": "La catégorie d'intérêts propre au prêt",
         "autoPostTitle": "Le paiement programmé du prêt s'enregistre lui-même",
-        "autoPostBody": "L'enregistrement automatique est activé pour le paiement programmé de ce prêt, donc lui et le prélèvement bancaire que cette règle règle paieraient tous les deux la même échéance. Désactivez l'enregistrement automatique du paiement programmé."
+        "autoPostBody": "L'enregistrement automatique est activé pour le paiement programmé de ce prêt, donc lui et le prélèvement bancaire que cette règle règle paieraient tous les deux la même échéance. Désactivez l'enregistrement automatique du paiement programmé.",
+        "autoPostBodyOccurrence": "Une échéance à venir du paiement programmé de ce prêt est réglée pour s'enregistrer seule, donc elle et le prélèvement bancaire que cette règle règle pourraient tous deux la payer. Désactivez l'enregistrement automatique de cette échéance dans Modifier l'occurrence."
       }
     },
     "actionTypes": {

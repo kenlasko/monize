@@ -695,7 +695,8 @@
       "retry": "Coba lagi",
       "autoPost": {
         "title": "Pembayaran terjadwal masih memposting dirinya sendiri",
-        "body": "Posting otomatis aktif untuk tagihan pinjaman ini, sehingga angsuran yang dilunasi aturan dari debit bank juga akan diposting oleh tagihan. Matikan posting otomatis pada tagihan di Tagihan & Setoran."
+        "body": "Posting otomatis aktif untuk tagihan pinjaman ini, sehingga angsuran yang dilunasi aturan dari debit bank juga akan diposting oleh tagihan. Matikan posting otomatis pada tagihan di Tagihan & Setoran.",
+        "bodyOccurrence": "Angsuran mendatang dari tagihan pinjaman ini diatur untuk diposting sendiri, sehingga tagihan dan debit bank yang dilunasi aturan bisa sama-sama membayarnya. Matikan posting otomatis angsuran itu di Edit Kemunculan, di Tagihan & Setoran."
       },
       "preconditions": {
         "openingBalance": "Saldo awal pinjaman harus berupa utang pada awal riwayat yang diproses; bunga setiap angsuran dihitung berdasarkan saldo tersebut.",

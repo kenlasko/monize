@@ -278,7 +278,8 @@
         "interestCategory": "Zinskategorie (optional)",
         "interestCategoryPlaceholder": "Die eigene Zinskategorie des Darlehens",
         "autoPostTitle": "Die geplante Zahlung des Darlehens bucht sich selbst",
-        "autoPostBody": "Die automatische Buchung ist für die geplante Zahlung dieses Darlehens aktiviert, sodass sie und die Bankabbuchung, die diese Regel begleicht, dieselbe Rate bezahlen würden. Schalte die automatische Buchung der geplanten Zahlung aus."
+        "autoPostBody": "Die automatische Buchung ist für die geplante Zahlung dieses Darlehens aktiviert, sodass sie und die Bankabbuchung, die diese Regel begleicht, dieselbe Rate bezahlen würden. Schalte die automatische Buchung der geplanten Zahlung aus.",
+        "autoPostBodyOccurrence": "Eine anstehende Rate der geplanten Zahlung dieses Darlehens ist auf automatische Buchung gestellt, sodass sie und die Bankabbuchung, die diese Regel begleicht, sie beide bezahlen könnten. Schalte die automatische Buchung dieser Rate unter „Ausführung bearbeiten“ aus."
       }
     },
     "actionTypes": {

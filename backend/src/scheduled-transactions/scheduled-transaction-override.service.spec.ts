@@ -3,6 +3,7 @@ import { DataSource, QueryFailedError } from "typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
+import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
@@ -16,6 +17,7 @@ jest.mock("../common/db/scoped-db", () =>
 describe("ScheduledTransactionOverrideService", () => {
   let service: ScheduledTransactionOverrideService;
   let overridesRepository: Record<string, jest.Mock>;
+  let schedulesRepository: Record<string, jest.Mock>;
   let manager: Record<string, jest.Mock>;
 
   const scheduledTransactionId = "st-1";
@@ -65,8 +67,15 @@ describe("ScheduledTransactionOverrideService", () => {
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder()),
     };
 
+    schedulesRepository = {
+      findOne: jest.fn().mockResolvedValue({
+        id: scheduledTransactionId,
+        amountIsEstimated: false,
+      }),
+    };
     const mocks = createScopedDbMocks([
       [ScheduledTransactionOverride, overridesRepository],
+      [ScheduledTransaction, schedulesRepository],
     ]);
     const { dataSource } = mocks;
     manager = mocks.manager as unknown as Record<string, jest.Mock>;
@@ -84,6 +93,47 @@ describe("ScheduledTransactionOverrideService", () => {
   });
 
   describe("createOverride", () => {
+    it("refuses opting an estimated occurrence in while it follows the estimate, under a lock on the schedule, writing nothing", async () => {
+      schedulesRepository.findOne.mockResolvedValue({
+        id: scheduledTransactionId,
+        amountIsEstimated: true,
+      });
+
+      await expect(
+        service.createOverride(scheduledTransactionId, {
+          originalDate: "2025-02-15",
+          overrideDate: "2025-02-15",
+          autoPost: true,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(schedulesRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: scheduledTransactionId },
+          lock: { mode: "pessimistic_read" },
+        }),
+      );
+      expect(overridesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("stores an estimated occurrence's opt-in once it states the amount", async () => {
+      schedulesRepository.findOne.mockResolvedValue({
+        id: scheduledTransactionId,
+        amountIsEstimated: true,
+      });
+
+      await service.createOverride(scheduledTransactionId, {
+        originalDate: "2025-02-15",
+        overrideDate: "2025-02-15",
+        amount: -80,
+        autoPost: true,
+      });
+
+      expect(overridesRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: -80, autoPost: true }),
+      );
+    });
+
     it("should create an override when no existing override for the date", async () => {
       overridesRepository.createQueryBuilder.mockReturnValue(
         mockQueryBuilder(null),

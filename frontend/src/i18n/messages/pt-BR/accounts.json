@@ -695,7 +695,8 @@
       "retry": "Tentar novamente",
       "autoPost": {
         "title": "O pagamento agendado ainda se registra automaticamente",
-        "body": "O registro automático está ativado na fatura deste empréstimo, então uma parcela que a regra liquida a partir do débito do banco também seria registrada pela fatura. Desative o registro automático da fatura em Faturas e depósitos."
+        "body": "O registro automático está ativado na fatura deste empréstimo, então uma parcela que a regra liquida a partir do débito do banco também seria registrada pela fatura. Desative o registro automático da fatura em Faturas e depósitos.",
+        "bodyOccurrence": "Uma parcela próxima da fatura deste empréstimo está configurada para se lançar sozinha, então a fatura e o débito do banco que a regra liquida poderiam pagá-la. Desative o registro automático dessa parcela em Editar Ocorrência, em Faturas e depósitos."
       },
       "preconditions": {
         "openingBalance": "O saldo inicial do empréstimo precisa ser a dívida no início do histórico a ser processado; os juros de cada parcela são calculados sobre ele.",

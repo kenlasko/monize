@@ -278,7 +278,10 @@ describe("ScheduledOccurrenceService", () => {
     );
 
     const predicates = qb.andWhere.mock.calls.map((c) => String(c[0]));
-    expect(predicates).toContain("st.autoPost = :autoPost");
+    // `manualOnly` does not narrow the read on the schedule's `auto_post`: an
+    // occurrence's override can opt it in or out, so it is decided on the
+    // resolved occurrence (`autoPosts`), not in SQL.
+    expect(predicates.some((p) => p.includes("autoPost"))).toBe(false);
     // The outflow narrowing keeps every FX-sensitive row whatever its stored
     // sign: a bare `st.amount < 0` drops a mixed-sign split parent whose
     // effective amount has crossed zero (the behaviour tests below).

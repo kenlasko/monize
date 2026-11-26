@@ -135,7 +135,13 @@ export interface OccurrenceCandidateFilter {
    * occurrence afterwards.
    */
   outflowsOnly?: boolean;
-  /** Only schedules the user has to post themselves. */
+  /**
+   * Only occurrences the user has to post themselves: those the auto-post cron
+   * will not post (`autoPosts` false), by the schedule's setting or the
+   * occurrence's own override. Decided on the resolved occurrence, not the
+   * schedule's `auto_post`, so an occurrence opted out of an auto-posting
+   * schedule is kept and one opted into a manual schedule is not.
+   */
   manualOnly?: boolean;
 }
 
@@ -333,14 +339,19 @@ export class ScheduledOccurrenceService {
           { investmentKind: SplitKind.INVESTMENT },
         );
       }
-      // An auto-posted schedule needs no reminder -- the posting is the reminder.
-      if (filter.manualOnly) {
-        qb.andWhere("st.autoPost = :autoPost", { autoPost: false });
-      }
       return qb.getMany();
     });
 
-    if (!filter.outflowsOnly) return this.expand(userId, rows, window);
+    // An occurrence the cron posts needs no reminder -- the posting is the
+    // reminder. Per occurrence: the override can opt one in or out.
+    const keepManual = (
+      list: ResolvedScheduledOccurrence[],
+    ): ResolvedScheduledOccurrence[] =>
+      filter.manualOnly ? list.filter((o) => !o.autoPosts) : list;
+
+    if (!filter.outflowsOnly) {
+      return keepManual(await this.expand(userId, rows, window));
+    }
 
     // A cap is applied to what the caller ASKED for, so it has to come after the
     // direction filter, not before it.
@@ -359,8 +370,10 @@ export class ScheduledOccurrenceService {
     // An unknown direction is KEPT, not dropped: its amount is unknown too, so a
     // consumer's total is withheld either way, and dropping it would hide a
     // possible outflow behind a total that still looked complete.
-    const outflows = occurrences.filter(
-      (o) => o.directionAmount === null || o.directionAmount < 0,
+    const outflows = keepManual(
+      occurrences.filter(
+        (o) => o.directionAmount === null || o.directionAmount < 0,
+      ),
     );
     if (window.maxOccurrences === undefined) return outflows;
 

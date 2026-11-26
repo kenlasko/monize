@@ -695,7 +695,8 @@
       "retry": "Tekrar dene",
       "autoPost": {
         "title": "Zamanlanmış ödeme hâlâ kendini kaydediyor",
-        "body": "Bu kredinin faturası için otomatik kayıt açık, bu nedenle kuralın bankanın çekiminden kapattığı bir taksit fatura tarafından da kaydedilir. Faturalar ve Mevduatlar bölümünde faturanın otomatik kaydını kapatın."
+        "body": "Bu kredinin faturası için otomatik kayıt açık, bu nedenle kuralın bankanın çekiminden kapattığı bir taksit fatura tarafından da kaydedilir. Faturalar ve Mevduatlar bölümünde faturanın otomatik kaydını kapatın.",
+        "bodyOccurrence": "Bu kredinin faturasının yaklaşan bir taksidi kendi kendine kaydedilecek şekilde ayarlı, bu nedenle fatura ve kuralın kapattığı banka çekimi onu ikisi birden ödeyebilir. Faturalar ve Mevduatlar bölümündeki Tekrarı Düzenle penceresinde o taksidin otomatik kaydını kapatın."
       },
       "preconditions": {
         "openingBalance": "Kredinin açılış bakiyesi, işlenen geçmişin başındaki borç olmalıdır; her taksidin faizi bunun üzerinden hesaplanır.",
