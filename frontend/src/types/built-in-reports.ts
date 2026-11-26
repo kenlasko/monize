@@ -8,10 +8,14 @@ export interface CategorySpendingItem {
    * non-empty this is the part that converted.
    */
   total: number;
+  /** Share of the whole, calculated before monetary rounding when the categories form a composition. */
+  percentage?: number;
 }
 
 export interface SpendingByCategoryResponse {
-  /** Every net-spent category, largest first. The caller decides how many to draw. */
+  /** Signed category totals and server-calculated shares. Older responses omit this flag. */
+  netSpending?: true;
+  /** Every reported category, largest first. The caller decides how many to draw. */
   data: CategorySpendingItem[];
   /**
    * Total spent, or `null` when a row could not be converted -- a missing rate

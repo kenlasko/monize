@@ -20,8 +20,9 @@ export class CategorySpendingComparisonItem {
   @ApiProperty()
   change: number;
 
-  @ApiProperty()
-  changePercent: number;
+  /** A new net credit has no percentage change against a previous zero. */
+  @ApiProperty({ type: Number, nullable: true })
+  changePercent: number | null;
 }
 
 export class MonthlyComparisonIncomeExpenses {
@@ -88,9 +89,17 @@ export class CategorySpendingSnapshot {
 
   @ApiProperty()
   total: number;
+
+  /** The category report's share when this month is a complete, nonnegative whole. */
+  @ApiPropertyOptional()
+  percentage?: number;
 }
 
 export class MonthlyComparisonExpenses {
+  /** Both monthly snapshots preserve signed net expense categories. */
+  @ApiPropertyOptional({ example: true })
+  netSpending?: true;
+
   @ApiProperty({ type: [CategorySpendingSnapshot] })
   currentMonth: CategorySpendingSnapshot[];
 

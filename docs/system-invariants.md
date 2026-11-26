@@ -3343,8 +3343,10 @@ Status              enforced
 ```text
 Statement           A category's figure in a report is the signed sum of its
                     rows of both signs, netted within that one category and
-                    never across two: a refund lowers the category's cost, and a
-                    category whose credits meet its debits is not spending.
+                    never across two. In Spending by Category a refund lowers
+                    the cost of an expense category already assigned to the
+                    posting. Activity with zero net stays visible; when refunds
+                    exceed debits the category has negative net spending.
                     Transfers are not a category and are not netted.
 Source of truth     The signed amounts on transactions and transaction_splits.
 Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending

@@ -7,7 +7,8 @@ export interface CategorySpendingComparisonItem {
   currentTotal: number;
   previousTotal: number;
   change: number;
-  changePercent: number;
+  /** Undefined as a percentage when new net refunds have no spending baseline. */
+  changePercent: number | null;
 }
 
 export interface MonthlyComparisonIncomeExpenses {
@@ -37,9 +38,11 @@ export interface CategorySpendingSnapshot {
   categoryName: string;
   color: string | null;
   total: number;
+  percentage?: number;
 }
 
 export interface MonthlyComparisonExpenses {
+  netSpending?: true;
   currentMonth: CategorySpendingSnapshot[];
   previousMonth: CategorySpendingSnapshot[];
   comparison: CategorySpendingComparisonItem[];
