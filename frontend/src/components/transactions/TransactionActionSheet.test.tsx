@@ -219,3 +219,45 @@ describe('TransactionActionSheet', () => {
     }
   });
 });
+
+describe('TransactionActionSheet: Confirm amount (issue #2397)', () => {
+  const baseProps = {
+    isOpen: true,
+    formatDate: (d: string) => d,
+    onClose: vi.fn(),
+    onDeleteClick: vi.fn(),
+  };
+
+  it('offers Confirm amount on a provisional row, closing the sheet first', () => {
+    const onConfirmAmount = vi.fn();
+    const onClose = vi.fn();
+    const provisional = { ...tx, isTransfer: true, amountIsProvisional: true };
+    render(
+      <TransactionActionSheet
+        {...baseProps}
+        transaction={provisional}
+        onClose={onClose}
+        onConfirmAmount={onConfirmAmount}
+      />,
+    );
+    fireEvent.click(screen.getByText('Confirm amount'));
+    expect(onClose).toHaveBeenCalled();
+    expect(onConfirmAmount).toHaveBeenCalledWith(provisional);
+  });
+
+  it('does not offer it on a confirmed row, or when no handler is passed', () => {
+    const view = render(
+      <TransactionActionSheet
+        {...baseProps}
+        transaction={{ ...tx, amountIsProvisional: false }}
+        onConfirmAmount={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('Confirm amount')).not.toBeInTheDocument();
+    view.unmount();
+    render(
+      <TransactionActionSheet {...baseProps} transaction={{ ...tx, amountIsProvisional: true }} />,
+    );
+    expect(screen.queryByText('Confirm amount')).not.toBeInTheDocument();
+  });
+});

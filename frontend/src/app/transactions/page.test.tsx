@@ -256,6 +256,7 @@ const mockGetSummary = vi.fn();
 const mockGetById = vi.fn();
 const mockBulkUpdate = vi.fn();
 const mockGetMonthlyTotals = vi.fn();
+const mockConfirmAmount = vi.fn();
 
 vi.mock('@/lib/transactions', () => ({
   transactionsApi: {
@@ -265,6 +266,7 @@ vi.mock('@/lib/transactions', () => ({
     getById: (...args: any[]) => mockGetById(...args),
     bulkUpdate: (...args: any[]) => mockBulkUpdate(...args),
     getMonthlyTotals: (...args: any[]) => mockGetMonthlyTotals(...args),
+    confirmAmount: (...args: any[]) => mockConfirmAmount(...args),
     // Used by the payee/category info widgets that mount on single-entity filters
     getGroupedTotals: vi.fn().mockResolvedValue([]),
     getRecurringCharges: vi.fn().mockResolvedValue([]),
@@ -358,6 +360,15 @@ vi.mock('@/components/transactions/TransactionList', () => ({
         <div key={t.id} data-testid={`tx-${t.id}`} onClick={() => props.onEdit(t)}>
           {t.payee?.name || 'No payee'}
           <span data-testid={`tx-${t.id}-attachments`}>{t.attachmentCount ?? 'none'}</span>
+          {t.amountIsProvisional && <span data-testid={`tx-${t.id}-provisional`}>Estimated amount</span>}
+          {t.amountIsProvisional && props.onConfirmAmount && (
+            <button
+              data-testid={`tx-${t.id}-confirm`}
+              onClick={(e) => { e.stopPropagation(); props.onConfirmAmount(t); }}
+            >
+              Confirm amount
+            </button>
+          )}
         </div>
       ))}
       {(props.onAddWarranty || props.onViewWarranties) && <span data-testid="row-warranty-actions" />}
@@ -2574,6 +2585,66 @@ describe('TransactionsPage', () => {
       // Asserted synchronously: a later refetch would restore the count and
       // hide the regression this test guards against.
       expect(screen.getByTestId('tx-tx-1-attachments')).toHaveTextContent('2');
+    });
+  });
+
+  describe('Confirm amount (issue #2397)', () => {
+    const provisionalLeg = { ...mockTransactions[0], isTransfer: true, amountIsProvisional: true };
+
+    it('calls the endpoint, then reloads the register so the badge goes', async () => {
+      const toast = await import('react-hot-toast');
+      mockGetAll.mockResolvedValue({
+        data: [provisionalLeg],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+      render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-tx-1-provisional')).toBeInTheDocument());
+
+      // The server now holds the leg confirmed; the reload reads it.
+      mockConfirmAmount.mockResolvedValue({ ...provisionalLeg, amountIsProvisional: false });
+      mockGetAll.mockResolvedValue({
+        data: [{ ...provisionalLeg, amountIsProvisional: false }],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+      const readsBefore = mockGetAll.mock.calls.length;
+      const accountReadsBefore = mockGetAllAccounts.mock.calls.length;
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('tx-tx-1-confirm'));
+      });
+
+      expect(mockConfirmAmount).toHaveBeenCalledTimes(1);
+      expect(mockConfirmAmount).toHaveBeenCalledWith('tx-1');
+      await waitFor(() => expect(screen.queryByTestId('tx-tx-1-provisional')).not.toBeInTheDocument());
+      expect(mockGetAll.mock.calls.length).toBeGreaterThan(readsBefore);
+      // The accounts are read again too: the account widget's figures come
+      // from that list, not from the rows.
+      expect(mockGetAllAccounts.mock.calls.length).toBeGreaterThan(accountReadsBefore);
+      expect(toast.default.success).toHaveBeenCalledWith('Amount confirmed');
+    });
+
+    it('sends one request for a double click, and reports a refusal without reloading', async () => {
+      const { showErrorToast } = await import('@/lib/errors');
+      mockGetAll.mockResolvedValue({
+        data: [provisionalLeg],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+      render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-tx-1-confirm')).toBeInTheDocument());
+
+      let reject: (error: Error) => void = () => {};
+      mockConfirmAmount.mockReturnValue(new Promise((_resolve, rej) => { reject = rej; }));
+      const readsBefore = mockGetAll.mock.calls.length;
+      fireEvent.click(screen.getByTestId('tx-tx-1-confirm'));
+      fireEvent.click(screen.getByTestId('tx-tx-1-confirm'));
+      expect(mockConfirmAmount).toHaveBeenCalledTimes(1);
+
+      const refusal = new Error('not provisional');
+      await act(async () => {
+        reject(refusal);
+      });
+      expect(showErrorToast).toHaveBeenCalledWith(refusal, 'Failed to confirm the amount');
+      expect(mockGetAll.mock.calls.length).toBe(readsBefore);
+      expect(screen.getByTestId('tx-tx-1-provisional')).toBeInTheDocument();
     });
   });
 

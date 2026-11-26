@@ -936,6 +936,33 @@ function TransactionsContent() {
     setShowScheduleForm(true);
   };
 
+  // "Confirm amount" on a provisional leg. No amount moves, but the row's
+  // badge goes and every balance surface's provisional count changes, so the
+  // page reloads through the path the register's delete takes (`loadAllData`:
+  // the accounts the account widget reads, the rows, and the reload key the
+  // widgets refetch on). One request per row at a time: a second click before
+  // the first answers would be refused as "not provisional" and toast an
+  // error over the success.
+  const confirmingAmountIds = useRef<Set<string>>(new Set());
+  const handleConfirmAmount = useCallback(async (transaction: Transaction) => {
+    if (confirmingAmountIds.current.has(transaction.id)) return;
+    confirmingAmountIds.current.add(transaction.id);
+    try {
+      try {
+        await transactionsApi.confirmAmount(transaction.id);
+      } catch (error) {
+        showErrorToast(error, t('provisional.confirmFailed'));
+        return;
+      }
+      toast.success(t('provisional.confirmed'));
+      // Held until the reload lands, so the row still drawn as provisional
+      // cannot send a second request meanwhile.
+      await loadAllData();
+    } finally {
+      confirmingAmountIds.current.delete(transaction.id);
+    }
+  }, [loadAllData, t]);
+
   // Add warranty, or a linked warranty, from inside the edit window leaves the
   // page, so it goes through the window's own close: a dirty form asks first
   // (Save, Discard or keep editing) and the navigation waits on the answer. It
@@ -2072,6 +2099,7 @@ function TransactionsContent() {
               onEdit={handleEdit}
               onDuplicate={handleDuplicate}
               onScheduleRecurring={handleScheduleRecurring}
+              onConfirmAmount={handleConfirmAmount}
               onRefresh={loadAllData}
               onTransactionUpdate={handleTransactionUpdate}
               onPayeeClick={handlePayeeView}

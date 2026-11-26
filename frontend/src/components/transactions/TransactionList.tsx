@@ -68,6 +68,7 @@ import {
   type RegisterFigure,
 } from './register-style-data';
 import { PebbleRegister } from './variants/PebbleRegister';
+import { isProvisionalAmount } from '@/lib/provisional-amount';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { FolioRegisterFoot } from './variants/FolioRegisterFoot';
 import { useIsLgUp } from '@/hooks/useIsMobile';
@@ -77,6 +78,14 @@ interface TransactionListProps {
   onEdit?: (transaction: Transaction) => void;
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
+  /**
+   * Confirm a provisional (estimated) amount as it stands. The caller owns
+   * the request and the refresh; the list offers the action only on a
+   * provisional row the reader owns (never a joint account's row, which the
+   * endpoint refuses), in the action sheet, the desktop row's inline buttons
+   * and the Pebble inspector. Omitted: no surface offers it.
+   */
+  onConfirmAmount?: (transaction: Transaction) => void;
   /**
    * Notification that the row has **already been deleted** -- this list owns the
    * confirmation, the `transactionsApi.delete`/`deleteTransfer` call and the
@@ -288,6 +297,7 @@ export function TransactionList({
   onEdit,
   onDuplicate,
   onScheduleRecurring,
+  onConfirmAmount,
   onDeleted,
   onRefresh,
   onTransactionUpdate,
@@ -462,6 +472,12 @@ export function TransactionList({
   const canEditRow = useCallback(
     (tx: Transaction) =>
       !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canEdit),
+    [jointPermissionsByAccount],
+  );
+  // The confirm endpoint is owner-scoped: a joint account shared to this
+  // reader belongs to someone else, so its rows are never offered it.
+  const canConfirmAmountRow = useCallback(
+    (tx: Transaction) => isProvisionalAmount(tx) && !jointPermissionsByAccount?.has(tx.accountId),
     [jointPermissionsByAccount],
   );
   const canDeleteRow = useCallback(
@@ -938,8 +954,10 @@ export function TransactionList({
           onDuplicate={onDuplicate}
           onScheduleRecurring={onScheduleRecurring}
           onDeleteClick={handleDeleteClick}
+          onConfirmAmount={onConfirmAmount}
           canEdit={canEditRow}
           canDelete={canDeleteRow}
+          canConfirmAmount={canConfirmAmountRow}
           categoryColorMap={categoryColorMap}
           categoryLabelMap={categoryLabelMap}
           categoryIconMap={categoryIconMap}
@@ -1297,6 +1315,7 @@ export function TransactionList({
                     }
                     onDuplicate={onDuplicate}
                     onScheduleRecurring={onScheduleRecurring}
+                    onConfirmAmount={canConfirmAmountRow(transaction) ? onConfirmAmount : undefined}
                     onDeleteClick={handleDeleteClick}
                     hideDelete={
                       !!jointPermissionsByAccount?.get(transaction.accountId) &&
@@ -1355,6 +1374,11 @@ export function TransactionList({
         onEdit={onEdit}
         onDuplicate={onDuplicate}
         onScheduleRecurring={onScheduleRecurring}
+        onConfirmAmount={
+          actionSheet.transaction && canConfirmAmountRow(actionSheet.transaction)
+            ? onConfirmAmount
+            : undefined
+        }
         onDeleteClick={handleDeleteClick}
         onDateFilterClick={onDateFilterClick}
         onAccountFilterClick={onAccountFilterClick}

@@ -233,6 +233,14 @@
     "scheduleRecurring": "Schedule as Recurring",
     "delete": "Delete"
   },
+  "provisional": {
+    "label": "Estimated amount",
+    "tooltip": "Monize estimated this amount at the historical exchange rate when it imported the other account's side of this transfer. It stays an estimate until this account's own file is imported or you confirm the amount.",
+    "confirmAction": "Confirm amount",
+    "confirmActionTitle": "Keep this amount as the actual amount received or paid",
+    "confirmed": "Amount confirmed",
+    "confirmFailed": "Failed to confirm the amount"
+  },
   "filter": {
     "favourites": "Favourites:",
     "panel": {

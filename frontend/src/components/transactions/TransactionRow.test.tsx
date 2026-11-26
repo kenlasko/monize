@@ -1454,3 +1454,59 @@ describe('TransactionRow warranties', () => {
     expect(screen.getByTitle('Duplicate transaction')).toBeInTheDocument();
   });
 });
+
+describe('TransactionRow: a provisional amount (issue #2397)', () => {
+  const provisional = { amountIsProvisional: true, isTransfer: true } as Partial<Transaction>;
+
+  it('labels a provisional amount in the desktop row, with what the estimate is', () => {
+    renderRow({}, provisional);
+    const badge = screen.getByTestId('provisional-amount-badge');
+    expect(badge).toHaveTextContent('Estimated amount');
+    // The tooltip says how the estimate stops being one.
+    expect(screen.getByLabelText(/stays an estimate until this account's own file is imported/)).toBeInTheDocument();
+  });
+
+  it('labels a provisional amount in the phone card', () => {
+    renderRow({ wrapped: true }, provisional);
+    expect(screen.getByTestId('provisional-amount-badge')).toHaveTextContent('Estimated amount');
+  });
+
+  it('labels a provisional amount in the Folio payment column', () => {
+    renderRow({ uiStyle: 'folio' }, provisional);
+    expect(screen.getAllByTestId('provisional-amount-badge')).toHaveLength(1);
+  });
+
+  it('shows neither the label nor the action on a confirmed row, or one without the field', () => {
+    const onConfirmAmount = vi.fn();
+    renderRow({ onConfirmAmount }, { amountIsProvisional: false });
+    expect(screen.queryByTestId('provisional-amount-badge')).not.toBeInTheDocument();
+    expect(screen.queryByText('Confirm amount')).not.toBeInTheDocument();
+  });
+
+  it('reads an absent flag as confirmed', () => {
+    renderRow({ onConfirmAmount: vi.fn(), wrapped: true });
+    expect(screen.queryByTestId('provisional-amount-badge')).not.toBeInTheDocument();
+  });
+
+  it('offers Confirm amount beside the inline buttons, without opening the row', () => {
+    const onConfirmAmount = vi.fn();
+    const onRowClick = vi.fn();
+    renderRow({ onConfirmAmount, onRowClick }, provisional);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm amount' }));
+    expect(onConfirmAmount).toHaveBeenCalledWith(expect.objectContaining({ id: 't1' }));
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it('draws the dense action as an icon with its name', () => {
+    const onConfirmAmount = vi.fn();
+    renderRow({ onConfirmAmount, density: 'dense' }, provisional);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm amount' }));
+    expect(onConfirmAmount).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the label but offers no action when the list passes no handler', () => {
+    renderRow({}, provisional);
+    expect(screen.getByTestId('provisional-amount-badge')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm amount' })).not.toBeInTheDocument();
+  });
+});

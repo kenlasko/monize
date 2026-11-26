@@ -468,3 +468,62 @@ describe('Pebble register', () => {
     expect(screen.queryByRole('button', { name: /density/i })).toBeNull();
   });
 });
+
+describe('A provisional amount in every register style (issue #2397)', () => {
+  const provisionalRows = [
+    makeTx({ id: 'est', transactionDate: '2024-01-16', amount: 80, payeeName: 'From USD', isTransfer: true, amountIsProvisional: true }),
+    makeTx({ id: 'firm', transactionDate: '2024-01-15', amount: -50, amountIsProvisional: false }),
+  ];
+
+  beforeEach(() => {
+    useHiddenColumnsStore.getState().setHidden('transactions', []);
+  });
+
+  it('Standard: labels only the provisional row and offers Confirm amount on it alone', () => {
+    style.value = 'standard';
+    const onConfirmAmount = vi.fn();
+    renderList({ transactions: provisionalRows, onConfirmAmount });
+    expect(screen.getAllByTestId('provisional-amount-badge')).toHaveLength(1);
+    const confirm = screen.getAllByRole('button', { name: 'Confirm amount' });
+    expect(confirm).toHaveLength(1);
+    fireEvent.click(confirm[0]);
+    expect(onConfirmAmount).toHaveBeenCalledWith(expect.objectContaining({ id: 'est' }));
+  });
+
+  it('Standard: a joint account shared to the reader keeps the label but offers no action', () => {
+    style.value = 'standard';
+    const joint = new Map([['acc-1', { canCreate: true, canEdit: true, canDelete: true }]]);
+    renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn(), jointPermissionsByAccount: joint });
+    expect(screen.getAllByTestId('provisional-amount-badge')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Confirm amount' })).toBeNull();
+  });
+
+  it('Folio: labels the provisional amount in its column', () => {
+    style.value = 'folio';
+    renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn() });
+    expect(screen.getAllByTestId('provisional-amount-badge')).toHaveLength(1);
+  });
+
+  it('Pebble: labels the row and the inspector, and the inspector confirms it', () => {
+    style.value = 'pebble';
+    const onConfirmAmount = vi.fn();
+    renderList({ transactions: provisionalRows, onConfirmAmount });
+    const [estRow, firmRow] = screen.getAllByTestId('pebble-row');
+    expect(within(estRow).getByTestId('provisional-amount-badge')).toHaveTextContent('Estimated amount');
+    expect(within(firmRow).queryByTestId('provisional-amount-badge')).toBeNull();
+    const inspector = screen.getByRole('complementary');
+    expect(within(inspector).getByTestId('provisional-amount-badge')).toBeTruthy();
+    fireEvent.click(within(inspector).getByRole('button', { name: 'Confirm amount' }));
+    expect(onConfirmAmount).toHaveBeenCalledWith(expect.objectContaining({ id: 'est' }));
+  });
+
+  it('Pebble: a confirmed row inspected shows neither label nor action', () => {
+    style.value = 'pebble';
+    renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn() });
+    fireEvent.click(screen.getAllByTestId('pebble-row')[1]);
+    const inspector = screen.getByRole('complementary');
+    expect(within(inspector).getByText('Grocery Store')).toBeTruthy();
+    expect(within(inspector).queryByTestId('provisional-amount-badge')).toBeNull();
+    expect(within(inspector).queryByRole('button', { name: 'Confirm amount' })).toBeNull();
+  });
+});

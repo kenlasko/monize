@@ -178,6 +178,13 @@ describe('transactionsApi', () => {
     expect(apiClient.post).toHaveBeenCalledWith('/transactions/tx-1/unreconcile');
   });
 
+  it('confirmAmount posts to /transactions/:id/confirm-amount and returns the confirmed row', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'tx-1', amountIsProvisional: false } });
+    const result = await transactionsApi.confirmAmount('tx-1');
+    expect(apiClient.post).toHaveBeenCalledWith('/transactions/tx-1/confirm-amount');
+    expect(result.amountIsProvisional).toBe(false);
+  });
+
   it('updateStatus patches /transactions/:id/status', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'tx-1' } });
     await transactionsApi.updateStatus('tx-1', 'cleared' as any);
