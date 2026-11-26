@@ -305,7 +305,8 @@ export class MonthlyCategoryBreakdownService {
   }
 
   /**
-   * Aggregate transfers per (account, month) into signed "from"/"to" rows.
+   * Aggregate transfers per (account, month) into signed "from"/"to" rows,
+   * from whole transfer rows and a split's transfer lines (INV-REPORT-006).
    * Each transfer is stored as two linked legs (a negative leg on the source
    * account and a positive leg on the destination account); grouping every
    * leg by the account it sits on therefore counts each transfer exactly once
@@ -329,15 +330,42 @@ export class MonthlyCategoryBreakdownService {
       flows: BreakdownTransferFlows;
     }[]
   > {
-    let query = `
+    const params: (string | string[] | undefined)[] = [
+      userId,
+      endDate,
+      defaultCurrency,
+    ];
+    let scope = "";
+    if (startDate) {
+      scope += ` AND t.transaction_date >= $4`;
+      params.push(startDate);
+    }
+    // The same scope as the category rows above: a transfer row is a row of
+    // one account, so it is kept or dropped with that account.
+    if (accountIds && accountIds.length > 0) {
+      scope += ` AND t.account_id = ANY($${params.length + 1}::uuid[])`;
+      params.push(accountIds);
+    }
+
+    // A whole transfer row, or a split's transfer line (counted on its
+    // parent's account, at the line's own amount and rate basis).
+    const selectList = (line: boolean) => {
+      const amt = line ? "ts.amount" : "t.amount";
+      return `
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
         t.account_id,
         a.name as account_name,
         t.currency_code,
-        ${rateBasisColumnsSql("$3", "t", ownTransferLegs(userId, "$1"))},
-        SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as outflow,
-        SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow
+        ${rateBasisColumnsSql("$3", "t", ownTransferLegs(userId, "$1", line ? "ts" : undefined))},
+        SUM(CASE WHEN ${amt} < 0 THEN ABS(${amt}) ELSE 0 END) as outflow,
+        SUM(CASE WHEN ${amt} > 0 THEN ${amt} ELSE 0 END) as inflow`;
+    };
+    const groupBy = `
+      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
+               t.account_id, a.name, t.currency_code, ${RATE_BASIS_GROUP_BY}
+    `;
+    const wholeQuery = `${selectList(false)}
       FROM transactions t
       JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
@@ -345,36 +373,29 @@ export class MonthlyCategoryBreakdownService {
         AND t.is_transfer = true
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
-    `;
-
-    const params: (string | string[] | undefined)[] = [
-      userId,
-      endDate,
-      defaultCurrency,
-    ];
-
-    if (startDate) {
-      query += ` AND t.transaction_date >= $4`;
-      params.push(startDate);
-    }
-
-    // The same scope as the category rows above: a transfer row is a row of
-    // one account, so it is kept or dropped with that account.
-    if (accountIds && accountIds.length > 0) {
-      query += ` AND t.account_id = ANY($${params.length + 1}::uuid[])`;
-      params.push(accountIds);
-    }
-
-    query += `
-      GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
-               t.account_id, a.name, t.currency_code, ${RATE_BASIS_GROUP_BY}
-      ORDER BY month
-    `;
+        ${scope}
+      ${groupBy}`;
+    const lineQuery = `${selectList(true)}
+      FROM transactions t
+      JOIN transaction_splits ts ON ts.transaction_id = t.id
+      JOIN accounts a ON a.id = t.account_id
+      WHERE t.user_id = $1
+        AND t.transaction_date <= $2
+        AND ts.transfer_account_id IS NOT NULL
+        AND (t.status IS NULL OR t.status != 'VOID')
+        AND t.parent_transaction_id IS NULL
+        AND ${INVESTMENT_EXCLUSION}
+        ${scope}
+      ${groupBy}`;
 
     const rawResults: RawTransferAggregate[] = await withScopedDb(
       this.dataSource,
-      (m) => m.query(query, params),
+      async (m) => [
+        ...(await m.query(wholeQuery, params)),
+        ...(await m.query(lineQuery, params)),
+      ],
     );
+    rawResults.sort((x, y) => x.month.localeCompare(y.month));
     const convert = wholeGroups(
       rawResults,
       await this.currencyService.buildConverter(rawResults, defaultCurrency),

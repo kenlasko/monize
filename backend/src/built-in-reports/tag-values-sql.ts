@@ -9,7 +9,7 @@
  * never joins `transaction_splits` -- a whole (non-split) transfer has no
  * split-level tags to union in, and `t.is_transfer = true` rows are never
  * split parents (`transactions/transaction-analytics.service.ts`'s
- * `getTransfersByAccount` reads the same population the same way).
+ * `getTransfersByAccount` reads split transfer lines in a second query).
  */
 export function transactionTagValuesArrayExpr(
   transactionAlias: string,

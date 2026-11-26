@@ -762,8 +762,8 @@ export class IncomeReportsService {
     // Two separate queries, not one `is_transfer = true OR transfer_account_id
     // IS NOT NULL` predicate over a single splits-joined query: a whole
     // (non-split) transfer and a split transfer leg are never the same row
-    // (`transaction-analytics.service.ts`'s `getTransfersByAccount` reads only
-    // the first population; splits carry their own transfer flag instead of
+    // (`transaction-analytics.service.ts`'s `getTransfersByAccount` reads both,
+    // in two queries; splits carry their own transfer flag instead of
     // the parent's), and a query that joins `transaction_splits` is never
     // exempt from the split-aware investment exclusion by merely mentioning
     // `is_transfer = true` (`investment-filter.guard.spec.ts`'s "never exempts

@@ -331,7 +331,7 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     });
   });
 
-  it("reads the outgoing leg at 90 EUR in the monthly category breakdown", async () => {
+  it("reads the plain leg and the split transfer line at 90 EUR each (180) in the monthly category breakdown", async () => {
     await seed("EUR");
 
     const result = await asUser(() =>
@@ -345,14 +345,51 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
         accountId: usId,
         accountName: "US Chequing",
         direction: "from",
-        valuesByMonth: { "2026-03": 90 },
+        valuesByMonth: { "2026-03": 180 },
         // Issue #2413: the server folds the row's total and its average over
         // the one-month window from the same unrounded leg.
-        total: 90,
-        average: 90,
+        total: 180,
+        average: 180,
       },
     ]);
     expect(result.missingCurrencies).toEqual([]);
+  });
+
+  it("counts a split's transfer line like a whole transfer: breakdown equals the Sankey (INV-REPORT-006)", async () => {
+    await seed("EUR");
+
+    const flows = await asUser(() =>
+      sankey.getCashFlowSankey(userId, START, END, { accountIds: [usId] }),
+    );
+    const result = await asUser(() =>
+      breakdown.getMonthlyCategoryBreakdown(userId, START, END, {
+        accountIds: [usId],
+      }),
+    );
+
+    expect(result.transfers[0].valuesByMonth["2026-03"]).toBe(
+      flows.nodes.find((n) => n.id === "class:savings")?.total,
+    );
+  });
+
+  it("reads the split transfer line in the per-account transfer totals", async () => {
+    await seed("EUR");
+
+    const result = await asUser(() =>
+      analytics.getTransfersByAccount(userId, START, END, [usId]),
+    );
+
+    expect(result.accounts).toEqual([
+      expect.objectContaining({
+        accountId: usId,
+        currency: "USD",
+        inbound: 0,
+        outbound: 200,
+        net: -200,
+        transferCount: 2,
+      }),
+    ]);
+    expect(result.totalOutbound).toBe(200);
   });
 
   it("reads tagged transfer flows at 90 EUR each in Income vs Expenses", async () => {

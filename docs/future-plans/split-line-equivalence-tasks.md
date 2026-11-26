@@ -6,7 +6,7 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 | ID | Task | Depends on | Deploy impact | Recommended agent | Status |
 | --- | --- | --- | --- | --- | --- |
 | S0 | Spec, plan, task list, INV-REPORT-006 entry | -- | none | -- | done |
-| T1 | Transfer rollups read the split transfer line | S0 | visible | sonnet, medium | open |
+| T1 | Transfer rollups read the split transfer line | S0 | visible | sonnet, medium | done |
 | T2 | The transfers filter reads the split transfer line, in analytics and the register | S0 | visible | opus, high | done |
 | T3 | Tag filters select a line once (`EXISTS`) | S0 | visible | sonnet, high | open |
 | T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | done |
@@ -14,14 +14,24 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 
 ## T1 transfer rollups
 
-- [ ] `getTransferRows` (`backend/src/built-in-reports/monthly-category-breakdown.service.ts`):
+- [x] `getTransferRows` (`backend/src/built-in-reports/monthly-category-breakdown.service.ts`):
   add the split transfer lines as a second branch, the way
   `splitTransferLegsQuery` (`cash-flow-sankey.service.ts`) does, with the
   line's rate basis (`ownTransferLegs(userId, "$1", "ts")`).
-- [ ] `getTransfersByAccount` (`backend/src/transactions/transaction-analytics.service.ts`):
+- [x] `getTransfersByAccount` (`backend/src/transactions/transaction-analytics.service.ts`):
   the same, by the line's parent account.
-- [ ] Restate "reads the outgoing leg at 90 EUR" to 180; add the whole-vs-split
+- [x] Restate "reads the outgoing leg at 90 EUR" to 180; add the whole-vs-split
   parity case.
+- [ ] Follow-up: the breakdown's whole-row transfer branch has no investment
+  exclusion while its line branch must carry it (`investment-filter.guard.spec.ts`),
+  so a transfer line on an investment-linked parent or in a brokerage sleeve is
+  dropped while its counterpart counts. Import writes whole transfer rows in
+  brokerage accounts; whether a split with a transfer line can live there is
+  unverified. `getTransfersByAccount`, which the guard does not scan, gives its
+  line branch the whole-row branch's scope, so its inbound and outbound net.
+  The fix is one investment scope for both branches of the breakdown (the
+  Sankey's, INV-SANKEY-003), which moves existing whole-row figures and needs
+  its own agreement.
 
 ## T2 the transfers filter
 

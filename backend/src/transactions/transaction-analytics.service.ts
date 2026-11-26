@@ -315,7 +315,8 @@ export class TransactionAnalyticsService {
 
   /**
    * Per-account transfer activity between the user's own accounts for a date
-   * range. Shared by the AI Assistant's tool executor and the MCP server so
+   * range: whole transfer rows plus a split's transfer lines, a line counted on
+   * its parent's account at its own signed amount (INV-REPORT-006). Shared by the AI Assistant's tool executor and the MCP server so
    * both surfaces return the same shape. `inbound` counts positive-sign
    * transfer rows (money received), `outbound` counts the absolute value of
    * negative-sign rows (money sent). When no account filter is applied,
@@ -359,13 +360,58 @@ export class TransactionAnalyticsService {
         qb.andWhere("t.accountId IN (:...accountIds)", { accountIds });
       }
 
-      const rows = await qb.getRawMany();
+      const wholeRows = await qb.getRawMany();
 
-      // Each row is in its account's currency, rounded at its precision.
-      const places = await loadCurrencyPlacesForRead(
-        m,
-        rows.map((r) => r.currencyCode),
+      // A split's transfer line is a transfer of its parent's account, at the
+      // line's own signed amount and the parent's currency (INV-REPORT-006).
+      // Same scope as the whole-row query above, so inbound and outbound net.
+      const lineParams: unknown[] = [userId, startDate, endDate];
+      let lineScope = "";
+      if (accountIds && accountIds.length > 0) {
+        lineScope = ` AND t.account_id = ANY($4::uuid[])`;
+        lineParams.push(accountIds);
+      }
+      const lineRows: typeof wholeRows = await m.query(
+        `SELECT a.name AS "accountName", a.id AS "accountId",
+                t.currency_code AS "currencyCode",
+                SUM(CASE WHEN ts.amount > 0 THEN ts.amount ELSE 0 END) AS inbound,
+                SUM(CASE WHEN ts.amount < 0 THEN ABS(ts.amount) ELSE 0 END) AS outbound,
+                COUNT(*) AS count
+           FROM transactions t
+           JOIN transaction_splits ts ON ts.transaction_id = t.id
+           JOIN accounts a ON a.id = t.account_id
+          WHERE t.user_id = $1
+            AND ts.transfer_account_id IS NOT NULL
+            AND t.transaction_date >= $2
+            AND t.transaction_date <= $3
+            AND (t.status IS NULL OR t.status != 'VOID')
+            ${lineScope}
+          GROUP BY a.id, a.name, t.currency_code`,
+        lineParams,
       );
+
+      const currencies = [...wholeRows, ...lineRows].map((r) => r.currencyCode);
+      // Each row is in its account's currency, rounded at its precision.
+      const places = await loadCurrencyPlacesForRead(m, currencies);
+      const merged = new Map<string, Record<string, unknown>>();
+      for (const r of [...wholeRows, ...lineRows]) {
+        const key = `${r.accountId}|${r.currencyCode}`;
+        const prev = merged.get(key);
+        if (!prev) {
+          merged.set(key, { ...r });
+          continue;
+        }
+        const decimals = moneyDecimalsForCode(places, r.currencyCode);
+        for (const f of ["inbound", "outbound", "count"] as const) {
+          prev[f] = sumMoney(
+            [Number(prev[f]) || 0, Number(r[f]) || 0],
+            f === "count" ? 0 : decimals,
+          );
+        }
+      }
+      const rows = [...merged.values()].sort((x, y) =>
+        String(x.accountName).localeCompare(String(y.accountName)),
+      ) as typeof wholeRows;
       const accounts: TransferAccountSummary[] = rows.map((r) => {
         const decimals = moneyDecimalsForCode(places, r.currencyCode);
         const inbound = roundMoney(Number(r.inbound) || 0, decimals);
