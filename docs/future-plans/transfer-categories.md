@@ -124,6 +124,9 @@ revised that day; the introduction says why.
 
 ## 5. Invariants (new; IDs assigned in PR 1)
 
+FIT, ONE, TYPE and READ are INV-CATEGORY-001 to INV-CATEGORY-004 in
+`docs/system-invariants.md`.
+
 | Working name | Statement | Mechanism |
 |---|---|---|
 | FIT | No category row holds a Transfer category | One server helper called by every write path, a source-scanning guard that fails a category write that bypasses it, an integration matrix over every entry point, and a database backstop (section 12, Q2) |
@@ -242,13 +245,15 @@ rollout.
 
 ## 12. Open questions
 
-Each default is what gets built unless changed before its task starts.
+Each default is what gets built unless changed before its task starts. PR 1
+settled all three; the reasoning and the Q2 measurement are in
+`docs/specs/transfer-categories.md` section 13.
 
-| # | Question | Default |
-|---|---|---|
-| Q1 | Must a Transfer category live under one "Transfer" parent? | No. Type is a field; the default set for new users happens to sit under one parent |
-| Q2 | Is FIT also enforced in the database? | Yes, as a constraint trigger on the tables that hold a category for a category row, if its cost on bulk imports measures acceptably in PR 1; otherwise service-level only, with the guard and the matrix |
-| Q3 | How are people told? | A "What's new" entry and release notes |
+| # | Question | Default | Settled in PR 1 |
+|---|---|---|---|
+| Q1 | Must a Transfer category live under one "Transfer" parent? | No. Type is a field; the default set for new users happens to sit under one parent | Confirmed |
+| Q2 | Is FIT also enforced in the database? | Yes, as a constraint trigger on the tables that hold a category for a category row, if its cost on bulk imports measures acceptably in PR 1; otherwise service-level only, with the guard and the matrix | Replaced, approved on #2452 (2026-11-26): yes, in the database, as a `BEFORE` row trigger serialized against a type change by an advisory lock per category owner, instead of a constraint trigger, shipped with the type in PR 2 with the settings' refusals. Measured: a few percent of a chunked or single-row import's insert time for the `BEFORE` variants, against 24% and 27% for a constraint trigger made safe against a concurrent type change |
+| Q3 | How are people told? | A "What's new" entry and release notes | Confirmed |
 
 ## 13. Risks
 

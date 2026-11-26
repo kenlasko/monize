@@ -31,8 +31,8 @@ The PRs run strictly in this order.
 
 One document in `docs/specs/`, no code.
 
-- [ ] Truth tables for FIT and ONE per entry point, each with a Transfer, an Income or Expense, and no category; the three funding figures; the budget overlap rule; the three transfer measures; invariant IDs.
-- [ ] Measure the database backstop on a bulk import and record the answer to Q2.
+- [x] Truth tables for FIT and ONE per entry point, each with a Transfer, an Income or Expense, and no category; the three funding figures; the budget overlap rule; the three transfer measures; invariant IDs. (9ab7221fc)
+- [x] Measure the database backstop on a bulk import and record the answer to Q2. (4181ef3d9)
 
 Done when the maintainer has approved it and every default in the plan's section 12 is confirmed or replaced there.
 
@@ -40,8 +40,8 @@ Done when the maintainer has approved it and every default in the plan's section
 
 Backend and frontend know the third type; nothing can use it on a row yet.
 
-- [ ] Schema: `category_type` column, check, backfill, the `is_income` mirror trigger; both split constraints relaxed; `schema.sql`; entity; support-backup and undo column lists.
-- [ ] Category service and API: `type` in and out, derived `isIncome`, inheritance, type-change refusal, type filter, stats; a loan's interest and fee categories refuse a Transfer category; `list_categories` in the assistant and MCP.
+- [ ] Schema: `category_type` column, check, backfill from each category's own flag with a count of mismatched children, the categories trigger (type mirror, a child's type from its parent, the subtree cascade); both split constraints relaxed; the FIT backstop triggers under the category-owner advisory lock, raising `category_fits_row` (`docs/specs/transfer-categories.md` sections 11 to 13; Q2 as approved on #2452); `schema.sql`; entity; support-backup and undo column lists, the category's history recording `type`.
+- [ ] Category service and API: `type` in and out, derived `isIncome`, inheritance, type-change refusal under the category-owner lock (and its entry in `docs/concurrency-and-idempotency.md` section 5), type filter, stats; `category_fits_row` answered as 400; a loan's interest and fee categories, a payee's default, an asset account's asset category and a payroll deduction rule refuse a Transfer category, and a stored one is skipped where applied; `list_categories` in the assistant and MCP.
 - [ ] Backend reader sweep: every `isIncome` read moves to a typed helper; the READ guard.
 - [ ] Frontend: types, typed helper and reader sweep; category form, list and detail.
 - [ ] Default Transfer set and its translations in the default import.

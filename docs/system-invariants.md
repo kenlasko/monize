@@ -226,6 +226,10 @@ implied.
 | INV-HA-003 | A single-use artifact is consumed at most once across every replica | enforced |
 | INV-HA-004 | One deployment publishes one OIDC signing key set, stable across restarts | enforced |
 | INV-HA-005 | A relay prompt is claimed by exactly one agent poll of the credential serving the chat, and answered at most once, by that credential | enforced |
+| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | unenforced |
+| INV-CATEGORY-002 | A category write on a transfer sets both of its legs, the writer's leg only across two owners | unenforced |
+| INV-CATEGORY-003 | A category's type is its parent's, and `is_income` mirrors it while the column exists | unenforced |
+| INV-CATEGORY-004 | An expense is a category of type expense, never one that is merely not income | unenforced |
 | INV-RULE-001 | A transaction rule never changes the matched row's amount, account, date or status; the only balance it moves is a structural action's counterpart | partial |
 | INV-RULE-002 | A transaction rule applies inside the transaction that inserts the row, on every creation path | partial |
 | INV-RULE-003 | The preview, the draft test and the commit of a transaction rule are one planner, and a run commits only the plan the person previewed | partial |
@@ -9530,6 +9534,167 @@ Required tests      Two connections and two instances:
                     both connections are dropped.
 Status              enforced
 ```
+
+## Categories
+
+Design: `docs/specs/transfer-categories.md` (discussion #2387). A category gains
+a type, `income`, `expense` or `transfer`; the four entries below are what the
+type must not break. All four are `unenforced` until the pull request that
+builds each mechanism (the specification's section 2) moves it.
+
+### INV-CATEGORY-001 -- a Transfer category is held only by a transfer row
+
+```text
+Statement           No category row holds a category whose type is transfer.
+                    A category row is an ordinary transaction, a split's
+                    category line, a scheduled ordinary transaction, a
+                    scheduled split's category line, or an override line of
+                    one. A transfer row (a transfer leg, a split's transfer
+                    line and the row it links, and their scheduled forms)
+                    accepts a category of any type. A payee's default
+                    category, an asset account's asset category, a payroll
+                    deduction rule's category and a loan's interest and fee
+                    categories are never a Transfer category, and are refused
+                    from the release that can first create one (PR 2).
+Source of truth     The category's type (categories.category_type, added in
+                    PR 2) against the row's own kind: transactions.is_transfer,
+                    transaction_splits.transfer_account_id, their scheduled
+                    counterparts, and for an override its schedule's
+                    is_transfer.
+Enforcement         None today. Planned: one server fit helper called by every
+                    path that writes a category (PR 3), a source scan that
+                    fails a category write bypassing it, and a BEFORE row
+                    trigger under an advisory lock per category owner on
+                    transactions,
+                    transaction_splits, scheduled_transactions and
+                    scheduled_transaction_splits, and an override's
+                    category_id checked against its schedule, shipped with
+                    the type in PR 2 (specification sections 11 and 13; its
+                    cost is measured in section 13.1). The override's split
+                    JSON is held by the service and refused at the post at
+                    the latest.
+Concurrency scope   category owner: every category write takes the owner's
+                    advisory lock shared and a type change takes it
+                    exclusive (specification section 12; the mechanism the
+                    maintainer approved on issue #2452).
+Retry semantics     A refused write wrote nothing, and a retry is refused
+                    again.
+Crash semantics     -- (the check and the write share one transaction)
+Failure response    400 from the service; from the backstop, SQLSTATE 23514
+                    with constraint name category_fits_row, which alone is
+                    answered as 400 (every other 23514 stays a 500).
+Required tests      The entry-point integration matrix of specification
+                    section 4; the backstop on each table; a two-connection
+                    race of a type change against a row write.
+Status              unenforced
+```
+
+No category has a type of its own yet, so no row violates the statement today.
+Nothing would refuse a violation either: every write path checks only that the
+category belongs to the caller (`assertCategoryOwned`,
+`validateCategoryOwnership`), and the scheduled write paths not even that. The
+first release that can create a Transfer category must already refuse it on a
+category row, which is why the backstop ships with the type.
+
+### INV-CATEGORY-002 -- one category per transfer
+
+```text
+Statement           A category write on a transfer sets both of its legs to
+                    that category in one transaction, and a split's transfer
+                    line together with the row it links. Across two owners it
+                    sets the writer's leg only: a category belongs to one
+                    person. A request whose category both legs already hold is
+                    not a write; one that differs from either leg's is. Legs that differ before this work keep their
+                    values until the next category write.
+Source of truth     transactions.category_id on both legs (linked by
+                    linked_transaction_id); transaction_splits.category_id and
+                    the linked row's category_id.
+Enforcement         None as a rule. Some paths happen to hold it:
+                    transferLegColumns (create) and updateTransfer write both
+                    legs of a same-owner transfer, and the scheduled post
+                    passes one category to both. Planned: every category write
+                    on a transfer through the transfer write helpers, held by
+                    the same integration matrix (PR 3).
+Concurrency scope   transfer: both legs locked in ascending account id,
+                    transactions before splits
+                    (docs/concurrency-and-idempotency.md section 5).
+Retry semantics     Idempotent: a repeated write sets the same values.
+Crash semantics     -- (both legs in one transaction)
+Failure response    -- (a write either sets both legs or refuses)
+Required tests      The entry-point integration matrix of specification
+                    section 4, each row checking both legs.
+Status              unenforced
+```
+
+Paths that write one leg today, each cited by the specification's section 4:
+the plain `PATCH /transactions/:id`, bulk update (deliberately, per its
+comment), `updateSplitTransferLeg` (the linked row without its line), a rule's
+`convert_to_transfer` with `clearCategory: false` (the kept row only), the QIF
+import's payee default (this file's leg only), the Money importer (each leg its
+own category from the file), and the removal of a split line that collapses the
+split into a transfer. No constraint keeps the legs equal.
+
+### INV-CATEGORY-003 -- a category's type is its parent's
+
+```text
+Statement           A category's type is income, expense or transfer and
+                    equals its parent's type, for every category written from
+                    PR 2 on. While categories.is_income exists (nullable
+                    today), it is true exactly when the type is income.
+Source of truth     categories.category_type (PR 2), categories.parent_id.
+Enforcement         None in the database. Today only is_income exists, and
+                    backend/src/categories/categories.service.ts gives a new
+                    child its parent's isIncome; a direct SQL write can break
+                    it. Planned: the same service rule over the type, a type
+                    change or a move refused while a holder would no longer
+                    fit (INV-CATEGORY-001), and a categories trigger that
+                    keeps is_income and category_type in step and gives a
+                    child its parent's type on every insert and move, since
+                    the previous release's pods write is_income alone (PR 2,
+                    specification section 11).
+Concurrency scope   category
+Retry semantics     --
+Crash semantics     -- (one transaction)
+Failure response    400 on a type change or a move that a holder refuses.
+Required tests      Integration: the backfill makes income exactly the
+                    categories whose is_income is true (false and NULL become
+                    expense); a write of either column sets the other; a child
+                    takes its parent's type, including on a previous-release
+                    write that sets is_income alone or moves a category.
+Status              unenforced
+```
+
+The violation exists in today's data: a moved category is re-typed alone and
+its children keep their flag (`CategoriesService.update`), and the Money
+importer stores each category's own flag. The backfill keeps each child's own
+type, because re-typing it would move figures (no migration, decision 3), and
+the migration counts the mismatches (specification section 11). A mismatch
+lasts until the category or an ancestor is next moved or re-typed.
+
+### INV-CATEGORY-004 -- an expense is a category of type expense
+
+```text
+Statement           A reader that means "expense" tests the type for expense,
+                    through one typed helper per layer, and never reads "not
+                    income" as expense. A Transfer category is never counted
+                    as spending or as income.
+Source of truth     categories.category_type (PR 2).
+Enforcement         None. About 60 backend and 40 frontend source files read
+                    isIncome, many as !isIncome meaning expense
+                    (docs/future-plans/transfer-categories.md section 2).
+                    Planned: the typed helpers and a source scan failing a new
+                    raw isIncome read (PR 2).
+Concurrency scope   -- (read path)
+Retry semantics     -- (read path)
+Crash semantics     -- (read path)
+Failure response    --
+Required tests      Unit tests of the helpers; the source scan.
+Status              unenforced
+```
+
+The violation is latent: while no Transfer category exists, "not income" and
+"expense" pick the same categories. From the first Transfer category on, every
+reader the sweep misses counts it as spending.
 
 ## Transaction rules
 
