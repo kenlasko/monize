@@ -43,7 +43,8 @@ Housing (parent)
 <p>Click <strong>Delete</strong> on a category&#x27;s row or detail page. Monize first checks how many transactions and scheduled bills and deposits use the category:</p>
 <ul>
 <li>If none do, the dialog says the category can be safely deleted.</li>
-<li>If some do, choose where they go under <strong>Reassign to:</strong> another category, or <strong>Leave uncategorized</strong>. They are moved before the category is deleted.</li>
+<li>If some do, choose where they go under <strong>Reassign to:</strong> another category, or <strong>Leave uncategorized</strong>. They are moved and the category is deleted in one step.</li>
+<li>If something else still uses the category, the delete is refused and nothing is moved. The dialog lists what uses it, with a link to each kind: budgets, rules, reports, payroll deductions, loan accounts and shared-expense postings. Change or remove those, then delete the category again.</li>
 </ul>
 <figure><img src="/docs/images/categories-delete-dialog.png" alt="The delete dialog for a category in use, offering to reassign its transactions to another category" width="448" height="316" loading="lazy" decoding="async" class="shot-dark"/><img src="/docs/images/categories-delete-dialog.light.png" alt="The delete dialog for a category in use, offering to reassign its transactions to another category" width="448" height="316" loading="lazy" decoding="async" class="shot-light"/><figcaption>The delete dialog for a category in use, offering to reassign its transactions to another category</figcaption></figure>
 <p>A category that still has subcategories cannot be deleted: move or delete its subcategories first. Payees that used the deleted category as their <a href="#default-categories">default category</a> are left without one. Deleting cannot be undone from the dialog.</p>
