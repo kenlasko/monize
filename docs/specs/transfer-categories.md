@@ -115,7 +115,7 @@ keeps refusing transfer rows on the joint register.
 | Create or replace a split: `PUT /transactions/:id/splits`, a patch carrying splits, a rule's split | `updateSplits`, `createSplitsInternal` in `backend/src/transactions/transaction-split.service.ts` | a transfer line: the line and its linked row (today: dropped silently); a category line: refused | either kind of line: written; a transfer line's linked row follows (today: a transfer line's category is dropped) | none |
 | Add a line: `POST /transactions/:id/splits` | `addSplit` | a transfer line: the line and the row it creates (today: the insert fails on `chk_split_kind_exclusive`); a category line: refused | same as Transfer for a transfer line; a category line: written | none |
 | Remove a line, leaving two or more | `removeSplit` | no category is written; a removed transfer line's linked row is deleted, as today | | |
-| Remove a line, leaving one | same | the remaining transfer line: the parent becomes a transfer holding the line's category, and its linked row already holds it (today: the parent's category is cleared) | the remaining transfer line: as Transfer; the remaining category line: the parent takes its category, as today | none |
+| Remove a line, leaving one | same | the remaining transfer line: the parent becomes a transfer holding the line's category, and its linked row already holds it (today a transfer line holds none, so the parent gets none) | the remaining transfer line: as Transfer; the remaining category line: the parent takes its category, as today | none |
 | Bulk recategorize a split parent | `bulkRecategorizeCategorySplits` | its category lines are skipped with a reason; its transfer lines are not touched, as today | its category lines, as today | its category lines cleared |
 
 ### 4.3 Scheduled transactions
@@ -562,8 +562,100 @@ The same in EUR with no USD->EUR rate within `FX_MAX_RATE_AGE_DAYS`: section
 | # | Question | Answer |
 |---|---|---|
 | Q1 | Must a Transfer category live under one "Transfer" parent? | **No, default confirmed.** The type is a field, so a required parent would say it a second time and need a guard of its own to keep the two in step. Top-level Transfer categories are useful ("Credit card payments"), and the unique key (user, name, parent) already lets a top-level Transfer category share a name with an Expense one. The default set for new users sits under one parent so it groups in pickers; nothing requires it. |
-| Q2 | Is FIT also enforced in the database? | Pending the measurement of a constraint trigger against a bulk import, the task list's second step for this pull request. |
+| Q2 | Is FIT also enforced in the database? | **Yes, default confirmed, as a `BEFORE` row trigger that locks the category `FOR SHARE` rather than as a constraint trigger.** Measured below. |
 | Q3 | How are people told? | **A "What's new" entry and the release notes, default confirmed.** Nothing changes on upgrade, so there is nothing to tell any one person about their data; the entry says the type exists and how to move a transfer to one (edit, bulk edit, a rule). |
+
+### 13.1 The Q2 measurement
+
+The trigger checks a row only when it is a category row holding a category
+(`WHEN (NEW.category_id IS NOT NULL AND NOT NEW.is_transfer)` on
+`transactions`, `NEW.transfer_account_id IS NULL` on `transaction_splits`), on
+`INSERT` and on an `UPDATE OF` the category or the row's kind, so the link
+back-patch of the Money import and every other update never fire it.
+
+Method: PostgreSQL 18.7 in a container on the development worker, the schema
+of `database/schema.sql` with PR 2's `category_type` column and the relaxed
+split constraint added, one user, 150 categories (100 expense, 20 income, 30
+transfer). Each run starts from a fresh copy of the seeded database. Two import
+shapes, each in one transaction:
+
+- **Chunked**, as the Money importer writes
+  (`backend/src/import/mny/writers/write-transactions.ts`, 500 rows per
+  `INSERT`): 50,000 transactions (80% ordinary, 10% transfers, 10% split
+  parents) and 10,000 split lines, of which 42,500 are checked (37,500 ordinary
+  rows holding a category and 5,000 category lines).
+- **Single-row**, as the QIF, OFX and CSV path writes: 5,000 one-row
+  `INSERT` statements, 4,750 holding a category.
+
+Median of five runs, the variants alternated; the database time of the
+statements, not of a whole import (the application's per-row work is outside
+it):
+
+| Variant | Chunked, ms | vs none | Single-row, ms | vs none |
+|---|---|---|---|---|
+| Round 1: no trigger | 10,176 | -- | 2,334 | -- |
+| Round 1: `BEFORE` row trigger, reads `NEW` | 11,034 | +8.4% | 2,597 | +11.3% |
+| Round 1: constraint trigger, reads `NEW` | 10,931 | +7.4% | 2,483 | +6.4% |
+| Round 1: constraint trigger, no `WHEN` filter | 11,146 | +9.5% | -- | -- |
+| Round 2: no trigger | 10,464 | -- | 2,341 | -- |
+| Round 2: constraint trigger, reads `NEW` | 11,232 | +7.3% | -- | -- |
+| Round 2: constraint trigger, re-reads the row, locks the category | 12,959 | +23.8% | 2,979 | +27.3% |
+| Round 2: `BEFORE` row trigger, locks the category | 10,691 | +2.2% | 2,537 | +8.4% |
+
+Runs of one variant spread by 1 to 14% (23% once), mostly from one slow run,
+so a difference of a few points between two variants is noise: the `BEFORE`
+trigger without a lock measured slower than the one with it, which is not a
+saving. A type change, checked by the categories trigger against a database
+of 5,000 rows, took under 10 ms per statement, client overhead included.
+
+Why not the constraint trigger the plan named. A constraint trigger is the
+only kind that can be deferred, but a deferred check must re-read the row
+(`NEW` is stale by commit), and every variant must lock the category to be
+correct against a concurrent type change (section 12). That correct
+constraint trigger cost a quarter of the insert time. The likely cause, not
+isolated further, is the extra lookup of the row and the order of the locks:
+the foreign key's check has already taken a weaker lock on the category when
+the trigger asks for a stronger one, on every row. The `BEFORE` trigger takes
+its lock before the foreign key's check runs, costs about what the variants
+without a lock cost, and reads exactly the row being written.
+What it gives up is deferral, which no path needs: a write that turns a
+transfer into a category row (conversion, a schedule's switch) clears a
+Transfer category in the same statement, and the integration matrix holds
+that.
+
+The shape PR 2 builds, for `transactions`; `transaction_splits` tests
+`NEW.transfer_account_id IS NULL`, the two schedule tables do the same with
+their own columns, and an override's `category_id` is checked against its
+schedule's `is_transfer` (the override's split JSON is held by the service
+only, and a line that does not fit is refused at the post at the latest):
+
+```sql
+CREATE FUNCTION refuse_transfer_category_on_category_row() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE category_kind text;
+BEGIN
+  -- FOR SHARE: a concurrent type change waits for this row, or this row for it
+  SELECT c.category_type INTO category_kind FROM categories c
+   WHERE c.id = NEW.category_id FOR SHARE;
+  IF category_kind = 'transfer' THEN
+    RAISE EXCEPTION 'a Transfer category goes only on a transfer'
+      USING ERRCODE = '23514', TABLE = TG_TABLE_NAME;
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER trg_transactions_category_fits
+  BEFORE INSERT OR UPDATE OF category_id, is_transfer ON transactions
+  FOR EACH ROW WHEN (NEW.category_id IS NOT NULL AND NOT NEW.is_transfer)
+  EXECUTE FUNCTION refuse_transfer_category_on_category_row();
+```
+
+`SECURITY DEFINER` with a pinned `search_path`, as the attachment tombstone
+trigger in `database/schema.sql` is: under RLS the caller's scope would hide a
+category it does not own and the check would pass silently. A categories
+trigger refuses a change to `transfer` while a category row holds the
+category. Restore sets `app.preserve_timestamps` rather than disabling
+triggers, so the backstop holds there too.
 
 ## 14. Test matrix
 
@@ -614,7 +706,8 @@ the review can find them:
    transfer whose legs differ takes the outgoing leg's category.
 7. Undo restores both legs to their recorded values, differing ones included
    (section 4.7).
-8. The database backstop ships with the type in PR 2 (section 11).
+8. The database backstop is a `BEFORE` trigger with a lock, and ships with the
+   type in PR 2 (sections 11 and 13).
 
 ## 16. Out of scope
 

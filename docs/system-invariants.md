@@ -9550,11 +9550,12 @@ Source of truth     The category's type (categories.category_type, added in
                     scheduled counterparts.
 Enforcement         None today. Planned: one server fit helper called by every
                     path that writes a category (PR 3), a source scan that
-                    fails a category write bypassing it, and a database
-                    backstop on transactions, transaction_splits,
-                    scheduled_transactions and scheduled_transaction_splits,
-                    shipped with the type in PR 2 (specification sections 11
-                    and 13).
+                    fails a category write bypassing it, and a BEFORE row
+                    trigger locking the category FOR SHARE on transactions,
+                    transaction_splits, scheduled_transactions and
+                    scheduled_transaction_splits, shipped with the type in
+                    PR 2 (specification sections 11 and 13; its cost is
+                    measured in section 13.1).
 Concurrency scope   category: a type change and a row write serialize on the
                     category's row lock (specification section 12).
 Retry semantics     A refused write wrote nothing, and a retry is refused

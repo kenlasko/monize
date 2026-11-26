@@ -31,7 +31,7 @@ The PRs run strictly in this order.
 
 One document in `docs/specs/`, no code.
 
-- [ ] Truth tables for FIT and ONE per entry point, each with a Transfer, an Income or Expense, and no category; the three funding figures; the budget overlap rule; the three transfer measures; invariant IDs.
+- [x] Truth tables for FIT and ONE per entry point, each with a Transfer, an Income or Expense, and no category; the three funding figures; the budget overlap rule; the three transfer measures; invariant IDs. (9ab7221fc)
 - [ ] Measure the database backstop on a bulk import and record the answer to Q2.
 
 Done when the maintainer has approved it and every default in the plan's section 12 is confirmed or replaced there.
