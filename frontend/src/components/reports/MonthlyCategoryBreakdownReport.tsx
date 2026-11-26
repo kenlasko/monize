@@ -31,6 +31,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ReportError } from '@/components/reports/ReportError';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { exportToCsv } from '@/lib/csv-export';
 import { gainLossColor } from '@/lib/format';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
@@ -1524,6 +1525,9 @@ export function MonthlyCategoryBreakdownReport() {
           displayCurrency={currency ?? ''}
         />
       )}
+      {/* The transfer rows can hold an imported estimate of a cross-currency
+          leg; the figures include it and the note says so. */}
+      {data && <ProvisionalDataNotice count={data.provisionalCount} />}
 
       {/* Table */}
       <div className={`${CARD_CLASS} px-2 py-4 sm:p-6`}>

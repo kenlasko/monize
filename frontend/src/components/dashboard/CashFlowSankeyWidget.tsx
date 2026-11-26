@@ -16,6 +16,7 @@ import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { DateRangeSelector } from '@/components/ui/DateRangeSelector';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import {
   CashFlowSankeyDiagram,
   sankeyNodeHref,
@@ -215,6 +216,7 @@ export function CashFlowSankeyWidget({ accounts, isLoading }: CashFlowSankeyWidg
               {tr('sankey.excludedCount', { count: data.excludedCount })}
             </p>
           )}
+          <ProvisionalDataNotice count={data.provisionalCount} className="mt-1" />
         </>
       )}
     </WidgetCard>
