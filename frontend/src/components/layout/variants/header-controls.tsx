@@ -42,6 +42,15 @@ function SearchIconTrigger() {
   );
 }
 
+/**
+ * Folio and Pebble draw the "search or jump to" label only where the header
+ * row has room for it: below md the right-hand controls already fill the row,
+ * and from xl to 2xl the nav links compete for it (the same band where the
+ * user's name is hidden in `AppHeader`). Elsewhere the label collapses to a
+ * screen-reader-only name and the button is the magnifying glass alone.
+ */
+const PALETTE_LABEL_CLASS = 'whitespace-nowrap max-md:sr-only xl:max-2xl:sr-only';
+
 function PaletteTrigger({ variant }: { variant: 'folio' | 'pebble' }) {
   const t = useTranslations('navigation');
   const tHelp = useTranslations('help');
@@ -59,7 +68,7 @@ function PaletteTrigger({ variant }: { variant: 'folio' | 'pebble' }) {
     >
       <span className="flex items-center gap-2">
         <MagnifyingGlassIcon aria-hidden="true" className="h-4 w-4 flex-shrink-0" />
-        <span className="max-sm:sr-only">{t('commandPalette.trigger')}</span>
+        <span className={PALETTE_LABEL_CLASS}>{t('commandPalette.trigger')}</span>
       </span>
       <kbd
         aria-hidden="true"

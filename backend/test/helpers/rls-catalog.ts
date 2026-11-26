@@ -106,11 +106,13 @@ export async function loadTableCatalog(
     column_name: string;
     ref_table: string;
     ref_column: string;
+    key_width: number;
   }[] = await dataSource.query(
     `SELECT rel.relname AS table_name,
             att.attname AS column_name,
             fref.relname AS ref_table,
-            fatt.attname AS ref_column
+            fatt.attname AS ref_column,
+            cardinality(con.conkey) AS key_width
        FROM pg_constraint con
        JOIN pg_class rel ON rel.oid = con.conrelid
        JOIN pg_namespace ns ON ns.oid = rel.relnamespace
@@ -120,6 +122,7 @@ export async function loadTableCatalog(
        JOIN pg_attribute fatt ON fatt.attrelid = fref.oid AND fatt.attnum = pairs.fattnum
       WHERE con.contype = 'f' AND ns.nspname = 'public'`,
   );
+  const compositeColumns = new Set<string>();
   for (const fk of fks) {
     // Ownership can have both a users FK and an ownership-preserving composite
     // FK. Keep the direct owner reference; other pairs resolve the seeded parent.
@@ -127,6 +130,20 @@ export async function loadTableCatalog(
       .get(fk.table_name)
       ?.foreignKeys.get(fk.column_name);
     if (existing?.refTable === "users" && fk.ref_table !== "users") continue;
+    // A column can also sit inside a composite key that keeps a child in its
+    // parent's group (shared_entries.group_id is in two, one of them a
+    // self-reference). pg_constraint's row order is undefined, so a composite
+    // pair never replaces the column's own single-column key, whichever of the
+    // two arrives first.
+    if (
+      fk.key_width > 1 &&
+      existing &&
+      !compositeColumns.has(`${fk.table_name}.${fk.column_name}`)
+    )
+      continue;
+    if (fk.key_width > 1)
+      compositeColumns.add(`${fk.table_name}.${fk.column_name}`);
+    else compositeColumns.delete(`${fk.table_name}.${fk.column_name}`);
     catalog.get(fk.table_name)?.foreignKeys.set(fk.column_name, {
       column: fk.column_name,
       refTable: fk.ref_table,

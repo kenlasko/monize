@@ -21,7 +21,12 @@ describe('header search slot', () => {
     // Standard is the bare magnifying glass; the others carry the visible field.
     const label = screen.getByText('Search or jump to');
     if (style === 'standard') expect(label).toHaveClass('sr-only');
-    else expect(label).not.toHaveClass('sr-only');
+    else {
+      // The label collapses to the magnifying glass where the header row is
+      // too narrow for the text (below md, and from xl to 2xl).
+      expect(label).toHaveClass('max-md:sr-only', 'xl:max-2xl:sr-only');
+      expect(label).not.toHaveClass('sr-only');
+    }
     const trigger = screen.getByRole('button', { name: /Search or jump to/ });
     expect(trigger).toHaveAttribute('aria-keyshortcuts', 'Control+K Meta+K');
     fireEvent.click(trigger);
