@@ -22,6 +22,11 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
   the same, by the line's parent account.
 - [x] Restate "reads the outgoing leg at 90 EUR" to 180; add the whole-vs-split
   parity case.
+- [ ] Follow-up (unverified): the breakdown's whole-row transfer branch has no
+  investment exclusion while its line branch must carry it
+  (`investment-filter.guard.spec.ts`), so a transfer line on an investment-linked
+  parent or in a brokerage sleeve is dropped while its counterpart counts; the
+  writes are not known to produce that shape.
 
 ## T2 the transfers filter
 

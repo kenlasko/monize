@@ -305,7 +305,8 @@ export class MonthlyCategoryBreakdownService {
   }
 
   /**
-   * Aggregate transfers per (account, month) into signed "from"/"to" rows.
+   * Aggregate transfers per (account, month) into signed "from"/"to" rows,
+   * from whole transfer rows and a split's transfer lines (INV-REPORT-006).
    * Each transfer is stored as two linked legs (a negative leg on the source
    * account and a positive leg on the destination account); grouping every
    * leg by the account it sits on therefore counts each transfer exactly once

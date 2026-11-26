@@ -13,6 +13,7 @@ import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 import {
   applyInvestmentTransactionFilters,
   brokerageExclusionForEntity,
+  investmentExclusionSql,
   investmentLinkedSplitExclusion,
   investmentLinkedTransactionExclusion,
   reportableTransactionAmountSql,
@@ -315,7 +316,8 @@ export class TransactionAnalyticsService {
 
   /**
    * Per-account transfer activity between the user's own accounts for a date
-   * range. Shared by the AI Assistant's tool executor and the MCP server so
+   * range: whole transfer rows plus a split's transfer lines, a line counted on
+   * its parent's account at its own signed amount (INV-REPORT-006). Shared by the AI Assistant's tool executor and the MCP server so
    * both surfaces return the same shape. `inbound` counts positive-sign
    * transfer rows (money received), `outbound` counts the absolute value of
    * negative-sign rows (money sent). When no account filter is applied,
@@ -383,6 +385,12 @@ export class TransactionAnalyticsService {
             AND t.transaction_date >= $2
             AND t.transaction_date <= $3
             AND (t.status IS NULL OR t.status != 'VOID')
+            AND ts.amount <> 0
+            AND ${investmentExclusionSql({
+              accountAlias: "a",
+              transactionAlias: "t",
+              splitAlias: "ts",
+            })}
             ${lineScope}
           GROUP BY a.id, a.name, t.currency_code`,
         lineParams,

@@ -1763,6 +1763,67 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
+    it("merges split transfer lines per account and currency", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          accountName: "Chequing",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "100",
+          count: "1",
+        },
+      ]);
+      managerMock.query.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          accountName: "Chequing",
+          currencyCode: "USD",
+          inbound: "5.25",
+          outbound: "100",
+          count: "1",
+        },
+        {
+          accountId: "acc-2",
+          accountName: "Mortgage",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "40",
+          count: "2",
+        },
+      ]);
+
+      const result = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+        ["acc-1", "acc-2"],
+      );
+
+      expect(managerMock.query.mock.calls[0][1]).toEqual([
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+        ["acc-1", "acc-2"],
+      ]);
+      expect(managerMock.query.mock.calls[0][0]).toContain("ANY($4::uuid[])");
+      expect(result.accounts).toEqual([
+        expect.objectContaining({
+          accountId: "acc-1",
+          inbound: 5.25,
+          outbound: 200,
+          transferCount: 2,
+        }),
+        expect.objectContaining({
+          accountId: "acc-2",
+          outbound: 40,
+          transferCount: 2,
+        }),
+      ]);
+      expect(result.totalOutbound).toBe(240);
+      expect(result.transferCount).toBe(4);
+    });
+
     it("returns zeroed totals when there are no transfers", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([]);
 
