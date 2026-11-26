@@ -29,3 +29,7 @@ The demo Custom Report named “Income vs Expenses” is an existing fixture of 
 - Assert row identity, count, sign, subtotal and headline. Exercise the specific filter or grouping through the public execution method. Permute row order and partition one population by disjoint keys, using an independent signed sum. Compare signed rows when the aggregate net is zero.
 - Verify signed labels and rendering in `custom-report-measure.test.ts`, `CustomReportViewer.test.tsx` and `ReportChart.test.tsx`. Check displayed values and exported cells for the same inputs, including negative and mixed-sign groups.
 - Before requesting review, run each affected layer's checks listed in `AGENTS.md`, rebase on the current upstream main, and link the approving discussion. Execute database-backed suites serially on a disposable database.
+
+### Income sources and spending by payee
+
+Apply the signed income definition after grouping by source. Select eligible spending components under the same date, category and conversion rules before grouping by payee. Carry the resulting amounts through report, dashboard, chart and export consumers. Verify the two approved −50 cases with PostgreSQL and cover a full refund, split lines, missing rates, signed charts and a population beyond the chart limit.
