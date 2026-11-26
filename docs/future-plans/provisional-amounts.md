@@ -164,6 +164,11 @@ Decided in issue #2398 (the mark and the note on accounts, the register header a
 - A sum of balances sums its accounts' counts (`sumProvisionalCounts`): an account row (a folded pair counts both ledgers), a group header and the accounts page's summary cards. The register header (the bar and the full widget) reads the account's own count.
 - Net worth reads the month's `provisionalCount`, `assetsProvisionalCount` and `liabilitiesProvisionalCount`: the hero, the widget's headline and the report's headline mark the newest month, and the report's table marks each month. The report's note takes the largest month's count, because a provisional leg stays in every month from its date on and a sum would count it once per month.
 
+Decided in issue #2399 (the note and the mark on reports, panels and budgets):
+
+- A count that covers one figure marks that figure; a count that covers several figures at once is a `ProvisionalDataNotice`, because the response does not say which figure holds the estimate. Marked: the custom report's headline (`PartialTotal` with the summary's count), the payee and category info widgets' period figures (`summarizeInDisplayCurrency` returns the native count, or the conversion's count over the currencies that converted), each account row of the payee and category pages' account panels (`TopGroupsPanel` reads a row's `provisionalCount`), and both totals on a currency's detail page. Noted: the custom report (beside its headline mark), the Cash Flow Sankey report and its dashboard widget, the Monthly Category Breakdown, each tag bucket's tagged transfer flows (Income vs Expenses and Cash Flow, under the inflow and outflow pair), and the budget dashboard (the summary's count over the transfer lines and transfer income).
+- A clickable row is a `<button>` and `ProvisionalMark`'s tooltip trigger is one too, so the mark sits beside the row's button, never inside it. For the same reason the budget lines carry no per-line mark: the standard row is a button end to end, so the budget dashboard's note is the one surface for every UI style.
+
 ## 10. Test matrix
 
 The discussion's ten scenarios, each owned by a task.
