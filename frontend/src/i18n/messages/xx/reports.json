@@ -2045,6 +2045,7 @@
     "unknown": "[XX-Unknown-XX]",
     "knownPartOnly": "[XX-Only the part that could be converted is drawn.-XX]",
     "roundingNote": "[XX-Each side's total is rounded once and shared out between its flows, so the diagram adds up exactly. A category here can therefore differ by one cent, or the smallest unit of your currency, from the same category in Spending by Category or Income by Source, which round each category on its own.-XX]",
+    "expenseRefund": "[XX-{category} (expense refund)-XX]",
     "netRefund": "[XX-Net refund: this subcategory took in more than it spent.-XX]",
     "excludedCount": "[XX-{count, plural, one {# amount could not be converted and is left out of the figures above.} other {# amounts could not be converted and are left out of the figures above.}}-XX]",
     "noData": "[XX-No income, spending or transfers in this period-XX]",

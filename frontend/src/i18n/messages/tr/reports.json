@@ -2045,6 +2045,7 @@
     "unknown": "Bilinmiyor",
     "knownPartOnly": "Yalnızca dönüştürülebilen kısım çizilir.",
     "roundingNote": "Her tarafın toplamı bir kez yuvarlanır ve akışlarına paylaştırılır; böylece diyagram tam olarak tutar. Bu yüzden buradaki bir kategori, her kategoriyi ayrı yuvarlayan Kategoriye Göre Harcama ya da Kaynağa Göre Gelir raporundaki aynı kategoriden bir sent ya da para biriminizin en küçük birimi kadar farklı olabilir.",
+    "expenseRefund": "{category} (gider iadesi)",
     "netRefund": "Net iade: bu alt kategori harcadığından fazlasını aldı.",
     "excludedCount": "{count, plural, one {# tutar dönüştürülemedi ve yukarıdaki rakamlara dahil edilmedi.} other {# tutar dönüştürülemedi ve yukarıdaki rakamlara dahil edilmedi.}}",
     "noData": "Bu dönemde gelir, harcama veya transfer yok",

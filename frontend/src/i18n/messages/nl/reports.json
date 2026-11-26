@@ -2045,6 +2045,7 @@
     "unknown": "Onbekend",
     "knownPartOnly": "Alleen het deel dat kon worden omgerekend, wordt getekend.",
     "roundingNote": "Het totaal van elke kant wordt één keer afgerond en over de stromen verdeeld, zodat het diagram precies klopt. Een categorie kan hier daarom een cent, of de kleinste eenheid van uw valuta, afwijken van dezelfde categorie in Uitgaven per categorie of Inkomsten per bron, die elke categorie apart afronden.",
+    "expenseRefund": "{category} (terugbetaling van uitgaven)",
     "netRefund": "Netto terugbetaling: deze subcategorie ontving meer dan er werd uitgegeven.",
     "excludedCount": "{count, plural, one {# bedrag kon niet worden omgerekend en ontbreekt in de cijfers hierboven.} other {# bedragen konden niet worden omgerekend en ontbreken in de cijfers hierboven.}}",
     "noData": "Geen inkomsten, uitgaven of overboekingen in deze periode",
