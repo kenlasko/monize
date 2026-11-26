@@ -780,6 +780,7 @@ describe("ReportsService", () => {
         knownTotal: 0,
         count: 0,
         average: 0,
+        provisionalCount: 0,
       });
     });
 
@@ -2009,6 +2010,7 @@ describe("ReportsService", () => {
           knownTotal: 0,
           count: 0,
           average: 0,
+          provisionalCount: 0,
         });
       });
     });
@@ -3308,6 +3310,130 @@ describe("ReportsService", () => {
 
           // The column is the only signal (design P4).
           expect(result.data[0].value).toBe(-90);
+        });
+      });
+
+      describe("provisionalCount (provisional-amounts design section 7)", () => {
+        // 100 USD sent on a day whose stored rate is 0.80 EUR per USD; the USD
+        // file's import estimated the EUR leg at +80 and flagged it.
+        const pendingIn = {
+          id: "tx-in",
+          amount: 80,
+          currencyCode: "EUR",
+          exchangeRate: 1,
+          isSplit: false,
+          linkedTransactionId: "tx-out",
+          amountIsProvisional: true,
+          account: { id: "acc-eur", name: "Euro Savings" },
+        } as never;
+        const estimatedIn = (extra: Partial<Transaction> = {}) =>
+          inLeg({ amount: 80, amountIsProvisional: true, ...extra });
+
+        it("counts the estimate when only the provisional side is in the report", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [estimatedIn()]);
+
+          expect(result.data.map((d) => [d.id, d.value])).toEqual([
+            ["tx-in", 80],
+          ]);
+          expect(result.provisionalCount).toBe(1);
+          expect(result.summary.provisionalCount).toBe(1);
+          expect(result.summary.total).toBe(80);
+        });
+
+        it("nets both sides to zero and still counts the estimate", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [
+            outLeg({ linkedTransaction: pendingIn }),
+            estimatedIn(),
+          ]);
+
+          expect(result.data.map((d) => [d.id, d.value])).toEqual([
+            ["tx-out", -80],
+            ["tx-in", 80],
+          ]);
+          expect(result.summary.total).toBe(0);
+          expect(result.provisionalCount).toBe(1);
+        });
+
+        it("counts nothing when only the confirmed side is in the report", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run("EUR", [
+            outLeg({ linkedTransaction: pendingIn }),
+          ]);
+
+          expect(result.data[0].value).toBe(-80);
+          expect(result.provisionalCount).toBe(0);
+          expect(result.summary.provisionalCount).toBe(0);
+        });
+
+        it("counts nothing once the amount is confirmed", async () => {
+          const result = await run("EUR", [
+            inLeg({ amount: 90, amountIsProvisional: false }),
+          ]);
+
+          expect(result.provisionalCount).toBe(0);
+        });
+
+        it("counts an estimate a grouped total sums, once", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run(
+            "EUR",
+            [estimatedIn()],
+            {
+              metric: MetricType.TOTAL_AMOUNT,
+              direction: DirectionFilter.INCOME_ONLY,
+            },
+            GroupByType.MONTH,
+          );
+
+          expect(result.summary.total).toBe(80);
+          expect(result.provisionalCount).toBe(1);
+        });
+
+        it("counts nothing a direction leaves out of every group", async () => {
+          storedRates.set("USD->EUR", 0.8);
+
+          const result = await run(
+            "EUR",
+            [estimatedIn()],
+            {
+              metric: MetricType.TOTAL_AMOUNT,
+              direction: DirectionFilter.EXPENSES_ONLY,
+            },
+            GroupByType.MONTH,
+          );
+
+          expect(result.data).toEqual([]);
+          expect(result.provisionalCount).toBe(0);
+        });
+
+        it("counts nothing under the count metric, which sums no amount", async () => {
+          const result = await run(
+            "EUR",
+            [estimatedIn()],
+            { metric: MetricType.COUNT },
+            GroupByType.MONTH,
+          );
+
+          expect(result.summary.total).toBe(1);
+          expect(result.provisionalCount).toBe(0);
+        });
+
+        it("counts nothing for an estimate with no rate into the reporting currency", async () => {
+          // Reported in CAD, the EUR estimate converts at nothing: it is in no
+          // figure, so no figure holds it (design section 8).
+          const result = await run("CAD", [
+            estimatedIn({ linkedTransaction: null }),
+          ]);
+
+          expect(result.data.map((d) => d.value)).toEqual([null]);
+          expect(result.missingCurrencies).toEqual(["EUR"]);
+          expect(result.provisionalCount).toBe(0);
         });
       });
 

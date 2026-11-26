@@ -69,6 +69,22 @@ describe("netLinesOf", () => {
     });
     expect(netLinesOf(parent, false)[0].cell).toBe("transfer:tx-1:0");
   });
+
+  it("names a provisional whole row, and no split line", () => {
+    expect(
+      netLinesOf(tx({ isTransfer: true, amountIsProvisional: true }), false)[0]
+        .provisionalRow,
+    ).toBe("tx-1");
+    expect(
+      netLinesOf(tx({ amountIsProvisional: false }), false)[0],
+    ).not.toHaveProperty("provisionalRow");
+    const parent = tx({
+      isSplit: true,
+      amountIsProvisional: true,
+      splits: [{ amount: -5, categoryId: "a" }],
+    });
+    expect(netLinesOf(parent, false)[0]).not.toHaveProperty("provisionalRow");
+  });
 });
 
 describe("NetCells", () => {
@@ -170,6 +186,54 @@ describe("NetCells", () => {
     expect(settled.has("A")).toBe(false);
     expect(settled.get("B")!.agg.knownSubtotal).toBe(10);
     expect(leftOut).toEqual(["USD:c"]);
+  });
+
+  describe("provisional rows (provisional-amounts design section 6, P5)", () => {
+    const leg = (cell: string, unit: string, currency = "CAD") => ({
+      ...line(cell, unit, 0, currency),
+      provisionalRow: unit,
+    });
+    const settledRows = (
+      direction: DirectionFilter,
+      add: (cells: ReturnType<typeof createNetCells>) => void,
+    ): string[] => {
+      const rows: string[] = [];
+      const cells = createNetCells(direction, false, undefined, (row) =>
+        rows.push(row),
+      );
+      add(cells);
+      cells.settle();
+      return rows;
+    };
+
+    it("names a provisional row once however many groups sum it", () => {
+      expect(
+        settledRows(DirectionFilter.BOTH, (cells) => {
+          cells.add("A", leg("transfer:p", "p"), 80);
+          cells.add("B", leg("transfer:p", "p"), 80);
+          cells.add("A", line("food", "x"), -5);
+        }),
+      ).toEqual(["p"]);
+    });
+
+    it("names none whose cell the direction drops", () => {
+      // An incoming +80 leg is no expense.
+      expect(
+        settledRows(DirectionFilter.EXPENSES_ONLY, (cells) =>
+          cells.add("g", leg("transfer:p", "p"), 80),
+        ),
+      ).toEqual([]);
+    });
+
+    it("names none whose line had no rate, nor one left out with its part", () => {
+      expect(
+        settledRows(DirectionFilter.BOTH, (cells) => {
+          cells.add("g", leg("transfer:p", "p", "EUR"), null);
+          cells.add("g", leg("food", "q", "USD"), -10);
+          cells.add("g", line("food", "r", 0, "USD"), null);
+        }),
+      ).toEqual([]);
+    });
   });
 
   it("keeps a whole part's lines for the count metric", () => {
