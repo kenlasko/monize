@@ -2791,44 +2791,100 @@ describe("InvestmentTransactionsService", () => {
       );
     });
 
-    it("deletes old cash transaction and reverses balance during reversal", async () => {
-      const existingTx = {
-        ...mockBuyTransaction,
-        transactionId: cashTransactionId,
-      };
-      const firstFindQB = createMockQueryBuilder(existingTx);
-      const secondFindQB = createMockQueryBuilder(existingTx);
-
-      investmentTransactionsRepository.createQueryBuilder
-        .mockReturnValueOnce(firstFindQB)
-        .mockReturnValueOnce(secondFindQB);
-
-      transactionRepository.findOne.mockResolvedValue({
+    describe("linked cash row keeps its identity (#2370)", () => {
+      const cashRow = (over: Record<string, unknown> = {}) => ({
         id: cashTransactionId,
         userId,
         accountId: cashAccountId,
         amount: -1509.99,
+        transactionDate: mockBuyTransaction.transactionDate,
+        currencyCode: mockCashAccount.currencyCode,
+        exchangeRate: 1,
+        payeeName: null,
+        description: null,
+        status: TransactionStatus.RECONCILED,
+        ...over,
+      });
+      const stage = (cash: Record<string, unknown>) => {
+        const existingTx = {
+          ...mockBuyTransaction,
+          transactionId: cashTransactionId,
+        };
+        investmentTransactionsRepository.createQueryBuilder
+          .mockReturnValueOnce(createMockQueryBuilder(existingTx))
+          .mockReturnValueOnce(createMockQueryBuilder(existingTx));
+        transactionRepository.findOne.mockResolvedValue(cash);
+      };
+      const cashWrites = () =>
+        (mockQueryRunner.manager.update as jest.Mock).mock.calls.filter(
+          ([entity]) => entity === Transaction,
+        );
+
+      it("updates the description in place: no delete, no create, status and balance kept", async () => {
+        stage(cashRow());
+        await service.update(userId, transactionId, { description: "Updated" });
+        const [first] = cashWrites();
+        expect(first[1]).toEqual({ id: cashTransactionId, userId });
+        expect(first[2]).toEqual(
+          expect.objectContaining({ description: "Updated" }),
+        );
+        expect(first[2]).not.toHaveProperty("status");
+        expect(first[2]).not.toHaveProperty("amount");
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+        expect(transactionRepository.create).not.toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
 
-      await service.update(userId, transactionId, { description: "Updated" });
+      it("reverses and reapplies the balance on the same row when the amount changes", async () => {
+        stage(cashRow());
+        await service.update(userId, transactionId, { quantity: 5 });
+        expect(accountsService.updateBalance).toHaveBeenNthCalledWith(
+          1,
+          cashAccountId,
+          1509.99,
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledTimes(2);
+        const [write] = cashWrites();
+        expect(write[1]).toEqual({ id: cashTransactionId, userId });
+        expect(write[2]).toEqual(
+          expect.objectContaining({
+            status: mockBuyTransaction.status ?? TransactionStatus.UNRECONCILED,
+          }),
+        );
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+        expect(transactionRepository.create).not.toHaveBeenCalled();
+      });
 
-      // Should clear FK reference first
-      expect(investmentTransactionsRepository.update).toHaveBeenCalledWith(
-        transactionId,
-        { transactionId: null },
-      );
+      it("clears the FK and deletes the cash row when the action loses its cash side", async () => {
+        stage(cashRow());
+        await service.update(userId, transactionId, {
+          action: InvestmentAction.ADD_SHARES,
+        });
+        expect(investmentTransactionsRepository.update).toHaveBeenCalledWith(
+          transactionId,
+          { transactionId: null },
+        );
+        expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
+          Transaction,
+          { id: cashTransactionId, userId },
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          cashAccountId,
+          1509.99,
+        );
+      });
 
-      // Should reverse the balance
-      expect(accountsService.updateBalance).toHaveBeenCalledWith(
-        cashAccountId,
-        1509.99, // Reverse of -1509.99
-      );
-
-      // Should remove the cash transaction -- conditionally, with the reversal
-      // gated on the row the database actually removed.
-      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
-        id: cashTransactionId,
-        userId,
+      it("refuses an amount change on a reconciled cash row under the strict lock before any write", async () => {
+        userPreferenceRepository.findOne.mockResolvedValue({
+          defaultCurrency: "CAD",
+          lockReconciledTransactions: true,
+        });
+        stage(cashRow());
+        await expect(
+          service.update(userId, transactionId, { quantity: 5 }),
+        ).rejects.toThrow(ConflictException);
+        expect(cashWrites()).toHaveLength(0);
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
       });
     });
 
@@ -2951,18 +3007,18 @@ describe("InvestmentTransactionsService", () => {
         1509.99,
       );
 
-      // NEW funding account should be debited via a freshly created cash tx
+      // NEW funding account should be debited by moving the same cash row
       expect(accountsService.updateBalance).toHaveBeenCalledWith(
         newFundingAccountId,
         -1509.99,
       );
 
-      // The new linked cash transaction must be persisted on the NEW account
-      expect(transactionRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          accountId: newFundingAccountId,
-          amount: -1509.99,
-        }),
+      // The linked cash row moves to the NEW account in place (#2370)
+      expect(transactionRepository.create).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Transaction,
+        { id: cashTransactionId, userId },
+        expect.objectContaining({ accountId: newFundingAccountId }),
       );
 
       // And the investment row must be saved with the NEW fundingAccountId
@@ -9393,11 +9449,10 @@ describe("InvestmentTransactionsService", () => {
           accruedInterest: 100,
         } as UpdateInvestmentTransactionDto);
 
-        const cashRows = transactionRepository.create.mock.calls.filter(
-          ([row]: [{ accountId: string }]) => row.accountId === cashAccountId,
-        );
-        expect(cashRows).toHaveLength(1);
-        expect(cashRows[0][0]).toEqual(
+        expect(transactionRepository.create).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          Transaction,
+          { id: cashTransactionId, userId },
           expect.objectContaining({ amount: 10075 }),
         );
       });
@@ -9414,11 +9469,12 @@ describe("InvestmentTransactionsService", () => {
           description: "Matured",
         } as UpdateInvestmentTransactionDto);
 
-        const cashRows = transactionRepository.create.mock.calls.filter(
-          ([row]: [{ accountId: string }]) => row.accountId === cashAccountId,
-        );
-        expect(cashRows[0][0]).toEqual(
-          expect.objectContaining({ amount: 10062.5 }),
+        // The cash row keeps its amount: no create, no amount change.
+        expect(transactionRepository.create).not.toHaveBeenCalled();
+        expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+          Transaction,
+          expect.anything(),
+          expect.objectContaining({ amount: expect.anything() }),
         );
       });
 
@@ -9435,10 +9491,9 @@ describe("InvestmentTransactionsService", () => {
           id: companionId,
           userId,
         });
-        const cashRows = transactionRepository.create.mock.calls.filter(
-          ([row]: [{ accountId: string }]) => row.accountId === cashAccountId,
-        );
-        expect(cashRows[0][0]).toEqual(
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          Transaction,
+          { id: cashTransactionId, userId },
           expect.objectContaining({ amount: 9975 }),
         );
       });

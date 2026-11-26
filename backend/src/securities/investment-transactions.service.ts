@@ -838,13 +838,13 @@ export class InvestmentTransactionsService {
     return Number(rate);
   }
 
-  private async createCashTransactionInTransaction(
-    manager: EntityManager,
+  // One computation for create and in-place update, so both write identical fields.
+  private async computeCashLeg(
     userId: string,
     cashAccount: Account,
     investmentTransaction: InvestmentTransaction,
     sourceAmount: number,
-  ): Promise<string> {
+  ): Promise<{ payeeName: string; exchangeRate: number; cashAmount: number }> {
     let symbol: string | null = null;
     let sourceCurrency = cashAccount.currencyCode;
     if (investmentTransaction.securityId) {
@@ -887,6 +887,23 @@ export class InvestmentTransactionsService {
       cashCurrency.decimalPlaces,
     );
 
+    return { payeeName, exchangeRate, cashAmount };
+  }
+
+  private async createCashTransactionInTransaction(
+    manager: EntityManager,
+    userId: string,
+    cashAccount: Account,
+    investmentTransaction: InvestmentTransaction,
+    sourceAmount: number,
+  ): Promise<string> {
+    const { payeeName, exchangeRate, cashAmount } = await this.computeCashLeg(
+      userId,
+      cashAccount,
+      investmentTransaction,
+      sourceAmount,
+    );
+
     // The cash leg is created with the investment row's status -- the two rows
     // describe one event, and a VOID trade's cash leg saying CLEARED would be
     // the pair describing two different events. Afterwards only the VOID
@@ -922,6 +939,102 @@ export class InvestmentTransactionsService {
     }
 
     return saved.id;
+  }
+
+  /**
+   * Update the linked cash row in place. An edit keeps the cash row's identity:
+   * its tags, attachments, links and reconciliation survive (#2370). Returns
+   * null when the row is gone, so the caller creates a fresh one.
+   */
+  private async updateCashTransactionInTransaction(
+    manager: EntityManager,
+    userId: string,
+    cashAccount: Account,
+    investmentTransaction: InvestmentTransaction,
+    sourceAmount: number,
+    cashTransactionId: string,
+  ): Promise<string | null> {
+    const row = await lockTransactionRow(manager, cashTransactionId, userId);
+    if (!row) return null;
+    const current = await manager.findOne(Transaction, {
+      where: { id: cashTransactionId, userId },
+    });
+    if (!current) return null;
+
+    const { payeeName, exchangeRate, cashAmount } = await this.computeCashLeg(
+      userId,
+      cashAccount,
+      investmentTransaction,
+      sourceAmount,
+    );
+    const transactionDate = investmentTransaction.transactionDate;
+    const isVoid = investmentTransaction.status === TransactionStatus.VOID;
+
+    const moved =
+      row.accountId !== cashAccount.id ||
+      row.transactionDate !== transactionDate ||
+      Number(row.amount) !== cashAmount ||
+      current.currencyCode !== cashAccount.currencyCode;
+    const voidChanged = (row.status === TransactionStatus.VOID) !== isVoid;
+    // Reconciliation is per-ledger: it survives an edit that changes nothing financial.
+    const status =
+      moved || voidChanged
+        ? (investmentTransaction.status ?? TransactionStatus.UNRECONCILED)
+        : (row.status as TransactionStatus | null);
+
+    const changes: Partial<Transaction> = {};
+    if (row.accountId !== cashAccount.id) changes.accountId = cashAccount.id;
+    if (current.currencyCode !== cashAccount.currencyCode) {
+      changes.currencyCode = cashAccount.currencyCode;
+    }
+    if (row.transactionDate !== transactionDate) {
+      changes.transactionDate = transactionDate;
+    }
+    if (Number(row.amount) !== cashAmount) changes.amount = cashAmount;
+    if (Number(current.exchangeRate) !== exchangeRate) {
+      changes.exchangeRate = exchangeRate;
+    }
+    if (current.payeeName !== payeeName) changes.payeeName = payeeName;
+    if (
+      (current.description ?? null) !==
+      (investmentTransaction.description ?? null)
+    ) {
+      changes.description = investmentTransaction.description;
+    }
+    if (status !== row.status) changes.status = status as TransactionStatus;
+
+    if (Object.keys(changes).length === 0) return cashTransactionId;
+
+    // Refuse before the first write: a rejected command must not already have written.
+    await assertReconciledRowsMutable(manager, userId, [row]);
+
+    if (moved || voidChanged) {
+      const effect = deletionBalanceEffect(row);
+      if (effect.delta !== 0) {
+        await this.accountsService.updateBalance(row.accountId, effect.delta);
+      }
+      if (effect.needsRecalc) {
+        await this.accountsService.recalculateCurrentBalance(
+          userId,
+          row.accountId,
+        );
+      }
+    }
+
+    await manager.update(
+      Transaction,
+      { id: cashTransactionId, userId },
+      changes,
+    );
+
+    if (
+      (moved || voidChanged) &&
+      status !== TransactionStatus.VOID &&
+      !isTransactionInFuture(transactionDate)
+    ) {
+      await this.accountsService.updateBalance(cashAccount.id, cashAmount);
+    }
+    return cashTransactionId;
   }
 
   private async deleteCashTransactionInTransaction(
@@ -2698,6 +2811,8 @@ export class InvestmentTransactionsService {
      * cost basis.
      */
     accruedInterest: number = 0,
+    /** The cash row an edit keeps; updated in place, or deleted if the row loses its cash side. */
+    existingCashTransactionId: string | null = null,
   ): Promise<void> {
     // Holdings are NOT written here. A stored holding is a projection of the
     // ledger, rebuilt for the touched (account, security) scopes by
@@ -2729,24 +2844,26 @@ export class InvestmentTransactionsService {
     switch (baseInvestmentAction(action)) {
       case InvestmentAction.BUY:
         if (createCashSide && cashAccount) {
-          cashTransactionId = await this.createCashTransactionInTransaction(
+          cashTransactionId = await this.writeCashTransactionInTransaction(
             manager,
             userId,
             cashAccount,
             transaction,
             -Number(totalAmount),
+            existingCashTransactionId,
           );
         }
         break;
 
       case InvestmentAction.SELL:
         if (createCashSide && cashAccount) {
-          cashTransactionId = await this.createCashTransactionInTransaction(
+          cashTransactionId = await this.writeCashTransactionInTransaction(
             manager,
             userId,
             cashAccount,
             transaction,
             disposalCashAmount(totalAmount, accruedInterest),
+            existingCashTransactionId,
           );
         }
         break;
@@ -2756,12 +2873,13 @@ export class InvestmentTransactionsService {
       case InvestmentAction.CAPITAL_GAIN:
       case InvestmentAction.RETURN_OF_CAPITAL:
         if (createCashSide && cashAccount) {
-          cashTransactionId = await this.createCashTransactionInTransaction(
+          cashTransactionId = await this.writeCashTransactionInTransaction(
             manager,
             userId,
             cashAccount,
             transaction,
             Number(totalAmount),
+            existingCashTransactionId,
           );
         }
         break;
@@ -2775,6 +2893,50 @@ export class InvestmentTransactionsService {
         transactionId: cashTransactionId,
       });
     }
+
+    // The edited row no longer has a cash side: clear the FK, then delete, as the reversal does.
+    if (
+      createCashSide &&
+      existingCashTransactionId &&
+      cashTransactionId !== existingCashTransactionId
+    ) {
+      await manager.update(InvestmentTransaction, transaction.id, {
+        transactionId: cashTransactionId,
+      });
+      await this.deleteCashTransactionInTransaction(
+        manager,
+        userId,
+        existingCashTransactionId,
+      );
+    }
+  }
+
+  private async writeCashTransactionInTransaction(
+    manager: EntityManager,
+    userId: string,
+    cashAccount: Account,
+    investmentTransaction: InvestmentTransaction,
+    sourceAmount: number,
+    existingCashTransactionId: string | null,
+  ): Promise<string> {
+    if (existingCashTransactionId) {
+      const kept = await this.updateCashTransactionInTransaction(
+        manager,
+        userId,
+        cashAccount,
+        investmentTransaction,
+        sourceAmount,
+        existingCashTransactionId,
+      );
+      if (kept) return kept;
+    }
+    return this.createCashTransactionInTransaction(
+      manager,
+      userId,
+      cashAccount,
+      investmentTransaction,
+      sourceAmount,
+    );
   }
 
   /**
@@ -4846,11 +5008,13 @@ export class InvestmentTransactionsService {
         isEmbedded,
       );
 
-      // Reverse the original transaction effects
+      // An edit keeps the cash row's identity: its tags, attachments, links and reconciliation survive (#2370).
+      const existingCashTransactionId = transaction.transactionId;
       await this.reverseTransactionEffectsInTransaction(
         manager,
         userId,
         transaction,
+        { keepCashSide: true },
       );
 
       // Update entity properties directly
@@ -5135,6 +5299,7 @@ export class InvestmentTransactionsService {
         saved,
         !isEmbedded,
         accruedInterest,
+        existingCashTransactionId,
       );
 
       if (isEmbedded) {
@@ -5293,7 +5458,8 @@ export class InvestmentTransactionsService {
        * Leave the linked cash Transaction row in place. Used by updateStatus,
        * which flips the existing cash leg across the VOID boundary instead of
        * deleting and recreating it -- a status change is not an edit of the
-       * financial rows.
+       * financial rows -- and by update(), which updates the cash row in place
+       * (#2370).
        */
       keepCashSide?: boolean;
     },
