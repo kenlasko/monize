@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Scheduled investment transactions require a brokerage account",
     "bondSeriesNotNameable": "A scheduled {{ action }} of a bond-linked security cannot name the bond series of its shares. Record it as a transaction and choose the series, or schedule a BUY, which takes the series on sale on its date.",
     "notFound": "Scheduled transaction with ID {{ id }} not found",
-    "inUse": "Scheduled transaction \"{{ name }}\" cannot be deleted: it is still used by {{ summary }}. Remove these first.",
     "occurrenceAlreadyPosted": "This occurrence has already been posted.",
     "noOccurrencesLeft": "This schedule has no occurrences left to post or skip.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

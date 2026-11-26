@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "As transações de investimento agendadas requerem uma conta de corretagem",
     "bondSeriesNotNameable": "Uma operação agendada {{ action }} de um valor mobiliário ligado a um programa de obrigações não pode indicar a série de obrigações das suas unidades. Registe-a como transação e escolha a série, ou agende uma compra (BUY), que toma a série à venda na sua data.",
     "notFound": "Transação agendada com ID {{ id }} não encontrada",
-    "inUse": "Não é possível eliminar a transação agendada \"{{ name }}\": ainda é usada por {{ summary }}. Remova-os primeiro.",
     "occurrenceAlreadyPosted": "Esta ocorrência já foi lançada.",
     "noOccurrencesLeft": "Este agendamento não tem mais ocorrências para lançar ou ignorar.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

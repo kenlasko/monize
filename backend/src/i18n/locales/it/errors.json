@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Le transazioni di investimento pianificate richiedono un conto di intermediazione",
     "bondSeriesNotNameable": "Un'operazione programmata {{ action }} su un titolo collegato a un programma obbligazionario non può indicare la serie obbligazionaria delle sue quote. Registrala come transazione e scegli la serie, oppure programma un acquisto (BUY), che prende la serie in vendita alla sua data.",
     "notFound": "Transazione pianificata con ID {{ id }} non trovata",
-    "inUse": "Impossibile eliminare la transazione pianificata \"{{ name }}\": è ancora usata da {{ summary }}. Rimuovi prima questi elementi.",
     "occurrenceAlreadyPosted": "Questa occorrenza è già stata registrata.",
     "noOccurrencesLeft": "Questa pianificazione non ha più occorrenze da registrare o saltare.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

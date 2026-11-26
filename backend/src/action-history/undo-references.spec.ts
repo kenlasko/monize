@@ -51,29 +51,12 @@ describe("assertNoReferencesBeforeDelete", () => {
     },
   );
 
-  it.each([
-    "category",
-    "payee",
-    "tag",
-    "account",
-    "scheduled_transaction",
-    "security",
-  ])("allows the undo of an unused %s", async (type) => {
-    await expect(run(type, makeManager(0))).resolves.toBeUndefined();
-  });
-
-  it("allows the undo of a schedule that only a loan links to (loan creation)", async () => {
-    const m = {
-      query: jest.fn((sql: string) =>
-        Promise.resolve(
-          sql.includes("FOR UPDATE")
-            ? [{ name: "Loan payment" }]
-            : [{ id: "l1" }],
-        ),
-      ),
-    };
-    await expect(run("scheduled_transaction", m)).resolves.toBeUndefined();
-  });
+  it.each(["category", "payee", "tag", "account", "security"])(
+    "allows the undo of an unused %s",
+    async (type) => {
+      await expect(run(type, makeManager(0))).resolves.toBeUndefined();
+    },
+  );
 
   it("words a redo of a delete as a redo", async () => {
     const error = await run("category", makeManager(1), true).catch((e) => e);
@@ -96,8 +79,11 @@ describe("assertNoReferencesBeforeDelete", () => {
     const gone = makeManager(5, false);
     await expect(run("tag", gone)).resolves.toBeUndefined();
     expect(gone.query).toHaveBeenCalledTimes(1);
-    const budget = makeManager(5);
-    await expect(run("budget", budget)).resolves.toBeUndefined();
-    expect(budget.query).not.toHaveBeenCalled();
+    // A schedule has no finder: the undo clears a loan's link itself.
+    for (const type of ["budget", "scheduled_transaction"]) {
+      const m = makeManager(5);
+      await expect(run(type, m)).resolves.toBeUndefined();
+      expect(m.query).not.toHaveBeenCalled();
+    }
   });
 });

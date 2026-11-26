@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "计划投资交易需要经纪账户",
     "bondSeriesNotNameable": "关联到债券计划的证券，其计划中的{{ action }}无法指明其份额所属的债券系列。请将其记录为交易并选择系列，或计划一笔买入（BUY），它会采用当日在售的系列。",
     "notFound": "未找到 ID 为 {{ id }} 的计划交易",
-    "inUse": "无法删除计划交易“{{ name }}”：它仍被 {{ summary }} 使用。请先移除这些项目。",
     "occurrenceAlreadyPosted": "该次记账已完成。",
     "noOccurrencesLeft": "此计划已没有可记账或跳过的周期。",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

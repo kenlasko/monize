@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Transaksi investasi terjadwal memerlukan akun pialang",
     "bondSeriesNotNameable": "Transaksi {{ action }} terjadwal pada sekuritas terkait program obligasi tidak dapat menyebutkan seri obligasi dari unitnya. Catat sebagai transaksi dan pilih serinya, atau jadwalkan pembelian (BUY), yang mengambil seri yang dijual pada tanggalnya.",
     "notFound": "Transaksi terjadwal dengan ID {{ id }} tidak ditemukan",
-    "inUse": "Transaksi terjadwal \"{{ name }}\" tidak dapat dihapus: masih digunakan oleh {{ summary }}. Hapus semuanya terlebih dahulu.",
     "occurrenceAlreadyPosted": "Kejadian ini sudah dicatat.",
     "noOccurrencesLeft": "Jadwal ini tidak memiliki kejadian tersisa untuk diposting atau dilewati.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

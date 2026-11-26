@@ -102,11 +102,6 @@ import {
   lockAccountsForBalanceWrite,
 } from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
-import {
-  recordInUseException,
-  recordInUseSummary,
-} from "../common/helpers/record-in-use";
-import { findScheduledTransactionReferences } from "./scheduled-transaction-references";
 import { returnedRows } from "../common/db/query-result";
 import { validateSplitAmountSum } from "../common/split-amount.util";
 import { roundMoney, sumMoney } from "../common/round.util";
@@ -3551,8 +3546,7 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
     const beforeData = { ...scheduled };
-    // Lock, count and delete in one transaction: a reference committed while
-    // this waits for the lock is counted, and a refusal has written nothing.
+    // Lock, unlink and delete in one transaction.
     await withScopedDb(this.dataSource, async (m) => {
       const repo = m.getRepository(ScheduledTransaction);
       const locked = await repo.findOne({
@@ -3568,22 +3562,11 @@ export class ScheduledTransactionsService {
           ),
         );
       }
-      const references = await findScheduledTransactionReferences(
-        m,
-        userId,
-        id,
+      // A loan's payment schedule: unlink it explicitly, not by ON DELETE SET NULL.
+      await m.query(
+        "UPDATE accounts SET scheduled_transaction_id = NULL WHERE user_id = $1 AND scheduled_transaction_id = $2",
+        [userId, id],
       );
-      if (references.length > 0) {
-        const summary = recordInUseSummary(references);
-        throw recordInUseException(
-          tr(
-            "errors.scheduled.inUse",
-            `Scheduled transaction "${locked.name}" cannot be deleted: it is still used by ${summary}. Remove these first.`,
-            { name: locked.name, summary },
-          ),
-          references,
-        );
-      }
       await repo.remove(scheduled);
     });
     return beforeData;

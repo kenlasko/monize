@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "定期投資交易需要經紀科目",
     "bondSeriesNotNameable": "連結到債券計畫的證券，其排程中的{{ action }}無法指明其份額所屬的債券系列。請將其記錄為交易並選擇系列，或排程一筆買入（BUY），它會採用當日在售的系列。",
     "notFound": "找不到 ID 為 {{ id }} 的定期交易",
-    "inUse": "無法刪除排程交易「{{ name }}」：它仍被 {{ summary }} 使用。請先移除這些項目。",
     "occurrenceAlreadyPosted": "此次記帳已完成。",
     "noOccurrencesLeft": "此排程已沒有可記帳或略過的期次。",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

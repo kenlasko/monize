@@ -1,5 +1,8 @@
 import { EntityManager } from "typeorm";
-import { RecordInUseEntry } from "../common/helpers/record-in-use";
+import {
+  RecordInUseEntry,
+  countReferences,
+} from "../common/helpers/record-in-use";
 
 /**
  * How deleting a category treats each column with a foreign key to
@@ -20,41 +23,80 @@ import { RecordInUseEntry } from "../common/helpers/record-in-use";
 export const CATEGORY_REFERENCES = {
   "categories.parent_id": { policy: "part" },
   "payees.default_category_id": { policy: "clear" },
-  "transactions.category_id": { policy: "refuse", kind: "transactions" },
-  "transaction_splits.category_id": { policy: "refuse", kind: "transactions" },
+  "transactions.category_id": {
+    policy: "refuse",
+    kind: "transactions",
+    sql: "SELECT count(*)::int AS count FROM transactions WHERE user_id = $1 AND category_id = $2",
+  },
+  "transaction_splits.category_id": {
+    policy: "refuse",
+    kind: "transactions",
+    sql: "SELECT count(*)::int AS count FROM transaction_splits s JOIN transactions t ON t.id = s.transaction_id WHERE t.user_id = $1 AND s.category_id = $2",
+  },
   "scheduled_transactions.category_id": {
     policy: "refuse",
     kind: "scheduledTransactions",
+    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND category_id = $2",
   },
   "scheduled_transaction_splits.category_id": {
     policy: "refuse",
     kind: "scheduledTransactions",
+    sql: "SELECT count(*)::int AS count FROM scheduled_transaction_splits s JOIN scheduled_transactions t ON t.id = s.scheduled_transaction_id WHERE t.user_id = $1 AND s.category_id = $2",
   },
   "scheduled_transaction_overrides.category_id": {
     policy: "refuse",
     kind: "scheduledTransactions",
+    sql: "SELECT count(*)::int AS count FROM scheduled_transaction_overrides o JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id WHERE t.user_id = $1 AND (o.category_id = $2 OR o.splits::text LIKE '%' || $2::text || '%')",
   },
-  "budget_categories.category_id": { policy: "refuse", kind: "budgetLines" },
+  "budget_categories.category_id": {
+    policy: "refuse",
+    kind: "budgetLines",
+    sql: "SELECT count(*)::int AS count FROM budget_categories c JOIN budgets b ON b.id = c.budget_id WHERE b.user_id = $1 AND c.category_id = $2",
+  },
   "budget_period_categories.category_id": {
     policy: "refuse",
     kind: "budgetPeriods",
+    sql: "SELECT count(*)::int AS count FROM budget_period_categories c JOIN budget_periods p ON p.id = c.budget_period_id JOIN budgets b ON b.id = p.budget_id WHERE b.user_id = $1 AND c.category_id = $2",
   },
   "payroll_deduction_rules.category_id": {
     policy: "refuse",
     kind: "payrollDeductionRules",
+    sql: "SELECT count(*)::int AS count FROM payroll_deduction_rules WHERE user_id = $1 AND category_id = $2",
   },
-  "loan_fees.category_id": { policy: "refuse", kind: "loanFees" },
-  "shared_postings.category_id": { policy: "refuse", kind: "sharedPostings" },
-  "accounts.principal_category_id": { policy: "refuse", kind: "loanAccounts" },
-  "accounts.interest_category_id": { policy: "refuse", kind: "loanAccounts" },
+  "loan_fees.category_id": {
+    policy: "refuse",
+    kind: "loanFees",
+    sql: "SELECT count(*)::int AS count FROM loan_fees WHERE user_id = $1 AND category_id = $2",
+  },
+  "shared_postings.category_id": {
+    policy: "refuse",
+    kind: "sharedPostings",
+    sql: "SELECT count(*)::int AS count FROM shared_postings WHERE user_id = $1 AND category_id = $2",
+  },
+  "accounts.principal_category_id": {
+    policy: "refuse",
+    kind: "loanAccounts",
+    counted: "loanAccounts",
+  },
+  "accounts.interest_category_id": {
+    policy: "refuse",
+    kind: "loanAccounts",
+    counted: "loanAccounts",
+  },
   "accounts.overpayment_category_id": {
     policy: "refuse",
     kind: "loanAccounts",
+    counted: "loanAccounts",
   },
-  "accounts.asset_category_id": { policy: "refuse", kind: "loanAccounts" },
+  "accounts.asset_category_id": {
+    policy: "refuse",
+    kind: "loanAccounts",
+    counted: "loanAccounts",
+  },
 } as const satisfies Record<
   string,
-  | { policy: "refuse"; kind: CategoryReferenceKind }
+  | { policy: "refuse"; kind: CategoryReferenceKind; sql: string }
+  | { policy: "refuse"; kind: "loanAccounts"; counted: "loanAccounts" }
   | { policy: "part" | "clear" }
 >;
 
@@ -71,33 +113,6 @@ export type CategoryReferenceKind =
   | "rules"
   | "customReports"
   | "subcategories";
-
-/** Counting SQL per `refuse` column; `$1` is the user, `$2` the category. */
-const COUNT_SQL: Record<string, string> = {
-  "transactions.category_id":
-    "SELECT count(*)::int AS count FROM transactions WHERE user_id = $1 AND category_id = $2",
-  "transaction_splits.category_id":
-    "SELECT count(*)::int AS count FROM transaction_splits s JOIN transactions t ON t.id = s.transaction_id WHERE t.user_id = $1 AND s.category_id = $2",
-  "scheduled_transactions.category_id":
-    "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND category_id = $2",
-  "scheduled_transaction_splits.category_id":
-    "SELECT count(*)::int AS count FROM scheduled_transaction_splits s JOIN scheduled_transactions t ON t.id = s.scheduled_transaction_id WHERE t.user_id = $1 AND s.category_id = $2",
-  // An override also keeps per-split category ids in its `splits` JSON, which
-  // has no foreign key. shortcut: matches the id anywhere in the JSON text;
-  // fine for UUIDs (no LIKE wildcard, unique).
-  "scheduled_transaction_overrides.category_id":
-    "SELECT count(*)::int AS count FROM scheduled_transaction_overrides o JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id WHERE t.user_id = $1 AND (o.category_id = $2 OR o.splits::text LIKE '%' || $2::text || '%')",
-  "budget_categories.category_id":
-    "SELECT count(*)::int AS count FROM budget_categories c JOIN budgets b ON b.id = c.budget_id WHERE b.user_id = $1 AND c.category_id = $2",
-  "budget_period_categories.category_id":
-    "SELECT count(*)::int AS count FROM budget_period_categories c JOIN budget_periods p ON p.id = c.budget_period_id JOIN budgets b ON b.id = p.budget_id WHERE b.user_id = $1 AND c.category_id = $2",
-  "payroll_deduction_rules.category_id":
-    "SELECT count(*)::int AS count FROM payroll_deduction_rules WHERE user_id = $1 AND category_id = $2",
-  "loan_fees.category_id":
-    "SELECT count(*)::int AS count FROM loan_fees WHERE user_id = $1 AND category_id = $2",
-  "shared_postings.category_id":
-    "SELECT count(*)::int AS count FROM shared_postings WHERE user_id = $1 AND category_id = $2",
-};
 
 /** The four loan columns report account ids so the client can link to them. */
 const LOAN_ACCOUNTS_SQL =
@@ -117,46 +132,23 @@ const CHILDREN_SQL =
 
 /**
  * Every kind of row that still uses the category, with a count above zero. Run
- * inside the delete's transaction, after locking the category row.
+ * inside the delete's transaction, after locking the category row. A `refuse`
+ * entry with `sql` is counted by it; `counted: "loanAccounts"` marks the four
+ * loan columns that `LOAN_ACCOUNTS_SQL` counts once, with ids.
  */
-export async function findCategoryReferences(
+export function findCategoryReferences(
   m: EntityManager,
   userId: string,
   categoryId: string,
 ): Promise<RecordInUseEntry[]> {
   // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
-  categoryId = categoryId.toLowerCase();
-  const counts = new Map<CategoryReferenceKind, number>();
-  const add = (kind: CategoryReferenceKind, n: number) =>
-    counts.set(kind, (counts.get(kind) ?? 0) + n);
-  const count = async (sql: string, ...params: string[]) => {
-    const rows: { count?: number }[] = await m.query(sql, params);
-    return Number(rows[0]?.count) || 0;
-  };
-
-  for (const [column, ref] of Object.entries(CATEGORY_REFERENCES)) {
-    if (ref.policy === "refuse" && ref.kind !== "loanAccounts") {
-      add(ref.kind, await count(COUNT_SQL[column], userId, categoryId));
-    }
-  }
-  const loanRows: { id: string }[] = await m.query(LOAN_ACCOUNTS_SQL, [
-    userId,
-    categoryId,
+  return countReferences(m, userId, categoryId.toLowerCase(), [
+    ...Object.values(CATEGORY_REFERENCES).flatMap((ref) =>
+      ref.policy === "refuse" && "sql" in ref ? [ref] : [],
+    ),
+    { kind: "rules", sql: RULES_SQL, like: true },
+    { kind: "customReports", sql: REPORTS_SQL, like: true },
+    { kind: "subcategories", sql: CHILDREN_SQL },
+    { kind: "loanAccounts", sql: LOAN_ACCOUNTS_SQL, ids: true },
   ]);
-  add("rules", await count(RULES_SQL, userId, `%${categoryId}%`));
-  add("customReports", await count(REPORTS_SQL, userId, `%${categoryId}%`));
-  add("subcategories", await count(CHILDREN_SQL, userId, categoryId));
-
-  const found: RecordInUseEntry[] = [];
-  for (const [kind, n] of counts) {
-    if (n > 0) found.push({ kind, count: n });
-  }
-  if (loanRows.length > 0) {
-    found.push({
-      kind: "loanAccounts",
-      count: loanRows.length,
-      ids: loanRows.map((r) => r.id),
-    });
-  }
-  return found;
 }

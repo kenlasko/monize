@@ -26,6 +26,13 @@ describe("SECURITY_REFERENCES", () => {
   it("names no column the schema does not reference securities from", () => {
     expect(mapped.filter((ref) => !schemaReferences.includes(ref))).toEqual([]);
   });
+
+  it("counts every refuse entry: by its own sql or by a named special case", () => {
+    const uncounted = Object.entries(SECURITY_REFERENCES).filter(
+      ([, ref]) => ref.policy === "refuse" && !("sql" in ref),
+    );
+    expect(uncounted.map(([column]) => column)).toEqual([]);
+  });
 });
 
 describe("findSecurityReferences", () => {

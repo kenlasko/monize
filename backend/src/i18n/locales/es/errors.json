@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Las transacciones de inversión planificadas requieren una cuenta de corretaje",
     "bondSeriesNotNameable": "Una operación programada {{ action }} de un valor vinculado a un programa de bonos no puede indicar la serie de bonos de sus acciones. Regístrela como transacción y elija la serie, o programe una compra (BUY), que toma la serie a la venta en su fecha.",
     "notFound": "Transacción planificada con ID {{ id }} no encontrada",
-    "inUse": "No se puede eliminar la transacción programada \"{{ name }}\": todavía la usan {{ summary }}. Quite primero estos elementos.",
     "occurrenceAlreadyPosted": "Esta ocurrencia ya se ha registrado.",
     "noOccurrencesLeft": "Esta programación no tiene más ocurrencias que registrar u omitir.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

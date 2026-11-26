@@ -3,7 +3,6 @@ import { tr } from "../i18n/translate";
 import { findAccountReferences } from "../accounts/account-references";
 import { findCategoryReferences } from "../categories/category-references";
 import { findPayeeReferences } from "../payees/payee-references";
-import { findScheduledTransactionReferences } from "../scheduled-transactions/scheduled-transaction-references";
 import { findSecurityReferences } from "../securities/security-references";
 import { findTagReferences } from "../tags/tag-references";
 import {
@@ -39,14 +38,6 @@ const REFERENCE_CHECKS: Record<
     table: "accounts",
     find: (m, userId, id) =>
       findAccountReferences(m, userId, id, { includeOwnSchedule: true }),
-  },
-  scheduled_transaction: {
-    table: "scheduled_transactions",
-    // The loan's link to its own payment schedule is cleared by the undo.
-    find: (m, userId, id) =>
-      findScheduledTransactionReferences(m, userId, id, {
-        includeLoanLink: false,
-      }),
   },
   // Named by symbol, as errors.securities.inUse and the UI do.
   security: {

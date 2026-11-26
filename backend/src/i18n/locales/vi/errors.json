@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Giao tác đầu tư theo lịch yêu cầu tài khoản môi giới",
     "bondSeriesNotNameable": "Giao dịch {{ action }} đã lên lịch của chứng khoán liên kết với chương trình trái phiếu không thể nêu series trái phiếu của các cổ phần. Hãy ghi nhận như một giao dịch và chọn series, hoặc lên lịch lệnh mua (BUY), lệnh này lấy series đang bán vào ngày đó.",
     "notFound": "Không tìm thấy giao tác theo lịch với ID {{ id }}",
-    "inUse": "Không thể xóa giao dịch đã lên lịch \"{{ name }}\": giao dịch vẫn đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
     "occurrenceAlreadyPosted": "Lần này đã được ghi nhận.",
     "noOccurrencesLeft": "Lịch này không còn lần nào để ghi sổ hoặc bỏ qua.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

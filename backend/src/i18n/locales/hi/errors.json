@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "अनुसूचित निवेश लेनदेन के लिए ब्रोकरेज खाता आवश्यक है",
     "bondSeriesNotNameable": "बॉन्ड प्रोग्राम से जुड़ी सिक्योरिटी का निर्धारित {{ action }} अपने शेयरों की बॉन्ड सीरीज़ नहीं बता सकता। इसे लेनदेन के रूप में दर्ज करके सीरीज़ चुनें, या खरीद (BUY) निर्धारित करें, जो उस तारीख़ पर बिक्री में उपलब्ध सीरीज़ लेती है।",
     "notFound": "ID {{ id }} वाला अनुसूचित लेनदेन नहीं मिला",
-    "inUse": "निर्धारित लेन-देन \"{{ name }}\" हटाया नहीं जा सकता: यह अब भी {{ summary }} द्वारा उपयोग में है। पहले इन्हें हटाएँ।",
     "occurrenceAlreadyPosted": "यह घटना पहले ही दर्ज की जा चुकी है।",
     "noOccurrencesLeft": "इस शेड्यूल में पोस्ट करने या छोड़ने के लिए कोई घटना शेष नहीं है।",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

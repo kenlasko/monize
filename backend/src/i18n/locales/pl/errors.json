@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Zaplanowane transakcje inwestycyjne wymagają konta maklerskiego",
     "bondSeriesNotNameable": "Zaplanowana operacja {{ action }} na papierze wartościowym powiązanym z obligacjami nie może wskazać serii obligacji swoich jednostek. Zapisz ją jako transakcję i wybierz serię albo zaplanuj zakup (BUY), który obejmuje serię będącą w sprzedaży w jego dniu.",
     "notFound": "Nie znaleziono zaplanowanej transakcji o ID {{ id }}",
-    "inUse": "Nie można usunąć zaplanowanej transakcji „{{ name }}”: nadal używają jej {{ summary }}. Najpierw usuń te elementy.",
     "occurrenceAlreadyPosted": "Ta rata została już zaksięgowana.",
     "noOccurrencesLeft": "Ten harmonogram nie ma już wystąpień do zaksięgowania ani pominięcia.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

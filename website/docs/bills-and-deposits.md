@@ -147,7 +147,7 @@ Below the forecast, the list shows all scheduled transactions with:
 
 ![The list of scheduled transactions](images/bills-list.png)
 
-**Delete** is refused, with a link to the items, while a loan account still uses the schedule as its own payment schedule. Remove the loan link first. The schedule's own split lines, changed occurrences and payroll deduction rules are deleted with it.
+**Delete** removes the schedule's own split lines, changed occurrences and payroll deduction rules with it. If a loan account uses the schedule as its payment schedule, deleting it unlinks it from the loan.
 
 A **modified** badge counts the upcoming occurrences you have changed (see [Overriding Individual Occurrences](#overriding-individual-occurrences)), and paused schedules are marked inactive.
 

@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Geplande beleggingstransacties vereisen een brokerage-rekening",
     "bondSeriesNotNameable": "Een geplande {{ action }} van een effect dat aan een obligatieprogramma is gekoppeld, kan de obligatieserie van zijn stukken niet benoemen. Leg het vast als transactie en kies de serie, of plan een aankoop (BUY), die de serie neemt die op die datum in de verkoop is.",
     "notFound": "Geplande transactie met ID {{ id }} niet gevonden",
-    "inUse": "Geplande transactie \"{{ name }}\" kan niet worden verwijderd: ze wordt nog gebruikt door {{ summary }}. Verwijder deze eerst.",
     "occurrenceAlreadyPosted": "Deze keer is al geboekt.",
     "noOccurrencesLeft": "Dit schema heeft geen voorkomens meer om te boeken of over te slaan.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

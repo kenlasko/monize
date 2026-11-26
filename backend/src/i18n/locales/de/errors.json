@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Terminierte Investmentbuchungen erfordern ein Maklerkonto",
     "bondSeriesNotNameable": "Eine geplante Buchung vom Typ {{ action }} eines mit einem Anleiheprogramm verknüpften Wertpapiers kann die Anleiheserie ihrer Anteile nicht benennen. Erfassen Sie sie als Buchung und wählen Sie die Serie, oder planen Sie einen Kauf (BUY), der die an seinem Tag angebotene Serie nimmt.",
     "notFound": "Terminierte Buchung mit ID {{ id }} nicht gefunden",
-    "inUse": "Die geplante Buchung \"{{ name }}\" kann nicht gelöscht werden: Sie wird noch von {{ summary }} verwendet. Entfernen Sie diese zuerst.",
     "occurrenceAlreadyPosted": "Dieser Vorgang wurde bereits gebucht.",
     "noOccurrencesLeft": "Dieser Zeitplan hat keine Termine mehr, die gebucht oder übersprungen werden können.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

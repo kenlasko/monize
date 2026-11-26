@@ -7815,12 +7815,16 @@ Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.t
                     { kind, count } per kind and nothing written;
                     previewDeletePayee (AI/MCP) refuses the same way.
                     PAYEE_REFERENCE_COUNTS is typed to PAYEE_REFERENCE_MOVES' keys.
-                    Categories, securities and schedules are refused the same way
-                    (#2368): CATEGORY_REFERENCES, SECURITY_REFERENCES and
-                    SCHEDULED_TRANSACTION_REFERENCES give every foreign key to
-                    the table a refuse, part or clear policy, and
-                    findCategoryReferences, findSecurityReferences and
-                    findScheduledTransactionReferences count the refuse ones;
+                    Categories and securities are refused the same way (#2368):
+                    CATEGORY_REFERENCES and SECURITY_REFERENCES give every
+                    foreign key to the table a refuse, part or clear policy
+                    (each refuse entry carries its counting sql), and
+                    findCategoryReferences and findSecurityReferences count the
+                    refuse ones through countReferences
+                    (common/helpers/record-in-use.ts). Deleting a schedule
+                    refuses nothing: SCHEDULED_TRANSACTION_REFERENCES has only
+                    part and clear, and removeWithoutHistory unlinks a loan's
+                    payment schedule (accounts.scheduled_transaction_id) first;
                     their specs parse schema.sql through foreignKeysTo
                     (common/schema-references.test-helpers.ts). Accounts and
                     tags have ACCOUNT_REFERENCES and TAG_REFERENCES the same way

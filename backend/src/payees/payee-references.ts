@@ -4,7 +4,10 @@ import { EmailReceiptParser } from "../email-receipts/entities/email-receipt-par
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Warranty } from "../warranties/entities/warranty.entity";
-import { RecordInUseEntry } from "../common/helpers/record-in-use";
+import {
+  RecordInUseEntry,
+  countReferences,
+} from "../common/helpers/record-in-use";
 import { affectedRowCount } from "../common/db/query-result";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 import {
@@ -175,7 +178,7 @@ const countRows = (table: string) =>
  */
 const PAYEE_REFERENCE_COUNTS: Record<
   CountedColumn,
-  { kind: PayeeReferenceKind; sql: string }
+  { kind: PayeeReferenceKind; sql: string; ids?: boolean }
 > = {
   "transactions.payee_id": {
     kind: "transactions",
@@ -193,6 +196,7 @@ const PAYEE_REFERENCE_COUNTS: Record<
   "accounts.overpayment_payee_id": {
     kind: "loanOverpaymentPayee",
     sql: "SELECT id FROM accounts WHERE user_id = $1 AND overpayment_payee_id = $2",
+    ids: true,
   },
   "shared_people.payee_id": {
     kind: "sharedPeople",
@@ -217,34 +221,14 @@ const RULES_SQL =
  * Every kind of row that still points at the payee, with a count above zero.
  * Run inside the delete's transaction, after locking the payee row.
  */
-export async function findPayeeReferences(
+export function findPayeeReferences(
   m: EntityManager,
   userId: string,
   payeeId: string,
 ): Promise<RecordInUseEntry[]> {
   // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
-  payeeId = payeeId.toLowerCase();
-  const found: RecordInUseEntry[] = [];
-  for (const { kind, sql } of Object.values(PAYEE_REFERENCE_COUNTS)) {
-    const rows: { count?: number; id?: string }[] = await m.query(sql, [
-      userId,
-      payeeId,
-    ]);
-    if (kind === "loanOverpaymentPayee") {
-      if (rows.length > 0) {
-        found.push({
-          kind,
-          count: rows.length,
-          ids: rows.map((r) => r.id as string),
-        });
-      }
-    } else if (Number(rows[0]?.count) > 0) {
-      found.push({ kind, count: Number(rows[0].count) });
-    }
-  }
-  const [rules] = await m.query(RULES_SQL, [userId, `%${payeeId}%`]);
-  if (Number(rules?.count) > 0) {
-    found.push({ kind: "rules", count: Number(rules.count) });
-  }
-  return found;
+  return countReferences(m, userId, payeeId.toLowerCase(), [
+    ...Object.values(PAYEE_REFERENCE_COUNTS),
+    { kind: "rules", sql: RULES_SQL, like: true },
+  ]);
 }

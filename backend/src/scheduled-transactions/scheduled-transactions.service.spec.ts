@@ -2626,23 +2626,20 @@ describe("ScheduledTransactionsService", () => {
       expect(scheduledRepo.remove).toHaveBeenCalledWith(scheduled);
     });
 
-    it("refuses with 409 RECORD_IN_USE while a loan uses it, and writes nothing", async () => {
+    it("unlinks a loan from the schedule in the delete's transaction, before the delete", async () => {
       stubFindOne(makeScheduled());
-      mockDataSource.query.mockImplementation((sql: string) =>
-        Promise.resolve(
-          sql.startsWith("SELECT id FROM accounts") ? [{ id: "loan-1" }] : [],
+
+      await service.remove(userId, stId);
+
+      expect(mockDataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "UPDATE accounts SET scheduled_transaction_id = NULL",
         ),
+        [userId, stId],
       );
-
-      const error = await service.remove(userId, stId).catch((e: unknown) => e);
-
-      expect(error).toBeInstanceOf(ConflictException);
-      expect((error as ConflictException).getResponse()).toMatchObject({
-        errorCode: "RECORD_IN_USE",
-        errors: [{ kind: "loanAccounts", count: 1, ids: ["loan-1"] }],
-      });
-      expect(scheduledRepo.remove).not.toHaveBeenCalled();
-      expect(mockActionHistoryService.record).not.toHaveBeenCalled();
+      expect(mockDataSource.query.mock.invocationCallOrder[0]).toBeLessThan(
+        scheduledRepo.remove.mock.invocationCallOrder[0],
+      );
     });
 
     it("should throw NotFoundException if not found", async () => {

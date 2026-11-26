@@ -27,6 +27,14 @@ describe("CATEGORY_REFERENCES", () => {
   it("names no column the schema does not reference categories from", () => {
     expect(mapped.filter((ref) => !schemaReferences.includes(ref))).toEqual([]);
   });
+
+  it("counts every refuse entry: by its own sql or by a named special case", () => {
+    const uncounted = Object.entries(CATEGORY_REFERENCES).filter(
+      ([, ref]) =>
+        ref.policy === "refuse" && !("sql" in ref || "counted" in ref),
+    );
+    expect(uncounted.map(([column]) => column)).toEqual([]);
+  });
 });
 
 describe("findCategoryReferences", () => {

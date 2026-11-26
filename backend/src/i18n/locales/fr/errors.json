@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "Les transactions d'investissement récurrentes nécessitent un compte de courtage",
     "bondSeriesNotNameable": "Une opération planifiée {{ action }} sur un titre lié à un programme obligataire ne peut pas indiquer la série d'obligations de ses titres. Enregistrez-la comme transaction et choisissez la série, ou planifiez un achat (BUY), qui prend la série en vente à sa date.",
     "notFound": "Transaction récurrente avec l'ID {{ id }} introuvable",
-    "inUse": "L'opération planifiée \"{{ name }}\" ne peut pas être supprimée : elle est encore utilisée par {{ summary }}. Supprimez-les d'abord.",
     "occurrenceAlreadyPosted": "Cette occurrence a déjà été enregistrée.",
     "noOccurrencesLeft": "Cette planification n'a plus d'occurrence à enregistrer ou à ignorer.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",

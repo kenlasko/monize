@@ -1,5 +1,9 @@
 import { EntityManager } from "typeorm";
-import { RecordInUseEntry } from "../common/helpers/record-in-use";
+import {
+  RecordInUseEntry,
+  ReferenceCount,
+  countReferences,
+} from "../common/helpers/record-in-use";
 
 /** What still uses a tag: one entry per kind of row carrying it. */
 export type TagReferenceKind =
@@ -19,70 +23,66 @@ export type TagReferenceKind =
  * and fails when this and the foreign keys disagree in either direction.
  */
 export const TAG_REFERENCES = {
-  "transaction_tags.tag_id": { policy: "clear", kind: "transactions" },
-  "transaction_split_tags.tag_id": { policy: "clear", kind: "transactions" },
+  "transaction_tags.tag_id": {
+    policy: "clear",
+    kind: "transactions",
+    sql: "SELECT count(*)::int AS count FROM transaction_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
+  },
+  "transaction_split_tags.tag_id": {
+    policy: "clear",
+    kind: "transactions",
+    sql: "SELECT count(*)::int AS count FROM transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
+  },
   "scheduled_transaction_split_tags.tag_id": {
     policy: "clear",
     kind: "scheduledTransactions",
+    sql: "SELECT count(*)::int AS count FROM scheduled_transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
   },
-  "security_tags.tag_id": { policy: "clear", kind: "securities" },
+  "security_tags.tag_id": {
+    policy: "clear",
+    kind: "securities",
+    sql: "SELECT count(*)::int AS count FROM security_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
+  },
 } as const satisfies Record<
   string,
-  { policy: "clear"; kind: TagReferenceKind }
+  { policy: "clear"; kind: TagReferenceKind; sql: string }
 >;
-
-/** `$1` is the user, `$2` the tag; each scoped through the tag's owner. */
-const COUNT_SQL: Record<string, string> = {
-  "transaction_tags.tag_id":
-    "SELECT count(*)::int AS count FROM transaction_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
-  "transaction_split_tags.tag_id":
-    "SELECT count(*)::int AS count FROM transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
-  "scheduled_transaction_split_tags.tag_id":
-    "SELECT count(*)::int AS count FROM scheduled_transaction_split_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
-  "security_tags.tag_id":
-    "SELECT count(*)::int AS count FROM security_tags x JOIN tags g ON g.id = x.tag_id WHERE g.user_id = $1 AND x.tag_id = $2",
-};
 
 /**
  * Tag ids kept in JSON have no foreign key. shortcut: matches the id anywhere
  * in the JSON text; fine for UUIDs. `$2` is the LIKE pattern.
  */
-const JSON_SQL: [TagReferenceKind, string][] = [
-  [
-    "scheduledTransactions",
-    "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND tag_ids::text LIKE $2",
-  ],
-  [
-    "rules",
-    "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
-  ],
-  [
-    "customReports",
-    "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
-  ],
+const JSON_SQL: ReferenceCount[] = [
+  {
+    kind: "scheduledTransactions",
+    sql: "SELECT count(*)::int AS count FROM scheduled_transactions WHERE user_id = $1 AND tag_ids::text LIKE $2",
+    like: true,
+  },
+  {
+    kind: "rules",
+    sql: "SELECT count(*)::int AS count FROM transaction_rules WHERE user_id = $1 AND (condition::text LIKE $2 OR actions::text LIKE $2)",
+    like: true,
+  },
+  {
+    kind: "customReports",
+    sql: "SELECT count(*)::int AS count FROM custom_reports WHERE user_id = $1 AND filters::text LIKE $2",
+    like: true,
+  },
 ];
 
 /**
  * Every kind of row that still carries the tag, with a count above zero. For
  * the undo of a create, after locking the tag row; a delete does not use it.
+ * Each count is scoped through the tag's owner (`$1` the user, `$2` the tag).
  */
-export async function findTagReferences(
+export function findTagReferences(
   m: EntityManager,
   userId: string,
   tagId: string,
 ): Promise<RecordInUseEntry[]> {
   // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
-  tagId = tagId.toLowerCase();
-  const counts = new Map<TagReferenceKind, number>();
-  const add = async (kind: TagReferenceKind, sql: string, param: string) => {
-    const rows: { count?: number }[] = await m.query(sql, [userId, param]);
-    counts.set(kind, (counts.get(kind) ?? 0) + (Number(rows[0]?.count) || 0));
-  };
-  for (const [column, ref] of Object.entries(TAG_REFERENCES)) {
-    await add(ref.kind, COUNT_SQL[column], tagId);
-  }
-  for (const [kind, sql] of JSON_SQL) await add(kind, sql, `%${tagId}%`);
-  return [...counts]
-    .filter(([, count]) => count > 0)
-    .map(([kind, count]) => ({ kind, count }));
+  return countReferences(m, userId, tagId.toLowerCase(), [
+    ...Object.values(TAG_REFERENCES),
+    ...JSON_SQL,
+  ]);
 }

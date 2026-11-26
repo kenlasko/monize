@@ -634,7 +634,6 @@
     "requiresBrokerageAccount": "スケジュール投資取引には証券口座が必要です",
     "bondSeriesNotNameable": "債券プログラムにリンクされた証券の予定された{{ action }}では、その株式の債券シリーズを指定できません。取引として記録してシリーズを選択するか、その日に販売中のシリーズを採用する購入（BUY）を予定してください。",
     "notFound": "ID {{ id }} のスケジュール取引が見つかりません",
-    "inUse": "予定取引「{{ name }}」は削除できません。まだ {{ summary }} で使われています。先にこれらを削除してください。",
     "occurrenceAlreadyPosted": "この回はすでに記帳されています。",
     "noOccurrencesLeft": "このスケジュールには、記帳またはスキップできる回が残っていません。",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
