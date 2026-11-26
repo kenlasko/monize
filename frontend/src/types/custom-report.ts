@@ -190,6 +190,12 @@ export interface ReportSummary {
   count: number;
   /** `null` with `total`. */
   average: number | null;
+  /**
+   * Provisional transfer amounts (an imported estimate awaiting the other
+   * account's file or the reader's confirmation) inside `total` /
+   * `knownTotal`. The figures include them; absent means no information.
+   */
+  provisionalCount?: number;
 }
 
 export interface ReportResult {
@@ -206,6 +212,8 @@ export interface ReportResult {
   missingCurrencies: string[];
   /** Rows (or split lines) left out of every figure for want of a rate. */
   excludedCount: number;
+  /** {@link ReportSummary.provisionalCount}, beside the other completeness fields. */
+  provisionalCount?: number;
   /** The row limit cut the read short (newest rows dropped): every figure is a subtotal. */
   truncated?: boolean;
   tableColumns?: TableColumn[];

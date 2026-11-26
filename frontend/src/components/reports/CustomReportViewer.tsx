@@ -27,6 +27,7 @@ import { useTranslations } from 'next-intl';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
 import { customReportMeasure, isSignedTransactionList } from '@/lib/custom-report-measure';
 import { customReportDrillDownHref } from '@/lib/custom-report-links';
@@ -319,6 +320,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
                   }
                   displayCurrency={result.currency ?? defaultCurrency}
                   explanation={truncatedOnly ? t('customReportViewer.truncatedNotice') : undefined}
+                  provisionalCount={result.summary.provisionalCount ?? result.provisionalCount}
                 >
                   {formatValue(summaryTotal?.value ?? 0)}
                 </PartialTotal>
@@ -339,6 +341,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               excludedCount={result.excludedCount ?? 0}
               displayCurrency={result.currency ?? defaultCurrency}
             />
+            <ProvisionalDataNotice count={result.provisionalCount ?? result.summary.provisionalCount} />
           </div>
 
           {/* Chart */}
