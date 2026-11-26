@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "{symbols} için fiyat yok: menkul kıymet sayfasında fiyatı güncelleyin veya ekleyin.",
     "weightingNoRate": "{pairs} için döviz kuru yok: Para Birimleri sayfasından ekleyin."
   },
+  "provisionalData": {
+    "notice": "Tahmini tutarlar içerir: bu rakamlardaki {count, plural, other {# tutar}}, Monize'ın dövizler arası bir transferin diğer tarafı için geçmiş döviz kuruyla yaptığı tahminlerdir; o hesabın kendi dosyası içe aktarılana veya tutar onaylanana kadar böyle kalır. Listelemek için işlemlerde is:provisional araması yapın."
+  },
   "sankey": {
     "help": "Gelen para ortadan geçerek harcandığı yerlere, biriktirilen veya yatırılan kısma ve borç ödemelerine akar. Rapor varsayılan olarak açık vadesiz, birikim, nakit, kredi kartı ve kredili mevduat hesaplarınızı kapsar ve bunlardan ikisi arasındaki transfer gösterilmez. Bir birikim hesabına ne aktardığınızı görmek için o hesabı hesap filtresinden çıkarın. Kredi kartı ödemesi asla borç ödemesi değildir: kapattığı alışverişler zaten harcama olarak sayılmıştır.",
     "depthLabel": "Ayrıntı",

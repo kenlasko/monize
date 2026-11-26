@@ -262,6 +262,10 @@
     "explanation": "部分的な合計: {count, plural, other {# 件の金額}}を含めることができなかったため、表示されている金額はこれらを除外しています。{currencies} の {displayCurrency} への為替レートがありません。",
     "explanationExcluded": "部分的な合計: {count, plural, other {# 件の金額}}を算出できなかったため、表示されている金額はこれらを除外しています。"
   },
+  "provisionalTotal": {
+    "srSuffix": "(推定金額を含む)",
+    "explanation": "推定金額を含みます: この数値のうち {count, plural, other {# 件の金額}}は、外貨間の振替の相手側について Monize が過去の為替レートで推定したものです。その口座自身のファイルがインポートされるか金額が確定されるまで、推定のままです。一覧するには取引で is:provisional を検索してください。"
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "金額を取得できません",

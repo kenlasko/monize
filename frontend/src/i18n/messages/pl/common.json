@@ -262,6 +262,10 @@
     "explanation": "Suma częściowa: {count, plural, one {# kwoty} few {# kwot} many {# kwot} other {# kwoty}} nie udało się uwzględnić, więc pokazana wartość ich nie obejmuje. Brak kursu do {displayCurrency} dla {currencies}.",
     "explanationExcluded": "Suma częściowa: {count, plural, one {# kwoty} few {# kwot} many {# kwot} other {# kwoty}} nie udało się ustalić, więc pokazana liczba ich nie obejmuje."
   },
+  "provisionalTotal": {
+    "srSuffix": "(zawiera kwoty szacunkowe)",
+    "explanation": "Zawiera kwoty szacunkowe: {count, plural, one {# kwota w tej wartości jest szacunkiem} few {# kwoty w tej wartości są szacunkami} many {# kwot w tej wartości to szacunki} other {# kwoty w tej wartości są szacunkami}} wykonanymi przez Monize po historycznym kursie dla drugiej strony przelewu między walutami. Każda pozostaje szacunkiem, dopóki nie zostanie zaimportowany własny plik tego konta lub kwota nie zostanie potwierdzona. Wyszukaj is:provisional w transakcjach, aby je wyświetlić."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Kwota niedostępna",

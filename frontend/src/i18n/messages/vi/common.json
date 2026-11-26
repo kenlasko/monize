@@ -262,6 +262,10 @@
     "explanation": "Tổng một phần: không thể bao gồm {count, plural, other {# khoản}}, vì vậy số liệu hiển thị đã loại trừ chúng. Không có tỷ giá sang {displayCurrency} cho {currencies}.",
     "explanationExcluded": "Tổng một phần: không thể tính được {count, plural, other {# khoản}}, vì vậy số liệu hiển thị đã loại trừ chúng."
   },
+  "provisionalTotal": {
+    "srSuffix": "(bao gồm số tiền ước tính)",
+    "explanation": "Bao gồm số tiền ước tính: {count, plural, other {# số tiền trong con số này là ước tính}} do Monize tính theo tỷ giá lịch sử cho phía bên kia của một giao dịch chuyển tiền giữa các loại tiền tệ. Mỗi khoản vẫn là ước tính cho đến khi tệp riêng của tài khoản đó được nhập hoặc số tiền được xác nhận. Tìm is:provisional trong giao dịch để liệt kê chúng."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Không có số tiền",

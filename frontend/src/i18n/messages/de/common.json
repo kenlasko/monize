@@ -262,6 +262,10 @@
     "explanation": "Teilsumme: {count, plural, one {# Betrag} other {# Beträge}} konnten nicht einbezogen werden, daher schließt der angezeigte Wert sie aus. Für {currencies} ist kein Kurs zu {displayCurrency} verfügbar.",
     "explanationExcluded": "Teilsumme: {count, plural, one {# Betrag} other {# Beträge}} konnten nicht ermittelt werden, daher schließt der angezeigte Wert sie aus."
   },
+  "provisionalTotal": {
+    "srSuffix": "(enthält geschätzte Beträge)",
+    "explanation": "Enthält geschätzte Beträge: {count, plural, one {# Betrag in dieser Zahl ist eine Schätzung} other {# Beträge in dieser Zahl sind Schätzungen}}, die Monize zum historischen Wechselkurs für die Gegenseite einer Fremdwährungsüberweisung vorgenommen hat. Jede bleibt eine Schätzung, bis die eigene Datei dieses Kontos importiert oder der Betrag bestätigt wird. Suchen Sie in den Buchungen nach is:provisional, um sie aufzulisten."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Betrag nicht verfügbar",

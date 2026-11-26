@@ -262,6 +262,10 @@
     "explanation": "Deeltotaal: {count, plural, one {# bedrag} other {# bedragen}} konden niet worden meegeteld, dus het weergegeven bedrag sluit ze uit. Er is geen koers naar {displayCurrency} beschikbaar voor {currencies}.",
     "explanationExcluded": "Deeltotaal: {count, plural, one {# bedrag} other {# bedragen}} konden niet worden berekend, dus het weergegeven bedrag sluit ze uit."
   },
+  "provisionalTotal": {
+    "srSuffix": "(bevat geschatte bedragen)",
+    "explanation": "Bevat geschatte bedragen: {count, plural, one {# bedrag in dit cijfer is een schatting} other {# bedragen in dit cijfer zijn schattingen}} die Monize tegen de historische wisselkoers maakte voor de andere kant van een overboeking tussen valuta. Elk blijft een schatting tot het eigen bestand van die rekening is geïmporteerd of het bedrag is bevestigd. Zoek in de transacties op is:provisional om ze te tonen."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Bedrag niet beschikbaar",

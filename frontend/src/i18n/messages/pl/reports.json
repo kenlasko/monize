@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Brak ceny dla {symbols}: odśwież lub dodaj cenę na stronie papieru wartościowego.",
     "weightingNoRate": "Brak kursu wymiany dla {pairs}: dodaj go na stronie Waluty."
   },
+  "provisionalData": {
+    "notice": "Zawiera kwoty szacunkowe: {count, plural, one {# kwota w tych wartościach jest szacunkiem} few {# kwoty w tych wartościach są szacunkami} many {# kwot w tych wartościach to szacunki} other {# kwoty w tych wartościach są szacunkami}} wykonanymi przez Monize po historycznym kursie dla drugiej strony przelewu między walutami, dopóki nie zostanie zaimportowany własny plik tego konta lub kwota nie zostanie potwierdzona. Wyszukaj is:provisional w transakcjach, aby je wyświetlić."
+  },
   "sankey": {
     "help": "Pieniądze, które wpłynęły, płyną przez środek do tego, na co je wydano, co zaoszczędzono lub zainwestowano i co spłaciło długi. Domyślnie raport obejmuje Twoje otwarte konta osobiste, oszczędnościowe, gotówkowe, karty kredytowe i linie kredytowe, a przelew między dwoma z nich nie jest pokazywany. Usuń konto oszczędnościowe z filtra kont, aby zobaczyć, co na nie przelałeś. Spłata karty kredytowej nigdy nie jest spłatą długu: zakupy, które rozlicza, są już liczone jako wydatki.",
     "depthLabel": "Szczegółowość",

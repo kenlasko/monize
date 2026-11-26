@@ -262,6 +262,10 @@
     "explanation": "Kısmi toplam: {count, plural, other {# tutar}} dahil edilemedi, bu nedenle gösterilen rakam bunları hariç tutuyor. {currencies} için {displayCurrency} kuru mevcut değil.",
     "explanationExcluded": "Kısmi toplam: {count, plural, other {# tutar}} hesaplanamadı, bu nedenle gösterilen rakam bunları hariç tutuyor."
   },
+  "provisionalTotal": {
+    "srSuffix": "(tahmini tutarlar içerir)",
+    "explanation": "Tahmini tutarlar içerir: bu rakamdaki {count, plural, other {# tutar}}, Monize'ın dövizler arası bir transferin diğer tarafı için geçmiş döviz kuruyla yaptığı tahminlerdir. Her biri, o hesabın kendi dosyası içe aktarılana veya tutar onaylanana kadar tahmin olarak kalır. Listelemek için işlemlerde is:provisional araması yapın."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Tutar kullanılamıyor",
