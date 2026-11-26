@@ -102,6 +102,12 @@ interface RowConverter {
   readonly places: number;
   readonly gaps: ConversionGaps;
   /**
+   * The provisional transfer legs (`amountIsProvisional`) whose converted
+   * amounts are inside the report's figures, by id: a row with no rate is in
+   * none of them, so it is not here (design section 8).
+   */
+  readonly provisionalRows: Set<string>;
+  /**
    * `amount` of `row`, or of its `split` line when given, in the reporting
    * currency; `null` when it has no rate into it on its date.
    */
@@ -192,6 +198,7 @@ export class ReportsService {
       currency,
       places,
       gaps,
+      provisionalRows: new Set<string>(),
       convert: (amount, row, split) => {
         // Zero converts to zero at any rate, so an empty row records no gap.
         if (amount === 0) return 0;
@@ -222,6 +229,21 @@ export class ReportsService {
     conv: RowConverter,
   ): (currency: string, unit: string) => void {
     return (currency, unit) => conv.gaps.record(currency, `left-out:${unit}`);
+  }
+
+  /** Records a provisional row whose amount a kept group summed. */
+  private inAFigure(conv: RowConverter): (row: string) => void {
+    return (row) => conv.provisionalRows.add(row);
+  }
+
+  /**
+   * How many provisional amounts the report's figures hold (design section 6,
+   * P5). A count metric sums no amount, so an estimate is in none of its
+   * figures; every other metric, a transaction list included, counts each
+   * provisional row whose amount converted into a figure once.
+   */
+  private provisionalCount(conv: RowConverter, metric: MetricType): number {
+    return metric === MetricType.COUNT ? 0 : conv.provisionalRows.size;
   }
 
   async create(
@@ -478,6 +500,7 @@ export class ReportsService {
       currency: converter.currency,
       missingCurrencies: converter.gaps.missingCurrencies,
       excludedCount: converter.gaps.excludedCount,
+      provisionalCount: summary.provisionalCount,
       truncated,
       tableColumns: report.config.tableColumns,
     };
@@ -1142,6 +1165,10 @@ export class ReportsService {
         } else {
           const accountAmount = lineAmount(tx.amount);
           const value = conv.convert(accountAmount, tx);
+          // A listed row with no rate is in no total, so not counted either.
+          if (value !== null && tx.amountIsProvisional === true) {
+            conv.provisionalRows.add(tx.id);
+          }
           result.push({
             sum: sumOf(value),
             point: {
@@ -1201,6 +1228,7 @@ export class ReportsService {
       config.direction,
       this.keepsUnconverted(metric),
       this.leftOutWithItsPart(conv),
+      this.inAFigure(conv),
     );
     for (const tx of transactions) {
       for (const line of netLinesOf(tx, false)) {
@@ -1236,6 +1264,7 @@ export class ReportsService {
       config.direction,
       this.keepsUnconverted(metric),
       this.leftOutWithItsPart(conv),
+      this.inAFigure(conv),
     );
     // An embedded investment line carries no category by definition, so
     // `netLinesOf` leaves it out: counting it here filed a securities purchase
@@ -1293,6 +1322,7 @@ export class ReportsService {
       config.direction,
       this.keepsUnconverted(metric),
       this.leftOutWithItsPart(conv),
+      this.inAFigure(conv),
     );
     const payeeNames = new Map<string, string>();
 
@@ -1343,6 +1373,7 @@ export class ReportsService {
       config.direction,
       this.keepsUnconverted(metric),
       this.leftOutWithItsPart(conv),
+      this.inAFigure(conv),
     );
     const tagInfo = new Map<string, { tagName: string; color?: string }>();
 
@@ -1415,6 +1446,7 @@ export class ReportsService {
       config.direction,
       this.keepsUnconverted(metric),
       this.leftOutWithItsPart(conv),
+      this.inAFigure(conv),
     );
     const labels = new Map<string, string>();
 
@@ -1601,7 +1633,10 @@ export class ReportsService {
     // is already in `gaps`, so the total is withheld.
     const complete =
       !truncated && (this.keepsUnconverted(metric) || conv.gaps.isComplete);
-    return summarizeRows(rows, metric, complete, conv.places);
+    return {
+      ...summarizeRows(rows, metric, complete, conv.places),
+      provisionalCount: this.provisionalCount(conv, metric),
+    };
   }
 
   private sortData(

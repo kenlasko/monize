@@ -36,6 +36,12 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
  * lines that converted would report a category whose debit is in and whose
  * refund, struck on a day with no rate, is out. The cell's other currencies
  * still net.
+ *
+ * A provisional transfer leg (`amountIsProvisional`, an amount the importer
+ * estimated) is in a figure exactly when its line converted and its part and
+ * cell were kept; `settle` names each such row once, so the report can say how
+ * many estimates its figures hold (`docs/future-plans/provisional-amounts.md`
+ * section 6, P5).
  */
 
 /** One line of a row, before conversion. */
@@ -52,6 +58,11 @@ export interface NetLine {
   currency: string;
   /** The split line this is, for a split parent; absent for a whole row. */
   split?: TransactionSplit;
+  /**
+   * The row's id when its amount is provisional. Only a whole row can be: a
+   * split line never is (its counterpart is a whole row and carries the flag).
+   */
+  provisionalRow?: string;
 }
 
 /**
@@ -89,6 +100,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
       amount: Number(tx.amount),
       unit: unitOf(0),
       currency: tx.currencyCode,
+      ...(tx.amountIsProvisional === true ? { provisionalRow: tx.id } : {}),
     },
   ];
 }
@@ -101,6 +113,8 @@ interface CellPart {
   convertedUnits: Set<string>;
   /** A line of this part had no rate. */
   unconverted: boolean;
+  /** The provisional rows whose lines converted into `agg`. */
+  provisionalRows: Set<string>;
 }
 
 /** One cell's parts, by the currency their lines are in. */
@@ -121,11 +135,14 @@ export interface NetCells {
  *   part kept, because every part it sits in holds a line with no rate, so the
  *   report counts it among what it left out; a line with no rate was already
  *   counted when it failed to convert.
+ * @param onProvisional told, once per settle, of each provisional row whose
+ *   converted amount is inside a kept group's sum.
  */
 export function createNetCells(
   direction: DirectionFilter,
   keepsUnconverted: boolean,
   onLeftOut: (currency: string, unit: string) => void = () => undefined,
+  onProvisional: (row: string) => void = () => undefined,
 ): NetCells {
   const groups = new Map<string, Map<string, Cell>>();
 
@@ -151,6 +168,7 @@ export function createNetCells(
         units: new Set(),
         convertedUnits: new Set(),
         unconverted: false,
+        provisionalRows: new Set(),
       };
       cell.set(line.currency, part);
     }
@@ -158,6 +176,9 @@ export function createNetCells(
     else {
       part.agg.addConverted(converted);
       part.convertedUnits.add(line.unit);
+      if (line.provisionalRow !== undefined) {
+        part.provisionalRows.add(line.provisionalRow);
+      }
     }
     part.units.add(line.unit);
   };
@@ -169,6 +190,8 @@ export function createNetCells(
     // (a row under two tags may leave one group and stay in the other).
     const keptUnits = new Set<string>();
     const leftOut = new Map<string, string>();
+    // A provisional row in a sum, once however many groups hold it.
+    const provisional = new Set<string>();
     for (const [group, cells] of groups) {
       const agg = new FxAggregate();
       const units = new Set<string>();
@@ -207,6 +230,7 @@ export function createNetCells(
         else agg.merge(net);
         for (const part of parts) {
           for (const unit of part.units) units.add(unit);
+          for (const row of part.provisionalRows) provisional.add(row);
         }
       }
       if (kept) settled.set(group, { agg, count: units.size });
@@ -214,6 +238,7 @@ export function createNetCells(
     for (const [unit, currency] of leftOut) {
       if (!keptUnits.has(unit)) onLeftOut(currency, unit);
     }
+    for (const row of provisional) onProvisional(row);
     return settled;
   };
 

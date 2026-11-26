@@ -154,6 +154,8 @@ export interface TransferAccountSummary {
   outbound: number;
   net: number;
   transferCount: number;
+  /** The provisional legs inside `inbound` / `outbound`. */
+  provisionalCount: number;
 }
 
 export interface TransfersByAccountResult {
@@ -161,6 +163,8 @@ export interface TransfersByAccountResult {
   totalInbound: number;
   totalOutbound: number;
   transferCount: number;
+  /** The provisional legs inside the two totals. */
+  provisionalCount: number;
 }
 
 /**
@@ -210,6 +214,16 @@ export interface LlmConvertedFlowFields {
   totalsCurrency: string;
   fxComplete: boolean;
   missingRatePairs: string[];
+  /**
+   * How many provisional transfer amounts (`amountIsProvisional`: Monize's
+   * estimate until the other account's file is imported) the known totals
+   * hold. They are included; nothing is withheld for them. 0 whenever the
+   * read excludes transfers, as `list_transactions` and `query_transactions`
+   * do; the MCP `financial-summary` and `recent-transactions` resources keep
+   * transfers (`getLlmFlowTotals` with `excludeTransfers: false`), so theirs
+   * can be above 0. A `transfers` rollup carries its own count.
+   */
+  provisionalCount: number;
 }
 
 export interface LlmQueryTransactionsResult extends LlmConvertedFlowFields {
@@ -285,6 +299,8 @@ export interface LlmComparisonPeriodTotal {
   end: string;
   total: number | null;
   knownSubtotal: number;
+  /** The provisional amounts inside `knownSubtotal` (see {@link LlmConvertedFlowFields}). */
+  provisionalCount: number;
 }
 
 export interface LlmPeriodComparisonResult {
@@ -345,6 +361,12 @@ export class TransactionAnalyticsService {
           "outbound",
         )
         .addSelect("COUNT(*)", "count")
+        // Every row here is a whole transfer leg, the only kind that can be
+        // provisional (design section 6, P5).
+        .addSelect(
+          "COUNT(*) FILTER (WHERE t.amountIsProvisional = true)",
+          "provisionalCount",
+        )
         .where("t.userId = :userId", { userId })
         .andWhere("t.isTransfer = true")
         .andWhere("t.transactionDate >= :startDate", { startDate })
@@ -378,6 +400,7 @@ export class TransactionAnalyticsService {
           outbound,
           net: roundMoney(inbound - outbound, decimals),
           transferCount: Number(r.count) || 0,
+          provisionalCount: Number(r.provisionalCount) || 0,
         };
       });
 
@@ -395,6 +418,7 @@ export class TransactionAnalyticsService {
           MONEY_SCALE,
         ),
         transferCount: accounts.reduce((s, a) => s + a.transferCount, 0),
+        provisionalCount: accounts.reduce((s, a) => s + a.provisionalCount, 0),
       };
     });
   }
@@ -521,6 +545,8 @@ export class TransactionAnalyticsService {
     totalExpenses: number;
     netCashFlow: number;
     transactionCount: number;
+    /** The provisional transfer amounts inside the totals above. */
+    provisionalCount: number;
     firstTransactionDate: string | null;
     lastTransactionDate: string | null;
     byCurrency: Record<
@@ -576,6 +602,7 @@ export class TransactionAnalyticsService {
         )
         .addSelect(WHOLE_ROW_COUNT_SQL, "transactionCount")
         .addSelect(SPLIT_IDS_SQL, "splitIds")
+        .addSelect(PROVISIONAL_COUNT_SQL, "provisionalCount")
         .addSelect(
           "TO_CHAR(MIN(transaction.transactionDate), 'YYYY-MM-DD')",
           "firstDate",
@@ -653,8 +680,18 @@ export class TransactionAnalyticsService {
         }
       }
 
+      const provisional = provisionalCountsBy(
+        rows,
+        (row) => row.currencyCode ?? "",
+      );
       const converted = reporting
-        ? await this.summaryInReportingCurrency(m, rows, byCurrency, reporting)
+        ? await this.summaryInReportingCurrency(
+            m,
+            rows,
+            byCurrency,
+            reporting,
+            provisional,
+          )
         : undefined;
 
       return {
@@ -662,6 +699,10 @@ export class TransactionAnalyticsService {
         totalExpenses,
         netCashFlow: totalIncome - totalExpenses,
         transactionCount,
+        provisionalCount: [...provisional.values()].reduce(
+          (sum, count) => sum + count,
+          0,
+        ),
         firstTransactionDate,
         lastTransactionDate,
         byCurrency,
@@ -675,6 +716,8 @@ export class TransactionAnalyticsService {
    * its own rate or the market rate on its own date, never at today's (issue
    * #2106). A bucket with no admissible rate is left out of both figures and
    * named, so a surface labels the figures partial rather than short.
+   * `provisional` is each currency's provisional legs; only an included
+   * bucket's are counted (design section 8).
    */
   private async summaryInReportingCurrency(
     m: EntityManager,
@@ -684,6 +727,7 @@ export class TransactionAnalyticsService {
       { totalIncome: number; totalExpenses: number; transactionCount: number }
     >,
     reporting: string,
+    provisional: ReadonlyMap<string, number>,
   ): Promise<SummaryInReportingCurrency> {
     const foreign = await convertRatePartAggregates(
       (sql, params) => m.query(sql, params),
@@ -702,12 +746,14 @@ export class TransactionAnalyticsService {
     const expenses = new FxAggregate();
     let includedTransactionCount = 0;
     let excludedTransactionCount = 0;
+    let provisionalCount = 0;
     const missing: string[] = [];
     for (const [code, bucket] of Object.entries(byCurrency)) {
       if (code === reporting) {
         income.addConverted(bucket.totalIncome);
         expenses.addConverted(bucket.totalExpenses);
         includedTransactionCount += bucket.transactionCount;
+        provisionalCount += provisional.get(code) ?? 0;
         continue;
       }
       const converted = foreign.get(code);
@@ -722,6 +768,7 @@ export class TransactionAnalyticsService {
       if (converted?.totalIncome) income.merge(converted.totalIncome);
       if (converted?.totalExpenses) expenses.merge(converted.totalExpenses);
       includedTransactionCount += bucket.transactionCount;
+      provisionalCount += provisional.get(code) ?? 0;
     }
     const net = FxAggregate.difference(income, expenses);
     const complete = missing.length === 0;
@@ -735,6 +782,7 @@ export class TransactionAnalyticsService {
       knownNet: net.knownSubtotal,
       includedTransactionCount,
       excludedTransactionCount,
+      provisionalCount,
       missingCurrencies: missing.sort(),
     };
   }
@@ -1081,6 +1129,7 @@ export class TransactionAnalyticsService {
         .addSelect(`SUM(ABS(${amountExpr}))`, "magnitude")
         .addSelect(WHOLE_ROW_COUNT_SQL, "count")
         .addSelect(SPLIT_IDS_SQL, "splitIds")
+        .addSelect(PROVISIONAL_COUNT_SQL, "provisionalCount")
         .addGroupBy("transaction.currencyCode");
       const reporting = await resolveUserDefaultCurrency(
         this.dataSource,
@@ -1118,7 +1167,8 @@ export class TransactionAnalyticsService {
    * beside it at each underlying row's own rate or the market rate on its own
    * date (issue #2106): a surface that sums several currencies reads
    * `convertedTotal` rather than converting a lifetime total at today's rate.
-   * `null` is a row with a part no admissible rate reaches.
+   * `null` is a row with a part no admissible rate reaches. `provisionalCount`
+   * is the provisional legs inside the row's own `total`.
    */
   private async groupsWithConvertedTotals<L extends object>(
     m: EntityManager,
@@ -1132,12 +1182,14 @@ export class TransactionAnalyticsService {
         currencyCode: string;
         total: number;
         count: number;
+        provisionalCount: number;
         convertedCurrency: string;
         convertedTotal: number | null;
       }
     >
   > {
     const keyOf = (row: RawGroupRow) => String(row.group_key);
+    const provisional = provisionalCountsBy(parts, keyOf);
     const sums = magnitude === "total" ? ["total"] : ["total", magnitude];
     const groups = foldRateParts(parts, keyOf, {
       sums,
@@ -1175,6 +1227,7 @@ export class TransactionAnalyticsService {
         currencyCode,
         total,
         count: g.count,
+        provisionalCount: provisional.get(g.key) ?? 0,
         convertedCurrency: reporting,
         convertedTotal:
           currencyCode === reporting
@@ -1219,6 +1272,7 @@ export class TransactionAnalyticsService {
       currencyCode: string;
       total: number;
       count: number;
+      provisionalCount: number;
       convertedCurrency: string;
       convertedTotal: number | null;
     }>
@@ -1249,6 +1303,7 @@ export class TransactionAnalyticsService {
         .addSelect(`SUM(ABS(${amountExpr}))`, "total")
         .addSelect(WHOLE_ROW_COUNT_SQL, "count")
         .addSelect(SPLIT_IDS_SQL, "splitIds")
+        .addSelect(PROVISIONAL_COUNT_SQL, "provisionalCount")
         .groupBy(valueExpr)
         .addGroupBy("transaction.currencyCode");
       const reporting = await resolveUserDefaultCurrency(
@@ -1294,6 +1349,8 @@ export class TransactionAnalyticsService {
       total: number | null;
       knownSubtotal?: number;
       count: number;
+      /** The provisional amounts inside `total` / `knownSubtotal`. */
+      provisionalCount: number;
     }>
   > {
     return withScopedDb(this.dataSource, async (m) => {
@@ -1338,6 +1395,7 @@ export class TransactionAnalyticsService {
         .addSelect(`SUM(${amountExpr})`, "total")
         .addSelect(WHOLE_ROW_COUNT_SQL, "count")
         .addSelect(SPLIT_IDS_SQL, "splitIds")
+        .addSelect(PROVISIONAL_COUNT_SQL, "provisionalCount")
         .groupBy("month")
         .addGroupBy("transaction.currencyCode")
         .addGroupBy(DAY_TX_SQL)
@@ -1383,6 +1441,7 @@ export class TransactionAnalyticsService {
           // The transactions page's monthly totals, not a report figure.
           ...totalFields(g.agg, FIAT_MONEY_DECIMALS),
           count: g.count + (splitIds.get(g.first.month)?.size ?? 0),
+          provisionalCount: g.provisionalCount,
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
     });
@@ -1949,6 +2008,7 @@ export class TransactionAnalyticsService {
           `SUM(CASE WHEN ${amountExpr} < 0 THEN ABS(${amountExpr}) ELSE 0 END)`,
           "totalExpenses",
         )
+        .addSelect(PROVISIONAL_COUNT_SQL, "provisionalCount")
         .groupBy("transaction.currencyCode")
         .addGroupBy(dayExpr);
       byOwnRate(qb, "transaction", reporting, {
@@ -1967,8 +2027,9 @@ export class TransactionAnalyticsService {
 
       const income = new FxAggregate();
       const expenses = new FxAggregate();
+      let provisionalCount = 0;
       for (const row of rows) {
-        addDatedAmount(
+        const incomeIn = addDatedAmount(
           income,
           Number(row.totalIncome) || 0,
           row,
@@ -1976,7 +2037,7 @@ export class TransactionAnalyticsService {
           rates,
           this.logger,
         );
-        addDatedAmount(
+        const expensesIn = addDatedAmount(
           expenses,
           Number(row.totalExpenses) || 0,
           row,
@@ -1984,10 +2045,15 @@ export class TransactionAnalyticsService {
           rates,
           this.logger,
         );
+        // A part's legs are in the known totals only when it converted.
+        if (incomeIn && expensesIn) {
+          provisionalCount += Number(row.provisionalCount) || 0;
+        }
       }
       return {
         income,
         expenses,
+        provisionalCount,
         totalsCurrency: reporting,
         places: await loadReportPlaces(m, reporting),
       };
@@ -2049,6 +2115,7 @@ export class TransactionAnalyticsService {
       totalsCurrency: converted.totalsCurrency,
       fxComplete,
       missingRatePairs: all.missingPairs,
+      provisionalCount: converted.provisionalCount,
     };
   }
 
@@ -2085,7 +2152,8 @@ export class TransactionAnalyticsService {
   /**
    * Fold per-(group, currency, day) rows into one converted aggregate per
    * group. `keyOf` names the group; the first row seen stands for its label
-   * columns.
+   * columns. A row's `provisionalCount`, where the read selects one, counts
+   * only when its amount converted into the aggregate.
    */
   private foldGroups(
     rows: RawGroupRow[],
@@ -2098,11 +2166,16 @@ export class TransactionAnalyticsService {
       const key = keyOf(row);
       let group = groups.get(key);
       if (!group) {
-        group = { first: row, agg: new FxAggregate(), count: 0 };
+        group = {
+          first: row,
+          agg: new FxAggregate(),
+          count: 0,
+          provisionalCount: 0,
+        };
         groups.set(key, group);
       }
       group.count += Number(row.count) || 0;
-      addDatedAmount(
+      const converted = addDatedAmount(
         group.agg,
         Number(row.total) || 0,
         row,
@@ -2110,6 +2183,9 @@ export class TransactionAnalyticsService {
         rates,
         this.logger,
       );
+      if (converted) {
+        group.provisionalCount += Number(row.provisionalCount) || 0;
+      }
     }
     return [...groups.values()];
   }
@@ -2484,12 +2560,14 @@ export class TransactionAnalyticsService {
         end: input.period1End,
         total: period1.total.totalAt(places),
         knownSubtotal: p1Total,
+        provisionalCount: period1.provisionalCount,
       },
       period2: {
         start: input.period2Start,
         end: input.period2End,
         total: period2.total.totalAt(places),
         knownSubtotal: p2Total,
+        provisionalCount: period2.provisionalCount,
       },
       totalChange,
       totalChangePercent,
@@ -2557,7 +2635,10 @@ export class TransactionAnalyticsService {
           .groupBy(`${SPLIT_CATEGORY_ID}::text`);
       }
       // Each part is converted at its own date before it joins its group.
+      // Transfers are outside this read, so its provisional count is 0 until
+      // that changes; it is counted, not assumed.
       qb.addSelect("t.currencyCode", "currencyCode")
+        .addSelect(provisionalCountSql("t", "ts"), "provisionalCount")
         .addSelect(DAY_SQL, "txDate")
         .addGroupBy("t.currencyCode")
         .addGroupBy(DAY_SQL);
@@ -2590,6 +2671,7 @@ export class TransactionAnalyticsService {
               : UNCATEGORIZED_LABEL,
         agg: g.agg,
         count: g.count,
+        provisionalCount: g.provisionalCount,
       }));
 
       if (direction === "expenses") {
@@ -2610,6 +2692,7 @@ export class TransactionAnalyticsService {
             label: "Other (aggregated)",
             agg: other,
             count: below.reduce((s, i) => s + i.count, 0),
+            provisionalCount: below.reduce((s, i) => s + i.provisionalCount, 0),
           });
         }
         items = above;
@@ -2617,7 +2700,12 @@ export class TransactionAnalyticsService {
 
       const total = new FxAggregate();
       for (const i of items) total.merge(i.agg);
-      return { totalsCurrency: reporting, items, total };
+      return {
+        totalsCurrency: reporting,
+        items,
+        total,
+        provisionalCount: items.reduce((s, i) => s + i.provisionalCount, 0),
+      };
     });
   }
 
@@ -2852,6 +2940,35 @@ const WHOLE_ROW_COUNT_SQL =
 const SPLIT_IDS_SQL =
   "ARRAY_AGG(DISTINCT transaction.id::text) FILTER (WHERE splits.id IS NOT NULL)";
 
+/**
+ * A part's provisional transfer legs (`amountIsProvisional`, design section
+ * 6, P5) over the same join: whole rows only, since a split line is never
+ * provisional, so each lies in one part and the parts' counts add up. VOID
+ * rows are already outside every analytics read.
+ */
+const PROVISIONAL_COUNT_SQL = provisionalCountSql("transaction", "splits");
+
+/** {@link PROVISIONAL_COUNT_SQL} for a read under other aliases. */
+function provisionalCountSql(alias: string, splitAlias: string): string {
+  return `COUNT(DISTINCT ${alias}.id) FILTER (WHERE ${splitAlias}.id IS NULL AND ${alias}.amountIsProvisional = true)`;
+}
+
+/** Each key's provisional legs, summed over its parts' `provisionalCount`. */
+function provisionalCountsBy(
+  rows: readonly RawGroupRow[],
+  keyOf: (row: RawGroupRow) => string,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const key = keyOf(row);
+    counts.set(
+      key,
+      (counts.get(key) ?? 0) + (Number(row.provisionalCount) || 0),
+    );
+  }
+  return counts;
+}
+
 /** A grouped raw row: its label columns, its currency and its day. */
 type RawGroupRow = Record<string, any>;
 
@@ -2904,6 +3021,8 @@ export interface GroupedTotalRow {
   currencyCode: string;
   total: number;
   count: number;
+  /** The provisional transfer amounts inside `total` (and `convertedTotal`). */
+  provisionalCount: number;
   /** The reader's reporting currency, which `convertedTotal` is in. */
   convertedCurrency: string;
   /** `total` at each row's own rate or on its own date; null without one. */
@@ -2930,6 +3049,11 @@ export interface SummaryInReportingCurrency {
   knownNet: number;
   includedTransactionCount: number;
   excludedTransactionCount: number;
+  /**
+   * The provisional transfer amounts inside the `known*` figures: those of
+   * the included buckets, never of a currency in `missingCurrencies`.
+   */
+  provisionalCount: number;
   missingCurrencies: string[];
 }
 
@@ -2937,11 +3061,15 @@ interface FoldedGroup {
   first: RawGroupRow;
   agg: FxAggregate;
   count: number;
+  /** The provisional legs of the parts that converted into `agg`. */
+  provisionalCount: number;
 }
 
 interface ConvertedFlowTotals {
   income: FxAggregate;
   expenses: FxAggregate;
+  /** The provisional legs of the parts that converted into the two totals. */
+  provisionalCount: number;
   totalsCurrency: string;
   /** `totalsCurrency`'s places, the ones its figures are read at. */
   places: number;
@@ -2957,6 +3085,7 @@ interface ComparisonItem {
   label: string;
   agg: FxAggregate;
   count: number;
+  provisionalCount: number;
 }
 
 interface ComparisonPeriodData {
@@ -2964,13 +3093,16 @@ interface ComparisonPeriodData {
   items: ComparisonItem[];
   /** Everything in `items`, for the period's own total. */
   total: FxAggregate;
+  /** The provisional legs inside `total`. */
+  provisionalCount: number;
 }
 
 /**
  * Add one dated amount of `row.currencyCode` to `agg` in the reporting
  * currency. Zero needs no rate and the same currency needs none; anything else
  * is converted at its own settled rate or the rate for its date, or recorded
- * as a gap. A query feeding it adds {@link byOwnRate}.
+ * as a gap. A query feeding it adds {@link byOwnRate}. Answers whether the
+ * amount is in the aggregate's known figure, `false` only for a gap.
  */
 function addDatedAmount(
   agg: FxAggregate,
@@ -2979,20 +3111,18 @@ function addDatedAmount(
   reporting: string,
   rates: RateIndex,
   logger: Logger,
-): void {
-  if (amount === 0) return;
+): boolean {
+  if (amount === 0) return true;
   if (row.currencyCode === reporting) {
     agg.addConverted(amount);
-    return;
+    return true;
   }
   // The row's own settled rate where it reaches the reporting currency
   // (INV-FX-002), else the market rate on its date: the reports' rule.
   const basis = partRateBasis(row, row.currencyCode, row.txDate, reporting);
-  agg.add(
-    convertRateBasis(amount, basis, reporting, rates, logger),
-    row.currencyCode,
-    reporting,
-  );
+  const converted = convertRateBasis(amount, basis, reporting, rates, logger);
+  agg.add(converted, row.currencyCode, reporting);
+  return converted !== null;
 }
 
 /** At most this many groups, 100 unless the caller asks; never past 500. */

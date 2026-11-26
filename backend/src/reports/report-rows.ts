@@ -75,13 +75,15 @@ export function metricValue(
  * never the sum of the groups' means. Every money figure here is the single
  * rounding of the rows' folded sums at `places`, the reporting currency's; the
  * count metric's mean is a ratio of counts, not money, and keeps four places.
+ * The provisional count is the report's own (`ReportsService`), read off the
+ * rows it converted rather than off these figures.
  */
 export function summarizeRows(
   rows: readonly ReportRow[],
   metric: MetricType,
   complete: boolean,
   places: number,
-): ReportSummary {
+): Omit<ReportSummary, "provisionalCount"> {
   const count = rows.reduce((acc, row) => acc + (row.point.count ?? 1), 0);
   let knownTotal: number;
   let mean: number;

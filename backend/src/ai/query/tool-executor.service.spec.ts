@@ -936,6 +936,43 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("Transfers: inbound 500.00");
     });
 
+    it("list_transactions marks the figures that hold estimated amounts, and none that hold none", async () => {
+      analytics.getLlmListTransactions.mockResolvedValueOnce({
+        totalIncome: 80,
+        totalExpenses: 0,
+        netCashFlow: 80,
+        knownIncomeSubtotal: 80,
+        knownExpensesSubtotal: 0,
+        totalsCurrency: "EUR",
+        fxComplete: true,
+        missingRatePairs: [],
+        provisionalCount: 1,
+        transactionCount: 1,
+        groupedBy: "none",
+        transfers: {
+          totalInbound: 80,
+          totalOutbound: 100,
+          transferCount: 2,
+          provisionalCount: 2,
+          accounts: [],
+        },
+      });
+
+      const result = await service.execute(userId, "list_transactions", {
+        transfersOnly: true,
+      });
+
+      expect(result.summary).toContain(
+        "Net: 80.00 EUR (includes 1 estimated amount)",
+      );
+      expect(result.summary).toContain(
+        "outbound 100.00 (includes 2 estimated amounts).",
+      );
+
+      const plain = await service.execute(userId, "list_transactions", {});
+      expect(plain.summary).not.toContain("estimated");
+    });
+
     it("list_transactions resolves account names to IDs", async () => {
       await service.execute(userId, "list_transactions", {
         accountNames: ["Checking"],
@@ -1367,6 +1404,38 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain("4000.00 PLN");
       expect(result.summary).not.toContain("Change:");
       expect(result.summary).not.toContain("null");
+    });
+
+    it("compare_periods marks a period whose total holds estimated amounts", async () => {
+      analytics.getLlmPeriodComparison.mockResolvedValueOnce({
+        period1: {
+          start: "2025-12-01",
+          end: "2025-12-31",
+          total: 3000,
+          knownSubtotal: 3000,
+          provisionalCount: 0,
+        },
+        period2: {
+          start: "2026-01-01",
+          end: "2026-01-31",
+          total: 3500,
+          knownSubtotal: 3500,
+          provisionalCount: 1,
+        },
+        totalChange: 500,
+        totalChangePercent: 16.67,
+        totalsCurrency: "USD",
+        fxComplete: true,
+        missingRatePairs: [],
+        comparison: [],
+      });
+
+      const result = await service.execute(userId, "compare_periods", {});
+
+      expect(result.summary).toMatch(
+        /Period 2 \([^)]*\) \(includes 1 estimated amount\): 3500\.00 USD/,
+      );
+      expect(result.summary).not.toMatch(/Period 1 \([^)]*\) \(includes/);
     });
 
     it("compare_periods fills in all four dates when omitted", async () => {

@@ -392,6 +392,13 @@ export interface LlmTransactionRow {
   originalAmount?: number;
   originalCurrencyCode?: string;
   exchangeRate?: number;
+  /**
+   * `true` on a provisional transfer leg: its amount is Monize's estimate
+   * until the other account's file is imported or the amount is confirmed
+   * (`docs/future-plans/provisional-amounts.md`). Absent on a confirmed row
+   * and on a split line, which is never provisional.
+   */
+  amountIsProvisional?: boolean;
 }
 
 export interface LlmTransactionSearch {
@@ -5556,6 +5563,9 @@ export class TransactionsService {
                   originalCurrencyCode: t.originalCurrencyCode,
                   exchangeRate: Number(t.exchangeRate),
                 }
+              : {}),
+            ...(t.amountIsProvisional === true
+              ? { amountIsProvisional: true }
               : {}),
           },
         ];
