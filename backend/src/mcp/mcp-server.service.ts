@@ -105,6 +105,7 @@ export class McpServerService {
           "- Account, category and payee NAMES resolve internally on every tool that takes them, reads and writes alike. Look an id up only where a field asks for one.",
           '- A category is named "Parent: Child"; a bare child name shared by two parents is rejected rather than guessed.',
           "- A null total means a component could not be priced or converted, never zero. Any partial sum travels beside it under its own name -- quote that as a subtotal, and say which currency a total is in.",
+          "- A provisionalCount above 0 means the figure includes amounts Monize estimated for a transfer leg until the other account's file is imported (such a row has amountIsProvisional true): quote it as including estimated amounts.",
           "- Never do arithmetic yourself: use calculate, and present a value a tool already computed as it stands.",
           "",
           "## Writing",

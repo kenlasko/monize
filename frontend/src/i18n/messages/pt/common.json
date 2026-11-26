@@ -262,6 +262,10 @@
     "explanation": "Total parcial: não foi possível incluir {count, plural, one {# montante} other {# montantes}}, pelo que o valor apresentado os exclui. Não há taxa para {displayCurrency} disponível para {currencies}.",
     "explanationExcluded": "Total parcial: não foi possível apurar {count, plural, one {# montante} other {# montantes}}, pelo que o valor apresentado os exclui."
   },
+  "provisionalTotal": {
+    "srSuffix": "(inclui montantes estimados)",
+    "explanation": "Inclui montantes estimados: {count, plural, one {# montante deste valor é uma estimativa} other {# montantes deste valor são estimativas}} feitas pelo Monize à taxa de câmbio histórica para o outro lado de uma transferência entre moedas. Cada um continua a ser uma estimativa até o ficheiro dessa conta ser importado ou o montante ser confirmado. Pesquise is:provisional nas transações para os listar."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Valor não disponível",

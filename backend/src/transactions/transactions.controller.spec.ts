@@ -44,6 +44,7 @@ describe("TransactionsController", () => {
       markCleared: jest.fn(),
       reconcile: jest.fn(),
       unreconcile: jest.fn(),
+      confirmAmount: jest.fn(),
       updateStatus: jest.fn(),
       getReconciliationData: jest.fn(),
       bulkReconcile: jest.fn(),
@@ -1212,6 +1213,18 @@ describe("TransactionsController", () => {
 
       expect(result).toEqual(expected);
       expect(mockService.reconcile).toHaveBeenCalledWith("user-1", "tx-1");
+    });
+  });
+
+  describe("confirmAmount()", () => {
+    it("delegates to service.confirmAmount with the JWT's user and the id", async () => {
+      const expected = { id: "tx-1", amountIsProvisional: false };
+      mockService.confirmAmount.mockResolvedValue(expected);
+
+      const result = await controller.confirmAmount(mockReq, "tx-1");
+
+      expect(result).toEqual(expected);
+      expect(mockService.confirmAmount).toHaveBeenCalledWith("user-1", "tx-1");
     });
   });
 

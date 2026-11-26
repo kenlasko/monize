@@ -21,6 +21,11 @@ export interface MonthlySnapshotRow {
   account_type: string;
   account_sub_type: string | null;
   currency_code: string;
+  /**
+   * An ASSET's acquisition date (`YYYY-MM-DD`): its snapshot is zeroed for the
+   * months before it. Selected by the net worth series only.
+   */
+  date_acquired?: string | null;
 }
 
 /** An account's first snapshot month. */

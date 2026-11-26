@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Aucun cours pour {symbols} : actualisez ou ajoutez un cours sur la page du titre.",
     "weightingNoRate": "Aucun taux de change pour {pairs} : ajoutez-en un sur la page Devises."
   },
+  "provisionalData": {
+    "notice": "Inclut des montants estimés : {count, plural, one {# montant de ces chiffres est une estimation} other {# montants de ces chiffres sont des estimations}} faites par Monize au taux de change historique pour l'autre côté d'un virement entre devises, jusqu'à l'import du fichier propre à ce compte ou la confirmation du montant. Recherchez is:provisional dans les transactions pour les lister."
+  },
   "sankey": {
     "help": "L’argent reçu passe par le centre vers ce à quoi il a été dépensé, ce qui a été épargné ou placé et ce qui a remboursé des dettes. Par défaut, le rapport couvre vos comptes chèques, d’épargne, d’espèces, de carte de crédit et de marge de crédit ouverts, et un virement entre deux d’entre eux n’est pas affiché. Retirez un compte d’épargne du filtre de comptes pour voir ce que vous y avez transféré. Un paiement de carte de crédit n’est jamais un remboursement de dette : les achats qu’il règle sont déjà comptés comme dépenses.",
     "depthLabel": "Niveau de détail",

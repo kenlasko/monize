@@ -78,11 +78,44 @@ Proposed for `docs/system-invariants.md` under the next free ids of the FX famil
 
 A provisional leg is never a recorded transfer to the importer's duplicate check (`import-transfer-dedupe.ts`), so the account's own file confirms it even when it states exactly the estimate. A zero transfer across currencies needs no rate: its other leg is a confirmed zero and is never provisional.
 
+Decided in issue #2392:
+
+- The confirm action's history entry restores the flag alone and records the confirmed amount only to compare. Undo is refused once the leg holds another amount or is no longer a transfer leg: that figure is the reader's, and decision 5 lets nobody mark an amount provisional.
+- A row the shared-expense ledger protects (`shared_protect_ledger_transaction`) is not exempted: the column stays off the trigger's ignore list, so confirming such a row is refused with the trigger's own message until it is unlinked in Shared expenses.
+- An amount is compared with its currency. A transfer edit that leaves the pair in one currency confirms the leg (a conserving pair holds no estimate), and an amount stated for a leg the edit moves into another currency confirms it even when the number is unchanged.
+- An edit of a split parent replaces its lines and recreates each transfer line's counterpart. The flag is carried onto a recreated counterpart in the same account holding the same amount (`backend/src/transactions/provisional-split-legs.ts`). This preserves a state across a row replacement, as the received amount already is; it is not a fifth writer, because it never sets the flag on an amount that was not provisional. A line whose own amount changed is repriced and written confirmed: a replace-all write cannot tell which old line it continues.
+
 A transfer edit that reprices the provisional leg without a supplied amount (the reader changed only the other side, and the server computed the rest from the market rate) leaves it provisional: the new figure is still an estimate.
 
 **Read shape.** The transaction entity is the response, so `amountIsProvisional` appears on every transaction read. The model-facing row `LlmTransactionRow` carries it too. It is never accepted on a create or update body.
 
 **Figure shape.** Each response that carries a converted or summed figure which can contain a transfer leg gains `provisionalCount: number` beside its existing completeness fields. It counts provisional legs inside that figure under that read's own filters, never void rows, and for a balance as of a day only legs dated on or before it. The frontend marks the figure when the count is above zero.
+
+Decided in issue #2394 (balances and net worth):
+
+- Every balance surface reads its count through `loadProvisionalCounts` (`backend/src/common/provisional-count.util.ts`), one statement over `ledgerProvisionalPredicate`: the ledger movement predicate plus the column, bounded at each as-of date. `ledger-balance-sql.spec.ts` fails a balance reader under `accounts/`, `net-worth/`, `delegation/` or `scheduled-transactions/` that names the column itself.
+- The account list's `provisionalCount` is over the rows inside `currentBalance`, dated on or before today, on owned rows and joint rows alike (`JointAccountsService.jointAccountsFor`). A future-dated leg sits in `futureTransactionsSum`, which the list adds to the balance it shows, and is not counted there (section 10: a future-dated leg counts nowhere).
+- A balance as of a later day counts the legs dated on or before that day: the balances-as-of report at its date, and each day of the daily totals, including a projected day.
+- `NetWorthTotals` and each net worth month carry `provisionalCount` with `assetsProvisionalCount` and `liabilitiesProvisionalCount` beside it, counted as of the month's end, bounded at the database's `CURRENT_DATE` as the snapshot's own sum is, over the accounts whose ledger balance is in the month's figure. A brokerage valued at market holds none of its ledger rows, so none of its legs either, and an asset counts nothing in the months before its acquisition, whose snapshot is zero. An account whose balance did not convert is outside the subtotal and outside the count (section 8). The summary also carries `totalBalanceProvisionalCount` for `totalBalance`. The LLM net worth history keeps only `provisionalCount`, as it drops the per-side completeness flags.
+- `list_accounts` is at its `tools/list` byte budget, so the counts are not declared in its output schema; the loose object carries them, as it does the `known*` subtotals.
+
+Decided in issue #2395 (custom reports, transaction analytics, the assistant and MCP):
+
+- A custom report's `ReportResult` and its `summary` carry `provisionalCount`: each provisional row whose converted amount is inside a figure, once however many groups hold it. The net cells (`backend/src/reports/report-net-cells.ts`) name a row only when its line converted and its part and cell were kept, so a row left out for want of a rate, or one a direction filter drops, counts nowhere; a listed transaction counts when it converted. The count metric sums no amount and counts 0.
+- Every `TransactionAnalyticsService` read that reports missing rates counts in SQL (`PROVISIONAL_COUNT_SQL`, whole rows only) at its own grain: the summary's `provisionalCount` over its totals and `converted.provisionalCount` over the buckets that converted, each grouped-totals and tag-breakdown row, each month of the monthly totals (over the parts that converted), the LLM flow totals and each side of the period comparison. The flow totals behind `list_transactions` and the period comparison exclude transfers, so their count is 0 today; it is counted, not assumed. The `transfersOnly` rollup (`getTransfersByAccount`), whose rows are whole transfer legs, carries a count per account and in total.
+- The assistant's summary line marks each figure whose count is above 0 ("includes N estimated amounts"), where the numbers are shown.
+- `LlmTransactionRow` carries `amountIsProvisional: true` on a provisional leg's row only.
+- The assistant's `list_transactions` and `compare_periods` descriptions say what the count means. On MCP the `tools/list` total is at its shrink-only budget, so the counts stay undeclared on the loose outputs, as `list_accounts`' do, and the server instructions say once, for every tool and resource, what a `provisionalCount` above 0 and `amountIsProvisional` mean.
+
+Decided in issue #2396 (built-in reports that read transfer legs, and budget transfer actuals):
+
+- In scope are exactly the reads whose rows can be transfer legs, the ones `transferRateSql` serves: the Cash Flow Sankey's transfer flows, the Monthly Category Breakdown's transfer rows, Income vs Expenses' tagged transfer flows, the payee and category account panels (`backend/src/built-in-reports/account-breakdown-fx.ts`), budget transfer actuals and the currency usage summary. Every other built-in report excludes transfers and gains nothing.
+- Each counts in SQL over whole rows (`amount_is_provisional`): a split's transfer line is never provisional, so the split reads count nothing. A group left out for want of a rate counts nowhere (section 8).
+- `CashFlowSankeyResponse` and `MonthlyCategoryBreakdownResponse` carry `provisionalCount` at the response; the Sankey counts each half of a flow row on its own side, so an estimate in a half that did not convert is not counted.
+- Income vs Expenses carries it on each tag bucket (`IncomeExpenseTagBucket.provisionalCount`), over its `taggedInflows` and `taggedOutflows`. The top-level (All) figures never hold a transfer leg and keep their shape (I1 of `docs/specs/report-tag-key-breakdown.md`).
+- Each row of the payee and category account panels carries `provisionalCount` over its `total`; `convertedTotal` is null rather than partial while a part has no rate, so it holds the same rows.
+- `queryCategorySpending` counts per outgoing transfer line, per transfer income line and for the transfers-in toggle's income, by id, so a leg an outgoing line and an income line naming one account both read counts once in `provisionalCount`. The budget summary carries `provisionalCount` on each `CategoryActualRow` (0 on a category line) and in total. The alerts, trend, health and period-close readers of the same util are not surfaces F3 marks and are left alone.
+- `CurrencyUsageSummary.provisionalCount` is over every row in `transactionCount`, inside `totalInCurrency` and inside `totalInReportingCurrency`, which is null rather than partial while a row has no rate. The transaction-rates list is not a summed figure and is left alone.
 
 **Search.** `is:provisional` and `-is:provisional` in the transaction search grammar.
 
@@ -117,6 +150,19 @@ The same table holds when the EUR file is imported first: the provisional leg is
 - **Figures.** One small component, a note in the shape of `PartialDataNotice`, and a mark on a headline figure in the shape of `PartialTotal`, both driven by a provisional count. They do not replace or hide the figure.
 - **Where.** The accounts list and its summary, the register header, the net worth hero, chart and report, the custom report viewer, the built-in reports whose rows can be transfer legs, the payee and category account panels, and budget transfer actuals.
 - **Copy.** Reader-facing words are "estimated amount" and "includes estimated amounts". Keys live under a `provisional` name so they do not collide with the schedule estimate's keys.
+
+Decided in issue #2397 (the badge and the action):
+
+- One component, `ProvisionalAmountBadge` (`frontend/src/components/transactions/`), draws the label wherever a row's amount is drawn: the phone card, the desktop row's Amount cell, Folio's Payment or Deposit cell, the Pebble row and the Pebble inspector. It reads the flag through `isProvisionalAmount` (`frontend/src/lib/provisional-amount.ts`) as `=== true`, so a payload without the field is drawn as confirmed. Every register that renders `TransactionList` shows the badge.
+- The action is offered only where a caller passes `onConfirmAmount`; today that is the Transactions page. The endpoint is the owner's alone: it carries no `@AllowDelegate()`, so `AccountDelegateGuard` refuses it to an acting delegate, and it is scoped to the caller's `user_id`. The list therefore offers it only outside a delegate session, on a row whose `userId` is the signed-in reader's, and never on a row of a joint account shared to the reader. Letting a delegate confirm would be a backend change (the route's delegate annotation) and a separate proposal.
+- A refusal (most likely "not provisional", because the leg was confirmed elsewhere) is toasted and the page reloads, so the row shows the server's state.
+- After the endpoint answers, the page marks the row confirmed in place, then reloads through `loadAllData`, the path the register's delete takes: the rows, the accounts the account widget reads (where F2's count will live), and the reload key the widgets refetch on. A reload that fails therefore leaves no stale badge. `transactionsApi.confirmAmount` drops the cached balance reads. A second click on the same row before the reload lands sends nothing.
+
+Decided in issue #2398 (the mark and the note on accounts, the register header and net worth):
+
+- `ProvisionalMark` (`frontend/src/components/ui/`) is a `≈` with an `InfoTooltip` saying how many estimates the figure includes and that `is:provisional` lists them. `PartialTotal` draws it through its optional `provisionalCount` prop, after the partial marker when there is one, so a figure that is both partial and provisional carries both. `ProvisionalDataNotice` (`frontend/src/components/reports/`) is the note counterpart of `PartialDataNotice`. Both read the count through `provisionalCountOf` (`frontend/src/lib/provisional-amount.ts`): an absent or unreadable count is `0` and draws nothing.
+- A sum of balances sums its accounts' counts (`sumProvisionalCounts`): an account row (a folded pair counts both ledgers), a group header and the accounts page's summary cards. The register header (the bar and the full widget) reads the account's own count.
+- Net worth reads the month's `provisionalCount`, `assetsProvisionalCount` and `liabilitiesProvisionalCount`: the hero, the widget's headline and the report's headline mark the newest month, and the report's table marks each month. The report's note takes the largest month's count, because a provisional leg stays in every month from its date on and a sum would count it once per month.
 
 ## 10. Test matrix
 

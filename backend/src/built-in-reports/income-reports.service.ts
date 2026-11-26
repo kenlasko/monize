@@ -83,6 +83,11 @@ interface RawTagFlowAggregate extends RawRateBasis {
   currency_code: string;
   inflow: string;
   outflow: string;
+  /**
+   * The group's provisional legs (`amount_is_provisional`); whole transfer
+   * rows only, as a split's transfer line is never provisional.
+   */
+  provisional_count?: string;
 }
 
 @Injectable()
@@ -803,6 +808,7 @@ export class IncomeReportsService {
           t.currency_code,
           ${rateBasisColumnsSql(wholeFlowCurrencyParam, "t", ownTransferLegs(userId, "$1"))},
           t.amount as leg_amount,
+          t.amount_is_provisional as leg_is_provisional,
           ${transactionTagValuesArrayExpr("t", wholeFlowKeyParam)} as tag_values
         FROM transactions t
         LEFT JOIN accounts a ON a.id = t.account_id
@@ -840,7 +846,8 @@ export class IncomeReportsService {
         tr.tx_date,
         tr.own_rate,
         SUM(CASE WHEN tr.leg_amount > 0 THEN tr.leg_amount ELSE 0 END) as inflow,
-        SUM(CASE WHEN tr.leg_amount < 0 THEN ABS(tr.leg_amount) ELSE 0 END) as outflow
+        SUM(CASE WHEN tr.leg_amount < 0 THEN ABS(tr.leg_amount) ELSE 0 END) as outflow,
+        COUNT(*) FILTER (WHERE tr.leg_is_provisional = true) as provisional_count
       FROM transfer_rows tr
       CROSS JOIN UNNEST(tr.tag_values) AS tv(value)
       GROUP BY tr.period_start, tv.value, tr.currency_code, tr.tx_date, tr.own_rate
@@ -1011,6 +1018,9 @@ export class IncomeReportsService {
 
     const missing = new Set(missingCurrencies);
     let flowExcludedCount = 0;
+    // The provisional legs inside the flows that converted (design section
+    // 8); a leg lies in one flow row of this value, so the rows' counts add.
+    let provisionalCount = 0;
     // A flow aggregate split by day counts once (see `ConversionGaps.record`).
     const flowGapGroups = new Set<string>();
     const flowsByPeriod = new Map<
@@ -1030,6 +1040,7 @@ export class IncomeReportsService {
         }
         continue;
       }
+      provisionalCount += Number(row.provisional_count) || 0;
       const key = periodKeyForStart(row.period_start, bucket);
       const entry = flowsByPeriod.get(key) ?? {
         inflows: new FxAggregate(),
@@ -1103,6 +1114,7 @@ export class IncomeReportsService {
       ),
       missingCurrencies: [...missing].sort(),
       excludedCount: excludedCountTotal,
+      provisionalCount,
     };
   }
 }

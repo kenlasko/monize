@@ -443,7 +443,7 @@
 <li>Check that transfers between accounts were matched correctly (not doubled)</li>
 </ol>
 <h3 id="72-review-cross-currency-transfers">7.2 Review Cross-Currency Transfers<a class="hlink" href="#72-review-cross-currency-transfers" aria-label="Link to this section">#</a></h3>
-<p>Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Look for transactions with a memo containing <em>&quot;PENDING IMPORT&quot;</em> and update the amounts to reflect the actual exchange rates.</p>
+<p>Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Search transactions for <code>is:provisional</code> to list the receiving sides whose amount is still an estimate, and update the amounts to reflect the actual exchange rates.</p>
 <h3 id="73-verify-investment-holdings">7.3 Verify Investment Holdings<a class="hlink" href="#73-verify-investment-holdings" aria-label="Link to this section">#</a></h3>
 <ol>
 <li>Navigate to <strong>Investments</strong></li>
@@ -538,7 +538,7 @@
 <p><strong>Cause:</strong> QIF files do not contain exchange rate information.</p>
 <p><strong>Solution:</strong></p>
 <ol>
-<li>Search transactions for &quot;PENDING IMPORT&quot; in the memo field</li>
+<li>Search transactions for <code>is:provisional</code></li>
 <li>Edit each flagged transaction</li>
 <li>Adjust the amount in the destination account to match the actual transfer amount</li>
 <li>This correctly sets the effective exchange rate</li>
@@ -594,7 +594,7 @@
 </code></pre>
 <h3 id="after-a-qif-import-checklist">After a QIF Import Checklist<a class="hlink" href="#after-a-qif-import-checklist" aria-label="Link to this section">#</a></h3>
 <pre><code>[ ] Verify all account balances match Microsoft Money
-[ ] Fix cross-currency transfer amounts (&quot;PENDING IMPORT&quot; memos)
+[ ] Fix cross-currency transfer amounts (search is:provisional)
 [ ] Verify investment holdings and cost basis
 [ ] Update auto-created securities with correct symbols
 [ ] Recreate scheduled transactions (bills and deposits)

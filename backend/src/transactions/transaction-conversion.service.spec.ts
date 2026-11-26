@@ -539,8 +539,16 @@ describe("TransactionConversionService", () => {
       });
       expect(accountsService.updateBalance).toHaveBeenCalledWith(SAVINGS, -50);
       // Detached with the pair's rate gone: a plain row has no rate of its own.
+      // A provisional amount is a transfer leg's (design P3 of
+      // docs/future-plans/provisional-amounts.md): the flag goes in the same
+      // write that ends the row's life as a leg.
       expect(updateOf(ROW)).toEqual([
-        { isTransfer: false, linkedTransactionId: null, exchangeRate: 1 },
+        {
+          isTransfer: false,
+          linkedTransactionId: null,
+          exchangeRate: 1,
+          amountIsProvisional: false,
+        },
       ]);
       expect(transactionsService.update).toHaveBeenCalledWith(
         USER,

@@ -22,6 +22,7 @@ export function NetWorthHeroPebble({
   netWorth,
   assets,
   liabilities,
+  provisional,
   invested,
   investedLoading,
   collapsed,
@@ -41,7 +42,7 @@ export function NetWorthHeroPebble({
             collapsed={collapsed}
             sizeClass="text-6xl sm:text-7xl xl:text-[92px] font-bold text-gray-900 dark:text-gray-50"
           >
-            <PartialTotal total={netWorth} displayCurrency={currency}>
+            <PartialTotal total={netWorth} displayCurrency={currency} provisionalCount={provisional.netWorth}>
               <MoneyFigure amount={netWorth.value} display />
             </PartialTotal>
           </HeroHeadline>
@@ -56,12 +57,12 @@ export function NetWorthHeroPebble({
           ))}
         <dl className="mt-auto flex flex-wrap gap-x-9 gap-y-3 pt-7">
           <BlockFigure label={t('hero.assetsLabel')}>
-            <PartialTotal total={assets} displayCurrency={currency}>
+            <PartialTotal total={assets} displayCurrency={currency} provisionalCount={provisional.assets}>
               {formatCurrency(assets.value)}
             </PartialTotal>
           </BlockFigure>
           <BlockFigure label={t('hero.liabilitiesLabel')}>
-            <PartialTotal total={liabilities} displayCurrency={currency}>
+            <PartialTotal total={liabilities} displayCurrency={currency} provisionalCount={provisional.liabilities}>
               {formatCurrency(liabilities.value)}
             </PartialTotal>
           </BlockFigure>

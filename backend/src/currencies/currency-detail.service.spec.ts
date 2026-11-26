@@ -30,6 +30,7 @@ interface UsageRow {
   in_code: string | null;
   in_account: string | null;
   missing_original: string;
+  provisional: string;
 }
 
 const usageRow = (overrides: Partial<UsageRow>): UsageRow => ({
@@ -42,6 +43,7 @@ const usageRow = (overrides: Partial<UsageRow>): UsageRow => ({
   in_code: "0",
   in_account: "0",
   missing_original: "0",
+  provisional: "0",
   ...overrides,
 });
 
@@ -124,6 +126,7 @@ describe("CurrencyDetailService", () => {
         knownReportingSubtotal: 215.75,
         unconvertedCount: 0,
         missingPairs: [],
+        provisionalCount: 0,
       });
       // Only the market-rate part loads history, over its own dates.
       expect(exchangeRateService.getRateIndex).toHaveBeenCalledWith(
@@ -202,6 +205,33 @@ describe("CurrencyDetailService", () => {
 
       expect(summary.totalInCurrency).toBe(12.25);
       expect(summary.totalInReportingCurrency).toBe(12.25);
+    });
+
+    it("counts the provisional legs of every group, which both totals hold", async () => {
+      manager.query.mockResolvedValue([
+        // Two imported estimates posted in EUR, at the market rate.
+        usageRow({
+          cnt: "3",
+          in_code: "90",
+          in_account: "90",
+          provisional: "2",
+        }),
+        usageRow({
+          currency_code: "CAD",
+          tx_date: null,
+          in_code: "5",
+          in_account: "7",
+          provisional: "1",
+        }),
+      ]);
+
+      const summary = await service.getUsageSummary("user-1", "EUR");
+
+      expect(summary.provisionalCount).toBe(3);
+      const [sql] = manager.query.mock.calls[0];
+      expect(sql).toMatch(
+        /COUNT\(\*\) FILTER \(\s*WHERE t\.amount_is_provisional = true\s*\)::text AS provisional/,
+      );
     });
 
     it("reads only the reader's own, non-void, top-level rows in the currency", async () => {

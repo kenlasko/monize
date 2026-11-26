@@ -6,6 +6,8 @@ import { Transaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { Modal } from '@/components/ui/Modal';
 import { usePayeeDisplay } from '@/hooks/usePayeeDisplay';
+import { isProvisionalAmount } from '@/lib/provisional-amount';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
 interface TransactionActionSheetProps {
   isOpen: boolean;
@@ -16,6 +18,8 @@ interface TransactionActionSheetProps {
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
   onShareExpense?: (transaction: Transaction) => void;
+  /** Confirm a provisional amount; offered only on a provisional row. */
+  onConfirmAmount?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
   onDateFilterClick?: (date: string) => void;
   onAccountFilterClick?: (accountId: string) => void;
@@ -35,6 +39,7 @@ export function TransactionActionSheet({
   onDuplicate,
   onScheduleRecurring,
   onShareExpense,
+  onConfirmAmount,
   onDeleteClick,
   onDateFilterClick,
   onAccountFilterClick,
@@ -202,6 +207,15 @@ export function TransactionActionSheet({
               {t('actionSheet.filterByTag', { name: tag.name })}
             </button>
           ))
+        )}
+        {onConfirmAmount && transaction && isProvisionalAmount(transaction) && (
+          <button
+            onClick={() => { onClose(); onConfirmAmount(transaction); }}
+            className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+          >
+            <CheckCircleIcon className="w-4 h-4 text-gray-400" aria-hidden="true" />
+            {t('provisional.confirmAction')}
+          </button>
         )}
         {onEdit && (
           <button

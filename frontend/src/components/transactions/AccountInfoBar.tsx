@@ -8,6 +8,7 @@ import { Account } from '@/types/account';
 import { balanceColor } from '@/lib/format';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
 import { InstitutionLogoData } from '@/components/institutions/InstitutionLogo';
 import { AccountIdentity, accountWidgetBalance } from '@/components/transactions/AccountIdentity';
 
@@ -84,6 +85,7 @@ export function AccountInfoBar({
           title={t('accountWidget.currentBalance')}
         >
           {formatCurrency(balance, account.currencyCode)}
+          <ProvisionalMark count={account.provisionalCount} />
         </span>
         <div className="flex items-center gap-0.5">
           <button

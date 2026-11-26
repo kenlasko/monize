@@ -301,8 +301,10 @@ Several words find the transactions that contain all of them, anywhere in the pa
 | `amount:>100` | Amount over 100 |
 | `amount:50..100` | Amount from 50 to 100 |
 | `date:2026-03` | Any day in March 2026 |
-| `is:split` | Split transactions (also `is:transfer`, `is:uncategorized`) |
+| `is:split` | Split transactions (also `is:transfer`, `is:uncategorized`, `is:provisional`) |
 | `has:attachment` | Has an attachment (also `has:warranty`, `has:ref`, `has:memo`, `has:tag`) |
+
+`is:provisional` finds the transfers a file import added to the other account with an estimated amount, worked out at the exchange rate of the transfer's date, until that account's own file is imported or the amount is corrected. `-is:provisional` finds every other transaction.
 
 The fields are `payee`, `memo` (the description), `cat`, `tag`, `account`, `ref`, `amount`, `date`, `status`, `is`, and `has`.
 

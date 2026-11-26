@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Geen koers voor {symbols}: ververs of voeg een koers toe op de pagina van het effect.",
     "weightingNoRate": "Geen wisselkoers voor {pairs}: voeg er een toe op de pagina Valuta's."
   },
+  "provisionalData": {
+    "notice": "Bevat geschatte bedragen: {count, plural, one {# bedrag in deze cijfers is een schatting} other {# bedragen in deze cijfers zijn schattingen}} die Monize tegen de historische wisselkoers maakte voor de andere kant van een overboeking tussen valuta, tot het eigen bestand van die rekening is geïmporteerd of het bedrag is bevestigd. Zoek in de transacties op is:provisional om ze te tonen."
+  },
   "sankey": {
     "help": "Binnengekomen geld stroomt door het midden naar waaraan het is uitgegeven, wat is gespaard of belegd en wat schulden heeft afgelost. Standaard omvat het rapport uw open betaal-, spaar-, contant-, creditcard- en kredietlijnrekeningen, en een overboeking tussen twee daarvan wordt niet getoond. Laat een spaarrekening weg uit het rekeningfilter om te zien wat u ernaar hebt overgemaakt. Een creditcardbetaling is nooit een aflossing: de aankopen die ze vereffent, zijn al als uitgaven geteld.",
     "depthLabel": "Detail",

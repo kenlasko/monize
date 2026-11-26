@@ -233,6 +233,14 @@
     "scheduleRecurring": "Lên lịch định kỳ",
     "delete": "Xóa"
   },
+  "provisional": {
+    "label": "Số tiền ước tính",
+    "tooltip": "Monize đã ước tính số tiền này theo tỷ giá lịch sử khi nhập phía tài khoản kia của giao dịch chuyển khoản này. Số tiền vẫn là ước tính cho đến khi tệp của chính tài khoản này được nhập hoặc bạn xác nhận số tiền.",
+    "confirmAction": "Xác nhận số tiền",
+    "confirmActionTitle": "Giữ số tiền này là số tiền thực nhận hoặc thực trả",
+    "confirmed": "Đã xác nhận số tiền",
+    "confirmFailed": "Không thể xác nhận số tiền"
+  },
   "filter": {
     "favourites": "Yêu thích:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "Chuyển khoản",
         "split": "Giao dịch tách",
-        "uncategorized": "Chưa phân loại"
+        "uncategorized": "Chưa phân loại",
+        "provisional": "Số tiền ước tính"
       },
       "has": {
         "attachment": "Có tệp đính kèm",

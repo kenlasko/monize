@@ -315,6 +315,39 @@ function assertConversionUndoable(
   });
 }
 
+/**
+ * Undoing "Confirm amount" (`TransactionsService.confirmAmount`) makes the
+ * amount an estimate again, which is only true of the amount that was
+ * confirmed. A transfer edit records no entry of its own, so the confirmation
+ * can still be the newest action after the reader has stated another amount
+ * for the leg, or turned it into an ordinary transaction; that figure is
+ * theirs, not Monize's estimate (design decisions 4 and 5 of
+ * docs/future-plans/provisional-amounts.md). Refused before any write.
+ */
+function assertConfirmationUndoable(
+  before: Record<string, any>,
+  transaction: Pick<Transaction, "amount" | "isTransfer">,
+): void {
+  if (
+    before.amountIsProvisional !== true ||
+    before.confirmedLegAmount === undefined
+  ) {
+    return;
+  }
+  const unchanged =
+    transaction.isTransfer === true &&
+    roundMoney(Number(transaction.amount), MONEY_SCALE) ===
+      roundMoney(Number(before.confirmedLegAmount), MONEY_SCALE);
+  if (unchanged) return;
+  throw new ConflictException({
+    message: tr(
+      "errors.actionHistory.undoConfirmedAmountChanged",
+      "This amount was changed after it was confirmed, so it is no longer an estimate and the confirmation cannot be undone.",
+    ),
+    errorCode: "UNDO_CONFIRMED_AMOUNT_CHANGED",
+  });
+}
+
 export interface RecordActionParams {
   entityType: string;
   entityId: string | null;
@@ -1153,6 +1186,7 @@ export class ActionHistoryService {
     const before = action.beforeData;
     assertConversionUndoable(before, action.afterData ?? {});
     assertVoidChangeUndoable(before, action.afterData ?? {});
+    assertConfirmationUndoable(before, transaction);
     const places = await this.assertSnapshotAmountsFit(manager, [
       { currencyCode: transaction.currencyCode, ...before },
     ]);

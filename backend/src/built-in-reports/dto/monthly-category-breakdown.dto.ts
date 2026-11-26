@@ -199,4 +199,12 @@ export class MonthlyCategoryBreakdownResponse {
   /** How many aggregate rows were left out, by any cause. */
   @ApiProperty({ example: 0 })
   excludedCount: number;
+
+  /**
+   * Provisional transfer legs (an imported estimate of what the other account
+   * received or sent) inside the transfer rows. The figures include them;
+   * above 0 the page says the report holds estimated amounts.
+   */
+  @ApiProperty({ example: 0 })
+  provisionalCount: number;
 }

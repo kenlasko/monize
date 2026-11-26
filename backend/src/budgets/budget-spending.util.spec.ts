@@ -7,6 +7,7 @@ import {
   queryCategorySpendingBuckets,
   resolveBudgetLineBudgeted,
   resolveCategoryName,
+  resolveCategoryProvisionalCount,
   resolveCategorySpent,
   resolveCategorySpentOrNull,
 } from "./budget-spending.util";
@@ -479,6 +480,87 @@ describe("queryCategorySpending", () => {
     expect(result.transferSpendingMap.get("acc-1")).toBe(340);
   });
 
+  it("counts each transfer line's provisional legs once, over the rows that converted (design section 6, P5)", async () => {
+    // An outgoing line to acc-1 and a transfer income line from acc-1 both
+    // read the -300 leg whose counterpart is in acc-1.
+    const outgoing = makeQbReturning([
+      {
+        key: "acc-1",
+        currencyCode: "CAD",
+        txDate: "2026-01-10",
+        total: "300",
+        provisionalIds: ["leg-1"],
+      },
+      // No JPY rate: the group is in no figure, so its estimate counts nowhere.
+      {
+        key: "acc-1",
+        currencyCode: "JPY",
+        txDate: "2026-01-12",
+        total: "10000",
+        provisionalIds: ["leg-2"],
+      },
+    ]);
+    const incoming = makeQbReturning([
+      {
+        key: "acc-1",
+        currencyCode: "CAD",
+        txDate: "2026-01-10",
+        total: "-220",
+        provisionalIds: ["leg-1", "leg-3"],
+      },
+    ]);
+    const txRepo: any = {
+      manager: makeManager(),
+      createQueryBuilder: jest
+        .fn()
+        .mockReturnValueOnce(outgoing)
+        .mockReturnValueOnce(incoming),
+    };
+    const splitRepo: any = {
+      createQueryBuilder: jest
+        .fn()
+        .mockImplementation(() => makeQbReturning([])),
+    };
+    const outgoingLine = makeBudgetCategory({
+      id: "bc-out",
+      categoryId: null,
+      isTransfer: true,
+      transferAccountId: "acc-1",
+    } as any);
+    const incomeLine = makeBudgetCategory({
+      id: "bc-in",
+      categoryId: null,
+      isTransfer: true,
+      isIncome: true,
+      transferAccountId: "acc-1",
+    } as any);
+
+    const result = await queryCategorySpending(
+      txRepo,
+      splitRepo,
+      "user-1",
+      [outgoingLine, incomeLine],
+      "2026-01-01",
+      "2026-01-31",
+    );
+
+    expect(result.transferSpendingMap.get("acc-1")).toBe(300);
+    expect(result.transferProvisionalCounts.get("acc-1")).toBe(1);
+    expect(result.transferIncomeProvisionalCounts.get("acc-1")).toBe(2);
+    expect(result.provisionalCount).toBe(2);
+    expect(resolveCategoryProvisionalCount(outgoingLine, result)).toBe(1);
+    expect(resolveCategoryProvisionalCount(incomeLine, result)).toBe(2);
+    expect(resolveCategoryProvisionalCount(makeBudgetCategory(), result)).toBe(
+      0,
+    );
+    for (const qb of [outgoing, incoming]) {
+      expect(qb.addSelect).toHaveBeenCalledWith(
+        "ARRAY_AGG(DISTINCT t.id::text) FILTER (WHERE t.amount_is_provisional = true)",
+        "provisionalIds",
+      );
+    }
+  });
+
   it("treats null totals as 0", async () => {
     const txRepo: any = {
       manager: makeManager(),
@@ -684,6 +766,10 @@ describe("resolveCategorySpentOrNull", () => {
       outsideTransferIncomeAggregate: new FxAggregate(),
       outsideTransferIncomeComplete: true,
       missingRatePairs: [],
+      transferProvisionalCounts: new Map(),
+      transferIncomeProvisionalCounts: new Map(),
+      outsideTransferIncomeProvisionalCount: 0,
+      provisionalCount: 0,
       ...overrides,
     };
   }

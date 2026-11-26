@@ -211,6 +211,10 @@ export interface Account {
   // How many top-level rows are UNRECONCILED or CLEARED, whatever their date:
   // what the reconcile screen lists. Absent means no information, as above.
   unreconciledCount?: number;
+  // How many provisional transfer amounts (Monize's estimates, awaiting the
+  // other account's own import) are inside `currentBalance`. Absent means no
+  // information; read with `provisionalCountOf` (`lib/provisional-amount.ts`).
+  provisionalCount?: number;
   // ── Joint accounts ──
   // Present on rows shared TO the current user (grantee view): the account
   // belongs to another user but appears natively in this user's lists.
@@ -361,6 +365,14 @@ export interface AccountSummary {
   missingRatePairs?: string[];
   unpricedSecurityIds?: string[];
   unpricedSymbols?: string[];
+  /**
+   * The provisional amounts inside `netWorth`, `totalAssets`,
+   * `totalLiabilities` and `totalBalance`. Absent means no information.
+   */
+  provisionalCount?: number;
+  assetsProvisionalCount?: number;
+  liabilitiesProvisionalCount?: number;
+  totalBalanceProvisionalCount?: number;
 }
 
 /**

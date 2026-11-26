@@ -637,7 +637,7 @@ Compare each account's current balance in Monize against your Microsoft Money re
 
 ### 7.2 Review Cross-Currency Transfers
 
-Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Look for transactions with a memo containing *"PENDING IMPORT"* and update the amounts to reflect the actual exchange rates.
+Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Search transactions for `is:provisional` to list the receiving sides whose amount is still an estimate, and update the amounts to reflect the actual exchange rates.
 
 ### 7.3 Verify Investment Holdings
 
@@ -758,7 +758,7 @@ For `.mny` import problems, see [Troubleshooting the .mny Import](#troubleshooti
 **Cause:** QIF files do not contain exchange rate information.
 
 **Solution:**
-1. Search transactions for "PENDING IMPORT" in the memo field
+1. Search transactions for `is:provisional`
 2. Edit each flagged transaction
 3. Adjust the amount in the destination account to match the actual transfer amount
 4. This correctly sets the effective exchange rate
@@ -850,7 +850,7 @@ The QIF format and Microsoft Money export have limitations. The following data m
 
 ```
 [ ] Verify all account balances match Microsoft Money
-[ ] Fix cross-currency transfer amounts ("PENDING IMPORT" memos)
+[ ] Fix cross-currency transfer amounts (search is:provisional)
 [ ] Verify investment holdings and cost basis
 [ ] Update auto-created securities with correct symbols
 [ ] Recreate scheduled transactions (bills and deposits)

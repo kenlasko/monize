@@ -233,6 +233,14 @@
     "scheduleRecurring": "Pianifica come ricorrente",
     "delete": "Elimina"
   },
+  "provisional": {
+    "label": "Importo stimato",
+    "tooltip": "Monize ha stimato questo importo al tasso di cambio storico quando ha importato il lato di questo trasferimento dell’altro conto. Resta una stima finché non viene importato il file di questo conto o non confermi l’importo.",
+    "confirmAction": "Conferma importo",
+    "confirmActionTitle": "Mantieni questo importo come importo effettivamente ricevuto o pagato",
+    "confirmed": "Importo confermato",
+    "confirmFailed": "Impossibile confermare l’importo"
+  },
   "filter": {
     "favourites": "Preferiti:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "Trasferimenti",
         "split": "Transazioni suddivise",
-        "uncategorized": "Senza categoria"
+        "uncategorized": "Senza categoria",
+        "provisional": "Importi stimati"
       },
       "has": {
         "attachment": "Ha un allegato",

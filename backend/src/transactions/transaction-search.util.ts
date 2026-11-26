@@ -314,6 +314,9 @@ function enumCondition(ctx: ClauseContext, term: SearchTerm): string {
   if (term.field === "is") {
     if (term.value === "transfer") return `${t}.is_transfer = true`;
     if (term.value === "split") return `${t}.is_split = true`;
+    if (term.value === "provisional") {
+      return `${t}.amount_is_provisional = true`;
+    }
     return uncategorizedSql(ctx.options);
   }
   switch (term.value) {

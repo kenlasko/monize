@@ -233,6 +233,14 @@
     "scheduleRecurring": "Jadwalkan sebagai Berulang",
     "delete": "Hapus"
   },
+  "provisional": {
+    "label": "Jumlah perkiraan",
+    "tooltip": "Monize memperkirakan jumlah ini dengan kurs historis saat mengimpor sisi transfer ini dari akun lain. Jumlah ini tetap perkiraan sampai file milik akun ini sendiri diimpor atau Anda mengonfirmasi jumlahnya.",
+    "confirmAction": "Konfirmasi jumlah",
+    "confirmActionTitle": "Pertahankan jumlah ini sebagai jumlah yang benar-benar diterima atau dibayar",
+    "confirmed": "Jumlah dikonfirmasi",
+    "confirmFailed": "Gagal mengonfirmasi jumlah"
+  },
   "filter": {
     "favourites": "Favorit:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "Transfer",
         "split": "Transaksi terpisah",
-        "uncategorized": "Tanpa kategori"
+        "uncategorized": "Tanpa kategori",
+        "provisional": "Jumlah perkiraan"
       },
       "has": {
         "attachment": "Memiliki lampiran",

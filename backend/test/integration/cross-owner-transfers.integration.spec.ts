@@ -376,6 +376,46 @@ describe("Cross-owner transfers (integration)", () => {
       expect(fromLeg.status).toBe("CLEARED");
       expect(toLeg.status).toBe("UNRECONCILED");
     });
+
+    // Design decision 4 of docs/future-plans/provisional-amounts.md, across
+    // the ownership boundary: the flag is a fact about the amount, which a
+    // connected edit mirrors, so it is cleared on the other owner's leg when
+    // an amount is stated for that leg, and by no other edit.
+    it("a connected edit confirms the other owner's provisional leg only by stating a different amount for it", async () => {
+      await grantOwnerAccount({ create: true, edit: true });
+      const { fromTransaction, toTransaction } =
+        await createCrossOwnerTransfer(500);
+      // Only the importer sets the column; no request path can.
+      await dataSource.query(
+        `UPDATE transactions SET amount_is_provisional = true WHERE id = $1`,
+        [toTransaction.id],
+      );
+
+      await withUserContext(delegateId, () =>
+        service.updateTransfer(
+          delegateId,
+          fromTransaction.id,
+          { description: "", amount: 500, toAmount: 500 },
+          actorB(),
+        ),
+      );
+      expect((await loadTx(toTransaction.id))!.amountIsProvisional).toBe(true);
+
+      await withUserContext(delegateId, () =>
+        service.updateTransfer(
+          delegateId,
+          fromTransaction.id,
+          { amount: 600, toAmount: 600 },
+          actorB(),
+        ),
+      );
+      const toLeg = (await loadTx(toTransaction.id))!;
+      expect(Number(toLeg.amount)).toBe(600);
+      expect(toLeg.amountIsProvisional).toBe(false);
+      expect((await loadTx(fromTransaction.id))!.amountIsProvisional).toBe(
+        false,
+      );
+    });
   });
 
   describe("revoke safety", () => {

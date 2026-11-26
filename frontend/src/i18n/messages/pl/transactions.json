@@ -233,6 +233,14 @@
     "scheduleRecurring": "Zaplanuj jako cykliczną",
     "delete": "Usuń"
   },
+  "provisional": {
+    "label": "Kwota szacunkowa",
+    "tooltip": "Monize oszacował tę kwotę według historycznego kursu wymiany podczas importu strony tego przelewu z drugiego konta. Pozostaje szacunkiem, dopóki nie zostanie zaimportowany własny plik tego konta lub nie potwierdzisz kwoty.",
+    "confirmAction": "Potwierdź kwotę",
+    "confirmActionTitle": "Zachowaj tę kwotę jako faktycznie otrzymaną lub zapłaconą",
+    "confirmed": "Kwota potwierdzona",
+    "confirmFailed": "Nie udało się potwierdzić kwoty"
+  },
   "filter": {
     "favourites": "Ulubione:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "Przelewy",
         "split": "Transakcje podzielone",
-        "uncategorized": "Bez kategorii"
+        "uncategorized": "Bez kategorii",
+        "provisional": "Kwoty szacunkowe"
       },
       "has": {
         "attachment": "Ma załącznik",

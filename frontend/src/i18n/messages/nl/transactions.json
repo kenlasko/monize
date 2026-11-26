@@ -233,6 +233,14 @@
     "scheduleRecurring": "Plannen als terugkerend",
     "delete": "Verwijderen"
   },
+  "provisional": {
+    "label": "Geschat bedrag",
+    "tooltip": "Monize heeft dit bedrag geschat tegen de historische wisselkoers bij het importeren van de kant van deze overboeking van de andere rekening. Het blijft een schatting totdat het eigen bestand van deze rekening is geïmporteerd of u het bedrag bevestigt.",
+    "confirmAction": "Bedrag bevestigen",
+    "confirmActionTitle": "Dit bedrag behouden als het werkelijk ontvangen of betaalde bedrag",
+    "confirmed": "Bedrag bevestigd",
+    "confirmFailed": "Bedrag bevestigen mislukt"
+  },
   "filter": {
     "favourites": "Favorieten:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "Overboekingen",
         "split": "Gesplitste transacties",
-        "uncategorized": "Zonder categorie"
+        "uncategorized": "Zonder categorie",
+        "provisional": "Geschatte bedragen"
       },
       "has": {
         "attachment": "Heeft een bijlage",

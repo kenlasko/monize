@@ -233,6 +233,14 @@
     "scheduleRecurring": "Als wiederkehrend planen",
     "delete": "Löschen"
   },
+  "provisional": {
+    "label": "Geschätzter Betrag",
+    "tooltip": "Monize hat diesen Betrag beim Import der Gegenseite dieser Überweisung aus dem anderen Konto zum historischen Wechselkurs geschätzt. Er bleibt eine Schätzung, bis die eigene Datei dieses Kontos importiert wird oder Sie den Betrag bestätigen.",
+    "confirmAction": "Betrag bestätigen",
+    "confirmActionTitle": "Diesen Betrag als tatsächlich erhaltenen oder gezahlten Betrag übernehmen",
+    "confirmed": "Betrag bestätigt",
+    "confirmFailed": "Betrag konnte nicht bestätigt werden"
+  },
   "filter": {
     "favourites": "Favoriten:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "Umbuchungen",
         "split": "Aufgeteilte Buchungen",
-        "uncategorized": "Ohne Kategorie"
+        "uncategorized": "Ohne Kategorie",
+        "provisional": "Geschätzte Beträge"
       },
       "has": {
         "attachment": "Hat einen Anhang",

@@ -233,6 +233,14 @@
     "scheduleRecurring": "Tekrarlayan Olarak Zamanla",
     "delete": "Sil"
   },
+  "provisional": {
+    "label": "Tahmini tutar",
+    "tooltip": "Monize, bu transferin diğer hesaptaki tarafını içe aktarırken bu tutarı geçmiş döviz kuruyla tahmin etti. Bu hesabın kendi dosyası içe aktarılana veya tutarı onaylayana kadar tahmin olarak kalır.",
+    "confirmAction": "Tutarı onayla",
+    "confirmActionTitle": "Bu tutarı gerçekte alınan veya ödenen tutar olarak koru",
+    "confirmed": "Tutar onaylandı",
+    "confirmFailed": "Tutar onaylanamadı"
+  },
   "filter": {
     "favourites": "Favoriler:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "Transferler",
         "split": "Bölünmüş işlemler",
-        "uncategorized": "Kategorisiz"
+        "uncategorized": "Kategorisiz",
+        "provisional": "Tahmini tutarlar"
       },
       "has": {
         "attachment": "Eki var",

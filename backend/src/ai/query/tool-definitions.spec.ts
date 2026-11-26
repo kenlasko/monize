@@ -62,6 +62,13 @@ describe("FINANCIAL_TOOLS", () => {
   });
 
   describe("list_transactions", () => {
+    it("says what the provisional count and a provisional row mean", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "list_transactions")!;
+      expect(tool.description).toContain("`provisionalCount`");
+      expect(tool.description).toContain("`amountIsProvisional`");
+      expect(tool.description).toContain("includes estimated amounts");
+    });
+
     it("has no required fields (dates default to last 30 days)", () => {
       const tool = FINANCIAL_TOOLS.find((t) => t.name === "list_transactions")!;
       expect(tool.inputSchema.required).toBeUndefined();
@@ -218,6 +225,12 @@ describe("FINANCIAL_TOOLS", () => {
   });
 
   describe("compare_periods", () => {
+    it("says what each period's provisional count means", () => {
+      const tool = FINANCIAL_TOOLS.find((t) => t.name === "compare_periods")!;
+      expect(tool.description).toContain("`provisionalCount`");
+      expect(tool.description).toContain("includes estimated amounts");
+    });
+
     it("has no required fields (defaults to previous month vs current month-to-date)", () => {
       const tool = FINANCIAL_TOOLS.find((t) => t.name === "compare_periods")!;
       expect(tool.inputSchema.required).toBeUndefined();

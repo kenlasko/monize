@@ -2,6 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
 
 import { withScopedDb } from "../common/db/scoped-db";
+import {
+  ProvisionalCounts,
+  loadProvisionalCounts,
+} from "../common/provisional-count.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import { roundMoney } from "../common/round.util";
@@ -38,6 +42,14 @@ export interface DailyBalanceTotalPoint {
    * that says so (`docs/financial-calculation-contract.md` section 1).
    */
   knownSubtotal: number;
+  /**
+   * How many provisional transfer amounts (Monize's estimates, awaiting the
+   * other account's own import) are inside `knownSubtotal`: each account's
+   * non-VOID legs dated on or before `date`, summed over the accounts whose
+   * balance it holds (`docs/future-plans/provisional-amounts.md` section 6,
+   * P5). The figure is unchanged by them.
+   */
+  provisionalCount: number;
   /** `date > today`, decided by the server's day and echoed as `today`. */
   isProjected: boolean;
   /**
@@ -173,6 +185,7 @@ export class DailyBalanceTotalsService {
           date,
           total: null,
           knownSubtotal: 0,
+          provisionalCount: 0,
           isProjected: date > today,
           missingRatePairs: [],
         })),
@@ -221,9 +234,23 @@ export class DailyBalanceTotalsService {
             unforecastableAccountIds: [] as string[],
           };
 
+    // A day's balance holds every ledger row dated on or before it -- a
+    // projected day's includes the future-dated rows up to it -- so each day
+    // counts the legs dated on or before itself.
+    const provisional: ProvisionalCounts = await withScopedDb(
+      this.dataSource,
+      (m) =>
+        loadProvisionalCounts(
+          m,
+          scope.map((a) => a.id),
+          dates,
+        ),
+    );
+
     const days = dates.map((date) => {
       const isProjected = date > today;
       const aggregate = new FxAggregate();
+      let provisionalCount = 0;
       // A projection is priced at today's rate: the day it is about has no rate
       // yet, and reaching for the nearest one would report a forecast at a rate
       // nobody ever struck.
@@ -241,24 +268,27 @@ export class DailyBalanceTotalsService {
           aggregate.addUnknown();
           continue;
         }
-        aggregate.add(
-          convertAtDate(
-            balance,
-            account.currencyCode,
-            currencyCode,
-            rateDate,
-            rateIndex,
-            this.logger,
-          ),
+        const converted = convertAtDate(
+          balance,
           account.currencyCode,
           currencyCode,
+          rateDate,
+          rateIndex,
+          this.logger,
         );
+        aggregate.add(converted, account.currencyCode, currencyCode);
+        // Counted over the balances that converted, as `knownSubtotal` is
+        // (design section 8).
+        if (converted !== null) {
+          provisionalCount += provisional.of(account.id, date);
+        }
       }
 
       return {
         date,
         total: aggregate.total,
         knownSubtotal: aggregate.knownSubtotal,
+        provisionalCount,
         isProjected,
         missingRatePairs: aggregate.missingPairs,
       };

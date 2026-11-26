@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Kein Kurs für {symbols}: Kurs auf der Seite des Wertpapiers aktualisieren oder hinzufügen.",
     "weightingNoRate": "Kein Wechselkurs für {pairs}: Auf der Seite Währungen hinzufügen."
   },
+  "provisionalData": {
+    "notice": "Enthält geschätzte Beträge: {count, plural, one {# Betrag in diesen Zahlen ist eine Schätzung} other {# Beträge in diesen Zahlen sind Schätzungen}}, die Monize zum historischen Wechselkurs für die Gegenseite einer Fremdwährungsüberweisung vorgenommen hat, bis die eigene Datei dieses Kontos importiert oder der Betrag bestätigt wird. Suchen Sie in den Buchungen nach is:provisional, um sie aufzulisten."
+  },
   "sankey": {
     "help": "Eingegangenes Geld fließt durch die Mitte in das, wofür es ausgegeben, gespart oder investiert wurde, und in die Tilgung von Schulden. Standardmäßig umfasst der Bericht Ihre offenen Giro-, Spar-, Bargeld-, Kreditkarten- und Kreditrahmenkonten, und eine Überweisung zwischen zwei dieser Konten wird nicht angezeigt. Nehmen Sie ein Sparkonto aus dem Kontofilter heraus, um zu sehen, was Sie darauf übertragen haben. Eine Kreditkartenzahlung ist nie eine Schuldenzahlung: Die damit beglichenen Käufe sind bereits als Ausgaben gezählt.",
     "depthLabel": "Detailtiefe",

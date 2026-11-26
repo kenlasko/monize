@@ -2637,6 +2637,104 @@ describe("TransactionTransferService", () => {
         );
       });
 
+      // Design section 10, the split half of rows 6 and 9: the importer's
+      // estimate of a split line's counterpart is confirmed by stating a
+      // different amount for the leg, and by nothing else.
+      describe("a provisional split counterpart", () => {
+        const provisionalLeg = {
+          ...crossLeg,
+          amountIsProvisional: true,
+        } as unknown as Transaction;
+
+        const legWrites = (): Record<string, unknown> =>
+          Object.assign(
+            {},
+            ...transactionsRepository.update.mock.calls
+              .filter((call: unknown[]) => call[0] === "leg-tx")
+              .map((call: unknown[]) => call[1]),
+          );
+
+        beforeEach(() => {
+          splitsRepository.findOne.mockResolvedValue(crossSplit);
+          splitsRepository.find.mockResolvedValue([
+            { id: "split-1", amount: -1000 },
+          ]);
+          mockFindOne
+            .mockResolvedValueOnce(provisionalLeg)
+            .mockResolvedValueOnce(crossParent)
+            .mockResolvedValueOnce(provisionalLeg);
+        });
+
+        it("clears the flag when a different amount is supplied for the leg", async () => {
+          await service.updateTransfer(
+            "user-1",
+            "leg-tx",
+            { amount: 1000, toAmount: 250 } as any,
+            mockFindOne,
+          );
+
+          expect(legWrites()).toEqual(
+            expect.objectContaining({
+              amount: 250,
+              amountIsProvisional: false,
+            }),
+          );
+          // The EUR balance moves by the difference in the same transaction.
+          expect(accountsService.updateBalance).toHaveBeenCalledWith(
+            "eur-account",
+            18,
+          );
+        });
+
+        it("leaves the flag when the stored amounts are resent with a new description", async () => {
+          await service.updateTransfer(
+            "user-1",
+            "leg-tx",
+            { amount: 1000, toAmount: 232, description: "" } as any,
+            mockFindOne,
+          );
+
+          expect(legWrites()).toEqual(
+            expect.objectContaining({ description: "" }),
+          );
+          expect(legWrites()).not.toHaveProperty("amountIsProvisional");
+          expect(accountsService.updateBalance).not.toHaveBeenCalled();
+        });
+
+        it("clears the flag when `amount` is sent alone, which this path writes onto the leg", async () => {
+          // With no `toAmount`, a split counterpart reads `amount` as its own
+          // figure (the pre-existing reading the AI and MCP edits rely on):
+          // the row then holds what the request stated, not the estimate.
+          await service.updateTransfer(
+            "user-1",
+            "leg-tx",
+            { amount: 250 } as any,
+            mockFindOne,
+          );
+
+          expect(legWrites()).toEqual(
+            expect.objectContaining({
+              amount: 250,
+              amountIsProvisional: false,
+            }),
+          );
+        });
+
+        it("leaves the flag when the source amount is restated beside the unchanged leg amount", async () => {
+          // The reader corrected what left the PLN account; the 232 EUR is
+          // still the importer's estimate.
+          await service.updateTransfer(
+            "user-1",
+            "leg-tx",
+            { amount: 1100, toAmount: 232 } as any,
+            mockFindOne,
+          );
+
+          expect(legWrites()).not.toHaveProperty("amount");
+          expect(legWrites()).not.toHaveProperty("amountIsProvisional");
+        });
+      });
+
       it("takes toAmount as the leg amount and amount as the source amount for a cross-currency pair (form payload)", async () => {
         // 80 EUR bought 0.02125 BTC. An earlier edit read `amount` as the BTC
         // figure: the leg held 80 BTC and the EUR parent 301,886.79.
@@ -3044,6 +3142,211 @@ describe("TransactionTransferService", () => {
           accountId: "new-to-account",
         }),
       );
+    });
+
+    // Design decision 4 and section 6 of
+    // docs/future-plans/provisional-amounts.md: a transfer edit confirms a
+    // provisional leg only by stating a different amount for THAT leg.
+    describe("confirming a provisional amount by an edit", () => {
+      // 100 USD out; the importer estimated +80 EUR at 0.80.
+      const eurTo = { ...mockToAccount, currencyCode: "EUR" };
+      const usdFromTx = {
+        ...fromTransaction,
+        amount: -100,
+        amountIsProvisional: false,
+      } as unknown as Transaction;
+      const provisionalEurTx = {
+        ...toTransaction,
+        amount: 80,
+        currencyCode: "EUR",
+        exchangeRate: 0.8,
+        account: eurTo,
+        amountIsProvisional: true,
+      } as unknown as Transaction;
+
+      const writtenTo = (id: string): Record<string, unknown> =>
+        Object.assign(
+          {},
+          ...transactionsRepository.update.mock.calls
+            .filter((call: unknown[]) => call[0] === id)
+            .map((call: unknown[]) => call[1]),
+        );
+
+      const edit = async (
+        legs: [Transaction, Transaction],
+        dto: Record<string, unknown>,
+        openedId = "to-tx",
+      ) => {
+        const [from, to] = legs;
+        const opened = openedId === "to-tx" ? to : from;
+        const other = openedId === "to-tx" ? from : to;
+        mockFindOne
+          .mockResolvedValueOnce(opened)
+          .mockResolvedValueOnce(other)
+          .mockResolvedValueOnce(from)
+          .mockResolvedValueOnce(to);
+        await service.updateTransfer("user-1", openedId, dto, mockFindOne);
+      };
+
+      it("clears the flag when a different amount is supplied for the provisional destination leg", async () => {
+        await edit([usdFromTx, provisionalEurTx], {
+          amount: 100,
+          toAmount: 90,
+        });
+
+        expect(writtenTo("to-tx")).toEqual(
+          expect.objectContaining({ amount: 90, amountIsProvisional: false }),
+        );
+        // The confirmed side was never provisional and is not written as such.
+        expect(writtenTo("from-tx")).not.toHaveProperty("amountIsProvisional");
+        // The balance moves by the difference, in the same transaction.
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "to-account",
+          -80,
+        );
+        expect(accountsService.updateBalance).toHaveBeenCalledWith(
+          "to-account",
+          90,
+        );
+      });
+
+      it("leaves the flag when the form resends the stored amounts with a new description", async () => {
+        await edit([usdFromTx, provisionalEurTx], {
+          amount: 100,
+          toAmount: 80,
+          exchangeRate: 0.8,
+          description: "",
+        });
+
+        expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+        expect(writtenTo("from-tx")).not.toHaveProperty("amountIsProvisional");
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
+      it("leaves the flag on description, payee, category and status edits", async () => {
+        await edit([usdFromTx, provisionalEurTx], {
+          description: "Edited",
+          payeeName: "Someone",
+          categoryId: null,
+          status: TransactionStatus.CLEARED,
+        });
+
+        expect(writtenTo("to-tx")).toEqual(
+          expect.objectContaining({ description: "Edited" }),
+        );
+        expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+      });
+
+      it("leaves the flag when only the other side changes and the server reprices the leg", async () => {
+        // 120 USD at the market 0.80 is 96 EUR: a new estimate, not a figure
+        // the reader stated for the EUR leg.
+        exchangeRateService.getRateForDate.mockResolvedValue(0.8);
+
+        await edit([usdFromTx, provisionalEurTx], { amount: 120 }, "from-tx");
+
+        expect(writtenTo("to-tx")).toEqual(
+          expect.objectContaining({ amount: 96 }),
+        );
+        expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+      });
+
+      it("clears the flag on a provisional source leg when a different amount is supplied for it", async () => {
+        // The EUR file came first: the USD source is the estimate (-112.50).
+        const provisionalUsdTx = {
+          ...usdFromTx,
+          amount: -112.5,
+          amountIsProvisional: true,
+        } as unknown as Transaction;
+        const confirmedEurTx = {
+          ...provisionalEurTx,
+          amount: 90,
+          amountIsProvisional: false,
+        } as unknown as Transaction;
+
+        await edit(
+          [provisionalUsdTx, confirmedEurTx],
+          { amount: 110, toAmount: 90 },
+          "from-tx",
+        );
+
+        expect(writtenTo("from-tx")).toEqual(
+          expect.objectContaining({ amount: -110, amountIsProvisional: false }),
+        );
+        expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+      });
+
+      describe("when the edit moves the leg to another account", () => {
+        const accounts = (extra: Record<string, unknown>) =>
+          accountsService.findOne.mockImplementation((_u: string, id: string) =>
+            Promise.resolve(
+              id === "to-account"
+                ? eurTo
+                : id === "from-account"
+                  ? mockFromAccount
+                  : { id, name: "Moved", ...extra },
+            ),
+          );
+
+        it("confirms it when the pair is left in one currency: nothing is estimated there", async () => {
+          accounts({ currencyCode: "USD" });
+
+          await edit([usdFromTx, provisionalEurTx], { toAccountId: "usd-2" });
+
+          expect(writtenTo("to-tx")).toEqual(
+            expect.objectContaining({
+              accountId: "usd-2",
+              currencyCode: "USD",
+              amount: 100,
+              amountIsProvisional: false,
+            }),
+          );
+        });
+
+        it("leaves it when the server reprices the leg in the new currency", async () => {
+          accounts({ currencyCode: "GBP" });
+          exchangeRateService.getRateForDate.mockResolvedValue(0.7);
+
+          await edit([usdFromTx, provisionalEurTx], { toAccountId: "gbp-1" });
+
+          expect(writtenTo("to-tx")).toEqual(
+            expect.objectContaining({ currencyCode: "GBP", amount: 70 }),
+          );
+          expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+        });
+
+        it("confirms it when an amount is stated for it in the new currency, even the same number", async () => {
+          // 80 GBP is not the 80 EUR the importer estimated.
+          accounts({ currencyCode: "GBP" });
+
+          await edit([usdFromTx, provisionalEurTx], {
+            toAccountId: "gbp-1",
+            amount: 100,
+            toAmount: 80,
+          });
+
+          expect(writtenTo("to-tx")).toEqual(
+            // The stored 80 is kept as the number; its currency is what moved.
+            expect.objectContaining({
+              currencyCode: "GBP",
+              amountIsProvisional: false,
+            }),
+          );
+        });
+      });
+
+      it("does not write the flag on a transfer that has no provisional leg", async () => {
+        const confirmedEurTx = {
+          ...provisionalEurTx,
+          amountIsProvisional: false,
+        } as unknown as Transaction;
+
+        await edit([usdFromTx, confirmedEurTx], { amount: 100, toAmount: 90 });
+
+        expect(writtenTo("to-tx")).toEqual(
+          expect.objectContaining({ amount: 90 }),
+        );
+        expect(writtenTo("to-tx")).not.toHaveProperty("amountIsProvisional");
+      });
     });
 
     describe("the resolved destination tuple is persisted together", () => {
@@ -5322,6 +5625,42 @@ describe("TransactionTransferService", () => {
           -500,
         );
         expect(accountsService.updateBalance).toHaveBeenCalledTimes(1);
+      });
+
+      it("clears a provisional foreign leg's flag when a different amount is supplied for it, and only then", async () => {
+        foreignLeg.amountIsProvisional = true;
+
+        await service.updateTransfer(
+          "user-1",
+          "own-leg",
+          { description: "Edited" },
+          mockFindOne,
+          actor,
+        );
+        const flagWrites = () =>
+          transactionsRepository.update.mock.calls.filter(
+            (call: unknown[]) =>
+              call[0] === "foreign-leg" &&
+              "amountIsProvisional" in (call[1] as object),
+          );
+        expect(flagWrites()).toHaveLength(0);
+
+        await service.updateTransfer(
+          "user-1",
+          "own-leg",
+          { amount: 600, toAmount: 600 },
+          mockFindOne,
+          actor,
+        );
+        expect(flagWrites()).toEqual([
+          [
+            "foreign-leg",
+            expect.objectContaining({
+              amount: 600,
+              amountIsProvisional: false,
+            }),
+          ],
+        ]);
       });
 
       // RR2-001: cross-owner status is per-ledger, so the two legs can sit in any

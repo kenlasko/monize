@@ -233,6 +233,14 @@
     "scheduleRecurring": "定期取引としてスケジュール",
     "delete": "削除"
   },
+  "provisional": {
+    "label": "推定金額",
+    "tooltip": "Monize は、この振替のもう一方の口座側をインポートした際に、過去の為替レートでこの金額を推定しました。この口座自身のファイルがインポートされるか、金額を確定するまで推定のままです。",
+    "confirmAction": "金額を確定",
+    "confirmActionTitle": "この金額を実際に受け取った、または支払った金額として確定します",
+    "confirmed": "金額を確定しました",
+    "confirmFailed": "金額を確定できませんでした"
+  },
   "filter": {
     "favourites": "お気に入り:",
     "panel": {
@@ -710,7 +718,8 @@
       "is": {
         "transfer": "振替",
         "split": "分割取引",
-        "uncategorized": "未分類"
+        "uncategorized": "未分類",
+        "provisional": "見積額"
       },
       "has": {
         "attachment": "添付ファイルあり",

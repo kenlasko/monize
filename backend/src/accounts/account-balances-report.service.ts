@@ -33,6 +33,7 @@ import {
 import { bondHoldingValue } from "../bonds/bond-holding-value";
 import { preferredCurrency } from "../common/default-currency.util";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
+import { loadProvisionalCounts } from "../common/provisional-count.util";
 
 /**
  * One account's worth at the end of a single day.
@@ -46,6 +47,14 @@ export interface AccountBalanceAsOf {
   accountId: string;
   currencyCode: string;
   balance: number;
+  /**
+   * How many provisional transfer amounts (Monize's estimates, awaiting the
+   * other account's own import) are inside `balance`: non-VOID legs dated on
+   * or before `asOfDate`. `balance` is unchanged by them; the count is what a
+   * reader is told about it (`docs/future-plans/provisional-amounts.md`
+   * section 6, P5). Zero before the account existed, as `balance` is.
+   */
+  provisionalCount: number;
   marketValue: number | null;
   knownMarketValueSubtotal: number;
   unpricedHoldingsCount: number;
@@ -147,7 +156,7 @@ type AccountPositions = Map<string, Map<string, number>>;
 /** The market-value half of one account's row -- everything but the ledger sum. */
 type AccountValuation = Omit<
   AccountBalanceAsOf,
-  "accountId" | "currencyCode" | "balance" | "existsAsOf"
+  "accountId" | "currencyCode" | "balance" | "provisionalCount" | "existsAsOf"
 >;
 
 /** The securities still held (non-zero) anywhere in a replay. */
@@ -334,6 +343,15 @@ export class AccountBalancesReportService {
       this.ledgerBalances(userId, asOfDate, jointAccountIds, restriction),
       this.firstActivityDates(userId, jointAccountIds, restriction),
     ]);
+    // Over the accounts the query above already scoped, so a restriction or a
+    // joint grant bounds the count exactly as it bounds the balance.
+    const provisional = await withScopedDb(this.dataSource, (m) =>
+      loadProvisionalCounts(
+        m,
+        accounts.map((a) => a.id),
+        [asOfDate],
+      ),
+    );
 
     const marketDate = marketDateFor(asOfDate);
 
@@ -423,6 +441,9 @@ export class AccountBalancesReportService {
         // Before its inception the account held nothing, so the opening balance
         // the ledger sum would otherwise carry does not travel back with it.
         const balance = existsAsOf ? (ledgerBalances.get(a.id) ?? 0) : 0;
+        const provisionalCount = existsAsOf
+          ? provisional.of(a.id, asOfDate)
+          : 0;
         const valuation = marketValues.get(a.id);
         // A row that holds no securities has no market value to report -- that
         // is "does not apply", which is why the completeness flag stays true
@@ -432,6 +453,7 @@ export class AccountBalancesReportService {
             accountId: a.id,
             currencyCode: a.currency_code,
             balance,
+            provisionalCount,
             marketValue: null,
             knownMarketValueSubtotal: 0,
             unpricedHoldingsCount: 0,
@@ -448,6 +470,7 @@ export class AccountBalancesReportService {
           accountId: a.id,
           currencyCode: a.currency_code,
           balance,
+          provisionalCount,
           ...valuation,
           existsAsOf,
         };

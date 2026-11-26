@@ -101,6 +101,16 @@ export interface Transaction {
   isTransfer: boolean;
   linkedTransactionId: string | null;
   linkedTransaction?: Transaction | null;
+  /**
+   * The amount is Monize's estimate for this leg of a cross-currency
+   * transfer: the importer wrote it from the other account's file at the
+   * historical rate, and it stays an estimate until this account's own file
+   * is imported, the reader confirms it (`transactionsApi.confirmAmount`) or a
+   * transfer edit states another amount. Read it through
+   * `isProvisionalAmount`; absent means no information, drawn as confirmed.
+   * Never sent on a create or update body.
+   */
+  amountIsProvisional?: boolean;
   /** ID of the linked investment transaction (if this is a cash transaction for an investment) */
   linkedInvestmentTransactionId?: string | null;
   /** Number of file attachments on this transaction (populated by the list endpoint). */

@@ -27,6 +27,7 @@ import { SummaryCard, SummaryIcons } from '@/components/ui/SummaryCard';
 import { CollapsibleSummary } from '@/components/ui/CollapsibleSummary';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { sumProvisionalCounts } from '@/lib/provisional-amount';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { AccountsSummary } from '@/components/accounts/variants/AccountsSummary';
 import { sumConverted, combineTotals } from '@/lib/currency-total';
@@ -319,10 +320,20 @@ function AccountsContent() {
     // their two readings can sit a unit off it.
     const totalBalance = combineTotals([totalAssets, totalLiabilities], [1, -1]);
 
+    // The estimates inside each card: every counted account's balance is in
+    // its side's figure, so its provisional count is too (a mark, never a gap).
+    const assetsProvisionalCount = sumProvisionalCounts(assets);
+    const liabilitiesProvisionalCount = sumProvisionalCounts(liabilities);
+
     return {
       totalBalance,
       totalAssets,
       totalLiabilities,
+      provisional: {
+        netWorth: assetsProvisionalCount + liabilitiesProvisionalCount,
+        assets: assetsProvisionalCount,
+        liabilities: liabilitiesProvisionalCount,
+      },
       accountCount: countLogicalAccounts(activeAccounts),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -370,17 +381,17 @@ function AccountsContent() {
               liabilities: t('page.summary.totalLiabilities'),
             }}
             netWorth={
-              <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency}>
+              <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency} provisionalCount={summary.provisional.netWorth}>
                 <MoneyFigure amount={summary.totalBalance.value} currencyCode={defaultCurrency} display />
               </PartialTotal>
             }
             assets={
-              <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency}>
+              <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency} provisionalCount={summary.provisional.assets}>
                 <MoneyFigure amount={summary.totalAssets.value} currencyCode={defaultCurrency} display />
               </PartialTotal>
             }
             liabilities={
-              <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency}>
+              <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency} provisionalCount={summary.provisional.liabilities}>
                 <MoneyFigure amount={summary.totalLiabilities.value} currencyCode={defaultCurrency} display />
               </PartialTotal>
             }
@@ -394,7 +405,7 @@ function AccountsContent() {
               <SummaryCard
                 label={t('page.summary.netWorth')}
                 value={
-                  <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency}>
+                  <PartialTotal total={summary.totalBalance} displayCurrency={defaultCurrency} provisionalCount={summary.provisional.netWorth}>
                     {formatCurrency(summary.totalBalance.value, defaultCurrency)}
                   </PartialTotal>
                 }
@@ -413,7 +424,7 @@ function AccountsContent() {
               <SummaryCard
                 label={t('page.summary.totalAssets')}
                 value={
-                  <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency}>
+                  <PartialTotal total={summary.totalAssets} displayCurrency={defaultCurrency} provisionalCount={summary.provisional.assets}>
                     {formatCurrency(summary.totalAssets.value, defaultCurrency)}
                   </PartialTotal>
                 }
@@ -423,7 +434,7 @@ function AccountsContent() {
               <SummaryCard
                 label={t('page.summary.totalLiabilities')}
                 value={
-                  <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency}>
+                  <PartialTotal total={summary.totalLiabilities} displayCurrency={defaultCurrency} provisionalCount={summary.provisional.liabilities}>
                     {formatCurrency(summary.totalLiabilities.value, defaultCurrency)}
                   </PartialTotal>
                 }

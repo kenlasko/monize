@@ -21,6 +21,7 @@ export function NetWorthHeroFolio({
   netWorth,
   assets,
   liabilities,
+  provisional,
   invested,
   investedLoading,
   collapsed,
@@ -45,7 +46,7 @@ export function NetWorthHeroFolio({
           collapsed={collapsed}
           sizeClass="text-6xl sm:text-7xl lg:text-[84px] font-medium"
         >
-          <PartialTotal total={netWorth} displayCurrency={currency}>
+          <PartialTotal total={netWorth} displayCurrency={currency} provisionalCount={provisional.netWorth}>
             <MoneyFigure amount={netWorth.value} display />
           </PartialTotal>
         </HeroHeadline>
@@ -59,10 +60,10 @@ export function NetWorthHeroFolio({
           ))}
         <dl className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] border-t border-gray-200 dark:border-gray-700">
           <StatementFigure label={t('hero.assetsLabel')} first>
-            <StatementAmount total={assets} currency={currency} />
+            <StatementAmount total={assets} currency={currency} provisionalCount={provisional.assets} />
           </StatementFigure>
           <StatementFigure label={t('hero.liabilitiesLabel')}>
-            <StatementAmount total={liabilities} currency={currency} />
+            <StatementAmount total={liabilities} currency={currency} provisionalCount={provisional.liabilities} />
           </StatementFigure>
           {(investedLoading || invested) && (
             <StatementFigure label={t('hero.investedLabel')}>

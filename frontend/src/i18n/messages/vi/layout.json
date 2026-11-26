@@ -127,6 +127,7 @@
       "deletedTransaction": "Đã xóa giao dịch {payee} {amount}",
       "convertedToTransfer": "Đã chuyển đổi giao dịch {payee} {amount} thành chuyển khoản",
       "convertedToTransaction": "Đã chuyển đổi chuyển khoản {payee} {amount} thành giao dịch",
+      "confirmedTransactionAmount": "Đã xác nhận số tiền ước tính của {payee} {amount}",
       "bulkUpdatedTransactions": "Đã cập nhật hàng loạt {count, plural, one {# giao dịch} other {# giao dịch}}",
       "createdTransfer": "Đã tạo chuyển khoản {amount} từ {from} đến {to}",
       "createdInvestmentTransaction": "Đã tạo giao dịch {action}",

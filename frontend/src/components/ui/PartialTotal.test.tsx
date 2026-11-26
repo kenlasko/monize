@@ -77,4 +77,51 @@ describe('PartialTotal', () => {
     expect(trigger.contains(popover)).toBe(false);
     expect(popover.textContent).toContain('GBP');
   });
+
+  describe('provisionalCount', () => {
+    it('adds the estimated-amounts mark to a complete figure at a count of 1', () => {
+      render(
+        <PartialTotal
+          total={{ value: 100, missingCurrencies: [], excludedCount: 0 }}
+          displayCurrency="USD"
+          provisionalCount={1}
+        >
+          $100.00
+        </PartialTotal>,
+      );
+      expect(screen.getByText('$100.00')).toBeInTheDocument();
+      expect(screen.getByTestId('provisional-mark')).toBeInTheDocument();
+      expect(screen.queryByTestId('partial-total-marker')).not.toBeInTheDocument();
+    });
+
+    it.each([[0], [undefined]])('adds nothing at a count of %s', (provisionalCount) => {
+      render(
+        <PartialTotal
+          total={{ value: 100, missingCurrencies: [], excludedCount: 0 }}
+          displayCurrency="USD"
+          provisionalCount={provisionalCount}
+        >
+          $100.00
+        </PartialTotal>,
+      );
+      expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    });
+
+    it('shows both marks on a figure that is partial and provisional', () => {
+      render(
+        <PartialTotal
+          total={{ value: 100, missingCurrencies: ['GBP'], excludedCount: 1 }}
+          displayCurrency="USD"
+          provisionalCount={1}
+        >
+          $100.00
+        </PartialTotal>,
+      );
+      expect(screen.getByTestId('partial-total-marker')).toBeInTheDocument();
+      expect(screen.getByTestId('provisional-mark')).toBeInTheDocument();
+      const labels = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? '');
+      expect(labels.some((l) => l.includes('GBP'))).toBe(true);
+      expect(labels.some((l) => l.includes('is:provisional'))).toBe(true);
+    });
+  });
 });

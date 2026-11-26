@@ -225,6 +225,38 @@ export type TransferEditHook = (
   target: { legIds: string[]; parentSplitId: string | null },
 ) => Promise<void>;
 
+/**
+ * The write that confirms a provisional leg through a transfer edit: the
+ * request supplied an amount for THAT leg (`amount` for the source, `toAmount`
+ * for the destination) and it differs from the stored one. A reprice the
+ * server computed from the other side is still an estimate, and a form
+ * resending the stored figure changed nothing, so both leave the flag
+ * (docs/future-plans/provisional-amounts.md, decision 4 and section 6).
+ *
+ * `next` is the pair the edit leaves behind, where an account can move (the
+ * same-owner path). An amount is compared with its currency: a figure
+ * supplied for a leg that now sits in another currency is a different amount
+ * even when the number is the same. And a pair left in one currency has no
+ * estimate in it at all -- the two legs conserve -- so the leg is confirmed
+ * whatever was supplied.
+ */
+export function confirmedBySuppliedAmount(
+  leg: Pick<Transaction, "amount" | "amountIsProvisional" | "currencyCode">,
+  suppliedAmount: number | undefined,
+  /** The leg currency's money precision, which the amounts compare at. */
+  decimals: number,
+  next?: { currencyCode: string; pairIsSameCurrency: boolean },
+): Partial<Transaction> {
+  if (!leg.amountIsProvisional) return {};
+  if (next?.pairIsSameCurrency) return { amountIsProvisional: false };
+  if (suppliedAmount === undefined) return {};
+  const differs =
+    (next !== undefined && next.currencyCode !== leg.currencyCode) ||
+    roundMoney(Math.abs(Number(suppliedAmount)), decimals) !==
+      roundMoney(Math.abs(Number(leg.amount)), decimals);
+  return differs ? { amountIsProvisional: false } : {};
+}
+
 @Injectable()
 export class TransactionTransferService {
   private readonly logger = new Logger(TransactionTransferService.name);
@@ -2157,6 +2189,19 @@ export class TransactionTransferService {
       oldFromAmount,
       moneyDecimalsForCode(places, updateFx.fromCurrencyCode),
     );
+    Object.assign(
+      fromUpdateData,
+      confirmedBySuppliedAmount(
+        fromTransaction,
+        updateDto.amount,
+        moneyDecimalsForCode(places, updateFx.fromCurrencyCode),
+        {
+          currencyCode: updateFx.fromCurrencyCode,
+          pairIsSameCurrency:
+            updateFx.fromCurrencyCode === updateFx.toCurrencyCode,
+        },
+      ),
+    );
 
     const toUpdateData = this.buildToUpdateData(
       updateDto,
@@ -2172,6 +2217,19 @@ export class TransactionTransferService {
       toTransaction.exchangeRate,
       updateFx.repriced,
       oldToAmount,
+    );
+    Object.assign(
+      toUpdateData,
+      confirmedBySuppliedAmount(
+        toTransaction,
+        updateDto.toAmount,
+        moneyDecimalsForCode(places, updateFx.toCurrencyCode),
+        {
+          currencyCode: updateFx.toCurrencyCode,
+          pairIsSameCurrency:
+            updateFx.fromCurrencyCode === updateFx.toCurrencyCode,
+        },
+      ),
     );
 
     // Both legs' field updates and the four possible balance adjustments
@@ -2694,6 +2752,20 @@ export class TransactionTransferService {
       updateFx.repriced,
       oldToAmount,
     );
+    // The flag is a fact about the amount, which this path mirrors across the
+    // ownership boundary, so it is cleared on whichever leg was restated.
+    Object.assign(
+      fromUpdateData,
+      confirmedBySuppliedAmount(
+        fromTransaction,
+        updateDto.amount,
+        fromDecimals,
+      ),
+    );
+    Object.assign(
+      toUpdateData,
+      confirmedBySuppliedAmount(toTransaction, updateDto.toAmount, toDecimals),
+    );
 
     // Per-user reference data and per-ledger reconciliation state never cross
     // an ownership boundary.
@@ -3185,6 +3257,16 @@ export class TransactionTransferService {
     if (updateDto.payeeName !== undefined)
       legData.payeeName = updateDto.payeeName || null;
     if (legChanged) legData.amount = newCounterpartAmount;
+    // The request stated a different amount for this leg, so the row no
+    // longer holds the importer's estimate. `legChanged` is exactly that: the
+    // figure this path reads as the leg's own (`toAmount` on a cross-currency
+    // pair, else `amount` -- which, sent alone, this path has always written
+    // onto the leg) differs from the stored one. The same figure resent, or a
+    // source amount restated beside an unchanged `toAmount`, leaves the flag
+    // (design decision 4).
+    if (legChanged && counterpart.amountIsProvisional) {
+      legData.amountIsProvisional = false;
+    }
 
     // The split row on the source transaction is kept in step with the leg: its
     // memo mirrors the leg's description (they are seeded from each other on

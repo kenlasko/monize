@@ -21,6 +21,11 @@ export interface PayeeAccountBreakdownRow {
    * own date (issue #2106); null while a part has no admissible rate.
    */
   convertedTotal: number | null;
+  /**
+   * Provisional transfer legs (an imported estimate of what the other account
+   * received or sent) inside `total`; above 0 the panel says so.
+   */
+  provisionalCount: number;
 }
 
 /** The payee's single largest transaction by absolute amount, linked from the page. */

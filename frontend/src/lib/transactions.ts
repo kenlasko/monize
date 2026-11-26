@@ -268,6 +268,15 @@ export const transactionsApi = {
     return response.data;
   },
 
+  // Confirm a provisional (estimated) amount as it stands. No amount and no
+  // balance moves, but every balance surface's provisional count does, so the
+  // cached balance reads are dropped as after any other write to a leg.
+  confirmAmount: async (id: string): Promise<Transaction> => {
+    const response = await apiClient.post<Transaction>(`/transactions/${id}/confirm-amount`);
+    invalidateBalanceCaches();
+    return response.data;
+  },
+
   // Update transaction status
   updateStatus: async (id: string, status: TransactionStatus): Promise<Transaction> => {
     const response = await apiClient.patch<Transaction>(`/transactions/${id}/status`, {

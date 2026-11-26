@@ -262,6 +262,10 @@
     "explanation": "[XX-Partial total: {count, plural, one {# amount} other {# amounts}} could not be included, so the figure shown excludes them. No rate to {displayCurrency} is available for {currencies}.-XX]",
     "explanationExcluded": "[XX-Partial total: {count, plural, one {# amount} other {# amounts}} could not be worked out, so the figure shown excludes them.-XX]"
   },
+  "provisionalTotal": {
+    "srSuffix": "[XX-(includes estimated amounts)-XX]",
+    "explanation": "[XX-Includes estimated amounts: {count, plural, one {# amount in this figure is an estimate} other {# amounts in this figure are estimates}} Monize made at the historical exchange rate for the other side of a cross-currency transfer. Each stays an estimate until that account's own file is imported or the amount is confirmed. Search transactions for is:provisional to list them.-XX]"
+  },
   "unknownAmount": {
     "marker": "[XX-—-XX]",
     "srLabel": "[XX-Amount not available-XX]",

@@ -36,6 +36,18 @@ describe('heroSnapshot', () => {
     expect(snap?.netWorth.missingCurrencies).toEqual(['EUR']);
   });
 
+  it('carries each figure\'s estimated-amount count, an absent one as none', () => {
+    const snap = heroSnapshot([
+      month('2026-11', 1000, 400, { provisionalCount: 1, assetsProvisionalCount: 1, liabilitiesProvisionalCount: 0 }),
+    ]);
+    expect(snap?.provisional).toEqual({ netWorth: 1, assets: 1, liabilities: 0 });
+    expect(heroSnapshot([month('2026-11', 1000, 400)])?.provisional).toEqual({
+      netWorth: 0,
+      assets: 0,
+      liabilities: 0,
+    });
+  });
+
   it('treats absent flags as no information, not as incomplete', () => {
     const snap = heroSnapshot([month('2026-11', 10, 0)]);
     expect(snap?.netWorth.excludedCount).toBe(0);

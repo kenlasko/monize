@@ -123,6 +123,17 @@ describe("McpServerService", () => {
     expect(serverInfo.version).not.toBe("1.0.0");
   });
 
+  it("tells every tool's reader once what a provisional count means", () => {
+    // The counts ride undeclared on loose outputs (the tools are at their
+    // tools/list byte budgets), so the instructions are where a client learns
+    // them (provisional-amounts design section 6).
+    const server = service.createServer();
+    const instructions = (server.server as any)._instructions as string;
+    expect(instructions).toContain("A provisionalCount above 0");
+    expect(instructions).toContain("amountIsProvisional true");
+    expect(instructions).toContain("including estimated amounts");
+  });
+
   it("should register all tools", () => {
     service.createServer();
     expect(mockToolProvider.register).toHaveBeenCalledTimes(17);

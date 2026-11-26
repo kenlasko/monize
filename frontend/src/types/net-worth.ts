@@ -40,6 +40,16 @@ export interface MonthlyNetWorth {
    * through `netWorthWindowChange` (`lib/net-worth-change.ts`).
    */
   netWorthChangeFromStart?: number;
+  /**
+   * How many provisional transfer amounts (Monize's estimates, awaiting the
+   * other account's own import) are inside `netWorth` as of the month's end,
+   * and inside each side of it. The figures are unchanged by them; the count
+   * only adds a mark. Absent means no information: read with
+   * `provisionalCountOf` (`lib/provisional-amount.ts`).
+   */
+  provisionalCount?: number;
+  assetsProvisionalCount?: number;
+  liabilitiesProvisionalCount?: number;
 }
 
 export interface MonthlyInvestmentValue {

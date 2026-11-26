@@ -74,6 +74,12 @@ export const listAccountsOutput = toolOutput({
   fxComplete: bool,
   pricesComplete: bool,
   valuationComplete: bool,
+  // `provisionalCount` (and `assetsProvisionalCount` /
+  // `liabilitiesProvisionalCount`, and each row's own) is how many provisional
+  // transfer amounts -- Monize's estimates until the other account's file is
+  // imported -- a figure holds. Undeclared like the `known*` subtotals: the
+  // tool is at its `tools/list` byte budget, which is shrink-only, and the
+  // loose object carries the field whole.
 });
 
 // ---------------------------------------------------------------------------
@@ -86,7 +92,11 @@ export const comparePeriodsOutput = toolOutput({
   // period `total` (and so `totalChange` / `totalChangePercent`) is null while
   // a pair has no rate; `knownSubtotal` (per period, undeclared like the
   // portfolio's return diagnostics: the tool is at its `tools/list` budget)
-  // is what did convert. These flags are the contract, not decoration.
+  // is what did convert. These flags are the contract, not decoration. Each
+  // period's `provisionalCount` (how many amounts in its total are Monize's
+  // estimates of a transfer leg awaiting the other account's import) is
+  // undeclared for the same budget; the server instructions say what it
+  // means once for every tool.
   period1: looseObject({ start: str, end: str, total: num }),
   period2: looseObject({ start: str, end: str, total: num }),
   totalChange: num,
@@ -144,6 +154,10 @@ export const listTransactionsOutput = toolOutput({
   // `knownExpensesSubtotal` carry what did convert (undeclared: the tool is at
   // its `tools/list` budget) and `missingRatePairs` the pairs to repair.
   // `byCurrency` is the unconverted view, each entry in its own currency.
+  // `provisionalCount` (how many amounts in the totals are Monize's estimates
+  // of a transfer leg awaiting the other account's import) and a raw row's
+  // `amountIsProvisional` are undeclared for the same budget; the server
+  // instructions say what they mean once for every tool.
   totalIncome: num,
   totalExpenses: num,
   netCashFlow: num,

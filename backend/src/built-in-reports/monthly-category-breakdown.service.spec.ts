@@ -296,6 +296,8 @@ describe("MonthlyCategoryBreakdownService", () => {
         tx_date: FIXTURE_TX_DATE,
         outflow: "0.00",
         inflow: "500.00",
+        // The incoming leg is an imported estimate (design section 6, P5).
+        provisional_count: "1",
       },
     ]);
 
@@ -319,6 +321,11 @@ describe("MonthlyCategoryBreakdownService", () => {
     const transferSql = scopedManager.query.mock.calls[1][0];
     expect(transferSql).toContain("t.is_transfer = true");
     expect(transferSql).toContain("parent_transaction_id IS NULL");
+    // The estimate stays in the figure and is counted beside it.
+    expect(result.provisionalCount).toBe(1);
+    expect(transferSql).toContain(
+      "COUNT(*) FILTER (WHERE t.amount_is_provisional = true) as provisional_count",
+    );
   });
 
   it("builds an expense row with parent metadata and signed monthly values", async () => {
@@ -624,6 +631,7 @@ describe("MonthlyCategoryBreakdownService", () => {
             tx_date: FIXTURE_TX_DATE,
             outflow: "100000",
             inflow: "0.00",
+            provisional_count: "1",
           },
         ]);
 
@@ -640,6 +648,8 @@ describe("MonthlyCategoryBreakdownService", () => {
       expect(result.currency).toBe("USD");
       expect(result.missingCurrencies).toEqual(["JPY"]);
       expect(result.excludedCount).toBe(2);
+      // An estimate left out for want of a rate is in no figure.
+      expect(result.provisionalCount).toBe(0);
       expect(JSON.stringify(result)).not.toContain("100000");
     });
 
