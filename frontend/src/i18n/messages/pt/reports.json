@@ -2045,6 +2045,7 @@
     "unknown": "Desconhecido",
     "knownPartOnly": "Só é desenhada a parte que foi possível converter.",
     "roundingNote": "O total de cada lado é arredondado uma única vez e repartido pelos seus fluxos, para que o diagrama bata certo. Por isso, uma categoria aqui pode diferir um cêntimo, ou a unidade mais pequena da sua moeda, da mesma categoria em Despesas por Categoria ou Receitas por Fonte, que arredondam cada categoria à parte.",
+    "expenseRefund": "{category} (reembolso de despesas)",
     "netRefund": "Reembolso líquido: esta subcategoria recebeu mais do que gastou.",
     "excludedCount": "{count, plural, one {# montante não pôde ser convertido e fica de fora dos valores acima.} other {# montantes não puderam ser convertidos e ficam de fora dos valores acima.}}",
     "noData": "Sem rendimentos, despesas ou transferências neste período",

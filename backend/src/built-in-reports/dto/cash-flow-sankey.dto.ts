@@ -72,6 +72,10 @@ export class CashFlowSankeyNode {
   @ApiProperty({ enum: SANKEY_NODE_KINDS })
   kind: SankeyNodeKind;
 
+  /** An expense category whose converted receipts exceed its payments. */
+  @ApiPropertyOptional()
+  expenseRefund?: boolean;
+
   /** The category or account name; an English fallback for the fixed nodes. */
   @ApiProperty({ example: "Groceries" })
   label: string;

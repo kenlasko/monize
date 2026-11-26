@@ -188,6 +188,7 @@ interface DraftLink {
 }
 
 interface DraftNode {
+  expenseRefund?: boolean;
   id: string;
   kind: SankeyNodeKind;
   label: string;
@@ -415,6 +416,7 @@ export function assembleCashFlowSankey(
       id,
       kind,
       label: category.name,
+      expenseRefund: isIncomeSide && category.isIncome === false,
       categoryId: rootId,
       parentCategoryId: null,
       accountId: null,
@@ -790,6 +792,7 @@ function finishNode(node: DraftNode, places: number): CashFlowSankeyNode {
     id: node.id,
     kind: node.kind,
     label: node.label,
+    ...(node.expenseRefund && { expenseRefund: true }),
     categoryId: node.categoryId,
     parentCategoryId: node.parentCategoryId,
     accountId: node.accountId,

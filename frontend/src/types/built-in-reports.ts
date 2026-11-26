@@ -771,6 +771,7 @@ export interface CashFlowSankeyNode {
    */
   id: string;
   kind: CashFlowSankeyNodeKind;
+  expenseRefund?: boolean;
   label: string;
   categoryId: string | null;
   parentCategoryId: string | null;
