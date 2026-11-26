@@ -398,6 +398,8 @@ export const RULES: Record<string, TableRules> = {
     investment_quantity: scaleQty,
     investment_price: keep,
     investment_total_amount: scale,
+    // This occurrence's auto-post choice: a flag, nothing to mask.
+    auto_post: keep,
     created_at: keep,
     updated_at: keep,
   },
