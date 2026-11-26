@@ -1195,6 +1195,75 @@ describe("ImportInvestmentProcessorService", () => {
       expect(cashTx).toBeDefined();
     });
 
+    it("writes a brokerage's cash leg as one plain row the investment row points at (#2436)", async () => {
+      // The investment row used to point at a brokerage-side transfer
+      // counterpart. An edit tears down the row `transaction_id` names, so it
+      // deleted the counterpart, orphaned the real cash row and wrote a second
+      // one in the cash account.
+      const securityMap = new Map<string, string | null>([
+        ["Vanguard ETF", "sec-2"],
+      ]);
+      const ctx = makeContext({
+        securityMap,
+        account: {
+          id: accountId,
+          currencyCode: "CAD",
+          accountSubType: AccountSubType.INVESTMENT_BROKERAGE,
+          linkedAccountId: "linked-acc-1",
+          name: "Brokerage",
+        } as any,
+      });
+      managerOf(ctx).findOne.mockImplementation((entity: any, opts: any) => {
+        if (entity === Security && opts?.where?.id === "sec-2") {
+          return Promise.resolve({
+            id: "sec-2",
+            symbol: "VTI",
+            currencyCode: "USD",
+          });
+        }
+        if (opts?.where?.id === "linked-acc-1") {
+          return Promise.resolve({ id: "linked-acc-1", currencyCode: "CAD" });
+        }
+        return Promise.resolve(null);
+      });
+      exchangeRateService.getRateForDate.mockResolvedValue(1.35);
+
+      await service.processTransaction(ctx, {
+        action: "Div",
+        security: "Vanguard ETF",
+        amount: 100,
+        date: "2025-03-01",
+      });
+
+      const saved = managerOf(ctx).save.mock.calls.map((c: any[]) => c[0]);
+      const cashRows = saved.filter(
+        (arg: any) => arg instanceof Transaction,
+      ) as Transaction[];
+      expect(cashRows).toHaveLength(1);
+      expect(cashRows[0]).toMatchObject({
+        accountId: "linked-acc-1",
+        amount: 135,
+        currencyCode: "CAD",
+        exchangeRate: 1.35,
+        isTransfer: false,
+      });
+      expect(cashRows[0].linkedTransactionId).toBeUndefined();
+      expect(
+        saved.some(
+          (arg: any) =>
+            arg?.accountId === accountId && arg instanceof Transaction,
+        ),
+      ).toBe(false);
+
+      const investmentTx = saved.find(
+        (arg: any) => arg instanceof InvestmentTransaction,
+      ) as InvestmentTransaction;
+      expect(investmentTx.transactionId).toBe(cashRows[0].id);
+      // The row's own rate is the one its cash leg was converted at, so an
+      // edit re-derives the same amount (INV-FX-002).
+      expect(investmentTx.exchangeRate).toBe(1.35);
+    });
+
     it("should format payee name with Buy label and security details", async () => {
       const securityMap = new Map<string, string | null>();
       securityMap.set("Test Stock", "sec-1");
