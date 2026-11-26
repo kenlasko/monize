@@ -1,11 +1,10 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import { EntityManager } from "typeorm";
 import { Account } from "../accounts/entities/account.entity";
 import { EmailReceiptParser } from "../email-receipts/entities/email-receipt-parser.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { Warranty } from "../warranties/entities/warranty.entity";
+import { foreignKeysTo } from "../common/schema-references.test-helpers";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 import {
   PAYEE_REFERENCE_MOVES,
@@ -24,46 +23,8 @@ import {
  * schema rather than against a list somebody has to remember to update.
  */
 
-const SCHEMA_PATH = join(__dirname, "..", "..", "..", "database", "schema.sql");
-
-/** Schema text with `--` comments blanked, so documentation cannot match. */
-const uncommented = readFileSync(SCHEMA_PATH, "utf8")
-  .split("\n")
-  .map((line) => line.replace(/--.*$/, ""))
-  .join("\n");
-
-/** Every `table.column` with a foreign key to `payees(id)`. */
-function parsePayeeReferences(sql: string): string[] {
-  const references: string[] = [];
-  const target = String.raw`REFERENCES\s+payees\s*\(\s*id\s*\)`;
-  const tableBlocks = sql.matchAll(
-    /CREATE TABLE(?: IF NOT EXISTS)?\s+(\w+)\s*\(([\s\S]*?)\n\);/g,
-  );
-  for (const [, table, body] of tableBlocks) {
-    for (const match of body.matchAll(
-      new RegExp(String.raw`^\s*(\w+)\s+[A-Za-z0-9_() ,]*?${target}`, "gim"),
-    )) {
-      references.push(`${table}.${match[1]}`);
-    }
-    for (const match of body.matchAll(
-      new RegExp(String.raw`FOREIGN KEY\s*\((\w+)\)\s*${target}`, "gi"),
-    )) {
-      references.push(`${table}.${match[1]}`);
-    }
-  }
-  for (const match of sql.matchAll(
-    new RegExp(
-      String.raw`ALTER TABLE\s+(?:IF EXISTS\s+)?(\w+)\s+ADD CONSTRAINT\s+\w+\s+FOREIGN KEY\s*\((\w+)\)\s*${target}`,
-      "gi",
-    ),
-  )) {
-    references.push(`${match[1]}.${match[2]}`);
-  }
-  return references.sort();
-}
-
 describe("PAYEE_REFERENCE_MOVES", () => {
-  const schemaReferences = parsePayeeReferences(uncommented);
+  const schemaReferences = foreignKeysTo("payees");
   const moved = Object.keys(PAYEE_REFERENCE_MOVES).sort();
 
   it("finds the references the schema is known to declare", () => {

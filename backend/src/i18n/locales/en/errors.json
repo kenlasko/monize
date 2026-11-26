@@ -359,7 +359,7 @@
     "circularParent": "Circular parent reference detected",
     "cannotDeleteSystem": "Cannot delete system categories",
     "hasSubcategories": "Cannot delete category with subcategories. Delete or reassign subcategories first.",
-    "hasTransactions": "Cannot delete category with {{ count }} referencing transaction(s). Reassign transactions first.",
+    "inUse": "Category \"{{ name }}\" cannot be deleted: it is still used by {{ summary }}. Reassign or remove these first.",
     "alreadyHasCategories": "Cannot import defaults: user already has categories. Delete existing categories first or start fresh."
   },
   "common": {
@@ -633,6 +633,7 @@
     "requiresBrokerageAccount": "Scheduled investment transactions require a brokerage account",
     "bondSeriesNotNameable": "A scheduled {{ action }} of a bond-linked security cannot name the bond series of its shares. Record it as a transaction and choose the series, or schedule a BUY, which takes the series on sale on its date.",
     "notFound": "Scheduled transaction with ID {{ id }} not found",
+    "inUse": "Scheduled transaction \"{{ name }}\" cannot be deleted: it is still used by {{ summary }}. Remove these first.",
     "occurrenceAlreadyPosted": "This occurrence has already been posted.",
     "noOccurrencesLeft": "This schedule has no occurrences left to post or skip.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
@@ -774,8 +775,7 @@
     "notFoundBySymbol": "Security with symbol {{ symbol }} not found",
     "cannotDeactivateWithHoldings": "Cannot deactivate security with active holdings. Please sell all shares first.",
     "inactiveSecurityLocked": "{{ symbol }} is deactivated, so its investment transactions cannot be added, changed or deleted. Activate {{ symbol }} on the Securities page first.",
-    "cannotDeleteWithHoldings": "Cannot delete security that has holdings. Remove all holdings first.",
-    "cannotDeleteWithTransactions": "Cannot delete security that has investment transactions. Delete all related transactions first.",
+    "inUse": "Security \"{{ symbol }}\" cannot be deleted: it is still used by {{ summary }}. Remove or reassign these first.",
     "holdingNotFound": "Holding with ID {{ id }} not found",
     "insufficientShares": "Insufficient shares: cannot reduce by {{ reduceBy }}, only {{ currentQuantity }} held",
     "splitRatioMustBePositive": "Split ratio must be greater than zero",
@@ -1121,7 +1121,18 @@
       "loanOverpaymentPayee": "loan accounts (overpayment payee)",
       "sharedPeople": "shared-expense people",
       "sharedPostings": "shared-expense postings",
-      "rules": "rules"
+      "rules": "rules",
+      "budgetLines": "budget lines",
+      "budgetPeriods": "budget periods",
+      "payrollDeductionRules": "payroll deduction rules",
+      "loanFees": "loan fees",
+      "loanAccounts": "loan accounts",
+      "customReports": "custom reports",
+      "subcategories": "subcategories",
+      "holdings": "holdings",
+      "investmentTransactions": "investment transactions",
+      "gemStrategies": "GEM strategies",
+      "securityDocuments": "security documents"
     }
   }
 }

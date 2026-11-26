@@ -1,5 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { CategoriesService } from "./categories.service";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -1327,19 +1331,246 @@ describe("CategoriesService", () => {
     it("removes category and clears payee defaults", async () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
       categoriesRepository.count.mockResolvedValue(0);
-
-      // Mock getTransactionCount to return 0 so remove() proceeds
-      transactionsRepository.count.mockResolvedValue(0);
-      splitsRepository.createQueryBuilder.mockReturnValue(
-        createMockQueryBuilder({
-          getCount: jest.fn().mockResolvedValue(0),
-        }),
+      txManager.query.mockImplementation((sql: string) =>
+        Promise.resolve(
+          sql.startsWith("SELECT id FROM accounts") ? [] : [{ count: 0 }],
+        ),
       );
-      scheduledTransactionsRepository.count.mockResolvedValue(0);
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
-        createMockQueryBuilder({
-          getMany: jest.fn().mockResolvedValue([]),
-        }),
+
+      await service.remove("user-1", "cat-1");
+
+      const manager = txManager;
+      // The row is locked before the references are counted.
+      expect(categoriesRepository.findOne).toHaveBeenLastCalledWith({
+        where: { id: "cat-1", userId: "user-1" },
+        lock: { mode: "pessimistic_write" },
+      });
+      expect(manager.update).toHaveBeenCalledWith(
+        Payee,
+        { userId: "user-1", defaultCategoryId: "cat-1" },
+        { defaultCategoryId: null },
+      );
+      // Must pass the explicit entity target: findOne returns a plain object
+      // (spread with effectiveColor), so the single-arg form throws
+      // CannotDetermineEntityError against real TypeORM.
+      expect(manager.remove).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({ id: "cat-1" }),
+      );
+    });
+
+    it("refuses with 409 RECORD_IN_USE naming the counts, and writes nothing", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
+      categoriesRepository.count.mockResolvedValue(0);
+      txManager.query.mockImplementation((sql: string) =>
+        Promise.resolve(
+          sql.includes("FROM transactions WHERE")
+            ? [{ count: 3 }]
+            : sql.startsWith("SELECT id FROM accounts")
+              ? [{ id: "loan-1" }]
+              : [{ count: 0 }],
+        ),
+      );
+
+      const error = await service
+        .remove("user-1", "cat-1")
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ConflictException);
+      expect((error as ConflictException).getResponse()).toMatchObject({
+        errorCode: "RECORD_IN_USE",
+        errors: [
+          { kind: "transactions", count: 3 },
+          { kind: "loanAccounts", count: 1, ids: ["loan-1"] },
+        ],
+      });
+      expect(txManager.update).not.toHaveBeenCalled();
+      expect(txManager.remove).not.toHaveBeenCalled();
+    });
+
+    it("throws BadRequestException for system categories", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockSystemCategory });
+
+      await expect(
+        service.update("user-1", "cat-sys", { name: "Renamed" }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("throws BadRequestException when setting parentId to self", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
+
+      await expect(
+        service.update("user-1", "cat-1", { parentId: "cat-1" }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("throws BadRequestException for circular parent reference", async () => {
+      // Setup: cat-1 -> cat-2 -> cat-3, and we try to set cat-1's parent to cat-3
+      // This would create: cat-1 -> cat-3 -> cat-2 -> cat-1 (cycle)
+      const cat3 = { ...mockCategory, id: "cat-3" };
+      categoriesRepository.findOne
+        .mockResolvedValueOnce({ ...mockCategory, id: "cat-1" }) // findOne: load cat-1
+        .mockResolvedValueOnce(cat3); // findOne: validate cat-3 exists
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null },
+        { id: "cat-2", parentId: "cat-1" },
+        { id: "cat-3", parentId: "cat-2" },
+      ]);
+
+      await expect(
+        service.update("user-1", "cat-1", { parentId: "cat-3" }),
+      ).rejects.toThrow("Circular parent reference detected");
+    });
+
+    it("throws NotFoundException when category does not exist", async () => {
+      categoriesRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.update("user-1", "cat-1", { name: "New" }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("does not overwrite fields that are not in the dto", async () => {
+      const original = {
+        ...mockCategory,
+        name: "Original",
+        description: "Keep me",
+      };
+      categoriesRepository.findOne.mockResolvedValue(original);
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      const result = await service.update("user-1", "cat-1", {
+        name: "Changed",
+      });
+
+      expect(result.name).toBe("Changed");
+      expect(result.description).toBe("Keep me");
+    });
+
+    it("cascades isIncome change to descendant subcategories", async () => {
+      // Parent category changing from Expense to Income
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        isIncome: false,
+      });
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      // The cascade runs inside the update transaction via the transaction
+      // manager. First call: direct children of cat-1; subsequent calls:
+      // grandchildren (none).
+      const manager = txManager;
+      manager.find
+        .mockResolvedValueOnce([{ id: "child-1" }, { id: "child-2" }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.update("user-1", "cat-1", { isIncome: true });
+
+      expect(manager.update).toHaveBeenCalledWith(
+        Category,
+        { id: "child-1", userId: "user-1" },
+        { isIncome: true },
+      );
+      expect(manager.update).toHaveBeenCalledWith(
+        Category,
+        { id: "child-2", userId: "user-1" },
+        { isIncome: true },
+      );
+    });
+
+    it("does not cascade when isIncome is not changed", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        isIncome: false,
+      });
+
+      await service.update("user-1", "cat-1", { name: "Renamed" });
+
+      // update should not be called for children
+      expect(txManager.update).not.toHaveBeenCalled();
+    });
+
+    it("stores a child's explicit autoSign instead of forcing it like isIncome", async () => {
+      const parentCat = {
+        ...mockCategory,
+        id: "cat-1",
+        isIncome: false,
+        autoSign: false,
+      };
+      categoriesRepository.findOne
+        .mockResolvedValueOnce({ ...mockChildCategory, autoSign: null }) // load child
+        .mockResolvedValueOnce(parentCat) // child's ancestor walk
+        .mockResolvedValueOnce(parentCat); // update: load parent for isIncome
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      const result = await service.update("user-1", "cat-2", {
+        autoSign: true,
+      });
+
+      expect(result.autoSign).toBe(true);
+      expect(txManager.save).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({ id: "cat-2", autoSign: true }),
+      );
+    });
+
+    it("does not cascade an autoSign change to descendants", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        autoSign: null,
+      });
+
+      const result = await service.update("user-1", "cat-1", {
+        autoSign: false,
+      });
+
+      expect(result.autoSign).toBe(false);
+      // The isIncome cascade reads children through manager.find and writes
+      // them through manager.update; neither runs for autoSign.
+      expect(txManager.find).not.toHaveBeenCalled();
+      expect(txManager.update).not.toHaveBeenCalled();
+    });
+
+    it("clears autoSign when the dto sets it to null", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        autoSign: false,
+      });
+
+      const result = await service.update("user-1", "cat-1", {
+        autoSign: null,
+      });
+
+      expect(result.autoSign).toBeNull();
+      expect(txManager.save).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({ autoSign: null }),
+      );
+    });
+
+    it("leaves autoSign alone when the dto omits it", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        autoSign: false,
+      });
+
+      const result = await service.update("user-1", "cat-1", {
+        name: "Renamed",
+      });
+
+      expect(result.autoSign).toBe(false);
+    });
+  });
+
+  describe("remove", () => {
+    it("removes category and clears payee defaults", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
+      categoriesRepository.count.mockResolvedValue(0);
+
+      txManager.query.mockImplementation((sql: string) =>
+        Promise.resolve(
+          sql.startsWith("SELECT id FROM accounts") ? [] : [{ count: 0 }],
+        ),
       );
 
       await service.remove("user-1", "cat-1");

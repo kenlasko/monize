@@ -26,6 +26,11 @@ import { getDefaultCategories } from "./country-category-additions";
 import { isSupportedLocale } from "../i18n/config";
 import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { withScopedDb } from "../common/db/scoped-db";
+import {
+  recordInUseException,
+  recordInUseSummary,
+} from "../common/helpers/record-in-use";
+import { findCategoryReferences } from "./category-references";
 import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
 
@@ -602,18 +607,6 @@ export class CategoriesService {
       );
     }
 
-    // M23: Check for referencing transactions before deletion
-    const transactionCount = await this.getTransactionCount(userId, id);
-    if (transactionCount > 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.categories.hasTransactions",
-          `Cannot delete category with ${transactionCount} referencing transaction(s). Reassign transactions first.`,
-          { count: transactionCount },
-        ),
-      );
-    }
-
     const beforeData = {
       id: category.id,
       name: category.name,
@@ -625,18 +618,40 @@ export class CategoriesService {
       isSystem: category.isSystem,
     };
 
-    // Clear the default-category reference on any payees and delete the
-    // category atomically, so a failure cannot leave payees pointing at a
-    // category that no longer exists.
+    // Lock, count and delete in one transaction: a reference committed while
+    // this waits for the lock is counted, and a refusal has written nothing.
+    // The payees' default-category reference is cleared with the delete, so a
+    // failure cannot leave a payee pointing at a category that is gone.
     await withScopedDb(this.dataSource, async (m) => {
+      const locked = await m.getRepository(Category).findOne({
+        where: { id, userId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!locked) {
+        throw new NotFoundException(
+          tr("errors.categories.notFound", `Category with ID ${id} not found`, {
+            id,
+          }),
+        );
+      }
+      const references = await findCategoryReferences(m, userId, id);
+      if (references.length > 0) {
+        const summary = recordInUseSummary(references);
+        throw recordInUseException(
+          tr(
+            "errors.categories.inUse",
+            `Category "${locked.name}" cannot be deleted: it is still used by ${summary}. Reassign or remove these first.`,
+            { name: locked.name, summary },
+          ),
+          references,
+        );
+      }
       await m.update(
         Payee,
         { userId, defaultCategoryId: id },
         { defaultCategoryId: null },
       );
-      // Explicit entity target: `category` here is a plain object from
-      // findOne (spread with effectiveColor), not a Category instance.
-      await m.remove(Category, category);
+      await m.remove(Category, locked);
     });
 
     this.actionHistoryService.record(userId, {

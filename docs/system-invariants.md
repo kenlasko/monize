@@ -7811,6 +7811,14 @@ Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.t
                     { kind, count } per kind and nothing written;
                     previewDeletePayee (AI/MCP) refuses the same way.
                     PAYEE_REFERENCE_COUNTS is typed to PAYEE_REFERENCE_MOVES' keys.
+                    Categories, securities and schedules are refused the same way
+                    (#2368): CATEGORY_REFERENCES, SECURITY_REFERENCES and
+                    SCHEDULED_TRANSACTION_REFERENCES give every foreign key to
+                    the table a refuse, part or clear policy, and
+                    findCategoryReferences, findSecurityReferences and
+                    findScheduledTransactionReferences count the refuse ones;
+                    their specs parse schema.sql through foreignKeysTo
+                    (common/schema-references.test-helpers.ts).
                     repointPayeeJsonReferences (payee-json-references.ts)
                     rewrites the JSON ids; payee-json-references.spec.ts fails
                     when a rule action type carrying a payeeId is missing from
