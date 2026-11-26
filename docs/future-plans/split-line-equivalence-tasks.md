@@ -9,7 +9,7 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 | T1 | Transfer rollups read the split transfer line | S0 | visible | sonnet, medium | open |
 | T2 | The transfers filter reads the split transfer line, in analytics and the register | S0 | visible | opus, high | done |
 | T3 | Tag filters select a line once (`EXISTS`) | S0 | visible | sonnet, high | open |
-| T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | open |
+| T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | done |
 | T5 | Close: INV-REPORT-006 status, user guide, plan retired | T1-T4 | none | sonnet, medium | open |
 
 ## T1 transfer rollups
@@ -51,9 +51,17 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 
 ## T4 Budget Health
 
-- [ ] `getSavingsRate` income fallback (`backend/src/budgets/budget-health-reports.service.ts`):
+- [x] `getSavingsRate` income fallback (`backend/src/budgets/budget-health-reports.service.ts`):
   read at line grain and drop the split transfer line.
-- [ ] A split with a positive transfer line adds nothing to income.
+- [x] A split with a positive transfer line adds nothing to income.
+- [ ] Follow-ups found in review, older than T4: the fallback applies no
+  investment exclusion (`investmentExclusionSql`), so brokerage cash deposits
+  count as income unless the account is excluded from the budget; a positive
+  line in a budgeted expense category (a refund) lowers that category's
+  expenses and also counts as fallback income, as a whole-row refund already
+  did. Checked and correct: the budget generator's history queries
+  (`budget-generator.service.ts`) read whole rows with a category and lines
+  with a category, so a transfer line, which has none, never enters them.
 
 ## T5 close
 
