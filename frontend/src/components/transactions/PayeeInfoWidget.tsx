@@ -244,7 +244,7 @@ export function PayeeInfoWidget({
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('payeeWidget.totalSpent')}</p>
         <p className="text-2xl font-bold text-red-600 dark:text-red-400">
           {totals ? (
-            <PartialTotal total={{ value: totals.expenses, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
+            <PartialTotal total={{ value: totals.expenses, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
               {formatCurrency(totals.expenses, currencyStrategy.displayCurrency)}
             </PartialTotal>
           ) : (
@@ -304,7 +304,7 @@ export function PayeeInfoWidget({
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-gray-500 dark:text-gray-400">{t('payeeWidget.income')}</dt>
             <dd className="text-green-600 dark:text-green-400 text-right">
-              <PartialTotal total={{ value: totals.income, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
+              <PartialTotal total={{ value: totals.income, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
                 {formatCurrency(totals.income, currencyStrategy.displayCurrency)}
               </PartialTotal>
             </dd>
@@ -314,7 +314,7 @@ export function PayeeInfoWidget({
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-gray-500 dark:text-gray-400">{t('payeeWidget.net')}</dt>
             <dd className="text-gray-900 dark:text-gray-100 text-right">
-              <PartialTotal total={{ value: totals.net, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
+              <PartialTotal total={{ value: totals.net, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
                 {formatCurrency(totals.net, currencyStrategy.displayCurrency)}
               </PartialTotal>
             </dd>
@@ -328,7 +328,7 @@ export function PayeeInfoWidget({
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-gray-500 dark:text-gray-400">{t('payeeWidget.averageAmount')}</dt>
             <dd className="text-gray-900 dark:text-gray-100 text-right">
-              <PartialTotal total={{ value: averageAmount, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
+              <PartialTotal total={{ value: averageAmount, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
                 {formatCurrency(averageAmount, currencyStrategy.displayCurrency)}
               </PartialTotal>
             </dd>

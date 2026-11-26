@@ -302,6 +302,7 @@ export function CategoryInfoWidget({
                 excludedCount: totals?.excludedTransactionCount ?? 0,
               }}
               displayCurrency={currencyStrategy.displayCurrency}
+              provisionalCount={totals?.provisionalCount}
             >
               {formatCurrency(headlineTotal, currencyStrategy.displayCurrency)}
             </PartialTotal>
@@ -360,6 +361,7 @@ export function CategoryInfoWidget({
                   excludedCount: totals?.excludedTransactionCount ?? 0,
                 }}
                 displayCurrency={currencyStrategy.displayCurrency}
+                provisionalCount={totals?.provisionalCount}
               >
                 {formatCurrency(averageAmount, currencyStrategy.displayCurrency)}
               </PartialTotal>

@@ -280,6 +280,24 @@ describe('PayeeDetailPage', () => {
     );
   });
 
+  it('marks an account row that includes an estimated amount', async () => {
+    const base = detailFixture();
+    mockGetDetail.mockResolvedValue(
+      detailFixture({ accounts: [{ ...base.accounts[0], provisionalCount: 1 }] }),
+    );
+    await renderPage();
+
+    const row = screen.getByText('Chequing').closest('li') as HTMLElement;
+    expect(within(row).getByTestId('provisional-mark')).toBeInTheDocument();
+  });
+
+  it('marks no account row without a provisional count', async () => {
+    await renderPage();
+
+    const row = screen.getByText('Chequing').closest('li') as HTMLElement;
+    expect(within(row).queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
   it('carries accountStatus=all on a category row too', async () => {
     await renderPage();
 

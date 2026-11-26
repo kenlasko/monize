@@ -6,6 +6,7 @@ import { chartColors } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { GroupedTotal } from '@/types/transaction';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
 
 interface TopGroupsPanelProps {
   title: string;
@@ -99,11 +100,15 @@ export function TopGroupsPanel({
                     <span className="text-gray-700 dark:text-gray-200 truncate">
                       {g.name ?? fallbackLabel}
                     </span>
-                    <span
-                      className="font-medium tabular-nums"
-                      style={{ color: signColor }}
-                    >
-                      {formatCurrency(Math.abs(amount), currencyCode)}
+                    <span className="inline-flex shrink-0 items-baseline gap-1">
+                      <span
+                        className="font-medium tabular-nums"
+                        style={{ color: signColor }}
+                      >
+                        {formatCurrency(Math.abs(amount), currencyCode)}
+                      </span>
+                      {/* A row holding an imported estimate says so; absent or 0 draws nothing. */}
+                      <ProvisionalMark count={g.provisionalCount} />
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">

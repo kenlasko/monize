@@ -117,6 +117,29 @@ describe('CategoryInfoWidget', () => {
     });
   });
 
+  it('marks the headline and the average when the period includes an estimated amount', async () => {
+    mockedTransactions.getSummary.mockResolvedValue({
+      totalIncome: 0,
+      totalExpenses: 800,
+      netCashFlow: -800,
+      transactionCount: 20,
+      provisionalCount: 1,
+      lastTransactionDate: '2026-06-20',
+      byCurrency: {
+        CAD: { totalIncome: 0, totalExpenses: 800, netCashFlow: -800, transactionCount: 20 },
+      },
+    });
+    await renderWidget();
+    expect(screen.getByText('CAD 800.00')).toBeInTheDocument();
+    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(2);
+  });
+
+  it('marks nothing without a provisional count', async () => {
+    await renderWidget();
+    expect(screen.getByText('CAD 800.00')).toBeInTheDocument();
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
   it('shows the category name, badge, swatch and headline total', async () => {
     await renderWidget();
 

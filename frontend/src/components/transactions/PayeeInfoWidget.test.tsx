@@ -261,6 +261,30 @@ describe('PayeeInfoWidget', () => {
     expect(mockPush).toHaveBeenCalledWith('/bills');
   });
 
+  it('marks the period figures that include an estimated amount', async () => {
+    mockedTransactions.getSummary.mockResolvedValue({
+      totalIncome: 50,
+      totalExpenses: 1200.5,
+      netCashFlow: -1150.5,
+      transactionCount: 12,
+      provisionalCount: 1,
+      lastTransactionDate: '2026-06-28',
+      byCurrency: {
+        CAD: { totalIncome: 50, totalExpenses: 1200.5, netCashFlow: -1150.5, transactionCount: 12 },
+      },
+    });
+    await renderWidget();
+    // The figure is shown; spent, income, net and the average each carry the mark.
+    expect(screen.getByText('CAD 1200.50')).toBeInTheDocument();
+    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(4);
+  });
+
+  it('marks nothing without a provisional count', async () => {
+    await renderWidget();
+    expect(screen.getByText('CAD 1200.50')).toBeInTheDocument();
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
   it('shows the empty state when the period has no transactions', async () => {
     mockedTransactions.getSummary.mockResolvedValue({
       totalIncome: 0,
