@@ -84,6 +84,11 @@ implied.
 | INV-FX-004 | A user-supplied rate never replaces a global exchange-rate observation | enforced |
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
 | INV-FX-006 | Whether an amount is provisional is read from `amount_is_provisional` and nowhere else | enforced |
+| INV-FX-007 | No request body sets or edits `amount_is_provisional`, and no edit of a description, memo, payee, category, tags or status changes it | enforced |
+| INV-FX-008 | A provisional leg is a transfer leg: a path that ends its life as one clears the flag | enforced |
+| INV-FX-009 | A figure that sums a provisional amount reports a provisional count above zero on the same response | enforced |
+| INV-FX-010 | Confirming replaces the estimate and moves the balance by the difference in the same transaction; the confirm action moves nothing | enforced |
+| INV-FX-011 | Undo restores `amount_is_provisional` with the row | enforced |
 | INV-CRYPTO-001 | An account's type and its currency's kind agree: a crypto wallet holds a coin, every other account and every security a fiat currency | partial |
 | INV-CRYPTO-002 | A pair with a coin on either side is priced only by the crypto provider, through the coin's Yahoo pair, and that provider prices nothing else | enforced |
 | INV-MONEY-001 | An amount in an account's currency is stored and rounded at that currency's money precision: never more places than it carries, never fewer | enforced |
@@ -2218,6 +2223,133 @@ Status              enforced -- the reading half, for backend/src, which the
                     action-history snapshot taken before the strip still holds
                     the old description, so undoing such an edit can write the
                     note back as text.
+```
+
+### INV-FX-007 -- a request never sets or edits the provisional flag
+
+```text
+Statement           transactions.amount_is_provisional is written by the
+                    importer (true), the confirm action, a transfer edit that
+                    states a different amount for the leg, and the paths that
+                    end a leg's life as a transfer leg (false) -- and by
+                    nothing else (design P2 of
+                    future-plans/provisional-amounts.md). No DTO accepts the
+                    field, and an edit of description, memo, payee, category,
+                    tags or status, or a resend of the stored amounts, leaves
+                    it alone. A change is a value difference, not a field
+                    being present.
+Source of truth     transactions.amount_is_provisional.
+Enforcement         The global validation pipe (whitelist and
+                    forbidNonWhitelisted) refuses the field on the create,
+                    update, transfer, convert, bulk, bulk-create and split
+                    bodies. transfer-leg updates compare the stated amount
+                    with the stored one before clearing the flag
+                    (transaction-transfer.service.ts).
+Test                transactions/dto/amount-is-provisional.dto.spec.ts (every
+                    body refuses the field);
+                    provisional-amount-confirm.integration.spec.ts rows 6 and
+                    10 (a description edit, a resend of the stored amounts and
+                    a split parent edit leave it provisional).
+Status              enforced.
+```
+
+### INV-FX-008 -- a provisional leg is a transfer leg
+
+```text
+Statement           A row with amount_is_provisional = true is a transfer leg
+                    (design P3). A path that turns it into an ordinary
+                    transaction, or moves the pair into one currency, where
+                    nothing is estimated, clears the flag in the same write.
+Source of truth     transactions.amount_is_provisional with is_transfer.
+Enforcement         transaction-conversion.service.ts clears it on
+                    convert-to-transaction; transaction-transfer.service.ts
+                    clears it when a leg moves to a same-currency pair or
+                    states a different amount. Each runs in the write's own
+                    withScopedDb transaction.
+Test                provisional-amount-confirm.integration.spec.ts "P3: a leg
+                    converted to an ordinary transaction is no longer
+                    provisional" and "a leg moved into a same-currency pair is
+                    confirmed"; transaction-conversion.service.spec.ts.
+Status              enforced for the paths that exist (the conversion and the
+                    transfer edit, which the bulk, assistant and MCP routes
+                    reach through the same services). A new path that ends a
+                    leg's life as a transfer leg must clear the flag itself;
+                    no guard finds one that does not.
+```
+
+### INV-FX-009 -- a figure with an estimate says so
+
+```text
+Statement           Every response that sums or lists a provisional amount
+                    carries provisionalCount over exactly the rows inside its
+                    figure (design P5): account balances and net worth, custom
+                    reports, transaction analytics, the assistant and MCP, the
+                    Cash Flow, Monthly Category Breakdown and Income vs
+                    Expenses reports, the payee and category account panels,
+                    budget transfer actuals and the currency usage summary. A
+                    row left out for want of a rate, a void row and a
+                    future-dated one count nowhere. Nothing is withheld: the
+                    figure is shown and the count marks it. The client reads
+                    the count as a number, so an absent field draws nothing.
+Source of truth     transactions.amount_is_provisional, counted in SQL by one
+                    shared predicate
+                    (common/ledger-balance.sql.ts, ledgerProvisionalPredicate
+                    and PROVISIONAL_COUNTS_AS_OF_DATES_SQL; the analytics
+                    reads count through provisionalCountSql).
+Enforcement         Per-surface specs (design section 10); no source guard
+                    finds a surface that omits the count.
+Test                provisional-count.integration.spec.ts,
+                    provisional-count-reports.integration.spec.ts,
+                    report-transfer-fx-surfaces.integration.spec.ts (count 1
+                    while the legs are provisional, 0 once confirmed, on every
+                    surface it covers), report-custom-transfer-fx.integration.spec.ts.
+Status              partial -- every surface that reads transfer legs today
+                    carries the count, but a new report that sums transfer legs
+                    is only caught in review. Scope cuts 5 and 6 of the design
+                    (no separate estimated subtotal; a confirmed side
+                    converted at the market rate is not flagged) are
+                    deliberate.
+```
+
+### INV-FX-010 -- confirming replaces the estimate
+
+```text
+Statement           When the amount is confirmed the estimate is replaced and
+                    the balance moves by the difference in the same
+                    transaction (design P6). A later import of the other
+                    account writes the file's amount and clears the flag in one
+                    update; the confirm action keeps the stored amount, clears
+                    the flag and moves no amount, rate or balance.
+Source of truth     transactions.amount and amount_is_provisional;
+                    accounts.current_balance.
+Enforcement         ImportRegularProcessorService.matchPendingTransfer (one
+                    UPDATE, atomic balance delta); TransactionsService
+                    confirmAmount, a conditional UPDATE ... WHERE
+                    amount_is_provisional inside one withScopedDb
+                    transaction, so a second or a concurrent confirm refuses
+                    and writes nothing; owner only (no @AllowDelegate).
+Test                provisional-amount-confirm.integration.spec.ts rows 9 and
+                    10; import-qif-plain-transfer.integration.spec.ts and
+                    import-qif-split-transfer.integration.spec.ts.
+Status              enforced.
+```
+
+### INV-FX-011 -- undo restores the flag
+
+```text
+Statement           Undoing a delete or an edit of a provisional row restores
+                    it provisional, and a confirmed one confirmed (design P7).
+                    Undoing a confirmation is refused once the reader has
+                    stated another amount for the leg.
+Source of truth     the action-history snapshot (beforeData) and
+                    transactions.amount_is_provisional.
+Enforcement         The column is in the restore field list and in every raw
+                    INSERT INTO transactions column list of
+                    action-history.service.ts.
+Test                action-history-provisional-undo.integration.spec.ts;
+                    provisional-amount-confirm.integration.spec.ts (undo and
+                    redo of a confirmation); action-history.service.spec.ts.
+Status              enforced.
 ```
 
 ### INV-CRYPTO-001 -- an account's type and its currency's kind agree
