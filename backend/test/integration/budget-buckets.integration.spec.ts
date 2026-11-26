@@ -13,7 +13,10 @@ import {
   BudgetStrategy,
   BudgetType,
 } from "@/budgets/entities/budget.entity";
-import { BudgetCategory } from "@/budgets/entities/budget-category.entity";
+import {
+  BudgetCategory,
+  RolloverType,
+} from "@/budgets/entities/budget-category.entity";
 import { BudgetBucketTargetType } from "@/budgets/entities/budget-bucket.entity";
 import { ApplyGeneratedBudgetDto } from "@/budgets/dto/apply-generated-budget.dto";
 import { UpdateBudgetCategoryDto } from "@/budgets/dto/update-budget-category.dto";
@@ -558,7 +561,7 @@ describe("bucket budgets (integration)", () => {
       const [firstClosed] = await rowsOf(s.budgetId, twoBack);
       expect(firstClosed.status).toBe("CLOSED");
 
-      // Only the bucket with a positive carry has a row in the new period.
+      // Only the bucket with a nonzero carry has a row in the new period.
       const opened = await rowsOf(s.budgetId, previous);
       expect(opened).toHaveLength(1);
       expect(opened[0]).toMatchObject({
@@ -609,6 +612,97 @@ describe("bucket budgets (integration)", () => {
       const third = await rowsOf(s.budgetId, current);
       expect(third.map((r) => [r.status, r.bucket_id, r.carry_in])).toEqual([
         ["OPEN", s.savingsId, n(1250)],
+      ]);
+    });
+
+    it("restores three monthly allocations after a purchase and a later refund, for both the line and its bucket", async () => {
+      const { id: budgetId } = await seedBudget(aliceId, "Electronics");
+      const bucketId = await createBucket(
+        aliceId,
+        budgetId,
+        "TV",
+        BudgetBucketTargetType.AMOUNT,
+        100,
+        { carryOver: true },
+      );
+      await withUserContext(aliceId, () =>
+        budgets.addCategory(aliceId, budgetId, {
+          categoryId: miscId,
+          amount: 100,
+          rolloverType: RolloverType.MONTHLY,
+          bucketId,
+        }),
+      );
+      await openFirstPeriod(budgetId, twoBack);
+      await spend(miscId, twoBack, 300);
+      const purchasePeriod = await close(budgetId);
+      const open = () =>
+        withUserContext(aliceId, () =>
+          periods.getOrCreateCurrentPeriod(aliceId, budgetId),
+        );
+      const refundPeriod = await open();
+      expect(refundPeriod.periodStart).toBe(previous.periodStart);
+      expect(Number(refundPeriod.periodCategories[0].rolloverIn)).toBe(-200);
+      expect(Number(refundPeriod.periodCategories[0].effectiveBudget)).toBe(
+        -100,
+      );
+      expect(await rowsOf(budgetId, previous)).toEqual([
+        expect.objectContaining({
+          status: "OPEN",
+          bucket_id: bucketId,
+          carry_in: n(-200),
+        }),
+      ]);
+
+      await spend(miscId, previous, -300);
+      await close(budgetId);
+
+      const detail = (id: string) =>
+        withUserContext(aliceId, () => periods.findOne(aliceId, budgetId, id));
+      for (const [id, actual, carry] of [
+        [purchasePeriod.id, 300, -200],
+        [refundPeriod.id, -300, 200],
+      ] as const) {
+        const closed = await detail(id);
+        expect(closed.status).toBe("CLOSED");
+        expect(Number(closed.periodCategories[0].actualAmount)).toBe(actual);
+        expect(Number(closed.periodCategories[0].rolloverOut)).toBe(carry);
+        expect(closed.periodBuckets).toEqual([
+          expect.objectContaining({
+            bucketId,
+            actualAmount: actual,
+            carryOut: carry,
+          }),
+        ]);
+      }
+
+      const next = await open();
+      expect(next.periodStart).toBe(current.periodStart);
+      expect(Number(next.periodCategories[0].rolloverIn)).toBe(200);
+      expect(Number(next.periodCategories[0].effectiveBudget)).toBe(300);
+      const summary = await withUserContext(aliceId, () =>
+        budgets.getSummary(aliceId, budgetId),
+      );
+      expect(summary.remaining).toBe(300);
+      expect(summary.categoryBreakdown).toEqual([
+        expect.objectContaining({
+          categoryId: miscId,
+          spent: 0,
+          remaining: 300,
+        }),
+      ]);
+      const status = await withUserContext(aliceId, () =>
+        bucketReports.getBucketStatus(aliceId, budgetId),
+      );
+      expect(status.buckets).toEqual([
+        expect.objectContaining({
+          bucketId,
+          allocated: 100,
+          carriedIn: 200,
+          planned: 100,
+          spent: 0,
+          available: 300,
+        }),
       ]);
     });
 

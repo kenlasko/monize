@@ -3,6 +3,7 @@ import { withScopedDb } from "../../common/db/scoped-db";
 import { BuiltInReportsService } from "../../built-in-reports/built-in-reports.service";
 import type { SpendingByPayeeResponse } from "../../built-in-reports/dto/spending-by-payee.dto";
 import { queryCategorySpending } from "../../budgets/budget-spending.util";
+import { BudgetPeriodCategory } from "../../budgets/entities/budget-period-category.entity";
 import { ExchangeRateService } from "../../currencies/exchange-rate.service";
 import { ScheduledOccurrenceService } from "../../scheduled-transactions/scheduled-occurrence.service";
 import { PortfolioService } from "../../securities/portfolio.service";
@@ -36,6 +37,7 @@ const byPayee = (names: string[]): SpendingByPayeeResponse =>
 describe("TriviaDailyLoader", () => {
   let query: jest.Mock;
   let budgetFind: jest.Mock;
+  let periodLineFind: jest.Mock;
   let reports: jest.Mocked<
     Pick<BuiltInReportsService, "getSpendingByCategory">
   >;
@@ -54,11 +56,14 @@ describe("TriviaDailyLoader", () => {
     (queryCategorySpending as jest.Mock).mockReset();
     query = jest.fn().mockResolvedValue([]);
     budgetFind = jest.fn().mockResolvedValue([]);
+    periodLineFind = jest.fn().mockResolvedValue([]);
     (withScopedDb as jest.Mock).mockImplementation(
       (_ds: DataSource, fn: (m: EntityManager) => unknown) =>
         fn({
           query,
-          getRepository: () => ({ find: budgetFind }),
+          getRepository: (entity: unknown) => ({
+            find: entity === BudgetPeriodCategory ? periodLineFind : budgetFind,
+          }),
         } as unknown as EntityManager),
     );
     reports = {
@@ -289,14 +294,20 @@ describe("TriviaDailyLoader", () => {
       ...over,
     });
 
-    it("reads the budget's actuals over the month, by its id", async () => {
-      budgetFind.mockResolvedValue([
+    it("reads monthly spending and includes the signed incoming balance in the budget", async () => {
+      budgetFind.mockResolvedValueOnce([
         {
           id: "b1",
           name: "Household",
           incomeLinked: false,
-          categories: [line({}), line({ categoryId: "c2", isIncome: true })],
+          categories: [
+            line({ id: "food-line", rolloverType: "MONTHLY" }),
+            line({ categoryId: "c2", isIncome: true }),
+          ],
         },
+      ]);
+      periodLineFind.mockResolvedValue([
+        { budgetCategoryId: "food-line", rolloverIn: -250 },
       ]);
       (queryCategorySpending as jest.Mock).mockResolvedValue({
         currency: "CAD",
@@ -321,7 +332,7 @@ describe("TriviaDailyLoader", () => {
         name: "Household",
         currency: "CAD",
         incomeLinked: false,
-        lines: [{ spent: 75, budgeted: 200 }],
+        lines: [{ spent: 75, budgeted: -50 }],
       });
     });
 

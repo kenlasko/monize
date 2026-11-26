@@ -202,6 +202,17 @@ describe('CategoryInfoWidget', () => {
     expect(screen.queryByText('CAD 5000.00')).not.toBeInTheDocument();
   });
 
+  it.each([[-50, 0], [150, 100]])('separates the signed %s percent from the bounded budget bar', async (percentUsed, position) => {
+    mockedBudgets.getCategoryBudgetStatus.mockResolvedValue({
+      'c-1': { budgeted: 100, spent: percentUsed, remaining: 100 - percentUsed, percentUsed },
+    });
+    await renderWidget();
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuenow', String(position));
+    expect(bar).toHaveAttribute('aria-valuetext', `${percentUsed}%`);
+    expect(bar.firstElementChild).toHaveStyle({ width: `${position}%` });
+  });
+
   it('shows earned labels for income categories and hides the budget bar', async () => {
     await renderWidget({
       category: makeCategory({ isIncome: true }),

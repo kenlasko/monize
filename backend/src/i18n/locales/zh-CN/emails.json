@@ -84,7 +84,7 @@
     "labelBudgeted": "预算",
     "labelSpent": "已支出",
     "labelRemaining": "剩余",
-    "percentUsed": "已用 {{ percent }}%",
+    "percentUsed": "已用 {{ percent }}",
     "topCategories": "主要分类",
     "button": "查看预算仪表盘"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "弹性组“{{ group }}”已使用{{ spent }}，总预算为{{ budgeted }}（{{ percent }}%）。",
       "incomeTitle": "收入低于预期",
       "incomeMessage": "在本期的这个阶段，您的实际收入（{{ actual }}）为预期收入（{{ expected }}）的{{ ratio }}%。",
+      "netActivityTitle": "预算动态",
+      "netSpendingMessage": "净支出：{{ spent }}。预算：{{ budgeted }}。",
+      "netIncomeMessage": "净收入：{{ actual }}。截至目前的预期收入：{{ expected }}。",
       "milestoneTitle": "预算执行良好",
       "milestoneMessage": "本期已过去{{ progress }}%，而您仅使用了总预算的{{ percent }}%。继续保持！",
       "seasonalTitle": "预计{{ category }}将出现季节性支出高峰",

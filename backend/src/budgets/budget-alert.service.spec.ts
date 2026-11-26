@@ -27,6 +27,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { EmailService } from "../notifications/email.service";
 import {
@@ -177,6 +178,7 @@ const spendingRow = (key: string, total: string) => ({
   key,
   currencyCode: TEST_BUDGET_CURRENCY,
   txDate: "2026-01-10",
+  purchases: String(Math.max(0, -Number(total))),
   total,
 });
 // A Mock carrying `query`, so it fits the specs' `Record<string, jest.Mock>`.
@@ -292,6 +294,7 @@ describe("BudgetAlertService", () => {
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
         [Budget, budgetsRepository as never],
+        [BudgetPeriodCategory, { find: jest.fn().mockResolvedValue([]) }],
         [Notification, alertsRepository as never],
         [Transaction, transactionsRepository as never],
         [TransactionSplit, splitsRepository as never],
@@ -624,8 +627,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        10, // daysElapsed
-        30, // totalDays
+        { dailyBurnRate: 20, projectedTotal: 600 },
       );
 
       // dailyRate = 200/10 = 20, projected = 20*30 = 600, 600/300 = 200%
@@ -650,8 +652,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        10,
-        30,
+        { dailyBurnRate: 10, projectedTotal: 300 },
       );
 
       // dailyRate = 100/10 = 10, projected = 10*30 = 300, 300/500 = 60%
@@ -673,8 +674,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        15,
-        30,
+        { dailyBurnRate: 40, projectedTotal: 1200 },
       );
 
       expect(alert).toBeNull();
@@ -695,8 +695,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        10,
-        30,
+        { dailyBurnRate: 15, projectedTotal: 450 },
       );
 
       // dailyRate = 150/10 = 15, projected = 15*30 = 450, 450/200 = 225%
@@ -880,6 +879,36 @@ describe("BudgetAlertService", () => {
       expect(alert!.message).toContain("€");
     });
 
+    it("names negative actual income and the expected amount independently", () => {
+      const alert = service.checkIncomeShortfall(
+        [
+          {
+            budgetCategoryId: "line",
+            categoryId: "income",
+            categoryName: "Income",
+            currencyCode: "USD",
+            budgeted: 200,
+            spent: -25,
+            percentUsed: -12.5,
+            isIncome: true,
+            alertWarnPercent: 80,
+            alertCriticalPercent: 95,
+            flexGroup: null,
+          },
+        ],
+        200,
+        0.5,
+      );
+      expect(alert?.message).toBe(
+        "Net income: -$25.00. Expected income to date: $100.00.",
+      );
+      expect(alert?.data).toMatchObject({
+        actualIncome: -25,
+        expectedIncome: 100,
+        ratio: -25,
+      });
+    });
+
     it("returns INCOME_SHORTFALL when income is < 80% of expected at 50%+ progress", () => {
       const alert = service.checkIncomeShortfall(
         [
@@ -996,6 +1025,34 @@ describe("BudgetAlertService", () => {
       expect(alerts).toHaveLength(1);
       expect(alerts[0].type).toBe(NotificationType.POSITIVE_MILESTONE);
       expect(alerts[0].severity).toBe(NotificationSeverity.SUCCESS);
+    });
+
+    it("reports a negative total factually without celebrating the refund", () => {
+      const [alert] = service.checkPositiveMilestones(
+        [
+          {
+            budgetCategoryId: "line",
+            categoryId: "groceries",
+            categoryName: "Groceries",
+            currencyCode: "USD",
+            budgeted: 100,
+            spent: -20,
+            percentUsed: -20,
+            isIncome: false,
+            alertWarnPercent: 80,
+            alertCriticalPercent: 95,
+            flexGroup: null,
+          },
+        ],
+        0.6,
+        12,
+      );
+      expect(alert).toMatchObject({
+        title: "Budget activity",
+        severity: NotificationSeverity.INFO,
+        message: "Net spending: -$20.00. Budget: $100.00.",
+        data: { percentUsed: -20, totalSpent: -20, totalBudgeted: 100 },
+      });
     });
 
     it("returns no milestone when spending is >= 60%", () => {
@@ -1226,6 +1283,38 @@ describe("BudgetAlertService", () => {
 
       expect(result.alertsCreated).toBe(0);
       expect(result.emailsSent).toBe(0);
+    });
+
+    it("projects only future purchases after an already received refund", async () => {
+      jest.useFakeTimers({
+        now: new Date("2026-04-10T12:00:00"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        const purchases = new FxAggregate();
+        purchases.addConverted(150);
+        const spent = new FxAggregate();
+        spent.addConverted(100);
+        (queryCategorySpending as jest.Mock).mockResolvedValueOnce({
+          ...spending({ "cat-1": -100 }),
+          paceByLine: new Map([["bc-1", { purchases, spent }]]),
+        });
+        alertsRepository.find.mockResolvedValue([]);
+        await service.processAlerts(
+          makeBudget({ categories: [makeCategory({ amount: 350 })] }),
+        );
+        expect(insertedAlerts).toContainEqual(
+          expect.objectContaining({
+            type: NotificationType.PROJECTED_OVERSPEND,
+            data: expect.objectContaining({
+              dailyRate: 15,
+              projectedTotal: 400,
+            }),
+          }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("resolves an income-linked line's percentage against the period's income", async () => {

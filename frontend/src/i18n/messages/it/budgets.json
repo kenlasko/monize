@@ -6,14 +6,14 @@
       "WANT": "Desideri",
       "SAVING": "Risparmio"
     },
-    "target": "Obiettivo: {percent}%",
-    "budgeted": "Nel budget: {percent}% ({amount})"
+    "target": "Obiettivo: {percent}",
+    "budgeted": "Nel budget: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Modifica: {name}",
     "budgetAmount": "Importo budget",
     "rolloverType": "Tipo di riporto",
-    "rolloverTypeTooltip": "Il budget non utilizzato di questa categoria viene riportato al periodo successivo invece di essere azzerato. Le spese eccessive non vengono mai riportate come debito, e un limite di riporto limita quanto si può accumulare.",
+    "rolloverTypeTooltip": "Un avanzo in una categoria di spesa aumenta il budget del periodo successivo. Uno sforamento lo riduce. Il limite di riporto si applica solo agli avanzi.",
     "rolloverCap": "Limite riporto (facoltativo)",
     "rolloverCapPlaceholder": "Nessun limite",
     "flexGroup": "Gruppo flessibile (facoltativo)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Categorie di uscite",
     "incomeCategories": "Categorie di entrate",
     "categorySublabel": "{count} categorie",
-    "rolloverBadge": "+{amount} riportato",
+    "rolloverBadge": "{amount} riportato",
     "underBudgetLabel": "{amount} sotto il budget",
     "overBudgetLabel": "{amount} oltre il budget",
     "carriedForward": "{amount} riportato al periodo successivo",
@@ -151,8 +151,8 @@
     "projected": "{label} (Previsto)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% utilizzato",
-    "paceMarkerTitle": "Ritmo previsto: {percent}%"
+    "ariaLabel": "{percent} utilizzato",
+    "paceMarkerTitle": "Ritmo previsto: {percent}"
   },
   "scenarioPlanner": {
     "title": "Pianificatore scenari ipotetici",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Stimato dall'analisi: {amount}/mese",
     "defaultRolloverType": "Tipo di riporto predefinito",
     "rolloverHint": "Imposta il valore predefinito per tutte le categorie. Puoi personalizzare le singole categorie dopo aver creato il budget.",
-    "rolloverTooltip": "Il budget non utilizzato di una categoria viene riportato al periodo successivo invece di essere azzerato. Le spese eccessive non vengono mai riportate come debito, e un limite di riporto limita quanto una categoria può accumulare.",
+    "rolloverTooltip": "Un avanzo in una categoria di spesa aumenta il budget del periodo successivo. Uno sforamento lo riduce. Il limite di riporto si applica solo agli avanzi.",
     "rolloverOptions": {
       "NONE": "Nessuno -- Si azzera ogni periodo",
       "MONTHLY": "Mensile -- Riportato ogni mese",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Un obiettivo in percentuale è una quota delle entrate del budget: le entrate ricevute in questo periodo per un budget collegato alle entrate, altrimenti le entrate di base, altrimenti gli importi delle categorie di entrata. Un importo fisso è uguale a ogni periodo.",
       "targetPercent": "Percentuale delle entrate",
       "targetAmount": "Importo per periodo",
-      "carryOver": "Riporta ciò che resta",
-      "carryOverTooltip": "Ciò che resta nella busta alla chiusura di un periodo viene aggiunto al periodo successivo. Una busta in eccesso di spesa non riporta nulla.",
+      "carryOver": "Riporta il saldo",
+      "carryOverTooltip": "Un saldo positivo aumenta la prossima assegnazione alla busta. Un saldo negativo la riduce. Il limite di riporto si applica solo ai saldi positivi.",
       "carryCap": "Limite di riporto (facoltativo)",
       "carryCapPlaceholder": "Nessun limite",
       "save": "Salva",

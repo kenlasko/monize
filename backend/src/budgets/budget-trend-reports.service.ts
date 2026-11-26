@@ -15,18 +15,13 @@ import { roundToDecimals, sumMoney } from "../common/round.util";
 import { reportFigure, reportPlacesOf } from "../common/report-figure";
 import {
   CategorySpending,
+  categoryExpenseActual,
   queryCategorySpending,
   queryCategorySpendingBuckets,
   resolveCategorySpent,
 } from "./budget-spending.util";
 import { BudgetCategory } from "./entities/budget-category.entity";
 
-/**
- * A budget's expense actual over one bucket: the net of its expense
- * categories plus its outgoing transfers, every figure already in the
- * budget's currency, clamped at zero as a whole so a net-refund month shows
- * no spending. `complete` is false while a line had a row with no rate.
- */
 /**
  * Whether one category's figure in `spending` is complete and, when it is not,
  * the pairs with no rate, so the reader learns what to add.
@@ -42,6 +37,7 @@ function lineCompleteness(
   };
 }
 
+/** Signed expense actual plus outgoing transfer funding for one period. */
 function netExpenseActual(
   lines: readonly BudgetCategory[],
   spending: CategorySpending,
@@ -57,7 +53,9 @@ function netExpenseActual(
       .map((bc) => bc.transferAccountId as string),
   );
   const net = sumMoney([
-    ...[...categoryIds].map((id) => -(spending.spendingMap.get(id) ?? 0)),
+    ...[...categoryIds].map((id) =>
+      categoryExpenseActual(spending.spendingMap, id),
+    ),
     ...[...destinations].map((id) => spending.transferSpendingMap.get(id) ?? 0),
   ]);
   const complete =
@@ -65,7 +63,7 @@ function netExpenseActual(
     ![...destinations].some((id) =>
       spending.incompleteTransferAccountIds.has(id),
     );
-  return { actual: Math.max(net, 0), complete };
+  return { actual: net, complete };
 }
 
 @Injectable()
@@ -239,7 +237,7 @@ export class BudgetTrendReportsService {
           | undefined;
 
         if (openSpending) {
-          actual = Math.max(-(openSpending.spendingMap.get(catId) ?? 0), 0);
+          actual = categoryExpenseActual(openSpending.spendingMap, catId);
           completeness = lineCompleteness(openSpending, catId);
         }
 

@@ -84,7 +84,7 @@
     "labelBudgeted": "Bütçelenen",
     "labelSpent": "Harcanan",
     "labelRemaining": "Kalan",
-    "percentUsed": "%{{ percent }} kullanıldı",
+    "percentUsed": "{{ percent }} kullanıldı",
     "topCategories": "En Yüksek Kategoriler",
     "button": "Bütçe Panosunu Görüntüle"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "“{{ group }}” esnek grubu toplam {{ budgeted }} bütçesinin {{ spent }} tutarını kullandı (%{{ percent }}).",
       "incomeTitle": "Gelir beklenenin altında",
       "incomeMessage": "Gerçek geliriniz ({{ actual }}), dönemin bu noktasında beklenen gelirin ({{ expected }}) %{{ ratio }} kadarını oluşturuyor.",
+      "netActivityTitle": "Bütçe hareketleri",
+      "netSpendingMessage": "Net harcama: {{ spent }}. Bütçe: {{ budgeted }}.",
+      "netIncomeMessage": "Net gelir: {{ actual }}. Bugüne kadar beklenen gelir: {{ expected }}.",
       "milestoneTitle": "Bütçe yolunda",
       "milestoneMessage": "Dönemin %{{ progress }} kadarı geçti ve toplam bütçenizin yalnızca %{{ percent }} kadarını kullandınız. Böyle devam edin!",
       "seasonalTitle": "{{ category }} için mevsimsel artış bekleniyor",

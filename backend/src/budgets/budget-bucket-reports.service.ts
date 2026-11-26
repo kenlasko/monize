@@ -10,7 +10,7 @@ import {
   buildBudgetBucketFiguresInput,
   computeBudgetBucketFigures,
 } from "./budget-bucket-figures.util";
-import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
+import { BudgetPeriod } from "./entities/budget-period.entity";
 import { BudgetPeriodBucket } from "./entities/budget-period-bucket.entity";
 
 /** A bucket as the live read exposes it: the figures minus `carryOut`. */
@@ -55,7 +55,7 @@ export class BudgetBucketReportsService {
         ]);
         const decimalPlaces = places.get(budget.currencyCode.toUpperCase());
         const period = await m.getRepository(BudgetPeriod).findOne({
-          where: { budgetId, status: PeriodStatus.OPEN },
+          where: { budgetId, periodStart },
         });
         const bucketIds = (budget.buckets ?? []).map((b) => b.id);
         const rows =

@@ -12,7 +12,7 @@ import {
   BudgetBucketTargetType,
 } from "./entities/budget-bucket.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
-import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
+import { BudgetPeriod } from "./entities/budget-period.entity";
 import { BudgetPeriodBucket } from "./entities/budget-period-bucket.entity";
 import { Currency } from "../currencies/entities/currency.entity";
 import * as dateUtils from "./budget-date.utils";
@@ -184,7 +184,7 @@ describe("BudgetBucketReportsService", () => {
     expect(r.periodEnd).toBe("2026-11-30");
   });
 
-  it("reads carry_in from the open period's bucket rows", async () => {
+  it("reads carry_in from the summary month's bucket rows after an early or late close", async () => {
     periods.findOne.mockResolvedValue({ id: "period-1" });
     periodBuckets.find.mockResolvedValue([
       { bucketId: "b-save", carryIn: 250 },
@@ -194,7 +194,7 @@ describe("BudgetBucketReportsService", () => {
     const r = await service.getBucketStatus("user-1", "budget-1");
 
     expect(periods.findOne).toHaveBeenCalledWith({
-      where: { budgetId: "budget-1", status: PeriodStatus.OPEN },
+      where: { budgetId: "budget-1", periodStart: "2026-11-01" },
     });
     expect(periodBuckets.find).toHaveBeenCalledTimes(1);
     expect(periodBuckets.find.mock.calls[0][0].where.budgetPeriodId).toBe(

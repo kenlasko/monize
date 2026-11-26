@@ -19,6 +19,10 @@ import {
   resolveCategorySpentOrNull,
 } from "../../budgets/budget-spending.util";
 import { getMonthPeriodDates } from "../../budgets/budget-date.utils";
+import {
+  effectiveLineBudget,
+  loadExpenseRolloverIn,
+} from "../../budgets/budget-rollover.util";
 import { ExchangeRateService } from "../../currencies/exchange-rate.service";
 import { ScheduledOccurrenceService } from "../../scheduled-transactions/scheduled-occurrence.service";
 import { PortfolioService } from "../../securities/portfolio.service";
@@ -342,6 +346,7 @@ export class TriviaDailyLoader {
         periodEnd,
         budget.id,
       );
+      const rollover = await loadExpenseRolloverIn(m, budget, periodStart);
       return {
         name: budget.name,
         currency: spending.currency,
@@ -350,7 +355,10 @@ export class TriviaDailyLoader {
           .filter((line) => !line.isIncome)
           .map((line) => ({
             spent: resolveCategorySpentOrNull(line, spending),
-            budgeted: resolveBudgetLineBudgeted(line, false, 0),
+            budgeted: effectiveLineBudget(
+              resolveBudgetLineBudgeted(line, false, 0),
+              rollover.get(line.id),
+            ),
           })),
       };
     });

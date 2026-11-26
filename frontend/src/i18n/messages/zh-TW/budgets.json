@@ -6,14 +6,14 @@
       "WANT": "想要",
       "SAVING": "儲蓄"
     },
-    "target": "目標：{percent}%",
-    "budgeted": "已預算：{percent}% ({amount})"
+    "target": "目標：{percent}",
+    "budgeted": "已預算：{percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "編輯：{name}",
     "budgetAmount": "預算金額",
     "rolloverType": "結轉類型",
-    "rolloverTypeTooltip": "此類別未用完的預算會結轉到下一期，而不是重設。超支絕不會以債務形式結轉，結轉上限則限制最多能累積多少。",
+    "rolloverTypeTooltip": "支出類別的結餘會增加下期預算，超支則會減少下期預算。結轉上限僅適用於結餘。",
     "rolloverCap": "結轉上限（選填）",
     "rolloverCapPlaceholder": "無上限",
     "flexGroup": "彈性群組（選填）",
@@ -138,7 +138,7 @@
     "expenseCategories": "支出類別",
     "incomeCategories": "收入類別",
     "categorySublabel": "{count} 個類別",
-    "rolloverBadge": "+{amount} 結轉",
+    "rolloverBadge": "{amount} 結轉",
     "underBudgetLabel": "低於預算 {amount}",
     "overBudgetLabel": "超出預算 {amount}",
     "carriedForward": "結轉 {amount}",
@@ -151,8 +151,8 @@
     "projected": "{label}（預計）"
   },
   "progressBar": {
-    "ariaLabel": "已使用 {percent}%",
-    "paceMarkerTitle": "預期進度：{percent}%"
+    "ariaLabel": "已使用 {percent}",
+    "paceMarkerTitle": "預期進度：{percent}"
   },
   "scenarioPlanner": {
     "title": "情境規劃器",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "從分析估算：{amount}/月",
     "defaultRolloverType": "預設結轉類型",
     "rolloverHint": "這將為所有類別設定預設值。建立預算後，您可以自訂各個類別。",
-    "rolloverTooltip": "某類別未用完的預算會結轉到下一期，而不是重設。超支絕不會以債務形式結轉，結轉上限則限制該類別最多能累積多少。",
+    "rolloverTooltip": "支出類別的結餘會增加下期預算，超支則會減少下期預算。結轉上限僅適用於結餘。",
     "rolloverOptions": {
       "NONE": "無 -- 每期重置",
       "MONTHLY": "每月 -- 每月延續",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "百分比目標是預算收入的一定比例：連結收入的預算為本期已收到的收入，否則為基本收入，再否則為收入類別的金額。固定金額每期相同。",
       "targetPercent": "收入百分比",
       "targetAmount": "每期金額",
-      "carryOver": "結轉剩餘金額",
-      "carryOverTooltip": "期間結束時資金桶中剩餘的金額會加到下一期。超支的資金桶不會結轉任何金額。",
+      "carryOver": "結轉餘額",
+      "carryOverTooltip": "餘額為正時會增加此資金桶的下期分配金額，餘額為負時則會減少下期分配金額。結轉上限僅適用於正餘額。",
       "carryCap": "結轉上限（選填）",
       "carryCapPlaceholder": "無上限",
       "save": "儲存",

@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Votre dernière dépense chez {sincePayeeName} remonte au {sincePayeeDay}, il y a {sincePayeeDays}.",
       "activityBillsDueThisWeek": "Factures à échéance dans les sept prochains jours : {billsDueCount}, pour un total de {billsDueTotal}.",
       "activityNextBill": "Votre prochaine facture est {nextBillName}, de {nextBillAmount}, à payer le {nextBillDate}.",
-      "spendingBudgetPace": "Vous avez utilisé {budgetUsedPercent} de votre budget {budgetName} ({budgetSpent} sur {budgetTotal}), et {budgetMonthPercent} du mois est écoulé.",
+      "spendingBudgetPace": "{budgetName} — Dépenses nettes : {budgetSpent} ({budgetUsedPercent}). Budget : {budgetTotal}. {budgetMonthPercent} du mois écoulé.",
       "investmentsTopMoverUp": "Votre plus forte variation le {moverSession} est {moverSymbol}, en hausse de {moverPercent}, ce qui a ajouté {moverValueChange} à votre position.",
       "investmentsTopMoverDown": "Votre plus forte variation le {moverSession} est {moverSymbol}, en baisse de {moverPercent}, ce qui a retiré {moverValueChange} de votre position.",
       "activityAnniversary": "Cette semaine, cela fait {anniversaryYears} que vous avez enregistré votre première transaction dans Monize, le {anniversaryFirstDate}.",
@@ -272,8 +272,8 @@
         "c": "À payer le {nextBillDate}, votre prochaine facture est {nextBillName}, de {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "{budgetMonthPercent} du mois est écoulé, et vous avez dépensé {budgetSpent} de votre budget {budgetName} de {budgetTotal}, soit {budgetUsedPercent}.",
-        "c": "Votre budget {budgetName} est utilisé à {budgetUsedPercent} ({budgetSpent} sur {budgetTotal}), et {budgetMonthPercent} du mois est passé."
+        "b": "{budgetName} — Budget : {budgetTotal}. Dépenses nettes : {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} du mois écoulé.",
+        "c": "{budgetName} — {budgetMonthPercent} du mois écoulé. Budget : {budgetTotal}. Dépenses nettes : {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSymbol} a été la plus forte variation de votre portefeuille le {moverSession} : en hausse de {moverPercent}, ce qui a ajouté {moverValueChange} à votre position.",

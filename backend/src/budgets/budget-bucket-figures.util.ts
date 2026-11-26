@@ -84,6 +84,8 @@ export interface BudgetBucketFigures {
 
 /** One budget line's figures for a period, keyed by the line's id. */
 export interface BudgetBucketLineRow {
+  /** The allocation before line rollover, when the live row also received carry. */
+  planned?: number;
   budgetCategoryId: string;
   isIncome: boolean;
   budgeted: number;
@@ -125,7 +127,7 @@ export function buildBudgetBucketFiguresInput(
   const lines = source.rows.map((row) => ({
     bucketId: bucketIdByLine.get(row.budgetCategoryId) ?? null,
     isIncome: row.isIncome,
-    budgeted: row.budgeted,
+    budgeted: row.planned ?? row.budgeted,
     spent: row.spent,
   }));
   return {
@@ -171,10 +173,9 @@ function carryOutOf(
   decimals: number,
 ): number {
   if (!bucket.carryOver || allocated === null || available === null) return 0;
-  const carried = Math.max(available, 0);
   return bucket.carryCap === null
-    ? carried
-    : roundMoney(Math.min(carried, bucket.carryCap), decimals);
+    ? available
+    : roundMoney(Math.min(available, bucket.carryCap), decimals);
 }
 
 export function computeBudgetBucketFigures(

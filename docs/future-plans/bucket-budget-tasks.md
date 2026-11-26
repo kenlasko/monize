@@ -78,7 +78,7 @@ Acceptance: `budget-buckets.service.spec.ts` covers every 6.4 refusal and truth 
 Files: new `backend/src/budgets/budget-bucket-figures.util.ts` and spec; new `backend/src/budgets/budget-bucket-reports.service.ts` and spec; `budget-reports.service.ts` (delegating method); `budgets.controller.ts` and spec; `budgets.module.ts`; `docs/system-invariants.md` and `docs/verification-contract.md` (INV-BUDGET-001 and INV-BUDGET-002, new "Budgets" section and matrix rows).
 
 - `computeBudgetBucketFigures(input)` is pure: buckets, the line breakdown rows with each line's `bucketId`, the bucket income inputs (`incomeLinked`, `baseIncome`, income lines' budgeted sum, actual income), `carriedIn` per bucket, the currency's money decimals. It returns the 6.5 shape minus the period fields, plus `carryOut` per bucket. Definitions: design section 4.
-- The service reads the line breakdown through `BudgetsService.getSummary` (no actuals query of its own), reads `carry_in` from the open period's `budget_period_buckets` rows (none before B4: every `carriedIn` is 0), and calls the function.
+- The service reads the line breakdown through `BudgetsService.getSummary` (no actuals query of its own), reads `carry_in` from the reported period's `budget_period_buckets` rows (none before B4: every `carriedIn` is 0), and calls the function.
 
 Acceptance: the util spec asserts truth tables A, B, C and the section 8 examples as literal numbers; `invariant-catalog-parity.spec.ts` and `doc-paths.spec.ts` green.
 
@@ -86,7 +86,7 @@ Acceptance: the util spec asserts truth tables A, B, C and the section 8 example
 
 Files: `backend/src/budgets/budget-period.service.ts` and its specs (`budget-period.service.spec.ts`, `budget-period-lifecycle.spec.ts`); `budget-period-cron.service.ts` only if its call signature must change; `docs/system-invariants.md` and `docs/verification-contract.md` (INV-BUDGET-003).
 
-- `closePeriod`: inside the existing transaction and lock, after the line actuals, build the same inputs as the live read from the close's own actuals and call `computeBudgetBucketFigures`; upsert one `budget_period_buckets` row per current bucket with the frozen columns of 6.3; pass each positive `carryOut` to the next period's creation.
+- `closePeriod`: inside the existing transaction and lock, after the line actuals, build the same inputs as the live read from the close's own actuals and call `computeBudgetBucketFigures`; upsert one `budget_period_buckets` row per current bucket with the frozen columns of 6.3; pass each nonzero `carryOut` to the next period's creation.
 - `createPeriodForBudget`: accepts an optional bucket carry map and inserts `carry_in` rows (with `bucket_name`, `target_type`, `target_value` as they are now) only when it won the `ON CONFLICT` claim, exactly as it does for lines.
 - The period detail read returns `periodBuckets`.
 - A budget with no buckets writes no rows and behaves as before.

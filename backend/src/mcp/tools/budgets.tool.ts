@@ -27,22 +27,19 @@ export class McpBudgetsTools {
         title: "Budget status",
         annotations: READ_ONLY,
         description:
-          "Period budget versus actuals by category, velocity, safe daily spend " +
-          "and health score. Unpriced upcoming bills make " +
-          "`velocity.safeDailySpend` null and `upcomingBillsComplete` false.",
+          "Category budgets, actuals, pace and health score. Unpriced bills: " +
+          "upcomingBillsComplete=false, safeDailySpend=null.",
         inputSchema: z.object({
           period: z
             .string()
             .max(20)
             .optional()
-            .describe(
-              "'CURRENT' (default), 'PREVIOUS', or a specific YYYY-MM month.",
-            ),
+            .describe("CURRENT (default), PREVIOUS or YYYY-MM."),
           budgetName: z
             .string()
             .max(100)
             .optional()
-            .describe("Defaults to the first active budget."),
+            .describe("Default: first active budget."),
         }),
         outputSchema: getBudgetStatusOutput,
       },

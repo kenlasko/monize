@@ -6,14 +6,14 @@
       "WANT": "Nhu cầu muốn có",
       "SAVING": "Tiết kiệm"
     },
-    "target": "Mục tiêu: {percent}%",
-    "budgeted": "Đã lập ngân sách: {percent}% ({amount})"
+    "target": "Mục tiêu: {percent}",
+    "budgeted": "Đã lập ngân sách: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Chỉnh sửa: {name}",
     "budgetAmount": "Số tiền ngân sách",
     "rolloverType": "Loại chuyển tiếp",
-    "rolloverTypeTooltip": "Ngân sách chưa dùng của danh mục này được chuyển sang kỳ tiếp theo thay vì đặt lại. Chi tiêu vượt mức không bao giờ được chuyển tiếp dưới dạng nợ, và Giới hạn chuyển tiếp hạn chế số tiền có thể tích lũy.",
+    "rolloverTypeTooltip": "Số dư dương của một danh mục chi tiêu làm tăng ngân sách kỳ sau. Chi vượt mức làm giảm ngân sách kỳ sau. Hạn mức chuyển sang kỳ sau chỉ áp dụng cho phần dư.",
     "rolloverCap": "Giới hạn chuyển tiếp (tùy chọn)",
     "rolloverCapPlaceholder": "Không giới hạn",
     "flexGroup": "Nhóm linh hoạt (tùy chọn)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Danh mục chi tiêu",
     "incomeCategories": "Danh mục thu nhập",
     "categorySublabel": "{count} danh mục",
-    "rolloverBadge": "+{amount} chuyển tiếp",
+    "rolloverBadge": "{amount} chuyển tiếp",
     "underBudgetLabel": "{amount} dưới ngân sách",
     "overBudgetLabel": "{amount} vượt ngân sách",
     "carriedForward": "{amount} chuyển sang kỳ sau",
@@ -151,8 +151,8 @@
     "projected": "{label} (Dự báo)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% đã dùng",
-    "paceMarkerTitle": "Tiến độ dự kiến: {percent}%"
+    "ariaLabel": "{percent} đã dùng",
+    "paceMarkerTitle": "Tiến độ dự kiến: {percent}"
   },
   "scenarioPlanner": {
     "title": "Trình lập kế hoạch giả định",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Ước tính từ phân tích: {amount}/tháng",
     "defaultRolloverType": "Loại chuyển tiếp mặc định",
     "rolloverHint": "Đây là mặc định cho tất cả danh mục. Bạn có thể tùy chỉnh từng danh mục sau khi tạo ngân sách.",
-    "rolloverTooltip": "Ngân sách chưa dùng của một danh mục được chuyển sang kỳ tiếp theo thay vì đặt lại. Chi tiêu vượt mức không bao giờ được chuyển tiếp dưới dạng nợ, và Giới hạn chuyển tiếp hạn chế số tiền một danh mục có thể tích lũy.",
+    "rolloverTooltip": "Số dư dương của một danh mục chi tiêu làm tăng ngân sách kỳ sau. Chi vượt mức làm giảm ngân sách kỳ sau. Hạn mức chuyển sang kỳ sau chỉ áp dụng cho phần dư.",
     "rolloverOptions": {
       "NONE": "Không có -- Đặt lại mỗi kỳ",
       "MONTHLY": "Hàng tháng -- Chuyển tiếp mỗi tháng",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Mục tiêu theo phần trăm là một phần thu nhập của ngân sách: thu nhập nhận được trong kỳ với ngân sách gắn với thu nhập, nếu không thì thu nhập cơ sở, nếu không nữa thì số tiền của các danh mục thu nhập. Số tiền cố định giống nhau mỗi kỳ.",
       "targetPercent": "Phần trăm thu nhập",
       "targetAmount": "Số tiền mỗi kỳ",
-      "carryOver": "Chuyển tiếp phần còn lại",
-      "carryOverTooltip": "Phần còn lại trong hũ khi kỳ kết thúc được cộng vào kỳ sau. Hũ chi vượt mức không chuyển tiếp gì.",
+      "carryOver": "Chuyển số dư sang kỳ sau",
+      "carryOverTooltip": "Số dư dương làm tăng số tiền phân bổ cho hũ ở kỳ sau. Số dư âm làm giảm số tiền đó. Hạn mức chuyển sang kỳ sau chỉ áp dụng cho số dư dương.",
       "carryCap": "Giới hạn chuyển tiếp (tùy chọn)",
       "carryCapPlaceholder": "Không giới hạn",
       "save": "Lưu",

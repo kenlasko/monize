@@ -84,7 +84,7 @@
     "labelBudgeted": "Gebudgetteerd",
     "labelSpent": "Uitgegeven",
     "labelRemaining": "Resterend",
-    "percentUsed": "{{ percent }}% gebruikt",
+    "percentUsed": "{{ percent }} gebruikt",
     "topCategories": "Topcategorieën",
     "button": "Budget-dashboard bekijken"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "De flexgroep ‘{{ group }}’ heeft {{ spent }} van het gezamenlijke budget van {{ budgeted }} gebruikt ({{ percent }}%).",
       "incomeTitle": "Inkomen lager dan verwacht",
       "incomeMessage": "Je werkelijke inkomen ({{ actual }}) bedraagt {{ ratio }}% van het verwachte inkomen ({{ expected }}) op dit moment in de periode.",
+      "netActivityTitle": "Budgetactiviteit",
+      "netSpendingMessage": "Netto-uitgaven: {{ spent }}. Budget: {{ budgeted }}.",
+      "netIncomeMessage": "Netto-inkomsten: {{ actual }}. Verwachte inkomsten tot nu toe: {{ expected }}.",
       "milestoneTitle": "Budget op schema",
       "milestoneMessage": "{{ progress }}% van de periode is verstreken en je hebt pas {{ percent }}% van je totale budget gebruikt. Ga zo door!",
       "seasonalTitle": "Seizoenspiek verwacht voor {{ category }}",

@@ -24,6 +24,7 @@ import {
   queryCategorySpending,
   queryCategorySpendingBuckets,
   resolveCategorySpent,
+  categoryExpenseActual,
   resolveOutsideTransferIncomeAggregate,
   isTransferIncomeLine,
   budgetTransfersInAsIncome,
@@ -203,9 +204,9 @@ export class BudgetHealthReportsService {
           // A category with a row that had no rate has no known actual: it is
           // left out of the score rather than scored on its converted part.
           if (openSpending.incompleteCategoryIds.has(pc.categoryId)) continue;
-          actual = Math.max(
-            -(openSpending.spendingMap.get(pc.categoryId) ?? 0),
-            0,
+          actual = categoryExpenseActual(
+            openSpending.spendingMap,
+            pc.categoryId,
           );
         }
 

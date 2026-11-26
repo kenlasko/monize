@@ -75,6 +75,16 @@ describe.each([
   ['Folio', BudgetCategoryListFolio],
   ['Pebble', BudgetCategoryListPebble],
 ])('BudgetCategoryList%s', (_n, Variant) => {
+  it('shows the carried deficit without a percentage or pace marker', () => {
+    const category = { ...list.rows[0].category, budgeted: -100, spent: 120, remaining: -220, percentUsed: 0 };
+    render(<Variant {...list} rows={[{ category }]} />);
+
+    expect(screen.getByText(/\$220\.00/)).toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('pace-marker')).not.toBeInTheDocument();
+  });
+
   it('shows the line and opens it from a real button', async () => {
     const onCategoryClick = vi.fn();
     render(<Variant {...list} onCategoryClick={onCategoryClick} />);

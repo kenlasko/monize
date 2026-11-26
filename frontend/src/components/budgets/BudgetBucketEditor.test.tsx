@@ -306,7 +306,7 @@ describe('BudgetBucketEditor', () => {
     it('updates a bucket by id, clearing the cap when carry-over is turned off', async () => {
       const handlers = renderPersisted([bucket({ carryCap: 250 })]);
       await click(screen.getByRole('button', { name: 'Edit Savings' }));
-      fireEvent.click(screen.getByRole('switch', { name: 'Carry Over What Is Left' }));
+      fireEvent.click(screen.getByRole('switch', { name: 'Carry Over Balance' }));
       await click(screen.getByRole('button', { name: 'Save Changes' }));
 
       expect(handlers.onUpdate).toHaveBeenCalledWith('b1', {

@@ -196,6 +196,7 @@ describe("BudgetPeriodService", () => {
     };
 
     budgetsService = {
+      invalidateCategoryActuals: jest.fn(),
       findOne: jest.fn().mockResolvedValue(mockBudget),
     };
 
@@ -408,6 +409,9 @@ describe("BudgetPeriodService", () => {
       const result = await service.closePeriod("user-1", "budget-1");
 
       expect(result.status).toBe(PeriodStatus.CLOSED);
+      expect(budgetsService.invalidateCategoryActuals).toHaveBeenCalledWith(
+        "budget-1",
+      );
       // The period categories are loaded with their budget line, which carries
       // the rollover type `computeRollover` reads.
       expect(periodsRepository.findOne.mock.calls[1][0].relations).toContain(
@@ -426,6 +430,46 @@ describe("BudgetPeriodService", () => {
       // closePeriod writes through the scoped transaction's EntityManager.
       expect(scopedDataSource.transaction).toHaveBeenCalled();
       expect(scopedManager.save).toHaveBeenCalled();
+    });
+
+    it("carries a newly added expense line's first shortfall even when the period opened without it", async () => {
+      const line = {
+        ...mockBudgetCategory,
+        amount: 100,
+        rolloverType: RolloverType.MONTHLY,
+      };
+      budgetsService.findOne.mockResolvedValue({
+        ...mockBudget,
+        categories: [line],
+      });
+      periodsRepository.findOne.mockResolvedValue({
+        ...mockPeriod,
+        periodCategories: [],
+      });
+      transactionsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest
+            .fn()
+            .mockResolvedValue([spendingRow("cat-1", "-300")]),
+        }),
+      );
+      const closed = await service.closePeriod("user-1", "budget-1");
+      expect(closed.periodCategories).toEqual([
+        expect.objectContaining({
+          budgetCategoryId: line.id,
+          budgetedAmount: 100,
+          effectiveBudget: 100,
+          actualAmount: 300,
+          rolloverOut: -200,
+        }),
+      ]);
+      expect(periodCategoriesRepository.save).toHaveBeenCalledWith([
+        expect.objectContaining({
+          budgetCategoryId: line.id,
+          rolloverIn: -200,
+          effectiveBudget: -100,
+        }),
+      ]);
     });
 
     it("throws BadRequestException when no open period", async () => {
@@ -796,7 +840,7 @@ describe("BudgetPeriodService", () => {
       expect(save).not.toHaveProperty("carryIn");
 
       // INV-BUDGET-003: the next period's carry_in is the closed carry_out,
-      // and only the bucket with a positive carry gets a row at creation.
+      // and only the bucket with a nonzero carry gets a row at creation.
       expect(createdRows()).toEqual([
         {
           budgetPeriodId: "new-period",
@@ -852,7 +896,7 @@ describe("BudgetPeriodService", () => {
       ]);
     });
 
-    it("carries nothing from an overspent carry-over bucket (row C5)", async () => {
+    it("carries the shortfall from an overspent bucket (row C5)", async () => {
       // Everyday with carry on: 1200 + 0 - 1350 = -150.
       arrangeClose({
         buckets: [{ ...everyday, carryOver: true }],
@@ -864,9 +908,11 @@ describe("BudgetPeriodService", () => {
       expect(written("b-every")).toMatchObject({
         allocatedAmount: 1200,
         actualAmount: 1350,
-        carryOut: 0,
+        carryOut: -150,
       });
-      expect(createdRows()).toEqual([]);
+      expect(createdRows()).toEqual([
+        expect.objectContaining({ bucketId: "b-every", carryIn: -150 }),
+      ]);
     });
 
     it("carries nothing when exactly nothing is left (row C6)", async () => {
@@ -1075,7 +1121,7 @@ describe("BudgetPeriodService", () => {
       buckets: [fixed, savings],
     };
 
-    it("inserts a carry_in row only for a bucket with a positive carry", async () => {
+    it("inserts a carry_in row only for a bucket with a nonzero carry", async () => {
       await service.createPeriodForBudget(
         budgetWithBuckets,
         undefined,
@@ -1307,20 +1353,26 @@ describe("BudgetPeriodService", () => {
       expect(result).toBe(50);
     });
 
-    it("returns 0 when actual exceeds budget", () => {
-      const pc = {
-        ...mockPeriodCategory,
-        effectiveBudget: 500,
-        budgetCategory: {
-          ...mockBudgetCategory,
-          rolloverType: RolloverType.MONTHLY,
-        },
-      };
-
-      const result = service.computeRollover(pc, 600);
-
-      expect(result).toBe(0);
-    });
+    it.each([
+      [false, 0, -100],
+      [false, 50, -100],
+      [true, null, 0],
+    ] as const)(
+      "preserves expense debt with cap and retains income behavior (income: %s, cap: %s)",
+      (isIncome, rolloverCap, expected) => {
+        const pc = {
+          ...mockPeriodCategory,
+          effectiveBudget: 500,
+          budgetCategory: {
+            ...mockBudgetCategory,
+            isIncome,
+            rolloverType: RolloverType.MONTHLY,
+            rolloverCap,
+          },
+        };
+        expect(service.computeRollover(pc, 600)).toBe(expected);
+      },
+    );
 
     it("returns 0 when actual equals budget", () => {
       const pc = {

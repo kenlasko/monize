@@ -84,7 +84,7 @@
     "labelBudgeted": "Запланировано",
     "labelSpent": "Потрачено",
     "labelRemaining": "Остаток",
-    "percentUsed": "{{ percent }}% использовано",
+    "percentUsed": "{{ percent }} использовано",
     "topCategories": "Топ категорий",
     "button": "Просмотреть панель бюджета"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "Гибкая группа «{{ group }}» использовала {{ spent }} из общего бюджета {{ budgeted }} ({{ percent }}%).",
       "incomeTitle": "Доход ниже ожидаемого",
       "incomeMessage": "Ваш фактический доход ({{ actual }}) составляет {{ ratio }}% от ожидаемого дохода ({{ expected }}) на данном этапе периода.",
+      "netActivityTitle": "Состояние бюджета",
+      "netSpendingMessage": "Чистые расходы: {{ spent }}. Бюджет: {{ budgeted }}.",
+      "netIncomeMessage": "Чистый доход: {{ actual }}. Ожидаемый доход к текущей дате: {{ expected }}.",
       "milestoneTitle": "Бюджет в пределах плана",
       "milestoneMessage": "Прошло {{ progress }}% периода, а вы использовали лишь {{ percent }}% общего бюджета. Так держать!",
       "seasonalTitle": "Ожидается сезонный рост расходов на категорию «{{ category }}»",

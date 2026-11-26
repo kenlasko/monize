@@ -10776,7 +10776,7 @@ Enforcement         BudgetPeriodService.closePeriod writes both inside its one
                     carry_in 0; a row with a NULL bucket_id (bucket deleted)
                     is left as it is, which is why the write is not an
                     ON CONFLICT on (budget_period_id, bucket_id), where NULLs
-                    are distinct. Each positive carry_out is handed to
+                    are distinct. Each nonzero carry_out is handed to
                     createPeriodForBudget, which inserts the next period's
                     carry_in rows only in the branch that won the
                     ON CONFLICT claim on budget_periods. Outside the close and
@@ -10794,7 +10794,7 @@ Failure response    a second close is NoOpenPeriodError (a skip for the cron)
 Required tests      Present: budget-period.service.spec.ts (truth table C
                     through a mocked close with the section 8 figures; the
                     carry reaching the next period's creation; rows only for a
-                    positive carry and only when the claim was won; a bucket
+                    nonzero carry and only when the claim was won; a bucket
                     created mid-period inserted with carry_in 0; a NULL
                     bucket_id row untouched; no bucket read or write for a
                     budget without buckets), budget-period-lifecycle.spec.ts

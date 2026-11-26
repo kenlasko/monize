@@ -471,7 +471,8 @@ export const getBudgetStatusOutput = toolOutput({
     projectedTotal: num,
     projectedVariance: num,
     daysRemaining: num,
-    paceStatus: str,
+    paceStatus: str.nullable(),
+    projectionMissingRatePairs: z.array(str).optional(),
   }).optional(),
   healthScore: looseObject({ score: num, label: str }).optional(),
   // Not-found branch.

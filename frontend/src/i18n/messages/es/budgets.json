@@ -6,14 +6,14 @@
       "WANT": "Deseos",
       "SAVING": "Ahorros"
     },
-    "target": "Objetivo: {percent}%",
-    "budgeted": "Presupuestado: {percent}% ({amount})"
+    "target": "Objetivo: {percent}",
+    "budgeted": "Presupuestado: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Editar: {name}",
     "budgetAmount": "Monto del presupuesto",
     "rolloverType": "Tipo de traspaso",
-    "rolloverTypeTooltip": "El presupuesto no utilizado de esta categoría se traslada al siguiente período en lugar de reiniciarse. El exceso de gasto nunca se traslada como una deuda, y un Límite de traspaso limita cuánto se puede acumular.",
+    "rolloverTypeTooltip": "Un excedente en una categoría de gastos aumenta el presupuesto del siguiente período. Un exceso de gasto lo reduce. El límite de traspaso solo se aplica a los excedentes.",
     "rolloverCap": "Límite de traspaso (opcional)",
     "rolloverCapPlaceholder": "Sin límite",
     "flexGroup": "Grupo flexible (opcional)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Categorías de gastos",
     "incomeCategories": "Categorías de ingresos",
     "categorySublabel": "{count} categorías",
-    "rolloverBadge": "+{amount} traspaso",
+    "rolloverBadge": "{amount} traspaso",
     "underBudgetLabel": "{amount} bajo presupuesto",
     "overBudgetLabel": "{amount} sobre presupuesto",
     "carriedForward": "{amount} trasladado",
@@ -151,8 +151,8 @@
     "projected": "{label} (Proyectado)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% usado",
-    "paceMarkerTitle": "Ritmo esperado: {percent}%"
+    "ariaLabel": "{percent} usado",
+    "paceMarkerTitle": "Ritmo esperado: {percent}"
   },
   "scenarioPlanner": {
     "title": "Planificador de escenarios hipotéticos",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Estimado del análisis: {amount}/mes",
     "defaultRolloverType": "Tipo de traspaso predeterminado",
     "rolloverHint": "Esto establece el predeterminado para todas las categorías. Puedes personalizar categorías individuales después de crear el presupuesto.",
-    "rolloverTooltip": "El presupuesto no utilizado de una categoría se traslada al siguiente período en lugar de reiniciarse. El exceso de gasto nunca se traslada como una deuda, y un Límite de traspaso limita cuánto puede acumular una categoría.",
+    "rolloverTooltip": "Un excedente en una categoría de gastos aumenta el presupuesto del siguiente período. Un exceso de gasto lo reduce. El límite de traspaso solo se aplica a los excedentes.",
     "rolloverOptions": {
       "NONE": "Ninguno -- Se reinicia cada período",
       "MONTHLY": "Mensual -- Se traslada cada mes",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Un objetivo en porcentaje es una parte de los ingresos del presupuesto: los ingresos recibidos en este período en un presupuesto vinculado a ingresos, si no los ingresos base, si no los montos de las categorías de ingresos. Un monto fijo es igual cada período.",
       "targetPercent": "Porcentaje de los ingresos",
       "targetAmount": "Monto por período",
-      "carryOver": "Trasladar lo que sobra",
-      "carryOverTooltip": "Lo que queda en el bolsillo al cerrar un período se suma al siguiente. Un bolsillo con exceso de gasto no traslada nada.",
+      "carryOver": "Traspasar saldo",
+      "carryOverTooltip": "Un saldo positivo aumenta la siguiente asignación del bolsillo. Un saldo negativo la reduce. El límite de traspaso solo se aplica a los saldos positivos.",
       "carryCap": "Límite de traslado (opcional)",
       "carryCapPlaceholder": "Sin límite",
       "save": "Guardar",

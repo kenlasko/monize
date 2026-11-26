@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { budgetsApi } from '@/lib/budgets';
 import { DashboardBudgetSummary } from '@/types/budget';
+import { clamp } from '@/lib/clamp';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { WidgetHeading } from './widget-meta';
@@ -103,7 +104,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all ${budgetProgressBarColor(summary.percentUsed)}`}
-            style={{ width: `${Math.min(summary.percentUsed, 100)}%` }}
+            style={{ width: `${clamp(summary.percentUsed, 0, 100)}%` }}
           />
         </div>
       </div>
@@ -138,7 +139,7 @@ export function BudgetStatusWidget({ isLoading: parentLoading }: BudgetStatusWid
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
                     className={`h-1.5 rounded-full ${budgetCategoryBarColor(cat.percentUsed)}`}
-                    style={{ width: `${Math.min(cat.percentUsed, 100)}%` }}
+                    style={{ width: `${clamp(cat.percentUsed, 0, 100)}%` }}
                   />
                 </div>
               </div>

@@ -100,7 +100,7 @@ describe('BudgetBucketForm', () => {
     expect(screen.getByRole('button', { name: 'Percent of Income', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Fixed Amount', pressed: false })).toBeInTheDocument();
     expect(screen.getByLabelText('Percent of Income')).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: 'Carry Over What Is Left' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Carry Over Balance' })).toBeInTheDocument();
   });
 
   it('submits a new percent bucket as a draft', async () => {
@@ -139,13 +139,13 @@ describe('BudgetBucketForm', () => {
     fireEvent.change(screen.getByLabelText('Percent of Income'), { target: { value: '20' } });
 
     expect(screen.queryByLabelText('Carry Cap (optional)')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over What Is Left' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over Balance' }));
     fireEvent.change(screen.getByLabelText('Carry Cap (optional)'), { target: { value: '300' } });
 
     // Off and on again: the cap typed before does not come back.
-    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over What Is Left' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over Balance' }));
     expect(screen.queryByLabelText('Carry Cap (optional)')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over What Is Left' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over Balance' }));
     expect(screen.getByLabelText('Carry Cap (optional)')).toHaveValue('');
 
     await submit();
@@ -156,7 +156,7 @@ describe('BudgetBucketForm', () => {
     const { onSubmit } = renderForm();
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Savings' } });
     fireEvent.change(screen.getByLabelText('Percent of Income'), { target: { value: '20' } });
-    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over What Is Left' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Carry Over Balance' }));
     fireEvent.change(screen.getByLabelText('Carry Cap (optional)'), { target: { value: '300' } });
     await submit();
 

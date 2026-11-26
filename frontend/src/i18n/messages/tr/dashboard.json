@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "{sincePayeeName} için en son {sincePayeeDay} tarihinde harcama yaptınız, bu {sincePayeeDays} önceydi.",
       "activityBillsDueThisWeek": "Önümüzdeki yedi günde vadesi gelen faturalar: {billsDueCount}, toplam {billsDueTotal}.",
       "activityNextBill": "Sıradaki faturanız {nextBillName}, tutarı {nextBillAmount}, vadesi {nextBillDate}.",
-      "spendingBudgetPace": "Ayın {budgetMonthPercent} kısmı geçerken {budgetName} bütçenizin ({budgetSpent} / {budgetTotal}) {budgetUsedPercent} kısmını kullandınız.",
+      "spendingBudgetPace": "{budgetName} — Net harcama: {budgetSpent} ({budgetUsedPercent}). Bütçe: {budgetTotal}. Ayın geçen kısmı: {budgetMonthPercent}.",
       "investmentsTopMoverUp": "{moverSession} tarihinde en çok hareket eden varlığınız {moverSymbol} oldu, {moverPercent} yükseldi ve pozisyonunuza {moverValueChange} ekledi.",
       "investmentsTopMoverDown": "{moverSession} tarihinde en çok hareket eden varlığınız {moverSymbol} oldu, {moverPercent} düştü ve pozisyonunuzdan {moverValueChange} eksiltti.",
       "activityAnniversary": "Bu hafta, Monize'daki ilk işleminizin ({anniversaryFirstDate}) üzerinden {anniversaryYears} geçmiş oluyor.",
@@ -272,8 +272,8 @@
         "c": "Vadesi {nextBillDate} olan sıradaki faturanız {nextBillName}, tutarı {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "Ayın {budgetMonthPercent} kısmı geçmişken, {budgetName} bütçenizin {budgetTotal} tutarından {budgetSpent} harcadınız; yani {budgetUsedPercent}.",
-        "c": "{budgetName} bütçenizin {budgetUsedPercent} kısmı kullanıldı ({budgetSpent} / {budgetTotal}) ve ayın {budgetMonthPercent} kısmı geçti."
+        "b": "{budgetName} — Bütçe: {budgetTotal}. Net harcama: {budgetSpent} ({budgetUsedPercent}). Ayın geçen kısmı: {budgetMonthPercent}.",
+        "c": "{budgetName} — Ayın geçen kısmı: {budgetMonthPercent}. Bütçe: {budgetTotal}. Net harcama: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSession} tarihinde portföyünüzde en çok hareket eden {moverSymbol} oldu: {moverPercent} yükseldi, pozisyonunuza {moverValueChange} ekledi.",

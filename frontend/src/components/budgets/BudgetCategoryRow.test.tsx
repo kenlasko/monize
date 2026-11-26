@@ -30,6 +30,18 @@ describe('BudgetCategoryRow', () => {
     expect(screen.getByText('70%')).toBeInTheDocument();
   });
 
+  it('shows negative spending and the full amount left after a net refund', () => {
+    const category = {
+      ...baseCategory, budgeted: 100, spent: -50, remaining: 150, percentUsed: -50,
+    };
+
+    render(<BudgetCategoryRow category={category} formatCurrency={mockFormat} />);
+
+    expect(screen.getByText(mockFormat(-50))).toBeInTheDocument();
+    expect(screen.getByText('-50%')).toBeInTheDocument();
+    expect(screen.getByText('$150.00 left')).toBeInTheDocument();
+  });
+
   it('shows remaining amount', () => {
     render(
       <BudgetCategoryRow category={baseCategory} formatCurrency={mockFormat} />,
@@ -52,6 +64,17 @@ describe('BudgetCategoryRow', () => {
 
     expect(screen.getByText('$100.00 over')).toBeInTheDocument();
     expect(screen.getByText('117%')).toBeInTheDocument();
+  });
+
+  it.each([-100, 0])('shows the deficit without a pace or percentage for funding of %s', (budgeted) => {
+    const category = { ...baseCategory, budgeted, spent: 120, remaining: budgeted - 120, percentUsed: 0 };
+    render(<BudgetCategoryRow category={category} formatCurrency={mockFormat} pacePercent={60} />);
+
+    expect(screen.getByText(mockFormat(120))).toHaveClass('text-red-600');
+    expect(screen.getByText(`${mockFormat(120 - budgeted)} over`)).toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    expect(screen.queryByText(/pace/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
   it('shows flex group badge when provided', () => {
