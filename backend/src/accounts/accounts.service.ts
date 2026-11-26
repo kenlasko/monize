@@ -85,6 +85,7 @@ import {
   LEDGER_MOVEMENT_PREDICATE,
   ledgerMovementPredicate,
 } from "../common/ledger-balance.sql";
+import { loadProvisionalCounts } from "../common/provisional-count.util";
 import {
   MortgageType,
   PrepaymentMode,
@@ -137,6 +138,16 @@ export interface NetWorthTotals {
   /** The securities behind `pricesComplete: false`. */
   unpricedSecurityIds: string[];
   unpricedSymbols: string[];
+  /**
+   * How many provisional transfer amounts (Monize's estimates, awaiting the
+   * other account's own import) are inside `netWorth`, `totalAssets` and
+   * `totalLiabilities`: the sum over their accounts, as of the latest month's
+   * end or today. None of the figures changes or is withheld because of them
+   * (`docs/future-plans/provisional-amounts.md` section 6, P5).
+   */
+  provisionalCount: number;
+  assetsProvisionalCount: number;
+  liabilitiesProvisionalCount: number;
 }
 
 /**
@@ -156,6 +167,13 @@ export interface LlmAccountRow {
   balance: number | null;
   /** Equal to `balance` when `valuationComplete`; otherwise the partial sum. */
   knownBalanceSubtotal: number;
+  /**
+   * How many provisional transfer amounts (estimates awaiting the other
+   * account's import) are inside `currentBalance`: rows dated on or before
+   * today. A future-dated leg is in `balance` but not counted (design
+   * section 10): the count speaks for the balance as of today.
+   */
+  provisionalCount: number;
   /** False when a held position had no price or no rate into the account's currency. */
   valuationComplete: boolean;
   currentBalance: number;
@@ -636,6 +654,7 @@ export class AccountsService {
       futureTransactionsSum?: number;
       lastReconciledDate?: string | null;
       unreconciledCount?: number;
+      provisionalCount?: number;
     })[]
   > {
     return withScopedDb(this.dataSource, async (m) => {
@@ -751,6 +770,11 @@ export class AccountsService {
         ],
       );
 
+      // The provisional legs inside each `currentBalance` above: its rows,
+      // so dated on or before today. A future-dated leg is in
+      // `futureTransactionsSum`, not in the balance this counts for.
+      const provisional = await loadProvisionalCounts(m, accountIds, [today]);
+
       // Each account's sums are in its own currency, rounded at its precision.
       const places = await loadCurrencyPlacesForRead(
         m,
@@ -801,6 +825,7 @@ export class AccountsService {
         futureTransactionsSum: futureSumMap.get(account.id) ?? 0,
         lastReconciledDate: lastReconciledMap.get(account.id) ?? null,
         unreconciledCount: unreconciledCountMap.get(account.id) ?? 0,
+        provisionalCount: provisional.of(account.id, today),
       }));
     });
   }
@@ -2080,6 +2105,9 @@ export class AccountsService {
       missingRatePairs: [],
       assetsFxComplete: true,
       liabilitiesFxComplete: true,
+      provisionalCount: 0,
+      assetsProvisionalCount: 0,
+      liabilitiesProvisionalCount: 0,
     };
 
     const pairs = new Set(month.missingRatePairs);
@@ -2128,15 +2156,23 @@ export class AccountsService {
       missingRatePairs: [...pairs].sort(),
       unpricedSecurityIds: [...unpriced.keys()].sort(),
       unpricedSymbols: [...unpriced.values()].sort(),
+      provisionalCount: month.provisionalCount,
+      assetsProvisionalCount: month.assetsProvisionalCount,
+      liabilitiesProvisionalCount: month.liabilitiesProvisionalCount,
     };
   }
 
   /**
    * Get account summary statistics for a user
    */
-  async getSummary(
-    userId: string,
-  ): Promise<{ totalAccounts: number; totalBalance: number } & NetWorthTotals> {
+  async getSummary(userId: string): Promise<
+    {
+      totalAccounts: number;
+      totalBalance: number;
+      /** The provisional legs inside `totalBalance`: the sum over its accounts. */
+      totalBalanceProvisionalCount: number;
+    } & NetWorthTotals
+  > {
     // totalAccounts counts open accounts. totalBalance also sums a closed
     // account that still holds a balance (`accountCarriesBalance`), which net
     // worth counts too; a closed account at zero adds nothing to either. Every
@@ -2173,6 +2209,12 @@ export class AccountsService {
     return {
       totalAccounts: accounts.length,
       totalBalance,
+      // Each balance's count is over the rows inside its `currentBalance`
+      // (`findAll`), so the total's is their sum.
+      totalBalanceProvisionalCount: balanceAccounts.reduce(
+        (sum, account) => sum + (account.provisionalCount ?? 0),
+        0,
+      ),
       ...totals,
     };
   }
@@ -2387,6 +2429,7 @@ export class AccountsService {
         subType: a.accountSubType ?? null,
         balance,
         knownBalanceSubtotal,
+        provisionalCount: a.provisionalCount ?? 0,
         valuationComplete: marketValueOf(a)?.valuationComplete ?? true,
         currentBalance,
         creditLimit: a.creditLimit ?? null,
