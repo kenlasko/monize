@@ -53,9 +53,7 @@
     "closeWithHoldings": "無法關閉仍持有證券的投資帳戶（{{ symbols }}）；請先賣出或轉出。",
     "notClosed": "科目尚未關閉",
     "modifyBalanceClosed": "無法修改已關閉科目的結餘",
-    "deleteWithTransactions": "無法刪除有 {{ transactionCount }} 筆交易的科目。請改為關閉科目。",
-    "deleteWithInvestmentTransactions": "無法刪除有 {{ investmentTransactionCount }} 筆投資交易的科目。請改為關閉科目。",
-    "deleteWithScheduledTransactions": "無法刪除被 {{ scheduledTransactionCount }} 筆排程交易使用的科目。請先從這些帳單與存款中移除該科目，或改為關閉科目。",
+    "inUse": "無法刪除帳戶「{{ name }}」：它仍被 {{ summary }} 使用。請先移除這些項目，或改為關閉該帳戶。",
     "invalidDateFormat": "無效的 dateFormat",
     "useFavouriteUpdateEndpoint": "請使用科目更新端點來變更我的最愛",
     "invalidExportFormat": "格式必須為 csv 或 qif",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "此貸款變更無法自動復原。請編輯貸款以改回。",
     "nothingToUndo": "沒有可復原的操作",
     "nothingToRedo": "沒有可重做的操作",
+    "undoCreateInUse": "無法復原建立「{{ name }}」：它現在被 {{ summary }} 使用。請先移除這些項目。",
+    "redoDeleteInUse": "無法重做刪除「{{ name }}」：它現在被 {{ summary }} 使用。請先移除這些項目。",
     "undoNotSupportedForEntityType": "不支援復原實體類型：{{ entityType }}",
     "unsupportedTransactionAction": "不支援的交易操作：{{ action }}",
     "undoTransactionGone": "無法復原：交易已不存在",
@@ -353,13 +353,14 @@
     "billCustomFrequency": "薪資扣款規則需要固定頻率的帳單；此帳單依自訂排程重複。"
   },
   "categories": {
+    "reassignOwnerOnly": "只有擁有者才能將交易移至其他類別",
     "notFound": "找不到 ID 為 {{ id }} 的類別",
     "cannotModifySystem": "無法修改系統類別",
     "selfParent": "類別不能以自身為父類別",
     "circularParent": "偵測到循環父類別參照",
     "cannotDeleteSystem": "無法刪除系統類別",
     "hasSubcategories": "無法刪除有子類別的類別。請先刪除或重新指派子類別。",
-    "hasTransactions": "無法刪除有 {{ count }} 筆交易參照的類別。請先重新指派交易。",
+    "inUse": "無法刪除類別「{{ name }}」：它仍被 {{ summary }} 使用。請先重新指派或移除這些項目。",
     "alreadyHasCategories": "無法匯入預設值：使用者已有類別。請先刪除現有類別或重新開始。"
   },
   "common": {
@@ -521,6 +522,9 @@
     "internal": "伺服器內部錯誤"
   },
   "import": {
+    "duplicatesChanged": "可能重複項目在檢查後已有變更。未匯入任何內容；請重新檢查。",
+    "duplicateDecisionRepeated": "檔案中的一列對其可能重複項目只能有一個決定。",
+    "duplicateActionNotAllowed": "已對帳的交易無法合併或取代，轉帳或分割交易無法取代。未匯入任何內容。",
     "accountClosed": "此帳戶已關閉。請重新開啟或選擇其他帳戶。",
     "noAccountBlocks": "在 QIF 檔案中找不到科目區塊。此檔案可能不是多科目匯出。",
     "accountTypeRequired": "匯入前請為以下科目選擇科目類型：{{ accounts }}",
@@ -564,10 +568,7 @@
     "mnyJobNotFound": "找不到匯入工作",
     "mnyFileTooLarge": "這個 Money 檔案超過 {{ limit }} MB 的匯入上限。",
     "noRateForSplitTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：一筆分割行轉帳到另一種貨幣的帳戶。請為該貨幣對與日期新增匯率，然後重新匯入。",
-    "noRateForTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：轉帳的另一個帳戶使用另一種貨幣。請為該貨幣對和日期新增匯率，然後重新匯入。",
-    "duplicatesChanged": "可能重複項目在檢查後已有變更。未匯入任何內容；請重新檢查。",
-    "duplicateDecisionRepeated": "檔案中的一列對其可能重複項目只能有一個決定。",
-    "duplicateActionNotAllowed": "已對帳的交易無法合併或取代，轉帳或分割交易無法取代。未匯入任何內容。"
+    "noRateForTransfer": "{{ date }} 沒有 {{ pair }} 的匯率：轉帳的另一個帳戶使用另一種貨幣。請為該貨幣對和日期新增匯率，然後重新匯入。"
   },
   "monteCarlo": {
     "scenarioNotFound": "找不到情境 {{ id }}",
@@ -633,6 +634,7 @@
     "requiresBrokerageAccount": "定期投資交易需要經紀科目",
     "bondSeriesNotNameable": "連結到債券計畫的證券，其排程中的{{ action }}無法指明其份額所屬的債券系列。請將其記錄為交易並選擇系列，或排程一筆買入（BUY），它會採用當日在售的系列。",
     "notFound": "找不到 ID 為 {{ id }} 的定期交易",
+    "inUse": "無法刪除排程交易「{{ name }}」：它仍被 {{ summary }} 使用。請先移除這些項目。",
     "occurrenceAlreadyPosted": "此次記帳已完成。",
     "noOccurrencesLeft": "此排程已沒有可記帳或略過的期次。",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
@@ -774,8 +776,7 @@
     "notFoundBySymbol": "找不到代碼為 {{ symbol }} 的證券",
     "cannotDeactivateWithHoldings": "無法停用有有效持倉的證券。請先賣出所有股份。",
     "inactiveSecurityLocked": "{{ symbol }} 已停用，因此無法新增、修改或刪除其投資交易。請先在證券頁面啟用 {{ symbol }}。",
-    "cannotDeleteWithHoldings": "無法刪除有持倉的證券。請先移除所有持倉。",
-    "cannotDeleteWithTransactions": "無法刪除有投資交易的證券。請先刪除所有相關交易。",
+    "inUse": "無法刪除證券「{{ symbol }}」：它仍被 {{ summary }} 使用。請先移除或重新指派這些項目。",
     "holdingNotFound": "找不到 ID 為 {{ id }} 的持倉",
     "insufficientShares": "股份不足：無法減少 {{ reduceBy }}，目前僅持有 {{ currentQuantity }}",
     "splitRatioMustBePositive": "分割比例必須大於零",
@@ -1028,6 +1029,10 @@
     "needsPreview": "請開啟此銀行帳戶的預覽，並在其被自動同步之前確認首次匯入。",
     "selectionNotNew": "所選的某筆交易不是銀行資料中的新紀錄。未匯入任何內容；請重新預覽。",
     "selectionOverlap": "一筆交易不能同時被匯入並加入例外清單。",
+    "selectionConflict": "一筆交易只能有一個決定：匯入、加入例外、合併、保留您的或取代您的。",
+    "duplicateNeedsPreview": "關於可能重複項目的決定需要顯示它的那次預覽。未匯入任何內容；請重新預覽。",
+    "selectionNotDuplicate": "選擇合併、保留或取代的交易已不再是可能重複項目。未匯入任何內容；請重新預覽。",
+    "duplicateActionNotAllowed": "已對帳的交易無法合併或取代，轉帳或分割交易無法取代。未匯入任何內容；請保留它，或將銀行的記錄匯入到它旁邊。",
     "nothingToUpdate": "請傳送 autoSync, notifySuccess 或 tagOperationType 以變更銀行連線。",
     "simplefinCredentialsMissing": "請先連接 SimpleFIN，再同步帳戶。",
     "simplefinAccessInvalid": "SimpleFIN 傳回無效的存取 URL。請在 SimpleFIN Bridge 中產生新的設定權杖。",
@@ -1045,11 +1050,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge 需要有效訂閱。請在 SimpleFIN Bridge 中檢查帳單。",
     "simplefinReadFailed": "SimpleFIN 未能提供完整的帳戶資料。請在 SimpleFIN Bridge 中檢查連線。",
     "simplefinQuotaExhausted": "SimpleFIN 請求配額已用盡。請等待配額恢復後重試目前批次。",
-    "simplefinClaimNotSent": "SimpleFIN 暫時無法使用。設定權杖尚未傳送；請稍後使用同一權杖重試。",
-    "selectionConflict": "一筆交易只能有一個決定：匯入、加入例外、合併、保留您的或取代您的。",
-    "duplicateNeedsPreview": "關於可能重複項目的決定需要顯示它的那次預覽。未匯入任何內容；請重新預覽。",
-    "selectionNotDuplicate": "選擇合併、保留或取代的交易已不再是可能重複項目。未匯入任何內容；請重新預覽。",
-    "duplicateActionNotAllowed": "已對帳的交易無法合併或取代，轉帳或分割交易無法取代。未匯入任何內容；請保留它，或將銀行的記錄匯入到它旁邊。"
+    "simplefinClaimNotSent": "SimpleFIN 暫時無法使用。設定權杖尚未傳送；請稍後使用同一權杖重試。"
   },
   "warranties": {
     "notFound": "找不到 ID 為 {{ id }} 的保固",
@@ -1121,7 +1122,22 @@
       "loanOverpaymentPayee": "貸款帳戶（額外還款收款方）",
       "sharedPeople": "共享支出成員",
       "sharedPostings": "共享支出記錄",
-      "rules": "規則"
+      "rules": "規則",
+      "budgetLines": "預算列",
+      "budgetPeriods": "預算期間",
+      "payrollDeductionRules": "薪資扣款規則",
+      "loanFees": "貸款費用",
+      "loanAccounts": "貸款帳戶",
+      "customReports": "自訂報表",
+      "subcategories": "子類別",
+      "holdings": "持倉",
+      "investmentTransactions": "投資交易",
+      "gemStrategies": "GEM 策略",
+      "securityDocuments": "證券文件",
+      "bankSyncLinks": "銀行同步連結",
+      "sharedIntegrations": "共享支出整合",
+      "linkedAccounts": "已連結帳戶",
+      "securities": "證券"
     }
   }
 }

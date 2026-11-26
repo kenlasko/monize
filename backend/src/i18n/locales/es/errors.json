@@ -53,9 +53,7 @@
     "closeWithHoldings": "No se puede cerrar una cuenta de inversión que todavía tiene valores ({{ symbols }}); véndelos o transfiérelos primero.",
     "notClosed": "La cuenta no está cerrada",
     "modifyBalanceClosed": "No se puede modificar el saldo de una cuenta cerrada",
-    "deleteWithTransactions": "No se puede eliminar una cuenta con {{ transactionCount }} transacción(es). Cierra la cuenta en su lugar.",
-    "deleteWithInvestmentTransactions": "No se puede eliminar una cuenta con {{ investmentTransactionCount }} transacción(es) de inversión. Cierra la cuenta en su lugar.",
-    "deleteWithScheduledTransactions": "No se puede eliminar una cuenta usada por {{ scheduledTransactionCount }} transacción(es) programada(s). Quita primero la cuenta de esas facturas y depósitos, o cierra la cuenta en su lugar.",
+    "inUse": "No se puede eliminar la cuenta \"{{ name }}\": todavía la usan {{ summary }}. Quite primero estos elementos o cierre la cuenta en su lugar.",
     "invalidDateFormat": "Formato de fecha no válido",
     "useFavouriteUpdateEndpoint": "Usa el endpoint de actualización de cuenta para cambiar los favoritos",
     "invalidExportFormat": "El formato debe ser csv o qif",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "Este cambio del préstamo no se puede deshacer automáticamente. Edita el préstamo para revertirlo.",
     "nothingToUndo": "Nada que deshacer",
     "nothingToRedo": "Nada que rehacer",
+    "undoCreateInUse": "No se puede deshacer la creación de \"{{ name }}\": ahora la usan {{ summary }}. Quite primero estos elementos.",
+    "redoDeleteInUse": "No se puede rehacer la eliminación de \"{{ name }}\": ahora la usan {{ summary }}. Quite primero estos elementos.",
     "undoNotSupportedForEntityType": "Deshacer no es compatible con el tipo de entidad: {{ entityType }}",
     "unsupportedTransactionAction": "Acción de transacción no admitida: {{ action }}",
     "undoTransactionGone": "No se puede deshacer: la transacción ya no existe",
@@ -353,13 +353,14 @@
     "billCustomFrequency": "Una regla de deducción de nómina necesita una factura con frecuencia fija; esta factura se repite según un calendario personalizado."
   },
   "categories": {
+    "reassignOwnerOnly": "Solo el propietario puede mover transacciones a otra categoría",
     "notFound": "Categoría con ID {{ id }} no encontrada",
     "cannotModifySystem": "No se pueden modificar las categorías del sistema",
     "selfParent": "Una categoría no puede ser su propio padre",
     "circularParent": "Se detectó una referencia de padre circular",
     "cannotDeleteSystem": "No se pueden eliminar las categorías del sistema",
     "hasSubcategories": "No se puede eliminar una categoría con subcategorías. Elimina o reasigna las subcategorías primero.",
-    "hasTransactions": "No se puede eliminar una categoría con {{ count }} transacción(es) referenciada(s). Reasigna las transacciones primero.",
+    "inUse": "No se puede eliminar la categoría \"{{ name }}\": todavía la usan {{ summary }}. Reasigne o quite primero estos elementos.",
     "alreadyHasCategories": "No se pueden importar los valores predeterminados: el usuario ya tiene categorías. Elimina las categorías existentes primero o comienza desde cero."
   },
   "common": {
@@ -521,6 +522,9 @@
     "internal": "Error interno del servidor"
   },
   "import": {
+    "duplicatesChanged": "Los posibles duplicados cambiaron desde que se comprobaron. No se importó nada; vuelve a comprobarlos.",
+    "duplicateDecisionRepeated": "Una fila del archivo solo puede tener una decisión sobre su posible duplicado.",
+    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada.",
     "accountClosed": "La cuenta está cerrada. Vuelva a abrirla o elija otra cuenta.",
     "noAccountBlocks": "No se encontraron bloques de cuenta en el archivo QIF. Es posible que este archivo no sea una exportación de múltiples cuentas.",
     "accountTypeRequired": "Elija un tipo de cuenta para estas cuentas antes de importar: {{ accounts }}",
@@ -564,10 +568,7 @@
     "mnyJobNotFound": "Tarea de importación no encontrada",
     "mnyFileTooLarge": "Ese archivo de Money supera el límite de importación de {{ limit }} MB.",
     "noRateForSplitTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: una línea dividida transfiere a una cuenta en otra moneda. Añade un tipo de cambio para ese par y esa fecha y vuelve a importar.",
-    "noRateForTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: la otra cuenta de la transferencia está en otra moneda. Añada un tipo de cambio para ese par y esa fecha y vuelva a importar.",
-    "duplicatesChanged": "Los posibles duplicados cambiaron desde que se comprobaron. No se importó nada; vuelve a comprobarlos.",
-    "duplicateDecisionRepeated": "Una fila del archivo solo puede tener una decisión sobre su posible duplicado.",
-    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada."
+    "noRateForTransfer": "No hay tipo de cambio para {{ pair }} el {{ date }}: la otra cuenta de la transferencia está en otra moneda. Añada un tipo de cambio para ese par y esa fecha y vuelva a importar."
   },
   "monteCarlo": {
     "scenarioNotFound": "Escenario {{ id }} no encontrado",
@@ -633,6 +634,7 @@
     "requiresBrokerageAccount": "Las transacciones de inversión planificadas requieren una cuenta de corretaje",
     "bondSeriesNotNameable": "Una operación programada {{ action }} de un valor vinculado a un programa de bonos no puede indicar la serie de bonos de sus acciones. Regístrela como transacción y elija la serie, o programe una compra (BUY), que toma la serie a la venta en su fecha.",
     "notFound": "Transacción planificada con ID {{ id }} no encontrada",
+    "inUse": "No se puede eliminar la transacción programada \"{{ name }}\": todavía la usan {{ summary }}. Quite primero estos elementos.",
     "occurrenceAlreadyPosted": "Esta ocurrencia ya se ha registrado.",
     "noOccurrencesLeft": "Esta programación no tiene más ocurrencias que registrar u omitir.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
@@ -774,8 +776,7 @@
     "notFoundBySymbol": "Valor con símbolo {{ symbol }} no encontrado",
     "cannotDeactivateWithHoldings": "No se puede desactivar un valor con posiciones activas. Vende todas las acciones primero.",
     "inactiveSecurityLocked": "{{ symbol }} está desactivado, por lo que sus transacciones de inversión no se pueden añadir, modificar ni eliminar. Activa {{ symbol }} primero en la página Valores.",
-    "cannotDeleteWithHoldings": "No se puede eliminar un valor que tiene posiciones. Elimina todas las posiciones primero.",
-    "cannotDeleteWithTransactions": "No se puede eliminar un valor que tiene transacciones de inversión. Elimina todas las transacciones relacionadas primero.",
+    "inUse": "No se puede eliminar el valor \"{{ symbol }}\": todavía lo usan {{ summary }}. Quite o reasigne primero estos elementos.",
     "holdingNotFound": "Posición con ID {{ id }} no encontrada",
     "insufficientShares": "Acciones insuficientes: no se puede reducir en {{ reduceBy }}, solo se tienen {{ currentQuantity }}",
     "splitRatioMustBePositive": "El ratio de división debe ser mayor que cero",
@@ -1028,6 +1029,10 @@
     "needsPreview": "Abre la vista previa de esta cuenta bancaria y confirma la primera importación antes de que se sincronice automáticamente.",
     "selectionNotNew": "Una transacción seleccionada no es una fila nueva de los datos del banco. No se importó nada; vuelve a generar la vista previa.",
     "selectionOverlap": "Una transacción no puede importarse y añadirse a las excepciones a la vez.",
+    "selectionConflict": "Una transacción solo puede tener una decisión: importarla, añadirla a las excepciones, fusionarla, conservar la tuya o reemplazar la tuya.",
+    "duplicateNeedsPreview": "Una decisión sobre un posible duplicado necesita la vista previa que lo mostró. No se importó nada; vuelve a generar la vista previa.",
+    "selectionNotDuplicate": "Una transacción elegida para fusionar, conservar o reemplazar ya no es un posible duplicado. No se importó nada; vuelve a generar la vista previa.",
+    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada; consérvala o importa la fila del banco junto a ella.",
     "nothingToUpdate": "Envía autoSync, notifySuccess o tagOperationType para cambiar una conexión bancaria.",
     "simplefinCredentialsMissing": "Conecta SimpleFIN antes de sincronizar cuentas.",
     "simplefinAccessInvalid": "SimpleFIN devolvió una URL de acceso no válida. Genera un nuevo token de configuración en SimpleFIN Bridge.",
@@ -1045,11 +1050,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge requiere una suscripción activa. Revise la facturación en SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN no pudo proporcionar datos completos de las cuentas. Revisa la conexión en SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Se agotó la cuota de solicitudes de SimpleFIN. Espera a que se reponga y vuelve a intentar el lote actual.",
-    "simplefinClaimNotSent": "SimpleFIN no está disponible temporalmente. No se envió el token de configuración; vuelve a intentarlo más tarde con el mismo token.",
-    "selectionConflict": "Una transacción solo puede tener una decisión: importarla, añadirla a las excepciones, fusionarla, conservar la tuya o reemplazar la tuya.",
-    "duplicateNeedsPreview": "Una decisión sobre un posible duplicado necesita la vista previa que lo mostró. No se importó nada; vuelve a generar la vista previa.",
-    "selectionNotDuplicate": "Una transacción elegida para fusionar, conservar o reemplazar ya no es un posible duplicado. No se importó nada; vuelve a generar la vista previa.",
-    "duplicateActionNotAllowed": "Una transacción conciliada no se puede fusionar ni reemplazar, y una transferencia o una transacción con desglose no se puede reemplazar. No se importó nada; consérvala o importa la fila del banco junto a ella."
+    "simplefinClaimNotSent": "SimpleFIN no está disponible temporalmente. No se envió el token de configuración; vuelve a intentarlo más tarde con el mismo token."
   },
   "warranties": {
     "notFound": "Garantía con ID {{ id }} no encontrada",
@@ -1121,7 +1122,22 @@
       "loanOverpaymentPayee": "cuentas de préstamo (beneficiario de pagos extra)",
       "sharedPeople": "personas de gastos compartidos",
       "sharedPostings": "apuntes de gastos compartidos",
-      "rules": "reglas"
+      "rules": "reglas",
+      "budgetLines": "líneas de presupuesto",
+      "budgetPeriods": "períodos presupuestarios",
+      "payrollDeductionRules": "reglas de deducción de nómina",
+      "loanFees": "comisiones de préstamo",
+      "loanAccounts": "cuentas de préstamo",
+      "customReports": "informes personalizados",
+      "subcategories": "subcategorías",
+      "holdings": "posiciones",
+      "investmentTransactions": "transacciones de inversión",
+      "gemStrategies": "estrategias GEM",
+      "securityDocuments": "documentos de valores",
+      "bankSyncLinks": "vínculos de sincronización bancaria",
+      "sharedIntegrations": "integraciones de gastos compartidos",
+      "linkedAccounts": "cuentas vinculadas",
+      "securities": "valores"
     }
   }
 }

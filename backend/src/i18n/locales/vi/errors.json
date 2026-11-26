@@ -53,9 +53,7 @@
     "closeWithHoldings": "Không thể đóng tài khoản đầu tư vẫn còn nắm giữ chứng khoán ({{ symbols }}); hãy bán hoặc chuyển đi trước.",
     "notClosed": "Tài khoản chưa được đóng",
     "modifyBalanceClosed": "Không thể sửa đổi số dư của tài khoản đã đóng",
-    "deleteWithTransactions": "Không thể xóa tài khoản có {{ transactionCount }} giao tác. Hãy đóng tài khoản thay thế.",
-    "deleteWithInvestmentTransactions": "Không thể xóa tài khoản có {{ investmentTransactionCount }} giao tác đầu tư. Hãy đóng tài khoản thay thế.",
-    "deleteWithScheduledTransactions": "Không thể xóa tài khoản đang được {{ scheduledTransactionCount }} giao dịch định kỳ sử dụng. Hãy gỡ tài khoản khỏi các hóa đơn và tiền gửi đó trước, hoặc đóng tài khoản thay thế.",
+    "inUse": "Không thể xóa tài khoản \"{{ name }}\": tài khoản vẫn đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước, hoặc đóng tài khoản thay thế.",
     "invalidDateFormat": "dateFormat không hợp lệ",
     "useFavouriteUpdateEndpoint": "Sử dụng điểm cuối cập nhật tài khoản để thay đổi mục yêu thích",
     "invalidExportFormat": "Định dạng phải là csv hoặc qif",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "Không thể tự động hoàn tác thay đổi khoản vay này. Hãy chỉnh sửa khoản vay để đổi lại.",
     "nothingToUndo": "Không có gì để hoàn tác",
     "nothingToRedo": "Không có gì để làm lại",
+    "undoCreateInUse": "Không thể hoàn tác việc tạo \"{{ name }}\": hiện mục này đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
+    "redoDeleteInUse": "Không thể làm lại việc xóa \"{{ name }}\": hiện mục này đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
     "undoNotSupportedForEntityType": "Hoàn tác không được hỗ trợ cho loại thực thể: {{ entityType }}",
     "unsupportedTransactionAction": "Hành động giao tác không được hỗ trợ: {{ action }}",
     "undoTransactionGone": "Không thể hoàn tác: giao tác không còn tồn tại",
@@ -353,13 +353,14 @@
     "billCustomFrequency": "Quy tắc khấu trừ lương cần một hóa đơn có tần suất cố định; hóa đơn này lặp lại theo lịch tùy chỉnh."
   },
   "categories": {
+    "reassignOwnerOnly": "Chỉ chủ sở hữu mới có thể chuyển giao dịch sang danh mục khác",
     "notFound": "Không tìm thấy danh mục với ID {{ id }}",
     "cannotModifySystem": "Không thể sửa đổi danh mục hệ thống",
     "selfParent": "Danh mục không thể là danh mục cha của chính nó",
     "circularParent": "Phát hiện tham chiếu danh mục cha vòng tròn",
     "cannotDeleteSystem": "Không thể xóa danh mục hệ thống",
     "hasSubcategories": "Không thể xóa danh mục có danh mục con. Hãy xóa hoặc gán lại danh mục con trước.",
-    "hasTransactions": "Không thể xóa danh mục có {{ count }} giao tác tham chiếu. Hãy gán lại giao tác trước.",
+    "inUse": "Không thể xóa danh mục \"{{ name }}\": danh mục vẫn đang được {{ summary }} sử dụng. Hãy gán lại hoặc gỡ các mục này trước.",
     "alreadyHasCategories": "Không thể nhập mặc định: người dùng đã có danh mục. Hãy xóa danh mục hiện có trước hoặc bắt đầu từ đầu."
   },
   "common": {
@@ -521,6 +522,9 @@
     "internal": "Lỗi máy chủ nội bộ"
   },
   "import": {
+    "duplicatesChanged": "Các giao dịch có thể trùng lặp đã thay đổi kể từ khi được kiểm tra. Chưa có gì được nhập; hãy kiểm tra lại.",
+    "duplicateDecisionRepeated": "Mỗi dòng của tệp chỉ có thể có một quyết định về giao dịch có thể trùng lặp của nó.",
+    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập.",
     "accountClosed": "Tài khoản đã đóng. Hãy mở lại hoặc chọn tài khoản khác.",
     "noAccountBlocks": "Không tìm thấy khối tài khoản trong tệp QIF. Tệp này có thể không phải là xuất khẩu nhiều tài khoản.",
     "accountTypeRequired": "Chọn loại tài khoản cho các tài khoản này trước khi nhập: {{ accounts }}",
@@ -564,10 +568,7 @@
     "mnyJobNotFound": "Không tìm thấy tác vụ nhập",
     "mnyFileTooLarge": "Tệp Money đó lớn hơn giới hạn nhập {{ limit }} MB.",
     "noRateForSplitTransfer": "Không có tỷ giá cho {{ pair }} vào ngày {{ date }}: một dòng chia tách chuyển sang tài khoản bằng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
-    "noRateForTransfer": "Không có tỷ giá cho {{ pair }} vào {{ date }}: tài khoản bên kia của giao dịch chuyển khoản dùng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
-    "duplicatesChanged": "Các giao dịch có thể trùng lặp đã thay đổi kể từ khi được kiểm tra. Chưa có gì được nhập; hãy kiểm tra lại.",
-    "duplicateDecisionRepeated": "Mỗi dòng của tệp chỉ có thể có một quyết định về giao dịch có thể trùng lặp của nó.",
-    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập."
+    "noRateForTransfer": "Không có tỷ giá cho {{ pair }} vào {{ date }}: tài khoản bên kia của giao dịch chuyển khoản dùng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại."
   },
   "monteCarlo": {
     "scenarioNotFound": "Không tìm thấy kịch bản {{ id }}",
@@ -633,6 +634,7 @@
     "requiresBrokerageAccount": "Giao tác đầu tư theo lịch yêu cầu tài khoản môi giới",
     "bondSeriesNotNameable": "Giao dịch {{ action }} đã lên lịch của chứng khoán liên kết với chương trình trái phiếu không thể nêu series trái phiếu của các cổ phần. Hãy ghi nhận như một giao dịch và chọn series, hoặc lên lịch lệnh mua (BUY), lệnh này lấy series đang bán vào ngày đó.",
     "notFound": "Không tìm thấy giao tác theo lịch với ID {{ id }}",
+    "inUse": "Không thể xóa giao dịch đã lên lịch \"{{ name }}\": giao dịch vẫn đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
     "occurrenceAlreadyPosted": "Lần này đã được ghi nhận.",
     "noOccurrencesLeft": "Lịch này không còn lần nào để ghi sổ hoặc bỏ qua.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
@@ -774,8 +776,7 @@
     "notFoundBySymbol": "Không tìm thấy chứng khoán với ký hiệu {{ symbol }}",
     "cannotDeactivateWithHoldings": "Không thể hủy kích hoạt chứng khoán có vị thế đang hoạt động. Vui lòng bán tất cả cổ phiếu trước.",
     "inactiveSecurityLocked": "{{ symbol }} đã bị hủy kích hoạt, vì vậy không thể thêm, sửa hoặc xóa các giao dịch đầu tư của nó. Hãy kích hoạt {{ symbol }} trước trên trang Giấy chứng khoán.",
-    "cannotDeleteWithHoldings": "Không thể xóa chứng khoán có vị thế. Hãy xóa tất cả vị thế trước.",
-    "cannotDeleteWithTransactions": "Không thể xóa chứng khoán có giao tác đầu tư. Hãy xóa tất cả giao tác liên quan trước.",
+    "inUse": "Không thể xóa chứng khoán \"{{ symbol }}\": chứng khoán vẫn đang được {{ summary }} sử dụng. Hãy gỡ hoặc gán lại các mục này trước.",
     "holdingNotFound": "Không tìm thấy vị thế với ID {{ id }}",
     "insufficientShares": "Không đủ cổ phiếu: không thể giảm {{ reduceBy }}, chỉ có {{ currentQuantity }} đang nắm giữ",
     "splitRatioMustBePositive": "Tỷ lệ chia phải lớn hơn không",
@@ -1028,6 +1029,10 @@
     "needsPreview": "Hãy mở bản xem trước của tài khoản ngân hàng này và xác nhận lần nhập đầu tiên trước khi nó được đồng bộ tự động.",
     "selectionNotNew": "Một giao dịch đã chọn không phải là dòng mới trong dữ liệu của ngân hàng. Chưa có gì được nhập; hãy xem trước lại.",
     "selectionOverlap": "Một giao dịch không thể vừa được nhập vừa được thêm vào danh sách ngoại lệ.",
+    "selectionConflict": "Mỗi giao dịch chỉ có thể có một quyết định: nhập, thêm vào ngoại lệ, gộp, giữ của bạn hoặc thay thế của bạn.",
+    "duplicateNeedsPreview": "Quyết định về một giao dịch có thể trùng lặp cần phần xem trước đã hiển thị nó. Chưa có gì được nhập; hãy xem trước lại.",
+    "selectionNotDuplicate": "Một giao dịch được chọn để gộp, giữ hoặc thay thế không còn là giao dịch có thể trùng lặp nữa. Chưa có gì được nhập; hãy xem trước lại.",
+    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập; hãy giữ nó hoặc nhập dòng của ngân hàng bên cạnh nó.",
     "nothingToUpdate": "Hãy gửi autoSync, notifySuccess hoặc tagOperationType để thay đổi một kết nối ngân hàng.",
     "simplefinCredentialsMissing": "Kết nối SimpleFIN trước khi đồng bộ tài khoản.",
     "simplefinAccessInvalid": "SimpleFIN trả về URL truy cập không hợp lệ. Hãy tạo mã thiết lập mới trong SimpleFIN Bridge.",
@@ -1045,11 +1050,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge yêu cầu gói đăng ký đang hoạt động. Hãy kiểm tra thanh toán trong SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN không cung cấp được dữ liệu tài khoản đầy đủ. Hãy kiểm tra kết nối trong SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Đã hết hạn mức yêu cầu SimpleFIN. Chờ hạn mức được bổ sung rồi thử lại lô hiện tại.",
-    "simplefinClaimNotSent": "SimpleFIN tạm thời không khả dụng. Mã thiết lập chưa được gửi; hãy thử lại sau bằng chính mã này.",
-    "selectionConflict": "Mỗi giao dịch chỉ có thể có một quyết định: nhập, thêm vào ngoại lệ, gộp, giữ của bạn hoặc thay thế của bạn.",
-    "duplicateNeedsPreview": "Quyết định về một giao dịch có thể trùng lặp cần phần xem trước đã hiển thị nó. Chưa có gì được nhập; hãy xem trước lại.",
-    "selectionNotDuplicate": "Một giao dịch được chọn để gộp, giữ hoặc thay thế không còn là giao dịch có thể trùng lặp nữa. Chưa có gì được nhập; hãy xem trước lại.",
-    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập; hãy giữ nó hoặc nhập dòng của ngân hàng bên cạnh nó."
+    "simplefinClaimNotSent": "SimpleFIN tạm thời không khả dụng. Mã thiết lập chưa được gửi; hãy thử lại sau bằng chính mã này."
   },
   "warranties": {
     "notFound": "Không tìm thấy bảo hành với ID {{ id }}",
@@ -1121,7 +1122,22 @@
       "loanOverpaymentPayee": "tài khoản vay (người nhận khoản trả thêm)",
       "sharedPeople": "người chia sẻ chi tiêu",
       "sharedPostings": "bút toán chi tiêu chung",
-      "rules": "quy tắc"
+      "rules": "quy tắc",
+      "budgetLines": "dòng ngân sách",
+      "budgetPeriods": "kỳ ngân sách",
+      "payrollDeductionRules": "quy tắc khấu trừ lương",
+      "loanFees": "phí khoản vay",
+      "loanAccounts": "tài khoản vay",
+      "customReports": "báo cáo tùy chỉnh",
+      "subcategories": "danh mục con",
+      "holdings": "khoản nắm giữ",
+      "investmentTransactions": "giao dịch đầu tư",
+      "gemStrategies": "chiến lược GEM",
+      "securityDocuments": "tài liệu chứng khoán",
+      "bankSyncLinks": "liên kết đồng bộ ngân hàng",
+      "sharedIntegrations": "tích hợp chi phí chung",
+      "linkedAccounts": "tài khoản liên kết",
+      "securities": "chứng khoán"
     }
   }
 }

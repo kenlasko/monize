@@ -53,9 +53,7 @@
     "closeWithHoldings": "无法关闭仍持有证券的投资账户（{{ symbols }}）；请先卖出或转出。",
     "notClosed": "账户未关闭",
     "modifyBalanceClosed": "无法修改已关闭账户的余额",
-    "deleteWithTransactions": "无法删除有 {{ transactionCount }} 笔交易的账户。请改为关闭该账户。",
-    "deleteWithInvestmentTransactions": "无法删除有 {{ investmentTransactionCount }} 笔投资交易的账户。请改为关闭该账户。",
-    "deleteWithScheduledTransactions": "无法删除被 {{ scheduledTransactionCount }} 笔计划交易使用的账户。请先从这些账单与存款中移除该账户，或改为关闭该账户。",
+    "inUse": "无法删除账户“{{ name }}”：它仍被 {{ summary }} 使用。请先移除这些项目，或改为关闭该账户。",
     "invalidDateFormat": "无效的 dateFormat",
     "useFavouriteUpdateEndpoint": "请使用账户更新端点更改收藏",
     "invalidExportFormat": "格式必须为 csv 或 qif",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "此贷款更改无法自动撤销。请编辑贷款以改回。",
     "nothingToUndo": "没有可撤销的操作",
     "nothingToRedo": "没有可重做的操作",
+    "undoCreateInUse": "无法撤销创建“{{ name }}”：它现在被 {{ summary }} 使用。请先移除这些项目。",
+    "redoDeleteInUse": "无法重做删除“{{ name }}”：它现在被 {{ summary }} 使用。请先移除这些项目。",
     "undoNotSupportedForEntityType": "不支持对实体类型撤销：{{ entityType }}",
     "unsupportedTransactionAction": "不支持的交易操作：{{ action }}",
     "undoTransactionGone": "无法撤销：交易已不存在",
@@ -353,13 +353,14 @@
     "billCustomFrequency": "工资扣款规则需要固定频率的账单；此账单按自定义计划重复。"
   },
   "categories": {
+    "reassignOwnerOnly": "只有所有者才能将交易移动到其他类别",
     "notFound": "未找到 ID 为 {{ id }} 的分类",
     "cannotModifySystem": "无法修改系统分类",
     "selfParent": "分类不能以自身为父级",
     "circularParent": "检测到循环父级引用",
     "cannotDeleteSystem": "无法删除系统分类",
     "hasSubcategories": "无法删除有子分类的分类。请先删除或重新分配子分类。",
-    "hasTransactions": "无法删除有 {{ count }} 笔引用交易的分类。请先重新分配交易。",
+    "inUse": "无法删除类别“{{ name }}”：它仍被 {{ summary }} 使用。请先重新分配或移除这些项目。",
     "alreadyHasCategories": "无法导入默认值：用户已有分类。请先删除现有分类或重新开始。"
   },
   "common": {
@@ -521,6 +522,9 @@
     "internal": "内部服务器错误"
   },
   "import": {
+    "duplicatesChanged": "可能重复项在检查后已发生变化。未导入任何内容；请重新检查。",
+    "duplicateDecisionRepeated": "文件中的一行对其可能重复项只能有一个决定。",
+    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容。",
     "accountClosed": "该账户已关闭。请重新打开或选择其他账户。",
     "noAccountBlocks": "QIF 文件中未找到账户块。此文件可能不是多账户导出文件。",
     "accountTypeRequired": "导入前请为以下账户选择账户类型：{{ accounts }}",
@@ -564,10 +568,7 @@
     "mnyJobNotFound": "未找到导入任务",
     "mnyFileTooLarge": "该 Money 文件超过 {{ limit }} MB 的导入上限。",
     "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。",
-    "noRateForTransfer": "{{ date }} 没有 {{ pair }} 的汇率：转账的另一账户使用另一种货币。请为该货币对和日期添加汇率，然后重新导入。",
-    "duplicatesChanged": "可能重复项在检查后已发生变化。未导入任何内容；请重新检查。",
-    "duplicateDecisionRepeated": "文件中的一行对其可能重复项只能有一个决定。",
-    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容。"
+    "noRateForTransfer": "{{ date }} 没有 {{ pair }} 的汇率：转账的另一账户使用另一种货币。请为该货币对和日期添加汇率，然后重新导入。"
   },
   "monteCarlo": {
     "scenarioNotFound": "未找到情景 {{ id }}",
@@ -633,6 +634,7 @@
     "requiresBrokerageAccount": "计划投资交易需要经纪账户",
     "bondSeriesNotNameable": "关联到债券计划的证券，其计划中的{{ action }}无法指明其份额所属的债券系列。请将其记录为交易并选择系列，或计划一笔买入（BUY），它会采用当日在售的系列。",
     "notFound": "未找到 ID 为 {{ id }} 的计划交易",
+    "inUse": "无法删除计划交易“{{ name }}”：它仍被 {{ summary }} 使用。请先移除这些项目。",
     "occurrenceAlreadyPosted": "该次记账已完成。",
     "noOccurrencesLeft": "此计划已没有可记账或跳过的周期。",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
@@ -774,8 +776,7 @@
     "notFoundBySymbol": "未找到代码为 {{ symbol }} 的证券",
     "cannotDeactivateWithHoldings": "无法停用有活跃持仓的证券。请先卖出所有股份。",
     "inactiveSecurityLocked": "{{ symbol }} 已停用，因此无法添加、修改或删除其投资交易。请先在证券页面激活 {{ symbol }}。",
-    "cannotDeleteWithHoldings": "无法删除有持仓的证券。请先移除所有持仓。",
-    "cannotDeleteWithTransactions": "无法删除有投资交易的证券。请先删除所有相关交易。",
+    "inUse": "无法删除证券“{{ symbol }}”：它仍被 {{ summary }} 使用。请先移除或重新分配这些项目。",
     "holdingNotFound": "未找到 ID 为 {{ id }} 的持仓",
     "insufficientShares": "股份不足：无法减少 {{ reduceBy }}，当前仅持有 {{ currentQuantity }}",
     "splitRatioMustBePositive": "拆股比例必须大于零",
@@ -1028,6 +1029,10 @@
     "needsPreview": "请打开此银行账户的预览，并在其被自动同步之前确认首次导入。",
     "selectionNotNew": "所选的某笔交易不是银行数据中的新记录。未导入任何内容；请重新预览。",
     "selectionOverlap": "一笔交易不能同时被导入并加入例外列表。",
+    "selectionConflict": "一笔交易只能有一个决定：导入、添加到例外、合并、保留您的或替换您的。",
+    "duplicateNeedsPreview": "关于可能重复项的决定需要显示它的那次预览。未导入任何内容；请重新预览。",
+    "selectionNotDuplicate": "选择合并、保留或替换的交易已不再是可能重复项。未导入任何内容；请重新预览。",
+    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容；请保留它，或将银行的记录导入到它旁边。",
     "nothingToUpdate": "请发送 autoSync, notifySuccess 或 tagOperationType 以更改银行连接。",
     "simplefinCredentialsMissing": "请先连接 SimpleFIN，再同步账户。",
     "simplefinAccessInvalid": "SimpleFIN 返回了无效的访问 URL。请在 SimpleFIN Bridge 中生成新的设置令牌。",
@@ -1045,11 +1050,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge 需要有效订阅。请在 SimpleFIN Bridge 中检查账单。",
     "simplefinReadFailed": "SimpleFIN 未能提供完整的账户数据。请在 SimpleFIN Bridge 中检查连接。",
     "simplefinQuotaExhausted": "SimpleFIN 请求配额已用尽。请等待配额恢复后重试当前批次。",
-    "simplefinClaimNotSent": "SimpleFIN 暂时不可用。设置令牌尚未发送；请稍后使用同一令牌重试。",
-    "selectionConflict": "一笔交易只能有一个决定：导入、添加到例外、合并、保留您的或替换您的。",
-    "duplicateNeedsPreview": "关于可能重复项的决定需要显示它的那次预览。未导入任何内容；请重新预览。",
-    "selectionNotDuplicate": "选择合并、保留或替换的交易已不再是可能重复项。未导入任何内容；请重新预览。",
-    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容；请保留它，或将银行的记录导入到它旁边。"
+    "simplefinClaimNotSent": "SimpleFIN 暂时不可用。设置令牌尚未发送；请稍后使用同一令牌重试。"
   },
   "warranties": {
     "notFound": "未找到 ID 为 {{ id }} 的保修",
@@ -1121,7 +1122,22 @@
       "loanOverpaymentPayee": "贷款账户（额外还款收款方）",
       "sharedPeople": "共享支出成员",
       "sharedPostings": "共享支出记录",
-      "rules": "规则"
+      "rules": "规则",
+      "budgetLines": "预算行",
+      "budgetPeriods": "预算期间",
+      "payrollDeductionRules": "工资扣减规则",
+      "loanFees": "贷款费用",
+      "loanAccounts": "贷款账户",
+      "customReports": "自定义报表",
+      "subcategories": "子类别",
+      "holdings": "持仓",
+      "investmentTransactions": "投资交易",
+      "gemStrategies": "GEM 策略",
+      "securityDocuments": "证券文档",
+      "bankSyncLinks": "银行同步链接",
+      "sharedIntegrations": "共享支出集成",
+      "linkedAccounts": "关联账户",
+      "securities": "证券"
     }
   }
 }

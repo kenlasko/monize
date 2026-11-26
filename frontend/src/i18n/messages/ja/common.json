@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, other {#件のローン口座（追加返済の支払先）}}",
       "sharedPeople": "{count, plural, other {#人の共有費用メンバー}}",
       "sharedPostings": "{count, plural, other {#件の共有費用の記帳}}",
-      "rules": "{count, plural, other {#件のルール}}"
-    }
+      "rules": "{count, plural, other {#件のルール}}",
+      "subcategories": "{count, plural, other {#件のサブカテゴリ}}",
+      "budgetLines": "{count, plural, other {#件の予算明細行}}",
+      "budgetPeriods": "{count, plural, other {#件の予算期間}}",
+      "payrollDeductionRules": "{count, plural, other {#件の給与天引きルール}}",
+      "loanFees": "{count, plural, other {#件のローン手数料}}",
+      "loanAccounts": "{count, plural, other {#件のローン口座}}",
+      "customReports": "{count, plural, other {#件のカスタムレポート}}",
+      "holdings": "{count, plural, other {#件の保有銘柄}}",
+      "investmentTransactions": "{count, plural, other {#件の投資取引}}",
+      "gemStrategies": "{count, plural, other {#件のGEM戦略}}",
+      "securityDocuments": "{count, plural, other {#件の有価証券の書類}}",
+      "bankSyncLinks": "{count, plural, other {#件の銀行連携リンク}}",
+      "sharedIntegrations": "{count, plural, other {#件の共有費用の連携}}",
+      "linkedAccounts": "{count, plural, other {#件の連携口座}}",
+      "securities": "{count, plural, other {#件の有価証券}}"
+    },
+    "title": "「{name}」は削除できません",
+    "close": "閉じる"
   }
 }

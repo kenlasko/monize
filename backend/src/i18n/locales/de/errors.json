@@ -53,9 +53,7 @@
     "closeWithHoldings": "Ein Anlagekonto mit Wertpapierbestand kann nicht geschlossen werden ({{ symbols }}); verkaufen oder übertragen Sie diese zuerst.",
     "notClosed": "Konto ist nicht geschlossen",
     "modifyBalanceClosed": "Saldo eines geschlossenen Kontos kann nicht geändert werden",
-    "deleteWithTransactions": "Konto mit {{ transactionCount }} Buchung(en) kann nicht gelöscht werden. Schließen Sie das Konto stattdessen.",
-    "deleteWithInvestmentTransactions": "Konto mit {{ investmentTransactionCount }} Investmentbuchung(en) kann nicht gelöscht werden. Schließen Sie das Konto stattdessen.",
-    "deleteWithScheduledTransactions": "Konto, das von {{ scheduledTransactionCount }} geplanten Buchung(en) verwendet wird, kann nicht gelöscht werden. Entfernen Sie das Konto zuerst aus diesen Rechnungen & Einzahlungen oder schließen Sie das Konto stattdessen.",
+    "inUse": "Das Konto \"{{ name }}\" kann nicht gelöscht werden: Es wird noch von {{ summary }} verwendet. Entfernen Sie diese zuerst oder schließen Sie das Konto stattdessen.",
     "invalidDateFormat": "Ungültiges dateFormat",
     "useFavouriteUpdateEndpoint": "Verwenden Sie den Konto-Aktualisierungsendpunkt, um Favoriten zu ändern",
     "invalidExportFormat": "Format muss csv oder qif sein",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "Diese Kreditänderung kann nicht automatisch rückgängig gemacht werden. Bearbeiten Sie den Kredit, um sie zurückzusetzen.",
     "nothingToUndo": "Nichts rückgängig zu machen",
     "nothingToRedo": "Nichts zu wiederholen",
+    "undoCreateInUse": "\"{{ name }}\" kann nicht rückgängig gemacht werden: Es wird jetzt von {{ summary }} verwendet. Entfernen Sie diese zuerst.",
+    "redoDeleteInUse": "\"{{ name }}\" kann nicht wiederholt gelöscht werden: Es wird jetzt von {{ summary }} verwendet. Entfernen Sie diese zuerst.",
     "undoNotSupportedForEntityType": "Rückgängig machen wird für den Entitätstyp nicht unterstützt: {{ entityType }}",
     "unsupportedTransactionAction": "Nicht unterstützte Buchungsaktion: {{ action }}",
     "undoTransactionGone": "Rückgängig machen nicht möglich: Buchung existiert nicht mehr",
@@ -353,13 +353,14 @@
     "billCustomFrequency": "Eine Lohnabzugsregel erfordert eine Rechnung mit fester Häufigkeit; diese Rechnung wiederholt sich nach einem benutzerdefinierten Zeitplan."
   },
   "categories": {
+    "reassignOwnerOnly": "Nur der Eigentümer kann Buchungen in eine andere Kategorie verschieben",
     "notFound": "Kategorie mit ID {{ id }} nicht gefunden",
     "cannotModifySystem": "Systemkategorien können nicht geändert werden",
     "selfParent": "Kategorie kann nicht ihre eigene übergeordnete Kategorie sein",
     "circularParent": "Zirkuläre übergeordnete Referenz erkannt",
     "cannotDeleteSystem": "Systemkategorien können nicht gelöscht werden",
     "hasSubcategories": "Kategorie mit Unterkategorien kann nicht gelöscht werden. Löschen oder verschieben Sie zuerst die Unterkategorien.",
-    "hasTransactions": "Kategorie mit {{ count }} referenzierender/n Buchung(en) kann nicht gelöscht werden. Weisen Sie zuerst die Buchungen neu zu.",
+    "inUse": "Die Kategorie \"{{ name }}\" kann nicht gelöscht werden: Sie wird noch von {{ summary }} verwendet. Weisen Sie diese zuerst neu zu oder entfernen Sie sie.",
     "alreadyHasCategories": "Standardkategorien können nicht importiert werden: Benutzer hat bereits Kategorien. Löschen Sie vorhandene Kategorien zuerst oder beginnen Sie neu."
   },
   "common": {
@@ -521,6 +522,9 @@
     "internal": "Interner Serverfehler"
   },
   "import": {
+    "duplicatesChanged": "Die möglichen Duplikate haben sich seit der Prüfung geändert. Es wurde nichts importiert; prüfen Sie erneut.",
+    "duplicateDecisionRepeated": "Für eine Zeile der Datei ist nur eine Entscheidung über ihr mögliches Duplikat möglich.",
+    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert.",
     "accountClosed": "Das Konto ist geschlossen. Öffnen Sie es wieder oder wählen Sie ein anderes Konto.",
     "noAccountBlocks": "Keine Kontoblöcke in der QIF-Datei gefunden. Diese Datei ist möglicherweise kein Multi-Konto-Export.",
     "accountTypeRequired": "Wählen Sie vor dem Import eine Kontoart für diese Konten: {{ accounts }}",
@@ -564,10 +568,7 @@
     "mnyJobNotFound": "Import-Auftrag nicht gefunden",
     "mnyFileTooLarge": "Diese Money-Datei ist größer als das Importlimit von {{ limit }} MB.",
     "noRateForSplitTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Eine Splitzeile überweist auf ein Konto in einer anderen Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut.",
-    "noRateForTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Das andere Konto der Überweisung führt eine andere Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut.",
-    "duplicatesChanged": "Die möglichen Duplikate haben sich seit der Prüfung geändert. Es wurde nichts importiert; prüfen Sie erneut.",
-    "duplicateDecisionRepeated": "Für eine Zeile der Datei ist nur eine Entscheidung über ihr mögliches Duplikat möglich.",
-    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert."
+    "noRateForTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Das andere Konto der Überweisung führt eine andere Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut."
   },
   "monteCarlo": {
     "scenarioNotFound": "Szenario {{ id }} nicht gefunden",
@@ -633,6 +634,7 @@
     "requiresBrokerageAccount": "Terminierte Investmentbuchungen erfordern ein Maklerkonto",
     "bondSeriesNotNameable": "Eine geplante Buchung vom Typ {{ action }} eines mit einem Anleiheprogramm verknüpften Wertpapiers kann die Anleiheserie ihrer Anteile nicht benennen. Erfassen Sie sie als Buchung und wählen Sie die Serie, oder planen Sie einen Kauf (BUY), der die an seinem Tag angebotene Serie nimmt.",
     "notFound": "Terminierte Buchung mit ID {{ id }} nicht gefunden",
+    "inUse": "Die geplante Buchung \"{{ name }}\" kann nicht gelöscht werden: Sie wird noch von {{ summary }} verwendet. Entfernen Sie diese zuerst.",
     "occurrenceAlreadyPosted": "Dieser Vorgang wurde bereits gebucht.",
     "noOccurrencesLeft": "Dieser Zeitplan hat keine Termine mehr, die gebucht oder übersprungen werden können.",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
@@ -774,8 +776,7 @@
     "notFoundBySymbol": "Wertpapier mit Symbol {{ symbol }} nicht gefunden",
     "cannotDeactivateWithHoldings": "Wertpapier mit aktiven Beständen kann nicht deaktiviert werden. Bitte verkaufen Sie zuerst alle Anteile.",
     "inactiveSecurityLocked": "{{ symbol }} ist deaktiviert, daher können seine Wertpapiertransaktionen nicht hinzugefügt, geändert oder gelöscht werden. Aktivieren Sie {{ symbol }} zuerst auf der Seite Wertpapiere.",
-    "cannotDeleteWithHoldings": "Wertpapier mit Beständen kann nicht gelöscht werden. Entfernen Sie zuerst alle Bestände.",
-    "cannotDeleteWithTransactions": "Wertpapier mit Investmentbuchungen kann nicht gelöscht werden. Löschen Sie zuerst alle zugehörigen Buchungen.",
+    "inUse": "Das Wertpapier \"{{ symbol }}\" kann nicht gelöscht werden: Es wird noch von {{ summary }} verwendet. Entfernen oder weisen Sie diese zuerst neu zu.",
     "holdingNotFound": "Bestand mit ID {{ id }} nicht gefunden",
     "insufficientShares": "Unzureichende Anteile: Reduzierung um {{ reduceBy }} nicht möglich, nur {{ currentQuantity }} gehalten",
     "splitRatioMustBePositive": "Teilungsverhältnis muss größer als null sein",
@@ -1028,6 +1029,10 @@
     "needsPreview": "Öffnen Sie die Vorschau für dieses Bankkonto und bestätigen Sie den ersten Import, bevor es automatisch synchronisiert wird.",
     "selectionNotNew": "Eine ausgewählte Transaktion ist keine neue Zeile der Bankdaten. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
     "selectionOverlap": "Eine Transaktion kann nicht gleichzeitig importiert und zu den Ausnahmen hinzugefügt werden.",
+    "selectionConflict": "Für eine Buchung ist nur eine Entscheidung möglich: importieren, zu den Ausnahmen hinzufügen, zusammenführen, Ihre behalten oder Ihre ersetzen.",
+    "duplicateNeedsPreview": "Eine Entscheidung über ein mögliches Duplikat erfordert die Vorschau, in der es angezeigt wurde. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
+    "selectionNotDuplicate": "Eine Buchung, die zum Zusammenführen, Behalten oder Ersetzen gewählt wurde, ist kein mögliches Duplikat mehr. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
+    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert; behalten Sie sie oder importieren Sie die Zeile der Bank daneben.",
     "nothingToUpdate": "Senden Sie autoSync, notifySuccess oder tagOperationType, um eine Bankverbindung zu ändern.",
     "simplefinCredentialsMissing": "Verbinde SimpleFIN, bevor du Konten synchronisierst.",
     "simplefinAccessInvalid": "SimpleFIN hat eine ungültige Zugriffs-URL zurückgegeben. Erstelle in SimpleFIN Bridge ein neues Einrichtungstoken.",
@@ -1045,11 +1050,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge erfordert ein aktives Abonnement. Prüfen Sie die Abrechnung in SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN konnte keine vollständigen Kontodaten liefern. Prüfen Sie die Verbindung in SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Das SimpleFIN-Anfragelimit ist erreicht. Warten Sie, bis wieder Anfragen verfügbar sind, und versuchen Sie den aktuellen Abschnitt erneut.",
-    "simplefinClaimNotSent": "SimpleFIN ist vorübergehend nicht verfügbar. Das Einrichtungstoken wurde nicht gesendet; versuchen Sie es später mit demselben Token erneut.",
-    "selectionConflict": "Für eine Buchung ist nur eine Entscheidung möglich: importieren, zu den Ausnahmen hinzufügen, zusammenführen, Ihre behalten oder Ihre ersetzen.",
-    "duplicateNeedsPreview": "Eine Entscheidung über ein mögliches Duplikat erfordert die Vorschau, in der es angezeigt wurde. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
-    "selectionNotDuplicate": "Eine Buchung, die zum Zusammenführen, Behalten oder Ersetzen gewählt wurde, ist kein mögliches Duplikat mehr. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
-    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert; behalten Sie sie oder importieren Sie die Zeile der Bank daneben."
+    "simplefinClaimNotSent": "SimpleFIN ist vorübergehend nicht verfügbar. Das Einrichtungstoken wurde nicht gesendet; versuchen Sie es später mit demselben Token erneut."
   },
   "warranties": {
     "notFound": "Garantie mit ID {{ id }} nicht gefunden",
@@ -1121,7 +1122,22 @@
       "loanOverpaymentPayee": "Darlehenskonten (Zahlungsempfänger für Sonderzahlungen)",
       "sharedPeople": "Personen für geteilte Ausgaben",
       "sharedPostings": "Buchungen geteilter Ausgaben",
-      "rules": "Regeln"
+      "rules": "Regeln",
+      "budgetLines": "Budgetzeilen",
+      "budgetPeriods": "Budgetzeiträume",
+      "payrollDeductionRules": "Lohnabzugsregeln",
+      "loanFees": "Darlehensgebühren",
+      "loanAccounts": "Darlehenskonten",
+      "customReports": "benutzerdefinierte Berichte",
+      "subcategories": "Unterkategorien",
+      "holdings": "Bestände",
+      "investmentTransactions": "Investmentbuchungen",
+      "gemStrategies": "GEM-Strategien",
+      "securityDocuments": "Wertpapierdokumente",
+      "bankSyncLinks": "Bankanbindungen",
+      "sharedIntegrations": "Integrationen für geteilte Ausgaben",
+      "linkedAccounts": "verknüpfte Konten",
+      "securities": "Wertpapiere"
     }
   }
 }

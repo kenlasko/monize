@@ -53,9 +53,7 @@
     "closeWithHoldings": "証券を保有している投資口座は閉鎖できません（{{ symbols }}）。先に売却または移管してください。",
     "notClosed": "口座は閉鎖されていません",
     "modifyBalanceClosed": "閉鎖された口座の残高は変更できません",
-    "deleteWithTransactions": "{{ transactionCount }} 件の取引がある口座は削除できません。代わりに口座を閉鎖してください。",
-    "deleteWithInvestmentTransactions": "{{ investmentTransactionCount }} 件の投資取引がある口座は削除できません。代わりに口座を閉鎖してください。",
-    "deleteWithScheduledTransactions": "{{ scheduledTransactionCount }} 件の予定取引で使われている口座は削除できません。先にそれらの請求書・入金から口座を外すか、代わりに口座を閉鎖してください。",
+    "inUse": "口座「{{ name }}」は削除できません。まだ {{ summary }} で使われています。先にこれらを削除するか、代わりに口座を閉鎖してください。",
     "invalidDateFormat": "無効な dateFormat です",
     "useFavouriteUpdateEndpoint": "お気に入りを変更するには口座更新エンドポイントを使用してください",
     "invalidExportFormat": "形式は csv または qif でなければなりません",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "このローンの変更は自動的に元に戻せません。元に戻すにはローンを編集してください。",
     "nothingToUndo": "元に戻すものがありません",
     "nothingToRedo": "やり直すものがありません",
+    "undoCreateInUse": "「{{ name }}」の作成を元に戻せません。現在 {{ summary }} で使われています。先にこれらを削除してください。",
+    "redoDeleteInUse": "「{{ name }}」の削除をやり直せません。現在 {{ summary }} で使われています。先にこれらを削除してください。",
     "undoNotSupportedForEntityType": "エンティティタイプ {{ entityType }} の元に戻す操作はサポートされていません",
     "unsupportedTransactionAction": "サポートされていない取引アクション：{{ action }}",
     "undoTransactionGone": "元に戻せません：取引がすでに存在しません",
@@ -353,13 +353,14 @@
     "billCustomFrequency": "給与控除ルールには固定の頻度の請求が必要です。この請求はカスタムのスケジュールで繰り返されます。"
   },
   "categories": {
+    "reassignOwnerOnly": "取引を別のカテゴリに移動できるのは所有者のみです",
     "notFound": "ID {{ id }} のカテゴリが見つかりません",
     "cannotModifySystem": "システムカテゴリは変更できません",
     "selfParent": "カテゴリ自身を親にすることはできません",
     "circularParent": "循環した親参照が検出されました",
     "cannotDeleteSystem": "システムカテゴリは削除できません",
     "hasSubcategories": "サブカテゴリのあるカテゴリは削除できません。先にサブカテゴリを削除または再割り当てしてください。",
-    "hasTransactions": "{{ count }} 件の取引が参照しているカテゴリは削除できません。先に取引を再割り当てしてください。",
+    "inUse": "カテゴリ「{{ name }}」は削除できません。まだ {{ summary }} で使われています。先にこれらを再割り当てするか削除してください。",
     "alreadyHasCategories": "デフォルトをインポートできません：ユーザーにはすでにカテゴリがあります。先に既存のカテゴリを削除するか、新たに始めてください。"
   },
   "common": {
@@ -521,6 +522,9 @@
     "internal": "内部サーバーエラー"
   },
   "import": {
+    "duplicatesChanged": "確認した後に重複の可能性が変わりました。何もインポートされていません。もう一度確認してください。",
+    "duplicateDecisionRepeated": "ファイルの 1 行に対して、重複の可能性に関する判断は 1 つだけです。",
+    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。",
     "accountClosed": "この口座は閉鎖されています。再開するか、別の口座を選択してください。",
     "noAccountBlocks": "QIFファイルに口座ブロックが見つかりません。このファイルはマルチアカウントエクスポートではない可能性があります。",
     "accountTypeRequired": "インポートする前に、次の口座の種類を選択してください: {{ accounts }}",
@@ -564,10 +568,7 @@
     "mnyJobNotFound": "インポートジョブが見つかりません",
     "mnyFileTooLarge": "この Money ファイルはインポート上限の {{ limit }} MB を超えています。",
     "noRateForSplitTransfer": "{{ date }} の {{ pair }} の為替レートがありません。分割行が別の通貨の口座へ振り替えています。その通貨ペアと日付の為替レートを追加してから、もう一度インポートしてください。",
-    "noRateForTransfer": "{{ date }} の {{ pair }} の為替レートがありません：振替先の口座は別の通貨です。その通貨ペアと日付の為替レートを追加してから、再度インポートしてください。",
-    "duplicatesChanged": "確認した後に重複の可能性が変わりました。何もインポートされていません。もう一度確認してください。",
-    "duplicateDecisionRepeated": "ファイルの 1 行に対して、重複の可能性に関する判断は 1 つだけです。",
-    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。"
+    "noRateForTransfer": "{{ date }} の {{ pair }} の為替レートがありません：振替先の口座は別の通貨です。その通貨ペアと日付の為替レートを追加してから、再度インポートしてください。"
   },
   "monteCarlo": {
     "scenarioNotFound": "シナリオ {{ id }} が見つかりません",
@@ -633,6 +634,7 @@
     "requiresBrokerageAccount": "スケジュール投資取引には証券口座が必要です",
     "bondSeriesNotNameable": "債券プログラムにリンクされた証券の予定された{{ action }}では、その株式の債券シリーズを指定できません。取引として記録してシリーズを選択するか、その日に販売中のシリーズを採用する購入（BUY）を予定してください。",
     "notFound": "ID {{ id }} のスケジュール取引が見つかりません",
+    "inUse": "予定取引「{{ name }}」は削除できません。まだ {{ summary }} で使われています。先にこれらを削除してください。",
     "occurrenceAlreadyPosted": "この回はすでに記帳されています。",
     "noOccurrencesLeft": "このスケジュールには、記帳またはスキップできる回が残っていません。",
     "changedConcurrently": "The scheduled transaction changed during the operation. Reload it and retry.",
@@ -774,8 +776,7 @@
     "notFoundBySymbol": "シンボル {{ symbol }} の有価証券が見つかりません",
     "cannotDeactivateWithHoldings": "保有残高のある有価証券は非アクティブにできません。先にすべての株式を売却してください。",
     "inactiveSecurityLocked": "{{ symbol }} は非アクティブのため、その投資取引を追加、変更、削除できません。先に有価証券ページで {{ symbol }} を有効にしてください。",
-    "cannotDeleteWithHoldings": "保有残高のある有価証券は削除できません。先にすべての保有残高を削除してください。",
-    "cannotDeleteWithTransactions": "投資取引がある有価証券は削除できません。先に関連するすべての取引を削除してください。",
+    "inUse": "有価証券「{{ symbol }}」は削除できません。まだ {{ summary }} で使われています。先にこれらを削除するか再割り当てしてください。",
     "holdingNotFound": "ID {{ id }} の保有残高が見つかりません",
     "insufficientShares": "株式が不足しています：{{ reduceBy }} 削減できません、保有株式は {{ currentQuantity }} のみです",
     "splitRatioMustBePositive": "株式分割比率はゼロより大きくなければなりません",
@@ -1028,6 +1029,10 @@
     "needsPreview": "この銀行口座のプレビューを開き、自動同期される前に最初のインポートを確認してください。",
     "selectionNotNew": "選択した取引は、銀行データの新しい行ではありません。何もインポートされませんでした。もう一度プレビューしてください。",
     "selectionOverlap": "1件の取引をインポートと除外リストへの追加の両方に指定することはできません。",
+    "selectionConflict": "1 つの取引に指定できる判断は 1 つだけです: インポート、例外に追加、マージ、自分の取引を残す、自分の取引を置き換えるのいずれかです。",
+    "duplicateNeedsPreview": "重複の可能性に関する判断には、それを表示したプレビューが必要です。何もインポートされていません。もう一度プレビューしてください。",
+    "selectionNotDuplicate": "マージ、保持、置き換えに選んだ取引は、もう重複の可能性ではありません。何もインポートされていません。もう一度プレビューしてください。",
+    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。既存の取引を残すか、銀行の行を別にインポートしてください。",
     "nothingToUpdate": "銀行接続を変更するには、autoSync, notifySuccess または tagOperationType を送信してください。",
     "simplefinCredentialsMissing": "口座を同期する前に SimpleFIN に接続してください。",
     "simplefinAccessInvalid": "SimpleFIN が無効なアクセス URL を返しました。SimpleFIN Bridge で新しいセットアップトークンを生成してください。",
@@ -1045,11 +1050,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge には有効なサブスクリプションが必要です。SimpleFIN Bridge で請求情報を確認してください。",
     "simplefinReadFailed": "SimpleFINから完全な口座データを取得できませんでした。SimpleFIN Bridgeで接続を確認してください。",
     "simplefinQuotaExhausted": "SimpleFINのリクエスト上限に達しました。利用枠が回復したら、現在のバッチを再試行してください。",
-    "simplefinClaimNotSent": "SimpleFINは一時的に利用できません。設定トークンは送信されていません。後で同じトークンを再試行してください。",
-    "selectionConflict": "1 つの取引に指定できる判断は 1 つだけです: インポート、例外に追加、マージ、自分の取引を残す、自分の取引を置き換えるのいずれかです。",
-    "duplicateNeedsPreview": "重複の可能性に関する判断には、それを表示したプレビューが必要です。何もインポートされていません。もう一度プレビューしてください。",
-    "selectionNotDuplicate": "マージ、保持、置き換えに選んだ取引は、もう重複の可能性ではありません。何もインポートされていません。もう一度プレビューしてください。",
-    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。既存の取引を残すか、銀行の行を別にインポートしてください。"
+    "simplefinClaimNotSent": "SimpleFINは一時的に利用できません。設定トークンは送信されていません。後で同じトークンを再試行してください。"
   },
   "warranties": {
     "notFound": "ID {{ id }} の保証が見つかりません",
@@ -1121,7 +1122,22 @@
       "loanOverpaymentPayee": "ローン口座（追加返済の支払先）",
       "sharedPeople": "共有費用メンバー",
       "sharedPostings": "共有費用の記帳",
-      "rules": "ルール"
+      "rules": "ルール",
+      "budgetLines": "予算明細行",
+      "budgetPeriods": "予算期間",
+      "payrollDeductionRules": "給与天引きルール",
+      "loanFees": "ローン手数料",
+      "loanAccounts": "ローン口座",
+      "customReports": "カスタムレポート",
+      "subcategories": "サブカテゴリ",
+      "holdings": "保有銘柄",
+      "investmentTransactions": "投資取引",
+      "gemStrategies": "GEM戦略",
+      "securityDocuments": "有価証券の書類",
+      "bankSyncLinks": "銀行連携リンク",
+      "sharedIntegrations": "共有費用の連携",
+      "linkedAccounts": "連携口座",
+      "securities": "有価証券"
     }
   }
 }
