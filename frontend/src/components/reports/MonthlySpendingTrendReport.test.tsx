@@ -296,7 +296,11 @@ describe("MonthlySpendingTrendReport: totals and the CSV read the server's figur
 
   it("writes each month's server figure to the CSV, not its whole units", async () => {
     render(<MonthlySpendingTrendReport />);
-    await waitFor(() => expect(screen.getByTestId("export-csv")).toBeInTheDocument());
+    // The menu is on screen before the report has loaded, and the mock does
+    // not honour `disabled`: wait for the data, or a slow run exports no rows.
+    await waitFor(() =>
+      expect(screen.getByTestId("export-pdf")).toHaveAttribute("data-disabled", "false"),
+    );
     await act(async () => { fireEvent.click(screen.getByTestId("export-csv")); });
     const rows = mockExportToCsv.mock.calls[0][2] as unknown[][];
     expect(rows.map((r) => r.slice(1))).toEqual([
