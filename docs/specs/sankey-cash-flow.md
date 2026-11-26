@@ -217,8 +217,11 @@ known links under the incomplete banner.
   closes. The label is neutral because the report cannot tell those cases
   apart.
 - No rows in the range: an `EmptyState` with the range, not an empty SVG.
-- A category with both signs netting to zero: no node; the table shows it
-  with 0.
+- A purchase of 100 and a refund of 150 in one expense category produce an
+  incoming link of width 50. The table and tooltip identify the category as
+  an expense refund. With a refund of 100, the table, CSV and PDF keep a zero
+  row and the diagram draws no link. See the
+  [agreed examples](https://github.com/kenlasko/monize/discussions/2404#discussioncomment-19932437).
 
 ## 10. Frontend structure
 
