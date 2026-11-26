@@ -2280,19 +2280,23 @@ describe("TransactionAnalyticsService", () => {
           [],
         );
 
-        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
-          expect.stringContaining("transaction_tags"),
-          expect.anything(),
-        );
+        expect(
+          mockQueryBuilder.andWhere.mock.calls.some(
+            ([c]: unknown[]) =>
+              typeof c === "string" && c.includes("transaction_tags"),
+          ),
+        ).toBe(false);
       });
 
       it("does not apply tag filter when tagIds is undefined", async () => {
         await service.getMonthlyTotals(userId);
 
-        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
-          expect.stringContaining("transaction_tags"),
-          expect.anything(),
-        );
+        expect(
+          mockQueryBuilder.andWhere.mock.calls.some(
+            ([c]: unknown[]) =>
+              typeof c === "string" && c.includes("transaction_tags"),
+          ),
+        ).toBe(false);
       });
     });
   });

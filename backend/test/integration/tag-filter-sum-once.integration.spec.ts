@@ -200,6 +200,11 @@ describe("a tag filter sums a line once (integration)", () => {
     expect((await summary([t2])).totalExpenses).toBe(60);
   });
 
+  it("lets the line's own tag decide in the register under {T2}", async () => {
+    // The parent does not carry T2: only the split arm matches.
+    expect(await registerTotal([t2])).toBe(-60);
+  });
+
   it("sums monthly totals once", async () => {
     const rows = await asUser(() =>
       analytics.getMonthlyTotals(

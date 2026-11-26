@@ -130,7 +130,11 @@ import {
   searchNarrows,
 } from "./apply-transaction-search";
 import { ParsedSearch } from "./transaction-search-query.util";
-import { buildTagKeyFilterClause, TagKeyFilter } from "./tag-key-filter.util";
+import {
+  buildTagKeyFilterClause,
+  tagFilterExistsSql,
+  TagKeyFilter,
+} from "./tag-key-filter.util";
 import { onlyBalanceAffecting } from "./balance-affecting.util";
 import { tr } from "../i18n/translate";
 import { stripHtml } from "../common/sanitization.util";
@@ -3120,11 +3124,9 @@ export class TransactionsService {
 
     if (hasTags) {
       // EXISTS, not joins: a join per tag multiplies a line in the SUM.
-      sumQb.andWhere(
-        `(EXISTS (SELECT 1 FROM transaction_tags satt WHERE satt.transaction_id = sa.id AND satt.tag_id IN (:...saTagIds)) ` +
-          `OR (saSplits.id IS NOT NULL AND EXISTS (SELECT 1 FROM transaction_split_tags sast WHERE sast.transaction_split_id = saSplits.id AND sast.tag_id IN (:...saTagIds))))`,
-        { saTagIds: filters.tagIds },
-      );
+      sumQb.andWhere(tagFilterExistsSql("sa", "saSplits", "saTagIds"), {
+        saTagIds: filters.tagIds,
+      });
     }
 
     sumQb.select(

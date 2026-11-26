@@ -23,6 +23,7 @@ import {
   SPLIT_CATEGORY_ID,
 } from "../common/transaction-split-query.util";
 import { applyTransactionSearch } from "./apply-transaction-search";
+import { tagFilterExistsSql } from "./tag-key-filter.util";
 import { RecurringCharge, detectFrequency } from "./recurring-charges.util";
 import {
   loadQualifiedCategoryNames,
@@ -988,8 +989,7 @@ export class TransactionAnalyticsService {
       // EXISTS, not joins: a join per tag multiplies a line, and SUM then
       // counts it once per matching tag.
       queryBuilder.andWhere(
-        `(EXISTS (SELECT 1 FROM transaction_tags ftt WHERE ftt.transaction_id = transaction.id AND ftt.tag_id IN (:...summaryTagIds)) ` +
-          `OR (splits.id IS NOT NULL AND EXISTS (SELECT 1 FROM transaction_split_tags fst WHERE fst.transaction_split_id = splits.id AND fst.tag_id IN (:...summaryTagIds))))`,
+        tagFilterExistsSql("transaction", "splits", "summaryTagIds"),
         { summaryTagIds: tagIds },
       );
     }

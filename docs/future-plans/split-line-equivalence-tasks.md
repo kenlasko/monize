@@ -35,6 +35,10 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 - [x] `createFilteredAnalyticsQuery` and `computeSplitAwareSum`: replace the two
   tag joins with `EXISTS` on the parent's tags or the line's tags.
 - [x] The spec's tag example as an integration case on both reads.
+- [ ] Follow-up, older than T3 and not fixed here: `getTransactionBreakdownByTagKey`
+  inner-joins the parent's tags and groups by trimmed, case-insensitive value,
+  so two tags on one row that give the same value (`scope:home`, `Scope: home`)
+  count the row twice, and a split line's own tags are not read.
 
 ## T4 Budget Health
 
