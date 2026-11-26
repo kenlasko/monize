@@ -131,12 +131,10 @@ export interface ReportResult {
    */
   missingCurrencies: string[];
   /**
-   * How many rows (or split lines) were left out for want of a rate: those
-   * with none, and those of the same currency in the same group and category
-   * that left with them where no other group kept them, so a refund struck on
-   * a day with no rate never leaves its debit standing alone. The amounts of a
-   * part with no rate could not be converted as a whole. For a signed tag
-   * total the count follows the same unduplicated population as the headline.
+   * Rows (or split lines) excluded because a rate was missing. BOTH / TOTAL_AMOUNT
+   * excludes the incomplete category/currency across every display group and
+   * counts each affected component once. Other metrics retain their group-level
+   * conversion policy.
    */
   excludedCount: number;
   /** {@link ReportSummary.provisionalCount}, beside the other completeness fields. */

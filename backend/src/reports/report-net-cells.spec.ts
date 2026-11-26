@@ -22,6 +22,7 @@ describe("netLinesOf", () => {
         category: "cat-1",
         amount: -100,
         unit: "tx-1",
+        component: "tx-1",
         currency: "CAD",
       },
     ]);
@@ -93,6 +94,7 @@ describe("NetCells", () => {
     category: cell,
     amount,
     unit,
+    component: unit,
     currency,
   });
 

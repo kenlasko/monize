@@ -39,7 +39,8 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
  * `wholeGroups` to their (group, category, currency) aggregates: keeping the
  * lines that converted would report a category whose debit is in and whose
  * refund, struck on a day with no rate, is out. The cell's other currencies
- * still net.
+ * still net. Signed totals apply that eligibility to the whole report before
+ * grouping, so regrouping cannot change the known part of a partial total.
  *
  * A provisional transfer leg (`amountIsProvisional`, an amount the importer
  * estimated) is in a figure exactly when its line converted and its part and
@@ -58,6 +59,8 @@ export interface NetLine {
   amount: number;
   /** What a group counts: the row, or the line when grouped by category. */
   unit: string;
+  /** Posting identity, independent of how its group counts a split parent. */
+  component: string;
   /** The row's currency, which `amount` is in. */
   currency: string;
   /** The split line this is, for a split parent; absent for a whole row. */
@@ -90,6 +93,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
         category,
         amount: Number(split.amount),
         unit: unitOf(index),
+        component: `${tx.id}:${index}`,
         currency: tx.currencyCode,
         split,
       };
@@ -103,6 +107,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
       category,
       amount: Number(tx.amount),
       unit: unitOf(0),
+      component: tx.id,
       currency: tx.currencyCode,
       ...(tx.amountIsProvisional === true ? { provisionalRow: tx.id } : {}),
     },
@@ -172,6 +177,9 @@ export function createNetCells(
   onProvisional: (row: string) => void = () => undefined,
 ): NetCells {
   const groups = new Map<string, Map<string, Cell>>();
+  const signedTotal = isSignedTotal(direction, metric);
+  // Each category/currency has one eligibility decision for the signed total.
+  const incompleteCells = new Map<string, Set<string>>();
 
   const add = (
     group: string,
@@ -199,10 +207,16 @@ export function createNetCells(
       };
       cell.set(line.currency, part);
     }
-    if (converted === null) part.unconverted = true;
-    else {
+    if (converted === null) {
+      part.unconverted = true;
+      if (signedTotal) {
+        const missing = incompleteCells.get(line.currency) ?? new Set<string>();
+        missing.add(line.cell);
+        incompleteCells.set(line.currency, missing);
+      }
+    } else {
       part.agg.addConverted(converted);
-      part.convertedUnits.add(line.unit);
+      part.convertedUnits.add(signedTotal ? line.component : line.unit);
       if (line.provisionalRow !== undefined) {
         part.provisionalRows.add(line.provisionalRow);
       }
@@ -223,11 +237,13 @@ export function createNetCells(
       const agg = new FxAggregate();
       const units = new Set<string>();
       let kept = false;
-      for (const cell of cells.values()) {
+      for (const [cellKey, cell] of cells) {
         // The count metric keeps every line; a money figure keeps only the
         // parts whose every line converted.
         const parts = [...cell.entries()].flatMap(([currency, part]) => {
-          if (metric === MetricType.COUNT || !part.unconverted) {
+          const incomplete =
+            part.unconverted || incompleteCells.get(currency)?.has(cellKey);
+          if (metric === MetricType.COUNT || !incomplete) {
             for (const unit of part.units) keptUnits.add(unit);
             return [part];
           }
@@ -250,7 +266,7 @@ export function createNetCells(
           if (!(net.sign > 0)) continue;
           spent = false;
         } else {
-          spent = !isSignedTotal(direction, metric) && net.sign < 0;
+          spent = !signedTotal && net.sign < 0;
         }
         kept = true;
         if (spent) agg.mergeNegated(net);
@@ -263,7 +279,7 @@ export function createNetCells(
       if (kept) settled.set(group, { agg, count: units.size });
     }
     for (const [unit, currency] of leftOut) {
-      if (!keptUnits.has(unit)) onLeftOut(currency, unit);
+      if (signedTotal || !keptUnits.has(unit)) onLeftOut(currency, unit);
     }
     for (const row of provisional) onProvisional(row);
     return settled;

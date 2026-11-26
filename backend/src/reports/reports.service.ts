@@ -485,9 +485,16 @@ export class ReportsService {
 
     // Apply custom sorting if configured
     if (report.config.sortBy) {
+      // A saved percentage sort keeps its direction after signed totals stop
+      // exposing shares. Rank by the monetary value those shares used to order.
+      const sortBy =
+        report.config.sortBy === TableColumn.PERCENTAGE &&
+        isSignedTotal(report.config.direction, report.config.metric)
+          ? TableColumn.VALUE
+          : report.config.sortBy;
       rows = this.sortData(
         rows,
-        report.config.sortBy,
+        sortBy,
         report.config.sortDirection || SortDirection.DESC,
       );
     }

@@ -3542,7 +3542,9 @@ Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
                     isNetSpending of the negated net; INCOME_ONLY: a positive
                     net). Under BOTH / TOTAL_AMOUNT a group sums signed cells.
                     Its complete headline nets the eligible components before
-                    display rounding. Tag rows can overlap: their headline
+                    display rounding. Its known subtotal excludes incomplete
+                    category/currency parts consistently across groupings.
+                    Tag rows can overlap: their headline
                     uses each component once, and counts a parent transaction
                     once even if distinct splits contribute. Under BOTH,
                     AVERAGE and grouped NONE retain category magnitudes.

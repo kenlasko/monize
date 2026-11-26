@@ -3702,6 +3702,32 @@ describe("ReportsService", () => {
         );
       });
 
+      it.each([SortDirection.ASC, SortDirection.DESC])(
+        "uses the signed monetary value for a saved Percentage sort in %s order",
+        async (sortDirection) => {
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.CATEGORY,
+              config: {
+                ...defaultConfig,
+                direction: DirectionFilter.BOTH,
+                metric: MetricType.TOTAL_AMOUNT,
+                sortBy: TableColumn.PERCENTAGE,
+                sortDirection,
+              },
+            },
+            refundRows(),
+          );
+          const result = await service.execute("user-1", "report-1");
+          expect(result.data.map((row) => row.value)).toEqual(
+            sortDirection === SortDirection.ASC ? [-70, 5000] : [5000, -70],
+          );
+          expect(result.data.every((row) => row.percentage === undefined)).toBe(
+            true,
+          );
+        },
+      );
+
       it("rounds the signed tag headline after folding its unique underlying amounts", async () => {
         storedRates.set("EUR->USD", 1.2474);
         const tags = [
@@ -3770,7 +3796,7 @@ describe("ReportsService", () => {
         expect(result.excludedCount).toBe(1);
       });
 
-      it("withholds an entire currency part from the tag headline when any of its rates is missing", async () => {
+      it("withholds the same incomplete currency part under each grouping of a signed total", async () => {
         const tagA = { id: "a", name: "A" };
         const tagB = { id: "b", name: "B" };
         storedRates.set("EUR->USD", 1.2);
@@ -3791,7 +3817,7 @@ describe("ReportsService", () => {
             tags: [tagB] as Transaction["tags"],
           }),
         ];
-        for (const groupBy of [GroupByType.NONE, GroupByType.TAG]) {
+        for (const groupBy of Object.values(GroupByType)) {
           setupExecuteMocks(
             {
               groupBy,
@@ -3806,6 +3832,7 @@ describe("ReportsService", () => {
             count: 1,
             average: null,
           });
+          expect(result.data.map((row) => row.value)).toEqual([-25]);
           expect(result.missingCurrencies).toEqual(["EUR"]);
           expect(result.excludedCount).toBe(2);
         }
