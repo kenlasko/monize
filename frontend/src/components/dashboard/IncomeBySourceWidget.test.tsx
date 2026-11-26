@@ -72,6 +72,18 @@ describe('IncomeBySourceWidget', () => {
     expect(screen.queryByText('$0')).not.toBeInTheDocument();
   });
 
+  it('keeps every signed source accessible in the bounded bar chart', async () => {
+    const data = Array.from({ length: 20 }, (_, i) => ({
+      categoryId: `c${i}`, categoryName: `Source ${i}`,
+      total: i === 19 ? -50 : 10, percentage: null,
+    }));
+    getIncomeBySource.mockResolvedValue({ data, totalIncome: 140 });
+    await renderWidget();
+    expect(screen.queryByTestId('pie-data')).not.toBeInTheDocument();
+    expect(screen.getByTestId('responsive-container').parentElement).toHaveClass('overflow-y-auto');
+    expect(screen.getByText('$140')).toBeInTheDocument();
+  });
+
   it('merges sources past the fifteenth into Other so the slices add up to the total', async () => {
     const data = Array.from({ length: 20 }, (_, i) => ({
       categoryId: `c${i}`,
