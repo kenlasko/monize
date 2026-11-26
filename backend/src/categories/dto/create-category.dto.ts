@@ -2,11 +2,13 @@ import {
   IsString,
   IsOptional,
   IsBoolean,
+  IsIn,
   IsUUID,
   MaxLength,
   Matches,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { CATEGORY_TYPES, CategoryType } from "../category-type.util";
 import { SanitizeHtml } from "../../common/decorators/sanitize-html.decorator";
 
 export class CreateCategoryDto {
@@ -39,7 +41,18 @@ export class CreateCategoryDto {
   color?: string;
 
   @ApiPropertyOptional({
-    description: "Whether this is an income category (false for expense)",
+    description:
+      "The category type. A subcategory has its parent's type, so a request naming another type for one is refused. A Transfer category goes only on a transfer.",
+    enum: CATEGORY_TYPES,
+    default: "expense",
+  })
+  @IsOptional()
+  @IsIn(CATEGORY_TYPES)
+  type?: CategoryType;
+
+  @ApiPropertyOptional({
+    description:
+      "Compatibility field: true is an income category, false an expense category. Ignored when `type` is present. Responses return `isIncome` as a read-only derived field (true only for an income category).",
     default: false,
   })
   @IsOptional()

@@ -254,6 +254,33 @@ describe("GlobalExceptionFilter", () => {
       return new QueryFailedError("SELECT 1", [], driverError as any);
     }
 
+    it("returns 400 for the Transfer category backstop, and 500 for any other CHECK violation", () => {
+      const check = (constraint: string) =>
+        new QueryFailedError(
+          "INSERT",
+          [],
+          Object.assign(new Error("check violation"), {
+            code: "23514",
+            constraint,
+          }) as any,
+        );
+
+      filter.catch(check("category_fits_row"), mockHost);
+      expect(mockResponse.status).toHaveBeenLastCalledWith(
+        HttpStatus.BAD_REQUEST,
+      );
+      expect(mockResponse.json).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          message: "A Transfer category can go only on a transfer",
+        }),
+      );
+
+      filter.catch(check("chk_split_kind_exclusive"), mockHost);
+      expect(mockResponse.status).toHaveBeenLastCalledWith(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    });
+
     it("returns 409 Conflict for unique constraint violations (PG 23505)", () => {
       const exception = createQueryFailedError(
         "23505",

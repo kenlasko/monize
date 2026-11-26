@@ -50,6 +50,8 @@ export class Category {
    * The category's type, the source of truth. `isIncome` is the previous
    * release's flag, kept one release in step by a trigger and never read by
    * application code (INV-CATEGORY-004); the API's `isIncome` is derived.
+   * Always set on a loaded row; optional here so a value built in code may omit
+   * it and let the database default and its trigger decide.
    */
   @Column({
     name: "category_type",
@@ -57,7 +59,7 @@ export class Category {
     length: 10,
     default: "expense",
   })
-  categoryType: CategoryType;
+  categoryType?: CategoryType;
 
   @Column({ name: "is_income", default: false })
   isIncome: boolean;

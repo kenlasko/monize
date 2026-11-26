@@ -1,3 +1,4 @@
+import { categoryFitsRefusal } from "../db/category-fit-refusal";
 import { sharedLedgerRefusal } from "../db/shared-ledger-refusal";
 import { HttpException, HttpStatus, Logger } from "@nestjs/common";
 import { QueryFailedError } from "typeorm";
@@ -111,6 +112,10 @@ export function httpErrorBody(
         errorCode: "SHARED_EXPENSE_MANAGED",
         message: sharedRefusal,
       };
+    }
+    const fitRefusal = categoryFitsRefusal(exception);
+    if (fitRefusal) {
+      return { statusCode: HttpStatus.BAD_REQUEST, message: fitRefusal };
     }
     logger.error("Database error", exception.stack);
     if (driverError?.code === "23505") {

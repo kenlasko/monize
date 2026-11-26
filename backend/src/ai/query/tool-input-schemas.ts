@@ -111,7 +111,7 @@ export const listAccountsSchema = z.object({
 });
 
 export const getCategoriesSchema = z.object({
-  type: z.enum(["expense", "income", "all"]).optional(),
+  type: z.enum(["expense", "income", "transfer", "all"]).optional(),
   search: z.string().max(100).optional(),
 });
 

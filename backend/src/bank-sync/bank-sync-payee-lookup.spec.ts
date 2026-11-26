@@ -33,6 +33,21 @@ describe("findExistingPayee", () => {
     expect(payees.findPayeeByAlias).not.toHaveBeenCalled();
   });
 
+  it("skips a stored Transfer default: a synced row takes no Transfer category", async () => {
+    payees.findByName.mockResolvedValue(
+      payee({
+        defaultCategory: { name: "Savings", categoryType: "transfer" } as never,
+      }),
+    );
+    await expect(findExistingPayee(payees, "u", "Biedronka")).resolves.toEqual({
+      payeeId: "payee-1",
+      payeeName: "Biedronka",
+      defaultCategoryId: null,
+      defaultCategoryName: null,
+      via: "name",
+    });
+  });
+
   it("says `alias` when only an alias matches", async () => {
     payees.findPayeeByAlias.mockResolvedValue(
       payee({ name: "Biedronka S.A.", defaultCategory: null as never }),

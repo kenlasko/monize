@@ -28,6 +28,15 @@ import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { withScopedDb } from "../common/db/scoped-db";
 import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
+import { lockCategoryOwnerExclusive } from "../common/db/locks";
+import {
+  CategoryType,
+  categoryTypeOf,
+  incomeFlagOfType,
+  isExpenseCategory,
+  isIncomeCategory,
+  isTransferCategory,
+} from "./category-type.util";
 
 @Injectable()
 export class CategoriesService {
@@ -37,22 +46,61 @@ export class CategoriesService {
     private readonly i18n: I18nService,
   ) {}
 
+  /**
+   * The type a request asks for: `type` when sent, else what the legacy
+   * `isIncome` flag means. `isIncome: false` on a Transfer category leaves it
+   * alone, as the previous release's flag could not name the third type.
+   */
+  private requestedType(
+    dto: { type?: CategoryType; isIncome?: boolean },
+    current: CategoryType | undefined,
+  ): CategoryType | undefined {
+    if (dto.type !== undefined) return dto.type;
+    if (dto.isIncome === true) return "income";
+    if (dto.isIncome === false) {
+      return current === "transfer" ? "transfer" : "expense";
+    }
+    return undefined;
+  }
+
+  /** A subcategory has its parent's type; a request naming another is refused. */
+  private assertChildTypeMatches(
+    requested: CategoryType | undefined,
+    parentType: CategoryType,
+    parentName: string,
+  ): void {
+    if (requested !== undefined && requested !== parentType) {
+      throw new BadRequestException(
+        tr(
+          "errors.categories.childTypeMismatch",
+          "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+          { parent: parentName, type: parentType },
+        ),
+      );
+    }
+  }
+
   async create(
     userId: string,
     createCategoryDto: CreateCategoryDto,
   ): Promise<Category> {
-    let isIncome = createCategoryDto.isIncome ?? false;
+    const { type: requestedType, ...rest } = createCategoryDto;
+    let type: CategoryType =
+      this.requestedType(createCategoryDto, undefined) ?? "expense";
 
     if (createCategoryDto.parentId) {
       const parent = await this.findOne(userId, createCategoryDto.parentId);
-      isIncome = parent.isIncome;
+      const parentType = categoryTypeOf(parent);
+      this.assertChildTypeMatches(requestedType, parentType, parent.name);
+      type = parentType;
     }
 
     const saved = await withScopedDb(this.dataSource, (m) => {
       const repo = m.getRepository(Category);
       const category = repo.create({
-        ...createCategoryDto,
-        isIncome,
+        ...rest,
+        categoryType: type,
+        isIncome: incomeFlagOfType(type),
         userId,
       });
       return repo.save(category);
@@ -69,6 +117,7 @@ export class CategoriesService {
         icon: saved.icon,
         color: saved.color,
         isIncome: saved.isIncome,
+        categoryType: saved.categoryType,
         autoSign: saved.autoSign,
         parentId: saved.parentId,
         isSystem: saved.isSystem,
@@ -262,9 +311,14 @@ export class CategoriesService {
     return rootCategories;
   }
 
-  async findByType(
+  /** The income (`true`) or expense (`false`) categories of the person. */
+  findByType(userId: string, isIncome: boolean) {
+    return this.findByCategoryType(userId, isIncome ? "income" : "expense");
+  }
+
+  async findByCategoryType(
     userId: string,
-    isIncome: boolean,
+    type: CategoryType,
   ): Promise<
     (Category & {
       effectiveColor: string | null;
@@ -273,7 +327,7 @@ export class CategoriesService {
   > {
     const categories = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Category).find({
-        where: { userId, isIncome },
+        where: { userId, categoryType: type },
         order: { name: "ASC" },
       }),
     );
@@ -286,8 +340,8 @@ export class CategoriesService {
    * the model can understand hierarchy without parsing nested JSON. Used by
    * both the AI Assistant and the MCP server to keep response shapes in sync.
    *
-   * - `type` narrows to expense or income categories; 'all' (default)
-   *   returns both.
+   * - `type` narrows to income, expense or transfer categories; 'all'
+   *   (default) returns every type.
    * - `search` is a case- and punctuation-insensitive substring match on
    *   category name. If the matching category is a subcategory, its parent is
    *   included so the LLM sees the hierarchy context.
@@ -295,7 +349,7 @@ export class CategoriesService {
   async getLlmCategories(
     userId: string,
     options: {
-      type?: "expense" | "income" | "all";
+      type?: CategoryType | "all";
       search?: string;
     } = {},
   ): Promise<{
@@ -311,6 +365,8 @@ export class CategoriesService {
        * refuses rather than guessing.
        */
       qualifiedName: string;
+      /** income, expense or transfer: a Transfer category goes only on a transfer. */
+      type: CategoryType;
       isIncome: boolean;
       transactionCount: number;
     }>;
@@ -324,8 +380,7 @@ export class CategoriesService {
 
     let filtered = all;
     if (type !== "all") {
-      const wantIncome = type === "income";
-      filtered = filtered.filter((c) => c.isIncome === wantIncome);
+      filtered = filtered.filter((c) => categoryTypeOf(c) === type);
     }
 
     if (search) {
@@ -350,7 +405,8 @@ export class CategoriesService {
           name: c.name,
           parentName,
           qualifiedName: qualifiedCategoryName(c.name, parentName),
-          isIncome: c.isIncome,
+          type: categoryTypeOf(c),
+          isIncome: isIncomeCategory(c),
           transactionCount: c.transactionCount,
         };
       })
@@ -435,13 +491,60 @@ export class CategoriesService {
     id: string,
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Category> {
+    // A type change or a move takes the category-owner lock exclusive as the
+    // first statement of its transaction, before any row lock, so a write that
+    // sets a category on a row either finished before the holders are counted
+    // or waits for this commit (INV-CATEGORY-001, `docs/concurrency-and-idempotency.md`
+    // section 5). The nested `withScopedDb` calls below join this transaction.
+    const mayRetype =
+      updateCategoryDto.type !== undefined ||
+      updateCategoryDto.isIncome !== undefined ||
+      updateCategoryDto.parentId !== undefined;
+    const { saved, beforeData } = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        if (mayRetype) await lockCategoryOwnerExclusive(m, userId);
+        return this.updateUnderLock(userId, id, updateCategoryDto, m);
+      },
+    );
+
+    this.actionHistoryService.record(userId, {
+      entityType: "category",
+      entityId: id,
+      action: "update",
+      beforeData,
+      afterData: {
+        name: saved.name,
+        description: saved.description,
+        icon: saved.icon,
+        color: saved.color,
+        isIncome: saved.isIncome,
+        categoryType: saved.categoryType,
+        autoSign: saved.autoSign,
+        parentId: saved.parentId,
+      },
+      description: `Updated category "${saved.name}"`,
+      descriptionKey: "updatedCategory",
+      descriptionParams: { name: saved.name },
+    });
+    return saved;
+  }
+
+  private async updateUnderLock(
+    userId: string,
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+    m: EntityManager,
+  ): Promise<{ saved: Category; beforeData: Record<string, unknown> }> {
     const category = await this.findOne(userId, id);
+    const beforeType = categoryTypeOf(category);
     const beforeData = {
       name: category.name,
       description: category.description,
       icon: category.icon,
       color: category.color,
       isIncome: category.isIncome,
+      categoryType: beforeType,
       autoSign: category.autoSign,
       parentId: category.parentId,
     };
@@ -502,62 +605,111 @@ export class CategoriesService {
       category.color = updateCategoryDto.color;
     if (updateCategoryDto.autoSign !== undefined)
       category.autoSign = updateCategoryDto.autoSign;
+    const moved =
+      updateCategoryDto.parentId !== undefined &&
+      updateCategoryDto.parentId !== category.parentId;
     if (updateCategoryDto.parentId !== undefined)
       category.parentId = updateCategoryDto.parentId;
 
-    // Inherit type from parent - child categories must match parent type
+    // A moved category takes its new parent's type, and so does its whole
+    // subtree (INV-CATEGORY-003). One that stays where it is keeps its own
+    // type: an existing child whose type differs from its parent's stays as it
+    // is until it, or an ancestor, is moved or re-typed. A top-level category
+    // takes the type the request names, `type` before the legacy flag.
+    let newType: CategoryType = beforeType;
     if (category.parentId) {
-      const parent = await this.findOne(userId, category.parentId);
-      category.isIncome = parent.isIncome;
-    } else if (updateCategoryDto.isIncome !== undefined) {
-      category.isIncome = updateCategoryDto.isIncome;
+      if (moved) {
+        const parent = await this.findOne(userId, category.parentId);
+        newType = categoryTypeOf(parent);
+        this.assertChildTypeMatches(
+          updateCategoryDto.type,
+          newType,
+          parent.name,
+        );
+      } else if (updateCategoryDto.type !== undefined) {
+        const parent = await this.findOne(userId, category.parentId);
+        this.assertChildTypeMatches(
+          updateCategoryDto.type,
+          categoryTypeOf(parent),
+          parent.name,
+        );
+      }
+    } else {
+      newType = this.requestedType(updateCategoryDto, beforeType) ?? beforeType;
+    }
+    category.categoryType = newType;
+    category.isIncome = incomeFlagOfType(newType);
+
+    const retyped = newType !== beforeType;
+    if (newType === "transfer" && (retyped || moved)) {
+      await this.assertSubtreeNotHeld(userId, category, m);
     }
 
     // Save the category and cascade any type change to all descendant
     // subcategories atomically, so a partial failure cannot leave children
     // with a type that disagrees with their parent.
-    const saved = await withScopedDb(this.dataSource, async (m) => {
-      // Pass the explicit entity target: findOne returns a plain object
-      // (spread with effectiveColor), not a Category instance, so the
-      // single-arg form would throw CannotDetermineEntityError.
-      const savedCategory = await m.save(Category, category);
+    // Pass the explicit entity target: findOne returns a plain object
+    // (spread with effectiveColor), not a Category instance, so the
+    // single-arg form would throw CannotDetermineEntityError.
+    const savedCategory = await m.save(Category, category);
+    if (retyped || moved) {
+      await this.updateDescendantTypes(userId, id, newType, m);
+    }
 
-      if (
-        !category.parentId &&
-        updateCategoryDto.isIncome !== undefined &&
-        updateCategoryDto.isIncome !== beforeData.isIncome
-      ) {
-        await this.updateDescendantTypes(userId, id, savedCategory.isIncome, m);
+    return { saved: savedCategory, beforeData };
+  }
+
+  /**
+   * Refuse turning a category, or a subtree, into Transfer categories while a
+   * category row holds one of them (`category_held_by_category_row`: an
+   * ordinary row, a split's category line, a scheduled category row, an
+   * override that can still post, a payee default, an asset category, a
+   * payroll rule, a loan's interest or fee category). A Transfer category
+   * becoming Income or Expense is always allowed: every holder is a transfer
+   * row and a transfer takes any type.
+   */
+  private async assertSubtreeNotHeld(
+    userId: string,
+    category: { id: string; name: string },
+    m: EntityManager,
+  ): Promise<void> {
+    const all =
+      (await m.getRepository(Category).find({
+        where: { userId },
+        select: ["id", "parentId", "name", "categoryType", "isIncome"],
+      })) ?? [];
+    const childrenOf = new Map<string, Category[]>();
+    for (const c of all) {
+      if (c.parentId) {
+        childrenOf.set(c.parentId, [...(childrenOf.get(c.parentId) ?? []), c]);
       }
-
-      return savedCategory;
-    });
-
-    this.actionHistoryService.record(userId, {
-      entityType: "category",
-      entityId: id,
-      action: "update",
-      beforeData,
-      afterData: {
-        name: saved.name,
-        description: saved.description,
-        icon: saved.icon,
-        color: saved.color,
-        isIncome: saved.isIncome,
-        autoSign: saved.autoSign,
-        parentId: saved.parentId,
-      },
-      description: `Updated category "${saved.name}"`,
-      descriptionKey: "updatedCategory",
-      descriptionParams: { name: saved.name },
-    });
-    return saved;
+    }
+    const subtree: { id: string; name: string }[] = [category];
+    for (let i = 0; i < subtree.length; i++) {
+      for (const child of childrenOf.get(subtree[i].id) ?? []) {
+        subtree.push(child);
+      }
+    }
+    const held = (await m.query(
+      `SELECT id FROM unnest($1::uuid[]) AS id WHERE category_held_by_category_row(id)`,
+      [subtree.map((c) => c.id)],
+    )) as { id: string }[] | undefined;
+    if (held && held.length > 0) {
+      const names = new Map(subtree.map((c) => [c.id, c.name]));
+      throw new BadRequestException(
+        tr(
+          "errors.categories.typeChangeHeld",
+          "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+          { name: names.get(held[0].id) ?? category.name },
+        ),
+      );
+    }
   }
 
   private async updateDescendantTypes(
     userId: string,
     parentId: string,
-    isIncome: boolean,
+    type: CategoryType,
     manager: EntityManager,
   ): Promise<void> {
     const children = await manager.find(Category, {
@@ -570,8 +722,12 @@ export class CategoriesService {
     }
 
     for (const child of children) {
-      await manager.update(Category, { id: child.id, userId }, { isIncome });
-      await this.updateDescendantTypes(userId, child.id, isIncome, manager);
+      await manager.update(
+        Category,
+        { id: child.id, userId },
+        { categoryType: type, isIncome: incomeFlagOfType(type) },
+      );
+      await this.updateDescendantTypes(userId, child.id, type, manager);
     }
   }
 
@@ -621,6 +777,7 @@ export class CategoriesService {
       icon: category.icon,
       color: category.color,
       isIncome: category.isIncome,
+      categoryType: categoryTypeOf(category),
       parentId: category.parentId,
       isSystem: category.isSystem,
     };
@@ -777,18 +934,21 @@ export class CategoriesService {
     totalCategories: number;
     incomeCategories: number;
     expenseCategories: number;
+    transferCategories: number;
     subcategories: number;
   }> {
     const categories = await this.findAll(userId, false);
 
-    const incomeCategories = categories.filter((c) => c.isIncome).length;
-    const expenseCategories = categories.filter((c) => !c.isIncome).length;
+    const incomeCategories = categories.filter(isIncomeCategory).length;
+    const expenseCategories = categories.filter(isExpenseCategory).length;
+    const transferCategories = categories.filter(isTransferCategory).length;
     const subcategories = categories.filter((c) => c.parentId !== null).length;
 
     return {
       totalCategories: categories.length,
       incomeCategories,
       expenseCategories,
+      transferCategories,
       subcategories,
     };
   }
@@ -872,6 +1032,7 @@ export class CategoriesService {
         const parentCategory = repo.create({
           userId,
           name: localizeCategory(cat.name),
+          categoryType: "income",
           isIncome: true,
         });
         const savedParent = await repo.save(parentCategory);
@@ -882,6 +1043,7 @@ export class CategoriesService {
             userId,
             parentId: savedParent.id,
             name: localizeSubcategory(cat.name, subName),
+            categoryType: "income",
             isIncome: true,
           });
           await repo.save(subCategory);
@@ -893,6 +1055,7 @@ export class CategoriesService {
         const parentCategory = repo.create({
           userId,
           name: localizeCategory(cat.name),
+          categoryType: "expense",
           isIncome: false,
         });
         const savedParent = await repo.save(parentCategory);
@@ -903,6 +1066,7 @@ export class CategoriesService {
             userId,
             parentId: savedParent.id,
             name: localizeSubcategory(cat.name, subName),
+            categoryType: "expense",
             isIncome: false,
           });
           await repo.save(subCategory);

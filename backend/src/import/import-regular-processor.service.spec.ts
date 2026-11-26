@@ -408,6 +408,34 @@ describe("ImportRegularProcessorService", () => {
       expect(createCall[1].categoryId).toBe("cat-groceries");
     });
 
+    it("skips a stored Transfer payee default, importing the row uncategorized", async () => {
+      const ctx = makeContext({});
+      managerOf(ctx).findOne.mockImplementation(
+        async (entity: { name?: string }) => {
+          if (entity?.name === "Payee") {
+            return { id: "p1", name: "Brokerage", defaultCategoryId: "cat-t" };
+          }
+          if (entity?.name === "Category") {
+            return { id: "cat-t", name: "Savings", categoryType: "transfer" };
+          }
+          return null;
+        },
+      );
+
+      await service.processTransaction(ctx, {
+        date: "2025-01-15",
+        amount: -50,
+        payee: "Brokerage",
+      });
+
+      const createCall = managerOf(ctx).create.mock.calls.find(
+        ([entity]: [{ name?: string }]) => entity?.name === "Transaction",
+      );
+      expect(createCall).toBeDefined();
+      expect(createCall![1].categoryId).toBeNull();
+      expect(createCall![1].payeeId).toBe("p1");
+    });
+
     it("should set categoryId to null for transfer transactions", async () => {
       const accountMap = new Map<string, string | null>();
       accountMap.set("Savings", "acc-savings");

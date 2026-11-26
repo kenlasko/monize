@@ -1,3 +1,4 @@
+import { isTransferCategory } from "../categories/category-type.util";
 import type { PayeesService } from "../payees/payees.service";
 
 /** How an existing payee was found for the bank's counterparty text. */
@@ -37,11 +38,16 @@ export async function findExistingPayee(
   const byName = await payees.findByName(userId, text);
   const found = byName ?? (await payees.findPayeeByAlias(userId, text));
   if (!found) return null;
+  // A stored Transfer default (written by a pod of the previous release) is
+  // skipped as if the payee had none: a synced row is an ordinary row, which
+  // refuses a Transfer category (INV-CATEGORY-001).
+  const usable =
+    found.defaultCategory == null || !isTransferCategory(found.defaultCategory);
   return {
     payeeId: found.id,
     payeeName: found.name,
-    defaultCategoryId: found.defaultCategoryId,
-    defaultCategoryName: found.defaultCategory?.name ?? null,
+    defaultCategoryId: usable ? found.defaultCategoryId : null,
+    defaultCategoryName: usable ? (found.defaultCategory?.name ?? null) : null,
     via: byName ? "name" : "alias",
   };
 }

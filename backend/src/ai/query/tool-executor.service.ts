@@ -2600,7 +2600,8 @@ export class ToolExecutorService {
     userId: string,
     input: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const type = input.type as "expense" | "income" | "all" | undefined;
+    const type = input.type as
+      "expense" | "income" | "transfer" | "all" | undefined;
     const search = input.search as string | undefined;
 
     const data = await this.categoriesService.getLlmCategories(userId, {

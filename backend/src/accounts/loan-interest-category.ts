@@ -1,5 +1,6 @@
 import { BadRequestException, Logger } from "@nestjs/common";
 import { EntityManager } from "typeorm";
+import { assertCategoryTakesCategoryRow } from "../categories/category-fit";
 import { Category } from "../categories/entities/category.entity";
 import { tr } from "../i18n/translate";
 // One-way dependency: `loan-installments/` must never import this file back.
@@ -33,6 +34,9 @@ export async function assertLoanInterestCategory(
       ),
     );
   }
+  // The interest line is a category line, which refuses a Transfer category
+  // (INV-CATEGORY-001).
+  await assertCategoryTakesCategoryRow(m, userId, categoryId);
 }
 
 export type LoanInterestRelinkPlan =

@@ -21,20 +21,31 @@ export function isCategoryType(value: unknown): value is CategoryType {
   );
 }
 
-interface HasCategoryType {
-  readonly categoryType: CategoryType;
+/**
+ * What a category says about its type: the type itself, or, for a value built
+ * before the type existed (a fixture, a row of the previous release's shape),
+ * the legacy flag. This is the one place the flag is read.
+ */
+export interface CategoryTypeSource {
+  readonly categoryType?: CategoryType | null;
+  readonly isIncome?: boolean | null;
 }
 
-export function isIncomeCategory(category: HasCategoryType): boolean {
-  return category.categoryType === "income";
+/** The type of a category, from its type or, failing that, its legacy flag. */
+export function categoryTypeOf(category: CategoryTypeSource): CategoryType {
+  return category.categoryType ?? categoryTypeFromIncomeFlag(category.isIncome);
 }
 
-export function isExpenseCategory(category: HasCategoryType): boolean {
-  return category.categoryType === "expense";
+export function isIncomeCategory(category: CategoryTypeSource): boolean {
+  return categoryTypeOf(category) === "income";
 }
 
-export function isTransferCategory(category: HasCategoryType): boolean {
-  return category.categoryType === "transfer";
+export function isExpenseCategory(category: CategoryTypeSource): boolean {
+  return categoryTypeOf(category) === "expense";
+}
+
+export function isTransferCategory(category: CategoryTypeSource): boolean {
+  return categoryTypeOf(category) === "transfer";
 }
 
 /**

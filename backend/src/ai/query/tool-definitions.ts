@@ -191,15 +191,15 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "list_categories",
     description:
-      "List the user's categories with their hierarchy (parent names) and transaction counts. Use this for questions like 'what categories do I have', 'list my income categories', or 'do I have a category for groceries'. Returns a flat list with each category's parent name so hierarchy is visible without nested JSON. Do not use this to query spending amounts -- use list_transactions with groupBy: 'category' for that.",
+      "List the user's categories with their hierarchy (parent names), type (income, expense or transfer) and transaction counts. Use this for questions like 'what categories do I have', 'list my income categories', or 'do I have a category for groceries'. Returns a flat list with each category's parent name so hierarchy is visible without nested JSON. Do not use this to query spending amounts -- use list_transactions with groupBy: 'category' for that.",
     inputSchema: {
       type: "object",
       properties: {
         type: {
           type: "string",
-          enum: ["expense", "income", "all"],
+          enum: ["expense", "income", "transfer", "all"],
           description:
-            "Filter by category type. 'expense' returns only expense categories, 'income' returns only income categories, 'all' returns both. Defaults to 'all'.",
+            "Filter by category type. 'expense' returns only expense categories, 'income' only income categories, 'transfer' only Transfer categories (they go only on a transfer, and are neither income nor spending), 'all' returns every type. Each category carries its `type`. Defaults to 'all'.",
         },
         search: {
           type: "string",
