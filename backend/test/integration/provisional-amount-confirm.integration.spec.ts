@@ -30,7 +30,7 @@ import {
 
 /**
  * Confirming a provisional amount (design decision 4, P2, P3 and P6 of
- * docs/future-plans/provisional-amounts.md; test matrix rows 6 and 9 and the
+ * docs/specs/provisional-amounts.md; test matrix rows 6 and 9 and the
  * split half of row 10).
  *
  * 100 USD left Chequing and the importer estimated +80 in the other account.

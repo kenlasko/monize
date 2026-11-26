@@ -736,7 +736,7 @@ export class ImportRegularProcessorService {
    * INV-CURRENCY-001): a row's currency is its account's, so a transfer into
    * an account in another currency is converted at the stored rate for the
    * row's date and carries that rate. The plain path and the split path share
-   * this one computation (design docs/future-plans/provisional-amounts.md,
+   * this one computation (design docs/specs/provisional-amounts.md,
    * decision 2). The file carries no rate of its own and the market rate is
    * not the bank's, so the caller writes the leg as provisional
    * (`amountIsProvisional`); its description is the file's memo, as a

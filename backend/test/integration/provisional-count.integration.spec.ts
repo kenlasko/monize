@@ -15,7 +15,7 @@ import { createTestAccount } from "../helpers/test-factories";
 
 /**
  * The provisional count on balances and net worth against real PostgreSQL
- * (`docs/future-plans/provisional-amounts.md` section 6 "Figure shape", P5,
+ * (`docs/specs/provisional-amounts.md` section 6 "Figure shape", P5,
  * and the balances line of section 10).
  *
  * One USD chequing account opens at 1,000.00 and holds a provisional leg of

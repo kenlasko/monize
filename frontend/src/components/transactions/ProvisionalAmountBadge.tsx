@@ -20,7 +20,7 @@ interface ProvisionalAmountBadgeProps {
 /**
  * The muted "Estimated amount" label under a provisional leg's amount, with a
  * tooltip saying what the estimate is and how it stops being one (design
- * section 9 of `docs/future-plans/provisional-amounts.md`). It follows the
+ * section 9 of `docs/specs/provisional-amounts.md`). It follows the
  * schedule estimate's label in `ScheduledTransactionList`: a word and a help
  * icon, never a colour alone. A confirmed row renders nothing.
  */

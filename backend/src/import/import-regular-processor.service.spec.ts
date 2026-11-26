@@ -2746,7 +2746,7 @@ describe("ImportRegularProcessorService", () => {
     });
   });
 
-  describe("provisional amounts (issue #2390, docs/future-plans/provisional-amounts.md)", () => {
+  describe("provisional amounts (issue #2390, docs/specs/provisional-amounts.md)", () => {
     /**
      * Answers each lookup by the predicates it wrote on its query builder,
      * so a case names the lookup it feeds instead of counting calls:

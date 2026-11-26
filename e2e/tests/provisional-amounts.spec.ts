@@ -6,7 +6,7 @@ import { uniqueId } from '../helpers/api';
 import { createAccount, createCurrency, type CreatedAccount } from '../helpers/factories';
 import { chooseIconSelectOption } from '../helpers/select';
 
-// Provisional amounts, end to end (issue #2401, docs/future-plans/provisional-amounts.md).
+// Provisional amounts, end to end (issue #2401, docs/specs/provisional-amounts.md).
 //
 // A QIF file for a USD account holds a 100.00 transfer into a EUR account. The
 // importer writes the EUR account's leg itself, as an estimate at the day's

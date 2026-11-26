@@ -16,7 +16,7 @@ const NOTE =
 
 /**
  * The issue #2400 strip of the importer's PENDING IMPORT note from transfer
- * leg descriptions (design docs/future-plans/provisional-amounts.md, decision
+ * leg descriptions (design docs/specs/provisional-amounts.md, decision
  * 1 and section 11). The exact note goes from every imported transfer leg,
  * flagged or confirmed; the rest is trimmed and an empty result is NULL; the
  * flag is never touched, so a leg the reader confirmed stays confirmed; a

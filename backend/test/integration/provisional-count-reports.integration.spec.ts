@@ -28,7 +28,7 @@ import { createTestAccount, createTestPayee } from "../helpers/test-factories";
 
 /**
  * Custom reports and the transaction-analytics reads say how many provisional
- * amounts their figures hold (`docs/future-plans/provisional-amounts.md`
+ * amounts their figures hold (`docs/specs/provisional-amounts.md`
  * section 6, P5; section 10 rows 2 and 3), against real PostgreSQL.
  *
  * The section 7 example: 100 USD sent from US Chequing on a day whose stored

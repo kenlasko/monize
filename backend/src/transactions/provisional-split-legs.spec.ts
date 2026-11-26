@@ -8,7 +8,7 @@ import {
 /**
  * A split write deletes and recreates each transfer line's counterpart; the
  * flag follows the amount across that replacement (design P2 of
- * docs/future-plans/provisional-amounts.md).
+ * docs/specs/provisional-amounts.md).
  */
 describe("provisional split legs across a replacement", () => {
   const line = (leg: Record<string, unknown> | null) => ({

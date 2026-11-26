@@ -1,5 +1,5 @@
 -- Repeat the issue #2389 backfill of transactions.amount_is_provisional
--- (issue #2390; design docs/future-plans/provisional-amounts.md, section 11).
+-- (issue #2390; design docs/specs/provisional-amounts.md, section 11).
 --
 -- 20261125132236_transactions_amount_is_provisional.sql flagged the transfer
 -- legs whose description held the importer's PENDING IMPORT note. A release

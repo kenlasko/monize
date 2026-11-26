@@ -22,7 +22,7 @@ const storedAmount = (value: unknown): number =>
  * what was recorded, `carryRecordedReceivedAmounts`), so whether that amount is
  * the importer's estimate has to survive it too: an edit of the parent's memo
  * or payee resends the lines, and is no statement about what the other
- * account received (design P2 of docs/future-plans/provisional-amounts.md).
+ * account received (design P2 of docs/specs/provisional-amounts.md).
  */
 export async function readProvisionalSplitLegs(
   m: EntityManager,

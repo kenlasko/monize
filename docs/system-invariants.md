@@ -1790,7 +1790,7 @@ Enforcement         portfolio-calculation.service.ts has always multiplied
                     so does a provisional counterpart (amount_is_provisional,
                     set by the importer until the other account's file is
                     imported), whose amount is not yet what moved (issue
-                    #2338, design P4 of future-plans/provisional-amounts.md);
+                    #2338, design P4 of specs/provisional-amounts.md);
                     the column is the only signal, so a confirmed row whose
                     description still carries the PENDING IMPORT note is a
                     posted amount. With no market rate the leg is reported
@@ -2178,7 +2178,7 @@ Statement           Whether a transaction's amount is the importer's estimate
                     for the other account's leg of a cross-currency transfer
                     is read from transactions.amount_is_provisional and from
                     nothing else (design P1 of
-                    future-plans/provisional-amounts.md). No edit of a
+                    specs/provisional-amounts.md). No edit of a
                     description can make an amount provisional or confirm one,
                     and no description carries the state: the importer's old
                     PENDING IMPORT note is retired.
@@ -2218,8 +2218,10 @@ Status              enforced -- the reading half, for backend/src, which the
                     not scanned. The text itself can linger where nothing
                     reads it: a pod of the previous release still writes the
                     note (beside the flag) during the rollout of the strip
-                    migration, which runs once at container start, and those
-                    legs keep it until a later release repeats the strip; an
+                    migration, which runs once at container start; migration
+                    20261126180000_transactions_strip_pending_import_note_repeat.sql
+                    repeats the strip for those legs (the same statement, a
+                    no-op on rows already handled, issue #2402). An
                     action-history snapshot taken before the strip still holds
                     the old description, so undoing such an edit can write the
                     note back as text.
@@ -2233,7 +2235,7 @@ Statement           transactions.amount_is_provisional is written by the
                     states a different amount for the leg, and the paths that
                     end a leg's life as a transfer leg (false) -- and by
                     nothing else (design P2 of
-                    future-plans/provisional-amounts.md). No DTO accepts the
+                    specs/provisional-amounts.md). No DTO accepts the
                     field, and an edit of description, memo, payee, category,
                     tags or status, or a resend of the stored amounts, leaves
                     it alone. A change is a value difference, not a field

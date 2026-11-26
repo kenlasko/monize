@@ -16,7 +16,7 @@ interface ProvisionalDataNoticeProps {
  * months, a breakdown. It is the provisional counterpart of
  * `PartialDataNotice`, and the two stand side by side: a figure can be both
  * partial and provisional. Renders nothing at a count of 0 or an absent count
- * (`docs/future-plans/provisional-amounts.md` section 9).
+ * (`docs/specs/provisional-amounts.md` section 9).
  */
 export function ProvisionalDataNotice({ count, className }: ProvisionalDataNoticeProps) {
   const t = useTranslations('reports');

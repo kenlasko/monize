@@ -1,5 +1,5 @@
 -- Retire the importer's PENDING IMPORT description note (issue #2400; design
--- docs/future-plans/provisional-amounts.md, decision 1, P1 and section 11).
+-- docs/specs/provisional-amounts.md, decision 1, P1 and section 11).
 --
 -- Until issue #2389 a cross-currency transfer leg the importer wrote before
 -- the other account's file arrived was marked only by a note it appended to

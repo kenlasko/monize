@@ -56,7 +56,7 @@ const BALANCE_FAMILY = [
  * The balance readers that report a provisional count. They read it through
  * `loadProvisionalCounts` and never name the column, so what counts (non-VOID,
  * top level, flagged, dated on or before the balance's day) is one predicate
- * (`docs/future-plans/provisional-amounts.md` section 6, P5). The importer and
+ * (`docs/specs/provisional-amounts.md` section 6, P5). The importer and
  * the action history WRITE the flag, which is why they are not in this list.
  */
 const PROVISIONAL_COUNT_READERS = [

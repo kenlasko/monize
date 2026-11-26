@@ -3145,7 +3145,7 @@ describe("TransactionTransferService", () => {
     });
 
     // Design decision 4 and section 6 of
-    // docs/future-plans/provisional-amounts.md: a transfer edit confirms a
+    // docs/specs/provisional-amounts.md: a transfer edit confirms a
     // provisional leg only by stating a different amount for THAT leg.
     describe("confirming a provisional amount by an edit", () => {
       // 100 USD out; the importer estimated +80 EUR at 0.80.

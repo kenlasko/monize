@@ -851,7 +851,7 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
   /**
    * Each surface above whose rows can be transfer legs says how many
    * provisional amounts its figures hold (design section 6, P5, of
-   * `docs/future-plans/provisional-amounts.md`): the count is over the
+   * `docs/specs/provisional-amounts.md`): the count is over the
    * provisional legs inside the figure, so the confirmed USD side alone
    * counts none (section 13, question 2), and it is 0 once the legs are
    * confirmed. The figures themselves do not change with the flag.

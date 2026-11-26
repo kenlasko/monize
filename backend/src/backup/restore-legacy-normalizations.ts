@@ -119,7 +119,7 @@ export const LEGACY_NORMALIZATIONS: readonly LegacyNormalization[] = [
   },
   {
     // The provisional flag from the importer's note (issues #2389 and #2390,
-    // design docs/future-plans/provisional-amounts.md section 11): an artifact
+    // design docs/specs/provisional-amounts.md section 11): an artifact
     // written before the importer set the column carries the state only in
     // the text. Keyed on the second pass, the last schema before the
     // importer wrote the column, and never on anything later: from then on a

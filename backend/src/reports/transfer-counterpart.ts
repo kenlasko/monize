@@ -28,7 +28,7 @@ export interface TransferCounterpart {
  * its amount is the importer's estimate until the other account's file
  * arrives, so the leg converts at the market rate meanwhile, and is reported
  * missing without one (issue #2338, design P4 of
- * `docs/future-plans/provisional-amounts.md`). The column is the only signal;
+ * `docs/specs/provisional-amounts.md`). The column is the only signal;
  * the description's text decides nothing. A split parent's line is the file's
  * own figure and is never provisional.
  */

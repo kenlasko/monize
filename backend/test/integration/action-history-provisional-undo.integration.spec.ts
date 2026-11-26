@@ -17,7 +17,7 @@ import { createTestAccount } from "../helpers/test-factories";
 
 /**
  * Undo restores amount_is_provisional with the row (design P7,
- * docs/future-plans/provisional-amounts.md): a deleted provisional row comes
+ * docs/specs/provisional-amounts.md): a deleted provisional row comes
  * back provisional, and a confirmed one comes back confirmed.
  */
 describe("Undo of a delete restores amount_is_provisional (integration)", () => {

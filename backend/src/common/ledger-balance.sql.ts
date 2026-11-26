@@ -110,7 +110,7 @@ export const ACCOUNT_BALANCES_AS_OF_DATES_SQL = `SELECT TO_CHAR(d.as_of, 'YYYY-M
 /**
  * A provisional leg among the movements above: a transfer leg whose amount is
  * Monize's estimate until the other account's own file confirms it
- * (`docs/future-plans/provisional-amounts.md` section 4). It is the movement
+ * (`docs/specs/provisional-amounts.md` section 4). It is the movement
  * predicate plus the column, so a VOID leg or a split child is never counted,
  * for the same reason neither moves a balance.
  *

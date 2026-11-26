@@ -271,7 +271,7 @@ export interface CategorySpending {
    * destination accountId -> the provisional transfer legs (an imported
    * estimate, `amount_is_provisional`) inside its `transferSpendingMap`
    * figure; absent when there are none. Only rows that converted count
-   * (design section 8 of `docs/future-plans/provisional-amounts.md`).
+   * (design section 8 of `docs/specs/provisional-amounts.md`).
    */
   transferProvisionalCounts: Map<string, number>;
   /** source accountId -> the same, inside its `transferIncomeMap` figure. */
@@ -377,7 +377,7 @@ export function emptyCategorySpending(currency: string): CategorySpending & {
 /**
  * The provisional legs of a transfer read's group, by id
  * (`amount_is_provisional`, design section 6, P5 of
- * `docs/future-plans/provisional-amounts.md`): a group of whole legs names
+ * `docs/specs/provisional-amounts.md`): a group of whole legs names
  * each estimate in it, and a split's transfer line, never provisional, names
  * none. `NULL` when the group holds no estimate.
  */

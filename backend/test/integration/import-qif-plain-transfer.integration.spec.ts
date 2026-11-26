@@ -14,7 +14,7 @@ import { createTestAccount } from "../helpers/test-factories";
 
 /**
  * A plain QIF transfer into an account in another currency (issue #2390,
- * design docs/future-plans/provisional-amounts.md sections 6 and 7).
+ * design docs/specs/provisional-amounts.md sections 6 and 7).
  *
  * The other account's leg is the importer's estimate at the stored rate for
  * the row's date, flagged in `amount_is_provisional`, and the balance moves by
