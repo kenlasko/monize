@@ -19,6 +19,7 @@ import { assertSecuritiesActiveIn } from "../securities/inactive-security.util";
 import { findBondLinkProblem } from "../securities/bond-link.util";
 import { ActionHistory } from "./entities/action-history.entity";
 import { assertUndoCurrencyKind } from "./undo-currency-kind";
+import { assertNoReferencesBeforeDelete } from "./undo-references";
 import { withPairedScheduleRecurrence } from "./undo-custom-recurrence";
 import {
   RULE_RUN_ENTITY_TYPE,
@@ -848,7 +849,13 @@ export class ActionHistoryService {
   private async executeUndo(
     action: ActionHistory,
     manager: EntityManager,
+    isRedo = false,
   ): Promise<UndoAfterCommit> {
+    // Undoing a create (or redoing a delete) removes the row; the schema's
+    // CASCADE / SET NULL would take or orphan whatever now uses it (#2368).
+    if (action.action === "create") {
+      await assertNoReferencesBeforeDelete(action, manager, isRedo);
+    }
     switch (action.entityType) {
       case "transaction":
         await this.undoTransaction(action, manager);
@@ -959,7 +966,7 @@ export class ActionHistoryService {
       afterData: action.beforeData,
       action: this.invertAction(action.action),
     };
-    return this.executeUndo(invertedAction, manager);
+    return this.executeUndo(invertedAction, manager, true);
   }
 
   private invertAction(action: string): string {

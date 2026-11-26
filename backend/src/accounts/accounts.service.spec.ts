@@ -7,7 +7,11 @@ import {
 import { Test, TestingModule } from "@nestjs/testing";
 import { I18nContext } from "nestjs-i18n";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
 import { AccountsService } from "./accounts.service";
 import {
   Account,
@@ -2222,23 +2226,35 @@ describe("AccountsService", () => {
       expect(mockQueryRunner.manager.remove).toHaveBeenCalled();
     });
 
-    it("throws when account has transactions", async () => {
+    /** Answers each reference count by a fragment of its SQL. */
+    const answerCounts = (counts: Record<string, number>) =>
+      mockQueryRunner.query.mockImplementation(async (sql: string) => {
+        const hit = Object.entries(counts).find(([needle]) =>
+          String(sql).includes(needle),
+        );
+        return hit ? [{ count: hit[1] }] : [];
+      });
+
+    it("refuses with one 409 naming every kind of row that uses the account", async () => {
       accountsRepository.findOne.mockResolvedValue(mockAccount);
-      transactionRepository.count.mockResolvedValue(5);
+      answerCounts({
+        "FROM transactions WHERE": 5,
+        "FROM investment_transactions WHERE user_id = $1 AND account_id": 2,
+      });
 
-      await expect(service.delete("user-1", "account-1")).rejects.toThrow(
-        BadRequestException,
-      );
-    });
+      const error = await service.delete("user-1", "account-1").catch((e) => e);
 
-    it("throws when account has investment transactions", async () => {
-      accountsRepository.findOne.mockResolvedValue(mockAccount);
-      transactionRepository.count.mockResolvedValue(0);
-      investmentTxRepository.count.mockResolvedValue(2);
-
-      await expect(service.delete("user-1", "account-1")).rejects.toThrow(
-        BadRequestException,
-      );
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toMatchObject({
+        errorCode: "RECORD_IN_USE",
+        errors: [
+          { kind: "transactions", count: 5 },
+          { kind: "investmentTransactions", count: 2 },
+        ],
+      });
+      expect(error.message).toContain("transactions (5)");
+      expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
+      expect(mockActionHistoryService.record).not.toHaveBeenCalled();
     });
 
     it("unlinks paired investment account before deletion", async () => {
@@ -2277,7 +2293,7 @@ describe("AccountsService", () => {
       );
 
       await expect(service.delete("user-1", "account-1")).rejects.toThrow(
-        "Cannot delete account used by 2 scheduled transaction(s)",
+        "scheduledTransactions (2)",
       );
 
       // The loan's own schedule is removed only after the refusal could fire.
@@ -2299,7 +2315,7 @@ describe("AccountsService", () => {
       );
 
       await expect(service.delete("user-1", "account-1")).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
 
       const calls = mockQueryRunner.query.mock.calls.map(
@@ -2325,24 +2341,24 @@ describe("AccountsService", () => {
     it("counts under the account lock inside the deleting transaction (A26-M19)", async () => {
       accountsRepository.findOne.mockResolvedValue({ ...mockAccount });
       // A sync committed a row before the lock was granted.
-      transactionRepository.count.mockResolvedValue(1);
-      investmentTxRepository.count.mockResolvedValue(0);
+      answerCounts({ "FROM transactions WHERE": 1 });
 
       await expect(service.delete("user-1", "account-1")).rejects.toThrow(
-        "Close the account instead",
+        "transactions (1)",
       );
 
-      const lockCall = mockQueryRunner.manager.query.mock.calls.findIndex(
-        ([sql]: [string]) =>
+      const calls: [string][] = mockQueryRunner.manager.query.mock.calls;
+      const lockCall = calls.findIndex(
+        ([sql]) =>
           typeof sql === "string" &&
           sql.includes("FROM accounts") &&
           sql.includes("FOR UPDATE"),
       );
+      const countCall = calls.findIndex(([sql]) =>
+        String(sql).includes("FROM transactions WHERE"),
+      );
       expect(lockCall).toBeGreaterThanOrEqual(0);
-      expect(transactionRepository.count).toHaveBeenCalledTimes(1);
-      expect(
-        mockQueryRunner.manager.query.mock.invocationCallOrder[lockCall],
-      ).toBeLessThan(transactionRepository.count.mock.invocationCallOrder[0]);
+      expect(countCall).toBeGreaterThan(lockCall);
       expect(mockQueryRunner.manager.remove).not.toHaveBeenCalled();
     });
 

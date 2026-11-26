@@ -25,7 +25,9 @@ import { AccountType } from "./entities/account.entity";
  *   it counts.
  *
  * A loan or mortgage's own payment schedule is left out: `AccountsService.delete`
- * removes it deliberately, in the same transaction as the account.
+ * removes it deliberately, in the same transaction as the account. The undo of
+ * creating the account counts it (`includeOwnSchedule`): that schedule is its
+ * own, newer history entry and is undone first.
  *
  * Each reference is its own lookup, unioned, so the account list, which asks
  * this for every account, never pairs every account with every schedule. The
@@ -36,6 +38,7 @@ import { AccountType } from "./entities/account.entity";
 export async function countSchedulesReferencingAccounts(
   m: EntityManager,
   accountIds: readonly string[],
+  options: { includeOwnSchedule?: boolean } = {},
 ): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   if (accountIds.length === 0) return counts;
@@ -73,10 +76,15 @@ export async function countSchedulesReferencingAccounts(
               COUNT(DISTINCT refs.schedule_id) AS "cnt"
        FROM refs
        JOIN accounts a ON a.id = refs.account_id
-       WHERE NOT (a.account_type = ANY($2)
+       WHERE $3::boolean
+          OR NOT (a.account_type = ANY($2)
                   AND refs.schedule_id IS NOT DISTINCT FROM a.scheduled_transaction_id)
        GROUP BY refs.account_id`,
-      [accountIds, [AccountType.LOAN, AccountType.MORTGAGE]],
+      [
+        accountIds,
+        [AccountType.LOAN, AccountType.MORTGAGE],
+        options.includeOwnSchedule === true,
+      ],
     );
   for (const row of rows) counts.set(row.accountId, Number(row.cnt));
   return counts;

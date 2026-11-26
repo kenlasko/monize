@@ -1136,7 +1136,11 @@ Source of truth     transactions, investment_transactions, scheduled_transaction
                     scheduled_transaction_splits and scheduled_transaction_overrides
                     rows naming the account
 Enforcement         AccountsService.delete runs one transaction: the account's
-                    lockAccountsForBalanceWrite, assertAccountEmpty, the loan's own
+                    lockAccountsForBalanceWrite, assertAccountUnreferenced (one
+                    409 RECORD_IN_USE with a count per kind, from
+                    findAccountReferences over ACCOUNT_REFERENCES in
+                    accounts/account-references.ts, which the spec checks
+                    against schema.sql), the loan's own
                     schedule as the locked row names it (removeWithoutHistory),
                     then the account. A refusal, or a failure to remove that
                     schedule, writes nothing. After the commit the schedule's undo
@@ -7818,7 +7822,11 @@ Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.t
                     findCategoryReferences, findSecurityReferences and
                     findScheduledTransactionReferences count the refuse ones;
                     their specs parse schema.sql through foreignKeysTo
-                    (common/schema-references.test-helpers.ts).
+                    (common/schema-references.test-helpers.ts). Accounts and
+                    tags have ACCOUNT_REFERENCES and TAG_REFERENCES the same way
+                    (findAccountReferences, findTagReferences); the undo of a
+                    create and the redo of a delete run the entity's finder
+                    first (action-history/undo-references.ts).
                     repointPayeeJsonReferences (payee-json-references.ts)
                     rewrites the JSON ids; payee-json-references.spec.ts fails
                     when a rule action type carrying a payeeId is missing from

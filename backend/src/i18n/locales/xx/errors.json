@@ -53,9 +53,7 @@
     "closeWithHoldings": "[XX-Cannot close an investment account that still holds securities ({{ symbols }}); sell or transfer them first.-XX]",
     "notClosed": "[XX-Account is not closed-XX]",
     "modifyBalanceClosed": "[XX-Cannot modify balance of a closed account-XX]",
-    "deleteWithTransactions": "[XX-Cannot delete account with {{ transactionCount }} transaction(s). Close the account instead.-XX]",
-    "deleteWithInvestmentTransactions": "[XX-Cannot delete account with {{ investmentTransactionCount }} investment transaction(s). Close the account instead.-XX]",
-    "deleteWithScheduledTransactions": "[XX-Cannot delete account used by {{ scheduledTransactionCount }} scheduled transaction(s). Remove the account from those bills and deposits first, or close the account instead.-XX]",
+    "inUse": "[XX-Account \"{{ name }}\" cannot be deleted: it is still used by {{ summary }}. Remove these first, or close the account instead.-XX]",
     "invalidDateFormat": "[XX-Invalid dateFormat-XX]",
     "useFavouriteUpdateEndpoint": "[XX-Use the account update endpoint to change favourites-XX]",
     "invalidExportFormat": "[XX-Format must be csv or qif-XX]",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "[XX-This loan change cannot be undone automatically. Edit the loan to change it back.-XX]",
     "nothingToUndo": "[XX-Nothing to undo-XX]",
     "nothingToRedo": "[XX-Nothing to redo-XX]",
+    "undoCreateInUse": "[XX-Cannot undo creating \"{{ name }}\": it is now used by {{ summary }}. Remove these first.-XX]",
+    "redoDeleteInUse": "[XX-Cannot redo deleting \"{{ name }}\": it is now used by {{ summary }}. Remove these first.-XX]",
     "undoNotSupportedForEntityType": "[XX-Undo not supported for entity type: {{ entityType }}-XX]",
     "unsupportedTransactionAction": "[XX-Unsupported transaction action: {{ action }}-XX]",
     "undoTransactionGone": "[XX-Cannot undo: transaction no longer exists-XX]",
@@ -1132,7 +1132,12 @@
       "holdings": "[XX-holdings-XX]",
       "investmentTransactions": "[XX-investment transactions-XX]",
       "gemStrategies": "[XX-GEM strategies-XX]",
-      "securityDocuments": "[XX-security documents-XX]"
+      "securityDocuments": "[XX-security documents-XX]",
+      "bankSyncLinks": "[XX-bank sync links-XX]",
+      "sharedIntegrations": "[XX-shared-expense integrations-XX]",
+      "linkedAccounts": "[XX-linked accounts-XX]",
+      "budgets": "[XX-budgets-XX]",
+      "securities": "[XX-securities-XX]"
     }
   }
 }

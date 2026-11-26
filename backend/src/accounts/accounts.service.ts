@@ -98,6 +98,11 @@ import { assertMortgageMethodTerms } from "./mortgage-installment.util";
 import { assertAccountCurrencyKindIn } from "./account-currency-kind.util";
 import { applyMortgageMethodColumns } from "./mortgage-method-columns.util";
 import { countSchedulesReferencingAccounts } from "./account-schedule-references";
+import { findAccountReferences } from "./account-references";
+import {
+  recordInUseException,
+  recordInUseSummary,
+} from "../common/helpers/record-in-use";
 import {
   assertLoanSourceAccount,
   reassignLoanSourceAccount,
@@ -1651,45 +1656,26 @@ export class AccountsService {
   }
 
   /**
-   * Refuses the delete of an account that holds any ledger row or that a
-   * scheduled transaction names.
+   * Refuses (409 RECORD_IN_USE, with the counts) the delete of an account that
+   * any other row still uses. The loan's own payment schedule is not counted:
+   * `delete` removes it.
    */
-  private async assertAccountEmpty(
+  private async assertAccountUnreferenced(
     m: EntityManager,
-    accountId: string,
+    userId: string,
+    account: { id: string; name: string },
   ): Promise<void> {
-    const {
-      transactionCount,
-      investmentTransactionCount,
-      scheduledTransactionCount,
-    } = await this.countDeletionBlockers(m, accountId);
-    if (transactionCount > 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.accounts.deleteWithTransactions",
-          `Cannot delete account with ${transactionCount} transaction(s). Close the account instead.`,
-          { transactionCount },
-        ),
-      );
-    }
-    if (investmentTransactionCount > 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.accounts.deleteWithInvestmentTransactions",
-          `Cannot delete account with ${investmentTransactionCount} investment transaction(s). Close the account instead.`,
-          { investmentTransactionCount },
-        ),
-      );
-    }
-    if (scheduledTransactionCount > 0) {
-      throw new BadRequestException(
-        tr(
-          "errors.accounts.deleteWithScheduledTransactions",
-          `Cannot delete account used by ${scheduledTransactionCount} scheduled transaction(s). Remove the account from those bills and deposits first, or close the account instead.`,
-          { scheduledTransactionCount },
-        ),
-      );
-    }
+    const references = await findAccountReferences(m, userId, account.id);
+    if (references.length === 0) return;
+    const summary = recordInUseSummary(references);
+    throw recordInUseException(
+      tr(
+        "errors.accounts.inUse",
+        `Account "${account.name}" cannot be deleted: it is still used by ${summary}. Remove these first, or close the account instead.`,
+        { name: account.name, summary },
+      ),
+      references,
+    );
   }
 
   /**
@@ -2546,7 +2532,7 @@ export class AccountsService {
         // can land before the removal: a writer either committed (and the count
         // sees it) or waits for this delete.
         await lockAccountsForBalanceWrite(m, [id], userId);
-        await this.assertAccountEmpty(m, id);
+        await this.assertAccountUnreferenced(m, userId, account);
 
         // The loan's own schedule as it stands under the lock, the one the
         // count just left out: a concurrent edit may have replaced the schedule

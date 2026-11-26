@@ -53,9 +53,7 @@
     "closeWithHoldings": "Cannot close an investment account that still holds securities ({{ symbols }}); sell or transfer them first.",
     "notClosed": "Account is not closed",
     "modifyBalanceClosed": "Cannot modify balance of a closed account",
-    "deleteWithTransactions": "Cannot delete account with {{ transactionCount }} transaction(s). Close the account instead.",
-    "deleteWithInvestmentTransactions": "Cannot delete account with {{ investmentTransactionCount }} investment transaction(s). Close the account instead.",
-    "deleteWithScheduledTransactions": "Cannot delete account used by {{ scheduledTransactionCount }} scheduled transaction(s). Remove the account from those bills and deposits first, or close the account instead.",
+    "inUse": "Account \"{{ name }}\" cannot be deleted: it is still used by {{ summary }}. Remove these first, or close the account instead.",
     "invalidDateFormat": "Invalid dateFormat",
     "useFavouriteUpdateEndpoint": "Use the account update endpoint to change favourites",
     "invalidExportFormat": "Format must be csv or qif",
@@ -98,6 +96,8 @@
     "loanEditNotUndoable": "This loan change cannot be undone automatically. Edit the loan to change it back.",
     "nothingToUndo": "Nothing to undo",
     "nothingToRedo": "Nothing to redo",
+    "undoCreateInUse": "Cannot undo creating \"{{ name }}\": it is now used by {{ summary }}. Remove these first.",
+    "redoDeleteInUse": "Cannot redo deleting \"{{ name }}\": it is now used by {{ summary }}. Remove these first.",
     "undoNotSupportedForEntityType": "Undo not supported for entity type: {{ entityType }}",
     "unsupportedTransactionAction": "Unsupported transaction action: {{ action }}",
     "undoTransactionGone": "Cannot undo: transaction no longer exists",
@@ -1132,7 +1132,12 @@
       "holdings": "holdings",
       "investmentTransactions": "investment transactions",
       "gemStrategies": "GEM strategies",
-      "securityDocuments": "security documents"
+      "securityDocuments": "security documents",
+      "bankSyncLinks": "bank sync links",
+      "sharedIntegrations": "shared-expense integrations",
+      "linkedAccounts": "linked accounts",
+      "budgets": "budgets",
+      "securities": "securities"
     }
   }
 }
