@@ -13,12 +13,17 @@ import { SUPPORTED_LOCALE_CODES } from "./config";
  */
 describe("i18n interpolation (real catalogue)", () => {
   let i18n: I18nService;
+  let moduleRef: TestingModule;
 
   beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [I18nModule],
     }).compile();
     i18n = moduleRef.get<I18nService>(I18nService);
+  });
+
+  afterAll(async () => {
+    await moduleRef.close();
   });
 
   it("interpolates a {{ name }} placeholder from a catalogue string", () => {
