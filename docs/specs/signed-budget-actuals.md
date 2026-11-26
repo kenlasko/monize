@@ -24,8 +24,18 @@ Bar widths and numeric accessibility positions stay within 0–100. The label an
 
 A negative milestone shows net spending and the budget amount. An income shortfall below zero shows signed actual income and the income expected so far. The daily budget fact shows net spending, the budget and the elapsed share of the month. [Review of PR #2429](https://github.com/kenlasko/monize/pull/2429#pullrequestreview-6067458497)
 
-## Projection and carry
+## Projection
 
 The current velocity calculation extrapolates signed spending. On day 5 of a 30-day month, a purchase of 50 and a refund of 300 give spending of −250, a daily pace of −50 and a projected total of −1,500. Computing a purchases-only pace would change this metric.
 
-Rollover is an open decision in [discussion #2404](https://github.com/kenlasko/monize/discussions/2404). The current zero floor forgives an overspend, while a later refund can raise the carry above that period’s effective budget. The same issue affects bucket carry. The maintainer requested agreement on capping the carry or carrying the debt before either calculation changes.
+## Expense and bucket rollover
+
+When rollover is enabled, the next period receives the signed closing balance. For an expense line this is its allocation plus incoming rollover minus actual spending. For a bucket this is its own allocation plus its incoming carry minus its members’ spending. The bucket and its lines carry their balances independently. A configured cap limits positive carry only. Disabling carry makes the outgoing amount zero. A bucket with an unknown allocation keeps its existing zero outgoing carry. Previously closed periods keep their stored amounts. [Decision in #2404](https://github.com/kenlasko/monize/discussions/2404) · [Maintainer confirmation](https://github.com/kenlasko/monize/pull/2429#issuecomment-7180940431)
+
+With 100 allocated per month, monthly rollover and no cap, a January purchase of 300 followed by a full refund in February gives the same result for an expense line and a bucket:
+
+| Month | Allocation | Carry in | Available before activity | Actual spending | Balance after activity |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| January | 100 | 0 | 100 | 300 | −200 |
+| February | 100 | −200 | −100 | −300 | 200 |
+| March | 100 | 200 | 300 | 0 | 300 |

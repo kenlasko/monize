@@ -37,6 +37,10 @@ import {
   budgetWeeklyDigestTemplate,
 } from "../notifications/email-templates";
 import {
+  effectiveLineBudget,
+  loadExpenseRolloverIn,
+} from "./budget-rollover.util";
+import {
   getCurrentMonthPeriodDates,
   PeriodDateRange,
 } from "./budget-date.utils";
@@ -1229,16 +1233,21 @@ export class BudgetAlertService {
 
     // The two spending queries share one scoped transaction so the direct and
     // split halves of a category's total come from the same snapshot.
-    const spending = await withScopedDb(this.dataSource, (m) =>
-      queryCategorySpending(
-        m.getRepository(Transaction),
-        m.getRepository(TransactionSplit),
-        userId,
-        budgetCategories,
-        periodStart,
-        periodEnd,
-        budget.id,
-      ),
+    const { spending, rolloverIn } = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        const spending = await queryCategorySpending(
+          m.getRepository(Transaction),
+          m.getRepository(TransactionSplit),
+          userId,
+          budgetCategories,
+          periodStart,
+          periodEnd,
+          budget.id,
+        );
+        const rolloverIn = await loadExpenseRolloverIn(m, budget, periodStart);
+        return { spending, rolloverIn };
+      },
     );
 
     // An income-linked budget's expense line holds a percentage of the
@@ -1249,11 +1258,12 @@ export class BudgetAlertService {
       : 0;
 
     const lines = budgetCategories.map((bc) => {
-      const budgeted = resolveBudgetLineBudgeted(
+      const planned = resolveBudgetLineBudgeted(
         bc,
         budget.incomeLinked,
         actualIncome,
       );
+      const budgeted = effectiveLineBudget(planned, rolloverIn.get(bc.id));
       const spent = resolveCategorySpent(
         bc,
         spending.spendingMap,

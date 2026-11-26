@@ -44,7 +44,7 @@ export class UpdateBudgetCategoryDto {
   isIncome?: boolean;
 
   @ApiPropertyOptional({
-    description: "Rollover type for unused budget",
+    description: "Rollover setting (expense lines carry the signed balance)",
     enum: RolloverType,
   })
   @IsOptional()
@@ -52,7 +52,7 @@ export class UpdateBudgetCategoryDto {
   rolloverType?: RolloverType;
 
   @ApiPropertyOptional({
-    description: "Maximum rollover accumulation (null for unlimited)",
+    description: "Maximum positive rollover (null for unlimited)",
   })
   @IsOptional()
   @IsNumber()

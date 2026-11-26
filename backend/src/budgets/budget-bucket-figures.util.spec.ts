@@ -222,11 +222,14 @@ describe("computeBudgetBucketFigures", () => {
       expect(b.available).toBe(850);
       expect(b.carryOut).toBe(500);
     });
-    it("carry on, available -150: 0", () => {
-      const b = carry({ carryOver: true, carryCap: 500 }, 1150);
-      expect(b.available).toBe(-150);
-      expect(b.carryOut).toBe(0);
-    });
+    it.each([null, 0, 50])(
+      "preserves the full shortfall with cap %s",
+      (carryCap) => {
+        const b = carry({ carryOver: true, carryCap }, 1150);
+        expect(b.available).toBe(-150);
+        expect(b.carryOut).toBe(-150);
+      },
+    );
     it("carry on, available 0: 0", () => {
       const b = carry({ carryOver: true }, 1000);
       expect(b.available).toBe(0);

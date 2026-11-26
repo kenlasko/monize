@@ -243,6 +243,7 @@ describe("Budget Period Lifecycle Integration", () => {
     };
 
     budgetsService = {
+      invalidateCategoryActuals: jest.fn(),
       findOne: jest.fn().mockResolvedValue(mockBudget),
     };
 
@@ -667,7 +668,7 @@ describe("Budget Period Lifecycle Integration", () => {
       expect(rollover).toBe(0);
     });
 
-    it("produces zero rollover for overspent categories", () => {
+    it("carries the shortfall for overspent categories", () => {
       const pc: BudgetPeriodCategory = {
         id: "bpc-1",
         budgetPeriodId: "period-1",
@@ -686,7 +687,7 @@ describe("Budget Period Lifecycle Integration", () => {
       };
 
       const rollover = periodService.computeRollover(pc, 750);
-      expect(rollover).toBe(0);
+      expect(rollover).toBe(-150);
     });
 
     it("unlimited rollover for ANNUAL type without cap", () => {

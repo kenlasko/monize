@@ -11,6 +11,7 @@ import { Budget } from "./entities/budget.entity";
 import { RolloverType } from "./entities/budget-category.entity";
 import { BudgetPeriod, PeriodStatus } from "./entities/budget-period.entity";
 import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
+import { effectiveLineBudget } from "./budget-rollover.util";
 import { BudgetBucket } from "./entities/budget-bucket.entity";
 import { BudgetPeriodBucket } from "./entities/budget-period-bucket.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
@@ -133,7 +134,7 @@ export class BudgetPeriodService {
     // never recomputed. The period row is locked first so a second close cannot
     // interleave -- the monthly cron fires on every replica, and both replicas
     // find the same OPEN period.
-    return withScopedDb(this.dataSource, async (manager) => {
+    const closed = await withScopedDb(this.dataSource, async (manager) => {
       const periods = manager.getRepository(BudgetPeriod);
       // Two queries, not one, and deliberately so: TypeORM turns `relations`
       // into a LEFT JOIN, and PostgreSQL rejects `FOR UPDATE` over the nullable
@@ -181,16 +182,53 @@ export class BudgetPeriodService {
       const incomeParts: number[] = [actuals.outsideTransferIncome];
       const expenseParts: number[] = [];
 
+      // An expense line can join the budget after this month was opened. Its first
+      // close must still freeze its spending and carry the balance into next month.
+      const openedLines = new Set(
+        openPeriod.periodCategories.map((pc) => pc.budgetCategoryId),
+      );
+      for (const line of budget.categories ?? []) {
+        if (
+          !line.isIncome &&
+          line.rolloverType !== RolloverType.NONE &&
+          !openedLines.has(line.id)
+        ) {
+          openPeriod.periodCategories.push(
+            manager.getRepository(BudgetPeriodCategory).create({
+              budgetPeriodId: openPeriod.id,
+              budgetCategoryId: line.id,
+              budgetCategory: line,
+              categoryId: line.categoryId,
+              rolloverIn: 0,
+            }),
+          );
+        }
+      }
+
       for (const pc of openPeriod.periodCategories) {
         const actual = actuals.lines.get(pc.budgetCategoryId) || 0;
         pc.actualAmount = actual;
 
-        const rollover = this.computeRollover(pc, actual);
-        pc.rolloverOut = rollover;
+        const bcEntry = pc.budgetCategory;
+        if (
+          bcEntry &&
+          !bcEntry.isIncome &&
+          (bcEntry.rolloverType !== RolloverType.NONE ||
+            Number(pc.rolloverIn) !== 0)
+        ) {
+          // Match the live allocation at close, including percentage-funded lines.
+          pc.budgetedAmount = resolveBudgetLineBudgeted(
+            bcEntry,
+            budget.incomeLinked,
+            actuals.linkedIncome,
+          );
+          pc.effectiveBudget = effectiveLineBudget(
+            pc.budgetedAmount,
+            Number(pc.rolloverIn),
+          );
+        }
+        pc.rolloverOut = this.computeRollover(pc, actual);
 
-        const bcEntry = budget.categories?.find(
-          (c) => c.id === pc.budgetCategoryId,
-        );
         if (bcEntry?.isIncome) {
           incomeParts.push(actual);
         } else {
@@ -217,6 +255,9 @@ export class BudgetPeriodService {
 
       return closedPeriod;
     });
+    // A read of the new month may already have cached figures before its carry was posted.
+    this.budgetsService.invalidateCategoryActuals(budgetId);
+    return closed;
   }
 
   async getOrCreateCurrentPeriod(
@@ -251,9 +292,9 @@ export class BudgetPeriodService {
    *   with the close that produced it; otherwise a scoped one is opened here.
    * @param dates the period to create; the current calendar month unless the
    *   caller derives it from the period it closed.
-   * @param bucketCarry each bucket's positive carry from the period the caller
+   * @param bucketCarry each bucket's signed carry from the period the caller
    *   closed, by bucket id: the new period's `budget_period_buckets.carry_in`
-   *   (INV-BUDGET-003). Only buckets with a positive carry get a row here; the
+   *   (INV-BUDGET-003). Only buckets with a nonzero carry get a row here; the
    *   close writes the rest.
    */
   async createPeriodForBudget(
@@ -311,9 +352,14 @@ export class BudgetPeriodService {
       });
 
       const periodCategories = budgetCategories.map((bc) => {
-        const rolloverIn = rolloverMap?.get(bc.id) || 0;
-        const budgetedAmount = Number(bc.amount);
-        const effectiveBudget = budgetedAmount + rolloverIn;
+        const rolloverIn = rolloverMap?.get(bc.id) ?? 0;
+        const budgetedAmount =
+          budget.incomeLinked &&
+          !bc.isIncome &&
+          bc.rolloverType !== RolloverType.NONE
+            ? 0
+            : Number(bc.amount);
+        const effectiveBudget = effectiveLineBudget(budgetedAmount, rolloverIn);
 
         return periodCatsRepo.create({
           budgetPeriodId: savedPeriod.id,
@@ -337,7 +383,7 @@ export class BudgetPeriodService {
       // of this period overwrites them with the figures it freezes.
       const bucketRows = (budget.buckets ?? []).flatMap((bucket) => {
         const carryIn = bucketCarry?.get(bucket.id) ?? 0;
-        return carryIn > 0
+        return carryIn !== 0
           ? [
               {
                 budgetPeriodId: savedPeriod.id,
@@ -369,29 +415,20 @@ export class BudgetPeriodService {
       return 0;
     }
 
-    const effectiveBudget = Number(periodCategory.effectiveBudget);
-    const unused = effectiveBudget - actualAmount;
-
-    if (unused <= 0) {
-      return 0;
-    }
-
-    let rollover = unused;
-
-    if (
-      budgetCategory.rolloverCap !== null &&
-      budgetCategory.rolloverCap !== undefined
-    ) {
-      rollover = Math.min(rollover, Number(budgetCategory.rolloverCap));
-    }
-
-    return roundMoney(rollover);
+    const remaining = Number(periodCategory.effectiveBudget) - actualAmount;
+    // Income lines retain their existing carry rule when receipts exceed the target.
+    const carry = budgetCategory.isIncome ? Math.max(0, remaining) : remaining;
+    return roundMoney(
+      budgetCategory.rolloverCap == null
+        ? carry
+        : Math.min(carry, Number(budgetCategory.rolloverCap)),
+    );
   }
 
   /**
    * Freezes one `budget_period_buckets` row per bucket the budget has now
    * (design 6.3) from the close's own line actuals, and returns each bucket's
-   * positive `carryOut` for the next period's creation (INV-BUDGET-003).
+   * nonzero `carryOut` for the next period's creation (INV-BUDGET-003).
    *
    * Runs inside the close's transaction, under its `FOR UPDATE` lock on the
    * period row. The rows are read, then each is updated by id or inserted:
@@ -503,7 +540,7 @@ export class BudgetPeriodService {
           ...frozen,
         });
       }
-      if (figure.carryOut > 0) carry.set(bucket.id, figure.carryOut);
+      if (figure.carryOut !== 0) carry.set(bucket.id, figure.carryOut);
     }
 
     return carry;
@@ -519,9 +556,8 @@ export class BudgetPeriodService {
 
     if (closedPeriod.periodCategories) {
       for (const pc of closedPeriod.periodCategories) {
-        if (pc.rolloverOut > 0) {
-          rolloverMap.set(pc.budgetCategoryId, Number(pc.rolloverOut));
-        }
+        const carry = Number(pc.rolloverOut);
+        if (carry !== 0) rolloverMap.set(pc.budgetCategoryId, carry);
       }
     }
 

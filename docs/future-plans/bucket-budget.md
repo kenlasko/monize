@@ -97,8 +97,9 @@ this feature is `BudgetBucket...` or `budget_bucket...`, never a bare `Bucket`.
 7. **Membership.** A non-income line belongs to at most one bucket of its own
    budget (`budget_categories.bucket_id`, nullable). Income lines cannot be
    assigned. Unassigned lines are summed into an `unassigned` block.
-8. **Carry never goes negative.** An overspent bucket carries zero, the same
-   rule a line's rollover follows. (Open question B2.)
+8. **Carry keeps its sign.** With carry-over enabled, an overspent bucket
+   passes its shortfall to the next period. The optional cap limits a surplus.
+   See [Signed budget actuals](../specs/signed-budget-actuals.md).
 9. **Bucket carry and line rollover are independent.** A bucket's balance is
    built from its allocation and its lines' spending only; a line's
    `rollover_in` never enters it. A person who wants balances to accumulate at
@@ -125,19 +126,18 @@ this feature is `BudgetBucket...` or `budget_bucket...`, never a bare `Bucket`.
   greater than 0.
 - **allocated**: `roundMoney(I * target_value / 100)` for `PERCENT` (`null`
   when `I` is `null`); `target_value` for `AMOUNT`.
-- **planned**: sum of the member lines' `budgeted` as the live summary reports
-  it (so a percentage line of an income-linked budget is already an amount).
+- **planned**: sum of the member lines' allocations before line rollover
+  (a percentage line of an income-linked budget is already an amount).
 - **spent**: sum of the member lines' `spent` (each line already a signed net
   through `resolveCategorySpent`). It can be negative when refunds exceed
   spending.
-- **carriedIn**: the open period's `budget_period_buckets.carry_in` for the
+- **carriedIn**: the reported period's `budget_period_buckets.carry_in` for the
   bucket; 0 when the bucket has no row yet or `carry_over` is off.
 - **available**: `allocated + carriedIn - spent`; `null` when `allocated` is.
 - **percentUsed**: `spent / (allocated + carriedIn) * 100`, two decimals; 0
   when the denominator is not greater than 0; `null` when `allocated` is.
 - **carryOut** (at close only): 0 when `carry_over` is off or `allocated` is
-  `null`; otherwise `max(available, 0)`, then `min(..., carry_cap)` when a cap
-  is set.
+  `null`; otherwise `available`, limited to `carry_cap` from above when set.
 
 All sums go through `sumMoney` and every derived amount through `roundMoney`,
 with the budget currency's decimals.
@@ -199,7 +199,7 @@ partial index where it is not null. Expand-only.
 `budget_period_categories` shape. Unassigned spending is not snapshotted.
 
 Row lifecycle: a period's creation inserts one row per bucket that has a
-positive carry to receive; the close upserts one row per bucket that exists at
+nonzero carry to receive; the close upserts one row per bucket that exists at
 that moment (a bucket created mid-period gets its row then, `carry_in` 0) and
 fills the frozen columns.
 
@@ -300,7 +300,7 @@ the MCP output schema change in the same commit.
 | true | null | null | any | 0 |
 | true | known | 850 | null | 850 |
 | true | known | 850 | 500 | 500 |
-| true | known | -150 | any | 0 |
+| true | known | -150 | any | -150 |
 | true | known | 0 | any | 0 |
 
 ### D. Membership writes
@@ -424,7 +424,7 @@ lines give Fixed costs and Savings `allocated` null, `totalAllocated` null,
 | # | Question | Recorded default |
 |---|---|---|
 | B1 | For a budget that is not income-linked, should a percent bucket follow planned income (decision 5) or the income actually received this period? | Planned (base income, else income lines): the allocation is known on day one |
-| B2 | Should an overspent carry-over bucket start the next period in the red? | No, carry floors at zero, matching line rollover |
+| B2 | Should an overspent carry-over bucket start the next period in the red? | Yes, a negative closing balance reduces the next period’s available budget ([#2404](../specs/signed-budget-actuals.md)) |
 | B3 | Should bucket-level alerts follow as a second proposal? | Yes, separately, after this ships |
 | B4 | Should assigning a line be required before a Bucket budget can be created in the wizard? | No; the review step warns and the dashboard shows Unassigned |
 

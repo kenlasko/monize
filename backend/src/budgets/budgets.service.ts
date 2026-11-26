@@ -35,6 +35,10 @@ import { CreateBudgetCategoryDto } from "./dto/create-budget-category.dto";
 import { UpdateBudgetCategoryDto } from "./dto/update-budget-category.dto";
 import { BulkCategoryAmountDto } from "./dto/bulk-update-budget-categories.dto";
 import {
+  effectiveLineBudget,
+  loadExpenseRolloverIn,
+} from "./budget-rollover.util";
+import {
   getCurrentMonthPeriodDates,
   PeriodDateRange,
 } from "./budget-date.utils";
@@ -89,6 +93,8 @@ export interface UpcomingBill {
 
 /** One budget line's figures for the current period. */
 export interface CategoryActualRow {
+  /** Allocation before rollover, also used by the bucket plan. */
+  planned?: number;
   budgetCategoryId: string;
   categoryId: string | null;
   categoryName: string;
@@ -1177,8 +1183,8 @@ export class BudgetsService {
     return getCurrentMonthPeriodDates();
   }
 
-  /** Drops a budget's cached actuals once its lines or config changed. */
-  private invalidateCategoryActuals(budgetId: string): void {
+  /** Drops cached figures after a budget edit or a period close commits. */
+  invalidateCategoryActuals(budgetId: string): void {
     for (const key of this.categoryActualsCache.keys()) {
       if (key.startsWith(`${budgetId}:`)) this.categoryActualsCache.delete(key);
     }
@@ -1236,16 +1242,21 @@ export class BudgetsService {
 
     // The two spending queries share one scoped transaction so the direct and
     // split halves of a category's total come from the same snapshot.
-    const spending = await withScopedDb(this.dataSource, (m) =>
-      queryCategorySpending(
-        m.getRepository(Transaction),
-        m.getRepository(TransactionSplit),
-        userId,
-        budgetCategories,
-        periodStart,
-        periodEnd,
-        budget.id,
-      ),
+    const { spending, rolloverIn } = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        const spending = await queryCategorySpending(
+          m.getRepository(Transaction),
+          m.getRepository(TransactionSplit),
+          userId,
+          budgetCategories,
+          periodStart,
+          periodEnd,
+          budget.id,
+        );
+        const rolloverIn = await loadExpenseRolloverIn(m, budget, periodStart);
+        return { spending, rolloverIn };
+      },
     );
 
     // An income-linked budget derives its lines from the income the same
@@ -1258,11 +1269,12 @@ export class BudgetsService {
     const lines = budgetCategories.map((bc) => {
       const percentage =
         budget.incomeLinked && !bc.isIncome ? Number(bc.amount) : null;
-      const budgeted = resolveBudgetLineBudgeted(
+      const planned = resolveBudgetLineBudgeted(
         bc,
         budget.incomeLinked,
         actualIncome,
       );
+      const budgeted = effectiveLineBudget(planned, rolloverIn.get(bc.id));
 
       const spent = resolveCategorySpent(
         bc,
@@ -1279,6 +1291,7 @@ export class BudgetsService {
         budgetCategoryId: bc.id,
         categoryId: bc.categoryId,
         categoryName,
+        planned,
         budgeted,
         spent,
         remaining,

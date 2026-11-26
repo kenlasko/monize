@@ -245,6 +245,50 @@ describe('BudgetPeriodDetail', () => {
     expect(screen.getByText('Carried out:')).toBeInTheDocument();
   });
 
+  it('shows carried debt in the period totals and the expense row', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          periodCategories: [{
+            ...mockPeriodCategory,
+            budgetedAmount: 100,
+            rolloverIn: -200,
+            effectiveBudget: -100,
+            actualAmount: 0,
+            rolloverOut: -100,
+          }],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Rollover Summary')).toBeInTheDocument();
+    expect(screen.getByText('Carried in:').parentElement).toHaveTextContent('$-200.00');
+    expect(screen.getByText('Carried out:').parentElement).toHaveTextContent('$-100.00');
+    expect(screen.getByText('$-200.00 rollover')).toBeInTheDocument();
+    expect(screen.getByText('$-100.00 carried forward')).toBeInTheDocument();
+  });
+
+  it('shows a zero net rollover when one category offsets another', () => {
+    render(
+      <BudgetPeriodDetail
+        period={{
+          ...mockPeriod,
+          periodCategories: [
+            { ...mockPeriodCategory, rolloverIn: 50, rolloverOut: 0 },
+            { ...mockPeriodCategory, id: 'second', rolloverIn: -50, rolloverOut: 0 },
+          ],
+        }}
+        formatCurrency={mockFormat}
+      />,
+    );
+
+    expect(screen.getByText('Carried in:').parentElement).toHaveTextContent('$0.00');
+    expect(screen.getByText('$50.00 rollover')).toBeInTheDocument();
+    expect(screen.getByText('$-50.00 rollover')).toBeInTheDocument();
+  });
+
   it('does not render rollover summary when no rollovers exist', () => {
     const periodNoRollover: BudgetPeriod = {
       ...mockPeriod,
@@ -287,7 +331,7 @@ describe('BudgetPeriodDetail', () => {
       <BudgetPeriodDetail period={mockPeriod} formatCurrency={mockFormat} />,
     );
 
-    expect(screen.getByText('+$50.00 rollover')).toBeInTheDocument();
+    expect(screen.getByText('$50.00 rollover')).toBeInTheDocument();
   });
 
   it('shows carried forward amount for categories with rollover out', () => {

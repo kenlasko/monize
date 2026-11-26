@@ -234,6 +234,78 @@ describe("budget period close (integration)", () => {
     expect(next.effective_budget).toBe("800.00000000");
   });
 
+  it("carries a mid-period income-linked expense line in currency and caps only its surplus", async () => {
+    await dataSource.manager.update(Budget, budget.id, { incomeLinked: true });
+    await dataSource.manager.delete(BudgetCategory, groceriesLine.id);
+    const salary = await createTestCategory(dataSource, userId, {
+      name: "Salary",
+      isIncome: true,
+    });
+    const asOwner = <T>(fn: () => Promise<T>) => withUserContext(userId, fn);
+    await asOwner(() =>
+      budgets.addCategory(userId, budget.id, {
+        categoryId: salary.id,
+        isIncome: true,
+        amount: 1000,
+      }),
+    );
+    await asOwner(async () =>
+      periods.createPeriodForBudget(
+        await budgets.findOne(userId, budget.id),
+        undefined,
+        undefined,
+        previous,
+      ),
+    );
+    const expenseLine = await asOwner(() =>
+      budgets.addCategory(userId, budget.id, {
+        categoryId: groceriesId,
+        amount: 10,
+        rolloverType: RolloverType.MONTHLY,
+        rolloverCap: 25,
+      }),
+    );
+    await insertTransaction({
+      categoryId: salary.id,
+      transactionDate: previous.periodStart,
+      amount: 1000,
+    });
+    await insertTransaction({
+      transactionDate: previous.periodStart,
+      amount: -300,
+    });
+
+    const closeAndRead = async () => {
+      const closed = await asOwner(() =>
+        periods.closePeriod(userId, budget.id),
+      );
+      const period = await asOwner(() =>
+        periods.findOne(userId, budget.id, closed.id),
+      );
+      return period.periodCategories.find(
+        (line) => line.budgetCategoryId === expenseLine.id,
+      )!;
+    };
+    const first = await closeAndRead();
+    expect(Number(first.budgetedAmount)).toBe(100);
+    expect(Number(first.effectiveBudget)).toBe(100);
+    expect(Number(first.rolloverOut)).toBe(-200);
+
+    // This month's 10% of 2500 gives 250 of new funding, before the 200 shortfall.
+    await insertTransaction({ categoryId: salary.id, amount: 2500 });
+    const summary = await asOwner(() => budgets.getSummary(userId, budget.id));
+    expect(
+      summary.categoryBreakdown.find(
+        (line) => line.budgetCategoryId === expenseLine.id,
+      )?.remaining,
+    ).toBe(50);
+    const second = await closeAndRead();
+    expect(Number(second.budgetedAmount)).toBe(250);
+    expect(Number(second.rolloverIn)).toBe(-200);
+    expect(Number(second.effectiveBudget)).toBe(50);
+    expect(Number(second.rolloverOut)).toBe(25);
+  });
+
   it("opens the following month when a period is closed before it ends", async () => {
     await openPeriod(current);
 

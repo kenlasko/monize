@@ -27,6 +27,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { User } from "../users/entities/user.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
+import { BudgetPeriodCategory } from "./entities/budget-period-category.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { EmailService } from "../notifications/email.service";
 import {
@@ -288,6 +289,7 @@ describe("BudgetAlertService", () => {
     ({ manager: scopedManager, dataSource: scopedDataSource } =
       createScopedDbMocks([
         [Budget, budgetsRepository as never],
+        [BudgetPeriodCategory, { find: jest.fn().mockResolvedValue([]) }],
         [Notification, alertsRepository as never],
         [Transaction, transactionsRepository as never],
         [TransactionSplit, splitsRepository as never],

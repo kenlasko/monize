@@ -247,6 +247,7 @@ describe("BudgetsService", () => {
     };
 
     periodCategoriesRepository = {
+      find: jest.fn().mockResolvedValue([]),
       create: jest.fn((d) => d),
       save: jest.fn(async (d) => d),
     };
@@ -1357,6 +1358,44 @@ describe("BudgetsService", () => {
       expect(groceries!.spent).toBe(350);
       expect(groceries!.remaining).toBe(150);
     });
+
+    it.each([RolloverType.MONTHLY, RolloverType.NONE])(
+      "keeps posted incoming carry in category and overall availability with outgoing rollover %s",
+      async (rolloverType) => {
+        budgetsRepository.findOne.mockResolvedValue({
+          ...mockBudget,
+          categories: [
+            {
+              ...mockBudgetCategory,
+              amount: 100,
+              rolloverType,
+            },
+          ],
+        });
+        periodCategoriesRepository.find.mockResolvedValue([
+          { budgetCategoryId: "bc-1", rolloverIn: "-200.00000000" },
+        ]);
+        const result = await service.getSummary("user-1", "budget-1");
+        expect(periodCategoriesRepository.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              budgetPeriod: {
+                budgetId: "budget-1",
+                periodStart: result.periodStart,
+              },
+              budgetCategoryId: In(["bc-1"]),
+            }),
+          }),
+        );
+        expect(result).toMatchObject({
+          totalBudgeted: -100,
+          remaining: -100,
+          categoryBreakdown: [
+            { budgeted: -100, planned: 100, remaining: -100 },
+          ],
+        });
+      },
+    );
 
     it("returns the period dates its figures were read for", async () => {
       const spy = jest
