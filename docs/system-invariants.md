@@ -2207,11 +2207,16 @@ Test                migration-transactions-strip-pending-import-note.integration
                     import-qif-plain-transfer.integration.spec.ts: a confirmed
                     row whose description holds the words is not matched as
                     pending.
-Status              enforced -- for backend/src, which the guard scans; the
-                    frontend has no reader of the text and is not scanned. An
+Status              enforced -- the reading half, for backend/src, which the
+                    guard scans; the frontend has no reader of the text and is
+                    not scanned. The text itself can linger where nothing
+                    reads it: a pod of the previous release still writes the
+                    note (beside the flag) during the rollout of the strip
+                    migration, which runs once at container start, and those
+                    legs keep it until a later release repeats the strip; an
                     action-history snapshot taken before the strip still holds
                     the old description, so undoing such an edit can write the
-                    note back as text; nothing reads it.
+                    note back as text.
 ```
 
 ### INV-CRYPTO-001 -- an account's type and its currency's kind agree

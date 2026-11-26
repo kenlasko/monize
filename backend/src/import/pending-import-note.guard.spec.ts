@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as ts from "typescript";
 
 /**
  * Whether an amount is provisional is read from
@@ -23,11 +24,33 @@ const ALLOWED = new Set(["backup/restore-legacy-normalizations.ts"]);
 /** The marker word pair, in any case and with any separator. */
 const OLD_TEXT = /PENDING[\s_-]*IMPORT/i;
 
-/** Comments blanked, line count preserved. */
+/**
+ * Comments blanked, line count preserved. The comment ranges come from
+ * TypeScript's parser, so a `//` or `/*` inside a string, a template or a
+ * regular expression is code and never hides what follows it on the line.
+ */
 export function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
-    .replace(/\/\/[^\n]*/g, "");
+  const file = ts.createSourceFile(
+    "scan.ts",
+    source,
+    ts.ScriptTarget.Latest,
+    false,
+  );
+  const out = source.split("");
+  const blank = (ranges: readonly ts.CommentRange[] | undefined) => {
+    for (const { pos, end } of ranges ?? []) {
+      for (let i = pos; i < end; i++) {
+        if (out[i] !== "\n") out[i] = " ";
+      }
+    }
+  };
+  const visit = (node: ts.Node) => {
+    blank(ts.getLeadingCommentRanges(source, node.pos));
+    blank(ts.getTrailingCommentRanges(source, node.end));
+    node.getChildren(file).forEach(visit);
+  };
+  visit(file);
+  return out.join("");
 }
 
 function sourceFiles(dir: string): string[] {
@@ -110,6 +133,21 @@ describe("the PENDING IMPORT description note stays retired", () => {
         "const b = 'PENDING IMPORT';",
       ].join("\n");
       expect(offendersIn("z.ts", source)).toEqual(["z.ts:5"]);
+    });
+
+    it("is not blinded by a comment opener inside a string, a template or a regex", () => {
+      const source = [
+        'const u = "https://x"; if (d.includes("PENDING IMPORT")) {}',
+        "const g = '/* not a comment'; const n = 'PENDING IMPORT'; // */",
+        "const t = `a // ${x} b`; const m = /PENDING IMPORT/;",
+        "const r = /\\/\\//; const k = `PENDING_IMPORT`;",
+      ].join("\n");
+      expect(offendersIn("w.ts", source)).toEqual([
+        "w.ts:1",
+        "w.ts:2",
+        "w.ts:3",
+        "w.ts:4",
+      ]);
     });
 
     it("exempts the restore normalization only", () => {

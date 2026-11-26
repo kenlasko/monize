@@ -174,5 +174,6 @@ Import a file for a USD account holding a transfer into a EUR account; the EUR r
 - Every locale, both layers, as the final commit.
 - Website docs: the pages that tell the reader to search for the memo text (`website/docs/importing-from-microsoft-money.md`, `website/docs/reports.md`, `website/docs/currency-management.md`) describe the badge, the action and `is:provisional`; regenerate the built pages and the search index.
 - Release note.
+- Repeat the B4 strip (`20261126115405_transactions_strip_pending_import_note.sql`) in a new migration authored after B4 has deployed, for the legs a pod of the previous release wrote with the note during B4's rollout; same statement, a no-op on rows already handled (decided on issue #2400). Never a repeat of the flag backfill.
 - The design's P1 to P7 are in `docs/system-invariants.md` with their enforcement status.
 - The plan pair is retired to `docs/specs/` as one spec, the tracker is closed, and Discussion #2383 gets a closing comment.

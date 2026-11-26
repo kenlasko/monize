@@ -12,7 +12,7 @@ import { createTestAccount } from "../helpers/test-factories";
 
 /** The note the importer wrote before issue #2400 retired it. */
 const NOTE =
-  "⚠️ PENDING IMPORT: Amount may need adjustment when importing the other account.";
+  "\u26a0\ufe0f PENDING IMPORT: Amount may need adjustment when importing the other account.";
 
 /**
  * The issue #2400 strip of the importer's PENDING IMPORT note from transfer
