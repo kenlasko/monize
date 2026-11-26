@@ -171,6 +171,19 @@ describe('CashFlowSankeyWidget', () => {
     );
   });
 
+  it('notes the estimated amounts the diagram includes', async () => {
+    mockGetSankey.mockResolvedValue({ ...RESPONSE, provisionalCount: 2 });
+    await renderWidget();
+    expect(screen.getByTestId('provisional-data-notice')).toHaveTextContent(
+      '2 amounts in these figures are estimates',
+    );
+  });
+
+  it('notes nothing without a provisional count', async () => {
+    await renderWidget();
+    expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
+  });
+
   it('shows an empty state when nothing moved', async () => {
     mockGetSankey.mockResolvedValue({ ...RESPONSE, nodes: [], links: [] });
     await renderWidget();

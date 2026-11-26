@@ -6,6 +6,8 @@ import { chartColors } from '@/lib/chart-colors';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { GroupedTotal } from '@/types/transaction';
 import { CARD_CLASS } from '@/components/ui/Card';
+import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 
 interface TopGroupsPanelProps {
   title: string;
@@ -117,18 +119,32 @@ export function TopGroupsPanel({
                   </div>
                 </>
               );
+              const row = clickable ? (
+                <button
+                  type="button"
+                  onClick={() => onSelect!(g.id)}
+                  className="block w-full text-left -mx-1 px-1 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  {body}
+                </button>
+              ) : (
+                body
+              );
+              // A row holding an imported estimate says so; absent or 0 draws
+              // nothing. The mark sits beside the row, never inside its button:
+              // its tooltip trigger is a button, and a button inside a button
+              // is a nesting the HTML parser does not allow.
               return (
                 <li key={`${g.id ?? 'none'}-${i}`}>
-                  {clickable ? (
-                    <button
-                      type="button"
-                      onClick={() => onSelect!(g.id)}
-                      className="block w-full text-left -mx-1 px-1 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      {body}
-                    </button>
+                  {provisionalCountOf(g.provisionalCount) > 0 ? (
+                    <div className="flex items-start gap-1">
+                      <div className="min-w-0 flex-1">{row}</div>
+                      <span className={clickable ? 'pt-1 text-sm' : 'text-sm'}>
+                        <ProvisionalMark count={g.provisionalCount} />
+                      </span>
+                    </div>
                   ) : (
-                    body
+                    row
                   )}
                 </li>
               );

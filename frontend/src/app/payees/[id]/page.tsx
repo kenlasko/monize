@@ -417,6 +417,7 @@ function PayeeDetailContent() {
         currencyCode: currencyStrategy.displayCurrency,
         total: inDisplayCurrency(currencyStrategy, row),
         count: row.transactionCount,
+        provisionalCount: row.provisionalCount,
       }))
       // Same reasoning as the category panel: no rate, no bar.
       .filter((row): row is typeof row & { total: number } => row.total !== null);

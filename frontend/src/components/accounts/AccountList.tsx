@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { sumConverted, type ConvertedTotal } from '@/lib/currency-total';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { sumProvisionalCounts } from '@/lib/provisional-amount';
 import { MoneyFigure } from '@/components/ui/MoneyFigure';
 import { TABLE_CLASS, TABLE_BODY_CLASS } from '@/components/ui/Table';
 import { useRouter } from 'next/navigation';
@@ -210,9 +211,12 @@ function GroupHeaderLabel({
 function GroupHeaderTotal({
   total,
   displayCurrency,
+  provisionalCount,
 }: {
   total: ConvertedTotal;
   displayCurrency: string;
+  /** The estimates inside the group's balances, marked beside the total. */
+  provisionalCount: number;
 }) {
   return (
     <span
@@ -222,7 +226,7 @@ function GroupHeaderTotal({
           : 'text-red-600 dark:text-red-400'
       }`}
     >
-      <PartialTotal total={total} displayCurrency={displayCurrency}>
+      <PartialTotal total={total} displayCurrency={displayCurrency} provisionalCount={provisionalCount}>
         <MoneyFigure amount={total.value} currencyCode={displayCurrency} className="ui-money-quiet" />
       </PartialTotal>
     </span>
@@ -594,7 +598,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
     // A group total is partial when one of its accounts has no rate to the
     // display currency; `sumConverted` keeps the subtotal and the missing pairs
     // together so the header can mark it instead of quietly under-reporting.
-    const totals = new Map<AccountGroupType, ConvertedTotal>();
+    const totals = new Map<AccountGroupType, ConvertedTotal & { provisionalCount: number }>();
     for (const { type, accounts: groupAccounts } of groupedAccounts) {
       // Sum over each entity's underlying ledgers (a brokerage pair is primary
       // plus its cash sub-account) so the arithmetic is exactly what it was
@@ -630,6 +634,8 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
       totals.set(type, {
         ...converted,
         excludedCount: converted.excludedCount + unknownCount,
+        // Every member's balance is in the total, so every member's estimates.
+        provisionalCount: sumProvisionalCounts(members),
       });
     }
     return totals;
@@ -639,7 +645,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   // indices so AccountRow alternation continues to look right across groups.
   const renderItems = useMemo(() => {
     type Item =
-      | { kind: 'header'; type: AccountGroupType; count: number; total: ConvertedTotal; isCollapsed: boolean }
+      | { kind: 'header'; type: AccountGroupType; count: number; total: ConvertedTotal; provisionalCount: number; isCollapsed: boolean }
       | { kind: 'row'; logical: LogicalAccount; index: number };
     const items: Item[] = [];
     let rowIndex = 0;
@@ -652,6 +658,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
         // what `countLogicalAccounts` counted when these were two rows.
         count: groupAccounts.length,
         total: groupTotals.get(type) ?? EMPTY_CONVERTED_TOTAL,
+        provisionalCount: groupTotals.get(type)?.provisionalCount ?? 0,
         isCollapsed,
       });
       if (!isCollapsed) {
@@ -1045,6 +1052,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                           <GroupHeaderTotal
                             total={item.total}
                             displayCurrency={defaultCurrency}
+                            provisionalCount={item.provisionalCount}
                           />
                         </span>
                       </div>
@@ -1068,6 +1076,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
                     <GroupHeaderTotal
                       total={item.total}
                       displayCurrency={defaultCurrency}
+                      provisionalCount={item.provisionalCount}
                     />
                   </td>
                   <td

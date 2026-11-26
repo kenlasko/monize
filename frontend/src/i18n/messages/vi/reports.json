@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Không có giá cho {symbols}: làm mới hoặc thêm giá trên trang chứng khoán.",
     "weightingNoRate": "Không có tỷ giá cho {pairs}: thêm tỷ giá trên trang Tiền tệ."
   },
+  "provisionalData": {
+    "notice": "Bao gồm số tiền ước tính: {count, plural, other {# số tiền trong các con số này là ước tính}} do Monize tính theo tỷ giá lịch sử cho phía bên kia của một giao dịch chuyển tiền giữa các loại tiền tệ, cho đến khi tệp riêng của tài khoản đó được nhập hoặc số tiền được xác nhận. Tìm is:provisional trong giao dịch để liệt kê chúng."
+  },
   "sankey": {
     "help": "Tiền vào chảy qua phần giữa tới những gì đã chi tiêu, phần đã tiết kiệm hoặc đầu tư và phần đã trả nợ. Theo mặc định, báo cáo bao gồm các tài khoản thanh toán, tiết kiệm, tiền mặt, thẻ tín dụng và hạn mức tín dụng đang mở của bạn, và chuyển khoản giữa hai tài khoản trong số đó không được hiển thị. Hãy bỏ một tài khoản tiết kiệm khỏi bộ lọc tài khoản để xem bạn đã chuyển bao nhiêu vào đó. Thanh toán thẻ tín dụng không bao giờ là trả nợ: các giao dịch mua mà nó tất toán đã được tính là chi tiêu.",
     "depthLabel": "Mức chi tiết",

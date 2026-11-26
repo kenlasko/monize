@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Tidak ada harga untuk {symbols}: perbarui atau tambahkan harga di halaman sekuritas.",
     "weightingNoRate": "Tidak ada kurs untuk {pairs}: tambahkan di halaman Mata Uang."
   },
+  "provisionalData": {
+    "notice": "Termasuk jumlah perkiraan: {count, plural, other {# jumlah dalam angka-angka ini adalah perkiraan}} yang dibuat Monize dengan kurs historis untuk sisi lain dari transfer lintas mata uang, sampai file milik akun tersebut diimpor atau jumlahnya dikonfirmasi. Cari is:provisional di transaksi untuk menampilkannya."
+  },
   "sankey": {
     "help": "Uang yang masuk mengalir melalui bagian tengah ke tempat uang itu dibelanjakan, yang ditabung atau diinvestasikan, dan yang membayar utang. Secara bawaan, laporan mencakup rekening giro, tabungan, tunai, kartu kredit, dan jalur kredit Anda yang masih terbuka, dan transfer antara dua di antaranya tidak ditampilkan. Keluarkan rekening tabungan dari filter rekening untuk melihat berapa yang Anda pindahkan ke sana. Pembayaran kartu kredit tidak pernah dianggap pembayaran utang: pembelian yang dilunasinya sudah dihitung sebagai pengeluaran.",
     "depthLabel": "Rincian",

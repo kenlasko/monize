@@ -262,6 +262,10 @@
     "explanation": "Total partiel : {count, plural, one {# montant n’a pas pu être inclus} other {# montants n’ont pas pu être inclus}}, la valeur affichée les exclut donc. Aucun taux vers {displayCurrency} n’est disponible pour {currencies}.",
     "explanationExcluded": "Total partiel : {count, plural, one {# montant n’a pas pu être calculé} other {# montants n’ont pas pu être calculés}}, la valeur affichée les exclut donc."
   },
+  "provisionalTotal": {
+    "srSuffix": "(inclut des montants estimés)",
+    "explanation": "Inclut des montants estimés : {count, plural, one {# montant de ce chiffre est une estimation} other {# montants de ce chiffre sont des estimations}} faites par Monize au taux de change historique pour l'autre côté d'un virement entre devises. Chacun reste une estimation jusqu'à l'import du fichier propre à ce compte ou la confirmation du montant. Recherchez is:provisional dans les transactions pour les lister."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Montant non disponible",

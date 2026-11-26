@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from './api';
 import { transactionsApi } from './transactions';
+import { invalidateBalanceCaches } from './apiCache';
 
 vi.mock('./api', () => ({
   default: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn() },
+}));
+vi.mock('./apiCache', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./apiCache')>()),
+  invalidateBalanceCaches: vi.fn(),
 }));
 
 describe('transactionsApi', () => {
@@ -176,6 +181,15 @@ describe('transactionsApi', () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'tx-1' } });
     await transactionsApi.unreconcile('tx-1');
     expect(apiClient.post).toHaveBeenCalledWith('/transactions/tx-1/unreconcile');
+  });
+
+  it('confirmAmount posts to /transactions/:id/confirm-amount and returns the confirmed row', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'tx-1', amountIsProvisional: false } });
+    const result = await transactionsApi.confirmAmount('tx-1');
+    expect(apiClient.post).toHaveBeenCalledWith('/transactions/tx-1/confirm-amount');
+    expect(result.amountIsProvisional).toBe(false);
+    // Every balance surface's provisional count moves, so the cached reads go.
+    expect(invalidateBalanceCaches).toHaveBeenCalledTimes(1);
   });
 
   it('updateStatus patches /transactions/:id/status', async () => {

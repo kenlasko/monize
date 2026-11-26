@@ -29,7 +29,9 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { LinkifiedText } from '@/components/ui/LinkifiedText';
 import { WarrantyBadge, rowHasWarranties } from '@/components/transactions/WarrantyBadge';
-import { CalendarIcon, ChevronDownIcon, DocumentDuplicateIcon, PaperClipIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, CheckCircleIcon, ChevronDownIcon, DocumentDuplicateIcon, PaperClipIcon } from '@heroicons/react/24/outline';
+import { ProvisionalAmountBadge } from '@/components/transactions/ProvisionalAmountBadge';
+import { isProvisionalAmount } from '@/lib/provisional-amount';
 import { Badge } from '@/components/ui/Badge';
 import type { UiStyle } from '@/lib/ui-styles';
 
@@ -239,6 +241,12 @@ export interface TransactionRowProps {
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
   onShareExpense?: (transaction: Transaction) => void;
+  /**
+   * Confirm a provisional amount as it stands. The button shows only on a
+   * provisional row, and only when the list passes this (a row the reader
+   * may confirm); the phone card offers it from the action sheet instead.
+   */
+  onConfirmAmount?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
   isSelected?: boolean;
   selectionMode?: boolean;
@@ -318,6 +326,7 @@ export const TransactionRow = memo(function TransactionRow({
   onDuplicate,
   onScheduleRecurring,
   onShareExpense,
+  onConfirmAmount,
   onDeleteClick,
   isSelected,
   selectionMode,
@@ -490,6 +499,7 @@ export const TransactionRow = memo(function TransactionRow({
                     )}
                   </div>
                 )}
+              <ProvisionalAmountBadge transaction={transaction} />
             </div>
             <div className="col-span-3 flex flex-wrap items-center gap-1.5">
               {/* Structural, not responsive, exactly as in the tier row: a
@@ -1013,6 +1023,7 @@ export const TransactionRow = memo(function TransactionRow({
                         *
                       </span>
                     )}
+                    <ProvisionalAmountBadge transaction={transaction} />
                   </>
                 )}
               </td>
@@ -1046,6 +1057,7 @@ export const TransactionRow = memo(function TransactionRow({
               )}
             </div>
           )}
+        <ProvisionalAmountBadge transaction={transaction} />
       </td>
       )}
       {showFxColumns && (
@@ -1104,6 +1116,18 @@ export const TransactionRow = memo(function TransactionRow({
             {transaction.linkedInvestmentTransactionId
               ? (density === 'dense' ? '\uD83D\uDCC8' : t('list.row.viewButton'))
               : (density === 'dense' ? '\u270E' : tc('edit'))}
+          </button>
+        )}
+        {onConfirmAmount && isProvisionalAmount(transaction) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onConfirmAmount(transaction); }}
+            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+            title={t('provisional.confirmActionTitle')}
+            aria-label={density === 'dense' ? t('provisional.confirmAction') : undefined}
+          >
+            {density === 'dense' ? (
+              <CheckCircleIcon className="w-3.5 h-3.5 inline" aria-hidden="true" />
+            ) : t('provisional.confirmAction')}
           </button>
         )}
         {!transaction.linkedInvestmentTransactionId && (onDuplicate || onScheduleRecurring || onShareExpense) && (

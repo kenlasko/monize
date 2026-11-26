@@ -101,6 +101,16 @@ export interface Transaction {
   isTransfer: boolean;
   linkedTransactionId: string | null;
   linkedTransaction?: Transaction | null;
+  /**
+   * The amount is Monize's estimate for this leg of a cross-currency
+   * transfer: the importer wrote it from the other account's file at the
+   * historical rate, and it stays an estimate until this account's own file
+   * is imported, the reader confirms it (`transactionsApi.confirmAmount`) or a
+   * transfer edit states another amount. Read it through
+   * `isProvisionalAmount`; absent means no information, drawn as confirmed.
+   * Never sent on a create or update body.
+   */
+  amountIsProvisional?: boolean;
   /** ID of the linked investment transaction (if this is a cash transaction for an investment) */
   linkedInvestmentTransactionId?: string | null;
   /** Number of file attachments on this transaction (populated by the list endpoint). */
@@ -202,6 +212,11 @@ export interface SummaryInReportingCurrency {
   includedTransactionCount: number;
   excludedTransactionCount: number;
   missingCurrencies: string[];
+  /**
+   * Provisional transfer amounts (an imported estimate) inside the known
+   * figures above: only the currencies that converted. Absent is no information.
+   */
+  provisionalCount?: number;
 }
 
 export interface TransactionSummary {
@@ -209,6 +224,8 @@ export interface TransactionSummary {
   totalExpenses: number;
   netCashFlow: number;
   transactionCount: number;
+  /** Provisional transfer amounts (an imported estimate) inside the native totals. */
+  provisionalCount?: number;
   firstTransactionDate?: string | null;
   lastTransactionDate?: string | null;
   byCurrency?: Record<string, CurrencySummary>;
@@ -225,6 +242,11 @@ export interface GroupedTotal {
   convertedCurrency?: string;
   /** `total` converted by the server at each row's own rate or date; null without one. */
   convertedTotal?: number | null;
+  /**
+   * Provisional transfer amounts (an imported estimate) inside `total`.
+   * Absent is no information and draws no mark.
+   */
+  provisionalCount?: number;
 }
 
 export interface RecurringChargeInfo {

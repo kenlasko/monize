@@ -24,6 +24,7 @@ import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { AccountIdentity, accountWidgetBalance } from '@/components/transactions/AccountIdentity';
 import { getNextScheduled } from '@/lib/scheduled-utils';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
+import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
 
 interface AccountInfoWidgetProps {
   account: Account;
@@ -277,6 +278,8 @@ export function AccountInfoWidget({
         </p>
         <p className={`text-2xl font-bold ${balanceColor(balance)}`}>
           {formatCurrency(balance, account.currencyCode)}
+          {/* The estimates inside the balance: a mark, the figure unchanged. */}
+          <ProvisionalMark count={account.provisionalCount} />
         </p>
       </div>
 

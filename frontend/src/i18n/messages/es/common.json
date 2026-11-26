@@ -262,6 +262,10 @@
     "explanation": "Total parcial: {count, plural, one {# importe} other {# importes}} no se pudieron incluir, por lo que la cifra mostrada los excluye. No hay tipo de cambio a {displayCurrency} para {currencies}.",
     "explanationExcluded": "Total parcial: {count, plural, one {# importe} other {# importes}} no se pudieron calcular, por lo que la cifra mostrada los excluye."
   },
+  "provisionalTotal": {
+    "srSuffix": "(incluye importes estimados)",
+    "explanation": "Incluye importes estimados: {count, plural, one {# importe de esta cifra es una estimación} other {# importes de esta cifra son estimaciones}} que Monize hizo al tipo de cambio histórico para el otro lado de una transferencia entre divisas. Cada uno sigue siendo una estimación hasta que se importe el archivo propio de esa cuenta o se confirme el importe. Busca is:provisional en las transacciones para verlos."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Importe no disponible",

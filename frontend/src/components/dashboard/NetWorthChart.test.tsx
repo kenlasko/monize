@@ -138,6 +138,26 @@ describe('NetWorthChart', () => {
     expect(screen.queryByText('View full report')).not.toBeInTheDocument();
   });
 
+  it('marks the current net worth when the latest month includes an estimated amount', async () => {
+    await renderWidget([twoMonths[0], { ...twoMonths[1], provisionalCount: 1 }]);
+    expect(screen.getByText('$15000')).toBeInTheDocument();
+    expect(screen.getByTestId('provisional-mark')).toBeInTheDocument();
+  });
+
+  it('adds no mark at a count of 0 or without one', async () => {
+    await renderWidget([{ ...twoMonths[0], provisionalCount: 2 }, { ...twoMonths[1], provisionalCount: 0 }]);
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
+  it('shows both marks on a latest month that is partial and provisional', async () => {
+    await renderWidget([
+      twoMonths[0],
+      { ...twoMonths[1], fxComplete: false, missingRatePairs: ['EUR->USD'], provisionalCount: 1 },
+    ]);
+    expect(screen.getByTestId('partial-total-marker')).toBeInTheDocument();
+    expect(screen.getByTestId('provisional-mark')).toBeInTheDocument();
+  });
+
   it('asks for the history again when a price refresh wrote new prices, keeping the chart meanwhile', async () => {
     getMonthly.mockResolvedValue(twoMonths);
     let view!: ReturnType<typeof render>;

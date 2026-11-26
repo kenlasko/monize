@@ -1094,6 +1094,21 @@ describe('MonthlyCategoryBreakdownReport', () => {
     await screen.findByText('Groceries');
     expect(screen.queryByTestId('partial-data-notice')).not.toBeInTheDocument();
   });
+
+  it('notes the estimated amounts the transfer rows include', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({ ...sampleResponse, provisionalCount: 1 });
+    render(<MonthlyCategoryBreakdownReport />);
+    expect(await screen.findByTestId('provisional-data-notice')).toHaveTextContent(
+      '1 amount in these figures is an estimate',
+    );
+  });
+
+  it('notes no estimate at a count of 0 or without one', async () => {
+    mockGetMonthlyCategoryBreakdown.mockResolvedValue({ ...sampleResponse, provisionalCount: 0 });
+    render(<MonthlyCategoryBreakdownReport />);
+    await screen.findByText('Groceries');
+    expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
+  });
 });
 
 describe('MonthlyCategoryBreakdownReport: a reload is not the previous answer', () => {

@@ -2161,6 +2161,144 @@ describe("Backup export/restore round-trip (integration)", () => {
   });
 
   /**
+   * Issue #2400: a backup taken before the importer's PENDING IMPORT note was
+   * retired brings the note back in, and one taken before
+   * transactions.amount_is_provisional existed carries the state only in the
+   * text. The restore flags the marked transfer legs of the second, strips the
+   * note from the transfer legs of both, and leaves a non-transfer row's text
+   * and a confirmed leg's flag alone (restore-legacy-normalizations.ts).
+   */
+  describe("the retired PENDING IMPORT note in an older artifact", () => {
+    const NOTE =
+      "\u26a0\ufe0f PENDING IMPORT: Amount may need adjustment when importing the other account.";
+    const AFTER_IMPORTER_WROTE_THE_COLUMN =
+      "20261125150107_transactions_amount_is_provisional_backfill_repeat.sql";
+
+    /** Exports a user whose transfer legs carry the note, unflagged. */
+    async function exportedWithNotes(): Promise<Record<string, unknown>> {
+      const user = await createTestUserDirect(dataSource, {
+        email: `pending-note-${randomUUID()}@example.com`,
+      });
+      const ids = await seedUserData(user.id);
+      const setDescription = (id: string, description: string) =>
+        dataSource.query(
+          `UPDATE transactions SET description = $2 WHERE id = $1`,
+          [id, description],
+        );
+      await setDescription(ids.transferInTxId, `Rent ${NOTE}`);
+      await setDescription(ids.transferOutTxId, NOTE);
+      await setDescription(ids.expenseTxId, NOTE);
+      const { buffer } = await withUserContext(user.id, () =>
+        service.exportToBuffer(user.id),
+      );
+      return JSON.parse(gunzipSync(buffer).toString("utf-8"));
+    }
+
+    /** Restores `doc` into a new user and reads back the three rows. */
+    async function restoredRows(doc: Record<string, unknown>) {
+      const target = await createTestUserDirect(dataSource, {
+        email: `pending-note-target-${randomUUID()}@example.com`,
+      });
+      await withUserContext(target.id, () =>
+        service.restoreData(target.id, {
+          compressedData: gzipSync(Buffer.from(JSON.stringify(doc))),
+          password: PASSWORD,
+        }),
+      );
+      const rows: Array<{
+        transaction_date: string;
+        amount: string;
+        description: string | null;
+        amount_is_provisional: boolean;
+      }> = await dataSource.query(
+        `SELECT TO_CHAR(transaction_date, 'YYYY-MM-DD') AS transaction_date,
+                amount, description, amount_is_provisional
+           FROM transactions
+          WHERE user_id = $1
+            AND transaction_date IN ('2026-01-15', '2026-01-17')`,
+        [target.id],
+      );
+      const pick = (date: string, sign: number) => {
+        const row = rows.find(
+          (r) =>
+            r.transaction_date === date && Math.sign(Number(r.amount)) === sign,
+        );
+        if (!row) throw new Error(`no restored row on ${date}`);
+        return {
+          description: row.description,
+          provisional: row.amount_is_provisional,
+        };
+      };
+      return {
+        transferIn: pick("2026-01-17", 1),
+        transferOut: pick("2026-01-17", -1),
+        expense: pick("2026-01-15", -1),
+      };
+    }
+
+    it("restores a pre-column artifact's marked legs flagged and without the note", async () => {
+      const doc = await exportedWithNotes();
+      const { producedBy: _p, ...markerless } = doc;
+      const preColumn = {
+        ...markerless,
+        transactions: (doc.transactions as Record<string, unknown>[]).map(
+          ({ amount_is_provisional: _f, ...row }) => row,
+        ),
+      };
+
+      const rows = await restoredRows(preColumn);
+
+      expect(rows.transferIn).toEqual({
+        description: "Rent",
+        provisional: true,
+      });
+      expect(rows.transferOut).toEqual({
+        description: null,
+        provisional: true,
+      });
+      // Not a transfer leg: the reader's own text, never the importer's state.
+      expect(rows.expense).toEqual({ description: NOTE, provisional: false });
+    });
+
+    it("strips the note from a later artifact's confirmed legs and leaves them confirmed", async () => {
+      // From this schema on a reader could confirm a leg, which clears the
+      // flag and keeps the note; flagging by the text would undo that.
+      const doc = await exportedWithNotes();
+      const rows = await restoredRows({
+        ...doc,
+        producedBy: { schemaMigration: AFTER_IMPORTER_WROTE_THE_COLUMN },
+      });
+
+      expect(rows.transferIn).toEqual({
+        description: "Rent",
+        provisional: false,
+      });
+      expect(rows.transferOut).toEqual({
+        description: null,
+        provisional: false,
+      });
+      expect(rows.expense).toEqual({ description: NOTE, provisional: false });
+    });
+
+    it("leaves an artifact with the column and no marker as stored", async () => {
+      // No positive evidence that it predates the strip.
+      const doc = await exportedWithNotes();
+      const { producedBy: _p, ...markerless } = doc;
+
+      const rows = await restoredRows(markerless);
+
+      expect(rows.transferIn).toEqual({
+        description: `Rent ${NOTE}`,
+        provisional: false,
+      });
+      expect(rows.transferOut).toEqual({
+        description: NOTE,
+        provisional: false,
+      });
+    });
+  });
+
+  /**
    * A26-S06-04: a migration that changes what a stored value means backfills the
    * rows it finds once; a restore of an older artifact brings the old meaning
    * back in. `skip_price_updates` used to be overridden by a provider and is now

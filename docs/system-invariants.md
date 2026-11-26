@@ -83,6 +83,7 @@ implied.
 | INV-FX-003 | A currency pair is stored in one orientation | partial |
 | INV-FX-004 | A user-supplied rate never replaces a global exchange-rate observation | enforced |
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
+| INV-FX-006 | Whether an amount is provisional is read from `amount_is_provisional` and nowhere else | enforced |
 | INV-CRYPTO-001 | An account's type and its currency's kind agree: a crypto wallet holds a coin, every other account and every security a fiat currency | partial |
 | INV-CRYPTO-002 | A pair with a coin on either side is priced only by the crypto provider, through the coin's Yahoo pair, and that provider prices nothing else | enforced |
 | INV-MONEY-001 | An amount in an account's currency is stored and rounded at that currency's money precision: never more places than it carries, never fewer | enforced |
@@ -98,6 +99,7 @@ implied.
 | INV-REPORT-003 | A transfer leg appears in a report only as a named flow, never inside income, expenses or net | enforced |
 | INV-REPORT-004 | A category's cost is its signed sum within the category, on every report surface | partial |
 | INV-REPORT-005 | A report figure is rounded once, from its own components: no part enters a total as its rounded reading | partial |
+| INV-REPORT-006 | A split line reads as the whole row it stands for: a transfer line is a leg, and a tag filter counts it once | partial |
 | INV-SANKEY-001 | The Cash Flow Sankey closes: income + inflows + deficit = expenses + outflows + unspent | enforced |
 | INV-SANKEY-002 | A Sankey transfer leg is counted at most once, by its own account's scope and its counterpart's class | enforced |
 | INV-SANKEY-003 | Investment linkage and VOID are excluded on every Sankey branch | enforced |
@@ -2164,6 +2166,60 @@ Status              enforced -- the chain, the service on it, the source
                     table cases are named in fx-provider-chain.spec.ts.
 ```
 
+### INV-FX-006 -- a provisional amount is the column, never the description
+
+```text
+Statement           Whether a transaction's amount is the importer's estimate
+                    for the other account's leg of a cross-currency transfer
+                    is read from transactions.amount_is_provisional and from
+                    nothing else (design P1 of
+                    future-plans/provisional-amounts.md). No edit of a
+                    description can make an amount provisional or confirm one,
+                    and no description carries the state: the importer's old
+                    PENDING IMPORT note is retired.
+Source of truth     transactions.amount_is_provisional (migration
+                    20261125132236_transactions_amount_is_provisional.sql).
+Enforcement         The importer's pending lookups match the column
+                    (import-regular-processor.service.ts PROVISIONAL_LEG_SQL),
+                    and so do the report readers (INV-FX-002). The importer
+                    writes a provisional leg's description as the file's memo.
+                    Migration
+                    20261126115405_transactions_strip_pending_import_note.sql
+                    cut the exact note out of every transfer leg holding it,
+                    flagged or confirmed, without touching the flag (a third
+                    backfill by the text would have re-flagged legs a reader
+                    had confirmed; issue #2400), and the restore of an older
+                    backup does the same through
+                    backup/restore-legacy-normalizations.ts, flagging by the
+                    text only for an artifact from before the importer wrote
+                    the column. import/pending-import-note.guard.spec.ts fails
+                    on the old text in any code under backend/src outside that
+                    normalization.
+Test                migration-transactions-strip-pending-import-note.integration.spec.ts:
+                    a note-only description becomes NULL, a memo-plus-note one
+                    the memo, an already-stripped one is untouched, twice; a
+                    confirmed leg loses the note and stays confirmed; a
+                    non-transfer row, an edited note and a shared-expense
+                    ledger row are left alone.
+                    backup-restore.integration.spec.ts "the retired PENDING
+                    IMPORT note in an older artifact": a pre-column artifact
+                    restores its marked legs flagged and without the note, and
+                    a later one strips the note and keeps its legs confirmed.
+                    import-qif-plain-transfer.integration.spec.ts: a confirmed
+                    row whose description holds the words is not matched as
+                    pending.
+Status              enforced -- the reading half, for backend/src, which the
+                    guard scans; the frontend has no reader of the text and is
+                    not scanned. The text itself can linger where nothing
+                    reads it: a pod of the previous release still writes the
+                    note (beside the flag) during the rollout of the strip
+                    migration, which runs once at container start, and those
+                    legs keep it until a later release repeats the strip; an
+                    action-history snapshot taken before the strip still holds
+                    the old description, so undoing such an edit can write the
+                    note back as text.
+```
+
 ### INV-CRYPTO-001 -- an account's type and its currency's kind agree
 
 ```text
@@ -3543,6 +3599,60 @@ Known gap           A holding's own value, cost and gain in the portfolio
                     aggregate), so a budget report figure is the two-place
                     reading of a four-place one; the transfers-in toggle's
                     figure folds as its aggregate in Budget Health only.
+Status              partial
+```
+
+### INV-REPORT-006 -- a split line reads as the whole row it stands for
+
+```text
+Statement           A split line counts as the whole row it stands for: a
+                    transfer line is a transfer leg on its parent's account at
+                    the line's signed amount, and a transfers-only read counts
+                    it beside the whole transfer rows, once. A tag filter
+                    selects a line when its parent or the line carries a
+                    selected tag and counts it once, however many tags match.
+                    The parent is never counted beside its lines.
+Source of truth     transaction_splits.transfer_account_id for what a line is;
+                    the line's own signed amount.
+Enforcement         The Cash Flow Sankey (wholeTransferLegsQuery /
+                    splitTransferLegsQuery), Income vs Expenses' tagged flows,
+                    the budget transfer builders (budget-spending.util.ts),
+                    the custom report (netLinesOf), the Monthly Category
+                    Breakdown's transfer rows (getTransferRows) and
+                    getTransfersByAccount read both shapes, each with a
+                    split-line branch. The analytics and register Transfers
+                    filter (createFilteredAnalyticsQuery, findAll,
+                    computeSplitAwareSum, buildFilteredIdsSubquery) matches
+                    transfer_account_id at line grain. The tag filters of the
+                    analytics and the register sum (tagFilterExistsSql) and the
+                    tag-key filter (buildTagKeyFilterClause) are EXISTS tests.
+                    Budget Health's income fallback reads at line grain
+                    without transfer and embedded investment lines.
+Concurrency scope   -- (read path)
+Retry semantics     -- (read path)
+Crash semantics     -- (read path)
+Failure response    -- a report answers; it does not refuse.
+Required tests      report-transfer-fx-surfaces.integration.spec.ts: the
+                    breakdown, getTransfersByAccount, the Transfers filter in
+                    the analytics and the register (pages 1 and 2) read the
+                    split line; both accounts in scope net to zero.
+                    tag-filter-sum-once.integration.spec.ts: a line matching
+                    several tags counts once.
+                    budget-health-split-transfer.integration.spec.ts: transfer
+                    and investment lines are not income. e2e/tests/split-line-equivalence.spec.ts: the four
+                    figures on screen.
+Known gap           Under the Transfers filter the register lists a split by
+                    its transfer line, but bulk update selects whole transfer
+                    rows only, and so does the is:transfer search term, which
+                    shares bulk update's path: widening either would let a
+                    filter-mode recategorization rewrite the split's category
+                    lines (split-bulk-update.md I2). The register export and
+                    the amount range read the parent's amount beside a split
+                    that hydrates only its matching lines, as under a category
+                    filter. The tag-key breakdown joins the parent's tags, so
+                    two tags giving one value count a row twice.
+                    externalFlowSubtotalsSql does not read split lines
+                    (docs/specs/split-line-equivalence.md section 5).
 Status              partial
 ```
 

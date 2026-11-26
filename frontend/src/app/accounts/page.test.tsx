@@ -703,6 +703,26 @@ describe('AccountsPage', () => {
       expect(screen.getByTestId('summary-Net Worth')).toHaveTextContent('partial total');
     });
 
+    it('marks a total that includes an estimated amount, beside its partial marker', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'acc-1', name: 'Checking', accountType: 'CHECKING', accountSubType: null, currencyCode: 'USD', currentBalance: 20000, isClosed: false, canDelete: true, provisionalCount: 1 },
+        { id: 'acc-2', name: 'Visa', accountType: 'CREDIT_CARD', accountSubType: null, currencyCode: 'USD', currentBalance: -500, isClosed: false, canDelete: true, provisionalCount: 0 },
+        { id: 'acc-5', name: 'Brokerage', accountType: 'INVESTMENT', accountSubType: 'INVESTMENT_BROKERAGE', currencyCode: 'USD', currentBalance: 0, isClosed: false, canDelete: false },
+      ]);
+      mockGetPortfolioSummary.mockRejectedValue(new Error('API error'));
+      render(<AccountsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('$20000.00');
+      });
+      // Assets is both partial (the unknown brokerage) and provisional.
+      expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('partial total');
+      expect(screen.getByTestId('summary-Total Assets')).toHaveTextContent('includes estimated amounts');
+      expect(screen.getByTestId('summary-Net Worth')).toHaveTextContent('includes estimated amounts');
+      // The liability side holds no estimate (a count of 0), so no mark.
+      expect(screen.getByTestId('summary-Total Liabilities')).not.toHaveTextContent('includes estimated amounts');
+    });
+
     // valuationComplete covers a missing rate with every price present, which
     // unpricedHoldingsCount (zero here) cannot see.
     it('marks the totals partial when a brokerage is FX-incomplete with every price present', async () => {

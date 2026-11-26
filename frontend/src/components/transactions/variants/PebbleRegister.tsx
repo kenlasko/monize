@@ -15,6 +15,8 @@ import { usePayeeDisplay } from '@/hooks/usePayeeDisplay';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { HIGHLIGHT_FLASH } from '@/hooks/useHighlightTarget';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { ProvisionalAmountBadge } from '@/components/transactions/ProvisionalAmountBadge';
+import { isProvisionalAmount } from '@/lib/provisional-amount';
 import {
   registerGroupLabel,
   rowAmount,
@@ -62,8 +64,12 @@ export interface PebbleRegisterProps {
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
   onDeleteClick: (transaction: Transaction) => void;
+  /** Confirm a provisional amount as it stands; offered only where `canConfirmAmount` allows. */
+  onConfirmAmount?: (transaction: Transaction) => void;
   canEdit: (transaction: Transaction) => boolean;
   canDelete: (transaction: Transaction) => boolean;
+  /** The reader may confirm this row's amount (they own it). Absent: never. */
+  canConfirmAmount?: (transaction: Transaction) => boolean;
   categoryColorMap?: Map<string, string | null>;
   categoryLabelMap?: Map<string, string>;
   /** Inherited-aware icon per category id; see buildCategoryIconMap. */
@@ -315,6 +321,7 @@ const PebbleRow = React.memo(function PebbleRow({
       <span className={`shrink-0 text-right font-semibold text-[15px] sm:w-28 whitespace-nowrap ${isVoid ? 'line-through' : ''} ${amountTone(amount, inspected)}`}>
         <MoneyFigure amount={amount} currencyCode={tx.currencyCode} />
         {converted && <span className="ml-0.5 text-xs font-normal">*</span>}
+        <ProvisionalAmountBadge transaction={tx} onInk={inspected} />
       </span>
       {balanceText !== null && (
         <span className={`hidden md:block shrink-0 w-24 text-right text-sm ${inspected ? 'opacity-70' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -357,6 +364,8 @@ function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
   // A linked row's Delete removes the investment transaction it belongs to
   // (`TransactionList` routes it), so the row offers it like any other.
   const showDelete = p.canDelete(tx);
+  const showConfirm =
+    isProvisionalAmount(tx) && !!p.onConfirmAmount && (p.canConfirmAmount?.(tx) ?? false);
   return (
     // Sticky against the window, so it follows the list. It only sticks once
     // the page title has scrolled away, which is when the floating page bar
@@ -383,6 +392,7 @@ function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
       </div>
       <div className="ui-page-title ui-pebble-inspector-amount">
         <MoneyFigure amount={amount} currencyCode={tx.currencyCode} display />
+        <ProvisionalAmountBadge transaction={tx} align="start" />
       </div>
       <dl className="flex flex-col">
         <InspectorRow label={t('list.header.date')}>{formatDate(tx.transactionDate)}</InspectorRow>
@@ -412,8 +422,18 @@ function Inspector({ tx, p }: { tx: Transaction; p: PebbleRegisterProps }) {
           <InspectorRow label={t('list.header.attachments')}>{tx.attachmentCount}</InspectorRow>
         )}
       </dl>
-      {(showEdit || showCopy || showSchedule || showDelete) && (
+      {(showEdit || showCopy || showSchedule || showDelete || showConfirm) && (
         <div className="flex flex-wrap gap-2">
+          {showConfirm && (
+            <button
+              type="button"
+              className={PILL}
+              title={t('provisional.confirmActionTitle')}
+              onClick={() => p.onConfirmAmount?.(tx)}
+            >
+              {t('provisional.confirmAction')}
+            </button>
+          )}
           {showEdit && (
             <button type="button" className={PILL} onClick={() => p.onEdit?.(tx)}>
               {tc('edit')}

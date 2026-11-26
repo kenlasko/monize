@@ -350,6 +350,17 @@ describe('CategoryDetailPage', () => {
     );
   });
 
+  it('marks an account row that includes an estimated amount', async () => {
+    const base = detailFixture();
+    mockGetDetail.mockResolvedValue(
+      detailFixture({ accounts: [{ ...base.accounts[0], provisionalCount: 1 }] }),
+    );
+    await renderPage();
+
+    const row = screen.getByText('Chequing').closest('li') as HTMLElement;
+    expect(within(row).getByTestId('provisional-mark')).toBeInTheDocument();
+  });
+
   it('filters by category and account together when an account row is clicked', async () => {
     await renderPage();
 

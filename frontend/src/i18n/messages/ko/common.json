@@ -262,6 +262,10 @@
     "explanation": "부분 합계: {count, plural, other {# 개의 금액}}을(를) 포함할 수 없어 표시된 수치에서 제외했습니다. {currencies}에 대한 {displayCurrency} 환율이 없습니다.",
     "explanationExcluded": "부분 합계: {count, plural, other {# 개의 금액}}을(를) 계산할 수 없어 표시된 수치에서 제외했습니다."
   },
+  "provisionalTotal": {
+    "srSuffix": "(추정 금액 포함)",
+    "explanation": "추정 금액 포함: 이 수치의 {count, plural, other {# 개 금액}}은 Monize가 통화 간 이체의 상대편에 대해 과거 환율로 추정한 값입니다. 해당 계좌의 자체 파일을 가져오거나 금액을 확인할 때까지 추정치로 남습니다. 목록을 보려면 거래에서 is:provisional을 검색하세요."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "금액을 확인할 수 없음",

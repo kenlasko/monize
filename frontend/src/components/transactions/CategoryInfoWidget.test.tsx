@@ -117,6 +117,32 @@ describe('CategoryInfoWidget', () => {
     });
   });
 
+  it('notes the estimated amounts the period figures include', async () => {
+    mockedTransactions.getSummary.mockResolvedValue({
+      totalIncome: 0,
+      totalExpenses: 800,
+      netCashFlow: -800,
+      transactionCount: 20,
+      provisionalCount: 1,
+      lastTransactionDate: '2026-06-20',
+      byCurrency: {
+        CAD: { totalIncome: 0, totalExpenses: 800, netCashFlow: -800, transactionCount: 20 },
+      },
+    });
+    await renderWidget();
+    expect(screen.getByText('CAD 800.00')).toBeInTheDocument();
+    expect(screen.getByTestId('provisional-data-notice')).toHaveTextContent(
+      '1 amount in these figures is an estimate',
+    );
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
+  it('notes nothing without a provisional count', async () => {
+    await renderWidget();
+    expect(screen.getByText('CAD 800.00')).toBeInTheDocument();
+    expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
+  });
+
   it('shows the category name, badge, swatch and headline total', async () => {
     await renderWidget();
 

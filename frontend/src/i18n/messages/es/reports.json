@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Sin precio para {symbols}: actualiza o añade un precio en la página del valor.",
     "weightingNoRate": "Sin tipo de cambio para {pairs}: añade uno en la página Divisas."
   },
+  "provisionalData": {
+    "notice": "Incluye importes estimados: {count, plural, one {# importe de estas cifras es una estimación} other {# importes de estas cifras son estimaciones}} que Monize hizo al tipo de cambio histórico para el otro lado de una transferencia entre divisas, hasta que se importe el archivo propio de esa cuenta o se confirme el importe. Busca is:provisional en las transacciones para verlos."
+  },
   "sankey": {
     "help": "El dinero que entró fluye por el centro hacia aquello en lo que se gastó, lo que se ahorró o invirtió y lo que pagó deudas. De forma predeterminada, el informe abarca sus cuentas corrientes, de ahorro, de efectivo, de tarjeta de crédito y de línea de crédito abiertas, y una transferencia entre dos de ellas no se muestra. Excluya una cuenta de ahorro del filtro de cuentas para ver lo que transfirió a ella. Un pago de tarjeta de crédito nunca es un pago de deuda: las compras que liquida ya se cuentan como gastos.",
     "depthLabel": "Detalle",

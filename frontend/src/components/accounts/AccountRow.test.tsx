@@ -188,6 +188,22 @@ describe('AccountRow', () => {
       expect(figureReading('$1500.00')).toBeInTheDocument();
     });
 
+    it('marks a balance that includes an estimated amount, and not one that does not', () => {
+      const { unmount } = renderAccountRow(
+        createDefaultProps({ account: createAccount({ currentBalance: 1500, provisionalCount: 1 }) }),
+      );
+      expect(figureReading('$1500.00')).toBeInTheDocument();
+      expect(screen.getByTestId('provisional-mark')).toBeInTheDocument();
+      unmount();
+      const { unmount: unmountZero } = renderAccountRow(
+        createDefaultProps({ account: createAccount({ currentBalance: 1500, provisionalCount: 0 }) }),
+      );
+      expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+      unmountZero();
+      renderAccountRow(createDefaultProps({ account: createAccount({ currentBalance: 1500 }) }));
+      expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    });
+
     it('renders Active status badge for open accounts', () => {
       const props = createDefaultProps({
         account: createAccount({ isClosed: false }),

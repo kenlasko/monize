@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Sem preço para {symbols}: atualize ou adicione um preço na página do ativo.",
     "weightingNoRate": "Sem taxa de câmbio para {pairs}: adicione uma na página Moedas."
   },
+  "provisionalData": {
+    "notice": "Inclui valores estimados: {count, plural, one {# valor nestes números é uma estimativa} other {# valores nestes números são estimativas}} feitas pelo Monize à taxa de câmbio histórica para o outro lado de uma transferência entre moedas, até que o arquivo dessa conta seja importado ou o valor seja confirmado. Pesquise is:provisional nas transações para listá-los."
+  },
   "sankey": {
     "help": "O dinheiro que entrou flui pelo centro para aquilo em que foi gasto, o que foi poupado ou investido e o que pagou dívidas. Por padrão, o relatório abrange suas contas correntes, poupanças, contas de dinheiro, cartões de crédito e linhas de crédito abertas, e uma transferência entre duas delas não é exibida. Tire uma conta poupança do filtro de contas para ver o que você transferiu para ela. Um pagamento de cartão de crédito nunca é um pagamento de dívida: as compras que ele quita já são contadas como despesas.",
     "depthLabel": "Detalhe",

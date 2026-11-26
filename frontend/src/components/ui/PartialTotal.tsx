@@ -2,6 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 import { isComplete, type ConvertedTotal } from '@/lib/currency-total';
 
 interface PartialTotalProps {
@@ -13,6 +15,13 @@ interface PartialTotalProps {
   displayCurrency: string;
   /** Replaces the missing-rate wording when something else withheld the total. */
   explanation?: string;
+  /**
+   * How many provisional amounts (estimates awaiting the other account's
+   * import) the figure includes. Above zero it adds `ProvisionalMark` after
+   * the figure, beside the partial marker when there is one; absent or 0 adds
+   * nothing.
+   */
+  provisionalCount?: number | null;
 }
 
 /**
@@ -31,15 +40,23 @@ export function PartialTotal({
   total,
   displayCurrency,
   explanation: explanationOverride,
+  provisionalCount,
 }: PartialTotalProps) {
   const t = useTranslations('common');
+  const provisional = provisionalCountOf(provisionalCount) > 0;
 
   // A total is a subtotal whenever any component was left out, whether the
   // reason was a missing rate (named currencies) or a value that could not be
   // worked out at all (an unpriced holding, which carries no currency).
   // `isComplete` is the one definition of "nothing excluded".
   if (isComplete(total)) {
-    return <>{children}</>;
+    if (!provisional) return <>{children}</>;
+    return (
+      <span className="inline-flex items-baseline gap-1">
+        <span>{children}</span>
+        <ProvisionalMark count={provisionalCount} />
+      </span>
+    );
   }
 
   // `excludedCount` is every component left out, by any cause; `missingCurrencies`
@@ -77,6 +94,7 @@ export function PartialTotal({
           `InfoTooltip` already has for exactly this: it renders fixed on
           `document.body` and clamps itself to the viewport. */}
       <InfoTooltip placement="top" text={explanation} usePortal />
+      {provisional && <ProvisionalMark count={provisionalCount} />}
     </span>
   );
 }

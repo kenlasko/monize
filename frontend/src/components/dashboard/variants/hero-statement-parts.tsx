@@ -41,13 +41,21 @@ export function StatementAmount({
   total,
   currency,
   explanation,
+  provisionalCount,
 }: {
   total: ConvertedTotal;
   currency: string;
   explanation?: string;
+  /** The provisional amounts inside the figure (`PartialTotal`). */
+  provisionalCount?: number;
 }) {
   return (
-    <PartialTotal total={total} displayCurrency={currency} explanation={explanation}>
+    <PartialTotal
+      total={total}
+      displayCurrency={currency}
+      explanation={explanation}
+      provisionalCount={provisionalCount}
+    >
       <MoneyFigure amount={total.value} className="ui-money-quiet" />
     </PartialTotal>
   );

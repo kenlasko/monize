@@ -45,6 +45,11 @@ export interface CategoryAccountBreakdownRow {
   convertedCurrency?: string;
   /** `total` converted by the server at each row's own rate or date; null without one. */
   convertedTotal?: number | null;
+  /**
+   * Provisional transfer legs (an imported estimate of what the other account
+   * received or sent) inside `total`; above 0 the panel marks the row.
+   */
+  provisionalCount?: number;
 }
 
 /**

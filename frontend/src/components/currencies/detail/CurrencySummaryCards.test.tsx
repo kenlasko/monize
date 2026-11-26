@@ -64,6 +64,55 @@ describe('CurrencySummaryCards', () => {
     );
   });
 
+  it('marks both totals when the rows include an estimated amount', () => {
+    render(
+      <CurrencySummaryCards
+        code="EUR"
+        defaultCurrency="CAD"
+        usage={usage({ provisionalCount: 1 })}
+        latestRate={latest}
+      />,
+    );
+
+    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(2);
+    expect(screen.getByText('Total in CAD')).toBeInTheDocument();
+  });
+
+  it('marks the total in the currency but not a partial conversion, which may leave the estimate out', () => {
+    render(
+      <CurrencySummaryCards
+        code="EUR"
+        defaultCurrency="CAD"
+        usage={usage({
+          totalInReportingCurrency: null,
+          knownReportingSubtotal: 150,
+          unconvertedCount: 1,
+          missingPairs: ['EUR->CAD'],
+          provisionalCount: 1,
+        })}
+        latestRate={latest}
+      />,
+    );
+
+    expect(screen.getByText('Converted Part in CAD')).toBeInTheDocument();
+    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(1);
+    expect(screen.getByText('Total in EUR').closest('article')).toContainElement(
+      screen.getByTestId('provisional-mark'),
+    );
+  });
+
+  it.each([[0], [undefined]])('marks nothing at a provisional count of %s', (provisionalCount) => {
+    render(
+      <CurrencySummaryCards
+        code="EUR"
+        defaultCurrency="CAD"
+        usage={usage({ provisionalCount })}
+        latestRate={latest}
+      />,
+    );
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
   it('sends the reader to the page that can fill a pair this page cannot', () => {
     // A row paid in EUR but posted in a USD account converts USD->CAD, which
     // only the USD page's fill fetches.

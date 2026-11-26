@@ -19,8 +19,9 @@ import { createTestAccount } from "../helpers/test-factories";
  * The split-transfer leg lives in the target account, so it is denominated
  * there: converted at the stored rate for the row's date, labelled with the
  * target's currency and carrying that rate, and written provisional in
- * `amount_is_provisional` with the `PENDING IMPORT` note the plain transfer
- * path writes (the market rate is not the bank's; issue #2390, design
+ * `amount_is_provisional` as the plain transfer path writes it, with no note
+ * in its description (the market rate is not the bank's; issues #2390 and
+ * #2400, design
  * docs/future-plans/provisional-amounts.md). The target's own file confirms
  * it. Without a rate the row is refused, naming the pair, rather than moving
  * the target's balance by a number in the wrong currency.
@@ -163,7 +164,9 @@ describe("QIF split transfer across currencies (integration)", () => {
     expect(Number(cadLeg.amount)).toBe(81);
     expect(Number(cadLeg.exchange_rate)).toBeCloseTo(1.35, 8);
     expect(cadLeg.amount_is_provisional).toBe(true);
-    expect(cadLeg.description).toContain("PENDING IMPORT");
+    // The split line carries no memo, so the leg has no description, the
+    // shape the strip migration leaves too: the state is the column alone.
+    expect(cadLeg.description).toBeNull();
     expect(await balanceOf(savingsId)).toBe(81);
     expect(await balanceOf(checkingId)).toBe(900);
   });

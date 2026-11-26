@@ -36,6 +36,7 @@ import { useDensityPreference, type DensityView } from '@/store/densityStore';
 import { useCompactMobileDates } from '@/store/dateDisplayStore';
 import { useRegisterPhoneCard } from '@/hooks/useRegisterPhoneCard';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { useAuthStore } from '@/store/authStore';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { SortableHeader } from '@/components/ui/SortableHeader';
@@ -68,6 +69,7 @@ import {
   type RegisterFigure,
 } from './register-style-data';
 import { PebbleRegister } from './variants/PebbleRegister';
+import { isProvisionalAmount } from '@/lib/provisional-amount';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { FolioRegisterFoot } from './variants/FolioRegisterFoot';
 import { useIsLgUp } from '@/hooks/useIsMobile';
@@ -77,6 +79,14 @@ interface TransactionListProps {
   onEdit?: (transaction: Transaction) => void;
   onDuplicate?: (transaction: Transaction) => void;
   onScheduleRecurring?: (transaction: Transaction) => void;
+  /**
+   * Confirm a provisional (estimated) amount as it stands. The caller owns
+   * the request and the refresh; the list offers the action only on a
+   * provisional row the reader owns (never a joint account's row, which the
+   * endpoint refuses), in the action sheet, the desktop row's inline buttons
+   * and the Pebble inspector. Omitted: no surface offers it.
+   */
+  onConfirmAmount?: (transaction: Transaction) => void;
   /**
    * Notification that the row has **already been deleted** -- this list owns the
    * confirmation, the `transactionsApi.delete`/`deleteTransfer` call and the
@@ -288,6 +298,7 @@ export function TransactionList({
   onEdit,
   onDuplicate,
   onScheduleRecurring,
+  onConfirmAmount,
   onDeleted,
   onRefresh,
   onTransactionUpdate,
@@ -463,6 +474,24 @@ export function TransactionList({
     (tx: Transaction) =>
       !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canEdit),
     [jointPermissionsByAccount],
+  );
+  // The confirm endpoint is the owner's alone. It carries no
+  // `@AllowDelegate()`, so `AccountDelegateGuard` refuses it to an acting
+  // delegate, and it is scoped to the caller's `user_id`, so a row someone
+  // else owns is a 404. A row is offered it only outside a delegate session,
+  // when the signed-in reader owns it: the row's own `userId` decides that
+  // even before the accounts have loaded, and the joint map covers a row
+  // whose owner is not on it. With no signed-in identity known, ownership is
+  // not decided here and the server's refusal stands.
+  const actingAsDelegate = useAuthStore((s) => s.actingAsUserId !== null);
+  const signedInUserId = useAuthStore((s) => s.user?.id ?? null);
+  const canConfirmAmountRow = useCallback(
+    (tx: Transaction) =>
+      isProvisionalAmount(tx) &&
+      !actingAsDelegate &&
+      !jointPermissionsByAccount?.has(tx.accountId) &&
+      (signedInUserId === null || !tx.userId || tx.userId === signedInUserId),
+    [actingAsDelegate, jointPermissionsByAccount, signedInUserId],
   );
   const canDeleteRow = useCallback(
     (tx: Transaction) =>
@@ -938,8 +967,10 @@ export function TransactionList({
           onDuplicate={onDuplicate}
           onScheduleRecurring={onScheduleRecurring}
           onDeleteClick={handleDeleteClick}
+          onConfirmAmount={onConfirmAmount}
           canEdit={canEditRow}
           canDelete={canDeleteRow}
+          canConfirmAmount={canConfirmAmountRow}
           categoryColorMap={categoryColorMap}
           categoryLabelMap={categoryLabelMap}
           categoryIconMap={categoryIconMap}
@@ -1297,6 +1328,7 @@ export function TransactionList({
                     }
                     onDuplicate={onDuplicate}
                     onScheduleRecurring={onScheduleRecurring}
+                    onConfirmAmount={canConfirmAmountRow(transaction) ? onConfirmAmount : undefined}
                     onDeleteClick={handleDeleteClick}
                     hideDelete={
                       !!jointPermissionsByAccount?.get(transaction.accountId) &&
@@ -1355,6 +1387,11 @@ export function TransactionList({
         onEdit={onEdit}
         onDuplicate={onDuplicate}
         onScheduleRecurring={onScheduleRecurring}
+        onConfirmAmount={
+          actionSheet.transaction && canConfirmAmountRow(actionSheet.transaction)
+            ? onConfirmAmount
+            : undefined
+        }
         onDeleteClick={handleDeleteClick}
         onDateFilterClick={onDateFilterClick}
         onAccountFilterClick={onAccountFilterClick}

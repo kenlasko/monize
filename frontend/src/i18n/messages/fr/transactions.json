@@ -233,6 +233,14 @@
     "scheduleRecurring": "Planifier comme récurrente",
     "delete": "Supprimer"
   },
+  "provisional": {
+    "label": "Montant estimé",
+    "tooltip": "Monize a estimé ce montant au taux de change historique en important le côté de ce virement provenant de l’autre compte. Il reste une estimation jusqu’à l’importation du fichier propre à ce compte ou jusqu’à ce que vous confirmiez le montant.",
+    "confirmAction": "Confirmer le montant",
+    "confirmActionTitle": "Conserver ce montant comme le montant réellement reçu ou payé",
+    "confirmed": "Montant confirmé",
+    "confirmFailed": "Impossible de confirmer le montant"
+  },
   "filter": {
     "favourites": "Favoris :",
     "panel": {

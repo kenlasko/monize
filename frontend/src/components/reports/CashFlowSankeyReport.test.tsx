@@ -503,6 +503,26 @@ describe('CashFlowSankeyReport', () => {
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain('expenses Unknown');
   });
 
+  it('notes the estimated amounts the transfer flows include, and the figures stay', async () => {
+    await renderReport({ ...example(), provisionalCount: 1 });
+
+    expect(screen.getByTestId('provisional-data-notice')).toHaveTextContent(
+      '1 amount in these figures is an estimate',
+    );
+    expect(screen.getByTestId('sankey-card-income')).toHaveTextContent('$5,000.00');
+  });
+
+  it('notes nothing at a provisional count of 0 or without one', async () => {
+    await renderReport({ ...example(), provisionalCount: 0 });
+    expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
+  });
+
+  it('shows the partial and the provisional notes together', async () => {
+    await renderReport({ ...withoutRate(), provisionalCount: 1 });
+    expect(screen.getByTestId('incomplete-data-details')).toBeInTheDocument();
+    expect(screen.getByTestId('provisional-data-notice')).toBeInTheDocument();
+  });
+
   it('formats the tooltip through the number hook and lists what Other holds', async () => {
     await renderReport();
 

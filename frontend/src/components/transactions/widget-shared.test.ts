@@ -82,6 +82,7 @@ describe('summarizeInDisplayCurrency', () => {
       missingCurrencies: [],
       includedTransactionCount: 20,
       excludedTransactionCount: 0,
+      provisionalCount: 0,
     });
   });
 
@@ -114,6 +115,7 @@ describe('summarizeInDisplayCurrency', () => {
       missingCurrencies: [],
       includedTransactionCount: 8,
       excludedTransactionCount: 0,
+      provisionalCount: 0,
     });
   });
 
@@ -242,7 +244,50 @@ describe('summarizeInDisplayCurrency', () => {
       missingCurrencies: ['CAD', 'USD'],
       includedTransactionCount: 0,
       excludedTransactionCount: 3,
+      provisionalCount: 0,
     });
+  });
+});
+
+describe('summarizeInDisplayCurrency: provisional amounts', () => {
+  const cad = { totalIncome: 100, totalExpenses: 0, netCashFlow: 100, transactionCount: 1 };
+  const usd = { totalIncome: 80, totalExpenses: 0, netCashFlow: 80, transactionCount: 1 };
+  const conversion = (over: Partial<NonNullable<TransactionSummary['converted']>>) => ({
+    currency: 'CAD',
+    totalIncome: 180,
+    totalExpenses: 0,
+    netCashFlow: 180,
+    knownIncome: 180,
+    knownExpenses: 0,
+    knownNet: 180,
+    includedTransactionCount: 2,
+    excludedTransactionCount: 0,
+    missingCurrencies: [],
+    ...over,
+  });
+
+  it('reads the native count on a single-currency summary', () => {
+    const result = summarizeInDisplayCurrency(
+      { ...summary({ CAD: cad }), provisionalCount: 1 },
+      native('CAD'),
+    );
+    expect(result.provisionalCount).toBe(1);
+  });
+
+  it("reads the conversion's count, over the currencies that converted, on a converted summary", () => {
+    const result = summarizeInDisplayCurrency(
+      // The native count holds an estimate the conversion left out with its currency.
+      { ...summary({ CAD: cad, USD: usd }, conversion({ provisionalCount: 1 })), provisionalCount: 2 },
+      converted('CAD'),
+    );
+    expect(result.provisionalCount).toBe(1);
+  });
+
+  it('reads an absent count as 0', () => {
+    expect(summarizeInDisplayCurrency(summary({ CAD: cad }), native('CAD')).provisionalCount).toBe(0);
+    expect(
+      summarizeInDisplayCurrency(summary({ CAD: cad, USD: usd }, conversion({})), converted('CAD')).provisionalCount,
+    ).toBe(0);
   });
 });
 

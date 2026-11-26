@@ -2,6 +2,7 @@ import type { MonthlyNetWorth } from '@/types/net-worth';
 import type { ConvertedTotal } from '@/lib/currency-total';
 import { netWorthIsPartial, partialTotalFor } from '@/lib/net-worth-completeness';
 import { roundMoney } from '@/lib/format';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 
 /**
  * The dashboard hero's figures, read from the monthly net worth series the
@@ -12,6 +13,11 @@ export interface HeroSnapshot {
   netWorth: ConvertedTotal;
   assets: ConvertedTotal;
   liabilities: ConvertedTotal;
+  /**
+   * The provisional amounts inside each of the three figures, `0` when there
+   * are none or the response does not say (`provisionalCountOf`).
+   */
+  provisional: { netWorth: number; assets: number; liabilities: number };
 }
 
 /**
@@ -31,6 +37,11 @@ export function heroSnapshot(series: readonly MonthlyNetWorth[]): HeroSnapshot |
       last.liabilitiesFxComplete ?? last.fxComplete,
       last.missingRatePairs,
     ),
+    provisional: {
+      netWorth: provisionalCountOf(last.provisionalCount),
+      assets: provisionalCountOf(last.assetsProvisionalCount),
+      liabilities: provisionalCountOf(last.liabilitiesProvisionalCount),
+    },
   };
 }
 

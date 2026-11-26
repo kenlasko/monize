@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "No price for {symbols}: refresh or add a price on the security's page.",
     "weightingNoRate": "No exchange rate for {pairs}: add one on the Currencies page."
   },
+  "provisionalData": {
+    "notice": "Includes estimated amounts: {count, plural, one {# amount in these figures is an estimate} other {# amounts in these figures are estimates}} Monize made at the historical exchange rate for the other side of a cross-currency transfer, until that account's own file is imported or the amount is confirmed. Search transactions for is:provisional to list them."
+  },
   "sankey": {
     "help": "Money that came in flows through the middle into what it was spent on, what was saved or invested, and what paid down debt. By default the report covers your open chequing, savings, cash, credit card and line of credit accounts, and a transfer between two of them is not shown. Leave a savings account out of the account filter to see what you moved into it. A credit card payment is never a debt payment: the purchases it settles are already counted as expenses.",
     "depthLabel": "Detail",

@@ -18,6 +18,7 @@ const props: NetWorthHeroViewProps = {
   netWorth: total(453227.01),
   assets: total(858421.6),
   liabilities: total(405194.59),
+  provisional: { netWorth: 0, assets: 0, liabilities: 0 },
   invested: { value: 66684.4, total: total(66684.4) },
   investedLoading: false,
   collapsed: { title: 'Net worth', figure: '$453,227.01' },
@@ -59,6 +60,15 @@ describe.each([
     expect(screen.getByTestId('dashboard-hero-figure-skeleton')).toBeInTheDocument();
     rerender(<Variant {...props} invested={null} investedLoading={false} />);
     expect(screen.queryByText('Invested')).not.toBeInTheDocument();
+  });
+
+  it('marks each figure that includes an estimated amount, and no other', () => {
+    const { rerender } = render(<Variant {...props} />);
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    rerender(<Variant {...props} provisional={{ netWorth: 1, assets: 1, liabilities: 0 }} />);
+    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(2);
+    // The figure is shown either way.
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent('$453,227.01');
   });
 
   it('says a change it cannot measure is unknown rather than drawing one', () => {

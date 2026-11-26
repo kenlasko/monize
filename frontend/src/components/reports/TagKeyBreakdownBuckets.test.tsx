@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent, within } from '@testing-library/react';
 import { render } from '@/test/render';
 import { TagKeyBreakdownBuckets } from './TagKeyBreakdownBuckets';
 import { UNTAGGED_TAG_BUCKET_ID, type IncomeExpenseTagBucket } from '@/types/built-in-reports';
@@ -129,6 +129,33 @@ describe('TagKeyBreakdownBuckets', () => {
       />,
     );
     expect(screen.queryByTestId('partial-total')).toBeNull();
+  });
+
+  it('notes the estimated amounts inside the tagged flows, under the pair', () => {
+    render(
+      <TagKeyBreakdownBuckets
+        tagKey="scope"
+        buckets={[bucket({ provisionalCount: 1 })]}
+        reportingCurrency="CAD"
+        idPrefix="test-tag"
+      />,
+    );
+    const flows = screen.getByTestId('tagged-flows');
+    expect(within(flows).getByTestId('provisional-data-notice')).toHaveTextContent(
+      '1 amount in these figures is an estimate',
+    );
+  });
+
+  it('notes no estimate on a bucket without one', () => {
+    render(
+      <TagKeyBreakdownBuckets
+        tagKey="scope"
+        buckets={[bucket({ provisionalCount: 0 }), bucket({ value: 'b' })]}
+        reportingCurrency="CAD"
+        idPrefix="test-tag"
+      />,
+    );
+    expect(screen.queryByTestId('provisional-data-notice')).toBeNull();
   });
 
   it('switches the visible bucket on tab click', () => {

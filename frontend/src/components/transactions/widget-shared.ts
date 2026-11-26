@@ -1,5 +1,6 @@
 import { GroupedTotal, TransactionSummary } from '@/types/transaction';
 import { roundMoney } from '@/lib/format';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 
 /**
  * The active Transactions-page filters a payee/category info widget must
@@ -83,6 +84,12 @@ export function summarizeInDisplayCurrency(
    * number of distinct currencies.
    */
   excludedTransactionCount: number;
+  /**
+   * Provisional transfer amounts (an imported estimate) inside the figures:
+   * the native count, or the converted one over the currencies that converted.
+   * Absent on the server's side reads as 0 (`provisionalCountOf`).
+   */
+  provisionalCount: number;
 } {
   const buckets = Object.entries(summary.byCurrency ?? {});
   // Native only when the figures are already in the display currency: a period
@@ -100,6 +107,7 @@ export function summarizeInDisplayCurrency(
       missingCurrencies: [],
       includedTransactionCount: summary.transactionCount,
       excludedTransactionCount: 0,
+      provisionalCount: provisionalCountOf(summary.provisionalCount),
     };
   }
   // The server's conversion. A bucket with no rate is excluded and named, so
@@ -114,6 +122,7 @@ export function summarizeInDisplayCurrency(
       missingCurrencies: buckets.map(([currency]) => currency).sort(),
       includedTransactionCount: 0,
       excludedTransactionCount: summary.transactionCount,
+      provisionalCount: 0,
     };
   }
   return {
@@ -126,6 +135,7 @@ export function summarizeInDisplayCurrency(
     missingCurrencies: converted.missingCurrencies,
     includedTransactionCount: converted.includedTransactionCount,
     excludedTransactionCount: converted.excludedTransactionCount,
+    provisionalCount: provisionalCountOf(converted.provisionalCount),
   };
 }
 
