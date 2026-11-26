@@ -152,6 +152,7 @@ export function NetWorthHero({
     netWorth: snapshot.netWorth,
     assets: snapshot.assets,
     liabilities: snapshot.liabilities,
+    provisional: snapshot.provisional,
     // Held back while the valuation is loading: the skeleton stands in its place.
     invested: investmentSummaryLoading ? null : invested,
     investedLoading: hasInvestments && investmentSummaryLoading,

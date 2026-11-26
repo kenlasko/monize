@@ -672,6 +672,45 @@ describe('NetWorthReport completeness', () => {
     expect(within(byMonth('Nov 2024')).queryByTestId('partial-total')).not.toBeInTheDocument();
   });
 
+  describe('estimated (provisional) amounts', () => {
+    const withEstimate = { ...complete, month: '2024-12-01', netWorth: 52000, provisionalCount: 1, assetsProvisionalCount: 1, liabilitiesProvisionalCount: 0 };
+
+    it('marks the headline and adds the note when the latest month includes one', async () => {
+      await renderReport([complete, withEstimate]);
+      expect(within(card('Current Net Worth')).getByTestId('provisional-mark')).toBeInTheDocument();
+      expect(screen.getByTestId('provisional-data-notice')).toHaveTextContent('1 amount in these figures is an estimate');
+      // The figure is shown, and the change still is: an estimate is not a gap.
+      expect(card('Current Net Worth')).toHaveTextContent('$52000');
+      expect(card('Change')).toHaveTextContent('+$2000');
+    });
+
+    it('marks nothing at a count of 0 or without a count', async () => {
+      await renderReport([complete, { ...complete, month: '2024-12-01', provisionalCount: 0 }]);
+      expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
+    });
+
+    it('shows both marks on a month that is partial and provisional', async () => {
+      await renderReport([complete, { ...partial, provisionalCount: 1 }]);
+      const headline = card('Current Net Worth');
+      expect(within(headline).getByTestId('partial-total-marker')).toBeInTheDocument();
+      expect(within(headline).getByTestId('provisional-mark')).toBeInTheDocument();
+      expect(screen.getByTestId('partial-data-notice')).toBeInTheDocument();
+      expect(screen.getByTestId('provisional-data-notice')).toBeInTheDocument();
+    });
+
+    it('marks only the month and the side that include one in the table', async () => {
+      await renderReport([complete, withEstimate]);
+      await act(async () => { fireEvent.click(screen.getByText('table')); });
+      const rows = screen.getAllByRole('row').slice(1);
+      const byMonth = (label: string) =>
+        rows.find((r) => r.textContent?.includes(label)) as HTMLElement;
+      // Assets and net worth, not liabilities.
+      expect(within(byMonth('Dec 2024')).getAllByTestId('provisional-mark')).toHaveLength(2);
+      expect(within(byMonth('Nov 2024')).queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    });
+  });
+
   it('draws a partial month as null, never as a measured dip', async () => {
     await renderReport([complete, partial]);
     const bar = JSON.parse(screen.getByTestId('composed-chart').getAttribute('data-points')!);

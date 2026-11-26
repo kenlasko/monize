@@ -21,6 +21,7 @@ import { useReportData } from '@/hooks/useReportData';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { ChartViewIcon } from '@/components/ui/ChartViewToggle';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { partialTotalFor } from '@/lib/net-worth-completeness';
 import { netWorthWindowChange } from '@/lib/net-worth-change';
@@ -158,6 +159,8 @@ export function NetWorthChart({ isLoading, refreshKey = 0 }: NetWorthChartProps)
       changePercent: windowChange.percent,
       // The headline is the latest month's: marked when it is a subtotal.
       currentTotal: partialTotalFor(current, last.fxComplete, last.missingRatePairs),
+      // The estimates inside it, marked beside the figure (never withheld).
+      currentProvisionalCount: provisionalCountOf(last.provisionalCount),
       // A change measured from or to a subtotal is not a change.
       changeKnown: windowChange.known,
     };
@@ -249,7 +252,11 @@ export function NetWorthChart({ isLoading, refreshKey = 0 }: NetWorthChartProps)
             <div className={`text-2xl font-bold ${
               summary.current >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'
             }`}>
-              <PartialTotal total={summary.currentTotal} displayCurrency={defaultCurrency}>
+              <PartialTotal
+                total={summary.currentTotal}
+                displayCurrency={defaultCurrency}
+                provisionalCount={summary.currentProvisionalCount}
+              >
                 {formatCurrency(summary.current)}
               </PartialTotal>
             </div>

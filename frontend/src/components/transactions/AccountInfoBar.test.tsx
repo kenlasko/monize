@@ -51,6 +51,18 @@ describe('AccountInfoBar', () => {
     expect(screen.getByText('CAD -42.00')).toBeInTheDocument();
   });
 
+  it('marks a balance that includes an estimated amount, and not one that does not', () => {
+    const { rerender } = render(
+      <AccountInfoBar account={makeAccount({ provisionalCount: 1 })} onEdit={vi.fn()} onExpand={vi.fn()} />,
+    );
+    expect(screen.getByTestId('provisional-mark')).toBeInTheDocument();
+    expect(screen.getByTestId('account-info-bar')).toHaveTextContent('CAD 1234.50');
+    rerender(<AccountInfoBar account={makeAccount({ provisionalCount: 0 })} onEdit={vi.fn()} onExpand={vi.fn()} />);
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    rerender(<AccountInfoBar account={makeAccount()} onEdit={vi.fn()} onExpand={vi.fn()} />);
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
   it("falls back to the account's stored balance", () => {
     render(<AccountInfoBar account={makeAccount()} onEdit={vi.fn()} onExpand={vi.fn()} />);
     expect(screen.getByText('CAD 1234.50')).toBeInTheDocument();

@@ -2198,6 +2198,26 @@ describe('AccountList', () => {
       expect(creditHeaderRow!.textContent).toContain('$-750.00');
     });
 
+    it('marks a group total that includes an estimated amount, and no other', () => {
+      const accounts = [
+        createAccount({ id: 'c1', name: 'Cheq A', accountType: 'CHEQUING', currencyCode: 'CAD', provisionalCount: 1 }),
+        createAccount({ id: 's1', name: 'Sav A', accountType: 'SAVINGS', currencyCode: 'CAD', provisionalCount: 0 }),
+        createAccount({ id: 'cc1', name: 'Visa', accountType: 'CREDIT_CARD', currencyCode: 'CAD' }),
+      ];
+
+      render(
+        <AccountList accounts={accounts} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+      );
+
+      const headerOf = (label: string) =>
+        Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[aria-expanded]')).find((tr) =>
+          tr.textContent?.includes(label),
+        )!;
+      expect(headerOf('Chequing').querySelector('[data-testid="provisional-mark"]')).not.toBeNull();
+      expect(headerOf('Savings').querySelector('[data-testid="provisional-mark"]')).toBeNull();
+      expect(headerOf('Credit Card').querySelector('[data-testid="provisional-mark"]')).toBeNull();
+    });
+
     it('collapses a group when its header is clicked and hides the rows', () => {
       const accounts = [
         createAccount({ id: 'c1', name: 'Cheq A', accountType: 'CHEQUING' }),

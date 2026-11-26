@@ -19,6 +19,8 @@ import { securitiesValueOf, type LogicalAccount } from '@/lib/logical-accounts';
 import { LinkIcon } from '@heroicons/react/24/outline';
 import { splitMoneyFigure } from '@/lib/money-parts';
 import { Badge } from '@/components/ui/Badge';
+import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
+import { sumProvisionalCounts } from '@/lib/provisional-amount';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { ACCOUNT_COLUMN_TIER, ACCOUNT_NAME_CELL_FLEX } from './account-list-columns';
@@ -513,6 +515,11 @@ export const AccountRow = memo(function AccountRow({
   const ownTotalBalance =
     (Number(account.currentBalance) || 0) +
     (Number(account.futureTransactionsSum) || 0);
+  // The estimates inside the row's figure: a folded pair's figure holds both
+  // ledgers, so both counts.
+  const provisionalCount = sumProvisionalCounts(
+    logical?.cash ? [account, logical.cash] : [account],
+  );
   const cashComponent = logical?.cash
     ? (Number(logical.cash.currentBalance) || 0) +
       (Number(logical.cash.futureTransactionsSum) || 0)
@@ -569,6 +576,7 @@ export const AccountRow = memo(function AccountRow({
           figure: (
             <div className={`text-sm font-medium ${gainLossColor(combined.combinedValue)}`}>
               {formatInAccountCurrency(combined.combinedValue)}
+              <ProvisionalMark count={provisionalCount} />
             </div>
           ),
           details: (
@@ -609,6 +617,7 @@ export const AccountRow = memo(function AccountRow({
           figure: (
             <div className="text-sm font-medium text-green-600 dark:text-green-400">
               {formatInAccountCurrency(brokerageMarketValue)}
+              <ProvisionalMark count={provisionalCount} />
             </div>
           ),
           details: (
@@ -636,6 +645,7 @@ export const AccountRow = memo(function AccountRow({
               ) : (
                 formatInAccountCurrency(ownTotalBalance)
               )}
+              <ProvisionalMark count={provisionalCount} />
             </div>
           ),
           details: (
