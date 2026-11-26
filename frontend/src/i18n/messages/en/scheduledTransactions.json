@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Date modified for this occurrence",
     "splitBadge": "Split ({count})",
     "autoPostBadge": "On",
+    "autoPostNextOnBadge": "Next on",
+    "autoPostNextOffBadge": "Next off",
+    "autoPostNextOnTitle": "The occurrence on {date} posts automatically, though this bill is otherwise posted by hand. Change it in Edit Occurrence.",
+    "autoPostNextOffTitle": "The occurrence on {date} is left for you to post, though this bill otherwise posts automatically. Change it in Edit Occurrence.",
     "inactiveSuffix": " — Inactive",
     "actionTitles": {
       "post": "Post transaction",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Total amount is required"
     },
     "estimatedHint": "This amount is the estimate for this occurrence. Leave it as it is and the occurrence keeps following the estimate as new payments arrive. {detail}",
-    "keepEstimate": "Keep this amount, even when new payments change the estimate"
+    "keepEstimate": "Keep this amount, even when new payments change the estimate",
+    "autoPostLabel": "Auto-post on due date",
+    "autoPostNeedsAmount": "Enter this occurrence's amount to post it automatically. While it follows the estimate, you confirm it by posting it yourself."
   },
   "form": {
     "tabs": {

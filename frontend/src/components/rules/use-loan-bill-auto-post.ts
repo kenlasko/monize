@@ -16,21 +16,37 @@ export function settlementScheduleId(actions: readonly EditorAction[], lookups: 
 }
 
 /**
- * Whether the loan's linked bill posts itself (`autoPost`): then the bill and
- * a settled bank debit would both pay the same installment, so the editor
- * warns. Fetched only while a settlement names a loan with a bill; the answer
- * is kept with the id it was asked for, so a stale answer never warns about
- * another loan, and a failed lookup does not warn (unknown, not "off").
+ * What on the loan's linked bill posts itself: `'bill'` when the bill does,
+ * `'occurrence'` when only an upcoming installment opted in on Edit Occurrence
+ * (`anyOccurrenceAutoPosts`), `null` when nothing does. Either way the bill and
+ * a settled bank debit could both pay an installment, so the editor warns.
  */
-export function useLoanBillAutoPost(scheduleId: string | null): boolean {
-  const [answer, setAnswer] = useState<{ id: string; autoPost: boolean } | null>(null);
+export type LoanBillAutoPost = 'bill' | 'occurrence' | null;
+
+/** The answer for one bill as the single-bill read returns it. */
+export function loanBillAutoPostOf(bill: {
+  autoPost: boolean;
+  anyOccurrenceAutoPosts?: boolean;
+}): LoanBillAutoPost {
+  if (bill.autoPost) return 'bill';
+  return bill.anyOccurrenceAutoPosts ? 'occurrence' : null;
+}
+
+/**
+ * `LoanBillAutoPost` for the loan a settlement action names. Fetched only
+ * while a settlement names a loan with a bill; the answer is kept with the id
+ * it was asked for, so a stale answer never warns about another loan, and a
+ * failed lookup does not warn (unknown, not "off").
+ */
+export function useLoanBillAutoPost(scheduleId: string | null): LoanBillAutoPost {
+  const [answer, setAnswer] = useState<{ id: string; kind: LoanBillAutoPost } | null>(null);
   useEffect(() => {
     if (scheduleId === null) return;
     let live = true;
     scheduledTransactionsApi
       .getById(scheduleId)
       .then((bill) => {
-        if (live) setAnswer({ id: scheduleId, autoPost: bill.autoPost });
+        if (live) setAnswer({ id: scheduleId, kind: loanBillAutoPostOf(bill) });
       })
       .catch((error: unknown) => {
         logger.warn('The loan bill could not be loaded', error);
@@ -39,5 +55,5 @@ export function useLoanBillAutoPost(scheduleId: string | null): boolean {
       live = false;
     };
   }, [scheduleId]);
-  return answer !== null && answer.id === scheduleId && answer.autoPost;
+  return answer !== null && answer.id === scheduleId ? answer.kind : null;
 }

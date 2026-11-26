@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Tanggal diubah untuk kejadian ini",
     "splitBadge": "Bagi ({count})",
     "autoPostBadge": "Aktif",
+    "autoPostNextOnBadge": "Berikutnya aktif",
+    "autoPostNextOffBadge": "Berikutnya nonaktif",
+    "autoPostNextOnTitle": "Kemunculan pada {date} diposting otomatis, meskipun tagihan ini biasanya diposting manual. Ubah di Edit Kemunculan.",
+    "autoPostNextOffTitle": "Kemunculan pada {date} dibiarkan untuk Anda posting, meskipun tagihan ini biasanya diposting otomatis. Ubah di Edit Kemunculan.",
     "inactiveSuffix": " — Tidak Aktif",
     "actionTitles": {
       "post": "Posting transaksi",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Total jumlah wajib diisi"
     },
     "estimatedHint": "Jumlah ini adalah perkiraan untuk kejadian ini. Biarkan apa adanya dan kejadian ini akan terus mengikuti perkiraan saat pembayaran baru masuk. {detail}",
-    "keepEstimate": "Pertahankan jumlah ini, meskipun pembayaran baru mengubah perkiraan"
+    "keepEstimate": "Pertahankan jumlah ini, meskipun pembayaran baru mengubah perkiraan",
+    "autoPostLabel": "Posting otomatis saat jatuh tempo",
+    "autoPostNeedsAmount": "Masukkan jumlah kemunculan ini untuk mempostingnya secara otomatis. Selama masih mengikuti perkiraan, Anda mengonfirmasinya dengan mempostingnya sendiri."
   },
   "form": {
     "tabs": {

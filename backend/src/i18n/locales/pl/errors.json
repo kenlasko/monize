@@ -652,6 +652,7 @@
     "loanLedgerUnreadable": "Nie można obliczyć tej raty kredytu, ponieważ nie udało się odczytać salda księgi. Spróbuj ponownie.",
     "estimateRequiresPlain": "Szacowana kwota jest dostępna tylko dla transakcji z jedną kategorią lub przelewu w walucie konta, a nie dla podziału, inwestycji ani kwoty w obcej walucie",
     "estimateNoAutoPost": "Zaplanowanej transakcji z szacowaną kwotą nie można zaksięgować automatycznie",
+    "overrideAutoPostNeedsAmount": "Wystąpienie zaplanowanej transakcji z szacowaną kwotą można zaksięgować automatycznie dopiero po wpisaniu jego własnej kwoty",
     "estimateRequiresPayeeAndCategory": "Szacowana kwota wymaga odbiorcy i kategorii, aby dopasować historię płatności",
     "estimateRequiresTransferAccount": "Szacowany przelew wymaga konta docelowego, aby dopasować historię przelewów",
     "estimateUnknown": "Szacowana kwota tego wystąpienia jest nieznana. Wprowadź kwotę, aby je zaksięgować.",

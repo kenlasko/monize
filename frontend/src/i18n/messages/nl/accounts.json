@@ -695,7 +695,8 @@
       "retry": "Opnieuw proberen",
       "autoPost": {
         "title": "De geplande betaling boekt zichzelf nog steeds",
-        "body": "Automatisch boeken staat aan voor de rekening van deze lening, dus een termijn die de regel verrekent uit de afschrijving van de bank zou ook door de rekening worden geboekt. Zet automatisch boeken voor de rekening uit in Facturen & stortingen."
+        "body": "Automatisch boeken staat aan voor de rekening van deze lening, dus een termijn die de regel verrekent uit de afschrijving van de bank zou ook door de rekening worden geboekt. Zet automatisch boeken voor de rekening uit in Facturen & stortingen.",
+        "bodyOccurrence": "Een komende termijn van de rekening van deze lening staat op automatisch boeken, dus de rekening en de bankafschrijving die de regel verrekent kunnen hem allebei betalen. Zet automatisch boeken voor die termijn uit via Herhaling bewerken in Facturen & stortingen."
       },
       "preconditions": {
         "openingBalance": "Het beginsaldo van de lening moet de schuld zijn aan het begin van de verwerkte geschiedenis; de rente van elke termijn wordt daarover berekend.",

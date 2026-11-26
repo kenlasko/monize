@@ -10,6 +10,8 @@ import {
   ScheduledTransactionOverride,
   OverrideSplit,
 } from "./entities/scheduled-transaction-override.entity";
+import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
+import { assertOverrideAutoPostAllowed } from "./occurrence-auto-post";
 import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
@@ -157,6 +159,7 @@ export class ScheduledTransactionOverrideService {
         amountCurrencyCode,
         createDto,
       );
+      await this.assertAutoPostAllowed(m, scheduledTransactionId, createDto);
       const repo = m.getRepository(ScheduledTransactionOverride);
       // The friendly refusal, for the ordinary case. It is NOT what makes one
       // override per occurrence true: a SELECT is not a lock, so two concurrent
@@ -220,6 +223,7 @@ export class ScheduledTransactionOverrideService {
         investmentQuantity: createDto.investmentQuantity ?? null,
         investmentPrice: createDto.investmentPrice ?? null,
         investmentTotalAmount: createDto.investmentTotalAmount ?? null,
+        autoPost: createDto.autoPost ?? null,
       });
 
       try {
@@ -368,6 +372,8 @@ export class ScheduledTransactionOverrideService {
       override.investmentPrice = updateDto.investmentPrice;
     if (updateDto.investmentTotalAmount !== undefined)
       override.investmentTotalAmount = updateDto.investmentTotalAmount;
+    if (updateDto.autoPost !== undefined)
+      override.autoPost = updateDto.autoPost;
 
     return withScopedDb(this.dataSource, async (m) => {
       const decimals = await this.assertOverrideAmountsPrecision(
@@ -375,6 +381,8 @@ export class ScheduledTransactionOverrideService {
         amountCurrencyCode,
         updateDto,
       );
+      // Judged on the override as this update leaves it.
+      await this.assertAutoPostAllowed(m, scheduledTransactionId, override);
       // The lines sum to the override amount at the schedule currency's
       // precision, judged before the write with the currency read above.
       if (splitAmount !== undefined && updateDto.splits) {
@@ -390,6 +398,31 @@ export class ScheduledTransactionOverrideService {
       );
       return m.getRepository(ScheduledTransactionOverride).save(override);
     });
+  }
+
+  /**
+   * Refuse an override that opts an estimated schedule's occurrence into
+   * auto-posting while it follows the estimate, inside the write's
+   * transaction: the schedule is read under a share lock there, so a
+   * concurrent switch to estimating either lands first and is seen, or waits
+   * for this write.
+   */
+  private async assertAutoPostAllowed(
+    m: EntityManager,
+    scheduledTransactionId: string,
+    override: {
+      autoPost?: boolean | null;
+      amount?: number | string | null;
+      isSplit?: boolean | null;
+    },
+  ): Promise<void> {
+    if (override.autoPost !== true) return;
+    const schedule = await m.getRepository(ScheduledTransaction).findOne({
+      where: { id: scheduledTransactionId },
+      select: { id: true, amountIsEstimated: true },
+      lock: { mode: "pessimistic_read" },
+    });
+    assertOverrideAutoPostAllowed(schedule ?? {}, override);
   }
 
   /**

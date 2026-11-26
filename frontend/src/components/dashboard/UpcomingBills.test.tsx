@@ -102,6 +102,24 @@ describe('UpcomingBills', () => {
     expect(screen.getByText('Manual')).toBeInTheDocument();
   });
 
+  it("marks the next occurrence by its own auto-post answer, not the bill's", () => {
+    const transactions = [
+      {
+        id: '1', name: 'Netflix', amount: -15.99, currencyCode: 'CAD',
+        nextDueDate: futureDateStr(1), isActive: true, autoPost: true,
+        nextOccurrenceAutoPosts: false,
+      },
+      {
+        id: '2', name: 'Hydro', amount: -80, currencyCode: 'CAD',
+        nextDueDate: futureDateStr(1), isActive: true, autoPost: false,
+        nextOccurrenceAutoPosts: true,
+      },
+    ] as any[];
+
+    render(<UpcomingBills accounts={[]} scheduledTransactions={transactions} isLoading={false} maxItems={defaultMaxItems} />);
+    expect(screen.getAllByText('Manual')).toHaveLength(1);
+  });
+
   it('labels an estimated amount as one (issue #2096)', () => {
     const transactions = [
       {

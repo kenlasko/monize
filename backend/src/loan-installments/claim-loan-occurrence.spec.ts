@@ -287,6 +287,7 @@ describe("claimLoanOccurrence", () => {
         investmentQuantity: null,
         investmentPrice: null,
         investmentTotalAmount: null,
+        autoPost: null,
       },
     ]);
     // Read before the advance and again after it, on the schedule's overrides.

@@ -652,6 +652,7 @@
     "loanLedgerUnreadable": "Pembayaran pinjaman ini tidak dapat dihitung karena saldo buku besarnya tidak dapat dibaca. Coba lagi.",
     "estimateRequiresPlain": "Jumlah perkiraan hanya tersedia untuk transaksi satu kategori atau transfer dalam mata uang akun, bukan untuk pecahan, investasi, atau jumlah mata uang asing",
     "estimateNoAutoPost": "Transaksi terjadwal dengan jumlah perkiraan tidak dapat diposting secara otomatis",
+    "overrideAutoPostNeedsAmount": "Kemunculan transaksi terjadwal dengan jumlah perkiraan hanya dapat diposting secara otomatis setelah jumlahnya sendiri dimasukkan",
     "estimateRequiresPayeeAndCategory": "Jumlah perkiraan memerlukan penerima dan kategori untuk mencocokkan riwayat pembayaran",
     "estimateRequiresTransferAccount": "Transfer perkiraan memerlukan akun tujuan untuk mencocokkan riwayat transfer",
     "estimateUnknown": "Jumlah perkiraan untuk kejadian ini tidak diketahui. Masukkan jumlahnya untuk mempostingnya.",

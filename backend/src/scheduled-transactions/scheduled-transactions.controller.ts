@@ -343,7 +343,7 @@ export class ScheduledTransactionsController {
   @DelegateRequiresSection("bills")
   @DelegatedScheduledParam("id")
   findOne(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
-    return this.scheduledTransactionsService.findOne(req.user.id, id);
+    return this.scheduledTransactionsService.findOneForClient(req.user.id, id);
   }
 
   @Patch(":id")

@@ -337,13 +337,15 @@ describe("BillReminderService", () => {
         });
       });
 
-      it("returns early when no manual bills exist", async () => {
+      it("returns early when no active bills exist", async () => {
         scheduledTransactionsRepo.find.mockResolvedValue([]);
 
         await service.sendBillReminders();
 
+        // Every active bill, auto-posting or not: whether one needs a reminder
+        // is decided per occurrence, which an override can opt in or out.
         expect(scheduledTransactionsRepo.find).toHaveBeenCalledWith({
-          where: { isActive: true, autoPost: false },
+          where: { isActive: true },
           // `splits` is loaded because the effective-amount resolver decides from
           // them whether a schedule's cash total re-prices at the current FX rate
           // (issue #1247).
@@ -376,6 +378,48 @@ describe("BillReminderService", () => {
         await service.sendBillReminders();
 
         expect(emailService.sendMail).not.toHaveBeenCalled();
+      });
+
+      it("does not remind about an occurrence the cron will post", async () => {
+        scheduledTransactionsRepo.find.mockResolvedValue([
+          makeBill({ autoPost: true, nextDueDate: daysFromNow(1) }),
+          makeBill({
+            id: "bill-uuid-2",
+            autoPost: false,
+            nextDueDate: daysFromNow(1),
+            overrides: [
+              makeOverride({
+                scheduledTransactionId: "bill-uuid-2",
+                autoPost: true,
+              }) as ScheduledTransactionOverride,
+            ],
+          }),
+        ]);
+        preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+        usersRepo.findOne.mockResolvedValue(mockUser1);
+
+        await service.sendBillReminders();
+
+        expect(emailService.sendMail).not.toHaveBeenCalled();
+      });
+
+      it("reminds about an occurrence opted out of an auto-posting bill", async () => {
+        const bill = makeBill({
+          autoPost: true,
+          nextDueDate: daysFromNow(1),
+          overrides: [
+            makeOverride({ autoPost: false }) as ScheduledTransactionOverride,
+          ],
+        });
+        scheduledTransactionsRepo.find.mockResolvedValue([bill]);
+        // The pricing pass reads the overrides itself.
+        overridesRepo.find.mockResolvedValue(bill.overrides ?? []);
+        preferencesRepo.findOne.mockResolvedValue(mockPrefsEmailEnabled);
+        usersRepo.findOne.mockResolvedValue(mockUser1);
+
+        await service.sendBillReminders();
+
+        expect(emailService.sendMail).toHaveBeenCalledTimes(1);
       });
 
       it("sends reminder for a bill due today (0 days away)", async () => {

@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Ngày đã được thay đổi cho lần này",
     "splitBadge": "Phần chia ({count})",
     "autoPostBadge": "Bật",
+    "autoPostNextOnBadge": "Lần tới bật",
+    "autoPostNextOffBadge": "Lần tới tắt",
+    "autoPostNextOnTitle": "Lần phát sinh ngày {date} được ghi tự động, dù hóa đơn này thường được ghi thủ công. Thay đổi trong Chỉnh sửa lần xuất hiện.",
+    "autoPostNextOffTitle": "Lần phát sinh ngày {date} để bạn tự ghi, dù hóa đơn này thường được ghi tự động. Thay đổi trong Chỉnh sửa lần xuất hiện.",
     "inactiveSuffix": " — Không hoạt động",
     "actionTitles": {
       "post": "Đăng giao tác",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Cần có tổng số tiền"
     },
     "estimatedHint": "Số tiền này là ước tính cho lần này. Giữ nguyên thì lần này sẽ tiếp tục theo ước tính khi có các khoản thanh toán mới. {detail}",
-    "keepEstimate": "Giữ số tiền này, ngay cả khi các khoản thanh toán mới làm thay đổi ước tính"
+    "keepEstimate": "Giữ số tiền này, ngay cả khi các khoản thanh toán mới làm thay đổi ước tính",
+    "autoPostLabel": "Tự động đăng khi đến hạn",
+    "autoPostNeedsAmount": "Nhập số tiền của lần phát sinh này để ghi tự động. Khi còn theo số ước tính, bạn xác nhận bằng cách tự ghi."
   },
   "form": {
     "tabs": {

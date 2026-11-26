@@ -700,7 +700,8 @@
       "retry": "Spróbuj ponownie",
       "autoPost": {
         "title": "Zaplanowana płatność nadal księguje się sama",
-        "body": "Auto-księgowanie jest włączone dla rachunku tego kredytu, więc rata, którą reguła rozliczy z obciążenia z banku, zostałaby też zaksięgowana przez rachunek. Wyłącz auto-księgowanie rachunku w sekcji Rachunki i wpłaty."
+        "body": "Auto-księgowanie jest włączone dla rachunku tego kredytu, więc rata, którą reguła rozliczy z obciążenia z banku, zostałaby też zaksięgowana przez rachunek. Wyłącz auto-księgowanie rachunku w sekcji Rachunki i wpłaty.",
+        "bodyOccurrence": "Nadchodząca rata rachunku tego kredytu jest ustawiona na samodzielne księgowanie, więc rachunek i obciążenie z banku rozliczane przez regułę mogą ją oba zapłacić. Wyłącz auto-księgowanie tej raty w oknie Edytuj wystąpienie w sekcji Rachunki i wpłaty."
       },
       "preconditions": {
         "openingBalance": "Saldo początkowe kredytu musi być zadłużeniem na początku przetwarzanej historii; od niego naliczane są odsetki każdej raty.",

@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Date modifiée pour cette occurrence",
     "splitBadge": "Répartition ({count})",
     "autoPostBadge": "Activé",
+    "autoPostNextOnBadge": "Prochaine : oui",
+    "autoPostNextOffBadge": "Prochaine : non",
+    "autoPostNextOnTitle": "L'occurrence du {date} est enregistrée automatiquement, bien que cette facture soit sinon enregistrée à la main. Modifiez-le dans Modifier l'occurrence.",
+    "autoPostNextOffTitle": "L'occurrence du {date} vous est laissée à enregistrer, bien que cette facture soit sinon enregistrée automatiquement. Modifiez-le dans Modifier l'occurrence.",
     "inactiveSuffix": " — Inactif",
     "actionTitles": {
       "post": "Enregistrer la transaction",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Le montant total est requis"
     },
     "estimatedHint": "Ce montant est l'estimation de cette occurrence. Laissez-le tel quel et l'occurrence continuera de suivre l'estimation à mesure que de nouveaux paiements arrivent. {detail}",
-    "keepEstimate": "Garder ce montant, même si de nouveaux paiements modifient l'estimation"
+    "keepEstimate": "Garder ce montant, même si de nouveaux paiements modifient l'estimation",
+    "autoPostLabel": "Enregistrement automatique à l'échéance",
+    "autoPostNeedsAmount": "Saisissez le montant de cette occurrence pour l'enregistrer automatiquement. Tant qu'elle suit l'estimation, vous la confirmez en l'enregistrant vous-même."
   },
   "form": {
     "tabs": {

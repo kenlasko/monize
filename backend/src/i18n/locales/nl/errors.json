@@ -652,6 +652,7 @@
     "loanLedgerUnreadable": "Deze leningbetaling kon niet worden berekend omdat het grootboeksaldo niet kon worden gelezen. Probeer het opnieuw.",
     "estimateRequiresPlain": "Een geschat bedrag is alleen beschikbaar voor een transactie met één categorie of een overboeking in de valuta van de rekening, niet voor een splitsing, een belegging of een bedrag in vreemde valuta",
     "estimateNoAutoPost": "Een geplande transactie met een geschat bedrag kan niet automatisch worden geboekt",
+    "overrideAutoPostNeedsAmount": "Een termijn van een geplande transactie met een geschat bedrag kan pas automatisch worden geboekt als het eigen bedrag is ingevuld",
     "estimateRequiresPayeeAndCategory": "Een geschat bedrag heeft een begunstigde en een categorie nodig om de betalingsgeschiedenis op te matchen",
     "estimateRequiresTransferAccount": "Een geschatte overboeking heeft de bestemmingsrekening nodig om de overboekingsgeschiedenis op te matchen",
     "estimateUnknown": "Het geschatte bedrag van deze keer is onbekend. Voer het bedrag in om het te boeken.",

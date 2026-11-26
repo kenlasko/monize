@@ -5,7 +5,11 @@ import { useTranslations } from 'next-intl';
 import { differenceInDays, startOfDay } from 'date-fns';
 import { renderForStyle, useUiStyle, type StyleVariants } from '@/hooks/useUiStyle';
 import { parseLocalDate } from '@/lib/utils';
-import { nextOccurrenceDueDate, nextOccurrenceEffectiveAmount } from '@/lib/scheduled-effective-amount';
+import {
+  nextOccurrenceAutoPosts,
+  nextOccurrenceDueDate,
+  nextOccurrenceEffectiveAmount,
+} from '@/lib/scheduled-effective-amount';
 import { occurrenceKind } from '@/lib/scheduled-kind';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -184,7 +188,7 @@ function heroNextUp(scheduledTransactions: readonly ScheduledTransaction[], toda
     id: next.id,
     name: next.name,
     payee: next.payeeName || next.payee?.name || null,
-    manual: !next.autoPost,
+    manual: !nextOccurrenceAutoPosts(next),
     kind: occurrenceKind(effective, next),
     amount: effective.amount,
     currencyCode: effective.currencyCode,

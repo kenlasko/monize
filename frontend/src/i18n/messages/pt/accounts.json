@@ -695,7 +695,8 @@
       "retry": "Tentar novamente",
       "autoPost": {
         "title": "O pagamento agendado continua a lançar-se automaticamente",
-        "body": "O lançamento automático está ativado na fatura deste empréstimo, pelo que uma prestação que a regra liquida a partir do débito do banco seria também lançada pela fatura. Desative o lançamento automático da fatura em Faturas e depósitos."
+        "body": "O lançamento automático está ativado na fatura deste empréstimo, pelo que uma prestação que a regra liquida a partir do débito do banco seria também lançada pela fatura. Desative o lançamento automático da fatura em Faturas e depósitos.",
+        "bodyOccurrence": "Uma prestação próxima da fatura deste empréstimo está definida para se lançar sozinha, pelo que a fatura e o débito do banco que a regra liquida poderiam ambos pagá-la. Desative o lançamento automático dessa prestação em Editar Ocorrência, em Faturas e depósitos."
       },
       "preconditions": {
         "openingBalance": "O saldo inicial do empréstimo tem de ser a dívida no início do histórico a processar; os juros de cada prestação são calculados sobre ele.",

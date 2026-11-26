@@ -278,7 +278,8 @@
         "interestCategory": "Categoría de interés (opcional)",
         "interestCategoryPlaceholder": "La categoría de interés propia del préstamo",
         "autoPostTitle": "El pago programado del préstamo se registra solo",
-        "autoPostBody": "El registro automático está activado para el pago programado de este préstamo, así que él y el débito bancario que esta regla liquida pagarían la misma cuota. Desactiva el registro automático del pago programado."
+        "autoPostBody": "El registro automático está activado para el pago programado de este préstamo, así que él y el débito bancario que esta regla liquida pagarían la misma cuota. Desactiva el registro automático del pago programado.",
+        "autoPostBodyOccurrence": "Una cuota próxima del pago programado de este préstamo está configurada para registrarse sola, así que ella y el débito bancario que esta regla liquida podrían pagarla ambos. Desactiva el registro automático de esa cuota en Editar ocurrencia."
       }
     },
     "actionTypes": {

@@ -1538,3 +1538,143 @@ describe('OverrideEditorDialog: an estimated schedule (issue #2096)', () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 });
+
+describe('OverrideEditorDialog: auto-post this occurrence', () => {
+  const bill = {
+    id: 's7', name: 'Internet', amount: -80, currencyCode: 'CAD',
+    accountId: 'a1', categoryId: 'c1', description: '',
+    isTransfer: false, isSplit: false, autoPost: false,
+    account: { name: 'Checking' },
+  } as any;
+  const estimated = {
+    ...bill,
+    id: 's8',
+    amountIsEstimated: true,
+    amountEstimate: {
+      status: 'estimated',
+      currencyCode: 'CAD',
+      months: { '2025-03': { amount: -180, basis: 'seasonal' } },
+      paymentCount: 8,
+      latestPaymentDate: '2025-02-10',
+      growthRate: null,
+      historyMonths: 24,
+      missingPair: null,
+    },
+  } as any;
+  const props = {
+    isOpen: true,
+    scheduledTransaction: bill,
+    overrideDate: '2025-03-01',
+    categories: [{ id: 'c1', name: 'Utilities', parentId: null }] as any[],
+    accounts: [{ id: 'a1', name: 'Checking', currentBalance: 5000 }] as any[],
+    onClose: vi.fn(),
+    onSave: vi.fn(),
+  };
+  const toggle = () => screen.getByRole('switch', { name: 'Auto-post on due date' });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("opens on the schedule's choice and saves no choice of its own when left alone", async () => {
+    render(<OverrideEditorDialog {...props} />);
+    expect(toggle()).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's7',
+        expect.objectContaining({ autoPost: null }),
+      );
+    });
+  });
+
+  it("opts one occurrence of a manual schedule into auto-posting", async () => {
+    render(<OverrideEditorDialog {...props} />);
+    fireEvent.click(toggle());
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's7',
+        expect.objectContaining({ autoPost: true }),
+      );
+    });
+  });
+
+  it('opts one occurrence of an auto-posting schedule out', async () => {
+    render(
+      <OverrideEditorDialog {...props} scheduledTransaction={{ ...bill, autoPost: true }} />,
+    );
+    expect(toggle()).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(toggle());
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's7',
+        expect.objectContaining({ autoPost: false }),
+      );
+    });
+  });
+
+  it("opens on the override's own choice", async () => {
+    const existingOverride = {
+      id: 'o7', originalDate: '2025-03-01', overrideDate: '2025-03-01',
+      amount: -90, categoryId: 'c1', description: null,
+      isSplit: false, splits: null, autoPost: true,
+    } as any;
+    render(<OverrideEditorDialog {...props} existingOverride={existingOverride} />);
+    expect(toggle()).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByText('Update Override'));
+    await waitFor(() => {
+      expect(mockUpdateOverride).toHaveBeenCalledWith(
+        's7',
+        'o7',
+        expect.objectContaining({ autoPost: true }),
+      );
+    });
+  });
+
+  it('locks the switch off, with the reason, while an estimated occurrence follows the estimate', () => {
+    render(<OverrideEditorDialog {...props} scheduledTransaction={estimated} />);
+    expect(toggle()).toBeDisabled();
+    expect(toggle()).toHaveAttribute('aria-checked', 'false');
+    expect(
+      screen.getByRole('button', { name: /Enter this occurrence's amount to post it automatically/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("opts an estimated schedule's occurrence in once its amount is stated", async () => {
+    render(<OverrideEditorDialog {...props} scheduledTransaction={estimated} />);
+    const amountInput = screen.getByLabelText('Amount') as HTMLInputElement;
+    fireEvent.change(amountInput, { target: { value: '-205' } });
+    fireEvent.blur(amountInput);
+    expect(toggle()).not.toBeDisabled();
+    fireEvent.click(toggle());
+    fireEvent.click(screen.getByText('Save Override'));
+    await waitFor(() => {
+      expect(mockCreateOverride).toHaveBeenCalledWith(
+        's8',
+        expect.objectContaining({ amount: -205, autoPost: true }),
+      );
+    });
+  });
+
+  it('drops the choice when the amount goes back to following the estimate', async () => {
+    const existingOverride = {
+      id: 'o8', originalDate: '2025-03-01', overrideDate: '2025-03-01',
+      amount: null, categoryId: null, description: null,
+      isSplit: null, splits: null, autoPost: true,
+    } as any;
+    render(
+      <OverrideEditorDialog {...props} scheduledTransaction={estimated} existingOverride={existingOverride} />,
+    );
+    expect(toggle()).toBeDisabled();
+    fireEvent.click(screen.getByText('Update Override'));
+    await waitFor(() => {
+      expect(mockUpdateOverride).toHaveBeenCalledWith(
+        's8',
+        'o8',
+        expect.objectContaining({ autoPost: null }),
+      );
+    });
+  });
+});

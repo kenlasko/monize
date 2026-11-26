@@ -25,6 +25,10 @@
     "modifiedDateTitle": "已修改此次執行的日期",
     "splitBadge": "分割（{count}）",
     "autoPostBadge": "開",
+    "autoPostNextOnBadge": "下次自動",
+    "autoPostNextOffBadge": "下次手動",
+    "autoPostNextOnTitle": "{date} 的這次將自動入帳，儘管此帳單通常手動入帳。可在「編輯付款」中變更。",
+    "autoPostNextOffTitle": "{date} 的這次留待您親自入帳，儘管此帳單通常自動入帳。可在「編輯付款」中變更。",
     "inactiveSuffix": " — 非活躍",
     "actionTitles": {
       "post": "過帳交易",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "總金額為必填"
     },
     "estimatedHint": "此金額是這次發生的估算值。保持不變，這次發生會隨著新付款繼續沿用估算。{detail}",
-    "keepEstimate": "保留此金額，即使新付款改變了估算"
+    "keepEstimate": "保留此金額，即使新付款改變了估算",
+    "autoPostLabel": "到期自動過帳",
+    "autoPostNeedsAmount": "輸入此次發生的金額即可自動入帳。在其沿用估算值期間，需由您親自入帳來確認。"
   },
   "form": {
     "tabs": {

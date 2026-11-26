@@ -61,6 +61,12 @@ interface UpcomingBill {
   scheduledTransaction: ScheduledTransaction;
   dueDate: Date;
   /**
+   * THIS occurrence posts itself once due: the server's per-occurrence answer,
+   * which folds in an occurrence opted into or out of the schedule's
+   * auto-posting. The schedule's `autoPost` only for an older backend.
+   */
+  autoPosts: boolean;
+  /**
    * What THIS occurrence would post today, from the server's occurrence contract;
    * `null` when it cannot be determined (issue #1247). Never the persisted
    * `amount`, and never the schedule-level figure applied to every projected
@@ -154,6 +160,7 @@ export function UpcomingBillsReport() {
         {
           scheduledTransaction,
           dueDate,
+          autoPosts: occurrence.autoPosts ?? scheduledTransaction.autoPost,
           amount: occurrence.amount,
           currencyCode: occurrence.currencyCode,
           directionAmount: occurrence.directionAmount,
@@ -264,7 +271,7 @@ export function UpcomingBillsReport() {
       bill.currencyCode,
       bill.scheduledTransaction.frequency,
       bill.scheduledTransaction.account?.name || '',
-      bill.isOverdue ? t('upcomingBills.csvStatusOverdue') : bill.scheduledTransaction.autoPost ? t('upcomingBills.csvStatusAuto') : t('upcomingBills.csvStatusManual'),
+      bill.isOverdue ? t('upcomingBills.csvStatusOverdue') : bill.autoPosts ? t('upcomingBills.csvStatusAuto') : t('upcomingBills.csvStatusManual'),
     ]);
     return { headers, rows };
   };
@@ -484,9 +491,9 @@ export function UpcomingBillsReport() {
                         className={`px-1 py-0.5 text-xs rounded truncate cursor-pointer flex items-center gap-0.5 ${
                           SCHEDULED_KIND_CHIP_CLASSES[occurrenceKind(bill, st)]
                         } hover:opacity-80`}
-                        title={st.autoPost ? t('upcomingBills.calendarAutoTitle', { name: st.name }) : t('upcomingBills.calendarManualTitle', { name: st.name })}
+                        title={bill.autoPosts ? t('upcomingBills.calendarAutoTitle', { name: st.name }) : t('upcomingBills.calendarManualTitle', { name: st.name })}
                       >
-                        {!st.autoPost && (
+                        {!bill.autoPosts && (
                           <svg className="h-3 w-3 flex-shrink-0 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01" />
                           </svg>
@@ -531,7 +538,7 @@ export function UpcomingBillsReport() {
                         {t('upcomingBills.overdueLabel')}
                       </span>
                     )}
-                    {bill.scheduledTransaction.autoPost ? (
+                    {bill.autoPosts ? (
                       <span className="px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 text-xs rounded">
                         {t('upcomingBills.autoLabel')}
                       </span>

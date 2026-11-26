@@ -695,7 +695,8 @@
       "retry": "Reintentar",
       "autoPost": {
         "title": "El pago programado todavía se registra solo",
-        "body": "El registro automático está activado en la factura de este préstamo, así que una cuota que la regla liquide a partir del adeudo del banco también la registraría la factura. Desactiva el registro automático de la factura en Facturas y depósitos."
+        "body": "El registro automático está activado en la factura de este préstamo, así que una cuota que la regla liquide a partir del adeudo del banco también la registraría la factura. Desactiva el registro automático de la factura en Facturas y depósitos.",
+        "bodyOccurrence": "Una cuota próxima de la factura de este préstamo está configurada para registrarse sola, así que la factura y el adeudo del banco que liquida la regla podrían pagarla ambos. Desactiva el registro automático de esa cuota en Editar ocurrencia, en Facturas y depósitos."
       },
       "preconditions": {
         "openingBalance": "El saldo inicial del préstamo debe ser la deuda al comienzo del historial que se procesa; los intereses de cada cuota se calculan sobre él.",

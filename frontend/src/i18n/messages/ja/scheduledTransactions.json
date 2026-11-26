@@ -25,6 +25,10 @@
     "modifiedDateTitle": "この回の予定日を変更済み",
     "splitBadge": "分割 ({count})",
     "autoPostBadge": "オン",
+    "autoPostNextOnBadge": "次回は自動",
+    "autoPostNextOffBadge": "次回は手動",
+    "autoPostNextOnTitle": "{date} の回は自動で記帳されます（この請求は通常は手動で記帳）。「発生を編集」で変更できます。",
+    "autoPostNextOffTitle": "{date} の回はご自身で記帳します（この請求は通常は自動で記帳）。「発生を編集」で変更できます。",
     "inactiveSuffix": " — 非アクティブ",
     "actionTitles": {
       "post": "取引を投稿",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "合計金額は必須です"
     },
     "estimatedHint": "この金額はこの回の見積もりです。そのままにしておくと、新しい支払いが入るたびにこの回は見積もりに従い続けます。{detail}",
-    "keepEstimate": "新しい支払いで見積もりが変わっても、この金額を保持する"
+    "keepEstimate": "新しい支払いで見積もりが変わっても、この金額を保持する",
+    "autoPostLabel": "期日に自動投稿",
+    "autoPostNeedsAmount": "この回を自動で記帳するには、この回の金額を入力してください。見積もりに従っている間は、ご自身で記帳して確定します。"
   },
   "form": {
     "tabs": {

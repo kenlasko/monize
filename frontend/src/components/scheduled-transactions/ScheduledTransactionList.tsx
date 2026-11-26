@@ -8,6 +8,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { getDecimalPlacesForCurrency } from '@/lib/format';
 import {
+  nextOccurrenceAutoPosts,
   nextOccurrenceDueDate,
   occurrenceFollowsEstimate,
   overrideEffectiveAmount,
@@ -210,8 +211,14 @@ function ScheduledAccountMarker({
 /**
  * What the Auto column shows, in BOTH layouts: the auto-post chip, or the muted
  * em dash for a schedule the user posts by hand -- a decision, not a label, so a
- * layout mode never re-makes it. It is a READ-ONLY marker of `autoPost`, never a
- * toggle: the flag is set on the schedule's own form.
+ * layout mode never re-makes it. It is a READ-ONLY marker, never a toggle: the
+ * schedule's flag is set on its own form, an occurrence's on Edit Occurrence.
+ *
+ * When the next occurrence's own choice departs from the schedule's (it opts in
+ * on a schedule posted by hand, or out on one that posts itself), the chip says
+ * so for that occurrence, with the date in its help. The answer is the
+ * server's (`nextOccurrenceAutoPosts`). An inactive schedule posts nothing, so
+ * it shows its own setting as before.
  */
 function ScheduledAutoMarker({
   transaction,
@@ -221,7 +228,27 @@ function ScheduledAutoMarker({
   badgePadding: string;
 }) {
   const t = useTranslations('scheduledTransactions');
-  return transaction.autoPost ? (
+  const { formatDate } = useDateFormat();
+  const scheduleAutoPosts = transaction.autoPost && !transaction.amountIsEstimated;
+  const nextAutoPosts = nextOccurrenceAutoPosts(transaction);
+  if (transaction.isActive && nextAutoPosts !== scheduleAutoPosts) {
+    const date = formatDate(nextOccurrenceDueDate(transaction));
+    const label = nextAutoPosts ? t('list.autoPostNextOnBadge') : t('list.autoPostNextOffBadge');
+    const help = nextAutoPosts
+      ? t('list.autoPostNextOnTitle', { date })
+      : t('list.autoPostNextOffTitle', { date });
+    return (
+      <span className="inline-flex items-center gap-1">
+        <Badge variant={nextAutoPosts ? 'blue' : 'amber'} className={badgePadding}>
+          {label}
+        </Badge>
+        <InfoTooltip text={help} iconClassName="h-3.5 w-3.5" usePortal />
+      </span>
+    );
+  }
+  // The schedule's own setting as the cron reads it: an estimated schedule
+  // never auto-posts, whatever a legacy `auto_post` says.
+  return scheduleAutoPosts ? (
     <Badge variant="green" className={badgePadding}>
       {t('list.autoPostBadge')}
     </Badge>

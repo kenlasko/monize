@@ -695,7 +695,8 @@
       "retry": "Erneut versuchen",
       "autoPost": {
         "title": "Die geplante Zahlung bucht sich weiterhin selbst",
-        "body": "Für die Rechnung dieses Darlehens ist das automatische Buchen aktiviert, daher würde eine Rate, die die Regel aus der Bankabbuchung verrechnet, zusätzlich von der Rechnung gebucht. Deaktiviere das automatische Buchen der Rechnung unter Rechnungen & Einzahlungen."
+        "body": "Für die Rechnung dieses Darlehens ist das automatische Buchen aktiviert, daher würde eine Rate, die die Regel aus der Bankabbuchung verrechnet, zusätzlich von der Rechnung gebucht. Deaktiviere das automatische Buchen der Rechnung unter Rechnungen & Einzahlungen.",
+        "bodyOccurrence": "Eine anstehende Rate der Rechnung dieses Darlehens ist auf automatisches Buchen gestellt, daher könnten die Rechnung und die Bankabbuchung, die die Regel verrechnet, sie beide bezahlen. Deaktiviere das automatische Buchen dieser Rate unter „Ausführung bearbeiten“ in Rechnungen & Einzahlungen."
       },
       "preconditions": {
         "openingBalance": "Der Anfangssaldo des Darlehens muss die Restschuld zu Beginn der verarbeiteten Historie sein; die Zinsen jeder Rate werden darauf berechnet.",

@@ -278,7 +278,8 @@
         "interestCategory": "Faiz kategorisi (isteğe bağlı)",
         "interestCategoryPlaceholder": "Kredinin kendi faiz kategorisi",
         "autoPostTitle": "Kredinin zamanlanmış ödemesi kendini kaydeder",
-        "autoPostBody": "Bu kredinin zamanlanmış ödemesi için otomatik kayıt açık, bu nedenle o ödeme ile bu kuralın karşıladığı banka çekimi aynı taksidi öder. Zamanlanmış ödemede otomatik kaydı kapatın."
+        "autoPostBody": "Bu kredinin zamanlanmış ödemesi için otomatik kayıt açık, bu nedenle o ödeme ile bu kuralın karşıladığı banka çekimi aynı taksidi öder. Zamanlanmış ödemede otomatik kaydı kapatın.",
+        "autoPostBodyOccurrence": "Bu kredinin zamanlanmış ödemesinin yaklaşan bir taksidi otomatik kayda ayarlı, bu nedenle o taksit ile bu kuralın karşıladığı banka çekimi onu ikisi birden ödeyebilir. Tekrarı Düzenle penceresinde o taksidin otomatik kaydını kapatın."
       }
     },
     "actionTypes": {

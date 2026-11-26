@@ -244,6 +244,14 @@ export interface ScheduledTransaction {
   splits?: ScheduledTransactionSplit[];
   overrideCount?: number;
   nextOverride?: ScheduledTransactionOverride | null;
+  // Read-only, server-resolved: the next occurrence is posted automatically
+  // once due, by the schedule's setting or that occurrence's own choice. Read
+  // it through `nextOccurrenceAutoPosts`; absent on an older backend.
+  nextOccurrenceAutoPosts?: boolean;
+  // Read-only, on the single-bill read only: the bill auto-posts, or an
+  // upcoming occurrence's override opts in. Absent elsewhere and on an older
+  // backend: read the bill's `autoPost` then.
+  anyOccurrenceAutoPosts?: boolean;
   futureOverrides?: ScheduledTransactionOverride[];
   createdAt: string;
   updatedAt: string;
@@ -351,6 +359,10 @@ export interface ScheduledTransactionOverride {
   investmentQuantity: number | null;
   investmentPrice: number | null;
   investmentTotalAmount: number | null;
+  // This occurrence's auto-post choice: null follows the schedule, true posts
+  // it automatically, false leaves it for manual posting. Absent from an
+  // older server's response, which reads as null.
+  autoPost?: boolean | null;
   // Read-only, server-resolved effective total this override would post today
   // when it carries investment splits (issue #1167 F5-2) -- its base splits
   // re-summed at current FX, so the forecast projects what posting would book
@@ -381,6 +393,7 @@ export interface CreateScheduledTransactionOverrideData {
   investmentQuantity?: number | null;
   investmentPrice?: number | null;
   investmentTotalAmount?: number | null;
+  autoPost?: boolean | null;
 }
 
 export interface UpdateScheduledTransactionOverrideData {
@@ -395,6 +408,7 @@ export interface UpdateScheduledTransactionOverrideData {
   investmentQuantity?: number | null;
   investmentPrice?: number | null;
   investmentTotalAmount?: number | null;
+  autoPost?: boolean | null;
 }
 
 export interface OverrideCheckResult {
@@ -546,6 +560,12 @@ export interface ScheduledOccurrence {
    * Absent on an older backend, which never estimates.
    */
   estimated?: boolean;
+  /**
+   * This occurrence is posted automatically once due, by the schedule's setting
+   * or its own override's choice. Absent on an older backend: read the
+   * schedule's `autoPost` then.
+   */
+  autoPosts?: boolean;
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;

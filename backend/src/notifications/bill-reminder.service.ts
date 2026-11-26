@@ -6,6 +6,7 @@ import { I18nService } from "nestjs-i18n";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { ScheduledOccurrenceService } from "../scheduled-transactions/scheduled-occurrence.service";
 import { expandOccurrenceSlots } from "../common/scheduled-occurrences";
+import { occurrenceAutoPosts } from "../scheduled-transactions/occurrence-auto-post";
 import { todayYMD } from "../common/date-utils";
 import { reminderWindowThrough } from "../scheduled-transactions/reminder-window";
 import { UserPreference } from "../users/entities/user-preference.entity";
@@ -88,12 +89,15 @@ export class BillReminderService {
 
     this.logger.log("Running bill reminder check...");
 
-    // Only manual bills (autoPost = false) that are active.
-    // RLS (task C2): cross-user fan-out over every user's manual bills.
-    const manualBills = await withSystemContext(() =>
+    // Every active bill: whether one needs a reminder is a question about its
+    // occurrence, which an override can opt into or out of auto-posting, so the
+    // schedule's own `auto_post` cannot narrow this read (`occurrenceAutoPosts`
+    // below decides).
+    // RLS (task C2): cross-user fan-out over every user's active bills.
+    const activeBills = await withSystemContext(() =>
       withScopedDb(this.dataSource, (manager) =>
         manager.getRepository(ScheduledTransaction).find({
-          where: { isActive: true, autoPost: false },
+          where: { isActive: true },
           // `splits` is what tells the effective-amount resolver whether a
           // schedule's cash total re-prices at the current FX rate (issue
           // #1247); without it an embedded-investment schedule looks fixed.
@@ -102,8 +106,8 @@ export class BillReminderService {
       ),
     );
 
-    if (manualBills.length === 0) {
-      this.logger.log("No manual bills found");
+    if (activeBills.length === 0) {
+      this.logger.log("No active bills found");
       return;
     }
 
@@ -125,7 +129,7 @@ export class BillReminderService {
     // sent and nothing recorded that it was owed. A window is only reproducible
     // if the date it is measured from is a value, not a second clock read.
     const todayStr = todayYMD();
-    for (const bill of manualBills) {
+    for (const bill of activeBills) {
       // "Is this bill due inside its own reminder window" is a question about an
       // OCCURRENCE, so it is asked through the one expander: the override that
       // matters is the one on the recurrence slot, and it may have moved the
@@ -141,11 +145,13 @@ export class BillReminderService {
       // for everybody (backend/CLAUDE.md, per-user isolation).
       let due: readonly unknown[];
       try {
+        // Only an occurrence the person posts themselves: one the cron posts
+        // needs no reminder.
         due = expandOccurrenceSlots(bill, bill.overrides ?? [], {
           from: todayStr,
           through: reminderWindowThrough(todayStr, bill.reminderDaysBefore),
           maxOccurrences: 1,
-        });
+        }).filter((slot) => !occurrenceAutoPosts(bill, slot.override));
       } catch (error) {
         this.logger.warn(
           `Bill reminder skipped scheduled transaction ${bill.id}: ` +
@@ -320,11 +326,16 @@ export class BillReminderService {
         (widest, b) => Math.max(widest, b.reminderDaysBefore ?? 0),
         0,
       );
-      const occurrences = await this.occurrences.expand(userId, [...bills], {
-        from: todayStr,
-        through: reminderWindowThrough(todayStr, longestWindow),
-        maxOccurrences: 1,
-      });
+      // The selecting pass kept only bills whose occurrence the person posts;
+      // the same occurrence is the one expanded here, and the filter keeps the
+      // two passes from disagreeing about it.
+      const occurrences = (
+        await this.occurrences.expand(userId, [...bills], {
+          from: todayStr,
+          through: reminderWindowThrough(todayStr, longestWindow),
+          maxOccurrences: 1,
+        })
+      ).filter((occurrence) => !occurrence.autoPosts);
       const billData = occurrences.map((occurrence) => {
         const schedule = occurrence.schedule;
         return {

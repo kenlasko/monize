@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Bu gerçekleşme için tarih değiştirildi",
     "splitBadge": "Bölünmüş ({count})",
     "autoPostBadge": "Açık",
+    "autoPostNextOnBadge": "Sonraki açık",
+    "autoPostNextOffBadge": "Sonraki kapalı",
+    "autoPostNextOnTitle": "{date} tarihli tekrar otomatik kaydedilir, ancak bu fatura normalde elle kaydedilir. Tekrarı Düzenle'den değiştirin.",
+    "autoPostNextOffTitle": "{date} tarihli tekrarı sizin kaydetmeniz için bırakılır, ancak bu fatura normalde otomatik kaydedilir. Tekrarı Düzenle'den değiştirin.",
     "inactiveSuffix": " — Pasif",
     "actionTitles": {
       "post": "İşlemi kaydet",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Toplam tutar zorunludur"
     },
     "estimatedHint": "Bu tutar bu tekrarın tahminidir. Olduğu gibi bırakırsanız yeni ödemeler geldikçe bu tekrar tahmini izlemeye devam eder. {detail}",
-    "keepEstimate": "Yeni ödemeler tahmini değiştirse bile bu tutarı koru"
+    "keepEstimate": "Yeni ödemeler tahmini değiştirse bile bu tutarı koru",
+    "autoPostLabel": "Vade tarihinde otomatik kaydet",
+    "autoPostNeedsAmount": "Bu tekrarı otomatik kaydetmek için tutarını girin. Tahmine bağlı kaldığı sürece onu kendiniz kaydederek onaylarsınız."
   },
   "form": {
     "tabs": {
