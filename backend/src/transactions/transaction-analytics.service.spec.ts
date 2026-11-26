@@ -1751,7 +1751,8 @@ describe("TransactionAnalyticsService", () => {
         "COUNT(*) FILTER (WHERE t.amountIsProvisional = true)",
         "provisionalCount",
       );
-      expect(result.accounts.map((a) => a.provisionalCount)).toEqual([0, 1]);
+      // Accounts come back sorted by name: Euro Savings, then US Chequing.
+      expect(result.accounts.map((a) => a.provisionalCount)).toEqual([1, 0]);
       expect(result.provisionalCount).toBe(1);
     });
 

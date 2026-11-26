@@ -353,8 +353,8 @@ export class MonthlyCategoryBreakdownService {
     }
 
     // A whole transfer row, or a split's transfer line (counted on its
-    // parent's account, at the line's own amount and rate basis; a line is
-    // provisional when its parent row is).
+    // parent's account, at the line's own amount and rate basis). Only a whole
+    // leg can be provisional (design section 6, P5), so a line counts none.
     const selectList = (line: boolean) => {
       const amt = line ? "ts.amount" : "t.amount";
       return `
@@ -366,7 +366,7 @@ export class MonthlyCategoryBreakdownService {
         ${rateBasisColumnsSql("$3", "t", ownTransferLegs(userId, "$1", line ? "ts" : undefined))},
         SUM(CASE WHEN ${amt} < 0 THEN ABS(${amt}) ELSE 0 END) as outflow,
         SUM(CASE WHEN ${amt} > 0 THEN ${amt} ELSE 0 END) as inflow,
-        COUNT(*) FILTER (WHERE t.amount_is_provisional = true) as provisional_count`;
+        ${line ? "0" : "COUNT(*) FILTER (WHERE t.amount_is_provisional = true)"} as provisional_count`;
     };
     const groupBy = `
       GROUP BY TO_CHAR(t.transaction_date, 'YYYY-MM'),
