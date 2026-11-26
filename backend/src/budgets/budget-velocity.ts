@@ -33,15 +33,16 @@ export function projectBudgetSpending(
     : null;
   const remainingPurchases =
     remaining === 0 ? 0 : rate === null ? null : rate * remaining;
+  const projection = new FxAggregate();
+  projection.merge(spent);
+  if (remainingPurchases === null) projection.addUnknown();
+  else projection.addConverted(remainingPurchases);
   return {
     currentSpent: spent.knownSubtotal,
     missingRatePairs: [
       ...new Set([...spent.missingPairs, ...purchases.missingPairs]),
     ].sort(),
     dailyBurnRate: rate === null ? null : roundMoney(rate),
-    projectedTotal:
-      spent.isComplete && remainingPurchases !== null
-        ? roundMoney(spent.unroundedSubtotal + remainingPurchases)
-        : null,
+    projectedTotal: projection.total,
   };
 }
