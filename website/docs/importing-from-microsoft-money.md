@@ -637,7 +637,7 @@ Compare each account's current balance in Monize against your Microsoft Money re
 
 ### 7.2 Review Cross-Currency Transfers
 
-Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Search transactions for `is:provisional` to list the receiving sides whose amount is still an estimate, and update the amounts to reflect the actual exchange rates.
+Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Monize estimates the receiving side at the historical exchange rate and marks it with an **Estimated amount** badge. Search transactions for `is:provisional` to list those rows. Importing the receiving account's file replaces the estimate with its own amount; otherwise edit the amount to the one that actually arrived, or choose **Confirm amount** on a row whose estimate is right.
 
 ### 7.3 Verify Investment Holdings
 
@@ -760,7 +760,7 @@ For `.mny` import problems, see [Troubleshooting the .mny Import](#troubleshooti
 **Solution:**
 1. Search transactions for `is:provisional`
 2. Edit each flagged transaction
-3. Adjust the amount in the destination account to match the actual transfer amount
+3. Adjust the amount in the destination account to match the actual transfer amount, which also confirms it and removes the badge (or choose **Confirm amount** if the estimate is right)
 4. This correctly sets the effective exchange rate
 
 #### Import Times Out

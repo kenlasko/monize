@@ -443,7 +443,7 @@
 <li>Check that transfers between accounts were matched correctly (not doubled)</li>
 </ol>
 <h3 id="72-review-cross-currency-transfers">7.2 Review Cross-Currency Transfers<a class="hlink" href="#72-review-cross-currency-transfers" aria-label="Link to this section">#</a></h3>
-<p>Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Search transactions for <code>is:provisional</code> to list the receiving sides whose amount is still an estimate, and update the amounts to reflect the actual exchange rates.</p>
+<p>Cross-currency transfers from Microsoft Money may need manual adjustment because the QIF format does not include exchange rate information. Monize estimates the receiving side at the historical exchange rate and marks it with an <strong>Estimated amount</strong> badge. Search transactions for <code>is:provisional</code> to list those rows. Importing the receiving account&#x27;s file replaces the estimate with its own amount; otherwise edit the amount to the one that actually arrived, or choose <strong>Confirm amount</strong> on a row whose estimate is right.</p>
 <h3 id="73-verify-investment-holdings">7.3 Verify Investment Holdings<a class="hlink" href="#73-verify-investment-holdings" aria-label="Link to this section">#</a></h3>
 <ol>
 <li>Navigate to <strong>Investments</strong></li>
@@ -540,7 +540,7 @@
 <ol>
 <li>Search transactions for <code>is:provisional</code></li>
 <li>Edit each flagged transaction</li>
-<li>Adjust the amount in the destination account to match the actual transfer amount</li>
+<li>Adjust the amount in the destination account to match the actual transfer amount, which also confirms it and removes the badge (or choose <strong>Confirm amount</strong> if the estimate is right)</li>
 <li>This correctly sets the effective exchange rate</li>
 </ol>
 <h4 id="import-times-out">Import Times Out<a class="hlink" href="#import-times-out" aria-label="Link to this section">#</a></h4>
