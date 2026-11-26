@@ -1663,7 +1663,7 @@ describe("ImportRegularProcessorService", () => {
       expect(linkedTxCreate[1].payeeName).toBeNull();
     });
 
-    it("should add PENDING IMPORT note for cross-currency transfers", async () => {
+    it("writes no note into a cross-currency leg's description (issue #2400)", async () => {
       const accountMap = new Map<string, string | null>();
       accountMap.set("USD Account", "acc-usd");
       const ctx = makeContext({ accountMap });
@@ -1703,7 +1703,9 @@ describe("ImportRegularProcessorService", () => {
         (call: any) => call[1]?.accountId === "acc-usd",
       );
       expect(linkedTxCreate).toBeDefined();
-      expect(linkedTxCreate[1].description).toContain("PENDING IMPORT");
+      // The row has no memo, so the leg has no description: the state is the
+      // column alone.
+      expect(linkedTxCreate[1].description).toBeUndefined();
       expect(linkedTxCreate[1]).toMatchObject({
         amount: 370,
         exchangeRate: 0.74,
@@ -1842,7 +1844,7 @@ describe("ImportRegularProcessorService", () => {
           exchangeRate: 0.74,
           amountIsProvisional: true,
         });
-        expect(createdLeg(ctx).description).toContain("PENDING IMPORT");
+        expect(createdLeg(ctx).description).toBeUndefined();
       });
 
       it("refuses the row, naming the pair, when no rate covers the date", async () => {
@@ -2029,7 +2031,7 @@ describe("ImportRegularProcessorService", () => {
         (call: any) => call[1]?.accountId === "acc-eur",
       );
       expect(linkedTxCreate).toBeDefined();
-      expect(linkedTxCreate[1].description).toContain("PENDING IMPORT");
+      expect(linkedTxCreate[1].description).toBe("FX transfer");
       expect(linkedTxCreate[1].currencyCode).toBe("EUR");
     });
 
@@ -2838,9 +2840,8 @@ describe("ImportRegularProcessorService", () => {
           amountIsProvisional: true,
           isTransfer: true,
         });
-        expect(createdLeg(ctx, "acc-usd").description).toContain(
-          "PENDING IMPORT",
-        );
+        // The state is the column; the description is the memo (issue #2400).
+        expect(createdLeg(ctx, "acc-usd").description).toBe("Savings");
         // The USD balance moves by the estimate, not by the file's figure.
         expect(balanceDeltas(ctx)).toEqual([-100, 80]);
       });
@@ -2921,7 +2922,7 @@ describe("ImportRegularProcessorService", () => {
         });
         // This file is the source's; the USD amount is still an estimate.
         expect(update[2].amountIsProvisional).toBeUndefined();
-        expect(update[2].description).toContain("PENDING IMPORT");
+        expect(update[2].description).toBe("Savings");
         expect(createdLeg(ctx, "acc-usd")).toBeUndefined();
         // The par placeholder of 100 becomes the estimate of 80.
         expect(balanceDeltas(ctx)).toEqual([-100, -20]);
@@ -3229,7 +3230,7 @@ describe("ImportRegularProcessorService", () => {
           linkedTransactionId: expect.any(String),
         });
         expect(update[2].amountIsProvisional).toBeUndefined();
-        expect(update[2].description).toContain("PENDING IMPORT");
+        expect(update[2].description).toBe("Shop");
         expect(createdLeg(ctx, "acc-usd")).toBeUndefined();
         expect(balanceDeltas(ctx)).toEqual([4.4, -100]);
       });

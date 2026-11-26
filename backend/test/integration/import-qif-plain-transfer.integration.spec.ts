@@ -174,8 +174,9 @@ describe("QIF plain transfer across currencies (integration)", () => {
     expect(Number(eurLeg.amount)).toBe(80);
     expect(Number(eurLeg.exchange_rate)).toBeCloseTo(0.8, 8);
     expect(eurLeg.amount_is_provisional).toBe(true);
-    expect(eurLeg.description).toContain("Rent");
-    expect(eurLeg.description).toContain("PENDING IMPORT");
+    // The state is the column; the description is the file's memo alone
+    // (issue #2400).
+    expect(eurLeg.description).toBe("Rent");
     const usdLeg = await onlyLegOf(usdId);
     expect(Number(usdLeg.amount)).toBe(-100);
     expect(usdLeg.amount_is_provisional).toBe(false);
