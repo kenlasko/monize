@@ -1,4 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import {
+  CategoryType,
+  categoryTypeOf,
+  categoryTypeOfOrUndefined,
+} from "../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
@@ -77,9 +82,11 @@ export function isNetSpending(total: number): boolean {
 /** Classified expenses keep their signed net even after a full or excess refund. */
 export function includesSpendingCategory(
   total: number,
-  isIncome?: boolean,
+  type?: CategoryType,
 ): boolean {
-  return isIncome === false || isNetSpending(total);
+  // A Transfer category is a named flow, never spending (INV-REPORT-003).
+  if (type === "transfer") return false;
+  return type === "expense" || isNetSpending(total);
 }
 
 @Injectable()
@@ -314,7 +321,10 @@ export class SpendingReportsService {
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
       ([, { agg, category }]) =>
-        includesSpendingCategory(agg.sign, category?.isIncome),
+        includesSpendingCategory(
+          agg.sign,
+          category ? categoryTypeOf(category) : undefined,
+        ),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -591,7 +601,10 @@ export class SpendingReportsService {
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
         .filter(([id, overall]) =>
-          includesSpendingCategory(overall.sign, categoryMap.get(id)?.isIncome),
+          includesSpendingCategory(
+            overall.sign,
+            categoryTypeOfOrUndefined(categoryMap.get(id)),
+          ),
         )
         .map(([id]) => id),
     );

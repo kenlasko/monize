@@ -226,10 +226,10 @@ implied.
 | INV-HA-003 | A single-use artifact is consumed at most once across every replica | enforced |
 | INV-HA-004 | One deployment publishes one OIDC signing key set, stable across restarts | enforced |
 | INV-HA-005 | A relay prompt is claimed by exactly one agent poll of the credential serving the chat, and answered at most once, by that credential | enforced |
-| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | unenforced |
+| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | partial |
 | INV-CATEGORY-002 | A category write on a transfer sets both of its legs, the writer's leg only across two owners | unenforced |
-| INV-CATEGORY-003 | A category's type is its parent's, and `is_income` mirrors it while the column exists | unenforced |
-| INV-CATEGORY-004 | An expense is a category of type expense, never one that is merely not income | unenforced |
+| INV-CATEGORY-003 | A category's type is its parent's, and `is_income` mirrors it while the column exists | partial |
+| INV-CATEGORY-004 | An expense is a category of type expense, never one that is merely not income | enforced |
 | INV-RULE-001 | A transaction rule never changes the matched row's amount, account, date or status; the only balance it moves is a structural action's counterpart | partial |
 | INV-RULE-002 | A transaction rule applies inside the transaction that inserts the row, on every creation path | partial |
 | INV-RULE-003 | The preview, the draft test and the commit of a transaction rule are one planner, and a run commits only the plan the person previewed | partial |

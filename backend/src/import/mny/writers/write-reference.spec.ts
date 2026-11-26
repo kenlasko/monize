@@ -466,7 +466,7 @@ describe("writeCategories", () => {
 
     expect(written.created).toBe(2);
     const parentId = written.idByFullName.get("Utilities");
-    expect(inserts(query)[1]).toEqual(["user-1", "Gas", parentId, false]);
+    expect(inserts(query)[1]).toEqual(["user-1", "Gas", parentId, "expense"]);
     expect(String(query.mock.calls[0][0])).toContain("ON CONFLICT DO NOTHING");
   });
 
@@ -477,7 +477,7 @@ describe("writeCategories", () => {
       category({ name: "Salary", fullName: "Salary", isIncome: true }),
     ]);
 
-    expect(inserts(query)[0]).toEqual(["user-1", "Salary", null, true]);
+    expect(inserts(query)[0]).toEqual(["user-1", "Salary", null, "income"]);
   });
 
   it("reuses an existing category matched on name and parent", async () => {
@@ -556,7 +556,7 @@ describe("writeCategories", () => {
     ]);
 
     expect(written.created).toBe(1);
-    expect(inserts(query)[0]).toEqual(["user-1", "Orphan", null, false]);
+    expect(inserts(query)[0]).toEqual(["user-1", "Orphan", null, "expense"]);
   });
 });
 

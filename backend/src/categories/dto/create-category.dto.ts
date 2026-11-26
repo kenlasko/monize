@@ -52,7 +52,7 @@ export class CreateCategoryDto {
 
   @ApiPropertyOptional({
     description:
-      "Compatibility field: true is an income category, false an expense category. Ignored when `type` is present. Responses return `isIncome` as a read-only derived field (true only for an income category).",
+      "Compatibility field: true is an income category, false an expense category. Ignored when `type` is present. Responses return the flag as a read-only derived field, true only for an income category.",
     default: false,
   })
   @IsOptional()

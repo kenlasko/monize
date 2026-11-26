@@ -56,7 +56,9 @@ export class CategoriesService {
     current: CategoryType | undefined,
   ): CategoryType | undefined {
     if (dto.type !== undefined) return dto.type;
+    // income-flag-ok: the request's legacy flag, which names only two types
     if (dto.isIncome === true) return "income";
+    // income-flag-ok: the request's legacy flag
     if (dto.isIncome === false) {
       return current === "transfer" ? "transfer" : "expense";
     }
@@ -543,7 +545,7 @@ export class CategoriesService {
       description: category.description,
       icon: category.icon,
       color: category.color,
-      isIncome: category.isIncome,
+      isIncome: isIncomeCategory(category),
       categoryType: beforeType,
       autoSign: category.autoSign,
       parentId: category.parentId,
@@ -676,7 +678,7 @@ export class CategoriesService {
     const all =
       (await m.getRepository(Category).find({
         where: { userId },
-        select: ["id", "parentId", "name", "categoryType", "isIncome"],
+        select: ["id", "parentId", "name", "categoryType"],
       })) ?? [];
     const childrenOf = new Map<string, Category[]>();
     for (const c of all) {
@@ -776,7 +778,7 @@ export class CategoriesService {
       description: category.description,
       icon: category.icon,
       color: category.color,
-      isIncome: category.isIncome,
+      isIncome: isIncomeCategory(category),
       categoryType: categoryTypeOf(category),
       parentId: category.parentId,
       isSystem: category.isSystem,

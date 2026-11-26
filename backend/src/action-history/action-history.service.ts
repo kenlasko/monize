@@ -418,6 +418,7 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "description",
     "icon",
     "color",
+    // income-flag-ok: column whitelist of the legacy column
     "is_income",
     "category_type",
     "is_system",

@@ -20,6 +20,7 @@
  * Then the blockers, and the balance line under the predicate
  * `TransactionsService.create` decides the balance with.
  */
+import { isIncomeCategory } from "../../categories/category-type.util";
 import { decimalPlacesOf } from "../../common/amount-precision.util";
 import { moneyDecimalsForCode } from "../../common/currency-places.util";
 import { MONEY_SCALE, roundMoney } from "../../common/round.util";
@@ -293,7 +294,8 @@ export function fillQuickAdd(input: QuickAddFillInput): QuickAddInterpretation {
     recent.filter((row) => row.amount > 0).length > recent.length / 2;
   const kind = stated
     ? kindField(stated.value, stated.source)
-    : category.category?.isIncome || mostlyDeposits
+    : (category.category && isIncomeCategory(category.category)) ||
+        mostlyDeposits
       ? kindField("deposit", "inferred")
       : kindField("payment", "default");
   const kindValue = kind.value ?? "payment";

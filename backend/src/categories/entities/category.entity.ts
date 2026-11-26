@@ -61,6 +61,7 @@ export class Category {
   })
   categoryType?: CategoryType;
 
+  // income-flag-ok: the legacy column the entity still maps
   @Column({ name: "is_income", default: false })
   isIncome: boolean;
 

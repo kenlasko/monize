@@ -163,8 +163,8 @@ describe("DemoSeedService", () => {
       // Verify income categories exist
       const incomeInserts = categoryCalls.filter(
         (call: (string | unknown[])[]) =>
-          (call[0] as string).includes("is_income") &&
-          (call[0] as string).includes("true"),
+          (call[0] as string).includes("category_type") &&
+          (call[0] as string).includes("'income'"),
       );
       expect(incomeInserts.length).toBe(4);
     });

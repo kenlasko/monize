@@ -13,6 +13,7 @@
  * can read one unit, a cent, off the same category rounded on its own, as
  * Spending by Category rounds it. The page says so beside the node.
  */
+import { isIncomeCategory } from "../categories/category-type.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import type { SankeyNodeKind } from "./dto/cash-flow-sankey.dto";
 
@@ -63,8 +64,8 @@ export function placeRoots<C extends { isIncome: boolean }>(
     const complete = bucket.agg.isComplete;
     const sign = bucket.agg.sign;
     const isIncomeSide = complete
-      ? sign > 0 || (sign === 0 && category.isIncome)
-      : category.isIncome;
+      ? sign > 0 || (sign === 0 && isIncomeCategory(category))
+      : isIncomeCategory(category);
     const kind: SankeyNodeKind = isIncomeSide ? "income" : "expense";
     const oriented = isIncomeSide
       ? FxAggregate.sum([bucket.agg])

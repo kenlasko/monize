@@ -57,6 +57,7 @@ export const BUDGET_RULES: Record<string, TableRules> = {
     is_transfer: keep,
     category_group: keep,
     amount: scale,
+    // income-flag-ok: column classification of the budget line's own column
     is_income: keep,
     rollover_type: keep,
     rollover_cap: scale,

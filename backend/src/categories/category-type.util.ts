@@ -36,6 +36,13 @@ export function categoryTypeOf(category: CategoryTypeSource): CategoryType {
   return category.categoryType ?? categoryTypeFromIncomeFlag(category.isIncome);
 }
 
+/** `categoryTypeOf`, or `undefined` for no category (an uncategorized row). */
+export function categoryTypeOfOrUndefined(
+  category: CategoryTypeSource | null | undefined,
+): CategoryType | undefined {
+  return category ? categoryTypeOf(category) : undefined;
+}
+
 export function isIncomeCategory(category: CategoryTypeSource): boolean {
   return categoryTypeOf(category) === "income";
 }

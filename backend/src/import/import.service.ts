@@ -274,6 +274,7 @@ export class ImportService {
       categoryDefs: result.categoryDefs.map((c) => ({
         name: c.name,
         description: c.description,
+        // income-flag-ok: the parsed file's own flag
         isIncome: c.isIncome,
       })),
       tagDefs: result.tagDefs.map((t) => ({

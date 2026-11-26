@@ -462,7 +462,7 @@ describe("IncomeReportsService", () => {
       expect(result.data[0].total).toBe(320);
     });
 
-    it("filters by is_income = true in the SQL query (income categories only)", async () => {
+    it("filters by the income type in the SQL query (income categories only)", async () => {
       scopedManager.query.mockResolvedValue([]);
       categoriesRepository.find.mockResolvedValue([]);
 
@@ -470,7 +470,7 @@ describe("IncomeReportsService", () => {
 
       const sql = scopedManager.query.mock.calls[0][0];
       expect(sql).toContain("INNER JOIN categories c");
-      expect(sql).toContain("c.is_income = true");
+      expect(sql).toContain("c.category_type = 'income'");
     });
 
     it("rounds totals to 2 decimal places", async () => {

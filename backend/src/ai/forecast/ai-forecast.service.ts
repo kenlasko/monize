@@ -1,4 +1,5 @@
 import type { ScheduleAmountEstimateStatus } from "../../scheduled-transactions/scheduled-amount-estimate.service";
+import { isExpenseCategory } from "../../categories/category-type.util";
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { tr } from "../../i18n/translate";
 import { DataSource } from "typeorm";
@@ -212,7 +213,7 @@ export class AiForecastService {
     }
     for (const month of aggregates.monthlyHistory) {
       const topExpenses = month.categoryBreakdown
-        .filter((c) => !c.isIncome)
+        .filter((c) => isExpenseCategory(c))
         .slice(0, 5)
         .map(
           (c) => `${sanitizePromptValue(c.categoryName)}=${c.total.toFixed(2)}`,
