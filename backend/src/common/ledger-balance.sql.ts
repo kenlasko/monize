@@ -106,3 +106,45 @@ export const ACCOUNT_BALANCES_AS_OF_DATES_SQL = `SELECT TO_CHAR(d.as_of, 'YYYY-M
    ${ledgerBalanceJoin("d.as_of")}
   WHERE a.id = $1 AND a.user_id = $2
   GROUP BY a.id, a.opening_balance, d.as_of`;
+
+/**
+ * A provisional leg among the movements above: a transfer leg whose amount is
+ * Monize's estimate until the other account's own file confirms it
+ * (`docs/future-plans/provisional-amounts.md` section 4). It is the movement
+ * predicate plus the column, so a VOID leg or a split child is never counted,
+ * for the same reason neither moves a balance.
+ *
+ * The column is the only source (design P1); the description text is never
+ * read here.
+ */
+export function ledgerProvisionalPredicate(alias = "t"): string {
+  const col = alias ? `${alias}.` : "";
+  return `(${ledgerMovementPredicate(alias)} AND ${col}amount_is_provisional)`;
+}
+
+/**
+ * How many provisional legs each account's balance holds as of each date:
+ * `$1` a `uuid[]` of account ids, `$2` a `date[]` of as-of dates, one row per
+ * date and account that holds at least one (`as_of` as `YYYY-MM-DD`, `count`
+ * as a bigint string). A leg counts toward a date when it is dated on or before
+ * it, which is the bound `ledgerBalanceJoin` puts on the balance itself, so the
+ * count is over exactly the provisional amounts inside that balance (design
+ * section 6, "Figure shape"; P5). Every balance surface reads its count through
+ * `loadProvisionalCounts` (`common/provisional-count.util.ts`).
+ *
+ * The provisional rows are read once and then joined to the dates, so a month
+ * grid of dates costs one pass over the account's (few) provisional legs.
+ */
+export const PROVISIONAL_COUNTS_AS_OF_DATES_SQL = `WITH legs AS (
+     SELECT t.account_id, t.transaction_date
+       FROM transactions t
+      WHERE t.account_id = ANY($1::uuid[])
+        AND ${ledgerProvisionalPredicate()}
+        AND t.transaction_date <= (SELECT MAX(x) FROM unnest($2::date[]) AS x)
+   )
+   SELECT TO_CHAR(d.as_of, 'YYYY-MM-DD') AS as_of,
+          legs.account_id AS account_id,
+          COUNT(*) AS count
+     FROM unnest($2::date[]) AS d(as_of)
+     JOIN legs ON legs.transaction_date <= d.as_of
+    GROUP BY d.as_of, legs.account_id`;

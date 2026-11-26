@@ -54,6 +54,10 @@ import {
   resolveInvestmentScopeAccountIds,
 } from "../securities/investment-scope.util";
 import { addDaysYMD, formatDateYMDLocal, todayYMD } from "../common/date-utils";
+import {
+  ProvisionalCounts,
+  loadProvisionalCounts,
+} from "../common/provisional-count.util";
 import { enumerateDaysYMD, monthEndSampleDates } from "./series-dates.util";
 import { loadFirstInvestmentDate } from "./investment-inception.util";
 import { positionCloseAsOf, PricePoint } from "./position-price.util";
@@ -902,6 +906,8 @@ export class NetWorthService {
       fxComplete: boolean;
       /** `"JPY->USD"` for each pair with no available rate. */
       missingRatePairs: string[];
+      /** Provisional (estimated) transfer amounts inside this month's net worth. */
+      provisionalCount: number;
     }[]
   > {
     const today = new Date();
@@ -933,6 +939,8 @@ export class NetWorthService {
         liabilitiesFxComplete: _liabilitiesFxComplete,
         netWorthChange: _netWorthChange,
         netWorthChangeFromStart: _netWorthChangeFromStart,
+        assetsProvisionalCount: _assetsProvisionalCount,
+        liabilitiesProvisionalCount: _liabilitiesProvisionalCount,
         ...month
       }) => month,
     );
@@ -991,6 +999,15 @@ export class NetWorthService {
        * month's `fxComplete` is false.
        */
       netWorthChangeFromStart: number;
+      /**
+       * The provisional legs inside `netWorth` as of this month's end (today,
+       * for the current month), and inside each side of it: the sum over the
+       * accounts whose ledger balance is in the month's figure. A count, not a
+       * caveat on the figure, which is unchanged (design section 6, P5).
+       */
+      provisionalCount: number;
+      assetsProvisionalCount: number;
+      liabilitiesProvisionalCount: number;
     }[]
   > {
     const months = await this.getMonthlyNetWorthWithAggregates(
@@ -1068,6 +1085,17 @@ export class NetWorthService {
       }
     }
 
+    const today = todayYMD();
+    const provisional = await withScopedDb(this.dataSource, (m) =>
+      loadProvisionalCounts(
+        m,
+        snapshots.map((s) => s.account_id),
+        snapshots.map((s) =>
+          this.snapshotAsOfDate(this.toDateString(s.month), today),
+        ),
+      ),
+    );
+
     return this.computeWithRateFill(
       async () =>
         this.foldMonthlyNetWorth(
@@ -1075,6 +1103,8 @@ export class NetWorthService {
           defaultCurrency,
           places,
           await this.buildRateIndex(currencies, defaultCurrency, start, end),
+          provisional,
+          today,
         ),
       // A monthly point's `month` is its month-first date, which is the month
       // the fill fetches; the conversion happens at that month's end.
@@ -1110,6 +1140,8 @@ export class NetWorthService {
     defaultCurrency: string,
     places: number,
     rateIndex: RateIndex,
+    provisional: ProvisionalCounts,
+    today: string,
   ): MonthlyNetWorthWithAggregate[] {
     // Aggregate by month. Assets and liabilities each accumulate through an
     // FxAggregate so a month containing a component with no available rate
@@ -1121,6 +1153,8 @@ export class NetWorthService {
         assets: FxAggregate;
         liabilities: FxAggregate;
         byAccountType: Map<AccountType, FxAggregate>;
+        assetsProvisionalCount: number;
+        liabilitiesProvisionalCount: number;
       }
     >();
 
@@ -1132,6 +1166,8 @@ export class NetWorthService {
           assets: new FxAggregate(),
           liabilities: new FxAggregate(),
           byAccountType: new Map(),
+          assetsProvisionalCount: 0,
+          liabilitiesProvisionalCount: 0,
         });
       }
       const entry = monthMap.get(monthKey)!;
@@ -1140,11 +1176,16 @@ export class NetWorthService {
       // For standalone investment accounts: use market_value + balance (holdings + cash)
       // For all others: use balance
       let rawValue: number;
+      // Whether the account's ledger balance is in `rawValue`: a brokerage's
+      // market value holds none of its ledger rows, so none of its provisional
+      // legs either.
+      let holdsLedgerBalance = true;
       if (
         s.account_sub_type === "INVESTMENT_BROKERAGE" &&
         s.market_value != null
       ) {
         rawValue = Number(s.market_value);
+        holdsLedgerBalance = false;
       } else if (
         s.account_type === "INVESTMENT" &&
         s.account_sub_type === null &&
@@ -1170,7 +1211,14 @@ export class NetWorthService {
         entry.byAccountType.set(accountType, new FxAggregate());
       }
       const typeTotal = entry.byAccountType.get(accountType)!;
+      // Counted over the components that converted, as the figure is
+      // (design section 8): an unconverted account is outside the subtotal.
+      const provisionalCount =
+        holdsLedgerBalance && converted !== null
+          ? provisional.of(s.account_id, this.snapshotAsOfDate(monthKey, today))
+          : 0;
       if (LIABILITY_TYPES.includes(accountType)) {
+        entry.liabilitiesProvisionalCount += provisionalCount;
         const owed = converted === null ? null : Math.abs(converted);
         entry.liabilities.add(owed, s.currency_code, defaultCurrency);
         typeTotal.add(
@@ -1179,6 +1227,7 @@ export class NetWorthService {
           defaultCurrency,
         );
       } else {
+        entry.assetsProvisionalCount += provisionalCount;
         entry.assets.add(converted, s.currency_code, defaultCurrency);
         typeTotal.add(converted, s.currency_code, defaultCurrency);
       }
@@ -1247,8 +1296,23 @@ export class NetWorthService {
           ),
           netWorthChange,
           netWorthChangeFromStart,
+          provisionalCount:
+            data.assetsProvisionalCount + data.liabilitiesProvisionalCount,
+          assetsProvisionalCount: data.assetsProvisionalCount,
+          liabilitiesProvisionalCount: data.liabilitiesProvisionalCount,
         };
       });
+  }
+
+  /**
+   * The day a month's snapshot balance stands at: the month's end, or today
+   * for the month still running (`recalculateRegularAccount` sums no row dated
+   * after today). A provisional leg counts toward the month only when it is
+   * dated on or before this day, as its amount is in the balance only then.
+   */
+  private snapshotAsOfDate(monthFirstDay: string, today: string): string {
+    const monthEnd = this.monthEndDate(monthFirstDay);
+    return monthEnd < today ? monthEnd : today;
   }
 
   /**
@@ -1280,6 +1344,9 @@ export class NetWorthService {
     missingRatePairs: string[];
     assetsFxComplete: boolean;
     liabilitiesFxComplete: boolean;
+    provisionalCount: number;
+    assetsProvisionalCount: number;
+    liabilitiesProvisionalCount: number;
   } | null> {
     await this.ensurePopulated(userId);
 
@@ -1309,6 +1376,9 @@ export class NetWorthService {
       missingRatePairs: latest.missingRatePairs,
       assetsFxComplete: latest.assetsFxComplete,
       liabilitiesFxComplete: latest.liabilitiesFxComplete,
+      provisionalCount: latest.provisionalCount,
+      assetsProvisionalCount: latest.assetsProvisionalCount,
+      liabilitiesProvisionalCount: latest.liabilitiesProvisionalCount,
     };
   }
 

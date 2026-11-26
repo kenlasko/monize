@@ -22,6 +22,12 @@ import {
 } from "../test-helpers/scoped-db-testing";
 import { lockAccountsForBalanceWrite } from "../common/db/locks";
 
+import {
+  ProvisionalLegFixture,
+  isProvisionalCountQuery,
+  provisionalCountRows,
+} from "../test-helpers/provisional-count-testing";
+
 jest.mock("../common/db/scoped-db", () => {
   const helpers = jest.requireActual("../test-helpers/scoped-db-testing");
   return {
@@ -59,6 +65,7 @@ describe("NetWorthService", () => {
   // write assertions -- the split the spec had when reads used
   // `reportQuery` and writes used `queryRunner.query`.
   let reportQuery: jest.Mock;
+  let provisionalLegs: ProvisionalLegFixture[];
   let snapshotQuery: jest.Mock;
 
   /**
@@ -208,10 +215,16 @@ describe("NetWorthService", () => {
       [UserPreference, prefRepository],
     ]);
     dataSource = mocks.dataSource;
+    provisionalLegs = [];
+    // The provisional count read has its own fixture, so a chain of
+    // `reportQuery` answers is not shifted by it.
     mocks.manager.query.mockImplementation((sql: string, params?: unknown[]) =>
-      /monthly_account_balances/.test(sql) && /^\s*(DELETE|INSERT)/i.test(sql)
-        ? snapshotQuery(sql, params)
-        : reportQuery(sql, params),
+      isProvisionalCountQuery(sql)
+        ? Promise.resolve(provisionalCountRows(provisionalLegs, params ?? []))
+        : /monthly_account_balances/.test(sql) &&
+            /^\s*(DELETE|INSERT)/i.test(sql)
+          ? snapshotQuery(sql, params)
+          : reportQuery(sql, params),
     );
 
     service = new NetWorthService(dataSource as never);
@@ -1777,11 +1790,16 @@ describe("NetWorthService", () => {
           byAccountType: { [AccountType.CHEQUING]: 10 },
           netWorthChange: null,
           netWorthChangeFromStart: 0,
+          provisionalCount: 2,
+          assetsProvisionalCount: 1,
+          liabilitiesProvisionalCount: 1,
         },
       ]);
 
       const history = await service.getLlmHistory("user-1");
 
+      // The month's count stays; its per-side split goes with the per-side
+      // completeness flags.
       expect(history).toEqual([
         {
           month: "2024-01-01",
@@ -1790,6 +1808,7 @@ describe("NetWorthService", () => {
           netWorth: 10,
           fxComplete: true,
           missingRatePairs: [],
+          provisionalCount: 2,
         },
       ]);
       spy.mockRestore();
@@ -2533,6 +2552,149 @@ describe("NetWorthService", () => {
     });
   });
 
+  describe("provisional amounts in the monthly net worth (design section 6, P5)", () => {
+    const snapshot = (
+      month: string,
+      account_id: string,
+      balance: number,
+      account_type: AccountType = AccountType.CHEQUING,
+      extra: Partial<{
+        market_value: number | null;
+        account_sub_type: string | null;
+      }> = {},
+    ) => ({
+      month,
+      balance,
+      market_value: null,
+      account_id,
+      account_type,
+      account_sub_type: null,
+      currency_code: "USD",
+      ...extra,
+    });
+
+    beforeEach(() => {
+      mabRepository.count.mockResolvedValue(5);
+      prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
+      // Today is 2024-03-15, so March's balance stands at today, not its end.
+      jest.useFakeTimers({
+        now: new Date(2024, 2, 15, 12),
+        doNotFake: ["nextTick", "setImmediate", "setTimeout", "setInterval"],
+      });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("counts each month as of its end, and the running month as of today", async () => {
+      reportQuery.mockResolvedValueOnce([
+        snapshot("2024-01-01", "chq", 100),
+        snapshot("2024-02-01", "chq", 180),
+        snapshot("2024-03-01", "chq", 180),
+      ]);
+      provisionalLegs = [
+        // On January's last day: inside January's balance and every later one.
+        { account_id: "chq", transaction_date: "2024-01-31" },
+        { account_id: "chq", transaction_date: "2024-02-10" },
+        // After today: inside no balance yet, so counted nowhere.
+        { account_id: "chq", transaction_date: "2024-03-20" },
+      ];
+
+      const months = await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-01-01",
+        "2024-03-31",
+      );
+
+      expect(
+        months.map((m) => [m.month, m.netWorth, m.provisionalCount]),
+      ).toEqual([
+        ["2024-01-01", 100, 1],
+        ["2024-02-01", 180, 2],
+        ["2024-03-01", 180, 2],
+      ]);
+      const countCall = (dataSource.manager.query as jest.Mock).mock.calls.find(
+        ([sql]: [string]) => isProvisionalCountQuery(sql),
+      );
+      expect(countCall[1]).toEqual([
+        ["chq"],
+        ["2024-01-31", "2024-02-29", "2024-03-15"],
+      ]);
+    });
+
+    it("sums each side over its accounts, and the net worth over both", async () => {
+      reportQuery.mockResolvedValueOnce([
+        snapshot("2024-02-01", "chq", 500),
+        snapshot("2024-02-01", "sav", 300, AccountType.SAVINGS),
+        snapshot("2024-02-01", "cc", -200, AccountType.CREDIT_CARD),
+      ]);
+      provisionalLegs = [
+        { account_id: "chq", transaction_date: "2024-02-01" },
+        { account_id: "sav", transaction_date: "2024-02-02" },
+        { account_id: "cc", transaction_date: "2024-02-03" },
+      ];
+
+      const [month] = await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-02-01",
+        "2024-02-29",
+      );
+
+      // The figures are unchanged by the count: nothing is withheld.
+      expect(month).toMatchObject({
+        assets: 800,
+        liabilities: 200,
+        netWorth: 600,
+        fxComplete: true,
+        provisionalCount: 3,
+        assetsProvisionalCount: 2,
+        liabilitiesProvisionalCount: 1,
+      });
+    });
+
+    it("does not count a brokerage's ledger rows, which its market value does not hold", async () => {
+      reportQuery.mockResolvedValueOnce([
+        snapshot("2024-02-01", "brk", 0, AccountType.INVESTMENT, {
+          market_value: 1000,
+          account_sub_type: "INVESTMENT_BROKERAGE",
+        }),
+        snapshot("2024-02-01", "inv", 50, AccountType.INVESTMENT, {
+          market_value: 1000,
+        }),
+      ]);
+      provisionalLegs = [
+        { account_id: "brk", transaction_date: "2024-02-01" },
+        // A standalone investment account's figure is holdings plus its cash.
+        { account_id: "inv", transaction_date: "2024-02-01" },
+      ];
+
+      const [month] = await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-02-01",
+        "2024-02-29",
+      );
+
+      expect(month.provisionalCount).toBe(1);
+    });
+
+    it("reports zero for a month built from confirmed amounts only", async () => {
+      reportQuery.mockResolvedValueOnce([snapshot("2024-02-01", "chq", 500)]);
+
+      const [month] = await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-02-01",
+        "2024-02-29",
+      );
+
+      expect(month).toMatchObject({
+        provisionalCount: 0,
+        assetsProvisionalCount: 0,
+        liabilitiesProvisionalCount: 0,
+      });
+    });
+  });
+
   describe("getLatestNetWorth", () => {
     it("returns only the latest month's totals", async () => {
       mabRepository.count.mockResolvedValue(5);
@@ -2574,6 +2736,9 @@ describe("NetWorthService", () => {
         missingRatePairs: [],
         assetsFxComplete: true,
         liabilitiesFxComplete: true,
+        provisionalCount: 0,
+        assetsProvisionalCount: 0,
+        liabilitiesProvisionalCount: 0,
       });
       // The month range is bounded to the latest month so the snapshot query
       // does not replay the whole history.
@@ -2612,6 +2777,12 @@ describe("NetWorthService", () => {
           },
         ])
         .mockResolvedValueOnce([]);
+      // One estimate in each account: only the one whose balance converted
+      // is inside the subtotal (design section 8).
+      provisionalLegs = [
+        { account_id: "checking", transaction_date: "2024-03-05" },
+        { account_id: "zzz", transaction_date: "2024-03-05" },
+      ];
 
       const result = await service.getLatestNetWorth("user-1");
 
@@ -2623,6 +2794,9 @@ describe("NetWorthService", () => {
         missingRatePairs: ["ZZZ->USD"],
         assetsFxComplete: false,
         liabilitiesFxComplete: true,
+        provisionalCount: 1,
+        assetsProvisionalCount: 1,
+        liabilitiesProvisionalCount: 0,
       });
     });
 

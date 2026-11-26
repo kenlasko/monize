@@ -2,6 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { AccountBalancesReportService } from "./account-balances-report.service";
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import {
+  ProvisionalLegFixture,
+  isProvisionalCountQuery,
+  provisionalCountRows,
+} from "../test-helpers/provisional-count-testing";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { SecurityPriceService } from "../securities/security-price.service";
@@ -47,6 +52,8 @@ interface Fixture {
     rate_date: string;
     rate: string;
   }>;
+  /** Provisional legs, read through `loadProvisionalCounts`. */
+  provisionalLegs?: ProvisionalLegFixture[];
 }
 
 /**
@@ -102,6 +109,9 @@ describe("AccountBalancesReportService", () => {
 
   const program = (fixture: Fixture) => {
     query.mockImplementation(async (sql: string, params: any[] = []) => {
+      if (isProvisionalCountQuery(sql)) {
+        return provisionalCountRows(fixture.provisionalLegs ?? [], params);
+      }
       if (sql.includes("FROM accounts\n") && sql.includes("account_sub_type")) {
         return fixture.accounts ?? [];
       }
@@ -413,6 +423,72 @@ describe("AccountBalancesReportService", () => {
     expect(ledgerCall[0]).toContain("t.parent_transaction_id IS NULL");
     expect(ledgerCall[0]).toContain("t.transaction_date <= $2");
     expect(ledgerCall[1]).toEqual(["user-1", "2026-03-01", [], null]);
+  });
+
+  describe("provisional amounts (design section 6, P5)", () => {
+    const savings = {
+      id: "acc-2",
+      currency_code: "CAD",
+      account_type: "SAVINGS",
+      account_sub_type: null,
+    };
+
+    it("counts each account's provisional legs dated on or before the date", async () => {
+      program({
+        accounts: [cheque, savings],
+        balances: [
+          { id: "acc-1", balance: "80" },
+          { id: "acc-2", balance: "10" },
+        ],
+        provisionalLegs: [
+          { account_id: "acc-1", transaction_date: "2026-02-10" },
+          { account_id: "acc-1", transaction_date: "2026-03-01" },
+          // Dated after the report's day: outside its balance, so uncounted.
+          { account_id: "acc-1", transaction_date: "2026-03-02" },
+        ],
+      });
+      const result = await service.getBalancesAsOf("user-1", "2026-03-01");
+      expect(
+        result.accounts.map((a) => [
+          a.accountId,
+          a.balance,
+          a.provisionalCount,
+        ]),
+      ).toEqual([
+        ["acc-1", 80, 2],
+        ["acc-2", 10, 0],
+      ]);
+    });
+
+    it("asks for exactly the scoped accounts at the report's date", async () => {
+      program({
+        accounts: [cheque],
+        balances: [{ id: "acc-1", balance: "80" }],
+      });
+      await service.getBalancesAsOf("user-1", "2026-03-01", [], ["acc-1"]);
+      const countCall = query.mock.calls.find(([sql]: [string]) =>
+        isProvisionalCountQuery(sql),
+      );
+      expect(countCall[1]).toEqual([["acc-1"], ["2026-03-01"]]);
+    });
+
+    it("counts nothing before the account existed, as its balance is zero", async () => {
+      program({
+        accounts: [
+          { ...cheque, account_type: "ASSET", date_acquired: "2026-04-01" },
+        ],
+        balances: [{ id: "acc-1", balance: "80" }],
+        provisionalLegs: [
+          { account_id: "acc-1", transaction_date: "2026-02-10" },
+        ],
+      });
+      const result = await service.getBalancesAsOf("user-1", "2026-03-01");
+      expect(result.accounts[0]).toMatchObject({
+        existsAsOf: false,
+        balance: 0,
+        provisionalCount: 0,
+      });
+    });
   });
 
   it("reports the ledger balance in the account's own currency", async () => {

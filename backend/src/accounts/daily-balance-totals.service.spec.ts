@@ -3,6 +3,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import {
+  ProvisionalLegFixture,
+  isProvisionalCountQuery,
+  provisionalCountRows,
+} from "../test-helpers/provisional-count-testing";
 
 import { DailyBalanceTotalsService } from "./daily-balance-totals.service";
 import { AccountsService } from "./accounts.service";
@@ -40,6 +45,7 @@ describe("DailyBalanceTotalsService", () => {
   let forecastService: { getBalanceForecast: jest.Mock };
   let accountRows: FakeRow[];
   let rateRows: FakeRow[];
+  let provisionalLegs: ProvisionalLegFixture[];
   let preference: { defaultCurrency?: string | null } | null;
   let queries: Array<{ sql: string; params: unknown[] }>;
 
@@ -49,6 +55,7 @@ describe("DailyBalanceTotalsService", () => {
     queries = [];
     accountRows = [];
     rateRows = [];
+    provisionalLegs = [];
     preference = { defaultCurrency: "CAD" };
     accountsService = { getDailyBalances: jest.fn().mockResolvedValue([]) };
     forecastService = { getBalanceForecast: jest.fn() };
@@ -58,6 +65,9 @@ describe("DailyBalanceTotalsService", () => {
     mocks.manager.query.mockImplementation(
       async (sql: string, params: unknown[]) => {
         queries.push({ sql, params });
+        if (isProvisionalCountQuery(sql)) {
+          return provisionalCountRows(provisionalLegs, params);
+        }
         if (sql.includes("FROM accounts")) return accountRows;
         if (sql.includes("FROM exchange_rates")) return rateRows;
         throw new Error(`unexpected query: ${sql}`);
@@ -184,6 +194,7 @@ describe("DailyBalanceTotalsService", () => {
         date: "2026-06-15",
         total: 2599.56,
         knownSubtotal: 2599.56,
+        provisionalCount: 0,
         isProjected: false,
         missingRatePairs: [],
       });
@@ -281,6 +292,108 @@ describe("DailyBalanceTotalsService", () => {
         false,
         [],
       );
+    });
+  });
+
+  describe("provisional amounts (design section 6, P5)", () => {
+    it("counts each day's legs dated on or before it, summed over the scope", async () => {
+      accountRows = [account("chequing", "CAD"), account("savings", "CAD")];
+      accountsService.getDailyBalances.mockResolvedValue([
+        balance("chequing", "2026-06-13", 100, "CAD"),
+        balance("savings", "2026-06-13", 10, "CAD"),
+        balance("chequing", "2026-06-14", 180, "CAD"),
+        balance("savings", "2026-06-14", 10, "CAD"),
+      ]);
+      provisionalLegs = [
+        { account_id: "chequing", transaction_date: "2026-06-01" },
+        { account_id: "chequing", transaction_date: "2026-06-14" },
+        { account_id: "savings", transaction_date: "2026-06-13" },
+      ];
+
+      const res = await service.getDailyBalanceTotals(
+        "user-1",
+        "2026-06-13",
+        "2026-06-14",
+      );
+
+      // The totals are the balances, unchanged; the count travels beside them.
+      expect(
+        res.days.map((d) => [d.date, d.total, d.provisionalCount]),
+      ).toEqual([
+        ["2026-06-13", 110, 2],
+        ["2026-06-14", 190, 3],
+      ]);
+      const countCall = queries.find((q) => isProvisionalCountQuery(q.sql));
+      expect(countCall?.params).toEqual([
+        ["chequing", "savings"],
+        ["2026-06-13", "2026-06-14"],
+      ]);
+    });
+
+    it("counts a future-dated leg only from the projected day it is in", async () => {
+      accountRows = [account("chequing", "CAD")];
+      accountsService.getDailyBalances.mockResolvedValue([
+        balance("chequing", TODAY, 2600, "CAD"),
+      ]);
+      forecastService.getBalanceForecast.mockResolvedValue(
+        completeForecast("chequing", "CAD", [
+          { date: TODAY, balance: 2600 },
+          { date: "2026-06-17", balance: 2680 },
+        ]),
+      );
+      provisionalLegs = [
+        { account_id: "chequing", transaction_date: "2026-06-17" },
+      ];
+
+      const res = await service.getDailyBalanceTotals(
+        "user-1",
+        TODAY,
+        "2026-06-17",
+      );
+
+      expect(res.days.map((d) => [d.date, d.provisionalCount])).toEqual([
+        [TODAY, 0],
+        ["2026-06-16", 0],
+        ["2026-06-17", 1],
+      ]);
+    });
+
+    it("leaves out an account whose balance did not convert, as the subtotal does", async () => {
+      accountRows = [account("chequing", "CAD"), account("savings", "USD")];
+      rateRows = [];
+      accountsService.getDailyBalances.mockResolvedValue([
+        balance("chequing", "2026-06-14", 100, "CAD"),
+        balance("savings", "2026-06-14", 1000, "USD"),
+      ]);
+      provisionalLegs = [
+        { account_id: "chequing", transaction_date: "2026-06-14" },
+        { account_id: "savings", transaction_date: "2026-06-14" },
+      ];
+
+      const res = await service.getDailyBalanceTotals(
+        "user-1",
+        "2026-06-14",
+        "2026-06-14",
+        undefined,
+        "CAD",
+      );
+
+      expect(res.days[0]).toMatchObject({
+        total: null,
+        knownSubtotal: 100,
+        provisionalCount: 1,
+      });
+    });
+
+    it("counts nothing on an empty scope", async () => {
+      accountRows = [];
+      const res = await service.getDailyBalanceTotals(
+        "user-1",
+        "2026-06-14",
+        "2026-06-14",
+      );
+      expect(res.days[0].provisionalCount).toBe(0);
+      expect(queries.some((q) => isProvisionalCountQuery(q.sql))).toBe(false);
     });
   });
 

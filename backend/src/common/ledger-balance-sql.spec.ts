@@ -8,8 +8,11 @@ import {
   LEDGER_MOVEMENT_PREDICATE,
   LEDGER_BALANCE_EXPRESSION,
   LEDGER_TOP_LEVEL_ONLY,
+  PROVISIONAL_COUNTS_AS_OF_DATES_SQL,
   ledgerBalanceAsOfExpression,
   ledgerBalanceJoin,
+  ledgerMovementPredicate,
+  ledgerProvisionalPredicate,
 } from "./ledger-balance.sql";
 
 /**
@@ -45,6 +48,20 @@ const BALANCE_FAMILY = [
   "action-history/",
   "delegation/",
   "import/",
+  "net-worth/",
+  "scheduled-transactions/",
+];
+
+/**
+ * The balance readers that report a provisional count. They read it through
+ * `loadProvisionalCounts` and never name the column, so what counts (non-VOID,
+ * top level, flagged, dated on or before the balance's day) is one predicate
+ * (`docs/future-plans/provisional-amounts.md` section 6, P5). The importer and
+ * the action history WRITE the flag, which is why they are not in this list.
+ */
+const PROVISIONAL_COUNT_READERS = [
+  "accounts/",
+  "delegation/",
   "net-worth/",
   "scheduled-transactions/",
 ];
@@ -92,6 +109,44 @@ describe("as-of ledger balance SQL", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("counts provisional legs through one predicate, never a balance reader's own", () => {
+    const offenders: string[] = [];
+    for (const relative of gitListFiles(SOURCE_ROOT)) {
+      if (!relative.endsWith(".ts") || relative.endsWith(".spec.ts")) continue;
+      if (!PROVISIONAL_COUNT_READERS.some((dir) => relative.startsWith(dir))) {
+        continue;
+      }
+      const source = stripComments(
+        readFileSync(join(SOURCE_ROOT, relative), "utf8"),
+      );
+      if (/amount_is_provisional|amountIsProvisional/.test(source)) {
+        offenders.push(relative);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("states a provisional leg as a ledger movement that carries the flag", () => {
+    expect(ledgerProvisionalPredicate()).toBe(
+      `(${LEDGER_MOVEMENT_PREDICATE} AND t.amount_is_provisional)`,
+    );
+    expect(ledgerProvisionalPredicate("")).toBe(
+      `(${ledgerMovementPredicate("")} AND amount_is_provisional)`,
+    );
+  });
+
+  it("bounds the provisional count at each as-of date, as the balance join is", () => {
+    expect(PROVISIONAL_COUNTS_AS_OF_DATES_SQL).toContain(
+      ledgerProvisionalPredicate(),
+    );
+    expect(PROVISIONAL_COUNTS_AS_OF_DATES_SQL).toContain(
+      "legs.transaction_date <= d.as_of",
+    );
+    expect(PROVISIONAL_COUNTS_AS_OF_DATES_SQL).toContain(
+      "t.account_id = ANY($1::uuid[])",
+    );
   });
 
   it("scans a family that actually exists", () => {

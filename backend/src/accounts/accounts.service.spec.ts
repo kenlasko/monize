@@ -49,6 +49,11 @@ import {
 } from "../test-helpers/scoped-db-testing";
 import { Currency } from "../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
+import {
+  isProvisionalCountQuery,
+  provisionalCountRows,
+} from "../test-helpers/provisional-count-testing";
+import { todayYMD } from "../common/date-utils";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -69,6 +74,9 @@ const latestNetWorth = (
   missingRatePairs: [],
   assetsFxComplete: true,
   liabilitiesFxComplete: true,
+  provisionalCount: 0,
+  assetsProvisionalCount: 0,
+  liabilitiesProvisionalCount: 0,
   ...overrides,
 });
 
@@ -2487,6 +2495,44 @@ describe("AccountsService", () => {
       ]);
     });
 
+    it("counts each account's provisional legs inside its current balance (design P5)", async () => {
+      const getMany = jest
+        .fn()
+        .mockResolvedValue([mockAccount, { ...mockAccount, id: "account-2" }]);
+      accountsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany,
+      });
+      const today = todayYMD();
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, params: unknown[]) =>
+          isProvisionalCountQuery(sql)
+            ? provisionalCountRows(
+                [
+                  { account_id: mockAccount.id, transaction_date: today },
+                  // After today: in futureTransactionsSum, not in the
+                  // balance the count speaks for.
+                  {
+                    account_id: mockAccount.id,
+                    transaction_date: "9999-12-31",
+                  },
+                ],
+                params,
+              )
+            : [],
+      );
+
+      const result = await service.findAll("user-1");
+
+      expect(result.map((a) => a.provisionalCount)).toEqual([1, 0]);
+      const [, params] = (mockQueryRunner.query.mock.calls as unknown[][]).find(
+        ([q]) => isProvisionalCountQuery(String(q)),
+      )!;
+      expect(params).toEqual([[mockAccount.id, "account-2"], [today]]);
+    });
+
     it("returns empty array when no accounts", async () => {
       const getMany = jest.fn().mockResolvedValue([]);
       accountsRepository.createQueryBuilder.mockReturnValue({
@@ -4435,6 +4481,56 @@ describe("AccountsService", () => {
       expect(result.unpricedSymbols).toEqual([]);
     });
 
+    it("carries the provisional counts of the totals beside them, changing no figure", async () => {
+      jest.spyOn(service, "findAll").mockResolvedValue([
+        { ...mockAccount, id: "a1", currentBalance: 80, provisionalCount: 1 },
+        { ...mockAccount, id: "a2", currentBalance: 20, provisionalCount: 2 },
+        {
+          ...mockAccount,
+          id: "closed-empty",
+          currentBalance: 0,
+          isClosed: true,
+          provisionalCount: 0,
+        },
+      ] as never);
+      netWorthService.getLatestNetWorth.mockResolvedValue(
+        latestNetWorth({
+          assets: 100,
+          liabilities: 0,
+          netWorth: 100,
+          provisionalCount: 3,
+          assetsProvisionalCount: 3,
+          liabilitiesProvisionalCount: 0,
+        }),
+      );
+
+      const result = await service.getSummary("user-1");
+
+      expect(result).toMatchObject({
+        totalBalance: 100,
+        totalBalanceProvisionalCount: 3,
+        totalAssets: 100,
+        netWorth: 100,
+        provisionalCount: 3,
+        assetsProvisionalCount: 3,
+        liabilitiesProvisionalCount: 0,
+      });
+    });
+
+    it("counts nothing when there is no snapshot to hold a provisional amount", async () => {
+      stubAccounts([]);
+      netWorthService.getLatestNetWorth.mockResolvedValue(null);
+
+      const result = await service.getSummary("user-1");
+
+      expect(result).toMatchObject({
+        totalBalanceProvisionalCount: 0,
+        provisionalCount: 0,
+        assetsProvisionalCount: 0,
+        liabilitiesProvisionalCount: 0,
+      });
+    });
+
     it("does not report a subtotal as net worth when a rate is missing", async () => {
       stubAccounts([{ ...mockAccount, id: "a1", currentBalance: 1000 }]);
       netWorthService.getLatestNetWorth.mockResolvedValue(
@@ -5032,6 +5128,40 @@ describe("AccountsService", () => {
       institutionsRepository.find = jest
         .fn()
         .mockResolvedValue([{ id: "inst-1", name: "Big Bank" }]);
+    });
+
+    it("carries each row's provisional count and the totals' counts (design P5)", async () => {
+      jest
+        .spyOn(service, "findAll")
+        .mockResolvedValue([
+          { ...allAccounts[0], provisionalCount: 2 },
+          ...allAccounts.slice(1),
+        ] as never);
+      (
+        netWorthService as unknown as Record<string, jest.Mock>
+      ).getLatestNetWorth = jest.fn().mockResolvedValue(
+        latestNetWorth({
+          assets: 800,
+          liabilities: 0,
+          netWorth: 800,
+          provisionalCount: 2,
+          assetsProvisionalCount: 2,
+        }),
+      );
+
+      const r = await service.getLlmAccounts("user-1", { status: "all" });
+
+      expect(r.accounts.map((a) => [a.id, a.provisionalCount])).toEqual([
+        ["a1", 2],
+        ["a2", 0],
+        ["a3", 0],
+      ]);
+      expect(r).toMatchObject({
+        netWorth: 800,
+        provisionalCount: 2,
+        assetsProvisionalCount: 2,
+        liabilitiesProvisionalCount: 0,
+      });
     });
 
     it("status defaults to open and filters closed accounts", async () => {

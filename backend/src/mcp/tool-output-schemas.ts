@@ -74,6 +74,12 @@ export const listAccountsOutput = toolOutput({
   fxComplete: bool,
   pricesComplete: bool,
   valuationComplete: bool,
+  // `provisionalCount` (and `assetsProvisionalCount` /
+  // `liabilitiesProvisionalCount`, and each row's own) is how many provisional
+  // transfer amounts -- Monize's estimates until the other account's file is
+  // imported -- a figure holds. Undeclared like the `known*` subtotals: the
+  // tool is at its `tools/list` byte budget, which is shrink-only, and the
+  // loose object carries the field whole.
 });
 
 // ---------------------------------------------------------------------------
