@@ -8,7 +8,7 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 | S0 | Spec, plan, task list, INV-REPORT-006 entry | -- | none | -- | done |
 | T1 | Transfer rollups read the split transfer line | S0 | visible | sonnet, medium | done |
 | T2 | The transfers filter reads the split transfer line, in analytics and the register | S0 | visible | opus, high | done |
-| T3 | Tag filters select a line once (`EXISTS`) | S0 | visible | sonnet, high | open |
+| T3 | Tag filters select a line once (`EXISTS`) | S0 | visible | sonnet, high | done |
 | T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | done |
 | T5 | Close: INV-REPORT-006 status, user guide, plan retired | T1-T4 | none | sonnet, medium | open |
 
@@ -55,9 +55,17 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 
 ## T3 tag filters
 
-- [ ] `createFilteredAnalyticsQuery` and `computeSplitAwareSum`: replace the two
+- [x] `createFilteredAnalyticsQuery` and `computeSplitAwareSum`: replace the two
   tag joins with `EXISTS` on the parent's tags or the line's tags.
-- [ ] The spec's tag example as an integration case on both reads.
+- [x] The spec's tag example as an integration case on both reads.
+- [ ] Follow-up, older than T3 and not fixed here: `getTransactionBreakdownByTagKey`
+  inner-joins the parent's tags and groups by trimmed, case-insensitive value,
+  so two tags on one row that give the same value (`scope:home`, `Scope: home`)
+  count the row twice, and a split line's own tags are not read.
+- [x] Left on joins on purpose: the register list (`findAll`),
+  `buildFilteredIdsSubquery` and the bulk-update selector pick or hydrate rows
+  and never sum over the join, so a repeated row changes no figure; an
+  aggregate added on one of them moves it to `tagFilterExistsSql` first.
 
 ## T4 Budget Health
 

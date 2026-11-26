@@ -72,6 +72,28 @@ export function buildTagKeyFilterClause(
   return { clause: negate ? `NOT ${anyMatch}` : anyMatch, params };
 }
 
+/**
+ * A row (line grain: a split line when `splitAlias.id` is not null, else the
+ * whole transaction) matches when its parent carries a selected tag or the
+ * line itself does. EXISTS, never a join per tag: a join multiplies the row
+ * and SUM then counts it once per matching tag. The subquery aliases derive
+ * from `transactionAlias`, so each call site stays unique.
+ */
+export function tagFilterExistsSql(
+  transactionAlias: string,
+  splitAlias: string,
+  paramName: string,
+): string {
+  const t = transactionAlias;
+  const s = splitAlias;
+  return (
+    `(EXISTS (SELECT 1 FROM transaction_tags ${t}_ftt WHERE ${t}_ftt.transaction_id = ${t}.id ` +
+    `AND ${t}_ftt.tag_id IN (:...${paramName})) ` +
+    `OR (${s}.id IS NOT NULL AND EXISTS (SELECT 1 FROM transaction_split_tags ${t}_fst ` +
+    `WHERE ${t}_fst.transaction_split_id = ${s}.id AND ${t}_fst.tag_id IN (:...${paramName}))))`
+  );
+}
+
 /** True when the op requires a `value` term. */
 export function tagKeyOpNeedsValue(op: TagKeyFilterOp): boolean {
   return op === "contains" || op === "notContains";

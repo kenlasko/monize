@@ -1,5 +1,6 @@
 import {
   buildTagKeyFilterClause,
+  tagFilterExistsSql,
   tagKeyOpNeedsValue,
 } from "./tag-key-filter.util";
 
@@ -70,5 +71,24 @@ describe("buildTagKeyFilterClause", () => {
     expect(tagKeyOpNeedsValue("notContains")).toBe(true);
     expect(tagKeyOpNeedsValue("hasValue")).toBe(false);
     expect(tagKeyOpNeedsValue("noValue")).toBe(false);
+  });
+});
+
+describe("tagFilterExistsSql", () => {
+  const sql = tagFilterExistsSql("sa", "saSplits", "ids");
+
+  it("tests the parent's tags and, only for a split line, the line's tags", () => {
+    expect(sql).toContain(
+      "FROM transaction_tags sa_ftt WHERE sa_ftt.transaction_id = sa.id",
+    );
+    expect(sql).toContain(
+      "saSplits.id IS NOT NULL AND EXISTS (SELECT 1 FROM transaction_split_tags sa_fst",
+    );
+    expect(sql).toContain("sa_fst.transaction_split_id = saSplits.id");
+  });
+
+  it("binds the one id list for both tests and never joins", () => {
+    expect(sql.match(/IN \(:\.\.\.ids\)/g)).toHaveLength(2);
+    expect(sql).not.toMatch(/JOIN/i);
   });
 });
