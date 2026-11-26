@@ -9565,8 +9565,8 @@ Enforcement         None today. Planned: one server fit helper called by every
                     the latest.
 Concurrency scope   category owner: every category write takes the owner's
                     advisory lock shared and a type change takes it
-                    exclusive (specification section 12; the mechanism is the
-                    Q2 proposal asked on issue #2452).
+                    exclusive (specification section 12; the mechanism the
+                    maintainer approved on issue #2452).
 Retry semantics     A refused write wrote nothing, and a retry is refused
                     again.
 Crash semantics     -- (the check and the write share one transaction)

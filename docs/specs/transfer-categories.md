@@ -629,7 +629,7 @@ a category line; each such reader is listed below.
   snapshots: the type change sees no holder, the row write sees the old type.
   The foreign key's own `FOR KEY SHARE` does not conflict with an update of
   `category_type`, which is not a key column, so it gives no protection. The
-  proposed lock (section 13.1) is an advisory lock per category owner, in a
+  lock (section 13.1) is an advisory lock per category owner, in a
   new `LockScope`: every write that sets a category takes it shared, a type
   change or a move takes it exclusive, each as the first statement of its
   transaction, before any row lock (the ordering rule of
@@ -665,12 +665,12 @@ a category line; each such reader is listed below.
 - **Retry.** A category write is idempotent: repeating it writes the same
   values, and a resent value is not a write at all.
 
-## 13. Open questions
+## 13. Open questions, settled
 
 | # | Question | Answer |
 |---|---|---|
 | Q1 | Must a Transfer category live under one "Transfer" parent? | **No, default confirmed.** The type is a field, so a required parent would say it a second time and need a guard of its own to keep the two in step. Top-level Transfer categories are useful ("Credit card payments"), and the unique key (user, name, parent) already lets a top-level Transfer category share a name with an Expense one. The default set for new users sits under one parent so it groups in pickers; nothing requires it. |
-| Q2 | Is FIT also enforced in the database? | **Replaced, proposed and asked on the issue.** Yes, in the database, but as a `BEFORE` row trigger serialized against a type change by an advisory lock per category owner, not as the constraint trigger the default named, and shipped with the type in PR 2 rather than with the fit helper in PR 3. Measured below. Until the maintainer answers, the default stands. |
+| Q2 | Is FIT also enforced in the database? | **Replaced, approved by the maintainer on issue #2452 (2026-11-26).** Yes, in the database, but as a `BEFORE` row trigger serialized against a type change by an advisory lock per category owner, not as the constraint trigger the default named. It ships with the type in PR 2, together with the refusals of the settings a later write copies onto a category row (section 11), rather than with the fit helper in PR 3. Measured below. |
 | Q3 | How are people told? | **A "What's new" entry and the release notes, default confirmed.** Nothing changes on upgrade, so there is nothing to tell any one person about their data; the entry says the type exists and how to move a transfer to one (edit, bulk edit, a rule). |
 
 ### 13.1 The Q2 measurement
@@ -750,7 +750,7 @@ Why the advisory lock rather than the row lock: the same cost, no wait for a
 colour or icon edit, and no deadlock with a cascading type change on a path
 that takes it first (section 12).
 
-The proposed shape, for `transactions`; `transaction_splits` tests
+The shape PR 2 builds, for `transactions`; `transaction_splits` tests
 `NEW.transfer_account_id IS NULL`, the two schedule tables do the same with
 their own columns, and an override's `category_id` is checked against its
 schedule's `is_transfer` (the override's split JSON is held by the service
@@ -857,7 +857,8 @@ the review can find them:
 8. The database backstop is a `BEFORE` trigger with an advisory lock per
    category owner, and it ships with the type in PR 2 together with the
    payee-default, asset-category, loan and payroll refusals (sections 11 to
-   13). This replaces the Q2 default and is asked on the issue.
+   13). This replaces the Q2 default; the maintainer approved it on issue
+   #2452.
 9. Existing children whose flag differs from their parent's keep their type
    through the backfill (section 11).
 
