@@ -52,3 +52,19 @@ Additional controls for the first change include a known zero with records, a pa
 ## Tax Summary and classified income reversals
 
 The [tax reporting proposal](https://github.com/kenlasko/monize/discussions/2404#discussioncomment-19932437) applies the assigned category to both signs. Tax Summary nets activity within its leaf category before combining display rows under their parent. For a deductible expense of 100 with a refund of 150, the category, total expenses and deductible expenses each show −50. For an income receipt of 100 with a reversal of 150, the source and total income each show −50. That income activity contributes zero spending in both the category and payee breakdowns. An exact reversal leaves a zero row under the assigned classification. Uncategorized tax receipts and payments remain separate by movement direction. Existing conversion, missing-rate and rounding rules apply to each result. This changes report calculations only.
+
+## Saved Custom Report filters
+
+[Ken approved the migration table](https://github.com/kenlasko/monize/discussions/2404#discussioncomment-19935046) for existing saved configurations. Direction selects movements (Both, Incoming or Outgoing). Category Type selects their economic classification (All, Income, Expense or Uncategorized). A transaction list here is No Grouping with No Aggregation. All grouped reports, including grouped No Aggregation, use the aggregate mapping.
+
+| Saved configuration | Direction | Category Type |
+| --- | --- | --- |
+| Expenses Only, individual transaction list | Outgoing | All |
+| Income Only, individual transaction list | Incoming | All |
+| Expenses Only, aggregated report | Both | Expense |
+| Income Only, aggregated report | Both | Income |
+| Both, any layout | Both | All |
+
+With an expense purchase of −100 and a refund of +30, the outgoing list selects the purchase. Signed Total Amount for the expense category includes both and reads −70. For a receipt of +100 and a reversal of −150 in one income category, the incoming list selects the receipt and the signed income category total reads −50. An uncategorized payment qualifies for Outgoing with All and falls outside Both with Expense. Apply the filters to eligible posting components, including individual split lines. Keep the existing account, date, transfer, currency conversion and completeness rules.
+
+Exercise each mapping against a previously saved configuration on reopen, execution and save. Repeating that cycle must preserve the mapping, unrelated filters and selected layout. Explain changes to signs, totals and included transactions to users before migration.
