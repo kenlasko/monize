@@ -657,8 +657,6 @@ export class ImportInvestmentProcessorService {
     });
     const actionLabel = formatInvestmentActionLabel(action);
 
-    const isCrossAccountTransfer = cashAccountId !== ctx.accountId;
-
     // The cash leg lives in the cash account, so it is denominated there.
     const converted = await this.resolveCashAmountInAccountCurrency(
       ctx,
@@ -682,6 +680,13 @@ export class ImportInvestmentProcessorService {
     }
     const cashAmount = converted.amount;
 
+    // One plain row in the cash account, referenced by the investment row's
+    // `transaction_id`: the shape `InvestmentTransactionsService.create` and
+    // the Money writer produce. A brokerage with a linked cash account used to
+    // get a transfer pair instead, with the investment row pointing at the
+    // brokerage-side counterpart. An edit tears down the row `transaction_id`
+    // names and writes a fresh cash leg, so it deleted the counterpart, left
+    // the real cash row orphaned and added a second one beside it (#2436).
     const cashTx = new Transaction();
     cashTx.userId = ctx.userId;
     cashTx.accountId = cashAccountId;
@@ -695,64 +700,15 @@ export class ImportInvestmentProcessorService {
     // The cash leg is the same event as the investment row, so it carries the
     // row's own parsed status rather than a hard-coded CLEARED.
     cashTx.status = investmentTx.status ?? TransactionStatus.UNRECONCILED;
-    cashTx.isTransfer = isCrossAccountTransfer;
+    cashTx.isTransfer = false;
 
     const savedCashTx = await ctx.manager.save(cashTx);
 
-    // Create linked transaction on the brokerage side so the target account
-    // is visible from both sides of the transfer
-    if (isCrossAccountTransfer) {
-      // The counterpart lives in the brokerage account, so it is denominated
-      // there. `-cashAmount` is a number in the CASH account's currency;
-      // labelling it with the brokerage's code wrote a row claiming EUR that
-      // was actually CAD (the P5-003 shape this importer's cash leg already
-      // avoids) -- convert it, or leave the cash leg standing alone rather
-      // than posting a mislabelled amount.
-      const counterpart = await this.resolveCashAmountInAccountCurrency(
-        ctx,
-        -cashAmount,
-        cashAccountCurrency,
-        ctx.account.currencyCode,
-        investmentTx.transactionDate,
-      );
-      if (counterpart === null) {
-        const pair = `${cashAccountCurrency} -> ${ctx.account.currencyCode}`;
-        const message = `No exchange rate for ${pair}: the brokerage-side counterpart of ${actionLabel} ${securitySymbol} was not created; the cash movement stands alone. Import an exchange rate for that pair and re-import, or record the counterpart manually.`;
-        ctx.importResult.warnings = [
-          ...(ctx.importResult.warnings ?? []),
-          message,
-        ];
-        this.logger.warn(message);
-        savedCashTx.isTransfer = false;
-        await ctx.manager.save(savedCashTx);
-        investmentTx.transactionId = savedCashTx.id;
-      } else {
-        const brokerageTx = new Transaction();
-        brokerageTx.userId = ctx.userId;
-        brokerageTx.accountId = ctx.accountId;
-        brokerageTx.transactionDate = investmentTx.transactionDate;
-        brokerageTx.amount = counterpart.amount;
-        brokerageTx.currencyCode = ctx.account.currencyCode;
-        brokerageTx.exchangeRate = counterpart.exchangeRate;
-        brokerageTx.payeeName = payeeName;
-        brokerageTx.payeeId = null;
-        brokerageTx.description = investmentTx.description;
-        brokerageTx.status =
-          investmentTx.status ?? TransactionStatus.UNRECONCILED;
-        brokerageTx.isTransfer = true;
-        brokerageTx.linkedTransactionId = savedCashTx.id;
-
-        const savedBrokerageTx = await ctx.manager.save(brokerageTx);
-
-        savedCashTx.linkedTransactionId = savedBrokerageTx.id;
-        await ctx.manager.save(savedCashTx);
-
-        investmentTx.transactionId = savedBrokerageTx.id;
-      }
-    } else {
-      investmentTx.transactionId = savedCashTx.id;
-    }
-
+    investmentTx.transactionId = savedCashTx.id;
+    // The row carries the rate its cash leg was converted at, as a natively
+    // entered one does, so an edit re-derives the same cash amount instead of
+    // converting at the column's default of 1 (INV-FX-002).
+    investmentTx.exchangeRate = converted.exchangeRate;
     await ctx.manager.save(investmentTx);
 
     await updateAccountBalance(
