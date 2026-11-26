@@ -165,7 +165,7 @@ export function toRechartsSankey(
   const merged = new Map<string, SankeyColumn>();
   const columns = new Map<SankeyColumn, CashFlowSankeyNode[]>();
   for (const node of response.nodes) {
-    if (!MERGEABLE.has(node.kind) || !drawable.has(node.id) || keepOwnNode.has(node.id)) continue;
+    if (!MERGEABLE.has(node.kind) || !drawable.has(node.id) || keepOwnNode.has(node.id) || node.expenseRefund) continue;
     const column = columnOf(node);
     columns.set(column, [...(columns.get(column) ?? []), node]);
   }

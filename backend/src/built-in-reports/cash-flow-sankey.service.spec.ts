@@ -613,8 +613,8 @@ describe("CashFlowSankeyService", () => {
           // An expense category whose refunds beat its spending.
           {
             category_id: GROCERIES.id,
-            positive: "80.0000",
-            negative: "-30.0000",
+            positive: "150.0000",
+            negative: "-100.0000",
           },
           // An income category whose clawbacks beat its income.
           { category_id: SALARY.id, positive: "10.0000", negative: "-40.0000" },
@@ -627,7 +627,11 @@ describe("CashFlowSankeyService", () => {
         "2026-09-30",
       );
 
-      expect(node(result, `income:${GROCERIES.id}`)?.total).toBe(50);
+      expect(node(result, `income:${GROCERIES.id}`)).toMatchObject({
+        total: 50,
+        expenseRefund: true,
+      });
+      expect(link(result, `income:${GROCERIES.id}`, "hub")?.amount).toBe(50);
       expect(node(result, `expense:${SALARY.id}`)?.total).toBe(30);
       expect(node(result, `expense:${GROCERIES.id}`)).toBeUndefined();
     });
@@ -654,8 +658,8 @@ describe("CashFlowSankeyService", () => {
         categorized: [
           {
             category_id: GROCERIES.id,
-            positive: "20.0000",
-            negative: "-20.0000",
+            positive: "100.0000",
+            negative: "-100.0000",
           },
         ],
       });
