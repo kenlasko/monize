@@ -325,7 +325,7 @@
     "notAvailable": "Н/Д",
     "monthlyCashFlow": "Ежемесячный денежный поток",
     "inflowsByCategory": "Поступления по категориям",
-    "outflowsByCategory": "Выбытия по категориям",
+    "outflowsByCategory": "Расходы по категориям с учётом возвратов",
     "noIncome": "Нет доходов за этот период",
     "noExpenses": "Нет расходов за этот период",
     "seriesInflows": "Поступления",

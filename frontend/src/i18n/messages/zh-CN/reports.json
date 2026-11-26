@@ -325,7 +325,7 @@
     "notAvailable": "不适用",
     "monthlyCashFlow": "月度现金流",
     "inflowsByCategory": "按分类流入",
-    "outflowsByCategory": "按分类流出",
+    "outflowsByCategory": "扣除退款后的分类支出",
     "noIncome": "此期间无收入",
     "noExpenses": "此期间无支出",
     "seriesInflows": "流入",

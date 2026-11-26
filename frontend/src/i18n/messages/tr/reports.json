@@ -325,7 +325,7 @@
     "notAvailable": "Y/A",
     "monthlyCashFlow": "Aylık Nakit Akışı",
     "inflowsByCategory": "Kategoriye Göre Girişler",
-    "outflowsByCategory": "Kategoriye Göre Çıkışlar",
+    "outflowsByCategory": "İadeler Sonrası Kategoriye Göre Harcamalar",
     "noIncome": "Bu dönemde gelir yok",
     "noExpenses": "Bu dönemde gider yok",
     "seriesInflows": "Girişler",

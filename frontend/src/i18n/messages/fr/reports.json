@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "Flux de trésorerie mensuels",
     "inflowsByCategory": "Entrées par catégorie",
-    "outflowsByCategory": "Sorties par catégorie",
+    "outflowsByCategory": "Dépenses par catégorie après remboursements",
     "noIncome": "Aucun revenu sur cette période",
     "noExpenses": "Aucune dépense sur cette période",
     "seriesInflows": "Entrées",

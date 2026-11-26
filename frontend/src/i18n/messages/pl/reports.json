@@ -325,7 +325,7 @@
     "notAvailable": "Brak",
     "monthlyCashFlow": "Miesięczne przepływy pieniężne",
     "inflowsByCategory": "Wpływy według kategorii",
-    "outflowsByCategory": "Wypływy według kategorii",
+    "outflowsByCategory": "Wydatki według kategorii po uwzględnieniu zwrotów",
     "noIncome": "Brak przychodów w tym okresie",
     "noExpenses": "Brak wydatków w tym okresie",
     "seriesInflows": "Wpływy",

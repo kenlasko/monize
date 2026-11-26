@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "월별 현금 흐름",
     "inflowsByCategory": "카테고리별 유입액",
-    "outflowsByCategory": "카테고리별 유출액",
+    "outflowsByCategory": "환불을 반영한 카테고리별 지출",
     "noIncome": "이 기간에 수익 없음",
     "noExpenses": "이 기간에 지출 없음",
     "seriesInflows": "유입액",

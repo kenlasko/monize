@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "Flujo de caja mensual",
     "inflowsByCategory": "Entradas por categoría",
-    "outflowsByCategory": "Salidas por categoría",
+    "outflowsByCategory": "Gastos por categoría tras los reembolsos",
     "noIncome": "Sin ingresos en este período",
     "noExpenses": "Sin gastos en este período",
     "seriesInflows": "Entradas",

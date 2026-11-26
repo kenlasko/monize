@@ -325,7 +325,7 @@
     "notAvailable": "Н/Д",
     "monthlyCashFlow": "Місячний рух грошових коштів",
     "inflowsByCategory": "Надходження за категоріями",
-    "outflowsByCategory": "Видатки за категоріями",
+    "outflowsByCategory": "Витрати за категоріями з урахуванням повернень",
     "noIncome": "Доходу за цей період немає",
     "noExpenses": "Витрат за цей період немає",
     "seriesInflows": "Надходження",

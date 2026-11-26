@@ -325,7 +325,7 @@
     "notAvailable": "T/A",
     "monthlyCashFlow": "Arus Kas Bulanan",
     "inflowsByCategory": "Arus Masuk per Kategori",
-    "outflowsByCategory": "Arus Keluar per Kategori",
+    "outflowsByCategory": "Pengeluaran per Kategori Setelah Pengembalian Dana",
     "noIncome": "Tidak ada pendapatan dalam periode ini",
     "noExpenses": "Tidak ada pengeluaran dalam periode ini",
     "seriesInflows": "Arus Masuk",

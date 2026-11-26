@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "Lưu chuyển tiền hàng tháng",
     "inflowsByCategory": "Dòng tiền vào theo danh mục",
-    "outflowsByCategory": "Dòng tiền ra theo danh mục",
+    "outflowsByCategory": "Chi tiêu theo danh mục sau khi trừ tiền hoàn",
     "noIncome": "Không có thu nhập trong kỳ này",
     "noExpenses": "Không có chi phí trong kỳ này",
     "seriesInflows": "Dòng vào",
