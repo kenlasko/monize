@@ -49,7 +49,7 @@ describe('IncomeBySourceWidget', () => {
     expect(screen.getByText('Income by Source')).toBeInTheDocument();
     expect(screen.getByText('1Y')).toBeInTheDocument();
     expect(screen.getByText('$5000')).toBeInTheDocument();
-    expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+    expect(screen.getByTestId('responsive-container').parentElement).not.toHaveClass('max-h-[260px]');
   });
 
   it('shows the empty state with no income', async () => {
@@ -70,6 +70,18 @@ describe('IncomeBySourceWidget', () => {
     await renderWidget();
     expect(screen.getByTestId('partial-total')).toHaveTextContent('$50');
     expect(screen.queryByText('$0')).not.toBeInTheDocument();
+  });
+
+  it('keeps every signed source accessible in the bounded bar chart', async () => {
+    const data = Array.from({ length: 20 }, (_, i) => ({
+      categoryId: `c${i}`, categoryName: `Source ${i}`,
+      total: i === 19 ? -50 : 10, percentage: null,
+    }));
+    getIncomeBySource.mockResolvedValue({ data, totalIncome: 140 });
+    await renderWidget();
+    expect(screen.queryByTestId('pie-data')).not.toBeInTheDocument();
+    expect(screen.getByTestId('responsive-container').parentElement).toHaveClass('overflow-y-auto');
+    expect(screen.getByText('$140')).toBeInTheDocument();
   });
 
   it('merges sources past the fifteenth into Other so the slices add up to the total', async () => {

@@ -3092,7 +3092,8 @@ Enforcement         One predicate, in backend/src/common/investment-filter.util.
                     so it derives its figure through
                     reportableTransactionAmountSql: the sum of the children that
                     are neither transfer nor investment, NULL when the row
-                    represents no ordinary cash. Spending by Payee, Recurring
+                    represents no ordinary cash. Spending by Payee now reads qualifying split
+                    lines directly, like Spending by Category. Recurring
                     Expenses, Bill Payment History and the Uncategorized list
                     and summary read that instead of t.amount. Duplicate
                     Transactions is the one declared exception, marked in its SQL

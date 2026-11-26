@@ -4,7 +4,7 @@ import {
 } from "../common/investment-filter.util";
 
 /**
- * The ordinary cash the parent row represents. A payee total reads only the
+ * The ordinary cash the parent row represents. An individual purchase fact reads only the
  * parent, so a split's embedded investment or transfer line has to come out of
  * the amount rather than out of the row (branch audit F-RPT-001). Alias `t`.
  */

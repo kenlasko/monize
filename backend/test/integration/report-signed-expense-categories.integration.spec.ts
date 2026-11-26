@@ -1,3 +1,4 @@
+import { IncomeReportsService } from "@/built-in-reports/income-reports.service";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ReportCurrencyService } from "@/built-in-reports/report-currency.service";
@@ -20,6 +21,7 @@ describe("signed expenses in Spending by Category (integration)", () => {
   const end = "2026-03-31";
   let module: TestingModule;
   let db: DataSource;
+  let income: IncomeReportsService;
   let reports: SpendingReportsService;
   let userId: string;
   let accountId: string;
@@ -32,6 +34,7 @@ describe("signed expenses in Spending by Category (integration)", () => {
     const currency = new ReportCurrencyService(db, {
       getRateIndex: async () => new Map(),
     } as never);
+    income = new IncomeReportsService(db, currency);
     reports = new SpendingReportsService(db, currency);
   });
 
@@ -99,6 +102,14 @@ describe("signed expenses in Spending by Category (integration)", () => {
         knownSpending: expected,
         excludedCount: 0,
       });
+      expect(
+        await withUserContext(userId, () =>
+          reports.getSpendingByPayee(userId, start, end),
+        ),
+      ).toMatchObject({
+        data: [{ payeeName: "Co-op", total: expected }],
+        totalSpending: expected,
+      });
       const trend = await withUserContext(userId, () =>
         reports.getMonthlySpendingTrend(userId, start, end),
       );
@@ -120,11 +131,38 @@ describe("signed expenses in Spending by Category (integration)", () => {
       { transactionId: parent.id, categoryId: groceries, amount: 35 },
       { transactionId: parent.id, categoryId: salary, amount: 100 },
     ]);
+    expect(
+      await withUserContext(userId, () =>
+        reports.getSpendingByPayee(userId, start, end),
+      ),
+    ).toMatchObject({
+      data: [{ payeeName: "Co-op", total: -35 }],
+      totalSpending: -35,
+    });
     expect(await read()).toMatchObject({
       data: [{ categoryId: groceries, total: -35 }],
       totalSpending: -35,
     });
   });
+
+  it.each([
+    [100, 0],
+    [150, -50],
+  ])(
+    "retains the source after reversing %i of 100 received",
+    async (reversed, expected) => {
+      await post(100, { categoryId: salary });
+      await post(-reversed, { categoryId: salary });
+      expect(
+        await withUserContext(userId, () =>
+          income.getIncomeBySource(userId, start, end),
+        ),
+      ).toMatchObject({
+        totalIncome: expected,
+        data: [{ categoryId: salary, total: expected, percentage: null }],
+      });
+    },
+  );
 
   it("reconciles expense subcategories and their parent across a net credit", async () => {
     const child = (

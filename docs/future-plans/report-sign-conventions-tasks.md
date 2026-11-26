@@ -11,3 +11,9 @@ Working draft for [#2404](https://github.com/kenlasko/monize/discussions/2404). 
 - [ ] Verify income and expense classification in the relevant built-in reports, including returns exceeding purchases. Audit their dashboard, analytics and export consumers.
 - [ ] Carry negative actual spending through the budget calculation and its documented variance formula.
 - [ ] Run the agreed cross-report scenarios at the release boundary, document any changes visible in saved reports, and link verification to the discussion.
+
+### Income sources and payees
+
+- [x] Verify the source and payee breakdowns against the approved signed examples in PostgreSQL.
+- [ ] Exercise signed and zero rows through the report, dashboard and supported export formats.
+- [ ] Verify user documentation, affected consumers and release gates on the final revision.

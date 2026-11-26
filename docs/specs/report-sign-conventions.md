@@ -44,3 +44,7 @@ Fixtures below use one currency. Each expected value is calculated from the list
 | Same metric in the table, chart and export | Retain the signs of both −100 and +100 and their zero total. Preserve access to rows on charts that cannot draw mixed signs. |
 
 Additional controls for the first change include a known zero with records, a partial total when an FX rate is missing, a genuinely empty selection and a report opened from a previously saved configuration. Use the existing signed/precision rules for amounts that display as zero. The [implementation plan](../future-plans/report-sign-conventions.md) identifies where each family of tests belongs.
+
+## Net income sources and net spending by payee
+
+[Ken approved both breakdowns](https://github.com/kenlasko/monize/discussions/2404#discussioncomment-19932193). For one income source, a receipt of 100 and a reversal of 150 produce a source row of −50 and total income of −50. For one payee and expense category, a purchase of 100 and a refund of 150 produce net spending of −50 in both breakdowns. An exact reversal leaves an active zero row. A chart limit may restrict the drawing; the full population determines the total. A mixed-sign breakdown has no part-of-whole percentage. Both reports retain their currency and missing-rate disclosures. Purchase frequency and the largest individual purchase retain their separate definitions.
