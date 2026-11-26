@@ -28,44 +28,36 @@ describe("SCHEDULED_TRANSACTION_REFERENCES", () => {
 });
 
 describe("findScheduledTransactionReferences", () => {
-  function makeManager(rules: number, loanIds: string[]) {
-    return {
-      query: jest.fn((sql: string, _params?: unknown[]) =>
-        Promise.resolve(
-          sql.startsWith("SELECT id")
-            ? loanIds.map((id) => ({ id }))
-            : [{ count: rules }],
-        ),
-      ),
-    };
-  }
+  const makeManager = (loanIds: string[]) => ({
+    query: jest.fn((_sql: string, _params?: unknown[]) =>
+      Promise.resolve(loanIds.map((id) => ({ id }))),
+    ),
+  });
+  const run = (m: unknown, options?: { includeLoanLink?: boolean }) =>
+    findScheduledTransactionReferences(m as EntityManager, "u", "s", options);
 
   it("returns nothing for a schedule nothing else uses", async () => {
-    const m = makeManager(0, []);
-    expect(
-      await findScheduledTransactionReferences(
-        m as unknown as EntityManager,
-        "u",
-        "s",
-      ),
-    ).toEqual([]);
-    expect(m.query).toHaveBeenCalledTimes(2);
-    for (const [, params] of m.query.mock.calls) {
-      expect(params).toEqual(["u", "s"]);
-    }
+    const m = makeManager([]);
+    expect(await run(m)).toEqual([]);
+    expect(m.query).toHaveBeenCalledWith(expect.any(String), ["u", "s"]);
   });
 
-  it("reports payroll rules by count and linked loans with their ids", async () => {
-    const m = makeManager(2, ["a1"]);
-    expect(
-      await findScheduledTransactionReferences(
-        m as unknown as EntityManager,
-        "u",
-        "s",
-      ),
-    ).toEqual([
-      { kind: "payrollDeductionRules", count: 2 },
+  it("does not count payroll rules: they belong to the bill", async () => {
+    const m = makeManager([]);
+    await run(m);
+    expect(m.query).toHaveBeenCalledTimes(1);
+    expect(m.query.mock.calls[0][0]).not.toContain("payroll_deduction_rules");
+  });
+
+  it("reports linked loans with their ids", async () => {
+    expect(await run(makeManager(["a1"]))).toEqual([
       { kind: "loanAccounts", count: 1, ids: ["a1"] },
     ]);
+  });
+
+  it("skips the loan link for the undo of a loan's creation", async () => {
+    const m = makeManager(["a1"]);
+    expect(await run(m, { includeLoanLink: false })).toEqual([]);
+    expect(m.query).not.toHaveBeenCalled();
   });
 });

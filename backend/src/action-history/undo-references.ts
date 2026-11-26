@@ -36,7 +36,11 @@ const REFERENCE_CHECKS: Record<string, { table: string; find: Finder }> = {
   },
   scheduled_transaction: {
     table: "scheduled_transactions",
-    find: findScheduledTransactionReferences,
+    // The loan's link to its own payment schedule is cleared by the undo.
+    find: (m, userId, id) =>
+      findScheduledTransactionReferences(m, userId, id, {
+        includeLoanLink: false,
+      }),
   },
   security: { table: "securities", find: findSecurityReferences },
 };

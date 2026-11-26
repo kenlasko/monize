@@ -8,6 +8,7 @@ import { foreignKeysTo } from "../common/schema-references.test-helpers";
 import { PayeeAlias } from "./entities/payee-alias.entity";
 import {
   PAYEE_REFERENCE_MOVES,
+  findPayeeReferences,
   reassignPayeeReferences,
 } from "./payee-references";
 
@@ -139,5 +140,16 @@ describe("reassignPayeeReferences", () => {
     );
 
     expect(result["transactions.payee_id"]).toBe(0);
+  });
+});
+
+describe("findPayeeReferences with an uppercase id", () => {
+  it("matches rule JSON by the lowercase id", async () => {
+    const m = { query: jest.fn().mockResolvedValue([{ count: 0 }]) };
+    await findPayeeReferences(m as unknown as EntityManager, "u", "ABC-1");
+    expect(m.query).toHaveBeenCalledWith(
+      expect.stringContaining("FROM transaction_rules"),
+      ["u", "%abc-1%"],
+    );
   });
 });

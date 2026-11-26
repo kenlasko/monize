@@ -1622,9 +1622,10 @@ export class AccountsService {
   }
 
   /**
-   * What would stop the account's delete: its ledger rows and the schedules
-   * naming it. The one answer both the refusal and `getTransactionCount` read,
-   * so the can-delete answer and the delete cannot disagree.
+   * The ledger rows and schedules naming the account, as counts. A cheap
+   * pre-check for the account list; the delete itself refuses on every kind
+   * `findAccountReferences` finds, so `canDelete` from the list can say true
+   * where the delete's 409 lists more (`getTransactionCount` asks the finder).
    */
   private async countDeletionBlockers(
     m: EntityManager,
@@ -2495,13 +2496,9 @@ export class AccountsService {
 
     return withScopedDb(this.dataSource, async (m) => {
       const counts = await this.countDeletionBlockers(m, accountId);
-      return {
-        ...counts,
-        canDelete:
-          counts.transactionCount === 0 &&
-          counts.investmentTransactionCount === 0 &&
-          counts.scheduledTransactionCount === 0,
-      };
+      // The same finder the delete refuses on, so the answer cannot disagree.
+      const references = await findAccountReferences(m, userId, accountId);
+      return { ...counts, canDelete: references.length === 0 };
     });
   }
 

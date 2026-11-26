@@ -275,6 +275,15 @@ describe("CategoriesController", () => {
       );
     });
 
+    it("treats an empty reassignTo as absent", () => {
+      controller.remove(mockReq, "cat-1", { reassignTo: "" });
+      expect(mockCategoriesService.remove).toHaveBeenCalledWith(
+        expect.anything(),
+        "cat-1",
+        undefined,
+      );
+    });
+
     it("refuses reassignTo from an acting delegate and calls nothing", () => {
       const delegateReq = { user: { id: "user-1", realUserId: "delegate-1" } };
       mockCategoriesService.remove!.mockClear();

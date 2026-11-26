@@ -954,6 +954,9 @@ describe("AccountsService", () => {
       accountsRepository.findOne.mockResolvedValue(mockAccount);
       transactionRepository.count.mockResolvedValue(5);
       investmentTxRepository.count.mockResolvedValue(0);
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FROM transactions WHERE") ? [{ count: 5 }] : [],
+      );
 
       const result = await service.getTransactionCount("user-1", "account-1");
 
@@ -964,9 +967,26 @@ describe("AccountsService", () => {
       accountsRepository.findOne.mockResolvedValue(mockAccount);
       transactionRepository.count.mockResolvedValue(0);
       investmentTxRepository.count.mockResolvedValue(3);
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FROM investment_transactions WHERE")
+          ? [{ count: 3 }]
+          : [],
+      );
 
       const result = await service.getTransactionCount("user-1", "account-1");
 
+      expect(result.canDelete).toBe(false);
+    });
+
+    it("returns canDelete=false for a reference only the delete's finder sees, such as a bank sync link", async () => {
+      accountsRepository.findOne.mockResolvedValue(mockAccount);
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FROM bank_sync_accounts") ? [{ count: 1 }] : [],
+      );
+
+      const result = await service.getTransactionCount("user-1", "account-1");
+
+      expect(result.transactionCount).toBe(0);
       expect(result.canDelete).toBe(false);
     });
 

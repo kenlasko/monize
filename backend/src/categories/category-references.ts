@@ -124,6 +124,8 @@ export async function findCategoryReferences(
   userId: string,
   categoryId: string,
 ): Promise<RecordInUseEntry[]> {
+  // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
+  categoryId = categoryId.toLowerCase();
   const counts = new Map<CategoryReferenceKind, number>();
   const add = (kind: CategoryReferenceKind, n: number) =>
     counts.set(kind, (counts.get(kind) ?? 0) + n);

@@ -2626,13 +2626,11 @@ describe("ScheduledTransactionsService", () => {
       expect(scheduledRepo.remove).toHaveBeenCalledWith(scheduled);
     });
 
-    it("refuses with 409 RECORD_IN_USE while a payroll rule or loan uses it, and writes nothing", async () => {
+    it("refuses with 409 RECORD_IN_USE while a loan uses it, and writes nothing", async () => {
       stubFindOne(makeScheduled());
       mockDataSource.query.mockImplementation((sql: string) =>
         Promise.resolve(
-          sql.startsWith("SELECT id FROM accounts")
-            ? [{ id: "loan-1" }]
-            : [{ count: 2 }],
+          sql.startsWith("SELECT id FROM accounts") ? [{ id: "loan-1" }] : [],
         ),
       );
 
@@ -2641,10 +2639,7 @@ describe("ScheduledTransactionsService", () => {
       expect(error).toBeInstanceOf(ConflictException);
       expect((error as ConflictException).getResponse()).toMatchObject({
         errorCode: "RECORD_IN_USE",
-        errors: [
-          { kind: "payrollDeductionRules", count: 2 },
-          { kind: "loanAccounts", count: 1, ids: ["loan-1"] },
-        ],
+        errors: [{ kind: "loanAccounts", count: 1, ids: ["loan-1"] }],
       });
       expect(scheduledRepo.remove).not.toHaveBeenCalled();
       expect(mockActionHistoryService.record).not.toHaveBeenCalled();

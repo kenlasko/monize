@@ -124,3 +124,14 @@ describe("findAccountReferences", () => {
     );
   });
 });
+
+describe("findAccountReferences with an uppercase id", () => {
+  it("matches JSON by the lowercase id", async () => {
+    const m = { query: jest.fn().mockResolvedValue([{ count: 0 }]) };
+    await findAccountReferences(m as unknown as EntityManager, "u", "ABC-1");
+    expect(m.query).toHaveBeenCalledWith(
+      expect.stringContaining("FROM budgets"),
+      ["u", "%abc-1%"],
+    );
+  });
+});

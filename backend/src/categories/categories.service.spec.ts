@@ -1432,6 +1432,21 @@ describe("CategoriesService", () => {
         expect(txManager.remove).toHaveBeenCalled();
       });
 
+      it("moves and matches by the lowercase id when the request sent uppercase", async () => {
+        txManager.query.mockImplementation((sql: string) =>
+          Promise.resolve(
+            sql.startsWith("SELECT id FROM accounts") ? [] : [{ count: 0 }],
+          ),
+        );
+
+        await service.remove("user-1", "cat-1", "CAT-2");
+
+        expect(txManager.query).toHaveBeenCalledWith(
+          expect.stringContaining("SET splits = replace"),
+          ['"cat-2"', "user-1", "cat-1"],
+        );
+      });
+
       it("uncategorized clears the categories with null", async () => {
         txManager.query.mockImplementation((sql: string) =>
           Promise.resolve(
@@ -1788,46 +1803,23 @@ describe("CategoriesService", () => {
   });
 
   describe("reassignTransactions", () => {
-    it("reassigns transactions from one category to another", async () => {
+    it("reassigns transactions from one category to another, by joins and lowercase ids", async () => {
       categoriesRepository.findOne
         .mockResolvedValueOnce(mockCategory)
         .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
-
-      const txQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([{ id: "tx-1" }, { id: "tx-2" }]),
-      });
-      const splitQb = createMockQueryBuilder({
-        execute: jest.fn().mockResolvedValue({ affected: 2 }),
-      });
-      const stQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([{ id: "st-1" }]),
-      });
-      const ssQb = createMockQueryBuilder();
-
-      let createQbCallCount = 0;
       const mockManager = {
-        // findOne() runs through the same re-mocked transaction, so route
-        // getRepository at the shared Category repo mock.
         getRepository: jest.fn(() => categoriesRepository),
         update: jest
           .fn()
           .mockResolvedValueOnce({ affected: 5 }) // Transaction update
           .mockResolvedValueOnce({ affected: 1 }), // ScheduledTransaction update
-        createQueryBuilder: jest
-          .fn()
-          .mockImplementation((..._args: unknown[]) => {
-            createQbCallCount++;
-            // Call 1: get user transaction IDs (with entity arg)
-            if (createQbCallCount === 1) return txQb;
-            // Call 2: update splits (no entity arg)
-            if (createQbCallCount === 2) return splitQb;
-            // Call 3: get user scheduled transaction IDs (with entity arg)
-            if (createQbCallCount === 3) return stQb;
-            // Call 4: update scheduled splits (no entity arg)
-            return ssQb;
-          }),
-        save: jest.fn(),
-        query: jest.fn().mockResolvedValue([]),
+        createQueryBuilder: jest.fn(),
+        query: jest.fn().mockImplementation((sql: string) =>
+          // A raw UPDATE answers [rows, rowCount].
+          Promise.resolve(
+            sql.includes("UPDATE transaction_splits") ? [[], 2] : [[], 0],
+          ),
+        ),
       };
       mockDataSource.transaction.mockImplementation(
         async (fn: (m: unknown) => unknown) => fn(mockManager),
@@ -1835,13 +1827,28 @@ describe("CategoriesService", () => {
 
       const result = await service.reassignTransactions(
         "user-1",
-        "cat-1",
-        "cat-target",
+        "CAT-1-ABC",
+        "CAT-TARGET",
       );
 
       expect(result.transactionsUpdated).toBe(5);
       expect(result.splitsUpdated).toBe(2);
       expect(result.scheduledUpdated).toBe(1);
+      // No id list is loaded and bound: that fails above 65535 parameters.
+      expect(mockManager.createQueryBuilder).not.toHaveBeenCalled();
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE transaction_splits"),
+        ["cat-target", "user-1", "cat-1-abc"],
+      );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE scheduled_transaction_splits"),
+        ["cat-target", "user-1", "cat-1-abc"],
+      );
+      expect(mockManager.update).toHaveBeenCalledWith(
+        expect.anything(),
+        { userId: "user-1", categoryId: "cat-1-abc" },
+        { categoryId: "cat-target" },
+      );
     });
 
     it("reassigns to null category", async () => {
@@ -1886,52 +1893,6 @@ describe("CategoriesService", () => {
       expect(result.transactionsUpdated).toBe(3);
       expect(result.splitsUpdated).toBe(0);
       expect(result.scheduledUpdated).toBe(0);
-    });
-
-    it("skips split update when user has no transactions", async () => {
-      categoriesRepository.findOne
-        .mockResolvedValueOnce(mockCategory)
-        .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
-
-      const txQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-      const stQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-
-      let createQbCallCount = 0;
-      const mockManager = {
-        // findOne() runs through the same re-mocked transaction, so route
-        // getRepository at the shared Category repo mock.
-        getRepository: jest.fn(() => categoriesRepository),
-        update: jest
-          .fn()
-          .mockResolvedValueOnce({ affected: 0 }) // Transaction update
-          .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
-        createQueryBuilder: jest
-          .fn()
-          .mockImplementation((..._args: unknown[]) => {
-            createQbCallCount++;
-            if (createQbCallCount === 1) return txQb;
-            return stQb;
-          }),
-        save: jest.fn(),
-        query: jest.fn().mockResolvedValue([]),
-      };
-      mockDataSource.transaction.mockImplementation(
-        async (fn: (m: unknown) => unknown) => fn(mockManager),
-      );
-
-      const result = await service.reassignTransactions(
-        "user-1",
-        "cat-1",
-        "cat-target",
-      );
-
-      expect(result.splitsUpdated).toBe(0);
-      // createQueryBuilder is called twice (txIds + scheduledTxIds) but never for splits
-      expect(mockManager.createQueryBuilder).toHaveBeenCalledTimes(2);
     });
 
     it("throws NotFoundException when source category does not exist", async () => {

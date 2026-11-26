@@ -83,3 +83,14 @@ describe("findTagReferences", () => {
     );
   });
 });
+
+describe("findTagReferences with an uppercase id", () => {
+  it("matches JSON by the lowercase id", async () => {
+    const m = { query: jest.fn().mockResolvedValue([{ count: 0 }]) };
+    await findTagReferences(m as unknown as EntityManager, "u", "ABC-1");
+    expect(m.query).toHaveBeenCalledWith(
+      expect.stringContaining("FROM custom_reports"),
+      ["u", "%abc-1%"],
+    );
+  });
+});

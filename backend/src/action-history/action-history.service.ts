@@ -2378,6 +2378,18 @@ export class ActionHistoryService {
     switch (action.action) {
       case "create":
         if (action.entityId) {
+          if (tableName === "scheduled_transactions") {
+            // Undoing a loan's creation deletes its payment schedule: clear
+            // the loan's link explicitly rather than lean on ON DELETE SET NULL.
+            await manager.update(
+              Account,
+              {
+                userId: action.userId,
+                scheduledTransactionId: action.entityId,
+              },
+              { scheduledTransactionId: null },
+            );
+          }
           await manager.delete(entityClass, {
             id: action.entityId,
           });

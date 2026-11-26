@@ -71,6 +71,8 @@ export async function findTagReferences(
   userId: string,
   tagId: string,
 ): Promise<RecordInUseEntry[]> {
+  // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
+  tagId = tagId.toLowerCase();
   const counts = new Map<TagReferenceKind, number>();
   const add = async (kind: TagReferenceKind, sql: string, param: string) => {
     const rows: { count?: number }[] = await m.query(sql, [userId, param]);

@@ -21,6 +21,7 @@ import { ActionHistory } from "./entities/action-history.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { Tag } from "../tags/entities/tag.entity";
+import { Account } from "../accounts/entities/account.entity";
 import { BondPriceService } from "../bonds/bond-price.service";
 import { HoldingsService } from "../securities/holdings.service";
 import { requestContextStorage } from "../common/request-context";
@@ -380,6 +381,35 @@ describe("ActionHistoryService", () => {
       expect(result.description).toContain("Undone");
       expect(mockDataSource.transaction).toHaveBeenCalled();
       expect(mockQueryRunner.manager.delete).toHaveBeenCalled();
+    });
+
+    it("undoing a loan's creation clears the loan's link, then deletes its schedule", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        action: "create",
+        entityType: "scheduled_transaction",
+        entityId: "st-1",
+        afterData: { id: "st-1", name: "Loan payment" },
+      });
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      // Only the row lock answers; the schedule has no other reference.
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FOR UPDATE") ? [{ name: "Loan payment" }] : [],
+      );
+
+      await service.undo(userId);
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Account,
+        { userId, scheduledTransactionId: "st-1" },
+        { scheduledTransactionId: null },
+      );
+      expect(
+        mockQueryRunner.manager.update.mock.invocationCallOrder[0],
+      ).toBeLessThan(
+        mockQueryRunner.manager.delete.mock.invocationCallOrder[0],
+      );
     });
 
     it("should undo a simple entity delete (tag)", async () => {

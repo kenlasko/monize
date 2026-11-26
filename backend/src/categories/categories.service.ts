@@ -26,6 +26,7 @@ import { getDefaultCategories } from "./country-category-additions";
 import { isSupportedLocale } from "../i18n/config";
 import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { withScopedDb } from "../common/db/scoped-db";
+import { affectedRowCount } from "../common/db/query-result";
 import {
   recordInUseException,
   recordInUseSummary,
@@ -642,8 +643,10 @@ export class CategoriesService {
       }
       if (reassignTo !== undefined) {
         let target: string | null = null;
+        // A UUID is valid in either case; stored JSON ids are lowercase.
+        reassignTo = reassignTo.toLowerCase();
         if (reassignTo !== UNCATEGORIZED) {
-          if (reassignTo === id) {
+          if (reassignTo === id.toLowerCase()) {
             throw new BadRequestException(
               tr(
                 "errors.categories.reassignToSelf",
@@ -779,57 +782,35 @@ export class CategoriesService {
     splitsUpdated: number;
     scheduledUpdated: number;
   }> {
+    fromCategoryId = fromCategoryId.toLowerCase();
+    toCategoryId = toCategoryId?.toLowerCase() ?? null;
     const transactionResult = await m.update(
       Transaction,
       { userId, categoryId: fromCategoryId },
       { categoryId: toCategoryId },
     );
-
-    const userTransactionIds = await m
-      .createQueryBuilder(Transaction, "t")
-      .select("t.id")
-      .where("t.userId = :userId", { userId })
-      .getMany();
-
-    const transactionIds = userTransactionIds.map((t) => t.id);
-
-    let splitsUpdated = 0;
-    if (transactionIds.length > 0) {
-      const splitResult = await m
-        .createQueryBuilder()
-        .update(TransactionSplit)
-        .set({ categoryId: toCategoryId })
-        .where("categoryId = :fromCategoryId", { fromCategoryId })
-        .andWhere("transactionId IN (:...transactionIds)", { transactionIds })
-        .execute();
-
-      splitsUpdated = splitResult.affected || 0;
-    }
+    // Joins, not an id list: a user's ids can exceed the 65535 bind limit.
+    const splitResult = await m.query(
+      `UPDATE transaction_splits s SET category_id = $1
+           FROM transactions t
+          WHERE t.id = s.transaction_id AND t.user_id = $2
+            AND s.category_id = $3`,
+      [toCategoryId, userId, fromCategoryId],
+    );
+    const splitsUpdated = affectedRowCount(splitResult);
 
     const scheduledResult = await m.update(
       ScheduledTransaction,
       { userId, categoryId: fromCategoryId },
       { categoryId: toCategoryId },
     );
-
-    const userScheduledTxIds = await m
-      .createQueryBuilder(ScheduledTransaction, "st")
-      .select("st.id")
-      .where("st.userId = :userId", { userId })
-      .getMany();
-
-    if (userScheduledTxIds.length > 0) {
-      const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
-      await m
-        .createQueryBuilder()
-        .update(ScheduledTransactionSplit)
-        .set({ categoryId: toCategoryId })
-        .where("categoryId = :fromCategoryId", { fromCategoryId })
-        .andWhere("scheduledTransactionId IN (:...scheduledTxIds)", {
-          scheduledTxIds,
-        })
-        .execute();
-    }
+    await m.query(
+      `UPDATE scheduled_transaction_splits s SET category_id = $1
+           FROM scheduled_transactions t
+          WHERE t.id = s.scheduled_transaction_id AND t.user_id = $2
+            AND s.category_id = $3`,
+      [toCategoryId, userId, fromCategoryId],
+    );
 
     // Overrides keep a category of their own and, in `splits` JSON, one per
     // split line; neither is reached by the updates above.

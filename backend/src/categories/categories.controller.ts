@@ -290,7 +290,9 @@ export class CategoriesController {
     // Moving rows rewrites the owner's whole ledger, which POST /:id/reassign
     // keeps owner-only; a delegate may delete only a category nothing uses.
     const realUserId = req.user.realUserId ?? req.user.id;
-    if (query.reassignTo !== undefined && realUserId !== req.user.id) {
+    // An empty `reassignTo=` is absent, as the DTO treats it.
+    const reassignTo = query.reassignTo || undefined;
+    if (reassignTo !== undefined && realUserId !== req.user.id) {
       throw new ForbiddenException(
         tr(
           "errors.categories.reassignOwnerOnly",
@@ -298,7 +300,7 @@ export class CategoriesController {
         ),
       );
     }
-    return this.categoriesService.remove(req.user.id, id, query.reassignTo);
+    return this.categoriesService.remove(req.user.id, id, reassignTo);
   }
 
   @Get(":id/transaction-count")

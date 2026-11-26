@@ -1,4 +1,10 @@
-import { IsOptional, IsString, Matches, MaxLength } from "class-validator";
+import {
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  ValidateIf,
+} from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
 export const UNCATEGORIZED = "uncategorized";
@@ -9,6 +15,7 @@ export class RemoveCategoryQueryDto {
       "Category UUID to move the category's rows to before deleting it, or the literal 'uncategorized'. The move and the delete commit together or not at all.",
   })
   @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
   @IsString()
   @MaxLength(36)
   @Matches(

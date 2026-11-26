@@ -222,6 +222,8 @@ export async function findPayeeReferences(
   userId: string,
   payeeId: string,
 ): Promise<RecordInUseEntry[]> {
+  // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
+  payeeId = payeeId.toLowerCase();
   const found: RecordInUseEntry[] = [];
   for (const { kind, sql } of Object.values(PAYEE_REFERENCE_COUNTS)) {
     const rows: { count?: number; id?: string }[] = await m.query(sql, [

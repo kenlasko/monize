@@ -159,6 +159,8 @@ export async function findAccountReferences(
   accountId: string,
   options: { includeOwnSchedule?: boolean } = {},
 ): Promise<RecordInUseEntry[]> {
+  // A UUID is valid in either case; JSON keeps it lowercase and LIKE is exact.
+  accountId = accountId.toLowerCase();
   const counts = new Map<AccountReferenceKind, number>();
   const add = (kind: AccountReferenceKind, n: number) =>
     counts.set(kind, (counts.get(kind) ?? 0) + n);
