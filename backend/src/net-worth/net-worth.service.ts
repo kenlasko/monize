@@ -1064,7 +1064,8 @@ export class NetWorthService {
     // getLatestNetWorth) the latest month, so the two can never disagree.
     const snapshots = await this.scopedQuery<MonthlySnapshotRow>(
       `SELECT mab.month, mab.balance, mab.market_value,
-              a.id as account_id, a.account_type, a.account_sub_type, a.currency_code
+              a.id as account_id, a.account_type, a.account_sub_type, a.currency_code,
+              TO_CHAR(a.date_acquired, 'YYYY-MM-DD') AS date_acquired
        FROM monthly_account_balances mab
        JOIN accounts a ON a.id = mab.account_id
        WHERE ((mab.user_id = $1 AND a.exclude_from_net_worth = false)
@@ -1085,14 +1086,15 @@ export class NetWorthService {
       }
     }
 
-    const today = todayYMD();
+    // Each month as of its end, bounded at the database's today as the
+    // snapshot balance is (`recalculateRegularAccount`), so the running month
+    // counts exactly the legs its balance sums.
     const provisional = await withScopedDb(this.dataSource, (m) =>
       loadProvisionalCounts(
         m,
         snapshots.map((s) => s.account_id),
-        snapshots.map((s) =>
-          this.snapshotAsOfDate(this.toDateString(s.month), today),
-        ),
+        snapshots.map((s) => this.monthEndDate(this.toDateString(s.month))),
+        { notAfterDatabaseToday: true },
       ),
     );
 
@@ -1104,7 +1106,6 @@ export class NetWorthService {
           places,
           await this.buildRateIndex(currencies, defaultCurrency, start, end),
           provisional,
-          today,
         ),
       // A monthly point's `month` is its month-first date, which is the month
       // the fill fetches; the conversion happens at that month's end.
@@ -1141,7 +1142,6 @@ export class NetWorthService {
     places: number,
     rateIndex: RateIndex,
     provisional: ProvisionalCounts,
-    today: string,
   ): MonthlyNetWorthWithAggregate[] {
     // Aggregate by month. Assets and liabilities each accumulate through an
     // FxAggregate so a month containing a component with no available rate
@@ -1213,9 +1213,15 @@ export class NetWorthService {
       const typeTotal = entry.byAccountType.get(accountType)!;
       // Counted over the components that converted, as the figure is
       // (design section 8): an unconverted account is outside the subtotal.
+      // An ASSET's snapshot is zero before the month it was acquired
+      // (`recalculateRegularAccount`), so it holds none of its legs then.
+      const acquiredLater =
+        s.account_type === AccountType.ASSET &&
+        !!s.date_acquired &&
+        monthKey.substring(0, 7) < s.date_acquired.substring(0, 7);
       const provisionalCount =
-        holdsLedgerBalance && converted !== null
-          ? provisional.of(s.account_id, this.snapshotAsOfDate(monthKey, today))
+        holdsLedgerBalance && converted !== null && !acquiredLater
+          ? provisional.of(s.account_id, this.monthEndDate(monthKey))
           : 0;
       if (LIABILITY_TYPES.includes(accountType)) {
         entry.liabilitiesProvisionalCount += provisionalCount;
@@ -1302,17 +1308,6 @@ export class NetWorthService {
           liabilitiesProvisionalCount: data.liabilitiesProvisionalCount,
         };
       });
-  }
-
-  /**
-   * The day a month's snapshot balance stands at: the month's end, or today
-   * for the month still running (`recalculateRegularAccount` sums no row dated
-   * after today). A provisional leg counts toward the month only when it is
-   * dated on or before this day, as its amount is in the balance only then.
-   */
-  private snapshotAsOfDate(monthFirstDay: string, today: string): string {
-    const monthEnd = this.monthEndDate(monthFirstDay);
-    return monthEnd < today ? monthEnd : today;
   }
 
   /**

@@ -48,11 +48,16 @@ export class ProvisionalCounts {
 /**
  * Read the counts for `accountIds` at each of `asOfDates` (`YYYY-MM-DD`) in
  * one statement, inside the caller's scoped transaction.
+ *
+ * `notAfterDatabaseToday` bounds every date at the database's `CURRENT_DATE`
+ * as well, for a balance the database itself bounds there (the monthly net
+ * worth snapshot); the result is still keyed by the dates asked for.
  */
 export async function loadProvisionalCounts(
   m: EntityManager,
   accountIds: ReadonlyArray<string>,
   asOfDates: ReadonlyArray<string>,
+  options: { notAfterDatabaseToday?: boolean } = {},
 ): Promise<ProvisionalCounts> {
   if (accountIds.length === 0 || asOfDates.length === 0) {
     return ProvisionalCounts.NONE;
@@ -61,6 +66,7 @@ export async function loadProvisionalCounts(
     await m.query(PROVISIONAL_COUNTS_AS_OF_DATES_SQL, [
       [...new Set(accountIds)],
       [...new Set(asOfDates)],
+      options.notAfterDatabaseToday === true,
     ]);
   return ProvisionalCounts.fromRows(rows);
 }

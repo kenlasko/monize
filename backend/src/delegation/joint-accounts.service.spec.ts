@@ -18,6 +18,12 @@ import { DelegateNetWorthExclusion } from "./entities/delegate-net-worth-exclusi
 import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
 import { Currency } from "../currencies/entities/currency.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
+import {
+  ProvisionalLegFixture,
+  isProvisionalCountQuery,
+  provisionalCountRows,
+} from "../test-helpers/provisional-count-testing";
+import { todayYMD } from "../common/date-utils";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -163,10 +169,16 @@ describe("JointAccountsService", () => {
   });
 
   describe("jointAccountsFor", () => {
+    let provisionalLegs: ProvisionalLegFixture[];
+
     beforeEach(() => {
+      provisionalLegs = [];
       delegatesRepo.find.mockResolvedValue([activeDelegation]);
       usersRepo.find.mockResolvedValue([ownerUser]);
-      manager.query.mockImplementation((sql: string) => {
+      manager.query.mockImplementation((sql: string, params: unknown[]) => {
+        if (isProvisionalCountQuery(sql)) {
+          return Promise.resolve(provisionalCountRows(provisionalLegs, params));
+        }
         if (sql.includes("futureSum")) {
           return Promise.resolve([
             { accountId: ACCOUNT_ID, futureSum: "25.5" },
@@ -197,6 +209,21 @@ describe("JointAccountsService", () => {
       expect(row.canDelete).toBe(false);
       // No exclusion row -> included in the grantee's net worth by default.
       expect(row.excludeFromNetWorth).toBe(false);
+    });
+
+    it("counts the provisional legs inside a joint row's current balance, as on an owned row", async () => {
+      grantsRepo.find.mockResolvedValue([grant()]);
+      accountsRepo.find.mockResolvedValue([chequing]);
+      provisionalLegs = [
+        { account_id: ACCOUNT_ID, transaction_date: todayYMD() },
+        // In futureTransactionsSum, not in the balance the count speaks for.
+        { account_id: ACCOUNT_ID, transaction_date: "9999-12-31" },
+      ];
+
+      const [row] = await service.jointAccountsFor(GRANTEE);
+
+      expect(row.provisionalCount).toBe(1);
+      expect(row.currentBalance).toBe(150.25);
     });
 
     it("keeps a joint BTC wallet's balance at its eight places (INV-MONEY-001)", async () => {

@@ -132,6 +132,11 @@ export function ledgerProvisionalPredicate(alias = "t"): string {
  * section 6, "Figure shape"; P5). Every balance surface reads its count through
  * `loadProvisionalCounts` (`common/provisional-count.util.ts`).
  *
+ * `$3` true also bounds every date at the database's `CURRENT_DATE`, for a
+ * balance that is itself bounded there: the monthly snapshot sums no row dated
+ * after it (`NetWorthService.recalculateRegularAccount`), so a month's end
+ * still ahead is today, on the database's clock rather than the request's.
+ *
  * The provisional rows are read once and then joined to the dates, so a month
  * grid of dates costs one pass over the account's (few) provisional legs.
  */
@@ -141,6 +146,7 @@ export const PROVISIONAL_COUNTS_AS_OF_DATES_SQL = `WITH legs AS (
       WHERE t.account_id = ANY($1::uuid[])
         AND ${ledgerProvisionalPredicate()}
         AND t.transaction_date <= (SELECT MAX(x) FROM unnest($2::date[]) AS x)
+        AND ($3::boolean IS NOT TRUE OR t.transaction_date <= CURRENT_DATE)
    )
    SELECT TO_CHAR(d.as_of, 'YYYY-MM-DD') AS as_of,
           legs.account_id AS account_id,

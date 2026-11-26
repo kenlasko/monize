@@ -66,6 +66,8 @@ describe("NetWorthService", () => {
   // `reportQuery` and writes used `queryRunner.query`.
   let reportQuery: jest.Mock;
   let provisionalLegs: ProvisionalLegFixture[];
+  /** The database's `CURRENT_DATE`, as the provisional count read sees it. */
+  let databaseToday: string;
   let snapshotQuery: jest.Mock;
 
   /**
@@ -216,11 +218,14 @@ describe("NetWorthService", () => {
     ]);
     dataSource = mocks.dataSource;
     provisionalLegs = [];
+    databaseToday = "9999-12-31";
     // The provisional count read has its own fixture, so a chain of
     // `reportQuery` answers is not shifted by it.
     mocks.manager.query.mockImplementation((sql: string, params?: unknown[]) =>
       isProvisionalCountQuery(sql)
-        ? Promise.resolve(provisionalCountRows(provisionalLegs, params ?? []))
+        ? Promise.resolve(
+            provisionalCountRows(provisionalLegs, params ?? [], databaseToday),
+          )
         : /monthly_account_balances/.test(sql) &&
             /^\s*(DELETE|INSERT)/i.test(sql)
           ? snapshotQuery(sql, params)
@@ -2561,6 +2566,7 @@ describe("NetWorthService", () => {
       extra: Partial<{
         market_value: number | null;
         account_sub_type: string | null;
+        date_acquired: string | null;
       }> = {},
     ) => ({
       month,
@@ -2576,15 +2582,9 @@ describe("NetWorthService", () => {
     beforeEach(() => {
       mabRepository.count.mockResolvedValue(5);
       prefRepository.findOne.mockResolvedValue({ defaultCurrency: "USD" });
-      // Today is 2024-03-15, so March's balance stands at today, not its end.
-      jest.useFakeTimers({
-        now: new Date(2024, 2, 15, 12),
-        doNotFake: ["nextTick", "setImmediate", "setTimeout", "setInterval"],
-      });
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
+      // The database's today is 2024-03-15, so March's snapshot balance
+      // stands at today, not at its end.
+      databaseToday = "2024-03-15";
     });
 
     it("counts each month as of its end, and the running month as of today", async () => {
@@ -2617,9 +2617,37 @@ describe("NetWorthService", () => {
       const countCall = (dataSource.manager.query as jest.Mock).mock.calls.find(
         ([sql]: [string]) => isProvisionalCountQuery(sql),
       );
+      // Each month at its end, bounded at the database's today: the bound the
+      // snapshot's own sum uses, not the request's clock.
       expect(countCall[1]).toEqual([
         ["chq"],
-        ["2024-01-31", "2024-02-29", "2024-03-15"],
+        ["2024-01-31", "2024-02-29", "2024-03-31"],
+        true,
+      ]);
+    });
+
+    it("counts nothing in an asset's months before it was acquired, whose snapshot is zero", async () => {
+      reportQuery.mockResolvedValueOnce([
+        snapshot("2024-01-01", "house", 0, AccountType.ASSET, {
+          date_acquired: "2024-02-10",
+        }),
+        snapshot("2024-02-01", "house", 300080, AccountType.ASSET, {
+          date_acquired: "2024-02-10",
+        }),
+      ]);
+      provisionalLegs = [
+        { account_id: "house", transaction_date: "2024-01-05" },
+      ];
+
+      const months = await service.getMonthlyNetWorth(
+        "user-1",
+        "2024-01-01",
+        "2024-02-29",
+      );
+
+      expect(months.map((m) => [m.month, m.provisionalCount])).toEqual([
+        ["2024-01-01", 0],
+        ["2024-02-01", 1],
       ]);
     });
 

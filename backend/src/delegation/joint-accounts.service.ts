@@ -27,6 +27,7 @@ import {
 } from "./cross-owner-access.service";
 import { DelegateOperation } from "./decorators/delegate-access.decorator";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
+import { loadProvisionalCounts } from "../common/provisional-count.util";
 
 /**
  * The single definition of which account types a joint grantee may WRITE to
@@ -71,6 +72,8 @@ export type JointAccountRow = Account & {
   jointPermissions: JointPermissions;
   canDelete: boolean;
   futureTransactionsSum: number;
+  /** The provisional legs inside `currentBalance`, as on an owned row. */
+  provisionalCount: number;
 };
 
 /**
@@ -203,7 +206,7 @@ export class JointAccountsService {
     const exclusions = await this.getNetWorthExclusions(realUserId);
     const today = todayYMD();
 
-    const [futureSums, currentSums, places] = await withScopedDb(
+    const [futureSums, currentSums, places, provisional] = await withScopedDb(
       this.dataSource,
       async (manager) => {
         const future: Array<{ accountId: string; futureSum: string }> =
@@ -235,7 +238,14 @@ export class JointAccountsService {
           manager,
           accounts.map((a) => a.currencyCode),
         );
-        return [future, current, currencyPlaces] as const;
+        // Over the rows inside `currentBalance`, as `AccountsService.findAll`
+        // counts an owned row, so the two halves of the list agree.
+        const provisionalCounts = await loadProvisionalCounts(
+          manager,
+          accountIds,
+          [today],
+        );
+        return [future, current, currencyPlaces, provisionalCounts] as const;
       },
     );
     const decimalsOf = new Map(
@@ -269,6 +279,7 @@ export class JointAccountsService {
         // The account object itself is owner-only for a grantee.
         canDelete: false,
         futureTransactionsSum: futureSumMap.get(account.id) ?? 0,
+        provisionalCount: provisional.of(account.id, today),
       };
     });
   }
