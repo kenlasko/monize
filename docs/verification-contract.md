@@ -101,6 +101,11 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-FX-004 a user's rate never rewrites the global history | **required** | supporting | optional | -- | -- | -- | -- | -- |
 | INV-FX-005 a stored rate names its provider; outage is not an empty answer | **required** | **required** | -- | -- | -- | -- | optional | -- |
 | INV-FX-006 a provisional amount is the column, never the description | required | **required** | **required** | -- | -- | -- | -- | optional |
+| INV-FX-007 a request never sets or edits the provisional flag | required | **required** | **required** | -- | -- | -- | -- | -- |
+| INV-FX-008 a provisional leg is a transfer leg | required | -- | **required** | -- | -- | -- | -- | -- |
+| INV-FX-009 a figure with an estimate says so | required | -- | **required** | -- | -- | -- | -- | optional |
+| INV-FX-010 confirming replaces the estimate | required | -- | **required** | -- | -- | -- | -- | optional |
+| INV-FX-011 undo restores the provisional flag | required | -- | **required** | -- | -- | -- | -- | -- |
 | INV-CRYPTO-001 an account's type and its currency's kind agree | **required** | -- | required | **required** | -- | -- | -- | -- |
 | INV-CRYPTO-002 a coin is priced only through its pair | **required** | -- | -- | -- | -- | -- | -- | -- |
 | INV-MONEY-001 precision is the currency's | **required** | **required** | **required** (`backend/test/integration/money-precision.integration.spec.ts`) | -- | -- | -- | -- | -- |
