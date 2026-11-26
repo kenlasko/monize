@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from "typeorm";
 import { User } from "../../users/entities/user.entity";
+import { CategoryType } from "../category-type.util";
 
 @Entity("categories")
 export class Category {
@@ -44,6 +45,19 @@ export class Category {
 
   @Column({ type: "varchar", length: 7, nullable: true })
   color: string | null;
+
+  /**
+   * The category's type, the source of truth. `isIncome` is the previous
+   * release's flag, kept one release in step by a trigger and never read by
+   * application code (INV-CATEGORY-004); the API's `isIncome` is derived.
+   */
+  @Column({
+    name: "category_type",
+    type: "varchar",
+    length: 10,
+    default: "expense",
+  })
+  categoryType: CategoryType;
 
   @Column({ name: "is_income", default: false })
   isIncome: boolean;

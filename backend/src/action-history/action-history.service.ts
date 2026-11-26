@@ -418,6 +418,7 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "icon",
     "color",
     "is_income",
+    "category_type",
     "is_system",
     "created_at",
   ]),
