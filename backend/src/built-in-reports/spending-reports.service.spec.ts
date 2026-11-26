@@ -222,6 +222,7 @@ describe("SpendingReportsService", () => {
       expect(result.totalSpending).toBeNull();
       expect(result.knownSpending).toBe(100);
       expect(result.data[0].total).toBe(100);
+      expect(result.data[0].percentage).toBeUndefined();
       expect(result.missingCurrencies).toEqual(["JPY"]);
       expect(result.excludedCount).toBe(1);
       expect(result.currency).toBe("USD");
@@ -841,7 +842,7 @@ describe("SpendingReportsService", () => {
         expect(result.totalSpending).toBe(23206.07);
       });
 
-      it("drops a category whose credits outweigh its debits", async () => {
+      it("retains expense categories whose credits outweigh their debits", async () => {
         scopedManager.query.mockResolvedValue([
           {
             category_id: "cat-parent",
@@ -873,11 +874,18 @@ describe("SpendingReportsService", () => {
           "2025-12-31",
         );
 
-        expect(result.data.map((d) => d.categoryId)).toEqual([null]);
-        expect(result.totalSpending).toBe(40);
+        expect(result.data.map((d) => d.categoryId)).toEqual([
+          null,
+          "cat-child",
+          "cat-parent",
+        ]);
+        expect(result.totalSpending).toBe(-485);
+        expect(result.data.every((row) => row.percentage === undefined)).toBe(
+          true,
+        );
       });
 
-      it("drops a category refunded back to exactly zero", async () => {
+      it("retains an expense category refunded back to exactly zero", async () => {
         scopedManager.query.mockResolvedValue([
           {
             category_id: "cat-parent",
@@ -894,7 +902,10 @@ describe("SpendingReportsService", () => {
           "2025-12-31",
         );
 
-        expect(result.data).toEqual([]);
+        expect(result.data).toMatchObject([
+          { categoryId: "cat-parent", total: 0 },
+        ]);
+        expect(result.data[0].percentage).toBeUndefined();
         expect(result.totalSpending).toBe(0);
       });
 
@@ -1170,6 +1181,43 @@ describe("SpendingReportsService", () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0].total).toBe(0);
       expect(result.totalSpending).toBe(0);
+    });
+
+    it("derives category shares from the unrounded parts and whole", async () => {
+      scopedManager.query.mockResolvedValue([
+        eur({ category_id: "cat-parent", total: "1" }),
+        eur({ category_id: "cat-child", total: "1" }),
+      ]);
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        undefined,
+        "2026-12-31",
+        { rollupToParent: false },
+      );
+      expect(result.totalSpending).toBe(2.49);
+      expect(
+        result.data.map(({ total, percentage }) => ({ total, percentage })),
+      ).toEqual([
+        { total: 1.25, percentage: 50 },
+        { total: 1.25, percentage: 50 },
+      ]);
+    });
+
+    it("omits every share when a net credit rounds to zero", async () => {
+      scopedManager.query.mockResolvedValue([
+        eur({ category_id: "cat-parent", total: "10" }),
+        eur({ category_id: "cat-child", total: "-0.001" }),
+      ]);
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        undefined,
+        "2026-12-31",
+        { rollupToParent: false },
+      );
+      expect(result.data.map((row) => row.total)).toEqual([12.47, 0]);
+      expect(result.data.every((row) => row.percentage === undefined)).toBe(
+        true,
+      );
     });
 
     it.each([
@@ -1768,7 +1816,7 @@ describe("SpendingReportsService", () => {
         expect(result.data.map((m) => m.totalSpending)).toEqual([100, -30]);
       });
 
-      it("keeps a net-credit category out of the series", async () => {
+      it("includes a net-credit expense category in the series and the monthly total", async () => {
         scopedManager.query.mockResolvedValue([
           {
             month: "2025-01",
@@ -1798,7 +1846,9 @@ describe("SpendingReportsService", () => {
 
         expect(result.data[0].categories.map((c) => c.categoryId)).toEqual([
           "cat-parent",
+          "cat-child",
         ]);
+        expect(result.data[0].totalSpending).toBe(20);
       });
 
       it("drops a month that holds only credits", async () => {

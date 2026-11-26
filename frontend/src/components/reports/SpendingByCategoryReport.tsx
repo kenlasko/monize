@@ -25,7 +25,7 @@ import { useReportAccountScope, nonInvestmentAccounts } from '@/hooks/useReportA
 import { useTaggedFundsFilter } from '@/hooks/useTaggedFundsFilter';
 import { useTaggedFunding } from '@/hooks/useTaggedFunding';
 import { spendingFunds } from '@/lib/spending-funds';
-import { CategorySpendingItem } from '@/types/built-in-reports';
+import { categorySpendingShare } from '@/lib/category-spending';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useDateRange } from '@/hooks/useDateRange';
@@ -57,7 +57,7 @@ import { CARD_CLASS } from '@/components/ui/Card';
 
 type SpendingCategorySortField = 'name' | 'value' | 'percentage';
 
-type ChartDataItem = ChartDatum & { id: string; colour: string };
+type ChartDataItem = ChartDatum & { id: string; colour: string; percentage?: number };
 
 /**
  * One column of the data table, and the record the two header rows are built
@@ -118,22 +118,17 @@ const IDENTITY_CELL =
 
 interface SpendingCategoryTooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: { id: string; name: string; value: number } }>;
-  totalExpenses: number;
-  formatCurrency: (value: number) => string;
-  formatPercent: (value: number, decimals?: number) => string;
+  payload?: Array<{ payload: ChartDataItem }>;
+  formatDetail: (item: ChartDataItem) => string;
 }
 
-function SpendingCategoryTooltip({ active, payload, totalExpenses, formatCurrency, formatPercent }: SpendingCategoryTooltipProps) {
-  if (!active || !payload || !payload.length) return null;
+function SpendingCategoryTooltip({ active, payload, formatDetail }: SpendingCategoryTooltipProps) {
+  if (!active || !payload?.length) return null;
   const data = payload[0].payload;
-  const percentage = totalExpenses > 0 ? (data.value / totalExpenses) * 100 : 0;
   return (
     <ChartTooltipPanel>
       <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
-      <p className="text-gray-600 dark:text-gray-400">
-        {formatCurrency(data.value)} ({formatPercent(percentage, 1)})
-      </p>
+      <p className="text-gray-600 dark:text-gray-400">{formatDetail(data)}</p>
     </ChartTooltipPanel>
   );
 }
@@ -145,13 +140,13 @@ export function SpendingByCategoryReport() {
   const t = useTranslations('reports');
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
-  const { formatCurrencyCompact: formatCurrency, formatPercent } = useNumberFormat();
+  const { formatCurrencyCompact, formatPercent } = useNumberFormat();
   const asStatement = useReportStatement();
   const { defaultCurrency } = useExchangeRates();
   const [viewType, setViewType] = useState<'pie' | 'bar' | 'table'>('pie');
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } =
     useDateRange({ defaultRange: '3m' });
-  const { sortField, sortDirection, handleSort } = useSortableTable<SpendingCategorySortField>(
+  const { sortField: savedSortField, sortDirection, setSort } = useSortableTable<SpendingCategorySortField>(
     'reports.spending-by-category.table.sort',
     { field: 'value', direction: 'desc' },
   );
@@ -195,7 +190,7 @@ export function SpendingByCategoryReport() {
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (!response) return [];
     let colourIndex = 0;
-    return response.data.map((item: CategorySpendingItem) => {
+    return response.data.map((item) => {
       let colour = item.color || '';
       if (!colour) {
         colour = CHART_COLOURS[colourIndex % CHART_COLOURS.length];
@@ -205,16 +200,19 @@ export function SpendingByCategoryReport() {
         id: item.categoryId || '',
         name: item.categoryName,
         value: item.total,
+        percentage: categorySpendingShare(item, response),
         colour,
       };
     });
   }, [response]);
 
-  // The server withholds `totalSpending` when a row could not be converted, so
-  // what is shown is the part that did convert, marked as a subtotal. It is also
-  // the denominator: percentages are shares of what is on screen, and dividing
-  // by a total that includes rows no slice represents would leave them summing
-  // to less than 100% with nothing saying why.
+  const showShares = chartData.every((item) => item.percentage !== undefined);
+  const sortField = !showShares && savedSortField === 'percentage' ? 'value' : savedSortField;
+  const handleSort = (field: SpendingCategorySortField) => setSort({
+    field,
+    direction: field === sortField && sortDirection === 'asc' ? 'desc' : 'asc',
+  });
+  const displayedView = viewType === 'pie' && !showShares ? 'table' : viewType;
   const spendingTotal: ConvertedTotal = useMemo(
     () => ({
       value: response?.knownSpending ?? 0,
@@ -225,6 +223,11 @@ export function SpendingByCategoryReport() {
   );
   const totalExpenses = spendingTotal.value;
   const reportingCurrency = response?.currency ?? defaultCurrency;
+  const formatAmount = (amount: number) => formatCurrencyCompact(amount, reportingCurrency);
+  const formatDetail = (item: ChartDataItem) =>
+    item.percentage === undefined
+      ? formatAmount(item.value)
+      : `${formatAmount(item.value)} (${formatPercent(item.percentage, 1)})`;
   // The screen wraps the total in `PartialTotal`; the PDF card carries the same
   // fact as a note, since a document has no hover.
   const { noteFor } = usePartialTotalNote();
@@ -255,17 +258,14 @@ export function SpendingByCategoryReport() {
         case 'value':
           comparison = compareValues(a.value, b.value);
           break;
-        case 'percentage': {
-          const pa = totalExpenses > 0 ? (a.value / totalExpenses) * 100 : 0;
-          const pb = totalExpenses > 0 ? (b.value / totalExpenses) * 100 : 0;
-          comparison = compareValues(pa, pb);
+        case 'percentage':
+          comparison = compareValues(a.percentage, b.percentage);
           break;
-        }
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
     return sorted;
-  }, [chartData, sortField, sortDirection, totalExpenses]);
+  }, [chartData, sortField, sortDirection]);
 
   // Exhaustive over the sort field union, so a new field is a compile error
   // rather than a column with no control in either header -- and each entry
@@ -283,25 +283,24 @@ export function SpendingByCategoryReport() {
   // the union cannot ship with no sort control in either header. The record's
   // declaration order IS the column order, and it is today's: category, amount,
   // share.
-  const sortColumns: readonly SortColumn[] = Object.values(columns);
+  const sortColumns: readonly SortColumn[] = Object.values(columns).filter(
+    (column) => showShares || column.field !== 'percentage',
+  );
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
 
-    const legendItems = chartData.map((item) => {
-      const percentage = totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0;
-      return {
-        color: item.colour,
-        label: `${item.name} - ${formatCurrency(item.value)} (${formatPercent(percentage, 1)})`,
-      };
-    });
+    const legendItems = chartData.map((item) => ({
+      color: item.colour,
+      label: `${item.name} - ${formatDetail(item)}`,
+    }));
 
     await exportToPdf({
       title: t('spendingByCategory.pdfTitle'),
       summaryCards: [
-        { label: t('spendingByCategory.totalExpenses'), value: formatCurrency(totalExpenses), color: '#dc2626', note: noteFor(spendingTotal) },
+        { label: t('spendingByCategory.totalExpenses'), value: formatAmount(totalExpenses), color: '#dc2626', note: noteFor(spendingTotal) },
         ...(funds && funds.availableFunds !== null
-          ? [{ label: t('tagBreakdown.fundsAvailable'), value: formatCurrency(funds.availableFunds), color: '#2563eb' }]
+          ? [{ label: t('tagBreakdown.fundsAvailable'), value: formatAmount(funds.availableFunds), color: '#2563eb' }]
           : []),
       ],
       chartContainer: chartRef.current,
@@ -316,10 +315,11 @@ export function SpendingByCategoryReport() {
       t('spendingByCategory.csvColAmount'),
       t('spendingByCategory.csvColPercentage'),
     ];
-    const rows = sortedTableData.map((item) => {
-      const percentage = totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0;
-      return [item.name, item.value, formatPercent(percentage, 2)];
-    });
+    const rows = sortedTableData.map((item) => [
+      item.name,
+      item.value,
+      item.percentage === undefined ? '' : formatPercent(item.percentage, 2),
+    ]);
     exportToCsv('spending-by-category', headers, rows);
   };
 
@@ -354,9 +354,9 @@ export function SpendingByCategoryReport() {
           <TaggedFundsControls filter={fundsFilter} />
           <div className="flex items-center gap-4">
             <ChartViewToggle
-              value={viewType}
+              value={displayedView}
               onChange={(v) => setViewType(v as 'pie' | 'bar' | 'table')}
-              options={['pie', 'bar', 'table']}
+              options={showShares ? ['pie', 'bar', 'table'] : ['bar', 'table']}
             />
           </div>
           <ReportToolbarActions
@@ -394,7 +394,7 @@ export function SpendingByCategoryReport() {
           </div>
         ) : chartData.length === 0 ? (
           <EmptyState title={t('spendingByCategory.noData')} />
-        ) : viewType === 'table' ? (
+        ) : displayedView === 'table' ? (
           <>
             {/* Data Table
 
@@ -402,17 +402,16 @@ export function SpendingByCategoryReport() {
                 two-track grid so all three columns fit a phone without a
                 horizontal scroll, on two lines: the category takes line 1 (it
                 is an unbounded name and wraps freely), the amount and the
-                portfolio share share line 2. Nothing is dropped -- the card
-                carries all three columns -- and the row stays what it is today:
-                hovering, and clickable when it names a category. From `sm` up it
+                share (when defined) share line 2. The same available figures
+                are shown at every width. A row remains clickable when it names a category. From `sm` up it
                 is the ordinary table. The sort controls survive as their own
                 phone-only header row, because the column header row that carries
                 them on desktop is hidden there.
 
                 Restyling `display` below `sm` strips the implicit table
                 semantics, so the explicit ARIA roles put them back (inert from
-                `sm` up). Every row exposes all three cells at every width, so no
-                cell leaves the DOM and no `aria-colindex` is owed. The
+                `sm` up). The share header and cells appear together when the
+                report supplies shares. The
                 `CellLabel` captions name each figure's column for a sighted
                 phone reader, who has no column header to look up. */}
             <div className="overflow-x-auto">
@@ -454,7 +453,6 @@ export function SpendingByCategoryReport() {
                 </thead>
                 <tbody role="rowgroup" className="block divide-y divide-gray-200 dark:divide-gray-700 sm:table-row-group">
                   {sortedTableData.map((item) => {
-                    const percentage = totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0;
                     // The row is the click target where it names a category, so
                     // it is also a KEYBOARD target there (WCAG 2.1.1) --
                     // `tabIndex`, the focus ring and the key handler only when
@@ -489,16 +487,18 @@ export function SpendingByCategoryReport() {
                         {/* The amount is the headline: the left of line 2. */}
                         <td role="cell" className={`${CELL_PLACEMENT.value} text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                           <CellLabel className={CAPTION_CLASS}>{columns.value.label}</CellLabel>
-                          {formatCurrency(item.value)}
+                          {formatAmount(item.value)}
                         </td>
                         {/* The share ends line 2, under the amount it is a share
                             of. Its value is bounded (`100.0%`) but its caption is
                             not, so it takes the same track as the amount rather
                             than an `auto` one sized by the caption. */}
-                        <td role="cell" className={`${CELL_PLACEMENT.percentage} text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
-                          <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
-                          {formatPercent(percentage, 1)}
-                        </td>
+                        {item.percentage !== undefined && (
+                          <td role="cell" className={`${CELL_PLACEMENT.percentage} text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
+                            <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
+                            {formatPercent(item.percentage, 1)}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -508,9 +508,7 @@ export function SpendingByCategoryReport() {
                       row wraps exactly the way a data row does -- the same two
                       tracks and the same placement, each figure captioned --
                       with "Total" standing in for the category in the identity
-                      track. Every column has a total, so no cell leaves the DOM
-                      below `sm` and the footer stays a full three-cell row at
-                      every width. */}
+                      track. The share column only exists for a composition. */}
                   <tr role="row" className={`${ROW_GRID} sm:table-row sm:p-0`}>
                     <td role="cell" className={`${IDENTITY_CELL} font-bold text-gray-900 dark:text-gray-100`}>
                       <span className="min-w-0 break-words sm:break-normal">{t('spendingByCategory.total')}</span>
@@ -518,13 +516,15 @@ export function SpendingByCategoryReport() {
                     <td role="cell" className={`${CELL_PLACEMENT.value} font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{columns.value.label}</CellLabel>
                       <PartialTotal total={spendingTotal} displayCurrency={reportingCurrency}>
-                        {formatCurrency(totalExpenses)}
+                        {formatAmount(totalExpenses)}
                       </PartialTotal>
                     </td>
-                    <td role="cell" className={`${CELL_PLACEMENT.percentage} font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
-                      <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
-                      100%
-                    </td>
+                    {showShares && (
+                      <td role="cell" className={`${CELL_PLACEMENT.percentage} font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
+                        <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
+                        {formatPercent(100, 0)}
+                      </td>
+                    )}
                   </tr>
                 </tfoot>
               </table>
@@ -532,7 +532,7 @@ export function SpendingByCategoryReport() {
           </>
         ) : (
           <>
-            {viewType === 'pie' ? (
+            {displayedView === 'pie' ? (
               <div className="relative h-96">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <PieChart>
@@ -543,7 +543,7 @@ export function SpendingByCategoryReport() {
                       innerRadius={80}
                       outerRadius={140}
                       paddingAngle={2}
-                      dataKey="value"
+                      dataKey="percentage"
                       cursor="pointer"
                       onClick={(data) => {
                         const { id } = data as typeof data & { id?: string };
@@ -554,7 +554,7 @@ export function SpendingByCategoryReport() {
                         <Cell key={`cell-${index}`} fill={entry.colour} />
                       ))}
                     </Pie>
-                    <Tooltip content={<SpendingCategoryTooltip totalExpenses={totalExpenses} formatCurrency={formatCurrency} formatPercent={formatPercent} />} />
+                    <Tooltip content={<SpendingCategoryTooltip formatDetail={formatDetail} />} />
                   </PieChart>
                 </ResponsiveContainer>
                 {/* The aggregate belongs in the donut's hole. */}
@@ -562,7 +562,7 @@ export function SpendingByCategoryReport() {
                   label={t('spendingByCategory.totalExpenses')}
                   value={
                     <PartialTotal total={spendingTotal} displayCurrency={reportingCurrency}>
-                      {formatCurrency(totalExpenses)}
+                      {formatAmount(totalExpenses)}
                     </PartialTotal>
                   }
                 />
@@ -572,9 +572,9 @@ export function SpendingByCategoryReport() {
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
                     <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
-                    <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
+                    <XAxis type="number" tickFormatter={(value) => formatAmount(value)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={80} />
-                    <Tooltip content={<SpendingCategoryTooltip totalExpenses={totalExpenses} formatCurrency={formatCurrency} formatPercent={formatPercent} />} />
+                    <Tooltip content={<SpendingCategoryTooltip formatDetail={formatDetail} />} />
                     <Bar radius={CHART_BAR_RADIUS_HORIZONTAL}
                       dataKey="value"
                       cursor="pointer"
@@ -596,12 +596,12 @@ export function SpendingByCategoryReport() {
               <div className="mt-6">
                 <ReportStatement
                   ariaLabel={t('spendingByCategory.totalExpenses')}
-                  showShare
+                  showShare={showShares}
                   lines={chartData.map((item, index) => ({
                     key: String(index),
                     label: item.name,
-                    value: formatCurrency(item.value),
-                    share: formatPercent(totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0, 1),
+                    value: formatAmount(item.value),
+                    share: item.percentage === undefined ? undefined : formatPercent(item.percentage, 1),
                     swatch: item.colour,
                     onSelect: () => handleCategoryClick(item.id),
                     disabled: !item.id,
@@ -610,7 +610,7 @@ export function SpendingByCategoryReport() {
                     label: t('spendingByCategory.totalExpenses'),
                     value: (
                       <PartialTotal total={spendingTotal} displayCurrency={reportingCurrency}>
-                        {formatCurrency(totalExpenses)}
+                        {formatAmount(totalExpenses)}
                       </PartialTotal>
                     ),
                   }}
@@ -621,28 +621,25 @@ export function SpendingByCategoryReport() {
               className="mt-6"
               phoneColumns={2}
               columnsClassName="sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-              items={chartData.map((item, index) => {
-                const percentage = totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0;
-                return {
-                  key: String(index),
-                  name: item.name,
-                  color: item.colour,
-                  detail: `${formatCurrency(item.value)} (${formatPercent(percentage, 1)})`,
-                  onClick: () => handleCategoryClick(item.id),
-                  disabled: !item.id,
-                };
-              })}
+              items={chartData.map((item, index) => ({
+                key: String(index),
+                name: item.name,
+                color: item.colour,
+                detail: formatDetail(item),
+                onClick: () => handleCategoryClick(item.id),
+                disabled: !item.id,
+              }))}
             />
             )}
 
             {/* The bar view has no hole to carry the total, so it keeps a total
                 line beneath the legend; the pie view shows it in the donut centre. */}
-            {viewType === 'bar' && !asStatement && (
+            {displayedView === 'bar' && !asStatement && (
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
                 <div className="text-sm text-gray-500 dark:text-gray-400">{t('spendingByCategory.totalExpenses')}</div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   <PartialTotal total={spendingTotal} displayCurrency={reportingCurrency}>
-                    {formatCurrency(totalExpenses)}
+                    {formatAmount(totalExpenses)}
                   </PartialTotal>
                 </div>
               </div>

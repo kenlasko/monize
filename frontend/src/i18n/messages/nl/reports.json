@@ -325,7 +325,7 @@
     "notAvailable": "N/B",
     "monthlyCashFlow": "Maandelijkse kasstroom",
     "inflowsByCategory": "Instroom per categorie",
-    "outflowsByCategory": "Uitstroom per categorie",
+    "outflowsByCategory": "Uitgaven per categorie na terugbetalingen",
     "noIncome": "Geen inkomsten in deze periode",
     "noExpenses": "Geen uitgaven in deze periode",
     "seriesInflows": "Instroom",

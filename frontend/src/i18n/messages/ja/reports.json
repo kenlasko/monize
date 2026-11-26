@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "月次キャッシュフロー",
     "inflowsByCategory": "カテゴリ別流入",
-    "outflowsByCategory": "カテゴリ別流出",
+    "outflowsByCategory": "カテゴリ別の返金差引後の支出",
     "noIncome": "この期間に収入がありません",
     "noExpenses": "この期間に支出がありません",
     "seriesInflows": "流入",

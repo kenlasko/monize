@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CategorySpendingItem {
   @ApiProperty({ example: "uuid-123", nullable: true })
@@ -20,11 +20,20 @@ export class CategorySpendingItem {
    */
   @ApiProperty({ example: 1500.5 })
   total: number;
+
+  /** Share from unrounded aggregates when every category is nonnegative and the complete total is positive. */
+  @ApiPropertyOptional({ example: 37.5 })
+  percentage?: number;
 }
 
 export class SpendingByCategoryResponse {
+  /** Present on reports that retain fully refunded and net-credit expense categories. */
+  @ApiPropertyOptional({ example: true })
+  netSpending?: true;
+
   /**
-   * Every category that was net-spent in over the window, largest first. The
+   * Expense categories with activity, including a zero or negative net, plus
+   * other buckets that net to spending over the window, largest first. The
    * full list, not a top-N: a caller that draws fewer decides its own cut and
    * can still say what it merged. The Spending by Category report lists them
    * all and the dashboard widget keeps eleven, folding the tail into Other.

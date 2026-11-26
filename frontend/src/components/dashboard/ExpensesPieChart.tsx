@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl';
 import { chartColors } from '@/lib/chart-colors';
 import { Account } from '@/types/account';
 import { builtInReportsApi } from '@/lib/built-in-reports';
-import { CategorySpendingItem } from '@/types/built-in-reports';
+import { categorySpendingShare } from '@/lib/category-spending';
+import { ChartLegend } from '@/components/ui/ChartLegend';
 import { useNumberFormat, type NumberFormatters } from '@/hooks/useNumberFormat';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import type { ConvertedTotal } from '@/lib/currency-total';
@@ -21,7 +22,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { WidgetCard, WidgetConfigRow, WidgetMessage } from './WidgetCard';
 import { WidgetSegmentedControl } from './WidgetSegmentedControl';
-import { DonutCalloutChart, DonutCalloutSlice, DonutCalloutViewHint } from './DonutCalloutChart';
+import { DonutCalloutChart, DonutCalloutViewHint } from './DonutCalloutChart';
 import {
   EXPENSES_PIE_DEFAULT,
   SPENDING_RANGES,
@@ -45,6 +46,7 @@ interface CategorySlice {
   name: string;
   value: number;
   colour: string;
+  percentage?: number;
   /** The slice merging the categories past the cut. */
   isOther?: boolean;
 }
@@ -55,19 +57,17 @@ interface ExpensesPieChartProps {
 }
 
 interface ExpensesPieTooltipProps {
-  slice: { name: string; value: number };
-  totalExpenses: number;
+  slice: { name: string; value: number; percentage?: number };
   formatCurrency: NumberFormatters['formatCurrency'];
   formatPercent: NumberFormatters['formatPercent'];
 }
 
-function ExpensesPieTooltip({ slice, totalExpenses, formatCurrency, formatPercent }: ExpensesPieTooltipProps) {
-  const percentage = (slice.value / totalExpenses) * 100;
+function ExpensesPieTooltip({ slice, formatCurrency, formatPercent }: ExpensesPieTooltipProps) {
   return (
     <div className={CHART_TOOLTIP_CLASS}>
       <p className="font-medium text-gray-900 dark:text-gray-100">{slice.name}</p>
       <p className="text-gray-600 dark:text-gray-400">
-        {formatCurrency(slice.value)} ({formatPercent(percentage, 1)})
+        {formatCurrency(slice.value)}{slice.percentage !== undefined && ` (${formatPercent(slice.percentage, 1)})`}
       </p>
     </div>
   );
@@ -119,17 +119,21 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
   const maxSlices = MAX_SLICES[view];
 
   const breakdown = useMemo(() => {
-    // Already largest-first from the server, which also decides which
-    // categories are net-spending at all.
-    const rows = response?.data ?? [];
+    // Keep the categories in the order selected by the report.
+    if (!response) return { data: [], inOther: [], showPie: false };
     let colourIndex = 0;
-    const slices: CategorySlice[] = rows.map((item: CategorySpendingItem) => ({
+    const slices: CategorySlice[] = response.data.map((item) => ({
       id: item.categoryId ?? '',
       name: item.categoryName,
       value: item.total,
+      percentage: categorySpendingShare(item, response),
       colour: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
     }));
 
+    // A net refund or zero net total cannot be drawn as a composition. Check all
+    // categories before folding the tail: an offset in Other could conceal a refund.
+    const showPie = slices.every((slice): slice is CategorySlice & { percentage: number } => slice.percentage !== undefined);
+    if (!showPie) return { data: slices, inOther: [], showPie };
     const inOther = slices.slice(maxSlices);
     const otherTotal = inOther.reduce((sum, item) => sum + item.value, 0);
     const data =
@@ -140,13 +144,14 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
               id: '',
               name: t('expensesPieChart.other'),
               value: otherTotal,
+              percentage: inOther.reduce((sum, item) => sum + item.percentage, 0),
               colour: chartColors.neutral,
               isOther: true,
             },
           ]
         : slices;
 
-    return { data, inOther };
+    return { data, inOther, showPie };
   }, [response, t, maxSlices]);
 
   const chartData = breakdown.data;
@@ -193,10 +198,11 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
   // A slice with an id opens its transactions; Other has none, and opens into
   // the categories it merged instead of going nowhere. A slice with neither
   // (Uncategorized) is inert, so it is not offered as a button.
-  const chartSlices: DonutCalloutSlice[] = chartData.map((item, index) => ({
+  const chartSlices = chartData.map((item, index) => ({
     key: item.id || `${item.name}-${index}`,
     name: item.name,
     value: item.value,
+    percentage: item.percentage,
     color: item.colour,
     onClick: item.id
       ? () => handleCategoryClick(item.id)
@@ -271,10 +277,31 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
         </div>
       ) : chartData.length === 0 ? (
         <WidgetMessage>{t('expensesPieChart.empty')}</WidgetMessage>
+      ) : !breakdown.showPie ? (
+        <>
+          <ChartLegend
+            className="max-h-64 overflow-y-auto"
+            columnsClassName="sm:grid-cols-3"
+            items={chartSlices.map((slice) => ({
+              key: slice.key,
+              name: slice.name,
+              color: slice.color,
+              trailing: formatCurrency(slice.value, displayCurrency),
+              onClick: slice.onClick,
+            }))}
+          />
+          <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3 text-sm dark:border-gray-700">
+            <span>{t('expensesPieChart.total')}</span>
+            <PartialTotal total={spendingTotal} displayCurrency={displayCurrency}>
+              {formatCurrency(totalExpenses, displayCurrency)}
+            </PartialTotal>
+          </div>
+        </>
       ) : (
         <>
           <DonutCalloutChart
             slices={chartSlices}
+            sliceWeight={(slice) => slice.percentage ?? slice.value}
             view={view}
             label={t('expensesPieChart.title')}
             formatValue={(value) => formatCurrency(value)}
@@ -303,7 +330,6 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
             renderTooltip={(slice) => (
               <ExpensesPieTooltip
                 slice={slice}
-                totalExpenses={totalExpenses}
                 formatCurrency={formatCurrency}
                 formatPercent={formatPercent}
               />

@@ -81,6 +81,8 @@ The figures a report receives are worked out from the converted amounts themselv
 | **Monthly & Yearly Breakdown** | Expense and income by category, month by month or year by year, with subtotals, a total, and an average per month or per year. Choose **Monthly** or **Yearly** for the columns: the monthly view offers the 3M, 6M, 1Y and YTD ranges, the yearly view 2Y, 5Y, 10Y and All, and both take a **Custom** range. A yearly column covers whole calendar years, so 5Y shows the five years before the current one. A category with no parent and no subcategories is a line of its own, in alphabetical order among the parent categories. Spending recorded directly on a parent category is a row inside that parent's section, counted in its subtotal; only uncategorized transactions are left under **Other expenses** or **Other income**. Switches turn on **Summary only** (just the Summary at the bottom), **Include current month** (**Include current year** in the yearly view), **Show percentages**, and **Highlight deviations** (months or years well above or below the category's average). Transfers are listed separately, click **Income**, **Expenses**, or **Transfers** to fold that group down to its total, and a cell opens its transactions |
 | **Year Over Year Comparison** | Compare this year's income, expenses, and savings with up to four previous years |
 
+In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund.
+
 ![The Spending by Category report](images/report-spending-category.png)
 
 ![The Monthly & Yearly Breakdown report](images/report-monthly-breakdown.png)
@@ -96,6 +98,8 @@ The figures a report receives are worked out from the converted amounts themselv
 ![The Income vs Expenses report](images/report-income-expenses.png)
 
 #### Tag Breakdowns
+
+In **Cash Flow Statement**, **Spending After Refunds by Category** shows the net for each expense category. A 100 purchase and a 150 refund in the same category appear as −50 on screen and in the PDF. The cash inflow and outflow summaries still describe money moving in and out.
 
 **Income vs Expenses** and **Cash Flow Statement** can split their figures by a [tag key](tags.md#keyvalue-tags). Choose a key in **Break down by tag key** (for example `project`) and the report adds a breakdown with a tab for each of the key's values (and one for untagged rows), showing that value's income, expenses, tagged inflows and outflows, **Balance**, and **Balance %**. Tick **Include tagged transfers** to count transfers that carry the tag as well.
 

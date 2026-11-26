@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "मासिक नकद प्रवाह",
     "inflowsByCategory": "श्रेणी के अनुसार अंतर्प्रवाह",
-    "outflowsByCategory": "श्रेणी के अनुसार बहिर्प्रवाह",
+    "outflowsByCategory": "रिफ़ंड के बाद श्रेणीवार खर्च",
     "noIncome": "इस अवधि में कोई आय नहीं",
     "noExpenses": "इस अवधि में कोई व्यय नहीं",
     "seriesInflows": "अंतर्प्रवाह",

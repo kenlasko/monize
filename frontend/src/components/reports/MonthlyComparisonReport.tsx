@@ -24,6 +24,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { gainLossColor } from '@/lib/format';
 import { CHART_COLOURS } from '@/lib/chart-colours';
+import { ChartLegend } from '@/components/ui/ChartLegend';
 import { chartColors } from '@/lib/chart-colors';
 import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions';
 import { SortableHeader } from '@/components/ui/SortableHeader';
@@ -148,6 +149,10 @@ export function MonthlyComparisonReport() {
           comparison = compareValues(a.change, b.change);
           break;
         case 'changePercent':
+          // Keep an undefined comparison after the measured changes in either direction.
+          if (a.changePercent === null || b.changePercent === null) {
+            return compareValues(a.changePercent, b.changePercent);
+          }
           comparison = compareValues(a.changePercent, b.changePercent);
           break;
       }
@@ -309,7 +314,7 @@ export function MonthlyComparisonReport() {
         formatCurrency(item.currentTotal, cur),
         formatCurrency(item.previousTotal, cur),
         `${item.change >= 0 ? '+' : ''}${formatCurrency(item.change, cur)}`,
-        formatSignedPercent(item.changePercent, 1),
+        item.changePercent === null ? t('monthlyComparison.pdfNotAvailable') : formatSignedPercent(item.changePercent, 1),
       ]),
     } : undefined;
 
@@ -324,7 +329,7 @@ export function MonthlyComparisonReport() {
         rows: topCats.currentMonth.map((cat, i) => [
           i + 1,
           cat.categoryName,
-          formatCurrency(Math.abs(cat.total), cur),
+          formatCurrency(cat.total, cur),
         ]),
       });
     }
@@ -335,7 +340,7 @@ export function MonthlyComparisonReport() {
         rows: topCats.previousMonth.map((cat, i) => [
           i + 1,
           cat.categoryName,
-          formatCurrency(Math.abs(cat.total), cur),
+          formatCurrency(cat.total, cur),
         ]),
       });
     }
@@ -528,21 +533,23 @@ export function MonthlyComparisonReport() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('monthlyComparison.monthlyExpenses')}</h2>
         {/* Pie Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <ExpensePieChart
+          <MonthlyExpenseBreakdown
             title={currentMonthLabel}
             data={expenses.currentMonth}
+            netSpending={expenses.netSpending}
             currency={currency}
             formatCurrency={formatCurrencyCompact}
             noDataLabel={t('monthlyComparison.noExpenseData')}
-            totalLabel={t('monthlyComparison.netWorthTotal', { amount: formatCurrencyCompact(expenses.currentTotal, currency) })}
+            total={expenses.currentTotal}
           />
-          <ExpensePieChart
+          <MonthlyExpenseBreakdown
             title={previousMonthLabel}
             data={expenses.previousMonth}
+            netSpending={expenses.netSpending}
             currency={currency}
             formatCurrency={formatCurrencyCompact}
             noDataLabel={t('monthlyComparison.noExpenseData')}
-            totalLabel={t('monthlyComparison.netWorthTotal', { amount: formatCurrencyCompact(expenses.previousTotal, currency) })}
+            total={expenses.previousTotal}
           />
         </div>
         {/* Comparison Table */}
@@ -628,9 +635,9 @@ export function MonthlyComparisonReport() {
                       <CellLabel className={CAPTION_CLASS}>{t('monthlyComparison.colChange')}</CellLabel>
                       {item.change >= 0 ? '+' : ''}{formatCurrency(item.change, currency)}
                     </td>
-                    <td role="cell" className={`col-start-3 row-start-2 font-medium ${gainLossColor(-item.changePercent)} ${MONEY_CELL}`}>
+                    <td role="cell" className={`col-start-3 row-start-2 font-medium ${item.changePercent === null ? '' : gainLossColor(-item.changePercent)} ${MONEY_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{t('monthlyComparison.colChangePercent')}</CellLabel>
-                      {formatSignedPercent(item.changePercent, 1)}
+                      {item.changePercent === null ? <UnknownAmount reason="noBaseline" /> : formatSignedPercent(item.changePercent, 1)}
                     </td>
                   </tr>
                 ))}
@@ -885,21 +892,24 @@ export function MonthlyComparisonReport() {
   );
 }
 
-function ExpensePieChart({
+function MonthlyExpenseBreakdown({
   title,
   data,
+  netSpending,
   currency,
   formatCurrency,
   noDataLabel,
-  totalLabel,
+  total,
 }: {
   title: string;
   data: CategorySpendingSnapshot[];
+  netSpending?: true;
   currency: string;
   formatCurrency: (amount: number, currency?: string) => string;
   noDataLabel: string;
-  totalLabel: string;
+  total: number;
 }) {
+  const t = useTranslations('reports');
   if (data.length === 0) {
     return (
       <div className="text-center">
@@ -909,33 +919,42 @@ function ExpensePieChart({
     );
   }
 
+  const showPie = !netSpending || data.every((item) => item.percentage !== undefined);
   return (
     <div>
       <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">{title}</h3>
-      <div className="h-56">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <PieChart>
-            <Pie
-              data={data.map((d) => ({ name: d.categoryName, value: Math.abs(d.total) }))}
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={80}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {data.map((d, i) => (
-                <Cell key={d.categoryId || i} fill={d.color || CHART_COLOURS[i % CHART_COLOURS.length]} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value, name) => [formatCurrency(Number(value), currency), String(name)]}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      {showPie ? (
+        <div className="h-56">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <PieChart>
+              <Pie
+                data={data}
+                nameKey="categoryName"
+                dataKey={netSpending ? 'percentage' : 'total'}
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={80}
+                paddingAngle={2}
+              >
+                {data.map((d, i) => (
+                  <Cell key={d.categoryId || i} fill={d.color || CHART_COLOURS[i % CHART_COLOURS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(_value, name, entry) => [formatCurrency(entry.payload.total, currency), String(name)]} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <ChartLegend items={data.map((item, i) => ({
+          key: item.categoryId ?? item.categoryName,
+          name: item.categoryName,
+          color: item.color || CHART_COLOURS[i % CHART_COLOURS.length],
+          trailing: formatCurrency(item.total, currency),
+        }))} />
+      )}
       <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-        {totalLabel}
+        {t('monthlyComparison.netWorthTotal', { amount: formatCurrency(total, currency) })}
       </div>
     </div>
   );
@@ -985,7 +1004,7 @@ function TopCategoriesTable({
                   {cat.categoryName}
                 </td>
                 <td className="px-3 py-2 text-sm text-right text-gray-900 dark:text-gray-100">
-                  {formatCurrency(Math.abs(cat.total), currency)}
+                  {formatCurrency(cat.total, currency)}
                 </td>
               </tr>
             ))}

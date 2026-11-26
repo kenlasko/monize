@@ -370,7 +370,7 @@ export function CashFlowReport() {
           title: t('cashFlow.outflowsByCategory'),
           headers: ["Category", "Amount"],
           rows: outflowRows,
-          totalRow: [t('cashFlow.totalOutflows'), cellFor(formatCurrency(categoryTotals.expenses.value), categoryTotals.expenses)],
+          totalRow: [t('spendingByCategory.totalExpenses'), cellFor(formatCurrency(categoryTotals.expenses.value), categoryTotals.expenses)],
         }] : []),
       ],
       filename: "cash-flow",
@@ -590,7 +590,7 @@ export function CashFlowReport() {
                   <span className="text-gray-900 dark:text-gray-100">
                     {item.categoryName}
                   </span>
-                  <span className="font-medium text-red-600 dark:text-red-400">
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
                     {formatCurrency(item.total)}
                   </span>
                 </div>
