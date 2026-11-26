@@ -81,10 +81,8 @@
       "deleteFailed": "수취인 삭제에 실패했습니다"
     },
     "inUse": {
-      "title": "\"{name}\"을(를) 삭제할 수 없습니다",
       "mergeHint": "이 항목을 유지하려면 이 수취인을 다른 수취인과 병합하세요. 병합하면 모든 항목이 선택한 수취인으로 이동합니다.",
-      "mergeInstead": "대신 병합",
-      "close": "닫기"
+      "mergeInstead": "대신 병합"
     }
   },
   "form": {

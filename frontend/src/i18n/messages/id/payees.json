@@ -81,10 +81,8 @@
       "deleteFailed": "Gagal menghapus penerima"
     },
     "inUse": {
-      "title": "\"{name}\" tidak dapat dihapus",
       "mergeHint": "Untuk mempertahankan item ini, gabungkan penerima pembayaran ini ke penerima lain. Penggabungan memindahkan semua item ke penerima yang Anda pilih.",
-      "mergeInstead": "Gabungkan saja",
-      "close": "Tutup"
+      "mergeInstead": "Gabungkan saja"
     }
   },
   "form": {

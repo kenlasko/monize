@@ -81,10 +81,8 @@
       "deleteFailed": "Không thể xóa người nhận"
     },
     "inUse": {
-      "title": "Không thể xóa \"{name}\"",
       "mergeHint": "Để giữ các mục này, hãy gộp người nhận này vào một người nhận khác. Việc gộp sẽ chuyển mọi mục sang người nhận bạn chọn.",
-      "mergeInstead": "Gộp thay thế",
-      "close": "Đóng"
+      "mergeInstead": "Gộp thay thế"
     }
   },
   "form": {

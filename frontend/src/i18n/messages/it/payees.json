@@ -81,10 +81,8 @@
       "deleteFailed": "Eliminazione del beneficiario non riuscita"
     },
     "inUse": {
-      "title": "Impossibile eliminare «{name}»",
       "mergeHint": "Per conservare questi elementi, unisci questo beneficiario a un altro. L’unione sposta tutti gli elementi sul beneficiario scelto.",
-      "mergeInstead": "Unisci invece",
-      "close": "Chiudi"
+      "mergeInstead": "Unisci invece"
     }
   },
   "form": {

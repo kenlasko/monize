@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { occurrencePin } from '@/lib/scheduled-effective-amount';
-import { getErrorMessage, getRecordInUseEntries, type RecordInUseEntry } from '@/lib/errors';
+import { getErrorMessage } from '@/lib/errors';
 import { parseLocalDate } from '@/lib/utils';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -212,7 +212,6 @@ export async function runScheduledAction(
   action: 'post' | 'skip' | 'delete',
   transaction: ScheduledTransaction,
   t: (key: string) => string,
-  onInUse?: (entries: RecordInUseEntry[]) => void,
 ): Promise<boolean> {
   try {
     switch (action) {
@@ -231,12 +230,6 @@ export async function runScheduledAction(
     }
     return true;
   } catch (error) {
-    // A refused delete is explained by the caller's notice, not a toast.
-    const inUse = action === 'delete' && onInUse ? getRecordInUseEntries(error) : null;
-    if (inUse) {
-      onInUse?.(inUse);
-      return false;
-    }
     const messages = {
       post: t('list.toasts.postFailed'),
       skip: t('list.toasts.skipFailed'),

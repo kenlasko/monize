@@ -18,9 +18,6 @@ import { estimateSubjectOf, useAmountEstimateText } from './useAmountEstimateTex
 import { useLongPress, type LongPressRowHandlers } from '@/hooks/useLongPress';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RowActions } from '@/components/ui/row-actions/RowActions';
-import { RecordInUseDialog } from '@/components/ui/RecordInUseDialog';
-import { scheduledInUseHref } from '@/lib/record-in-use-hrefs';
-import type { RecordInUseEntry } from '@/lib/errors';
 import { RowActionSheet } from '@/components/ui/row-actions/RowActionSheet';
 import {
   HIGHLIGHT_FLASH,
@@ -822,7 +819,6 @@ export function ScheduledTransactionList({
   const isMobile = useIsMobile();
   const wrapped = isMobile && density === 'normal';
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
-  const [inUse, setInUse] = useState<{ transaction: ScheduledTransaction; entries: RecordInUseEntry[] } | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState>({
     isOpen: false,
     action: null,
@@ -855,7 +851,7 @@ export function ScheduledTransactionList({
     try {
       // A failed action refreshes nothing: a refetch claims the ledger moved.
       // A 409 is the exception: the row was stale, so the list is refetched.
-      if (await runScheduledAction(action, transaction, t, (entries) => setInUse({ transaction, entries }))) {
+      if (await runScheduledAction(action, transaction, t)) {
         onRefresh?.();
       }
     } finally {
@@ -965,12 +961,6 @@ export function ScheduledTransactionList({
         onConfirm={handleConfirm}
         onCancel={closeConfirm}
         {...scheduledConfirmConfig(confirmState.action, confirmState.transaction, t)}
-      />
-
-      <RecordInUseDialog
-        inUse={inUse && { name: inUse.transaction.name, entries: inUse.entries }}
-        hrefFor={(entry) => (inUse ? scheduledInUseHref(inUse.transaction.id, entry) : undefined)}
-        onClose={() => setInUse(null)}
       />
     </div>
   );

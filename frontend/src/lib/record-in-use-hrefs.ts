@@ -59,15 +59,6 @@ export function accountInUseHref(accountId: string, entry: RecordInUseEntry): st
   }
 }
 
-export function scheduledInUseHref(_scheduleId: string, entry: RecordInUseEntry): string | undefined {
-  switch (entry.kind) {
-    case 'loanAccounts':
-      return firstOrList(entry);
-    default:
-      return undefined;
-  }
-}
-
 export function securityInUseHref(securityId: string, entry: RecordInUseEntry): string | undefined {
   switch (entry.kind) {
     case 'holdings':
