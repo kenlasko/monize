@@ -1664,7 +1664,9 @@ export function ScheduledTransactionForm({
             {t('form.autoPostLabel')}
           </span>
         </label>
-        {estimating && <InfoTooltip text={t('form.autoPostDisabledEstimate')} />}
+        {estimating && (
+          <InfoTooltip text={t('form.autoPostDisabledEstimate')} placement="top" usePortal />
+        )}
       </span>
     </div>
   );
