@@ -139,7 +139,9 @@ export function isSignedTotal(
   metric: MetricType,
 ): boolean {
   return (
-    direction === DirectionFilter.BOTH && metric === MetricType.TOTAL_AMOUNT
+    direction !== DirectionFilter.EXPENSES_ONLY &&
+    direction !== DirectionFilter.INCOME_ONLY &&
+    metric === MetricType.TOTAL_AMOUNT
   );
 }
 

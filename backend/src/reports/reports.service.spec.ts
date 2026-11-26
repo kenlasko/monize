@@ -9,6 +9,7 @@ import {
   GroupByType,
   MetricType,
   DirectionFilter,
+  ReportCategoryType,
   ReportViewType,
   ReportConfig,
   TableColumn,
@@ -322,7 +323,8 @@ describe("ReportsService", () => {
           config: expect.objectContaining({
             metric: MetricType.TOTAL_AMOUNT,
             includeTransfers: false,
-            direction: DirectionFilter.EXPENSES_ONLY,
+            direction: DirectionFilter.BOTH,
+            categoryType: ReportCategoryType.EXPENSE,
           }),
           filters: {},
         }),
@@ -354,7 +356,8 @@ describe("ReportsService", () => {
           config: {
             metric: MetricType.COUNT,
             includeTransfers: true,
-            direction: DirectionFilter.INCOME_ONLY,
+            direction: DirectionFilter.BOTH,
+            categoryType: ReportCategoryType.INCOME,
             customStartDate: "2025-01-01",
             customEndDate: "2025-06-30",
             tableColumns: [TableColumn.LABEL, TableColumn.VALUE],
@@ -483,7 +486,16 @@ describe("ReportsService", () => {
 
       const result = await service.findAll("user-1");
 
-      expect(result).toEqual(reports);
+      expect(result).toEqual(
+        reports.map((report) => ({
+          ...report,
+          config: {
+            ...report.config,
+            direction: DirectionFilter.BOTH,
+            categoryType: ReportCategoryType.EXPENSE,
+          },
+        })),
+      );
       expect(reportsRepository.find).toHaveBeenCalledWith({
         where: { userId: "user-1" },
         order: { sortOrder: "ASC", createdAt: "DESC" },
@@ -505,7 +517,14 @@ describe("ReportsService", () => {
 
       const result = await service.findOne("user-1", "report-1");
 
-      expect(result).toEqual(mockReport);
+      expect(result).toEqual({
+        ...mockReport,
+        config: {
+          ...mockReport.config,
+          direction: DirectionFilter.BOTH,
+          categoryType: ReportCategoryType.EXPENSE,
+        },
+      });
       expect(reportsRepository.findOne).toHaveBeenCalledWith({
         where: { id: "report-1", userId: "user-1" },
       });
@@ -588,7 +607,9 @@ describe("ReportsService", () => {
 
       expect(result.config.metric).toBe(MetricType.AVERAGE);
       // Existing config values should be preserved via spread
-      expect(result.config.direction).toBe(DirectionFilter.EXPENSES_ONLY);
+      expect(result.config.direction).toBe(DirectionFilter.BOTH);
+      expect(result.config.categoryType).toBe(ReportCategoryType.EXPENSE);
+      expect(result.config.tableColumns).toEqual([TableColumn.LABEL]);
     });
 
     it("replaces filters when provided", async () => {
@@ -773,7 +794,7 @@ describe("ReportsService", () => {
       const result = await service.execute("user-1", "report-1");
 
       expect(result.reportId).toBe("report-1");
-      expect(result).not.toHaveProperty("signedTotal");
+      expect(result).toHaveProperty("signedTotal", true);
       expect(result.name).toBe("Monthly Expenses");
       expect(result.data).toEqual([]);
       expect(result.summary).toEqual({
@@ -873,9 +894,9 @@ describe("ReportsService", () => {
         expect(result.data).toHaveLength(1);
         expect(result.data[0].id).toBe("total");
         expect(result.data[0].label).toBe("Total");
-        expect(result.data[0].value).toBe(80); // abs(-50) + abs(-30)
+        expect(result.data[0].value).toBe(-80); // -50 + -30
         expect(result.data[0].count).toBe(2);
-        expect(result.data[0].percentage).toBe(100);
+        expect(result.data[0].percentage).toBeUndefined();
       });
 
       it("returns COUNT metric as transaction count", async () => {
@@ -943,7 +964,7 @@ describe("ReportsService", () => {
         expect(result.data).toHaveLength(2);
         expect(result.data[0].id).toBe("tx-1");
         expect(result.data[0].label).toBe("Store A");
-        expect(result.data[0].value).toBe(50);
+        expect(result.data[0].value).toBe(-50);
         expect(result.data[0].payee).toBe("Store A");
         expect(result.data[0].description).toBe("Desc A");
         expect(result.data[1].id).toBe("tx-2");
@@ -986,10 +1007,10 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data).toHaveLength(2);
-        expect(result.data[0].value).toBe(60);
+        expect(result.data[0].value).toBe(-60);
         expect(result.data[0].memo).toBe("Food");
         expect(result.data[0].category).toBe("Groceries");
-        expect(result.data[1].value).toBe(40);
+        expect(result.data[1].value).toBe(-40);
         expect(result.data[1].memo).toBe("Cleaning supplies");
       });
 
@@ -1071,7 +1092,7 @@ describe("ReportsService", () => {
         expect(result.summary.total).toBe(0);
       });
 
-      it("still lists magnitudes when the list has one direction", async () => {
+      it("preserves outgoing signs and computes shares of the outgoing total", async () => {
         const transactions = [
           createMockTransaction({ id: "tx-1", amount: -300 }),
           createMockTransaction({
@@ -1091,8 +1112,9 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data.map((d) => d.value)).toEqual([300, 100]);
-        expect(result.summary.total).toBe(400);
+        expect(result.data.map((d) => d.value)).toEqual([-300, -100]);
+        expect(result.data.map((d) => d.percentage)).toEqual([75, 25]);
+        expect(result.summary.total).toBe(-400);
       });
 
       it("renders category as 'Parent: Child' for subcategories on individual transactions", async () => {
@@ -1219,7 +1241,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].value).toBe(100); // -(-60 + -40)
+        expect(result.data[0].value).toBe(-100); // -60 + -40
         // A transaction counts once per group (audit A26-M33); the two lines
         // are one unit when the report is not grouped by category.
         expect(result.data[0].count).toBe(1);
@@ -1262,13 +1284,13 @@ describe("ReportsService", () => {
 
         expect(result.data).toHaveLength(2);
         // Sorted descending by value
-        expect(result.data[0].label).toBe("Groceries");
-        expect(result.data[0].value).toBe(80);
-        expect(result.data[0].color).toBe("#22c55e");
-        expect(result.data[0].count).toBe(2);
-        expect(result.data[1].label).toBe("Dining");
-        expect(result.data[1].value).toBe(20);
-        expect(result.data[1].count).toBe(1);
+        expect(result.data[1].label).toBe("Groceries");
+        expect(result.data[1].value).toBe(-80);
+        expect(result.data[1].color).toBe("#22c55e");
+        expect(result.data[1].count).toBe(2);
+        expect(result.data[0].label).toBe("Dining");
+        expect(result.data[0].value).toBe(-20);
+        expect(result.data[0].count).toBe(1);
       });
 
       it("labels uncategorized transactions", async () => {
@@ -1322,8 +1344,8 @@ describe("ReportsService", () => {
         expect(result.data).toHaveLength(2);
         const groceries = result.data.find((d) => d.label === "Groceries");
         const dining = result.data.find((d) => d.label === "Dining");
-        expect(groceries!.value).toBe(60);
-        expect(dining!.value).toBe(40);
+        expect(groceries!.value).toBe(-60);
+        expect(dining!.value).toBe(-40);
       });
 
       it("labels subcategories with their parent in 'Parent: Child' format", async () => {
@@ -1370,7 +1392,7 @@ describe("ReportsService", () => {
         );
       });
 
-      it("calculates percentages for category aggregation", async () => {
+      it("calculates percentages for category aggregation with the unsigned average", async () => {
         const transactions = [
           createMockTransaction({
             id: "tx-1",
@@ -1390,7 +1412,7 @@ describe("ReportsService", () => {
         setupExecuteMocks(
           {
             groupBy: GroupByType.CATEGORY,
-            config: { ...defaultConfig, metric: MetricType.TOTAL_AMOUNT },
+            config: { ...defaultConfig, metric: MetricType.AVERAGE },
           },
           transactions,
         );
@@ -1457,10 +1479,10 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data).toHaveLength(2);
-        expect(result.data[0].label).toBe("Walmart");
-        expect(result.data[0].value).toBe(80);
-        expect(result.data[1].label).toBe("Target");
-        expect(result.data[1].value).toBe(20);
+        expect(result.data[1].label).toBe("Walmart");
+        expect(result.data[1].value).toBe(-80);
+        expect(result.data[0].label).toBe("Target");
+        expect(result.data[0].value).toBe(-20);
       });
 
       it("labels unknown payees from payeeName field", async () => {
@@ -1559,10 +1581,10 @@ describe("ReportsService", () => {
         // Sorted by date key ascending
         expect(result.data[0].id).toBe("2025-01");
         expect(result.data[0].label).toBe("Jan 2025");
-        expect(result.data[0].value).toBe(80);
+        expect(result.data[0].value).toBe(-80);
         expect(result.data[1].id).toBe("2025-02");
         expect(result.data[1].label).toBe("Feb 2025");
-        expect(result.data[1].value).toBe(20);
+        expect(result.data[1].value).toBe(-20);
       });
 
       it("aggregates by YEAR", async () => {
@@ -1590,9 +1612,9 @@ describe("ReportsService", () => {
 
         expect(result.data).toHaveLength(2);
         expect(result.data[0].id).toBe("2024");
-        expect(result.data[0].value).toBe(100);
+        expect(result.data[0].value).toBe(-100);
         expect(result.data[1].id).toBe("2025");
-        expect(result.data[1].value).toBe(50);
+        expect(result.data[1].value).toBe(-50);
       });
 
       it("aggregates by DAY", async () => {
@@ -1624,9 +1646,9 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data).toHaveLength(2);
-        expect(result.data[0].value).toBe(80);
+        expect(result.data[0].value).toBe(-80);
         expect(result.data[0].count).toBe(2);
-        expect(result.data[1].value).toBe(20);
+        expect(result.data[1].value).toBe(-20);
         expect(result.data[1].count).toBe(1);
       });
 
@@ -1655,7 +1677,7 @@ describe("ReportsService", () => {
 
         // Both should be in the same week
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].value).toBe(80);
+        expect(result.data[0].value).toBe(-80);
         expect(result.data[0].label).toMatch(/^Week of /);
       });
     });
@@ -1884,9 +1906,9 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.summary.total).toBe(100);
+        expect(result.summary.total).toBe(-100);
         expect(result.summary.count).toBe(2);
-        expect(result.summary.average).toBe(50);
+        expect(result.summary.average).toBe(-50);
       });
 
       it("summarises the average metric over every row, not the sum of group averages", async () => {
@@ -1950,7 +1972,7 @@ describe("ReportsService", () => {
         expect(result.truncated).toBe(true);
         expect(result.summary.total).toBeNull();
         expect(result.summary.average).toBeNull();
-        expect(result.summary.knownTotal).toBe(50000);
+        expect(result.summary.knownTotal).toBe(-50000);
       });
 
       // A both-direction list reads in date order (discussion #1978); within
@@ -1995,7 +2017,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.truncated).toBe(false);
-        expect(result.summary.total).toBe(5);
+        expect(result.summary.total).toBe(-5);
       });
 
       it("returns zero summary when no data", async () => {
@@ -2059,10 +2081,10 @@ describe("ReportsService", () => {
 
           expect(result.data).toHaveLength(1);
           expect(result.data[0].label).toBe("Groceries");
-          expect(result.data[0].value).toBe(290);
+          expect(result.data[0].value).toBe(-290);
           expect(result.data[0].count).toBe(2);
-          expect(result.summary.total).toBe(290);
-          expect(result.summary.knownTotal).toBe(290);
+          expect(result.summary.total).toBe(-290);
+          expect(result.summary.knownTotal).toBe(-290);
           expect(result.currency).toBe("CAD");
           expect(result.missingCurrencies).toEqual([]);
           expect(result.excludedCount).toBe(0);
@@ -2074,14 +2096,14 @@ describe("ReportsService", () => {
 
           const result = await run(GroupByType.CATEGORY, groceries);
 
-          expect(result.summary.total).toBeCloseTo(290, 2);
+          expect(result.summary.total).toBeCloseTo(-290, 2);
         });
 
         it("converts with no grouping", async () => {
           const result = await run(GroupByType.NONE, groceries);
 
-          expect(result.data[0].value).toBe(290);
-          expect(result.summary.total).toBe(290);
+          expect(result.data[0].value).toBe(-290);
+          expect(result.summary.total).toBe(-290);
         });
 
         it("converts each row of the no-aggregation listing", async () => {
@@ -2091,8 +2113,12 @@ describe("ReportsService", () => {
             MetricType.NONE,
           );
 
-          expect(result.data.map((d) => d.value).sort()).toEqual([200, 90]);
-          expect(result.summary.total).toBe(290);
+          expect(
+            result.data
+              .map((d) => d.value)
+              .sort((a, b) => Number(a) - Number(b)),
+          ).toEqual([-200, -90]);
+          expect(result.summary.total).toBe(-290);
         });
 
         it("lists each row's own amount in its account's currency beside the converted value", async () => {
@@ -2104,13 +2130,13 @@ describe("ReportsService", () => {
 
           const byId = new Map(result.data.map((d) => [d.id, d]));
           expect(byId.get("tx-1")).toMatchObject({
-            value: 200,
-            accountAmount: 200,
+            value: -200,
+            accountAmount: -200,
             accountCurrency: "CAD",
           });
           expect(byId.get("tx-2")).toMatchObject({
-            value: 90,
-            accountAmount: 10000,
+            value: -90,
+            accountAmount: -10000,
             accountCurrency: "JPY",
           });
         });
@@ -2173,8 +2199,8 @@ describe("ReportsService", () => {
               d.accountCurrency,
             ]),
           ).toEqual([
-            ["Rice", 6000, "JPY"],
-            ["Tea", 4000, "JPY"],
+            ["Rice", -6000, "JPY"],
+            ["Tea", -4000, "JPY"],
           ]);
         });
 
@@ -2200,10 +2226,10 @@ describe("ReportsService", () => {
           const result = await service.execute("user-1", "report-1");
 
           expect(result.data.map((d) => d.id)).toEqual([
-            "c-small",
             "c-big",
-            "j-small",
+            "c-small",
             "j-big",
+            "j-small",
           ]);
         });
 
@@ -2225,10 +2251,10 @@ describe("ReportsService", () => {
 
             const byId = new Map(result.data.map((d) => [d.id, d]));
             expect(byId.get("tx-eur")).toMatchObject({
-              value: 150,
-              accountAmount: 150,
+              value: -150,
+              accountAmount: -150,
               accountCurrency: "CAD",
-              originalAmount: 100,
+              originalAmount: -100,
               originalCurrency: "EUR",
             });
             expect(byId.get("tx-cad")).not.toHaveProperty("originalAmount");
@@ -2325,8 +2351,8 @@ describe("ReportsService", () => {
 
             expect(result.data.map((d) => d.id)).toEqual([
               "plain",
-              "eur-small",
               "eur-big",
+              "eur-small",
               "usd-big",
             ]);
           });
@@ -2335,8 +2361,8 @@ describe("ReportsService", () => {
         it("converts by payee", async () => {
           const result = await run(GroupByType.PAYEE, groceries);
 
-          expect(result.data[0].value).toBe(290);
-          expect(result.summary.total).toBe(290);
+          expect(result.data[0].value).toBe(-290);
+          expect(result.summary.total).toBe(-290);
         });
 
         it("converts by tag", async () => {
@@ -2346,16 +2372,16 @@ describe("ReportsService", () => {
             groceries.map((t) => ({ ...t, tags: [tag] }) as Transaction),
           );
 
-          expect(result.data[0].value).toBe(290);
-          expect(result.summary.total).toBe(290);
+          expect(result.data[0].value).toBe(-290);
+          expect(result.summary.total).toBe(-290);
         });
 
         it("converts by month", async () => {
           const result = await run(GroupByType.MONTH, groceries);
 
           expect(result.data).toHaveLength(1);
-          expect(result.data[0].value).toBe(290);
-          expect(result.summary.total).toBe(290);
+          expect(result.data[0].value).toBe(-290);
+          expect(result.summary.total).toBe(-290);
         });
 
         it("averages converted amounts", async () => {
@@ -2377,7 +2403,7 @@ describe("ReportsService", () => {
           });
           const result = await run(GroupByType.CATEGORY, [split]);
 
-          expect(result.summary.total).toBe(90);
+          expect(result.summary.total).toBe(-90);
         });
       });
 
@@ -2625,16 +2651,20 @@ describe("ReportsService", () => {
           expect(result.summary.average).toBe(124.76);
         });
 
-        it("shares the total out from unrounded values", async () => {
-          const result = await runIncome(GroupByType.PAYEE, [
-            receipt("tx-1"),
-            receipt("tx-2", {
-              amount: 300.03,
-              payeeId: "payee-2",
-              payee: { id: "payee-2", name: "Employer" },
-              payeeName: "Employer",
-            } as Partial<Transaction>),
-          ]);
+        it("calculates shares from unrounded values for the unsigned average", async () => {
+          const result = await runIncome(
+            GroupByType.PAYEE,
+            [
+              receipt("tx-1"),
+              receipt("tx-2", {
+                amount: 300.03,
+                payeeId: "payee-2",
+                payee: { id: "payee-2", name: "Employer" },
+                payeeName: "Employer",
+              } as Partial<Transaction>),
+            ],
+            MetricType.AVERAGE,
+          );
 
           // 300.03 of 400.04 EUR is three quarters exactly. Read from the
           // four-place groups (374.2574 of 499.0099) it was 74.99998.
@@ -2781,15 +2811,13 @@ describe("ReportsService", () => {
                 total: expected.knownSubtotalAt(2),
               });
               if (groupBy === GroupByType.CATEGORY) {
-                // Each share is the category's exact sum over the total's.
+                // Each signed category is rounded once from its exact amount.
                 for (const row of result.data) {
                   const categoryUnits = transactions
                     .filter((tx) => tx.categoryId === row.id)
                     .reduce((sum, tx) => sum + exactUnits(tx), 0n);
-                  expect(row.percentage).toBeCloseTo(
-                    (Number(categoryUnits) / Number(exactTotal)) * 100,
-                    9,
-                  );
+                  expect(row.value).toBe(readAt2(categoryUnits));
+                  expect(row.percentage).toBeUndefined();
                 }
               }
             }
@@ -2802,9 +2830,9 @@ describe("ReportsService", () => {
           const result = await run(GroupByType.CATEGORY, groceries);
 
           expect(result.data).toHaveLength(1);
-          expect(result.data[0].value).toBe(200);
+          expect(result.data[0].value).toBe(-200);
           expect(result.summary.total).toBeNull();
-          expect(result.summary.knownTotal).toBe(200);
+          expect(result.summary.knownTotal).toBe(-200);
           expect(result.missingCurrencies).toEqual(["JPY"]);
           expect(result.excludedCount).toBe(1);
           expect(result.currency).toBe("CAD");
@@ -2813,10 +2841,10 @@ describe("ReportsService", () => {
         it("withholds the total with no grouping", async () => {
           const result = await run(GroupByType.NONE, groceries);
 
-          expect(result.data[0].value).toBe(200);
+          expect(result.data[0].value).toBe(-200);
           expect(result.data[0].count).toBe(1);
           expect(result.summary.total).toBeNull();
-          expect(result.summary.knownTotal).toBe(200);
+          expect(result.summary.knownTotal).toBe(-200);
         });
 
         it("keeps the unconverted row listed under its own amount, with no value (issue #2342)", async () => {
@@ -2835,13 +2863,13 @@ describe("ReportsService", () => {
               d.accountCurrency,
             ]),
           ).toEqual([
-            ["tx-1", 200, 200, "CAD"],
-            ["tx-2", null, 10000, "JPY"],
+            ["tx-1", -200, -200, "CAD"],
+            ["tx-2", null, -10000, "JPY"],
           ]);
           // Listed, but in no sum: the total is withheld beside the part
           // that converted.
           expect(result.summary.total).toBeNull();
-          expect(result.summary.knownTotal).toBe(200);
+          expect(result.summary.knownTotal).toBe(-200);
           expect(result.summary.average).toBeNull();
           expect(result.summary.count).toBe(2);
           expect(result.missingCurrencies).toEqual(["JPY"]);
@@ -2865,9 +2893,9 @@ describe("ReportsService", () => {
           expect(
             result.data.map((d) => [d.id, d.value, d.accountAmount]),
           ).toEqual([
-            ["tx-1", 200, 200],
-            ["tx-3", null, 6000],
-            ["tx-3", null, 4000],
+            ["tx-1", -200, -200],
+            ["tx-3", null, -6000],
+            ["tx-3", null, -4000],
           ]);
           // A share is of what converted; a row with no rate has none.
           expect(result.data.map((d) => d.percentage)).toEqual([
@@ -2875,7 +2903,7 @@ describe("ReportsService", () => {
             undefined,
             undefined,
           ]);
-          expect(result.summary.knownTotal).toBe(200);
+          expect(result.summary.knownTotal).toBe(-200);
           expect(result.excludedCount).toBe(2);
         });
 
@@ -2899,8 +2927,8 @@ describe("ReportsService", () => {
 
             expect(result.data.map((d) => d.id)).toEqual(
               sortDirection === SortDirection.ASC
-                ? ["tx-3", "tx-1", "tx-2"]
-                : ["tx-1", "tx-3", "tx-2"],
+                ? ["tx-1", "tx-3", "tx-2"]
+                : ["tx-3", "tx-1", "tx-2"],
             );
           },
         );
@@ -2908,7 +2936,7 @@ describe("ReportsService", () => {
         it("withholds the total by payee", async () => {
           const result = await run(GroupByType.PAYEE, groceries);
 
-          expect(result.data[0].value).toBe(200);
+          expect(result.data[0].value).toBe(-200);
           expect(result.summary.total).toBeNull();
           expect(result.missingCurrencies).toEqual(["JPY"]);
         });
@@ -2931,9 +2959,9 @@ describe("ReportsService", () => {
         it("withholds the total by month", async () => {
           const result = await run(GroupByType.MONTH, groceries);
 
-          expect(result.data[0].value).toBe(200);
+          expect(result.data[0].value).toBe(-200);
           expect(result.summary.total).toBeNull();
-          expect(result.summary.knownTotal).toBe(200);
+          expect(result.summary.knownTotal).toBe(-200);
         });
 
         it("counts every row for the count metric", async () => {
@@ -2950,7 +2978,7 @@ describe("ReportsService", () => {
         it("leaves a group's currency part out whole when one of its days has no rate (issue #2130)", async () => {
           // The rate is observed on 2025-01-10, so the refund struck in December
           // is past FX_MAX_RATE_AGE_DAYS and has none. Keeping the January debit
-          // alone would read 290: a debit in, its refund out.
+          // alone would read -290: a debit in, its refund out.
           storedRates.set("JPY->CAD", 0.009);
           const result = await run(GroupByType.CATEGORY, [
             cad("tx-1", -200),
@@ -2959,10 +2987,10 @@ describe("ReportsService", () => {
           ]);
 
           expect(result.data).toHaveLength(1);
-          expect(result.data[0].value).toBe(200);
+          expect(result.data[0].value).toBe(-200);
           expect(result.data[0].count).toBe(1);
           expect(result.summary.total).toBeNull();
-          expect(result.summary.knownTotal).toBe(200);
+          expect(result.summary.knownTotal).toBe(-200);
           expect(result.missingCurrencies).toEqual(["JPY"]);
           // The refund with no rate, and the debit that left with it.
           expect(result.excludedCount).toBe(2);
@@ -2974,7 +3002,7 @@ describe("ReportsService", () => {
             jpy("tx-2", 0),
           ]);
 
-          expect(result.summary.total).toBe(200);
+          expect(result.summary.total).toBe(-200);
           expect(result.excludedCount).toBe(0);
         });
       });
@@ -3002,7 +3030,7 @@ describe("ReportsService", () => {
 
         const result = await run(GroupByType.CATEGORY, [settled]);
 
-        expect(result.summary.total).toBe(100);
+        expect(result.summary.total).toBe(-100);
       });
 
       it("loads the rate history from the earliest foreign row's date (issue #2106)", async () => {
@@ -3026,7 +3054,7 @@ describe("ReportsService", () => {
       it("needs no rate for the reporting currency itself", async () => {
         const result = await run(GroupByType.CATEGORY, [cad("tx-1", -200)]);
 
-        expect(result.summary.total).toBe(200);
+        expect(result.summary.total).toBe(-200);
       });
 
       it("resolves the currency and rates once per execution", async () => {
@@ -3154,13 +3182,13 @@ describe("ReportsService", () => {
           [outLeg()],
           {
             metric: MetricType.TOTAL_AMOUNT,
-            direction: DirectionFilter.EXPENSES_ONLY,
+            direction: DirectionFilter.OUTGOING,
           },
           GroupByType.MONTH,
         );
 
-        expect(result.data.map((d) => d.value)).toEqual([90]);
-        expect(result.summary.total).toBe(90);
+        expect(result.data.map((d) => d.value)).toEqual([-90]);
+        expect(result.summary.total).toBe(-90);
       });
 
       it("nets both legs of an in-scope pair to zero", async () => {
@@ -3396,23 +3424,6 @@ describe("ReportsService", () => {
           expect(result.provisionalCount).toBe(1);
         });
 
-        it("counts nothing a direction leaves out of every group", async () => {
-          storedRates.set("USD->EUR", 0.8);
-
-          const result = await run(
-            "EUR",
-            [estimatedIn()],
-            {
-              metric: MetricType.TOTAL_AMOUNT,
-              direction: DirectionFilter.EXPENSES_ONLY,
-            },
-            GroupByType.MONTH,
-          );
-
-          expect(result.data).toEqual([]);
-          expect(result.provisionalCount).toBe(0);
-        });
-
         it("counts nothing under the count metric, which sums no amount", async () => {
           const result = await run(
             "EUR",
@@ -3581,17 +3592,22 @@ describe("ReportsService", () => {
       ];
 
       it("nets a refund within its category for EXPENSES_ONLY (A26-S16-05)", async () => {
-        setupExecuteMocks(
+        const { qb } = setupExecuteMocks(
           { groupBy: GroupByType.CATEGORY, config: { ...defaultConfig } },
-          refundRows(),
+          refundRows().filter((tx) => tx.categoryId === "cat-1"),
         );
 
         const result = await service.execute("user-1", "report-1");
 
-        // Salary is income: it is not a row of an expense report, and it does
-        // not cancel anything in Groceries.
+        // PostgreSQL returns just the expense postings to the aggregator.
+        expect(qb.andWhere).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "splitCategory.isIncome ELSE category.isIncome",
+          ),
+          { reportIncome: false },
+        );
         expect(result.data).toEqual([
-          expect.objectContaining({ id: "cat-1", value: 70, count: 2 }),
+          expect.objectContaining({ id: "cat-1", value: -70, count: 2 }),
         ]);
       });
 
@@ -3844,21 +3860,25 @@ describe("ReportsService", () => {
       it("nets within each category, never across two, under a month group", async () => {
         setupExecuteMocks(
           { groupBy: GroupByType.MONTH, config: { ...defaultConfig } },
-          refundRows(),
+          refundRows().filter((tx) => tx.categoryId === "cat-1"),
         );
 
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].value).toBe(70);
+        expect(result.data[0].value).toBe(-70);
         expect(result.data[0].count).toBe(2);
       });
 
-      it("does not net a transfer pair: each leg is its own cell", async () => {
+      it("retains both transfer legs when their signed total is zero", async () => {
         setupExecuteMocks(
           {
             groupBy: GroupByType.NONE,
-            config: { ...defaultConfig, includeTransfers: true },
+            config: {
+              ...defaultConfig,
+              direction: DirectionFilter.BOTH,
+              includeTransfers: true,
+            },
           },
           [
             createMockTransaction({
@@ -3879,7 +3899,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data).toEqual([
-          expect.objectContaining({ id: "total", value: 200 }),
+          expect.objectContaining({ id: "total", value: 0, count: 2 }),
         ]);
       });
     });
@@ -3900,10 +3920,10 @@ describe("ReportsService", () => {
             (c: unknown[]) => c[0],
           );
           expect(andWhereCalls).not.toContain(
-            "(transaction.isSplit = true OR transaction.amount < 0)",
+            "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END < 0",
           );
           expect(andWhereCalls).not.toContain(
-            "(transaction.isSplit = true OR transaction.amount > 0)",
+            "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END > 0",
           );
         }
       });
@@ -3923,10 +3943,9 @@ describe("ReportsService", () => {
         const andWhereCalls = qb.andWhere.mock.calls.map(
           (c: unknown[]) => c[0],
         );
-        // A split parent's own sign is the sum of its lines, so it passes this
-        // gate and is narrowed per line afterwards (audit F-CUSTOM-DIR-001).
+        // Evaluate each split line against its own sign (audit F-CUSTOM-DIR-001).
         expect(andWhereCalls).toContain(
-          "(transaction.isSplit = true OR transaction.amount < 0)",
+          "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END < 0",
         );
       });
 
@@ -3946,7 +3965,7 @@ describe("ReportsService", () => {
           (c: unknown[]) => c[0],
         );
         expect(andWhereCalls).toContain(
-          "(transaction.isSplit = true OR transaction.amount > 0)",
+          "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END > 0",
         );
       });
 
@@ -3961,10 +3980,10 @@ describe("ReportsService", () => {
           (c: unknown[]) => c[0],
         );
         expect(andWhereCalls).not.toContain(
-          "(transaction.isSplit = true OR transaction.amount > 0)",
+          "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END > 0",
         );
         expect(andWhereCalls).not.toContain(
-          "(transaction.isSplit = true OR transaction.amount < 0)",
+          "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END < 0",
         );
       });
 
@@ -4682,13 +4701,12 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        // A26-M33: a zero net is not net spending, so EXPENSES_ONLY drops it;
-        // Both / Total Amount keeps the signed total, including a known zero.
+        // A recorded zero is a known signed amount.
         expect(result.data).toHaveLength(1);
         expect(result.data[0].value).toBe(0);
       });
 
-      it("drops a zero-net row from an expense report (audit A26-M33)", async () => {
+      it("retains a recorded zero in an expense-category report (audit A26-M33)", async () => {
         setupExecuteMocks(
           {
             groupBy: GroupByType.NONE,
@@ -4699,7 +4717,9 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data).toEqual([]);
+        expect(result.data).toEqual([
+          expect.objectContaining({ value: 0, count: 1 }),
+        ]);
       });
 
       it("handles positive amounts (income) with abs value", async () => {
@@ -4909,12 +4929,12 @@ describe("ReportsService", () => {
 
         expect(result.data).toHaveLength(2);
         // Sorted descending by value
-        expect(result.data[0].label).toBe("Essentials");
-        expect(result.data[0].value).toBe(80);
-        expect(result.data[0].color).toBe("#ff0000");
-        expect(result.data[0].count).toBe(2);
-        expect(result.data[1].label).toBe("Luxury");
-        expect(result.data[1].value).toBe(20);
+        expect(result.data[1].label).toBe("Essentials");
+        expect(result.data[1].value).toBe(-80);
+        expect(result.data[1].color).toBe("#ff0000");
+        expect(result.data[1].count).toBe(2);
+        expect(result.data[0].label).toBe("Luxury");
+        expect(result.data[0].value).toBe(-20);
       });
 
       it("labels untagged transactions", async () => {
@@ -4981,7 +5001,7 @@ describe("ReportsService", () => {
         expect(luxury!.count).toBe(1);
       });
 
-      it("calculates percentages for tag aggregation", async () => {
+      it("calculates percentages for tag aggregation with the unsigned average", async () => {
         const transactions = [
           createMockTransaction({
             id: "tx-1",
@@ -4997,7 +5017,7 @@ describe("ReportsService", () => {
         setupExecuteMocks(
           {
             groupBy: GroupByType.TAG,
-            config: { ...defaultConfig, metric: MetricType.TOTAL_AMOUNT },
+            config: { ...defaultConfig, metric: MetricType.AVERAGE },
           },
           transactions,
         );
@@ -5093,8 +5113,12 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data.find((d) => d.label === "Vacation")!.value).toBe(30);
-        expect(result.data.find((d) => d.label === "Untagged")!.value).toBe(70);
+        expect(result.data.find((d) => d.label === "Vacation")!.value).toBe(
+          -30,
+        );
+        expect(result.data.find((d) => d.label === "Untagged")!.value).toBe(
+          -70,
+        );
       });
 
       it("files every line under the parent's tags as well as its own", async () => {
@@ -5122,7 +5146,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0]).toMatchObject({ label: "Trip", value: 100 });
+        expect(result.data[0]).toMatchObject({ label: "Trip", value: -100 });
       });
     });
 
@@ -5567,6 +5591,37 @@ describe("ReportsService", () => {
         });
       });
 
+      it.each([
+        [DirectionFilter.INCOMING, ReportCategoryType.ALL],
+        [DirectionFilter.BOTH, ReportCategoryType.INCOME],
+        [DirectionFilter.BOTH, ReportCategoryType.UNCATEGORIZED],
+      ])(
+        "excludes unrelated unspent budgets and FX gaps for %s / %s",
+        async (direction, categoryType) => {
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.CATEGORY,
+              config: {
+                ...defaultConfig,
+                metric: MetricType.BUDGET_VARIANCE,
+                direction,
+                categoryType,
+              },
+            },
+            [],
+          );
+          categoriesRepository.find.mockResolvedValue([mockCategory]);
+          budgetOf(
+            [{ categoryId: "cat-1", amount: 100, isIncome: false }],
+            "JPY",
+          );
+          const result = await service.execute("user-1", "report-1");
+          expect(result.data).toEqual([]);
+          expect(result.missingCurrencies).toEqual([]);
+          expect(result.summary.total).toBe(0);
+        },
+      );
+
       it("converts a foreign-currency budget into the reporting currency", async () => {
         storedRates.set("EUR->USD", 2);
         setupExecuteMocks(
@@ -5621,7 +5676,7 @@ describe("ReportsService", () => {
       });
     });
     describe("additional sorting columns", () => {
-      it("sorts by PERCENTAGE column", async () => {
+      it("sorts a migrated percentage sort by signed value", async () => {
         const transactions = [
           createMockTransaction({
             id: "tx-1",
@@ -5654,8 +5709,9 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data[0].percentage!).toBeLessThanOrEqual(
-          result.data[1].percentage!,
+        expect(result.data.map((row) => row.value)).toEqual([-80, -20]);
+        expect(result.data.every((row) => row.percentage === undefined)).toBe(
+          true,
         );
       });
 

@@ -20,6 +20,7 @@ import {
   GroupByType,
   MetricType,
   DirectionFilter,
+  ReportCategoryType,
   TableColumn,
   SortDirection,
   FilterGroup,
@@ -100,6 +101,7 @@ const customReportSchema = z.object({
   groupBy: z.nativeEnum(GroupByType),
   metric: z.nativeEnum(MetricType),
   direction: z.nativeEnum(DirectionFilter),
+  categoryType: z.nativeEnum(ReportCategoryType),
   includeTransfers: z.boolean(),
   customStartDate: z.string().optional(),
   customEndDate: z.string().optional(),
@@ -166,6 +168,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
           groupBy: report.groupBy,
           metric: report.config.metric,
           direction: report.config.direction,
+          categoryType: report.config.categoryType ?? ReportCategoryType.ALL,
           includeTransfers: report.config.includeTransfers,
           customStartDate: report.config.customStartDate || '',
           customEndDate: report.config.customEndDate || '',
@@ -183,7 +186,8 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
           timeframeType: TimeframeType.LAST_3_MONTHS,
           groupBy: GroupByType.NONE,
           metric: MetricType.TOTAL_AMOUNT,
-          direction: DirectionFilter.EXPENSES_ONLY,
+          direction: DirectionFilter.BOTH,
+          categoryType: ReportCategoryType.EXPENSE,
           includeTransfers: false,
           customStartDate: '',
           customEndDate: '',
@@ -236,6 +240,7 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
       config: {
         metric: data.metric,
         direction: data.direction,
+        categoryType: data.categoryType,
         includeTransfers: data.includeTransfers,
         customStartDate: data.timeframeType === TimeframeType.CUSTOM ? data.customStartDate : undefined,
         customEndDate: data.timeframeType === TimeframeType.CUSTOM ? data.customEndDate : undefined,
@@ -470,6 +475,15 @@ export function CustomReportForm({ report, onSubmit, onCancel, onDirtyChange, su
             options={directionOptions}
             {...register('direction')}
             error={errors.direction?.message}
+          />
+          <Select
+            label={t('customReport.labelCategoryType')}
+            options={Object.values(ReportCategoryType).map((value) => ({
+              value,
+              label: t(`customReportLabels.categoryType.${value}`),
+            }))}
+            {...register('categoryType')}
+            error={errors.categoryType?.message}
           />
           <div className="md:col-span-2">
             <label className="flex items-center gap-2">

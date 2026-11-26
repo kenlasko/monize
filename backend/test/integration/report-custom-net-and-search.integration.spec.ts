@@ -1,6 +1,7 @@
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import type { RateIndex } from "@/common/time-series/rate-index.util";
+import { SplitKind } from "@/transactions/entities/split-kind.enum";
 import { TransactionSplit } from "@/transactions/entities/transaction-split.entity";
 import { ReportCurrencyService } from "@/built-in-reports/report-currency.service";
 import { ReportsService } from "@/reports/reports.service";
@@ -9,6 +10,7 @@ import {
   DirectionFilter,
   GroupByType,
   MetricType,
+  ReportCategoryType,
   ReportViewType,
   TimeframeType,
   SortDirection,
@@ -58,11 +60,10 @@ describe("custom report: signed category sums and escaped search (integration)",
     const currency = new ReportCurrencyService(dataSource, {
       getRateIndex: async () => rates,
     } as never);
-    // `execute` uses neither the budgets service nor action history.
     reports = new ReportsService(
       dataSource,
       {} as never,
-      {} as never,
+      { record: jest.fn() } as never,
       currency,
     );
   });
@@ -122,8 +123,10 @@ describe("custom report: signed category sums and escaped search (integration)",
   }
 
   async function saveReport(overrides: {
+    includeTransfers?: boolean;
     groupBy?: GroupByType;
     direction?: DirectionFilter;
+    categoryType?: ReportCategoryType;
     metric?: MetricType;
     filters?: CustomReport["filters"];
     startDate?: string;
@@ -141,8 +144,9 @@ describe("custom report: signed category sums and escaped search (integration)",
         filters: overrides.filters ?? {},
         config: {
           metric: overrides.metric ?? MetricType.TOTAL_AMOUNT,
-          includeTransfers: false,
+          includeTransfers: overrides.includeTransfers ?? false,
           direction: overrides.direction ?? DirectionFilter.EXPENSES_ONLY,
+          categoryType: overrides.categoryType,
           customStartDate: overrides.startDate ?? START,
           customEndDate: overrides.endDate ?? END,
           sortBy: overrides.sortBy,
@@ -240,9 +244,191 @@ describe("custom report: signed category sums and escaped search (integration)",
     const result = await run({ direction: DirectionFilter.EXPENSES_ONLY });
 
     expect(result.data).toEqual([
-      expect.objectContaining({ id: groceriesId, value: 70 }),
+      expect.objectContaining({ id: groceriesId, value: -70 }),
     ]);
-    expect(result.summary.total).toBe(70);
+    expect(result.summary.total).toBe(-70);
+  });
+
+  it.each([
+    [
+      DirectionFilter.EXPENSES_ONLY,
+      GroupByType.NONE,
+      MetricType.NONE,
+      "OUTGOING",
+      "ALL",
+    ],
+    [
+      DirectionFilter.INCOME_ONLY,
+      GroupByType.NONE,
+      MetricType.NONE,
+      "INCOMING",
+      "ALL",
+    ],
+    [
+      DirectionFilter.EXPENSES_ONLY,
+      GroupByType.CATEGORY,
+      MetricType.TOTAL_AMOUNT,
+      "BOTH",
+      "EXPENSE",
+    ],
+    [
+      DirectionFilter.INCOME_ONLY,
+      GroupByType.NONE,
+      MetricType.TOTAL_AMOUNT,
+      "BOTH",
+      "INCOME",
+    ],
+    [
+      DirectionFilter.EXPENSES_ONLY,
+      GroupByType.CATEGORY,
+      MetricType.NONE,
+      "BOTH",
+      "EXPENSE",
+    ],
+    [DirectionFilter.BOTH, GroupByType.PAYEE, MetricType.COUNT, "BOTH", "ALL"],
+  ] as const)(
+    "reopens saved %s / %s / %s with independent %s and %s filters",
+    async (direction, groupBy, metric, movement, categoryType) => {
+      const saved = await saveReport({
+        direction,
+        groupBy,
+        metric,
+        filters: { accountIds: [accountId] },
+      });
+      for (let read = 0; read < 2; read++) {
+        const report = await withUserContext(userId, () =>
+          reports.findOne(userId, saved.id),
+        );
+        expect(report).toMatchObject({
+          id: saved.id,
+          groupBy,
+          filters: saved.filters,
+          config: { ...saved.config, direction: movement, categoryType },
+        });
+      }
+    },
+  );
+
+  it("keeps only uncategorized ordinary postings when the report includes transfers", async () => {
+    const other = await createTestAccount(dataSource, userId, {
+      name: "Savings",
+      currencyCode: "USD",
+    });
+    const split = await insertTransaction({ isSplit: true, amount: -34 });
+    await dataSource.manager.save(TransactionSplit, [
+      { transactionId: split.id, categoryId: null, amount: -4 },
+      {
+        transactionId: split.id,
+        kind: SplitKind.TRANSFER,
+        categoryId: null,
+        transferAccountId: other.id,
+        amount: -10,
+      },
+      { transactionId: split.id, categoryId: groceriesId, amount: -20 },
+    ]);
+    await insertTransaction({ categoryId: null, amount: -8 });
+    await insertTransaction({
+      categoryId: null,
+      amount: -50,
+      isTransfer: true,
+    });
+    const result = await run({
+      direction: DirectionFilter.OUTGOING,
+      categoryType: ReportCategoryType.UNCATEGORIZED,
+      groupBy: GroupByType.NONE,
+      metric: MetricType.NONE,
+      includeTransfers: true,
+    });
+    expect(result.data.map((row) => row.value).sort((a, b) => Number(a) - Number(b))).toEqual([-8, -4]);
+    expect(result.summary.total).toBe(-12);
+  });
+
+  it("excludes a provisional incoming posting before converting an outgoing monthly total", async () => {
+    await insertTransaction({
+      categoryId: null,
+      amount: 80,
+      isTransfer: true,
+      amountIsProvisional: true,
+    });
+    const options = {
+      groupBy: GroupByType.MONTH,
+      includeTransfers: true,
+      metric: MetricType.TOTAL_AMOUNT,
+    };
+    const incoming = await run({
+      ...options,
+      direction: DirectionFilter.INCOMING,
+    });
+    expect(incoming.summary.total).toBe(80);
+    expect(incoming.provisionalCount).toBe(1);
+    const outgoing = await run({
+      ...options,
+      direction: DirectionFilter.OUTGOING,
+    });
+    expect(outgoing.data).toEqual([]);
+    expect(outgoing.provisionalCount).toBe(0);
+  });
+
+  it("keeps the migrated population when changing the layout and saving again", async () => {
+    const saved = await saveReport({
+      direction: DirectionFilter.EXPENSES_ONLY,
+      groupBy: GroupByType.CATEGORY,
+      metric: MetricType.NONE,
+      filters: { accountIds: [accountId] },
+    });
+    const expected = {
+      ...saved.config,
+      direction: DirectionFilter.BOTH,
+      categoryType: "EXPENSE",
+    };
+    await withUserContext(userId, async () => {
+      await reports.update(userId, saved.id, { groupBy: GroupByType.NONE });
+      const reopened = await reports.findOne(userId, saved.id);
+      expect(reopened).toMatchObject({
+        groupBy: GroupByType.NONE,
+        config: expected,
+        filters: saved.filters,
+      });
+      await reports.update(userId, saved.id, { config: reopened.config });
+    });
+    const persisted = await dataSource.manager.findOneByOrFail(CustomReport, {
+      id: saved.id,
+    });
+    expect(persisted.config).toEqual(expected);
+  });
+
+  it("selects different split postings for movement lists and classified totals", async () => {
+    const mixed = await insertTransaction({ amount: 0, isSplit: true });
+    await dataSource.manager.save(TransactionSplit, [
+      { transactionId: mixed.id, categoryId: groceriesId, amount: -100 },
+      { transactionId: mixed.id, categoryId: salaryId, amount: 100 },
+    ]);
+    await insertTransaction({ categoryId: groceriesId, amount: 30 });
+    await insertTransaction({ categoryId: salaryId, amount: -150 });
+    await insertTransaction({ categoryId: null, amount: -8 });
+    const expense = await run({ direction: DirectionFilter.EXPENSES_ONLY });
+    const income = await run({ direction: DirectionFilter.INCOME_ONLY });
+    expect(expense.summary.total).toBe(-70);
+    expect(income.summary.total).toBe(-50);
+    const list = { groupBy: GroupByType.NONE, metric: MetricType.NONE };
+    const outgoing = await run({
+      ...list,
+      direction: DirectionFilter.EXPENSES_ONLY,
+    });
+    const incoming = await run({
+      ...list,
+      direction: DirectionFilter.INCOME_ONLY,
+    });
+    expect(
+      outgoing.data
+        .map((row) => row.value)
+        .sort((a, b) => Number(a) - Number(b)),
+    ).toEqual([-150, -100, -8]);
+    expect(
+      incoming.data
+        .map((row) => row.value)
+        .sort((a, b) => Number(a) - Number(b)),
+    ).toEqual([30, 100]);
   });
 
   it("reopens an existing Both / Total Amount configuration as a signed net", async () => {
@@ -372,14 +558,22 @@ describe("custom report: signed category sums and escaped search (integration)",
     // Groceries nets to 70 of spending; Salary is income and is not netted
     // against it.
     expect(result.data).toEqual([
-      expect.objectContaining({ id: "2026-03", value: 70 }),
+      expect.objectContaining({ id: "2026-03", value: -70 }),
     ]);
   });
 
   describe("text filter", () => {
     beforeEach(async () => {
-      await insertTransaction({ payeeName: "50 Shop", amount: -10 });
-      await insertTransaction({ payeeName: "5000 Mart", amount: -20 });
+      await insertTransaction({
+        payeeName: "50 Shop",
+        amount: -10,
+        categoryId: groceriesId,
+      });
+      await insertTransaction({
+        payeeName: "5000 Mart",
+        amount: -20,
+        categoryId: groceriesId,
+      });
     });
 
     it("reads % in the legacy search text as a literal", async () => {
@@ -408,7 +602,7 @@ describe("custom report: signed category sums and escaped search (integration)",
         filters: { searchText: "shop" },
       });
 
-      expect(result.summary.total).toBe(10);
+      expect(result.summary.total).toBe(-10);
     });
   });
 });
