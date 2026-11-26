@@ -26,14 +26,15 @@ alone.
 ## 2. Which schedules can be estimated
 
 An estimated schedule (`scheduled_transactions.amount_is_estimated`) is a plain,
-single-category schedule in its account's currency, with a payee and a category,
-or a transfer to another account (issue #2164, section 10):
+single-category schedule with a payee and a category, in its account's currency
+or entered in another (issue #2458, section 11), or a transfer to another
+account (issue #2164, section 10):
 
 | Shape | Estimate on create / explicit update | Flag already on, update changes the shape |
 | --- | --- | --- |
 | Split, investment | refused (`estimateRequiresPlain`) | flag dropped, like the foreign-currency trio |
+| Foreign-currency amount (`original_currency_code`) | estimated in that currency (section 11) | kept, the estimate moving to the new currency |
 | Transfer with no destination | refused (`estimateRequiresTransferAccount`) | refused when this request clears it, or switches between a transfer and a transaction without the new kind's basis |
-| Foreign-currency amount (`original_currency_code`) | refused (`estimateRequiresPlain`) | flag dropped |
 | Auto-post on | refused (`estimateNoAutoPost`) | refused |
 | No payee id or no category | refused (`estimateRequiresPayeeAndCategory`) | refused when this request clears it; a payee or category gone on its own leaves the schedule editable (status `no-basis`) |
 
@@ -54,9 +55,10 @@ filter `amount_is_estimated` and the under-lock `requireActiveAutoPost` check
 refuses it. The row only reads oddly until the next edit refuses the pair; the
 CHECK constraint in a later contract migration closes it.
 
-In the form, the toggle is disabled for a delegate (the reason in its tooltip)
-and the currency picker is disabled while estimating, so neither a delegate's
-toggle nor a switch to a foreign entry is dropped silently.
+In the form, the toggle is disabled for a delegate (the reason in its tooltip),
+so a delegate's toggle is not dropped silently. The currency picker stays
+available while estimating: a switch of the entry currency moves the estimate
+into it (section 11) rather than turning it off.
 
 ## 3. Which payments count
 
@@ -234,6 +236,9 @@ marker.
 | Refusals before write, snapshot, flag dropped on a shape change, posting default and refusal, list read model | `scheduled-transactions.service.spec.ts`, "estimated amounts" |
 | Bill Payment History band | `built-in-reports.service.spec.ts` |
 | Client forecast, Post dialog, editor, list label, form toggle | the frontend tests named in `docs/future-plans/scheduled-amount-estimate-tasks.md` |
+| A foreign-currency bill: the entry basis, a payment at its charged amount, the conversion with the fee, no rate into the account's currency | `scheduled-amount-estimate.service.spec.ts`, "a foreign-currency bill"; `test/integration/scheduled-amount-estimate.integration.spec.ts` |
+| A foreign-currency bill: create and update store both figures, an unchanged edit writes neither, posting at the posting date's rate, the refresh after posting | `scheduled-transactions.service.spec.ts`, "a foreign-currency bill (issue #2458)" |
+| A foreign-currency bill on the client: the toggle, the preview's currency, the saved figures, the Post dialog's seed | `ScheduledTransactionForm.test.tsx`, `PostTransactionDialog.test.tsx`, `lib/scheduled-effective-amount.test.ts` |
 | A transfer's floor: statement and balance modes, the worked example of section 10.3, rounding and sign | `transfer-estimate-floor.spec.ts` |
 | A transfer's history and ledger reads, FX of the debt, the read model's raised months | `scheduled-amount-estimate.service.spec.ts`, "an estimated transfer"; `test/integration/scheduled-amount-estimate.integration.spec.ts` |
 | A transfer's refusals, basis, snapshot and delegate rule; the expansion through the floor | `scheduled-transactions.service.spec.ts`, "estimated amounts"; `scheduled-occurrence.service.spec.ts` |
@@ -384,3 +389,78 @@ Estimated transfers are never auto-posted, as section 2.
 7. A frequency change moves an estimated transfer's snapshot (it decides the
    mode); it is not a change of the basis, so a delegate may make it.
 
+## 11. Bills entered in another currency (issue #2458)
+
+A plain bill whose amount is entered in the currency the biller charges
+(`original_currency_code`, the foreign-currency trio of
+`docs/financial-semantics.md`) can be estimated too. Agreed with the
+maintainer on the issue on 2026-11-26 (option A: the estimate is in the
+biller's currency).
+
+### 11.1 The estimate
+
+`estimateBasisOf` gives such a schedule an `entry` basis, the entry currency
+and its account; a transfer never has one, and an entry currency equal to the
+account's is none. The history (section 3) is read and priced in the entry
+currency instead of the account's:
+
+- A payment that carries its amount in that currency
+  (`transactions.original_currency_code`, the plain row's `original_amount`)
+  counts at that amount, the one the biller charged, rather than a
+  reconversion of what the account was debited. The rule holds for every
+  estimate, so an account-currency bill also counts a payment made from an
+  account in another currency but entered in the schedule's at that entered
+  amount (before issue #2458 it was reconverted at today's rate). A split
+  line carries no original amount and is converted from the row's currency.
+- Every other payment is converted into the entry currency at the current
+  rate, as section 3 converts one into the account's.
+
+The profile, the arithmetic of section 4 and the rounding to the entry
+currency's places are unchanged. Each occurrence is then converted into the
+account's currency at the newest stored rate on or before today
+(`getRateForDate(..., { fetchMissing: false })`) with the account's FX fee
+(`applyFxConversion`, the account currency's money precision), the same
+conversion the nightly refresh applies to the stored `original_amount`
+(`docs/cron-jobs.md`). With no such rate the estimate is `missing-rate`
+naming the pair (entry to account): every occurrence is unknown, as with a
+payment's missing rate.
+
+### 11.2 Where it is read
+
+`ScheduleAmountEstimate.entry` carries the rate, the fee and the places;
+`estimatedOccurrenceFor` answers the account-currency `amount` every
+occurrence consumer reads (section 7), and `originalAmount`, the biller's
+figure. The read model's months carry both, beside `originalCurrencyCode` and
+`exchangeRate`; an account-currency bill's carry neither. The preview takes
+the form's entry currency (`originalCurrencyCode` on
+`GET /scheduled-transactions/amount-estimate/:accountId`).
+
+### 11.3 The snapshot and posting
+
+- Create, update and the post-commit refresh store the next occurrence's
+  estimate in both columns: `amount` (account currency) and
+  `original_amount` (entry currency), with the rate in `exchange_rate`. The
+  refresh writes only while the row is still estimated in the same entry
+  currency (CONC-008). An unknown estimate keeps the entry the request sent.
+  An edit that cannot move the snapshot writes neither figure, as it writes no
+  amount (section 6). A change of the entry currency is a change of the basis.
+- The nightly refresh re-derives `amount` from the stored `original_amount`
+  at the latest rate, as for any foreign-currency schedule, so it agrees with
+  the list read up to the day's rate.
+- `post()` with no amount and no foreign amount sent, on an occurrence that
+  follows the estimate, posts the month's biller-currency estimate converted
+  at the posting date's rate (`resolveFxForPosting`), never the stored
+  `original_amount`; an unknown estimate is refused (`estimateUnknown`). A
+  foreign amount sent with the post, an amount, or an override stating one,
+  wins as before.
+- The Post dialog opens the foreign field at the month's biller-currency
+  estimate (`estimatedOccurrenceOriginalAmount`), an unknown one at zero,
+  which is refused unchanged.
+
+### 11.4 Decisions
+
+1. The estimate is in the biller's currency, converted for every surface that
+   reads the account's (option A on the issue).
+2. A payment recorded in the biller's currency counts at the amount charged.
+3. Posting converts at the posting date's rate; the list and the forecast
+   convert at the newest stored rate, as for a typed foreign-currency amount.
