@@ -189,6 +189,57 @@ export function createTransaction(
   });
 }
 
+/** A whole transfer: two linked rows, `amount` leaving `fromAccountId`. */
+export function createTransfer(
+  api: ApiClient,
+  data: {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    transactionDate?: string;
+    tagIds?: string[];
+  },
+): Promise<{ fromTransaction: { id: string }; toTransaction: { id: string } }> {
+  return api.post('/transactions/transfer', {
+    fromAccountId: data.fromAccountId,
+    toAccountId: data.toAccountId,
+    amount: data.amount,
+    transactionDate: data.transactionDate ?? new Date().toISOString().slice(0, 10),
+    ...(data.tagIds !== undefined ? { tagIds: data.tagIds } : {}),
+  });
+}
+
+/**
+ * A split parent. Each line is a category line or a transfer line (a
+ * `transferAccountId`), signed like the parent; the lines sum to `amount`.
+ */
+export function createSplitTransaction(
+  api: ApiClient,
+  data: {
+    accountId: string;
+    amount: number;
+    splits: {
+      amount: number;
+      categoryId?: string;
+      transferAccountId?: string;
+      tagIds?: string[];
+    }[];
+    payeeName?: string;
+    transactionDate?: string;
+    tagIds?: string[];
+  },
+): Promise<CreatedTransaction> {
+  return api.post<CreatedTransaction>('/transactions', {
+    accountId: data.accountId,
+    amount: data.amount,
+    payeeName: data.payeeName ?? `E2E Split ${uniqueId()}`,
+    transactionDate: data.transactionDate ?? new Date().toISOString().slice(0, 10),
+    currencyCode: 'USD',
+    splits: data.splits,
+    ...(data.tagIds !== undefined ? { tagIds: data.tagIds } : {}),
+  });
+}
+
 export interface CreatedScheduledTransaction {
   id: string;
   name: string;
