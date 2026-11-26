@@ -1881,6 +1881,11 @@ export class TransactionBulkUpdateService {
           if (hasTransfer) {
             const method = hasCondition ? "orWhere" : "where";
             hasCondition = true;
+            // shortcut: whole transfer rows only, although the register also
+            // lists a split by its transfer line (INV-REPORT-006). Selecting it
+            // here would let a filter-mode recategorization rewrite the split's
+            // hidden category lines (docs/specs/split-bulk-update.md I2); widen
+            // once the maintainer decides what a bulk edit of such a split does.
             qb[method]("transaction.isTransfer = true");
           }
           if (uniqueCategoryIds.length > 0) {

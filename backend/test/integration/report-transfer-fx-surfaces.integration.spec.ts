@@ -4,6 +4,7 @@ import { ReportCurrencyService } from "@/built-in-reports/report-currency.servic
 import { CashFlowSankeyService } from "@/built-in-reports/cash-flow-sankey.service";
 import { MonthlyCategoryBreakdownService } from "@/built-in-reports/monthly-category-breakdown.service";
 import { IncomeReportsService } from "@/built-in-reports/income-reports.service";
+import { TransactionsService } from "@/transactions/transactions.service";
 import { TransactionAnalyticsService } from "@/transactions/transaction-analytics.service";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { PayeeDetailService } from "@/payees/payee-detail.service";
@@ -53,6 +54,7 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
   let module: TestingModule;
   let dataSource: DataSource;
   let analytics: TransactionAnalyticsService;
+  let transactionsService: TransactionsService;
   let sankey: CashFlowSankeyService;
   let breakdown: MonthlyCategoryBreakdownService;
   let income: IncomeReportsService;
@@ -72,6 +74,7 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     module = await createIntegrationModule([TransactionsModule]);
     dataSource = module.get(DataSource);
     analytics = module.get(TransactionAnalyticsService);
+    transactionsService = module.get(TransactionsService);
     const currency = new ReportCurrencyService(dataSource, {
       getRateIndex: (
         currencies: ReadonlySet<string>,
@@ -332,7 +335,7 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
     });
   });
 
-  it("reads the outgoing leg at 90 EUR in the monthly category breakdown", async () => {
+  it("reads the plain leg and the split transfer line at 90 EUR each (180) in the monthly category breakdown", async () => {
     await seed("EUR");
 
     const result = await asUser(() =>
@@ -346,14 +349,51 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
         accountId: usId,
         accountName: "US Chequing",
         direction: "from",
-        valuesByMonth: { "2026-03": 90 },
+        valuesByMonth: { "2026-03": 180 },
         // Issue #2413: the server folds the row's total and its average over
         // the one-month window from the same unrounded leg.
-        total: 90,
-        average: 90,
+        total: 180,
+        average: 180,
       },
     ]);
     expect(result.missingCurrencies).toEqual([]);
+  });
+
+  it("counts a split's transfer line like a whole transfer: breakdown equals the Sankey (INV-REPORT-006)", async () => {
+    await seed("EUR");
+
+    const flows = await asUser(() =>
+      sankey.getCashFlowSankey(userId, START, END, { accountIds: [usId] }),
+    );
+    const result = await asUser(() =>
+      breakdown.getMonthlyCategoryBreakdown(userId, START, END, {
+        accountIds: [usId],
+      }),
+    );
+
+    expect(result.transfers[0].valuesByMonth["2026-03"]).toBe(
+      flows.nodes.find((n) => n.id === "class:savings")?.total,
+    );
+  });
+
+  it("reads the split transfer line in the per-account transfer totals", async () => {
+    await seed("EUR");
+
+    const result = await asUser(() =>
+      analytics.getTransfersByAccount(userId, START, END, [usId]),
+    );
+
+    expect(result.accounts).toEqual([
+      expect.objectContaining({
+        accountId: usId,
+        currency: "USD",
+        inbound: 0,
+        outbound: 200,
+        net: -200,
+        transferCount: 2,
+      }),
+    ]);
+    expect(result.totalOutbound).toBe(200);
   });
 
   it("reads tagged transfer flows at 90 EUR each in Income vs Expenses", async () => {
@@ -501,16 +541,91 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       analytics.getMonthlyTotals(userId, undefined, START, END, ["transfer"]),
     );
 
-    // The register lists the whole transfer rows only (-90 + 90 and the
-    // counterpart's +90), not the split parent, and the chart adds up to it.
+    // The register lists the plain transfer's two rows, the split parent
+    // (only its transfer line hydrated) and the split's counterpart; the chart
+    // adds up to it at line grain: -90 + 90 plain, the line's -90 against its
+    // +90 counterpart. The groceries line is not a transfer, so it is out.
     expect(monthly).toEqual([
       expect.objectContaining({
         month: "2026-03",
         currency: "EUR",
-        total: 90,
-        count: 3,
+        total: 0,
+        // One row per line: plain out, plain in, the split's transfer line
+        // (the parent counts through that line only) and its counterpart.
+        count: 4,
       }),
     ]);
+  });
+
+  it("reads only the outgoing amounts under the transfer filter of the sending account", async () => {
+    await seed("EUR");
+
+    const monthly = await asUser(() =>
+      analytics.getMonthlyTotals(userId, [usId], START, END, ["transfer"]),
+    );
+
+    // USD only: -100 plain, -100 transfer line; the -60 groceries line stays out.
+    expect(monthly).toEqual([
+      expect.objectContaining({ currency: "USD", total: -200, count: 2 }),
+    ]);
+  });
+
+  it("reads only the incoming amounts under the transfer filter of the receiving account", async () => {
+    await seed("EUR");
+
+    const monthly = await asUser(() =>
+      analytics.getMonthlyTotals(userId, [euId], START, END, ["transfer"]),
+    );
+
+    expect(monthly).toEqual([
+      expect.objectContaining({ currency: "EUR", total: 180, count: 2 }),
+    ]);
+  });
+
+  it("lists a split under the register's transfer filter with only its transfer line", async () => {
+    await seed("EUR");
+
+    const page = await asUser(() =>
+      transactionsService.findAll(userId, [usId], undefined, undefined, [
+        "transfer",
+      ]),
+    );
+
+    const split = page.data.find((t) => t.isSplit);
+    expect(page.data).toHaveLength(2);
+    expect(split?.splits?.map((l) => l.id)).toEqual([transferLineId]);
+    // The filtered balance is the two transfer amounts, not the parent's -160.
+    expect(page.startingBalance).toBe(-200);
+  });
+
+  it("walks the register's later pages under the transfer filter at the line's amount", async () => {
+    await seed("EUR");
+
+    const pageAt = (page: number) =>
+      asUser(() =>
+        transactionsService.findAll(
+          userId,
+          [usId],
+          undefined,
+          undefined,
+          ["transfer"],
+          undefined,
+          page,
+          1,
+        ),
+      );
+    const first = await pageAt(1);
+    const second = await pageAt(2);
+
+    // The split row counts only its hydrated transfer line, as the register
+    // draws it; a plain row counts its own amount.
+    const [row] = first.data;
+    const shown = row.isSplit
+      ? row.splits!.reduce((sum, l) => sum + Number(l.amount), 0)
+      : Number(row.amount);
+    expect(shown).toBe(-100);
+    expect(first.startingBalance).toBe(-200);
+    expect(second.startingBalance).toBe(first.startingBalance! - shown);
   });
 
   it("agrees on a payee's split transfer in the summary and the monthly totals", async () => {

@@ -268,7 +268,7 @@ The filter panel provides powerful options for finding specific transactions. **
 | **Accounts** | Filter by one or more accounts |
 | **Payees** | Filter by one or more payees |
 | **Categories** | Filter by one or more categories |
-| **Tags** | Filter by one or more [tags](tags.md) |
+| **Tags** | Filter by one or more [tags](tags.md). A transaction, or a line of a split, that carries several of the chosen tags counts once in the totals |
 | **Status** | Filter by one or more reconciliation statuses (Unreconciled, Cleared, Reconciled, Void) |
 | **Tag key** and **Condition** | Filter by a [key:value tag](tags.md#filtering-transactions-by-tag-key): has a value, has no value, value contains, or value does not contain |
 | **Time Period** | Quick presets that set the date range for you: All Dates, Today, Yesterday, This Week, Last Week, Last 30 Days, Month to Date, Last Month, Last 365 Days, Year to Date, Last Year, or Custom |
@@ -277,6 +277,8 @@ The filter panel provides powerful options for finding specific transactions. **
 | **Currency** | Transactions entered in a particular foreign currency |
 | **Attachments** | **Yes** or **No** to find transactions with or without attachments |
 | **Search** | Free text, or the [search syntax](#search-syntax) |
+
+Choosing **Transfers** in the category filter lists every transfer, including a split's transfer line: the split shows only that line and its amount, as a split filtered by category shows only its matching lines. A bulk edit of all matching transactions leaves such a split unchanged.
 
 > [!NOTE]
 > When the filter panel is collapsed, each active filter appears as a removable chip -- click the **x** on a chip to clear just that filter. If any of your accounts are marked as favourites, a **Favourites** row of quick-select buttons appears above the panel so you can limit the list to a favourite account in one tap.

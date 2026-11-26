@@ -624,7 +624,7 @@ describe("TransactionAnalyticsService", () => {
       expect(result.lastTransactionDate).toBe("2026-05-20");
     });
 
-    it("filters by tagIds via transaction and split tag joins", async () => {
+    it("filters by tagIds with EXISTS on the transaction and split tags", async () => {
       await service.getSummary(
         userId,
         undefined,
@@ -640,20 +640,8 @@ describe("TransactionAnalyticsService", () => {
         ["tag-1"],
       );
 
-      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
-        "transaction.tags",
-        "filterTags",
-      );
-      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
-        "splits.tags",
-        "filterSplitTags",
-      );
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        "filterTags.id IN (:...summaryTagIds)",
-        { summaryTagIds: ["tag-1"] },
-      );
-      expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
-        "filterSplitTags.id IN (:...summaryTagIds)",
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining("EXISTS (SELECT 1 FROM transaction_tags"),
         { summaryTagIds: ["tag-1"] },
       );
     });
@@ -1186,7 +1174,7 @@ describe("TransactionAnalyticsService", () => {
           expect.any(Brackets),
         );
         expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-          "transaction.isTransfer = true",
+          "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
         );
       });
 
@@ -1211,7 +1199,7 @@ describe("TransactionAnalyticsService", () => {
         );
         // Transfer and category conditions use orWhere
         expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
-          "transaction.isTransfer = true",
+          "(transaction.isTransfer = true OR splits.transferAccountId IS NOT NULL)",
         );
 
         // Splits join for regular categories
@@ -1763,7 +1751,8 @@ describe("TransactionAnalyticsService", () => {
         "COUNT(*) FILTER (WHERE t.amountIsProvisional = true)",
         "provisionalCount",
       );
-      expect(result.accounts.map((a) => a.provisionalCount)).toEqual([0, 1]);
+      // Accounts come back sorted by name: Euro Savings, then US Chequing.
+      expect(result.accounts.map((a) => a.provisionalCount)).toEqual([1, 0]);
       expect(result.provisionalCount).toBe(1);
     });
 
@@ -1873,6 +1862,67 @@ describe("TransactionAnalyticsService", () => {
         "t.accountId IN (:...accountIds)",
         { accountIds: ["acc-1", "acc-2"] },
       );
+    });
+
+    it("merges split transfer lines per account and currency", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          accountName: "Chequing",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "100",
+          count: "1",
+        },
+      ]);
+      managerMock.query.mockResolvedValue([
+        {
+          accountId: "acc-1",
+          accountName: "Chequing",
+          currencyCode: "USD",
+          inbound: "5.25",
+          outbound: "100",
+          count: "1",
+        },
+        {
+          accountId: "acc-2",
+          accountName: "Mortgage",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "40",
+          count: "2",
+        },
+      ]);
+
+      const result = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+        ["acc-1", "acc-2"],
+      );
+
+      expect(managerMock.query.mock.calls[0][1]).toEqual([
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+        ["acc-1", "acc-2"],
+      ]);
+      expect(managerMock.query.mock.calls[0][0]).toContain("ANY($4::uuid[])");
+      expect(result.accounts).toEqual([
+        expect.objectContaining({
+          accountId: "acc-1",
+          inbound: 5.25,
+          outbound: 200,
+          transferCount: 2,
+        }),
+        expect.objectContaining({
+          accountId: "acc-2",
+          outbound: 40,
+          transferCount: 2,
+        }),
+      ]);
+      expect(result.totalOutbound).toBe(240);
+      expect(result.transferCount).toBe(4);
     });
 
     it("returns zeroed totals when there are no transfers", async () => {
@@ -2366,7 +2416,7 @@ describe("TransactionAnalyticsService", () => {
     });
 
     describe("tagIds filter", () => {
-      it("joins both transaction tags and split tags when tagIds provided", async () => {
+      it("tests both transaction tags and split tags when tagIds provided", async () => {
         await service.getMonthlyTotals(
           userId,
           undefined,
@@ -2384,13 +2434,9 @@ describe("TransactionAnalyticsService", () => {
           "transaction.splits",
           "splits",
         );
-        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
-          "transaction.tags",
-          "filterTags",
-        );
-        expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
-          "splits.tags",
-          "filterSplitTags",
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          expect.stringContaining("transaction_split_tags"),
+          { summaryTagIds: ["tag-1"] },
         );
       });
 
@@ -2409,14 +2455,7 @@ describe("TransactionAnalyticsService", () => {
         );
 
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          expect.any(Brackets),
-        );
-        expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-          "filterTags.id IN (:...summaryTagIds)",
-          { summaryTagIds: ["tag-1", "tag-2"] },
-        );
-        expect(mockQueryBuilder.orWhere).toHaveBeenCalledWith(
-          "filterSplitTags.id IN (:...summaryTagIds)",
+          expect.stringMatching(/EXISTS.*transaction_tags.* OR .*EXISTS/),
           { summaryTagIds: ["tag-1", "tag-2"] },
         );
       });
@@ -2507,19 +2546,23 @@ describe("TransactionAnalyticsService", () => {
           [],
         );
 
-        expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalledWith(
-          "transaction.tags",
-          "filterTags",
-        );
+        expect(
+          mockQueryBuilder.andWhere.mock.calls.some(
+            ([c]: unknown[]) =>
+              typeof c === "string" && c.includes("transaction_tags"),
+          ),
+        ).toBe(false);
       });
 
       it("does not apply tag filter when tagIds is undefined", async () => {
         await service.getMonthlyTotals(userId);
 
-        expect(mockQueryBuilder.leftJoin).not.toHaveBeenCalledWith(
-          "transaction.tags",
-          "filterTags",
-        );
+        expect(
+          mockQueryBuilder.andWhere.mock.calls.some(
+            ([c]: unknown[]) =>
+              typeof c === "string" && c.includes("transaction_tags"),
+          ),
+        ).toBe(false);
       });
     });
   });
