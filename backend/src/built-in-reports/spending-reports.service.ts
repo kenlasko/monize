@@ -55,14 +55,16 @@ const NONZERO_AMOUNT = "COALESCE(ts.amount, t.amount) <> 0";
 
 // The ledger population is shared by category, payee and month. The optional
 // category joins for the payee view identify the same reporting parent.
-function spendingComponentsSql(categoryJoins = ""): string {
+function spendingComponentsSql(parentJoin = ""): string {
   return `
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
       LEFT JOIN accounts a ON a.id = t.account_id
-      ${categoryJoins}
+      LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id) AND c.user_id = t.user_id
+      ${parentJoin}
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
+        AND c.is_income IS NOT TRUE
         AND ${NONZERO_AMOUNT}
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
@@ -301,12 +303,12 @@ export class SpendingReportsService {
     }
 
     // An expense category identifies spending even when its refunds equal or
-    // exceed its purchases. Other buckets keep their existing positive-net
+    // exceed its purchases. Unclassified buckets keep their positive-net
     // inclusion rule, including Uncategorized. Zero-only postings are already
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
       ([, { agg, category }]) =>
-        includesSpendingCategory(agg.sign, category?.isIncome),
+        category?.isIncome != null || isNetSpending(agg.sign),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -353,12 +355,11 @@ export class SpendingReportsService {
       SELECT
         COALESCE(ts.category_id, t.category_id) AS category_id,
         COALESCE(parent.id, c.id) AS bucket_id,
-        COALESCE(parent.is_income, c.is_income) AS is_income,
+        COALESCE(parent.is_income, c.is_income) IS NOT NULL AS classified,
         t.payee_id, t.payee_name, t.currency_code,
         ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
       ${spendingComponentsSql(`
-        LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id) AND c.user_id = t.user_id
         LEFT JOIN categories parent ON parent.id = c.parent_id AND parent.user_id = t.user_id
       `)}
     `;
@@ -375,7 +376,7 @@ export class SpendingReportsService {
     const rawResults: (RawPayeeAggregate & {
       category_id: string | null;
       bucket_id: string | null;
-      is_income: boolean | null;
+      classified: boolean;
     })[] = await withScopedDb(this.dataSource, (m) => m.query(query, params));
 
     const payeeIds = rawResults
@@ -418,8 +419,7 @@ export class SpendingReportsService {
     // Decide eligibility at category level before attributing each posting
     // to its payee. A refund can come from a different payee than the purchase.
     for (const { row, total, category } of convertedRows) {
-      if (!includesSpendingCategory(category.sign, row.is_income ?? undefined))
-        continue;
+      if (!row.classified && !isNetSpending(category.sign)) continue;
       const key = JSON.stringify([
         row.payee_id,
         row.payee_id ? null : row.payee_name,
@@ -576,8 +576,10 @@ export class SpendingReportsService {
     // The fallback tests the sign before rounding (rules 2 and 5).
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
-        .filter(([id, overall]) =>
-          includesSpendingCategory(overall.sign, categoryMap.get(id)?.isIncome),
+        .filter(
+          ([id, overall]) =>
+            categoryMap.get(id)?.isIncome != null ||
+            isNetSpending(overall.sign),
         )
         .map(([id]) => id),
     );

@@ -330,6 +330,29 @@ describe("TaxRecurringReportsService", () => {
       expect(result.totals.income).toBe(0);
     });
 
+    it("uses the net direction when a stored category has no type", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        { ...mockMedicalCategory, isIncome: null },
+      ]);
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: mockMedicalCategory.id,
+          currency_code: "USD",
+          amount: "-100",
+        },
+        {
+          category_id: mockMedicalCategory.id,
+          currency_code: "USD",
+          amount: "150",
+        },
+      ]);
+      expect(await service.getTaxSummary(mockUserId, 2026)).toMatchObject({
+        incomeBySource: [{ name: mockMedicalCategory.name, total: 50 }],
+        allExpenses: [],
+        deductibleExpenses: [],
+      });
+    });
+
     it("nets many 0.1 and 0.2 rows against 0.3 rows to exactly zero", async () => {
       const rows: Array<Record<string, string>> = [];
       for (let i = 0; i < 500; i++) {
@@ -344,7 +367,10 @@ describe("TaxRecurringReportsService", () => {
 
       const result = await service.getTaxSummary(mockUserId, 2025);
 
-      expect(result.allExpenses).toEqual([]);
+      expect(result.allExpenses).toEqual([
+        { name: "Medical Expenses", total: 0 },
+      ]);
+      expect(result.deductibleExpenses).toEqual(result.allExpenses);
       expect(result.incomeBySource).toEqual([]);
       expect(result.totals.expenses).toBe(0);
       expect(result.totals.income).toBe(0);

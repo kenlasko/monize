@@ -1,4 +1,5 @@
 import { IncomeReportsService } from "@/built-in-reports/income-reports.service";
+import { TaxRecurringReportsService } from "@/built-in-reports/tax-recurring-reports.service";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { ReportCurrencyService } from "@/built-in-reports/report-currency.service";
@@ -21,6 +22,7 @@ describe("signed expenses in Spending by Category (integration)", () => {
   const end = "2026-03-31";
   let module: TestingModule;
   let db: DataSource;
+  let tax: TaxRecurringReportsService;
   let income: IncomeReportsService;
   let reports: SpendingReportsService;
   let userId: string;
@@ -34,6 +36,7 @@ describe("signed expenses in Spending by Category (integration)", () => {
     const currency = new ReportCurrencyService(db, {
       getRateIndex: async () => new Map(),
     } as never);
+    tax = new TaxRecurringReportsService(db, currency);
     income = new IncomeReportsService(db, currency);
     reports = new SpendingReportsService(db, currency);
   });
@@ -163,6 +166,96 @@ describe("signed expenses in Spending by Category (integration)", () => {
       });
     },
   );
+
+  it.each([100, 150])(
+    "keeps a %i refund or reversal in the assigned tax category",
+    async (reversal) => {
+      const medical = await createTestCategory(db, userId, { name: "Medical" });
+      await post(100, { categoryId: salary });
+      await post(-reversal, { categoryId: salary });
+      const byPayee = () =>
+        withUserContext(userId, () =>
+          reports.getSpendingByPayee(userId, start, end),
+        );
+      expect(await read()).toMatchObject({ data: [], totalSpending: 0 });
+      expect(await byPayee()).toMatchObject({ data: [], totalSpending: 0 });
+
+      await post(-100, { categoryId: medical.id });
+      await post(reversal, { categoryId: medical.id });
+      await post(12, { categoryId: null });
+      await post(-8, { categoryId: null });
+      const net = 100 - reversal;
+      const report = await withUserContext(userId, () =>
+        tax.getTaxSummary(userId, 2026),
+      );
+      expect(report.incomeBySource).toEqual([
+        { name: "Uncategorized", total: 12 },
+        { name: "Salary", total: net },
+      ]);
+      expect(report.allExpenses).toEqual([
+        { name: "Uncategorized", total: 8 },
+        { name: "Medical", total: net },
+      ]);
+      expect(report.deductibleExpenses).toEqual([
+        { name: "Medical", total: net },
+      ]);
+      expect(report.totals).toMatchObject({
+        income: 12 + net,
+        expenses: 8 + net,
+        deductible: net,
+      });
+    },
+  );
+
+  it("classifies a split by its leaf before rolling up a legacy mixed-type tree", async () => {
+    const medical = await createTestCategory(db, userId, {
+      name: "Medical",
+      parentId: salary,
+    });
+    const parent = await post(-50, { isSplit: true, categoryId: null });
+    await db.manager.save(TransactionSplit, [
+      { transactionId: parent.id, categoryId: medical.id, amount: -100 },
+      { transactionId: parent.id, categoryId: salary, amount: 50 },
+    ]);
+    await post(150, { categoryId: medical.id });
+    expect(await read()).toMatchObject({
+      data: [{ categoryId: salary, total: -50 }],
+      totalSpending: -50,
+    });
+    expect(
+      await withUserContext(userId, () =>
+        reports.getSpendingByPayee(userId, start, end),
+      ),
+    ).toMatchObject({
+      data: [{ payeeName: "Co-op", total: -50 }],
+      totalSpending: -50,
+    });
+    const report = await withUserContext(userId, () =>
+      tax.getTaxSummary(userId, 2026),
+    );
+    expect(report.totals).toMatchObject({
+      income: 50,
+      expenses: -50,
+      deductible: -50,
+    });
+  });
+
+  it("keeps uncategorized movements separate in tax and nets them in spending", async () => {
+    await post(-100, { categoryId: null });
+    await post(150, { categoryId: null });
+    expect(await read()).toMatchObject({ data: [], totalSpending: 0 });
+    expect(
+      await withUserContext(userId, () =>
+        reports.getSpendingByPayee(userId, start, end),
+      ),
+    ).toMatchObject({ data: [], totalSpending: 0 });
+    expect(
+      await withUserContext(userId, () => tax.getTaxSummary(userId, 2026)),
+    ).toMatchObject({
+      incomeBySource: [{ name: "Uncategorized", total: 150 }],
+      allExpenses: [{ name: "Uncategorized", total: 100 }],
+    });
+  });
 
   it("reconciles expense subcategories and their parent across a net credit", async () => {
     const child = (

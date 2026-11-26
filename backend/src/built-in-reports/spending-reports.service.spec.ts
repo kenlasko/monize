@@ -160,6 +160,34 @@ describe("SpendingReportsService", () => {
       expect(result.totalSpending).toBe(0);
     });
 
+    it("uses the net direction when a stored category has no type", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        { ...mockParentCategory, isIncome: null },
+      ]);
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: mockParentCategory.id,
+          bucket_id: mockParentCategory.id,
+          classified: false,
+          payee_id: null,
+          payee_name: "Co-op",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "-50",
+        },
+      ]);
+      expect(
+        await service.getSpendingByCategory(
+          mockUserId,
+          undefined,
+          "2026-12-31",
+        ),
+      ).toMatchObject({ data: [], totalSpending: 0 });
+      expect(
+        await service.getSpendingByPayee(mockUserId, undefined, "2026-12-31"),
+      ).toMatchObject({ data: [], totalSpending: 0 });
+    });
+
     it("aggregates spending by parent category with rollup", async () => {
       scopedManager.query.mockResolvedValue([
         {
