@@ -119,6 +119,8 @@ Four cards at the top provide an at-a-glance overview:
 | **Remaining** | Budget remaining, with the number of days left in the period (or **Period ended**) |
 | **Savings** | Income received so far minus spending, marked **On track** or **Over budget** |
 
+Purchases add to **Spent** and refunds in the same expense category reduce it. For a budget of 100, a purchase of 100 and a refund of 150 show **Spent −50** and **Remaining 150**. An ordinary income line likewise shows negative income if reversals exceed receipts. Open periods use these signed figures, and closing a period records them. Previously closed periods keep their saved figures.
+
 ### Health Score
 
 A circular gauge from 0 to 100 summarizing how well you are sticking to your budget.

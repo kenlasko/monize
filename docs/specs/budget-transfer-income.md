@@ -38,9 +38,9 @@ budget account, not itself).
 
 **Net change.** The figure is the signed sum of those legs: money in from the
 source is positive, money from a budget account back to the source is
-negative. A line's actual is clamped at zero, like an income category's; the
-income-linked base (`resolveBudgetIncome`) nets the signed figures of every
-income line first and clamps the whole, as it already does for categories.
+negative. A transfer income line's actual is clamped at zero. The
+income-linked funding base (`resolveBudgetIncome`) nets its signed
+inputs first and clamps the whole.
 
 **Option (a)** reads the same legs with every excluded account as a source,
 less any account a transfer line of the budget already names (that line

@@ -683,8 +683,8 @@ export async function queryCategorySpendingBuckets(
 }
 
 /**
- * A budget's actual income from its spending maps: the signed net of its
- * income lines, converted into the budget's currency by `queryCategorySpending`
+ * Funding for income-linked budget allocations: the signed net of income
+ * lines, converted into the budget's currency by `queryCategorySpending`
  * and clamped at zero as a whole, so a deduction in one income category nets
  * against another's pay. Each category counts once however many lines name
  * it. The figure is the KNOWN converted part (`incompleteCategoryIds` names an
@@ -725,7 +725,7 @@ export function resolveBudgetIncome(
 
 /**
  * The income `config.transfersInAsIncome` adds, as a line reads it: the net
- * change clamped at zero, like an income line's actual (issue #2141).
+ * change clamped at zero, like a transfer income line (issue #2141).
  */
 export function resolveOutsideTransferIncome(
   spending: Pick<CategorySpending, "outsideTransferIncome">,
@@ -777,18 +777,19 @@ export function resolveCategoryName(bc: BudgetCategory): string {
     : "Uncategorized";
 }
 
+/** Signed spending in an ordinary expense category, including a net refund. */
+export function categoryExpenseActual(
+  spendingMap: ReadonlyMap<string, number>,
+  categoryId: string,
+): number {
+  const net = spendingMap.get(categoryId) ?? 0;
+  return net === 0 ? 0 : -net;
+}
+
 /**
- * Resolves the actual spent/earned amount for a budget category from the
- * spending maps.  The maps now contain signed net sums (expenses negative,
- * income positive).  We convert to a non-negative "spent" / "earned" value:
- *   - Expense categories: negate the sum so spending is positive, clamp to 0
- *     when refunds exceed spending.
- *   - Income categories: keep the positive sum, clamp to 0 when deductions
- *     exceed income.
- *   - Transfers: already filtered to outgoing (amount < 0), returned as a
- *     positive value by the query.
- *   - Transfer income lines: the signed net in from the source, clamped to 0
- *     when more went back to it than came out (issue #2141).
+ * Ordinary expense lines report the negative of their signed ledger sum;
+ * ordinary income lines report the signed sum itself. Transfer funding has
+ * its own direction and availability rules (issue #2141).
  *
  * The figure is the KNOWN converted part: a row with no exchange rate is not in
  * it. A caller that can show "unknown" uses `resolveCategorySpentOrNull`.
@@ -808,14 +809,16 @@ export function resolveCategorySpent(
   if (bc.isTransfer && bc.transferAccountId) {
     return transferSpendingMap.get(bc.transferAccountId) || 0;
   }
-  const raw = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
-  return bc.isIncome ? Math.max(raw, 0) : Math.max(-raw, 0);
+  if (!bc.categoryId) return 0;
+  return bc.isIncome
+    ? (spendingMap.get(bc.categoryId) ?? 0)
+    : categoryExpenseActual(spendingMap, bc.categoryId);
 }
 
 /**
  * `resolveCategorySpent` for a caller that can show "unknown": `null` when a
  * row of this line had no rate to the budget currency (a partial sum is not the
- * line's spent), otherwise the same clamped value.
+ * line's spent), otherwise the same actual.
  */
 export function resolveCategorySpentOrNull(
   bc: BudgetCategory,

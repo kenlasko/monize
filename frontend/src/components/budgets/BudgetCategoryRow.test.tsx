@@ -30,6 +30,18 @@ describe('BudgetCategoryRow', () => {
     expect(screen.getByText('70%')).toBeInTheDocument();
   });
 
+  it('shows negative spending and the full amount left after a net refund', () => {
+    const category = {
+      ...baseCategory, budgeted: 100, spent: -50, remaining: 150, percentUsed: -50,
+    };
+
+    render(<BudgetCategoryRow category={category} formatCurrency={mockFormat} />);
+
+    expect(screen.getByText(mockFormat(-50))).toBeInTheDocument();
+    expect(screen.getByText('-50%')).toBeInTheDocument();
+    expect(screen.getByText('$150.00 left')).toBeInTheDocument();
+  });
+
   it('shows remaining amount', () => {
     render(
       <BudgetCategoryRow category={baseCategory} formatCurrency={mockFormat} />,

@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { BudgetsModule } from "@/budgets/budgets.module";
 import { BudgetsService } from "@/budgets/budgets.service";
+import { BudgetPeriodService } from "@/budgets/budget-period.service";
 import { BudgetTrendReportsService } from "@/budgets/budget-trend-reports.service";
 import { Budget, BudgetType } from "@/budgets/entities/budget.entity";
 import { BudgetCategory } from "@/budgets/entities/budget-category.entity";
@@ -215,6 +216,60 @@ describe("budget actuals across currencies (integration)", () => {
     expect(resolveCategorySpentOrNull(diningLine, spending)).toBe(30);
     expect(spending.missingRatePairs).toEqual([]);
     expect(spending.incompleteCategoryIds.size).toBe(0);
+  });
+
+  it("carries signed actuals through the summary, trends and period close", async () => {
+    const salary = await createTestCategory(dataSource, userId, {
+      name: "Salary",
+      isIncome: true,
+    });
+    await dataSource.manager.save(BudgetCategory, {
+      budgetId: budget.id,
+      categoryId: salary.id,
+      isIncome: true,
+      amount: 100,
+    });
+    await insertTransaction({ categoryId: diningId, amount: -100 });
+    await insertTransaction({ categoryId: diningId, amount: 150 });
+    await insertTransaction({ categoryId: salary.id, amount: 100 });
+    await insertTransaction({ categoryId: salary.id, amount: -125 });
+    const trends = module.get(BudgetTrendReportsService);
+    const periods = module.get(BudgetPeriodService);
+
+    await withUserContext(userId, async () => {
+      const summary = await budgets.getSummary(userId, budget.id);
+      expect(summary).toMatchObject({ totalSpent: -50, totalIncome: -25 });
+      expect(
+        summary.categoryBreakdown.find((c) => c.categoryId === diningId),
+      ).toMatchObject({
+        budgeted: 100,
+        spent: -50,
+        remaining: 150,
+        percentUsed: -50,
+      });
+      const [live] = await trends.getTrend(userId, budget.id, 1);
+      expect(live.actual).toBe(-50);
+
+      await periods.getOrCreateCurrentPeriod(userId, budget.id);
+      const [category] = await trends.getCategoryTrend(userId, budget.id, 1, [
+        diningId,
+      ]);
+      expect(category.data[0]).toMatchObject({
+        budgeted: 100,
+        actual: -50,
+        variance: -150,
+        percentUsed: -50,
+      });
+
+      const closed = await periods.closePeriod(userId, budget.id);
+      expect(Number(closed.actualExpenses)).toBe(-50);
+      expect(Number(closed.actualIncome)).toBe(-25);
+      const trend = await trends.getTrend(userId, budget.id, 2);
+      expect(
+        trend.find((point) => point.monthKey === periodStart.slice(0, 7))
+          ?.actual,
+      ).toBe(-50);
+    });
   });
 
   it("converts a row at its own rate, as the reports do (INV-FX-002, issue #2130)", async () => {

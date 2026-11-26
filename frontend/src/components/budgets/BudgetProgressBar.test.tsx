@@ -9,6 +9,7 @@ describe('BudgetProgressBar', () => {
     const bar = screen.getByRole('progressbar');
     expect(bar).toBeInTheDocument();
     expect(bar).toHaveAttribute('aria-valuenow', '60');
+    expect(bar).not.toHaveAttribute('aria-valuetext');
     expect(bar.style.width).toBe('60%');
   });
 
@@ -48,6 +49,22 @@ describe('BudgetProgressBar', () => {
 
     const bar = screen.getByRole('progressbar');
     expect(bar.className).toContain('bg-red-500');
+  });
+
+  it.each([
+    [-50, 0, '-50%'],
+    [-12.25, 0, '-12.25%'],
+    [150.75, 100, '150.75%'],
+  ])('exposes %s%% used with a bounded progress value', (percent, position, text) => {
+    render(<BudgetProgressBar percentUsed={percent} />);
+
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuemin', '0');
+    expect(bar).toHaveAttribute('aria-valuemax', '100');
+    expect(bar).toHaveAttribute('aria-valuenow', String(position));
+    expect(bar).toHaveAttribute('aria-valuetext', text);
+    expect(bar).toHaveAccessibleName(`${text} used`);
+    expect(bar.style.width).toBe(`${position}%`);
   });
 
   it('clamps width to 100% maximum', () => {
