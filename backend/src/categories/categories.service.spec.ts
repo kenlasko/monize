@@ -1388,6 +1388,114 @@ describe("CategoriesService", () => {
       expect(txManager.remove).not.toHaveBeenCalled();
     });
 
+    describe("with reassignTo", () => {
+      const calls = () =>
+        txManager.query.mock.calls.map(([sql]) => sql as string);
+
+      beforeEach(() => {
+        categoriesRepository.findOne.mockImplementation(
+          ({ where }: { where: { id: string } }) =>
+            Promise.resolve({ ...mockCategory, id: where.id }),
+        );
+        categoriesRepository.count.mockResolvedValue(0);
+        txManager.update.mockResolvedValue({ affected: 0 });
+        txManager.createQueryBuilder.mockImplementation(() =>
+          createMockQueryBuilder({
+            getMany: jest.fn().mockResolvedValue([]),
+          }),
+        );
+      });
+
+      it("reassigns, moves override rows and deletes on one manager", async () => {
+        txManager.query.mockImplementation((sql: string) =>
+          Promise.resolve(
+            sql.startsWith("SELECT id FROM accounts") ? [] : [{ count: 0 }],
+          ),
+        );
+
+        await service.remove("user-1", "cat-1", "cat-2");
+
+        const sqls = calls();
+        expect(sqls.some((q) => q.includes("SET category_id = $1"))).toBe(true);
+        expect(txManager.query).toHaveBeenCalledWith(
+          expect.stringContaining("SET category_id = $1"),
+          ["cat-2", "user-1", "cat-1"],
+        );
+        expect(txManager.query).toHaveBeenCalledWith(
+          expect.stringContaining("SET splits = replace"),
+          ['"cat-2"', "user-1", "cat-1"],
+        );
+        // The move runs before the in-use count, inside the same transaction.
+        const moveAt = sqls.findIndex((q) => q.includes("SET category_id"));
+        const countAt = sqls.findIndex((q) => q.includes("count(*)"));
+        expect(moveAt).toBeLessThan(countAt);
+        expect(txManager.remove).toHaveBeenCalled();
+      });
+
+      it("uncategorized clears the categories with null", async () => {
+        txManager.query.mockImplementation((sql: string) =>
+          Promise.resolve(
+            sql.startsWith("SELECT id FROM accounts") ? [] : [{ count: 0 }],
+          ),
+        );
+
+        await service.remove("user-1", "cat-1", "uncategorized");
+
+        expect(txManager.query).toHaveBeenCalledWith(
+          expect.stringContaining("SET splits = replace"),
+          ["null", "user-1", "cat-1"],
+        );
+        expect(txManager.update).toHaveBeenCalledWith(
+          Transaction,
+          { userId: "user-1", categoryId: "cat-1" },
+          { categoryId: null },
+        );
+      });
+
+      it("a refusal after the reassignment throws inside the same transaction, so nothing commits", async () => {
+        txManager.query.mockImplementation((sql: string) =>
+          Promise.resolve(
+            sql.includes("FROM budget_categories")
+              ? [{ count: 2 }]
+              : sql.startsWith("SELECT id FROM accounts")
+                ? []
+                : [{ count: 0 }],
+          ),
+        );
+
+        await expect(
+          service.remove("user-1", "cat-1", "cat-2"),
+        ).rejects.toBeInstanceOf(ConflictException);
+
+        // The move did run, on the manager whose transaction the throw aborts.
+        expect(txManager.update).toHaveBeenCalledWith(
+          Transaction,
+          { userId: "user-1", categoryId: "cat-1" },
+          { categoryId: "cat-2" },
+        );
+        expect(txManager.remove).not.toHaveBeenCalled();
+      });
+
+      it("refuses to reassign to the category itself", async () => {
+        await expect(
+          service.remove("user-1", "cat-1", "cat-1"),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(txManager.remove).not.toHaveBeenCalled();
+      });
+
+      it("refuses a target that is not the user's own", async () => {
+        categoriesRepository.findOne.mockImplementation(
+          ({ where }: { where: { id: string } }) =>
+            Promise.resolve(where.id === "cat-1" ? { ...mockCategory } : null),
+        );
+
+        await expect(
+          service.remove("user-1", "cat-1", "foreign"),
+        ).rejects.toBeInstanceOf(NotFoundException);
+        expect(txManager.remove).not.toHaveBeenCalled();
+      });
+    });
+
     it("throws BadRequestException for system categories", async () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockSystemCategory });
 
@@ -1719,6 +1827,7 @@ describe("CategoriesService", () => {
             return ssQb;
           }),
         save: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
       };
       mockDataSource.transaction.mockImplementation(
         async (fn: (m: unknown) => unknown) => fn(mockManager),
@@ -1762,6 +1871,7 @@ describe("CategoriesService", () => {
             return stQb;
           }),
         save: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
       };
       mockDataSource.transaction.mockImplementation(
         async (fn: (m: unknown) => unknown) => fn(mockManager),
@@ -1807,6 +1917,7 @@ describe("CategoriesService", () => {
             return stQb;
           }),
         save: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
       };
       mockDataSource.transaction.mockImplementation(
         async (fn: (m: unknown) => unknown) => fn(mockManager),

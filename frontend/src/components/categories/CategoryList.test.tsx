@@ -352,12 +352,32 @@ describe('CategoryList', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1');
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', null);
     });
 
     await waitFor(() => {
       expect(onRefresh).toHaveBeenCalled();
     });
+  });
+
+  it('reassigns and deletes in one DELETE request when the category has transactions', async () => {
+    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(4);
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Food', isSystem: false }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    fireEvent.click(screen.getByText('Delete'));
+    await waitFor(() => {
+      expect(screen.getByText('Delete "Food"')).toBeInTheDocument();
+    });
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', null);
+    });
+    expect(mockCategoriesApi.reassignTransactions).not.toHaveBeenCalled();
   });
 
   it('shows what still uses the category, linked, when the delete is refused with 409', async () => {
@@ -402,7 +422,7 @@ describe('CategoryList', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1');
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', null);
     });
 
     await waitFor(() => {

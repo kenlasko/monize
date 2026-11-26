@@ -363,13 +363,9 @@ export function CategoryList({
     if (!deleteCategory) return;
 
     try {
-      // Check if there are transactions to reassign
-      const count = await categoriesApi.getTransactionCount(deleteCategory.id);
-      if (count > 0) {
-        await categoriesApi.reassignTransactions(deleteCategory.id, reassignToCategoryId);
-      }
-
-      await categoriesApi.delete(deleteCategory.id);
+      // One request: the server moves the rows and deletes in one transaction,
+      // so a refusal leaves everything where it was.
+      await categoriesApi.delete(deleteCategory.id, reassignToCategoryId);
       toast.success(t('toasts.deleted'));
       if (onDelete) {
         onDelete(deleteCategory.id);

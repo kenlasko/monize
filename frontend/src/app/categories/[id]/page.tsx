@@ -531,16 +531,12 @@ function CategoryDetailContent() {
     [categoryId, close, loadData, tc],
   );
 
-  // The same reassign-then-delete flow the categories list runs; success
+  // The same single reassign-and-delete request the categories list runs; success
   // leaves the page, since the category it described no longer exists.
   const handleConfirmDelete = useCallback(
     async (reassignToCategoryId: string | null) => {
       try {
-        const count = await categoriesApi.getTransactionCount(categoryId);
-        if (count > 0) {
-          await categoriesApi.reassignTransactions(categoryId, reassignToCategoryId);
-        }
-        await categoriesApi.delete(categoryId);
+        await categoriesApi.delete(categoryId, reassignToCategoryId);
         toast.success(tc('toasts.deleted'));
         router.push('/categories');
       } catch (err) {

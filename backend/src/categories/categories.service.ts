@@ -30,6 +30,7 @@ import {
   recordInUseException,
   recordInUseSummary,
 } from "../common/helpers/record-in-use";
+import { UNCATEGORIZED } from "./dto/remove-category-query.dto";
 import { findCategoryReferences } from "./category-references";
 import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
@@ -580,7 +581,12 @@ export class CategoriesService {
     }
   }
 
-  async remove(userId: string, id: string): Promise<void> {
+  /**
+   * Delete a category. With `reassignTo` (a category id or `uncategorized`) its
+   * rows are moved first, in the same transaction as the in-use check, so a
+   * refusal rolls the move back and a refused delete has moved nothing.
+   */
+  async remove(userId: string, id: string, reassignTo?: string): Promise<void> {
     const category = await this.findOne(userId, id);
 
     if (category.isSystem) {
@@ -633,6 +639,33 @@ export class CategoriesService {
             id,
           }),
         );
+      }
+      if (reassignTo !== undefined) {
+        let target: string | null = null;
+        if (reassignTo !== UNCATEGORIZED) {
+          if (reassignTo === id) {
+            throw new BadRequestException(
+              tr(
+                "errors.categories.reassignToSelf",
+                "Cannot reassign a category's rows to the category being deleted",
+              ),
+            );
+          }
+          const found = await m
+            .getRepository(Category)
+            .findOne({ where: { id: reassignTo, userId } });
+          if (!found) {
+            throw new NotFoundException(
+              tr(
+                "errors.categories.notFound",
+                `Category with ID ${reassignTo} not found`,
+                { id: reassignTo },
+              ),
+            );
+          }
+          target = reassignTo;
+        }
+        await this.reassignCategoryRows(m, userId, id, target);
       }
       const references = await findCategoryReferences(m, userId, id);
       if (references.length > 0) {
@@ -727,65 +760,106 @@ export class CategoriesService {
     }
 
     // M22: All UPDATE operations run in a single transaction.
-    return withScopedDb(this.dataSource, async (m) => {
-      const transactionResult = await m.update(
-        Transaction,
-        { userId, categoryId: fromCategoryId },
-        { categoryId: toCategoryId },
-      );
+    return withScopedDb(this.dataSource, (m) =>
+      this.reassignCategoryRows(m, userId, fromCategoryId, toCategoryId),
+    );
+  }
 
-      const userTransactionIds = await m
-        .createQueryBuilder(Transaction, "t")
-        .select("t.id")
-        .where("t.userId = :userId", { userId })
-        .getMany();
+  /**
+   * Point every row of `fromCategoryId` at `toCategoryId` (null clears it) on
+   * the caller's manager, so a delete can run it in its own transaction.
+   */
+  private async reassignCategoryRows(
+    m: EntityManager,
+    userId: string,
+    fromCategoryId: string,
+    toCategoryId: string | null,
+  ): Promise<{
+    transactionsUpdated: number;
+    splitsUpdated: number;
+    scheduledUpdated: number;
+  }> {
+    const transactionResult = await m.update(
+      Transaction,
+      { userId, categoryId: fromCategoryId },
+      { categoryId: toCategoryId },
+    );
 
-      const transactionIds = userTransactionIds.map((t) => t.id);
+    const userTransactionIds = await m
+      .createQueryBuilder(Transaction, "t")
+      .select("t.id")
+      .where("t.userId = :userId", { userId })
+      .getMany();
 
-      let splitsUpdated = 0;
-      if (transactionIds.length > 0) {
-        const splitResult = await m
-          .createQueryBuilder()
-          .update(TransactionSplit)
-          .set({ categoryId: toCategoryId })
-          .where("categoryId = :fromCategoryId", { fromCategoryId })
-          .andWhere("transactionId IN (:...transactionIds)", { transactionIds })
-          .execute();
+    const transactionIds = userTransactionIds.map((t) => t.id);
 
-        splitsUpdated = splitResult.affected || 0;
-      }
+    let splitsUpdated = 0;
+    if (transactionIds.length > 0) {
+      const splitResult = await m
+        .createQueryBuilder()
+        .update(TransactionSplit)
+        .set({ categoryId: toCategoryId })
+        .where("categoryId = :fromCategoryId", { fromCategoryId })
+        .andWhere("transactionId IN (:...transactionIds)", { transactionIds })
+        .execute();
 
-      const scheduledResult = await m.update(
-        ScheduledTransaction,
-        { userId, categoryId: fromCategoryId },
-        { categoryId: toCategoryId },
-      );
+      splitsUpdated = splitResult.affected || 0;
+    }
 
-      const userScheduledTxIds = await m
-        .createQueryBuilder(ScheduledTransaction, "st")
-        .select("st.id")
-        .where("st.userId = :userId", { userId })
-        .getMany();
+    const scheduledResult = await m.update(
+      ScheduledTransaction,
+      { userId, categoryId: fromCategoryId },
+      { categoryId: toCategoryId },
+    );
 
-      if (userScheduledTxIds.length > 0) {
-        const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
-        await m
-          .createQueryBuilder()
-          .update(ScheduledTransactionSplit)
-          .set({ categoryId: toCategoryId })
-          .where("categoryId = :fromCategoryId", { fromCategoryId })
-          .andWhere("scheduledTransactionId IN (:...scheduledTxIds)", {
-            scheduledTxIds,
-          })
-          .execute();
-      }
+    const userScheduledTxIds = await m
+      .createQueryBuilder(ScheduledTransaction, "st")
+      .select("st.id")
+      .where("st.userId = :userId", { userId })
+      .getMany();
 
-      return {
-        transactionsUpdated: transactionResult.affected || 0,
-        splitsUpdated,
-        scheduledUpdated: scheduledResult.affected || 0,
-      };
-    });
+    if (userScheduledTxIds.length > 0) {
+      const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
+      await m
+        .createQueryBuilder()
+        .update(ScheduledTransactionSplit)
+        .set({ categoryId: toCategoryId })
+        .where("categoryId = :fromCategoryId", { fromCategoryId })
+        .andWhere("scheduledTransactionId IN (:...scheduledTxIds)", {
+          scheduledTxIds,
+        })
+        .execute();
+    }
+
+    // Overrides keep a category of their own and, in `splits` JSON, one per
+    // split line; neither is reached by the updates above.
+    await m.query(
+      `UPDATE scheduled_transaction_overrides o SET category_id = $1
+           FROM scheduled_transactions t
+          WHERE t.id = o.scheduled_transaction_id AND t.user_id = $2
+            AND o.category_id = $3`,
+      [toCategoryId, userId, fromCategoryId],
+    );
+    // shortcut: a text replace of the quoted UUID in the JSON; exact for
+    // UUIDs, which are unique and appear only as category ids in a split.
+    await m.query(
+      `UPDATE scheduled_transaction_overrides o
+            SET splits = replace(o.splits::text, '"' || $3::text || '"', $1::text)::jsonb
+           FROM scheduled_transactions t
+          WHERE t.id = o.scheduled_transaction_id AND t.user_id = $2
+            AND o.splits::text LIKE '%' || $3::text || '%'`,
+      [
+        toCategoryId ? JSON.stringify(toCategoryId) : "null",
+        userId,
+        fromCategoryId,
+      ],
+    );
+
+    return {
+      transactionsUpdated: transactionResult.affected || 0,
+      splitsUpdated,
+      scheduledUpdated: scheduledResult.affected || 0,
+    };
   }
 
   async getStats(userId: string): Promise<{

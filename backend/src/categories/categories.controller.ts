@@ -27,6 +27,7 @@ import { CategoryDetailService } from "./category-detail.service";
 import { CategoryDetailDto } from "./dto/category-detail.dto";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
+import { RemoveCategoryQueryDto } from "./dto/remove-category-query.dto";
 import { ReassignTransactionsDto } from "./dto/reassign-transactions.dto";
 import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { DEFAULT_CATEGORY_COUNTRY_CODES } from "./country-category-additions";
@@ -279,8 +280,12 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: "Category not found" })
   @AllowDelegate()
   @DelegateRequiresCapability("categories", "delete")
-  remove(@Request() req, @Param("id", ParseUUIDPipe) id: string) {
-    return this.categoriesService.remove(req.user.id, id);
+  remove(
+    @Request() req,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: RemoveCategoryQueryDto,
+  ) {
+    return this.categoriesService.remove(req.user.id, id, query.reassignTo);
   }
 
   @Get(":id/transaction-count")

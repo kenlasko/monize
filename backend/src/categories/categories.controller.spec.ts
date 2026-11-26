@@ -254,12 +254,23 @@ describe("CategoriesController", () => {
     it("delegates to categoriesService.remove with userId and id", () => {
       mockCategoriesService.remove!.mockReturnValue("removed");
 
-      const result = controller.remove(mockReq, "cat-1");
+      const result = controller.remove(mockReq, "cat-1", {});
 
       expect(result).toBe("removed");
       expect(mockCategoriesService.remove).toHaveBeenCalledWith(
         "user-1",
         "cat-1",
+        undefined,
+      );
+    });
+
+    it("passes reassignTo through", () => {
+      controller.remove(mockReq, "cat-1", { reassignTo: "uncategorized" });
+
+      expect(mockCategoriesService.remove).toHaveBeenCalledWith(
+        "user-1",
+        "cat-1",
+        "uncategorized",
       );
     });
   });
