@@ -1046,9 +1046,12 @@ describe('SecuritiesPage', () => {
     it('reads the last refresh time on load, for the button to report', async () => {
       render(<SecuritiesPage />);
       await waitFor(() => expect(mockGetPriceStatus).toHaveBeenCalled());
-      expect(
-        screen.getByRole('button', { name: 'Refresh' }).getAttribute('title'),
-      ).toMatch(/^Last updated:/);
+      // The title follows the status response, which lands after the call.
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Refresh' }).getAttribute('title'),
+        ).toMatch(/^Last updated:/),
+      );
     });
   });
 
