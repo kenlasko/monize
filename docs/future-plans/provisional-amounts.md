@@ -99,6 +99,13 @@ Decided in issue #2394 (balances and net worth):
 - `NetWorthTotals` and each net worth month carry `provisionalCount` with `assetsProvisionalCount` and `liabilitiesProvisionalCount` beside it, counted as of the month's end, bounded at the database's `CURRENT_DATE` as the snapshot's own sum is, over the accounts whose ledger balance is in the month's figure. A brokerage valued at market holds none of its ledger rows, so none of its legs either, and an asset counts nothing in the months before its acquisition, whose snapshot is zero. An account whose balance did not convert is outside the subtotal and outside the count (section 8). The summary also carries `totalBalanceProvisionalCount` for `totalBalance`. The LLM net worth history keeps only `provisionalCount`, as it drops the per-side completeness flags.
 - `list_accounts` is at its `tools/list` byte budget, so the counts are not declared in its output schema; the loose object carries them, as it does the `known*` subtotals.
 
+Decided in issue #2395 (custom reports, transaction analytics, the assistant and MCP):
+
+- A custom report's `ReportResult` and its `summary` carry `provisionalCount`: each provisional row whose converted amount is inside a figure, once however many groups hold it. The net cells (`backend/src/reports/report-net-cells.ts`) name a row only when its line converted and its part and cell were kept, so a row left out for want of a rate, or one a direction filter drops, counts nowhere; a listed transaction counts when it converted. The count metric sums no amount and counts 0.
+- Every `TransactionAnalyticsService` read that reports missing rates counts in SQL (`PROVISIONAL_COUNT_SQL`, whole rows only) at its own grain: the summary's `provisionalCount` over its totals and `converted.provisionalCount` over the buckets that converted, each grouped-totals and tag-breakdown row, each month of the monthly totals (over the parts that converted), the LLM flow totals and each side of the period comparison. The flow totals behind `list_transactions` and the period comparison exclude transfers, so their count is 0 today; it is counted, not assumed.
+- `LlmTransactionRow` carries `amountIsProvisional: true` on a provisional leg's row only.
+- The assistant's `list_transactions` and `compare_periods` descriptions say what the count means. On MCP the `tools/list` total is at its shrink-only budget, so the counts stay undeclared on the loose outputs, as `list_accounts`' do, and the server instructions say once, for every tool and resource, what a `provisionalCount` above 0 and `amountIsProvisional` mean.
+
 **Search.** `is:provisional` and `-is:provisional` in the transaction search grammar.
 
 ## 7. Truth table
