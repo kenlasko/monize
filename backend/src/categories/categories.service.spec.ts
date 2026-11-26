@@ -1495,10 +1495,9 @@ describe("CategoriesService", () => {
           expect.stringContaining("SET splits = replace"),
           ["null", "user-1", "cat-1"],
         );
-        expect(txManager.update).toHaveBeenCalledWith(
-          Transaction,
-          { userId: "user-1", categoryId: "cat-1" },
-          { categoryId: null },
+        expect(txManager.query).toHaveBeenCalledWith(
+          expect.stringContaining("UPDATE transactions SET category_id = $1"),
+          [null, "user-1", "cat-1"],
         );
       });
 
@@ -1518,12 +1517,87 @@ describe("CategoriesService", () => {
         ).rejects.toBeInstanceOf(ConflictException);
 
         // The move did run, on the manager whose transaction the throw aborts.
-        expect(txManager.update).toHaveBeenCalledWith(
-          Transaction,
-          { userId: "user-1", categoryId: "cat-1" },
-          { categoryId: "cat-2" },
+        expect(txManager.query).toHaveBeenCalledWith(
+          expect.stringContaining("UPDATE transactions SET category_id = $1"),
+          ["cat-2", "user-1", "cat-1"],
         );
         expect(txManager.remove).not.toHaveBeenCalled();
+      });
+
+      describe("history entry", () => {
+        const recorded = () =>
+          (service as any).actionHistoryService.record.mock.calls[0][1];
+
+        const answer = (moved: boolean) =>
+          txManager.query.mockImplementation((sql: string) => {
+            if (sql.startsWith("SELECT id FROM accounts"))
+              return Promise.resolve([]);
+            if (sql.includes("count(*)"))
+              return Promise.resolve([{ count: 0 }]);
+            if (!moved) return Promise.resolve([[], 0]);
+            if (sql.includes("WITH old AS")) {
+              return Promise.resolve([
+                [
+                  {
+                    id: "o2",
+                    before: [{ categoryId: "cat-1" }],
+                    after: [{ categoryId: "cat-2" }],
+                  },
+                ],
+                1,
+              ]);
+            }
+            if (sql.includes("UPDATE transactions SET")) {
+              return Promise.resolve([[{ id: "t1" }, { id: "t2" }], 2]);
+            }
+            return Promise.resolve([[], 0]);
+          });
+
+        it("records the moved ids and override JSON in the delete's beforeData", async () => {
+          answer(true);
+
+          await service.remove("user-1", "cat-1", "cat-2");
+
+          expect(recorded().beforeData.movedRows).toEqual({
+            to: "cat-2",
+            transactions: ["t1", "t2"],
+            transactionSplits: [],
+            scheduled: [],
+            scheduledSplits: [],
+            overrides: [],
+            overrideSplits: [
+              {
+                id: "o2",
+                before: [{ categoryId: "cat-1" }],
+                after: [{ categoryId: "cat-2" }],
+              },
+            ],
+          });
+        });
+
+        it("records null as the target for uncategorized", async () => {
+          answer(true);
+
+          await service.remove("user-1", "cat-1", "uncategorized");
+
+          expect(recorded().beforeData.movedRows.to).toBeNull();
+        });
+
+        it("records nothing extra when reassignTo moved no row", async () => {
+          answer(false);
+
+          await service.remove("user-1", "cat-1", "cat-2");
+
+          expect(recorded().beforeData).not.toHaveProperty("movedRows");
+        });
+
+        it("records nothing extra without reassignTo", async () => {
+          answer(true);
+
+          await service.remove("user-1", "cat-1");
+
+          expect(recorded().beforeData).not.toHaveProperty("movedRows");
+        });
       });
 
       it("refuses to reassign to the category itself", async () => {
@@ -1840,17 +1914,24 @@ describe("CategoriesService", () => {
         .mockResolvedValueOnce({ ...mockCategory, id: "cat-target" });
       const mockManager = {
         getRepository: jest.fn(() => categoriesRepository),
-        update: jest
-          .fn()
-          .mockResolvedValueOnce({ affected: 5 }) // Transaction update
-          .mockResolvedValueOnce({ affected: 1 }), // ScheduledTransaction update
         createQueryBuilder: jest.fn(),
-        query: jest.fn().mockImplementation((sql: string) =>
-          // A raw UPDATE answers [rows, rowCount].
-          Promise.resolve(
-            sql.includes("UPDATE transaction_splits") ? [[], 2] : [[], 0],
-          ),
-        ),
+        // A raw UPDATE ... RETURNING answers [rows, rowCount].
+        query: jest.fn().mockImplementation((sql: string) => {
+          const rows = sql.includes("UPDATE transaction_splits")
+            ? [{ id: "s1" }, { id: "s2" }]
+            : sql.includes("UPDATE transactions")
+              ? [
+                  { id: "t1" },
+                  { id: "t2" },
+                  { id: "t3" },
+                  { id: "t4" },
+                  { id: "t5" },
+                ]
+              : sql.includes("UPDATE scheduled_transactions")
+                ? [{ id: "st1" }]
+                : [];
+          return Promise.resolve([rows, rows.length]);
+        }),
       };
       mockDataSource.transaction.mockImplementation(
         async (fn: (m: unknown) => unknown) => fn(mockManager),
@@ -1862,9 +1943,11 @@ describe("CategoriesService", () => {
         "CAT-TARGET",
       );
 
-      expect(result.transactionsUpdated).toBe(5);
-      expect(result.splitsUpdated).toBe(2);
-      expect(result.scheduledUpdated).toBe(1);
+      expect(result).toEqual({
+        transactionsUpdated: 5,
+        splitsUpdated: 2,
+        scheduledUpdated: 1,
+      });
       // No id list is loaded and bound: that fails above 65535 parameters.
       expect(mockManager.createQueryBuilder).not.toHaveBeenCalled();
       expect(mockManager.query).toHaveBeenCalledWith(
@@ -1875,41 +1958,25 @@ describe("CategoriesService", () => {
         expect.stringContaining("UPDATE scheduled_transaction_splits"),
         ["cat-target", "user-1", "cat-1-abc"],
       );
-      expect(mockManager.update).toHaveBeenCalledWith(
-        expect.anything(),
-        { userId: "user-1", categoryId: "cat-1-abc" },
-        { categoryId: "cat-target" },
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE transactions SET category_id = $1"),
+        ["cat-target", "user-1", "cat-1-abc"],
       );
     });
 
     it("reassigns to null category", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-
-      const txQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-      const stQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-
-      let createQbCallCount = 0;
       const mockManager = {
-        // findOne() runs through the same re-mocked transaction, so route
-        // getRepository at the shared Category repo mock.
         getRepository: jest.fn(() => categoriesRepository),
-        update: jest
+        query: jest
           .fn()
-          .mockResolvedValueOnce({ affected: 3 }) // Transaction update
-          .mockResolvedValueOnce({ affected: 0 }), // ScheduledTransaction update
-        createQueryBuilder: jest
-          .fn()
-          .mockImplementation((..._args: unknown[]) => {
-            createQbCallCount++;
-            if (createQbCallCount === 1) return txQb;
-            return stQb;
-          }),
-        save: jest.fn(),
-        query: jest.fn().mockResolvedValue([]),
+          .mockImplementation((sql: string) =>
+            Promise.resolve(
+              sql.includes("UPDATE transactions")
+                ? [[{ id: "t1" }, { id: "t2" }, { id: "t3" }], 3]
+                : [[], 0],
+            ),
+          ),
       };
       mockDataSource.transaction.mockImplementation(
         async (fn: (m: unknown) => unknown) => fn(mockManager),
@@ -1921,9 +1988,11 @@ describe("CategoriesService", () => {
         null,
       );
 
-      expect(result.transactionsUpdated).toBe(3);
-      expect(result.splitsUpdated).toBe(0);
-      expect(result.scheduledUpdated).toBe(0);
+      expect(result).toEqual({
+        transactionsUpdated: 3,
+        splitsUpdated: 0,
+        scheduledUpdated: 0,
+      });
     });
 
     it("throws NotFoundException when source category does not exist", async () => {

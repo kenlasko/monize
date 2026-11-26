@@ -98,6 +98,7 @@
     "nothingToRedo": "Tidak ada yang dapat diulang",
     "undoCreateInUse": "Pembuatan \"{{ name }}\" tidak dapat dibatalkan: kini digunakan oleh {{ summary }}. Hapus semuanya terlebih dahulu.",
     "redoDeleteInUse": "Penghapusan \"{{ name }}\" tidak dapat diulang: kini digunakan oleh {{ summary }}. Hapus semuanya terlebih dahulu.",
+    "redoDeleteTargetGone": "Penghapusan ini tidak dapat diulang: kategori tujuan pemindahan barisnya sudah tidak ada.",
     "undoNotSupportedForEntityType": "Pembatalan tidak didukung untuk jenis entitas: {{ entityType }}",
     "unsupportedTransactionAction": "Tindakan transaksi tidak didukung: {{ action }}",
     "undoTransactionGone": "Tidak dapat membatalkan: transaksi tidak ada lagi",

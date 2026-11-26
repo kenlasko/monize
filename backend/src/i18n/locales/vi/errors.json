@@ -98,6 +98,7 @@
     "nothingToRedo": "Không có gì để làm lại",
     "undoCreateInUse": "Không thể hoàn tác việc tạo \"{{ name }}\": hiện mục này đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
     "redoDeleteInUse": "Không thể làm lại việc xóa \"{{ name }}\": hiện mục này đang được {{ summary }} sử dụng. Hãy gỡ các mục này trước.",
+    "redoDeleteTargetGone": "Không thể làm lại thao tác xóa này: danh mục mà các dòng đã được chuyển tới không còn tồn tại.",
     "undoNotSupportedForEntityType": "Hoàn tác không được hỗ trợ cho loại thực thể: {{ entityType }}",
     "unsupportedTransactionAction": "Hành động giao tác không được hỗ trợ: {{ action }}",
     "undoTransactionGone": "Không thể hoàn tác: giao tác không còn tồn tại",

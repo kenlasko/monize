@@ -98,6 +98,7 @@
     "nothingToRedo": "沒有可重做的操作",
     "undoCreateInUse": "無法復原建立「{{ name }}」：它現在被 {{ summary }} 使用。請先移除這些項目。",
     "redoDeleteInUse": "無法重做刪除「{{ name }}」：它現在被 {{ summary }} 使用。請先移除這些項目。",
+    "redoDeleteTargetGone": "無法重做此刪除：其項目被移入的類別已不存在。",
     "undoNotSupportedForEntityType": "不支援復原實體類型：{{ entityType }}",
     "unsupportedTransactionAction": "不支援的交易操作：{{ action }}",
     "undoTransactionGone": "無法復原：交易已不存在",

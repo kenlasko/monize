@@ -98,6 +98,7 @@
     "nothingToRedo": "やり直すものがありません",
     "undoCreateInUse": "「{{ name }}」の作成を元に戻せません。現在 {{ summary }} で使われています。先にこれらを削除してください。",
     "redoDeleteInUse": "「{{ name }}」の削除をやり直せません。現在 {{ summary }} で使われています。先にこれらを削除してください。",
+    "redoDeleteTargetGone": "この削除をやり直せません。行の移動先のカテゴリが存在しなくなりました。",
     "undoNotSupportedForEntityType": "エンティティタイプ {{ entityType }} の元に戻す操作はサポートされていません",
     "unsupportedTransactionAction": "サポートされていない取引アクション：{{ action }}",
     "undoTransactionGone": "元に戻せません：取引がすでに存在しません",

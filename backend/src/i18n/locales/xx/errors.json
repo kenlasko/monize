@@ -98,6 +98,7 @@
     "nothingToRedo": "[XX-Nothing to redo-XX]",
     "undoCreateInUse": "[XX-Cannot undo creating \"{{ name }}\": it is now used by {{ summary }}. Remove these first.-XX]",
     "redoDeleteInUse": "[XX-Cannot redo deleting \"{{ name }}\": it is now used by {{ summary }}. Remove these first.-XX]",
+    "redoDeleteTargetGone": "[XX-Cannot redo this delete: the category its rows moved to no longer exists.-XX]",
     "undoNotSupportedForEntityType": "[XX-Undo not supported for entity type: {{ entityType }}-XX]",
     "unsupportedTransactionAction": "[XX-Unsupported transaction action: {{ action }}-XX]",
     "undoTransactionGone": "[XX-Cannot undo: transaction no longer exists-XX]",

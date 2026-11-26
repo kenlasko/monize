@@ -98,6 +98,7 @@
     "nothingToRedo": "没有可重做的操作",
     "undoCreateInUse": "无法撤销创建“{{ name }}”：它现在被 {{ summary }} 使用。请先移除这些项目。",
     "redoDeleteInUse": "无法重做删除“{{ name }}”：它现在被 {{ summary }} 使用。请先移除这些项目。",
+    "redoDeleteTargetGone": "无法重做此删除：其条目被移入的类别已不存在。",
     "undoNotSupportedForEntityType": "不支持对实体类型撤销：{{ entityType }}",
     "unsupportedTransactionAction": "不支持的交易操作：{{ action }}",
     "undoTransactionGone": "无法撤销：交易已不存在",

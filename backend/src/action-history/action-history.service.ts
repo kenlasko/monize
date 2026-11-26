@@ -20,6 +20,11 @@ import { findBondLinkProblem } from "../securities/bond-link.util";
 import { ActionHistory } from "./entities/action-history.entity";
 import { assertUndoCurrencyKind } from "./undo-currency-kind";
 import { assertNoReferencesBeforeDelete } from "./undo-references";
+import {
+  moveListedRows,
+  movedRowsOf,
+  redoMovedRows,
+} from "../categories/category-moved-rows";
 import { withPairedScheduleRecurrence } from "./undo-custom-recurrence";
 import {
   RULE_RUN_ENTITY_TYPE,
@@ -864,7 +869,7 @@ export class ActionHistoryService {
         await this.undoTransfer(action, manager);
         break;
       case "category":
-        await this.undoSimpleEntity(action, manager, Category, "categories");
+        await this.undoCategory(action, manager);
         break;
       case "payee":
         await this.undoSimpleEntity(action, manager, Payee, "payees");
@@ -958,6 +963,15 @@ export class ActionHistoryService {
     // before anything is written, as a structural rule run's redo is.
     if (action.entityType === "transaction" && action.action === "create") {
       assertTransactionCreateRedoable(action);
+    }
+    // A delete that moved rows into another category: the undo moved them back,
+    // so the redo moves them again before the delete's reference check.
+    const moved =
+      action.entityType === "category" && action.action === "delete"
+        ? movedRowsOf(action.beforeData)
+        : null;
+    if (moved && action.entityId) {
+      await redoMovedRows(manager, action.userId, action.entityId, moved);
     }
     // Redo is the inverse of undo: swap before/after and flip the action
     const invertedAction: ActionHistory = {
@@ -2368,6 +2382,41 @@ export class ActionHistoryService {
   }
 
   // --- Simple entity undo (categories, payees, tags, accounts) ---
+
+  /**
+   * A category delete's snapshot may carry `movedRows` (the rows a delete with
+   * `reassignTo` moved). It is not a column, so it is stripped before the
+   * re-insert; the rows still on the target are then moved back to the
+   * restored category in the same transaction.
+   */
+  private async undoCategory(
+    action: ActionHistory,
+    manager: EntityManager,
+  ): Promise<void> {
+    const moved =
+      action.action === "delete" ? movedRowsOf(action.beforeData) : null;
+    if (!moved) {
+      await this.undoSimpleEntity(action, manager, Category, "categories");
+      return;
+    }
+    const { movedRows: _movedRows, ...snapshot } = action.beforeData ?? {};
+    await this.undoSimpleEntity(
+      { ...action, beforeData: snapshot },
+      manager,
+      Category,
+      "categories",
+    );
+    if (action.entityId) {
+      await moveListedRows(
+        manager,
+        action.userId,
+        moved,
+        moved.to,
+        action.entityId,
+        true,
+      );
+    }
+  }
 
   private async undoSimpleEntity(
     action: ActionHistory,

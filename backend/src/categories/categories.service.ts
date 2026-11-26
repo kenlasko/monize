@@ -25,7 +25,8 @@ import { getDefaultCategories } from "./country-category-additions";
 import { isSupportedLocale } from "../i18n/config";
 import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { withScopedDb } from "../common/db/scoped-db";
-import { affectedRowCount } from "../common/db/query-result";
+import { returnedRows } from "../common/db/query-result";
+import { hasMovedRows, MovedCategoryRows } from "./category-moved-rows";
 import {
   recordInUseException,
   recordInUseSummary,
@@ -628,6 +629,7 @@ export class CategoriesService {
     // this waits for the lock is counted, and a refusal has written nothing.
     // The payees' default-category reference is cleared with the delete, so a
     // failure cannot leave a payee pointing at a category that is gone.
+    let movedRows: MovedCategoryRows | undefined;
     await withScopedDb(this.dataSource, async (m) => {
       // Both rows are locked in id order, so two deletes that each move rows
       // into the other cannot deadlock; the target's lookup below re-takes it.
@@ -682,7 +684,8 @@ export class CategoriesService {
           }
           target = reassignTo;
         }
-        await this.reassignCategoryRows(m, userId, id, target);
+        const result = await this.reassignCategoryRows(m, userId, id, target);
+        if (hasMovedRows(result.moved)) movedRows = result.moved;
       }
       const references = await findCategoryReferences(m, userId, id);
       if (references.length > 0) {
@@ -708,7 +711,9 @@ export class CategoriesService {
       entityType: "category",
       entityId: id,
       action: "delete",
-      beforeData,
+      // The moved ids let the undo move them back; an entry over the history's
+      // size limit is not recorded at all, which is safer than a wrong undo.
+      beforeData: movedRows ? { ...beforeData, movedRows } : beforeData,
       description: `Deleted category "${beforeData.name}"`,
       descriptionKey: "deletedCategory",
       descriptionParams: { name: beforeData.name },
@@ -779,9 +784,19 @@ export class CategoriesService {
     }
 
     // M22: All UPDATE operations run in a single transaction.
-    return withScopedDb(this.dataSource, (m) =>
-      this.reassignCategoryRows(m, userId, fromCategoryId, toCategoryId),
-    );
+    return withScopedDb(this.dataSource, async (m) => {
+      const r = await this.reassignCategoryRows(
+        m,
+        userId,
+        fromCategoryId,
+        toCategoryId,
+      );
+      return {
+        transactionsUpdated: r.transactionsUpdated,
+        splitsUpdated: r.splitsUpdated,
+        scheduledUpdated: r.scheduledUpdated,
+      };
+    });
   }
 
   /**
@@ -797,65 +812,87 @@ export class CategoriesService {
     transactionsUpdated: number;
     splitsUpdated: number;
     scheduledUpdated: number;
+    moved: MovedCategoryRows;
   }> {
     fromCategoryId = fromCategoryId.toLowerCase();
     toCategoryId = toCategoryId?.toLowerCase() ?? null;
-    const transactionResult = await m.update(
-      Transaction,
-      { userId, categoryId: fromCategoryId },
-      { categoryId: toCategoryId },
+    const ids = async (sql: string) =>
+      returnedRows<{ id: string }>(
+        await m.query(sql, [toCategoryId, userId, fromCategoryId]),
+      ).map((r) => r.id);
+    // Each UPDATE returns the ids it moved, for the delete's undo. The two
+    // entity tables keep the `updated_at` the entity update used to stamp.
+    const transactions = await ids(
+      `UPDATE transactions SET category_id = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $2 AND category_id = $3 RETURNING id`,
     );
     // Joins, not an id list: a user's ids can exceed the 65535 bind limit.
-    const splitResult = await m.query(
+    const transactionSplits = await ids(
       `UPDATE transaction_splits s SET category_id = $1
            FROM transactions t
           WHERE t.id = s.transaction_id AND t.user_id = $2
-            AND s.category_id = $3`,
-      [toCategoryId, userId, fromCategoryId],
+            AND s.category_id = $3 RETURNING s.id`,
     );
-    const splitsUpdated = affectedRowCount(splitResult);
-
-    const scheduledResult = await m.update(
-      ScheduledTransaction,
-      { userId, categoryId: fromCategoryId },
-      { categoryId: toCategoryId },
+    const scheduled = await ids(
+      `UPDATE scheduled_transactions SET category_id = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $2 AND category_id = $3 RETURNING id`,
     );
-    await m.query(
+    const scheduledSplits = await ids(
       `UPDATE scheduled_transaction_splits s SET category_id = $1
            FROM scheduled_transactions t
           WHERE t.id = s.scheduled_transaction_id AND t.user_id = $2
-            AND s.category_id = $3`,
-      [toCategoryId, userId, fromCategoryId],
+            AND s.category_id = $3 RETURNING s.id`,
     );
 
     // Overrides keep a category of their own and, in `splits` JSON, one per
     // split line; neither is reached by the updates above.
-    await m.query(
+    const overrides = await ids(
       `UPDATE scheduled_transaction_overrides o SET category_id = $1
            FROM scheduled_transactions t
           WHERE t.id = o.scheduled_transaction_id AND t.user_id = $2
-            AND o.category_id = $3`,
-      [toCategoryId, userId, fromCategoryId],
+            AND o.category_id = $3 RETURNING o.id`,
     );
     // shortcut: a text replace of the quoted UUID in the JSON; exact for
     // UUIDs, which are unique and appear only as category ids in a split.
-    await m.query(
-      `UPDATE scheduled_transaction_overrides o
-            SET splits = replace(o.splits::text, '"' || $3::text || '"', $1::text)::jsonb
-           FROM scheduled_transactions t
-          WHERE t.id = o.scheduled_transaction_id AND t.user_id = $2
-            AND o.splits::text LIKE '%' || $3::text || '%'`,
-      [
-        toCategoryId ? JSON.stringify(toCategoryId) : "null",
-        userId,
-        fromCategoryId,
-      ],
+    // The CTE locks the rows and keeps the value read, so `before` is the one
+    // the rewrite replaced.
+    const overrideSplits = returnedRows<{
+      id: string;
+      before: unknown;
+      after: unknown;
+    }>(
+      await m.query(
+        `WITH old AS (
+           SELECT o.id, o.splits FROM scheduled_transaction_overrides o
+             JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id
+            WHERE t.user_id = $2 AND o.splits::text LIKE '%' || $3::text || '%'
+              FOR UPDATE OF o)
+         UPDATE scheduled_transaction_overrides o
+            SET splits = replace(old.splits::text, '"' || $3::text || '"', $1::text)::jsonb
+           FROM old
+          WHERE o.id = old.id
+      RETURNING o.id, old.splits AS before, o.splits AS after`,
+        [
+          toCategoryId ? JSON.stringify(toCategoryId) : "null",
+          userId,
+          fromCategoryId,
+        ],
+      ),
     );
 
     return {
-      transactionsUpdated: transactionResult.affected || 0,
-      splitsUpdated,
-      scheduledUpdated: scheduledResult.affected || 0,
+      transactionsUpdated: transactions.length,
+      splitsUpdated: transactionSplits.length,
+      scheduledUpdated: scheduled.length,
+      moved: {
+        to: toCategoryId,
+        transactions,
+        transactionSplits,
+        scheduled,
+        scheduledSplits,
+        overrides,
+        overrideSplits,
+      },
     };
   }
 

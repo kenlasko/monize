@@ -98,6 +98,7 @@
     "nothingToRedo": "Nada para refazer",
     "undoCreateInUse": "Não é possível desfazer a criação de \"{{ name }}\": agora ele é usado por {{ summary }}. Remova-os primeiro.",
     "redoDeleteInUse": "Não é possível refazer a exclusão de \"{{ name }}\": agora ele é usado por {{ summary }}. Remova-os primeiro.",
+    "redoDeleteTargetGone": "Não é possível refazer esta exclusão: a categoria para a qual as linhas foram movidas não existe mais.",
     "undoNotSupportedForEntityType": "Desfazer não suportado para o tipo de entidade: {{ entityType }}",
     "unsupportedTransactionAction": "Ação de transação não suportada: {{ action }}",
     "undoTransactionGone": "Não é possível desfazer: a transação não existe mais",
