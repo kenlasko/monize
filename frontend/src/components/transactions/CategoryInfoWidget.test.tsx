@@ -117,7 +117,7 @@ describe('CategoryInfoWidget', () => {
     });
   });
 
-  it('marks the headline and the average when the period includes an estimated amount', async () => {
+  it('notes the estimated amounts the period figures include', async () => {
     mockedTransactions.getSummary.mockResolvedValue({
       totalIncome: 0,
       totalExpenses: 800,
@@ -131,13 +131,16 @@ describe('CategoryInfoWidget', () => {
     });
     await renderWidget();
     expect(screen.getByText('CAD 800.00')).toBeInTheDocument();
-    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(2);
+    expect(screen.getByTestId('provisional-data-notice')).toHaveTextContent(
+      '1 amount in these figures is an estimate',
+    );
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
   });
 
-  it('marks nothing without a provisional count', async () => {
+  it('notes nothing without a provisional count', async () => {
     await renderWidget();
     expect(screen.getByText('CAD 800.00')).toBeInTheDocument();
-    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
   });
 
   it('shows the category name, badge, swatch and headline total', async () => {

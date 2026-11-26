@@ -46,8 +46,10 @@ export function CurrencySummaryCards({
 
   const firstYear = usage.firstTransactionDate?.slice(0, 4) ?? null;
 
-  // Both totals sum the same rows, so an imported estimate among them is in
-  // each; the mark sits beside the figure and never replaces it.
+  // The count is over every row, so it is inside the total in the currency
+  // and the complete reporting total. A partial reporting subtotal leaves out
+  // the rows with no rate, which may be the estimated ones, so it is not
+  // marked. The mark sits beside the figure and never replaces it.
   const provisional = provisionalCountOf(usage.provisionalCount) > 0;
   const withProvisionalMark = (figure: string) =>
     provisional ? (
@@ -90,14 +92,11 @@ export function CurrencySummaryCards({
         ? t('summary.totalIn', { currency: usage.reportingCurrency })
         : t('summary.convertedPartIn', { currency: usage.reportingCurrency }),
       // A partial sum is shown under its own caption, never under "Total".
-      value: withProvisionalMark(
-        formatCurrency(
-          complete
-            ? (usage.totalInReportingCurrency as number)
-            : usage.knownReportingSubtotal,
-          usage.reportingCurrency,
-        ),
-      ),
+      value: complete
+        ? withProvisionalMark(
+            formatCurrency(usage.totalInReportingCurrency as number, usage.reportingCurrency),
+          )
+        : formatCurrency(usage.knownReportingSubtotal, usage.reportingCurrency),
       valueClass: complete ? undefined : 'text-amber-600 dark:text-amber-400',
       note: complete
         ? t('summary.convertedNote')

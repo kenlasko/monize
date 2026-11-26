@@ -261,7 +261,7 @@ describe('PayeeInfoWidget', () => {
     expect(mockPush).toHaveBeenCalledWith('/bills');
   });
 
-  it('marks the period figures that include an estimated amount', async () => {
+  it('notes the estimated amounts the period figures include', async () => {
     mockedTransactions.getSummary.mockResolvedValue({
       totalIncome: 50,
       totalExpenses: 1200.5,
@@ -274,15 +274,19 @@ describe('PayeeInfoWidget', () => {
       },
     });
     await renderWidget();
-    // The figure is shown; spent, income, net and the average each carry the mark.
+    // The figures are shown, and one note covers them: the count does not say
+    // which figure holds the estimate, so none of them is marked.
     expect(screen.getByText('CAD 1200.50')).toBeInTheDocument();
-    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(4);
+    expect(screen.getByTestId('provisional-data-notice')).toHaveTextContent(
+      '1 amount in these figures is an estimate',
+    );
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
   });
 
-  it('marks nothing without a provisional count', async () => {
+  it('notes nothing without a provisional count', async () => {
     await renderWidget();
     expect(screen.getByText('CAD 1200.50')).toBeInTheDocument();
-    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
   });
 
   it('shows the empty state when the period has no transactions', async () => {

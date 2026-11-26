@@ -22,6 +22,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { PayeeLogo } from '@/components/payees/PayeeLogo';
 import { createLogger } from '@/lib/logger';
 import {
@@ -244,7 +245,7 @@ export function PayeeInfoWidget({
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('payeeWidget.totalSpent')}</p>
         <p className="text-2xl font-bold text-red-600 dark:text-red-400">
           {totals ? (
-            <PartialTotal total={{ value: totals.expenses, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
+            <PartialTotal total={{ value: totals.expenses, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
               {formatCurrency(totals.expenses, currencyStrategy.displayCurrency)}
             </PartialTotal>
           ) : (
@@ -304,7 +305,7 @@ export function PayeeInfoWidget({
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-gray-500 dark:text-gray-400">{t('payeeWidget.income')}</dt>
             <dd className="text-green-600 dark:text-green-400 text-right">
-              <PartialTotal total={{ value: totals.income, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
+              <PartialTotal total={{ value: totals.income, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
                 {formatCurrency(totals.income, currencyStrategy.displayCurrency)}
               </PartialTotal>
             </dd>
@@ -314,7 +315,7 @@ export function PayeeInfoWidget({
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-gray-500 dark:text-gray-400">{t('payeeWidget.net')}</dt>
             <dd className="text-gray-900 dark:text-gray-100 text-right">
-              <PartialTotal total={{ value: totals.net, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
+              <PartialTotal total={{ value: totals.net, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
                 {formatCurrency(totals.net, currencyStrategy.displayCurrency)}
               </PartialTotal>
             </dd>
@@ -328,7 +329,7 @@ export function PayeeInfoWidget({
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-gray-500 dark:text-gray-400">{t('payeeWidget.averageAmount')}</dt>
             <dd className="text-gray-900 dark:text-gray-100 text-right">
-              <PartialTotal total={{ value: averageAmount, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency} provisionalCount={totals?.provisionalCount}>
+              <PartialTotal total={{ value: averageAmount, ...summaryMarker }} displayCurrency={currencyStrategy.displayCurrency}>
                 {formatCurrency(averageAmount, currencyStrategy.displayCurrency)}
               </PartialTotal>
             </dd>
@@ -356,6 +357,9 @@ export function PayeeInfoWidget({
           </div>
         )}
       </dl>
+      {/* One count covers every figure above (it does not say whether the
+          estimate is in income or expenses), so it is a note, not a mark. */}
+      <ProvisionalDataNotice count={totals?.provisionalCount} className="-mt-2 mb-4" />
 
       {!isLoading && transactionCount === 0 && (
         <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">

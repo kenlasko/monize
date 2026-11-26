@@ -192,6 +192,8 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
           : total;
       })()
     : null;
+  // One source for the headline mark and the note, so the two cannot disagree.
+  const provisionalCount = result ? (result.summary.provisionalCount ?? result.provisionalCount) : undefined;
   const truncatedOnly =
     !!result?.truncated && result.summary.total === null && !!summaryTotal && isComplete(summaryTotal);
   // A truncated total is partial too: the Total row (table and PDF) carries the marker.
@@ -320,7 +322,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
                   }
                   displayCurrency={result.currency ?? defaultCurrency}
                   explanation={truncatedOnly ? t('customReportViewer.truncatedNotice') : undefined}
-                  provisionalCount={result.summary.provisionalCount ?? result.provisionalCount}
+                  provisionalCount={provisionalCount}
                 >
                   {formatValue(summaryTotal?.value ?? 0)}
                 </PartialTotal>
@@ -341,7 +343,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               excludedCount={result.excludedCount ?? 0}
               displayCurrency={result.currency ?? defaultCurrency}
             />
-            <ProvisionalDataNotice count={result.provisionalCount ?? result.summary.provisionalCount} />
+            <ProvisionalDataNotice count={provisionalCount} />
           </div>
 
           {/* Chart */}

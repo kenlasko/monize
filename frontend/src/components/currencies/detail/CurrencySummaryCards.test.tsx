@@ -78,7 +78,7 @@ describe('CurrencySummaryCards', () => {
     expect(screen.getByText('Total in CAD')).toBeInTheDocument();
   });
 
-  it('marks a partial conversion that includes an estimate, beside its own caption', () => {
+  it('marks the total in the currency but not a partial conversion, which may leave the estimate out', () => {
     render(
       <CurrencySummaryCards
         code="EUR"
@@ -95,7 +95,10 @@ describe('CurrencySummaryCards', () => {
     );
 
     expect(screen.getByText('Converted Part in CAD')).toBeInTheDocument();
-    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(2);
+    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(1);
+    expect(screen.getByText('Total in EUR').closest('article')).toContainElement(
+      screen.getByTestId('provisional-mark'),
+    );
   });
 
   it.each([[0], [undefined]])('marks nothing at a provisional count of %s', (provisionalCount) => {

@@ -24,6 +24,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { createLogger } from '@/lib/logger';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { CategoryGlyph } from '@/components/categories/CategoryGlyph';
 import {
   WidgetFilterParams,
@@ -302,7 +303,7 @@ export function CategoryInfoWidget({
                 excludedCount: totals?.excludedTransactionCount ?? 0,
               }}
               displayCurrency={currencyStrategy.displayCurrency}
-              provisionalCount={totals?.provisionalCount}
+             
             >
               {formatCurrency(headlineTotal, currencyStrategy.displayCurrency)}
             </PartialTotal>
@@ -361,7 +362,7 @@ export function CategoryInfoWidget({
                   excludedCount: totals?.excludedTransactionCount ?? 0,
                 }}
                 displayCurrency={currencyStrategy.displayCurrency}
-                provisionalCount={totals?.provisionalCount}
+               
               >
                 {formatCurrency(averageAmount, currencyStrategy.displayCurrency)}
               </PartialTotal>
@@ -379,6 +380,9 @@ export function CategoryInfoWidget({
           </div>
         )}
       </dl>
+      {/* One count covers every figure above (it does not say whether the
+          estimate is in income or expenses), so it is a note, not a mark. */}
+      <ProvisionalDataNotice count={totals?.provisionalCount} className="-mt-2 mb-4" />
 
       {!isLoading && transactionCount === 0 && (
         <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
