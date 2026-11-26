@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@/test/render";
 import { SpendingByPayeeReport } from "./SpendingByPayeeReport";
 
-const { exportToCsv } = vi.hoisted(() => ({ exportToCsv: vi.fn() }));
+const { exportToCsv, exportToPdf } = vi.hoisted(() => ({ exportToCsv: vi.fn(), exportToPdf: vi.fn() }));
+vi.mock("@/lib/pdf-export", () => ({ exportToPdf }));
 vi.mock("@/lib/csv-export", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/csv-export")>(),
   exportToCsv,
@@ -137,6 +138,10 @@ describe("SpendingByPayeeReport", () => {
     expect(row).not.toHaveTextContent("%");
     fireEvent.click(screen.getByTestId("export-csv"));
     expect(exportToCsv).toHaveBeenCalledWith("spending-by-payee", expect.any(Array), [["Co-op", -50, ""]]);
+    fireEvent.click(screen.getByTestId("export-pdf"));
+    await waitFor(() => expect(exportToPdf).toHaveBeenCalledWith(expect.objectContaining({
+      tableData: expect.objectContaining({ rows: [["Co-op", "$-50.00", ""]], totalRow: ["Total", "$-50.00", ""] }),
+    })));
   });
 
   it("renders empty state when no data returned", async () => {

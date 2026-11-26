@@ -29,7 +29,7 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { ChartTooltipPanel } from '@/components/reports/ChartTooltip';
 import { ReportError } from '@/components/reports/ReportError';
 import { PartialTotal } from '@/components/ui/PartialTotal';
-import { reportTotal } from '@/lib/currency-total';
+import { isComplete, reportTotal } from '@/lib/currency-total';
 import { exportToCsv } from '@/lib/csv-export';
 import type { ChartDatum } from '@/types/chart';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -64,6 +64,7 @@ function SpendingPayeeTooltip({ active, payload, totalExpenses, formatCurrency, 
 
 export function SpendingByPayeeReport() {
   const t = useTranslations('reports');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
   const { formatCurrencyCompact: formatCurrency, formatCurrencyAxis, formatPercent, defaultCurrency } = useNumberFormat();
@@ -129,25 +130,34 @@ export function SpendingByPayeeReport() {
     return sorted;
   }, [chartData, sortField, sortDirection, totalExpenses]);
 
+  const exportTable = (amount: (value: number) => string | number) => ({
+    headers: [t('spendingByPayee.csvColPayee'), t('spendingByPayee.csvColAmount'), t('spendingByPayee.csvColPercentage')],
+    rows: sortedTableData.map((item) => {
+      const percentage = reportBreakdownShare(item, totalExpenses);
+      return [item.name, amount(item.value), percentage === null ? '' : formatPercent(percentage, 2)];
+    }),
+  });
+
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
+    const totalLabel = t('incomeBySource.total');
     await exportToPdf({
       title: t('spendingByPayee.pdfTitle'),
       chartContainer: chartRef.current,
+      tableData: {
+        ...exportTable(formatCurrency),
+        totalRow: [
+          isComplete(spendingTotal) ? totalLabel : `${totalLabel} ${tCommon('partialTotal.srSuffix')}`,
+          formatCurrency(totalExpenses),
+          '',
+        ],
+      },
       filename: 'spending-by-payee',
     });
   };
 
   const handleExportCsv = () => {
-    const headers = [
-      t('spendingByPayee.csvColPayee'),
-      t('spendingByPayee.csvColAmount'),
-      t('spendingByPayee.csvColPercentage'),
-    ];
-    const rows = sortedTableData.map((item) => {
-      const percentage = reportBreakdownShare(item, totalExpenses);
-      return [item.name, item.value, percentage === null ? '' : formatPercent(percentage, 2)];
-    });
+    const { headers, rows } = exportTable((value) => value);
     exportToCsv('spending-by-payee', headers, rows);
   };
 

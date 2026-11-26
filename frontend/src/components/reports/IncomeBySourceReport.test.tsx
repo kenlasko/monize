@@ -150,6 +150,11 @@ describe("IncomeBySourceReport", () => {
     expect(row?.lastElementChild).toHaveTextContent(/^% of Total—$/);
     fireEvent.click(screen.getByTestId("export-csv"));
     expect(exportToCsv).toHaveBeenCalledWith("income-by-source", expect.any(Array), [["Salary", -50, ""]]);
+    fireEvent.click(screen.getByTestId("export-pdf"));
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledWith(expect.objectContaining({
+      chartLegend: [expect.objectContaining({ label: "Salary - $-50.00" })],
+      summaryCards: [expect.objectContaining({ value: "$-50.00" })],
+    })));
   });
 
   it("renders empty state when no data returned", async () => {
