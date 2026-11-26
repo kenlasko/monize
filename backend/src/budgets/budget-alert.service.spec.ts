@@ -174,6 +174,7 @@ const spendingRow = (key: string, total: string) => ({
   key,
   currencyCode: TEST_BUDGET_CURRENCY,
   txDate: "2026-01-10",
+  purchases: String(Math.max(0, -Number(total))),
   total,
 });
 // A Mock carrying `query`, so it fits the specs' `Record<string, jest.Mock>`.
@@ -622,8 +623,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        10, // daysElapsed
-        30, // totalDays
+        { dailyBurnRate: 20, projectedTotal: 600 },
       );
 
       // dailyRate = 200/10 = 20, projected = 20*30 = 600, 600/300 = 200%
@@ -648,8 +648,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        10,
-        30,
+        { dailyBurnRate: 10, projectedTotal: 300 },
       );
 
       // dailyRate = 100/10 = 10, projected = 10*30 = 300, 300/500 = 60%
@@ -671,8 +670,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        15,
-        30,
+        { dailyBurnRate: 40, projectedTotal: 1200 },
       );
 
       expect(alert).toBeNull();
@@ -693,8 +691,7 @@ describe("BudgetAlertService", () => {
           alertCriticalPercent: 95,
           flexGroup: null,
         },
-        10,
-        30,
+        { dailyBurnRate: 15, projectedTotal: 450 },
       );
 
       // dailyRate = 150/10 = 15, projected = 15*30 = 450, 450/200 = 225%
@@ -1282,6 +1279,38 @@ describe("BudgetAlertService", () => {
 
       expect(result.alertsCreated).toBe(0);
       expect(result.emailsSent).toBe(0);
+    });
+
+    it("projects only future purchases after an already received refund", async () => {
+      jest.useFakeTimers({
+        now: new Date("2026-04-10T12:00:00"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        const purchases = new FxAggregate();
+        purchases.addConverted(150);
+        const spent = new FxAggregate();
+        spent.addConverted(100);
+        (queryCategorySpending as jest.Mock).mockResolvedValueOnce({
+          ...spending({ "cat-1": -100 }),
+          paceByLine: new Map([["bc-1", { purchases, spent }]]),
+        });
+        alertsRepository.find.mockResolvedValue([]);
+        await service.processAlerts(
+          makeBudget({ categories: [makeCategory({ amount: 350 })] }),
+        );
+        expect(insertedAlerts).toContainEqual(
+          expect.objectContaining({
+            type: NotificationType.PROJECTED_OVERSPEND,
+            data: expect.objectContaining({
+              dailyRate: 15,
+              projectedTotal: 400,
+            }),
+          }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("resolves an income-linked line's percentage against the period's income", async () => {

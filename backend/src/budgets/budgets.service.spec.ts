@@ -63,6 +63,7 @@ const spendingRow = (key: string, total: string) => ({
   key,
   currencyCode: TEST_BUDGET_CURRENCY,
   txDate: "2026-01-10",
+  purchases: String(Math.max(0, -Number(total))),
   total,
 });
 // A Mock carrying `query`, so it fits the specs' `Record<string, jest.Mock>`.
@@ -1749,7 +1750,11 @@ describe("BudgetsService", () => {
      * A budget with one 600 category, its signed ledger net, and the upcoming bills the
      * scheduled-transaction query returns.
      */
-    const stubVelocityBudget = (bills: unknown[], ledgerNet = "-200") => {
+    const stubVelocityBudget = (
+      bills: unknown[],
+      ledgerNet = "-200",
+      purchases = String(Math.max(0, -Number(ledgerNet))),
+    ) => {
       budgetsRepository.findOne.mockResolvedValue({
         ...mockBudget,
         categories: [
@@ -1767,7 +1772,9 @@ describe("BudgetsService", () => {
         createMockQueryBuilder({
           getRawMany: jest
             .fn()
-            .mockResolvedValue([spendingRow("cat-1", ledgerNet)]),
+            .mockResolvedValue([
+              { ...spendingRow("cat-1", ledgerNet), purchases },
+            ]),
         }),
       );
       splitsRepository.createQueryBuilder.mockReturnValue(
@@ -1780,21 +1787,21 @@ describe("BudgetsService", () => {
       );
     };
 
-    it("projects the signed net of purchases and refunds at the current pace", async () => {
+    it("projects purchases over remaining days and counts a received refund once", async () => {
       jest.useFakeTimers({
         now: new Date("2026-11-05T12:00:00Z"),
         doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
       });
       try {
         // A purchase of 50 and a refund of 300 net to a 250 ledger credit.
-        stubVelocityBudget([], "250");
+        stubVelocityBudget([], "250", "50");
         const result = await service.getVelocity("user-1", "budget-1");
         expect(result).toMatchObject({
           daysElapsed: 5,
           totalDays: 30,
           currentSpent: -250,
-          dailyBurnRate: -50,
-          projectedTotal: -1500,
+          dailyBurnRate: 10,
+          projectedTotal: 0,
         });
       } finally {
         jest.useRealTimers();

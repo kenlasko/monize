@@ -151,7 +151,7 @@ export interface LlmBudgetStatusResult {
   }>;
   categoryCount: number;
   velocity?: {
-    dailyBurnRate: number;
+    dailyBurnRate: number | null;
     /**
      * `null` when an upcoming bill's current amount could not be determined, so
      * "what is truly available" -- and therefore what is safe to spend per day
@@ -160,10 +160,11 @@ export interface LlmBudgetStatusResult {
      */
     safeDailySpend: number | null;
     upcomingBillsComplete: boolean;
-    projectedTotal: number;
-    projectedVariance: number;
+    projectedTotal: number | null;
+    projectedVariance: number | null;
     daysRemaining: number;
-    paceStatus: "under" | "on_track" | "over";
+    projectionMissingRatePairs?: string[];
+    paceStatus: "under" | "on_track" | "over" | null;
   };
   healthScore?: {
     score: number;
@@ -404,6 +405,7 @@ export class BudgetReportsService {
         projectedVariance: velocity.projectedVariance,
         daysRemaining: velocity.daysRemaining,
         paceStatus: velocity.paceStatus,
+        projectionMissingRatePairs: velocity.projectionMissingRatePairs,
       };
     }
 

@@ -144,9 +144,9 @@ The [Budget Health Score report](#budget-reports) gives a more detailed version 
 
 Shows your spending pace and whether you will finish the period within budget:
 
-- **Daily burn rate** -- How much you are spending per day
+- **Daily burn rate** -- Purchases divided by elapsed days. Refunds do not reduce the purchase pace.
 - **Safe to spend** -- How much you can spend per day and stay on track
-- **Projected month-end** -- Where you will land at the current pace
+- **Projected month-end** -- Net spending so far, plus expected purchases over the remaining days. If you buy 50 and receive a refund of 300 in the first five days of a 30-day month, the purchase pace is 10 per day. The remaining 25 days add 250, giving projected net spending of zero. Projected-overspend alerts use the same calculation for each category.
 - **Pace status** -- **Under budget pace** (green), **On track** (yellow), or **Over budget pace** (red)
 - **Budget total**, **Bills coming** and **Truly available** -- your budget less the scheduled bills still to come this period
 - A progress bar showing **Day X of Y** and the days remaining

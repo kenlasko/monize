@@ -391,17 +391,18 @@ export interface UpcomingBill {
 }
 
 export interface BudgetVelocity {
-  dailyBurnRate: number;
-  projectedTotal: number;
+  dailyBurnRate: number | null;
+  projectedTotal: number | null;
   budgetTotal: number;
-  projectedVariance: number;
+  projectedVariance: number | null;
   /** `null` when `trulyAvailable` is unknown -- it is derived from it. */
   safeDailySpend: number | null;
   daysElapsed: number;
   daysRemaining: number;
   totalDays: number;
   currentSpent: number;
-  paceStatus: 'under' | 'on_track' | 'over';
+  projectionMissingRatePairs?: string[];
+  paceStatus: 'under' | 'on_track' | 'over' | null;
   upcomingBills: UpcomingBill[];
   /**
    * `null` when any upcoming bill's current amount is unknown (issue #1247):

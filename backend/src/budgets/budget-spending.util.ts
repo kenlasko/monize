@@ -3,6 +3,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { FxAggregate } from "../common/fx-aggregate";
+import type { BudgetPaceInput } from "./budget-velocity";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { buildRateIndex } from "../common/time-series/rate-index.util";
 import {
@@ -235,6 +236,7 @@ export function isTransferIncomeLine(bc: BudgetCategory): boolean {
 
 /** What `queryCategorySpending` returns: converted sums plus what is unknown. */
 export interface CategorySpending {
+  paceByLine?: ReadonlyMap<string, BudgetPaceInput>;
   /** categoryId -> signed net sum of the rows that converted, in `currency`. */
   spendingMap: Map<string, number>;
   /** destination accountId -> outgoing total of the rows that converted. */
@@ -270,6 +272,7 @@ export interface CategorySpending {
 }
 
 interface SpendingRow {
+  purchases?: string;
   key: string;
   currencyCode: string;
   txDate: string;
@@ -315,6 +318,7 @@ export async function queryCategorySpending(
   periodStart: string,
   periodEnd: string,
   budgetId?: string,
+  paceThrough?: string,
 ): Promise<CategorySpending> {
   const { currency, buckets } = await queryCategorySpendingBuckets(
     transactionsRepository,
@@ -325,6 +329,7 @@ export async function queryCategorySpending(
     periodEnd,
     () => "",
     budgetId,
+    paceThrough,
   );
   return buckets.get("") ?? emptyCategorySpending(currency);
 }
@@ -369,6 +374,7 @@ export async function queryCategorySpendingBuckets(
   periodEnd: string,
   bucketOf: (txDate: string) => string,
   budgetId: string | undefined = budgetCategories[0]?.budgetId,
+  paceThrough?: string,
 ): Promise<{ currency: string; buckets: Map<string, CategorySpending> }> {
   const buckets = new Map<string, CategorySpending>();
 
@@ -440,6 +446,8 @@ export async function queryCategorySpendingBuckets(
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" })
       .andWhere("t.is_split = false");
+    if (paceThrough)
+      directQb.addSelect("SUM(-LEAST(t.amount, 0))", "purchases");
     excludeBudgetAccounts(directQb, excludedAccountIds)
       .groupBy("t.category_id")
       .addGroupBy("t.currency_code")
@@ -460,6 +468,7 @@ export async function queryCategorySpendingBuckets(
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" });
+    if (paceThrough) splitQb.addSelect("SUM(-LEAST(s.amount, 0))", "purchases");
     excludeBudgetAccounts(splitQb, excludedAccountIds)
       .groupBy("s.category_id")
       .addGroupBy("t.currency_code")
@@ -676,6 +685,38 @@ export async function queryCategorySpendingBuckets(
         ...outsideIncome.pairs,
       ]),
     ].sort();
+    if (paceThrough) {
+      const elapsedRows = (categoryByBucket.get(bucket) ?? []).filter(
+        (row) => row.txDate <= paceThrough,
+      );
+      const net = fold(elapsedRows).totals;
+      const purchases = fold(
+        elapsedRows.map((row) => ({ ...row, total: row.purchases! })),
+      ).totals;
+      const outgoing = fold(
+        (transferByBucket.get(bucket) ?? []).filter(
+          (row) => row.txDate <= paceThrough,
+        ),
+      ).totals;
+      const byLine = new Map<string, BudgetPaceInput>();
+      for (const line of budgetCategories) {
+        if (line.isIncome) continue;
+        if (isTransferLine(line) && line.transferAccountId) {
+          const amount =
+            outgoing.get(line.transferAccountId) ?? new FxAggregate();
+          byLine.set(line.id, { purchases: amount, spent: amount });
+        } else if (line.categoryId) {
+          const spent = new FxAggregate();
+          const ledger = net.get(line.categoryId);
+          if (ledger) spent.mergeNegated(ledger);
+          byLine.set(line.id, {
+            spent,
+            purchases: purchases.get(line.categoryId) ?? new FxAggregate(),
+          });
+        }
+      }
+      spending.paceByLine = byLine;
+    }
     buckets.set(bucket, spending);
   }
 

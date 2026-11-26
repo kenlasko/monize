@@ -51,6 +51,11 @@ import {
   resolveCategorySpent,
   resolveOutsideTransferIncome,
 } from "./budget-spending.util";
+import {
+  budgetPaceWindow,
+  projectBudgetSpending,
+  type BudgetPaceInput,
+} from "./budget-velocity";
 import { formatDateYMD, todayYMD } from "../common/date-utils";
 import { overdueCarryFrom } from "../common/scheduled-occurrences";
 import { roundMoney, sumMoney } from "../common/round.util";
@@ -110,6 +115,7 @@ export interface CategoryActualRow {
 
 /** The current period's line figures and the income no line carries. */
 interface CategoryActuals {
+  paceByLine?: ReadonlyMap<string, BudgetPaceInput>;
   lines: CategoryActualRow[];
   /**
    * `config.transfersInAsIncome`'s income, clamped at zero like a line's
@@ -697,17 +703,18 @@ export class BudgetsService {
     userId: string,
     budgetId: string,
   ): Promise<{
-    dailyBurnRate: number;
-    projectedTotal: number;
+    projectionMissingRatePairs: string[];
+    dailyBurnRate: number | null;
+    projectedTotal: number | null;
     budgetTotal: number;
-    projectedVariance: number;
+    projectedVariance: number | null;
     /** `null` when `trulyAvailable` is unknown -- it is derived from it. */
     safeDailySpend: number | null;
     daysElapsed: number;
     daysRemaining: number;
     totalDays: number;
     currentSpent: number;
-    paceStatus: "under" | "on_track" | "over";
+    paceStatus: "under" | "on_track" | "over" | null;
     upcomingBills: UpcomingBill[];
     /**
      * `null` when any upcoming bill's current amount is unknown (issue #1247):
@@ -730,38 +737,34 @@ export class BudgetsService {
     const budget = await this.findOne(userId, budgetId);
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const today = new Date();
-    const startDate = new Date(periodStart);
-    const endDate = new Date(periodEnd);
-
-    // periodEnd is the inclusive last day, so the period spans one more day.
-    const totalDays =
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ) + 1;
-    const daysElapsed = Math.max(
-      1,
-      Math.ceil(
-        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    );
-    const daysRemaining = Math.max(0, totalDays - daysElapsed);
-
-    const { lines: categoryBreakdown } = await this.getCachedCategoryActuals(
-      userId,
-      budget,
+    const todayStr = todayYMD();
+    const { totalDays, daysElapsed, daysRemaining } = budgetPaceWindow(
       periodStart,
       periodEnd,
+      todayStr,
     );
 
+    const { lines: categoryBreakdown, paceByLine } =
+      await this.getCachedCategoryActuals(
+        userId,
+        budget,
+        periodStart,
+        periodEnd,
+        todayStr,
+      );
+
     const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
-    const currentSpent = sumMoney(expenseCategories.map((c) => c.spent));
+    const projection = projectBudgetSpending(
+      paceByLine?.values() ?? [],
+      daysElapsed,
+      daysRemaining,
+    );
+    const { currentSpent, dailyBurnRate, projectedTotal } = projection;
     const budgetTotal = sumMoney(expenseCategories.map((c) => c.budgeted));
 
     const upcomingBills = await this.getUpcomingBills(userId, periodEnd);
     // Today on the caller's own clock, so the rate is the one the bills list is
     // showing rather than one from the container's timezone.
-    const todayStr = todayYMD();
     // Every bill converted into the budget's own currency before it joins the
     // total, because that is the currency `remaining` is in.
     //
@@ -789,10 +792,11 @@ export class BudgetsService {
     const totalUpcomingBills = billsTotal.total;
     const upcomingBillsMissingRates = billsTotal.missingPairs;
 
-    const dailyBurnRate = currentSpent / daysElapsed;
-    const projectedTotal = dailyBurnRate * totalDays;
-    const projectedVariance = projectedTotal - budgetTotal;
-    const remaining = roundMoney(budgetTotal - currentSpent);
+    const projectedVariance =
+      projectedTotal === null ? null : roundMoney(projectedTotal - budgetTotal);
+    // Available funds still include transactions booked for the whole period.
+    const periodSpent = sumMoney(expenseCategories.map((line) => line.spent));
+    const remaining = roundMoney(budgetTotal - periodSpent);
     const trulyAvailable =
       totalUpcomingBills === null
         ? null
@@ -804,9 +808,16 @@ export class BudgetsService {
           ? Math.max(0, trulyAvailable / daysRemaining)
           : 0;
 
-    let paceStatus: "under" | "on_track" | "over";
-    const paceRatio = budgetTotal > 0 ? projectedTotal / budgetTotal : 0;
-    if (budgetTotal === 0 || paceRatio <= 0.95) {
+    let paceStatus: "under" | "on_track" | "over" | null;
+    const paceRatio =
+      projectedTotal === null
+        ? null
+        : budgetTotal > 0
+          ? projectedTotal / budgetTotal
+          : 0;
+    if (paceRatio === null) {
+      paceStatus = null;
+    } else if (budgetTotal === 0 || paceRatio <= 0.95) {
       paceStatus = "under";
     } else if (paceRatio <= 1.05) {
       paceStatus = "on_track";
@@ -815,10 +826,11 @@ export class BudgetsService {
     }
 
     return {
-      dailyBurnRate: roundMoney(dailyBurnRate),
-      projectedTotal: roundMoney(projectedTotal),
+      projectionMissingRatePairs: projection.missingRatePairs,
+      dailyBurnRate,
+      projectedTotal,
       budgetTotal,
-      projectedVariance: roundMoney(projectedVariance),
+      projectedVariance,
       safeDailySpend:
         safeDailySpend === null ? null : roundMoney(safeDailySpend),
       daysElapsed,
@@ -1195,8 +1207,9 @@ export class BudgetsService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
+    paceThrough?: string,
   ) {
-    const key = `${budget.id}:${periodStart}:${periodEnd}`;
+    const key = `${budget.id}:${periodStart}:${periodEnd}:${paceThrough ?? ""}`;
     const cached = this.categoryActualsCache.get(key);
     const now = Date.now();
 
@@ -1210,6 +1223,7 @@ export class BudgetsService {
       budget,
       periodStart,
       periodEnd,
+      paceThrough,
     );
     this.categoryActualsCache.set(key, { data: promise, timestamp: now });
 
@@ -1228,6 +1242,7 @@ export class BudgetsService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
+    paceThrough?: string,
   ): Promise<CategoryActuals> {
     const budgetCategories = budget.categories || [];
 
@@ -1253,6 +1268,7 @@ export class BudgetsService {
           periodStart,
           periodEnd,
           budget.id,
+          paceThrough,
         );
         const rolloverIn = await loadExpenseRolloverIn(m, budget, periodStart);
         return { spending, rolloverIn };
@@ -1304,6 +1320,7 @@ export class BudgetsService {
 
     return {
       lines,
+      paceByLine: spending.paceByLine,
       outsideTransferIncome: resolveOutsideTransferIncome(spending),
     };
   }

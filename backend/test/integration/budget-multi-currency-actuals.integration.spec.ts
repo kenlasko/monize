@@ -1,3 +1,4 @@
+import { projectBudgetSpending } from "@/budgets/budget-velocity";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { TransactionsModule } from "@/transactions/transactions.module";
@@ -182,7 +183,7 @@ describe("budget actuals across currencies (integration)", () => {
       [periodStart],
     );
 
-  function runQuery() {
+  function runQuery(paceThrough?: string) {
     return withUserContext(userId, () =>
       withScopedDb(dataSource, (m) =>
         queryCategorySpending(
@@ -192,10 +193,29 @@ describe("budget actuals across currencies (integration)", () => {
           [groceriesLine, diningLine, transferLine],
           periodStart,
           periodEnd,
+          undefined,
+          paceThrough,
         ),
       ),
     );
   }
+
+  it("projects a 50 purchase and 300 refund once and excludes future postings", async () => {
+    await insertTransaction({ categoryId: groceriesId, amount: -50 });
+    await insertTransaction({ categoryId: groceriesId, amount: 300 });
+    await insertTransaction({
+      categoryId: groceriesId,
+      amount: -90,
+      transactionDate: periodEnd,
+    });
+    const spending = await runQuery(periodStart.slice(0, 8) + "05");
+    const inputs = spending.paceByLine!.values();
+    expect(projectBudgetSpending(inputs, 5, 25)).toMatchObject({
+      currentSpent: -250,
+      dailyBurnRate: 10,
+      projectedTotal: 0,
+    });
+  });
 
   it("converts each currency to the budget currency before summing", async () => {
     await insertCadAndJpyGroceries();
