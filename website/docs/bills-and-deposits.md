@@ -56,7 +56,7 @@ For a bill whose amount changes from month to month, such as heating or electric
 
 ![A schedule with Estimate on](images/scheduled-transaction-estimate.png)
 
-The estimate follows new payments as you record them. Under the **Amount**, the form says which payments set the estimate (those of the last 12 months, or your three most recent) and when the latest was, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, investment, or foreign-currency amount) or for a transfer (see [Estimated Transfers](#estimated-transfers)), and is never posted automatically, so **Auto-post on due date** is turned off.
+The estimate follows new payments as you record them. Under the **Amount**, the form says which payments set the estimate (those of the last 12 months, or your three most recent) and when the latest was, or what is missing when there is not enough to estimate from: no payments yet, or no exchange rate for a payment's currency. An estimated schedule needs a **Payee** and a **Category**, is available for a single-category transaction in the account's own currency (not a split, investment, or foreign-currency amount) or for a transfer (see [Estimated Transfers](#estimated-transfers)), and is not posted automatically, so **Auto-post on due date** is turned off. Once you enter an occurrence's own amount in **Edit Occurrence**, you can turn on auto-posting for that one occurrence (see [Modifying an Occurrence](#modifying-an-occurrence)).
 
 You still decide every occurrence: the bills list labels the amount **Estimated**, **Edit Occurrence** shows each upcoming occurrence's estimate and lets you change any of them, and the **Post Transaction** dialog opens on the estimate for you to correct before posting. An occurrence you change keeps your amount; one you leave alone keeps following the estimate.
 
@@ -142,7 +142,7 @@ Below the forecast, the list shows all scheduled transactions with:
 | **Category** | The category, the transfer's destination, or a **Split** badge |
 | **Amount** | The amount of the next occurrence |
 | **Schedule** | The next due date with an **Overdue**, **Due Today**, or **Due Soon** (within a week) badge, the frequency, and how many occurrences are left |
-| **Auto-Post** | **On** when the schedule posts itself |
+| **Auto-Post** | **On** when the schedule posts itself. **Next on** marks a bill you post by hand whose next occurrence is set to post itself, and **Next off** an auto-posting bill whose next occurrence is left for you to post; the help icon beside either says which date it is |
 | **Actions** | **Post Transaction**, **Skip Occurrence**, **Edit Occurrence**, **Edit Schedule**, and **Delete** |
 
 ![The list of scheduled transactions](images/bills-list.png)
@@ -183,7 +183,7 @@ When **Auto-post on due date** is turned on for a scheduled transaction, Monize 
 
 ### How It Works
 
-1. Every hour, Monize checks for active, auto-posting scheduled transactions that are due today or overdue in your timezone
+1. Every hour, Monize checks for active scheduled transactions whose next occurrence is due today or overdue in your timezone and set to post automatically, by the schedule or by that occurrence's own **Auto-post on due date** in **Edit Occurrence**
 2. Each due occurrence is created in the designated account, with any changes you made to that occurrence
 3. The next due date is calculated based on the frequency
 4. When the end date or the number of occurrences is reached, the schedule ends
@@ -197,7 +197,7 @@ A posting that fails (for example, for want of an exchange rate) raises a notifi
 
 ### When NOT to Use Auto-Posting
 
-- **Variable-amount bills** (e.g., utilities, credit card payments) -- Use reminders instead and enter the actual amount manually, or turn on [Estimate](#estimated-amounts) so the forecast follows your history (an estimated bill is never auto-posted)
+- **Variable-amount bills** (e.g., utilities, credit card payments) -- Use reminders instead and enter the actual amount manually, or turn on [Estimate](#estimated-amounts) so the forecast follows your history (an estimated bill is auto-posted only for an occurrence whose amount you entered and set to auto-post)
 - **Bills your bank's import already brings in** -- the imported row and the auto-posted one would both be recorded
 
 ---
@@ -212,7 +212,8 @@ You can modify or skip individual occurrences of a scheduled transaction without
 2. In **Select Occurrence Date**, choose which upcoming occurrence to change (occurrences you already changed are marked **Modified**)
 3. In the **Edit Occurrence** dialog, change the **Occurrence Date**, **Amount**, **Category**, or **Description** for this occurrence only
 4. To split just this occurrence across multiple categories, turn on **Split this occurrence** and add category/amount rows (independent of whether the underlying schedule is split)
-5. Click **Save Override** (or **Update Override** for one you changed before)
+5. Turn **Auto-post on due date** on to have Monize post just this occurrence automatically on its date, or off to post it yourself when the schedule otherwise posts automatically. For an [estimated](#estimated-amounts) bill the switch stays off until you enter this occurrence's own amount. When the next occurrence's choice differs from the bill's, the list's **Auto-Post** column shows **Next on** or **Next off**, and the dashboard's upcoming bills and the Upcoming Bills report mark that occurrence **Manual** or not by its own choice
+6. Click **Save Override** (or **Update Override** for one you changed before)
 
 ![The Edit Occurrence dialog](images/bills-edit-occurrence.png)
 

@@ -21,6 +21,10 @@ test.beforeAll(async ({ browser }) => {
   context = await openDocsSession(browser);
   page = await context.newPage();
   await estimateTheHydroBill();
+  // The list shows one bill whose next occurrence posts itself although the
+  // bill is posted by hand, and one the other way round.
+  await setNextOccurrenceAutoPost("Car Insurance", true);
+  await setNextOccurrenceAutoPost("Gym Membership", false);
 });
 
 interface ScheduleRow {
@@ -30,6 +34,37 @@ interface ScheduleRow {
   payeeId: string | null;
   categoryId: string | null;
   amountIsEstimated?: boolean;
+  nextDueDate: string;
+  nextOverride?: { id: string; autoPost?: boolean | null } | null;
+}
+
+/**
+ * Give the named demo bill's next occurrence its own auto-post choice, through
+ * the Edit Occurrence endpoints the dialog uses. Idempotent: an existing
+ * override of that occurrence is updated in place.
+ */
+async function setNextOccurrenceAutoPost(
+  name: string,
+  autoPost: boolean,
+): Promise<void> {
+  const api = apiFor(page);
+  const schedules = await api.get<ScheduleRow[]>("/scheduled-transactions");
+  const bill = schedules.find((s) => s.name === name);
+  if (!bill) throw new Error(`The demo data has no ${name} bill`);
+  if (bill.nextOverride) {
+    if (bill.nextOverride.autoPost === autoPost) return;
+    await api.patch(
+      `/scheduled-transactions/${bill.id}/overrides/${bill.nextOverride.id}`,
+      { autoPost },
+    );
+    return;
+  }
+  const date = String(bill.nextDueDate).slice(0, 10);
+  await api.post(`/scheduled-transactions/${bill.id}/overrides`, {
+    originalDate: date,
+    overrideDate: date,
+    autoPost,
+  });
 }
 
 /**

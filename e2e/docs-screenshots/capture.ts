@@ -82,10 +82,15 @@ export async function docShot(
   await shoot(page, file, { dir: DOCS_IMAGE_DIR, element });
 }
 
-/** The card (`Card`, a dashboard widget, a page section) that holds `inner`. */
+/**
+ * The card (`Card`, a dashboard widget, a page section) that holds `inner`, by
+ * the `ui-card` marker `CARD_CLASS` carries. Not by its corner class: the UI
+ * styles made the radius a token (`rounded-(--ui-radius-card)`), and the
+ * `rounded-lg` this used to look for matched no card at all.
+ */
 export function cardOf(inner: Locator): Locator {
   return inner.locator(
-    'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-lg ")][1]',
+    'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " ui-card ")][1]',
   );
 }
 
