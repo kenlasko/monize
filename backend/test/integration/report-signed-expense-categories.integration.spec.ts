@@ -240,12 +240,9 @@ describe("signed expenses in Spending by Category (integration)", () => {
     });
   });
 
-  it("uses direction for a legacy category with no type", async () => {
-    await db.query("UPDATE categories SET is_income = NULL WHERE id = $1", [
-      groceries,
-    ]);
-    await post(-100);
-    await post(150);
+  it("keeps uncategorized movements separate in tax and nets them in spending", async () => {
+    await post(-100, { categoryId: null });
+    await post(150, { categoryId: null });
     expect(await read()).toMatchObject({ data: [], totalSpending: 0 });
     expect(
       await withUserContext(userId, () =>
@@ -255,8 +252,8 @@ describe("signed expenses in Spending by Category (integration)", () => {
     expect(
       await withUserContext(userId, () => tax.getTaxSummary(userId, 2026)),
     ).toMatchObject({
-      incomeBySource: [{ name: "Groceries", total: 50 }],
-      allExpenses: [],
+      incomeBySource: [{ name: "Uncategorized", total: 150 }],
+      allExpenses: [{ name: "Uncategorized", total: 100 }],
     });
   });
 
