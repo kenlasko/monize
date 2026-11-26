@@ -151,6 +151,13 @@ The same table holds when the EUR file is imported first: the provisional leg is
 - **Where.** The accounts list and its summary, the register header, the net worth hero, chart and report, the custom report viewer, the built-in reports whose rows can be transfer legs, the payee and category account panels, and budget transfer actuals.
 - **Copy.** Reader-facing words are "estimated amount" and "includes estimated amounts". Keys live under a `provisional` name so they do not collide with the schedule estimate's keys.
 
+Decided in issue #2397 (the badge and the action):
+
+- One component, `ProvisionalAmountBadge` (`frontend/src/components/transactions/`), draws the label wherever a row's amount is drawn: the phone card, the desktop row's Amount cell, Folio's Payment or Deposit cell, the Pebble row and the Pebble inspector. It reads the flag through `isProvisionalAmount` (`frontend/src/lib/provisional-amount.ts`) as `=== true`, so a payload without the field is drawn as confirmed. Every register that renders `TransactionList` shows the badge.
+- The action is offered only where a caller passes `onConfirmAmount`; today that is the Transactions page. The endpoint is the owner's alone: it carries no `@AllowDelegate()`, so `AccountDelegateGuard` refuses it to an acting delegate, and it is scoped to the caller's `user_id`. The list therefore offers it only outside a delegate session, on a row whose `userId` is the signed-in reader's, and never on a row of a joint account shared to the reader. Letting a delegate confirm would be a backend change (the route's delegate annotation) and a separate proposal.
+- A refusal (most likely "not provisional", because the leg was confirmed elsewhere) is toasted and the page reloads, so the row shows the server's state.
+- After the endpoint answers, the page marks the row confirmed in place, then reloads through `loadAllData`, the path the register's delete takes: the rows, the accounts the account widget reads (where F2's count will live), and the reload key the widgets refetch on. A reload that fails therefore leaves no stale badge. `transactionsApi.confirmAmount` drops the cached balance reads. A second click on the same row before the reload lands sends nothing.
+
 ## 10. Test matrix
 
 The discussion's ten scenarios, each owned by a task.

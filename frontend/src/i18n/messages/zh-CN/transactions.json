@@ -233,6 +233,14 @@
     "scheduleRecurring": "设为定期计划",
     "delete": "删除"
   },
+  "provisional": {
+    "label": "估算金额",
+    "tooltip": "Monize 在导入此转账另一账户一侧时，按历史汇率估算了此金额。在导入此账户自己的文件或您确认金额之前，它仍是估算值。",
+    "confirmAction": "确认金额",
+    "confirmActionTitle": "将此金额保留为实际收到或支付的金额",
+    "confirmed": "金额已确认",
+    "confirmFailed": "无法确认金额"
+  },
   "filter": {
     "favourites": "收藏：",
     "panel": {

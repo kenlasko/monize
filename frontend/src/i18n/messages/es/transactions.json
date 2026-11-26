@@ -233,6 +233,14 @@
     "scheduleRecurring": "Programar como recurrente",
     "delete": "Eliminar"
   },
+  "provisional": {
+    "label": "Importe estimado",
+    "tooltip": "Monize estimó este importe al tipo de cambio histórico al importar el lado de esta transferencia de la otra cuenta. Seguirá siendo una estimación hasta que se importe el archivo propio de esta cuenta o confirme el importe.",
+    "confirmAction": "Confirmar importe",
+    "confirmActionTitle": "Conservar este importe como el importe real recibido o pagado",
+    "confirmed": "Importe confirmado",
+    "confirmFailed": "No se pudo confirmar el importe"
+  },
   "filter": {
     "favourites": "Favoritos:",
     "panel": {
