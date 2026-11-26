@@ -397,6 +397,24 @@ describe("provisional count on custom reports and transaction analytics (integra
         }),
       );
       expect(flows.provisionalCount).toBe(0);
+
+      const rollup = await asUser(() =>
+        analytics.getLlmListTransactions(userId, {
+          startDate: START,
+          endDate: END,
+          transfersOnly: true,
+        }),
+      );
+      expect(
+        rollup.transfers?.accounts.map((a) => [
+          a.accountName,
+          a.provisionalCount,
+        ]),
+      ).toEqual([
+        ["Euro Savings", 1],
+        ["US Chequing", 0],
+      ]);
+      expect(rollup.transfers?.provisionalCount).toBe(1);
     });
 
     it("reads the period comparison's count, 0 while it leaves transfers out", async () => {

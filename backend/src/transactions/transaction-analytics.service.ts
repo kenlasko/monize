@@ -154,6 +154,8 @@ export interface TransferAccountSummary {
   outbound: number;
   net: number;
   transferCount: number;
+  /** The provisional legs inside `inbound` / `outbound`. */
+  provisionalCount: number;
 }
 
 export interface TransfersByAccountResult {
@@ -161,6 +163,8 @@ export interface TransfersByAccountResult {
   totalInbound: number;
   totalOutbound: number;
   transferCount: number;
+  /** The provisional legs inside the two totals. */
+  provisionalCount: number;
 }
 
 /**
@@ -213,8 +217,11 @@ export interface LlmConvertedFlowFields {
   /**
    * How many provisional transfer amounts (`amountIsProvisional`: Monize's
    * estimate until the other account's file is imported) the known totals
-   * hold. They are included; nothing is withheld for them. Always 0 while
-   * transfers are excluded, as they are from income and expenses.
+   * hold. They are included; nothing is withheld for them. 0 whenever the
+   * read excludes transfers, as `list_transactions` and `query_transactions`
+   * do; the MCP `financial-summary` and `recent-transactions` resources keep
+   * transfers (`getLlmFlowTotals` with `excludeTransfers: false`), so theirs
+   * can be above 0. A `transfers` rollup carries its own count.
    */
   provisionalCount: number;
 }
@@ -354,6 +361,12 @@ export class TransactionAnalyticsService {
           "outbound",
         )
         .addSelect("COUNT(*)", "count")
+        // Every row here is a whole transfer leg, the only kind that can be
+        // provisional (design section 6, P5).
+        .addSelect(
+          "COUNT(*) FILTER (WHERE t.amountIsProvisional = true)",
+          "provisionalCount",
+        )
         .where("t.userId = :userId", { userId })
         .andWhere("t.isTransfer = true")
         .andWhere("t.transactionDate >= :startDate", { startDate })
@@ -387,6 +400,7 @@ export class TransactionAnalyticsService {
           outbound,
           net: roundMoney(inbound - outbound, decimals),
           transferCount: Number(r.count) || 0,
+          provisionalCount: Number(r.provisionalCount) || 0,
         };
       });
 
@@ -404,6 +418,7 @@ export class TransactionAnalyticsService {
           MONEY_SCALE,
         ),
         transferCount: accounts.reduce((s, a) => s + a.transferCount, 0),
+        provisionalCount: accounts.reduce((s, a) => s + a.provisionalCount, 0),
       };
     });
   }

@@ -1731,6 +1731,42 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
+    it("counts each account's provisional legs and their total", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          accountId: "acc-usd",
+          accountName: "US Chequing",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "100",
+          count: "1",
+          provisionalCount: "0",
+        },
+        {
+          accountId: "acc-eur",
+          accountName: "Euro Savings",
+          currencyCode: "EUR",
+          inbound: "80",
+          outbound: "0",
+          count: "1",
+          provisionalCount: "1",
+        },
+      ]);
+
+      const result = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(*) FILTER (WHERE t.amountIsProvisional = true)",
+        "provisionalCount",
+      );
+      expect(result.accounts.map((a) => a.provisionalCount)).toEqual([0, 1]);
+      expect(result.provisionalCount).toBe(1);
+    });
+
     it("aggregates inbound, outbound, net, and count per account", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {
