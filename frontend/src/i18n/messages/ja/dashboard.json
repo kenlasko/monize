@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "{sincePayeeName}で最後に支出したのは{sincePayeeDay}で、{sincePayeeDays}前です。",
       "activityBillsDueThisWeek": "今後 7 日間に支払期限が来る請求:{billsDueCount}件、合計{billsDueTotal}。",
       "activityNextBill": "次の請求は{nextBillName}で、{nextBillAmount}、期限は{nextBillDate}です。",
-      "spendingBudgetPace": "今月の経過は{budgetMonthPercent}で、{budgetName}の予算({budgetTotal})のうち{budgetSpent}、{budgetUsedPercent}を使っています。",
+      "spendingBudgetPace": "{budgetName} — 純支出：{budgetSpent} ({budgetUsedPercent})。予算：{budgetTotal}。今月の{budgetMonthPercent}が経過。",
       "investmentsTopMoverUp": "{moverSession}の値動きが最も大きかったのは{moverSymbol}で、{moverPercent}上昇し、保有分は{moverValueChange}増えました。",
       "investmentsTopMoverDown": "{moverSession}の値動きが最も大きかったのは{moverSymbol}で、{moverPercent}下落し、保有分は{moverValueChange}減りました。",
       "activityAnniversary": "今週は、Monize での最初の取引({anniversaryFirstDate})から{anniversaryYears}です。",
@@ -272,8 +272,8 @@
         "c": "期限が{nextBillDate}の次の請求は{nextBillName}で、{nextBillAmount}です。"
       },
       "spendingBudgetPace": {
-        "b": "今月の経過は{budgetMonthPercent}で、{budgetName}の予算{budgetTotal}のうち{budgetSpent}、{budgetUsedPercent}を使いました。",
-        "c": "{budgetName}の予算は{budgetUsedPercent}を使用({budgetSpent}/{budgetTotal})、今月の経過は{budgetMonthPercent}です。"
+        "b": "{budgetName} — 予算：{budgetTotal}。純支出：{budgetSpent} ({budgetUsedPercent})。今月の{budgetMonthPercent}が経過。",
+        "c": "{budgetName} — 今月の{budgetMonthPercent}が経過。予算：{budgetTotal}。純支出：{budgetSpent} ({budgetUsedPercent})。"
       },
       "investmentsTopMoverUp": {
         "b": "{moverSession}にポートフォリオで最も動いたのは{moverSymbol}で、{moverPercent}上昇し、保有分は{moverValueChange}増えました。",

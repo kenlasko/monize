@@ -6,8 +6,8 @@
       "WANT": "इच्छाएं",
       "SAVING": "बचत"
     },
-    "target": "लक्ष्य: {percent}%",
-    "budgeted": "बजटीय: {percent}% ({amount})"
+    "target": "लक्ष्य: {percent}",
+    "budgeted": "बजटीय: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "संपादित करें: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (अनुमानित)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% उपयोग",
-    "paceMarkerTitle": "अपेक्षित गति: {percent}%"
+    "ariaLabel": "{percent} उपयोग",
+    "paceMarkerTitle": "अपेक्षित गति: {percent}"
   },
   "scenarioPlanner": {
     "title": "क्या होगा परिदृश्य योजनाकार",

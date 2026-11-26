@@ -6,8 +6,8 @@
       "WANT": "欲しいもの",
       "SAVING": "貯蓄"
     },
-    "target": "目標：{percent}%",
-    "budgeted": "予算：{percent}%（{amount}）"
+    "target": "目標：{percent}",
+    "budgeted": "予算：{percent}（{amount}）"
   },
   "categoryForm": {
     "editTitle": "編集：{name}",
@@ -151,8 +151,8 @@
     "projected": "{label}（予測）"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% 使用済み",
-    "paceMarkerTitle": "予想ペース：{percent}%"
+    "ariaLabel": "{percent} 使用済み",
+    "paceMarkerTitle": "予想ペース：{percent}"
   },
   "scenarioPlanner": {
     "title": "仮定シナリオプランナー",

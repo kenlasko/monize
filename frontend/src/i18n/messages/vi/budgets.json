@@ -6,8 +6,8 @@
       "WANT": "Nhu cầu muốn có",
       "SAVING": "Tiết kiệm"
     },
-    "target": "Mục tiêu: {percent}%",
-    "budgeted": "Đã lập ngân sách: {percent}% ({amount})"
+    "target": "Mục tiêu: {percent}",
+    "budgeted": "Đã lập ngân sách: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Chỉnh sửa: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (Dự báo)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% đã dùng",
-    "paceMarkerTitle": "Tiến độ dự kiến: {percent}%"
+    "ariaLabel": "{percent} đã dùng",
+    "paceMarkerTitle": "Tiến độ dự kiến: {percent}"
   },
   "scenarioPlanner": {
     "title": "Trình lập kế hoạch giả định",

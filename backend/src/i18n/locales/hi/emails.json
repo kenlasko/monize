@@ -84,7 +84,7 @@
     "labelBudgeted": "बजटित",
     "labelSpent": "खर्च किया गया",
     "labelRemaining": "शेष",
-    "percentUsed": "{{ percent }}% उपयोग किया गया",
+    "percentUsed": "{{ percent }} उपयोग किया गया",
     "topCategories": "शीर्ष श्रेणियाँ",
     "button": "बजट डैशबोर्ड देखें"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "लचीले समूह “{{ group }}” ने अपने {{ budgeted }} के संयुक्त बजट में से {{ spent }} उपयोग किए हैं ({{ percent }}%)।",
       "incomeTitle": "आय अपेक्षा से कम है",
       "incomeMessage": "इस अवधि के इस चरण में आपकी वास्तविक आय ({{ actual }}), अपेक्षित आय ({{ expected }}) का {{ ratio }}% है।",
+      "netActivityTitle": "बजट गतिविधि",
+      "netSpendingMessage": "शुद्ध खर्च: {{ spent }}. बजट: {{ budgeted }}.",
+      "netIncomeMessage": "शुद्ध आय: {{ actual }}. अब तक की अपेक्षित आय: {{ expected }}.",
       "milestoneTitle": "बजट सही दिशा में है",
       "milestoneMessage": "अवधि का {{ progress }}% बीत चुका है और आपने कुल बजट का केवल {{ percent }}% उपयोग किया है। ऐसे ही जारी रखें!",
       "seasonalTitle": "{{ category }} में मौसमी वृद्धि की संभावना है",

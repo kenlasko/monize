@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "您上次在{sincePayeeName}消費是{sincePayeeDay}，距今{sincePayeeDays}前。",
       "activityBillsDueThisWeek": "未來七天內到期的帳單：{billsDueCount}筆，共計{billsDueTotal}。",
       "activityNextBill": "您的下一筆帳單是{nextBillName}，金額{nextBillAmount}，到期日為{nextBillDate}。",
-      "spendingBudgetPace": "本月已過去{budgetMonthPercent}，您的{budgetName}預算（{budgetTotal}）已用掉{budgetSpent}，即{budgetUsedPercent}。",
+      "spendingBudgetPace": "{budgetName} — 淨支出：{budgetSpent} ({budgetUsedPercent})。預算：{budgetTotal}。本月已過{budgetMonthPercent}。",
       "investmentsTopMoverUp": "{moverSession}波動最大的是{moverSymbol}，上漲{moverPercent}，使您的持股增加了{moverValueChange}。",
       "investmentsTopMoverDown": "{moverSession}波動最大的是{moverSymbol}，下跌{moverPercent}，使您的持股減少了{moverValueChange}。",
       "activityAnniversary": "本週距您在 Monize 中的第一筆交易（{anniversaryFirstDate}）滿{anniversaryYears}。",
@@ -272,8 +272,8 @@
         "c": "到期日為{nextBillDate}的下一筆帳單是{nextBillName}，金額{nextBillAmount}。"
       },
       "spendingBudgetPace": {
-        "b": "本月已過去{budgetMonthPercent}，您的{budgetName}預算{budgetTotal}已用掉{budgetSpent}，即{budgetUsedPercent}。",
-        "c": "您的{budgetName}預算已用{budgetUsedPercent}（{budgetSpent}／{budgetTotal}），本月已過去{budgetMonthPercent}。"
+        "b": "{budgetName} — 預算：{budgetTotal}。淨支出：{budgetSpent} ({budgetUsedPercent})。本月已過{budgetMonthPercent}。",
+        "c": "{budgetName} — 本月已過{budgetMonthPercent}。預算：{budgetTotal}。淨支出：{budgetSpent} ({budgetUsedPercent})。"
       },
       "investmentsTopMoverUp": {
         "b": "{moverSession}，{moverSymbol}是您投資組合中波動最大的，上漲{moverPercent}，使持股增加{moverValueChange}。",

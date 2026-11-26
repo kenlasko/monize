@@ -6,8 +6,8 @@
       "WANT": "Бажання",
       "SAVING": "Заощадження"
     },
-    "target": "Ціль: {percent}%",
-    "budgeted": "Заплановано: {percent}% ({amount})"
+    "target": "Ціль: {percent}",
+    "budgeted": "Заплановано: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Редагувати: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (Прогноз)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% використано",
-    "paceMarkerTitle": "Очікуваний темп: {percent}%"
+    "ariaLabel": "{percent} використано",
+    "paceMarkerTitle": "Очікуваний темп: {percent}"
   },
   "scenarioPlanner": {
     "title": "Планувальник сценаріїв",

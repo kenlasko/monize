@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Bạn chi lần gần nhất cho {sincePayeeName} vào {sincePayeeDay}, cách đây {sincePayeeDays}.",
       "activityBillsDueThisWeek": "Hóa đơn đến hạn trong bảy ngày tới: {billsDueCount}, tổng cộng {billsDueTotal}.",
       "activityNextBill": "Hóa đơn tiếp theo của bạn là {nextBillName}, {nextBillAmount}, đến hạn {nextBillDate}.",
-      "spendingBudgetPace": "Bạn đã dùng {budgetUsedPercent} ngân sách {budgetName} ({budgetSpent} trên {budgetTotal}), khi tháng đã trôi qua {budgetMonthPercent}.",
+      "spendingBudgetPace": "{budgetName} — Chi tiêu ròng: {budgetSpent} ({budgetUsedPercent}). Ngân sách: {budgetTotal}. {budgetMonthPercent} thời gian của tháng đã trôi qua.",
       "investmentsTopMoverUp": "Mã biến động mạnh nhất của bạn vào {moverSession} là {moverSymbol}, tăng {moverPercent}, thêm {moverValueChange} vào vị thế của bạn.",
       "investmentsTopMoverDown": "Mã biến động mạnh nhất của bạn vào {moverSession} là {moverSymbol}, giảm {moverPercent}, làm vị thế của bạn mất {moverValueChange}.",
       "activityAnniversary": "Tuần này tròn {anniversaryYears} kể từ giao dịch đầu tiên của bạn trong Monize, vào {anniversaryFirstDate}.",
@@ -272,8 +272,8 @@
         "c": "Đến hạn {nextBillDate}, hóa đơn tiếp theo của bạn là {nextBillName}, {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "Khi tháng đã trôi qua {budgetMonthPercent}, bạn đã chi {budgetSpent} trên ngân sách {budgetName} {budgetTotal}, tức {budgetUsedPercent}.",
-        "c": "Ngân sách {budgetName} của bạn đã dùng {budgetUsedPercent} ({budgetSpent} trên {budgetTotal}), và tháng đã trôi qua {budgetMonthPercent}."
+        "b": "{budgetName} — Ngân sách: {budgetTotal}. Chi tiêu ròng: {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} thời gian của tháng đã trôi qua.",
+        "c": "{budgetName} — {budgetMonthPercent} thời gian của tháng đã trôi qua. Ngân sách: {budgetTotal}. Chi tiêu ròng: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSymbol} là mã biến động mạnh nhất trong danh mục của bạn vào {moverSession}: tăng {moverPercent}, thêm {moverValueChange} vào vị thế của bạn.",

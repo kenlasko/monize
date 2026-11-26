@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Hai speso presso {sincePayeeName} per l'ultima volta il {sincePayeeDay}, {sincePayeeDays} fa.",
       "activityBillsDueThisWeek": "Fatture in scadenza nei prossimi sette giorni: {billsDueCount}, per un totale di {billsDueTotal}.",
       "activityNextBill": "La tua prossima fattura è {nextBillName}, di {nextBillAmount}, in scadenza il {nextBillDate}.",
-      "spendingBudgetPace": "Hai usato il {budgetUsedPercent} del tuo budget {budgetName} ({budgetSpent} su {budgetTotal}) e il {budgetMonthPercent} del mese è trascorso.",
+      "spendingBudgetPace": "{budgetName} — Spesa netta: {budgetSpent} ({budgetUsedPercent}). Budget: {budgetTotal}. {budgetMonthPercent} del mese trascorso.",
       "investmentsTopMoverUp": "Il titolo che si è mosso di più il {moverSession} è {moverSymbol}, in rialzo del {moverPercent}, che ha aggiunto {moverValueChange} alla tua posizione.",
       "investmentsTopMoverDown": "Il titolo che si è mosso di più il {moverSession} è {moverSymbol}, in calo del {moverPercent}, che ha tolto {moverValueChange} dalla tua posizione.",
       "activityAnniversary": "La tua prima transazione in Monize, registrata il {anniversaryFirstDate}, questa settimana ha {anniversaryYears}.",
@@ -272,8 +272,8 @@
         "c": "In scadenza il {nextBillDate}, la tua prossima fattura è {nextBillName}, di {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "È trascorso il {budgetMonthPercent} del mese e hai speso {budgetSpent} del tuo budget {budgetName} da {budgetTotal}, ovvero il {budgetUsedPercent}.",
-        "c": "Il tuo budget {budgetName} è usato al {budgetUsedPercent} ({budgetSpent} su {budgetTotal}), e il {budgetMonthPercent} del mese è passato."
+        "b": "{budgetName} — Budget: {budgetTotal}. Spesa netta: {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} del mese trascorso.",
+        "c": "{budgetName} — {budgetMonthPercent} del mese trascorso. Budget: {budgetTotal}. Spesa netta: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSymbol} è stato il titolo che si è mosso di più nel tuo portafoglio il {moverSession}: in rialzo del {moverPercent}, ha aggiunto {moverValueChange} alla tua posizione.",

@@ -84,7 +84,7 @@
     "labelBudgeted": "예산",
     "labelSpent": "지출",
     "labelRemaining": "잔여",
-    "percentUsed": "{{ percent }}% 사용",
+    "percentUsed": "{{ percent }} 사용",
     "topCategories": "주요 카테고리",
     "button": "예산 대시보드 보기"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "유동 그룹 “{{ group }}”이(가) 통합 예산 {{ budgeted }} 중 {{ spent }}을 사용했습니다({{ percent }}%).",
       "incomeTitle": "수입이 예상보다 적습니다",
       "incomeMessage": "현재 시점의 실제 수입({{ actual }})은 예상 수입({{ expected }})의 {{ ratio }}%입니다.",
+      "netActivityTitle": "예산 현황",
+      "netSpendingMessage": "순지출: {{ spent }}. 예산: {{ budgeted }}.",
+      "netIncomeMessage": "순수입: {{ actual }}. 현재까지 예상 수입: {{ expected }}.",
       "milestoneTitle": "예산이 순조롭게 진행 중입니다",
       "milestoneMessage": "기간의 {{ progress }}%가 지났고 전체 예산의 {{ percent }}%만 사용했습니다. 계속 유지하세요!",
       "seasonalTitle": "{{ category }}의 계절적 지출 증가가 예상됩니다",

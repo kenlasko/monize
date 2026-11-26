@@ -6,8 +6,8 @@
       "WANT": "İstekler",
       "SAVING": "Tasarruflar"
     },
-    "target": "Hedef: %{percent}",
-    "budgeted": "Bütçelenen: %{percent} ({amount})"
+    "target": "Hedef: {percent}",
+    "budgeted": "Bütçelenen: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Düzenle: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (Tahmini)"
   },
   "progressBar": {
-    "ariaLabel": "%{percent} kullanıldı",
-    "paceMarkerTitle": "Beklenen hız: %{percent}"
+    "ariaLabel": "{percent} kullanıldı",
+    "paceMarkerTitle": "Beklenen hız: {percent}"
   },
   "scenarioPlanner": {
     "title": "Varsayımsal Senaryo Planlayıcısı",

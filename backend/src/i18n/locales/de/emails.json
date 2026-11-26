@@ -84,7 +84,7 @@
     "labelBudgeted": "Budgetiert",
     "labelSpent": "Ausgegeben",
     "labelRemaining": "Verbleibend",
-    "percentUsed": "{{ percent }}% verwendet",
+    "percentUsed": "{{ percent }} verwendet",
     "topCategories": "Top-Kategorien",
     "button": "Budget-Dashboard anzeigen"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "Die Flex-Gruppe „{{ group }}“ hat {{ spent }} ihres Gesamtbudgets von {{ budgeted }} verbraucht ({{ percent }}%).",
       "incomeTitle": "Einkommen unter den Erwartungen",
       "incomeMessage": "Dein tatsächliches Einkommen ({{ actual }}) beträgt {{ ratio }}% des zu diesem Zeitpunkt erwarteten Einkommens ({{ expected }}).",
+      "netActivityTitle": "Budgetaktivität",
+      "netSpendingMessage": "Nettoausgaben: {{ spent }}. Budget: {{ budgeted }}.",
+      "netIncomeMessage": "Nettoeinnahmen: {{ actual }}. Bisher erwartete Einnahmen: {{ expected }}.",
       "milestoneTitle": "Budget im Plan",
       "milestoneMessage": "{{ progress }}% des Zeitraums sind vergangen und du hast erst {{ percent }}% deines Gesamtbudgets verbraucht. Weiter so!",
       "seasonalTitle": "Saisonaler Ausgabenanstieg für {{ category }} erwartet",

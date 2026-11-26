@@ -6,8 +6,8 @@
       "WANT": "想要",
       "SAVING": "儲蓄"
     },
-    "target": "目標：{percent}%",
-    "budgeted": "已預算：{percent}% ({amount})"
+    "target": "目標：{percent}",
+    "budgeted": "已預算：{percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "編輯：{name}",
@@ -151,8 +151,8 @@
     "projected": "{label}（預計）"
   },
   "progressBar": {
-    "ariaLabel": "已使用 {percent}%",
-    "paceMarkerTitle": "預期進度：{percent}%"
+    "ariaLabel": "已使用 {percent}",
+    "paceMarkerTitle": "預期進度：{percent}"
   },
   "scenarioPlanner": {
     "title": "情境規劃器",

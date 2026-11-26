@@ -6,8 +6,8 @@
       "WANT": "Desideri",
       "SAVING": "Risparmio"
     },
-    "target": "Obiettivo: {percent}%",
-    "budgeted": "Nel budget: {percent}% ({amount})"
+    "target": "Obiettivo: {percent}",
+    "budgeted": "Nel budget: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Modifica: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (Previsto)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% utilizzato",
-    "paceMarkerTitle": "Ritmo previsto: {percent}%"
+    "ariaLabel": "{percent} utilizzato",
+    "paceMarkerTitle": "Ritmo previsto: {percent}"
   },
   "scenarioPlanner": {
     "title": "Pianificatore scenari ipotetici",

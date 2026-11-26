@@ -6,8 +6,8 @@
       "WANT": "Keinginan",
       "SAVING": "Tabungan"
     },
-    "target": "Target: {percent}%",
-    "budgeted": "Dianggarkan: {percent}% ({amount})"
+    "target": "Target: {percent}",
+    "budgeted": "Dianggarkan: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Edit: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (Proyeksi)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% terpakai",
-    "paceMarkerTitle": "Kecepatan yang diharapkan: {percent}%"
+    "ariaLabel": "{percent} terpakai",
+    "paceMarkerTitle": "Kecepatan yang diharapkan: {percent}"
   },
   "scenarioPlanner": {
     "title": "Perencana Skenario Bagaimana-Jika",

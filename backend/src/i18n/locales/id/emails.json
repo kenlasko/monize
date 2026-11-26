@@ -84,7 +84,7 @@
     "labelBudgeted": "Dianggarkan",
     "labelSpent": "Dibelanjakan",
     "labelRemaining": "Sisa",
-    "percentUsed": "{{ percent }}% digunakan",
+    "percentUsed": "{{ percent }} digunakan",
     "topCategories": "Kategori Teratas",
     "button": "Lihat Dasbor Anggaran"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "Grup fleksibel “{{ group }}” telah menggunakan {{ spent }} dari anggaran gabungan {{ budgeted }} ({{ percent }}%).",
       "incomeTitle": "Pendapatan di bawah perkiraan",
       "incomeMessage": "Pendapatan aktual Anda ({{ actual }}) adalah {{ ratio }}% dari pendapatan yang diharapkan ({{ expected }}) pada tahap periode ini.",
+      "netActivityTitle": "Aktivitas anggaran",
+      "netSpendingMessage": "Pengeluaran bersih: {{ spent }}. Anggaran: {{ budgeted }}.",
+      "netIncomeMessage": "Pendapatan bersih: {{ actual }}. Perkiraan pendapatan hingga saat ini: {{ expected }}.",
       "milestoneTitle": "Anggaran sesuai rencana",
       "milestoneMessage": "{{ progress }}% periode telah berlalu dan Anda baru menggunakan {{ percent }}% dari total anggaran. Pertahankan!",
       "seasonalTitle": "Lonjakan musiman diperkirakan untuk {{ category }}",

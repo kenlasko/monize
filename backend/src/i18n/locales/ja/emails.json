@@ -84,7 +84,7 @@
     "labelBudgeted": "予算額",
     "labelSpent": "支出額",
     "labelRemaining": "残額",
-    "percentUsed": "{{ percent }}% 使用済み",
+    "percentUsed": "{{ percent }} 使用済み",
     "topCategories": "主なカテゴリ",
     "button": "予算ダッシュボードを確認する"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "フレックスグループ「{{ group }}」は合計予算{{ budgeted }}のうち{{ spent }}を使用しました（{{ percent }}%）。",
       "incomeTitle": "収入が予想を下回っています",
       "incomeMessage": "この期間の現時点で、実際の収入（{{ actual }}）は予想収入（{{ expected }}）の{{ ratio }}%です。",
+      "netActivityTitle": "予算の状況",
+      "netSpendingMessage": "純支出：{{ spent }}。予算：{{ budgeted }}。",
+      "netIncomeMessage": "純収入：{{ actual }}。現時点の予定収入：{{ expected }}。",
       "milestoneTitle": "予算は順調です",
       "milestoneMessage": "期間の{{ progress }}%が経過しましたが、予算全体の{{ percent }}%しか使用していません。その調子です！",
       "seasonalTitle": "{{ category }}の季節的な支出増加が予想されます",

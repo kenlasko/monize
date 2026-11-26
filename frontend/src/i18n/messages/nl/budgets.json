@@ -6,8 +6,8 @@
       "WANT": "Wensen",
       "SAVING": "Sparen"
     },
-    "target": "Doel: {percent}%",
-    "budgeted": "Gebudgetteerd: {percent}% ({amount})"
+    "target": "Doel: {percent}",
+    "budgeted": "Gebudgetteerd: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Bewerken: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (Gepland)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% gebruikt",
-    "paceMarkerTitle": "Verwacht tempo: {percent}%"
+    "ariaLabel": "{percent} gebruikt",
+    "paceMarkerTitle": "Verwacht tempo: {percent}"
   },
   "scenarioPlanner": {
     "title": "Wat-als-scenarioplanner",

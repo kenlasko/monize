@@ -6,8 +6,8 @@
       "WANT": "欲望",
       "SAVING": "储蓄"
     },
-    "target": "目标：{percent}%",
-    "budgeted": "已预算：{percent}%（{amount}）"
+    "target": "目标：{percent}",
+    "budgeted": "已预算：{percent}（{amount}）"
   },
   "categoryForm": {
     "editTitle": "编辑：{name}",
@@ -151,8 +151,8 @@
     "projected": "{label}（预测）"
   },
   "progressBar": {
-    "ariaLabel": "已用 {percent}%",
-    "paceMarkerTitle": "预期进度：{percent}%"
+    "ariaLabel": "已用 {percent}",
+    "paceMarkerTitle": "预期进度：{percent}"
   },
   "scenarioPlanner": {
     "title": "假设情景规划器",

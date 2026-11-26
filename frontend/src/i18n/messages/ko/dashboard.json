@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "{sincePayeeName}에서 마지막으로 지출한 날은 {sincePayeeDay}(이)며, {sincePayeeDays} 전입니다.",
       "activityBillsDueThisWeek": "앞으로 7일 안에 결제일이 돌아오는 청구서: {billsDueCount}건, 합계 {billsDueTotal}.",
       "activityNextBill": "다음 청구서는 {nextBillName}(이)며, 금액은 {nextBillAmount}, 기한은 {nextBillDate}입니다.",
-      "spendingBudgetPace": "이번 달이 {budgetMonthPercent} 지난 시점에 {budgetName} 예산 {budgetTotal} 중 {budgetSpent}, 즉 {budgetUsedPercent}를 사용했습니다.",
+      "spendingBudgetPace": "{budgetName} — 순지출: {budgetSpent} ({budgetUsedPercent}). 예산: {budgetTotal}. 이번 달의 {budgetMonthPercent} 경과.",
       "investmentsTopMoverUp": "{moverSession}에 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 올라 보유분이 {moverValueChange} 늘었습니다.",
       "investmentsTopMoverDown": "{moverSession}에 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 내려 보유분이 {moverValueChange} 줄었습니다.",
       "activityAnniversary": "이번 주는 Monize에서 첫 거래를 기록한 {anniversaryFirstDate}(으)로부터 {anniversaryYears}이 되는 주입니다.",
@@ -272,8 +272,8 @@
         "c": "기한이 {nextBillDate}인 다음 청구서는 {nextBillName}(이)며, {nextBillAmount}입니다."
       },
       "spendingBudgetPace": {
-        "b": "이번 달이 {budgetMonthPercent} 지난 시점에 {budgetName} 예산 {budgetTotal} 중 {budgetSpent}, 즉 {budgetUsedPercent}를 썼습니다.",
-        "c": "{budgetName} 예산은 {budgetUsedPercent} 사용했고({budgetSpent}/{budgetTotal}), 이번 달은 {budgetMonthPercent} 지났습니다."
+        "b": "{budgetName} — 예산: {budgetTotal}. 순지출: {budgetSpent} ({budgetUsedPercent}). 이번 달의 {budgetMonthPercent} 경과.",
+        "c": "{budgetName} — 이번 달의 {budgetMonthPercent} 경과. 예산: {budgetTotal}. 순지출: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSession}에 포트폴리오에서 가장 크게 움직인 종목은 {moverSymbol}(이)며, {moverPercent} 올라 보유분이 {moverValueChange} 늘었습니다.",

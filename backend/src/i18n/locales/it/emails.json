@@ -84,7 +84,7 @@
     "labelBudgeted": "Budget",
     "labelSpent": "Speso",
     "labelRemaining": "Rimanente",
-    "percentUsed": "{{ percent }}% utilizzato",
+    "percentUsed": "{{ percent }} utilizzato",
     "topCategories": "Categorie principali",
     "button": "Visualizza pannello budget"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "Il gruppo flessibile «{{ group }}» ha utilizzato {{ spent }} del budget complessivo di {{ budgeted }} ({{ percent }}%).",
       "incomeTitle": "Entrate inferiori alle attese",
       "incomeMessage": "Le tue entrate effettive ({{ actual }}) sono pari al {{ ratio }}% delle entrate previste ({{ expected }}) a questo punto del periodo.",
+      "netActivityTitle": "Attività del budget",
+      "netSpendingMessage": "Spesa netta: {{ spent }}. Budget: {{ budgeted }}.",
+      "netIncomeMessage": "Entrate nette: {{ actual }}. Entrate previste a oggi: {{ expected }}.",
       "milestoneTitle": "Budget sotto controllo",
       "milestoneMessage": "È trascorso il {{ progress }}% del periodo e hai utilizzato solo il {{ percent }}% del budget totale. Continua così!",
       "seasonalTitle": "Aumento stagionale previsto per {{ category }}",

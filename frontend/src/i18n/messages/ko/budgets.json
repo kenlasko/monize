@@ -6,8 +6,8 @@
       "WANT": "선택 지출",
       "SAVING": "저축"
     },
-    "target": "목표: {percent}%",
-    "budgeted": "예산 설정: {percent}% ({amount})"
+    "target": "목표: {percent}",
+    "budgeted": "예산 설정: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "편집: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (예상)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% 사용됨",
-    "paceMarkerTitle": "예상 진도: {percent}%"
+    "ariaLabel": "{percent} 사용됨",
+    "paceMarkerTitle": "예상 진도: {percent}"
   },
   "scenarioPlanner": {
     "title": "가상 시나리오 플래너",

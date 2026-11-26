@@ -84,7 +84,7 @@
     "labelBudgeted": "Zabudżetowane",
     "labelSpent": "Wydane",
     "labelRemaining": "Pozostało",
-    "percentUsed": "{{ percent }}% wykorzystane",
+    "percentUsed": "{{ percent }} wykorzystane",
     "topCategories": "Najważniejsze kategorie",
     "button": "Zobacz panel budżetu"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "Grupa elastyczna „{{ group }}” wykorzystała {{ spent }} z łącznego budżetu {{ budgeted }} ({{ percent }}%).",
       "incomeTitle": "Dochód poniżej oczekiwań",
       "incomeMessage": "Rzeczywisty dochód ({{ actual }}) stanowi {{ ratio }}% oczekiwanego dochodu ({{ expected }}) na tym etapie okresu.",
+      "netActivityTitle": "Stan budżetu",
+      "netSpendingMessage": "Wydatki netto: {{ spent }}. Budżet: {{ budgeted }}.",
+      "netIncomeMessage": "Dochód netto: {{ actual }}. Oczekiwany dochód do dziś: {{ expected }}.",
       "milestoneTitle": "Budżet pod kontrolą",
       "milestoneMessage": "Upłynęło {{ progress }}% okresu, a wykorzystano tylko {{ percent }}% całego budżetu. Tak trzymaj!",
       "seasonalTitle": "Spodziewany sezonowy wzrost wydatków: {{ category }}",
