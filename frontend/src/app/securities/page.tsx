@@ -30,7 +30,9 @@ import { SEGMENTED_TOOLBAR_GROUP_CLASS, toolbarSegmentClass } from '@/components
 import { RefreshPricesButton } from '@/components/investments/RefreshPricesButton';
 import { securityPositionValue, compareSecurityValues } from '@/lib/security-value';
 import { createLogger } from '@/lib/logger';
-import { getErrorMessage } from '@/lib/errors';
+import { getErrorMessage, getRecordInUseEntries, type RecordInUseEntry } from '@/lib/errors';
+import { securityInUseHref } from '@/lib/record-in-use-hrefs';
+import { RecordInUseDialog } from '@/components/ui/RecordInUseDialog';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useOnUndoRedo } from '@/hooks/useOnUndoRedo';
 import { useOnAiAction } from '@/hooks/useOnAiAction';
@@ -59,6 +61,7 @@ function SecuritiesContent() {
     isOpen: false,
     security: null,
   });
+  const [inUse, setInUse] = useState<{ security: Security; entries: RecordInUseEntry[] } | null>(null);
   const { showForm, editingItem: editingSecurity, openCreate, openEdit, close, isEditing, modalProps, setFormDirty, unsavedChangesDialog, formSubmitRef } = useFormModal<Security>();
   // Legacy deep link: `?price=<securityId>` used to open a price-history modal
   // on this page. The detail page owns that view now, so the link is honoured by
@@ -274,7 +277,12 @@ function SecuritiesContent() {
       toast.success(t('page.toasts.deleted', { symbol: security.symbol }));
       loadData();
     } catch (error) {
-      toast.error(getErrorMessage(error, t('page.toasts.deleteFailed')));
+      const entries = getRecordInUseEntries(error);
+      if (entries) {
+        setInUse({ security, entries });
+      } else {
+        toast.error(getErrorMessage(error, t('page.toasts.deleteFailed')));
+      }
     }
   };
 
@@ -543,6 +551,11 @@ function SecuritiesContent() {
           variant="danger"
           onConfirm={handleDeleteConfirm}
           onCancel={handleDeleteCancel}
+        />
+        <RecordInUseDialog
+          inUse={inUse && { name: inUse.security.symbol, entries: inUse.entries }}
+          hrefFor={(entry) => (inUse ? securityInUseHref(inUse.security.id, entry) : undefined)}
+          onClose={() => setInUse(null)}
         />
       </main>
     </PageLayout>

@@ -62,7 +62,8 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 // Mock errors
-vi.mock('@/lib/errors', () => ({
+vi.mock('@/lib/errors', async (importOriginal) => ({
+  getRecordInUseEntries: (await importOriginal<typeof import('@/lib/errors')>()).getRecordInUseEntries,
   getErrorMessage: vi.fn((_e: any, fallback: string) => fallback),
 }));
 
@@ -823,6 +824,32 @@ describe('SecuritiesPage', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to delete security');
     });
+  });
+
+  it('shows what still uses the security, linked, when the delete is refused with 409', async () => {
+    const { investmentsApi } = await import('@/lib/investments');
+    (investmentsApi.deleteSecurity as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      Object.assign(new Error('Conflict'), {
+        isAxiosError: true,
+        response: {
+          status: 409,
+          data: {
+            errorCode: 'RECORD_IN_USE',
+            errors: [{ kind: 'holdings', count: 2 }, { kind: 'bankSyncLinks', count: 1 }],
+          },
+        },
+      }),
+    );
+    render(<SecuritiesPage />);
+    await waitFor(() => expect(screen.getByTestId('security-list')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('delete-AAPL')); });
+    await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByTestId('confirm-btn')); });
+
+    expect(await screen.findByText('Cannot delete "AAPL"')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '2 holdings' })).toHaveAttribute('href', '/securities/s1');
+    expect(screen.getByText('1 bank sync link')).toBeInTheDocument();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('opens the detail page from the list', async () => {

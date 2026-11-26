@@ -37,7 +37,8 @@ vi.mock('@/lib/scheduled-transactions', () => ({
   },
 }));
 
-vi.mock('@/lib/errors', () => ({
+vi.mock('@/lib/errors', async (importOriginal) => ({
+  getRecordInUseEntries: (await importOriginal<typeof import('@/lib/errors')>()).getRecordInUseEntries,
   getErrorMessage: (_error: unknown, fallback: string) => fallback,
 }));
 
@@ -843,6 +844,28 @@ describe('ScheduledTransactionList', () => {
     // Confirm dialog should appear
     expect(screen.getByText('Delete Scheduled Transaction')).toBeInTheDocument();
     expect(screen.getByText(/Are you sure you want to delete/)).toBeInTheDocument();
+  });
+
+  it('shows what still uses the schedule, linked, when the delete is refused with 409', async () => {
+    mockDelete.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          errorCode: 'RECORD_IN_USE',
+          errors: [{ kind: 'loanAccounts', count: 1, ids: ['loan-1'] }, { kind: 'loanFees', count: 2, ids: ['loan-1'] }],
+        },
+      },
+    });
+    const onRefresh = vi.fn();
+    render(<ScheduledTransactionList transactions={[createTransaction()]} onRefresh={onRefresh} />);
+    fireEvent.click(screen.getByTitle('Delete'));
+    fireEvent.click(screen.getByText('Delete'));
+
+    expect(await screen.findByText('Cannot delete "Netflix"')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '1 loan account' })).toHaveAttribute('href', '/accounts/loan-1');
+    expect(screen.getByRole('link', { name: '2 loan fees' })).toHaveAttribute('href', '/accounts/loan-1');
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(onRefresh).not.toHaveBeenCalled();
   });
 
   it('calls delete API when confirming deletion', async () => {

@@ -935,6 +935,34 @@ describe('AccountList', () => {
     expect(accountsApi.close).not.toHaveBeenCalled();
   });
 
+  it('shows what still uses the account, linked, when the delete is refused with 409', async () => {
+    const account = createAccount({ canDelete: true });
+    (accountsApi.delete as ReturnType<typeof vi.fn>).mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          errorCode: 'RECORD_IN_USE',
+          errors: [
+            { kind: 'transactions', count: 4 },
+            { kind: 'loanAccounts', count: 1, ids: ['loan-1'] },
+            { kind: 'bankSyncLinks', count: 1 },
+          ],
+        },
+      },
+    });
+
+    render(
+      <AccountList accounts={[account]} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+    );
+    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+
+    expect(await screen.findByText(`Cannot delete "${account.name}"`)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '4 transactions' })).toHaveAttribute('href', `/transactions?accountId=${account.id}`);
+    expect(screen.getByRole('link', { name: '1 loan account' })).toHaveAttribute('href', '/accounts/loan-1');
+    expect(mockOnRefresh).not.toHaveBeenCalled();
+  });
+
   it('confirms delete and calls API', async () => {
     const account = createAccount({ canDelete: true });
 

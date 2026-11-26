@@ -17,7 +17,9 @@ import { moneyDecimalsForCurrency, roundMoney } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import toast from 'react-hot-toast';
-import { getErrorMessage } from '@/lib/errors';
+import { getErrorMessage, getRecordInUseEntries, type RecordInUseEntry } from '@/lib/errors';
+import { accountInUseHref } from '@/lib/record-in-use-hrefs';
+import { RecordInUseDialog } from '@/components/ui/RecordInUseDialog';
 import {
   AccountRow,
   buildAccountActions,
@@ -258,6 +260,7 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToClose, setAccountToClose] = useState<Account | null>(null);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  const [inUse, setInUse] = useState<{ account: Account; entries: RecordInUseEntry[] } | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   // Optimistic favourite state so toggling the star does not trigger a full
@@ -765,7 +768,14 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
       setAccountToDelete(null);
       onRefresh();
     } catch (error) {
-      toast.error(getErrorMessage(error, t('toast.deleteFailed')));
+      const entries = getRecordInUseEntries(error);
+      if (entries) {
+        setInUse({ account: accountToDelete, entries });
+        setDeleteDialogOpen(false);
+        setAccountToDelete(null);
+      } else {
+        toast.error(getErrorMessage(error, t('toast.deleteFailed')));
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -1206,6 +1216,12 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
         variant="danger"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+      />
+
+      <RecordInUseDialog
+        inUse={inUse && { name: inUse.account.name, entries: inUse.entries }}
+        hrefFor={(entry) => (inUse ? accountInUseHref(inUse.account.id, entry) : undefined)}
+        onClose={() => setInUse(null)}
       />
     </div>
   );

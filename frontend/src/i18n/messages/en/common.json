@@ -296,7 +296,25 @@
       "loanOverpaymentPayee": "{count, plural, one {# loan account (overpayment payee)} other {# loan accounts (overpayment payee)}}",
       "sharedPeople": "{count, plural, one {# shared-expense person} other {# shared-expense people}}",
       "sharedPostings": "{count, plural, one {# shared-expense posting} other {# shared-expense postings}}",
-      "rules": "{count, plural, one {# rule} other {# rules}}"
-    }
+      "rules": "{count, plural, one {# rule} other {# rules}}",
+      "subcategories": "{count, plural, one {# subcategory} other {# subcategories}}",
+      "budgetLines": "{count, plural, one {# budget line} other {# budget lines}}",
+      "budgetPeriods": "{count, plural, one {# budget period} other {# budget periods}}",
+      "payrollDeductionRules": "{count, plural, one {# payroll deduction rule} other {# payroll deduction rules}}",
+      "loanFees": "{count, plural, one {# loan fee} other {# loan fees}}",
+      "loanAccounts": "{count, plural, one {# loan account} other {# loan accounts}}",
+      "customReports": "{count, plural, one {# custom report} other {# custom reports}}",
+      "holdings": "{count, plural, one {# holding} other {# holdings}}",
+      "investmentTransactions": "{count, plural, one {# investment transaction} other {# investment transactions}}",
+      "gemStrategies": "{count, plural, one {# GEM strategy} other {# GEM strategies}}",
+      "securityDocuments": "{count, plural, one {# security document} other {# security documents}}",
+      "bankSyncLinks": "{count, plural, one {# bank sync link} other {# bank sync links}}",
+      "sharedIntegrations": "{count, plural, one {# shared integration} other {# shared integrations}}",
+      "linkedAccounts": "{count, plural, one {# linked account} other {# linked accounts}}",
+      "budgets": "{count, plural, one {# budget} other {# budgets}}",
+      "securities": "{count, plural, one {# security} other {# securities}}"
+    },
+    "title": "Cannot delete \"{name}\"",
+    "close": "Close"
   }
 }

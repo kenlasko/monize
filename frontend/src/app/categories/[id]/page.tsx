@@ -40,7 +40,9 @@ import {
   buildDescendantIdSet,
   rollupToDirectChildren,
 } from '@/lib/categoryUtils';
-import { getErrorMessage } from '@/lib/errors';
+import { getErrorMessage, getRecordInUseEntries, type RecordInUseEntry } from '@/lib/errors';
+import { categoryInUseHref } from '@/lib/record-in-use-hrefs';
+import { RecordInUseDialog } from '@/components/ui/RecordInUseDialog';
 import { createLogger } from '@/lib/logger';
 import {
   buildDisplayCurrencyStrategy,
@@ -149,6 +151,7 @@ function CategoryDetailContent() {
   const [tab, setTab] = useState<TabKey>(() => tabFromQuery(searchParams.get('tab')));
   const [payeeRange, setPayeeRange] = useState<PayeeRange>('year');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [inUse, setInUse] = useState<RecordInUseEntry[] | null>(null);
   // Supporting data; a failure costs its feature, never the page.
   const [categories, setCategories] = useState<Category[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledTransaction[]>([]);
@@ -541,8 +544,13 @@ function CategoryDetailContent() {
         toast.success(tc('toasts.deleted'));
         router.push('/categories');
       } catch (err) {
-        toast.error(getErrorMessage(err, tc('toasts.deleteFailed')));
-        logger.error(err);
+        const entries = getRecordInUseEntries(err);
+        if (entries) {
+          setInUse(entries);
+        } else {
+          toast.error(getErrorMessage(err, tc('toasts.deleteFailed')));
+          logger.error(err);
+        }
       } finally {
         setIsDeleting(false);
       }
@@ -815,6 +823,11 @@ function CategoryDetailContent() {
           categories={categories}
           onConfirm={handleConfirmDelete}
           onCancel={() => setIsDeleting(false)}
+        />
+        <RecordInUseDialog
+          inUse={inUse && { name: category.name, entries: inUse }}
+          hrefFor={(entry) => categoryInUseHref(categoryId, entry)}
+          onClose={() => setInUse(null)}
         />
       </main>
     </PageLayout>
