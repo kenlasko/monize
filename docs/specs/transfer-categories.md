@@ -70,6 +70,8 @@ that builds its mechanism moves it.
 | A scheduled ordinary transaction, a scheduled split's category line, an override of either | refused | fits | fits |
 | A payee's default category | refused | fits | fits |
 | A loan's interest category and its fee categories | refused | fits | fits |
+| An asset account's asset category (the QIF, OFX and CSV importer writes it on the account's ordinary rows) | refused | fits | fits |
+| A loan's principal and overpayment categories (settings the loan views match rows against; no path writes them onto a row) | fits | fits | fits |
 | A rule's `set_category` action, a budget line, a custom report filter | any type; whether it fits is decided for each row it reaches | | |
 
 A refusal answers 400 with a translated message naming the category ("Savings
@@ -124,14 +126,17 @@ keeps refusing transfer rows on the joint register.
 |---|---|---|---|---|
 | Create or update a scheduled transfer | `backend/src/scheduled-transactions/scheduled-transactions.service.ts` | kept | kept, as today (issue #743) | none |
 | Create or update a scheduled ordinary transaction | same | refused | written | written |
-| Switch a schedule from transfer to ordinary | same | the Transfer category is cleared in the same write | kept | -- |
+| Switch a schedule from transfer to ordinary | same | the Transfer category is cleared in the same write, on the schedule and on each of its overrides (`category_id` and every split JSON line) | kept | -- |
 | A scheduled split's lines | `createSplits` | a transfer line: kept (today: dropped silently); a category line: refused | either kind: kept (today: dropped on a transfer line) | none |
 | An override's category and split lines | `buildOverrideSplits` in `backend/src/scheduled-transactions/scheduled-transaction-override.service.ts` | fits the schedule's kind, or each line's kind; refused where it does not (today: stored as sent) | stored | stored |
 | Post an occurrence | `post` | a transfer: both legs (the inline value, then the override's, then the schedule's, as today); a split's transfer line: the line and its linked row (today: dropped); a line that does not fit refuses the post and the occurrence stays due | same | none |
 
 The category written at schedule, split and override time is also checked for
 ownership, which the sweep found missing at write time (only the post checks
-it today). The fit helper checks ownership and fit together.
+it today). The fit helper checks ownership and fit together. The database
+backstop checks an override's `category_id` when the override is written, not
+when its schedule changes kind; the switch above is held by the service, and a
+line that still does not fit is refused at the post.
 
 ### 4.4 Automation
 
@@ -168,8 +173,9 @@ it lands on; on a transfer, a Transfer category of that path is preferred.
 
 | Change | Outcome |
 |---|---|
-| A category, or a parent and its subtree, becomes Transfer | refused while a category row, a scheduled category row, an override line on one, a payee default or a loan's interest or fee category holds it or a descendant |
+| A category, or a parent and its subtree, becomes Transfer | refused while a category row, a scheduled category row, an override line on one, a payee default, an asset account's asset category or a loan's interest or fee category holds it or a descendant |
 | A Transfer category becomes Income or Expense | allowed: every holder is a transfer row, and a transfer accepts any type |
+| Which overrides count as holders | only those that can still post (`original_date` on or after the schedule's `next_due_date`), as the account-delete count reads them: a spent override never posts and is not shown, so counting it would refuse the change with no way out |
 | Moving a category under a parent of another type | the child takes the parent's type (INV-CATEGORY-003), under the same refusal as a type change |
 | Delete | as today: refused while anything references it |
 
@@ -480,7 +486,7 @@ The same in EUR with no USD->EUR rate within `FX_MAX_RATE_AGE_DAYS`: section
 
 | Surface | After this work | Built in |
 |---|---|---|
-| Register category filter, grouped totals (`backend/src/transactions/transaction-analytics.service.ts`), MCP flow totals | a transfer holding a Transfer category is listed and grouped under it, labelled a transfer; one holding an Income or Expense category is counted as today (section 5) | PR 4 |
+| Register category filter, grouped totals (`backend/src/transactions/transaction-analytics.service.ts`), MCP flow totals | a transfer holding a Transfer category, a whole leg or a split's transfer line, is listed and grouped under it, labelled a transfer; one holding an Income or Expense category is counted as today (section 5); a split's transfer line holding no category stays out of the grouped totals, as today, where it would read as Uncategorized. What a category filter matches changes on every surface at once (the register list and its totals, bulk update's filter selection, the balance windows, the search's category term), so a chart still adds up to the register list it sits on | PR 4 |
 | Category detail (`backend/src/categories/category-detail.service.ts`) | a Transfer category shows outgoing, incoming and net, not spent or received; a split's transfer line holding the category is read (today the query drops every split transfer line) | PR 4 |
 | The `income` and `expense` filter pseudo-ids | keep their meaning; a Transfer category is in neither; `transfer` keeps meaning every transfer | PR 2 |
 | Income and expense reports, Spending by Category, Cash Flow Sankey | no change: transfers are already excluded or placed by account | -- |
@@ -515,11 +521,24 @@ The same in EUR with no USD->EUR rate within `FX_MAX_RATE_AGE_DAYS`: section
 
 ## 11. Versioning, recomputation and the rolling deployment
 
-- **Schema.** `category_type` is added and backfilled from `is_income` in PR 2,
+- **Schema.** `category_type` is added and backfilled from `is_income` in PR 2
+  (`true` to income; `false` and `NULL` to expense, the column being nullable),
   so every existing category is Income or Expense and every existing row
-  already fits. `is_income` stays one release for the previous pods, kept in
-  step by a trigger (INV-CATEGORY-003), and is dropped later as a
-  `contract-after` change; the API field `isIncome` stays, derived.
+  already fits. `is_income` stays one release for the previous pods and is
+  dropped later as a `contract-after` change; the API field `isIncome` stays,
+  derived.
+- **The type mirror** (INV-CATEGORY-003) is a categories trigger, because a
+  pod of the previous release writes `is_income` alone and moves categories
+  without knowing the type:
+  - a category with a parent takes the parent's type on every insert and on
+    every update of `parent_id`, whatever the write said (the current
+    release's service refuses a request naming another type for a child);
+  - a top-level write that sets the type sets `is_income` to `type = 'income'`;
+    one that sets only `is_income` sets the type to income when true, and to
+    expense when false unless it is already transfer;
+  - a type change, a move included, cascades to the subtree, and each category
+    that becomes transfer is checked against its holders (section 4.6) in the
+    same statement.
 - **Split constraints.** `chk_split_kind_exclusive` and
   `chk_scheduled_split_kind_exclusive` are relaxed so a transfer line may hold
   a `category_id`. The change only widens.
@@ -532,8 +551,9 @@ The same in EUR with no USD->EUR rate within `FX_MAX_RATE_AGE_DAYS`: section
   that no release between PR 2 and PR 3 lets a category row take a Transfer
   category. Until PR 3's service refusal exists the backstop's SQLSTATE 23514
   must reach the client as a 400, not a 500. Neither refuses data that exists:
-  no stored row holds a Transfer category, and an update that changes neither
-  the category nor the row's kind does not fire the trigger.
+  no stored row holds a Transfer category, and an update whose values leave
+  both the category and the row's kind as they were does not fire the
+  trigger (its `WHEN` compares `OLD` and `NEW`, section 13.1).
 - **Recomputation.** Reports and budgets read on request; nothing new is
   materialized except the period close's Transfer Funding part, frozen with
   the period like `actual_income`. Cached budget actuals are invalidated after
@@ -551,6 +571,14 @@ The same in EUR with no USD->EUR rate within `FX_MAX_RATE_AGE_DAYS`: section
   pending row write and then sees the row. Without the lock both pass on their
   own snapshots. The foreign key's own `FOR KEY SHARE` does not conflict with
   an update of a non-key column, so it gives no protection here.
+- **What the lock costs besides time.** The share lock is held to the end of
+  the writing transaction, so any update of the category row itself (a
+  rename, a colour, a move, a type change) waits for a running write that
+  used it, a long import included. A category edit takes no ledger row lock,
+  so this is a wait, not a deadlock. If the wait proves a problem, an advisory
+  lock keyed by the category, shared in the trigger and exclusive in a type
+  change, removes it for every edit but a type change; that variant was not
+  measured.
 - **ONE.** Both legs are written in one transaction, in the lock order of
   section 4.8. Two concurrent category writes to the two legs of one transfer
   serialize on the first leg; the later write sets both legs.
@@ -568,10 +596,15 @@ The same in EUR with no USD->EUR rate within `FX_MAX_RATE_AGE_DAYS`: section
 ### 13.1 The Q2 measurement
 
 The trigger checks a row only when it is a category row holding a category
-(`WHEN (NEW.category_id IS NOT NULL AND NOT NEW.is_transfer)` on
-`transactions`, `NEW.transfer_account_id IS NULL` on `transaction_splits`), on
-`INSERT` and on an `UPDATE OF` the category or the row's kind, so the link
-back-patch of the Money import and every other update never fire it.
+(`NEW.category_id IS NOT NULL AND NEW.is_transfer IS NOT TRUE` on
+`transactions`, the column being nullable; `NEW.transfer_account_id IS NULL`
+on `transaction_splits`), on an insert, and on an update that changes the
+category or the row's kind. The update trigger compares `OLD` with `NEW` in
+its `WHEN`: `UPDATE OF` alone fires whenever a column is in the `SET` list,
+even with the value it already had. The link back-patch of the Money import
+and every update of other columns never fire it. The measured variants used
+`NOT NEW.is_transfer` and `UPDATE OF` without the comparison; neither changes
+an insert's cost.
 
 Method: PostgreSQL 18.7 in a container on the development worker, the schema
 of `database/schema.sql` with PR 2's `category_type` column and the relaxed
@@ -644,18 +677,26 @@ BEGIN
   RETURN NEW;
 END $$;
 
-CREATE TRIGGER trg_transactions_category_fits
-  BEFORE INSERT OR UPDATE OF category_id, is_transfer ON transactions
-  FOR EACH ROW WHEN (NEW.category_id IS NOT NULL AND NOT NEW.is_transfer)
+CREATE TRIGGER trg_transactions_category_fits_insert
+  BEFORE INSERT ON transactions
+  FOR EACH ROW WHEN (NEW.category_id IS NOT NULL AND NEW.is_transfer IS NOT TRUE)
+  EXECUTE FUNCTION refuse_transfer_category_on_category_row();
+
+CREATE TRIGGER trg_transactions_category_fits_update
+  BEFORE UPDATE OF category_id, is_transfer ON transactions
+  FOR EACH ROW WHEN (NEW.category_id IS NOT NULL AND NEW.is_transfer IS NOT TRUE
+    AND (OLD.category_id IS DISTINCT FROM NEW.category_id
+         OR OLD.is_transfer IS DISTINCT FROM NEW.is_transfer))
   EXECUTE FUNCTION refuse_transfer_category_on_category_row();
 ```
 
 `SECURITY DEFINER` with a pinned `search_path`, as the attachment tombstone
 trigger in `database/schema.sql` is: under RLS the caller's scope would hide a
-category it does not own and the check would pass silently. A categories
-trigger refuses a change to `transfer` while a category row holds the
-category. Restore sets `app.preserve_timestamps` rather than disabling
-triggers, so the backstop holds there too.
+category it does not own and the check would pass silently. The categories
+trigger of section 11 refuses a change to `transfer`, a move included, while a
+category row holds the category or a descendant. Restore sets
+`app.preserve_timestamps` rather than disabling triggers, so the backstop
+holds there too.
 
 ## 14. Test matrix
 
@@ -669,7 +710,8 @@ Every case fails on the code before its pull request
 | The backstop refuses a Transfer category on each category-row table, allows it on each transfer-row table, and does not fire on an update of another column | integration | PR 2 |
 | A type change and a row write race: one wins, the other is refused | two connections | PR 2 |
 | The schema change leaves every row, category and figure as it was | integration | PR 2 |
-| `type` and `is_income` stay in step both ways; a child takes its parent's type | integration | PR 2 |
+| `type` and `is_income` stay in step both ways; a child takes its parent's type; a previous-release write (`is_income` only, a create or a move under a Transfer parent) leaves the type right | integration | PR 2 |
+| A switch of a schedule to ordinary clears its overrides' Transfer categories | integration | PR 3 |
 | The fit helper; type change and move refusals; the loan interest and fee checks | unit | PR 2, PR 3 |
 | No category write outside the fit helper | source scan | PR 3 |
 | No new raw `isIncome` read | source scan | PR 2 |

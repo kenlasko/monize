@@ -226,7 +226,7 @@ implied.
 | INV-HA-003 | A single-use artifact is consumed at most once across every replica | enforced |
 | INV-HA-004 | One deployment publishes one OIDC signing key set, stable across restarts | enforced |
 | INV-HA-005 | A relay prompt is claimed by exactly one agent poll of the credential serving the chat, and answered at most once, by that credential | enforced |
-| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row or split category line holds one | unenforced |
+| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | unenforced |
 | INV-CATEGORY-002 | A category write on a transfer sets both of its legs, the writer's leg only across two owners | unenforced |
 | INV-CATEGORY-003 | A category's type is its parent's, and `is_income` mirrors it while the column exists | unenforced |
 | INV-CATEGORY-004 | An expense is a category of type expense, never one that is merely not income | unenforced |
@@ -9542,20 +9542,25 @@ Statement           No category row holds a category whose type is transfer.
                     one. A transfer row (a transfer leg, a split's transfer
                     line and the row it links, and their scheduled forms)
                     accepts a category of any type. A payee's default
-                    category and a loan's interest and fee categories are
-                    never a Transfer category.
+                    category, an asset account's asset category and a loan's
+                    interest and fee categories are never a Transfer
+                    category.
 Source of truth     The category's type (categories.category_type, added in
                     PR 2) against the row's own kind: transactions.is_transfer,
-                    transaction_splits.transfer_account_id and their
-                    scheduled counterparts.
+                    transaction_splits.transfer_account_id, their scheduled
+                    counterparts, and for an override its schedule's
+                    is_transfer.
 Enforcement         None today. Planned: one server fit helper called by every
                     path that writes a category (PR 3), a source scan that
                     fails a category write bypassing it, and a BEFORE row
                     trigger locking the category FOR SHARE on transactions,
                     transaction_splits, scheduled_transactions and
-                    scheduled_transaction_splits, shipped with the type in
-                    PR 2 (specification sections 11 and 13; its cost is
-                    measured in section 13.1).
+                    scheduled_transaction_splits, and an override's
+                    category_id checked against its schedule, shipped with
+                    the type in PR 2 (specification sections 11 and 13; its
+                    cost is measured in section 13.1). The override's split
+                    JSON is held by the service and refused at the post at
+                    the latest.
 Concurrency scope   category: a type change and a row write serialize on the
                     category's row lock (specification section 12).
 Retry semantics     A refused write wrote nothing, and a retry is refused
@@ -9619,23 +9624,28 @@ split into a transfer. No constraint keeps the legs equal.
 ```text
 Statement           A category's type is income, expense or transfer and
                     equals its parent's type. While categories.is_income
-                    exists, it equals type = 'income'.
+                    exists (nullable today), it is true exactly when the type
+                    is income.
 Source of truth     categories.category_type (PR 2), categories.parent_id.
 Enforcement         None in the database. Today only is_income exists, and
                     backend/src/categories/categories.service.ts gives a new
                     child its parent's isIncome; a direct SQL write can break
                     it. Planned: the same service rule over the type, a type
                     change or a move refused while a holder would no longer
-                    fit (INV-CATEGORY-001), and a trigger keeping is_income and
-                    category_type in step for the previous release's pods
-                    (PR 2).
+                    fit (INV-CATEGORY-001), and a categories trigger that
+                    keeps is_income and category_type in step and gives a
+                    child its parent's type on every insert and move, since
+                    the previous release's pods write is_income alone (PR 2,
+                    specification section 11).
 Concurrency scope   category
 Retry semantics     --
 Crash semantics     -- (one transaction)
 Failure response    400 on a type change or a move that a holder refuses.
-Required tests      Integration: the backfill leaves every category's type
-                    equal to its is_income; a write of either column sets the
-                    other; a child takes its parent's type.
+Required tests      Integration: the backfill makes income exactly the
+                    categories whose is_income is true (false and NULL become
+                    expense); a write of either column sets the other; a child
+                    takes its parent's type, including on a previous-release
+                    write that sets is_income alone or moves a category.
 Status              unenforced
 ```
 

@@ -40,7 +40,7 @@ Done when the maintainer has approved it and every default in the plan's section
 
 Backend and frontend know the third type; nothing can use it on a row yet.
 
-- [ ] Schema: `category_type` column, check, backfill, the `is_income` mirror trigger; both split constraints relaxed; `schema.sql`; entity; support-backup and undo column lists.
+- [ ] Schema: `category_type` column, check, backfill, the `is_income` mirror trigger; both split constraints relaxed; the FIT backstop triggers and the categories trigger (`docs/specs/transfer-categories.md` sections 11 and 13), with SQLSTATE 23514 answered as 400; `schema.sql`; entity; support-backup and undo column lists.
 - [ ] Category service and API: `type` in and out, derived `isIncome`, inheritance, type-change refusal, type filter, stats; a loan's interest and fee categories refuse a Transfer category; `list_categories` in the assistant and MCP.
 - [ ] Backend reader sweep: every `isIncome` read moves to a typed helper; the READ guard.
 - [ ] Frontend: types, typed helper and reader sweep; category form, list and detail.
