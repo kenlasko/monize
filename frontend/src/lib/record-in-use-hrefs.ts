@@ -18,8 +18,12 @@ export function categoryInUseHref(categoryId: string, entry: RecordInUseEntry): 
     case 'budgets':
     case 'budgetLines':
     case 'budgetPeriods':
-    case 'payrollDeductionRules':
       return '/budgets';
+    case 'payrollDeductionRules':
+      return '/taxes/payroll-deductions';
+    case 'loanFees':
+    case 'loanAccounts':
+      return firstOrList(entry);
     case 'rules':
       return '/rules';
     case 'customReports':
@@ -48,6 +52,10 @@ export function accountInUseHref(accountId: string, entry: RecordInUseEntry): st
       return '/budgets';
     case 'rules':
       return '/rules';
+    case 'customReports':
+      return '/reports';
+    case 'gemStrategies':
+      return '/reports/gem-strategy';
     default:
       return undefined;
   }
@@ -55,14 +63,10 @@ export function accountInUseHref(accountId: string, entry: RecordInUseEntry): st
 
 export function scheduledInUseHref(_scheduleId: string, entry: RecordInUseEntry): string | undefined {
   switch (entry.kind) {
-    case 'loanFees':
     case 'loanAccounts':
       return firstOrList(entry);
-    case 'budgetLines':
-    case 'budgets':
-      return '/budgets';
-    case 'rules':
-      return '/rules';
+    case 'payrollDeductionRules':
+      return '/taxes/payroll-deductions';
     default:
       return undefined;
   }
@@ -72,9 +76,10 @@ export function securityInUseHref(securityId: string, entry: RecordInUseEntry): 
   switch (entry.kind) {
     case 'holdings':
     case 'investmentTransactions':
-    case 'transactions':
     case 'securityDocuments':
       return `/securities/${securityId}`;
+    case 'scheduledTransactions':
+      return '/bills';
     case 'gemStrategies':
       return '/reports/gem-strategy';
     default:
