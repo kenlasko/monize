@@ -156,6 +156,14 @@ export class CreateScheduledTransactionOverrideDto {
   @Min(-999999999999)
   @Max(999999999999)
   investmentTotalAmount?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      "This occurrence's auto-post choice: null follows the schedule, true posts it automatically, false leaves it for manual posting",
+  })
+  @IsOptional()
+  @IsBoolean()
+  autoPost?: boolean | null;
 }
 
 export class UpdateScheduledTransactionOverrideDto {
@@ -231,6 +239,14 @@ export class UpdateScheduledTransactionOverrideDto {
   @Min(-999999999999)
   @Max(999999999999)
   investmentTotalAmount?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      "This occurrence's auto-post choice: null follows the schedule, true posts it automatically, false leaves it for manual posting",
+  })
+  @IsOptional()
+  @IsBoolean()
+  autoPost?: boolean | null;
 }
 
 export class ScheduledTransactionOverrideResponseDto {
@@ -269,6 +285,9 @@ export class ScheduledTransactionOverrideResponseDto {
 
   @ApiPropertyOptional()
   investmentTotalAmount: number | null;
+
+  @ApiPropertyOptional()
+  autoPost: boolean | null;
 
   @ApiProperty()
   createdAt: Date;

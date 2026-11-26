@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Datum gewijzigd voor deze gebeurtenis",
     "splitBadge": "Splitsing ({count})",
     "autoPostBadge": "Aan",
+    "autoPostNextOnBadge": "Volgende aan",
+    "autoPostNextOffBadge": "Volgende uit",
+    "autoPostNextOnTitle": "De termijn van {date} wordt automatisch geboekt, hoewel deze rekening verder met de hand wordt geboekt. Wijzig dit via Herhaling bewerken.",
+    "autoPostNextOffTitle": "De termijn van {date} laat u zelf boeken, hoewel deze rekening verder automatisch wordt geboekt. Wijzig dit via Herhaling bewerken.",
     "inactiveSuffix": " — Inactief",
     "actionTitles": {
       "post": "Transactie boeken",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Totaalbedrag is verplicht"
     },
     "estimatedHint": "Dit bedrag is de schatting voor deze keer. Laat het zoals het is en deze keer blijft de schatting volgen naarmate er nieuwe betalingen binnenkomen. {detail}",
-    "keepEstimate": "Dit bedrag behouden, ook als nieuwe betalingen de schatting veranderen"
+    "keepEstimate": "Dit bedrag behouden, ook als nieuwe betalingen de schatting veranderen",
+    "autoPostLabel": "Automatisch boeken op vervaldatum",
+    "autoPostNeedsAmount": "Vul het bedrag van deze termijn in om hem automatisch te boeken. Zolang hij de schatting volgt, bevestigt u hem door hem zelf te boeken."
   },
   "form": {
     "tabs": {

@@ -25,6 +25,7 @@ import {
   type ScheduledKind,
 } from '@/lib/scheduled-kind';
 import {
+  nextOccurrenceAutoPosts,
   nextOccurrenceDueDate,
   nextOccurrenceEffectiveAmount,
   occurrenceFollowsEstimate,
@@ -343,7 +344,7 @@ export function UpcomingBills({ scheduledTransactions, accounts, isLoading, maxI
       typeBadge: getTypeBadge(type),
       amountText: amountDisplay.text,
       amountClass: amountDisplay.className,
-      manual: !item.autoPost,
+      manual: !nextOccurrenceAutoPosts(item),
       estimated: occurrenceFollowsEstimate(item, item.nextOverride),
       overdraws: negativeBalanceItems.has(item.id),
     };

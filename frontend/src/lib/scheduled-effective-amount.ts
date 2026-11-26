@@ -290,6 +290,16 @@ export function occurrenceTouchesAccounts(
 }
 
 /**
+ * Whether the next occurrence posts itself once due: the server's answer, which
+ * folds in that occurrence's own choice (an occurrence opted into or out of the
+ * schedule's auto-posting), never the schedule's `autoPost` alone, which is only
+ * the fallback for an older backend.
+ */
+export function nextOccurrenceAutoPosts(st: ScheduledTransaction): boolean {
+  return st.nextOccurrenceAutoPosts ?? st.autoPost;
+}
+
+/**
  * The date the schedule's *next* occurrence actually falls on.
  *
  * `nextDueDate` is the recurrence slot; an override addressed to that slot can

@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Data alterada para esta ocorrência",
     "splitBadge": "Dividida ({count})",
     "autoPostBadge": "Ativo",
+    "autoPostNextOnBadge": "Próxima sim",
+    "autoPostNextOffBadge": "Próxima não",
+    "autoPostNextOnTitle": "A ocorrência de {date} é lançada automaticamente, embora esta fatura seja normalmente lançada à mão. Altere-o em Editar Ocorrência.",
+    "autoPostNextOffTitle": "A ocorrência de {date} fica para lançar por si, embora esta fatura seja normalmente lançada automaticamente. Altere-o em Editar Ocorrência.",
     "inactiveSuffix": " — Inativo",
     "actionTitles": {
       "post": "Lançar transação",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "O montante total é obrigatório"
     },
     "estimatedHint": "Este montante é a estimativa desta ocorrência. Deixe-o como está e a ocorrência continuará a seguir a estimativa à medida que chegam novos pagamentos. {detail}",
-    "keepEstimate": "Manter este montante, mesmo que novos pagamentos alterem a estimativa"
+    "keepEstimate": "Manter este montante, mesmo que novos pagamentos alterem a estimativa",
+    "autoPostLabel": "Lançar automaticamente na data de vencimento",
+    "autoPostNeedsAmount": "Introduza o montante desta ocorrência para a lançar automaticamente. Enquanto seguir a estimativa, confirma-a lançando-a você mesmo."
   },
   "form": {
     "tabs": {

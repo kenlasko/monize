@@ -135,6 +135,13 @@ export class ScheduledTransactionOverride {
   })
   investmentTotalAmount: number | null;
 
+  @ApiPropertyOptional({
+    description:
+      "This occurrence's auto-post choice: null follows the schedule, true posts it automatically, false leaves it for manual posting",
+  })
+  @Column({ type: "boolean", name: "auto_post", nullable: true })
+  autoPost: boolean | null;
+
   @ApiProperty({ description: "When this override was created" })
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;

@@ -652,6 +652,7 @@
     "loanLedgerUnreadable": "Defter bakiyesi okunamadığı için bu kredi ödemesi hesaplanamadı. Tekrar deneyin.",
     "estimateRequiresPlain": "Tahmini tutar yalnızca hesap para biriminde tek kategorili bir işlem veya transfer için kullanılabilir; bölünmüş işlem, yatırım veya döviz tutarı için kullanılamaz",
     "estimateNoAutoPost": "Tahmini tutarlı planlı bir işlem otomatik olarak kaydedilemez",
+    "overrideAutoPostNeedsAmount": "Tahmini tutarlı planlı bir işlemin bir tekrarı, ancak kendi tutarı girildikten sonra otomatik olarak kaydedilebilir",
     "estimateRequiresPayeeAndCategory": "Tahmini tutar, ödeme geçmişinin eşleştirileceği bir alıcı ve kategori gerektirir",
     "estimateRequiresTransferAccount": "Tahmini bir transfer, transfer geçmişinin eşleştirileceği hedef hesabı gerektirir",
     "estimateUnknown": "Bu tekrarın tahmini tutarı bilinmiyor. Kaydetmek için tutarı girin.",

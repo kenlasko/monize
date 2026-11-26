@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Data modificata per questa occorrenza",
     "splitBadge": "Suddivisione ({count})",
     "autoPostBadge": "Attivo",
+    "autoPostNextOnBadge": "Prossima sì",
+    "autoPostNextOffBadge": "Prossima no",
+    "autoPostNextOnTitle": "L'occorrenza del {date} viene registrata automaticamente, anche se questa bolletta di solito si registra a mano. Modificalo in Modifica occorrenza.",
+    "autoPostNextOffTitle": "L'occorrenza del {date} resta da registrare a te, anche se questa bolletta di solito si registra automaticamente. Modificalo in Modifica occorrenza.",
     "inactiveSuffix": " — Inattiva",
     "actionTitles": {
       "post": "Registra transazione",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "L'importo totale è obbligatorio"
     },
     "estimatedHint": "Questo importo è la stima per questa occorrenza. Lascialo invariato e l'occorrenza continuerà a seguire la stima man mano che arrivano nuovi pagamenti. {detail}",
-    "keepEstimate": "Mantieni questo importo, anche se nuovi pagamenti cambiano la stima"
+    "keepEstimate": "Mantieni questo importo, anche se nuovi pagamenti cambiano la stima",
+    "autoPostLabel": "Registra automaticamente alla scadenza",
+    "autoPostNeedsAmount": "Inserisci l'importo di questa occorrenza per registrarla automaticamente. Finché segue la stima, la confermi registrandola tu stesso."
   },
   "form": {
     "tabs": {

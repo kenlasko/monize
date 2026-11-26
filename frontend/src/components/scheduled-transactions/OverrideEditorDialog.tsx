@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { HelpLink } from '@/components/help/HelpLink';
 import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { SplitEditor, SplitRow, createEmptySplits, toSplitRows } from '@/components/transactions/SplitEditor';
 import { toOverrideSplits } from './splitSerialization';
 import { bookSplitRowsAtMinorUnit } from '@/lib/minor-unit-booking';
@@ -127,6 +128,9 @@ export function OverrideEditorDialog({
   // Keep the estimate shown as this occurrence's own amount, so later
   // payments no longer move it.
   const [keepEstimate, setKeepEstimate] = useState(false);
+  // This occurrence's own auto-post switch, as shown: the override's choice,
+  // or what the schedule does when it has none.
+  const [autoPost, setAutoPost] = useState(false);
   const estimateText = useAmountEstimateText();
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -185,6 +189,11 @@ export function OverrideEditorDialog({
     isInvestmentKind &&
     investmentAction != null &&
     ['DIVIDEND', 'INTEREST', 'CAPITAL_GAIN', 'RETURN_OF_CAPITAL'].includes(baseInvestmentAction(investmentAction));
+
+  // Whether an occurrence with no choice of its own auto-posts. An estimated
+  // schedule's never does: the estimate is confirmed by a person posting it.
+  const scheduleAutoPosts =
+    scheduledTransaction.autoPost && !scheduledTransaction.amountIsEstimated;
 
   // Re-render when the currency decimals registry fills, so a coin amount
   // loaded before `GET /currencies` answered is redrawn at the coin's places.
@@ -301,6 +310,7 @@ export function OverrideEditorDialog({
           : undefined;
       setEstimateSeed(seed === undefined ? undefined : seed === null ? null : toLoadedPlaces(seed));
       setKeepEstimate(false);
+      setAutoPost(existingOverride?.autoPost ?? scheduleAutoPosts);
       if (seed === null) {
         setAmount(0);
         setAmountUnknown(true);
@@ -592,6 +602,20 @@ export function OverrideEditorDialog({
     });
   }, [categories]);
 
+  // An estimate saved unchanged is not a stated amount: the occurrence
+  // keeps following the estimate as new payments arrive (issue #2096).
+  const followsEstimate =
+    !isSplit &&
+    ((typeof estimateSeed === 'number' && amount === estimateSeed && !keepEstimate) ||
+      (estimateSeed === null && amountUnknown));
+  // An estimated schedule's occurrence auto-posts only once it states its own
+  // amount (INV-OCCURRENCE-004); until then the switch is off and locked.
+  const autoPostLocked = !!scheduledTransaction.amountIsEstimated && followsEstimate;
+  const autoPostShown = autoPost && !autoPostLocked;
+  // Saved as the occurrence's own choice only where it differs from what the
+  // schedule does, so a later change to the schedule still reaches it.
+  const autoPostChoice = autoPostShown === scheduleAutoPosts ? null : autoPostShown;
+
   const handleSave = async () => {
     if (isInvestmentKind) {
       if (isInvestmentQuantityPrice || isInvestmentQuantityOnly) {
@@ -626,10 +650,6 @@ export function OverrideEditorDialog({
       // For transfers, negate the amount (user enters positive, stored as negative)
       // An estimate saved unchanged is not a stated amount: the occurrence
       // keeps following the estimate as new payments arrive (issue #2096).
-      const followsEstimate =
-        !isSplit &&
-        ((typeof estimateSeed === 'number' && amount === estimateSeed && !keepEstimate) ||
-          (estimateSeed === null && amountUnknown));
       const savedAmount = followsEstimate
         ? null
         : scheduledTransaction.isTransfer
@@ -644,6 +664,7 @@ export function OverrideEditorDialog({
               investmentPrice === '' ? null : Number(investmentPrice),
             investmentTotalAmount:
               investmentTotalAmount === '' ? null : Number(investmentTotalAmount),
+            autoPost: autoPostChoice,
           }
         : {
             amount: savedAmount,
@@ -651,6 +672,7 @@ export function OverrideEditorDialog({
             description: description || null,
             isSplit,
             splits: isSplit ? toOverrideSplits(splits) : null,
+            autoPost: autoPostChoice,
           };
 
       // originalDate = the calculated occurrence date from the picker (overrideDate prop)
@@ -997,6 +1019,30 @@ export function OverrideEditorDialog({
             maxLength={TRANSACTION_NOTE_MAX_LENGTH}
           />
         </div>
+
+        {/* This occurrence's own auto-post choice, both ways: on for one
+            occurrence of a manual schedule, off for one of an auto-posting
+            schedule. */}
+        <span className="inline-flex items-center">
+          <label className="flex items-center gap-2 cursor-pointer w-fit">
+            <ToggleSwitch
+              checked={autoPostShown}
+              onChange={setAutoPost}
+              label={t('overrideEditor.autoPostLabel')}
+              disabled={autoPostLocked}
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              {t('overrideEditor.autoPostLabel')}
+            </span>
+          </label>
+          {autoPostLocked && (
+            <InfoTooltip
+              text={t('overrideEditor.autoPostNeedsAmount')}
+              placement="top"
+              usePortal
+            />
+          )}
+        </span>
       </div>
 
       {/* Actions */}

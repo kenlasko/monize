@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Datum für dieses Vorkommen geändert",
     "splitBadge": "Buchungsteil ({count})",
     "autoPostBadge": "Ein",
+    "autoPostNextOnBadge": "Nächster an",
+    "autoPostNextOffBadge": "Nächster aus",
+    "autoPostNextOnTitle": "Der Termin am {date} wird automatisch gebucht, obwohl diese Rechnung sonst von Hand gebucht wird. Ändern Sie das unter „Ausführung bearbeiten“.",
+    "autoPostNextOffTitle": "Der Termin am {date} bleibt Ihnen zum Buchen überlassen, obwohl diese Rechnung sonst automatisch gebucht wird. Ändern Sie das unter „Ausführung bearbeiten“.",
     "inactiveSuffix": " — Inaktiv",
     "actionTitles": {
       "post": "Buchung ausführen",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Gesamtbetrag ist erforderlich"
     },
     "estimatedHint": "Dieser Betrag ist die Schätzung für diesen Termin. Lassen Sie ihn unverändert, folgt der Termin weiter der Schätzung, wenn neue Zahlungen eingehen. {detail}",
-    "keepEstimate": "Diesen Betrag behalten, auch wenn neue Zahlungen die Schätzung ändern"
+    "keepEstimate": "Diesen Betrag behalten, auch wenn neue Zahlungen die Schätzung ändern",
+    "autoPostLabel": "Am Fälligkeitsdatum automatisch buchen",
+    "autoPostNeedsAmount": "Geben Sie den Betrag dieses Termins ein, um ihn automatisch zu buchen. Solange er der Schätzung folgt, bestätigen Sie ihn, indem Sie ihn selbst buchen."
   },
   "form": {
     "tabs": {

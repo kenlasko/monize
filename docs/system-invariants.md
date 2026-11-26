@@ -134,7 +134,7 @@ implied.
 | INV-OCCURRENCE-001 | One scheduled occurrence has at most one financial effect | enforced |
 | INV-OCCURRENCE-002 | A stored override price survives reopening | enforced |
 | INV-OCCURRENCE-003 | Every surface reports the effective occurrence: its current amount and currency, its direction, on the date it falls | enforced |
-| INV-OCCURRENCE-004 | An estimated schedule's occurrence is its month's history estimate unless an override states its amount, and is never auto-posted | partial |
+| INV-OCCURRENCE-004 | An estimated schedule's occurrence is its month's history estimate unless an override states its amount, and is auto-posted only when that override states its amount and opts in | partial |
 | INV-PAYROLL-001 | A payroll deduction rule never writes a ledger row; changing one changes no posted transaction | enforced |
 | INV-PAYROLL-002 | The cap on a deduction line is decided under the posting lock from the ledger as it stands | enforced |
 | INV-PAYROLL-003 | The posting and the projection reduce a line by one definition over the server's own figures | enforced |
@@ -6123,7 +6123,9 @@ Statement           An occurrence of a schedule with amount_is_estimated, which
                     it falls in, on every surface and at posting; an unknown
                     estimate is unknown, never the stored snapshot; an override
                     that states an amount is never replaced by an estimate; an
-                    estimated schedule is never posted automatically
+                    estimated schedule's occurrence is posted automatically
+                    only when its override states the amount and opts in
+                    (auto_post = true): one that follows the estimate never is
                     (docs/specs/scheduled-amount-estimate.md, issue #2096). An
                     estimated transfer's occurrence is its month's estimate of
                     the transfers between its two accounts, raised (never
@@ -6149,9 +6151,16 @@ Enforcement         ScheduledOccurrenceService.expand prices each estimated slot
                     transfer's floor months before the plain month, and the
                     server applies the floor inside estimatedAmountFor, so no
                     caller prices a transfer without it. Auto-post:
-                    assertEstimatable refuses the pair before any write, both
-                    auto-post candidate reads filter amount_is_estimated, and
-                    the under-lock requireActiveAutoPost check refuses it.
+                    assertEstimatable refuses the schedule-wide pair before any
+                    write; whether one occurrence auto-posts is
+                    occurrenceAutoPosts (scheduled-transactions/occurrence-auto-
+                    post.ts) over the schedule and its current override, the
+                    cron's override read is the same predicate in SQL
+                    (OCCURRENCE_AUTO_POSTS_SQL) and its by-date read filters
+                    amount_is_estimated; the under-lock requireActiveAutoPost
+                    check and the posting undo's wouldAutoPost call
+                    occurrenceAutoPosts; assertOverrideAutoPostAllowed refuses
+                    an override opting in while it follows the estimate.
 Concurrency scope   schedule; the estimate is read-only.
 Retry semantics     a read; a retried post recomputes the same estimate from the
                     same ledger.
@@ -6164,7 +6173,9 @@ Required tests      amount-estimate.spec.ts, transfer-estimate-floor.spec.ts,
                     integration twin),
                     scheduled-occurrence.service.spec.ts and
                     scheduled-transactions.service.spec.ts (the estimate
-                    blocks), forecast.test.ts, the dialog and form tests named
+                    blocks), occurrence-auto-post.spec.ts and
+                    scheduled-occurrence-auto-post.integration.spec.ts (the
+                    per-occurrence auto-post choice), forecast.test.ts, the dialog and form tests named
                     in docs/future-plans/scheduled-amount-estimate-tasks.md.
 Known scope         GET /scheduled-transactions/due and /upcoming return the raw
                     row with its snapshot amount (no client surface reads them).

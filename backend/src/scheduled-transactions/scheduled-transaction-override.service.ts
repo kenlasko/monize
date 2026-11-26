@@ -220,6 +220,7 @@ export class ScheduledTransactionOverrideService {
         investmentQuantity: createDto.investmentQuantity ?? null,
         investmentPrice: createDto.investmentPrice ?? null,
         investmentTotalAmount: createDto.investmentTotalAmount ?? null,
+        autoPost: createDto.autoPost ?? null,
       });
 
       try {
@@ -368,6 +369,8 @@ export class ScheduledTransactionOverrideService {
       override.investmentPrice = updateDto.investmentPrice;
     if (updateDto.investmentTotalAmount !== undefined)
       override.investmentTotalAmount = updateDto.investmentTotalAmount;
+    if (updateDto.autoPost !== undefined)
+      override.autoPost = updateDto.autoPost;
 
     return withScopedDb(this.dataSource, async (m) => {
       const decimals = await this.assertOverrideAmountsPrecision(

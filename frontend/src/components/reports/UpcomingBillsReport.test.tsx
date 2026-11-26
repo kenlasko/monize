@@ -409,6 +409,20 @@ describe('UpcomingBillsReport', () => {
       });
     });
 
+    it("labels each occurrence by its own auto-post answer, not the bill's", async () => {
+      mockGetAll.mockResolvedValue([
+        makeTransaction({ id: 'st-1', nextDueDate: '2026-02-19', frequency: 'ONCE', autoPost: false }),
+      ]);
+      mockGetOccurrences.mockResolvedValue([makeOccurrence({ autoPosts: true })]);
+      render(<UpcomingBillsReport />);
+      await waitFor(() => expect(screen.getByText('List')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('List'));
+      await waitFor(() => {
+        expect(screen.getByText('Auto')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Manual')).not.toBeInTheDocument();
+    });
+
     it('shows payee name in list view', async () => {
       mockGetAll.mockResolvedValue([
         makeTransaction({ nextDueDate: '2026-02-19', frequency: 'ONCE', payee: { name: 'Hydro One' }, payeeName: 'Hydro One' }),

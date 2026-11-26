@@ -158,6 +158,11 @@ import {
 } from "./custom-recurrence-write";
 import { tr } from "../i18n/translate";
 import {
+  assertOverrideAutoPostAllowed,
+  OCCURRENCE_AUTO_POSTS_SQL,
+  occurrenceAutoPosts,
+} from "./occurrence-auto-post";
+import {
   programOfSecurity,
   seriesRoleOf,
   infersSeriesFromDate,
@@ -216,6 +221,7 @@ export interface LlmScheduledItem {
   nextDueDate: string;
   daysUntilDue: number;
   isActive: boolean;
+  /** This occurrence is posted automatically once due (`occurrenceAutoPosts`). */
   autoPost: boolean;
   kind: LlmScheduledKind;
   description: string | null;
@@ -294,6 +300,14 @@ export type ScheduledTransactionOverrideReadModel =
 export type ScheduledTransactionReadModel = ScheduledTransaction & {
   overrideCount?: number;
   nextOverride?: ScheduledTransactionOverrideReadModel | null;
+  /**
+   * The auto-post cron posts the next occurrence once it is due, by the
+   * schedule's setting or that occurrence's own override
+   * (`occurrenceAutoPosts`, INV-OCCURRENCE-004). Differs from `autoPost` when
+   * the next occurrence opted in or out, or the schedule is inactive or
+   * estimated.
+   */
+  nextOccurrenceAutoPosts: boolean;
   futureOverrides?: ScheduledTransactionOverrideReadModel[];
   investmentForecastExchangeRate: number | null;
   investmentForecastAmount: number | null;
@@ -361,6 +375,8 @@ export interface ScheduledOccurrenceReadModel {
   moved: boolean;
   /** `amount` is the schedule's history estimate for this month (issue #2096). */
   estimated: boolean;
+  /** The auto-post cron posts this occurrence once due (`occurrenceAutoPosts`). */
+  autoPosts: boolean;
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;
@@ -696,8 +712,19 @@ export class ScheduledTransactionsService {
               candidates.map((t) => t.id),
               today,
             );
-            const dueByDate = candidates.filter((t) => !postponedIds.has(t.id));
+            // An auto-posting schedule whose current occurrence was set to
+            // be posted by a person (its override's auto_post = false) waits.
+            const optedOutIds = await this.findAutoPostOptOutIds(
+              candidates.map((t) => t.id),
+            );
+            const dueByDate = candidates.filter(
+              (t) => !postponedIds.has(t.id) && !optedOutIds.has(t.id),
+            );
 
+            // Every schedule whose current occurrence has an override that
+            // makes it due today and auto-posting by the occurrence's own rule
+            // (occurrenceAutoPosts): a date moved earlier, or one occurrence
+            // of a manual or estimated schedule opted in.
             const overrideDueIds = await m
               .getRepository(ScheduledTransactionOverride)
               .createQueryBuilder("o")
@@ -705,11 +732,7 @@ export class ScheduledTransactionsService {
               .where("st.userId IN (:...userIds)", { userIds })
               .andWhere("o.overrideDate <= :today", { today })
               .andWhere("o.originalDate = st.nextDueDate")
-              .andWhere("st.isActive = :active", { active: true })
-              .andWhere("st.autoPost = :autoPost", { autoPost: true })
-              .andWhere("st.amountIsEstimated = :estimated", {
-                estimated: false,
-              })
+              .andWhere(OCCURRENCE_AUTO_POSTS_SQL)
               .select("st.id", "id")
               .distinct(true)
               .getRawMany();
@@ -995,6 +1018,33 @@ export class ScheduledTransactionsService {
         .where("o.scheduledTransactionId IN (:...ids)", { ids: candidateIds })
         .andWhere("o.originalDate = st.nextDueDate")
         .andWhere("o.overrideDate > :today", { today })
+        .select("o.scheduledTransactionId", "id")
+        .distinct(true)
+        .getRawMany(),
+    );
+
+    return new Set(rows.map((r) => r.id as string));
+  }
+
+  /**
+   * The schedules among `candidateIds` whose current occurrence's override
+   * turns auto-posting off for that one occurrence (`auto_post = false`).
+   */
+  private async findAutoPostOptOutIds(
+    candidateIds: string[],
+  ): Promise<Set<string>> {
+    if (candidateIds.length === 0) {
+      return new Set();
+    }
+
+    const rows = await withScopedDb(this.dataSource, (m) =>
+      m
+        .getRepository(ScheduledTransactionOverride)
+        .createQueryBuilder("o")
+        .innerJoin("o.scheduledTransaction", "st")
+        .where("o.scheduledTransactionId IN (:...ids)", { ids: candidateIds })
+        .andWhere("o.originalDate = st.nextDueDate")
+        .andWhere("o.autoPost = :off", { off: false })
         .select("o.scheduledTransactionId", "id")
         .distinct(true)
         .getRawMany(),
@@ -2140,6 +2190,7 @@ export class ScheduledTransactionsService {
           ? augmentOverride(row.nextOverride)
           : null,
         futureOverrides: row.futureOverrides?.map(augmentOverride),
+        nextOccurrenceAutoPosts: occurrenceAutoPosts(row, row.nextOverride),
         investmentForecastExchangeRate: resolved.investmentForecastExchangeRate,
         investmentForecastAmount: resolved.investmentForecastAmount,
         effectiveAmount: base.amount,
@@ -2556,6 +2607,7 @@ export class ScheduledTransactionsService {
       overrideId: occurrence.overrideId,
       moved: occurrence.moved,
       estimated: occurrence.estimated,
+      autoPosts: occurrence.autoPosts,
       accountId: occurrence.schedule.accountId,
       transferAccountId: occurrence.schedule.transferAccountId ?? null,
       isTransfer: !!occurrence.schedule.isTransfer,
@@ -4364,22 +4416,6 @@ export class ScheduledTransactionsService {
       // a manual post of the consumed slot would be an extra payment.
       assertScheduleHasOccurrence(current);
 
-      // Cron selected this row when it was active and auto-posting; if the user
-      // turned either off after selection but before the lock, the automatic
-      // post must not fire (issue #1154 re-review). Manual posts do not pass this
-      // option, so an explicit user post of an inactive schedule still works.
-      if (
-        options.requireActiveAutoPost &&
-        (!current.isActive || !current.autoPost || current.amountIsEstimated)
-      ) {
-        throw new ConflictException(
-          tr(
-            "errors.scheduled.changedConcurrently",
-            "The scheduled transaction changed during the operation. Reload it and retry.",
-          ),
-        );
-      }
-
       // The transfer/plain payloads (preparedTransfer, transactionPayload) and
       // the FX amount were prepared from the pre-lock `scheduled` snapshot. If a
       // concurrent edit changed what the schedule *is* -- kind, accounts, amount,
@@ -4418,6 +4454,23 @@ export class ScheduledTransactionsService {
           ensureYMD(current.nextDueDate),
           lockedOverride,
           options.occurrencePin,
+        );
+      }
+      // Cron selected this occurrence when it auto-posted; if the user turned
+      // the schedule inactive, or auto-posting off for the schedule or this
+      // occurrence, after selection but before the lock, the automatic post
+      // must not fire (issue #1154 re-review). Judged on the locked rows by the
+      // cron's own rule. Manual posts do not pass this option, so an explicit
+      // user post of an inactive schedule still works.
+      if (
+        options.requireActiveAutoPost &&
+        !occurrenceAutoPosts(current, lockedOverride)
+      ) {
+        throw new ConflictException(
+          tr(
+            "errors.scheduled.changedConcurrently",
+            "The scheduled transaction changed during the operation. Reload it and retry.",
+          ),
         );
       }
       if (
@@ -5324,6 +5377,7 @@ export class ScheduledTransactionsService {
       this.buildSplitProvenanceSource(scheduled.splits ?? []),
       createDto.splits,
     );
+    assertOverrideAutoPostAllowed(scheduled, createDto);
     return this.overrideService.createOverride(
       scheduledTransactionId,
       createDto,
@@ -5389,6 +5443,17 @@ export class ScheduledTransactionsService {
       this.buildOverrideProvenanceSource(existing.splits),
       updateDto.splits,
     );
+    // Judged on the override as this update leaves it.
+    assertOverrideAutoPostAllowed(scheduled, {
+      autoPost:
+        updateDto.autoPost !== undefined
+          ? updateDto.autoPost
+          : existing.autoPost,
+      amount:
+        updateDto.amount !== undefined ? updateDto.amount : existing.amount,
+      isSplit:
+        updateDto.isSplit !== undefined ? updateDto.isSplit : existing.isSplit,
+    });
     return this.overrideService.updateOverride(
       scheduledTransactionId,
       overrideId,
@@ -5520,7 +5585,9 @@ function toLlmScheduledItem(
     nextDueDate: occurrence.dueDate,
     daysUntilDue: daysBetweenYMD(todayYMDStr, occurrence.dueDate),
     isActive: row.isActive,
-    autoPost: row.autoPost,
+    // This occurrence's own answer: an occurrence opted in or out of the
+    // schedule's setting is reported as what the cron will do with it.
+    autoPost: occurrence.autoPosts,
     kind: classifyScheduledKind(occurrence),
     description: row.description ?? null,
   };

@@ -1251,6 +1251,9 @@ CREATE TABLE scheduled_transaction_overrides (
     investment_quantity NUMERIC(20, 8),
     investment_price NUMERIC(24, 10),
     investment_total_amount NUMERIC(24, 8),
+    -- This occurrence's auto-post choice: NULL follows the schedule's auto_post,
+    -- TRUE posts it automatically, FALSE leaves it for manual posting.
+    auto_post BOOLEAN,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     -- An occurrence's IDENTITY is its recurrence slot, so that is what is
@@ -1270,6 +1273,9 @@ CREATE INDEX idx_sched_txn_overrides_date ON scheduled_transaction_overrides(ove
 -- constraint that used to supply this index as a side effect of its own; it is
 -- declared explicitly now so nothing depends on a constraint for a lookup.
 CREATE INDEX idx_sched_txn_overrides_sched_txn_override_date ON scheduled_transaction_overrides(scheduled_transaction_id, override_date);
+
+COMMENT ON COLUMN scheduled_transaction_overrides.auto_post IS
+  'This occurrence''s auto-post choice: NULL follows the schedule, TRUE posts it automatically, FALSE leaves it for manual posting.';
 
 -- Posted occurrences (migration 140). The occurrence -- not the schedule -- is
 -- the thing that must happen once, and this unique key is its name. Manual and

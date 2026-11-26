@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Fecha modificada para esta ocurrencia",
     "splitBadge": "División ({count})",
     "autoPostBadge": "Activo",
+    "autoPostNextOnBadge": "Próxima sí",
+    "autoPostNextOffBadge": "Próxima no",
+    "autoPostNextOnTitle": "La ocurrencia del {date} se registra automáticamente, aunque esta factura normalmente se registra a mano. Cámbialo en Editar ocurrencia.",
+    "autoPostNextOffTitle": "La ocurrencia del {date} queda para que la registres tú, aunque esta factura normalmente se registra automáticamente. Cámbialo en Editar ocurrencia.",
     "inactiveSuffix": " — Inactiva",
     "actionTitles": {
       "post": "Registrar transacción",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "El monto total es obligatorio"
     },
     "estimatedHint": "Este importe es la estimación para esta ocurrencia. Si lo deja tal cual, la ocurrencia seguirá la estimación a medida que lleguen nuevos pagos. {detail}",
-    "keepEstimate": "Mantener este importe aunque nuevos pagos cambien la estimación"
+    "keepEstimate": "Mantener este importe aunque nuevos pagos cambien la estimación",
+    "autoPostLabel": "Registrar automáticamente al vencer",
+    "autoPostNeedsAmount": "Introduce el importe de esta ocurrencia para registrarla automáticamente. Mientras siga la estimación, la confirmas registrándola tú mismo."
   },
   "form": {
     "tabs": {

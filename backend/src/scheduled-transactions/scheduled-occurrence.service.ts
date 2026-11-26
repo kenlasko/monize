@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { DataSource, In } from "typeorm";
 import { ScheduledTransaction } from "./entities/scheduled-transaction.entity";
 import { ScheduledTransactionOverride } from "./entities/scheduled-transaction-override.entity";
+import { occurrenceAutoPosts } from "./occurrence-auto-post";
 import {
   ScheduledEffectiveAmountService,
   overrideEffectiveKey,
@@ -105,6 +106,13 @@ export interface EffectiveScheduledOccurrence {
    * (`ScheduleAmountEstimateStatus`); `null` when `estimated` is false.
    */
   estimateStatus: ScheduleAmountEstimateStatus | null;
+  /**
+   * The auto-post cron posts this occurrence once it is due, by the schedule's
+   * setting or this occurrence's own override (`occurrenceAutoPosts`,
+   * INV-OCCURRENCE-004). A surface marking "posts itself" reads this, never the
+   * schedule's `autoPost`.
+   */
+  autoPosts: boolean;
 }
 
 /**
@@ -216,6 +224,7 @@ export class ScheduledOccurrenceService {
           // its own split lines) keeps that amount.
           estimated: occurrenceFollowsEstimate(row, slot.override),
           estimateStatus: null,
+          autoPosts: occurrenceAutoPosts(row, slot.override),
           schedule: row,
         });
       }

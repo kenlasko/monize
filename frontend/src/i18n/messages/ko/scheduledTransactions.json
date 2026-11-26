@@ -25,6 +25,10 @@
     "modifiedDateTitle": "이 일정의 날짜가 변경됨",
     "splitBadge": "분할 ({count})",
     "autoPostBadge": "켜짐",
+    "autoPostNextOnBadge": "다음 회차 자동",
+    "autoPostNextOffBadge": "다음 회차 수동",
+    "autoPostNextOnTitle": "{date} 회차는 자동으로 게시됩니다. 이 청구서는 평소에는 직접 게시합니다. 발생 편집에서 변경하세요.",
+    "autoPostNextOffTitle": "{date} 회차는 직접 게시해야 합니다. 이 청구서는 평소에는 자동으로 게시됩니다. 발생 편집에서 변경하세요.",
     "inactiveSuffix": " — 비활성",
     "actionTitles": {
       "post": "거래 게시",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "총 금액이 필요합니다"
     },
     "estimatedHint": "이 금액은 이 회차의 예상치입니다. 그대로 두면 새 결제가 들어올 때마다 이 회차는 계속 예상치를 따릅니다. {detail}",
-    "keepEstimate": "새 결제로 예상이 바뀌어도 이 금액 유지"
+    "keepEstimate": "새 결제로 예상이 바뀌어도 이 금액 유지",
+    "autoPostLabel": "만기일에 자동 게시",
+    "autoPostNeedsAmount": "이 회차를 자동으로 게시하려면 이 회차의 금액을 입력하세요. 예상 금액을 따르는 동안에는 직접 게시하여 확정합니다."
   },
   "form": {
     "tabs": {

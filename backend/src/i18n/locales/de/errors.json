@@ -652,6 +652,7 @@
     "loanLedgerUnreadable": "Diese Kreditrate konnte nicht berechnet werden, da ihr Kontosaldo nicht gelesen werden konnte. Bitte erneut versuchen.",
     "estimateRequiresPlain": "Ein geschätzter Betrag ist nur für eine Buchung mit einer Kategorie oder eine Überweisung in der Kontowährung verfügbar, nicht für eine Aufteilung, eine Investition oder einen Betrag in Fremdwährung",
     "estimateNoAutoPost": "Eine geplante Buchung mit geschätztem Betrag kann nicht automatisch gebucht werden",
+    "overrideAutoPostNeedsAmount": "Ein Termin einer geplanten Buchung mit geschätztem Betrag kann erst automatisch gebucht werden, wenn sein eigener Betrag eingegeben ist",
     "estimateRequiresPayeeAndCategory": "Ein geschätzter Betrag braucht einen Zahlungsempfänger und eine Kategorie, um den Zahlungsverlauf abzugleichen",
     "estimateRequiresTransferAccount": "Eine geschätzte Überweisung braucht das Zielkonto, um den Überweisungsverlauf abzugleichen",
     "estimateUnknown": "Der geschätzte Betrag dieses Termins ist unbekannt. Geben Sie den Betrag ein, um ihn zu buchen.",

@@ -2,6 +2,7 @@ import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { returnedRows } from "../common/db/query-result";
 import { tr } from "../i18n/translate";
+import { occurrenceAutoPosts } from "../scheduled-transactions/occurrence-auto-post";
 import { todayInTimezone, todayYMD } from "../common/date-utils";
 import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
 import {
@@ -121,15 +122,23 @@ export async function undoScheduledPosting(
     todayYMD();
   if (snapshot.cursor && locked.length > 0) {
     const { before, after, prunedOverrides } = snapshot.cursor;
+    const rewoundOverride = prunedOverrides.find(
+      (o) => o.originalDate === before.nextDueDate,
+    );
     const rewoundWouldAutoPost = wouldAutoPost(
       {
         autoPost: locked[0].auto_post,
         isActive: before.isActive,
         amountIsEstimated: locked[0].amount_is_estimated,
         nextDueDate: before.nextDueDate,
-        overrideDate:
-          prunedOverrides.find((o) => o.originalDate === before.nextDueDate)
-            ?.overrideDate ?? null,
+        override: rewoundOverride
+          ? {
+              overrideDate: rewoundOverride.overrideDate,
+              autoPost: rewoundOverride.autoPost ?? null,
+              amount: rewoundOverride.amount,
+              isSplit: rewoundOverride.isSplit,
+            }
+          : null,
       },
       today,
     );
@@ -203,14 +212,20 @@ interface AutoPostState {
   readonly isActive: boolean;
   readonly amountIsEstimated: boolean;
   readonly nextDueDate: string;
-  /** The date an override of the `nextDueDate` occurrence moved it to. */
-  readonly overrideDate: string | null;
+  /** The override of the `nextDueDate` occurrence, when it has one. */
+  readonly override: {
+    /** The date it moved the occurrence to. */
+    readonly overrideDate: string;
+    readonly autoPost: boolean | null;
+    readonly amount: number | string | null;
+    readonly isSplit: boolean | null;
+  } | null;
 }
 
 /**
  * Whether the hourly auto-post cron would post this schedule's occurrence
- * again at its next run (`processAutoPostWithinContext`: active,
- * auto-posting, not estimated, and due on or before today by the occurrence's
+ * again at its next run (`processAutoPostWithinContext`: the occurrence
+ * auto-posts by `occurrenceAutoPosts`, and is due on or before today by its
  * override date when it has one, an earlier one included, else by
  * `next_due_date`: `findPostponedIds` and the cron's `overrideDueIds`).
  * Putting the schedule back on such an occurrence would only re-post what the
@@ -220,10 +235,8 @@ interface AutoPostState {
  */
 function wouldAutoPost(state: AutoPostState, today: string): boolean {
   return (
-    state.autoPost &&
-    state.isActive &&
-    !state.amountIsEstimated &&
-    (state.overrideDate ?? state.nextDueDate) <= today
+    occurrenceAutoPosts(state, state.override) &&
+    (state.override?.overrideDate ?? state.nextDueDate) <= today
   );
 }
 
@@ -244,8 +257,15 @@ function removedScheduleState(removed: RemovedScheduleSnapshot): AutoPostState {
     isActive: row.is_active === true,
     amountIsEstimated: row.amount_is_estimated === true,
     nextDueDate,
-    overrideDate: override
-      ? String(override.override_date ?? "").slice(0, 10) || null
+    override: override
+      ? {
+          overrideDate:
+            String(override.override_date ?? "").slice(0, 10) || nextDueDate,
+          autoPost:
+            typeof override.auto_post === "boolean" ? override.auto_post : null,
+          amount: (override.amount as number | string | null) ?? null,
+          isSplit: override.is_split === true ? true : null,
+        }
       : null,
   };
 }

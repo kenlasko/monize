@@ -177,7 +177,10 @@ export type PrunedScheduleOverride = Pick<
   | "investmentQuantity"
   | "investmentPrice"
   | "investmentTotalAmount"
->;
+> & {
+  /** Absent from a snapshot recorded before the column existed: follows the schedule. */
+  readonly autoPost?: boolean | null;
+};
 
 /**
  * One advance of a schedule's cursor, recorded so it can be undone
@@ -225,6 +228,7 @@ export function prunedScheduleOverride(
     investmentQuantity: override.investmentQuantity ?? null,
     investmentPrice: override.investmentPrice ?? null,
     investmentTotalAmount: override.investmentTotalAmount ?? null,
+    autoPost: override.autoPost ?? null,
   };
 }
 

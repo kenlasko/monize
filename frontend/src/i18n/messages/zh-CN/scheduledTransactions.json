@@ -25,6 +25,10 @@
     "modifiedDateTitle": "已修改此次执行的日期",
     "splitBadge": "拆分（{count}）",
     "autoPostBadge": "开启",
+    "autoPostNextOnBadge": "下次自动",
+    "autoPostNextOffBadge": "下次手动",
+    "autoPostNextOnTitle": "{date} 的这次将自动入账，尽管此账单通常手动入账。可在“编辑发生”中更改。",
+    "autoPostNextOffTitle": "{date} 的这次留待您亲自入账，尽管此账单通常自动入账。可在“编辑发生”中更改。",
     "inactiveSuffix": " — 非活跃",
     "actionTitles": {
       "post": "过账交易",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "总金额为必填项"
     },
     "estimatedHint": "此金额是这次发生的估算值。保持不变，这次发生会随着新付款继续沿用估算。{detail}",
-    "keepEstimate": "保留此金额，即使新付款改变了估算"
+    "keepEstimate": "保留此金额，即使新付款改变了估算",
+    "autoPostLabel": "到期自动过账",
+    "autoPostNeedsAmount": "输入此次发生的金额即可自动入账。在其沿用估算值期间，需由您亲自入账来确认。"
   },
   "form": {
     "tabs": {

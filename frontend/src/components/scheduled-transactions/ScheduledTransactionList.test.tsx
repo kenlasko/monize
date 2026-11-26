@@ -493,6 +493,49 @@ describe('ScheduledTransactionList', () => {
   });
 
   // --- Auto-post display ---
+  it("marks a manual bill whose next occurrence posts itself, with the date in its help", () => {
+    const transactions = [
+      createTransaction({ autoPost: false, nextOccurrenceAutoPosts: true, nextDueDate: '2026-12-01' }),
+    ];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(screen.getByText('Next on')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /The occurrence on 2026-12-01 posts automatically/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('On')).not.toBeInTheDocument();
+  });
+
+  it('marks an auto-posting bill whose next occurrence is left for a person', () => {
+    const transactions = [
+      createTransaction({ autoPost: true, nextOccurrenceAutoPosts: false, nextDueDate: '2026-12-01' }),
+    ];
+    render(<ScheduledTransactionList transactions={transactions} />);
+    expect(screen.getByText('Next off')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /The occurrence on 2026-12-01 is left for you to post/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the plain marker when the next occurrence follows the bill', () => {
+    render(
+      <ScheduledTransactionList
+        transactions={[createTransaction({ autoPost: true, nextOccurrenceAutoPosts: true })]}
+      />,
+    );
+    expect(screen.getByText('On')).toBeInTheDocument();
+    expect(screen.queryByText('Next off')).not.toBeInTheDocument();
+  });
+
+  it("shows an inactive bill's own setting, not a next-occurrence marker", () => {
+    render(
+      <ScheduledTransactionList
+        transactions={[createTransaction({ autoPost: true, isActive: false, nextOccurrenceAutoPosts: false })]}
+      />,
+    );
+    expect(screen.getByText('On')).toBeInTheDocument();
+    expect(screen.queryByText('Next off')).not.toBeInTheDocument();
+  });
+
   it('shows On badge when autoPost is true', () => {
     const transactions = [createTransaction({ autoPost: true })];
     render(<ScheduledTransactionList transactions={transactions} />);

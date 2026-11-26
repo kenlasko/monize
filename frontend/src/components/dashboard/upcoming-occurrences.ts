@@ -1,7 +1,11 @@
 import { addDays, differenceInDays, format } from 'date-fns';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 import { parseLocalDate } from '@/lib/utils';
-import { nextOccurrenceDueDate, nextOccurrenceEffectiveAmount } from '@/lib/scheduled-effective-amount';
+import {
+  nextOccurrenceAutoPosts,
+  nextOccurrenceDueDate,
+  nextOccurrenceEffectiveAmount,
+} from '@/lib/scheduled-effective-amount';
 import { occurrenceKind } from '@/lib/scheduled-kind';
 import type { UpcomingStrip, UpcomingStripDay } from './variants/upcoming-bills-view';
 
@@ -33,8 +37,10 @@ export function upcomingOccurrences(
         parseLocalDate(nextOccurrenceDueDate(b)).getTime();
       if (dateDiff !== 0) return dateDiff;
       // On the same day, show manual items first so they're visible before truncation
-      if (!a.autoPost && b.autoPost) return -1;
-      if (a.autoPost && !b.autoPost) return 1;
+      const aAuto = nextOccurrenceAutoPosts(a);
+      const bAuto = nextOccurrenceAutoPosts(b);
+      if (!aAuto && bAuto) return -1;
+      if (aAuto && !bAuto) return 1;
       return 0;
     });
 }

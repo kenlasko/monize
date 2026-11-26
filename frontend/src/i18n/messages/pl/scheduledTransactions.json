@@ -25,6 +25,10 @@
     "modifiedDateTitle": "Data zmieniona dla tego wystąpienia",
     "splitBadge": "Podział ({count})",
     "autoPostBadge": "Wł.",
+    "autoPostNextOnBadge": "Następne wł.",
+    "autoPostNextOffBadge": "Następne wył.",
+    "autoPostNextOnTitle": "Wystąpienie z {date} zostanie zaksięgowane automatycznie, choć ten rachunek zwykle księgujesz ręcznie. Zmień to w Edytuj wystąpienie.",
+    "autoPostNextOffTitle": "Wystąpienie z {date} zostaje do zaksięgowania przez Ciebie, choć ten rachunek zwykle księguje się automatycznie. Zmień to w Edytuj wystąpienie.",
     "inactiveSuffix": " — Nieaktywne",
     "actionTitles": {
       "post": "Zaksięguj transakcję",
@@ -204,7 +208,9 @@
       "totalAmountRequired": "Kwota łączna jest wymagana"
     },
     "estimatedHint": "Ta kwota to szacunek dla tego wystąpienia. Pozostaw ją bez zmian, a wystąpienie będzie nadal podążać za szacunkiem w miarę napływu nowych płatności. {detail}",
-    "keepEstimate": "Zachowaj tę kwotę, nawet gdy nowe płatności zmienią szacunek"
+    "keepEstimate": "Zachowaj tę kwotę, nawet gdy nowe płatności zmienią szacunek",
+    "autoPostLabel": "Auto-księgowanie w terminie",
+    "autoPostNeedsAmount": "Wpisz kwotę tego wystąpienia, aby księgować je automatycznie. Dopóki opiera się na szacunku, potwierdzasz je, księgując je samodzielnie."
   },
   "form": {
     "tabs": {
