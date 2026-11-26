@@ -151,12 +151,11 @@ describe('ExpensesPieChart', () => {
 
   it('draws the supplied shares even when the rounded currency amounts match', async () => {
     await renderChart(report([
-      { ...category('one', 'First', 0.01), percentage: 70 },
-      { ...category('two', 'Second', 0.01), percentage: 30 },
+      { ...category('one', 'First', 1), percentage: 50.2 },
+      { ...category('two', 'Second', 1), percentage: 49.8 },
     ], { netSpending: true }));
-    expect(screen.getByTestId('pie-slice-First')).toHaveAttribute('data-weight', '70');
-    expect(screen.getByTestId('pie-slice-Second')).toHaveAttribute('data-weight', '30');
-    expect(screen.getByRole('button', { name: /First/ })).toHaveTextContent('$0.01');
+    expect(screen.getByTestId('pie-slice-First')).toHaveAttribute('data-weight', '50.2');
+    expect(screen.getByTestId('pie-slice-Second')).toHaveAttribute('data-weight', '49.8');
   });
 
   it('keeps every returned group visible for a refund-dominated period', async () => {

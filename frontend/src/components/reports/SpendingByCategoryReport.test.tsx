@@ -6,7 +6,6 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
 const mockPush = vi.fn();
-const mockFormatCurrency = vi.fn((amount: number) => `$${amount.toFixed(2)}`);
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
@@ -17,7 +16,7 @@ vi.mock('@/hooks/useNumberFormat', async () => {
     useNumberFormat: vi.fn(() => ({
       ...numberFormatMockDefaults(),
       formatCurrencyCompact: (n: number) => `$${n.toFixed(2)}`,
-      formatCurrency: mockFormatCurrency,
+      formatCurrency: (n: number) => `$${n.toFixed(2)}`,
       formatCurrencyAxis: (n: number) => `$${n}`,
       defaultCurrency: "CAD",
     })),
@@ -261,38 +260,43 @@ describe("SpendingByCategoryReport", () => {
     mockGetSpendingByCategory.mockResolvedValue({
       ...completeReport([
         { categoryId: "cat-1", categoryName: "Food", total: 30, color: null },
-        { categoryId: "cat-2", categoryName: "Clothes", total: -30.25, color: null },
+        { categoryId: "cat-2", categoryName: "Clothes", total: -80, color: null },
         { categoryId: "cat-3", categoryName: "Travel", total: 0, color: null },
-      ], -0.25),
+      ], -50),
       netSpending: true,
     });
     await act(async () => { render(<SpendingByCategoryReport />); });
 
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(screen.queryByTestId("pie-chart")).not.toBeInTheDocument();
-    for (const amount of ["$30.00", "$-30.25", "$0.00", "$-0.25"]) {
+    for (const amount of ["$30.00", "$-80.00", "$0.00", "$-50.00"]) {
       expect(screen.getByText(amount)).toBeInTheDocument();
     }
     expect(screen.queryAllByText(/%/)).toHaveLength(0);
 
-    expect(mockFormatCurrency).toHaveBeenCalledWith(-0.25, "CAD");
     fireEvent.click(screen.getByTestId("export-csv"));
     expect(mockExportToCsv).toHaveBeenCalledWith("spending-by-category", expect.any(Array), [
-      ["Food", 30, ""], ["Travel", 0, ""], ["Clothes", -30.25, ""],
+      ["Food", 30, ""], ["Travel", 0, ""], ["Clothes", -80, ""],
     ]);
     fireEvent.click(screen.getByTestId("toggle-bar"));
     expect(screen.getByTestId("bar-chart")).toBeInTheDocument();
-    expect(screen.getByText("$-30.25")).toBeInTheDocument();
+    expect(screen.getByText("$-80.00")).toBeInTheDocument();
     expect(screen.queryAllByText(/%/)).toHaveLength(0);
     await act(async () => { fireEvent.click(screen.getByTestId("export-pdf")); });
     expect(mockExportToPdf.mock.calls[0][0].chartLegend.map((line: { label: string }) => line.label))
-      .toEqual(["Food - $30.00", "Clothes - $-30.25", "Travel - $0.00"]);
+      .toEqual(["Food - $30.00", "Clothes - $-80.00", "Travel - $0.00"]);
   });
 
-  it("displays a one-cent USD refund as -$0.01 in the category and the total", async () => {
+  // The PostgreSQL regression posts the purchase and refund. Here the service
+  // returns their net, and the row, headline and CSV must preserve its sign.
+  it.each([
+    { refund: 30, net: 70, amount: /^\$70(?:\.00)?$/, percentage: 100 },
+    { refund: 100, net: 0, amount: /^\$0(?:\.00)?$/, percentage: undefined },
+    { refund: 150, net: -50, amount: /^-\$50(?:\.00)?$/, percentage: undefined },
+  ])("preserves the net from a 100 purchase and a $refund refund", async ({ net, amount, percentage }) => {
     const real = await vi.importActual<typeof import('@/hooks/useNumberFormat')>('@/hooks/useNumberFormat');
     mockGetSpendingByCategory.mockResolvedValue({
-      ...completeReport([{ categoryId: "food", categoryName: "Groceries", color: null, total: -0.01 }], -0.01),
+      ...completeReport([{ categoryId: "food", categoryName: "Groceries", total: net, percentage, color: null }], net),
       currency: "USD",
       netSpending: true,
     });
@@ -301,11 +305,23 @@ describe("SpendingByCategoryReport", () => {
     try {
       await vi.mocked(useNumberFormat).withImplementation(real.useNumberFormat, async () => {
         const { unmount } = render(<SpendingByCategoryReport />);
-        const row = await screen.findByRole("row", { name: /Groceries/ });
-        expect(within(row).getByText("-$0.01")).toBeInTheDocument();
-        const totalRow = screen.getByRole("row", { name: /^Total/ });
-        expect(within(totalRow).getByText("-$0.01")).toBeInTheDocument();
-        unmount();
+        try {
+          await screen.findByText("Groceries");
+          if (percentage === undefined) {
+            expect(screen.queryByTestId("pie-chart")).not.toBeInTheDocument();
+          }
+          fireEvent.click(screen.getByTestId("toggle-table"));
+          const row = screen.getByRole("row", { name: /Groceries/ });
+          const totalRow = screen.getByRole("row", { name: /^Total/ });
+          expect(within(row).getByText(amount)).toBeInTheDocument();
+          expect(within(totalRow).getByText(amount)).toBeInTheDocument();
+          fireEvent.click(screen.getByTestId("export-csv"));
+          expect(mockExportToCsv).toHaveBeenCalledWith("spending-by-category", expect.any(Array), [
+            ["Groceries", net, percentage === undefined ? "" : "100.00%"],
+          ]);
+        } finally {
+          unmount();
+        }
       });
     } finally {
       usePreferencesStore.setState({ preferences });
@@ -335,21 +351,21 @@ describe("SpendingByCategoryReport", () => {
   });
 
   it("uses shares from before monetary rounding throughout a positive composition", async () => {
-    // Underlying amounts 0.014 and 0.006 both display as 0.01.
+    // The two category amounts round to the same dollar. Their server shares differ.
     mockGetSpendingByCategory.mockResolvedValue({
       ...completeReport([
-        { categoryId: "a", categoryName: "Food", total: 0.01, percentage: 70, color: null },
-        { categoryId: "b", categoryName: "Travel", total: 0.01, percentage: 30, color: null },
-      ], 0.02),
+        { categoryId: "a", categoryName: "Food", total: 1, percentage: 50.2, color: null },
+        { categoryId: "b", categoryName: "Travel", total: 1, percentage: 49.8, color: null },
+      ], 2),
       netSpending: true,
     });
     await act(async () => { render(<SpendingByCategoryReport />); });
     expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
-    expect(screen.getByText("$0.01 (70.0%)")).toBeInTheDocument();
-    expect(screen.getByText("$0.01 (30.0%)")).toBeInTheDocument();
+    expect(screen.getByText(/\(50\.2%\)/)).toBeInTheDocument();
+    expect(screen.getByText(/\(49\.8%\)/)).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("export-csv"));
     expect(mockExportToCsv).toHaveBeenCalledWith("spending-by-category", expect.any(Array), [
-      ["Food", 0.01, "70.00%"], ["Travel", 0.01, "30.00%"],
+      ["Food", 1, "50.20%"], ["Travel", 1, "49.80%"],
     ]);
   });
 

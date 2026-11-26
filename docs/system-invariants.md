@@ -3349,7 +3349,9 @@ Statement           A category's figure in a report is the signed sum of its
                     exceed debits the category has negative net spending.
                     Transfers are not a category and are not netted.
 Source of truth     The signed amounts on transactions and transaction_splits.
-Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
+Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
+                    group. An assigned expense category with qualifying activity
+                    keeps its row at any sign. Other groups use isNetSpending
                     (backend/src/built-in-reports/spending-reports.service.ts);
                     client summaries: netEntityTotal. Custom report engine
                     (backend/src/reports/reports.service.ts): each line lands in
@@ -3372,6 +3374,9 @@ Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
 Concurrency scope   --
 Failure response    --
 Required tests      Integration:
+                    backend/test/integration/report-signed-expense-categories.integration.spec.ts
+                    (purchase of 100, refunds of 30, 100 and 150: category and
+                    headline read 70, 0 and -50 respectively);
                     backend/test/integration/report-custom-net-and-search.integration.spec.ts
                     (Groceries -100 and +30: 70 under EXPENSES_ONLY and BOTH, by
                     category and by month; and the BOTH list's signed rows in

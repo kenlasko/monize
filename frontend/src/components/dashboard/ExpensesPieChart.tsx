@@ -76,7 +76,7 @@ function ExpensesPieTooltip({ slice, formatCurrency, formatPercent }: ExpensesPi
 export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps) {
   const t = useTranslations('dashboard');
   const router = useRouter();
-  const { formatCurrencyCompact: formatCurrency, formatCurrency: formatSignedAmount, formatCurrencyTight, formatPercent } = useNumberFormat();
+  const { formatCurrencyCompact: formatCurrency, formatCurrencyTight, formatPercent } = useNumberFormat();
   const { config, updateConfig } = useWidgetConfig<ExpensesPieConfig>(
     WIDGET_ID,
     EXPENSES_PIE_DEFAULT,
@@ -285,14 +285,14 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
               key: slice.key,
               name: slice.name,
               color: slice.color,
-              trailing: formatSignedAmount(slice.value, displayCurrency),
+              trailing: formatCurrency(slice.value, displayCurrency),
               onClick: slice.onClick,
             }))}
           />
           <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
             <span>{t('expensesPieChart.total')}</span>
             <PartialTotal total={spendingTotal} displayCurrency={displayCurrency}>
-              {formatSignedAmount(totalExpenses, displayCurrency)}
+              {formatCurrency(totalExpenses, displayCurrency)}
             </PartialTotal>
           </div>
         </>

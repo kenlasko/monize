@@ -538,8 +538,7 @@ export function MonthlyComparisonReport() {
             data={expenses.currentMonth}
             netSpending={expenses.netSpending}
             currency={currency}
-            formatCurrency={formatCurrency}
-            formatCurrencyCompact={formatCurrencyCompact}
+            formatCurrency={formatCurrencyCompact}
             noDataLabel={t('monthlyComparison.noExpenseData')}
             total={expenses.currentTotal}
           />
@@ -548,8 +547,7 @@ export function MonthlyComparisonReport() {
             data={expenses.previousMonth}
             netSpending={expenses.netSpending}
             currency={currency}
-            formatCurrency={formatCurrency}
-            formatCurrencyCompact={formatCurrencyCompact}
+            formatCurrency={formatCurrencyCompact}
             noDataLabel={t('monthlyComparison.noExpenseData')}
             total={expenses.previousTotal}
           />
@@ -900,7 +898,6 @@ function MonthlyExpenseBreakdown({
   netSpending,
   currency,
   formatCurrency,
-  formatCurrencyCompact,
   noDataLabel,
   total,
 }: {
@@ -909,7 +906,6 @@ function MonthlyExpenseBreakdown({
   netSpending?: true;
   currency: string;
   formatCurrency: (amount: number, currency?: string) => string;
-  formatCurrencyCompact: (amount: number, currency?: string) => string;
   noDataLabel: string;
   total: number;
 }) {
@@ -945,7 +941,7 @@ function MonthlyExpenseBreakdown({
                   <Cell key={d.categoryId || i} fill={d.color || CHART_COLOURS[i % CHART_COLOURS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(_value, name, entry) => [formatCurrencyCompact(entry.payload.total, currency), String(name)]} />
+              <Tooltip formatter={(_value, name, entry) => [formatCurrency(entry.payload.total, currency), String(name)]} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -958,7 +954,7 @@ function MonthlyExpenseBreakdown({
         }))} />
       )}
       <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-        {t('monthlyComparison.netWorthTotal', { amount: (showPie ? formatCurrencyCompact : formatCurrency)(total, currency) })}
+        {t('monthlyComparison.netWorthTotal', { amount: formatCurrency(total, currency) })}
       </div>
     </div>
   );

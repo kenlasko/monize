@@ -140,7 +140,7 @@ export function SpendingByCategoryReport() {
   const t = useTranslations('reports');
   const router = useRouter();
   const chartRef = useRef<HTMLDivElement>(null);
-  const { formatCurrency, formatCurrencyCompact, formatPercent } = useNumberFormat();
+  const { formatCurrencyCompact, formatPercent } = useNumberFormat();
   const asStatement = useReportStatement();
   const { defaultCurrency } = useExchangeRates();
   const [viewType, setViewType] = useState<'pie' | 'bar' | 'table'>('pie');
@@ -218,9 +218,7 @@ export function SpendingByCategoryReport() {
   );
   const totalExpenses = spendingTotal.value;
   const reportingCurrency = response?.currency ?? defaultCurrency;
-  // A small refund must stay distinguishable from a known zero in the signed view.
-  const formatAmount = (amount: number) =>
-    (showShares ? formatCurrencyCompact : formatCurrency)(amount, reportingCurrency);
+  const formatAmount = (amount: number) => formatCurrencyCompact(amount, reportingCurrency);
   const formatDetail = (item: ChartDataItem) =>
     item.percentage === undefined
       ? formatAmount(item.value)
@@ -297,7 +295,7 @@ export function SpendingByCategoryReport() {
       summaryCards: [
         { label: t('spendingByCategory.totalExpenses'), value: formatAmount(totalExpenses), color: '#dc2626', note: noteFor(spendingTotal) },
         ...(funds && funds.availableFunds !== null
-          ? [{ label: t('tagBreakdown.fundsAvailable'), value: formatCurrencyCompact(funds.availableFunds, reportingCurrency), color: '#2563eb' }]
+          ? [{ label: t('tagBreakdown.fundsAvailable'), value: formatAmount(funds.availableFunds), color: '#2563eb' }]
           : []),
       ],
       chartContainer: chartRef.current,
