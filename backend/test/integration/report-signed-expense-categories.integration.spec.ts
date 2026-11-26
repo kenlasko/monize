@@ -240,6 +240,26 @@ describe("signed expenses in Spending by Category (integration)", () => {
     });
   });
 
+  it("uses direction for a legacy category with no type", async () => {
+    await db.query("UPDATE categories SET is_income = NULL WHERE id = $1", [
+      groceries,
+    ]);
+    await post(-100);
+    await post(150);
+    expect(await read()).toMatchObject({ data: [], totalSpending: 0 });
+    expect(
+      await withUserContext(userId, () =>
+        reports.getSpendingByPayee(userId, start, end),
+      ),
+    ).toMatchObject({ data: [], totalSpending: 0 });
+    expect(
+      await withUserContext(userId, () => tax.getTaxSummary(userId, 2026)),
+    ).toMatchObject({
+      incomeBySource: [{ name: "Groceries", total: 50 }],
+      allExpenses: [],
+    });
+  });
+
   it("reconciles expense subcategories and their parent across a net credit", async () => {
     const child = (
       await createTestCategory(db, userId, {

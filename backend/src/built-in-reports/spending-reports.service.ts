@@ -307,7 +307,8 @@ export class SpendingReportsService {
     // inclusion rule, including Uncategorized. Zero-only postings are already
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
-      ([, { agg, category }]) => category !== null || isNetSpending(agg.sign),
+      ([, { agg, category }]) =>
+        category?.isIncome != null || isNetSpending(agg.sign),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -354,6 +355,7 @@ export class SpendingReportsService {
       SELECT
         COALESCE(ts.category_id, t.category_id) AS category_id,
         COALESCE(parent.id, c.id) AS bucket_id,
+        COALESCE(parent.is_income, c.is_income) IS NOT NULL AS classified,
         t.payee_id, t.payee_name, t.currency_code,
         ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
@@ -369,11 +371,12 @@ export class SpendingReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), COALESCE(parent.id, c.id), t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), COALESCE(parent.id, c.id), COALESCE(parent.is_income, c.is_income), t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
 
     const rawResults: (RawPayeeAggregate & {
       category_id: string | null;
       bucket_id: string | null;
+      classified: boolean;
     })[] = await withScopedDb(this.dataSource, (m) => m.query(query, params));
 
     const payeeIds = rawResults
@@ -416,7 +419,7 @@ export class SpendingReportsService {
     // Decide eligibility at category level before attributing each posting
     // to its payee. A refund can come from a different payee than the purchase.
     for (const { row, total, category } of convertedRows) {
-      if (!row.bucket_id && !isNetSpending(category.sign)) continue;
+      if (!row.classified && !isNetSpending(category.sign)) continue;
       const key = JSON.stringify([
         row.payee_id,
         row.payee_id ? null : row.payee_name,
@@ -574,7 +577,9 @@ export class SpendingReportsService {
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
         .filter(
-          ([id, overall]) => categoryMap.has(id) || isNetSpending(overall.sign),
+          ([id, overall]) =>
+            categoryMap.get(id)?.isIncome != null ||
+            isNetSpending(overall.sign),
         )
         .map(([id]) => id),
     );
