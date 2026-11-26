@@ -18,6 +18,7 @@ import { Tabs, TabPanel } from '@/components/ui/Tabs';
 import { Card } from '@/components/ui/Card';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { ChartTooltip } from '@/components/reports/ChartTooltip';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { chartColors } from '@/lib/chart-colors';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
@@ -256,6 +257,9 @@ export function TagKeyBreakdownBuckets({
                   </div>
                 </div>
               </div>
+              {/* The bucket counts its estimates over both flows, so the note
+                  sits under the pair rather than marking either one. */}
+              <ProvisionalDataNotice count={bucket.provisionalCount} className="mt-2" />
             </div>
           </TabPanel>
         );

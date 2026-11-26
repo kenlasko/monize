@@ -176,6 +176,11 @@ export interface CurrencyUsageSummary {
   knownReportingSubtotal: number;
   unconvertedCount: number;
   missingPairs: string[];
+  /**
+   * Provisional transfer legs (an imported estimate) among the rows, so inside
+   * both totals. The figures include them; absent is no information.
+   */
+  provisionalCount?: number;
 }
 
 /**

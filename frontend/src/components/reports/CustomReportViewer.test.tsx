@@ -657,6 +657,87 @@ describe("CustomReportViewer", () => {
     });
   });
 
+  describe("estimated (provisional) amounts", () => {
+    const savedReport = {
+      id: "rpt-1",
+      name: "Transfers Report",
+      viewType: "BAR_CHART",
+      timeframeType: "LAST_3_MONTHS",
+      groupBy: "CATEGORY",
+      config: { metric: "TOTAL_AMOUNT", direction: "BOTH", includeTransfers: true },
+      filters: {},
+    };
+    const executed = {
+      viewType: "BAR_CHART",
+      groupBy: "CATEGORY",
+      data: [{ label: "Transfers", value: 80, count: 1, id: "cat-1" }],
+      timeframe: { label: "Last 3 months" },
+      currency: "EUR",
+      missingCurrencies: [],
+    };
+
+    it("marks the headline and adds the note when the figures include one", async () => {
+      mockGetById.mockResolvedValue(savedReport);
+      mockExecute.mockResolvedValue({
+        ...executed,
+        summary: { total: 80, knownTotal: 80, count: 1, average: 80, provisionalCount: 1 },
+        excludedCount: 0,
+        provisionalCount: 1,
+      });
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      expect(await screen.findByTestId("provisional-mark")).toBeInTheDocument();
+      expect(screen.getByTestId("provisional-data-notice")).toHaveTextContent(
+        "1 amount in these figures is an estimate",
+      );
+      // The figure is shown, not withheld: an estimate is not a gap.
+      expect(screen.queryByTestId("partial-total")).not.toBeInTheDocument();
+    });
+
+    it("marks nothing at a count of 0 or without a count", async () => {
+      mockGetById.mockResolvedValue(savedReport);
+      mockExecute.mockResolvedValue({
+        ...executed,
+        summary: { total: 80, knownTotal: 80, count: 1, average: 80 },
+        excludedCount: 0,
+      });
+      const { unmount } = render(<CustomReportViewer reportId="rpt-1" />);
+      await screen.findByTestId("report-chart");
+      expect(screen.queryByTestId("provisional-mark")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("provisional-data-notice")).not.toBeInTheDocument();
+      unmount();
+
+      mockExecute.mockResolvedValue({
+        ...executed,
+        summary: { total: 80, knownTotal: 80, count: 1, average: 80, provisionalCount: 0 },
+        excludedCount: 0,
+        provisionalCount: 0,
+      });
+      render(<CustomReportViewer reportId="rpt-1" />);
+      await screen.findByTestId("report-chart");
+      expect(screen.queryByTestId("provisional-mark")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("provisional-data-notice")).not.toBeInTheDocument();
+    });
+
+    it("shows both marks when the total is partial and provisional", async () => {
+      mockGetById.mockResolvedValue(savedReport);
+      mockExecute.mockResolvedValue({
+        ...executed,
+        summary: { total: null, knownTotal: 80, count: 2, average: null, provisionalCount: 1 },
+        missingCurrencies: ["JPY"],
+        excludedCount: 1,
+        provisionalCount: 1,
+      });
+      render(<CustomReportViewer reportId="rpt-1" />);
+
+      const headline = await screen.findByTestId("partial-total");
+      expect(headline).toContainElement(screen.getByTestId("partial-total-marker"));
+      expect(headline).toContainElement(screen.getByTestId("provisional-mark"));
+      expect(screen.getByTestId("partial-data-notice")).toBeInTheDocument();
+      expect(screen.getByTestId("provisional-data-notice")).toBeInTheDocument();
+    });
+  });
+
   // Discussion #1978: a both-direction figure says what it measures.
   describe("measure caption", () => {
     const report = (config: Record<string, unknown>) => ({

@@ -13,6 +13,7 @@ import { Budget503020Summary } from './Budget503020Summary';
 import { BudgetBucketSummary, type BudgetBucketStatusState } from './BudgetBucketSummary';
 import { BudgetScenarioPlanner } from './BudgetScenarioPlanner';
 import { STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from './utils/budget-labels';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import type { BudgetSummary, BudgetTrendPoint, BudgetVelocity } from '@/types/budget';
 import type { ScheduledTransaction } from '@/types/scheduled-transaction';
 
@@ -84,6 +85,9 @@ export function BudgetDashboard({
         displayCurrency={displayCurrency}
         formatCurrency={formatCurrency}
       />
+      {/* A transfer line's actual can hold an imported estimate of a
+          cross-currency leg; the figures include it and the note says so. */}
+      <ProvisionalDataNotice count={summary.provisionalCount} />
 
       {/* Strategy-specific widgets */}
       {strategy === 'ZERO_BASED' && (

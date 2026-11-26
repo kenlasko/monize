@@ -212,6 +212,11 @@ export interface SummaryInReportingCurrency {
   includedTransactionCount: number;
   excludedTransactionCount: number;
   missingCurrencies: string[];
+  /**
+   * Provisional transfer amounts (an imported estimate) inside the known
+   * figures above: only the currencies that converted. Absent is no information.
+   */
+  provisionalCount?: number;
 }
 
 export interface TransactionSummary {
@@ -219,6 +224,8 @@ export interface TransactionSummary {
   totalExpenses: number;
   netCashFlow: number;
   transactionCount: number;
+  /** Provisional transfer amounts (an imported estimate) inside the native totals. */
+  provisionalCount?: number;
   firstTransactionDate?: string | null;
   lastTransactionDate?: string | null;
   byCurrency?: Record<string, CurrencySummary>;
@@ -235,6 +242,11 @@ export interface GroupedTotal {
   convertedCurrency?: string;
   /** `total` converted by the server at each row's own rate or date; null without one. */
   convertedTotal?: number | null;
+  /**
+   * Provisional transfer amounts (an imported estimate) inside `total`.
+   * Absent is no information and draws no mark.
+   */
+  provisionalCount?: number;
 }
 
 export interface RecurringChargeInfo {

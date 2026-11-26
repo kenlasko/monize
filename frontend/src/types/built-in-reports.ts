@@ -226,6 +226,11 @@ export interface IncomeExpenseTagBucket {
   missingCurrencies: string[];
   /** How many aggregate rows this bucket left out, by any cause. */
   excludedCount: number;
+  /**
+   * Provisional transfer legs (an imported estimate) inside `taggedInflows`
+   * and `taggedOutflows`. Absent is no information and draws nothing.
+   */
+  provisionalCount?: number;
 }
 
 export interface IncomeVsExpensesResponse {
@@ -381,6 +386,11 @@ export interface MonthlyCategoryBreakdownResponse {
   missingCurrencies: string[];
   /** How many aggregate rows were left out, by any cause. */
   excludedCount: number;
+  /**
+   * Provisional transfer legs (an imported estimate) inside the transfer rows.
+   * Absent is no information and draws nothing.
+   */
+  provisionalCount?: number;
 }
 
 // Year-over-year types
@@ -796,4 +806,9 @@ export interface CashFlowSankeyResponse {
   };
   missingCurrencies: string[];
   excludedCount: number;
+  /**
+   * Provisional transfer legs (an imported estimate) inside the transfer flows
+   * that converted. Absent is no information and draws nothing.
+   */
+  provisionalCount?: number;
 }

@@ -29,6 +29,7 @@ import { ReportToolbarActions } from '@/components/reports/ReportToolbarActions'
 import { ReportAccountMultiSelect } from '@/components/reports/ReportAccountMultiSelect';
 import { ReportError } from '@/components/reports/ReportError';
 import { IncompleteDataDetails } from '@/components/reports/IncompleteDataDetails';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import {
   CashFlowSankeyDiagram,
   sankeyNodeHref,
@@ -315,6 +316,9 @@ export function CashFlowSankeyReport() {
           ))}
         </div>
       )}
+      {/* The transfer flows can hold an imported estimate of a cross-currency
+          leg; the figures include it and the note says so. */}
+      {data && <ProvisionalDataNotice count={data.provisionalCount} />}
 
       {incomplete && (
         <div className="space-y-2">

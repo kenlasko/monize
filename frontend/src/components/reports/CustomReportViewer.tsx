@@ -27,6 +27,7 @@ import { useTranslations } from 'next-intl';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PartialTotal } from '@/components/ui/PartialTotal';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { isComplete, reportTotal, type ConvertedTotal } from '@/lib/currency-total';
 import { customReportMeasure, isSignedTransactionList } from '@/lib/custom-report-measure';
 import { customReportDrillDownHref } from '@/lib/custom-report-links';
@@ -191,6 +192,8 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
           : total;
       })()
     : null;
+  // One source for the headline mark and the note, so the two cannot disagree.
+  const provisionalCount = result ? (result.summary.provisionalCount ?? result.provisionalCount) : undefined;
   const truncatedOnly =
     !!result?.truncated && result.summary.total === null && !!summaryTotal && isComplete(summaryTotal);
   // A truncated total is partial too: the Total row (table and PDF) carries the marker.
@@ -319,6 +322,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
                   }
                   displayCurrency={result.currency ?? defaultCurrency}
                   explanation={truncatedOnly ? t('customReportViewer.truncatedNotice') : undefined}
+                  provisionalCount={provisionalCount}
                 >
                   {formatValue(summaryTotal?.value ?? 0)}
                 </PartialTotal>
@@ -339,6 +343,7 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
               excludedCount={result.excludedCount ?? 0}
               displayCurrency={result.currency ?? defaultCurrency}
             />
+            <ProvisionalDataNotice count={provisionalCount} />
           </div>
 
           {/* Chart */}

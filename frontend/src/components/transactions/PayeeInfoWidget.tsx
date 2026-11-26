@@ -22,6 +22,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
 import { PayeeLogo } from '@/components/payees/PayeeLogo';
 import { createLogger } from '@/lib/logger';
 import {
@@ -356,6 +357,9 @@ export function PayeeInfoWidget({
           </div>
         )}
       </dl>
+      {/* One count covers every figure above (it does not say whether the
+          estimate is in income or expenses), so it is a note, not a mark. */}
+      <ProvisionalDataNotice count={totals?.provisionalCount} className="-mt-2 mb-4" />
 
       {!isLoading && transactionCount === 0 && (
         <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">

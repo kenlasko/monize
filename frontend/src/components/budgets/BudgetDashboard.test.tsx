@@ -197,6 +197,40 @@ describe('BudgetDashboard', () => {
     expect(screen.getByTestId('total-budgeted')).toHaveTextContent('5200');
   });
 
+  it('notes the estimated amounts the transfer actuals include', () => {
+    render(
+      <BudgetDashboard
+        summary={{ ...mockSummary, provisionalCount: 1 }}
+        velocity={mockVelocity}
+        scheduledTransactions={[]}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={85}
+        displayCurrency="USD"
+        formatCurrency={mockFormat}
+      />,
+    );
+    expect(screen.getByTestId('provisional-data-notice')).toHaveTextContent(
+      '1 amount in these figures is an estimate',
+    );
+  });
+
+  it.each([[0], [undefined]])('notes nothing at a provisional count of %s', (provisionalCount) => {
+    render(
+      <BudgetDashboard
+        summary={{ ...mockSummary, provisionalCount }}
+        velocity={mockVelocity}
+        scheduledTransactions={[]}
+        dailySpending={[]}
+        trendData={[]}
+        healthScore={85}
+        displayCurrency="USD"
+        formatCurrency={mockFormat}
+      />,
+    );
+    expect(screen.queryByTestId('provisional-data-notice')).not.toBeInTheDocument();
+  });
+
   it('passes health score to gauge', () => {
     render(
       <BudgetDashboard

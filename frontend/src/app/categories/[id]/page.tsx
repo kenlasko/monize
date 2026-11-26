@@ -426,6 +426,7 @@ function CategoryDetailContent() {
               currencyCode: currencyStrategy.displayCurrency,
               total,
               count: row.transactionCount,
+              provisionalCount: row.provisionalCount,
             },
           ];
     });
