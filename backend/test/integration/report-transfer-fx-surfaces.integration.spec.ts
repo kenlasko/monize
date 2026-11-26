@@ -854,7 +854,12 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
               findOne: async () => ({ id: payeeId }),
             } as never).getDetail(userId, payeeId),
           )
-        ).accounts.map((r) => [r.accountName, r.total, r.provisionalCount]);
+        ).accounts
+          .map((r) => [r.accountName, r.total, r.provisionalCount])
+          // The panel ranks accounts by transaction count, and these two hold
+          // one row each: their order is the GROUP BY's, which PostgreSQL does
+          // not fix. This spec is about the count, so it reads them by name.
+          .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
 
       await setEuroLegsProvisional(true);
       const provisional = await read();
@@ -862,12 +867,12 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       const confirmed = await read();
 
       expect(provisional).toEqual([
-        ["US Chequing", -100, 0],
         ["Euro Savings", 90, 1],
+        ["US Chequing", -100, 0],
       ]);
       expect(confirmed).toEqual([
-        ["US Chequing", -100, 0],
         ["Euro Savings", 90, 0],
+        ["US Chequing", -100, 0],
       ]);
     });
 
