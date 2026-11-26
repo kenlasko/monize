@@ -1,5 +1,7 @@
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
+import type { RateIndex } from "@/common/time-series/rate-index.util";
+import { TransactionSplit } from "@/transactions/entities/transaction-split.entity";
 import { ReportCurrencyService } from "@/built-in-reports/report-currency.service";
 import { ReportsService } from "@/reports/reports.service";
 import {
@@ -9,6 +11,8 @@ import {
   MetricType,
   ReportViewType,
   TimeframeType,
+  SortDirection,
+  TableColumn,
 } from "@/reports/entities/custom-report.entity";
 import {
   Transaction,
@@ -43,15 +47,16 @@ describe("custom report: signed category sums and escaped search (integration)",
   let groceriesId: string;
   let salaryId: string;
 
+  let rates: RateIndex = new Map();
+
   const START = "2026-03-01";
   const END = "2026-03-31";
 
   beforeAll(async () => {
     module = await createIntegrationModule([]);
     dataSource = module.get(DataSource);
-    // Every fixture is USD, so no rate is looked up: an empty list is honest.
     const currency = new ReportCurrencyService(dataSource, {
-      getRateIndex: async () => new Map(),
+      getRateIndex: async () => rates,
     } as never);
     // `execute` uses neither the budgets service nor action history.
     reports = new ReportsService(
@@ -67,6 +72,7 @@ describe("custom report: signed category sums and escaped search (integration)",
   });
 
   beforeEach(async () => {
+    rates = new Map();
     await cleanTables(dataSource, [
       "custom_reports",
       "transaction_splits",
@@ -115,13 +121,17 @@ describe("custom report: signed category sums and escaped search (integration)",
     );
   }
 
-  async function run(overrides: {
+  async function saveReport(overrides: {
     groupBy?: GroupByType;
     direction?: DirectionFilter;
     metric?: MetricType;
     filters?: CustomReport["filters"];
+    startDate?: string;
+    endDate?: string;
+    sortBy?: TableColumn;
+    sortDirection?: SortDirection;
   }) {
-    const report = await dataSource.manager.save(
+    return dataSource.manager.save(
       dataSource.manager.create(CustomReport, {
         userId,
         name: "Report",
@@ -133,11 +143,17 @@ describe("custom report: signed category sums and escaped search (integration)",
           metric: overrides.metric ?? MetricType.TOTAL_AMOUNT,
           includeTransfers: false,
           direction: overrides.direction ?? DirectionFilter.EXPENSES_ONLY,
-          customStartDate: START,
-          customEndDate: END,
+          customStartDate: overrides.startDate ?? START,
+          customEndDate: overrides.endDate ?? END,
+          sortBy: overrides.sortBy,
+          sortDirection: overrides.sortDirection,
         },
       } as Partial<CustomReport>),
     );
+  }
+
+  async function run(overrides: Parameters<typeof saveReport>[0]) {
+    const report = await saveReport(overrides);
     return withUserContext(userId, () => reports.execute(userId, report.id));
   }
 
@@ -151,6 +167,73 @@ describe("custom report: signed category sums and escaped search (integration)",
     await insertTransaction({ categoryId: salaryId, amount: 5000 });
   }
 
+  it.each([false, true])(
+    "keeps the same FX exclusions for every grouping, with split purchase = %s",
+    async (splitPurchase) => {
+      rates.set("EUR->USD", [{ date: "2026-01-10", rate: 1.2 }]);
+      const euroAccount = await createTestAccount(dataSource, userId, {
+        name: "Euros",
+        currencyCode: "EUR",
+      });
+      await insertTransaction({ amount: -25, categoryId: groceriesId });
+      const purchase = await insertTransaction({
+        accountId: euroAccount.id,
+        currencyCode: "EUR",
+        categoryId: splitPurchase ? null : groceriesId,
+        amount: splitPurchase ? -26 : -20,
+        isSplit: splitPurchase,
+        transactionDate: "2026-01-10",
+      });
+      if (splitPurchase) {
+        // The second line has an independently complete currency part.
+        await dataSource.getRepository(TransactionSplit).save([
+          { transactionId: purchase.id, categoryId: groceriesId, amount: -20 },
+          { transactionId: purchase.id, categoryId: salaryId, amount: -6 },
+        ]);
+      }
+      const refund = await insertTransaction({
+        accountId: euroAccount.id,
+        currencyCode: "EUR",
+        categoryId: groceriesId,
+        amount: 10,
+        transactionDate: "2026-12-20",
+      });
+      for (const [transactionId, name] of [
+        [purchase.id, "Purchase"],
+        [refund.id, "Refund"],
+      ]) {
+        const [tag] = await dataSource.query(
+          "INSERT INTO tags (user_id, name) VALUES ($1,$2) RETURNING id",
+          [userId, name],
+        );
+        await dataSource.query(
+          "INSERT INTO transaction_tags (transaction_id, tag_id) VALUES ($1,$2)",
+          [transactionId, tag.id],
+        );
+      }
+
+      for (const groupBy of Object.values(GroupByType)) {
+        const result = await run({
+          groupBy,
+          direction: DirectionFilter.BOTH,
+          startDate: "2026-01-01",
+          endDate: "2026-12-31",
+        });
+        const expected = splitPurchase ? -32.2 : -25;
+        expect({ groupBy, ...result.summary }).toMatchObject({
+          groupBy,
+          total: null,
+          knownTotal: expected,
+        });
+        expect(
+          result.data.reduce((total, row) => total + Number(row.value), 0),
+        ).toBeCloseTo(expected, 10);
+        expect(result.missingCurrencies).toEqual(["EUR"]);
+        expect(result.excludedCount).toBe(2);
+      }
+    },
+  );
+
   it("nets a refund within its category for an expense report", async () => {
     await insertGroceriesWithRefund();
 
@@ -162,15 +245,95 @@ describe("custom report: signed category sums and escaped search (integration)",
     expect(result.summary.total).toBe(70);
   });
 
-  it("nets a refund within its category when both directions are shown", async () => {
+  it("reopens an existing Both / Total Amount configuration as a signed net", async () => {
     await insertGroceriesWithRefund();
+    // This is the pre-change saved shape; there is no version field or re-save.
+    const saved = await saveReport({
+      direction: DirectionFilter.BOTH,
+      sortBy: TableColumn.VALUE,
+      sortDirection: SortDirection.ASC,
+    });
+    for (let read = 0; read < 2; read++) {
+      const result = await withUserContext(userId, () =>
+        reports.execute(userId, saved.id),
+      );
+      expect(result.data.map(({ id, value }) => [id, value])).toEqual([
+        [groceriesId, -70],
+        [salaryId, 5000],
+      ]);
+      expect(result.summary.total).toBe(4930);
+    }
+    expect(
+      (await dataSource.manager.findOneByOrFail(CustomReport, { id: saved.id }))
+        .config,
+    ).toEqual(saved.config);
+  });
 
-    const result = await run({ direction: DirectionFilter.BOTH });
+  it.each([
+    { amounts: [-700], expected: -700 },
+    { amounts: [-100, 150], expected: 50 },
+    { amounts: [100, -150], expected: -50 },
+  ])(
+    "totals the signed movements $amounts as $expected",
+    async ({ amounts, expected }) => {
+      const categoryId = amounts[0] > 0 ? salaryId : groceriesId;
+      for (const amount of amounts)
+        await insertTransaction({ categoryId, amount });
+      for (const groupBy of [
+        GroupByType.NONE,
+        GroupByType.CATEGORY,
+        GroupByType.MONTH,
+      ]) {
+        const result = await run({ groupBy, direction: DirectionFilter.BOTH });
+        expect(result.summary.total).toBe(expected);
+        expect(result.data[0].value).toBe(expected);
+      }
+    },
+  );
 
-    const groceries = result.data.find((d) => d.id === groceriesId);
-    expect(groceries?.value).toBe(70);
-    const salary = result.data.find((d) => d.id === salaryId);
-    expect(salary?.value).toBe(5000);
+  it("keeps both transactions and their signed months visible when a complete refund nets to zero", async () => {
+    const debit = await insertTransaction({
+      categoryId: groceriesId,
+      amount: -100,
+    });
+    const credit = await insertTransaction({
+      categoryId: groceriesId,
+      amount: 100,
+      transactionDate: "2026-04-10",
+    });
+    const execute = async (
+      groupBy: GroupByType,
+      metric = MetricType.TOTAL_AMOUNT,
+    ) => {
+      const report = await saveReport({
+        groupBy,
+        direction: DirectionFilter.BOTH,
+        metric,
+      });
+      return withUserContext(userId, () =>
+        reports.execute(userId, report.id, {
+          timeframeType: TimeframeType.CUSTOM,
+          startDate: START,
+          endDate: "2026-04-30",
+        }),
+      );
+    };
+    const listed = await execute(GroupByType.NONE, MetricType.NONE);
+    expect(listed.data.map(({ id, value }) => [id, value])).toEqual([
+      [debit.id, -100],
+      [credit.id, 100],
+    ]);
+    const category = await execute(GroupByType.CATEGORY);
+    expect(category.data).toEqual([
+      expect.objectContaining({ id: groceriesId, value: 0, count: 2 }),
+    ]);
+    const months = await execute(GroupByType.MONTH);
+    expect(months.data.map(({ id, value }) => [id, value])).toEqual([
+      ["2026-03", -100],
+      ["2026-04", 100],
+    ]);
+    for (const result of [listed, category, months])
+      expect(result.summary.total).toBe(0);
   });
 
   // Discussion #1978: one chronological list of both directions, each row

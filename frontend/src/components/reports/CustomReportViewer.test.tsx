@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@/test/render";
+import { act, render, screen, waitFor, fireEvent } from "@/test/render";
 import { CustomReportViewer } from "./CustomReportViewer";
 
 const mockPush = vi.fn();
@@ -51,18 +51,21 @@ vi.mock("@/components/reports/ReportChart", () => ({
     onDataPointClick,
     partialTotal,
     totalLabel,
+    totalRowCount,
     signed,
   }: {
     data?: Array<{ id?: string }>;
     onDataPointClick?: (id: string) => void;
     partialTotal?: { excludedCount: number } | null;
     totalLabel?: string;
+    totalRowCount?: number;
     signed?: boolean;
   }) => (
     <div
       data-testid="report-chart"
       data-partial={partialTotal ? String(partialTotal.excludedCount) : ""}
       data-total-label={totalLabel ?? ""}
+      data-total-count={totalRowCount}
       data-signed={signed ? "true" : "false"}
     >
       {(data ?? []).map((item) => (
@@ -781,15 +784,49 @@ describe("CustomReportViewer", () => {
       expect(await screen.findByTestId("report-measure")).toHaveTextContent("Net cash movement");
     });
 
-    it("names a both-direction aggregate as unsigned category amounts, unsigned rows", async () => {
-      mockGetById.mockResolvedValue({ ...report({ metric: "TOTAL_AMOUNT" }), groupBy: "CATEGORY" });
-      mockExecute.mockResolvedValue({ ...executed, groupBy: "CATEGORY" });
-      render(<CustomReportViewer reportId="rpt-1" />);
+    it.each([
+      { signedTotal: true, expense: -70, total: 930, caption: "Net amount" },
+      { signedTotal: undefined, expense: 70, total: 1070, caption: "Total of unsigned category amounts" },
+    ])("uses the server's measure for the same saved Both / Total report: $caption", async ({ signedTotal, expense, total, caption }) => {
+      const groupBy = "CATEGORY";
+      mockGetById.mockResolvedValue({ ...report({ metric: "TOTAL_AMOUNT" }), groupBy });
+      mockExecute.mockResolvedValue({
+        ...executed, groupBy, signedTotal,
+        data: [{ id: "salary", label: "Salary", value: 1000, count: 1 }, { id: "food", label: "Food", value: expense, count: 1 }],
+        summary: { total, knownTotal: total, count: 2 },
+      });
+      await act(async () => { render(<CustomReportViewer reportId="rpt-1" />); });
 
-      expect(await screen.findByTestId("report-measure")).toHaveTextContent(
-        "Total of unsigned category amounts",
-      );
-      expect(screen.getByTestId("report-chart")).toHaveAttribute("data-signed", "false");
+      expect(screen.getByTestId("report-measure")).toHaveTextContent(caption);
+      expect(screen.getByText(`$${total.toFixed(2)}`)).toBeInTheDocument();
+      const chart = screen.getByTestId("report-chart");
+      expect(chart).toHaveAttribute("data-total-label", caption);
+      expect(chart).toHaveAttribute("data-signed", signedTotal ? "true" : "false");
+      if (signedTotal) expect(chart).toHaveAttribute("data-total-count", "2");
+      else expect(chart).not.toHaveAttribute("data-total-count");
+    });
+
+    it.each([
+      { name: "mixed signs", values: [-70, 100, ...Array<number>(14).fill(0)], metric: "TOTAL_AMOUNT", groupBy: "CATEGORY" },
+      { name: "an ungrouped signed transaction list", values: [-300, 300, ...Array<number>(20).fill(0)], metric: "NONE", groupBy: "NONE" },
+      { name: "all zero", values: [0, 0], metric: "TOTAL_AMOUNT", groupBy: "CATEGORY" },
+    ])("exposes every signed pie amount in the keyboard-accessible legend for $name", async ({ values, metric, groupBy }) => {
+      const viewType = "PIE_CHART";
+      const data = values.map((value, index) => ({
+        label: `Group ${index + 1}`, id: `cat-${index}`, value, count: 2,
+      }));
+      const total = values.reduce((sum, value) => sum + value, 0);
+      mockGetById.mockResolvedValue({ ...report({ metric }), viewType, groupBy });
+      mockExecute.mockResolvedValue({
+        ...executed, viewType, groupBy, data, signedTotal: true, summary: { total, knownTotal: total, count: data.length * 2 },
+      });
+
+      await act(async () => { render(<CustomReportViewer reportId="rpt-1" />); });
+
+      for (const row of data) {
+        const entry = screen.getByRole("button", { name: `${row.label} $${row.value.toFixed(2)}` });
+        expect(entry).toBeEnabled();
+      }
     });
 
     // Grouped, No Aggregation sums each group's unsigned cells on the server,

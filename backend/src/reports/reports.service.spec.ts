@@ -773,6 +773,7 @@ describe("ReportsService", () => {
       const result = await service.execute("user-1", "report-1");
 
       expect(result.reportId).toBe("report-1");
+      expect(result).not.toHaveProperty("signedTotal");
       expect(result.name).toBe("Monthly Expenses");
       expect(result.data).toEqual([]);
       expect(result.summary).toEqual({
@@ -3594,7 +3595,7 @@ describe("ReportsService", () => {
         ]);
       });
 
-      it("reports the magnitude of each category's net for BOTH", async () => {
+      it("reports each signed category and the signed net for Both / Total Amount", async () => {
         setupExecuteMocks(
           {
             groupBy: GroupByType.CATEGORY,
@@ -3605,10 +3606,239 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data.find((d) => d.id === "cat-1")?.value).toBe(70);
+        expect(result.data.find((d) => d.id === "cat-1")?.value).toBe(-70);
         expect(result.data.find((d) => d.id === "cat-salary")?.value).toBe(
           5000,
         );
+        expect(result.summary.total).toBe(4930);
+        expect(result.signedTotal).toBe(true);
+        expect(result.data.every((row) => row.percentage === undefined)).toBe(
+          true,
+        );
+      });
+
+      it("identifies a signed total even when the ledger selection is empty", async () => {
+        setupExecuteMocks({
+          groupBy: GroupByType.NONE,
+          config: { ...defaultConfig, direction: DirectionFilter.BOTH },
+        });
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.signedTotal).toBe(true);
+        expect(result.data).toEqual([]);
+        expect(result.summary.total).toBe(0);
+      });
+
+      it.each(Object.values(GroupByType))(
+        "keeps the same signed headline when grouped by %s",
+        async (groupBy) => {
+          const rows = refundRows();
+          for (const input of [rows, [...rows].reverse()]) {
+            setupExecuteMocks(
+              {
+                groupBy,
+                config: { ...defaultConfig, direction: DirectionFilter.BOTH },
+              },
+              input,
+            );
+
+            const result = await service.execute("user-1", "report-1");
+
+            expect(result.summary).toMatchObject({
+              total: 4930,
+              knownTotal: 4930,
+              count: 3,
+            });
+          }
+        },
+      );
+
+      it("counts overlapping tags once in the signed headline, including distinct split amounts", async () => {
+        const common = { id: "common", name: "Common" };
+        const trip = { id: "trip", name: "Trip" };
+        const split = createMockTransaction({
+          id: "purchase",
+          amount: -100,
+          isSplit: true,
+          tags: [common] as Transaction["tags"],
+          splits: [
+            {
+              id: "line-1",
+              amount: -65,
+              categoryId: "cat-1",
+              tags: [common, trip],
+            },
+            { id: "line-2", amount: -35, categoryId: "cat-1", tags: [] },
+          ] as Transaction["splits"],
+        });
+        const refund = createMockTransaction({
+          id: "refund",
+          amount: 30,
+          tags: [trip] as Transaction["tags"],
+        });
+        const config = { ...defaultConfig, direction: DirectionFilter.BOTH };
+        setupExecuteMocks({ groupBy: GroupByType.TAG, config }, [
+          split,
+          refund,
+        ]);
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(
+          result.data.map(({ id, value, count }) => ({ id, value, count })),
+        ).toEqual([
+          { id: "trip", value: -35, count: 2 },
+          { id: "common", value: -100, count: 1 },
+        ]);
+        expect(result.summary).toEqual({
+          provisionalCount: 0,
+          total: -70,
+          knownTotal: -70,
+          count: 2,
+          average: -35,
+        });
+        expect(result.data.every((row) => row.percentage === undefined)).toBe(
+          true,
+        );
+      });
+
+      it.each([SortDirection.ASC, SortDirection.DESC])(
+        "uses the signed monetary value for a saved Percentage sort in %s order",
+        async (sortDirection) => {
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.CATEGORY,
+              config: {
+                ...defaultConfig,
+                direction: DirectionFilter.BOTH,
+                metric: MetricType.TOTAL_AMOUNT,
+                sortBy: TableColumn.PERCENTAGE,
+                sortDirection,
+              },
+            },
+            refundRows(),
+          );
+          const result = await service.execute("user-1", "report-1");
+          expect(result.data.map((row) => row.value)).toEqual(
+            sortDirection === SortDirection.ASC ? [-70, 5000] : [5000, -70],
+          );
+          expect(result.data.every((row) => row.percentage === undefined)).toBe(
+            true,
+          );
+        },
+      );
+
+      it("rounds the signed tag headline after folding its unique underlying amounts", async () => {
+        storedRates.set("EUR->USD", 1.2474);
+        const tags = [
+          { id: "a", name: "A" },
+          { id: "b", name: "B" },
+        ] as Transaction["tags"];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.TAG,
+            config: { ...defaultConfig, direction: DirectionFilter.BOTH },
+          },
+          [
+            createMockTransaction({
+              id: "first",
+              amount: -1,
+              currencyCode: "EUR",
+              tags: [tags[0]],
+            }),
+            createMockTransaction({
+              id: "second",
+              amount: -1,
+              currencyCode: "EUR",
+              tags: [tags[1]],
+            }),
+            createMockTransaction({ id: "refund", amount: 1, tags: [] }),
+          ],
+        );
+
+        const result = await service.execute("user-1", "report-1");
+
+        // Rounded rows sum to -1.50. The reference is -2 * 1.2474 + 1 = -1.4948.
+        expect(result.data.map((row) => row.value)).toEqual([1, -1.25, -1.25]);
+        expect(result.summary.total).toBe(-1.49);
+      });
+
+      it("keeps a missing FX rate distinct from a negative known subtotal for overlapping tags", async () => {
+        const tags = [
+          { id: "one", name: "One" },
+          { id: "two", name: "Two" },
+        ] as Transaction["tags"];
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.TAG,
+            config: { ...defaultConfig, direction: DirectionFilter.BOTH },
+          },
+          [
+            createMockTransaction({ id: "known", amount: -100, tags }),
+            createMockTransaction({
+              id: "unknown",
+              amount: 30,
+              currencyCode: "EUR",
+              tags,
+            }),
+          ],
+        );
+
+        const result = await service.execute("user-1", "report-1");
+
+        expect(result.summary).toEqual({
+          provisionalCount: 0,
+          total: null,
+          knownTotal: -100,
+          count: 1,
+          average: null,
+        });
+        expect(result.missingCurrencies).toEqual(["EUR"]);
+        expect(result.excludedCount).toBe(1);
+      });
+
+      it("withholds the same incomplete currency part under each grouping of a signed total", async () => {
+        const tagA = { id: "a", name: "A" };
+        const tagB = { id: "b", name: "B" };
+        storedRates.set("EUR->USD", 1.2);
+        const transactions = [
+          createMockTransaction({ id: "usd", amount: -25 }),
+          createMockTransaction({
+            id: "eur-debit",
+            amount: -20,
+            currencyCode: "EUR",
+            transactionDate: "2025-01-10",
+            tags: [tagA] as Transaction["tags"],
+          }),
+          createMockTransaction({
+            id: "eur-refund",
+            amount: 10,
+            currencyCode: "EUR",
+            transactionDate: "2025-12-20",
+            tags: [tagB] as Transaction["tags"],
+          }),
+        ];
+        for (const groupBy of Object.values(GroupByType)) {
+          setupExecuteMocks(
+            {
+              groupBy,
+              config: { ...defaultConfig, direction: DirectionFilter.BOTH },
+            },
+            transactions,
+          );
+          const result = await service.execute("user-1", "report-1");
+          expect(result.summary).toEqual({
+            provisionalCount: 0,
+            total: null,
+            knownTotal: -25,
+            count: 1,
+            average: null,
+          });
+          expect(result.data.map((row) => row.value)).toEqual([-25]);
+          expect(result.missingCurrencies).toEqual(["EUR"]);
+          expect(result.excludedCount).toBe(2);
+        }
       });
 
       it("nets within each category, never across two, under a month group", async () => {
@@ -4453,7 +4683,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         // A26-M33: a zero net is not net spending, so EXPENSES_ONLY drops it;
-        // BOTH keeps every category's magnitude, zero included.
+        // Both / Total Amount keeps the signed total, including a known zero.
         expect(result.data).toHaveLength(1);
         expect(result.data[0].value).toBe(0);
       });
@@ -4501,7 +4731,7 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        // Default case in aggregateData falls through to aggregateNoGrouping
+        // An unknown grouping uses the ungrouped report.
         expect(result.data).toEqual([]);
       });
 
