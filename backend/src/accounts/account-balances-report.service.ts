@@ -51,7 +51,7 @@ export interface AccountBalanceAsOf {
    * How many provisional transfer amounts (Monize's estimates, awaiting the
    * other account's own import) are inside `balance`: non-VOID legs dated on
    * or before `asOfDate`. `balance` is unchanged by them; the count is what a
-   * reader is told about it (`docs/future-plans/provisional-amounts.md`
+   * reader is told about it (`docs/specs/provisional-amounts.md`
    * section 6, P5). Zero before the account existed, as `balance` is.
    */
   provisionalCount: number;

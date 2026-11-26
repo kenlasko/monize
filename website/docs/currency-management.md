@@ -201,11 +201,12 @@ When you transfer money between accounts that use different currencies, Monize h
 
 Cross-currency transfers imported from QIF files require special handling because the QIF format does not record exchange rate information:
 
-1. The first side of the transfer is imported as a pending transaction
-2. When the other account's file is imported, the system matches the pending transfer
-3. You may need to manually adjust the destination amount to match the actual exchange rate used
+1. The first side of the transfer is imported normally. The other account's side is created for you with an **estimated amount**: the amount converted at the historical exchange rate for the transfer's date. If no rate is available for that pair and date, the row is not imported and the import result names the pair and the date
+2. The estimated side shows an **Estimated amount** badge, and hovering over it explains the estimate. Search transactions for `is:provisional` to list every such row
+3. When the other account's file is imported, Monize matches the transfer, replaces the estimate with the amount that file states, and the badge goes
+4. If you already know the amount that actually arrived, or the estimate is right, choose **Confirm amount** on the row to keep it as it is. The action can be undone from the action history. Editing the transfer and entering a different amount for that side confirms it as well
 
-This is noted in the transaction with a memo: *"PENDING IMPORT: Amount may need adjustment..."*
+The estimate counts in your balances, net worth and reports, which mark each figure that includes one ("includes estimated amounts") rather than leaving it out. Editing the memo or any other field never changes whether an amount is an estimate.
 
 Importing a Microsoft Money `.mny` file brings across Money's own exchange rate history as well (shown with the source "Money import"). Importing a KMyMoney file does the same with KMyMoney's own rate history (shown with the source "KMyMoney import").
 

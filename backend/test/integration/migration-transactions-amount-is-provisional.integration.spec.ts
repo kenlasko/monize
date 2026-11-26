@@ -12,7 +12,7 @@ import { createTestAccount } from "../helpers/test-factories";
 
 /**
  * The issue #2389 backfill of transactions.amount_is_provisional from the
- * importer's PENDING IMPORT note (design docs/future-plans/provisional-amounts.md
+ * importer's PENDING IMPORT note (design docs/specs/provisional-amounts.md
  * section 6), and its repeat in issue #2390 for the rows a release without
  * the importer change wrote after the first pass (design section 11). Only a
  * transfer leg carrying the note is flagged; the note itself stays until task

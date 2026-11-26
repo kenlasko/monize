@@ -10,7 +10,7 @@ import { BulkCreateTransactionsDto } from "./bulk-create.dto";
 import { UpdateSplitsDto } from "./update-splits.dto";
 
 /**
- * Design P2 of docs/future-plans/provisional-amounts.md: whether an amount is
+ * Design P2 of docs/specs/provisional-amounts.md: whether an amount is
  * provisional is never accepted from a request body. Only the importer sets
  * the flag, and only the confirm action, a transfer edit that restates the
  * leg's amount and the paths that end a leg's life clear it. Each body below

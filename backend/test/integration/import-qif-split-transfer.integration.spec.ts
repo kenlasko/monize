@@ -22,7 +22,7 @@ import { createTestAccount } from "../helpers/test-factories";
  * `amount_is_provisional` as the plain transfer path writes it, with no note
  * in its description (the market rate is not the bank's; issues #2390 and
  * #2400, design
- * docs/future-plans/provisional-amounts.md). The target's own file confirms
+ * docs/specs/provisional-amounts.md). The target's own file confirms
  * it. Without a rate the row is refused, naming the pair, rather than moving
  * the target's balance by a number in the wrong currency.
  */

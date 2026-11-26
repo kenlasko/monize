@@ -40,7 +40,7 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
  * A provisional transfer leg (`amountIsProvisional`, an amount the importer
  * estimated) is in a figure exactly when its line converted and its part and
  * cell were kept; `settle` names each such row once, so the report can say how
- * many estimates its figures hold (`docs/future-plans/provisional-amounts.md`
+ * many estimates its figures hold (`docs/specs/provisional-amounts.md`
  * section 6, P5).
  */
 

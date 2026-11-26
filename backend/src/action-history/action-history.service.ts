@@ -322,7 +322,7 @@ function assertConversionUndoable(
  * can still be the newest action after the reader has stated another amount
  * for the leg, or turned it into an ordinary transaction; that figure is
  * theirs, not Monize's estimate (design decisions 4 and 5 of
- * docs/future-plans/provisional-amounts.md). Refused before any write.
+ * docs/specs/provisional-amounts.md). Refused before any write.
  */
 function assertConfirmationUndoable(
   before: Record<string, any>,
@@ -1229,7 +1229,7 @@ export class ActionHistoryService {
       "status",
       "isSplit",
       // An edit that confirmed an estimated amount is undone with its flag
-      // (design P7, docs/future-plans/provisional-amounts.md).
+      // (design P7, docs/specs/provisional-amounts.md).
       "amountIsProvisional",
     ];
     for (const key of fieldKeys) {

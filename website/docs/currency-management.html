@@ -112,11 +112,12 @@
 <h3 id="during-import">During Import<a class="hlink" href="#during-import" aria-label="Link to this section">#</a></h3>
 <p>Cross-currency transfers imported from QIF files require special handling because the QIF format does not record exchange rate information:</p>
 <ol>
-<li>The first side of the transfer is imported as a pending transaction</li>
-<li>When the other account&#x27;s file is imported, the system matches the pending transfer</li>
-<li>You may need to manually adjust the destination amount to match the actual exchange rate used</li>
+<li>The first side of the transfer is imported normally. The other account&#x27;s side is created for you with an <strong>estimated amount</strong>: the amount converted at the historical exchange rate for the transfer&#x27;s date. If no rate is available for that pair and date, the row is not imported and the import result names the pair and the date</li>
+<li>The estimated side shows an <strong>Estimated amount</strong> badge, and hovering over it explains the estimate. Search transactions for <code>is:provisional</code> to list every such row</li>
+<li>When the other account&#x27;s file is imported, Monize matches the transfer, replaces the estimate with the amount that file states, and the badge goes</li>
+<li>If you already know the amount that actually arrived, or the estimate is right, choose <strong>Confirm amount</strong> on the row to keep it as it is. The action can be undone from the action history. Editing the transfer and entering a different amount for that side confirms it as well</li>
 </ol>
-<p>This is noted in the transaction with a memo: <em>&quot;PENDING IMPORT: Amount may need adjustment...&quot;</em></p>
+<p>The estimate counts in your balances, net worth and reports, which mark each figure that includes one (&quot;includes estimated amounts&quot;) rather than leaving it out. Editing the memo or any other field never changes whether an amount is an estimate.</p>
 <p>Importing a Microsoft Money <code>.mny</code> file brings across Money&#x27;s own exchange rate history as well (shown with the source &quot;Money import&quot;). Importing a KMyMoney file does the same with KMyMoney&#x27;s own rate history (shown with the source &quot;KMyMoney import&quot;).</p>
 <h2 id="currency-in-reports">Currency in Reports<a class="hlink" href="#currency-in-reports" aria-label="Link to this section">#</a></h2>
 <h3 id="conversion-for-reports">Conversion for Reports<a class="hlink" href="#conversion-for-reports" aria-label="Link to this section">#</a></h3>

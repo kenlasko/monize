@@ -202,7 +202,7 @@ export class Transaction {
    * The amount is the importer's estimate for the other account's leg of a
    * cross-currency transfer, until that account's own file (or the reader)
    * confirms it. The only source of truth for the state; never accepted from
-   * a request body (docs/future-plans/provisional-amounts.md, P1 and P2).
+   * a request body (docs/specs/provisional-amounts.md, P1 and P2).
    */
   @Column({ name: "amount_is_provisional", default: false })
   amountIsProvisional: boolean;

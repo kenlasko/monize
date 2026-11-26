@@ -1,6 +1,6 @@
 # Provisional transaction amounts
 
-Status: approved to build (Discussion #2383). The task list is `docs/future-plans/provisional-amounts-tasks.md`.
+Status: shipped (tracker #2388, Discussion #2383; every task below is merged, and the acceptance task Q closed the build). Kept as the specification: the invariants are catalogued as INV-FX-006 to INV-FX-011 in `docs/system-invariants.md` (P4 is the transfer paragraph of INV-FX-002), the importer's rules are in `docs/backend/transactions-and-money.md`, and the reader-facing behaviour is in `website/docs/currency-management.md` and `website/docs/reports.md`. The plan's task list is folded into section 14.
 
 ## 1. Goal
 
@@ -213,3 +213,26 @@ Each has a recorded default that the tasks implement; the maintainer may reverse
 2. Scope cut 6: flag only a figure that contains the provisional leg itself (default), or also one that contains only its confirmed side.
 3. The confirm action on a leg whose estimate the reader accepts leaves the stored rate as the importer wrote it (default), rather than recomputing it from the two amounts.
 4. Whether the import result should count the provisional legs it created. Default: no new field; the badge and `is:provisional` are the way to find them.
+
+## 14. Delivery
+
+The build was one task per agent session and one PR per task, each based on `main`. Deploy classes: none (tests and docs), inert (a column, a field or an endpoint that changes no figure), neutral (rewrites a live path and preserves its behaviour), visible (changes a figure, a stored value or what a reader sees). Only B2 changed stored figures for new imports and only B4 rewrote existing descriptions.
+
+| Task | Issue | What it delivered | Class |
+| --- | --- | --- | --- |
+| B1 | #2389 | The column, backfill, entity, support-backup rule, action-history column lists | inert |
+| B2 | #2390 | The importer writes and matches the column; the plain path estimates at the historical rate and refuses without one | visible |
+| B3 | #2391 | Both report readers read the column | neutral |
+| B5 | #2392 | Confirm-amount endpoint, the transfer-edit rule, clearing when a leg stops being a transfer leg, undo | inert |
+| S1 | #2393 | `is:provisional` in the transaction search | inert |
+| B6 | #2394 | Provisional count on balances and net worth | inert |
+| B7 | #2395 | Provisional count on custom reports, analytics, the assistant and MCP | inert |
+| B8 | #2396 | Provisional count on built-in reports that read transfer legs, and budget transfer actuals | inert |
+| F1 | #2397 | The row badge and the Confirm amount action | visible |
+| F2 | #2398 | The mark and note on accounts, the register header and net worth | visible |
+| F3 | #2399 | The note on custom reports, built-in reports, panels and budgets | visible |
+| B4 | #2400 | The description note retired: not written, stripped, restore normalization, guard | visible |
+| E1 | #2401 | End-to-end spec (import, badge, confirm) | none |
+| Q | #2402 | Acceptance: every locale, website docs, release note, invariants catalogued, plan retired, the strip repeated | none |
+
+Task Q also added `20261126180000_transactions_strip_pending_import_note_repeat.sql`, the strip of B4 repeated for legs a pod of the previous release wrote with the note during B4's rollout (decided on issue #2400). It is never a repeat of the flag backfill.

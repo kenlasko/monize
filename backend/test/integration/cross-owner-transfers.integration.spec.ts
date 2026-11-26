@@ -377,7 +377,7 @@ describe("Cross-owner transfers (integration)", () => {
       expect(toLeg.status).toBe("UNRECONCILED");
     });
 
-    // Design decision 4 of docs/future-plans/provisional-amounts.md, across
+    // Design decision 4 of docs/specs/provisional-amounts.md, across
     // the ownership boundary: the flag is a fact about the amount, which a
     // connected edit mirrors, so it is cleared on the other owner's leg when
     // an amount is stated for that leg, and by no other edit.

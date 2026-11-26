@@ -1,5 +1,5 @@
 -- Record whether a transaction's amount is provisional in a column (issue
--- #2389, Discussion #2383; design docs/future-plans/provisional-amounts.md,
+-- #2389, Discussion #2383; design docs/specs/provisional-amounts.md,
 -- sections 5 and 6).
 --
 -- When an imported file holds a cross-currency transfer, the importer creates

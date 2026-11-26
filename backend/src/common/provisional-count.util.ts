@@ -4,7 +4,7 @@ import { PROVISIONAL_COUNTS_AS_OF_DATES_SQL } from "./ledger-balance.sql";
 
 /**
  * The provisional legs inside account balances, by account and as-of date
- * (`docs/future-plans/provisional-amounts.md` section 6, "Figure shape"; P5).
+ * (`docs/specs/provisional-amounts.md` section 6, "Figure shape"; P5).
  *
  * A balance surface (the account list, the balances-as-of report, the daily
  * totals, the net worth months) reads its count from here and never writes its

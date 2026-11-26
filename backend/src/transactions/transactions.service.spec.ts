@@ -3356,7 +3356,7 @@ describe("TransactionsService", () => {
     });
   });
 
-  // Design decision 4 and P6 of docs/future-plans/provisional-amounts.md.
+  // Design decision 4 and P6 of docs/specs/provisional-amounts.md.
   describe("confirmAmount", () => {
     const provisionalLeg = {
       id: "tx-1",

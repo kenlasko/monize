@@ -143,7 +143,7 @@ export interface NetWorthTotals {
    * other account's own import) are inside `netWorth`, `totalAssets` and
    * `totalLiabilities`: the sum over their accounts, as of the latest month's
    * end or today. None of the figures changes or is withheld because of them
-   * (`docs/future-plans/provisional-amounts.md` section 6, P5).
+   * (`docs/specs/provisional-amounts.md` section 6, P5).
    */
   provisionalCount: number;
   assetsProvisionalCount: number;

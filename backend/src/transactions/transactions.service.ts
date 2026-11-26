@@ -399,7 +399,7 @@ export interface LlmTransactionRow {
   /**
    * `true` on a provisional transfer leg: its amount is Monize's estimate
    * until the other account's file is imported or the amount is confirmed
-   * (`docs/future-plans/provisional-amounts.md`). Absent on a confirmed row
+   * (`docs/specs/provisional-amounts.md`). Absent on a confirmed row
    * and on a split line, which is never provisional.
    */
   amountIsProvisional?: boolean;
@@ -4686,7 +4686,7 @@ export class TransactionsService {
 
   /**
    * Confirm a provisional amount as it stands (design decision 4 of
-   * docs/future-plans/provisional-amounts.md): the flag is cleared and nothing
+   * docs/specs/provisional-amounts.md): the flag is cleared and nothing
    * else is written, so no amount and no balance moves. The refusal and the
    * write are one conditional `UPDATE` keyed on the owner and on the flag
    * still being set, so two confirmations cannot both succeed and a row that

@@ -231,7 +231,7 @@ export type TransferEditHook = (
  * for the destination) and it differs from the stored one. A reprice the
  * server computed from the other side is still an estimate, and a form
  * resending the stored figure changed nothing, so both leave the flag
- * (docs/future-plans/provisional-amounts.md, decision 4 and section 6).
+ * (docs/specs/provisional-amounts.md, decision 4 and section 6).
  *
  * `next` is the pair the edit leaves behind, where an account can move (the
  * same-owner path). An amount is compared with its currency: a figure

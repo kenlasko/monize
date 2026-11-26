@@ -46,7 +46,7 @@ export interface DailyBalanceTotalPoint {
    * How many provisional transfer amounts (Monize's estimates, awaiting the
    * other account's own import) are inside `knownSubtotal`: each account's
    * non-VOID legs dated on or before `date`, summed over the accounts whose
-   * balance it holds (`docs/future-plans/provisional-amounts.md` section 6,
+   * balance it holds (`docs/specs/provisional-amounts.md` section 6,
    * P5). The figure is unchanged by them.
    */
   provisionalCount: number;

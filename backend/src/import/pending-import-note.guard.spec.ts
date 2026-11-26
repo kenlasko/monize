@@ -5,7 +5,7 @@ import * as ts from "typescript";
 /**
  * Whether an amount is provisional is read from
  * `transactions.amount_is_provisional` and nowhere else (design P1 of
- * docs/future-plans/provisional-amounts.md, issue #2400). The importer used to
+ * docs/specs/provisional-amounts.md, issue #2400). The importer used to
  * mark such a leg with a note in its description, a field the reader can edit,
  * and every reader that matched the text could be fooled by an edit. The note
  * is retired: nothing writes it, and the only code that still knows the text is
