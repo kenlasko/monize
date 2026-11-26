@@ -173,4 +173,21 @@ describe('TopGroupsPanel', () => {
     expect(items[0].querySelector('[data-testid="provisional-mark"]')).not.toBeNull();
     expect(screen.getAllByTestId('provisional-mark')).toHaveLength(1);
   });
+
+  it('keeps the mark outside a clickable row, so no button sits inside another', () => {
+    render(
+      <TopGroupsPanel
+        title="Accounts"
+        emptyLabel="No activity"
+        fallbackLabel="Unknown"
+        totals={[{ id: 'a1', name: 'EUR Savings', currencyCode: 'CAD', total: 80, count: 1, provisionalCount: 1 }]}
+        currencyCode="CAD"
+        isLoading={false}
+        onSelect={vi.fn()}
+      />,
+    );
+    const mark = screen.getByTestId('provisional-mark');
+    expect(mark.closest('button[type="button"]')).not.toBe(screen.getByText('EUR Savings').closest('button'));
+    expect(screen.getByText('EUR Savings').closest('button')?.querySelector('button')).toBeNull();
+  });
 });

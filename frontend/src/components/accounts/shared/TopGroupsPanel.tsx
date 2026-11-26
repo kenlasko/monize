@@ -7,6 +7,7 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { GroupedTotal } from '@/types/transaction';
 import { CARD_CLASS } from '@/components/ui/Card';
 import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 
 interface TopGroupsPanelProps {
   title: string;
@@ -100,15 +101,11 @@ export function TopGroupsPanel({
                     <span className="text-gray-700 dark:text-gray-200 truncate">
                       {g.name ?? fallbackLabel}
                     </span>
-                    <span className="inline-flex shrink-0 items-baseline gap-1">
-                      <span
-                        className="font-medium tabular-nums"
-                        style={{ color: signColor }}
-                      >
-                        {formatCurrency(Math.abs(amount), currencyCode)}
-                      </span>
-                      {/* A row holding an imported estimate says so; absent or 0 draws nothing. */}
-                      <ProvisionalMark count={g.provisionalCount} />
+                    <span
+                      className="font-medium tabular-nums"
+                      style={{ color: signColor }}
+                    >
+                      {formatCurrency(Math.abs(amount), currencyCode)}
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
@@ -122,18 +119,32 @@ export function TopGroupsPanel({
                   </div>
                 </>
               );
+              const row = clickable ? (
+                <button
+                  type="button"
+                  onClick={() => onSelect!(g.id)}
+                  className="block w-full text-left -mx-1 px-1 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  {body}
+                </button>
+              ) : (
+                body
+              );
+              // A row holding an imported estimate says so; absent or 0 draws
+              // nothing. The mark sits beside the row, never inside its button:
+              // its tooltip trigger is a button, and a button inside a button
+              // is a nesting the HTML parser does not allow.
               return (
                 <li key={`${g.id ?? 'none'}-${i}`}>
-                  {clickable ? (
-                    <button
-                      type="button"
-                      onClick={() => onSelect!(g.id)}
-                      className="block w-full text-left -mx-1 px-1 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      {body}
-                    </button>
+                  {provisionalCountOf(g.provisionalCount) > 0 ? (
+                    <div className="flex items-start gap-1">
+                      <div className="min-w-0 flex-1">{row}</div>
+                      <span className={clickable ? 'pt-1 text-sm' : 'text-sm'}>
+                        <ProvisionalMark count={g.provisionalCount} />
+                      </span>
+                    </div>
                   ) : (
-                    body
+                    row
                   )}
                 </li>
               );

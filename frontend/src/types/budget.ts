@@ -348,6 +348,11 @@ export interface CategoryBreakdown {
   /** A transfer line: savings out, or transfer income when `isIncome`. */
   isTransfer: boolean;
   percentage: number | null;
+  /**
+   * Provisional transfer legs (an imported estimate) inside `spent`; 0 on a
+   * category line. Absent is no information.
+   */
+  provisionalCount?: number;
 }
 
 export interface BudgetSummary {
@@ -365,6 +370,12 @@ export interface BudgetSummary {
    */
   outsideTransferIncome: number;
   categoryBreakdown: CategoryBreakdown[];
+  /**
+   * Provisional transfer legs (an imported estimate) inside the transfer
+   * lines' actuals and `outsideTransferIncome`, each counted once. The figures
+   * include them; absent is no information.
+   */
+  provisionalCount?: number;
   /** The current period the figures were read for (not the budget's start). */
   periodStart: string;
   periodEnd: string;

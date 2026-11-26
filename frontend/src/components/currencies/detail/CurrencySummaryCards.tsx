@@ -11,6 +11,8 @@ import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { CurrencyUsageSummary } from '@/lib/exchange-rates';
 import { rateDisplayDecimals, type RateHistoryRow } from '@/lib/currency-detail';
 import { useRateSourceLabel } from './useRateSourceLabel';
+import { ProvisionalMark } from '@/components/ui/ProvisionalMark';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 
 interface CurrencySummaryCardsProps {
   code: string;
@@ -44,6 +46,19 @@ export function CurrencySummaryCards({
 
   const firstYear = usage.firstTransactionDate?.slice(0, 4) ?? null;
 
+  // Both totals sum the same rows, so an imported estimate among them is in
+  // each; the mark sits beside the figure and never replaces it.
+  const provisional = provisionalCountOf(usage.provisionalCount) > 0;
+  const withProvisionalMark = (figure: string) =>
+    provisional ? (
+      <span className="inline-flex items-baseline gap-1">
+        <span>{figure}</span>
+        <ProvisionalMark count={usage.provisionalCount} />
+      </span>
+    ) : (
+      figure
+    );
+
   const cards: SummaryCardItem[] = [
     {
       label: t('summary.transactions'),
@@ -55,7 +70,7 @@ export function CurrencySummaryCards({
       value:
         usage.totalInCurrency === null
           ? '—'
-          : formatCurrency(usage.totalInCurrency, code),
+          : withProvisionalMark(formatCurrency(usage.totalInCurrency, code)),
       note:
         usage.totalInCurrency === null
           ? t('summary.totalInCurrencyUnknown', { currency: code })
@@ -75,11 +90,13 @@ export function CurrencySummaryCards({
         ? t('summary.totalIn', { currency: usage.reportingCurrency })
         : t('summary.convertedPartIn', { currency: usage.reportingCurrency }),
       // A partial sum is shown under its own caption, never under "Total".
-      value: formatCurrency(
-        complete
-          ? (usage.totalInReportingCurrency as number)
-          : usage.knownReportingSubtotal,
-        usage.reportingCurrency,
+      value: withProvisionalMark(
+        formatCurrency(
+          complete
+            ? (usage.totalInReportingCurrency as number)
+            : usage.knownReportingSubtotal,
+          usage.reportingCurrency,
+        ),
       ),
       valueClass: complete ? undefined : 'text-amber-600 dark:text-amber-400',
       note: complete
