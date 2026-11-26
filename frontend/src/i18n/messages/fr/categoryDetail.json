@@ -16,7 +16,8 @@
     "switchCategory": "Passer à une autre catégorie",
     "switchPlaceholder": "Filtrer les catégories...",
     "switchNoMatches": "Aucune catégorie ne correspond",
-    "since": "Catégorie depuis {date}"
+    "since": "Catégorie depuis {date}",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "Dépensé cette année",
@@ -29,7 +30,8 @@
     "sinceYear": "Depuis {year}",
     "lastTransaction": "Dernière transaction",
     "convertedNote": "Converti en {currency}",
-    "partialRatesNote": "Certains mois n'ont pas de taux de change"
+    "partialRatesNote": "Certains mois n'ont pas de taux de change",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "Principaux bénéficiaires",
@@ -77,7 +79,8 @@
     "largestValue": "{amount} le {date}",
     "defaultFor": "Catégorie par défaut pour",
     "defaultForMore": "+{count} autres",
-    "description": "Description"
+    "description": "Description",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "Sections de la catégorie",

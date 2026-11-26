@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "システムカテゴリは削除できません",
     "hasSubcategories": "サブカテゴリのあるカテゴリは削除できません。先にサブカテゴリを削除または再割り当てしてください。",
     "hasTransactions": "{{ count }} 件の取引が参照しているカテゴリは削除できません。先に取引を再割り当てしてください。",
-    "alreadyHasCategories": "デフォルトをインポートできません：ユーザーにはすでにカテゴリがあります。先に既存のカテゴリを削除するか、新たに始めてください。"
+    "alreadyHasCategories": "デフォルトをインポートできません：ユーザーにはすでにカテゴリがあります。先に既存のカテゴリを削除するか、新たに始めてください。",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "無効なUUID：{{ id }}",
@@ -521,6 +526,9 @@
     "internal": "内部サーバーエラー"
   },
   "import": {
+    "duplicatesChanged": "確認した後に重複の可能性が変わりました。何もインポートされていません。もう一度確認してください。",
+    "duplicateDecisionRepeated": "ファイルの 1 行に対して、重複の可能性に関する判断は 1 つだけです。",
+    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。",
     "accountClosed": "この口座は閉鎖されています。再開するか、別の口座を選択してください。",
     "noAccountBlocks": "QIFファイルに口座ブロックが見つかりません。このファイルはマルチアカウントエクスポートではない可能性があります。",
     "accountTypeRequired": "インポートする前に、次の口座の種類を選択してください: {{ accounts }}",
@@ -564,10 +572,7 @@
     "mnyJobNotFound": "インポートジョブが見つかりません",
     "mnyFileTooLarge": "この Money ファイルはインポート上限の {{ limit }} MB を超えています。",
     "noRateForSplitTransfer": "{{ date }} の {{ pair }} の為替レートがありません。分割行が別の通貨の口座へ振り替えています。その通貨ペアと日付の為替レートを追加してから、もう一度インポートしてください。",
-    "noRateForTransfer": "{{ date }} の {{ pair }} の為替レートがありません：振替先の口座は別の通貨です。その通貨ペアと日付の為替レートを追加してから、再度インポートしてください。",
-    "duplicatesChanged": "確認した後に重複の可能性が変わりました。何もインポートされていません。もう一度確認してください。",
-    "duplicateDecisionRepeated": "ファイルの 1 行に対して、重複の可能性に関する判断は 1 つだけです。",
-    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。"
+    "noRateForTransfer": "{{ date }} の {{ pair }} の為替レートがありません：振替先の口座は別の通貨です。その通貨ペアと日付の為替レートを追加してから、再度インポートしてください。"
   },
   "monteCarlo": {
     "scenarioNotFound": "シナリオ {{ id }} が見つかりません",
@@ -1028,6 +1033,10 @@
     "needsPreview": "この銀行口座のプレビューを開き、自動同期される前に最初のインポートを確認してください。",
     "selectionNotNew": "選択した取引は、銀行データの新しい行ではありません。何もインポートされませんでした。もう一度プレビューしてください。",
     "selectionOverlap": "1件の取引をインポートと除外リストへの追加の両方に指定することはできません。",
+    "selectionConflict": "1 つの取引に指定できる判断は 1 つだけです: インポート、例外に追加、マージ、自分の取引を残す、自分の取引を置き換えるのいずれかです。",
+    "duplicateNeedsPreview": "重複の可能性に関する判断には、それを表示したプレビューが必要です。何もインポートされていません。もう一度プレビューしてください。",
+    "selectionNotDuplicate": "マージ、保持、置き換えに選んだ取引は、もう重複の可能性ではありません。何もインポートされていません。もう一度プレビューしてください。",
+    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。既存の取引を残すか、銀行の行を別にインポートしてください。",
     "nothingToUpdate": "銀行接続を変更するには、autoSync, notifySuccess または tagOperationType を送信してください。",
     "simplefinCredentialsMissing": "口座を同期する前に SimpleFIN に接続してください。",
     "simplefinAccessInvalid": "SimpleFIN が無効なアクセス URL を返しました。SimpleFIN Bridge で新しいセットアップトークンを生成してください。",
@@ -1045,11 +1054,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge には有効なサブスクリプションが必要です。SimpleFIN Bridge で請求情報を確認してください。",
     "simplefinReadFailed": "SimpleFINから完全な口座データを取得できませんでした。SimpleFIN Bridgeで接続を確認してください。",
     "simplefinQuotaExhausted": "SimpleFINのリクエスト上限に達しました。利用枠が回復したら、現在のバッチを再試行してください。",
-    "simplefinClaimNotSent": "SimpleFINは一時的に利用できません。設定トークンは送信されていません。後で同じトークンを再試行してください。",
-    "selectionConflict": "1 つの取引に指定できる判断は 1 つだけです: インポート、例外に追加、マージ、自分の取引を残す、自分の取引を置き換えるのいずれかです。",
-    "duplicateNeedsPreview": "重複の可能性に関する判断には、それを表示したプレビューが必要です。何もインポートされていません。もう一度プレビューしてください。",
-    "selectionNotDuplicate": "マージ、保持、置き換えに選んだ取引は、もう重複の可能性ではありません。何もインポートされていません。もう一度プレビューしてください。",
-    "duplicateActionNotAllowed": "照合済みの取引はマージも置き換えもできず、振替や分割取引は置き換えできません。何もインポートされていません。既存の取引を残すか、銀行の行を別にインポートしてください。"
+    "simplefinClaimNotSent": "SimpleFINは一時的に利用できません。設定トークンは送信されていません。後で同じトークンを再試行してください。"
   },
   "warranties": {
     "notFound": "ID {{ id }} の保証が見つかりません",

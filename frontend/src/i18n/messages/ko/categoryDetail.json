@@ -16,7 +16,8 @@
     "switchCategory": "다른 카테고리로 이동",
     "switchPlaceholder": "카테고리 검색...",
     "switchNoMatches": "일치하는 카테고리가 없습니다",
-    "since": "{date}부터 등록된 카테고리"
+    "since": "{date}부터 등록된 카테고리",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "올해 지출",
@@ -29,7 +30,8 @@
     "sinceYear": "{year}년부터",
     "lastTransaction": "마지막 거래",
     "convertedNote": "{currency}(으)로 환산",
-    "partialRatesNote": "일부 월에는 환율이 없습니다"
+    "partialRatesNote": "일부 월에는 환율이 없습니다",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "상위 수취인",
@@ -77,7 +79,8 @@
     "largestValue": "{date}에 {amount}",
     "defaultFor": "기본 카테고리로 지정된 수취인",
     "defaultForMore": "+{count}개 더",
-    "description": "설명"
+    "description": "설명",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "카테고리 섹션",

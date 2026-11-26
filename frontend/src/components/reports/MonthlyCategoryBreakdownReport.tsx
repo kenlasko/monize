@@ -726,6 +726,7 @@ export function MonthlyCategoryBreakdownReport() {
       rawGroups.filter((g) => g.section.isIncome).map(buildSection),
     );
     const expenseSectionsRaw = sortSections(
+      // income-flag-ok: the report's own two sections, income and expense
       rawGroups.filter((g) => !g.section.isIncome).map(buildSection),
     );
 

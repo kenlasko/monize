@@ -49,7 +49,9 @@
     "editAria": "Edit category",
     "collapseAria": "Hide category info",
     "show": "Show category info",
-    "amountUnavailable": "No rate"
+    "amountUnavailable": "No rate",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Current Balance",

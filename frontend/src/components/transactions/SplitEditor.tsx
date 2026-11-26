@@ -1,5 +1,6 @@
 'use client';
 
+import { signByCategoryType } from '@/lib/category-type';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/Input';
@@ -220,7 +221,7 @@ export function SplitEditor({
   // A category created from a split line is applied before the parent's own
   // state update has re-rendered this component, so the new row is not in
   // `categories` yet. Remember what was created here so the income/expense sign
-  // rules below can still read its `isIncome` flag on the very first apply.
+  // rules below can still read its type on the very first apply.
   const createdCategoriesRef = useRef<Category[]>([]);
   const findCategory = useCallback(
     (id: string): Category | undefined =>
@@ -373,7 +374,7 @@ export function SplitEditor({
         const currentAmount = Number(newSplits[index].amount) || 0;
         if (currentAmount !== 0) {
           const absAmount = Math.abs(currentAmount);
-          const newAmount = category.isIncome ? absAmount : -absAmount;
+          const newAmount = signByCategoryType(category, absAmount);
           if (newAmount !== currentAmount) {
             newSplits[index] = { ...newSplits[index], amount: newAmount };
           }
@@ -383,7 +384,7 @@ export function SplitEditor({
         // to match (analogous to how normal transactions infer sign from category)
         if (index === 0 && onTransactionAmountChange && transactionAmount !== 0) {
           const absTotal = Math.abs(transactionAmount);
-          const newTotal = category.isIncome ? absTotal : -absTotal;
+          const newTotal = signByCategoryType(category, absTotal);
           if (newTotal !== transactionAmount) {
             onTransactionAmountChange(newTotal);
             // Flip uncategorized splits to keep them consistent with the new sign
@@ -415,7 +416,7 @@ export function SplitEditor({
 
             if (!isJustSignChange && category.effectiveAutoSign !== false) {
               const absAmount = Math.abs(newAmount);
-              value = category.isIncome ? absAmount : -absAmount;
+              value = signByCategoryType(category, absAmount);
             }
           }
         }

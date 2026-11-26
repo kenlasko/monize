@@ -1,5 +1,6 @@
 'use client';
 
+import { categoryTypeOf } from '@/lib/category-type';
 import { useTranslations } from 'next-intl';
 import { KeyValueList, type KeyValueRow } from '@/components/ui/KeyValueList';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -46,7 +47,7 @@ export function CategoryKeyInfoCard({
     {
       key: 'type',
       label: t('keyInfo.type'),
-      value: category.isIncome ? t('keyInfo.income') : t('keyInfo.expense'),
+      value: t(`keyInfo.${categoryTypeOf(category)}`),
     },
     {
       key: 'parent',

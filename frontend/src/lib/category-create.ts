@@ -1,4 +1,5 @@
 import { categoriesApi } from './categories';
+import type { CategoryType } from '@/lib/category-type';
 import { delegationApi } from './delegation';
 import { Category } from '@/types/category';
 
@@ -51,7 +52,7 @@ export interface CreatedCategory {
 
 export interface CreateCategoryFromInputOptions {
   /** Passed through to the API for the created leaf category. */
-  isIncome?: boolean;
+  type?: CategoryType;
   /**
    * A joint account whose OWNER's ledger the category belongs on. A joint
    * transaction is the owner's row and may only carry the owner's category
@@ -81,7 +82,7 @@ export async function createCategoryFromInput(
   // One decision, made once: every create in this call lands on the same
   // ledger. Choosing per request could put a `Parent: Child` pair astride two.
   const createCategory = options.jointAccountId
-    ? (data: { name: string; parentId?: string; isIncome?: boolean }) =>
+    ? (data: { name: string; parentId?: string; type?: CategoryType }) =>
         delegationApi.createJointCategory(options.jointAccountId!, data)
     : categoriesApi.create;
 
@@ -118,7 +119,7 @@ export async function createCategoryFromInput(
   const category = await createCategory({
     name: categoryName,
     parentId,
-    ...(options.isIncome !== undefined ? { isIncome: options.isIncome } : {}),
+    ...(options.type !== undefined ? { type: options.type } : {}),
   });
   created.push(category);
 

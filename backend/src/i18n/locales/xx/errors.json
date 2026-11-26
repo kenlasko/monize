@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "[XX-Cannot delete system categories-XX]",
     "hasSubcategories": "[XX-Cannot delete category with subcategories. Delete or reassign subcategories first.-XX]",
     "hasTransactions": "[XX-Cannot delete category with {{ count }} referencing transaction(s). Reassign transactions first.-XX]",
-    "alreadyHasCategories": "[XX-Cannot import defaults: user already has categories. Delete existing categories first or start fresh.-XX]"
+    "alreadyHasCategories": "[XX-Cannot import defaults: user already has categories. Delete existing categories first or start fresh.-XX]",
+    "transferCategoryOnCategoryRow": "[XX-{{ name }} is a Transfer category; it can go only on a transfer-XX]",
+    "transferCategoryOnCategoryRowGeneric": "[XX-A Transfer category can go only on a transfer-XX]",
+    "childTypeMismatch": "[XX-A subcategory has the type of its parent, {{ parent }} ({{ type }})-XX]",
+    "typeChangeHeld": "[XX-{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.-XX]",
+    "undoTypeHeld": "[XX-This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.-XX]"
   },
   "common": {
     "invalidUuid": "[XX-Invalid UUID: {{ id }}-XX]",

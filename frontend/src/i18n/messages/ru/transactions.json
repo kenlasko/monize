@@ -49,7 +49,9 @@
     "editAria": "Редактировать категорию",
     "collapseAria": "Скрыть информацию о категории",
     "show": "Показать информацию о категории",
-    "amountUnavailable": "Нет курса"
+    "amountUnavailable": "Нет курса",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Текущий остаток",
@@ -150,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Удалить перевод",
+      "splitLegTitle": "Убрать перевод из разделения",
       "transactionTitle": "Удалить проводку",
       "transferMessage": "Вы уверены, что хотите удалить этот перевод? Обе связанные проводки будут удалены.",
-      "splitLegTitle": "Убрать перевод из разделения",
       "splitLegMessage": "Этот перевод является одной строкой разделённой транзакции {hasPayee, select, true {с {payee} } other {}}от {date}. При удалении будет убрана только эта строка, а итог разделения будет пересчитан. Разделение и его остальные строки сохранятся.",
       "transactionMessage": "Вы уверены, что хотите удалить эту проводку? Это действие нельзя отменить.",
       "investmentTitle": "Удалить инвестиционную операцию",

@@ -17,7 +17,9 @@
     "summaryIncome": "Danh mục thu nhập",
     "summaryExpense": "Danh mục chi tiêu",
     "summaryTopLevel": "Cấp cao nhất",
-    "eyebrow": "Sơ đồ danh mục"
+    "eyebrow": "Sơ đồ danh mục",
+    "filterTransfers": "Transfers ({count})",
+    "summaryTransfer": "Transfer Categories"
   },
   "empty": {
     "heading": "Chưa có danh mục",
@@ -70,7 +72,8 @@
     "iconNone": "Không có biểu tượng",
     "descriptionLabel": "Mô tả (tùy chọn)",
     "submitCreate": "Tạo danh mục",
-    "submitUpdate": "Cập nhật danh mục"
+    "submitUpdate": "Cập nhật danh mục",
+    "typeTransfer": "Transfer"
   },
   "list": {
     "emptyHeading": "Không tìm thấy danh mục",
@@ -84,7 +87,8 @@
     "badgeExpense": "Chi tiêu",
     "systemBadge": "(Hệ thống)",
     "inheritedColorTitle": "Kế thừa từ cha",
-    "viewTransactionsTitle": "Xem giao dịch trong danh mục này"
+    "viewTransactionsTitle": "Xem giao dịch trong danh mục này",
+    "badgeTransfer": "Transfer"
   },
   "deleteDialog": {
     "title": "Xóa \"{name}\"",

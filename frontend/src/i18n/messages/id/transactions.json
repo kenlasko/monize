@@ -49,7 +49,9 @@
     "editAria": "Edit kategori",
     "collapseAria": "Sembunyikan info kategori",
     "show": "Tampilkan info kategori",
-    "amountUnavailable": "Tidak ada kurs"
+    "amountUnavailable": "Tidak ada kurs",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Saldo Saat Ini",
@@ -150,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Hapus Transfer",
+      "splitLegTitle": "Hapus Transfer dari Pemisahan",
       "transactionTitle": "Hapus Transaksi",
       "transferMessage": "Apakah Anda yakin ingin menghapus transfer ini? Kedua transaksi yang terkait akan dihapus.",
-      "splitLegTitle": "Hapus Transfer dari Pemisahan",
       "splitLegMessage": "Transfer ini adalah satu baris dari transaksi terpisah {hasPayee, select, true {dengan {payee} } other {}}tanggal {date}. Menghapusnya hanya menghapus baris ini dan menghitung ulang total pemisahan. Pemisahan dan baris lainnya tetap ada.",
       "transactionMessage": "Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.",
       "investmentTitle": "Hapus Transaksi Investasi",

@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "Impossibile eliminare le categorie di sistema",
     "hasSubcategories": "Impossibile eliminare la categoria con sottocategorie. Elimina o riassegna prima le sottocategorie.",
     "hasTransactions": "Impossibile eliminare la categoria con {{ count }} transazione/i che vi fanno riferimento. Riassegna prima le transazioni.",
-    "alreadyHasCategories": "Impossibile importare i predefiniti: l'utente ha già delle categorie. Elimina prima le categorie esistenti o ricomincia da zero."
+    "alreadyHasCategories": "Impossibile importare i predefiniti: l'utente ha già delle categorie. Elimina prima le categorie esistenti o ricomincia da zero.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "UUID non valido: {{ id }}",
@@ -521,6 +526,9 @@
     "internal": "Errore interno del server"
   },
   "import": {
+    "duplicatesChanged": "I possibili duplicati sono cambiati da quando sono stati controllati. Non è stato importato nulla; controlla di nuovo.",
+    "duplicateDecisionRepeated": "Una riga del file può avere una sola decisione sul suo possibile duplicato.",
+    "duplicateActionNotAllowed": "Una transazione riconciliata non può essere unita o sostituita, e un trasferimento o una transazione suddivisa non può essere sostituito. Non è stato importato nulla.",
     "accountClosed": "Il conto è chiuso. Riaprilo o scegli un altro conto.",
     "noAccountBlocks": "Nessun blocco account trovato nel file QIF. Questo file potrebbe non essere un'esportazione multi-account.",
     "accountTypeRequired": "Scegli un tipo di conto per questi conti prima di importare: {{ accounts }}",
@@ -564,10 +572,7 @@
     "mnyJobNotFound": "Attività di importazione non trovata",
     "mnyFileTooLarge": "Questo file Money supera il limite di importazione di {{ limit }} MB.",
     "noRateForSplitTransfer": "Nessun tasso di cambio per {{ pair }} il {{ date }}: una riga suddivisa trasferisce su un conto in un'altra valuta. Aggiungi un tasso di cambio per quella coppia e quella data, poi importa di nuovo.",
-    "noRateForTransfer": "Nessun tasso di cambio per {{ pair }} il {{ date }}: l'altro conto del trasferimento è in un'altra valuta. Aggiungi un tasso di cambio per quella coppia e quella data, poi importa di nuovo.",
-    "duplicatesChanged": "I possibili duplicati sono cambiati da quando sono stati controllati. Non è stato importato nulla; controlla di nuovo.",
-    "duplicateDecisionRepeated": "Una riga del file può avere una sola decisione sul suo possibile duplicato.",
-    "duplicateActionNotAllowed": "Una transazione riconciliata non può essere unita o sostituita, e un trasferimento o una transazione suddivisa non può essere sostituito. Non è stato importato nulla."
+    "noRateForTransfer": "Nessun tasso di cambio per {{ pair }} il {{ date }}: l'altro conto del trasferimento è in un'altra valuta. Aggiungi un tasso di cambio per quella coppia e quella data, poi importa di nuovo."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scenario {{ id }} non trovato",
@@ -1028,6 +1033,10 @@
     "needsPreview": "Apri l'anteprima di questo conto bancario e conferma la prima importazione prima che venga sincronizzato automaticamente.",
     "selectionNotNew": "Una transazione selezionata non è una nuova riga dei dati della banca. Non è stato importato nulla; genera di nuovo l'anteprima.",
     "selectionOverlap": "Una transazione non può essere importata e aggiunta alle eccezioni allo stesso tempo.",
+    "selectionConflict": "Una transazione può avere una sola decisione: importarla, aggiungerla alle eccezioni, unirla, mantenere la tua o sostituire la tua.",
+    "duplicateNeedsPreview": "Una decisione su un possibile duplicato richiede l'anteprima che lo ha mostrato. Non è stato importato nulla; genera di nuovo l'anteprima.",
+    "selectionNotDuplicate": "Una transazione scelta per essere unita, mantenuta o sostituita non è più un possibile duplicato. Non è stato importato nulla; genera di nuovo l'anteprima.",
+    "duplicateActionNotAllowed": "Una transazione riconciliata non può essere unita o sostituita, e un trasferimento o una transazione suddivisa non può essere sostituito. Non è stato importato nulla; mantienila o importa la riga della banca accanto a essa.",
     "nothingToUpdate": "Invia autoSync, notifySuccess o tagOperationType per modificare un collegamento bancario.",
     "simplefinCredentialsMissing": "Collega SimpleFIN prima di sincronizzare i conti.",
     "simplefinAccessInvalid": "SimpleFIN ha restituito un URL di accesso non valido. Genera un nuovo token di configurazione in SimpleFIN Bridge.",
@@ -1045,11 +1054,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge richiede un abbonamento attivo. Controlla la fatturazione in SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN non ha fornito dati completi dei conti. Controlla la connessione in SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Quota di richieste SimpleFIN esaurita. Attendi che si ripristini e riprova il lotto corrente.",
-    "simplefinClaimNotSent": "SimpleFIN è temporaneamente indisponibile. Il token di configurazione non è stato inviato; riprova più tardi con lo stesso token.",
-    "selectionConflict": "Una transazione può avere una sola decisione: importarla, aggiungerla alle eccezioni, unirla, mantenere la tua o sostituire la tua.",
-    "duplicateNeedsPreview": "Una decisione su un possibile duplicato richiede l'anteprima che lo ha mostrato. Non è stato importato nulla; genera di nuovo l'anteprima.",
-    "selectionNotDuplicate": "Una transazione scelta per essere unita, mantenuta o sostituita non è più un possibile duplicato. Non è stato importato nulla; genera di nuovo l'anteprima.",
-    "duplicateActionNotAllowed": "Una transazione riconciliata non può essere unita o sostituita, e un trasferimento o una transazione suddivisa non può essere sostituito. Non è stato importato nulla; mantienila o importa la riga della banca accanto a essa."
+    "simplefinClaimNotSent": "SimpleFIN è temporaneamente indisponibile. Il token di configurazione non è stato inviato; riprova più tardi con lo stesso token."
   },
   "warranties": {
     "notFound": "Garanzia con ID {{ id }} non trovata",

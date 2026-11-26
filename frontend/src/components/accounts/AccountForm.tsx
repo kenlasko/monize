@@ -1002,7 +1002,7 @@ export function AccountForm({
   // category for the fee editor to select; null when nothing was created.
   const handleLoanFeeCategoryCreate = async (name: string): Promise<Category | null> => {
     try {
-      const result = await createCategoryFromInput(name, categories, { isIncome: false });
+      const result = await createCategoryFromInput(name, categories, { type: 'expense' });
       if (!result) return null;
       setCategories(prev => [...prev, ...result.created]);
       toast.success(
@@ -1022,7 +1022,7 @@ export function AccountForm({
   const handleAssetCategoryCreate = async (name: string) => {
     try {
       const result = await createCategoryFromInput(name, categories, {
-        isIncome: false, // Asset value changes are typically not income
+        type: 'expense', // Asset value changes are typically not income
       });
       if (!result) return;
       setCategories(prev => [...prev, ...result.created]);

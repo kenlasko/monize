@@ -16,7 +16,8 @@
     "switchCategory": "Naar een andere categorie gaan",
     "switchPlaceholder": "Categorieën filteren...",
     "switchNoMatches": "Geen categorieën gevonden",
-    "since": "Categorie sinds {date}"
+    "since": "Categorie sinds {date}",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "Dit jaar uitgegeven",
@@ -29,7 +30,8 @@
     "sinceYear": "Sinds {year}",
     "lastTransaction": "Laatste transactie",
     "convertedNote": "Omgerekend naar {currency}",
-    "partialRatesNote": "Voor sommige maanden ontbreekt een wisselkoers"
+    "partialRatesNote": "Voor sommige maanden ontbreekt een wisselkoers",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "Topbegunstigden",
@@ -77,7 +79,8 @@
     "largestValue": "{amount} op {date}",
     "defaultFor": "Standaardcategorie voor",
     "defaultForMore": "+{count} meer",
-    "description": "Beschrijving"
+    "description": "Beschrijving",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "Onderdelen van de categorie",

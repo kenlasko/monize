@@ -49,7 +49,9 @@
     "editAria": "编辑分类",
     "collapseAria": "隐藏分类信息",
     "show": "显示分类信息",
-    "amountUnavailable": "无汇率"
+    "amountUnavailable": "无汇率",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "当前余额",
@@ -150,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "删除转账",
+      "splitLegTitle": "从拆分中移除转账",
       "transactionTitle": "删除交易",
       "transferMessage": "确定要删除此转账吗？两笔关联交易均将被删除。",
-      "splitLegTitle": "从拆分中移除转账",
       "splitLegMessage": "此转账是 {date} 拆分交易{hasPayee, select, true {（{payee}）} other {}}的一行。删除只会移除这一行，并重新计算拆分合计。拆分及其其他行会保留。",
       "transactionMessage": "确定要删除此交易吗？此操作无法撤销。",
       "investmentTitle": "删除投资交易",

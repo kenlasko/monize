@@ -149,6 +149,16 @@ describe('CategoryList', () => {
     expect(screen.getByText('Income')).toBeInTheDocument();
   });
 
+  it('marks a Transfer category as one, never as an expense', () => {
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Savings', categoryType: 'transfer', isIncome: false }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    expect(screen.getByText('Transfer')).toBeInTheDocument();
+    expect(screen.queryByText('Expense')).not.toBeInTheDocument();
+  });
+
   it('displays transaction count for each category', () => {
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', transactionCount: 5 }),

@@ -16,7 +16,8 @@
     "switchCategory": "Перейти до іншої категорії",
     "switchPlaceholder": "Фільтр категорій...",
     "switchNoMatches": "Немає відповідних категорій",
-    "since": "Категорія з {date}"
+    "since": "Категорія з {date}",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "Витрачено цього року",
@@ -29,7 +30,8 @@
     "sinceYear": "З {year}",
     "lastTransaction": "Остання транзакція",
     "convertedNote": "Переведено в {currency}",
-    "partialRatesNote": "Для деяких місяців немає обмінного курсу"
+    "partialRatesNote": "Для деяких місяців немає обмінного курсу",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "Основні одержувачі",
@@ -77,7 +79,8 @@
     "largestValue": "{amount} — {date}",
     "defaultFor": "Категорія за замовчуванням для",
     "defaultForMore": "+ще {count}",
-    "description": "Опис"
+    "description": "Опис",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "Розділи категорії",

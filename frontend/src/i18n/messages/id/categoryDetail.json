@@ -16,7 +16,8 @@
     "switchCategory": "Pindah ke kategori lain",
     "switchPlaceholder": "Saring kategori...",
     "switchNoMatches": "Tidak ada kategori yang cocok",
-    "since": "Kategori sejak {date}"
+    "since": "Kategori sejak {date}",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "Pengeluaran Tahun Ini",
@@ -29,7 +30,8 @@
     "sinceYear": "Sejak {year}",
     "lastTransaction": "Transaksi Terakhir",
     "convertedNote": "Dikonversi ke {currency}",
-    "partialRatesNote": "Beberapa bulan tidak memiliki kurs"
+    "partialRatesNote": "Beberapa bulan tidak memiliki kurs",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "Penerima Teratas",
@@ -77,7 +79,8 @@
     "largestValue": "{amount} pada {date}",
     "defaultFor": "Kategori Default untuk",
     "defaultForMore": "+{count} lagi",
-    "description": "Deskripsi"
+    "description": "Deskripsi",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "Bagian kategori",

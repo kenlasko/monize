@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "Impossible de supprimer les catégories système",
     "hasSubcategories": "Impossible de supprimer une catégorie avec des sous-catégories. Supprimez ou réaffectez les sous-catégories d'abord.",
     "hasTransactions": "Impossible de supprimer une catégorie avec {{ count }} transaction(s) référencée(s). Réaffectez les transactions d'abord.",
-    "alreadyHasCategories": "Impossible d'importer les valeurs par défaut : l'utilisateur a déjà des catégories. Supprimez d'abord les catégories existantes ou repartez de zéro."
+    "alreadyHasCategories": "Impossible d'importer les valeurs par défaut : l'utilisateur a déjà des catégories. Supprimez d'abord les catégories existantes ou repartez de zéro.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "UUID invalide : {{ id }}",
@@ -521,6 +526,9 @@
     "internal": "Erreur interne du serveur"
   },
   "import": {
+    "duplicatesChanged": "Les doublons possibles ont changé depuis leur vérification. Rien n'a été importé ; vérifiez de nouveau.",
+    "duplicateDecisionRepeated": "Une ligne du fichier ne peut avoir qu'une seule décision sur son doublon possible.",
+    "duplicateActionNotAllowed": "Une transaction rapprochée ne peut pas être fusionnée ni remplacée, et un virement ou une transaction répartie ne peut pas être remplacé. Rien n'a été importé.",
     "accountClosed": "Le compte est clôturé. Rouvrez-le ou choisissez un autre compte.",
     "noAccountBlocks": "Aucun bloc de compte trouvé dans le fichier QIF. Ce fichier n'est peut-être pas une exportation multi-compte.",
     "accountTypeRequired": "Choisissez un type de compte pour ces comptes avant l'importation : {{ accounts }}",
@@ -564,10 +572,7 @@
     "mnyJobNotFound": "Tâche d'import introuvable",
     "mnyFileTooLarge": "Ce fichier Money dépasse la limite d'import de {{ limit }} Mo.",
     "noRateForSplitTransfer": "Aucun taux de change pour {{ pair }} au {{ date }} : une ligne ventilée transfère vers un compte dans une autre devise. Ajoutez un taux de change pour cette paire et cette date, puis importez à nouveau.",
-    "noRateForTransfer": "Aucun taux de change pour {{ pair }} au {{ date }} : l'autre compte du virement est dans une autre devise. Ajoutez un taux de change pour cette paire et cette date, puis importez à nouveau.",
-    "duplicatesChanged": "Les doublons possibles ont changé depuis leur vérification. Rien n'a été importé ; vérifiez de nouveau.",
-    "duplicateDecisionRepeated": "Une ligne du fichier ne peut avoir qu'une seule décision sur son doublon possible.",
-    "duplicateActionNotAllowed": "Une transaction rapprochée ne peut pas être fusionnée ni remplacée, et un virement ou une transaction répartie ne peut pas être remplacé. Rien n'a été importé."
+    "noRateForTransfer": "Aucun taux de change pour {{ pair }} au {{ date }} : l'autre compte du virement est dans une autre devise. Ajoutez un taux de change pour cette paire et cette date, puis importez à nouveau."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scénario {{ id }} introuvable",
@@ -1028,6 +1033,10 @@
     "needsPreview": "Ouvrez l'aperçu de ce compte bancaire et confirmez le premier import avant sa synchronisation automatique.",
     "selectionNotNew": "Une transaction sélectionnée n'est pas une nouvelle ligne des données de la banque. Rien n'a été importé ; relancez l'aperçu.",
     "selectionOverlap": "Une transaction ne peut pas être à la fois importée et ajoutée aux exceptions.",
+    "selectionConflict": "Une transaction ne peut avoir qu'une seule décision : l'importer, l'ajouter aux exceptions, la fusionner, garder la vôtre ou remplacer la vôtre.",
+    "duplicateNeedsPreview": "Une décision sur un doublon possible nécessite l'aperçu qui l'a affiché. Rien n'a été importé ; générez de nouveau l'aperçu.",
+    "selectionNotDuplicate": "Une transaction choisie pour être fusionnée, gardée ou remplacée n'est plus un doublon possible. Rien n'a été importé ; générez de nouveau l'aperçu.",
+    "duplicateActionNotAllowed": "Une transaction rapprochée ne peut pas être fusionnée ni remplacée, et un virement ou une transaction répartie ne peut pas être remplacé. Rien n'a été importé ; gardez-la ou importez la ligne de la banque à côté.",
     "nothingToUpdate": "Envoyez autoSync, notifySuccess ou tagOperationType pour modifier une connexion bancaire.",
     "simplefinCredentialsMissing": "Connectez SimpleFIN avant de synchroniser les comptes.",
     "simplefinAccessInvalid": "SimpleFIN a renvoyé une URL d’accès non valide. Générez un nouveau jeton de configuration dans SimpleFIN Bridge.",
@@ -1045,11 +1054,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge nécessite un abonnement actif. Vérifiez la facturation dans SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN n’a pas pu fournir les données complètes des comptes. Vérifiez la connexion dans SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Le quota de requêtes SimpleFIN est épuisé. Attendez son renouvellement et réessayez le lot actuel.",
-    "simplefinClaimNotSent": "SimpleFIN est temporairement indisponible. Le jeton de configuration n’a pas été envoyé ; réessayez plus tard avec ce même jeton.",
-    "selectionConflict": "Une transaction ne peut avoir qu'une seule décision : l'importer, l'ajouter aux exceptions, la fusionner, garder la vôtre ou remplacer la vôtre.",
-    "duplicateNeedsPreview": "Une décision sur un doublon possible nécessite l'aperçu qui l'a affiché. Rien n'a été importé ; générez de nouveau l'aperçu.",
-    "selectionNotDuplicate": "Une transaction choisie pour être fusionnée, gardée ou remplacée n'est plus un doublon possible. Rien n'a été importé ; générez de nouveau l'aperçu.",
-    "duplicateActionNotAllowed": "Une transaction rapprochée ne peut pas être fusionnée ni remplacée, et un virement ou une transaction répartie ne peut pas être remplacé. Rien n'a été importé ; gardez-la ou importez la ligne de la banque à côté."
+    "simplefinClaimNotSent": "SimpleFIN est temporairement indisponible. Le jeton de configuration n’a pas été envoyé ; réessayez plus tard avec ce même jeton."
   },
   "warranties": {
     "notFound": "Garantie avec l'ID {{ id }} introuvable",

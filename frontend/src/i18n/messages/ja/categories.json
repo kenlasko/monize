@@ -17,7 +17,9 @@
     "summaryIncome": "収入カテゴリ",
     "summaryExpense": "支出カテゴリ",
     "summaryTopLevel": "トップレベル",
-    "eyebrow": "カテゴリ一覧"
+    "eyebrow": "カテゴリ一覧",
+    "filterTransfers": "Transfers ({count})",
+    "summaryTransfer": "Transfer Categories"
   },
   "empty": {
     "heading": "カテゴリがまだありません",
@@ -70,7 +72,8 @@
     "iconNone": "アイコンなし",
     "descriptionLabel": "説明（任意）",
     "submitCreate": "カテゴリを作成",
-    "submitUpdate": "カテゴリを更新"
+    "submitUpdate": "カテゴリを更新",
+    "typeTransfer": "Transfer"
   },
   "list": {
     "emptyHeading": "カテゴリが見つかりません",
@@ -84,7 +87,8 @@
     "badgeExpense": "支出",
     "systemBadge": "（システム）",
     "inheritedColorTitle": "親から継承",
-    "viewTransactionsTitle": "このカテゴリの取引を表示"
+    "viewTransactionsTitle": "このカテゴリの取引を表示",
+    "badgeTransfer": "Transfer"
   },
   "deleteDialog": {
     "title": "「{name}」を削除",

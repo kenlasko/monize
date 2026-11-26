@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "无法删除系统分类",
     "hasSubcategories": "无法删除有子分类的分类。请先删除或重新分配子分类。",
     "hasTransactions": "无法删除有 {{ count }} 笔引用交易的分类。请先重新分配交易。",
-    "alreadyHasCategories": "无法导入默认值：用户已有分类。请先删除现有分类或重新开始。"
+    "alreadyHasCategories": "无法导入默认值：用户已有分类。请先删除现有分类或重新开始。",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "无效的 UUID：{{ id }}",
@@ -521,6 +526,9 @@
     "internal": "内部服务器错误"
   },
   "import": {
+    "duplicatesChanged": "可能重复项在检查后已发生变化。未导入任何内容；请重新检查。",
+    "duplicateDecisionRepeated": "文件中的一行对其可能重复项只能有一个决定。",
+    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容。",
     "accountClosed": "该账户已关闭。请重新打开或选择其他账户。",
     "noAccountBlocks": "QIF 文件中未找到账户块。此文件可能不是多账户导出文件。",
     "accountTypeRequired": "导入前请为以下账户选择账户类型：{{ accounts }}",
@@ -564,10 +572,7 @@
     "mnyJobNotFound": "未找到导入任务",
     "mnyFileTooLarge": "该 Money 文件超过 {{ limit }} MB 的导入上限。",
     "noRateForSplitTransfer": "{{ date }} 没有 {{ pair }} 的汇率：一条拆分行转账到另一种货币的账户。请为该货币对和日期添加汇率，然后重新导入。",
-    "noRateForTransfer": "{{ date }} 没有 {{ pair }} 的汇率：转账的另一账户使用另一种货币。请为该货币对和日期添加汇率，然后重新导入。",
-    "duplicatesChanged": "可能重复项在检查后已发生变化。未导入任何内容；请重新检查。",
-    "duplicateDecisionRepeated": "文件中的一行对其可能重复项只能有一个决定。",
-    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容。"
+    "noRateForTransfer": "{{ date }} 没有 {{ pair }} 的汇率：转账的另一账户使用另一种货币。请为该货币对和日期添加汇率，然后重新导入。"
   },
   "monteCarlo": {
     "scenarioNotFound": "未找到情景 {{ id }}",
@@ -1028,6 +1033,10 @@
     "needsPreview": "请打开此银行账户的预览，并在其被自动同步之前确认首次导入。",
     "selectionNotNew": "所选的某笔交易不是银行数据中的新记录。未导入任何内容；请重新预览。",
     "selectionOverlap": "一笔交易不能同时被导入并加入例外列表。",
+    "selectionConflict": "一笔交易只能有一个决定：导入、添加到例外、合并、保留您的或替换您的。",
+    "duplicateNeedsPreview": "关于可能重复项的决定需要显示它的那次预览。未导入任何内容；请重新预览。",
+    "selectionNotDuplicate": "选择合并、保留或替换的交易已不再是可能重复项。未导入任何内容；请重新预览。",
+    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容；请保留它，或将银行的记录导入到它旁边。",
     "nothingToUpdate": "请发送 autoSync, notifySuccess 或 tagOperationType 以更改银行连接。",
     "simplefinCredentialsMissing": "请先连接 SimpleFIN，再同步账户。",
     "simplefinAccessInvalid": "SimpleFIN 返回了无效的访问 URL。请在 SimpleFIN Bridge 中生成新的设置令牌。",
@@ -1045,11 +1054,7 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge 需要有效订阅。请在 SimpleFIN Bridge 中检查账单。",
     "simplefinReadFailed": "SimpleFIN 未能提供完整的账户数据。请在 SimpleFIN Bridge 中检查连接。",
     "simplefinQuotaExhausted": "SimpleFIN 请求配额已用尽。请等待配额恢复后重试当前批次。",
-    "simplefinClaimNotSent": "SimpleFIN 暂时不可用。设置令牌尚未发送；请稍后使用同一令牌重试。",
-    "selectionConflict": "一笔交易只能有一个决定：导入、添加到例外、合并、保留您的或替换您的。",
-    "duplicateNeedsPreview": "关于可能重复项的决定需要显示它的那次预览。未导入任何内容；请重新预览。",
-    "selectionNotDuplicate": "选择合并、保留或替换的交易已不再是可能重复项。未导入任何内容；请重新预览。",
-    "duplicateActionNotAllowed": "已对账的交易不能合并或替换，转账或拆分交易不能替换。未导入任何内容；请保留它，或将银行的记录导入到它旁边。"
+    "simplefinClaimNotSent": "SimpleFIN 暂时不可用。设置令牌尚未发送；请稍后使用同一令牌重试。"
   },
   "warranties": {
     "notFound": "未找到 ID 为 {{ id }} 的保修",

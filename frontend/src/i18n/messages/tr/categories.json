@@ -17,7 +17,9 @@
     "summaryIncome": "Gelir Kategorileri",
     "summaryExpense": "Gider Kategorileri",
     "summaryTopLevel": "Üst Düzey",
-    "eyebrow": "Kategori planı"
+    "eyebrow": "Kategori planı",
+    "filterTransfers": "Transfers ({count})",
+    "summaryTransfer": "Transfer Categories"
   },
   "empty": {
     "heading": "Henüz kategori yok",
@@ -70,7 +72,8 @@
     "iconNone": "Simge yok",
     "descriptionLabel": "Açıklama (isteğe bağlı)",
     "submitCreate": "Kategori Oluştur",
-    "submitUpdate": "Kategoriyi Güncelle"
+    "submitUpdate": "Kategoriyi Güncelle",
+    "typeTransfer": "Transfer"
   },
   "list": {
     "emptyHeading": "Kategori bulunamadı",
@@ -84,7 +87,8 @@
     "badgeExpense": "Gider",
     "systemBadge": "(Sistem)",
     "inheritedColorTitle": "Üst kategoriden devralındı",
-    "viewTransactionsTitle": "Bu kategorideki işlemleri görüntüle"
+    "viewTransactionsTitle": "Bu kategorideki işlemleri görüntüle",
+    "badgeTransfer": "Transfer"
   },
   "deleteDialog": {
     "title": "\"{name}\" kategorisini sil",

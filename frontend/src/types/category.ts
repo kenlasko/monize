@@ -1,3 +1,5 @@
+import type { CategoryType } from '@/lib/category-type';
+
 export interface Category {
   id: string;
   userId: string;
@@ -23,6 +25,16 @@ export interface Category {
   autoSign: boolean | null;
   /** Resolved server-side by walking the ancestor chain; always a concrete boolean. */
   effectiveAutoSign: boolean;
+  /**
+   * Income, expense or transfer; a Transfer category goes only on a transfer.
+   * Always sent by the API; optional here so a value built before the type
+   * existed (a fixture) reads through `categoryTypeOf`.
+   */
+  categoryType?: CategoryType;
+  /**
+   * Read-only, derived: true only for an income category. Read a category's
+   * type through `@/lib/category-type`, never this flag.
+   */
   isIncome: boolean;
   isSystem: boolean;
   createdAt: string;
@@ -94,7 +106,8 @@ export interface CreateCategoryData {
   description?: string;
   icon?: string;
   color?: string;
-  isIncome?: boolean;
+  /** The category type; a subcategory takes its parent's. */
+  type?: CategoryType;
   autoSign?: boolean | null;
 }
 

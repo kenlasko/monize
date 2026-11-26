@@ -1,5 +1,6 @@
 'use client';
 
+import { categoryTypeOf } from '@/lib/category-type';
 import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
@@ -114,7 +115,7 @@ export function CategoryDetailHeader({
           </div>
 
           <Badge className="ui-detail-pill">
-            {category.isIncome ? t('header.incomePill') : t('header.expensePill')}
+            {t(`header.${categoryTypeOf(category)}Pill`)}
           </Badge>
           {category.isSystem && (
             <Badge className="ui-detail-pill">

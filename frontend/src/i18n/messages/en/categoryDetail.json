@@ -16,7 +16,8 @@
     "switchCategory": "Switch category",
     "switchPlaceholder": "Filter categories...",
     "switchNoMatches": "No categories match",
-    "since": "Category since {date}"
+    "since": "Category since {date}",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "Spent This Year",
@@ -29,7 +30,8 @@
     "sinceYear": "Since {year}",
     "lastTransaction": "Last Transaction",
     "convertedNote": "Converted to {currency}",
-    "partialRatesNote": "Some months have no exchange rate"
+    "partialRatesNote": "Some months have no exchange rate",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "Top Payees",
@@ -77,7 +79,8 @@
     "largestValue": "{amount} on {date}",
     "defaultFor": "Default Category For",
     "defaultForMore": "+{count} more",
-    "description": "Description"
+    "description": "Description",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "Category detail sections",

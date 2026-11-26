@@ -49,7 +49,9 @@
     "editAria": "श्रेणी संपादित करें",
     "collapseAria": "श्रेणी जानकारी छुपाएं",
     "show": "श्रेणी जानकारी दिखाएं",
-    "amountUnavailable": "कोई दर नहीं"
+    "amountUnavailable": "कोई दर नहीं",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "वर्तमान शेष",
@@ -150,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "ट्रांसफर हटाएं",
+      "splitLegTitle": "विभाजन से स्थानांतरण हटाएं",
       "transactionTitle": "लेन-देन हटाएं",
       "transferMessage": "क्या आप वाकई यह ट्रांसफर हटाना चाहते हैं? दोनों लिंक किए गए लेन-देन हटा दिए जाएंगे।",
-      "splitLegTitle": "विभाजन से स्थानांतरण हटाएं",
       "splitLegMessage": "यह स्थानांतरण {date} के विभाजित लेनदेन {hasPayee, select, true {({payee} के साथ) } other {}}की एक पंक्ति है। इसे हटाने पर केवल यह पंक्ति हटती है और विभाजन का कुल योग फिर से निकाला जाता है। विभाजन और उसकी अन्य पंक्तियां बनी रहती हैं।",
       "transactionMessage": "क्या आप वाकई यह लेन-देन हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।",
       "investmentTitle": "निवेश लेन-देन हटाएं",

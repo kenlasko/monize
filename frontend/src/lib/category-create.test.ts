@@ -105,15 +105,15 @@ describe('createCategoryFromInput', () => {
     });
   });
 
-  it('passes isIncome through only when the caller supplies it', async () => {
+  it('passes the type through only when the caller supplies it', async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: cat({ id: 'new', name: 'Boat' }) });
 
-    await createCategoryFromInput('boat', [], { isIncome: false });
+    await createCategoryFromInput('boat', [], { type: 'expense' });
 
     expect(apiClient.post).toHaveBeenCalledWith('/categories', {
       name: 'Boat',
       parentId: undefined,
-      isIncome: false,
+      type: 'expense',
     });
   });
 

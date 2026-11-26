@@ -49,7 +49,9 @@
     "editAria": "카테고리 편집",
     "collapseAria": "카테고리 정보 숨기기",
     "show": "카테고리 정보 표시",
-    "amountUnavailable": "환율 없음"
+    "amountUnavailable": "환율 없음",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "현재 잔액",
@@ -150,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "이체 삭제",
+      "splitLegTitle": "분할에서 이체 제거",
       "transactionTitle": "거래 삭제",
       "transferMessage": "이 이체를 삭제하시겠습니까? 연결된 두 거래가 모두 삭제됩니다.",
-      "splitLegTitle": "분할에서 이체 제거",
       "splitLegMessage": "이 이체는 {date}의 분할 거래{hasPayee, select, true {({payee})} other {}}의 한 줄입니다. 삭제하면 이 줄만 제거되고 분할 합계가 다시 계산됩니다. 분할과 다른 줄은 그대로 남습니다.",
       "transactionMessage": "이 거래를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
       "investmentTitle": "투자 거래 삭제",

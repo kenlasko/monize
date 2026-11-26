@@ -158,7 +158,7 @@ describe('LoanFeesPanel', () => {
     await act(async () => {
       fireEvent.click(create);
     });
-    expect(mockCreateCategory).toHaveBeenCalledWith({ name: 'Mortgage Insurance', isIncome: false });
+    expect(mockCreateCategory).toHaveBeenCalledWith({ name: 'Mortgage Insurance', type: 'expense' });
     fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '25' } });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save fees' }));

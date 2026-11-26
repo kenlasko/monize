@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  categoryTypeOf,
+  isExpenseCategory,
+  isIncomeCategory,
+  isTransferCategory,
+} from '@/lib/category-type';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -213,7 +219,7 @@ export function CategoryInfoWidget({
     return elapsedMonths > 0 ? sum / elapsedMonths : null;
   }, [monthlyTotals]);
 
-  const headlineTotal = totals ? netEntityTotal(totals, category.isIncome) : null;
+  const headlineTotal = totals ? netEntityTotal(totals, isIncomeCategory(category)) : null;
   const swatchColor = category.effectiveColor ?? category.color;
   // Same inheritance the list and the detail header use: show this category's
   // own icon, or the nearest ancestor's.
@@ -249,7 +255,7 @@ export function CategoryInfoWidget({
                 </p>
               )}
               <span className="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                {category.isIncome ? t('categoryWidget.income') : t('categoryWidget.expense')}
+                {t(`categoryWidget.${categoryTypeOf(category)}`)}
               </span>
             </div>
           </div>
@@ -287,13 +293,19 @@ export function CategoryInfoWidget({
 
       <div className="mb-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {category.isIncome ? t('categoryWidget.totalEarned') : t('categoryWidget.totalSpent')}
+          {categoryTypeOf(category) === 'income'
+            ? t('categoryWidget.totalEarned')
+            : categoryTypeOf(category) === 'transfer'
+              ? t('categoryWidget.totalTransferred')
+              : t('categoryWidget.totalSpent')}
         </p>
         <p
           className={`text-2xl font-bold ${
-            category.isIncome
+            isIncomeCategory(category)
               ? 'text-green-600 dark:text-green-400'
-              : 'text-red-600 dark:text-red-400'
+              : isTransferCategory(category)
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-red-600 dark:text-red-400'
           }`}
         >
           {headlineTotal !== null ? (
@@ -314,7 +326,7 @@ export function CategoryInfoWidget({
         </p>
       </div>
 
-      {budgetStatus && !category.isIncome && (
+      {budgetStatus && isExpenseCategory(category) && (
         <div className="mb-4">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-sm text-gray-500 dark:text-gray-400">

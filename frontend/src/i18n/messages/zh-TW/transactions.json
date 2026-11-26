@@ -49,7 +49,9 @@
     "editAria": "編輯分類",
     "collapseAria": "隱藏分類資訊",
     "show": "顯示分類資訊",
-    "amountUnavailable": "無匯率"
+    "amountUnavailable": "無匯率",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "目前結餘",
@@ -150,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "刪除轉帳",
+      "splitLegTitle": "從拆分中移除轉帳",
       "transactionTitle": "刪除交易",
       "transferMessage": "確定要刪除此轉帳嗎？兩筆連結的交易都將被刪除。",
-      "splitLegTitle": "從拆分中移除轉帳",
       "splitLegMessage": "此轉帳是 {date} 拆分交易{hasPayee, select, true {（{payee}）} other {}}的一列。刪除只會移除這一列，並重新計算拆分合計。拆分及其其他列會保留。",
       "transactionMessage": "確定要刪除此交易嗎？此操作無法復原。",
       "investmentTitle": "刪除投資交易",

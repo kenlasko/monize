@@ -49,7 +49,9 @@
     "editAria": "Editar categoria",
     "collapseAria": "Ocultar informações da categoria",
     "show": "Mostrar informações da categoria",
-    "amountUnavailable": "Sem taxa"
+    "amountUnavailable": "Sem taxa",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Saldo Atual",
@@ -150,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Eliminar Transferência",
+      "splitLegTitle": "Remover transferência da divisão",
       "transactionTitle": "Eliminar Transação",
       "transferMessage": "Tem a certeza de que quer eliminar esta transferência? Ambas as transações associadas serão eliminadas.",
-      "splitLegTitle": "Remover transferência da divisão",
       "splitLegMessage": "Esta transferência é uma linha de uma transação dividida {hasPayee, select, true {com {payee} } other {}}de {date}. Eliminá-la remove apenas esta linha e recalcula o total da divisão. A divisão e as suas outras linhas mantêm-se.",
       "transactionMessage": "Tem a certeza de que quer eliminar esta transação? Esta ação não pode ser desfeita.",
       "investmentTitle": "Eliminar Transação de Investimento",
