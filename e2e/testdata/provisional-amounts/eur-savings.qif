@@ -1,0 +1,7 @@
+!Type:Bank
+D01/15/2025
+T90.00
+PE2E Wire to Euro
+MReceived
+L[Checking USD]
+^
