@@ -233,6 +233,14 @@
     "scheduleRecurring": "設為固定排程",
     "delete": "刪除"
   },
+  "provisional": {
+    "label": "估算金額",
+    "tooltip": "Monize 在匯入此轉帳另一帳戶一側時，依歷史匯率估算了此金額。在匯入此帳戶自己的檔案或您確認金額之前，它仍是估算值。",
+    "confirmAction": "確認金額",
+    "confirmActionTitle": "將此金額保留為實際收到或支付的金額",
+    "confirmed": "金額已確認",
+    "confirmFailed": "無法確認金額"
+  },
   "filter": {
     "favourites": "最愛：",
     "panel": {

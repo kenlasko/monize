@@ -233,6 +233,14 @@
     "scheduleRecurring": "Agendar como Recorrente",
     "delete": "Eliminar"
   },
+  "provisional": {
+    "label": "Montante estimado",
+    "tooltip": "O Monize estimou este montante à taxa de câmbio histórica ao importar o lado desta transferência da outra conta. Continua a ser uma estimativa até o ficheiro desta conta ser importado ou até confirmar o montante.",
+    "confirmAction": "Confirmar montante",
+    "confirmActionTitle": "Manter este montante como o montante efetivamente recebido ou pago",
+    "confirmed": "Montante confirmado",
+    "confirmFailed": "Não foi possível confirmar o montante"
+  },
   "filter": {
     "favourites": "Favoritos:",
     "panel": {

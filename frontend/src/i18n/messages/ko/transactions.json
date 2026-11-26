@@ -233,6 +233,14 @@
     "scheduleRecurring": "반복 거래로 예약",
     "delete": "삭제"
   },
+  "provisional": {
+    "label": "추정 금액",
+    "tooltip": "Monize가 이 이체의 다른 계좌 쪽을 가져올 때 과거 환율로 이 금액을 추정했습니다. 이 계좌의 파일을 가져오거나 금액을 확정할 때까지 추정치로 유지됩니다.",
+    "confirmAction": "금액 확정",
+    "confirmActionTitle": "이 금액을 실제로 받거나 지급한 금액으로 유지합니다",
+    "confirmed": "금액이 확정되었습니다",
+    "confirmFailed": "금액을 확정하지 못했습니다"
+  },
   "filter": {
     "favourites": "즐겨찾기:",
     "panel": {
