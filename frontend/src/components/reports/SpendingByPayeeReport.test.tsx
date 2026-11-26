@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@/test/render";
 import { SpendingByPayeeReport } from "./SpendingByPayeeReport";
 
+const { exportToCsv } = vi.hoisted(() => ({ exportToCsv: vi.fn() }));
+vi.mock("@/lib/csv-export", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/csv-export")>(),
+  exportToCsv,
+}));
+
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -122,6 +128,17 @@ describe("SpendingByPayeeReport", () => {
     expect(document.querySelector(".animate-pulse")).toBeTruthy();
   });
 
+  it("shows the net credit in the table without a percentage", async () => {
+    mockGetSpendingByPayee.mockResolvedValue({ data: [{ payeeId: "shop", payeeName: "Co-op", total: -50, percentage: null }], totalSpending: -50 });
+    await act(async () => { render(<SpendingByPayeeReport />); });
+    fireEvent.click(screen.getByTestId("toggle-table"));
+    const row = screen.getByText("Co-op").closest("tr");
+    expect(row).toHaveTextContent("$-50.00");
+    expect(row).not.toHaveTextContent("%");
+    fireEvent.click(screen.getByTestId("export-csv"));
+    expect(exportToCsv).toHaveBeenCalledWith("spending-by-payee", expect.any(Array), [["Co-op", -50, ""]]);
+  });
+
   it("renders empty state when no data returned", async () => {
     mockGetSpendingByPayee.mockResolvedValue({
       data: [],
@@ -145,7 +162,7 @@ describe("SpendingByPayeeReport", () => {
     });
     render(<SpendingByPayeeReport />);
     await waitFor(() => {
-      expect(screen.getByText(/Top 2 Payees/)).toBeInTheDocument();
+      expect(screen.getByText("Total")).toBeInTheDocument();
     });
     expect(screen.getByText("$500.00")).toBeInTheDocument();
   });
@@ -237,7 +254,7 @@ describe("SpendingByPayeeReport", () => {
     });
     render(<SpendingByPayeeReport />);
     await waitFor(() => {
-      expect(screen.getByText(/Top 3 Payees/)).toBeInTheDocument();
+      expect(screen.getByText("Total")).toBeInTheDocument();
     });
     expect(screen.getByText("$600.00")).toBeInTheDocument();
   });

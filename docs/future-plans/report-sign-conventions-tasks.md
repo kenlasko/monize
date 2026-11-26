@@ -14,6 +14,6 @@ Working draft for [#2404](https://github.com/kenlasko/monize/discussions/2404). 
 
 ### Income sources and payees
 
-- [ ] Verify the source and payee breakdowns against the approved signed examples in PostgreSQL.
+- [x] Verify the source and payee breakdowns against the approved signed examples in PostgreSQL.
 - [ ] Exercise signed and zero rows through the report, dashboard and supported export formats.
 - [ ] Verify user documentation, affected consumers and release gates on the final revision.

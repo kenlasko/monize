@@ -96,12 +96,11 @@ function sourceRows(
   return {
     total,
     rows: report.data
-      .filter((r) => r.categoryId !== null && r.total > 0)
-      .map((r) => ({
-        name: r.categoryName,
-        total: r.total,
-        percentage: r.percentage,
-      }))
+      .flatMap((r) =>
+        r.categoryId !== null && r.total > 0 && r.percentage !== null
+          ? [{ name: r.categoryName, total: r.total, percentage: r.percentage }]
+          : [],
+      )
       .sort((a, b) => b.total - a.total),
   };
 }

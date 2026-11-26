@@ -228,14 +228,8 @@ export class IncomeReportsService {
       }
     }
 
-    // Signed net within the category (INV-REPORT-004): a correction lowers
-    // the source, and a source whose debits meet its credits earned nothing.
-    // Judged on the net's sign before rounding, so a source that earned
-    // 0.00003 is still one (docs/specs/report-rounding-and-aggregation.md
-    // rule 5).
-    const earned = Array.from(categoryTotals.entries()).filter(
-      ([, { agg }]) => agg.sign > 0,
-    );
+    // Classification was selected in SQL. A reversal stays with its source.
+    const earned = Array.from(categoryTotals.entries());
     // Every source, not a top-N: the caller decides how many to draw. Cutting
     // here made `totalIncome` the sum of the largest fifteen. The sources fold
     // as aggregates, so the total is rounded once (rule 2).
@@ -247,13 +241,15 @@ export class IncomeReportsService {
     // aggregates before either is rounded (rule 8): two equal sources of
     // 1.2474 read 1.25 each over 2.49, and 1.25 / 2.49 is 50.2% where each is
     // half. Over the income that converted, the figure the page shows.
+    const hasShares =
+      income.sign > 0 && earned.every(([, { agg }]) => agg.sign >= 0);
     const data: IncomeSourceItem[] = earned
       .map(([id, { agg, category }]) => ({
         categoryId: id,
         categoryName: category.name,
         color: category.color || null,
         total: agg.knownSubtotalAt(places),
-        percentage: shareOf(agg, income),
+        percentage: hasShares ? shareOf(agg, income) : null,
       }))
       .sort((a, b) => b.total - a.total);
 

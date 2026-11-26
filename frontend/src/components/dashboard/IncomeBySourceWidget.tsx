@@ -1,5 +1,6 @@
 'use client';
 
+import { amountWithShare, reportBreakdownShare } from '@/lib/report-breakdown-share';
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -56,7 +57,7 @@ interface IncomeSlice {
    * (rule 8); the merged slice's is the sum of its sources'. Absent from an
    * older backend, which still gets the readings' ratio.
    */
-  percentage?: number;
+  percentage?: number | null;
 }
 
 export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
@@ -102,7 +103,7 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
     });
     // The server returns every source; the chart keeps the largest and merges
     // the rest, so the slices still add up to the total.
-    if (slices.length <= MAX_SLICES) return slices;
+    if (slices.length <= MAX_SLICES || slices.some((item) => item.percentage === null)) return slices;
     const rest = slices.slice(MAX_SLICES);
     return [
       ...slices.slice(0, MAX_SLICES),
@@ -124,18 +125,21 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
   const totalIncome = incomeTotal.value;
   const reportingCurrency = response?.currency ?? defaultCurrency;
 
+  const canDrawPie = chartData.every((item) => item.percentage !== null);
+  const chartType = canDrawPie ? config.chartType : 'bar';
+
   const renderTooltip = (active: boolean | undefined, rawPayload: unknown) => {
     const payload = rawPayload as Array<{ payload: IncomeSlice }> | undefined;
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     // The server's share, never the slice's reading over the income's: two
     // equal sources of 1.2474 read 1.25 over 2.49, 50.2%, and are each half.
-    const pct = d.percentage ?? (totalIncome > 0 ? (d.value / totalIncome) * 100 : 0);
+    const pct = reportBreakdownShare(d, totalIncome);
     return (
       <ChartTooltipPanel>
         <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
         <p className="text-gray-600 dark:text-gray-400">
-          {formatCurrency(d.value)} ({formatPercent(pct, 1)})
+          {amountWithShare(formatCurrency(d.value), pct, formatPercent)}
         </p>
       </ChartTooltipPanel>
     );
@@ -153,9 +157,9 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
       </WidgetConfigRow>
       <WidgetConfigRow label={t('widgets.chartType')}>
         <ChartViewToggle
-          value={config.chartType}
+          value={chartType}
           onChange={(v) => updateConfig({ chartType: v as 'pie' | 'bar' })}
-          options={['pie', 'bar']}
+          options={canDrawPie ? ['pie', 'bar'] : ['bar']}
         />
       </WidgetConfigRow>
     </>
@@ -184,7 +188,7 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
         <>
           <div className="flex-1 min-h-[260px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              {config.chartType === 'bar' ? (
+              {chartType === 'bar' ? (
                 <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
                   <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />
                   <XAxis type="number" tickFormatter={formatCurrencyAxis} tick={{ fontSize: 11 }} />

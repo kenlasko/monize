@@ -9,11 +9,14 @@ export class PayeeSpendingItem {
 
   @ApiProperty({ example: 500.0 })
   total: number;
+
+  @ApiProperty({ type: Number, nullable: true })
+  percentage?: number | null;
 }
 
 export class SpendingByPayeeResponse {
   /**
-   * The largest payees, in {@link currency}. Rows whose currency had no rate
+   * All qualifying payees, in {@link currency}. Rows whose currency had no rate
    * are left out of every figure, so when `missingCurrencies` is non-empty each
    * payee's `total` is only the part that converted.
    */

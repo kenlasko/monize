@@ -76,7 +76,7 @@ The figures a report receives are worked out from the converted amounts themselv
 | Report | Description |
 |--------|-------------|
 | **Spending by Category** | See where your money goes with a breakdown of expenses by category over time |
-| **Spending by Payee** | Track how much you spend with each merchant or vendor over time |
+| **Spending by Payee** | See spending after refunds by merchant. A purchase of 100 and refund of 150 at the same merchant show −50. The total includes every qualifying merchant. |
 | **Monthly Spending Trend** | View your spending patterns month over month to identify trends |
 | **Monthly & Yearly Breakdown** | Expense and income by category, month by month or year by year, with subtotals, a total, and an average per month or per year. Choose **Monthly** or **Yearly** for the columns: the monthly view offers the 3M, 6M, 1Y and YTD ranges, the yearly view 2Y, 5Y, 10Y and All, and both take a **Custom** range. A yearly column covers whole calendar years, so 5Y shows the five years before the current one. A category with no parent and no subcategories is a line of its own, in alphabetical order among the parent categories. Spending recorded directly on a parent category is a row inside that parent's section, counted in its subtotal; only uncategorized transactions are left under **Other expenses** or **Other income**. Switches turn on **Summary only** (just the Summary at the bottom), **Include current month** (**Include current year** in the yearly view), **Show percentages**, and **Highlight deviations** (months or years well above or below the category's average). Transfers are listed separately, click **Income**, **Expenses**, or **Transfers** to fold that group down to its total, and a cell opens its transactions |
 | **Year Over Year Comparison** | Compare this year's income, expenses, and savings with up to four previous years |
@@ -92,7 +92,7 @@ In **Spending by Category**, a refund reduces spending in the expense category a
 | Report | Description |
 |--------|-------------|
 | **Income vs Expenses** | Compare your income to expenses and track your savings rate over time |
-| **Income by Source** | Break down your income streams to understand where your money comes from |
+| **Income by Source** | See income after reversals by source. Receiving 100 and reversing 150 against the same source shows −50. An exact reversal leaves a visible zero row. |
 | **Cash Flow Statement** | Detailed view of money coming in and going out across all accounts |
 
 ![The Income vs Expenses report](images/report-income-expenses.png)

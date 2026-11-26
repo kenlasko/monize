@@ -1,5 +1,6 @@
 'use client';
 
+import { amountWithShare, reportBreakdownShare } from '@/lib/report-breakdown-share';
 import { useState, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
@@ -37,11 +38,11 @@ import { CARD_CLASS } from '@/components/ui/Card';
 
 type SpendingPayeeSortField = 'name' | 'value' | 'percentage';
 
-type ChartDataItem = ChartDatum & { id: string };
+type ChartDataItem = ChartDatum & { id: string; percentage?: number | null };
 
 interface SpendingPayeeTooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: { name: string; value: number } }>;
+  payload?: Array<{ payload: { name: string; value: number; percentage?: number | null } }>;
   totalExpenses: number;
   formatCurrency: (value: number) => string;
   formatPercent: (value: number, decimals?: number) => string;
@@ -50,12 +51,12 @@ interface SpendingPayeeTooltipProps {
 function SpendingPayeeTooltip({ active, payload, totalExpenses, formatCurrency, formatPercent }: SpendingPayeeTooltipProps) {
   if (!active || !payload || !payload.length) return null;
   const data = payload[0].payload;
-  const percentage = totalExpenses > 0 ? (data.value / totalExpenses) * 100 : 0;
+  const percentage = reportBreakdownShare(data, totalExpenses);
   return (
     <ChartTooltipPanel>
       <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
       <p className="text-gray-600 dark:text-gray-400">
-        {formatCurrency(data.value)} ({formatPercent(percentage, 1)})
+        {amountWithShare(formatCurrency(data.value), percentage, formatPercent)}
       </p>
     </ChartTooltipPanel>
   );
@@ -93,6 +94,7 @@ export function SpendingByPayeeReport() {
         id: item.payeeId || '',
         name: item.payeeName,
         value: item.total,
+        percentage: item.percentage,
       })),
     [response],
   );
@@ -116,9 +118,9 @@ export function SpendingByPayeeReport() {
           comparison = compareValues(a.value, b.value);
           break;
         case 'percentage': {
-          const pa = totalExpenses > 0 ? (a.value / totalExpenses) * 100 : 0;
-          const pb = totalExpenses > 0 ? (b.value / totalExpenses) * 100 : 0;
-          comparison = compareValues(pa, pb);
+          const pa = reportBreakdownShare(a, totalExpenses);
+          const pb = reportBreakdownShare(b, totalExpenses);
+          comparison = compareValues(pa ?? a.value, pb ?? b.value);
           break;
         }
       }
@@ -143,8 +145,8 @@ export function SpendingByPayeeReport() {
       t('spendingByPayee.csvColPercentage'),
     ];
     const rows = sortedTableData.map((item) => {
-      const percentage = totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0;
-      return [item.name, item.value, formatPercent(percentage, 2)];
+      const percentage = reportBreakdownShare(item, totalExpenses);
+      return [item.name, item.value, percentage === null ? '' : formatPercent(percentage, 2)];
     });
     exportToCsv('spending-by-payee', headers, rows);
   };
@@ -238,7 +240,7 @@ export function SpendingByPayeeReport() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {sortedTableData.map((item, idx) => {
-                    const percentage = totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0;
+                    const percentage = reportBreakdownShare(item, totalExpenses);
                     return (
                       <tr
                         key={item.id || item.name}
@@ -258,7 +260,7 @@ export function SpendingByPayeeReport() {
                           {formatCurrency(item.value)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400">
-                          {formatPercent(percentage, 1)}
+                          {percentage === null ? '—' : formatPercent(percentage, 1)}
                         </td>
                       </tr>
                     );
@@ -267,14 +269,14 @@ export function SpendingByPayeeReport() {
                 <tfoot className="bg-gray-50 dark:bg-gray-900/50">
                   <tr>
                     <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-100">
-                      {t('spendingByPayee.totalTopPayees', { count: chartData.length })}
+                      {t('incomeBySource.total')}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-gray-100">
                       <PartialTotal total={spendingTotal} displayCurrency={reportingCurrency}>
                         {formatCurrency(totalExpenses)}
                       </PartialTotal>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-gray-100">100%</td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-gray-100">{chartData.every((item) => item.percentage !== null) ? formatPercent(100, 0) : '—'}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -309,7 +311,7 @@ export function SpendingByPayeeReport() {
             {/* Total */}
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                {t('spendingByPayee.totalTopPayees', { count: chartData.length })}
+                {t('incomeBySource.total')}
               </div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 <PartialTotal total={spendingTotal} displayCurrency={reportingCurrency}>
