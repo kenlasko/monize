@@ -353,6 +353,7 @@
     "billCustomFrequency": "[XX-A payroll deduction rule needs a bill on a fixed frequency; this bill repeats on a custom schedule.-XX]"
   },
   "categories": {
+    "reassignOwnerOnly": "[XX-Only the owner can move transactions to another category-XX]",
     "notFound": "[XX-Category with ID {{ id }} not found-XX]",
     "cannotModifySystem": "[XX-Cannot modify system categories-XX]",
     "selfParent": "[XX-Category cannot be its own parent-XX]",

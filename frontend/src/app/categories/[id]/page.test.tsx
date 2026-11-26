@@ -422,7 +422,7 @@ describe('CategoryDetailPage', () => {
       fireEvent.click(screen.getAllByRole('button', { name: /Delete/ }).at(-1)!);
     });
 
-    expect(mockDeleteCategory).toHaveBeenCalledWith('cat-1', null);
+    expect(mockDeleteCategory).toHaveBeenCalledWith('cat-1', undefined);
     expect(mockReassignTransactions).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/categories');
   });

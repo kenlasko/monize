@@ -359,7 +359,7 @@ export function CategoryList({
     onClick: (category) => router.push(`/categories/${category.id}`),
   });
 
-  const handleConfirmDelete = async (reassignToCategoryId: string | null) => {
+  const handleConfirmDelete = async (reassignToCategoryId?: string | null) => {
     if (!deleteCategory) return;
 
     try {

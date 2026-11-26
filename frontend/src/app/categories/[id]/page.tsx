@@ -534,7 +534,7 @@ function CategoryDetailContent() {
   // The same single reassign-and-delete request the categories list runs; success
   // leaves the page, since the category it described no longer exists.
   const handleConfirmDelete = useCallback(
-    async (reassignToCategoryId: string | null) => {
+    async (reassignToCategoryId?: string | null) => {
       try {
         await categoriesApi.delete(categoryId, reassignToCategoryId);
         toast.success(tc('toasts.deleted'));

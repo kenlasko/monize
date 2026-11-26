@@ -352,7 +352,7 @@ describe('CategoryList', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', null);
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', undefined);
     });
 
     await waitFor(() => {
@@ -422,7 +422,7 @@ describe('CategoryList', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', null);
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', undefined);
     });
 
     await waitFor(() => {
