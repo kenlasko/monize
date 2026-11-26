@@ -406,7 +406,7 @@ Nine budget-specific reports are available in the **Budget** category of the [Re
 | **Seasonal Spending Patterns** | Discover seasonal trends and high-spending months across your budget categories |
 | **Budget Trend** | Line chart showing total budgeted vs total actual spending over 6--12 months to track improvement |
 | **Category Performance** | Table showing each category's budget performance over multiple months with trend indicators |
-| **Savings Rate** | Track your savings rate (income minus expenses divided by income) over time vs your target |
+| **Savings Rate** | Track your savings rate (income minus expenses divided by income) over time vs your target. Without an income category in the budget, income is every deposit of the month, each line of a split on its own, leaving out transfers and investment trades |
 | **Health Score History** | Line chart of monthly budget health scores showing your financial trajectory over time |
 | **Flex Group Analysis** | Stacked bar chart for each flex group showing component categories with group limit reference |
 | **Seasonal Spending Map** | Heatmap grid showing 12 months across all categories to identify seasonal spending patterns |

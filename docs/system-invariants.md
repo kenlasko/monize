@@ -3561,24 +3561,43 @@ Source of truth     transaction_splits.transfer_account_id for what a line is;
                     the line's own signed amount.
 Enforcement         The Cash Flow Sankey (wholeTransferLegsQuery /
                     splitTransferLegsQuery), Income vs Expenses' tagged flows,
-                    the budget transfer builders (budget-spending.util.ts) and
-                    the custom report (netLinesOf) read both shapes. The
-                    tag-key filter is an EXISTS (buildTagKeyFilterClause).
+                    the budget transfer builders (budget-spending.util.ts),
+                    the custom report (netLinesOf), the Monthly Category
+                    Breakdown's transfer rows (getTransferRows) and
+                    getTransfersByAccount read both shapes, each with a
+                    split-line branch. The analytics and register Transfers
+                    filter (createFilteredAnalyticsQuery, findAll,
+                    computeSplitAwareSum, buildFilteredIdsSubquery) matches
+                    transfer_account_id at line grain. The tag filters of the
+                    analytics and the register sum (tagFilterExistsSql) and the
+                    tag-key filter (buildTagKeyFilterClause) are EXISTS tests.
+                    Budget Health's income fallback reads at line grain
+                    without transfer and embedded investment lines.
 Concurrency scope   -- (read path)
 Retry semantics     -- (read path)
 Crash semantics     -- (read path)
 Failure response    -- a report answers; it does not refuse.
-Required tests      report-transfer-fx-surfaces.integration.spec.ts: a whole
-                    transfer and the equivalent split line give one figure on
-                    each surface the spec's section 5 names; both accounts in
-                    scope net to zero; a line matching several tags counts
-                    once.
-Known gap           The Monthly Category Breakdown's transfer rows,
-                    getTransfersByAccount (AI and MCP list_transactions with
-                    transfersOnly), the analytics and register transfers
-                    filter, the analytics and register tag filters, and Budget
-                    Health's income fallback (docs/specs/split-line-equivalence.md
-                    section 5; tasks T1-T4).
+Required tests      report-transfer-fx-surfaces.integration.spec.ts: the
+                    breakdown, getTransfersByAccount, the Transfers filter in
+                    the analytics and the register (pages 1 and 2) read the
+                    split line; both accounts in scope net to zero.
+                    tag-filter-sum-once.integration.spec.ts: a line matching
+                    several tags counts once.
+                    budget-health-split-transfer.integration.spec.ts: transfer
+                    and investment lines are not income. e2e/tests/split-line-equivalence.spec.ts: the four
+                    figures on screen.
+Known gap           Under the Transfers filter the register lists a split by
+                    its transfer line, but bulk update selects whole transfer
+                    rows only, and so does the is:transfer search term, which
+                    shares bulk update's path: widening either would let a
+                    filter-mode recategorization rewrite the split's category
+                    lines (split-bulk-update.md I2). The register export and
+                    the amount range read the parent's amount beside a split
+                    that hydrates only its matching lines, as under a category
+                    filter. The tag-key breakdown joins the parent's tags, so
+                    two tags giving one value count a row twice.
+                    externalFlowSubtotalsSql does not read split lines
+                    (docs/specs/split-line-equivalence.md section 5).
 Status              partial
 ```
 
