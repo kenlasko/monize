@@ -15,7 +15,6 @@ export function categoryInUseHref(categoryId: string, entry: RecordInUseEntry): 
       return `/transactions?categoryId=${categoryId}`;
     case 'scheduledTransactions':
       return '/bills';
-    case 'budgets':
     case 'budgetLines':
     case 'budgetPeriods':
       return '/budgets';
@@ -47,7 +46,6 @@ export function accountInUseHref(accountId: string, entry: RecordInUseEntry): st
     case 'loanAccounts':
     case 'linkedAccounts':
       return firstOrList(entry);
-    case 'budgets':
     case 'budgetLines':
       return '/budgets';
     case 'rules':
@@ -65,8 +63,6 @@ export function scheduledInUseHref(_scheduleId: string, entry: RecordInUseEntry)
   switch (entry.kind) {
     case 'loanAccounts':
       return firstOrList(entry);
-    case 'payrollDeductionRules':
-      return '/taxes/payroll-deductions';
     default:
       return undefined;
   }

@@ -788,16 +788,19 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
       setAccountToDelete(null);
       onRefresh();
     } catch (error) {
-      // A half may already be gone: the list must not keep showing it.
+      // A half may already be gone: the list must not keep showing it, nor
+      // the dialog keep offering to delete it again.
       if (deletedAny) {
         invalidateBalanceCaches();
         onRefresh();
       }
       const entries = getRecordInUseEntries(error);
-      if (entries) {
-        setInUse({ account: current, entries });
+      if (entries || deletedAny) {
         setDeleteDialogOpen(false);
         setAccountToDelete(null);
+      }
+      if (entries) {
+        setInUse({ account: current, entries });
       } else {
         toast.error(getErrorMessage(error, t('toast.deleteFailed')));
       }

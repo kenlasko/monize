@@ -629,6 +629,19 @@ export class CategoriesService {
     // The payees' default-category reference is cleared with the delete, so a
     // failure cannot leave a payee pointing at a category that is gone.
     await withScopedDb(this.dataSource, async (m) => {
+      // Both rows are locked in id order, so two deletes that each move rows
+      // into the other cannot deadlock; the target's lookup below re-takes it.
+      const targetId = reassignTo?.toLowerCase();
+      if (
+        targetId &&
+        targetId !== UNCATEGORIZED &&
+        targetId < id.toLowerCase()
+      ) {
+        await m.getRepository(Category).findOne({
+          where: { id: targetId, userId },
+          lock: { mode: "pessimistic_read" },
+        });
+      }
       const locked = await m.getRepository(Category).findOne({
         where: { id, userId },
         lock: { mode: "pessimistic_write" },

@@ -1462,6 +1462,26 @@ describe("CategoriesService", () => {
         });
       });
 
+      it("locks a lower-id target before the source, so crossing deletes cannot deadlock", async () => {
+        txManager.query.mockImplementation((sql: string) =>
+          Promise.resolve(
+            sql.startsWith("SELECT id FROM accounts") ? [] : [{ count: 0 }],
+          ),
+        );
+        categoriesRepository.findOne.mockClear();
+
+        await service.remove("user-1", "cat-2", "cat-1");
+
+        const locks = categoriesRepository.findOne.mock.calls
+          .map(([opts]) => opts)
+          .filter((opts) => opts?.lock)
+          .map((opts) => [opts.where.id, opts.lock.mode]);
+        expect(locks.slice(0, 2)).toEqual([
+          ["cat-1", "pessimistic_read"],
+          ["cat-2", "pessimistic_write"],
+        ]);
+      });
+
       it("uncategorized clears the categories with null", async () => {
         txManager.query.mockImplementation((sql: string) =>
           Promise.resolve(

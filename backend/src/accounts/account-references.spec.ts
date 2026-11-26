@@ -89,11 +89,10 @@ describe("findAccountReferences", () => {
         { kind: "gemStrategies", count: 1 },
         { kind: "rules", count: 2 },
         { kind: "customReports", count: 3 },
-        { kind: "budgets", count: 4 },
         { kind: "linkedAccounts", count: 2, ids: ["l1", "l2"] },
       ]),
     );
-    expect(found).toHaveLength(12);
+    expect(found).toHaveLength(11);
   });
 
   it("counts only a nonzero position as a holding", async () => {
@@ -119,7 +118,7 @@ describe("findAccountReferences", () => {
     const m = makeManager();
     await run(m);
     expect(m.query).toHaveBeenCalledWith(
-      expect.stringContaining("FROM budgets"),
+      expect.stringContaining("FROM custom_reports"),
       ["u", "%a%"],
     );
   });
@@ -130,7 +129,7 @@ describe("findAccountReferences with an uppercase id", () => {
     const m = { query: jest.fn().mockResolvedValue([{ count: 0 }]) };
     await findAccountReferences(m as unknown as EntityManager, "u", "ABC-1");
     expect(m.query).toHaveBeenCalledWith(
-      expect.stringContaining("FROM budgets"),
+      expect.stringContaining("FROM custom_reports"),
       ["u", "%abc-1%"],
     );
   });

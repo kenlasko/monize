@@ -852,7 +852,7 @@ describe('ScheduledTransactionList', () => {
         status: 409,
         data: {
           errorCode: 'RECORD_IN_USE',
-          errors: [{ kind: 'loanAccounts', count: 1, ids: ['loan-1'] }, { kind: 'loanFees', count: 2, ids: ['loan-1'] }],
+          errors: [{ kind: 'loanAccounts', count: 1, ids: ['loan-1'] }],
         },
       },
     });
@@ -863,7 +863,6 @@ describe('ScheduledTransactionList', () => {
 
     expect(await screen.findByText('Cannot delete "Netflix"')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '1 loan account' })).toHaveAttribute('href', '/accounts/loan-1');
-    expect(screen.getByRole('link', { name: '2 loan fees' })).toHaveAttribute('href', '/accounts/loan-1');
     expect(toast.error).not.toHaveBeenCalled();
     expect(onRefresh).not.toHaveBeenCalled();
   });

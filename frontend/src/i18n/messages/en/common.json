@@ -311,7 +311,6 @@
       "bankSyncLinks": "{count, plural, one {# bank sync link} other {# bank sync links}}",
       "sharedIntegrations": "{count, plural, one {# shared integration} other {# shared integrations}}",
       "linkedAccounts": "{count, plural, one {# linked account} other {# linked accounts}}",
-      "budgets": "{count, plural, one {# budget} other {# budgets}}",
       "securities": "{count, plural, one {# security} other {# securities}}"
     },
     "title": "Cannot delete \"{name}\"",

@@ -22,8 +22,9 @@ type Finder = (
 /**
  * Entities whose row removal would clear or destroy rows that point at it.
  * `budget` and `custom_report` are absent: their children are part of them.
- * The account's finder counts the loan's own schedule too: that schedule is a
- * separate, newer history entry, undone first.
+ * The account's finder counts the loan's own schedule too, so an account undo
+ * never drops a schedule that still pays into it. (Loan and mortgage creation
+ * records only the schedule's entry today, so this guards a future one.)
  */
 const REFERENCE_CHECKS: Record<
   string,
