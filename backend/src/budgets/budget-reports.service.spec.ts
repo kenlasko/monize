@@ -73,6 +73,10 @@ function spending(
     outsideTransferIncomeAggregate: new FxAggregate(),
     outsideTransferIncomeComplete: true,
     missingRatePairs: extra.incomplete ? ["JPY->USD"] : [],
+    transferProvisionalCounts: new Map(),
+    transferIncomeProvisionalCounts: new Map(),
+    outsideTransferIncomeProvisionalCount: 0,
+    provisionalCount: 0,
   };
 }
 

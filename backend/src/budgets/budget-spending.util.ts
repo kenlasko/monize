@@ -267,6 +267,22 @@ export interface CategorySpending {
   outsideTransferIncomeComplete: boolean;
   /** `"JPY->CAD"` for each pair with no admissible rate, sorted. */
   missingRatePairs: string[];
+  /**
+   * destination accountId -> the provisional transfer legs (an imported
+   * estimate, `amount_is_provisional`) inside its `transferSpendingMap`
+   * figure; absent when there are none. Only rows that converted count
+   * (design section 8 of `docs/future-plans/provisional-amounts.md`).
+   */
+  transferProvisionalCounts: Map<string, number>;
+  /** source accountId -> the same, inside its `transferIncomeMap` figure. */
+  transferIncomeProvisionalCounts: Map<string, number>;
+  /** The same, inside `outsideTransferIncome`. */
+  outsideTransferIncomeProvisionalCount: number;
+  /**
+   * The distinct provisional legs in any transfer figure above, once each
+   * however many figures hold it.
+   */
+  provisionalCount: number;
 }
 
 interface SpendingRow {
@@ -274,6 +290,11 @@ interface SpendingRow {
   currencyCode: string;
   txDate: string;
   total: string | null;
+  /**
+   * The group's provisional legs by id (transfer reads only). A split's
+   * transfer line is never provisional, so its reads name none.
+   */
+  provisionalIds?: string[] | null;
   /** The row's own rate columns (`splitByRateBasis`). */
   fx_original_currency?: string | null;
   fx_exchange_rate?: string | null;
@@ -346,8 +367,22 @@ export function emptyCategorySpending(currency: string): CategorySpending & {
     outsideTransferIncomeAggregate: new FxAggregate(),
     outsideTransferIncomeComplete: true,
     missingRatePairs: [],
+    transferProvisionalCounts: new Map(),
+    transferIncomeProvisionalCounts: new Map(),
+    outsideTransferIncomeProvisionalCount: 0,
+    provisionalCount: 0,
   };
 }
+
+/**
+ * The provisional legs of a transfer read's group, by id
+ * (`amount_is_provisional`, design section 6, P5 of
+ * `docs/future-plans/provisional-amounts.md`): a group of whole legs names
+ * each estimate in it, and a split's transfer line, never provisional, names
+ * none. `NULL` when the group holds no estimate.
+ */
+const PROVISIONAL_IDS_SQL =
+  "ARRAY_AGG(DISTINCT t.id::text) FILTER (WHERE t.amount_is_provisional = true)";
 
 /**
  * `queryCategorySpending` over one range, with the figures kept apart per
@@ -485,6 +520,7 @@ export async function queryCategorySpendingBuckets(
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
       .addSelect(`COALESCE(ABS(SUM(${PARENT_TRANSFER_AMOUNT})), 0)`, "total")
+      .addSelect(PROVISIONAL_IDS_SQL, "provisionalIds")
       .groupBy(PARENT_TRANSFER_DESTINATION)
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
@@ -502,6 +538,7 @@ export async function queryCategorySpendingBuckets(
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
       .addSelect(`COALESCE(ABS(SUM(${SPLIT_TRANSFER_AMOUNT})), 0)`, "total")
+      .addSelect(PROVISIONAL_IDS_SQL, "provisionalIds")
       .groupBy(SPLIT_TRANSFER_DESTINATION)
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
@@ -532,6 +569,7 @@ export async function queryCategorySpendingBuckets(
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
       .addSelect(`COALESCE(SUM(${PARENT_TRANSFER_AMOUNT}), 0)`, "total")
+      .addSelect(PROVISIONAL_IDS_SQL, "provisionalIds")
       .groupBy(PARENT_TRANSFER_SOURCE)
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
@@ -547,6 +585,7 @@ export async function queryCategorySpendingBuckets(
       .addSelect("t.currency_code", "currencyCode")
       .addSelect(dateExpr, "txDate")
       .addSelect(`COALESCE(SUM(${SPLIT_TRANSFER_AMOUNT}), 0)`, "total")
+      .addSelect(PROVISIONAL_IDS_SQL, "provisionalIds")
       .groupBy(SPLIT_TRANSFER_SOURCE)
       .addGroupBy("t.currency_code")
       .addGroupBy("t.transaction_date");
@@ -583,9 +622,21 @@ export async function queryCategorySpendingBuckets(
 
   const fold = (
     rows: SpendingRow[],
-  ): { totals: Map<string, FxAggregate>; pairs: Set<string> } => {
+  ): {
+    totals: Map<string, FxAggregate>;
+    pairs: Set<string>;
+    /** Per key, the provisional legs of its groups that converted. */
+    provisional: Map<string, Set<string>>;
+  } => {
     const totals = new Map<string, FxAggregate>();
     const pairs = new Set<string>();
+    const provisional = new Map<string, Set<string>>();
+    const noteProvisional = (row: SpendingRow) => {
+      if (!row.provisionalIds || row.provisionalIds.length === 0) return;
+      const ids = provisional.get(row.key) ?? new Set<string>();
+      for (const id of row.provisionalIds) ids.add(id);
+      provisional.set(row.key, ids);
+    };
     for (const row of rows) {
       let agg = totals.get(row.key);
       if (!agg) {
@@ -597,6 +648,7 @@ export async function queryCategorySpendingBuckets(
       // that nets to nothing moves the category by nothing.
       if (row.currencyCode === currency || amount === 0) {
         agg.addConverted(amount);
+        noteProvisional(row);
         continue;
       }
       // Its own settled rate where it reaches the budget's currency
@@ -608,11 +660,14 @@ export async function queryCategorySpendingBuckets(
         rateIndex,
       );
       agg.add(converted, row.currencyCode, currency);
+      // A group left out for want of a rate is in no figure, so its
+      // estimates are counted nowhere (design section 8).
+      if (converted !== null) noteProvisional(row);
     }
     for (const agg of totals.values()) {
       for (const pair of agg.missingPairs) pairs.add(pair);
     }
-    return { totals, pairs };
+    return { totals, pairs, provisional };
   };
 
   // One pass per row set, so the work is O(rows), not O(buckets x rows).
@@ -668,6 +723,23 @@ export async function queryCategorySpendingBuckets(
       spending.outsideTransferIncomeAggregate = outsideAgg;
       spending.outsideTransferIncomeComplete = outsideAgg.isComplete;
     }
+    // An outgoing line and an income line naming one account can both read
+    // the same leg, so the whole count is over distinct ids.
+    const provisionalIds = new Set<string>();
+    for (const [key, ids] of transfers.provisional) {
+      spending.transferProvisionalCounts.set(key, ids.size);
+      for (const id of ids) provisionalIds.add(id);
+    }
+    for (const [key, ids] of lineIncome.provisional) {
+      spending.transferIncomeProvisionalCounts.set(key, ids.size);
+      for (const id of ids) provisionalIds.add(id);
+    }
+    const outsideIds = outsideIncome.provisional.get("");
+    if (outsideIds) {
+      spending.outsideTransferIncomeProvisionalCount = outsideIds.size;
+      for (const id of outsideIds) provisionalIds.add(id);
+    }
+    spending.provisionalCount = provisionalIds.size;
     spending.missingRatePairs = [
       ...new Set([
         ...categories.pairs,
@@ -810,6 +882,31 @@ export function resolveCategorySpent(
   }
   const raw = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
   return bc.isIncome ? Math.max(raw, 0) : Math.max(-raw, 0);
+}
+
+/**
+ * The provisional transfer legs inside the figure `resolveCategorySpent`
+ * reads for `bc`: a transfer line's own count, 0 for a category line, whose
+ * rows are never transfer legs.
+ */
+export function resolveCategoryProvisionalCount(
+  bc: BudgetCategory,
+  spending: Pick<
+    CategorySpending,
+    "transferProvisionalCounts" | "transferIncomeProvisionalCounts"
+  >,
+): number {
+  if (isTransferIncomeLine(bc)) {
+    return (
+      spending.transferIncomeProvisionalCounts.get(
+        bc.transferAccountId as string,
+      ) ?? 0
+    );
+  }
+  if (bc.isTransfer && bc.transferAccountId) {
+    return spending.transferProvisionalCounts.get(bc.transferAccountId) ?? 0;
+  }
+  return 0;
 }
 
 /**
