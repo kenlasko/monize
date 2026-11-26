@@ -1377,10 +1377,22 @@ Known and unresolved; none of these is a bug report waiting to be filed:
   (`backend/src/backup/restore-legacy-normalizations.ts`) is a registry of those
   backfills keyed by the migration that introduced each change. It is applied
   inside the restore transaction after the rows are inserted, scoped to
-  `user_id = $1`, with the `WHERE` mirroring the migration's. One entry exists:
-  `skip_price_updates` (`20261012131846`), which became the user's own switch, so
-  a pre-1.19 `true` on a security with a `quote_provider` or an
-  `msn_instrument_id` is cleared, as the migration did.
+  `user_id = $1`, with the `WHERE` mirroring the migration's. Three entries
+  exist, applied in this order:
+  - `skip_price_updates` (`20261012131846`), which became the user's own switch,
+    so a pre-1.19 `true` on a security with a `quote_provider` or an
+    `msn_instrument_id` is cleared, as the migration did.
+  - `amount_is_provisional` from the importer's old description note
+    (`20261125150107`, the last schema before the importer wrote the column):
+    a transfer leg whose description holds `PENDING IMPORT` is flagged, as the
+    two backfill migrations did. Keyed no later, because from then on a reader
+    can confirm a leg, which clears the flag and keeps the note, and flagging
+    by the text again would undo that confirmation (issue #2400).
+  - The note itself (`20261126115405`): the exact text is cut out of every
+    transfer leg holding it, flagged or confirmed, the rest trimmed and an
+    empty result stored as `NULL`, as the migration did; the flag is not
+    touched. Both provisional entries skip shared-expense ledger rows and leave
+    a non-transfer row's text alone.
 
   Whether an artifact is older is decided by `artifactPredates`. The export writes
   an optional `producedBy: { schemaMigration }` member (`readProducedBy`,
@@ -1399,7 +1411,10 @@ Known and unresolved; none of these is a bug report waiting to be filed:
   first shipped in release 1.19.0 and neither in 1.18.0, and the export is a
   `SELECT *`, so a null value is still a key. A marker-less artifact that has the
   key comes from 1.19.0, where `true` is a deliberate switch and is kept. With no
-  preference rows nothing is known, so nothing is normalized. A new entry states
+  preference rows nothing is known, so nothing is normalized. The two
+  provisional entries read the same kind of evidence from `transactions`: rows
+  that exist and carry no `amount_is_provisional` key were written before
+  `20261125132236` added the column. A new entry states
   its own evidence rule; a migration with no such column to lean on has no safe
   marker-less rule and normalizes only artifacts that carry a marker.
 - **Delegation is kept, not reset.** `account_delegates`, `account_delegate_grants`,

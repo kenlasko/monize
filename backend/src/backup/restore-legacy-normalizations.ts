@@ -56,6 +56,49 @@ function lacksHiddenTableColumns(data: BackupData): boolean {
   );
 }
 
+/**
+ * Evidence that a marker-less artifact predates
+ * `transactions.amount_is_provisional`
+ * (`20261125132236_transactions_amount_is_provisional.sql`): the export writes
+ * every column of `transactions`, so rows lacking the key were written before
+ * the column existed. With no transaction rows there is no evidence, and with
+ * the key present the file is not known to be old.
+ */
+function lacksAmountIsProvisional(data: BackupData): boolean {
+  const rows = backupTables(data).transactions;
+  if (!Array.isArray(rows) || rows.length === 0) return false;
+  return rows.every(
+    (row) =>
+      typeof row === "object" &&
+      row !== null &&
+      !("amount_is_provisional" in row),
+  );
+}
+
+/**
+ * The note the QIF importer appended to a provisional transfer leg's
+ * description until issue #2400 retired it. This file is the only code that
+ * still knows the text (`import/pending-import-note.guard.spec.ts`): it strips
+ * it from a backup taken before the migration that stripped the database.
+ */
+export const LEGACY_PENDING_IMPORT_NOTE =
+  "\u26a0\ufe0f PENDING IMPORT: Amount may need adjustment when importing the other account.";
+
+/**
+ * A transfer leg outside the shared-expense ledger, as the two backfills and
+ * the strip select it: the importer never wrote a ledger row, so no note there
+ * is its, and the shared-ledger protect trigger on transactions
+ * (database/schema.sql) refuses the flag change on any of them and even a
+ * description edit on a settlement-account row or a VOID posting.
+ */
+const IMPORTED_TRANSFER_LEG_SQL = `is_transfer = true
+            AND shared_expense_posting_id IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM accounts a
+              WHERE a.id = transactions.account_id
+                AND a.shared_expense_group_id IS NOT NULL
+            )`;
+
 export const LEGACY_NORMALIZATIONS: readonly LegacyNormalization[] = [
   {
     // `skip_price_updates` became the user's own "disable price updates" switch:
@@ -71,6 +114,47 @@ export const LEGACY_NORMALIZATIONS: readonly LegacyNormalization[] = [
             AND skip_price_updates = true
             AND (quote_provider IS NOT NULL OR msn_instrument_id IS NOT NULL)`,
         [userId],
+      );
+    },
+  },
+  {
+    // The provisional flag from the importer's note (issues #2389 and #2390,
+    // design docs/future-plans/provisional-amounts.md section 11): an artifact
+    // written before the importer set the column carries the state only in
+    // the text. Keyed on the second pass, the last schema before the
+    // importer wrote the column, and never on anything later: from then on a
+    // reader can confirm a leg, which clears the flag and leaves the note, so
+    // flagging by the text again would undo the confirmation (issue #2400).
+    migration:
+      "20261125150107_transactions_amount_is_provisional_backfill_repeat.sql",
+    markerlessArtifactIsOlder: lacksAmountIsProvisional,
+    apply: async (manager, userId) => {
+      await manager.query(
+        `UPDATE transactions
+            SET amount_is_provisional = true
+          WHERE user_id = $1
+            AND amount_is_provisional = false
+            AND description LIKE '%PENDING IMPORT%'
+            AND ${IMPORTED_TRANSFER_LEG_SQL}`,
+        [userId],
+      );
+    },
+  },
+  {
+    // The note itself, cut out of every imported transfer leg that still
+    // holds it verbatim, flagged or confirmed; the rest is trimmed and an
+    // empty description is NULL (issue #2400). Runs after the backfill above,
+    // which reads the text.
+    migration: "20261126115405_transactions_strip_pending_import_note.sql",
+    markerlessArtifactIsOlder: lacksAmountIsProvisional,
+    apply: async (manager, userId) => {
+      await manager.query(
+        `UPDATE transactions
+            SET description = NULLIF(btrim(replace(description, $2, '')), '')
+          WHERE user_id = $1
+            AND strpos(description, $2) > 0
+            AND ${IMPORTED_TRANSFER_LEG_SQL}`,
+        [userId, LEGACY_PENDING_IMPORT_NOTE],
       );
     },
   },

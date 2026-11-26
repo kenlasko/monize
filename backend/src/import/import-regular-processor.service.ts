@@ -35,7 +35,6 @@ import {
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import { tr } from "../i18n/translate";
 import { TransactionRulesApplierService } from "../transaction-rules/transaction-rules-applier.service";
-import { PENDING_IMPORT_NOTE } from "./pending-import";
 
 /**
  * The predicate every pending lookup matches a provisional leg with: the
@@ -673,7 +672,7 @@ export class ImportRegularProcessorService {
       await ctx.manager.update(Transaction, pendingTransfer.id, {
         amount: linkedAmount,
         exchangeRate: leg.exchangeRate,
-        description: this.provisionalLegDescription(split.memo || qifTx.memo),
+        description: split.memo || qifTx.memo || null,
         linkedTransactionId: savedTx.id,
       });
 
@@ -705,9 +704,7 @@ export class ImportRegularProcessorService {
       payeeName: isLoanPayment
         ? qifTx.payee || `Loan Payment from ${ctx.account.name}`
         : qifTx.payee || null,
-      description: leg.crossCurrency
-        ? this.provisionalLegDescription(split.memo || qifTx.memo)
-        : split.memo || qifTx.memo,
+      description: split.memo || qifTx.memo || null,
       status,
       currencyCode: leg.currencyCode,
       exchangeRate: leg.exchangeRate,
@@ -742,7 +739,8 @@ export class ImportRegularProcessorService {
    * this one computation (design docs/future-plans/provisional-amounts.md,
    * decision 2). The file carries no rate of its own and the market rate is
    * not the bank's, so the caller writes the leg as provisional
-   * (`amountIsProvisional`), with the `PENDING IMPORT` note until task B4.
+   * (`amountIsProvisional`); its description is the file's memo, as a
+   * confirmed leg's is (design P1: nothing about the state is in the text).
    * Without a rate the row is refused (its savepoint rolls back and the
    * result names the pair and the date, decision 3): a balance moved by a
    * number in the wrong currency is worse than a row the user can re-import
@@ -834,18 +832,10 @@ export class ImportRegularProcessorService {
   }
 
   /**
-   * The description of a leg whose amount is provisional. The note is kept
-   * beside the column until task B4 retires it; nothing reads it here.
-   */
-  private provisionalLegDescription(memo: string | null | undefined): string {
-    return `${memo || ""} ${PENDING_IMPORT_NOTE}`.trim();
-  }
-
-  /**
    * A provisional leg in the target account that lost its source (deleted;
    * the link is ON DELETE SET NULL), of the row's date and sign, found by the
-   * column alone: a confirmed row whose description happens to say
-   * `PENDING IMPORT` is not one, and a provisional leg whose description was
+   * column alone: a confirmed row whose description happens to hold the old
+   * importer note is not one, and a provisional leg whose description was
    * edited or cleared still is (design P1).
    */
   private async findOrphanedProvisionalLeg(
@@ -1001,7 +991,7 @@ export class ImportRegularProcessorService {
         exchangeRate: leg.exchangeRate,
         linkedTransactionId: savedTx.id,
         payeeName: linkedPayeeName,
-        description: this.provisionalLegDescription(qifTx.memo),
+        description: qifTx.memo || null,
       });
 
       await ctx.manager.update(Transaction, savedTx.id, {
@@ -1027,9 +1017,7 @@ export class ImportRegularProcessorService {
       transactionDate: qifTx.date,
       amount: leg.amount,
       payeeName: linkedPayeeName,
-      description: leg.crossCurrency
-        ? this.provisionalLegDescription(qifTx.memo)
-        : qifTx.memo,
+      description: qifTx.memo || null,
       referenceNumber: qifTx.number,
       status,
       currencyCode: leg.currencyCode,

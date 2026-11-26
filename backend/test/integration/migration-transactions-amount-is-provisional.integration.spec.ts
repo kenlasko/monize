@@ -2,7 +2,6 @@ import { DataSource } from "typeorm";
 import * as fs from "fs";
 import * as path from "path";
 
-import { PENDING_IMPORT_NOTE } from "@/import/pending-import";
 import {
   INTEGRATION_TYPEORM_OPTIONS,
   cleanTables,
@@ -22,6 +21,10 @@ import { createTestAccount } from "../helpers/test-factories";
  * The fixture is a real database and the migration is read from disk, since
  * the assertion is about what its SQL concludes from rows the importer wrote.
  */
+/** The note the importer wrote before issue #2400 retired it. */
+const PENDING_IMPORT_NOTE =
+  "\u26a0\ufe0f PENDING IMPORT: Amount may need adjustment when importing the other account.";
+
 const BACKFILL_MIGRATIONS = [
   "20261125132236_transactions_amount_is_provisional.sql",
   "20261125150107_transactions_amount_is_provisional_backfill_repeat.sql",
