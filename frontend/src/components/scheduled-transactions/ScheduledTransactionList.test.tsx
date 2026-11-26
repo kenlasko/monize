@@ -1507,6 +1507,47 @@ describe('ScheduledTransactionList - foreign currency', () => {
     ).toBeInTheDocument();
   });
 
+  // Issue #2458: an estimated foreign bill's second line is its month's
+  // biller-currency estimate, never the stored snapshot.
+  it("shows an estimated foreign bill's biller-currency estimate, not the snapshot", () => {
+    const estimated = (months: Record<string, unknown>) =>
+      createTransaction({
+        amount: -140,
+        currencyCode: 'CAD',
+        originalAmount: -100,
+        originalCurrencyCode: 'USD',
+        exchangeRate: 1.4,
+        nextDueDate: '2026-12-15',
+        amountIsEstimated: true,
+        effectiveAmount: -154,
+        amountEstimate: {
+          status: Object.keys(months).length > 0 ? 'estimated' : 'no-history',
+          currencyCode: 'CAD',
+          originalCurrencyCode: 'USD',
+          exchangeRate: 1.4,
+          months,
+          paymentCount: 3,
+          latestPaymentDate: '2026-11-01',
+          growthRate: null,
+          historyMonths: 24,
+          missingPair: null,
+        },
+      } as never);
+    const { unmount } = render(
+      <ScheduledTransactionList
+        transactions={[
+          estimated({ '2026-12': { amount: -154, basis: 'recent', originalAmount: -110 } }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('USD 110.00')).toBeInTheDocument();
+    expect(screen.queryByText('USD 100.00')).not.toBeInTheDocument();
+    unmount();
+
+    render(<ScheduledTransactionList transactions={[estimated({})]} />);
+    expect(screen.queryByText(/USD \d/)).not.toBeInTheDocument();
+  });
+
   it('shows no second line for an ordinary schedule', () => {
     render(<ScheduledTransactionList transactions={[createTransaction()]} />);
     expect(screen.queryByText(/USD/)).not.toBeInTheDocument();

@@ -160,6 +160,21 @@ export function estimatedOccurrenceAmount(
 }
 
 /**
+ * A foreign-currency bill's estimate for an occurrence falling on `dueDate`
+ * in the biller's currency (issue #2458), the foreign amount its posting
+ * converts at the posting date's rate: `undefined` when `st` is not an
+ * estimated foreign-currency bill, `null` when the estimate is unknown for
+ * that month.
+ */
+export function estimatedOccurrenceOriginalAmount(
+  st: ScheduledTransaction,
+  dueDate: string,
+): number | null | undefined {
+  if (st.amountIsEstimated !== true || !st.originalCurrencyCode) return undefined;
+  return estimateEntryOn(st.amountEstimate, dueDate)?.originalAmount ?? null;
+}
+
+/**
  * The amount `estimate` gives an occurrence falling on `dueDate`, or `null`
  * when it gives none (an unknown estimate, a month it does not hold, or no
  * estimate read yet). For a form previewing a schedule not saved yet; a saved

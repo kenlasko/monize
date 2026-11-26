@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "La cantidad es obligatoria para la modificación de desglose",
     "dateMustBeYMD": "la fecha debe estar en formato YYYY-MM-DD",
     "loanLedgerUnreadable": "No se pudo calcular este pago del préstamo porque no se pudo leer el saldo de su libro mayor. Vuelve a intentarlo.",
-    "estimateRequiresPlain": "Un importe estimado solo está disponible para una transacción de una sola categoría o una transferencia en la moneda de la cuenta, no para una división, una inversión ni un importe en moneda extranjera",
+    "estimateRequiresPlain": "Un importe estimado solo está disponible para una transacción de una sola categoría o una transferencia, no para una división ni una inversión",
     "estimateNoAutoPost": "Una transacción programada con un importe estimado no se puede registrar automáticamente",
     "overrideAutoPostNeedsAmount": "Una ocurrencia de una transacción programada con un importe estimado solo se puede registrar automáticamente cuando se ha introducido su propio importe",
     "estimateRequiresPayeeAndCategory": "Un importe estimado necesita un beneficiario y una categoría con los que buscar el historial de pagos",

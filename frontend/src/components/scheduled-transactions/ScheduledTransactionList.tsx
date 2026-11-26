@@ -9,6 +9,7 @@ import { useLocalizedAmount } from '@/hooks/useLocalizedAmount';
 import { getDecimalPlacesForCurrency } from '@/lib/format';
 import {
   nextOccurrenceAutoPosts,
+  estimatedOccurrenceOriginalAmount,
   nextOccurrenceDueDate,
   occurrenceFollowsEstimate,
   overrideEffectiveAmount,
@@ -371,13 +372,23 @@ function ScheduledAmountValue({
     Number(overrideAmount) !== Number(baseAmount);
   // A foreign-currency schedule shows the fixed amount the biller charges
   // under the converted estimate, as a foreign-entered transaction row does.
+  // An estimated one shows its month's biller-currency estimate (issue
+  // #2458), and nothing while that is unknown, never the stored snapshot.
+  const foreignFigure = !transaction.originalCurrencyCode
+    ? null
+    : followsEstimate
+      ? (estimatedOccurrenceOriginalAmount(transaction, nextOccurrenceDueDate(transaction)) ??
+        null)
+      : transaction.originalAmount != null
+        ? Number(transaction.originalAmount)
+        : null;
   const foreignLine =
-    transaction.originalCurrencyCode && transaction.originalAmount != null ? (
+    transaction.originalCurrencyCode && foreignFigure !== null ? (
       <div className="flex items-center justify-end gap-1 text-xs font-normal text-gray-500 dark:text-gray-400">
         <span>
           {transaction.originalCurrencyCode}{' '}
           {formatAmountLocal(
-            Math.abs(Number(transaction.originalAmount)),
+            Math.abs(foreignFigure),
             getDecimalPlacesForCurrency(transaction.originalCurrencyCode),
           )}
         </span>

@@ -9,6 +9,7 @@ import {
   occurrenceFollowsEstimate,
 } from "./scheduled-amount-estimate.service";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
+import { applyFxConversion } from "../common/fx-entry.util";
 import { Currency } from "../currencies/entities/currency.entity";
 import {
   createScopedDbMocks,
@@ -547,6 +548,146 @@ describe("ScheduledAmountEstimateService", () => {
       expect(
         estimateBasisOf({ ...schedule, isTransfer: false }).transfer,
       ).toBeUndefined();
+    });
+  });
+  describe("a foreign-currency bill (issue #2458)", () => {
+    const foreignBasis: ScheduleEstimateBasis = {
+      ...basis,
+      entry: { currencyCode: "USD", accountId: "acc-cad" },
+    };
+    const rates: Record<string, number | null> = {
+      "USD->CAD": 1.4,
+      "CAD->USD": 0.7,
+    };
+    let fxFee: string | null;
+
+    beforeEach(() => {
+      fxFee = null;
+      exchangeRates.getRateForDate.mockImplementation(
+        async (from: string, to: string) => rates[`${from}->${to}`] ?? null,
+      );
+    });
+
+    const answer = (history: unknown[]) =>
+      manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("fx_fee_percent")
+          ? [{ id: "acc-cad", fx_fee_percent: fxFee }]
+          : history,
+      );
+
+    it("builds an entry basis only for a plain bill in another currency", () => {
+      const schedule = {
+        payeeId: "payee-1",
+        categoryId: "cat-1",
+        currencyCode: "CAD",
+        accountId: "acc-cad",
+        frequency: "MONTHLY" as const,
+        nextDueDate: "2026-11-26",
+      };
+      expect(
+        estimateBasisOf({ ...schedule, originalCurrencyCode: "usd" }).entry,
+      ).toEqual({ currencyCode: "USD", accountId: "acc-cad" });
+      expect(
+        estimateBasisOf({ ...schedule, originalCurrencyCode: "CAD" }).entry,
+      ).toBeUndefined();
+      expect(
+        estimateBasisOf({ ...schedule, originalCurrencyCode: null }).entry,
+      ).toBeUndefined();
+      expect(
+        estimateBasisOf({
+          ...schedule,
+          originalCurrencyCode: "USD",
+          isTransfer: true,
+          transferAccountId: "acc-card",
+        }).entry,
+      ).toBeUndefined();
+    });
+
+    it("prices the history in the biller's currency and converts each occurrence", async () => {
+      answer([
+        // Paid from the CAD account in USD: the charged USD 50 counts.
+        {
+          ...historyRow("2026-08-15", -70),
+          original_currency_code: "USD",
+          original_amount: "-50",
+        },
+        // Paid from a USD account.
+        historyRow("2026-09-15", -60, "USD"),
+        // Paid in CAD with no USD figure: converted at today's CAD->USD.
+        historyRow("2026-10-15", -84),
+      ]);
+
+      const estimate = await service.estimateFor("user-1", foreignBasis, TODAY);
+
+      // USD (-50 - 60 - 58.80) / 3 = -56.27; CAD -56.27 x 1.4 = -78.778.
+      expect(estimatedOccurrenceFor(estimate, "2026-12-15")).toEqual({
+        amount: -78.778,
+        basis: "recent",
+        originalAmount: -56.27,
+      });
+      expect(estimate.currencyCode).toBe("CAD");
+      expect(estimate.entry).toMatchObject({ currencyCode: "USD", rate: 1.4 });
+
+      const model = estimateReadModel(estimate, TODAY);
+      expect(model).toMatchObject({
+        currencyCode: "CAD",
+        originalCurrencyCode: "USD",
+        exchangeRate: 1.4,
+      });
+      expect(model.months["2027-01"]).toEqual({
+        amount: -78.778,
+        basis: "recent",
+        originalAmount: -56.27,
+      });
+    });
+
+    it("applies the account's FX fee, as the nightly refresh does", async () => {
+      fxFee = "2.5";
+      answer([historyRow("2026-10-15", -100, "USD")]);
+
+      const estimate = await service.estimateFor("user-1", foreignBasis, TODAY);
+
+      expect(estimatedAmountFor(estimate, "2026-12-15")).toBe(
+        applyFxConversion(-100, 1.4, 2.5, { toDecimals: 4 }).amount,
+      );
+      expect(estimatedAmountFor(estimate, "2026-12-15")).toBe(-143.5);
+    });
+
+    it("is unknown and names the pair with no rate into the account's currency", async () => {
+      rates["USD->CAD"] = null;
+      answer([historyRow("2026-10-15", -100, "USD")]);
+
+      const estimate = await service.estimateFor("user-1", foreignBasis, TODAY);
+      rates["USD->CAD"] = 1.4;
+
+      expect(estimate).toMatchObject({
+        status: "missing-rate",
+        missingPair: { from: "USD", to: "CAD" },
+        profile: null,
+      });
+      expect(estimatedOccurrenceFor(estimate, "2026-12-15")).toBeNull();
+      expect(estimateReadModel(estimate, TODAY)).toMatchObject({
+        originalCurrencyCode: null,
+        exchangeRate: null,
+        months: {},
+      });
+    });
+
+    it("keeps an account-currency bill's payment at its account amount", async () => {
+      answer([
+        {
+          ...historyRow("2026-10-15", -70),
+          original_currency_code: "USD",
+          original_amount: "-50",
+        },
+      ]);
+
+      const estimate = await service.estimateFor("user-1", basis, TODAY);
+
+      expect(estimatedOccurrenceFor(estimate, "2026-12-15")).toEqual({
+        amount: -70,
+        basis: "recent",
+      });
     });
   });
 });

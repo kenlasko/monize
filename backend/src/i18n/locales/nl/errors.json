@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "Bedrag is vereist voor splitsingsoverschrijving",
     "dateMustBeYMD": "datum moet in JJJJ-MM-DD-formaat zijn",
     "loanLedgerUnreadable": "Deze leningbetaling kon niet worden berekend omdat het grootboeksaldo niet kon worden gelezen. Probeer het opnieuw.",
-    "estimateRequiresPlain": "Een geschat bedrag is alleen beschikbaar voor een transactie met één categorie of een overboeking in de valuta van de rekening, niet voor een splitsing, een belegging of een bedrag in vreemde valuta",
+    "estimateRequiresPlain": "Een geschat bedrag is alleen beschikbaar voor een transactie met één categorie of een overboeking, niet voor een splitsing of een belegging",
     "estimateNoAutoPost": "Een geplande transactie met een geschat bedrag kan niet automatisch worden geboekt",
     "overrideAutoPostNeedsAmount": "Een termijn van een geplande transactie met een geschat bedrag kan pas automatisch worden geboekt als het eigen bedrag is ingevuld",
     "estimateRequiresPayeeAndCategory": "Een geschat bedrag heeft een begunstigde en een categorie nodig om de betalingsgeschiedenis op te matchen",

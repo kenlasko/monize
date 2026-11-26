@@ -24,6 +24,7 @@ import {
 import { isLoanBillCandidate, loanOccurrenceLines } from '@/lib/loan-occurrence';
 import {
   estimatedOccurrenceAmount,
+  estimatedOccurrenceOriginalAmount,
   nextOccurrenceDueDate,
   occurrenceFollowsEstimate,
   occurrencePin,
@@ -132,6 +133,17 @@ export function PostTransactionDialog({
     scheduledTransaction.nextOverride,
   )
     ? estimatedOccurrenceAmount(scheduledTransaction, nextOccurrenceDueDate(scheduledTransaction))
+    : undefined;
+  // A foreign-currency bill's estimate is the biller's amount (issue #2458),
+  // which seeds the foreign field and is converted at the posting date's rate.
+  const postEstimateOriginal = occurrenceFollowsEstimate(
+    scheduledTransaction,
+    scheduledTransaction.nextOverride,
+  )
+    ? estimatedOccurrenceOriginalAmount(
+        scheduledTransaction,
+        nextOccurrenceDueDate(scheduledTransaction),
+      )
     : undefined;
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -509,13 +521,17 @@ export function PostTransactionDialog({
       // Foreign-currency schedule: the field the user edits is the biller's
       // amount in its own currency. An occurrence override deliberately stays
       // an account-currency figure (see resolveFxForPosting on the backend), so
-      // it does not seed this.
+      // it does not seed this. An estimated occurrence opens at its month's
+      // biller-currency estimate, an unknown one at zero.
+      const foreignSeed =
+        postEstimateOriginal !== undefined
+          ? postEstimateOriginal
+          : scheduledTransaction.originalAmount != null
+            ? Number(scheduledTransaction.originalAmount)
+            : null;
       setForeignAmount(
-        scheduledTransaction.originalAmount != null
-          ? loadedEntryAmount(
-              Number(scheduledTransaction.originalAmount),
-              scheduledTransaction.originalCurrencyCode,
-            )
+        foreignSeed !== null
+          ? loadedEntryAmount(foreignSeed, scheduledTransaction.originalCurrencyCode)
           : 0,
       );
       setPostFxRate(null);
@@ -870,7 +886,10 @@ export function PostTransactionDialog({
   const handlePost = async () => {
     // An unknown estimate opened the field at zero; posting that unchanged
     // would book a figure nobody stated.
-    if (!isInvestmentKind && postEstimate === null && amount === 0) {
+    // A foreign bill's figure is the biller's amount, which the server
+    // converts even when the rate preview has not answered (issue #2458).
+    const enteredZero = isForeignPosting ? foreignAmount === 0 : amount === 0;
+    if (!isInvestmentKind && postEstimate === null && enteredZero) {
       toast.error(t('postDialog.toasts.estimateUnknown'));
       return;
     }

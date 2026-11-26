@@ -6380,7 +6380,11 @@ Statement           An occurrence of a schedule with amount_is_estimated, which
                     estimated transfer's occurrence is its month's estimate of
                     the transfers between its two accounts, raised (never
                     lowered) to what the destination owes for the occurrences
-                    its balance floor governs (section 10, issue #2164).
+                    its balance floor governs (section 10, issue #2164). A bill
+                    entered in another currency is estimated in that currency
+                    and converted into the account's at the newest stored
+                    rate, and posts its month's estimate at the posting date's
+                    rate (section 11, issue #2458).
 Source of truth     The ledger (non-void payments to the payee in the category,
                     24 months; for a transfer, the transfers between its
                     accounts and the destination's as-of balances) read by

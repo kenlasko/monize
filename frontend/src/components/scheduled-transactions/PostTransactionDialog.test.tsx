@@ -2765,3 +2765,124 @@ describe('PostTransactionDialog: an estimated schedule (issue #2096)', () => {
     });
   });
 });
+
+// Issue #2458: an estimated bill entered in another currency opens at its
+// month's estimate in the biller's currency, converted at the posting date's
+// rate, never at the stored biller amount.
+describe('PostTransactionDialog: an estimated foreign-currency bill (issue #2458)', () => {
+  const foreignEstimated = {
+    id: 's-fx', name: 'Streaming', amount: -140, currencyCode: 'CAD',
+    originalAmount: -100, originalCurrencyCode: 'USD', exchangeRate: 1.4,
+    accountId: 'a1', categoryId: 'c1', description: '',
+    nextDueDate: '2026-03-01T00:00:00Z', isTransfer: false, isSplit: false,
+    account: { name: 'Checking' },
+    amountIsEstimated: true,
+    amountEstimate: {
+      status: 'estimated',
+      currencyCode: 'CAD',
+      originalCurrencyCode: 'USD',
+      exchangeRate: 1.4,
+      months: { '2026-03': { amount: -154, basis: 'recent', originalAmount: -110 } },
+      paymentCount: 3,
+      latestPaymentDate: '2026-02-01',
+      growthRate: null,
+      historyMonths: 24,
+      missingPair: null,
+    },
+  } as any;
+  const props = {
+    isOpen: true,
+    scheduledTransaction: foreignEstimated,
+    categories: [{ id: 'c1', name: 'Entertainment', parentId: null }] as any[],
+    accounts: [{ id: 'a1', name: 'Checking', currentBalance: 5000, fxFeePercent: null }] as any[],
+    scheduledTransactions: [] as any[],
+    futureTransactions: [] as any[],
+    onClose: vi.fn(),
+    onPosted: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetRateForDate.mockResolvedValue(1.5);
+  });
+
+  it("opens at the month's biller-currency estimate and sends it", async () => {
+    await act(async () => {
+      render(<PostTransactionDialog {...props} />);
+    });
+    await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalledWith('USD', 'CAD', '2026-03-01'));
+
+    const amount = screen.getByLabelText('Amount in USD') as HTMLInputElement;
+    expect(amount.value).toContain('110');
+    expect(screen.getByText(/This amount is an estimate/)).toBeInTheDocument();
+
+    const buttons = screen.getAllByText('Post Transaction');
+    await act(async () => {
+      fireEvent.click(buttons[buttons.length - 1]);
+    });
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalledWith(
+        's-fx',
+        expect.objectContaining({ originalAmount: -110 }),
+      );
+    });
+    expect(mockPostApi.mock.calls[0][1]).not.toHaveProperty('amount');
+  });
+
+  it('opens an unknown estimate at zero and refuses to post it unchanged', async () => {
+    await act(async () => {
+      render(
+        <PostTransactionDialog
+          {...props}
+          scheduledTransaction={{
+            ...foreignEstimated,
+            amountEstimate: { ...foreignEstimated.amountEstimate, status: 'no-history', months: {} },
+          }}
+        />,
+      );
+    });
+    await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalled());
+
+    const buttons = screen.getAllByText('Post Transaction');
+    await act(async () => {
+      fireEvent.click(buttons[buttons.length - 1]);
+    });
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "This occurrence's estimated amount is unknown. Enter the amount to post it.",
+      );
+    });
+    expect(mockPostApi).not.toHaveBeenCalled();
+  });
+
+  it('posts a typed foreign amount for an unknown estimate while the rate preview has not answered', async () => {
+    mockGetRateForDate.mockRejectedValue(new Error('offline'));
+    await act(async () => {
+      render(
+        <PostTransactionDialog
+          {...props}
+          scheduledTransaction={{
+            ...foreignEstimated,
+            amountEstimate: { ...foreignEstimated.amountEstimate, status: 'no-history', months: {} },
+          }}
+        />,
+      );
+    });
+    const amountInput = screen.getByLabelText('Amount in USD');
+    await act(async () => {
+      fireEvent.change(amountInput, { target: { value: '-120' } });
+      fireEvent.blur(amountInput);
+    });
+
+    const buttons = screen.getAllByText('Post Transaction');
+    await act(async () => {
+      fireEvent.click(buttons[buttons.length - 1]);
+    });
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalledWith(
+        's-fx',
+        expect.objectContaining({ originalAmount: -120 }),
+      );
+    });
+  });
+});

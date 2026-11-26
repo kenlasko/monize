@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "分割覆蓋需要金額",
     "dateMustBeYMD": "date 必須為 YYYY-MM-DD 格式",
     "loanLedgerUnreadable": "無法計算此貸款還款，因為無法讀取其帳簿餘額。請重試。",
-    "estimateRequiresPlain": "估算金額僅適用於以帳戶幣別記帳的單一類別交易或轉帳，不適用於分割、投資或外幣金額",
+    "estimateRequiresPlain": "估算金額僅適用於單一類別交易或轉帳，不適用於分割或投資",
     "estimateNoAutoPost": "金額為估算值的排程交易不能自動入帳",
     "overrideAutoPostNeedsAmount": "金額為估算值的排程交易，其單次發生只有在輸入其自身金額後才能自動入帳",
     "estimateRequiresPayeeAndCategory": "估算金額需要收款對象和類別，以便比對付款紀錄",

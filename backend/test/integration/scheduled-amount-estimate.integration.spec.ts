@@ -59,6 +59,7 @@ describe("Scheduled amount estimate (integration)", () => {
 
   beforeEach(async () => {
     await cleanTables(db, [
+      "exchange_rates",
       "scheduled_transaction_overrides",
       "scheduled_transaction_splits",
       "scheduled_transactions",
@@ -137,6 +138,44 @@ describe("Scheduled amount estimate (integration)", () => {
     // Neither seasonal nor trending (one year), so every month is the
     // latest year's mean.
     expect(estimatedAmountFor(estimate, addMonthsClamped(today, 1))).toBe(-110);
+  });
+
+  it("prices a foreign-currency bill in the biller's currency and converts it (issue #2458)", async () => {
+    await db.query(
+      `INSERT INTO currencies (code, name, symbol, decimal_places) VALUES
+         ('EUR', 'Euro', 'E', 2), ('USD', 'US Dollar', '$', 2)
+       ON CONFLICT DO NOTHING`,
+    );
+    await db.query(
+      `INSERT INTO exchange_rates (from_currency, to_currency, rate_date, rate, source)
+       VALUES ('EUR', 'USD', $1::DATE, '1.2000000000', 'test')`,
+      [addDaysYMD(today, -1)],
+    );
+    // Paid in EUR from the USD account: the charged EUR amounts count.
+    await insertTransaction(monthsAgo(1), -61, {
+      original_currency_code: "EUR",
+      original_amount: -50,
+      exchange_rate: 1.22,
+    });
+    await insertTransaction(monthsAgo(2), -64, {
+      original_currency_code: "EUR",
+      original_amount: -55,
+      exchange_rate: 1.1636363636,
+    });
+
+    const estimate = await withUserContext(userId, () =>
+      estimates.estimateFor(userId, {
+        ...basis(),
+        entry: { currencyCode: "EUR", accountId },
+      }),
+    );
+
+    expect(estimate.status).toBe("estimated");
+    expect(
+      estimate.profile?.payments.map((p) => p.amount).sort((a, b) => a - b),
+    ).toEqual([-55, -50]);
+    // EUR -52.50 at the stored 1.2, in the account's USD.
+    expect(estimatedAmountFor(estimate, addMonthsClamped(today, 1))).toBe(-63);
   });
 
   it("is no-history for a payee with no matching payment", async () => {

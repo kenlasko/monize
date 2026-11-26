@@ -3,6 +3,7 @@ import {
   estimateAmountOn,
   estimateEntryOn,
   estimatedOccurrenceAmount,
+  estimatedOccurrenceOriginalAmount,
   nextOccurrenceEffectiveAmount,
   occurrenceFollowsEstimate,
   occurrenceAccountIds,
@@ -540,6 +541,28 @@ describe('estimated amounts (issue #2096)', () => {
     expect(
       estimatedOccurrenceAmount(estimated({ amountEstimate: null }), '2025-02-10'),
     ).toBeNull();
+  });
+
+  // Issue #2458: a foreign-currency bill's month carries the biller's figure.
+  it("reads a foreign-currency bill's biller-currency estimate", () => {
+    const foreign = estimated({
+      originalCurrencyCode: 'USD',
+      originalAmount: -100,
+      amountEstimate: {
+        ...estimated().amountEstimate!,
+        originalCurrencyCode: 'USD',
+        exchangeRate: 1.4,
+        months: { '2025-02': { amount: -154, basis: 'recent', originalAmount: -110 } },
+      },
+    });
+    expect(estimatedOccurrenceOriginalAmount(foreign, '2025-02-10')).toBe(-110);
+    expect(estimatedOccurrenceAmount(foreign, '2025-02-10')).toBe(-154);
+    // A month it does not hold is unknown, never the stored -100.
+    expect(estimatedOccurrenceOriginalAmount(foreign, '2025-09-10')).toBeNull();
+    expect(estimatedOccurrenceOriginalAmount(estimated(), '2025-02-10')).toBeUndefined();
+    expect(
+      estimatedOccurrenceOriginalAmount({ ...foreign, amountIsEstimated: false }, '2025-02-10'),
+    ).toBeUndefined();
   });
 
   it('is undefined for a schedule that does not estimate', () => {

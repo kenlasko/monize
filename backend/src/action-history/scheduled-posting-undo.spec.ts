@@ -142,6 +142,29 @@ describe("undoScheduledPosting (issue #2165)", () => {
     );
   });
 
+  it("puts a foreign-currency bill's three snapshot columns back together (issue #2458)", async () => {
+    const { manager, query } = managerWith();
+
+    await undoScheduledPosting(
+      actionOf({
+        ...recurring,
+        estimatedAmount: -140,
+        estimatedEntry: {
+          originalAmount: -100,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1.4,
+        },
+      }),
+      manager,
+      jest.fn(),
+    );
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("original_currency_code = $6"),
+      [-140, SCHEDULE, USER, -100, 1.4, "USD"],
+    );
+  });
+
   it("clears the category of an override it puts back when that category is gone", async () => {
     const { manager, query } = managerWith();
     (query as jest.Mock).mockImplementation(async (sql: string) => {

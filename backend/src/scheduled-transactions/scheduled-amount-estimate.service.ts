@@ -2,7 +2,7 @@ import { Inject, Injectable, forwardRef } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { todayYMD } from "../common/date-utils";
-import { applyFxConversion } from "../common/fx-entry.util";
+import { applyFxConversion, roundFxRate } from "../common/fx-entry.util";
 import {
   loadCurrencyPlacesForRead,
   moneyDecimalsForCode,
@@ -54,13 +54,39 @@ import {
 export type ScheduleAmountEstimateStatus =
   "estimated" | "no-basis" | "no-history" | "missing-rate";
 
+/**
+ * How the estimate of a foreign-currency bill (issue #2458) reaches the
+ * account's currency: the history is priced in the biller's currency
+ * (`currencyCode`), and each occurrence is converted at the newest stored
+ * rate with the account's FX fee, as the nightly refresh converts the
+ * schedule's `original_amount` (docs/specs/scheduled-amount-estimate.md 11).
+ */
+export interface EstimateEntryConversion {
+  /** The biller's currency, the one the profile's amounts are in. */
+  currencyCode: string;
+  /** Account-currency units per one unit of `currencyCode`. */
+  rate: number;
+  /** The account's FX fee percentage, or null. */
+  fxFeePercent: number | null;
+  /** The account currency's money precision, the converted figure's. */
+  accountMoneyDecimals: number;
+}
+
 /** One schedule's estimate, from which any occurrence's amount is read. */
 export interface ScheduleAmountEstimate {
   status: ScheduleAmountEstimateStatus;
-  /** The currency every amount is in: the schedule's. */
+  /** The currency every occurrence amount is in: the schedule's (account's). */
   currencyCode: string;
-  /** Present exactly when `status === "estimated"`. */
+  /**
+   * Present exactly when `status === "estimated"`, in the biller's currency
+   * when `entry` is set and in `currencyCode` otherwise.
+   */
   profile: EstimateProfile | null;
+  /**
+   * Set for an estimated foreign-currency bill (issue #2458): the profile is
+   * in `entry.currencyCode`, converted per occurrence into `currencyCode`.
+   */
+  entry?: EstimateEntryConversion | null;
   /** The pair with no current rate, when `status === "missing-rate"`. */
   missingPair: { from: string; to: string } | null;
   /**
@@ -86,11 +112,24 @@ export interface TransferEstimateBasis {
   nextOccurrenceDueDate: string;
 }
 
+/**
+ * A foreign-currency bill's entry (issue #2458): the estimate is worked out
+ * in `currencyCode`, the biller's, and converted into the account's.
+ */
+export interface EntryEstimateBasis {
+  currencyCode: string;
+  /** The account whose FX fee the conversion applies. */
+  accountId: string;
+}
+
 /** What one schedule's estimate is matched and converted on. */
 export interface ScheduleEstimateBasis {
   payeeId: string | null;
   categoryId: string | null;
+  /** The schedule's (account's) currency, every occurrence amount's. */
   currencyCode: string;
+  /** Set for a plain bill entered in another currency (issue #2458). */
+  entry?: EntryEstimateBasis | null;
   /** Set for a transfer, which is matched on its accounts instead. */
   transfer?: TransferEstimateBasis | null;
 }
@@ -111,6 +150,8 @@ export function estimateBasisOf(
     transferAccountId?: string | null;
     frequency: FrequencyType;
     nextDueDate: string | Date;
+    /** A plain bill's foreign entry currency (issue #2458). */
+    originalCurrencyCode?: string | null;
   },
   nextOccurrenceDueDate?: string | null,
 ): ScheduleEstimateBasis {
@@ -119,7 +160,15 @@ export function estimateBasisOf(
     categoryId: schedule.categoryId,
     currencyCode: schedule.currencyCode,
   };
-  if (schedule.isTransfer !== true) return basis;
+  if (schedule.isTransfer !== true) {
+    const entryCode = schedule.originalCurrencyCode?.toUpperCase() ?? null;
+    return entryCode && entryCode !== schedule.currencyCode.toUpperCase()
+      ? {
+          ...basis,
+          entry: { currencyCode: entryCode, accountId: schedule.accountId },
+        }
+      : basis;
+  }
   return {
     ...basis,
     transfer: {
@@ -138,9 +187,15 @@ export type EstimatedAmountBasis = EstimateBasis | "balance";
 
 /** One month of an estimate, as a client reads it. */
 export interface EstimatedMonthReadModel {
+  /** In the schedule's (account's) currency. */
   amount: number;
   /** `balance` when what a transfer's destination owes raised the estimate. */
   basis: EstimatedAmountBasis;
+  /**
+   * A foreign-currency bill's estimate in the biller's currency, the figure
+   * `amount` is converted from (issue #2458); absent for any other schedule.
+   */
+  originalAmount?: number;
 }
 
 /**
@@ -164,6 +219,16 @@ export interface EstimateFloorReadModel {
 export interface ScheduleAmountEstimateReadModel {
   status: ScheduleAmountEstimateStatus;
   currencyCode: string;
+  /**
+   * A foreign-currency bill's currency, each month's `originalAmount`'s
+   * (issue #2458); null for any other schedule.
+   */
+  originalCurrencyCode: string | null;
+  /**
+   * The rate each month's `originalAmount` was converted at, account units
+   * per biller unit; null for any other schedule.
+   */
+  exchangeRate: number | null;
   /** `YYYY-MM` -> the per-occurrence estimate for occurrences in that month. */
   months: Record<string, EstimatedMonthReadModel>;
   /**
@@ -255,19 +320,35 @@ export function estimatedOccurrenceFor(
 ): EstimatedMonthReadModel | null {
   if (estimate.status !== "estimated" || !estimate.profile) return null;
   return raisedMonth(
+    estimate,
     estimate.profile,
     monthKeyOf(dueDate),
     floorFor(estimate.floors, dueDate),
   );
 }
 
-/** `month`'s history estimate, raised to `floor` when that is more. */
+/**
+ * `month`'s history estimate, raised to `floor` when that is more; a
+ * foreign-currency bill's converted into the account's currency, keeping the
+ * biller's figure as `originalAmount`.
+ */
 function raisedMonth(
+  estimate: ScheduleAmountEstimate,
   profile: EstimateProfile,
   month: string,
   floor: EstimateBalanceFloor | null,
 ): EstimatedMonthReadModel {
   const base = estimateForMonth(profile, month);
+  const entry = estimate.entry;
+  if (entry) {
+    return {
+      amount: applyFxConversion(base.amount, entry.rate, entry.fxFeePercent, {
+        toDecimals: entry.accountMoneyDecimals,
+      }).amount,
+      basis: base.basis,
+      originalAmount: base.amount,
+    };
+  }
   const raised = applyBalanceFloor(base.amount, floor, profile.decimals);
   return raised.raised
     ? { amount: raised.amount, basis: "balance" }
@@ -298,7 +379,7 @@ export function estimateReadModel(
     if (first < floor) first = floor;
     const last = shiftMonthKey(todayMonth, ESTIMATE_READ_MODEL_MONTHS_AHEAD);
     for (let month = first; month <= last; month = shiftMonthKey(month, 1)) {
-      months[month] = estimateForMonth(profile, month);
+      months[month] = raisedMonth(estimate, profile, month, null);
     }
     for (const balanceFloor of estimate.floors) {
       const floorMonths: Record<string, EstimatedMonthReadModel> = {};
@@ -310,7 +391,12 @@ export function estimateReadModel(
         month <= through && month <= last;
         month = shiftMonthKey(month, 1)
       ) {
-        floorMonths[month] = raisedMonth(profile, month, balanceFloor);
+        floorMonths[month] = raisedMonth(
+          estimate,
+          profile,
+          month,
+          balanceFloor,
+        );
       }
       floors.push({
         after: balanceFloor.after,
@@ -322,6 +408,8 @@ export function estimateReadModel(
   return {
     status: estimate.status,
     currencyCode: estimate.currencyCode,
+    originalCurrencyCode: estimate.entry?.currencyCode ?? null,
+    exchangeRate: estimate.entry ? roundFxRate(estimate.entry.rate) : null,
     months,
     paymentCount: profile?.payments.length ?? 0,
     levelPaymentCount: profile?.levelPaymentCount ?? null,
@@ -338,12 +426,19 @@ export function estimateReadModel(
   };
 }
 
-interface RawHistoryRow {
-  payee_id: string;
-  category_id: string;
+/** One payment the history read returns, before it is converted. */
+interface HistoryRow {
   tx_date: string;
   currency_code: string;
   amount: string;
+  /** The amount the payment had in the currency it was paid in, if another. */
+  original_currency_code?: string | null;
+  original_amount?: string | null;
+}
+
+interface RawHistoryRow extends HistoryRow {
+  payee_id: string;
+  category_id: string;
 }
 
 /** The key a basis's history is grouped on, or `null` when it names none. */
@@ -414,11 +509,21 @@ export class ScheduledAmountEstimateService {
       }
     }
 
-    const { history, destinations, places } = await this.loadHistory(
+    const entryAccountIds = [
+      ...new Set(
+        [...bases.values()]
+          .map((b) => b.entry?.accountId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    const { history, destinations, places, fxFees } = await this.loadHistory(
       userId,
       [...pairs.values()],
       [...transfers.values()],
-      [...bases.values()].map((b) => b.currencyCode),
+      [...bases.values()].flatMap((b) =>
+        b.entry ? [b.currencyCode, b.entry.currencyCode] : [b.currencyCode],
+      ),
+      entryAccountIds,
       today,
     );
 
@@ -465,7 +570,11 @@ export class ScheduledAmountEstimateService {
         continue;
       }
 
-      const to = basis.currencyCode.toUpperCase();
+      // A foreign-currency bill's history is priced in the biller's currency
+      // (issue #2458), the schedule's own otherwise.
+      const to = (
+        basis.entry?.currencyCode ?? basis.currencyCode
+      ).toUpperCase();
       const moneyDecimals = moneyDecimalsForCode(places, to);
       const convert = async (
         amount: number,
@@ -483,7 +592,15 @@ export class ScheduledAmountEstimateService {
       const payments: EstimatePayment[] = [];
       let missingPair: { from: string; to: string } | null = null;
       for (const row of rows) {
-        const amount = await convert(Number(row.amount), row.currency_code);
+        // A payment that carries its amount in the estimate's currency counts
+        // at that amount, the one the biller charged, not a reconversion of
+        // what the account was debited.
+        const amount =
+          row.original_currency_code?.toUpperCase() === to &&
+          row.original_amount !== null &&
+          row.original_amount !== undefined
+            ? Number(row.original_amount)
+            : await convert(Number(row.amount), row.currency_code);
         if (typeof amount !== "number") {
           missingPair = amount;
           break;
@@ -536,18 +653,40 @@ export class ScheduledAmountEstimateService {
 
       const entryDecimals = places.get(to) ?? moneyDecimals;
       const profile = buildEstimateProfile(payments, today, entryDecimals);
-      result.set(
-        id,
-        profile
-          ? {
-              status: "estimated",
-              currencyCode: basis.currencyCode,
-              profile,
-              missingPair: null,
-              floors,
-            }
-          : unknown("no-history"),
-      );
+      if (!profile) {
+        result.set(id, unknown("no-history"));
+        continue;
+      }
+
+      // A foreign-currency bill's occurrences are in the account's currency:
+      // with no current rate into it, every one is unknown and names the pair.
+      let entry: EstimateEntryConversion | null = null;
+      if (basis.entry) {
+        const accountCode = basis.currencyCode.toUpperCase();
+        const rate = await rateFor(to, accountCode);
+        if (rate === null) {
+          result.set(
+            id,
+            unknown("missing-rate", { from: to, to: accountCode }),
+          );
+          continue;
+        }
+        entry = {
+          currencyCode: to,
+          rate,
+          fxFeePercent: fxFees.get(basis.entry.accountId) ?? null,
+          accountMoneyDecimals: moneyDecimalsForCode(places, accountCode),
+        };
+      }
+
+      result.set(id, {
+        status: "estimated",
+        currencyCode: basis.currencyCode,
+        profile,
+        missingPair: null,
+        floors,
+        ...(entry ? { entry } : {}),
+      });
     }
     return result;
   }
@@ -578,14 +717,13 @@ export class ScheduledAmountEstimateService {
     pairs: { payeeId: string; categoryId: string }[],
     transfers: { accountId: string; transferAccountId: string }[],
     currencyCodes: string[],
+    entryAccountIds: string[],
     today: string,
   ): Promise<{
-    history: Map<
-      string,
-      { tx_date: string; currency_code: string; amount: string }[]
-    >;
+    history: Map<string, HistoryRow[]>;
     destinations: Map<string, TransferDestination>;
     places: ReadonlyMap<string, number>;
+    fxFees: ReadonlyMap<string, number | null>;
   }> {
     return withScopedDb(this.dataSource, async (m) => {
       const destinations = await loadTransferDestinations(
@@ -598,14 +736,9 @@ export class ScheduledAmountEstimateService {
         ...currencyCodes,
         ...[...destinations.values()].map((d) => d.currencyCode),
       ]);
-      const history = new Map<
-        string,
-        { tx_date: string; currency_code: string; amount: string }[]
-      >();
-      const add = (
-        key: string,
-        row: { tx_date: string; currency_code: string; amount: string },
-      ) => {
+      const fxFees = await this.loadFxFees(m, userId, entryAccountIds);
+      const history = new Map<string, HistoryRow[]>();
+      const add = (key: string, row: HistoryRow) => {
         const list = history.get(key);
         if (list) list.push(row);
         else history.set(key, [row]);
@@ -627,8 +760,33 @@ export class ScheduledAmountEstimateService {
       )) {
         add(transferKey(row.account_id, row.transfer_account_id), row);
       }
-      return { history, destinations, places };
+      return { history, destinations, places, fxFees };
     });
+  }
+
+  /**
+   * The FX fee of each account a foreign-currency bill is paid from, the one
+   * its conversion applies (issue #2458), as the nightly refresh does.
+   */
+  private async loadFxFees(
+    m: EntityManager,
+    userId: string,
+    accountIds: string[],
+  ): Promise<Map<string, number | null>> {
+    const fees = new Map<string, number | null>();
+    if (accountIds.length === 0) return fees;
+    const rows: { id: string; fx_fee_percent: string | null }[] = await m.query(
+      `SELECT id, fx_fee_percent FROM accounts
+          WHERE user_id = $1 AND id = ANY($2::uuid[])`,
+      [userId, accountIds],
+    );
+    for (const row of rows) {
+      fees.set(
+        row.id,
+        row.fx_fee_percent === null ? null : Number(row.fx_fee_percent),
+      );
+    }
+    return fees;
   }
 
   private async loadPaymentHistory(
@@ -649,7 +807,8 @@ export class ScheduledAmountEstimateService {
       `
       SELECT t.payee_id, t.category_id,
              TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
-             t.currency_code, t.amount
+             t.currency_code, t.amount,
+             t.original_currency_code, t.original_amount
         FROM transactions t
         LEFT JOIN accounts a ON a.id = t.account_id
        WHERE t.user_id = $1
@@ -666,7 +825,8 @@ export class ScheduledAmountEstimateService {
       UNION ALL
       SELECT t.payee_id, ts.category_id,
              TO_CHAR(t.transaction_date, 'YYYY-MM-DD') AS tx_date,
-             t.currency_code, ts.amount
+             t.currency_code, ts.amount,
+             NULL AS original_currency_code, NULL AS original_amount
         FROM transactions t
         JOIN transaction_splits ts ON ts.transaction_id = t.id
         LEFT JOIN accounts a ON a.id = t.account_id
