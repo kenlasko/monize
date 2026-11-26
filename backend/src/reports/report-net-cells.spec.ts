@@ -223,8 +223,11 @@ describe("NetCells", () => {
       add: (cells: ReturnType<typeof createNetCells>) => void,
     ): string[] => {
       const rows: string[] = [];
-      const cells = createNetCells(direction, false, undefined, (row) =>
-        rows.push(row),
+      const cells = createNetCells(
+        direction,
+        MetricType.TOTAL_AMOUNT,
+        undefined,
+        (row) => rows.push(row),
       );
       add(cells);
       cells.settle();

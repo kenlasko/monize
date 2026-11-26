@@ -3692,6 +3692,7 @@ describe("ReportsService", () => {
           { id: "common", value: -100, count: 1 },
         ]);
         expect(result.summary).toEqual({
+          provisionalCount: 0,
           total: -70,
           knownTotal: -70,
           count: 2,
@@ -3787,6 +3788,7 @@ describe("ReportsService", () => {
         const result = await service.execute("user-1", "report-1");
 
         expect(result.summary).toEqual({
+          provisionalCount: 0,
           total: null,
           knownTotal: -100,
           count: 1,
@@ -3827,6 +3829,7 @@ describe("ReportsService", () => {
           );
           const result = await service.execute("user-1", "report-1");
           expect(result.summary).toEqual({
+            provisionalCount: 0,
             total: null,
             knownTotal: -25,
             count: 1,
