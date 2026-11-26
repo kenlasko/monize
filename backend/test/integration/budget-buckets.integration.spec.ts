@@ -667,8 +667,13 @@ describe("bucket budgets (integration)", () => {
         expect(closed.status).toBe("CLOSED");
         expect(Number(closed.periodCategories[0].actualAmount)).toBe(actual);
         expect(Number(closed.periodCategories[0].rolloverOut)).toBe(carry);
-        expect(Number(closed.periodBuckets[0].actualAmount)).toBe(actual);
-        expect(Number(closed.periodBuckets[0].carryOut)).toBe(carry);
+        expect(closed.periodBuckets).toEqual([
+          expect.objectContaining({
+            bucketId,
+            actualAmount: actual,
+            carryOut: carry,
+          }),
+        ]);
       }
 
       const next = await open();
