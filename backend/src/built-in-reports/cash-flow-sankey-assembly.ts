@@ -416,7 +416,7 @@ export function assembleCashFlowSankey(
       id,
       kind,
       label: category.name,
-      expenseRefund: isIncomeSide && !category.isIncome,
+      expenseRefund: isIncomeSide && category.isIncome === false,
       categoryId: rootId,
       parentCategoryId: null,
       accountId: null,

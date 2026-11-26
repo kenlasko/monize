@@ -636,6 +636,25 @@ describe("CashFlowSankeyService", () => {
       expect(node(result, `expense:${GROCERIES.id}`)).toBeUndefined();
     });
 
+    it("leaves an inflow from a legacy untyped category unlabelled as a refund", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        { ...GROCERIES, isIncome: null },
+      ]);
+      useLedger({
+        categorized: [
+          { category_id: GROCERIES.id, positive: "150", negative: "-100" },
+        ],
+      });
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+      );
+      const inflow = node(result, `income:${GROCERIES.id}`);
+      expect(inflow?.total).toBe(50);
+      expect(inflow?.expenseRefund).toBeUndefined();
+    });
+
     it("keeps uncategorized income and spending on their own sides", async () => {
       useLedger({
         categorized: [
