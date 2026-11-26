@@ -677,12 +677,28 @@ export function composeLocalizedNotificationCopy(
         !hasCurrency(data)
       )
         return null;
+      if (data.actualIncome < 0) {
+        return pair("budget.incomeTitle", "budget.netIncomeMessage", {
+          actual: money(data.actualIncome, data.currencyCode),
+          expected: money(data.expectedIncome, data.currencyCode),
+        });
+      }
       return pair("budget.incomeTitle", "budget.incomeMessage", {
         actual: money(data.actualIncome, data.currencyCode),
         expected: money(data.expectedIncome, data.currencyCode),
         ratio: number(data.ratio, 0),
       });
     case NotificationType.POSITIVE_MILESTONE:
+      if (
+        numbers(data, "totalSpent", "totalBudgeted") &&
+        data.totalSpent < 0 &&
+        hasCurrency(data)
+      ) {
+        return pair("budget.netActivityTitle", "budget.netSpendingMessage", {
+          spent: money(data.totalSpent, data.currencyCode),
+          budgeted: money(data.totalBudgeted, data.currencyCode),
+        });
+      }
       if (!numbers(data, "periodProgress", "percentUsed")) return null;
       return pair("budget.milestoneTitle", "budget.milestoneMessage", {
         progress: number(data.periodProgress, 0),

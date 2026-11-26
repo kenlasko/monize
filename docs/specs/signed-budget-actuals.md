@@ -17,3 +17,15 @@ Read signed actuals through the same rule in the live budget summary, the catego
 An income-linked allocation uses its existing nonnegative funding base. A transfer line tracking money from a funding account retains its separate rules in [Budget transfer income](budget-transfer-income.md). These funding calculations serve a different purpose from measuring actual income in ordinary categories.
 
 The PostgreSQL regression in the budget multi-currency actuals suite follows a purchase and its larger refund through the summary, trend and period close. Unit tests cover income reversals, zero activity, missing rates and transfer-specific controls.
+
+## Progress bars and notices
+
+Bar widths and numeric accessibility positions stay within 0–100. The label and the accessible value text retain an out-of-range financial percentage in the reader's number format. A 100 budget with net spending of −50 has an empty bar and reports −50%. Spending of 150 fills the bar and reports 150%. The same geometric bounds apply to budget widgets, 50/30/20 group bars and monthly summary emails.
+
+A negative milestone shows net spending and the budget amount. An income shortfall below zero shows signed actual income and the income expected so far. The daily budget fact shows net spending, the budget and the elapsed share of the month. [Review of PR #2429](https://github.com/kenlasko/monize/pull/2429#pullrequestreview-6067458497)
+
+## Projection and carry
+
+The current velocity calculation extrapolates signed spending. On day 5 of a 30-day month, a purchase of 50 and a refund of 300 give spending of −250, a daily pace of −50 and a projected total of −1,500. Computing a purchases-only pace would change this metric.
+
+Rollover is an open decision in [discussion #2404](https://github.com/kenlasko/monize/discussions/2404). The current zero floor forgives an overspend, while a later refund can raise the carry above that period’s effective budget. The same issue affects bucket carry. The maintainer requested agreement on capping the carry or carrying the debt before either calculation changes.

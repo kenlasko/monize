@@ -666,13 +666,10 @@ export class BudgetAlertService {
         type: NotificationType.INCOME_SHORTFALL,
         severity: NotificationSeverity.CRITICAL,
         title: "Income below expected",
-        message: `Your actual income (${n.formatCurrency(
-          totalActualIncome,
-          currencyCode,
-        )}) is below ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(
-          expectedSoFar,
-          currencyCode,
-        )}) at this point in the period.`,
+        message:
+          totalActualIncome < 0
+            ? `Net income: ${n.formatCurrency(totalActualIncome, currencyCode)}. Expected income to date: ${n.formatCurrency(expectedSoFar, currencyCode)}.`
+            : `Your actual income (${n.formatCurrency(totalActualIncome, currencyCode)}) is at ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(expectedSoFar, currencyCode)}) at this point in the period.`,
         data: {
           actualIncome: totalActualIncome,
           expectedIncome: expectedSoFar,
@@ -701,14 +698,21 @@ export class BudgetAlertService {
     const overallPercent = (totalSpent / totalBudgeted) * 100;
 
     if (overallPercent < 60) {
+      const currency = actuals[0].currencyCode;
       return [
         {
           budgetId: "",
           budgetCategoryId: null,
           type: NotificationType.POSITIVE_MILESTONE,
-          severity: NotificationSeverity.SUCCESS,
-          title: "Budget on track",
-          message: `You are ${n.formatPercent(Math.round(periodProgress * 100), 0)} through the period and have only used ${n.formatPercent(overallPercent, 1)} of your total budget. Keep it up!`,
+          severity:
+            totalSpent < 0
+              ? NotificationSeverity.INFO
+              : NotificationSeverity.SUCCESS,
+          title: totalSpent < 0 ? "Budget activity" : "Budget on track",
+          message:
+            totalSpent < 0
+              ? `Net spending: ${n.formatCurrency(totalSpent, currency)}. Budget: ${n.formatCurrency(totalBudgeted, currency)}.`
+              : `You are ${n.formatPercent(Math.round(periodProgress * 100), 0)} through the period and have only used ${n.formatPercent(overallPercent, 1)} of your total budget. Keep it up!`,
           data: {
             periodProgress: Math.round(periodProgress * 100),
             percentUsed: Math.round(overallPercent * 10) / 10,

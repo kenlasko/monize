@@ -265,6 +265,20 @@ describe("buildDailyTriviaFacts", () => {
       });
     });
 
+    it("retains the signed net and percentage used by the neutral budget fact", () => {
+      const budget = {
+        ...fullDailyInput().budget!,
+        lines: [{ spent: -50, budgeted: 100 }],
+      };
+      expect(
+        find(build({ budget }), "spendingBudgetPace")?.figures,
+      ).toMatchObject({
+        budgetSpent: { kind: "money", value: -50 },
+        budgetTotal: { kind: "money", value: 100 },
+        budgetUsedPercent: { kind: "percent", value: -50 },
+      });
+    });
+
     it("refuses an income-linked budget, a null line and a zero budget", () => {
       const budget = fullDailyInput().budget!;
       for (const over of [

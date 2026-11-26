@@ -168,6 +168,8 @@ Each row shows:
 - **Pace status** -- **Under pace**, **On pace**, or **Over pace** compared with how far through the period you are
 - **Amount left**, or how much you are **over**
 
+If refunds exceed purchases in the period, net spending and the percentage used can be negative. For a budget of 100 and net spending of −50, the progress bar is empty and the amount left is 150. Above 100% the bar stays full while the figure shows the actual percentage.
+
 Use the **Sort** dropdown to sort by **% Used** (the default), **Spent**, **Remaining**, or **Name**, and the arrow beside it to reverse the order. On mobile, the sort controls stack below the heading.
 
 Click a category row to open the Transactions page filtered to that category and the budget period.

@@ -311,6 +311,37 @@ describe("notification email copy", () => {
     },
   );
 
+  it("uses neutral signed monetary figures in negative milestone and income notices", () => {
+    const spending = source(NotificationType.POSITIVE_MILESTONE, {
+      totalSpent: -20,
+      totalBudgeted: 100,
+      percentUsed: -20,
+      periodProgress: 60,
+      currencyCode: "USD",
+    });
+    const income = source(NotificationType.INCOME_SHORTFALL, {
+      actualIncome: -25,
+      expectedIncome: 100,
+      ratio: -25,
+      currencyCode: "USD",
+    });
+    expect(notificationEmailCopy(spending, englishEmailT, "en")).toEqual({
+      title: "Budget activity",
+      message: "Net spending: -$20.00. Budget: $100.00.",
+    });
+    expect(notificationEmailCopy(income, englishEmailT, "en").message).toBe(
+      "Net income: -$25.00. Expected income to date: $100.00.",
+    );
+    const french = notificationEmailCopy(
+      spending,
+      emailTranslator(i18n, "fr"),
+      "fr",
+    );
+    expect(french.title).toBe("Activité du budget");
+    expect(french.message).toContain("Dépenses nettes");
+    expect(french.message).toContain("-20");
+  });
+
   describe("AI review notifications", () => {
     const english = (type: NotificationType, data: Record<string, unknown>) =>
       notificationEmailCopy(source(type, data), englishEmailT, "en", { now });

@@ -46,6 +46,18 @@ describe('BudgetStatusWidget', () => {
     mockGetDashboardSummary.mockResolvedValue(mockSummary);
   });
 
+  it.each([[-50, '0%'], [150, '100%']])('bounds the total and category bars at %s while retaining the percent', async (percentUsed, width) => {
+    mockGetDashboardSummary.mockResolvedValue({
+      ...mockSummary,
+      percentUsed,
+      topCategories: [{ ...mockSummary.topCategories[0], percentUsed }],
+    });
+    const { container } = render(<BudgetStatusWidget isLoading={false} />);
+    expect(await screen.findAllByText(`${percentUsed}%`)).toHaveLength(2);
+    const bars = container.querySelectorAll<HTMLElement>('[style*="width:"]');
+    expect(Array.from(bars, (bar) => bar.style.width)).toEqual([width, width]);
+  });
+
   it('shows loading skeleton when parent is loading', () => {
     render(<BudgetStatusWidget isLoading={true} />);
 

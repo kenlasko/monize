@@ -411,6 +411,7 @@ export function budgetMonthlySummaryTemplate(
 
   const budgetSections = summaries
     .map((s) => {
+      const percentUsed = n.formatPercent(s.percentUsed, 1);
       const percentColor =
         s.percentUsed > 100
           ? "#dc2626"
@@ -477,9 +478,9 @@ export function budgetMonthlySummaryTemplate(
           </div>
 
           <div style="background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 8px;">
-            <div style="background: ${percentColor}; border-radius: 4px; height: 8px; width: ${Math.min(s.percentUsed, 100)}%;"></div>
+            <div style="background: ${percentColor}; border-radius: 4px; height: 8px; width: ${Math.max(0, Math.min(s.percentUsed, 100))}%;"></div>
           </div>
-          <p style="margin: 0 0 8px 0; color: ${percentColor}; font-weight: 600; font-size: 14px;">${t("emails.budgetMonthlySummary.percentUsed", `${n.formatPercent(s.percentUsed, 1)} used`, { percent: n.formatNumber(s.percentUsed, 1) })}</p>
+          <p style="margin: 0 0 8px 0; color: ${percentColor}; font-weight: 600; font-size: 14px;">${t("emails.budgetMonthlySummary.percentUsed", `${percentUsed} used`, { percent: percentUsed })}</p>
 
           ${healthSection}
           ${overBudgetRows}

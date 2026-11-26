@@ -1707,10 +1707,10 @@ describe("BudgetsService", () => {
     // ---- Effective amounts and completeness (issue #1247) ----
 
     /**
-     * A budget with one 600 category, 200 spent, and whatever upcoming bills the
+     * A budget with one 600 category, its signed ledger net, and the upcoming bills the
      * scheduled-transaction query returns.
      */
-    const stubVelocityBudget = (bills: unknown[]) => {
+    const stubVelocityBudget = (bills: unknown[], ledgerNet = "-200") => {
       budgetsRepository.findOne.mockResolvedValue({
         ...mockBudget,
         categories: [
@@ -1728,7 +1728,7 @@ describe("BudgetsService", () => {
         createMockQueryBuilder({
           getRawMany: jest
             .fn()
-            .mockResolvedValue([spendingRow("cat-1", "-200")]),
+            .mockResolvedValue([spendingRow("cat-1", ledgerNet)]),
         }),
       );
       splitsRepository.createQueryBuilder.mockReturnValue(
@@ -1740,6 +1740,27 @@ describe("BudgetsService", () => {
         }),
       );
     };
+
+    it("projects the signed net of purchases and refunds at the current pace", async () => {
+      jest.useFakeTimers({
+        now: new Date("2026-11-05T12:00:00Z"),
+        doNotFake: ["nextTick", "setImmediate", "queueMicrotask"],
+      });
+      try {
+        // A purchase of 50 and a refund of 300 net to a 250 ledger credit.
+        stubVelocityBudget([], "250");
+        const result = await service.getVelocity("user-1", "budget-1");
+        expect(result).toMatchObject({
+          daysElapsed: 5,
+          totalDays: 30,
+          currentSpent: -250,
+          dailyBurnRate: -50,
+          projectedTotal: -1500,
+        });
+      } finally {
+        jest.useRealTimers();
+      }
+    });
 
     /**
      * The issue's schedule: 10 x 100, pinned at 1.50 while priced in EUR.

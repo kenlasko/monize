@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { BudgetCategory, CategoryBreakdown } from '@/types/budget';
 
+import { clamp } from '@/lib/clamp';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { CARD_CLASS } from '@/components/ui/Card';
 interface Budget503020SummaryProps {
@@ -79,7 +80,7 @@ export function Budget503020Summary({
             statusColor = 'text-red-600 dark:text-red-400';
           }
 
-          const barWidth = Math.min(actualPercent, 100);
+          const barWidth = clamp(actualPercent, 0, 100);
 
           return (
             <div key={group.key}>
@@ -89,7 +90,7 @@ export function Budget503020Summary({
                     {t(`summary503020.groups.${group.key}`)}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('summary503020.target', { percent: group.target })}
+                    {t('summary503020.target', { percent: formatPercentTrimmed(group.target) })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -110,11 +111,11 @@ export function Budget503020Summary({
                 <div
                   className="absolute top-0 h-full w-px bg-gray-500/60 dark:bg-gray-400/60"
                   style={{ left: `${group.target}%` }}
-                  title={t('summary503020.target', { percent: group.target })}
+                  title={t('summary503020.target', { percent: formatPercentTrimmed(group.target) })}
                 />
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {t('summary503020.budgeted', { percent: budgetedPercent, amount: formatCurrency(data.budgeted) })}
+                {t('summary503020.budgeted', { percent: formatPercentTrimmed(budgetedPercent), amount: formatCurrency(data.budgeted) })}
               </div>
             </div>
           );

@@ -565,6 +565,22 @@ describe("Email Templates", () => {
       expect(html).toContain("$800.00");
     });
 
+    it.each([
+      [-50, 0],
+      [150, 100],
+    ])(
+      "bounds email progress geometry for %s percent and preserves its value",
+      (percentUsed, width) => {
+        const html = budgetMonthlySummaryTemplate(
+          "Alice",
+          [{ ...sampleSummaries[0], totalSpent: percentUsed, percentUsed }],
+          "https://monize.app",
+        );
+        expect(html).toContain(`width: ${width}%;`);
+        expect(html).toContain(`${percentUsed.toFixed(1)}% used`);
+      },
+    );
+
     it("shows percent used", () => {
       const html = budgetMonthlySummaryTemplate(
         "Alice",

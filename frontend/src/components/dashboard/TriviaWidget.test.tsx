@@ -213,6 +213,23 @@ describe('TriviaWidget', () => {
     );
   });
 
+  it.each([FIRST_WORDING_DAY, '2026-11-03', '2026-11-04'])('describes signed budget spending as a net amount on %s', (date) => {
+    state.today = date;
+    state.trivia = list({
+      items: [{ topic: 'spending', source: 'calculated', factId: 'spendingBudgetPace' }],
+      figures: {
+        budgetName: { kind: 'text', value: 'Household' },
+        budgetSpent: { kind: 'money', value: -50, currency: 'USD' },
+        budgetTotal: { kind: 'money', value: 100, currency: 'USD' },
+        budgetUsedPercent: { kind: 'percent', value: -50 },
+        budgetMonthPercent: { kind: 'percent', value: 60 },
+      },
+    });
+    render(<TriviaWidget isLoading={false} />);
+    expect(sentence()).toHaveTextContent(/Net spending: .*50.*-50/);
+    expect(sentence()).toHaveTextContent(/Budget: .*100/);
+  });
+
   it('words a windowed fact by its window', () => {
     state.trivia = list({
       items: [

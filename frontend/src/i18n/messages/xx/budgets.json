@@ -6,8 +6,8 @@
       "WANT": "[XX-Wants-XX]",
       "SAVING": "[XX-Savings-XX]"
     },
-    "target": "[XX-Target: {percent}%-XX]",
-    "budgeted": "[XX-Budgeted: {percent}% ({amount})-XX]"
+    "target": "[XX-Target: {percent}-XX]",
+    "budgeted": "[XX-Budgeted: {percent} ({amount})-XX]"
   },
   "categoryForm": {
     "editTitle": "[XX-Edit: {name}-XX]",
@@ -151,8 +151,8 @@
     "projected": "[XX-{label} (Projected)-XX]"
   },
   "progressBar": {
-    "ariaLabel": "[XX-{percent}% used-XX]",
-    "paceMarkerTitle": "[XX-Expected pace: {percent}%-XX]"
+    "ariaLabel": "[XX-{percent} used-XX]",
+    "paceMarkerTitle": "[XX-Expected pace: {percent}-XX]"
   },
   "scenarioPlanner": {
     "title": "[XX-What-If Scenario Planner-XX]",

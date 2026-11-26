@@ -876,6 +876,36 @@ describe("BudgetAlertService", () => {
       expect(alert!.message).toContain("€");
     });
 
+    it("names negative actual income and the expected amount independently", () => {
+      const alert = service.checkIncomeShortfall(
+        [
+          {
+            budgetCategoryId: "line",
+            categoryId: "income",
+            categoryName: "Income",
+            currencyCode: "USD",
+            budgeted: 200,
+            spent: -25,
+            percentUsed: -12.5,
+            isIncome: true,
+            alertWarnPercent: 80,
+            alertCriticalPercent: 95,
+            flexGroup: null,
+          },
+        ],
+        200,
+        0.5,
+      );
+      expect(alert?.message).toBe(
+        "Net income: -$25.00. Expected income to date: $100.00.",
+      );
+      expect(alert?.data).toMatchObject({
+        actualIncome: -25,
+        expectedIncome: 100,
+        ratio: -25,
+      });
+    });
+
     it("returns INCOME_SHORTFALL when income is < 80% of expected at 50%+ progress", () => {
       const alert = service.checkIncomeShortfall(
         [
@@ -992,6 +1022,34 @@ describe("BudgetAlertService", () => {
       expect(alerts).toHaveLength(1);
       expect(alerts[0].type).toBe(NotificationType.POSITIVE_MILESTONE);
       expect(alerts[0].severity).toBe(NotificationSeverity.SUCCESS);
+    });
+
+    it("reports a negative total factually without celebrating the refund", () => {
+      const [alert] = service.checkPositiveMilestones(
+        [
+          {
+            budgetCategoryId: "line",
+            categoryId: "groceries",
+            categoryName: "Groceries",
+            currencyCode: "USD",
+            budgeted: 100,
+            spent: -20,
+            percentUsed: -20,
+            isIncome: false,
+            alertWarnPercent: 80,
+            alertCriticalPercent: 95,
+            flexGroup: null,
+          },
+        ],
+        0.6,
+        12,
+      );
+      expect(alert).toMatchObject({
+        title: "Budget activity",
+        severity: NotificationSeverity.INFO,
+        message: "Net spending: -$20.00. Budget: $100.00.",
+        data: { percentUsed: -20, totalSpent: -20, totalBudgeted: 100 },
+      });
     });
 
     it("returns no milestone when spending is >= 60%", () => {

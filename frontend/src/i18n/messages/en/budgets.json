@@ -6,8 +6,8 @@
       "WANT": "Wants",
       "SAVING": "Savings"
     },
-    "target": "Target: {percent}%",
-    "budgeted": "Budgeted: {percent}% ({amount})"
+    "target": "Target: {percent}",
+    "budgeted": "Budgeted: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Edit: {name}",
@@ -151,8 +151,8 @@
     "projected": "{label} (Projected)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% used",
-    "paceMarkerTitle": "Expected pace: {percent}%"
+    "ariaLabel": "{percent} used",
+    "paceMarkerTitle": "Expected pace: {percent}"
   },
   "scenarioPlanner": {
     "title": "What-If Scenario Planner",
