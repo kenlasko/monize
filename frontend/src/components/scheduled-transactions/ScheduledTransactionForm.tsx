@@ -23,7 +23,7 @@ import { SplitEditor, SplitRow, createEmptySplits, toSplitRows, toCreateSplitDat
 import { bookSplitRowsAtMinorUnit } from '@/lib/minor-unit-booking';
 import { CurrencyPickerButton } from '@/components/transactions/CurrencyPickerButton';
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
-import { estimateAmountOn } from '@/lib/scheduled-effective-amount';
+import { estimateEntryOn } from '@/lib/scheduled-effective-amount';
 import { useAmountEstimateText } from './useAmountEstimateText';
 import { useAuthStore } from '@/store/authStore';
 import { exchangeRatesApi } from '@/lib/exchange-rates';
@@ -178,11 +178,11 @@ function getTransferAccountId(st?: ScheduledTransaction): string {
   return st?.transferAccountId || '';
 }
 
-/** What an estimate preview is asked for (issues #2096, #2164). */
+/** What an estimate preview is asked for (issues #2096, #2164, #2458). */
 interface EstimateRequest {
   accountId: string;
   basis:
-    | { payeeId: string; categoryId: string }
+    | { payeeId: string; categoryId: string; originalCurrencyCode?: string }
     | { transferAccountId: string; frequency: FrequencyType };
   nextDueDate: string;
 }
@@ -194,7 +194,8 @@ const ESTIMATE_PREVIEW_DEBOUNCE_MS = 250;
  * The key an estimate preview is requested and kept by, the request itself
  * serialized, or `null` while its basis is incomplete: a transaction's payee
  * and category (issue #2096), a transfer's destination and frequency (issue
- * #2164, a card's statement cycle applies to a monthly transfer).
+ * #2164, a card's statement cycle applies to a monthly transfer). A bill
+ * entered in another currency is estimated in it (issue #2458).
  */
 function estimateRequestKeyOf(fields: {
   transfer: boolean;
@@ -204,6 +205,7 @@ function estimateRequestKeyOf(fields: {
   transferAccountId: string | null | undefined;
   frequency: FrequencyType | null | undefined;
   nextDueDate: string | null | undefined;
+  originalCurrencyCode?: string | null;
 }): string | null {
   if (!fields.accountId) return null;
   let basis: EstimateRequest['basis'];
@@ -212,7 +214,13 @@ function estimateRequestKeyOf(fields: {
     basis = { transferAccountId: fields.transferAccountId, frequency: fields.frequency || 'MONTHLY' };
   } else {
     if (!fields.payeeId || !fields.categoryId) return null;
-    basis = { payeeId: fields.payeeId, categoryId: fields.categoryId };
+    basis = {
+      payeeId: fields.payeeId,
+      categoryId: fields.categoryId,
+      ...(fields.originalCurrencyCode
+        ? { originalCurrencyCode: fields.originalCurrencyCode.toUpperCase() }
+        : {}),
+    };
   }
   const request: EstimateRequest = {
     accountId: fields.accountId,
@@ -482,10 +490,11 @@ export function ScheduledTransactionForm({
     !!entryCurrency &&
     entryCurrency.toUpperCase() !== accountCurrency.toUpperCase();
 
-  // The Estimate option: a single-category, account-currency schedule (issue
-  // #2096) or a transfer (issue #2164), as the server allows.
+  // The Estimate option: a single-category schedule (issue #2096), in the
+  // account's currency or another (issue #2458), or a transfer (issue #2164),
+  // as the server allows.
   const estimating =
-    ((mode === 'transaction' && !isForeign) || mode === 'transfer') && watchedEstimate === true;
+    (mode === 'transaction' || mode === 'transfer') && watchedEstimate === true;
   const estimateText = useAmountEstimateText();
   // A delegate does not turn the estimate on or off, and is refused its
   // preview: it reads the owner's payments in every account (issue #2096).
@@ -503,6 +512,7 @@ export function ScheduledTransactionForm({
         transferAccountId: transferToAccountId,
         frequency: watchedFrequency,
         nextDueDate: watchedNextDueDate,
+        originalCurrencyCode: isForeign ? entryCurrency : null,
       })
     : null;
   const [estimatePreview, setEstimatePreview] = useState<{
@@ -518,6 +528,7 @@ export function ScheduledTransactionForm({
       transferAccountId: scheduledTransaction.transferAccountId,
       frequency: scheduledTransaction.frequency,
       nextDueDate: scheduledTransaction.nextDueDate.split('T')[0],
+      originalCurrencyCode: scheduledTransaction.originalCurrencyCode,
     });
     return key ? { key, estimate: scheduledTransaction.amountEstimate } : null;
   });
@@ -550,7 +561,14 @@ export function ScheduledTransactionForm({
     estimateRequestKey && estimatePreview?.key === estimateRequestKey
       ? estimatePreview.estimate
       : null;
-  const nextEstimateAmount = estimateAmountOn(currentEstimate, watchedNextDueDate || '');
+  const nextEstimateEntry = estimateEntryOn(currentEstimate, watchedNextDueDate || '');
+  const nextEstimateAmount = nextEstimateEntry?.amount ?? null;
+  // A foreign-currency bill's estimate in the biller's currency and the rate
+  // it was converted at (issue #2458); null while unknown.
+  const nextEstimateOriginalAmount = isForeign
+    ? (nextEstimateEntry?.originalAmount ?? null)
+    : null;
+  const estimateExchangeRate = isForeign ? (currentEstimate?.exchangeRate ?? null) : null;
 
   const fxFeePercent = selectedAccount?.fxFeePercent ?? undefined;
   // An account-currency figure at the places the form enters it in: cents, or
@@ -1260,7 +1278,9 @@ export function ScheduledTransactionForm({
   const onSubmit = async (data: ScheduledTransactionFormData) => {
     // A foreign entry without a rate would save whatever happens to be in the
     // account-currency amount field -- refuse rather than guess.
-    if (isForeign && (fxRate == null || foreignAmount === undefined)) {
+    // An estimated foreign bill sends the estimate's own figures instead,
+    // which the server works out again.
+    if (isForeign && !estimating && (fxRate == null || foreignAmount === undefined)) {
       toast.error(t('form.toasts.fxRateRequired'));
       return;
     }
@@ -1355,7 +1375,7 @@ export function ScheduledTransactionForm({
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : [],
         // The canonical rule while Custom; null otherwise, which clears it.
         customRecurrence: data.frequency === 'CUSTOM' ? canonicalCustomRecurrence(data.customRecurrence) : null,
-        // Only a single-category, account-currency schedule estimates; the
+        // Only a single-category schedule or a transfer estimates; the
         // server replaces the amount with the next occurrence's estimate.
         amountIsEstimated: estimating,
         ...(estimating && {
@@ -1454,15 +1474,24 @@ export function ScheduledTransactionForm({
           // Foreign-currency entry: send the trio, or explicit nulls when the
           // schedule used to carry one and the user switched back to the
           // account currency (undefined would leave the old values in place).
-          ...(isForeign && foreignAmount !== undefined && fxRate != null
+          ...(isForeign && estimating
             ? {
-                originalAmount: foreignAmount,
+                // The next occurrence's estimate in the biller's currency,
+                // which the server replaces with its own (issue #2458); a
+                // zero while unknown, as the account-currency amount is.
+                originalAmount: nextEstimateOriginalAmount ?? 0,
                 originalCurrencyCode: entryCurrency,
-                exchangeRate: fxRate,
+                exchangeRate: estimateExchangeRate ?? fxRate ?? 1,
               }
-            : scheduledTransaction?.originalCurrencyCode
-              ? { originalAmount: null, originalCurrencyCode: null, exchangeRate: 1 }
-              : {}),
+            : isForeign && foreignAmount !== undefined && fxRate != null
+              ? {
+                  originalAmount: foreignAmount,
+                  originalCurrencyCode: entryCurrency,
+                  exchangeRate: fxRate,
+                }
+              : scheduledTransaction?.originalCurrencyCode
+                ? { originalAmount: null, originalCurrencyCode: null, exchangeRate: 1 }
+                : {}),
         };
       }
 
@@ -1565,6 +1594,45 @@ export function ScheduledTransactionForm({
       )}
     </p>
   );
+
+  // An estimated foreign-currency bill (issue #2458): what the next
+  // occurrence's estimate comes to in the account's currency, at the rate the
+  // server converted it at. Nothing while the estimate is unknown: the note
+  // under the field says why.
+  const renderEstimateFxCaption = () => {
+    if (
+      nextEstimateAmount === null ||
+      nextEstimateOriginalAmount === null ||
+      estimateExchangeRate === null
+    ) {
+      return null;
+    }
+    const estimateFee =
+      fxFeePercent && fxFeePercent > 0
+        ? toAccountPlaces(nextEstimateAmount - nextEstimateOriginalAmount * estimateExchangeRate)
+        : 0;
+    return (
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <span>
+          {t('form.fx.estimateCaption', {
+            total: formatCurrency(nextEstimateAmount, accountCurrency),
+            from: entryCurrency,
+            rate: formatNumber(estimateExchangeRate, FX_RATE_DISPLAY_DECIMALS),
+            to: accountCurrency,
+          })}
+        </span>
+        {estimateFee !== 0 && (
+          <span>
+            {' '}
+            {t('form.fx.feeCaption', {
+              percent: formatNumber(fxFeePercent as number, 2),
+              fee: formatCurrency(Math.abs(estimateFee), accountCurrency),
+            })}
+          </span>
+        )}
+      </p>
+    );
+  };
 
   // Shared End Condition section
   const renderEndCondition = (_idSuffix: string) => {
@@ -1836,9 +1904,9 @@ export function ScheduledTransactionForm({
                   value={entryCurrency}
                   accountCurrencyCode={accountCurrency}
                   onChange={handleEntryCurrencyChange}
-                  // An estimate is in the account's currency: switching to a
-                  // foreign entry would silently turn it off.
-                  disabled={isLoading || estimating}
+                  // An estimate follows the entry currency (issue #2458), so
+                  // the currency stays choosable while estimating.
+                  disabled={isLoading}
                 />
                 <div className="flex-1 min-w-0">
                   <CurrencyInput
@@ -1853,10 +1921,11 @@ export function ScheduledTransactionForm({
                     // estimate and is not edited; an unknown estimate is an
                     // empty field, never the stored snapshot.
                     value={
-                      isForeign
-                        ? foreignAmount
-                        : estimating
-                          ? (nextEstimateAmount ?? undefined)
+                      estimating
+                        ? ((isForeign ? nextEstimateOriginalAmount : nextEstimateAmount) ??
+                          undefined)
+                        : isForeign
+                          ? foreignAmount
                           : watchedAmount
                     }
                     onChange={
@@ -1871,9 +1940,9 @@ export function ScheduledTransactionForm({
                 </div>
                 {/* Between Amount and Reference Number, taking its width from
                     the Amount input (issue #2096). */}
-                {!isForeign && renderEstimateToggle()}
+                {renderEstimateToggle()}
               </div>
-              {isForeign && renderFxCaption()}
+              {isForeign && (estimating ? renderEstimateFxCaption() : renderFxCaption())}
               {renderEstimateNote()}
             </div>
             <Input
