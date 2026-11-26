@@ -154,8 +154,8 @@ The same table holds when the EUR file is imported first: the provisional leg is
 Decided in issue #2397 (the badge and the action):
 
 - One component, `ProvisionalAmountBadge` (`frontend/src/components/transactions/`), draws the label wherever a row's amount is drawn: the phone card, the desktop row's Amount cell, Folio's Payment or Deposit cell, the Pebble row and the Pebble inspector. It reads the flag through `isProvisionalAmount` (`frontend/src/lib/provisional-amount.ts`) as `=== true`, so a payload without the field is drawn as confirmed. Every register that renders `TransactionList` shows the badge.
-- The action is offered only where a caller passes `onConfirmAmount`; today that is the Transactions page. The list withholds it from a row of a joint account shared to the reader, because the endpoint is owner-scoped and would refuse it.
-- After the endpoint answers, the page reloads through `loadAllData`, the path the register's delete takes: the rows, the accounts the account widget reads (where F2's count will live), and the reload key the widgets refetch on. `transactionsApi.confirmAmount` drops the cached balance reads. A second click on the same row before the reload lands sends nothing.
+- The action is offered only where a caller passes `onConfirmAmount`; today that is the Transactions page. The endpoint is owner-scoped, so the list offers it only on a row whose `userId` is the identity the server acts as (the owner for an acting delegate), and never on a row of a joint account shared to the reader.
+- After the endpoint answers, the page marks the row confirmed in place, then reloads through `loadAllData`, the path the register's delete takes: the rows, the accounts the account widget reads (where F2's count will live), and the reload key the widgets refetch on. A reload that fails therefore leaves no stale badge. `transactionsApi.confirmAmount` drops the cached balance reads. A second click on the same row before the reload lands sends nothing.
 
 ## 10. Test matrix
 

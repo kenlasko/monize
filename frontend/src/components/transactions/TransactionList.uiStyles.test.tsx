@@ -4,6 +4,7 @@ import { TransactionList } from './TransactionList';
 import { useDensityStore } from '@/store/densityStore';
 import { Transaction, TransactionStatus } from '@/types/transaction';
 import { useHiddenColumnsStore } from '@/store/hiddenColumnsStore';
+import { useAuthStore } from '@/store/authStore';
 
 /**
  * The register under the Folio and Pebble UI styles. Standard is covered by
@@ -496,6 +497,32 @@ describe('A provisional amount in every register style (issue #2397)', () => {
     renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn(), jointPermissionsByAccount: joint });
     expect(screen.getAllByTestId('provisional-amount-badge')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Confirm amount' })).toBeNull();
+  });
+
+  it('Standard: a row another user owns keeps the label but offers no action, before any account has loaded', () => {
+    style.value = 'standard';
+    useAuthStore.setState({ user: { id: 'u' } as any, actingAsUserId: null });
+    try {
+      const foreign = provisionalRows.map((tx) => ({ ...tx, userId: 'someone-else' }));
+      const view = renderList({ transactions: foreign, onConfirmAmount: vi.fn() });
+      expect(screen.getAllByTestId('provisional-amount-badge')).toHaveLength(1);
+      expect(screen.queryByRole('button', { name: 'Confirm amount' })).toBeNull();
+      view.unmount();
+    } finally {
+      useAuthStore.setState({ user: null, actingAsUserId: null });
+    }
+  });
+
+  it('Standard: an acting delegate is offered the action on the owner\'s rows', () => {
+    style.value = 'standard';
+    useAuthStore.setState({ user: { id: 'delegate' } as any, actingAsUserId: 'u' });
+    try {
+      const view = renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn() });
+      expect(screen.getAllByRole('button', { name: 'Confirm amount' })).toHaveLength(1);
+      view.unmount();
+    } finally {
+      useAuthStore.setState({ user: null, actingAsUserId: null });
+    }
   });
 
   it('Folio: labels the provisional amount in its column', () => {

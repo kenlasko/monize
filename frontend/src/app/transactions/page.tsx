@@ -955,8 +955,11 @@ function TransactionsContent() {
         return;
       }
       toast.success(t('provisional.confirmed'));
-      // Held until the reload lands, so the row still drawn as provisional
-      // cannot send a second request meanwhile.
+      // The row is confirmed now, whatever the reload does: a reload that
+      // fails must not leave the badge and an action the server would refuse.
+      setTransactions((prev) =>
+        prev.map((tx) => (tx.id === transaction.id ? { ...tx, amountIsProvisional: false } : tx)),
+      );
       await loadAllData();
     } finally {
       confirmingAmountIds.current.delete(transaction.id);

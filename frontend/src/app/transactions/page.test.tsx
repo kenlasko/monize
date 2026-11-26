@@ -2622,6 +2622,23 @@ describe('TransactionsPage', () => {
       expect(toast.default.success).toHaveBeenCalledWith('Amount confirmed');
     });
 
+    it('drops the badge at once, even when the reload that follows fails', async () => {
+      mockGetAll.mockResolvedValue({
+        data: [provisionalLeg],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
+      render(<TransactionsPage />);
+      await waitFor(() => expect(screen.getByTestId('tx-tx-1-provisional')).toBeInTheDocument());
+
+      mockConfirmAmount.mockResolvedValue({ ...provisionalLeg, amountIsProvisional: false });
+      mockGetAll.mockRejectedValue(new Error('network'));
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('tx-tx-1-confirm'));
+      });
+      expect(screen.queryByTestId('tx-tx-1-provisional')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('tx-tx-1-confirm')).not.toBeInTheDocument();
+    });
+
     it('sends one request for a double click, and reports a refusal without reloading', async () => {
       const { showErrorToast } = await import('@/lib/errors');
       mockGetAll.mockResolvedValue({

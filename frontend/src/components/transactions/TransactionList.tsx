@@ -36,6 +36,7 @@ import { useDensityPreference, type DensityView } from '@/store/densityStore';
 import { useCompactMobileDates } from '@/store/dateDisplayStore';
 import { useRegisterPhoneCard } from '@/hooks/useRegisterPhoneCard';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { useAuthStore } from '@/store/authStore';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { SortableHeader } from '@/components/ui/SortableHeader';
@@ -474,11 +475,19 @@ export function TransactionList({
       !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canEdit),
     [jointPermissionsByAccount],
   );
-  // The confirm endpoint is owner-scoped: a joint account shared to this
-  // reader belongs to someone else, so its rows are never offered it.
+  // The confirm endpoint is owner-scoped (`user_id` is the identity the
+  // server acts as: the owner for an acting delegate), so a row is offered it
+  // only when that identity owns it. The row's own `userId` decides it even
+  // before the accounts have loaded; the joint map covers a row whose owner
+  // is not known yet. With no signed-in identity at all, ownership is not
+  // decided here and the server's refusal stands.
+  const ledgerOwnerId = useAuthStore((s) => s.actingAsUserId ?? s.user?.id ?? null);
   const canConfirmAmountRow = useCallback(
-    (tx: Transaction) => isProvisionalAmount(tx) && !jointPermissionsByAccount?.has(tx.accountId),
-    [jointPermissionsByAccount],
+    (tx: Transaction) =>
+      isProvisionalAmount(tx) &&
+      !jointPermissionsByAccount?.has(tx.accountId) &&
+      (ledgerOwnerId === null || !tx.userId || tx.userId === ledgerOwnerId),
+    [jointPermissionsByAccount, ledgerOwnerId],
   );
   const canDeleteRow = useCallback(
     (tx: Transaction) =>
