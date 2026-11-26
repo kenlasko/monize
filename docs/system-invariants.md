@@ -3444,19 +3444,15 @@ destination classes. The half that matters -- a transfer is never income -- is
 unchanged: the Sankey reports a savings transfer as an outflow beside the
 expenses, never as one of them.
 
-A custom report's list of transactions (metric NONE) with **Include transfers**
-is not an income or expense figure, so this invariant does not reach it: it
-lists each matching leg by its own account and its own sign, and under BOTH its
-total is the signed sum of the listed rows, captioned "Net cash movement"
-rather than net (`customReportMeasure`, discussion #1978). Both legs of a
-same-currency transfer inside the report's scope cancel, because each is
-converted by the one converter of the report execution (`createConverter` in
-reports.service.ts); a cross-currency transfer's legs are each converted at
-its own rate or the market rate on its own date (issue #2106), not at the
-rate the two amounts imply, so they can leave a residual. A leg whose counterpart does not match the filters
-counts alone, and no counterpart is added. Only the ungrouped list signs its
-rows: grouped, metric NONE sums each group's unsigned cells like
-TOTAL_AMOUNT, and the client names it so (`isSignedTransactionList`).
+A custom report with direction BOTH measures account movement in its ungrouped
+transaction list (metric NONE) and its TOTAL_AMOUNT groups and headline.
+With **Include transfers**, the client labels that measure "Net cash movement"
+(`customReportMeasure`). Each qualifying leg counts with its own sign. A
+same-currency pair in scope cancels. When one side is in the reporting currency
+and a settled counterleg is available, the report values the pair at the
+amounts transferred (INV-FX-002). Independent market valuations can leave a
+residual. A transfer with just one side selected contributes that side alone.
+Grouped metric NONE retains its unsigned category amounts (INV-REPORT-004).
 
 ### INV-SANKEY-001 -- the Cash Flow Sankey closes
 
@@ -3533,37 +3529,47 @@ Status              enforced
 ```text
 Statement           A category's figure in a report is the signed sum of its
                     rows of both signs, netted within that one category and
-                    never across two: a refund lowers the category's cost, and a
-                    category whose credits meet its debits is not spending.
+                    never across two. In Spending by Category a refund lowers
+                    the cost of an expense category already assigned to the
+                    posting. Activity with zero net stays visible; when refunds
+                    exceed debits the category has negative net spending.
                     Transfers are not a category and are not netted.
 Source of truth     The signed amounts on transactions and transaction_splits.
-Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
+Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
+                    group. An assigned expense category with qualifying activity
+                    keeps its row at any sign. Other groups use isNetSpending
                     (backend/src/built-in-reports/spending-reports.service.ts);
                     client summaries: netEntityTotal. Custom report engine
                     (backend/src/reports/reports.service.ts): each line lands in
                     a (group, category) cell, signed; a cell is kept only when
                     its net is in the report's direction (EXPENSES_ONLY:
                     isNetSpending of the negated net; INCOME_ONLY: a positive
-                    net; BOTH: the magnitude of the net), and a group is the sum
-                    of its kept cells (audit A26-M33). The metric NONE list keeps
-                    its row-level direction filter; ungrouped and under BOTH it
-                    lists each row with its own sign, so its total is the signed
-                    net of the listed rows (discussion #1978). The client names a
-                    BOTH headline (`customReportMeasure`,
-                    frontend/src/lib/custom-report-measure.ts): a signed list's
-                    "Net amount" ("Net cash movement" with transfers included),
-                    an aggregate's or a grouped metric NONE report's "Total of
-                    unsigned category amounts".
+                    net). Under BOTH / TOTAL_AMOUNT a group sums signed cells.
+                    Its complete headline nets the eligible components before
+                    display rounding. Its known subtotal excludes incomplete
+                    category/currency parts consistently across groupings.
+                    Tag rows can overlap: their headline
+                    uses each component once, and counts a parent transaction
+                    once even if distinct splits contribute. Under BOTH,
+                    AVERAGE and grouped NONE retain category magnitudes.
+                    The ungrouped BOTH / NONE list preserves each row's sign.
+                    The signed measures use "Net amount" or "Net cash movement"
+                    with transfers. See customReportMeasure in
+                    frontend/src/lib/custom-report-measure.ts.
                     The loan history's Interest Paid
                     (frontend/src/lib/loan-history.ts) sums each interest row
                     signed, so a lender's refund nets (A26-S15-05).
 Concurrency scope   --
 Failure response    --
 Required tests      Integration:
+                    backend/test/integration/report-signed-expense-categories.integration.spec.ts
+                    (purchase of 100, refunds of 30, 100 and 150: category and
+                    headline read 70, 0 and -50 respectively);
                     backend/test/integration/report-custom-net-and-search.integration.spec.ts
-                    (Groceries -100 and +30: 70 under EXPENSES_ONLY and BOTH, by
-                    category and by month; and the BOTH list's signed rows in
-                    date order) and the reports.service.spec.ts cases;
+                    (Groceries -100 and +30: expense magnitude 70, signed BOTH
+                    total -70. A saved BOTH / TOTAL_AMOUNT report re-executes
+                    with signed groups.) reports.service.spec.ts also covers
+                    signed tag totals over overlapping groups;
                     frontend/src/lib/loan-history.test.ts "nets an interest
                     refund".
 Known gap           No source scan holds the rule: a new aggregator summing
@@ -10781,7 +10787,7 @@ Enforcement         BudgetPeriodService.closePeriod writes both inside its one
                     carry_in 0; a row with a NULL bucket_id (bucket deleted)
                     is left as it is, which is why the write is not an
                     ON CONFLICT on (budget_period_id, bucket_id), where NULLs
-                    are distinct. Each positive carry_out is handed to
+                    are distinct. Each nonzero carry_out is handed to
                     createPeriodForBudget, which inserts the next period's
                     carry_in rows only in the branch that won the
                     ON CONFLICT claim on budget_periods. Outside the close and
@@ -10799,7 +10805,7 @@ Failure response    a second close is NoOpenPeriodError (a skip for the cron)
 Required tests      Present: budget-period.service.spec.ts (truth table C
                     through a mocked close with the section 8 figures; the
                     carry reaching the next period's creation; rows only for a
-                    positive carry and only when the claim was won; a bucket
+                    nonzero carry and only when the claim was won; a bucket
                     created mid-period inserted with carry_in 0; a NULL
                     bucket_id row untouched; no bucket read or write for a
                     budget without buckets), budget-period-lifecycle.spec.ts

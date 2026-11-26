@@ -274,6 +274,46 @@ describe('MonthlyComparisonReport', () => {
     expect(screen.getAllByText('Utilities').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('preserves a net refund in both months, including the top-five tables in the PDF', async () => {
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    const clothing = { categoryId: 'credit', categoryName: 'Clothing', color: null, total: -42 };
+    const transit = { categoryId: 'transit', categoryName: 'Transit', color: null, total: -42 };
+    const even = { categoryId: 'even', categoryName: 'Fully refunded', color: null, total: 0 };
+    const currentMonth = [even, clothing];
+    const previousMonth = [even, transit];
+    mockGetMonthlyComparison.mockResolvedValue({
+      ...mockResponse,
+      expenses: {
+        ...mockResponse.expenses,
+        netSpending: true,
+        currentMonth, currentTotal: -42,
+        previousMonth, previousTotal: -42,
+        comparison: [
+          { ...clothing, currentTotal: -42, previousTotal: 0, change: -42, changePercent: null },
+          { ...transit, currentTotal: 0, previousTotal: -42, change: 42, changePercent: null },
+          { ...even, currentTotal: 0, previousTotal: 0, change: 0, changePercent: 0 },
+        ],
+      },
+      topCategories: { currentMonth, previousMonth },
+    });
+    await act(async () => { render(<MonthlyComparisonReport />); });
+    expect(screen.queryAllByTestId('pie-chart')).toHaveLength(0);
+    const compared = screen.getByRole('heading', { name: 'Monthly Expenses Compared' }).parentElement!;
+    const clothingRow = within(compared).getByRole('row', { name: /Clothing/ });
+    expect(within(clothingRow).getByTestId('unknown-amount')).toBeInTheDocument();
+    const transitRow = within(compared).getByRole('row', { name: /Transit/ });
+    expect(within(transitRow).getByTestId('unknown-amount')).toBeInTheDocument();
+    const ranked = screen.getByRole('heading', { name: 'Top 5 Expense Categories' }).parentElement!;
+    for (const name of ['Clothing', 'Transit']) {
+      expect(within(ranked).getByRole('row', { name: new RegExp(name) })).toHaveTextContent('$-42.00');
+    }
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export PDF/i })); });
+    const pdf = vi.mocked(exportToPdf).mock.calls[0][0];
+    expect(pdf.tableData?.rows[0]).toEqual(['Clothing', '$-42.00', '$0.00', '$-42.00', 'N/A']);
+    expect(pdf.additionalTables?.[0].rows).toEqual([[1, 'Fully refunded', '$0.00'], [2, 'Clothing', '$-42.00']]);
+    expect(pdf.additionalTables?.[1].rows).toEqual([[1, 'Fully refunded', '$0.00'], [2, 'Transit', '$-42.00']]);
+  });
+
   it('renders top 5 categories section', async () => {
     mockGetMonthlyComparison.mockResolvedValue(mockResponse);
     render(<MonthlyComparisonReport />);

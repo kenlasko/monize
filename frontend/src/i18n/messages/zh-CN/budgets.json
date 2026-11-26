@@ -6,14 +6,14 @@
       "WANT": "欲望",
       "SAVING": "储蓄"
     },
-    "target": "目标：{percent}%",
-    "budgeted": "已预算：{percent}%（{amount}）"
+    "target": "目标：{percent}",
+    "budgeted": "已预算：{percent}（{amount}）"
   },
   "categoryForm": {
     "editTitle": "编辑：{name}",
     "budgetAmount": "预算金额",
     "rolloverType": "滚存类型",
-    "rolloverTypeTooltip": "此分类未用完的预算会结转到下一期，而不是重置。超支绝不会作为债务结转，滚存上限限制了最多能累积多少。",
+    "rolloverTypeTooltip": "支出类别的结余会增加下期预算，超支会减少下期预算。结转上限仅适用于结余。",
     "rolloverCap": "滚存上限（可选）",
     "rolloverCapPlaceholder": "无上限",
     "flexGroup": "弹性分组（可选）",
@@ -138,7 +138,7 @@
     "expenseCategories": "支出分类",
     "incomeCategories": "收入分类",
     "categorySublabel": "{count} 个分类",
-    "rolloverBadge": "+{amount} 滚存",
+    "rolloverBadge": "{amount} 滚存",
     "underBudgetLabel": "低于预算 {amount}",
     "overBudgetLabel": "超出预算 {amount}",
     "carriedForward": "结转 {amount}",
@@ -151,8 +151,8 @@
     "projected": "{label}（预测）"
   },
   "progressBar": {
-    "ariaLabel": "已用 {percent}%",
-    "paceMarkerTitle": "预期进度：{percent}%"
+    "ariaLabel": "已用 {percent}",
+    "paceMarkerTitle": "预期进度：{percent}"
   },
   "scenarioPlanner": {
     "title": "假设情景规划器",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "分析估算：{amount}/月",
     "defaultRolloverType": "默认滚存类型",
     "rolloverHint": "这将设置所有分类的默认值。创建预算后可自定义各个分类。",
-    "rolloverTooltip": "某分类未用完的预算会结转到下一期，而不是重置。超支绝不会作为债务结转，滚存上限限制了某分类最多能累积多少。",
+    "rolloverTooltip": "支出类别的结余会增加下期预算，超支会减少下期预算。结转上限仅适用于结余。",
     "rolloverOptions": {
       "NONE": "无 — 每期重置",
       "MONTHLY": "按月 — 每月结转",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "百分比目标是预算收入的一个比例：对于关联收入的预算为本期已收到的收入，否则为基础收入，再否则为收入分类的金额。固定金额每期相同。",
       "targetPercent": "收入百分比",
       "targetAmount": "每期金额",
-      "carryOver": "结转剩余金额",
-      "carryOverTooltip": "期间结束时资金桶中剩余的金额会加到下一期。超支的资金桶不会结转任何金额。",
+      "carryOver": "结转余额",
+      "carryOverTooltip": "余额为正时会增加该资金桶的下期分配额，余额为负时会减少下期分配额。结转上限仅适用于正余额。",
       "carryCap": "结转上限（可选）",
       "carryCapPlaceholder": "无上限",
       "save": "保存",

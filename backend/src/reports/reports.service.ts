@@ -18,7 +18,13 @@ import {
   searchNarrows,
 } from "../transactions/apply-transaction-search";
 import { ParsedSearch } from "../transactions/transaction-search-query.util";
-import { createNetCells, netLinesOf } from "./report-net-cells";
+import {
+  createNetCells,
+  isSignedTotal,
+  netLinesOf,
+  shareDenominator,
+  type NetGroup,
+} from "./report-net-cells";
 import {
   convertAtTransferAmounts,
   transferCounterpartOf,
@@ -116,6 +122,12 @@ interface RowConverter {
     row: Transaction,
     split?: TransactionSplit,
   ): number | null;
+}
+
+interface ReportGroups {
+  rows: ReportRow[];
+  /** When tag groups overlap, the signed headline counts the population once. */
+  uniquePopulation?: NetGroup;
 }
 
 /**
@@ -441,16 +453,20 @@ export class ReportsService {
 
     const converter = await this.createConverter(userId, transactions);
 
-    // Aggregate data based on groupBy type
-    let rows = this.aggregateData(
-      transactions,
-      report.groupBy,
-      report.config,
-      categoryMap,
-      payeeMap,
-      converter,
-    );
-
+    const groups: ReportGroups =
+      report.groupBy === GroupByType.TAG
+        ? this.aggregateByTag(transactions, report.config, converter)
+        : {
+            rows: this.aggregateDisjointGroups(
+              transactions,
+              report.groupBy,
+              report.config,
+              categoryMap,
+              payeeMap,
+              converter,
+            ),
+          };
+    let rows = groups.rows;
     // For BUDGET_VARIANCE metric with CATEGORY grouping, enrich with budget data
     if (
       report.config.metric === MetricType.BUDGET_VARIANCE &&
@@ -469,9 +485,16 @@ export class ReportsService {
 
     // Apply custom sorting if configured
     if (report.config.sortBy) {
+      // A saved percentage sort keeps its direction after signed totals stop
+      // exposing shares. Rank by the monetary value those shares used to order.
+      const sortBy =
+        report.config.sortBy === TableColumn.PERCENTAGE &&
+        isSignedTotal(report.config.direction, report.config.metric)
+          ? TableColumn.VALUE
+          : report.config.sortBy;
       rows = this.sortData(
         rows,
-        report.config.sortBy,
+        sortBy,
         report.config.sortDirection || SortDirection.DESC,
       );
     }
@@ -482,11 +505,15 @@ export class ReportsService {
       converter,
       report.config.metric,
       truncated,
+      groups.uniquePopulation,
     );
     const data = rows.map((row) => row.point);
 
     return {
       reportId: report.id,
+      ...(isSignedTotal(report.config.direction, report.config.metric)
+        ? { signedTotal: true as const }
+        : {}),
       name: report.name,
       viewType: report.viewType,
       groupBy: report.groupBy,
@@ -1021,9 +1048,9 @@ export class ReportsService {
     }
   }
 
-  private aggregateData(
+  private aggregateDisjointGroups(
     transactions: Transaction[],
-    groupBy: GroupByType,
+    groupBy: Exclude<GroupByType, GroupByType.TAG>,
     config: ReportConfig,
     categoryMap: Map<string, Category>,
     payeeMap: Map<string, Payee>,
@@ -1063,8 +1090,6 @@ export class ReportsService {
         return this.aggregateByTime(transactions, metric, config, "week", conv);
       case GroupByType.DAY:
         return this.aggregateByTime(transactions, metric, config, "day", conv);
-      case GroupByType.TAG:
-        return this.aggregateByTag(transactions, metric, config, conv);
       default:
         return this.aggregateNoGrouping(transactions, metric, config, conv);
     }
@@ -1226,7 +1251,7 @@ export class ReportsService {
     // For other metrics, aggregate into a single total
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1245,7 +1270,7 @@ export class ReportsService {
           id: "total",
           label: "Total",
           value: metricValue(bucket.agg, bucket.count, metric, conv.places),
-          percentage: 100,
+          percentage: isSignedTotal(config.direction, metric) ? undefined : 100,
           count: bucket.count,
         },
         sum: bucket.agg,
@@ -1262,7 +1287,7 @@ export class ReportsService {
   ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1282,7 +1307,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
+    const whole = shareDenominator(dataMap, config);
 
     const result: ReportRow[] = [];
     for (const [categoryId, data] of dataMap) {
@@ -1301,7 +1326,7 @@ export class ReportsService {
           label,
           value: metricValue(data.agg, data.count, metric, conv.places),
           color: category?.color || undefined,
-          percentage: shareOf(data.agg, whole),
+          percentage: whole && shareOf(data.agg, whole),
           count: data.count,
         },
         sum: data.agg,
@@ -1320,7 +1345,7 @@ export class ReportsService {
   ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1343,7 +1368,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
+    const whole = shareDenominator(dataMap, config);
 
     const result: ReportRow[] = [];
     for (const [payeeId, data] of dataMap) {
@@ -1353,7 +1378,7 @@ export class ReportsService {
           id: payeeId,
           label: payee?.name || payeeNames.get(payeeId) || "Unknown",
           value: metricValue(data.agg, data.count, metric, conv.places),
-          percentage: shareOf(data.agg, whole),
+          percentage: whole && shareOf(data.agg, whole),
           count: data.count,
         },
         sum: data.agg,
@@ -1365,14 +1390,19 @@ export class ReportsService {
 
   private aggregateByTag(
     transactions: Transaction[],
-    metric: MetricType,
     config: ReportConfig,
     conv: RowConverter,
-  ): ReportRow[] {
+  ): ReportGroups {
+    const metric = config.metric;
+    // A tagged line is one financial component even if several tag rows show it.
+    // Settle the same population as the ungrouped total, with its FX-gap policy.
+    const uniqueCells = isSignedTotal(config.direction, metric)
+      ? createNetCells(config.direction, metric, this.leftOutWithItsPart(conv))
+      : undefined;
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
-      this.leftOutWithItsPart(conv),
+      metric,
+      uniqueCells ? undefined : this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
     const tagInfo = new Map<string, { tagName: string; color?: string }>();
@@ -1407,6 +1437,7 @@ export class ReportsService {
                 }
                 return tag.id;
               });
+        uniqueCells?.add("total", line, value);
         for (const group of groups) cells.add(group, line, value);
       }
     }
@@ -1414,7 +1445,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
+    const whole = shareDenominator(dataMap, config);
 
     const result: ReportRow[] = [];
     for (const [tagId, data] of dataMap) {
@@ -1425,14 +1456,22 @@ export class ReportsService {
           label: info?.tagName ?? "Untagged",
           value: metricValue(data.agg, data.count, metric, conv.places),
           color: info?.color,
-          percentage: shareOf(data.agg, whole),
+          percentage: whole && shareOf(data.agg, whole),
           count: data.count,
         },
         sum: data.agg,
       });
     }
 
-    return byValueDescending(result);
+    return {
+      rows: byValueDescending(result),
+      uniquePopulation: uniqueCells
+        ? (uniqueCells.settle().get("total") ?? {
+            agg: new FxAggregate(),
+            count: 0,
+          })
+        : undefined,
+    };
   }
 
   private aggregateByTime(
@@ -1444,7 +1483,7 @@ export class ReportsService {
   ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1628,13 +1667,14 @@ export class ReportsService {
     conv: RowConverter,
     metric: MetricType,
     truncated: boolean,
+    uniquePopulation?: NetGroup,
   ): ReportSummary {
     // A listed row with no rate counts as listed but adds to no sum; its gap
     // is already in `gaps`, so the total is withheld.
     const complete =
       !truncated && (this.keepsUnconverted(metric) || conv.gaps.isComplete);
     return {
-      ...summarizeRows(rows, metric, complete, conv.places),
+      ...summarizeRows(rows, metric, complete, conv.places, uniquePopulation),
       provisionalCount: this.provisionalCount(conv, metric),
     };
   }

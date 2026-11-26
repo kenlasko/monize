@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "[XX-It has been {sincePayeeDays} since you last spent with {sincePayeeName}, on {sincePayeeDay}.-XX]",
       "activityBillsDueThisWeek": "[XX-Bills due in the next seven days: {billsDueCount}, coming to {billsDueTotal}.-XX]",
       "activityNextBill": "[XX-Your next bill is {nextBillName}, for {nextBillAmount}, due {nextBillDate}.-XX]",
-      "spendingBudgetPace": "[XX-You have used {budgetUsedPercent} of your {budgetName} budget ({budgetSpent} of {budgetTotal}), with {budgetMonthPercent} of the month gone.-XX]",
+      "spendingBudgetPace": "[XX-{budgetName} — Net spending: {budgetSpent} ({budgetUsedPercent}). Budget: {budgetTotal}. {budgetMonthPercent} of the month has elapsed.-XX]",
       "investmentsTopMoverUp": "[XX-Your top mover on {moverSession} was {moverSymbol}, up {moverPercent}, which added {moverValueChange} to your position.-XX]",
       "investmentsTopMoverDown": "[XX-Your top mover on {moverSession} was {moverSymbol}, down {moverPercent}, which took {moverValueChange} off your position.-XX]",
       "activityAnniversary": "[XX-This week marks {anniversaryYears} since your first transaction in Monize, on {anniversaryFirstDate}.-XX]",
@@ -272,8 +272,8 @@
         "c": "[XX-Due {nextBillDate}, your next bill is {nextBillName} for {nextBillAmount}.-XX]"
       },
       "spendingBudgetPace": {
-        "b": "[XX-With {budgetMonthPercent} of the month gone, you have spent {budgetSpent} of your {budgetTotal} {budgetName} budget, or {budgetUsedPercent}.-XX]",
-        "c": "[XX-Your {budgetName} budget is {budgetUsedPercent} used ({budgetSpent} of {budgetTotal}), and {budgetMonthPercent} of the month has passed.-XX]"
+        "b": "[XX-{budgetName} — Budget: {budgetTotal}. Net spending: {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} of the month has elapsed.-XX]",
+        "c": "[XX-{budgetName} — {budgetMonthPercent} of the month has elapsed. Budget: {budgetTotal}. Net spending: {budgetSpent} ({budgetUsedPercent}).-XX]"
       },
       "investmentsTopMoverUp": {
         "b": "[XX-{moverSymbol} was the top mover in your portfolio on {moverSession}: up {moverPercent}, adding {moverValueChange} to your position.-XX]",

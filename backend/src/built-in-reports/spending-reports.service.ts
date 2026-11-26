@@ -14,7 +14,7 @@ import {
   rateBasisColumnsSql,
 } from "./report-currency.service";
 import { MONEY_SCALE, toMoneyNumber } from "../common/round.util";
-import { FxAggregate } from "../common/fx-aggregate";
+import { FxAggregate, shareOf } from "../common/fx-aggregate";
 import {
   SpendingByCategoryResponse,
   CategorySpendingItem,
@@ -69,15 +69,17 @@ const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
 export const NET_SPEND_AMOUNT = "-COALESCE(ts.amount, t.amount)";
 const NONZERO_AMOUNT = "COALESCE(ts.amount, t.amount) <> 0";
 
-/**
- * A category whose credits meet or exceed its debits over the period was not
- * spent in, so it is not a row in a spending report. This is also what keeps
- * income categories (and uncategorized income, which the old debit-only
- * predicate excluded row by row) out of the breakdown now that credits are
- * read at all.
- */
+/** Positive-net inclusion for reports and fallback buckets defined by direction. */
 export function isNetSpending(total: number): boolean {
   return total > 0;
+}
+
+/** Classified expenses keep their signed net even after a full or excess refund. */
+export function includesSpendingCategory(
+  total: number,
+  isIncome?: boolean,
+): boolean {
+  return isIncome === false || isNetSpending(total);
 }
 
 @Injectable()
@@ -244,15 +246,8 @@ export class SpendingReportsService {
       string,
       { agg: FxAggregate; category: Category | null }
     >();
-    /**
-     * Source currencies with no rate into the reporting currency, and how many
-     * aggregate rows that cost us.
-     *
-     * An excluded row is not a smaller number: it could have changed which
-     * categories appear at all, since a category is kept or dropped on whether
-     * it nets to spending. So a single exclusion anywhere withholds the report's
-     * total rather than only the affected category's.
-     */
+    // A missing currency group may contain purchases or refunds. Keep the
+    // converted subtotal, and withhold the complete total and its shares.
     const gaps = new ConversionGaps();
 
     const bucketFor = (key: string, category: Category | null) => {
@@ -313,35 +308,33 @@ export class SpendingReportsService {
       } as Category).agg.addConverted(converted);
     }
 
-    // Netting happens before this filter, so a category is judged on what it
-    // cost after its refunds -- not on whether it happened to hold a debit --
-    // and on the sign of that net before rounding, so a category that cost
-    // 0.00003 is still one (docs/specs/report-rounding-and-aggregation.md
-    // rule 5).
-    const spent = Array.from(parentTotals.entries()).filter(([, { agg }]) =>
-      isNetSpending(agg.sign),
+    // An expense category identifies spending even when its refunds equal or
+    // exceed its purchases. Other buckets keep their existing positive-net
+    // inclusion rule, including Uncategorized. Zero-only postings are already
+    // excluded by the query, so an expense row at zero represents activity.
+    const spent = Array.from(parentTotals.entries()).filter(
+      ([, { agg, category }]) =>
+        includesSpendingCategory(agg.sign, category?.isIncome),
     );
+    const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
+    const knownSpending = spending.knownSubtotalAt(places);
+    const canShowShares =
+      gaps.isComplete &&
+      spending.sign > 0 &&
+      spent.every(([, { agg }]) => agg.sign >= 0);
     const data: CategorySpendingItem[] = spent
       .map(([id, { agg, category }]) => ({
         categoryId: id === "uncategorized" ? null : id,
         categoryName: category?.name || "Uncategorized",
         color: category?.color || null,
         total: agg.knownSubtotalAt(places),
+        ...(canShowShares && { percentage: shareOf(agg, spending) }),
       }))
       .sort((a, b) => b.total - a.total);
 
-    // Every category, not a top-N: the caller decides how many to draw and can
-    // still say what it merged. Truncating here made `totalSpending` the sum of
-    // the largest fifteen under a name that says "total". The categories fold
-    // as aggregates, so the total is rounded once: summing their rounded rows
-    // read two 124.752474 subcategories as 249.5050 where their parent, rolled
-    // up, read 249.5049 (rule 2).
-    const spending = new FxAggregate();
-    for (const [, { agg }] of spent) spending.merge(agg);
-    const knownSpending = spending.knownSubtotalAt(places);
-
     return {
       response: {
+        netSpending: true,
         data,
         totalSpending: gaps.headline(knownSpending),
         knownSpending,
@@ -593,13 +586,13 @@ export class SpendingReportsService {
     }
     // Whether a category belongs in a spending trend is decided over the whole
     // period, not per month: one month's refund is still part of a category
-    // that was spent in. A category that is net-credit across the range was
-    // not -- and an income category, now that credits are read at all, never
-    // is one. The months fold as aggregates and the net is judged on its sign
-    // before rounding (rules 2 and 5).
+    // that was spent in. Classified expenses keep credit and zero balances.
+    // The fallback tests the sign before rounding (rules 2 and 5).
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
-        .filter(([, overall]) => isNetSpending(overall.sign))
+        .filter(([id, overall]) =>
+          includesSpendingCategory(overall.sign, categoryMap.get(id)?.isIncome),
+        )
         .map(([id]) => id),
     );
     const topCategories = Array.from(allCategoryTotals.entries())

@@ -41,6 +41,18 @@ describe('BudgetVelocityWidget', () => {
     expect(screen.getByText('$155.00/day')).toBeInTheDocument();
   });
 
+  it('shows the purchase pace and the net forecast when refunds exceed purchases', () => {
+    render(
+      <BudgetVelocityWidget
+        velocity={{ ...baseVelocity, currentSpent: -250, dailyBurnRate: 10,
+          projectedTotal: 0, daysElapsed: 5, daysRemaining: 25, totalDays: 30 }}
+        formatCurrency={mockFormat}
+      />,
+    );
+    expect(screen.getByText('$10.00/day')).toBeInTheDocument();
+    expect(screen.getByText('$0.00')).toBeInTheDocument();
+  });
+
   it('displays safe daily spend', () => {
     render(
       <BudgetVelocityWidget velocity={baseVelocity} formatCurrency={mockFormat} />,

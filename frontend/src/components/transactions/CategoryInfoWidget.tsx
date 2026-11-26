@@ -19,6 +19,7 @@ import { sumMoney } from '@/lib/format';
 import { getNextScheduled } from '@/lib/scheduled-utils';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { buildDescendantIdSet, rollupToDirectChildren } from '@/lib/categoryUtils';
+import { clamp } from '@/lib/clamp';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -217,7 +218,7 @@ export function CategoryInfoWidget({
   // Same inheritance the list and the detail header use: show this category's
   // own icon, or the nearest ancestor's.
   const glyphIcon = category.effectiveIcon ?? category.icon;
-  const budgetPercent = budgetStatus ? Math.min(budgetStatus.percentUsed, 100) : 0;
+  const budgetPercent = budgetStatus ? clamp(budgetStatus.percentUsed, 0, 100) : 0;
   const budgetBarColor = budgetStatus
     ? budgetStatus.percentUsed >= 100
       ? 'bg-red-500'
@@ -329,7 +330,9 @@ export function CategoryInfoWidget({
           <div
             className="ui-meter mt-1 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
             role="progressbar"
-            aria-valuenow={Math.round(budgetStatus.percentUsed)}
+            aria-label={t('categoryWidget.budgetThisMonth')}
+            aria-valuenow={Math.round(budgetPercent)}
+            aria-valuetext={budgetStatus.percentUsed === budgetPercent ? undefined : formatPercentTrimmed(budgetStatus.percentUsed)}
             aria-valuemin={0}
             aria-valuemax={100}
           >

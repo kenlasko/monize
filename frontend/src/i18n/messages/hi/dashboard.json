@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "आपने {sincePayeeName} पर आखिरी बार {sincePayeeDay} को खर्च किया था, यानी {sincePayeeDays} पहले।",
       "activityBillsDueThisWeek": "अगले सात दिनों में देय बिल: {billsDueCount}, कुल {billsDueTotal}।",
       "activityNextBill": "आपका अगला बिल {nextBillName} है, {nextBillAmount} का, देय तिथि {nextBillDate}।",
-      "spendingBudgetPace": "महीने का {budgetMonthPercent} बीत जाने पर आपने अपने {budgetName} बजट ({budgetSpent} / {budgetTotal}) का {budgetUsedPercent} इस्तेमाल कर लिया है।",
+      "spendingBudgetPace": "{budgetName} — शुद्ध खर्च: {budgetSpent} ({budgetUsedPercent}). बजट: {budgetTotal}. महीने का {budgetMonthPercent} बीत चुका है.",
       "investmentsTopMoverUp": "{moverSession} को आपका सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा, जो {moverPercent} बढ़ा और आपकी पोज़िशन में {moverValueChange} जोड़ गया।",
       "investmentsTopMoverDown": "{moverSession} को आपका सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा, जो {moverPercent} गिरा और आपकी पोज़िशन से {moverValueChange} घटा गया।",
       "activityAnniversary": "इस हफ़्ते Monize में आपके पहले लेन-देन ({anniversaryFirstDate}) को {anniversaryYears} पूरे हो रहे हैं।",
@@ -272,8 +272,8 @@
         "c": "देय तिथि {nextBillDate} वाला आपका अगला बिल {nextBillName} है, {nextBillAmount} का।"
       },
       "spendingBudgetPace": {
-        "b": "महीने का {budgetMonthPercent} बीत जाने पर आपने {budgetName} बजट के {budgetTotal} में से {budgetSpent} खर्च किए हैं, यानी {budgetUsedPercent}।",
-        "c": "आपका {budgetName} बजट {budgetUsedPercent} इस्तेमाल हो चुका है ({budgetSpent} / {budgetTotal}), और महीने का {budgetMonthPercent} बीत चुका है।"
+        "b": "{budgetName} — बजट: {budgetTotal}. शुद्ध खर्च: {budgetSpent} ({budgetUsedPercent}). महीने का {budgetMonthPercent} बीत चुका है.",
+        "c": "{budgetName} — महीने का {budgetMonthPercent} बीत चुका है. बजट: {budgetTotal}. शुद्ध खर्च: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSession} को आपके पोर्टफ़ोलियो में सबसे ज़्यादा चलने वाला निवेश {moverSymbol} रहा: {moverPercent} बढ़ा, पोज़िशन में {moverValueChange} जोड़ गया।",

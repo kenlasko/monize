@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Востаннє ви витрачали в одержувача «{sincePayeeName}» у день {sincePayeeDay}, {sincePayeeDays} тому.",
       "activityBillsDueThisWeek": "Рахунків до сплати в найближчі сім днів: {billsDueCount}, на суму {billsDueTotal}.",
       "activityNextBill": "Ваш наступний рахунок: «{nextBillName}», сума {nextBillAmount}, термін {nextBillDate}.",
-      "spendingBudgetPace": "Бюджет «{budgetName}» використано на {budgetUsedPercent} ({budgetSpent} із {budgetTotal}), а від місяця минуло {budgetMonthPercent}.",
+      "spendingBudgetPace": "{budgetName} — Чисті витрати: {budgetSpent} ({budgetUsedPercent}). Бюджет: {budgetTotal}. {budgetMonthPercent} місяця минуло.",
       "investmentsTopMoverUp": "Найбільше рухався папір {moverSymbol}, сесія {moverSession}: зростання на {moverPercent}, до вашої позиції додалося {moverValueChange}.",
       "investmentsTopMoverDown": "Найбільше рухався папір {moverSymbol}, сесія {moverSession}: падіння на {moverPercent}, ваша позиція зменшилася на {moverValueChange}.",
       "activityAnniversary": "Цього тижня виповнюється {anniversaryYears} з вашої першої транзакції в Monize, дата: {anniversaryFirstDate}.",
@@ -272,8 +272,8 @@
         "c": "Термін {nextBillDate}: найближчий рахунок «{nextBillName}» на суму {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "Коли від місяця минуло {budgetMonthPercent}, ви витратили {budgetSpent} із {budgetTotal} бюджету «{budgetName}», це {budgetUsedPercent}.",
-        "c": "Бюджет «{budgetName}» використано на {budgetUsedPercent} ({budgetSpent} із {budgetTotal}), від місяця минуло {budgetMonthPercent}."
+        "b": "{budgetName} — Бюджет: {budgetTotal}. Чисті витрати: {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} місяця минуло.",
+        "c": "{budgetName} — {budgetMonthPercent} місяця минуло. Бюджет: {budgetTotal}. Чисті витрати: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "Найсильніше у вашому портфелі рухався папір {moverSymbol}, сесія {moverSession}: зростання на {moverPercent}, позиція збільшилася на {moverValueChange}.",

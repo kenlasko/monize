@@ -9,7 +9,7 @@ import { RecurringCharge } from "../../transactions/recurring-charges.util";
 import { Category } from "../../categories/entities/category.entity";
 import { FxAggregate } from "../../common/fx-aggregate";
 import { roundMoney } from "../../common/round.util";
-import { isNetSpending } from "../../built-in-reports/spending-reports.service";
+import { includesSpendingCategory } from "../../built-in-reports/spending-reports.service";
 import { buildRateIndex } from "../../common/time-series/rate-index.util";
 import {
   convertRateBasis,
@@ -64,6 +64,7 @@ interface SpendingRow {
   month: string;
   categoryId: string;
   categoryName: string;
+  isIncome: boolean;
   currencyCode: string;
   net: string;
   txnCount: string;
@@ -211,6 +212,7 @@ export class InsightsAggregatorService {
           .select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "month")
           .addSelect("cat.id", "categoryId")
           .addSelect("cat.name", "categoryName")
+          .addSelect("cat.isIncome", "isIncome")
           .addSelect("t.currencyCode", "currencyCode")
           .addSelect("SUM(-COALESCE(ts.amount, t.amount))", "net")
           .addSelect("COUNT(DISTINCT t.id)", "txnCount")
@@ -271,6 +273,7 @@ export class InsightsAggregatorService {
       string,
       {
         name: string;
+        isIncome: boolean;
         txnCount: number;
         byMonth: Map<string, FxAggregate>;
       }
@@ -278,6 +281,7 @@ export class InsightsAggregatorService {
     for (const r of rows) {
       const cat = categories.get(r.categoryId) ?? {
         name: r.categoryName,
+        isIncome: r.isIncome,
         txnCount: 0,
         byMonth: new Map<string, FxAggregate>(),
       };
@@ -315,7 +319,7 @@ export class InsightsAggregatorService {
         overall.merge(agg);
         for (const pair of agg.missingPairs) missing.add(pair);
       }
-      if (!isNetSpending(overall.sign)) continue;
+      if (!includesSpendingCategory(overall.sign, cat.isIncome)) continue;
 
       const monthCount = cat.byMonth.size;
       categorySpending.push({

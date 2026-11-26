@@ -719,6 +719,81 @@ describe("BudgetPeriodCronService", () => {
       expect(htmlArg).toContain("Monthly Budget");
     });
 
+    it.each([
+      [-300, "$200.00", false],
+      [120, "-$220.00", true],
+    ] as const)(
+      "uses the signed February opening in the email with net spending of %s",
+      async (actual, formattedRemaining, overBudget) => {
+        preferencesRepository.findOne.mockResolvedValue(null);
+        usersRepository.findOne.mockResolvedValue(mockUser);
+        const period = {
+          ...mockClosedPeriod,
+          periodStart: "2026-02-01",
+          periodEnd: "2026-02-28",
+          totalBudgeted: 100,
+          actualExpenses: actual,
+          periodCategories: [
+            {
+              ...mockClosedPeriod.periodCategories[0],
+              budgetedAmount: 100,
+              rolloverIn: -200,
+              effectiveBudget: -100,
+              actualAmount: actual,
+            },
+          ],
+        };
+
+        await service.sendMonthlySummaryEmails([
+          { budget: mockBudget, period },
+        ]);
+
+        const html = emailService.sendMail.mock.calls[0][2];
+        expect(html).toContain(`>${formattedRemaining}</span>`);
+        expect(html).toContain("/ -$100.00");
+        expect(html.includes(">Over Budget</h4>")).toBe(overBudget);
+      },
+    );
+
+    it("retains the stored total for missing expense rows and adds only known expense carry", async () => {
+      preferencesRepository.findOne.mockResolvedValue(null);
+      usersRepository.findOne.mockResolvedValue(mockUser);
+      const budget = {
+        ...mockBudget,
+        categories: [
+          ...mockBudget.categories,
+          { ...mockBudget.categories[0], id: "missing-line", amount: 200 },
+        ],
+      };
+      const period = {
+        ...mockClosedPeriod,
+        totalBudgeted: 300,
+        actualExpenses: 0,
+        periodCategories: [
+          {
+            ...mockClosedPeriod.periodCategories[0],
+            budgetedAmount: 100,
+            rolloverIn: -200,
+            effectiveBudget: -100,
+            actualAmount: 0,
+          },
+          {
+            ...mockClosedPeriod.periodCategories[0],
+            budgetCategoryId: "bc-2",
+            budgetedAmount: 5000,
+            rolloverIn: 50,
+            effectiveBudget: 5050,
+          },
+        ],
+      };
+
+      await service.sendMonthlySummaryEmails([{ budget, period }]);
+
+      const html = emailService.sendMail.mock.calls[0][2];
+      expect(html).toContain(">$100.00</span>");
+      expect(html).not.toContain(">$150.00</span>");
+    });
+
     it("includes health score in email when available", async () => {
       preferencesRepository.findOne.mockResolvedValue(null);
       usersRepository.findOne.mockResolvedValue(mockUser);

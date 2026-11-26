@@ -2355,6 +2355,36 @@ describe("BudgetReportsService", () => {
       expect(result.healthScore?.score).toBe(82);
     });
 
+    it("reports a shortfall on a category with no positive spending base", async () => {
+      budgetsService.getSummary.mockResolvedValue({
+        ...summary,
+        categoryBreakdown: [
+          {
+            ...summary.categoryBreakdown[0],
+            budgeted: -100,
+            spent: 120,
+            remaining: -220,
+            percentUsed: 0,
+          },
+          {
+            ...summary.categoryBreakdown[1],
+            budgeted: -100,
+            spent: -300,
+            remaining: 200,
+            percentUsed: 0,
+          },
+        ],
+      });
+
+      const result = await service.getLlmBudgetStatus("user-1");
+      if ("error" in result) throw new Error("unexpected error payload");
+
+      expect(result.overBudgetCategories.map((row) => row.category)).toEqual([
+        "Groceries",
+      ]);
+      expect(result.nearLimitCategories).toEqual([]);
+    });
+
     it("returns error when no active budgets exist", async () => {
       budgetsService.findAll = jest.fn().mockResolvedValue([]);
 

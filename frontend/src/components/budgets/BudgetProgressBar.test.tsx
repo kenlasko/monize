@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@/test/render';
+import { act, render, renderInLocale, screen } from '@/test/render';
+import { usePreferencesStore } from '@/store/preferencesStore';
+import type { UserPreferences } from '@/types/auth';
+import frBudgetMessages from '@/i18n/messages/fr/budgets.json';
 import { BudgetProgressBar } from './BudgetProgressBar';
 
 describe('BudgetProgressBar', () => {
@@ -9,7 +12,25 @@ describe('BudgetProgressBar', () => {
     const bar = screen.getByRole('progressbar');
     expect(bar).toBeInTheDocument();
     expect(bar).toHaveAttribute('aria-valuenow', '60');
+    expect(bar).not.toHaveAttribute('aria-valuetext');
     expect(bar.style.width).toBe('60%');
+  });
+
+  it('uses the French percent pattern in the accessible name and value', () => {
+    const previous = usePreferencesStore.getState().preferences;
+    try {
+      usePreferencesStore.setState({ preferences: { numberFormat: 'fr-FR' } as UserPreferences });
+      renderInLocale(<BudgetProgressBar percentUsed={-12.5} />, {
+        locale: 'fr', messages: { budgets: frBudgetMessages },
+      });
+      const value = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFractionDigits: 2 }).format(-0.125);
+      const bar = screen.getByRole('progressbar');
+      expect(bar.getAttribute('aria-label')).toBe(`${value} utilisé`);
+      expect(bar.getAttribute('aria-valuetext')).toBe(value);
+      expect(bar).toHaveAttribute('aria-valuenow', '0');
+    } finally {
+      act(() => usePreferencesStore.setState({ preferences: previous }));
+    }
   });
 
   it.each([
@@ -48,6 +69,22 @@ describe('BudgetProgressBar', () => {
 
     const bar = screen.getByRole('progressbar');
     expect(bar.className).toContain('bg-red-500');
+  });
+
+  it.each([
+    [-50, 0, '-50%'],
+    [-12.25, 0, '-12.25%'],
+    [150.75, 100, '150.75%'],
+  ])('exposes %s%% used with a bounded progress value', (percent, position, text) => {
+    render(<BudgetProgressBar percentUsed={percent} />);
+
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuemin', '0');
+    expect(bar).toHaveAttribute('aria-valuemax', '100');
+    expect(bar).toHaveAttribute('aria-valuenow', String(position));
+    expect(bar).toHaveAttribute('aria-valuetext', text);
+    expect(bar).toHaveAccessibleName(`${text} used`);
+    expect(bar.style.width).toBe(`${position}%`);
   });
 
   it('clamps width to 100% maximum', () => {

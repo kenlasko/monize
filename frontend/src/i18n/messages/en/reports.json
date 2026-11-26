@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "Monthly Cash Flow",
     "inflowsByCategory": "Inflows by Category",
-    "outflowsByCategory": "Outflows by Category",
+    "outflowsByCategory": "Spending After Refunds by Category",
     "noIncome": "No income in this period",
     "noExpenses": "No expenses in this period",
     "seriesInflows": "Inflows",

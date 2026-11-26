@@ -78,7 +78,9 @@ export interface ReportTimeframe {
 
 export interface ReportSummary {
   /**
-   * What `data` adds up to, rounded once from the rows' unrounded sums (so it
+   * The report's total, rounded once from the underlying sums. Under a signed
+   * tag total each component contributes once even if several tag rows show it.
+   * For disjoint groups the figure is the sum before row-level rounding (so it
    * can sit a ten-thousandth from the sum of the rounded values,
    * docs/specs/report-rounding-and-aggregation.md rule 4), or `null` when any
    * row could not be converted into {@link ReportResult.currency} -- a missing
@@ -88,13 +90,14 @@ export interface ReportSummary {
    */
   total: number | null;
   /**
-   * What `data`'s known values add up to, rounded once. Equals `total` when
+   * The known part of the same report population, rounded once. Equals `total` when
    * nothing was excluded; otherwise it is a subtotal and must be labelled as
    * one, never under "Total".
    */
   knownTotal: number;
   /**
-   * Rows counted in `data`; rows left out for want of a rate are not in it,
+   * Rows counted in the report population (once across overlapping tags for
+   * signed totals); rows left out for want of a rate are not in it,
    * except on a transaction list, which lists them with a `null` value.
    */
   count: number;
@@ -112,6 +115,8 @@ export interface ReportSummary {
 
 export interface ReportResult {
   reportId: string;
+  /** Present when this server settled BOTH / TOTAL_AMOUNT as signed net movement. */
+  signedTotal?: true;
   name: string;
   viewType: string;
   groupBy: string;
@@ -126,12 +131,10 @@ export interface ReportResult {
    */
   missingCurrencies: string[];
   /**
-   * How many rows (or split lines) were left out for want of a rate: those
-   * with none, and those of the same currency in the same group and category
-   * that left with them where no other group kept them, so a refund struck on
-   * a day with no rate never leaves its debit standing alone. The amounts of a
-   * part with no rate could not be converted as a whole, as a built-in
-   * report's group with a day no rate reaches cannot.
+   * Rows (or split lines) excluded because a rate was missing. BOTH / TOTAL_AMOUNT
+   * excludes the incomplete category/currency across every display group and
+   * counts each affected component once. Other metrics retain their group-level
+   * conversion policy.
    */
   excludedCount: number;
   /** {@link ReportSummary.provisionalCount}, beside the other completeness fields. */

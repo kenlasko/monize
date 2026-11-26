@@ -32,7 +32,6 @@ import {
   MonthlyComparisonIncomeExpenses,
   MonthlyComparisonNotes,
   MonthlyComparisonExpenses,
-  CategorySpendingSnapshot,
   CategorySpendingComparisonItem,
   TopCategoriesComparison,
   MonthlyComparisonNetWorth,
@@ -286,19 +285,6 @@ export class MonthlyComparisonService {
   ): MonthlyComparisonExpenses {
     const currentData = current.response.data;
     const previousData = previous.response.data;
-    const currentMonth: CategorySpendingSnapshot[] = currentData.map((c) => ({
-      categoryId: c.categoryId,
-      categoryName: c.categoryName,
-      color: c.color,
-      total: c.total,
-    }));
-    const previousMonth: CategorySpendingSnapshot[] = previousData.map((c) => ({
-      categoryId: c.categoryId,
-      categoryName: c.categoryName,
-      color: c.color,
-      total: c.total,
-    }));
-
     // Merge into comparison table
     const allCategories = new Map<
       string,
@@ -353,15 +339,22 @@ export class MonthlyComparisonService {
         currentTotal: c.current.knownSubtotalAt(places),
         previousTotal: c.previous.knownSubtotalAt(places),
         change: this.change(c.current, c.previous, places),
-        changePercent: this.percentChange(c.previous, c.current, places),
+        // A net credit in the prior month provides no spending baseline.
+        changePercent:
+          c.previous.sign < 0 ||
+          (c.previous.knownSubtotalAt(places) === 0 && c.current.sign < 0)
+            ? null
+            : this.percentChange(c.previous, c.current, places),
       }))
       .sort((a, b) => b.currentTotal - a.currentTotal);
 
     // Each month's total as Spending by Category rounds it, once from its
     // categories' aggregates, never re-summed from their rounded rows.
     return {
-      currentMonth,
-      previousMonth,
+      netSpending:
+        current.response.netSpending && previous.response.netSpending,
+      currentMonth: currentData,
+      previousMonth: previousData,
       comparison,
       currentTotal: current.response.knownSpending,
       previousTotal: previous.response.knownSpending,

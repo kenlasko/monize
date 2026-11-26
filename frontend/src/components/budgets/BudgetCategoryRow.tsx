@@ -31,8 +31,9 @@ export function BudgetCategoryRow({
 }: BudgetCategoryRowProps) {
   const t = useTranslations('budgets');
   const { formatPercentTrimmed } = useNumberFormat();
-  const isOverBudget = category.percentUsed > 100;
-  const paceStatus = pacePercent !== undefined
+  const isOverBudget = category.remaining < 0;
+  const hasPositiveBudget = category.budgeted > 0;
+  const paceStatus = hasPositiveBudget && pacePercent !== undefined
     ? getPaceStatus(category.percentUsed, pacePercent)
     : undefined;
   const paceLabelMap = {
@@ -76,22 +77,26 @@ export function BudgetCategoryRow({
               </span>
             )}
           </span>
-          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-            isOverBudget
-              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-              : category.percentUsed >= 80
-                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-          }`}>
-            {formatPercentTrimmed(Math.round(category.percentUsed))}
-          </span>
+          {hasPositiveBudget && (
+            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+              isOverBudget
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                : category.percentUsed >= 80
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+            }`}>
+              {formatPercentTrimmed(Math.round(category.percentUsed))}
+            </span>
+          )}
         </div>
       </div>
-      <BudgetProgressBar
-        percentUsed={category.percentUsed}
-        pacePercent={pacePercent}
-        showPaceMarker={pacePercent !== undefined}
-      />
+      {hasPositiveBudget && (
+        <BudgetProgressBar
+          percentUsed={category.percentUsed}
+          pacePercent={pacePercent}
+          showPaceMarker={pacePercent !== undefined}
+        />
+      )}
       <div className="flex items-center justify-between mt-1.5">
         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           {rolloverType && rolloverType !== 'NONE' && (

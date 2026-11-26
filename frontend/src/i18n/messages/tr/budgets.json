@@ -6,14 +6,14 @@
       "WANT": "İstekler",
       "SAVING": "Tasarruflar"
     },
-    "target": "Hedef: %{percent}",
-    "budgeted": "Bütçelenen: %{percent} ({amount})"
+    "target": "Hedef: {percent}",
+    "budgeted": "Bütçelenen: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Düzenle: {name}",
     "budgetAmount": "Bütçe Tutarı",
     "rolloverType": "Devir Türü",
-    "rolloverTypeTooltip": "Bu kategorinin kullanılmayan bütçesi sıfırlanmak yerine bir sonraki döneme devreder. Aşırı harcama asla borç olarak devretmez, ve Devir Üst Sınırı ne kadar birikebileceğini sınırlar.",
+    "rolloverTypeTooltip": "Bir gider kategorisinde artan tutar sonraki dönemin bütçesini artırır. Bütçe aşımı bu tutarı azaltır. Devir sınırı yalnızca artan tutara uygulanır.",
     "rolloverCap": "Devir Üst Sınırı (isteğe bağlı)",
     "rolloverCapPlaceholder": "Sınır yok",
     "flexGroup": "Esnek Grup (isteğe bağlı)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Harcama Kategorileri",
     "incomeCategories": "Gelir Kategorileri",
     "categorySublabel": "{count} kategori",
-    "rolloverBadge": "+{amount} devir",
+    "rolloverBadge": "{amount} devir",
     "underBudgetLabel": "{amount} bütçe altında",
     "overBudgetLabel": "{amount} bütçe üstünde",
     "carriedForward": "{amount} ileriye taşındı",
@@ -151,8 +151,8 @@
     "projected": "{label} (Tahmini)"
   },
   "progressBar": {
-    "ariaLabel": "%{percent} kullanıldı",
-    "paceMarkerTitle": "Beklenen hız: %{percent}"
+    "ariaLabel": "{percent} kullanıldı",
+    "paceMarkerTitle": "Beklenen hız: {percent}"
   },
   "scenarioPlanner": {
     "title": "Varsayımsal Senaryo Planlayıcısı",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Analizden tahmin: {amount}/ay",
     "defaultRolloverType": "Varsayılan Devir Türü",
     "rolloverHint": "Bu, tüm kategoriler için varsayılanı belirler. Bütçeyi oluşturduktan sonra bireysel kategorileri özelleştirebilirsiniz.",
-    "rolloverTooltip": "Bir kategorinin kullanılmayan bütçesi sıfırlanmak yerine bir sonraki döneme devreder. Aşırı harcama asla borç olarak devretmez, ve Devir Üst Sınırı bir kategoride ne kadar birikebileceğini sınırlar.",
+    "rolloverTooltip": "Bir gider kategorisinde artan tutar sonraki dönemin bütçesini artırır. Bütçe aşımı bu tutarı azaltır. Devir sınırı yalnızca artan tutara uygulanır.",
     "rolloverOptions": {
       "NONE": "Yok -- Her dönem sıfırlanır",
       "MONTHLY": "Aylık -- Her ay ileriye taşınır",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Yüzde hedefi, bütçenin gelirinin bir payıdır: gelire bağlı bir bütçede bu dönem alınan gelir, aksi halde temel gelir, o da yoksa gelir kategorilerinin tutarları. Sabit tutar her dönem aynıdır.",
       "targetPercent": "Gelirin Yüzdesi",
       "targetAmount": "Dönem Başına Tutar",
-      "carryOver": "Kalanı Devret",
-      "carryOverTooltip": "Dönem kapandığında zarfta kalan, bir sonraki döneme eklenir. Fazla harcanan zarf hiçbir şey devretmez.",
+      "carryOver": "Bakiyeyi Devret",
+      "carryOverTooltip": "Pozitif bakiye, sonraki dönemde zarfa ayrılan tutarı artırır. Negatif bakiye bu tutarı azaltır. Devir sınırı yalnızca pozitif bakiyelere uygulanır.",
       "carryCap": "Devir Üst Sınırı (isteğe bağlı)",
       "carryCapPlaceholder": "Sınır yok",
       "save": "Kaydet",

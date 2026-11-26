@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Ostatnie wydatki u kontrahenta {sincePayeeName}: {sincePayeeDay}, czyli {sincePayeeDays} temu.",
       "activityBillsDueThisWeek": "Liczba rachunków do zapłaty w ciągu najbliższych siedmiu dni: {billsDueCount}, razem {billsDueTotal}.",
       "activityNextBill": "Twój następny rachunek to {nextBillName}, na kwotę {nextBillAmount}, termin: {nextBillDate}.",
-      "spendingBudgetPace": "Wykorzystano {budgetUsedPercent} Twojego budżetu {budgetName} ({budgetSpent} z {budgetTotal}), a minęło {budgetMonthPercent} miesiąca.",
+      "spendingBudgetPace": "{budgetName} — Wydatki netto: {budgetSpent} ({budgetUsedPercent}). Budżet: {budgetTotal}. {budgetMonthPercent} miesiąca upłynęło.",
       "investmentsTopMoverUp": "Największy ruch w Twoim portfelu ({moverSession}): {moverSymbol}, wzrost o {moverPercent}, co dodało {moverValueChange} do Twojej pozycji.",
       "investmentsTopMoverDown": "Największy ruch w Twoim portfelu ({moverSession}): {moverSymbol}, spadek o {moverPercent}, co odjęło {moverValueChange} od Twojej pozycji.",
       "activityAnniversary": "Ten tydzień to {anniversaryYears} od Twojej pierwszej transakcji w Monize ({anniversaryFirstDate}).",
@@ -272,8 +272,8 @@
         "c": "Termin: {nextBillDate}. Twój następny rachunek to {nextBillName}, na kwotę {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "Minęło {budgetMonthPercent} miesiąca, a wydano {budgetSpent} z Twojego budżetu {budgetName} wynoszącego {budgetTotal}, czyli {budgetUsedPercent}.",
-        "c": "Twój budżet {budgetName} jest wykorzystany w {budgetUsedPercent} ({budgetSpent} z {budgetTotal}), a {budgetMonthPercent} miesiąca już minęło."
+        "b": "{budgetName} — Budżet: {budgetTotal}. Wydatki netto: {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} miesiąca upłynęło.",
+        "c": "{budgetName} — {budgetMonthPercent} miesiąca upłynęło. Budżet: {budgetTotal}. Wydatki netto: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSymbol} to największy ruch w Twoim portfelu ({moverSession}): wzrost o {moverPercent}, co dodało {moverValueChange} do Twojej pozycji.",

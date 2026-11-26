@@ -181,12 +181,16 @@ export interface ReportTimeframe {
 
 export interface ReportSummary {
   /**
-   * `null` while any row was left out for want of an exchange rate; read
-   * `knownTotal` and mark it partial. Never render `null` as zero.
+   * A truncated read or a missing exchange rate withholds the full amount.
+   * Counts require no rate and are withheld only for a truncated read.
    */
   total: number | null;
-  /** Sum of the rows that converted: the total when nothing was excluded. */
+  /** The same metric over the known population, rounded once. Show it as a subtotal when total is null. */
   knownTotal: number;
+  /**
+   * Signed totals count a posting once across overlapping tags. An unconverted
+   * posting is excluded from a monetary aggregate but remains on a transaction list.
+   */
   count: number;
   /** `null` with `total`. */
   average: number | null;
@@ -206,6 +210,8 @@ export interface ReportResult {
   timeframe: ReportTimeframe;
   data: AggregatedDataPoint[];
   summary: ReportSummary;
+  /** Present when Both / Total Amount used signed postings. Older servers return unsigned totals. */
+  signedTotal?: true;
   /** Reporting currency every money figure is expressed in. */
   currency: string;
   /** Source currencies with no rate into `currency`; their rows are in no figure. */

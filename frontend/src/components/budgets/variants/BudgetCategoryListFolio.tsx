@@ -78,18 +78,20 @@ export function BudgetCategoryListFolio({
                   {over ? `(${formatCurrency(Math.abs(category.remaining))})` : formatCurrency(category.remaining)}
                 </td>
                 <td className={TD_CLASS}>
-                  <div className="flex items-center gap-3">
-                    <div className="min-w-0 flex-1">
-                      <BudgetProgressBar
-                        percentUsed={category.percentUsed}
-                        pacePercent={pacePercent}
-                        showPaceMarker={pacePercent !== undefined}
-                      />
+                  {category.budgeted > 0 ? (
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <BudgetProgressBar
+                          percentUsed={category.percentUsed}
+                          pacePercent={pacePercent}
+                          showPaceMarker={pacePercent !== undefined}
+                        />
+                      </div>
+                      <span className="ui-bud-num w-10 shrink-0 text-right text-xs text-gray-500 dark:text-gray-400">
+                        {formatPercentTrimmed(Math.round(category.percentUsed))}
+                      </span>
                     </div>
-                    <span className="ui-bud-num w-10 shrink-0 text-right text-xs text-gray-500 dark:text-gray-400">
-                      {formatPercentTrimmed(Math.round(category.percentUsed))}
-                    </span>
-                  </div>
+                  ) : '—'}
                 </td>
               </tr>
             );

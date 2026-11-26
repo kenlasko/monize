@@ -1,6 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { clamp } from '@/lib/clamp';
+import { useNumberFormat } from '@/hooks/useNumberFormat';
 
 interface BudgetProgressBarProps {
   percentUsed: number;
@@ -33,10 +35,13 @@ export function BudgetProgressBar({
   showPaceMarker = false,
 }: BudgetProgressBarProps) {
   const t = useTranslations('budgets');
-  const clampedPercent = Math.min(Math.max(percentUsed, 0), 100);
+  const { formatPercentTrimmed } = useNumberFormat();
+  const clampedPercent = clamp(percentUsed, 0, 100);
+  const outsideBar = percentUsed !== clampedPercent;
+  const formattedPercent = formatPercentTrimmed(outsideBar ? percentUsed : Math.round(percentUsed));
   const barColor = getBarColor(percentUsed);
   const pacePosition = pacePercent !== undefined
-    ? Math.min(Math.max(pacePercent, 0), 100)
+    ? clamp(pacePercent, 0, 100)
     : undefined;
 
   return (
@@ -46,16 +51,17 @@ export function BudgetProgressBar({
         data-level={getLevel(percentUsed)}
         style={{ width: `${clampedPercent}%` }}
         role="progressbar"
-        aria-valuenow={Math.round(percentUsed)}
+        aria-valuenow={Math.round(clampedPercent)}
+        aria-valuetext={outsideBar ? formattedPercent : undefined}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={t('progressBar.ariaLabel', { percent: String(Math.round(percentUsed)) })}
+        aria-label={t('progressBar.ariaLabel', { percent: formattedPercent })}
       />
       {showPaceMarker && pacePosition !== undefined && (
         <div
           className="ui-meter-pace absolute top-0 h-full w-px bg-gray-500/60 dark:bg-gray-400/60"
           style={{ left: `${pacePosition}%` }}
-          title={t('progressBar.paceMarkerTitle', { percent: String(Math.round(pacePosition)) })}
+          title={t('progressBar.paceMarkerTitle', { percent: formatPercentTrimmed(Math.round(pacePosition)) })}
           data-testid="pace-marker"
         />
       )}

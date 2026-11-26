@@ -177,9 +177,32 @@ describe("CashFlowReport", () => {
     await waitFor(() => {
       expect(screen.getByText("Inflows by Category")).toBeInTheDocument();
     });
-    expect(screen.getByText("Outflows by Category")).toBeInTheDocument();
+    expect(screen.getByText("Spending After Refunds by Category")).toBeInTheDocument();
     expect(screen.getByText("Salary")).toBeInTheDocument();
     expect(screen.getByText("Groceries")).toBeInTheDocument();
+  });
+
+  it("shows a 100 purchase and a 150 refund as -50 in the category and its PDF row", async () => {
+    const netSpending = 100 - 150;
+    mockGetCashFlow.mockResolvedValue({
+      data: [],
+      totals: { income: 150, knownIncome: 150, expenses: 100, knownExpenses: 100, net: 50, knownNet: 50 },
+    });
+    mockGetIncomeBySource.mockResolvedValue({ data: [], totalIncome: 0, knownIncome: 0 });
+    mockGetSpendingByCategory.mockResolvedValue({
+      data: [{ categoryId: "groceries", categoryName: "Groceries", color: null, total: netSpending }],
+      totalSpending: netSpending, knownSpending: netSpending, netSpending: true,
+    });
+    await act(async () => { render(<CashFlowReport />); });
+    const heading = screen.getByRole("heading", { name: "Spending After Refunds by Category" });
+    const categoryRow = within(heading.parentElement!.parentElement!).getByText("Groceries").parentElement!;
+    expect(within(categoryRow).getByText("$-50")).toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByTestId("export-pdf")); });
+    expect(mockExportToPdf.mock.calls[0][0].additionalTables).toContainEqual(expect.objectContaining({
+      title: "Spending After Refunds by Category",
+      rows: [["Groceries", "$-50"]],
+      totalRow: ["Total Expenses", "$-50"],
+    }));
   });
 
   it("renders negative cash flow with orange styling", async () => {

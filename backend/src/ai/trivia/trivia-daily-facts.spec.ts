@@ -70,6 +70,14 @@ describe("buildDailyTriviaFacts", () => {
         { monthToDate: { through: "x", spent: null, previousSpent: 5 } },
       ],
       [
+        "a refund-only current month",
+        { monthToDate: { through: "x", spent: -150, previousSpent: 300 } },
+      ],
+      [
+        "a fully refunded current month",
+        { monthToDate: { through: "x", spent: 0, previousSpent: 300 } },
+      ],
+      [
         "a null previous total",
         { monthToDate: { through: "x", spent: 5, previousSpent: null } },
       ],
@@ -145,7 +153,9 @@ describe("buildDailyTriviaFacts", () => {
           "spendingNoSpendStreak",
         );
       }
-      expect(ids(build({ streakSpent: 0 }))).toContain("spendingNoSpendStreak");
+      for (const streakSpent of [0, -40]) {
+        expect(ids(build({ streakSpent }))).toContain("spendingNoSpendStreak");
+      }
     });
 
     it("counts the days since a payee to today, and needs 2 or more", () => {
@@ -262,6 +272,20 @@ describe("buildDailyTriviaFacts", () => {
         budgetUsedPercent: { kind: "percent", value: 50 },
         // 19 of 30 days.
         budgetMonthPercent: { kind: "percent", value: 63.3333 },
+      });
+    });
+
+    it("retains the signed net and percentage used by the neutral budget fact", () => {
+      const budget = {
+        ...fullDailyInput().budget!,
+        lines: [{ spent: -50, budgeted: 100 }],
+      };
+      expect(
+        find(build({ budget }), "spendingBudgetPace")?.figures,
+      ).toMatchObject({
+        budgetSpent: { kind: "money", value: -50 },
+        budgetTotal: { kind: "money", value: 100 },
+        budgetUsedPercent: { kind: "percent", value: -50 },
       });
     });
 

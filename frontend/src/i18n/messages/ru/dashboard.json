@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Последний раз вы тратили у получателя «{sincePayeeName}» в день {sincePayeeDay}, {sincePayeeDays} назад.",
       "activityBillsDueThisWeek": "Счетов к оплате в ближайшие семь дней: {billsDueCount}, на сумму {billsDueTotal}.",
       "activityNextBill": "Ваш следующий счёт: «{nextBillName}», сумма {nextBillAmount}, срок {nextBillDate}.",
-      "spendingBudgetPace": "Бюджет «{budgetName}» использован на {budgetUsedPercent} ({budgetSpent} из {budgetTotal}), а от месяца прошло {budgetMonthPercent}.",
+      "spendingBudgetPace": "{budgetName} — Чистые расходы: {budgetSpent} ({budgetUsedPercent}). Бюджет: {budgetTotal}. {budgetMonthPercent} месяца прошло.",
       "investmentsTopMoverUp": "Больше всего двигалась бумага {moverSymbol}, сессия {moverSession}: рост на {moverPercent}, к вашей позиции добавилось {moverValueChange}.",
       "investmentsTopMoverDown": "Больше всего двигалась бумага {moverSymbol}, сессия {moverSession}: падение на {moverPercent}, ваша позиция уменьшилась на {moverValueChange}.",
       "activityAnniversary": "На этой неделе исполняется {anniversaryYears} с вашей первой транзакции в Monize, дата: {anniversaryFirstDate}.",
@@ -272,8 +272,8 @@
         "c": "Срок {nextBillDate}: ближайший счёт «{nextBillName}» на сумму {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "Когда от месяца прошло {budgetMonthPercent}, вы потратили {budgetSpent} из {budgetTotal} бюджета «{budgetName}», это {budgetUsedPercent}.",
-        "c": "Бюджет «{budgetName}» использован на {budgetUsedPercent} ({budgetSpent} из {budgetTotal}), от месяца прошло {budgetMonthPercent}."
+        "b": "{budgetName} — Бюджет: {budgetTotal}. Чистые расходы: {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} месяца прошло.",
+        "c": "{budgetName} — {budgetMonthPercent} месяца прошло. Бюджет: {budgetTotal}. Чистые расходы: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "Сильнее всего в вашем портфеле двигалась бумага {moverSymbol}, сессия {moverSession}: рост на {moverPercent}, позиция увеличилась на {moverValueChange}.",

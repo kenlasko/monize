@@ -753,6 +753,73 @@ describe("MonthlyComparisonService", () => {
       });
     });
 
+    it.each([
+      [-10, 90],
+      [-42, 0],
+    ])(
+      "withholds category growth from a credit of %d to %d",
+      async (previous, current) => {
+        mockSpendingReports.getSpendingByCategoryWithAggregates
+          .mockReset()
+          .mockResolvedValueOnce(spendingWindow({ clothing: [current] }))
+          .mockResolvedValueOnce(spendingWindow({ clothing: [previous] }));
+        mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
+          incomeMonth("2026-01", []),
+        );
+        const { expenses } = await service.getMonthlyComparison(
+          mockUserId,
+          "2026-01",
+        );
+        expect(expenses.comparison[0]).toMatchObject({
+          previousTotal: previous,
+          currentTotal: current,
+          change: current - previous,
+          changePercent: null,
+        });
+      },
+    );
+
+    it("preserves signed snapshots and withholds the change percentage for a new net credit", async () => {
+      const previous = spendingWindow({ food: [10] });
+      const current = spendingWindow({ refund: [-20], food: [60] });
+      mockSpendingReports.getSpendingByCategoryWithAggregates
+        .mockReset()
+        .mockResolvedValueOnce({
+          ...current,
+          response: { ...current.response, netSpending: true },
+        })
+        .mockResolvedValueOnce({
+          ...previous,
+          response: {
+            ...previous.response,
+            netSpending: true,
+            data: previous.response.data.map((row) => ({
+              ...row,
+              percentage: 100,
+            })),
+          },
+        });
+      mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
+        incomeMonth("2026-01", []),
+      );
+      const { expenses } = await service.getMonthlyComparison(
+        mockUserId,
+        "2026-01",
+      );
+      expect(expenses.netSpending).toBe(true);
+      expect(expenses.currentMonth).toEqual(current.response.data);
+      expect(expenses.previousMonth[0].percentage).toBe(100);
+      expect(expenses.currentTotal).toBe(40);
+      expect(
+        expenses.comparison.find((c) => c.categoryId === "refund"),
+      ).toMatchObject({
+        currentTotal: -20,
+        previousTotal: 0,
+        change: -20,
+        changePercent: null,
+      });
+    });
+
     it("reads the net worth change once from the exact change", async () => {
       const month = (date: string, exact: number) => {
         const netWorthAggregate = aggregateOf(exact);

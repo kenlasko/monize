@@ -84,7 +84,7 @@
     "labelBudgeted": "Заплановано",
     "labelSpent": "Витрачено",
     "labelRemaining": "Залишок",
-    "percentUsed": "Використано {{ percent }}%",
+    "percentUsed": "Використано {{ percent }}",
     "topCategories": "Топ категорій",
     "button": "Переглянути панель бюджету"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "Гнучка група «{{ group }}» використала {{ spent }} зі спільного бюджету {{ budgeted }} ({{ percent }}%).",
       "incomeTitle": "Дохід нижчий за очікуваний",
       "incomeMessage": "Ваш фактичний дохід ({{ actual }}) становить {{ ratio }}% від очікуваного доходу ({{ expected }}) на цьому етапі періоду.",
+      "netActivityTitle": "Стан бюджету",
+      "netSpendingMessage": "Чисті витрати: {{ spent }}. Бюджет: {{ budgeted }}.",
+      "netIncomeMessage": "Чистий дохід: {{ actual }}. Очікуваний дохід на сьогодні: {{ expected }}.",
       "milestoneTitle": "Бюджет у межах плану",
       "milestoneMessage": "Минуло {{ progress }}% періоду, а ви використали лише {{ percent }}% загального бюджету. Так тримати!",
       "seasonalTitle": "Очікується сезонне зростання витрат на категорію «{{ category }}»",
