@@ -55,14 +55,16 @@ const NONZERO_AMOUNT = "COALESCE(ts.amount, t.amount) <> 0";
 
 // The ledger population is shared by category, payee and month. The optional
 // category joins for the payee view identify the same reporting parent.
-function spendingComponentsSql(categoryJoins = ""): string {
+function spendingComponentsSql(parentJoin = ""): string {
   return `
       FROM transactions t
       LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
       LEFT JOIN accounts a ON a.id = t.account_id
-      ${categoryJoins}
+      LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id) AND c.user_id = t.user_id
+      ${parentJoin}
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
+        AND c.is_income IS NOT TRUE
         AND ${NONZERO_AMOUNT}
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
@@ -87,7 +89,7 @@ export function includesSpendingCategory(
   total: number,
   isIncome?: boolean,
 ): boolean {
-  return isIncome === false || isNetSpending(total);
+  return isIncome === undefined ? isNetSpending(total) : !isIncome;
 }
 
 @Injectable()
@@ -301,7 +303,7 @@ export class SpendingReportsService {
     }
 
     // An expense category identifies spending even when its refunds equal or
-    // exceed its purchases. Other buckets keep their existing positive-net
+    // exceed its purchases. Unclassified buckets keep their positive-net
     // inclusion rule, including Uncategorized. Zero-only postings are already
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
@@ -358,7 +360,6 @@ export class SpendingReportsService {
         ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
       ${spendingComponentsSql(`
-        LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id) AND c.user_id = t.user_id
         LEFT JOIN categories parent ON parent.id = c.parent_id AND parent.user_id = t.user_id
       `)}
     `;

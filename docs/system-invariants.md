@@ -3542,7 +3542,10 @@ Statement           A category's figure in a report is the signed sum of its
 Source of truth     The signed amounts on transactions and transaction_splits.
 Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
                     group. An assigned expense category with qualifying activity
-                    keeps its row at any sign. Other groups use isNetSpending
+                    keeps its row at any sign. Income reversals are excluded from
+                    spending. Tax Summary retains each classified leaf in its
+                    income or expense section at any sign. Unclassified
+                    spending groups use isNetSpending
                     (backend/src/built-in-reports/spending-reports.service.ts);
                     client summaries: netEntityTotal. Custom report engine
                     (backend/src/reports/reports.service.ts): each line lands in

@@ -122,7 +122,7 @@ Payroll deductions with yearly maximums are tracked on the [Taxes](taxes.md) pag
 
 | Report | Description |
 |--------|-------------|
-| **Tax Summary** | Annual summary of tax-deductible expenses and taxable income, for reference |
+| **Tax Summary** | Annual summary of potentially deductible expenses and income. A refund of 150 against a deductible expense of 100 shows −50 in expenses and deductions. A reversal of 150 against income of 100 shows −50 in income. Uncategorized payments and receipts follow their movement direction |
 | **Payroll Deductions** | For each payroll deduction category, the year's total against its maximum, paycheque by paycheque, and every year on record. Pick the **Year** to show. Until you have set up a payroll deduction rule, it offers **Open Payroll Deductions** |
 
 ### Debt & Loans Reports

@@ -24,7 +24,7 @@ import {
   type RecurringExpenseFrequency,
   type RecurringExpenseRange,
 } from "./dto/recurring-expenses.dto";
-import { isNetSpending } from "./spending-reports.service";
+import { includesSpendingCategory } from "./spending-reports.service";
 import { formatDateYMD } from "../common/date-utils";
 import { MONEY_SCALE, sumMoney, toMoneyNumber } from "../common/round.util";
 import { reportFigure } from "../common/report-figure";
@@ -242,7 +242,7 @@ export class TaxRecurringReportsService {
     // not cancel; the display name only groups the classified results.
     const netByCategory = new Map<
       string,
-      { name: string; leafName: string; net: FxAggregate }
+      { name: string; leafName: string; isIncome?: boolean; net: FxAggregate }
     >();
 
     rawResults.forEach((row) => {
@@ -276,17 +276,15 @@ export class TaxRecurringReportsService {
       const entry = netByCategory.get(key) ?? {
         name: catName,
         leafName: category?.name ?? catName,
+        isIncome: category?.isIncome,
         net: new FxAggregate(),
       };
       entry.net.addConverted(amount);
       netByCategory.set(key, entry);
     });
 
-    // A category is classified once, by the sign of its net before rounding:
-    // spending when its debits exceed its credits (`isNetSpending`), income
-    // when its credits do. Every list and total folds the nets as aggregates
-    // and is rounded once (docs/specs/report-rounding-and-aggregation.md
-    // rules 2 and 5).
+    // Classify the leaf before grouping by its display parent. Only a missing
+    // classification falls back to the movement's sign.
     const addTo = (
       map: Map<string, FxAggregate>,
       name: string,
@@ -298,13 +296,13 @@ export class TaxRecurringReportsService {
       else sum.merge(net);
       map.set(name, sum);
     };
-    netByCategory.forEach(({ name: catName, leafName, net }) => {
-      if (isNetSpending(-net.sign)) {
+    netByCategory.forEach(({ name: catName, leafName, isIncome, net }) => {
+      if (includesSpendingCategory(-net.sign, isIncome)) {
         totalExpenses.mergeNegated(net);
         addTo(allExpensesByCategory, catName, net, true);
         if (matchesKeywords(catName) || matchesKeywords(leafName))
           addTo(deductibleExpenses, catName, net, true);
-      } else if (net.sign > 0) {
+      } else if (isIncome || net.sign > 0) {
         totalIncome.merge(net);
         addTo(incomeBySource, catName, net, false);
       }
