@@ -10,6 +10,12 @@ A PostgreSQL 18.7 baseline ran four saved configurations per scenario: the trans
 
 Agree with the maintainer on the first metric and compatibility policy before changing these calculations or their existing tests. Review the contract against INV-REPORT-003 (account movement and transfers), INV-REPORT-004 (category aggregation) and INV-REPORT-005 (rounding). The eventual implementation updates the affected paragraphs in the same change as the behavior they describe.
 
+## Client checks independent of the compatibility decision
+
+With the current frontend and a signed response supplied at the API boundary, the viewer, CSV and PDF retain a negative amount. All three still label a Both / Total Amount aggregate “Total of unsigned category amounts.” With September −100 and October +100, the table lists both months and shows zero, while the aggregate pie draws no sectors. The signed transaction-list control draws two sectors for those same values. Test the renderer with mixed values, a negative value alone and a known zero. Use the same definition of the measure in the headline, table, geometry, tooltip and exports. Assert the actual cells written to CSV and PDF.
+
+The demo Custom Report named “Income vs Expenses” is an existing fixture of Both / Total Amount by month in `backend/src/database/demo-seed-data/reports.ts`. Include this configuration in compatibility checks, along with a report restored from an older backup. If Ken selects the new definition for every saved report, verify that a pre-change configuration gets the signed result on reopening. If legacy reports retain the unsigned measure, verify both definitions separately, including after editing or restoring the report.
+
 ## Delivery sequence
 
 1. **Custom Reports.** Change the shared handling of Both / Total Amount and its consumers together. Audit every group-by route, saved-report viewer and export that reads this metric. Use the remaining metrics as controls for accidental changes to shared code. Work with #2403 on which components are included in split transfers and overlapping tag groups. A release covering overlapping groups must show a correct overall total when an operation appears in multiple groups.
