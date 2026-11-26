@@ -344,7 +344,10 @@ describe("TaxRecurringReportsService", () => {
 
       const result = await service.getTaxSummary(mockUserId, 2025);
 
-      expect(result.allExpenses).toEqual([]);
+      expect(result.allExpenses).toEqual([
+        { name: "Medical Expenses", total: 0 },
+      ]);
+      expect(result.deductibleExpenses).toEqual(result.allExpenses);
       expect(result.incomeBySource).toEqual([]);
       expect(result.totals.expenses).toBe(0);
       expect(result.totals.income).toBe(0);
