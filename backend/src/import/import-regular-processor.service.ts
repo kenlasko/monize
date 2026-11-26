@@ -704,7 +704,7 @@ export class ImportRegularProcessorService {
       payeeName: isLoanPayment
         ? qifTx.payee || `Loan Payment from ${ctx.account.name}`
         : qifTx.payee || null,
-      description: split.memo || qifTx.memo,
+      description: split.memo || qifTx.memo || null,
       status,
       currencyCode: leg.currencyCode,
       exchangeRate: leg.exchangeRate,
@@ -1017,7 +1017,7 @@ export class ImportRegularProcessorService {
       transactionDate: qifTx.date,
       amount: leg.amount,
       payeeName: linkedPayeeName,
-      description: qifTx.memo,
+      description: qifTx.memo || null,
       referenceNumber: qifTx.number,
       status,
       currencyCode: leg.currencyCode,

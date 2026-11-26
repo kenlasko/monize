@@ -90,9 +90,20 @@ describe("the PENDING IMPORT description note stays retired", () => {
         fs.readFileSync(file, "utf8"),
       ),
     );
-    // A provisional amount is `amountIsProvisional` / `amount_is_provisional`;
-    // never match, write or test a description for the old note.
-    expect(offenders).toEqual([]);
+    // The ban is deliberately the two words, not only the note's exact text:
+    // a reader of the state would not spell the note out. An unrelated name
+    // that happens to say them (a job state, a key) is renamed rather than
+    // exempted.
+    if (offenders.length > 0) {
+      throw new Error(
+        "The retired PENDING IMPORT description note is back at " +
+          offenders.join(", ") +
+          ". Whether an amount is provisional is `amountIsProvisional` " +
+          "(`t.amount_is_provisional`), never the description (design P1, " +
+          "INV-FX-006): read or write the column. A name unrelated to the " +
+          "note takes other words.",
+      );
+    }
   });
 
   it("keeps the allowed file real", () => {

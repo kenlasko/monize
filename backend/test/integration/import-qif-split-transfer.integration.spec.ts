@@ -164,10 +164,9 @@ describe("QIF split transfer across currencies (integration)", () => {
     expect(Number(cadLeg.amount)).toBe(81);
     expect(Number(cadLeg.exchange_rate)).toBeCloseTo(1.35, 8);
     expect(cadLeg.amount_is_provisional).toBe(true);
-    // The split line carries no memo, so the leg has no description (the
-    // parser's empty memo, as a same-currency leg's): the state is the column
-    // alone.
-    expect(cadLeg.description || null).toBeNull();
+    // The split line carries no memo, so the leg has no description, the
+    // shape the strip migration leaves too: the state is the column alone.
+    expect(cadLeg.description).toBeNull();
     expect(await balanceOf(savingsId)).toBe(81);
     expect(await balanceOf(checkingId)).toBe(900);
   });

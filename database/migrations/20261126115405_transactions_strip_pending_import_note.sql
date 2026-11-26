@@ -32,7 +32,9 @@
 --     no longer holds the note verbatim is left alone;
 --   * a shared-expense ledger row (shared_expense_posting_id, or an account in
 --     a shared group) is skipped, as in the two backfills: the importer never
---     writes one, and shared_protect_ledger_transaction would refuse the edit.
+--     writes one, so no note there is its; and shared_protect_ledger_transaction
+--     refuses an edit to a settlement-account row or a VOID posting, which
+--     would abort the migration (a live posting's description it allows).
 --
 -- The restore of a backup taken before this migration applies the same strip
 -- (backend/src/backup/restore-legacy-normalizations.ts).

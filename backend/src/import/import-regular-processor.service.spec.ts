@@ -1705,7 +1705,7 @@ describe("ImportRegularProcessorService", () => {
       expect(linkedTxCreate).toBeDefined();
       // The row has no memo, so the leg has no description: the state is the
       // column alone.
-      expect(linkedTxCreate[1].description).toBeUndefined();
+      expect(linkedTxCreate[1].description).toBeNull();
       expect(linkedTxCreate[1]).toMatchObject({
         amount: 370,
         exchangeRate: 0.74,
@@ -1844,7 +1844,7 @@ describe("ImportRegularProcessorService", () => {
           exchangeRate: 0.74,
           amountIsProvisional: true,
         });
-        expect(createdLeg(ctx).description).toBeUndefined();
+        expect(createdLeg(ctx).description).toBeNull();
       });
 
       it("refuses the row, naming the pair, when no rate covers the date", async () => {
@@ -2870,7 +2870,7 @@ describe("ImportRegularProcessorService", () => {
           exchangeRate: 1,
           amountIsProvisional: false,
         });
-        expect(createdLeg(ctx, "acc-usd").description).toBeUndefined();
+        expect(createdLeg(ctx, "acc-usd").description).toBeNull();
       });
 
       it("refuses the row, naming the pair and the date, when no rate covers it, and writes nothing for the other account (row 6)", async () => {

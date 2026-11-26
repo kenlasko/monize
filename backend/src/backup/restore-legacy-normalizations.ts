@@ -86,8 +86,10 @@ export const LEGACY_PENDING_IMPORT_NOTE =
 
 /**
  * A transfer leg outside the shared-expense ledger, as the two backfills and
- * the strip select it: shared_protect_ledger_transaction refuses an edit to a
- * ledger row, and the importer never wrote one.
+ * the strip select it: the importer never wrote a ledger row, so no note there
+ * is its, and shared_protect_ledger_transaction refuses the flag change on any
+ * of them and even a description edit on a settlement-account row or a VOID
+ * posting.
  */
 const IMPORTED_TRANSFER_LEG_SQL = `is_transfer = true
             AND shared_expense_posting_id IS NULL
