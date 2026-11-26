@@ -83,6 +83,7 @@ implied.
 | INV-FX-003 | A currency pair is stored in one orientation | partial |
 | INV-FX-004 | A user-supplied rate never replaces a global exchange-rate observation | enforced |
 | INV-FX-005 | A provider-written rate names its provider, every provider question goes through the chain, and an outage is never remembered as an empty answer | enforced |
+| INV-FX-006 | Whether an amount is provisional is read from `amount_is_provisional` and nowhere else | enforced |
 | INV-CRYPTO-001 | An account's type and its currency's kind agree: a crypto wallet holds a coin, every other account and every security a fiat currency | partial |
 | INV-CRYPTO-002 | A pair with a coin on either side is priced only by the crypto provider, through the coin's Yahoo pair, and that provider prices nothing else | enforced |
 | INV-MONEY-001 | An amount in an account's currency is stored and rounded at that currency's money precision: never more places than it carries, never fewer | enforced |
@@ -2162,6 +2163,55 @@ Status              enforced -- the chain, the service on it, the source
                     order is fixed at frankfurter_v2,yahoo (FX_PROVIDERS was
                     removed with the v1 adapter), and the section 5 truth
                     table cases are named in fx-provider-chain.spec.ts.
+```
+
+### INV-FX-006 -- a provisional amount is the column, never the description
+
+```text
+Statement           Whether a transaction's amount is the importer's estimate
+                    for the other account's leg of a cross-currency transfer
+                    is read from transactions.amount_is_provisional and from
+                    nothing else (design P1 of
+                    future-plans/provisional-amounts.md). No edit of a
+                    description can make an amount provisional or confirm one,
+                    and no description carries the state: the importer's old
+                    PENDING IMPORT note is retired.
+Source of truth     transactions.amount_is_provisional (migration
+                    20261125132236_transactions_amount_is_provisional.sql).
+Enforcement         The importer's pending lookups match the column
+                    (import-regular-processor.service.ts PROVISIONAL_LEG_SQL),
+                    and so do the report readers (INV-FX-002). The importer
+                    writes a provisional leg's description as the file's memo.
+                    Migration
+                    20261126115405_transactions_strip_pending_import_note.sql
+                    cut the exact note out of every transfer leg holding it,
+                    flagged or confirmed, without touching the flag (a third
+                    backfill by the text would have re-flagged legs a reader
+                    had confirmed; issue #2400), and the restore of an older
+                    backup does the same through
+                    backup/restore-legacy-normalizations.ts, flagging by the
+                    text only for an artifact from before the importer wrote
+                    the column. import/pending-import-note.guard.spec.ts fails
+                    on the old text in any code under backend/src outside that
+                    normalization.
+Test                migration-transactions-strip-pending-import-note.integration.spec.ts:
+                    a note-only description becomes NULL, a memo-plus-note one
+                    the memo, an already-stripped one is untouched, twice; a
+                    confirmed leg loses the note and stays confirmed; a
+                    non-transfer row, an edited note and a shared-expense
+                    ledger row are left alone.
+                    backup-restore.integration.spec.ts "the retired PENDING
+                    IMPORT note in an older artifact": a pre-column artifact
+                    restores its marked legs flagged and without the note, and
+                    a later one strips the note and keeps its legs confirmed.
+                    import-qif-plain-transfer.integration.spec.ts: a confirmed
+                    row whose description holds the words is not matched as
+                    pending.
+Status              enforced -- for backend/src, which the guard scans; the
+                    frontend has no reader of the text and is not scanned. An
+                    action-history snapshot taken before the strip still holds
+                    the old description, so undoing such an edit can write the
+                    note back as text; nothing reads it.
 ```
 
 ### INV-CRYPTO-001 -- an account's type and its currency's kind agree

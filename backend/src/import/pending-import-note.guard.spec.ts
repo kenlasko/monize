@@ -117,9 +117,9 @@ describe("the PENDING IMPORT description note stays retired", () => {
       expect(
         offendersIn("backup/restore-legacy-normalizations.ts", source),
       ).toEqual([]);
-      expect(offendersIn("backup/backup-restore.service.ts", source)).toEqual(
-        ["backup/backup-restore.service.ts:1"],
-      );
+      expect(offendersIn("backup/backup-restore.service.ts", source)).toEqual([
+        "backup/backup-restore.service.ts:1",
+      ]);
     });
   });
 });

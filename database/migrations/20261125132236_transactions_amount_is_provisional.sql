@@ -5,7 +5,8 @@
 -- When an imported file holds a cross-currency transfer, the importer creates
 -- the other account's leg before that account's own file has arrived. Until
 -- now that leg was marked only by the words PENDING IMPORT in its description
--- (backend/src/import/pending-import.ts), a field the reader can edit. This
+-- (a note the importer has since stopped writing; migration 20261126115405
+-- strips it, issue #2400), a field the reader can edit. This
 -- adds the column that becomes the only source of truth for the state, and
 -- the partial index the importer's pending lookups and the provisional counts
 -- read.
@@ -17,7 +18,7 @@
 -- happens to carry the text is not, and nothing else changes: the description
 -- keeps its note until a later migration strips it (task B4), and nothing
 -- reads the column yet. The marker is matched exactly as the importer's
--- PENDING_IMPORT_LIKE pattern does. A shared-expense ledger row (a posting,
+-- pattern then did. A shared-expense ledger row (a posting,
 -- or an account in a shared group) is skipped: the importer never writes one,
 -- and shared_protect_ledger_transaction refuses the update, which would fail
 -- the migration.
