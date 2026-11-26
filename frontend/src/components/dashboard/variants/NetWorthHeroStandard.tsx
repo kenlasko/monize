@@ -24,6 +24,7 @@ export function NetWorthHeroStandard({
   netWorth,
   assets,
   liabilities,
+  provisional,
   invested,
   investedLoading,
   collapsed,
@@ -52,7 +53,7 @@ export function NetWorthHeroStandard({
           <HeroCaption>{t('hero.netWorth')}</HeroCaption>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
             <HeroHeadline negative={netWorth.value < 0} collapsed={collapsed}>
-              <PartialTotal total={netWorth} displayCurrency={currency}>
+              <PartialTotal total={netWorth} displayCurrency={currency} provisionalCount={provisional.netWorth}>
                 {formatCurrency(netWorth.value)}
               </PartialTotal>
             </HeroHeadline>
@@ -62,7 +63,7 @@ export function NetWorthHeroStandard({
             <span>
               {t.rich('hero.assets', {
                 value: () => (
-                  <PartialTotal total={assets} displayCurrency={currency}>
+                  <PartialTotal total={assets} displayCurrency={currency} provisionalCount={provisional.assets}>
                     {formatCurrency(assets.value)}
                   </PartialTotal>
                 ),
@@ -72,7 +73,7 @@ export function NetWorthHeroStandard({
             <span>
               {t.rich('hero.liabilities', {
                 value: () => (
-                  <PartialTotal total={liabilities} displayCurrency={currency}>
+                  <PartialTotal total={liabilities} displayCurrency={currency} provisionalCount={provisional.liabilities}>
                     {formatCurrency(liabilities.value)}
                   </PartialTotal>
                 ),

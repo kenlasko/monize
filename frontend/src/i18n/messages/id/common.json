@@ -262,6 +262,10 @@
     "explanation": "Total sebagian: {count, plural, other {# jumlah}} tidak dapat disertakan, sehingga angka yang ditampilkan mengecualikannya. Tidak ada kurs ke {displayCurrency} untuk {currencies}.",
     "explanationExcluded": "Total sebagian: {count, plural, other {# jumlah}} tidak dapat dihitung, sehingga angka yang ditampilkan mengecualikannya."
   },
+  "provisionalTotal": {
+    "srSuffix": "(termasuk jumlah perkiraan)",
+    "explanation": "Termasuk jumlah perkiraan: {count, plural, other {# jumlah dalam angka ini adalah perkiraan}} yang dibuat Monize dengan kurs historis untuk sisi lain dari transfer lintas mata uang. Masing-masing tetap perkiraan sampai file milik akun tersebut diimpor atau jumlahnya dikonfirmasi. Cari is:provisional di transaksi untuk menampilkannya."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Jumlah tidak tersedia",

@@ -39,6 +39,8 @@ import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { PartialDataNotice } from '@/components/reports/PartialDataNotice';
 import { PartialTotal } from '@/components/ui/PartialTotal';
+import { ProvisionalDataNotice } from '@/components/reports/ProvisionalDataNotice';
+import { provisionalCountOf } from '@/lib/provisional-amount';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { isComplete } from '@/lib/currency-total';
 import {
@@ -202,6 +204,10 @@ export function NetWorthReport() {
       liabilitiesValue: d.liabilities,
       netWorthValue: d.netWorth,
       pairs: d.missingRatePairs ?? [],
+      // The estimates inside each figure: a mark beside it, never a gap.
+      assetsProvisional: provisionalCountOf(d.assetsProvisionalCount),
+      liabilitiesProvisional: provisionalCountOf(d.liabilitiesProvisionalCount),
+      netWorthProvisional: provisionalCountOf(d.provisionalCount),
       Assets: partial ? null : d.assets,
       Liabilities: partial ? null : d.liabilities,
       NetWorth: partial ? null : d.netWorth,
@@ -230,7 +236,7 @@ export function NetWorthReport() {
     // The server's change from the first month, not a difference of readings.
     const windowChange = netWorthWindowChange(monthlyData, moneyDecimalsForCurrency(defaultCurrency));
     if (windowChange === null) {
-      return { current: 0, change: 0, changePercent: 0, currentTotal: partialTotalFor(0, undefined), pairs: [] as string[], currentPairs: [] as string[], anyPartial: false, changeKnown: true };
+      return { current: 0, change: 0, changePercent: 0, currentTotal: partialTotalFor(0, undefined), currentProvisionalCount: 0, provisionalCount: 0, pairs: [] as string[], currentPairs: [] as string[], anyPartial: false, changeKnown: true };
     }
     const last = monthlyData[monthlyData.length - 1];
     const current = last.netWorth;
@@ -240,6 +246,11 @@ export function NetWorthReport() {
       changePercent: windowChange.percent,
       currentTotal: partialTotalFor(current, last.fxComplete, last.missingRatePairs),
       currentPairs: last.missingRatePairs ?? [],
+      currentProvisionalCount: provisionalCountOf(last.provisionalCount),
+      // The window's estimates for the notice: a provisional leg stays in every
+      // month from its date on, so the largest month's count is how many the
+      // window holds, where a sum would count one leg once per month.
+      provisionalCount: Math.max(0, ...monthlyData.map((m) => provisionalCountOf(m.provisionalCount))),
       // Every pair either end month could not convert, for the notice.
       pairs: unionPairs(monthlyData.filter((m) => m.fxComplete === false)),
       anyPartial: monthlyData.some((m) => m.fxComplete === false),
@@ -426,7 +437,7 @@ export function NetWorthReport() {
           total={{
             label: t('netWorth.currentNetWorth'),
             value: (
-              <PartialTotal total={summary.currentTotal} displayCurrency={defaultCurrency}>
+              <PartialTotal total={summary.currentTotal} displayCurrency={defaultCurrency} provisionalCount={summary.currentProvisionalCount}>
                 {formatCurrency(summary.current)}
               </PartialTotal>
             ),
@@ -458,7 +469,7 @@ export function NetWorthReport() {
           <div className={`text-2xl font-bold ${
             gainLossColor(summary.current)
           }`}>
-            <PartialTotal total={summary.currentTotal} displayCurrency={defaultCurrency}>
+            <PartialTotal total={summary.currentTotal} displayCurrency={defaultCurrency} provisionalCount={summary.currentProvisionalCount}>
               {formatCurrency(summary.current)}
             </PartialTotal>
           </div>
@@ -497,6 +508,7 @@ export function NetWorthReport() {
           displayCurrency={defaultCurrency}
         />
       )}
+      {!dataUnavailable && <ProvisionalDataNotice count={summary.provisionalCount} />}
 
       {/* Controls -- always rendered so focus inside DateInput survives reloads */}
       <div className={`${CARD_CLASS} p-4`}>
@@ -616,17 +628,17 @@ export function NetWorthReport() {
                       {row.name}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-green-600 dark:text-green-400">
-                      <PartialTotal total={partialTotalFor(row.assetsValue, row.partial ? false : undefined, row.pairs)} displayCurrency={defaultCurrency}>
+                      <PartialTotal total={partialTotalFor(row.assetsValue, row.partial ? false : undefined, row.pairs)} displayCurrency={defaultCurrency} provisionalCount={row.assetsProvisional}>
                         {formatCurrency(row.assetsValue)}
                       </PartialTotal>
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-red-600 dark:text-red-400">
-                      <PartialTotal total={partialTotalFor(row.liabilitiesValue, row.partial ? false : undefined, row.pairs)} displayCurrency={defaultCurrency}>
+                      <PartialTotal total={partialTotalFor(row.liabilitiesValue, row.partial ? false : undefined, row.pairs)} displayCurrency={defaultCurrency} provisionalCount={row.liabilitiesProvisional}>
                         {formatCurrency(row.liabilitiesValue)}
                       </PartialTotal>
                     </td>
                     <td className={`px-4 py-3 text-right text-sm font-medium ${row.netWorthValue >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'}`}>
-                      <PartialTotal total={partialTotalFor(row.netWorthValue, row.partial ? false : undefined, row.pairs)} displayCurrency={defaultCurrency}>
+                      <PartialTotal total={partialTotalFor(row.netWorthValue, row.partial ? false : undefined, row.pairs)} displayCurrency={defaultCurrency} provisionalCount={row.netWorthProvisional}>
                         {formatCurrency(row.netWorthValue)}
                       </PartialTotal>
                     </td>

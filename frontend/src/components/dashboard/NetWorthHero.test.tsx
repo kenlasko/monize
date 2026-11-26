@@ -139,6 +139,24 @@ describe('NetWorthHero', () => {
     expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/1,250/);
   });
 
+  it('adds no estimated-amount mark when the series carries no count', async () => {
+    await renderHero();
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
+  it('marks net worth and assets when the newest month includes an estimated amount', async () => {
+    getMonthly.mockResolvedValue([
+      ...SERIES.slice(0, 3),
+      month('2026-11', 1100, { provisionalCount: 1, assetsProvisionalCount: 1, liabilitiesProvisionalCount: 0 }),
+    ]);
+    await renderHero();
+    expect(screen.getByTestId('dashboard-hero-headline')).toHaveTextContent(/1,100/);
+    expect(
+      screen.getByTestId('dashboard-hero-headline').querySelector('[data-testid="provisional-mark"]'),
+    ).not.toBeNull();
+    expect(screen.getAllByTestId('provisional-mark')).toHaveLength(2);
+  });
+
   it('says a fall in words, not only with the arrow', async () => {
     getMonthly.mockResolvedValue([month('2026-10', 1000), month('2026-11', 800)]);
     await renderHero();

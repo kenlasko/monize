@@ -262,6 +262,10 @@
     "explanation": "部分合计：有 {count, plural, other {# 笔金额}} 无法计入，因此所示数字已将其排除。没有 {currencies} 兑 {displayCurrency} 的汇率。",
     "explanationExcluded": "部分合计：有 {count, plural, other {# 笔金额}} 无法计算，因此所示数字已将其排除。"
   },
+  "provisionalTotal": {
+    "srSuffix": "（包含估算金额）",
+    "explanation": "包含估算金额：此数字中有 {count, plural, other {# 笔金额}}是 Monize 按历史汇率为跨币种转账的另一方估算的。在该账户自己的文件导入或金额被确认之前，它们仍是估算值。在交易中搜索 is:provisional 可列出它们。"
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "金额不可用",

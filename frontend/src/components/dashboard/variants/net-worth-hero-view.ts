@@ -22,6 +22,8 @@ export interface NetWorthHeroViewProps {
   netWorth: ConvertedTotal;
   assets: ConvertedTotal;
   liabilities: ConvertedTotal;
+  /** The provisional amounts inside each figure; above zero adds `ProvisionalMark`. */
+  provisional: { netWorth: number; assets: number; liabilities: number };
   /** `null` when there is nothing invested to show (or it failed to load). */
   invested: NetWorthHeroInvested | null;
   /** The valuation behind "invested" is still on its way. */

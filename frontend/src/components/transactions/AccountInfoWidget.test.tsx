@@ -77,6 +77,17 @@ describe('AccountInfoWidget', () => {
     expect(screen.getByText('Chequing')).toBeInTheDocument();
   });
 
+  it('marks a balance that includes an estimated amount, and not one that does not', () => {
+    const { rerender } = render(
+      <AccountInfoWidget account={makeAccount({ provisionalCount: 1 })} onEdit={vi.fn()} onCollapse={vi.fn()} />,
+    );
+    expect(screen.getByTestId('provisional-mark')).toBeInTheDocument();
+    rerender(<AccountInfoWidget account={makeAccount({ provisionalCount: 0 })} onEdit={vi.fn()} onCollapse={vi.fn()} />);
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+    rerender(<AccountInfoWidget account={makeAccount()} onEdit={vi.fn()} onCollapse={vi.fn()} />);
+    expect(screen.queryByTestId('provisional-mark')).not.toBeInTheDocument();
+  });
+
   it('prefers the live chart-derived balance over the stale account balance', () => {
     render(
       <AccountInfoWidget

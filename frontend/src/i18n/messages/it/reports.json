@@ -2030,6 +2030,9 @@
     "weightingNoPrice": "Nessun prezzo per {symbols}: aggiorna o aggiungi un prezzo nella pagina del titolo.",
     "weightingNoRate": "Nessun tasso di cambio per {pairs}: aggiungine uno nella pagina Valute."
   },
+  "provisionalData": {
+    "notice": "Include importi stimati: {count, plural, one {# importo di queste cifre è una stima} other {# importi di queste cifre sono stime}} fatte da Monize al tasso di cambio storico per l'altro lato di un trasferimento tra valute, finché il file di quel conto non viene importato o l'importo non viene confermato. Cerca is:provisional nelle transazioni per elencarli."
+  },
   "sankey": {
     "help": "Il denaro entrato scorre attraverso il centro verso ciò in cui è stato speso, ciò che è stato risparmiato o investito e ciò che ha rimborsato debiti. Per impostazione predefinita il report copre i tuoi conti correnti, di risparmio, contanti, carte di credito e linee di credito aperti, e un trasferimento tra due di essi non viene mostrato. Escludi un conto di risparmio dal filtro dei conti per vedere quanto vi hai trasferito. Il pagamento di una carta di credito non è mai un rimborso di debito: gli acquisti che salda sono già contati come spese.",
     "depthLabel": "Dettaglio",

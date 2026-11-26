@@ -262,6 +262,10 @@
     "explanation": "Totale parziale: non è stato possibile includere {count, plural, one {# importo} other {# importi}}, quindi la cifra mostrata li esclude. Nessun tasso verso {displayCurrency} è disponibile per {currencies}.",
     "explanationExcluded": "Totale parziale: non è stato possibile calcolare {count, plural, one {# importo} other {# importi}}, quindi la cifra mostrata li esclude."
   },
+  "provisionalTotal": {
+    "srSuffix": "(include importi stimati)",
+    "explanation": "Include importi stimati: {count, plural, one {# importo di questa cifra è una stima} other {# importi di questa cifra sono stime}} fatte da Monize al tasso di cambio storico per l'altro lato di un trasferimento tra valute. Ognuno resta una stima finché il file di quel conto non viene importato o l'importo non viene confermato. Cerca is:provisional nelle transazioni per elencarli."
+  },
   "unknownAmount": {
     "marker": "—",
     "srLabel": "Importo non disponibile",
