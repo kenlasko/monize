@@ -412,6 +412,34 @@ describe("ActionHistoryService", () => {
       );
     });
 
+    it("undoing a security create deletes its zero-quantity holdings first", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        action: "create",
+        entityType: "security",
+        entityId: "sec-1",
+        afterData: { id: "sec-1", symbol: "ABC" },
+      });
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FOR UPDATE") ? [{ name: "ABC" }] : [],
+      );
+
+      await service.undo(userId);
+
+      const calls: [string][] = mockQueryRunner.query.mock.calls;
+      const holdingsAt = calls.findIndex(([sql]) =>
+        String(sql).includes("DELETE FROM holdings"),
+      );
+      expect(holdingsAt).toBeGreaterThanOrEqual(0);
+      expect(
+        mockQueryRunner.query.mock.invocationCallOrder[holdingsAt],
+      ).toBeLessThan(
+        mockQueryRunner.manager.delete.mock.invocationCallOrder[0],
+      );
+    });
+
     it("should undo a simple entity delete (tag)", async () => {
       const deleteAction = {
         ...mockAction,

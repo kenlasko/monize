@@ -25,10 +25,15 @@ type Finder = (
  * The account's finder counts the loan's own schedule too: that schedule is a
  * separate, newer history entry, undone first.
  */
-const REFERENCE_CHECKS: Record<string, { table: string; find: Finder }> = {
+const REFERENCE_CHECKS: Record<
+  string,
+  { table: string; label?: string; find: Finder; skipOnRedo?: boolean }
+> = {
   category: { table: "categories", find: findCategoryReferences },
   payee: { table: "payees", find: findPayeeReferences },
-  tag: { table: "tags", find: findTagReferences },
+  // Deleting a tag removes it everywhere on purpose (PR #2378), so its redo is
+  // not refused; only the undo of a create is.
+  tag: { table: "tags", find: findTagReferences, skipOnRedo: true },
   account: {
     table: "accounts",
     find: (m, userId, id) =>
@@ -42,7 +47,12 @@ const REFERENCE_CHECKS: Record<string, { table: string; find: Finder }> = {
         includeLoanLink: false,
       }),
   },
-  security: { table: "securities", find: findSecurityReferences },
+  // Named by symbol, as errors.securities.inUse and the UI do.
+  security: {
+    table: "securities",
+    label: "symbol",
+    find: findSecurityReferences,
+  },
 };
 
 /**
@@ -57,10 +67,10 @@ export async function assertNoReferencesBeforeDelete(
   isRedo: boolean,
 ): Promise<void> {
   const check = REFERENCE_CHECKS[action.entityType];
-  if (!check || !action.entityId) return;
-  // `table` comes from the map above, never from the request.
+  if (!check || !action.entityId || (isRedo && check.skipOnRedo)) return;
+  // `table` and `label` come from the map above, never from the request.
   const rows: { name?: string }[] = await manager.query(
-    `SELECT name FROM ${check.table} WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+    `SELECT ${check.label ?? "name"} AS name FROM ${check.table} WHERE id = $1 AND user_id = $2 FOR UPDATE`,
     [action.entityId, action.userId],
   );
   if (!rows?.length) return;

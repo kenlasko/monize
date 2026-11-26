@@ -1447,6 +1447,21 @@ describe("CategoriesService", () => {
         );
       });
 
+      it("locks the target category FOR SHARE before moving rows", async () => {
+        txManager.query.mockImplementation((sql: string) =>
+          Promise.resolve(
+            sql.startsWith("SELECT id FROM accounts") ? [] : [{ count: 0 }],
+          ),
+        );
+
+        await service.remove("user-1", "cat-1", "cat-2");
+
+        expect(categoriesRepository.findOne).toHaveBeenCalledWith({
+          where: { id: "cat-2", userId: "user-1" },
+          lock: { mode: "pessimistic_read" },
+        });
+      });
+
       it("uncategorized clears the categories with null", async () => {
         txManager.query.mockImplementation((sql: string) =>
           Promise.resolve(
@@ -1743,7 +1758,19 @@ describe("CategoriesService", () => {
   });
 
   describe("getTransactionCount", () => {
-    it("returns sum of all transaction types", async () => {
+    /** Answers the scheduled-split and override counts by their SQL. */
+    const answerCounts = (splits: number, overrides: number) =>
+      txManager.query.mockImplementation((sql: string) =>
+        Promise.resolve([
+          {
+            count: sql.includes("scheduled_transaction_overrides")
+              ? overrides
+              : splits,
+          },
+        ]),
+      );
+
+    it("returns sum of all transaction types, including changed occurrences", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
       transactionsRepository.count.mockResolvedValue(5);
       splitsRepository.createQueryBuilder.mockReturnValue(
@@ -1752,45 +1779,29 @@ describe("CategoriesService", () => {
         }),
       );
       scheduledTransactionsRepository.count.mockResolvedValue(2);
+      answerCounts(1, 4);
 
-      const scheduledQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([{ id: "st-1" }, { id: "st-2" }]),
-      });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
-        scheduledQb,
+      const result = await service.getTransactionCount("user-1", "CAT-1");
+
+      expect(result).toBe(15);
+      // Overrides are matched by category_id or the id inside the splits JSON,
+      // by the lowercase id; no id list is bound.
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("o.splits::text LIKE"),
+        ["user-1", "cat-1"],
       );
-
-      const splitCountQb = createMockQueryBuilder({
-        getCount: jest.fn().mockResolvedValue(1),
-      });
-      scheduledSplitsRepository.createQueryBuilder.mockReturnValue(
-        splitCountQb,
-      );
-
-      const result = await service.getTransactionCount("user-1", "cat-1");
-
-      expect(result).toBe(11);
     });
 
-    it("skips scheduled split count when no scheduled transactions exist", async () => {
+    it("counts a category used only by a changed occurrence", async () => {
       categoriesRepository.findOne.mockResolvedValue(mockCategory);
-      transactionsRepository.count.mockResolvedValue(2);
-      splitsRepository.count.mockResolvedValue(0);
-      scheduledTransactionsRepository.count.mockResolvedValue(0);
-
-      const scheduledQb = createMockQueryBuilder({
-        getMany: jest.fn().mockResolvedValue([]),
-      });
-      scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
-        scheduledQb,
+      transactionsRepository.count.mockResolvedValue(0);
+      splitsRepository.createQueryBuilder.mockReturnValue(
+        createMockQueryBuilder({ getCount: jest.fn().mockResolvedValue(0) }),
       );
+      scheduledTransactionsRepository.count.mockResolvedValue(0);
+      answerCounts(0, 1);
 
-      const result = await service.getTransactionCount("user-1", "cat-1");
-
-      expect(result).toBe(2);
-      expect(
-        scheduledSplitsRepository.createQueryBuilder,
-      ).not.toHaveBeenCalled();
+      expect(await service.getTransactionCount("user-1", "cat-1")).toBe(1);
     });
 
     it("throws NotFoundException for nonexistent category", async () => {
@@ -2173,6 +2184,7 @@ describe("CategoriesService", () => {
       scheduledTransactionsRepository.createQueryBuilder.mockReturnValue(
         scheduledQb,
       );
+      txManager.query.mockResolvedValue([{ count: 0 }]);
 
       await service.getTransactionCount("user-1", "cat-1");
 

@@ -2390,6 +2390,15 @@ export class ActionHistoryService {
               { scheduledTransactionId: null },
             );
           }
+          if (tableName === "securities") {
+            // The finder refused a nonzero position; a zero-quantity holding is
+            // bookkeeping and goes first, as SecuritiesService.remove does.
+            await manager.query(
+              `DELETE FROM holdings h USING accounts a
+                WHERE a.id = h.account_id AND a.user_id = $1 AND h.security_id = $2`,
+              [action.userId, action.entityId],
+            );
+          }
           await manager.delete(entityClass, {
             id: action.entityId,
           });

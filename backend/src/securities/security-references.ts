@@ -13,6 +13,8 @@ export type SecurityReferenceKind =
  * How deleting a security treats each column with a foreign key to
  * `securities(id)`:
  *  - `refuse`: counted; any row blocks the delete (409 RECORD_IN_USE).
+ *  - `clear`: history the schema deliberately keeps with the link nulled (a
+ *    strategy's past signals).
  *  - `part`: the security's own data; it goes with the security, not counted.
  *    `holdings.security_id` is refused only while the position is nonzero; a
  *    zero-quantity holding is bookkeeping that `SecuritiesService.remove`
@@ -40,10 +42,8 @@ export const SECURITY_REFERENCES = {
     policy: "refuse",
     kind: "gemStrategies",
   },
-  "gem_strategy_signals.target_security_id": {
-    policy: "refuse",
-    kind: "gemStrategies",
-  },
+  // Signal history: SET NULL on purpose and no way to remove a signal.
+  "gem_strategy_signals.target_security_id": { policy: "clear" },
   "security_documents.security_id": {
     policy: "refuse",
     kind: "securityDocuments",
@@ -52,7 +52,8 @@ export const SECURITY_REFERENCES = {
   "security_tags.security_id": { policy: "part" },
 } as const satisfies Record<
   string,
-  { policy: "refuse"; kind: SecurityReferenceKind } | { policy: "part" }
+  | { policy: "refuse"; kind: SecurityReferenceKind }
+  | { policy: "part" | "clear" }
 >;
 
 /** Counting SQL per `refuse` column; `$1` is the user, `$2` the security. */
@@ -69,8 +70,6 @@ const COUNT_SQL: Record<string, string> = {
     "SELECT count(*)::int AS count FROM scheduled_transaction_splits s JOIN scheduled_transactions t ON t.id = s.scheduled_transaction_id WHERE t.user_id = $1 AND s.investment_security_id = $2",
   "gem_strategy_assets.security_id":
     "SELECT count(*)::int AS count FROM gem_strategy_assets WHERE user_id = $1 AND security_id = $2",
-  "gem_strategy_signals.target_security_id":
-    "SELECT count(*)::int AS count FROM gem_strategy_signals WHERE user_id = $1 AND target_security_id = $2",
   "security_documents.security_id":
     "SELECT count(*)::int AS count FROM security_documents WHERE user_id = $1 AND security_id = $2",
 };

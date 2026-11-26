@@ -17,7 +17,6 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
-import { ScheduledTransactionSplit } from "../scheduled-transactions/entities/scheduled-transaction-split.entity";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { ActionHistoryService } from "../action-history/action-history.service";
@@ -654,9 +653,11 @@ export class CategoriesService {
               ),
             );
           }
-          const found = await m
-            .getRepository(Category)
-            .findOne({ where: { id: reassignTo, userId } });
+          // Locked FOR SHARE: a concurrent delete of the target waits.
+          const found = await m.getRepository(Category).findOne({
+            where: { id: reassignTo, userId },
+            lock: { mode: "pessimistic_read" },
+          });
           if (!found) {
             throw new NotFoundException(
               tr(
@@ -721,28 +722,30 @@ export class CategoriesService {
       const scheduledCount = await m.getRepository(ScheduledTransaction).count({
         where: { userId, categoryId },
       });
-      const userScheduledTxIds = await m
-        .getRepository(ScheduledTransaction)
-        .createQueryBuilder("st")
-        .select("st.id")
-        .where("st.userId = :userId", { userId })
-        .getMany();
-
-      let scheduledSplitCount = 0;
-      if (userScheduledTxIds.length > 0) {
-        const scheduledTxIds = userScheduledTxIds.map((st) => st.id);
-        scheduledSplitCount = await m
-          .getRepository(ScheduledTransactionSplit)
-          .createQueryBuilder("ss")
-          .where("ss.categoryId = :categoryId", { categoryId })
-          .andWhere("ss.scheduledTransactionId IN (:...scheduledTxIds)", {
-            scheduledTxIds,
-          })
-          .getCount();
-      }
+      // Joins, not an id list: a user's ids can exceed the 65535 bind limit.
+      const lowerId = categoryId.toLowerCase();
+      const [{ count: scheduledSplitCount }] = await m.query(
+        `SELECT count(*)::int AS count FROM scheduled_transaction_splits s
+           JOIN scheduled_transactions t ON t.id = s.scheduled_transaction_id
+          WHERE t.user_id = $1 AND s.category_id = $2`,
+        [userId, lowerId],
+      );
+      // Overrides keep a category of their own and one per split line in JSON;
+      // `reassignCategoryRows` moves both, so the dialog must offer the move.
+      const [{ count: overrideCount }] = await m.query(
+        `SELECT count(*)::int AS count FROM scheduled_transaction_overrides o
+           JOIN scheduled_transactions t ON t.id = o.scheduled_transaction_id
+          WHERE t.user_id = $1
+            AND (o.category_id = $2 OR o.splits::text LIKE '%' || $2::text || '%')`,
+        [userId, lowerId],
+      );
 
       return (
-        transactionCount + splitCount + scheduledCount + scheduledSplitCount
+        transactionCount +
+        splitCount +
+        scheduledCount +
+        Number(scheduledSplitCount) +
+        Number(overrideCount)
       );
     });
   }

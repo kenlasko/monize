@@ -16,6 +16,7 @@ vi.mock('@/lib/accounts', () => ({
     close: vi.fn().mockResolvedValue(undefined),
     reopen: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
+    canDelete: vi.fn().mockResolvedValue({ canDelete: true }),
     update: vi.fn().mockResolvedValue(undefined),
     setDelegateFavourite: vi.fn().mockResolvedValue(undefined),
   },
@@ -1026,6 +1027,71 @@ describe('AccountList', () => {
     const deleteMock = accountsApi.delete as ReturnType<typeof vi.fn>;
     expect(deleteMock.mock.calls[0][0]).toBe('broker-1');
     expect(deleteMock.mock.calls[1][0]).toBe('cash-1');
+  });
+
+  describe('a pair whose half is refused', () => {
+    const pair = () => [
+      createAccount({
+        id: 'broker-1',
+        name: 'TFSA - Brokerage',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_BROKERAGE',
+        linkedAccountId: 'cash-1',
+        canDelete: true,
+      }),
+      createAccount({
+        id: 'cash-1',
+        name: 'TFSA - Cash',
+        accountType: 'INVESTMENT',
+        accountSubType: 'INVESTMENT_CASH',
+        linkedAccountId: 'broker-1',
+        canDelete: true,
+      }),
+    ];
+    const refusal = {
+      response: {
+        status: 409,
+        data: { errorCode: 'RECORD_IN_USE', errors: [{ kind: 'transactions', count: 2 }] },
+      },
+    };
+    const deleteAll = () => {
+      render(
+        <AccountList accounts={pair()} onEdit={mockOnEdit} defaultCurrency="CAD" convertToDefault={exchangeMocks.convertToDefault} onRefresh={mockOnRefresh} />
+      );
+      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    };
+    const canDeleteMock = () => accountsApi.canDelete as ReturnType<typeof vi.fn>;
+    afterEach(() => canDeleteMock().mockResolvedValue({ canDelete: true }));
+
+    it.each([
+      ['the brokerage', 'broker-1', 'TFSA - Brokerage'],
+      ['the cash half', 'cash-1', 'TFSA - Cash'],
+    ])('deletes neither half when %s cannot be deleted, and names that half', async (_label, blockedId, name) => {
+      canDeleteMock().mockImplementation(async (id: string) => ({ canDelete: id !== blockedId }));
+      (accountsApi.delete as ReturnType<typeof vi.fn>).mockRejectedValueOnce(refusal);
+
+      deleteAll();
+
+      expect(await screen.findByText(`Cannot delete "${name}"`)).toBeInTheDocument();
+      // Only the blocked half is asked to delete, to obtain its entries.
+      expect(accountsApi.delete).toHaveBeenCalledTimes(1);
+      expect(accountsApi.delete).toHaveBeenCalledWith(blockedId);
+      expect(screen.getByRole('link', { name: '2 transactions' })).toHaveAttribute('href', `/transactions?accountId=${blockedId}`);
+    });
+
+    it('refreshes the list and names the second half when its delete is refused after the first succeeded', async () => {
+      canDeleteMock().mockResolvedValue({ canDelete: true });
+      (accountsApi.delete as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(refusal);
+
+      deleteAll();
+
+      expect(await screen.findByText('Cannot delete "TFSA - Cash"')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: '2 transactions' })).toHaveAttribute('href', '/transactions?accountId=cash-1');
+      expect(mockOnRefresh).toHaveBeenCalled();
+    });
   });
 
   it('deletes only the account itself when it has no linked ledger', async () => {

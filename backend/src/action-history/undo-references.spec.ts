@@ -76,8 +76,20 @@ describe("assertNoReferencesBeforeDelete", () => {
   });
 
   it("words a redo of a delete as a redo", async () => {
-    const error = await run("tag", makeManager(1), true).catch((e) => e);
+    const error = await run("category", makeManager(1), true).catch((e) => e);
     expect(error.getResponse().message).toContain("Cannot redo deleting");
+  });
+
+  it("does not check the redo of a tag delete, which removes the tag everywhere", async () => {
+    const m = makeManager(3);
+    await expect(run("tag", m, true)).resolves.toBeUndefined();
+    expect(m.query).not.toHaveBeenCalled();
+  });
+
+  it("names a security by its symbol", async () => {
+    const m = makeManager(1);
+    await run("security", m).catch(() => undefined);
+    expect(m.query.mock.calls[0][0]).toContain("SELECT symbol AS name");
   });
 
   it("checks nothing for a row that is already gone or an entity without a finder", async () => {

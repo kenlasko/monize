@@ -750,15 +750,35 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
     if (!accountToDelete) return;
 
     setIsDeleting(true);
+    // The half a refusal names, so the dialog and its links use that id.
+    let current = accountToDelete;
+    let deletedAny = false;
     try {
       // Both ledgers of a pair go, brokerage first. The server unlinks the
-      // partner rather than cascading, so if the second call fails the
-      // survivor is an ordinary cash account -- the least bad failure shape,
-      // and one every surface already handles.
+      // partner rather than cascading, so a failure of the second call leaves
+      // an ordinary cash account.
+      let halves = [accountToDelete];
       const cashHalf = logicalById.get(accountToDelete.id)?.cash;
-      await accountsApi.delete(accountToDelete.id);
       if (cashHalf) {
-        await accountsApi.delete(cashHalf.id);
+        halves = [accountToDelete, cashHalf];
+        // Ask about both before deleting either, so a refusal leaves the pair
+        // whole. The DELETE of the blocked half writes nothing; it only
+        // returns the entries the dialog shows.
+        const checks = await Promise.all(halves.map((h) => accountsApi.canDelete(h.id)));
+        const blockedAt = checks.findIndex((c) => !c.canDelete);
+        if (blockedAt >= 0) {
+          current = halves[blockedAt];
+          await accountsApi.delete(current.id);
+          // It was deletable after all (a change since the check): carry on
+          // with the other half.
+          deletedAny = true;
+          halves = halves.filter((_, i) => i !== blockedAt);
+        }
+      }
+      for (const half of halves) {
+        current = half;
+        await accountsApi.delete(half.id);
+        deletedAny = true;
       }
       // Deleting a brokerage removes its holdings from the portfolio, so the
       // account list is not the only cached view that just went stale.
@@ -768,9 +788,14 @@ export function AccountList({ accounts, institutions, brokerageMarketValues, unp
       setAccountToDelete(null);
       onRefresh();
     } catch (error) {
+      // A half may already be gone: the list must not keep showing it.
+      if (deletedAny) {
+        invalidateBalanceCaches();
+        onRefresh();
+      }
       const entries = getRecordInUseEntries(error);
       if (entries) {
-        setInUse({ account: accountToDelete, entries });
+        setInUse({ account: current, entries });
         setDeleteDialogOpen(false);
         setAccountToDelete(null);
       } else {

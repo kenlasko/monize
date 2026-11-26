@@ -75,7 +75,7 @@ describe("findSecurityReferences", () => {
       "FROM holdings": 4,
       "FROM investment_transactions": 5,
       "FROM gem_strategy_assets": 1,
-      "FROM gem_strategy_signals": 1,
+      "FROM gem_strategy_signals": 9, // history: never counted
       "FROM security_documents": 3,
     });
     expect(
@@ -84,7 +84,7 @@ describe("findSecurityReferences", () => {
       { kind: "holdings", count: 4 },
       { kind: "investmentTransactions", count: 5 },
       { kind: "scheduledTransactions", count: 3 },
-      { kind: "gemStrategies", count: 2 },
+      { kind: "gemStrategies", count: 1 },
       { kind: "securityDocuments", count: 3 },
     ]);
   });
