@@ -186,8 +186,8 @@ export function IncomeBySourceWidget({ isLoading }: IncomeBySourceWidgetProps) {
         <WidgetMessage>{t('incomeBySource.empty')}</WidgetMessage>
       ) : (
         <>
-          <div className="flex-1 min-h-[260px] max-h-[260px] overflow-y-auto">
-            <ResponsiveContainer width="100%" height={canDrawPie ? 260 : Math.max(260, chartData.length * 26)} minWidth={0}>
+          <div className={canDrawPie ? 'flex-1 min-h-[260px]' : 'flex-1 min-h-[260px] max-h-[260px] overflow-y-auto'}>
+            <ResponsiveContainer width="100%" height={canDrawPie ? '100%' : Math.max(260, chartData.length * 26)} minWidth={0}>
               {chartType === 'bar' ? (
                 <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
                   <CartesianGrid {...CHART_GRID_PROPS_HORIZONTAL_BARS} />

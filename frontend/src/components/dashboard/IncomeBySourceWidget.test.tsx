@@ -49,7 +49,7 @@ describe('IncomeBySourceWidget', () => {
     expect(screen.getByText('Income by Source')).toBeInTheDocument();
     expect(screen.getByText('1Y')).toBeInTheDocument();
     expect(screen.getByText('$5000')).toBeInTheDocument();
-    expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
+    expect(screen.getByTestId('responsive-container').parentElement).not.toHaveClass('max-h-[260px]');
   });
 
   it('shows the empty state with no income', async () => {
