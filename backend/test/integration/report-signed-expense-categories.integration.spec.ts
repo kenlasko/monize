@@ -99,6 +99,16 @@ describe("signed expenses in Spending by Category (integration)", () => {
         knownSpending: expected,
         excludedCount: 0,
       });
+      const trend = await withUserContext(userId, () =>
+        reports.getMonthlySpendingTrend(userId, start, end),
+      );
+      expect(trend.data).toMatchObject([
+        {
+          month: "2026-03",
+          totalSpending: expected,
+          categories: [{ categoryId: groceries, total: expected }],
+        },
+      ]);
       expect(report.data[0].percentage).toEqual(expected > 0 ? 100 : undefined);
     },
   );

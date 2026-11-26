@@ -1816,7 +1816,7 @@ describe("SpendingReportsService", () => {
         expect(result.data.map((m) => m.totalSpending)).toEqual([100, -30]);
       });
 
-      it("keeps a net-credit category out of the series", async () => {
+      it("includes a net-credit expense category in the series and the monthly total", async () => {
         scopedManager.query.mockResolvedValue([
           {
             month: "2025-01",
@@ -1846,7 +1846,9 @@ describe("SpendingReportsService", () => {
 
         expect(result.data[0].categories.map((c) => c.categoryId)).toEqual([
           "cat-parent",
+          "cat-child",
         ]);
+        expect(result.data[0].totalSpending).toBe(20);
       });
 
       it("drops a month that holds only credits", async () => {

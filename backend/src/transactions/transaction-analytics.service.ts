@@ -26,6 +26,7 @@ import { applyTransactionSearch } from "./apply-transaction-search";
 import { RecurringCharge, detectFrequency } from "./recurring-charges.util";
 import {
   loadQualifiedCategoryNames,
+  qualifiedNamesById,
   resolveCategoryNamePaths,
   suggestQualifiedCategoryNames,
   UNCATEGORIZED_LABEL,
@@ -49,7 +50,7 @@ import {
   buildRateIndex,
   RateIndex,
 } from "../common/time-series/rate-index.util";
-import { isNetSpending } from "../built-in-reports/spending-reports.service";
+import { includesSpendingCategory } from "../built-in-reports/spending-reports.service";
 import {
   convertDatedRowAggregates,
   convertDatedRows,
@@ -303,7 +304,7 @@ export interface LlmPeriodComparisonResult {
     period1Amount: number;
     period2Amount: number;
     change: number;
-    changePercent: number;
+    changePercent: number | null;
   }>;
 }
 
@@ -2087,6 +2088,17 @@ export class TransactionAnalyticsService {
    * group. `keyOf` names the group; the first row seen stands for its label
    * columns.
    */
+  private async loadReportCategories(m: EntityManager, userId: string) {
+    const rows = await m.getRepository(Category).find({
+      where: { userId },
+      select: ["id", "name", "parentId", "isIncome"],
+    });
+    return {
+      names: qualifiedNamesById(rows),
+      incomeById: new Map(rows.map((row) => [row.id, row.isIncome])),
+    };
+  }
+
   private foldGroups(
     rows: RawGroupRow[],
     keyOf: (row: RawGroupRow) => string,
@@ -2239,7 +2251,10 @@ export class TransactionAnalyticsService {
             startDate,
             endDate,
           );
-          const names = await loadQualifiedCategoryNames(m, userId);
+          const { names, incomeById } = await this.loadReportCategories(
+            m,
+            userId,
+          );
           let groups = this.foldGroups(
             rows,
             (r) => r.categoryId ?? "",
@@ -2250,7 +2265,11 @@ export class TransactionAnalyticsService {
             // A group with a part still unconverted is kept: its net is
             // unknown, not spent-in-nothing.
             groups = groups.filter(
-              (g) => isNetSpending(g.agg.sign) || !g.agg.isComplete,
+              (g) =>
+                includesSpendingCategory(
+                  g.agg.sign,
+                  incomeById.get(g.first.categoryId),
+                ) || !g.agg.isComplete,
             );
           } else if (direction === "income") {
             // Salary +5000 / -200 correction is 4800 income, like the report.
@@ -2437,6 +2456,12 @@ export class TransactionAnalyticsService {
     const percentOf = (difference: FxAggregate, base: FxAggregate): number =>
       percentToTwoPlaces(difference.unroundedSubtotal / base.unroundedSubtotal);
 
+    const noSpendingBase = (base: FxAggregate, current: FxAggregate) =>
+      direction === "expenses" &&
+      groupBy === "category" &&
+      (base.sign < 0 ||
+        (base.knownSubtotalAt(places) === 0 && current.sign < 0));
+
     const comparison = Array.from(allLabels).map((label) => {
       const p1 = p1Map.get(label) ?? none;
       const p2 = p2Map.get(label) ?? none;
@@ -2444,8 +2469,13 @@ export class TransactionAnalyticsService {
       const p1Amount = p1.knownSubtotalAt(places);
       const p2Amount = p2.knownSubtotalAt(places);
       const change = difference.knownSubtotalAt(places);
-      const changePercent =
-        p1Amount !== 0 ? percentOf(difference, p1) : p2Amount !== 0 ? 100 : 0;
+      const changePercent = noSpendingBase(p1, p2)
+        ? null
+        : p1Amount !== 0
+          ? percentOf(difference, p1)
+          : p2Amount !== 0
+            ? 100
+            : 0;
 
       return {
         label,
@@ -2472,7 +2502,7 @@ export class TransactionAnalyticsService {
       ? totalDifference.knownSubtotalAt(places)
       : null;
     const totalChangePercent =
-      totalChange === null
+      totalChange === null || noSpendingBase(period1.total, period2.total)
         ? null
         : p1Total !== 0
           ? percentOf(totalDifference, period1.total)
@@ -2528,8 +2558,8 @@ export class TransactionAnalyticsService {
 
       // Expenses are the signed sum over rows of both signs, negated, so a
       // refund in a category reduces what was spent there instead of being
-      // dropped (a category's cost, AGENTS.md); a category whose credits meet
-      // its debits is not a row (`isNetSpending`). Income keeps its positive
+      // dropped. Classified expense categories keep a zero or credit balance.
+      // Income keeps its positive
       // rows and "both" the magnitude of every row.
       let amountExpr: string;
       if (direction === "expenses") {
@@ -2571,34 +2601,37 @@ export class TransactionAnalyticsService {
         startDate,
         endDate,
       );
-      const names =
-        groupBy === "payee"
-          ? new Map<string, string>()
-          : await loadQualifiedCategoryNames(m, userId);
-      const groups = this.foldGroups(
+      const categories =
+        groupBy === "category"
+          ? await this.loadReportCategories(m, userId)
+          : undefined;
+      let groups = this.foldGroups(
         rows,
         (r) => (groupBy === "payee" ? r.label : (r.categoryId ?? "")),
         reporting,
         rates,
       );
+      if (direction === "expenses") {
+        groups = groups.filter(
+          (g) =>
+            !g.agg.isComplete ||
+            includesSpendingCategory(
+              g.agg.sign,
+              categories?.incomeById.get(g.first.categoryId),
+            ),
+        );
+      }
       let items: ComparisonItem[] = groups.map((g) => ({
         label:
           groupBy === "payee"
             ? g.first.label
             : g.first.categoryId
-              ? (names.get(g.first.categoryId) ?? UNKNOWN_CATEGORY_LABEL)
+              ? (categories?.names.get(g.first.categoryId) ??
+                UNKNOWN_CATEGORY_LABEL)
               : UNCATEGORIZED_LABEL,
         agg: g.agg,
         count: g.count,
       }));
-
-      if (direction === "expenses") {
-        // A group with a part still unconverted is kept: its net is unknown,
-        // not spent-in-nothing.
-        items = items.filter(
-          (i) => isNetSpending(i.agg.sign) || !i.agg.isComplete,
-        );
-      }
 
       if (groupBy === "payee") {
         const above = items.filter((i) => i.count >= MIN_AGGREGATION_COUNT);

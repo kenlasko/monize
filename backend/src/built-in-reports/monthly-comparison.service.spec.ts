@@ -753,6 +753,32 @@ describe("MonthlyComparisonService", () => {
       });
     });
 
+    it.each([
+      [-10, 90],
+      [-42, 0],
+    ])(
+      "withholds category growth from a credit of %d to %d",
+      async (previous, current) => {
+        mockSpendingReports.getSpendingByCategoryWithAggregates
+          .mockReset()
+          .mockResolvedValueOnce(spendingWindow({ clothing: [current] }))
+          .mockResolvedValueOnce(spendingWindow({ clothing: [previous] }));
+        mockIncomeReports.getIncomeVsExpensesWithAggregates.mockResolvedValue(
+          incomeMonth("2026-01", []),
+        );
+        const { expenses } = await service.getMonthlyComparison(
+          mockUserId,
+          "2026-01",
+        );
+        expect(expenses.comparison[0]).toMatchObject({
+          previousTotal: previous,
+          currentTotal: current,
+          change: current - previous,
+          changePercent: null,
+        });
+      },
+    );
+
     it("preserves signed snapshots and withholds the change percentage for a new net credit", async () => {
       const previous = spendingWindow({ food: [10] });
       const current = spendingWindow({ refund: [-20], food: [60] });

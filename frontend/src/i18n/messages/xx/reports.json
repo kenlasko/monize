@@ -325,7 +325,7 @@
     "notAvailable": "[XX-N/A-XX]",
     "monthlyCashFlow": "[XX-Monthly Cash Flow-XX]",
     "inflowsByCategory": "[XX-Inflows by Category-XX]",
-    "outflowsByCategory": "[XX-Outflows by Category-XX]",
+    "outflowsByCategory": "[XX-Spending After Refunds by Category-XX]",
     "noIncome": "[XX-No income in this period-XX]",
     "noExpenses": "[XX-No expenses in this period-XX]",
     "seriesInflows": "[XX-Inflows-XX]",

@@ -290,7 +290,7 @@ describe('MonthlyComparisonReport', () => {
         previousMonth, previousTotal: -42,
         comparison: [
           { ...clothing, currentTotal: -42, previousTotal: 0, change: -42, changePercent: null },
-          { ...transit, currentTotal: 0, previousTotal: -42, change: 42, changePercent: 100 },
+          { ...transit, currentTotal: 0, previousTotal: -42, change: 42, changePercent: null },
           { ...even, currentTotal: 0, previousTotal: 0, change: 0, changePercent: 0 },
         ],
       },
@@ -301,6 +301,8 @@ describe('MonthlyComparisonReport', () => {
     const compared = screen.getByRole('heading', { name: 'Monthly Expenses Compared' }).parentElement!;
     const clothingRow = within(compared).getByRole('row', { name: /Clothing/ });
     expect(within(clothingRow).getByTestId('unknown-amount')).toBeInTheDocument();
+    const transitRow = within(compared).getByRole('row', { name: /Transit/ });
+    expect(within(transitRow).getByTestId('unknown-amount')).toBeInTheDocument();
     const ranked = screen.getByRole('heading', { name: 'Top 5 Expense Categories' }).parentElement!;
     for (const name of ['Clothing', 'Transit']) {
       expect(within(ranked).getByRole('row', { name: new RegExp(name) })).toHaveTextContent('$-42.00');

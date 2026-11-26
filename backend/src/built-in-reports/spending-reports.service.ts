@@ -74,6 +74,14 @@ export function isNetSpending(total: number): boolean {
   return total > 0;
 }
 
+/** Classified expenses keep their signed net even after a full or excess refund. */
+export function includesSpendingCategory(
+  total: number,
+  isIncome?: boolean,
+): boolean {
+  return isIncome === false || isNetSpending(total);
+}
+
 @Injectable()
 export class SpendingReportsService {
   constructor(
@@ -306,7 +314,7 @@ export class SpendingReportsService {
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
       ([, { agg, category }]) =>
-        category?.isIncome === false || isNetSpending(agg.sign),
+        includesSpendingCategory(agg.sign, category?.isIncome),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -578,13 +586,13 @@ export class SpendingReportsService {
     }
     // Whether a category belongs in a spending trend is decided over the whole
     // period, not per month: one month's refund is still part of a category
-    // that was spent in. A category that is net-credit across the range was
-    // not -- and an income category, now that credits are read at all, never
-    // is one. The months fold as aggregates and the net is judged on its sign
-    // before rounding (rules 2 and 5).
+    // that was spent in. Classified expenses keep credit and zero balances.
+    // The fallback tests the sign before rounding (rules 2 and 5).
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
-        .filter(([, overall]) => isNetSpending(overall.sign))
+        .filter(([id, overall]) =>
+          includesSpendingCategory(overall.sign, categoryMap.get(id)?.isIncome),
+        )
         .map(([id]) => id),
     );
     const topCategories = Array.from(allCategoryTotals.entries())

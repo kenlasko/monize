@@ -146,7 +146,7 @@ export function SpendingByCategoryReport() {
   const [viewType, setViewType] = useState<'pie' | 'bar' | 'table'>('pie');
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } =
     useDateRange({ defaultRange: '3m' });
-  const { sortField, sortDirection, handleSort } = useSortableTable<SpendingCategorySortField>(
+  const { sortField: savedSortField, sortDirection, setSort } = useSortableTable<SpendingCategorySortField>(
     'reports.spending-by-category.table.sort',
     { field: 'value', direction: 'desc' },
   );
@@ -207,6 +207,11 @@ export function SpendingByCategoryReport() {
   }, [response]);
 
   const showShares = chartData.every((item) => item.percentage !== undefined);
+  const sortField = !showShares && savedSortField === 'percentage' ? 'value' : savedSortField;
+  const handleSort = (field: SpendingCategorySortField) => setSort({
+    field,
+    direction: field === sortField && sortDirection === 'asc' ? 'desc' : 'asc',
+  });
   const displayedView = viewType === 'pie' && !showShares ? 'table' : viewType;
   const spendingTotal: ConvertedTotal = useMemo(
     () => ({
@@ -405,8 +410,8 @@ export function SpendingByCategoryReport() {
 
                 Restyling `display` below `sm` strips the implicit table
                 semantics, so the explicit ARIA roles put them back (inert from
-                `sm` up). Every row exposes all three cells at every width, so no
-                cell leaves the DOM and no `aria-colindex` is owed. The
+                `sm` up). The share header and cells appear together when the
+                report supplies shares. The
                 `CellLabel` captions name each figure's column for a sighted
                 phone reader, who has no column header to look up. */}
             <div className="overflow-x-auto">

@@ -132,7 +132,7 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
 
     // A net refund or zero net total cannot be drawn as a composition. Check all
     // categories before folding the tail: an offset in Other could conceal a refund.
-    const showPie = slices.every((slice) => slice.percentage !== undefined);
+    const showPie = slices.every((slice): slice is CategorySlice & { percentage: number } => slice.percentage !== undefined);
     if (!showPie) return { data: slices, inOther: [], showPie };
     const inOther = slices.slice(maxSlices);
     const otherTotal = inOther.reduce((sum, item) => sum + item.value, 0);
@@ -144,7 +144,7 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
               id: '',
               name: t('expensesPieChart.other'),
               value: otherTotal,
-              percentage: inOther.reduce((sum, item) => sum + (item.percentage ?? 0), 0),
+              percentage: inOther.reduce((sum, item) => sum + item.percentage, 0),
               colour: chartColors.neutral,
               isOther: true,
             },
@@ -280,6 +280,7 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
       ) : !breakdown.showPie ? (
         <>
           <ChartLegend
+            className="max-h-64 overflow-y-auto"
             columnsClassName="sm:grid-cols-3"
             items={chartSlices.map((slice) => ({
               key: slice.key,
@@ -289,7 +290,7 @@ export function ExpensesPieChart({ accounts, isLoading }: ExpensesPieChartProps)
               onClick: slice.onClick,
             }))}
           />
-          <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
+          <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3 text-sm dark:border-gray-700">
             <span>{t('expensesPieChart.total')}</span>
             <PartialTotal total={spendingTotal} displayCurrency={displayCurrency}>
               {formatCurrency(totalExpenses, displayCurrency)}

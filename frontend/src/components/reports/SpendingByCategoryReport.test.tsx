@@ -304,7 +304,8 @@ describe("SpendingByCategoryReport", () => {
     updatePreferences({ numberFormat: "en-US", defaultCurrency: "USD" });
     try {
       await vi.mocked(useNumberFormat).withImplementation(real.useNumberFormat, async () => {
-        const { unmount } = render(<SpendingByCategoryReport />);
+        let unmount!: () => void;
+        await act(async () => { ({ unmount } = render(<SpendingByCategoryReport />)); });
         try {
           await screen.findByText("Groceries");
           if (percentage === undefined) {
@@ -325,6 +326,29 @@ describe("SpendingByCategoryReport", () => {
       });
     } finally {
       usePreferencesStore.setState({ preferences });
+    }
+  });
+
+  it("sorts signed amounts when a saved share sort has no visible column", async () => {
+    const key = "reports.spending-by-category.table.sort";
+    localStorage.setItem(key, JSON.stringify({field: "percentage", direction: "asc"}));
+    try {
+      mockGetSpendingByCategory.mockResolvedValue({
+        ...completeReport([
+          { categoryId: "dining", categoryName: "Dining", color: null, total: 80 },
+          { categoryId: "travel", categoryName: "Travel", color: null, total: -50 },
+        ], 30),
+        netSpending: true,
+      });
+      await act(async () => { render(<SpendingByCategoryReport />); });
+      const headers = screen.getAllByRole("columnheader", { name: "Amount" });
+      for (const header of headers) expect(header).toHaveAttribute("aria-sort", "ascending");
+      const rows = screen.getAllByRole("row").filter(row => row.querySelector("td"));
+      expect(rows[0]).toHaveTextContent("Travel");
+      fireEvent.click(headers[0]);
+      for (const header of headers) expect(header).toHaveAttribute("aria-sort", "descending");
+    } finally {
+      localStorage.removeItem(key);
     }
   });
 

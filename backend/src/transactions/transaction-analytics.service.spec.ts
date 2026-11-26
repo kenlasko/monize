@@ -101,7 +101,7 @@ describe("TransactionAnalyticsService", () => {
       // collision cannot show whether the right one was named.
       find: jest.fn().mockResolvedValue([
         { id: "cat-food", name: "Food", parentId: null },
-        { id: "cat-travel", name: "Travel", parentId: null },
+        { id: "cat-travel", name: "Travel", parentId: null, isIncome: false },
         { id: "cat-bills", name: "Bills", parentId: null },
         { id: "cat-bills-cell", name: "Cell Phone", parentId: "cat-bills" },
         { id: "cat-biz", name: "Business", parentId: null },
@@ -3185,10 +3185,13 @@ describe("TransactionAnalyticsService", () => {
         .join(" | ");
       expect(selects).toContain("SUM(-COALESCE(ts.amount, t.amount))");
       expect(selects).not.toContain("SUM(ABS(");
-      // A category whose credits exceed its debits is not a spending row.
+      // A classified refund remains part of category spending.
       expect(
         (result.breakdown as any[]).map((r) => [r.categoryId, r.total]),
-      ).toEqual([["cat-food", 70]]);
+      ).toEqual([
+        ["cat-food", 70],
+        ["cat-travel", -20],
+      ]);
     });
 
     it("nets a correction into its income category and drops a net-negative one", async () => {
@@ -3498,14 +3501,14 @@ describe("TransactionAnalyticsService", () => {
         .mockResolvedValueOnce([
           // Food: 120 spent, 20 refunded -> 100 net (the SQL sums -amount).
           row({ categoryId: "cat-food", total: "100", count: "6" }),
-          // Travel was refunded in full and more: not a row in a spend report.
+          // Travel refunds exceed purchases, reducing the overall spending.
           row({ categoryId: "cat-travel", total: "-30", count: "2" }),
         ]);
 
       const result = await service.getLlmPeriodComparison(userId, periods);
 
-      expect(result.comparison.map((c) => c.label)).toEqual(["Food"]);
-      expect(result.period2.total).toBe(100);
+      expect(result.comparison.map((c) => c.label)).toEqual(["Travel", "Food"]);
+      expect(result.period2.total).toBe(70);
       const selected = (mockQueryBuilder.addSelect.mock.calls as any[][]).map(
         (c) => c[0],
       );
@@ -3515,6 +3518,23 @@ describe("TransactionAnalyticsService", () => {
       );
       expect(wheres).toContain("COALESCE(ts.amount, t.amount) <> 0");
       expect(wheres).not.toContain("COALESCE(ts.amount, t.amount) < 0");
+    });
+
+    it("omits expense growth against a net refund but keeps its signed change", async () => {
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-travel", total: "-10", count: "1" }),
+        ])
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-travel", total: "90", count: "1" }),
+        ]);
+      const result = await service.getLlmPeriodComparison(userId, periods);
+      expect(result.comparison[0]).toMatchObject({
+        change: 100,
+        changePercent: null,
+      });
+      expect(result.totalChange).toBe(100);
+      expect(result.totalChangePercent).toBeNull();
     });
 
     it("returns 100% change when period1 is zero but period2 is non-zero", async () => {

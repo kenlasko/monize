@@ -339,9 +339,10 @@ export class MonthlyComparisonService {
         currentTotal: c.current.knownSubtotalAt(places),
         previousTotal: c.previous.knownSubtotalAt(places),
         change: this.change(c.current, c.previous, places),
-        // A new net-credit category cannot have grown by 100% from zero.
+        // A net credit in the prior month provides no spending baseline.
         changePercent:
-          c.previous.knownSubtotalAt(places) === 0 && c.current.sign < 0
+          c.previous.sign < 0 ||
+          (c.previous.knownSubtotalAt(places) === 0 && c.current.sign < 0)
             ? null
             : this.percentChange(c.previous, c.current, places),
       }))
