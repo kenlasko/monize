@@ -59,6 +59,14 @@ export interface CurrencyUsageSummary {
   unconvertedCount: number;
   /** `"EUR->CAD"` for each pair with no rate; empty when the total is complete. */
   missingPairs: string[];
+  /**
+   * Provisional transfer legs (an imported estimate of what the other account
+   * received or sent, `amount_is_provisional`) among `transactionCount`, so
+   * inside `totalInCurrency`, and inside `totalInReportingCurrency`, which is
+   * null rather than partial while a row has no rate. Above 0 the page says
+   * the totals include estimated amounts.
+   */
+  provisionalCount: number;
 }
 
 /**
@@ -108,6 +116,7 @@ interface RawUsageGroup {
   in_code: string | null;
   in_account: string | null;
   missing_original: string;
+  provisional: string;
 }
 
 interface RawTransactionRate {
@@ -163,7 +172,10 @@ export class CurrencyDetailService {
                   SUM(ABS(t.amount)) AS in_account,
                   COUNT(*) FILTER (
                     WHERE t.currency_code <> $2 AND t.original_amount IS NULL
-                  )::text AS missing_original
+                  )::text AS missing_original,
+                  COUNT(*) FILTER (
+                    WHERE t.amount_is_provisional = true
+                  )::text AS provisional
              FROM transactions t
             WHERE t.user_id = $1
               AND ${LEDGER_MOVEMENT_PREDICATE}
@@ -181,6 +193,7 @@ export class CurrencyDetailService {
     let transactionCount = 0;
     let unconvertedCount = 0;
     let missingOriginal = 0;
+    let provisionalCount = 0;
     let firstDate: string | null = null;
     let lastDate: string | null = null;
     const inCode: number[] = [];
@@ -189,6 +202,7 @@ export class CurrencyDetailService {
       const count = Number(group.cnt);
       transactionCount += count;
       missingOriginal += Number(group.missing_original);
+      provisionalCount += Number(group.provisional) || 0;
       if (group.first_date && (!firstDate || group.first_date < firstDate)) {
         firstDate = group.first_date;
       }
@@ -218,6 +232,7 @@ export class CurrencyDetailService {
       knownReportingSubtotal: inReporting.knownSubtotal,
       unconvertedCount,
       missingPairs: inReporting.missingPairs,
+      provisionalCount,
     };
   }
 

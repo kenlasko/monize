@@ -162,6 +162,16 @@ export class IncomeExpenseTagBucket {
   /** How many aggregate rows this bucket left out, by any cause. */
   @ApiProperty({ example: 0 })
   excludedCount: number;
+
+  /**
+   * Provisional transfer legs (an imported estimate of what the other account
+   * received or sent) inside `taggedInflows` and `taggedOutflows`. The
+   * figures include them; above 0 the page says the bucket holds estimated
+   * amounts. Only a bucket carries it: the response's top-level (All)
+   * figures never hold a transfer leg (I2), so they have nothing to count.
+   */
+  @ApiProperty({ example: 0 })
+  provisionalCount: number;
 }
 
 export class IncomeVsExpensesResponse {

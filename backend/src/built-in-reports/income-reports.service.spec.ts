@@ -1439,6 +1439,50 @@ describe("IncomeReportsService", () => {
       expect(household.taggedOutflows).toBe(1000);
     });
 
+    it("counts each bucket's provisional legs inside its tagged flows (design section 6, P5)", async () => {
+      scopedManager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          // An imported estimate tagged household, beside a confirmed leg.
+          {
+            ...flowRow("household", "80.00", "100.00"),
+            provisional_count: "1",
+          },
+          { ...flowRow("work", "0.00", "50.00"), provisional_count: "0" },
+        ])
+        .mockResolvedValueOnce([flowRow("household", "0.00", "20.00")]);
+
+      const result = await service.getIncomeVsExpenses(
+        mockUserId,
+        "2025-01-01",
+        "2025-01-31",
+        { tagKey: "scope" },
+      );
+
+      const household = bucketByValue(result.buckets, "household");
+      expect(household.taggedInflows).toBe(80);
+      expect(household.provisionalCount).toBe(1);
+      expect(bucketByValue(result.buckets, "work").provisionalCount).toBe(0);
+      expect(
+        bucketByValue(result.buckets, UNTAGGED_TAG_BUCKET_ID).provisionalCount,
+      ).toBe(0);
+      // The All figures hold no transfer leg, so they carry no count (I1).
+      expect(result).not.toHaveProperty("provisionalCount");
+
+      const [wholeSql, splitSql] = scopedManager.query.mock.calls
+        .slice(2, 4)
+        .map((call) => call[0] as string);
+      expect(wholeSql).toContain(
+        "t.amount_is_provisional as leg_is_provisional",
+      );
+      expect(wholeSql).toContain(
+        "COUNT(*) FILTER (WHERE tr.leg_is_provisional = true) as provisional_count",
+      );
+      // A split's transfer line is never provisional.
+      expect(splitSql).not.toContain("amount_is_provisional");
+    });
+
     // The All figure's 0.015 of income and 0.005 of expenses, and the
     // bucket's 0.005 of tagged inflows and 0.004 of outflows, read 0.02, 0.01,
     // 0.01 and 0.00: the page's Balance of the four readings was 0.02 where

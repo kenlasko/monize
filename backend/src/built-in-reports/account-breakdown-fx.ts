@@ -27,6 +27,12 @@ export interface AccountTotalsRow {
   convertedCurrency: string;
   /** `total` at each part's own rate or date; null without one. */
   convertedTotal: number | null;
+  /**
+   * The provisional transfer legs (`amountIsProvisional`, an imported
+   * estimate) inside `total`, and so inside `convertedTotal`, which is null
+   * rather than partial while a part has no rate.
+   */
+  provisionalCount: number;
 }
 
 /**
@@ -61,6 +67,12 @@ export async function readAccountTotalsInReportingCurrency(
     .addSelect("account.currency_code", "currencyCode")
     .addSelect(countExpr, "transactionCount")
     .addSelect(`SUM(${amountExpr})`, "total")
+    // Whole rows only: a split's lines are never provisional, so a leg lies
+    // in one part and the parts' counts add up.
+    .addSelect(
+      "COUNT(DISTINCT t.id) FILTER (WHERE t.amount_is_provisional = true)",
+      "provisionalCount",
+    )
     // Formatted in Postgres so the day never shifts through a time zone.
     .addSelect(
       "TO_CHAR(MAX(t.transaction_date), 'YYYY-MM-DD')",
@@ -87,6 +99,14 @@ export async function readAccountTotalsInReportingCurrency(
   if (parts.length === 0) return [];
 
   const keyOf = (row: Record<string, any>) => String(row.accountId);
+  const provisionalCounts = new Map<string, number>();
+  for (const part of parts) {
+    const key = keyOf(part);
+    provisionalCounts.set(
+      key,
+      (provisionalCounts.get(key) ?? 0) + (Number(part.provisionalCount) || 0),
+    );
+  }
   const accounts = foldRateParts(parts, keyOf, {
     sums: ["total"],
     count: "transactionCount",
@@ -125,6 +145,7 @@ export async function readAccountTotalsInReportingCurrency(
         currencyCode === reportingCurrency
           ? total
           : (converted.get(account.key)?.total ?? null),
+      provisionalCount: provisionalCounts.get(account.key) ?? 0,
     };
   });
 }

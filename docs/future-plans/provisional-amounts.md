@@ -107,6 +107,16 @@ Decided in issue #2395 (custom reports, transaction analytics, the assistant and
 - `LlmTransactionRow` carries `amountIsProvisional: true` on a provisional leg's row only.
 - The assistant's `list_transactions` and `compare_periods` descriptions say what the count means. On MCP the `tools/list` total is at its shrink-only budget, so the counts stay undeclared on the loose outputs, as `list_accounts`' do, and the server instructions say once, for every tool and resource, what a `provisionalCount` above 0 and `amountIsProvisional` mean.
 
+Decided in issue #2396 (built-in reports that read transfer legs, and budget transfer actuals):
+
+- In scope are exactly the reads whose rows can be transfer legs, the ones `transferRateSql` serves: the Cash Flow Sankey's transfer flows, the Monthly Category Breakdown's transfer rows, Income vs Expenses' tagged transfer flows, the payee and category account panels (`backend/src/built-in-reports/account-breakdown-fx.ts`), budget transfer actuals and the currency usage summary. Every other built-in report excludes transfers and gains nothing.
+- Each counts in SQL over whole rows (`amount_is_provisional`): a split's transfer line is never provisional, so the split reads count nothing. A group left out for want of a rate counts nowhere (section 8).
+- `CashFlowSankeyResponse` and `MonthlyCategoryBreakdownResponse` carry `provisionalCount` at the response; the Sankey counts each half of a flow row on its own side, so an estimate in a half that did not convert is not counted.
+- Income vs Expenses carries it on each tag bucket (`IncomeExpenseTagBucket.provisionalCount`), over its `taggedInflows` and `taggedOutflows`. The top-level (All) figures never hold a transfer leg and keep their shape (I1 of `docs/specs/report-tag-key-breakdown.md`).
+- Each row of the payee and category account panels carries `provisionalCount` over its `total`; `convertedTotal` is null rather than partial while a part has no rate, so it holds the same rows.
+- `queryCategorySpending` counts per outgoing transfer line, per transfer income line and for the transfers-in toggle's income, by id, so a leg an outgoing line and an income line naming one account both read counts once in `provisionalCount`. The budget summary carries `provisionalCount` on each `CategoryActualRow` (0 on a category line) and in total. The alerts, trend, health and period-close readers of the same util are not surfaces F3 marks and are left alone.
+- `CurrencyUsageSummary.provisionalCount` is over every row in `transactionCount`, inside `totalInCurrency` and inside `totalInReportingCurrency`, which is null rather than partial while a row has no rate. The transaction-rates list is not a summed figure and is left alone.
+
 **Search.** `is:provisional` and `-is:provisional` in the transaction search grammar.
 
 ## 7. Truth table

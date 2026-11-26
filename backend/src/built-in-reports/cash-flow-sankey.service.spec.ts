@@ -81,6 +81,8 @@ interface TransferFixture {
   own_rate?: string | null;
   inflow?: string;
   outflow?: string;
+  provisional_inflow_count?: string;
+  provisional_outflow_count?: string;
 }
 
 interface RateFixture {
@@ -1206,6 +1208,65 @@ describe("CashFlowSankeyService", () => {
       ).rejects.toBe(boom);
     });
   });
+
+  describe("provisional count (design section 6, P5)", () => {
+    it("counts the estimates inside the transfer flows that converted", async () => {
+      useLedger({
+        scope: [CHEQUING, US_CHEQUING],
+        whole: [
+          // One estimate on each side of a CAD flow.
+          {
+            counterpart_account_id: "acct-savings",
+            counterpart_type: "SAVINGS",
+            inflow: "300",
+            outflow: "-500",
+            provisional_inflow_count: "1",
+            provisional_outflow_count: "1",
+          },
+          // A USD estimate with no rate is in no figure, so counts nowhere.
+          {
+            counterpart_account_id: "acct-savings",
+            counterpart_type: "SAVINGS",
+            currency_code: "USD",
+            outflow: "-100",
+            provisional_outflow_count: "1",
+          },
+        ],
+        // A split's transfer line is never provisional.
+        split: [
+          {
+            counterpart_account_id: "acct-loan",
+            counterpart_type: "LOAN",
+            outflow: "-200",
+          },
+        ],
+        rates: [],
+      });
+
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+      );
+
+      expect(result.provisionalCount).toBe(2);
+      expect(result.excludedCount).toBe(1);
+      // The estimates stay in the figures: nothing is withheld for them.
+      expect(node(result, "class:debt")?.total).toBe(200);
+    });
+
+    it("counts nothing without a provisional leg", async () => {
+      useLedger({ ...EXAMPLE });
+
+      const result = await service.getCashFlowSankey(
+        USER,
+        "2026-09-01",
+        "2026-09-30",
+      );
+
+      expect(result.provisionalCount).toBe(0);
+    });
+  });
 });
 
 describe("the Sankey's transfer reads (issue #2153)", () => {
@@ -1225,6 +1286,19 @@ describe("the Sankey's transfer reads (issue #2153)", () => {
         '"ts".transfer_account_id IS NOT NULL',
       );
     });
+  });
+
+  it("counts each whole leg's estimate on its own side", () => {
+    const { sql } = wholeTransferLegsQuery(scope);
+    expect(sql).toContain(
+      "COUNT(*) FILTER (WHERE t.amount_is_provisional = true AND t.amount > 0) AS provisional_inflow_count",
+    );
+    expect(sql).toContain(
+      "COUNT(*) FILTER (WHERE t.amount_is_provisional = true AND t.amount < 0) AS provisional_outflow_count",
+    );
+    expect(splitTransferLegsQuery(scope).sql).not.toContain(
+      "amount_is_provisional",
+    );
   });
 
   it("keeps the market rate on a ledger the reader does not own", () => {

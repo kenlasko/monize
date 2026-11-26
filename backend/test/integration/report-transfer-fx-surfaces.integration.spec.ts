@@ -7,6 +7,7 @@ import { IncomeReportsService } from "@/built-in-reports/income-reports.service"
 import { TransactionAnalyticsService } from "@/transactions/transaction-analytics.service";
 import { TransactionsModule } from "@/transactions/transactions.module";
 import { PayeeDetailService } from "@/payees/payee-detail.service";
+import { CurrencyDetailService } from "@/currencies/currency-detail.service";
 import {
   Transaction,
   TransactionStatus,
@@ -300,6 +301,9 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       totalExpenses: 208,
       missingCurrencies: [],
     });
+    // Only the confirmed side is in the figure, so nothing is an estimate
+    // (design section 13, question 2).
+    expect(flows.provisionalCount).toBe(0);
   });
 
   it("reads confirmed EUR legs at 90 EUR whatever their description says (design P4)", async () => {
@@ -727,6 +731,266 @@ describe("a transfer leg at the amounts moved, on every report (integration)", (
       currency: "USD",
       totalIncome: 200,
       missingCurrencies: [],
+    });
+  });
+  /**
+   * Each surface above whose rows can be transfer legs says how many
+   * provisional amounts its figures hold (design section 6, P5, of
+   * `docs/future-plans/provisional-amounts.md`): the count is over the
+   * provisional legs inside the figure, so the confirmed USD side alone
+   * counts none (section 13, question 2), and it is 0 once the legs are
+   * confirmed. The figures themselves do not change with the flag.
+   */
+  describe("the provisional count on each surface (design P5)", () => {
+    /** Flags or confirms both incoming EUR legs, as the USD file's import left them. */
+    const setEuroLegsProvisional = (provisional: boolean) =>
+      dataSource.query(
+        `UPDATE transactions SET amount_is_provisional = $3
+          WHERE user_id = $1 AND account_id = $2`,
+        [userId, euId, provisional],
+      );
+
+    /** The plain transfer's incoming EUR leg. */
+    const plainInId = async (): Promise<string> =>
+      (
+        await dataSource.query(
+          `SELECT linked_transaction_id AS id FROM transactions WHERE id = $1`,
+          [plainOutId],
+        )
+      )[0].id;
+
+    it("counts both EUR legs in the Cash Flow Sankey of Euro Savings, and none once confirmed", async () => {
+      await seed("EUR");
+      const read = () =>
+        asUser(() =>
+          sankey.getCashFlowSankey(userId, START, END, { accountIds: [euId] }),
+        );
+
+      await setEuroLegsProvisional(true);
+      const provisional = await read();
+      await setEuroLegsProvisional(false);
+      const confirmed = await read();
+
+      // The plain leg and the split's counterpart row, each 90 in.
+      expect(provisional.totals.inflows).toBe(180);
+      expect(provisional.provisionalCount).toBe(2);
+      expect(confirmed.totals.inflows).toBe(180);
+      expect(confirmed.provisionalCount).toBe(0);
+    });
+
+    it("counts nothing in the Sankey of the confirmed US side", async () => {
+      await seed("EUR");
+      await setEuroLegsProvisional(true);
+
+      const flows = await asUser(() =>
+        sankey.getCashFlowSankey(userId, START, END, { accountIds: [usId] }),
+      );
+
+      expect(flows.provisionalCount).toBe(0);
+    });
+
+    it("counts both EUR legs in the monthly category breakdown, and none once confirmed", async () => {
+      await seed("EUR");
+      const read = () =>
+        asUser(() =>
+          breakdown.getMonthlyCategoryBreakdown(userId, START, END, {
+            accountIds: [euId],
+          }),
+        );
+
+      await setEuroLegsProvisional(true);
+      const provisional = await read();
+      await setEuroLegsProvisional(false);
+      const confirmed = await read();
+
+      expect(provisional.transfers).toEqual([
+        expect.objectContaining({ direction: "to", total: -180 }),
+      ]);
+      expect(provisional.provisionalCount).toBe(2);
+      expect(confirmed.provisionalCount).toBe(0);
+      // Both sides together: the US legs are confirmed, so still two.
+      await setEuroLegsProvisional(true);
+      const both = await asUser(() =>
+        breakdown.getMonthlyCategoryBreakdown(userId, START, END),
+      );
+      expect(both.provisionalCount).toBe(2);
+    });
+
+    it("counts the tagged EUR leg in its Income vs Expenses bucket, and none once confirmed", async () => {
+      await seed("EUR");
+      await tag("transaction_id", await plainInId());
+      const read = () =>
+        asUser(() =>
+          income.getIncomeVsExpenses(userId, START, END, {
+            tagKey: "scope",
+            accountIds: [euId],
+          }),
+        );
+
+      await setEuroLegsProvisional(true);
+      const provisional = await read();
+      await setEuroLegsProvisional(false);
+      const confirmed = await read();
+
+      const home = provisional.buckets?.find((b) => b.value === "home");
+      expect(home?.taggedInflows).toBe(90);
+      expect(home?.provisionalCount).toBe(1);
+      expect(
+        confirmed.buckets?.find((b) => b.value === "home")?.provisionalCount,
+      ).toBe(0);
+    });
+
+    it("counts the EUR leg in its account's row of a payee's panel, and none once confirmed", async () => {
+      await seed("EUR");
+      // The incoming leg carries the payee too, as a recorded transfer's do.
+      await dataSource.query(
+        `UPDATE transactions SET payee_id = $1, payee_name = 'Exchange' WHERE id = $2`,
+        [payeeId, await plainInId()],
+      );
+      const read = async () =>
+        (
+          await asUser(() =>
+            new PayeeDetailService(dataSource, {
+              findOne: async () => ({ id: payeeId }),
+            } as never).getDetail(userId, payeeId),
+          )
+        ).accounts.map((r) => [r.accountName, r.total, r.provisionalCount]);
+
+      await setEuroLegsProvisional(true);
+      const provisional = await read();
+      await setEuroLegsProvisional(false);
+      const confirmed = await read();
+
+      expect(provisional).toEqual([
+        ["US Chequing", -100, 0],
+        ["Euro Savings", 90, 1],
+      ]);
+      expect(confirmed).toEqual([
+        ["US Chequing", -100, 0],
+        ["Euro Savings", 90, 0],
+      ]);
+    });
+
+    it("counts both EUR legs in a budget's transfer income from US Chequing, and none once confirmed", async () => {
+      await seed("EUR");
+      const budget = await dataSource.manager.save(
+        dataSource.manager.create(Budget, {
+          userId,
+          name: "March",
+          budgetType: BudgetType.MONTHLY,
+          periodStart: START,
+          currencyCode: "EUR",
+          config: {},
+        } as Partial<Budget>),
+      );
+      const line = {
+        id: "bc-from-us",
+        budgetId: budget.id,
+        categoryId: null,
+        isTransfer: true,
+        isIncome: true,
+        transferAccountId: usId,
+      } as unknown as BudgetCategory;
+      const read = () =>
+        asUser(() =>
+          withScopedDb(dataSource, (m) =>
+            queryCategorySpending(
+              m.getRepository(Transaction),
+              m.getRepository(TransactionSplit),
+              userId,
+              [line],
+              START,
+              END,
+            ),
+          ),
+        );
+
+      await setEuroLegsProvisional(true);
+      const provisional = await read();
+      await setEuroLegsProvisional(false);
+      const confirmed = await read();
+
+      expect(provisional.transferIncomeMap.get(usId)).toBe(180);
+      expect(provisional.transferIncomeProvisionalCounts.get(usId)).toBe(2);
+      expect(provisional.provisionalCount).toBe(2);
+      expect(confirmed.transferIncomeProvisionalCounts.get(usId)).toBe(
+        undefined,
+      );
+      expect(confirmed.provisionalCount).toBe(0);
+    });
+
+    it("counts the outgoing USD estimate in a budget's transfer actuals when the EUR file came first", async () => {
+      await seed("EUR");
+      // The EUR file's import estimated the plain transfer's USD leg.
+      await dataSource.query(
+        `UPDATE transactions SET amount_is_provisional = $2 WHERE id = $1`,
+        [plainOutId, true],
+      );
+      const budget = await dataSource.manager.save(
+        dataSource.manager.create(Budget, {
+          userId,
+          name: "March",
+          budgetType: BudgetType.MONTHLY,
+          periodStart: START,
+          currencyCode: "EUR",
+          config: {},
+        } as Partial<Budget>),
+      );
+      const line = {
+        id: "bc-savings",
+        budgetId: budget.id,
+        categoryId: null,
+        isTransfer: true,
+        transferAccountId: euId,
+      } as unknown as BudgetCategory;
+      const read = () =>
+        asUser(() =>
+          withScopedDb(dataSource, (m) =>
+            queryCategorySpending(
+              m.getRepository(Transaction),
+              m.getRepository(TransactionSplit),
+              userId,
+              [line],
+              START,
+              END,
+            ),
+          ),
+        );
+
+      const provisional = await read();
+      await dataSource.query(
+        `UPDATE transactions SET amount_is_provisional = $2 WHERE id = $1`,
+        [plainOutId, false],
+      );
+      const confirmed = await read();
+
+      // The plain leg and the split's transfer line, each at what arrived.
+      expect(provisional.transferSpendingMap.get(euId)).toBe(180);
+      expect(provisional.transferProvisionalCounts.get(euId)).toBe(1);
+      expect(provisional.provisionalCount).toBe(1);
+      expect(confirmed.transferProvisionalCounts.get(euId)).toBe(undefined);
+      expect(confirmed.provisionalCount).toBe(0);
+    });
+
+    it("counts both EUR legs in the euro's usage summary, and none once confirmed", async () => {
+      await seed("EUR");
+      const currencyDetail = new CurrencyDetailService(dataSource, {
+        getRateIndex: () => Promise.resolve(new Map()),
+      } as never);
+      const read = () =>
+        asUser(() => currencyDetail.getUsageSummary(userId, "EUR"));
+
+      await setEuroLegsProvisional(true);
+      const provisional = await read();
+      await setEuroLegsProvisional(false);
+      const confirmed = await read();
+
+      expect(provisional).toMatchObject({
+        transactionCount: 2,
+        totalInCurrency: 180,
+        provisionalCount: 2,
+      });
+      expect(confirmed.provisionalCount).toBe(0);
     });
   });
 });

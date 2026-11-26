@@ -1356,6 +1356,7 @@ describe("BudgetsService", () => {
       expect(groceries!.budgeted).toBe(500);
       expect(groceries!.spent).toBe(350);
       expect(groceries!.remaining).toBe(150);
+      expect(result.provisionalCount).toBe(0);
     });
 
     it("returns the period dates its figures were read for", async () => {
@@ -1525,13 +1526,12 @@ describe("BudgetsService", () => {
         )
         .mockReturnValueOnce(
           createMockQueryBuilder({
-            getRawMany: jest
-              .fn()
-              .mockResolvedValue([
-                spendingRow("hisa", "2000"),
-                spendingRow("hisa", "-500"),
-                spendingRow("rrsp", "300"),
-              ]),
+            getRawMany: jest.fn().mockResolvedValue([
+              // Imported estimates (design section 6, P5), one per figure.
+              { ...spendingRow("hisa", "2000"), provisionalIds: ["leg-h"] },
+              spendingRow("hisa", "-500"),
+              { ...spendingRow("rrsp", "300"), provisionalIds: ["leg-r"] },
+            ]),
           }),
         );
       splitsRepository.createQueryBuilder.mockReturnValue(
@@ -1547,8 +1547,11 @@ describe("BudgetsService", () => {
         isIncome: true,
         isTransfer: true,
         spent: 1500,
+        provisionalCount: 1,
       });
       expect(result.outsideTransferIncome).toBe(300);
+      // The line's estimate and the toggle's, each once.
+      expect(result.provisionalCount).toBe(2);
       expect(result.totalIncome).toBe(1800);
       // The income-linked line is a percentage of every income, transfers in
       // included: 10% of 1,800.
@@ -1556,6 +1559,7 @@ describe("BudgetsService", () => {
         (c) => c.budgetCategoryId === "bc-1",
       );
       expect(groceries!.budgeted).toBe(180);
+      expect(groceries!.provisionalCount).toBe(0);
     });
 
     it("counts the toggle's income on a budget with no line (issue #2141)", async () => {

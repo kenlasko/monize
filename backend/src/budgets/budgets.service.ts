@@ -41,6 +41,7 @@ import {
 import {
   budgetTransfersInAsIncome,
   queryCategorySpending,
+  resolveCategoryProvisionalCount,
   resolveBudgetIncome,
   resolveBudgetLineBudgeted,
   resolveCategoryName,
@@ -100,6 +101,11 @@ export interface CategoryActualRow {
   /** A transfer line: outgoing savings, or transfer income when `isIncome`. */
   isTransfer: boolean;
   percentage: number | null;
+  /**
+   * Provisional transfer legs (an imported estimate) inside `spent`; 0 on a
+   * category line, whose rows are never transfer legs.
+   */
+  provisionalCount: number;
 }
 
 /** The current period's line figures and the income no line carries. */
@@ -110,6 +116,11 @@ interface CategoryActuals {
    * (`resolveOutsideTransferIncome`); `0` with the toggle off (issue #2141).
    */
   outsideTransferIncome: number;
+  /**
+   * The distinct provisional transfer legs in any line's `spent` or in
+   * `outsideTransferIncome` (`CategorySpending.provisionalCount`).
+   */
+  provisionalCount: number;
 }
 
 @Injectable()
@@ -598,18 +609,27 @@ export class BudgetsService {
     /** Included in `totalIncome`; `0` unless `config.transfersInAsIncome`. */
     outsideTransferIncome: number;
     categoryBreakdown: CategoryActualRow[];
+    /**
+     * Provisional transfer legs (an imported estimate) inside the transfer
+     * lines' actuals and `outsideTransferIncome`, once each; above 0 the page
+     * says its figures include estimated amounts.
+     */
+    provisionalCount: number;
   }> {
     const budget = await this.findOne(userId, budgetId);
 
     const { periodStart, periodEnd } = this.getCurrentPeriodDates(budget);
 
-    const { lines: categoryBreakdown, outsideTransferIncome } =
-      await this.getCachedCategoryActuals(
-        userId,
-        budget,
-        periodStart,
-        periodEnd,
-      );
+    const {
+      lines: categoryBreakdown,
+      outsideTransferIncome,
+      provisionalCount,
+    } = await this.getCachedCategoryActuals(
+      userId,
+      budget,
+      periodStart,
+      periodEnd,
+    );
 
     const expenseCategories = categoryBreakdown.filter((c) => !c.isIncome);
     const incomeCategories = categoryBreakdown.filter((c) => c.isIncome);
@@ -644,6 +664,7 @@ export class BudgetsService {
       actualIncome,
       outsideTransferIncome,
       categoryBreakdown,
+      provisionalCount,
     };
   }
 
@@ -1231,7 +1252,7 @@ export class BudgetsService {
       budgetCategories.length === 0 &&
       !budgetTransfersInAsIncome(budget.config)
     ) {
-      return { lines: [], outsideTransferIncome: 0 };
+      return { lines: [], outsideTransferIncome: 0, provisionalCount: 0 };
     }
 
     // The two spending queries share one scoped transaction so the direct and
@@ -1286,12 +1307,14 @@ export class BudgetsService {
         isIncome: bc.isIncome,
         isTransfer: bc.isTransfer,
         percentage,
+        provisionalCount: resolveCategoryProvisionalCount(bc, spending),
       };
     });
 
     return {
       lines,
       outsideTransferIncome: resolveOutsideTransferIncome(spending),
+      provisionalCount: spending.provisionalCount,
     };
   }
 }

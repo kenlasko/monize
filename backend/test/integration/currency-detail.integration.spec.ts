@@ -211,6 +211,7 @@ describe("currency detail (integration)", () => {
       knownReportingSubtotal: 664,
       unconvertedCount: 0,
       missingPairs: [],
+      provisionalCount: 0,
     });
   });
 
