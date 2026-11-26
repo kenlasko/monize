@@ -581,6 +581,35 @@ describe("Email Templates", () => {
       },
     );
 
+    it("shows the carried shortfall in money when no positive funding is available", () => {
+      const line = {
+        categoryName: "TV",
+        budgeted: -100,
+        actual: 120,
+        percentUsed: 0,
+      };
+      const html = budgetMonthlySummaryTemplate(
+        "Alice",
+        [
+          {
+            ...sampleSummaries[0],
+            totalBudgeted: -100,
+            totalSpent: 120,
+            remaining: -220,
+            percentUsed: 0,
+            overBudgetCategories: [line],
+            topCategories: [line],
+          },
+        ],
+        "https://monize.app",
+      );
+
+      expect(html).toContain("-$220.00");
+      expect(html).toContain("Over Budget");
+      expect(html).not.toContain("0.0% used");
+      expect(html).not.toContain(">0%</");
+    });
+
     it("shows percent used", () => {
       const html = budgetMonthlySummaryTemplate(
         "Alice",

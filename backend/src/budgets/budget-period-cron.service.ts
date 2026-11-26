@@ -17,6 +17,7 @@ import {
 import { BudgetReportsService } from "./budget-reports.service";
 import { EmailService } from "../notifications/email.service";
 import { budgetMonthlySummaryTemplate } from "../notifications/email-templates";
+import { roundMoney, sumMoney } from "../common/round.util";
 import { numberFormatterFor } from "../common/number-locale.util";
 import { withSystemContext, withUserContext } from "../common/db/with-context";
 import { NotificationCategory } from "../notification-center/entities/notification.entity";
@@ -314,37 +315,52 @@ export class BudgetPeriodCronService {
         const categories = budget.categories || [];
         const expenseCategories = categories.filter((c) => !c.isIncome);
 
-        const periodCategories = period.periodCategories || [];
-
+        const frozenByLine = new Map(
+          (period.periodCategories ?? []).map((pc) => [
+            pc.budgetCategoryId,
+            pc,
+          ]),
+        );
         const categoryData = expenseCategories.map((bc) => {
-          const pc = periodCategories.find((p) => p.budgetCategoryId === bc.id);
+          const pc = frozenByLine.get(bc.id);
+          const budgeted = Number(
+            pc?.effectiveBudget ?? pc?.budgetedAmount ?? bc.amount,
+          );
+          const actual = Number(pc?.actualAmount ?? 0);
           return {
             categoryName: bc.category?.name || "Uncategorized",
-            budgeted: Number(pc?.budgetedAmount ?? bc.amount),
-            actual: Number(pc?.actualAmount ?? 0),
+            budgeted,
+            actual,
             percentUsed:
-              Number(pc?.budgetedAmount ?? bc.amount) > 0
-                ? Math.round(
-                    (Number(pc?.actualAmount ?? 0) /
-                      Number(pc?.budgetedAmount ?? bc.amount)) *
-                      10000,
-                  ) / 100
-                : 0,
+              budgeted > 0 ? Math.round((actual / budgeted) * 10000) / 100 : 0,
           };
         });
 
         const overBudgetCategories = categoryData.filter(
-          (c) => c.percentUsed > 100,
+          (c) => c.actual > c.budgeted,
         );
 
         const topCategories = [...categoryData]
           .sort((a, b) => b.actual - a.actual)
           .slice(0, 5);
 
-        const totalBudgeted = Number(period.totalBudgeted);
+        // The header holds the opening plan. The frozen expense lines hold the
+        // amounts actually available, including carry and income-linked funding.
+        // A partial set of lines can adjust the header only by its known carry.
+        const allExpensesFrozen =
+          expenseCategories.length > 0 &&
+          expenseCategories.every((bc) => frozenByLine.has(bc.id));
+        const totalBudgeted = allExpensesFrozen
+          ? sumMoney(categoryData.map((c) => c.budgeted))
+          : sumMoney([
+              Number(period.totalBudgeted),
+              ...expenseCategories.map((bc) =>
+                Number(frozenByLine.get(bc.id)?.rolloverIn ?? 0),
+              ),
+            ]);
         const totalSpent = Number(period.actualExpenses);
         const totalIncome = Number(period.actualIncome);
-        const remaining = totalBudgeted - totalSpent;
+        const remaining = roundMoney(totalBudgeted - totalSpent);
         const percentUsed =
           totalBudgeted > 0
             ? Math.round((totalSpent / totalBudgeted) * 10000) / 100

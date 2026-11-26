@@ -32,6 +32,8 @@ The current velocity calculation extrapolates signed spending. On day 5 of a 30-
 
 When rollover is enabled, the next period receives the signed closing balance. For an expense line this is its allocation plus incoming rollover minus actual spending. For a bucket this is its own allocation plus its incoming carry minus its members’ spending. The bucket and its lines carry their balances independently. A configured cap limits positive carry only. Disabling carry makes the outgoing amount zero. A bucket with an unknown allocation keeps its existing zero outgoing carry. Previously closed periods keep their stored amounts. [Decision in #2404](https://github.com/kenlasko/monize/discussions/2404) · [Maintainer confirmation](https://github.com/kenlasko/monize/pull/2429#issuecomment-7180940431)
 
+The live category row shows the amount over budget when the remaining balance is negative. A line with zero or negative effective funding has no meaningful percentage of budget used or comparison to the elapsed share of the month. The monthly email uses the effective expense funding recorded for the closed period.
+
 With 100 allocated per month, monthly rollover and no cap, a January purchase of 300 followed by a full refund in February gives the same result for an expense line and a bucket:
 
 | Month | Allocation | Carry in | Available before activity | Actual spending | Balance after activity |

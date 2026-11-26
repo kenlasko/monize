@@ -356,7 +356,7 @@ export class BudgetReportsService {
     }
 
     const overBudgetCategories = summary.categoryBreakdown
-      .filter((c) => !c.isIncome && c.percentUsed > 100)
+      .filter((c) => !c.isIncome && c.remaining < 0)
       .map((c) => ({
         category: c.categoryName,
         budgeted: c.budgeted,
@@ -365,7 +365,13 @@ export class BudgetReportsService {
       }));
 
     const nearLimitCategories = summary.categoryBreakdown
-      .filter((c) => !c.isIncome && c.percentUsed >= 80 && c.percentUsed <= 100)
+      .filter(
+        (c) =>
+          !c.isIncome &&
+          c.remaining >= 0 &&
+          c.percentUsed >= 80 &&
+          c.percentUsed <= 100,
+      )
       .map((c) => ({
         category: c.categoryName,
         budgeted: c.budgeted,

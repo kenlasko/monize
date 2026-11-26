@@ -66,6 +66,17 @@ describe('BudgetCategoryRow', () => {
     expect(screen.getByText('117%')).toBeInTheDocument();
   });
 
+  it.each([-100, 0])('shows the deficit without a pace or percentage for funding of %s', (budgeted) => {
+    const category = { ...baseCategory, budgeted, spent: 120, remaining: budgeted - 120, percentUsed: 0 };
+    render(<BudgetCategoryRow category={category} formatCurrency={mockFormat} pacePercent={60} />);
+
+    expect(screen.getByText(mockFormat(120))).toHaveClass('text-red-600');
+    expect(screen.getByText(`${mockFormat(120 - budgeted)} over`)).toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    expect(screen.queryByText(/pace/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+
   it('shows flex group badge when provided', () => {
     render(
       <BudgetCategoryRow
