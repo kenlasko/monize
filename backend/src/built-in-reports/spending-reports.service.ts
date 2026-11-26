@@ -89,7 +89,7 @@ export function includesSpendingCategory(
   total: number,
   isIncome?: boolean,
 ): boolean {
-  return isIncome === undefined ? isNetSpending(total) : !isIncome;
+  return isIncome === false || isNetSpending(total);
 }
 
 @Injectable()
@@ -307,8 +307,7 @@ export class SpendingReportsService {
     // inclusion rule, including Uncategorized. Zero-only postings are already
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
-      ([, { agg, category }]) =>
-        includesSpendingCategory(agg.sign, category?.isIncome),
+      ([, { agg, category }]) => category !== null || isNetSpending(agg.sign),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -355,7 +354,6 @@ export class SpendingReportsService {
       SELECT
         COALESCE(ts.category_id, t.category_id) AS category_id,
         COALESCE(parent.id, c.id) AS bucket_id,
-        COALESCE(parent.is_income, c.is_income) AS is_income,
         t.payee_id, t.payee_name, t.currency_code,
         ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
@@ -371,12 +369,11 @@ export class SpendingReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), COALESCE(parent.id, c.id), COALESCE(parent.is_income, c.is_income), t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), COALESCE(parent.id, c.id), t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
 
     const rawResults: (RawPayeeAggregate & {
       category_id: string | null;
       bucket_id: string | null;
-      is_income: boolean | null;
     })[] = await withScopedDb(this.dataSource, (m) => m.query(query, params));
 
     const payeeIds = rawResults
@@ -419,8 +416,7 @@ export class SpendingReportsService {
     // Decide eligibility at category level before attributing each posting
     // to its payee. A refund can come from a different payee than the purchase.
     for (const { row, total, category } of convertedRows) {
-      if (!includesSpendingCategory(category.sign, row.is_income ?? undefined))
-        continue;
+      if (!row.bucket_id && !isNetSpending(category.sign)) continue;
       const key = JSON.stringify([
         row.payee_id,
         row.payee_id ? null : row.payee_name,
@@ -577,8 +573,8 @@ export class SpendingReportsService {
     // The fallback tests the sign before rounding (rules 2 and 5).
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
-        .filter(([id, overall]) =>
-          includesSpendingCategory(overall.sign, categoryMap.get(id)?.isIncome),
+        .filter(
+          ([id, overall]) => categoryMap.has(id) || isNetSpending(overall.sign),
         )
         .map(([id]) => id),
     );

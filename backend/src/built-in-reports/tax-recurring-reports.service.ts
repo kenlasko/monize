@@ -297,14 +297,14 @@ export class TaxRecurringReportsService {
       map.set(name, sum);
     };
     netByCategory.forEach(({ name: catName, leafName, isIncome, net }) => {
-      if (includesSpendingCategory(-net.sign, isIncome)) {
+      if (isIncome ?? net.sign > 0) {
+        totalIncome.merge(net);
+        addTo(incomeBySource, catName, net, false);
+      } else if (includesSpendingCategory(-net.sign, isIncome)) {
         totalExpenses.mergeNegated(net);
         addTo(allExpensesByCategory, catName, net, true);
         if (matchesKeywords(catName) || matchesKeywords(leafName))
           addTo(deductibleExpenses, catName, net, true);
-      } else if (isIncome || net.sign > 0) {
-        totalIncome.merge(net);
-        addTo(incomeBySource, catName, net, false);
       }
     });
 

@@ -207,6 +207,39 @@ describe("signed expenses in Spending by Category (integration)", () => {
     },
   );
 
+  it("classifies a split by its leaf before rolling up a legacy mixed-type tree", async () => {
+    const medical = await createTestCategory(db, userId, {
+      name: "Medical",
+      parentId: salary,
+    });
+    const parent = await post(-50, { isSplit: true, categoryId: null });
+    await db.manager.save(TransactionSplit, [
+      { transactionId: parent.id, categoryId: medical.id, amount: -100 },
+      { transactionId: parent.id, categoryId: salary, amount: 50 },
+    ]);
+    await post(150, { categoryId: medical.id });
+    expect(await read()).toMatchObject({
+      data: [{ categoryId: salary, total: -50 }],
+      totalSpending: -50,
+    });
+    expect(
+      await withUserContext(userId, () =>
+        reports.getSpendingByPayee(userId, start, end),
+      ),
+    ).toMatchObject({
+      data: [{ payeeName: "Co-op", total: -50 }],
+      totalSpending: -50,
+    });
+    const report = await withUserContext(userId, () =>
+      tax.getTaxSummary(userId, 2026),
+    );
+    expect(report.totals).toMatchObject({
+      income: 50,
+      expenses: -50,
+      deductible: -50,
+    });
+  });
+
   it("reconciles expense subcategories and their parent across a net credit", async () => {
     const child = (
       await createTestCategory(db, userId, {
