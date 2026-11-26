@@ -151,6 +151,12 @@ The same table holds when the EUR file is imported first: the provisional leg is
 - **Where.** The accounts list and its summary, the register header, the net worth hero, chart and report, the custom report viewer, the built-in reports whose rows can be transfer legs, the payee and category account panels, and budget transfer actuals.
 - **Copy.** Reader-facing words are "estimated amount" and "includes estimated amounts". Keys live under a `provisional` name so they do not collide with the schedule estimate's keys.
 
+Decided in issue #2397 (the badge and the action):
+
+- One component, `ProvisionalAmountBadge` (`frontend/src/components/transactions/`), draws the label wherever a row's amount is drawn: the phone card, the desktop row's Amount cell, Folio's Payment or Deposit cell, the Pebble row and the Pebble inspector. It reads the flag through `isProvisionalAmount` (`frontend/src/lib/provisional-amount.ts`) as `=== true`, so a payload without the field is drawn as confirmed. Every register that renders `TransactionList` shows the badge.
+- The action is offered only where a caller passes `onConfirmAmount`; today that is the Transactions page. The list withholds it from a row of a joint account shared to the reader, because the endpoint is owner-scoped and would refuse it.
+- After the endpoint answers, the page reloads through `loadAllData`, the path the register's delete takes: the rows, the accounts the account widget reads (where F2's count will live), and the reload key the widgets refetch on. `transactionsApi.confirmAmount` drops the cached balance reads. A second click on the same row before the reload lands sends nothing.
+
 ## 10. Test matrix
 
 The discussion's ten scenarios, each owned by a task.
