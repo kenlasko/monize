@@ -2854,4 +2854,35 @@ describe('PostTransactionDialog: an estimated foreign-currency bill (issue #2458
     });
     expect(mockPostApi).not.toHaveBeenCalled();
   });
+
+  it('posts a typed foreign amount for an unknown estimate while the rate preview has not answered', async () => {
+    mockGetRateForDate.mockRejectedValue(new Error('offline'));
+    await act(async () => {
+      render(
+        <PostTransactionDialog
+          {...props}
+          scheduledTransaction={{
+            ...foreignEstimated,
+            amountEstimate: { ...foreignEstimated.amountEstimate, status: 'no-history', months: {} },
+          }}
+        />,
+      );
+    });
+    const amountInput = screen.getByLabelText('Amount in USD');
+    await act(async () => {
+      fireEvent.change(amountInput, { target: { value: '-120' } });
+      fireEvent.blur(amountInput);
+    });
+
+    const buttons = screen.getAllByText('Post Transaction');
+    await act(async () => {
+      fireEvent.click(buttons[buttons.length - 1]);
+    });
+    await waitFor(() => {
+      expect(mockPostApi).toHaveBeenCalledWith(
+        's-fx',
+        expect.objectContaining({ originalAmount: -120 }),
+      );
+    });
+  });
 });

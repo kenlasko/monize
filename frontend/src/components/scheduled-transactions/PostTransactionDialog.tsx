@@ -886,7 +886,10 @@ export function PostTransactionDialog({
   const handlePost = async () => {
     // An unknown estimate opened the field at zero; posting that unchanged
     // would book a figure nobody stated.
-    if (!isInvestmentKind && postEstimate === null && amount === 0) {
+    // A foreign bill's figure is the biller's amount, which the server
+    // converts even when the rate preview has not answered (issue #2458).
+    const enteredZero = isForeignPosting ? foreignAmount === 0 : amount === 0;
+    if (!isInvestmentKind && postEstimate === null && enteredZero) {
       toast.error(t('postDialog.toasts.estimateUnknown'));
       return;
     }

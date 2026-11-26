@@ -1284,6 +1284,12 @@ export function ScheduledTransactionForm({
       toast.error(t('form.toasts.fxRateRequired'));
       return;
     }
+    // An estimated foreign bill needs a rate as well: the estimate's own, or
+    // while that is unknown the latest one the form found (issue #2458).
+    if (isForeign && estimating && estimateExchangeRate == null && fxRate == null) {
+      toast.error(t('form.toasts.fxRateRequired'));
+      return;
+    }
 
     // An estimate is matched on the payee and the category (issue #2096); a
     // transfer's on its destination, which the check below requires.
@@ -1477,11 +1483,12 @@ export function ScheduledTransactionForm({
           ...(isForeign && estimating
             ? {
                 // The next occurrence's estimate in the biller's currency,
-                // which the server replaces with its own (issue #2458); a
-                // zero while unknown, as the account-currency amount is.
-                originalAmount: nextEstimateOriginalAmount ?? 0,
+                // which the server replaces with its own (issue #2458); while
+                // it is unknown, the foreign amount and rate as they stand,
+                // which the server keeps.
+                originalAmount: nextEstimateOriginalAmount ?? foreignAmount ?? 0,
                 originalCurrencyCode: entryCurrency,
-                exchangeRate: estimateExchangeRate ?? fxRate ?? 1,
+                exchangeRate: (estimateExchangeRate ?? fxRate) as number,
               }
             : isForeign && foreignAmount !== undefined && fxRate != null
               ? {

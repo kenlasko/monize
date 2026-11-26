@@ -443,7 +443,11 @@ the form's entry currency (`originalCurrencyCode` on
   refresh writes only while the row is still estimated in the same entry
   currency (CONC-008). An unknown estimate keeps the entry the request sent.
   An edit that cannot move the snapshot writes neither figure, as it writes no
-  amount (section 6). A change of the entry currency is a change of the basis.
+  amount (section 6). A change of the entry currency, or of the paying
+  account (whose FX fee the conversion applies), moves the snapshot; neither
+  is what the history is matched on, so a delegate may make it. Undoing a
+  posting puts all three columns back (`estimatedEntry` on the posting
+  snapshot), only while the row is still estimated in that entry currency.
 - The nightly refresh re-derives `amount` from the stored `original_amount`
   at the latest rate, as for any foreign-currency schedule, so it agrees with
   the list read up to the day's rate.
@@ -451,11 +455,17 @@ the form's entry currency (`originalCurrencyCode` on
   follows the estimate, posts the month's biller-currency estimate converted
   at the posting date's rate (`resolveFxForPosting`), never the stored
   `original_amount`; an unknown estimate is refused (`estimateUnknown`). A
-  foreign amount sent with the post, an amount, or an override stating one,
-  wins as before.
+  foreign amount sent with the post, or an override stating an amount, wins
+  as before; an account-currency amount sent alone is booked as sent, with its
+  rate derived from the month's estimate rather than the snapshot.
 - The Post dialog opens the foreign field at the month's biller-currency
   estimate (`estimatedOccurrenceOriginalAmount`), an unknown one at zero,
-  which is refused unchanged.
+  which is refused unchanged; a typed foreign amount posts even while the
+  rate preview has not answered. The bills list's second line is the same
+  month's biller-currency estimate, and absent while it is unknown.
+- The form saves an unknown estimate with the foreign amount and the latest
+  rate it found, so `amount` and `original_amount` still agree; with no rate
+  at all it refuses (`fxRateRequired`), as for a typed foreign amount.
 
 ### 11.4 Decisions
 

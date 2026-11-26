@@ -172,7 +172,25 @@ export async function undoScheduledPosting(
       userId,
       await withoutGoneCategories(manager, userId, snapshot.cursor),
     );
-    if (snapshot.estimatedAmount !== undefined) {
+    if (snapshot.estimatedAmount !== undefined && snapshot.estimatedEntry) {
+      // A foreign-currency bill's snapshot is both figures and the rate
+      // (issue #2458): put the three back together, only while the row is
+      // still estimated in the same entry currency (CONC-008).
+      await manager.query(
+        `UPDATE scheduled_transactions
+            SET amount = $1, original_amount = $4, exchange_rate = $5
+          WHERE id = $2 AND user_id = $3 AND amount_is_estimated = true
+            AND original_currency_code = $6`,
+        [
+          snapshot.estimatedAmount,
+          scheduleId,
+          userId,
+          snapshot.estimatedEntry.originalAmount,
+          snapshot.estimatedEntry.exchangeRate,
+          snapshot.estimatedEntry.originalCurrencyCode,
+        ],
+      );
+    } else if (snapshot.estimatedAmount !== undefined) {
       // The estimate of the occurrence the cursor is back on, from a history
       // without the payment just removed: what it was before the posting.
       // Only the snapshot column, and only while the row is still estimated

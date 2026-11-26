@@ -11319,6 +11319,43 @@ describe("ScheduledTransactionsService", () => {
         );
       });
 
+      it("derives an inline amount's rate from the month's estimate, not the snapshot", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        stubFindOne(foreignSchedule());
+        stubNoOverride();
+
+        await service.post(userId, stId, { amount: -165 } as never);
+
+        expect(transactionsService.create).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            amount: -165,
+            originalAmount: -110,
+            exchangeRate: 1.5,
+          }),
+          { fromScheduledPosting: true, recordHistory: false },
+        );
+      });
+
+      it("re-reads the snapshot when the bill moves to another account, a delegate included", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        stubFindOne(foreignSchedule());
+
+        await service.update(
+          userId,
+          stId,
+          { accountId: "acc-9" },
+          { actorIsDelegate: true },
+        );
+
+        expect(amountEstimates.estimateFor).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            entry: { currencyCode: "USD", accountId: "acc-9" },
+          }),
+        );
+      });
+
       it("refuses an unknown estimate before writing", async () => {
         amountEstimates.estimateFor.mockResolvedValue({
           ...unknownEstimate,

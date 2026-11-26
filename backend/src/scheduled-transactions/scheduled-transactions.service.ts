@@ -2981,16 +2981,21 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.amountIsEstimated = effectiveEstimated;
     }
     // A foreign-currency bill's estimate is in its entry currency (issue
-    // #2458), so a change of that currency moves it as well.
+    // #2458) and its conversion applies the paying account's FX fee, so a
+    // change of either moves the snapshot. Neither is what the history is
+    // matched on, so a delegate may make it.
     const effectiveOriginalCurrencyCode =
       fieldsToUpdate.originalCurrencyCode !== undefined
         ? (fieldsToUpdate.originalCurrencyCode as string | null)
         : (scheduled.originalCurrencyCode ?? null);
+    const entryConversionChanged =
+      effectiveOriginalCurrencyCode !==
+        (scheduled.originalCurrencyCode ?? null) ||
+      (effectiveOriginalCurrencyCode !== null &&
+        effectiveAccountId !== scheduled.accountId);
     const basisChanged =
       kindChanged ||
       accountCurrencyCode !== scheduled.currencyCode ||
-      effectiveOriginalCurrencyCode !==
-        (scheduled.originalCurrencyCode ?? null) ||
       (estimateShape.isTransfer
         ? effectiveAccountId !== scheduled.accountId ||
           effectiveTransferAccountId !== (scheduled.transferAccountId ?? null)
@@ -3012,6 +3017,7 @@ export class ScheduledTransactionsService {
     const snapshotMayMove =
       fieldsToUpdate.amountIsEstimated === true ||
       basisChanged ||
+      entryConversionChanged ||
       (estimateShape.isTransfer &&
         fieldsToUpdate.frequency !== undefined &&
         fieldsToUpdate.frequency !== scheduled.frequency) ||
@@ -4064,8 +4070,10 @@ export class ScheduledTransactionsService {
       postDto?.originalAmount !== undefined && postDto?.originalAmount !== null;
     let estimatedAmount: number | null = null;
     let estimatedOriginalAmount: number | null = null;
+    // A foreign bill's inline account-currency amount still needs a foreign
+    // figure to derive its rate from: the month's estimate, not the snapshot.
     if (
-      !hasInlineAmount &&
+      (!hasInlineAmount || isForeignSchedule) &&
       !postStatesLines &&
       !(isForeignSchedule && postStatesOriginalAmount) &&
       occurrenceFollowsEstimate(scheduled, storedOverride)
@@ -4088,9 +4096,10 @@ export class ScheduledTransactionsService {
         estimatedAmount = estimated?.amount ?? null;
       }
       if (
-        isForeignSchedule
+        !hasInlineAmount &&
+        (isForeignSchedule
           ? estimatedOriginalAmount === null
-          : estimatedAmount === null
+          : estimatedAmount === null)
       ) {
         throw new BadRequestException(
           tr(
@@ -4999,6 +5008,18 @@ export class ScheduledTransactionsService {
               : {}),
             ...(cursor && current.amountIsEstimated
               ? { estimatedAmount: Number(current.amount) }
+              : {}),
+            ...(cursor &&
+            current.amountIsEstimated &&
+            current.originalCurrencyCode &&
+            current.originalAmount !== null
+              ? {
+                  estimatedEntry: {
+                    originalAmount: Number(current.originalAmount),
+                    originalCurrencyCode: current.originalCurrencyCode,
+                    exchangeRate: Number(current.exchangeRate),
+                  },
+                }
               : {}),
             ...(removedSchedule ? { removedSchedule } : {}),
           },

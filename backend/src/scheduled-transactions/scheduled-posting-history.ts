@@ -83,6 +83,16 @@ export interface ScheduledPostingSnapshot {
    * which the payment it posted is part of (issue #2096).
    */
   readonly estimatedAmount?: number;
+  /**
+   * An estimated foreign-currency bill's biller-currency snapshot before the
+   * posting (issue #2458): the refresh after the commit rewrites it with
+   * `amount`, so an undo puts the three columns back together.
+   */
+  readonly estimatedEntry?: {
+    readonly originalAmount: number;
+    readonly originalCurrencyCode: string;
+    readonly exchangeRate: number;
+  };
   /** A one-time schedule, deleted by the posting. */
   readonly removedSchedule?: RemovedScheduleSnapshot;
 }

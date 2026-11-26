@@ -3867,6 +3867,37 @@ describe('ScheduledTransactionForm: Estimate', () => {
       });
     });
 
+    it('keeps the foreign amount and the latest rate while the estimate is unknown', async () => {
+      mockGetAmountEstimate.mockResolvedValue({
+        ...foreignEstimate,
+        status: 'no-history',
+        months: {},
+        originalCurrencyCode: null,
+        exchangeRate: null,
+      });
+      const { container } = render(
+        <ScheduledTransactionForm scheduledTransaction={{ ...foreignSt, amountEstimate: null }} />,
+      );
+      await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
+      await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalled());
+
+      await act(async () => {
+        fireEvent.click(container.querySelector('button[type="submit"]')!);
+      });
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          's1',
+          expect.objectContaining({
+            amountIsEstimated: true,
+            originalAmount: -100,
+            originalCurrencyCode: 'USD',
+            exchangeRate: 1.35,
+          }),
+        );
+      });
+    });
+
     it('turns the estimate on for a foreign bill without asking for a typed amount', async () => {
       const { container } = render(
         <ScheduledTransactionForm
