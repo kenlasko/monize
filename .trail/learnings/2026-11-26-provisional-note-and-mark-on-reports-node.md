@@ -1,17 +1,20 @@
 ---
-title: "Provisional note and mark on reports, panels and budgets (F3, #2399)"
+title: "Provisional note and mark on reports, panels and budgets (F3, issue 2399)"
 author: Node
 date: 2026-11-26
 branch: claude/issue-2399
-cost: { minutes: 45, tokens: 250000 }
+cost: { minutes: 22, tokens: 221510 }
 touches:
-  - frontend/src/components/reports/CustomReportViewer.tsx
-  - frontend/src/components/transactions/widget-shared.ts
-  - frontend/src/components/accounts/shared/TopGroupsPanel.tsx
-  - frontend/src/components/reports/TagKeyBreakdownBuckets.tsx
-  - frontend/src/components/budgets/BudgetDashboard.tsx
-  - frontend/src/components/currencies/detail/CurrencySummaryCards.tsx
   - docs/future-plans/provisional-amounts.md
+  - frontend/src/components/accounts/shared/TopGroupsPanel.test.tsx
+  - frontend/src/components/accounts/shared/TopGroupsPanel.tsx
+  - frontend/src/components/budgets/BudgetDashboard.test.tsx
+  - frontend/src/components/budgets/BudgetDashboard.tsx
+  - frontend/src/components/currencies/detail/CurrencySummaryCards.test.tsx
+  - frontend/src/components/currencies/detail/CurrencySummaryCards.tsx
+  - frontend/src/lib/exchange-rates.ts
+  - frontend/src/types/budget.ts
+  - frontend/src/components/dashboard/CashFlowSankeyWidget.test.tsx
 ---
 
 ## Decided
