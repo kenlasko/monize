@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Transfer",
         "split": "Transaksi terpisah",
-        "uncategorized": "Tanpa kategori"
+        "uncategorized": "Tanpa kategori",
+        "provisional": "Jumlah perkiraan"
       },
       "has": {
         "attachment": "Memiliki lampiran",

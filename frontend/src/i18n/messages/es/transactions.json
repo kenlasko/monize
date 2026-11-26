@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Transferencias",
         "split": "Transacciones divididas",
-        "uncategorized": "Sin categoría"
+        "uncategorized": "Sin categoría",
+        "provisional": "Importes estimados"
       },
       "has": {
         "attachment": "Tiene un adjunto",

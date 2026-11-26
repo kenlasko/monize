@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Перекази",
         "split": "Розділені операції",
-        "uncategorized": "Без категорії"
+        "uncategorized": "Без категорії",
+        "provisional": "Орієнтовні суми"
       },
       "has": {
         "attachment": "Має вкладення",

@@ -48,6 +48,11 @@ describe('SearchInterpretationLine', () => {
     [term({ field: 'date', op: 'gte', value: '2026-03-01' }), 'Date D(2026-03-01) or more'],
     [term({ field: 'status', op: 'eq', value: 'cleared' }), 'Status is Cleared'],
     [term({ field: 'is', op: 'eq', value: 'split' }), 'Split transactions'],
+    [term({ field: 'is', op: 'eq', value: 'provisional' }), 'Estimated amounts'],
+    [
+      term({ field: 'is', op: 'eq', value: 'provisional', negated: true }),
+      'not Estimated amounts',
+    ],
     [term({ field: 'has', op: 'eq', value: 'attachment' }), 'Has an attachment'],
     [term({ field: 'has', op: 'eq', value: 'warranty' }), 'Has a warranty'],
     [

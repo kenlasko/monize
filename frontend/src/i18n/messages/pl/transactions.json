@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Przelewy",
         "split": "Transakcje podzielone",
-        "uncategorized": "Bez kategorii"
+        "uncategorized": "Bez kategorii",
+        "provisional": "Kwoty szacunkowe"
       },
       "has": {
         "attachment": "Ma załącznik",

@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Chuyển khoản",
         "split": "Giao dịch tách",
-        "uncategorized": "Chưa phân loại"
+        "uncategorized": "Chưa phân loại",
+        "provisional": "Số tiền ước tính"
       },
       "has": {
         "attachment": "Có tệp đính kèm",

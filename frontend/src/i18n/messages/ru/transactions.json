@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Переводы",
         "split": "Разделённые операции",
-        "uncategorized": "Без категории"
+        "uncategorized": "Без категории",
+        "provisional": "Расчётные суммы"
       },
       "has": {
         "attachment": "Есть вложение",

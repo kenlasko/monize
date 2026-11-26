@@ -48,6 +48,7 @@ describe("transaction search (integration)", () => {
   let splitAccount: Account;
   let promoAccount: Account;
   let taggedAccount: Account;
+  let pendingAccount: Account;
   /** Transaction id -> fixture label. */
   const labels = new Map<string, string>();
   /** Split id -> fixture label ("S/Gas"). */
@@ -80,6 +81,10 @@ describe("transaction search (integration)", () => {
     });
     taggedAccount = await createTestAccount(dataSource, userId, {
       name: "Tagged",
+      currencyCode: "USD",
+    });
+    pendingAccount = await createTestAccount(dataSource, userId, {
+      name: "Pending",
       currencyCode: "USD",
     });
     const groceries = await createTestCategory(dataSource, userId, {
@@ -180,6 +185,23 @@ describe("transaction search (integration)", () => {
         [fuelRow.id, tag.id],
       );
     }
+
+    // A provisional transfer leg beside a confirmed one and an ordinary row
+    // (provisional-amounts plan, decision 6). The confirmed leg's description
+    // carries the old note text, so the search reads the column, not the text.
+    await save("PV", {
+      accountId: pendingAccount.id,
+      amount: 80,
+      isTransfer: true,
+      amountIsProvisional: true,
+    });
+    await save("CF", {
+      accountId: pendingAccount.id,
+      amount: 90,
+      isTransfer: true,
+      description: "PENDING IMPORT: Amount may need adjustment",
+    });
+    await save("OR", { accountId: pendingAccount.id, amount: -15 });
 
     await save("Q500", {
       accountId: promoAccount.id,
@@ -294,6 +316,18 @@ describe("transaction search (integration)", () => {
     });
   });
 
+  describe("is:provisional (provisional-amounts plan, decision 6)", () => {
+    it.each<[string, string[]]>([
+      ["is:provisional", ["PV"]],
+      ["-is:provisional", ["CF", "OR"]],
+      ["is:transfer -is:provisional", ["CF"]],
+    ])("%j", async (input, expected) => {
+      await expect(
+        transactionsMatching(input, pendingAccount.id),
+      ).resolves.toEqual(expected);
+    });
+  });
+
   it.each(["transaction", "t", "bf"])(
     "every field and operator is valid SQL under the alias %j",
     async (alias) => {
@@ -302,7 +336,7 @@ describe("transaction search (integration)", () => {
       // result.
       for (const query of [
         "nomatch payee:x memo:=x cat:x* tag:x account:x ref:=x #1",
-        "nomatch status:void is:transfer is:uncategorized has:attachment has:warranty has:memo has:tag has:ref",
+        "nomatch status:void is:transfer is:uncategorized is:provisional has:attachment has:warranty has:memo has:tag has:ref",
       ]) {
         await expect(
           transactionsMatching(query, refAccount.id, alias),

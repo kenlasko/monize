@@ -199,6 +199,7 @@ describe("buildTransactionSearchWhere", () => {
     it.each([
       ["is:transfer", "transaction.is_transfer = true"],
       ["is:split", "transaction.is_split = true"],
+      ["is:provisional", "transaction.amount_is_provisional = true"],
       ["is:uncategorized", uncategorizedSql(TX)],
       ["has:attachment", hasAttachmentSql("transaction")],
       ["has:warranty", hasWarrantySql("transaction")],

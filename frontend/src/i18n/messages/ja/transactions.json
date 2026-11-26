@@ -710,7 +710,8 @@
       "is": {
         "transfer": "振替",
         "split": "分割取引",
-        "uncategorized": "未分類"
+        "uncategorized": "未分類",
+        "provisional": "見積額"
       },
       "has": {
         "attachment": "添付ファイルあり",

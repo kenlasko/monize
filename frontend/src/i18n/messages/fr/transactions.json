@@ -710,7 +710,8 @@
       "is": {
         "transfer": "Virements",
         "split": "Opérations ventilées",
-        "uncategorized": "Sans catégorie"
+        "uncategorized": "Sans catégorie",
+        "provisional": "Montants estimés"
       },
       "has": {
         "attachment": "Possède une pièce jointe",

@@ -710,7 +710,8 @@
       "is": {
         "transfer": "轉帳",
         "split": "分割交易",
-        "uncategorized": "未分類"
+        "uncategorized": "未分類",
+        "provisional": "估算金額"
       },
       "has": {
         "attachment": "有附件",

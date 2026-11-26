@@ -252,6 +252,14 @@ describe("parseTransactionSearch", () => {
         [{ field: "is", op: "eq", value: "uncategorized", negated: false }],
       ],
       [
+        "is:provisional",
+        [{ field: "is", op: "eq", value: "provisional", negated: false }],
+      ],
+      [
+        "-is:provisional",
+        [{ field: "is", op: "eq", value: "provisional", negated: true }],
+      ],
+      [
         "has:attachment",
         [{ field: "has", op: "eq", value: "attachment", negated: false }],
       ],
