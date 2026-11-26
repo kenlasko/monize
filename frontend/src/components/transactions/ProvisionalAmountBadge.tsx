@@ -34,8 +34,10 @@ export function ProvisionalAmountBadge({
   return (
     <span
       data-testid="provisional-amount-badge"
-      className={`flex items-center gap-1 text-xs font-normal ${
-        align === 'end' ? 'justify-end' : 'justify-start'
+      // Wraps rather than spilling: the Pebble row's amount column is a fixed
+      // width, and the label runs longer in most locales than in English.
+      className={`flex items-center gap-1 text-xs font-normal whitespace-normal ${
+        align === 'end' ? 'justify-end text-right' : 'justify-start text-left'
       } ${onInk ? 'opacity-70' : 'text-gray-500 dark:text-gray-400'}`}
     >
       <span>{t('provisional.label')}</span>

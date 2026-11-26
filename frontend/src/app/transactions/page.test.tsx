@@ -2639,7 +2639,7 @@ describe('TransactionsPage', () => {
       expect(screen.queryByTestId('tx-tx-1-confirm')).not.toBeInTheDocument();
     });
 
-    it('sends one request for a double click, and reports a refusal without reloading', async () => {
+    it('sends one request for a double click, and reloads after a refusal so the row shows the server state', async () => {
       const { showErrorToast } = await import('@/lib/errors');
       mockGetAll.mockResolvedValue({
         data: [provisionalLeg],
@@ -2655,13 +2655,20 @@ describe('TransactionsPage', () => {
       fireEvent.click(screen.getByTestId('tx-tx-1-confirm'));
       expect(mockConfirmAmount).toHaveBeenCalledTimes(1);
 
+      // Confirmed elsewhere meanwhile: the server refuses, and its row is
+      // already confirmed.
+      mockGetAll.mockResolvedValue({
+        data: [{ ...provisionalLeg, amountIsProvisional: false }],
+        pagination: { page: 1, totalPages: 1, total: 1 },
+      });
       const refusal = new Error('not provisional');
       await act(async () => {
         reject(refusal);
       });
       expect(showErrorToast).toHaveBeenCalledWith(refusal, 'Failed to confirm the amount');
-      expect(mockGetAll.mock.calls.length).toBe(readsBefore);
-      expect(screen.getByTestId('tx-tx-1-provisional')).toBeInTheDocument();
+      expect(mockGetAll.mock.calls.length).toBeGreaterThan(readsBefore);
+      await waitFor(() => expect(screen.queryByTestId('tx-tx-1-provisional')).not.toBeInTheDocument());
+      expect(screen.queryByTestId('tx-tx-1-confirm')).not.toBeInTheDocument();
     });
   });
 

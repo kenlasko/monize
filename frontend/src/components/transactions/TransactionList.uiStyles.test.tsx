@@ -513,9 +513,22 @@ describe('A provisional amount in every register style (issue #2397)', () => {
     }
   });
 
-  it('Standard: an acting delegate is offered the action on the owner\'s rows', () => {
+  it('Standard: an acting delegate keeps the label but is not offered the action, which the server refuses them', () => {
     style.value = 'standard';
     useAuthStore.setState({ user: { id: 'delegate' } as any, actingAsUserId: 'u' });
+    try {
+      const view = renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn() });
+      expect(screen.getAllByTestId('provisional-amount-badge')).toHaveLength(1);
+      expect(screen.queryByRole('button', { name: 'Confirm amount' })).toBeNull();
+      view.unmount();
+    } finally {
+      useAuthStore.setState({ user: null, actingAsUserId: null });
+    }
+  });
+
+  it('Standard: the owner signed in as themselves is offered the action on their own row', () => {
+    style.value = 'standard';
+    useAuthStore.setState({ user: { id: 'u' } as any, actingAsUserId: null });
     try {
       const view = renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn() });
       expect(screen.getAllByRole('button', { name: 'Confirm amount' })).toHaveLength(1);
@@ -523,6 +536,13 @@ describe('A provisional amount in every register style (issue #2397)', () => {
     } finally {
       useAuthStore.setState({ user: null, actingAsUserId: null });
     }
+  });
+
+  it('Standard: with no signed-in identity known, ownership is left to the server', () => {
+    style.value = 'standard';
+    useAuthStore.setState({ user: null, actingAsUserId: null });
+    renderList({ transactions: provisionalRows, onConfirmAmount: vi.fn() });
+    expect(screen.getAllByRole('button', { name: 'Confirm amount' })).toHaveLength(1);
   });
 
   it('Folio: labels the provisional amount in its column', () => {

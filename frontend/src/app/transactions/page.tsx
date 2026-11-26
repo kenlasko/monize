@@ -952,6 +952,11 @@ function TransactionsContent() {
         await transactionsApi.confirmAmount(transaction.id);
       } catch (error) {
         showErrorToast(error, t('provisional.confirmFailed'));
+        // The likeliest refusal is "not provisional": the leg was confirmed
+        // elsewhere (another tab, an import, an undo or redo). Reload so the
+        // row shows the server's state rather than offering the same refused
+        // action again.
+        await loadAllData();
         return;
       }
       toast.success(t('provisional.confirmed'));

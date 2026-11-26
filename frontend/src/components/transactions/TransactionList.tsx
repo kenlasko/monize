@@ -475,19 +475,23 @@ export function TransactionList({
       !(jointPermissionsByAccount?.get(tx.accountId) && !jointPermissionsByAccount.get(tx.accountId)!.canEdit),
     [jointPermissionsByAccount],
   );
-  // The confirm endpoint is owner-scoped (`user_id` is the identity the
-  // server acts as: the owner for an acting delegate), so a row is offered it
-  // only when that identity owns it. The row's own `userId` decides it even
-  // before the accounts have loaded; the joint map covers a row whose owner
-  // is not known yet. With no signed-in identity at all, ownership is not
-  // decided here and the server's refusal stands.
-  const ledgerOwnerId = useAuthStore((s) => s.actingAsUserId ?? s.user?.id ?? null);
+  // The confirm endpoint is the owner's alone. It carries no
+  // `@AllowDelegate()`, so `AccountDelegateGuard` refuses it to an acting
+  // delegate, and it is scoped to the caller's `user_id`, so a row someone
+  // else owns is a 404. A row is offered it only outside a delegate session,
+  // when the signed-in reader owns it: the row's own `userId` decides that
+  // even before the accounts have loaded, and the joint map covers a row
+  // whose owner is not on it. With no signed-in identity known, ownership is
+  // not decided here and the server's refusal stands.
+  const actingAsDelegate = useAuthStore((s) => s.actingAsUserId !== null);
+  const signedInUserId = useAuthStore((s) => s.user?.id ?? null);
   const canConfirmAmountRow = useCallback(
     (tx: Transaction) =>
       isProvisionalAmount(tx) &&
+      !actingAsDelegate &&
       !jointPermissionsByAccount?.has(tx.accountId) &&
-      (ledgerOwnerId === null || !tx.userId || tx.userId === ledgerOwnerId),
-    [jointPermissionsByAccount, ledgerOwnerId],
+      (signedInUserId === null || !tx.userId || tx.userId === signedInUserId),
+    [actingAsDelegate, jointPermissionsByAccount, signedInUserId],
   );
   const canDeleteRow = useCallback(
     (tx: Transaction) =>
