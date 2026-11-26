@@ -206,6 +206,8 @@ describe("CategoryDetailService", () => {
           accountType: "CHEQUING",
           currencyCode: "CAD",
           transactionCount: "37",
+          // An imported estimate among the account's rows.
+          provisionalCount: "1",
           total: "-1234.56789",
           lastTransactionDate: "2026-06-30",
         },
@@ -234,6 +236,7 @@ describe("CategoryDetailService", () => {
         lastTransactionDate: "2026-06-30",
         convertedCurrency: "CAD",
         convertedTotal: -1234.5679,
+        provisionalCount: 1,
       },
       {
         accountId: "acct-2",
@@ -245,6 +248,7 @@ describe("CategoryDetailService", () => {
         lastTransactionDate: null,
         convertedCurrency: "CAD",
         convertedTotal: -89.5,
+        provisionalCount: 0,
       },
     ]);
   });
@@ -326,6 +330,7 @@ describe("CategoryDetailService", () => {
       count: string,
       total: string,
       own?: { currency: string; rate: string },
+      provisional = "0",
     ) => ({
       accountId: "acct-us",
       accountName: "US Card",
@@ -337,6 +342,7 @@ describe("CategoryDetailService", () => {
       fx_day: day,
       fx_original_currency: own?.currency ?? null,
       fx_exchange_rate: own?.rate ?? "1",
+      provisionalCount: provisional,
     });
     given({
       accountRows: [
@@ -352,8 +358,9 @@ describe("CategoryDetailService", () => {
           fx_original_currency: null,
           fx_exchange_rate: null,
         },
-        part("2026-01-12", "1", "-100"),
-        part("2026-06-12", "1", "-100"),
+        // Two imported estimates, one in each market-rate part.
+        part("2026-01-12", "1", "-100", undefined, "1"),
+        part("2026-06-12", "1", "-100", undefined, "1"),
         // Settled into CAD at its own 1.30 (0.7692307692 USD per CAD).
         part("2026-06-12", "1", "-100", {
           currency: "CAD",
@@ -376,6 +383,7 @@ describe("CategoryDetailService", () => {
         lastTransactionDate: "2026-06-12",
         convertedCurrency: "CAD",
         convertedTotal: -395,
+        provisionalCount: 2,
       },
       expect.objectContaining({
         accountId: "acct-1",

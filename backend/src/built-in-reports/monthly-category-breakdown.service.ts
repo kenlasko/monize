@@ -64,6 +64,8 @@ interface RawTransferAggregate extends RawRateBasis {
   account_name: string;
   outflow: string;
   inflow: string;
+  /** The group's provisional legs (`amount_is_provisional`). */
+  provisional_count: string;
 }
 
 /** Adds `amount` to `month`'s aggregate in `byMonth`. */
@@ -258,7 +260,7 @@ export class MonthlyCategoryBreakdownService {
       acc.withdrawalTotal.addConverted(withdrawals);
     }
 
-    const transferRows = await this.getTransferRows(
+    const { rows: transferRows, provisionalCount } = await this.getTransferRows(
       userId,
       startDate,
       endDate,
@@ -301,6 +303,7 @@ export class MonthlyCategoryBreakdownService {
       currency: defaultCurrency,
       missingCurrencies: gaps.missingCurrencies,
       excludedCount: gaps.excludedCount,
+      provisionalCount,
     };
   }
 
@@ -323,12 +326,14 @@ export class MonthlyCategoryBreakdownService {
     gaps: ConversionGaps,
     columnOf: (month: string) => string,
     accountIds?: string[],
-  ): Promise<
-    {
+  ): Promise<{
+    rows: {
       row: Omit<MonthlyBreakdownTransferRow, "total" | "average">;
       flows: BreakdownTransferFlows;
-    }[]
-  > {
+    }[];
+    /** Provisional legs in the groups that converted (design section 8). */
+    provisionalCount: number;
+  }> {
     let query = `
       SELECT
         TO_CHAR(t.transaction_date, 'YYYY-MM') as month,
@@ -337,7 +342,8 @@ export class MonthlyCategoryBreakdownService {
         t.currency_code,
         ${rateBasisColumnsSql("$3", "t", ownTransferLegs(userId, "$1"))},
         SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as outflow,
-        SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow
+        SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as inflow,
+        COUNT(*) FILTER (WHERE t.amount_is_provisional = true) as provisional_count
       FROM transactions t
       JOIN accounts a ON a.id = t.account_id
       WHERE t.user_id = $1
@@ -413,6 +419,7 @@ export class MonthlyCategoryBreakdownService {
       addTo(entry.valuesByMonth, month, amount);
     };
 
+    let provisionalCount = 0;
     for (const row of rawResults) {
       const outflow = convert(toMoneyNumber(row.outflow, MONEY_SCALE), row);
       const inflow = convert(toMoneyNumber(row.inflow, MONEY_SCALE), row);
@@ -423,6 +430,7 @@ export class MonthlyCategoryBreakdownService {
         );
         continue;
       }
+      provisionalCount += Number(row.provisional_count) || 0;
       const column = columnOf(row.month);
       monthSet.add(column);
       if (outflow !== 0) {
@@ -465,10 +473,13 @@ export class MonthlyCategoryBreakdownService {
         };
       });
 
-    return [
-      ...buildTransferRows(fromByAccount, "from"),
-      ...buildTransferRows(toByAccount, "to"),
-    ];
+    return {
+      rows: [
+        ...buildTransferRows(fromByAccount, "from"),
+        ...buildTransferRows(toByAccount, "to"),
+      ],
+      provisionalCount,
+    };
   }
 
   /**

@@ -63,6 +63,13 @@ export interface SankeyTransferRow {
   ownRate: number | null;
   inflow: number;
   outflow: number;
+  /**
+   * The provisional legs (`amount_is_provisional`, design section 6, P5) in
+   * `inflow` and in `outflow`. A split's transfer line is never provisional,
+   * so its rows leave both out.
+   */
+  provisionalInflowCount?: number;
+  provisionalOutflowCount?: number;
 }
 
 export interface SankeyCategory {
@@ -228,6 +235,8 @@ export function assembleCashFlowSankey(
 
   const missingCurrencies = new Set<string>();
   let excludedCount = 0;
+  /** Provisional legs inside a half that converted (design section 8). */
+  let provisionalCount = 0;
 
   /** Signed (positive = money in) per top-level category. */
   const roots = new Map<string, Bucket>();
@@ -313,6 +322,12 @@ export function assembleCashFlowSankey(
     ) {
       missingCurrencies.add(row.currency);
       excludedCount += 1;
+    }
+    if (inflow.value !== null) {
+      provisionalCount += row.provisionalInflowCount ?? 0;
+    }
+    if (outflow.value !== null) {
+      provisionalCount += row.provisionalOutflowCount ?? 0;
     }
     if (inflow.needed) {
       bucketOf(inflowClasses, flowClass).agg.add(
@@ -681,6 +696,7 @@ export function assembleCashFlowSankey(
     },
     missingCurrencies: [...missingCurrencies].sort(),
     excludedCount,
+    provisionalCount,
   };
 }
 

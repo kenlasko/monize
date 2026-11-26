@@ -185,4 +185,12 @@ export class CashFlowSankeyResponse {
   /** Aggregate rows left out of the figures for want of a rate. */
   @ApiProperty({ example: 0 })
   excludedCount: number;
+
+  /**
+   * Provisional transfer legs (an imported estimate of what the other account
+   * received or sent) inside the transfer flows that converted. The figures
+   * include them; above 0 the page says the diagram holds estimated amounts.
+   */
+  @ApiProperty({ example: 0 })
+  provisionalCount: number;
 }

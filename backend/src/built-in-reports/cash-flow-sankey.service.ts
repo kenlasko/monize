@@ -151,7 +151,9 @@ export function wholeTransferLegsQuery(scope: SankeyQueryScope): BuiltQuery {
         ${ownRateSql("$4", "t", ownTransferLegs(scope.userId, "$1"))} AS own_rate,
         cp.managed_purpose AS counterpart_managed_purpose,
         SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) AS inflow,
-        SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS outflow
+        SUM(CASE WHEN t.amount < 0 THEN t.amount ELSE 0 END) AS outflow,
+        COUNT(*) FILTER (WHERE t.amount_is_provisional = true AND t.amount > 0) AS provisional_inflow_count,
+        COUNT(*) FILTER (WHERE t.amount_is_provisional = true AND t.amount < 0) AS provisional_outflow_count
       FROM transactions t
       LEFT JOIN accounts a ON a.id = t.account_id
       LEFT JOIN transactions lt ON lt.id = t.linked_transaction_id
@@ -230,6 +232,9 @@ interface RawTransferRow {
   own_rate: string | null;
   inflow: string;
   outflow: string;
+  /** Whole legs only: absent on a split's transfer lines, never provisional. */
+  provisional_inflow_count?: string;
+  provisional_outflow_count?: string;
 }
 
 const toNumber = (value: unknown): number => {
@@ -308,6 +313,8 @@ export class CashFlowSankeyService {
         ownRate: toOwnRate(row.own_rate),
         inflow: toNumber(row.inflow),
         outflow: toNumber(row.outflow),
+        provisionalInflowCount: toNumber(row.provisional_inflow_count),
+        provisionalOutflowCount: toNumber(row.provisional_outflow_count),
       }),
     );
 
