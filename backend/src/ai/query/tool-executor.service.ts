@@ -166,6 +166,16 @@ const PENDING_ACTION_TOOL_RESULT = {
 const withNote = (note: string): string => (note ? ` ${note}` : "");
 
 /**
+ * The mark a summary line carries beside a figure that holds provisional
+ * transfer amounts (Monize's estimates until the other account's file is
+ * imported); nothing at 0, or when the read carried no count.
+ */
+const includesEstimates = (count: number | undefined): string =>
+  count !== undefined && count > 0
+    ? ` (includes ${count} estimated amount${count === 1 ? "" : "s"})`
+    : "";
+
+/**
  * The contact fields a payee preview would write, for the model-facing summary
  * line beside a confirmation card.
  *
@@ -609,14 +619,14 @@ export class ToolExecutorService {
         ? `Totals withheld: no exchange rate for ${data.missingRatePairs.join(", ")}; add it under Currencies. Converted so far: income ${fig(data.knownIncomeSubtotal)} ${cur}, expenses ${fig(data.knownExpensesSubtotal)} ${cur}`
         : `Income: ${fig(data.totalIncome)} ${cur}, Expenses: ${fig(data.totalExpenses)} ${cur}, Net: ${fig(data.netCashFlow)} ${cur}`;
     const summaryParts = [
-      `${data.transactionCount} transactions from ${startDate} to ${endDate}. ${flow}`,
+      `${data.transactionCount} transactions from ${startDate} to ${endDate}. ${flow}${includesEstimates(data.provisionalCount)}`,
     ];
     if (data.groupedBy !== "none") {
       summaryParts.push(`Grouped by ${data.groupedBy}.`);
     }
     if (data.transfers) {
       summaryParts.push(
-        `Transfers: inbound ${data.transfers.totalInbound.toFixed(2)}, outbound ${data.transfers.totalOutbound.toFixed(2)}.`,
+        `Transfers: inbound ${data.transfers.totalInbound.toFixed(2)}, outbound ${data.transfers.totalOutbound.toFixed(2)}${includesEstimates(data.transfers.provisionalCount)}.`,
       );
     }
     if (includeTransactions) {
@@ -2646,8 +2656,8 @@ export class ToolExecutorService {
     // places for BHD), and the line prints it at them, as the data says it.
     const cur = data.totalsCurrency;
     const fig = await this.figureIn(cur);
-    const periods = `Period 1 (${period1Start} to ${period1End})`;
-    const periods2 = `Period 2 (${period2Start} to ${period2End})`;
+    const periods = `Period 1 (${period1Start} to ${period1End})${includesEstimates(data.period1.provisionalCount)}`;
+    const periods2 = `Period 2 (${period2Start} to ${period2End})${includesEstimates(data.period2.provisionalCount)}`;
     const summary =
       data.fxComplete === false ||
       data.period1.total === null ||

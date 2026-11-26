@@ -47,7 +47,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "list_transactions",
     description:
-      "List and aggregate the user's cash transactions. Accepts NAMES for accounts, categories, and payees (resolved internally; no need to call list_accounts/list_categories/list_payees first). Returns a rich summary by default: income/expense/net totals, per-currency totals, an optional grouped breakdown (groupBy), and an optional per-account transfer rollup (transfersOnly). Set includeTransactions=true ONLY when the user explicitly wants the individual transaction rows (this costs many more tokens); otherwise the summary alone answers spending, income, and total questions. For spending by category use groupBy: 'category'; for an income breakdown use direction: 'income' with groupBy. Transfers between the user's own accounts are excluded from income/expense totals. This single tool replaces the former search_transactions, query_transactions, get_transfers, get_spending_by_category, and get_income_summary tools.",
+      "List and aggregate the user's cash transactions. Accepts NAMES for accounts, categories, and payees (resolved internally; no need to call list_accounts/list_categories/list_payees first). Returns a rich summary by default: income/expense/net totals, per-currency totals, an optional grouped breakdown (groupBy), and an optional per-account transfer rollup (transfersOnly). Set includeTransactions=true ONLY when the user explicitly wants the individual transaction rows (this costs many more tokens); otherwise the summary alone answers spending, income, and total questions. For spending by category use groupBy: 'category'; for an income breakdown use direction: 'income' with groupBy. Transfers between the user's own accounts are excluded from income/expense totals. `provisionalCount` is how many amounts in the totals are Monize's estimates of a transfer leg awaiting the other account's import (a row with `amountIsProvisional` true is one); the totals include them, so when it is above 0 say the figure includes estimated amounts. This single tool replaces the former search_transactions, query_transactions, get_transfers, get_spending_by_category, and get_income_summary tools.",
     inputSchema: {
       type: "object",
       properties: {
@@ -212,7 +212,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
   {
     name: "compare_periods",
     description:
-      "Compare spending or income between two time periods. Returns a side-by-side comparison showing absolute and percentage changes. Use for questions like 'compare this month vs last month'. If any of the four date fields are omitted, defaults to the previous full month (period1) vs the current month-to-date (period2).",
+      "Compare spending or income between two time periods. Returns a side-by-side comparison showing absolute and percentage changes. Use for questions like 'compare this month vs last month'. If any of the four date fields are omitted, defaults to the previous full month (period1) vs the current month-to-date (period2). Each period's `provisionalCount` is how many amounts in its total are Monize's estimates of a transfer leg awaiting the other account's import; the total includes them, so when it is above 0 say it includes estimated amounts.",
     inputSchema: {
       type: "object",
       properties: {

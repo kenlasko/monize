@@ -260,6 +260,7 @@ describe("TransactionAnalyticsService", () => {
         firstTransactionDate: null,
         lastTransactionDate: null,
         byCurrency: {},
+        provisionalCount: 0,
       });
     });
 
@@ -337,6 +338,7 @@ describe("TransactionAnalyticsService", () => {
         knownNet: -315,
         includedTransactionCount: 3,
         excludedTransactionCount: 0,
+        provisionalCount: 0,
         missingCurrencies: [],
       });
       // The per-currency view folds the day parts back together.
@@ -846,6 +848,80 @@ describe("TransactionAnalyticsService", () => {
       expect(mockQueryBuilder.groupBy).toHaveBeenCalledWith(
         "transaction.currencyCode",
       );
+    });
+
+    describe("provisionalCount (provisional-amounts design section 6, P5)", () => {
+      it("counts each part's provisional legs, whole rows only", async () => {
+        mockQueryBuilder.getRawMany.mockResolvedValueOnce([
+          {
+            currencyCode: "EUR",
+            totalIncome: "80",
+            totalExpenses: "0",
+            transactionCount: "1",
+            provisionalCount: "1",
+          },
+        ]);
+
+        const result = await service.getSummary(userId);
+
+        expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+          "COUNT(DISTINCT transaction.id) FILTER (WHERE splits.id IS NULL AND transaction.amountIsProvisional = true)",
+          "provisionalCount",
+        );
+        expect(result.provisionalCount).toBe(1);
+        expect(result.totalIncome).toBe(80);
+      });
+
+      it("counts in the converted figures only the buckets that converted (design section 8)", async () => {
+        userPreferenceRepository.findOne.mockResolvedValue({
+          defaultCurrency: "EUR",
+        });
+        mockQueryBuilder.getRawMany.mockResolvedValueOnce([
+          {
+            currencyCode: "EUR",
+            fx_day: null,
+            totalIncome: "80",
+            totalExpenses: "0",
+            transactionCount: "1",
+            provisionalCount: "1",
+          },
+          {
+            currencyCode: "USD",
+            fx_day: "2026-01-12",
+            fx_exchange_rate: "1",
+            totalIncome: "0",
+            totalExpenses: "112.5",
+            transactionCount: "1",
+            provisionalCount: "1",
+          },
+        ]);
+        // No USD rate on file: the USD bucket is in no converted figure.
+        managerMock.query.mockResolvedValue([]);
+
+        const result = await service.getSummary(
+          userId,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          { inReportingCurrency: true },
+        );
+
+        expect(result.provisionalCount).toBe(2);
+        expect(result.converted).toMatchObject({
+          missingCurrencies: ["USD"],
+          knownIncome: 80,
+          provisionalCount: 1,
+        });
+      });
     });
 
     describe("account exclusion", () => {
@@ -1655,6 +1731,42 @@ describe("TransactionAnalyticsService", () => {
       );
     });
 
+    it("counts each account's provisional legs and their total", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          accountId: "acc-usd",
+          accountName: "US Chequing",
+          currencyCode: "USD",
+          inbound: "0",
+          outbound: "100",
+          count: "1",
+          provisionalCount: "0",
+        },
+        {
+          accountId: "acc-eur",
+          accountName: "Euro Savings",
+          currencyCode: "EUR",
+          inbound: "80",
+          outbound: "0",
+          count: "1",
+          provisionalCount: "1",
+        },
+      ]);
+
+      const result = await service.getTransfersByAccount(
+        userId,
+        "2026-01-01",
+        "2026-01-31",
+      );
+
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(*) FILTER (WHERE t.amountIsProvisional = true)",
+        "provisionalCount",
+      );
+      expect(result.accounts.map((a) => a.provisionalCount)).toEqual([0, 1]);
+      expect(result.provisionalCount).toBe(1);
+    });
+
     it("aggregates inbound, outbound, net, and count per account", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([
         {
@@ -1805,9 +1917,27 @@ describe("TransactionAnalyticsService", () => {
       const result = await service.getMonthlyTotals(userId);
 
       expect(result).toEqual([
-        { month: "2025-01", currency: "USD", total: -500.5, count: 10 },
-        { month: "2025-02", currency: "USD", total: -300.25, count: 8 },
-        { month: "2025-03", currency: "USD", total: 200, count: 5 },
+        {
+          month: "2025-01",
+          currency: "USD",
+          total: -500.5,
+          count: 10,
+          provisionalCount: 0,
+        },
+        {
+          month: "2025-02",
+          currency: "USD",
+          total: -300.25,
+          count: 8,
+          provisionalCount: 0,
+        },
+        {
+          month: "2025-03",
+          currency: "USD",
+          total: 200,
+          count: 5,
+          provisionalCount: 0,
+        },
       ]);
     });
 
@@ -1836,8 +1966,20 @@ describe("TransactionAnalyticsService", () => {
       const result = await service.getMonthlyTotals(userId);
 
       expect(result).toEqual([
-        { month: "2025-01", currency: "USD", total: -160, count: 4 },
-        { month: "2025-02", currency: "USD", total: -40, count: 1 },
+        {
+          month: "2025-01",
+          currency: "USD",
+          total: -160,
+          count: 4,
+          provisionalCount: 0,
+        },
+        {
+          month: "2025-02",
+          currency: "USD",
+          total: -40,
+          count: 1,
+          provisionalCount: 0,
+        },
       ]);
     });
 
@@ -1863,6 +2005,7 @@ describe("TransactionAnalyticsService", () => {
         currency: "USD",
         total: 0,
         count: 0,
+        provisionalCount: 0,
       });
     });
 
@@ -1884,7 +2027,13 @@ describe("TransactionAnalyticsService", () => {
       const result = await service.getMonthlyTotals(userId);
 
       expect(result).toEqual([
-        { month: "2025-01", currency: "USD", total: -20, count: 2 },
+        {
+          month: "2025-01",
+          currency: "USD",
+          total: -20,
+          count: 2,
+          provisionalCount: 0,
+        },
       ]);
     });
 
@@ -1909,6 +2058,7 @@ describe("TransactionAnalyticsService", () => {
           total: null,
           knownSubtotal: -10,
           count: 2,
+          provisionalCount: 0,
         },
       ]);
     });
@@ -1927,7 +2077,13 @@ describe("TransactionAnalyticsService", () => {
       const result = await service.getMonthlyTotals(userId);
 
       expect(result).toEqual([
-        { month: "2025-01", currency: "EUR", total: -5, count: 1 },
+        {
+          month: "2025-01",
+          currency: "EUR",
+          total: -5,
+          count: 1,
+          provisionalCount: 0,
+        },
       ]);
     });
 
@@ -1958,12 +2114,60 @@ describe("TransactionAnalyticsService", () => {
       const result = await service.getMonthlyTotals(userId);
 
       expect(result).toEqual([
-        { month: "2025-12", currency: "EUR", total: -150, count: 2 },
+        {
+          month: "2025-12",
+          currency: "EUR",
+          total: -150,
+          count: 2,
+          provisionalCount: 0,
+        },
       ]);
       expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith(
         "fx_exchange_rate",
       );
       expect(managerMock.query).not.toHaveBeenCalled();
+    });
+
+    it("counts a month's provisional legs over the parts that converted (design section 8)", async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          ...usdDay("2025-01", "2025-01-10"),
+          total: "80",
+          count: "1",
+          provisionalCount: "1",
+        },
+        // No EUR rate on file: this part is outside January's known subtotal.
+        {
+          month: "2025-01",
+          currencyCode: "EUR",
+          txDate: "2025-01-12",
+          total: "-5",
+          count: "1",
+          provisionalCount: "1",
+        },
+        {
+          ...usdDay("2025-02", "2025-02-10"),
+          total: "-40",
+          count: "1",
+        },
+      ]);
+
+      const result = await service.getMonthlyTotals(userId);
+
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(DISTINCT transaction.id) FILTER (WHERE splits.id IS NULL AND transaction.amountIsProvisional = true)",
+        "provisionalCount",
+      );
+      expect(
+        result.map((r) => [
+          r.month,
+          r.knownSubtotal ?? r.total,
+          r.provisionalCount,
+        ]),
+      ).toEqual([
+        ["2025-01", 80, 1],
+        ["2025-02", -40, 0],
+      ]);
     });
 
     it("leaves voided rows out of the monthly totals", async () => {
@@ -2738,6 +2942,45 @@ describe("TransactionAnalyticsService", () => {
       expect(result.netCashFlow).toBe(1.24);
     });
 
+    it("counts the provisional legs of the parts that converted (design section 8)", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "EUR",
+      });
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        {
+          currencyCode: "EUR",
+          txDate: "2026-01-12",
+          totalIncome: "80",
+          totalExpenses: "0",
+          provisionalCount: "1",
+        },
+        // No USD rate on file: in neither known subtotal, so not counted.
+        {
+          currencyCode: "USD",
+          txDate: "2026-01-12",
+          fx_exchange_rate: "1",
+          totalIncome: "0",
+          totalExpenses: "112.5",
+          provisionalCount: "1",
+        },
+      ]);
+      managerMock.query.mockResolvedValue([]);
+
+      const result = await service.getLlmFlowTotals(userId, {
+        startDate: "2026-01-01",
+        endDate: "2026-01-31",
+        excludeTransfers: false,
+      });
+
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(DISTINCT transaction.id) FILTER (WHERE splits.id IS NULL AND transaction.amountIsProvisional = true)",
+        "provisionalCount",
+      );
+      expect(result.fxComplete).toBe(false);
+      expect(result.knownIncomeSubtotal).toBe(80);
+      expect(result.provisionalCount).toBe(1);
+    });
+
     it("leaves every transfer out by default", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([]);
 
@@ -3280,6 +3523,30 @@ describe("TransactionAnalyticsService", () => {
       expect(result.missingRatePairs).toEqual([]);
       expect(result.comparison[0].label).toBe("Food");
       expect(result.comparison[0].change).toBe(50);
+    });
+
+    it("counts each period's provisional legs beside its total", async () => {
+      mockQueryBuilder.getRawMany
+        .mockResolvedValueOnce([
+          row({
+            categoryId: "cat-food",
+            total: "100",
+            count: "5",
+            provisionalCount: "1",
+          }),
+        ])
+        .mockResolvedValueOnce([
+          row({ categoryId: "cat-food", total: "150", count: "8" }),
+        ]);
+
+      const result = await service.getLlmPeriodComparison(userId, periods);
+
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(DISTINCT t.id) FILTER (WHERE ts.id IS NULL AND t.amountIsProvisional = true)",
+        "provisionalCount",
+      );
+      expect(result.period1.provisionalCount).toBe(1);
+      expect(result.period2.provisionalCount).toBe(0);
     });
 
     it("reads each figure and each change once at the reporting currency's places (issue #2410)", async () => {
@@ -4288,6 +4555,7 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "CAD",
           total: -450.7512,
           count: 12,
+          provisionalCount: 0,
           convertedCurrency: "CAD",
           convertedTotal: -450.7512,
         },
@@ -4297,6 +4565,7 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "CAD",
           total: -25.25,
           count: 2,
+          provisionalCount: 0,
           convertedCurrency: "CAD",
           convertedTotal: -25.25,
         },
@@ -4332,6 +4601,39 @@ describe("TransactionAnalyticsService", () => {
       expect(result.map((r) => [r.name, r.convertedTotal])).toEqual([
         ["Shop B", -112.5],
         ["Cafe A", -12.5],
+      ]);
+    });
+
+    it("counts each group's provisional legs over its parts", async () => {
+      userPreferenceRepository.findOne.mockResolvedValue({
+        defaultCurrency: "CAD",
+      });
+      const part = (id: string | null, provisionalCount: string) => ({
+        id,
+        name: id === null ? null : "Groceries",
+        currencyCode: "CAD",
+        total: "80",
+        magnitude: "80",
+        count: "1",
+        provisionalCount,
+      });
+      mockQueryBuilder.getRawMany.mockResolvedValueOnce([
+        part("cat-1", "1"),
+        part("cat-1", "1"),
+        part(null, "0"),
+      ]);
+
+      const result = await service.getGroupedTotals(userId, {
+        groupBy: "category",
+      });
+
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(DISTINCT transaction.id) FILTER (WHERE splits.id IS NULL AND transaction.amountIsProvisional = true)",
+        "provisionalCount",
+      );
+      expect(result.map((r) => [r.id, r.provisionalCount])).toEqual([
+        ["cat-1", 2],
+        [null, 0],
       ]);
     });
 
@@ -4381,6 +4683,7 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "USD",
           total: -300,
           count: 3,
+          provisionalCount: 0,
           convertedCurrency: "CAD",
           convertedTotal: -395,
         },
@@ -4390,6 +4693,7 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "USD",
           total: -10,
           count: 1,
+          provisionalCount: 0,
           convertedCurrency: "CAD",
           convertedTotal: -12.5,
         },
@@ -4664,6 +4968,7 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "CAD",
           total: 200,
           count: 2,
+          provisionalCount: 0,
           convertedCurrency: "CAD",
           convertedTotal: 200,
         },
@@ -4673,10 +4978,16 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "CAD",
           total: 100,
           count: 1,
+          provisionalCount: 0,
           convertedCurrency: "CAD",
           convertedTotal: 100,
         },
       ]);
+      // Each value counts its provisional legs, as the grouped totals do.
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith(
+        "COUNT(DISTINCT transaction.id) FILTER (WHERE splits.id IS NULL AND transaction.amountIsProvisional = true)",
+        "provisionalCount",
+      );
       // Joins the transaction's tags and groups by value + currency.
       expect(mockQueryBuilder.innerJoin).toHaveBeenCalledWith(
         "transaction.tags",
@@ -4723,6 +5034,7 @@ describe("TransactionAnalyticsService", () => {
           currencyCode: "USD",
           total: 200,
           count: 2,
+          provisionalCount: 0,
           convertedCurrency: "CAD",
           convertedTotal: 265,
         },

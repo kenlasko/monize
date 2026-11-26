@@ -100,6 +100,14 @@ export interface ReportSummary {
   count: number;
   /** `null` with `total`: a mean over the rows that converted is not the mean. */
   average: number | null;
+  /**
+   * How many provisional transfer amounts (`amountIsProvisional`: Monize's
+   * estimate until the other account's file is imported or the amount is
+   * confirmed) are inside `total` / `knownTotal`. The figures include them;
+   * nothing is withheld for it. A row left out for want of a rate is not
+   * counted, and the count metric, which sums no amount, is always 0.
+   */
+  provisionalCount: number;
 }
 
 export interface ReportResult {
@@ -126,6 +134,8 @@ export interface ReportResult {
    * report's group with a day no rate reaches cannot.
    */
   excludedCount: number;
+  /** {@link ReportSummary.provisionalCount}, beside the other completeness fields. */
+  provisionalCount: number;
   /**
    * True when the row limit cut the read short (the newest rows are the ones
    * dropped): every figure is then a subtotal and `summary.total` is `null`.

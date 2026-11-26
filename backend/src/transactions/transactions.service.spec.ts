@@ -10144,6 +10144,38 @@ describe("TransactionsService", () => {
         expect(bare).not.toHaveProperty("tagNames");
       });
 
+      it("marks a provisional transfer leg's row, and no confirmed row", async () => {
+        const leg = {
+          id: "t-leg",
+          transactionDate: "2026-01-14",
+          payeeName: null,
+          category: null,
+          amount: 80,
+          account: { name: "EUR Savings" },
+          description: null,
+          status: "cleared",
+          isSplit: false,
+          isTransfer: true,
+        };
+        jest
+          .spyOn(service, "findOne")
+          .mockResolvedValue({ ...leg, amountIsProvisional: true } as any);
+        const [provisional] = await service.getLlmTransactionById(
+          "user-1",
+          "t-leg",
+        );
+        expect(provisional.amountIsProvisional).toBe(true);
+
+        jest
+          .spyOn(service, "findOne")
+          .mockResolvedValue({ ...leg, amountIsProvisional: false } as any);
+        const [confirmed] = await service.getLlmTransactionById(
+          "user-1",
+          "t-leg",
+        );
+        expect(confirmed).not.toHaveProperty("amountIsProvisional");
+      });
+
       it("answers a plain transaction as one row without reading splits", async () => {
         splitsRepository.find.mockClear();
         jest.spyOn(service, "findOne").mockResolvedValue({
