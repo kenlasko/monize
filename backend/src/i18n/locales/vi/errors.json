@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "Số tiền là bắt buộc cho ghi đè chia nhỏ",
     "dateMustBeYMD": "date phải có định dạng YYYY-MM-DD",
     "loanLedgerUnreadable": "Không thể tính khoản thanh toán vay này vì không thể đọc số dư sổ cái của nó. Vui lòng thử lại.",
-    "estimateRequiresPlain": "Số tiền ước tính chỉ có cho giao dịch một danh mục hoặc chuyển khoản bằng đơn vị tiền tệ của tài khoản, không áp dụng cho giao dịch chia, đầu tư hoặc số tiền ngoại tệ",
+    "estimateRequiresPlain": "Số tiền ước tính chỉ có cho giao dịch một danh mục hoặc chuyển khoản, không áp dụng cho giao dịch chia hoặc khoản đầu tư",
     "estimateNoAutoPost": "Giao dịch định kỳ có số tiền ước tính không thể được ghi tự động",
     "overrideAutoPostNeedsAmount": "Một lần phát sinh của giao dịch định kỳ có số tiền ước tính chỉ có thể được ghi tự động sau khi đã nhập số tiền riêng của nó",
     "estimateRequiresPayeeAndCategory": "Số tiền ước tính cần có người nhận và danh mục để đối chiếu lịch sử thanh toán",

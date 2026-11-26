@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "분할 재정의에는 금액이 필요합니다",
     "dateMustBeYMD": "date는 YYYY-MM-DD 형식이어야 합니다",
     "loanLedgerUnreadable": "원장 잔액을 읽을 수 없어 이 대출 상환액을 계산할 수 없습니다. 다시 시도하세요.",
-    "estimateRequiresPlain": "예상 금액은 계좌 통화로 된 단일 카테고리 거래나 이체에만 사용할 수 있으며, 분할, 투자 또는 외화 금액에는 사용할 수 없습니다",
+    "estimateRequiresPlain": "예상 금액은 단일 카테고리 거래나 이체에만 사용할 수 있으며, 분할 또는 투자에는 사용할 수 없습니다",
     "estimateNoAutoPost": "예상 금액이 있는 예약 거래는 자동으로 게시할 수 없습니다",
     "overrideAutoPostNeedsAmount": "예상 금액이 있는 예약 거래의 회차는 해당 회차의 금액을 입력한 후에만 자동으로 게시할 수 있습니다",
     "estimateRequiresPayeeAndCategory": "예상 금액에는 결제 내역을 맞춰 볼 수취인과 카테고리가 필요합니다",

@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "分割上書きには金額が必要です",
     "dateMustBeYMD": "date は YYYY-MM-DD 形式でなければなりません",
     "loanLedgerUnreadable": "元帳の残高を読み取れなかったため、このローン支払いを計算できませんでした。もう一度お試しください。",
-    "estimateRequiresPlain": "見積もり金額は、口座の通貨で単一カテゴリの取引または振替にのみ使用できます。分割、投資、外貨金額には使用できません",
+    "estimateRequiresPlain": "見積もり金額は、単一カテゴリの取引または振替にのみ使用できます。分割や投資には使用できません",
     "estimateNoAutoPost": "見積もり金額の予定取引は自動で記帳できません",
     "overrideAutoPostNeedsAmount": "見積もり金額の予定取引の各回は、その回の金額を入力した場合にのみ自動で記帳できます",
     "estimateRequiresPayeeAndCategory": "見積もり金額には、支払い履歴を照合するための支払先とカテゴリが必要です",

@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "Jumlah diperlukan untuk penggantian terbagi",
     "dateMustBeYMD": "tanggal harus dalam format YYYY-MM-DD",
     "loanLedgerUnreadable": "Pembayaran pinjaman ini tidak dapat dihitung karena saldo buku besarnya tidak dapat dibaca. Coba lagi.",
-    "estimateRequiresPlain": "Jumlah perkiraan hanya tersedia untuk transaksi satu kategori atau transfer dalam mata uang akun, bukan untuk pecahan, investasi, atau jumlah mata uang asing",
+    "estimateRequiresPlain": "Jumlah perkiraan hanya tersedia untuk transaksi satu kategori atau transfer, bukan untuk pecahan atau investasi",
     "estimateNoAutoPost": "Transaksi terjadwal dengan jumlah perkiraan tidak dapat diposting secara otomatis",
     "overrideAutoPostNeedsAmount": "Kemunculan transaksi terjadwal dengan jumlah perkiraan hanya dapat diposting secara otomatis setelah jumlahnya sendiri dimasukkan",
     "estimateRequiresPayeeAndCategory": "Jumlah perkiraan memerlukan penerima dan kategori untuk mencocokkan riwayat pembayaran",

@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "Le montant est requis pour le remplacement fractionné",
     "dateMustBeYMD": "La date doit être au format YYYY-MM-DD",
     "loanLedgerUnreadable": "Ce paiement de prêt n'a pas pu être calculé car le solde de son grand livre n'a pas pu être lu. Réessayez.",
-    "estimateRequiresPlain": "Un montant estimé n'est disponible que pour une opération à catégorie unique ou un virement dans la devise du compte, pas pour une ventilation, un investissement ou un montant en devise étrangère",
+    "estimateRequiresPlain": "Un montant estimé n'est disponible que pour une opération à catégorie unique ou un virement, pas pour une ventilation ou un investissement",
     "estimateNoAutoPost": "Une opération planifiée dont le montant est estimé ne peut pas être enregistrée automatiquement",
     "overrideAutoPostNeedsAmount": "Une occurrence d'une opération planifiée dont le montant est estimé ne peut être enregistrée automatiquement qu'une fois son propre montant saisi",
     "estimateRequiresPayeeAndCategory": "Un montant estimé a besoin d'un bénéficiaire et d'une catégorie pour retrouver l'historique des paiements",

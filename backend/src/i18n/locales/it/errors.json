@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "L'importo è obbligatorio per la sostituzione suddivisa",
     "dateMustBeYMD": "la data deve essere nel formato YYYY-MM-DD",
     "loanLedgerUnreadable": "Non è stato possibile calcolare questo pagamento del prestito perché non è stato possibile leggere il saldo del suo registro. Riprova.",
-    "estimateRequiresPlain": "Un importo stimato è disponibile solo per una transazione con una sola categoria o un trasferimento nella valuta del conto, non per una suddivisione, un investimento o un importo in valuta estera",
+    "estimateRequiresPlain": "Un importo stimato è disponibile solo per una transazione con una sola categoria o un trasferimento, non per una suddivisione o un investimento",
     "estimateNoAutoPost": "Una transazione pianificata con un importo stimato non può essere registrata automaticamente",
     "overrideAutoPostNeedsAmount": "Un'occorrenza di una transazione pianificata con un importo stimato può essere registrata automaticamente solo dopo averne inserito l'importo",
     "estimateRequiresPayeeAndCategory": "Un importo stimato richiede un beneficiario e una categoria su cui confrontare lo storico dei pagamenti",

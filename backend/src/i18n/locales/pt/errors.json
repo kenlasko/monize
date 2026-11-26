@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "O montante é obrigatório para substituição de parcela",
     "dateMustBeYMD": "date deve estar no formato YYYY-MM-DD",
     "loanLedgerUnreadable": "Não foi possível calcular este pagamento do empréstimo porque não foi possível ler o saldo do seu livro-razão. Tente novamente.",
-    "estimateRequiresPlain": "Um montante estimado só está disponível para uma transação de categoria única ou uma transferência na moeda da conta, não para uma divisão, um investimento ou um montante em moeda estrangeira",
+    "estimateRequiresPlain": "Um montante estimado só está disponível para uma transação de categoria única ou uma transferência, não para uma divisão ou um investimento",
     "estimateNoAutoPost": "Uma transação agendada com um montante estimado não pode ser lançada automaticamente",
     "overrideAutoPostNeedsAmount": "Uma ocorrência de uma transação agendada com um montante estimado só pode ser lançada automaticamente depois de introduzido o seu próprio montante",
     "estimateRequiresPayeeAndCategory": "Um montante estimado precisa de um beneficiário e de uma categoria para corresponder ao histórico de pagamentos",

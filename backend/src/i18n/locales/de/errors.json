@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "Betrag ist für Buchungsteil-Überschreibung erforderlich",
     "dateMustBeYMD": "Datum muss im Format YYYY-MM-DD sein",
     "loanLedgerUnreadable": "Diese Kreditrate konnte nicht berechnet werden, da ihr Kontosaldo nicht gelesen werden konnte. Bitte erneut versuchen.",
-    "estimateRequiresPlain": "Ein geschätzter Betrag ist nur für eine Buchung mit einer Kategorie oder eine Überweisung in der Kontowährung verfügbar, nicht für eine Aufteilung, eine Investition oder einen Betrag in Fremdwährung",
+    "estimateRequiresPlain": "Ein geschätzter Betrag ist nur für eine Buchung mit einer Kategorie oder eine Überweisung verfügbar, nicht für eine Aufteilung oder eine Investition",
     "estimateNoAutoPost": "Eine geplante Buchung mit geschätztem Betrag kann nicht automatisch gebucht werden",
     "overrideAutoPostNeedsAmount": "Ein Termin einer geplanten Buchung mit geschätztem Betrag kann erst automatisch gebucht werden, wenn sein eigener Betrag eingegeben ist",
     "estimateRequiresPayeeAndCategory": "Ein geschätzter Betrag braucht einen Zahlungsempfänger und eine Kategorie, um den Zahlungsverlauf abzugleichen",
