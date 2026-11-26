@@ -39,6 +39,10 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
   inner-joins the parent's tags and groups by trimmed, case-insensitive value,
   so two tags on one row that give the same value (`scope:home`, `Scope: home`)
   count the row twice, and a split line's own tags are not read.
+- [x] Left on joins on purpose: the register list (`findAll`),
+  `buildFilteredIdsSubquery` and the bulk-update selector pick or hydrate rows
+  and never sum over the join, so a repeated row changes no figure; an
+  aggregate added on one of them moves it to `tagFilterExistsSql` first.
 
 ## T4 Budget Health
 
