@@ -85,9 +85,10 @@ All (decided) by the maintainer on 2026-11-26.
 11. **Automation.** A rule's "Set the category" applies to a transfer when the
     category is a Transfer category, and "Convert to transfer" can name one. A
     payee's default category stays Income or Expense and stays off transfers.
-12. **Delivery.** Six pull requests into one integration branch, grouped by
-    area rather than one per task, then one into `main`; `main` and users see
-    nothing until the whole release is ready.
+12. **Delivery.** Six pull requests, grouped by area rather than one per
+    task, each into `main` in order (the issue workers branch from `main`).
+    `main` holds a half-built feature between the third and the fifth, so no
+    release is cut until the sixth has merged.
 
 ## 4. Definitions
 
@@ -291,5 +292,6 @@ Each default is what gets built unless changed before its task starts.
   the review list is what makes the change visible.
 - **Size.** One release touches the schema, every category reader, every
   transaction write path, three report engines, budgets, importers, the
-  assistant, docs and all locales. The integration branch keeps `main`
-  releasable throughout.
+  assistant, docs and all locales. `main` is not releasable between the
+  third and fifth pull requests; a fix that must ship in that window is
+  released from a branch cut before the third.

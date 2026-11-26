@@ -1,10 +1,11 @@
 # Transfer Categories: Agent Task List
 
-> Companion to [`transfer-categories.md`](./transfer-categories.md) (the plan). The work is six pull requests into one integration branch, then one into `main`. Each PR is a list of steps; a step is one agent session and one commit. Mark a step done by checking its box and noting the commit.
+> Companion to [`transfer-categories.md`](./transfer-categories.md) (the plan). The work is six pull requests into `main`, in order. Each PR is a list of steps; a step is one agent session and one commit. Mark a step done by checking its box and noting the commit.
 
 ## How to use this list (read first, every session)
 
-- **Integration branch `transfer-categories/integration`**, cut from `main`. Each PR below is one branch off it; its steps are commits on that branch, done in the order listed. Nothing merges to `main` until PR 7.
+- **Each PR below is one branch off `main` and merges into `main`**; its steps are commits on that branch, done in the order listed. A PR starts only after the one before it has merged.
+- **No release is cut between PR 3 and PR 6.** PR 3 makes the server refuse categories that existing transfers still hold until PR 5 migrates them.
 - **PR 1 is approved by the maintainer before PR 2 starts.** It may change the defaults in the plan's section 12; later PRs build what it says.
 - **A step stays inside its PR's area.** Work outside it is a scope violation: stop and leave a note.
 - **Read first:** `AGENTS.md`, the layer `CLAUDE.md`, and the documents its table names for the step's subject. Re-locate code by symbol, never by line.
@@ -19,12 +20,11 @@
 | 1 | Specification | -- | none | [ ] |
 | 2 | The category type, end to end | 1 | none while no Transfer category exists | [ ] |
 | 3 | Rules for what a row may hold, on every write path | 2 | yes | [ ] |
-| 4 | Reports and budgets | 2 | yes | [ ] |
-| 5 | Migration of existing data | 3, 4 | yes | [ ] |
+| 4 | Reports and budgets | 3 | yes | [ ] |
+| 5 | Migration of existing data | 4 | yes | [ ] |
 | 6 | Docs, end-to-end tests, locales, release notes | 5 | none | [ ] |
-| 7 | Integration branch into `main`, by the maintainer | 6 | the release | [ ] |
 
-PRs 3 and 4 touch different modules and can be built side by side. Every other pair is sequential.
+The PRs run strictly in this order.
 
 ---
 
@@ -93,7 +93,3 @@ Done when the checks at the end of the plan's section 7 pass on real PostgreSQL.
 - [ ] E2E specs from the plan's section 10.
 - [ ] Full-locale i18n pass.
 - [ ] Release notes and What's new; a follow-up issue for the `is_income` column drop and the migration re-run.
-
-## PR 7: Into `main`
-
-Opened and merged by the maintainer once PR 6 is in.
