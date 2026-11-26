@@ -26,7 +26,7 @@ A negative milestone shows net spending and the budget amount. An income shortfa
 
 ## Projection
 
-The current velocity calculation extrapolates signed spending. On day 5 of a 30-day month, a purchase of 50 and a refund of 300 give spending of −250, a daily pace of −50 and a projected total of −1,500. Computing a purchases-only pace would change this metric.
+For the velocity widget and projected-overspend alert, measure purchases on elapsed days before netting refunds. Divide those purchases by elapsed days and project only the remaining days. The month-end net is spending already recorded (purchases minus refunds) plus future purchases at that pace. Purchases of 50 and a refund of 300 by day 5 of 30 give a pace of 10 per day, another 250 in expected purchases, and projected net spending of zero. A refund-only period has zero purchase pace. On the last day the forecast equals recorded net spending. The widget applies the rule across expense lines and the alert applies it to its category. Use the budget’s account, split, transfer and currency eligibility at the posting date. A missing exchange rate leaves an unknown projection and suppresses a velocity alert.
 
 ## Expense and bucket rollover
 
