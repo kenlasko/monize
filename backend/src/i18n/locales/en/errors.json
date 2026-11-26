@@ -650,7 +650,7 @@
     "updateSplitOverrideRequiresAmount": "Amount is required for split override",
     "dateMustBeYMD": "date must be in YYYY-MM-DD format",
     "loanLedgerUnreadable": "This loan payment could not be priced because its ledger balance could not be read. Try again.",
-    "estimateRequiresPlain": "An estimated amount is only available for a single-category transaction or a transfer in the account's currency, not a split, an investment or a foreign-currency amount",
+    "estimateRequiresPlain": "An estimated amount is only available for a single-category transaction or a transfer, not a split or an investment",
     "estimateNoAutoPost": "A scheduled transaction with an estimated amount cannot be posted automatically",
     "overrideAutoPostNeedsAmount": "An occurrence of a scheduled transaction with an estimated amount can be posted automatically only once its own amount is entered",
     "estimateRequiresPayeeAndCategory": "An estimated amount needs a payee and a category to match the payment history on",

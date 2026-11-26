@@ -11102,6 +11102,259 @@ describe("ScheduledTransactionsService", () => {
       });
     });
 
+    describe("a foreign-currency bill (issue #2458)", () => {
+      /** The same history priced in USD, each occurrence converted at 1.4. */
+      const foreignEstimate = (): ScheduleAmountEstimate => ({
+        ...knownEstimate(),
+        currencyCode: "CAD",
+        entry: {
+          currencyCode: "USD",
+          rate: 1.4,
+          fxFeePercent: null,
+          accountMoneyDecimals: 4,
+        },
+      });
+      const foreignSchedule = (extra: Record<string, unknown> = {}) =>
+        makeScheduled({
+          amountIsEstimated: true,
+          amount: -140,
+          currencyCode: "CAD",
+          originalAmount: -100,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1.4,
+          account: {
+            id: "acc-1",
+            currencyCode: "CAD",
+            fxFeePercent: null,
+          } as any,
+          ...extra,
+        } as never);
+      const stubNoOverride = () => {
+        const overrideQb = mockQueryBuilder(null);
+        overrideQb.getOne.mockResolvedValue(null);
+        overridesRepo.createQueryBuilder.mockReturnValue(overrideQb);
+        accountsRepo.findOne.mockResolvedValue(null);
+      };
+
+      beforeEach(() => {
+        accountsService.findOne.mockResolvedValue({
+          id: "acc-1",
+          userId,
+          currencyCode: "CAD",
+          fxFeePercent: null,
+        });
+      });
+
+      it("accepts the estimate and stores both figures of the next occurrence", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        const saved = foreignSchedule();
+        scheduledRepo.save.mockResolvedValue(saved);
+        stubFindOne(saved);
+
+        await service.create(userId, {
+          ...baseDto,
+          currencyCode: "CAD",
+          amount: -1,
+          originalAmount: -1,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1,
+        });
+
+        expect(amountEstimates.estimateFor).toHaveBeenCalledWith(userId, {
+          payeeId: "payee-1",
+          categoryId: "cat-1",
+          currencyCode: "CAD",
+          entry: { currencyCode: "USD", accountId: "acc-1" },
+        });
+        expect(scheduledRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amountIsEstimated: true,
+            amount: -154,
+            originalAmount: -110,
+            originalCurrencyCode: "USD",
+            exchangeRate: 1.4,
+          }),
+        );
+      });
+
+      it("keeps the sent entry while the estimate is unknown", async () => {
+        amountEstimates.estimateFor.mockResolvedValue({
+          ...unknownEstimate,
+          currencyCode: "CAD",
+        });
+        const saved = foreignSchedule();
+        scheduledRepo.save.mockResolvedValue(saved);
+        stubFindOne(saved);
+
+        await service.create(userId, {
+          ...baseDto,
+          currencyCode: "CAD",
+          amount: -13.5,
+          originalAmount: -10,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1.35,
+        });
+
+        expect(scheduledRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            amount: -13.5,
+            originalAmount: -10,
+            exchangeRate: 1.35,
+          }),
+        );
+      });
+
+      it("turns the estimate on for a stored foreign bill and writes both figures", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        stubFindOne(foreignSchedule({ amountIsEstimated: false }));
+
+        await service.update(userId, stId, {
+          amountIsEstimated: true,
+          amount: -140,
+          originalAmount: -100,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1.4,
+        });
+
+        expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+          ScheduledTransaction,
+          stId,
+          expect.objectContaining({
+            amountIsEstimated: true,
+            amount: -154,
+            originalAmount: -110,
+            exchangeRate: 1.4,
+          }),
+        );
+      });
+
+      it("keeps the flag when an estimated bill moves to another currency", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        stubFindOne(
+          makeScheduled({
+            amountIsEstimated: true,
+            currencyCode: "CAD",
+            account: { id: "acc-1", currencyCode: "CAD" } as any,
+          } as never),
+        );
+
+        await service.update(userId, stId, {
+          amount: -140,
+          originalAmount: -100,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1.4,
+        });
+
+        const fields = mockQueryRunner.manager.update.mock.calls.find(
+          (c: any[]) => c[1] === stId,
+        )?.[2];
+        expect(fields.amountIsEstimated).toBeUndefined();
+        expect(fields).toMatchObject({
+          originalCurrencyCode: "USD",
+          amount: -154,
+          originalAmount: -110,
+        });
+        expect(amountEstimates.estimateFor).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            entry: { currencyCode: "USD", accountId: "acc-1" },
+          }),
+        );
+      });
+
+      it("writes neither figure for an edit that cannot move the snapshot", async () => {
+        stubFindOne(foreignSchedule());
+
+        await service.update(userId, stId, {
+          name: "Streaming",
+          amount: -150,
+          originalAmount: -107,
+          originalCurrencyCode: "USD",
+          exchangeRate: 1.4,
+        });
+
+        expect(amountEstimates.estimateFor).not.toHaveBeenCalled();
+        const fields = mockQueryRunner.manager.update.mock.calls.find(
+          (c: any[]) => c[1] === stId,
+        )?.[2];
+        expect(fields).toMatchObject({ name: "Streaming" });
+        expect(fields.amount).toBeUndefined();
+        expect(fields.originalAmount).toBeUndefined();
+        expect(fields.exchangeRate).toBeUndefined();
+      });
+
+      it("posts the biller-currency estimate at the posting date's rate", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        stubFindOne(foreignSchedule());
+        stubNoOverride();
+        mockExchangeRateService.getRateForDate.mockResolvedValue(1.5);
+
+        await service.post(userId, stId);
+
+        // USD -110 at the day's 1.5, not the stored -100 nor the list's -154.
+        expect(transactionsService.create).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({
+            amount: -165,
+            originalAmount: -110,
+            originalCurrencyCode: "USD",
+            exchangeRate: 1.5,
+          }),
+          { fromScheduledPosting: true, recordHistory: false },
+        );
+      });
+
+      it("posts the foreign amount the person entered over the estimate", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        stubFindOne(foreignSchedule());
+        stubNoOverride();
+        mockExchangeRateService.getRateForDate.mockResolvedValue(1.5);
+
+        await service.post(userId, stId, { originalAmount: -120 } as never);
+
+        expect(transactionsService.create).toHaveBeenCalledWith(
+          userId,
+          expect.objectContaining({ amount: -180, originalAmount: -120 }),
+          { fromScheduledPosting: true, recordHistory: false },
+        );
+      });
+
+      it("refuses an unknown estimate before writing", async () => {
+        amountEstimates.estimateFor.mockResolvedValue({
+          ...unknownEstimate,
+          currencyCode: "CAD",
+        });
+        stubFindOne(foreignSchedule());
+        stubNoOverride();
+        mockExchangeRateService.getRateForDate.mockResolvedValue(1.5);
+
+        await expect(service.post(userId, stId)).rejects.toThrow(
+          BadRequestException,
+        );
+        expect(transactionsService.create).not.toHaveBeenCalled();
+      });
+
+      it("refreshes both figures of the snapshot after posting", async () => {
+        amountEstimates.estimateFor.mockResolvedValue(foreignEstimate());
+        stubFindOne(foreignSchedule());
+        stubNoOverride();
+        mockExchangeRateService.getRateForDate.mockResolvedValue(1.5);
+        scheduledRepo.update = jest.fn().mockResolvedValue({ affected: 1 });
+
+        await service.post(userId, stId);
+
+        expect(scheduledRepo.update).toHaveBeenCalledWith(
+          {
+            id: stId,
+            userId,
+            amountIsEstimated: true,
+            originalCurrencyCode: "USD",
+          },
+          { amount: -154, originalAmount: -110, exchangeRate: 1.4 },
+        );
+      });
+    });
+
     describe("findAll", () => {
       it("publishes the estimate and prices the base and an amountless override", async () => {
         amountEstimates.estimateMany.mockResolvedValue(
