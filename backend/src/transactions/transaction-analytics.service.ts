@@ -13,7 +13,6 @@ import { getAllCategoryIdsWithChildren } from "../common/category-tree.util";
 import {
   applyInvestmentTransactionFilters,
   brokerageExclusionForEntity,
-  investmentExclusionSql,
   investmentLinkedSplitExclusion,
   investmentLinkedTransactionExclusion,
   reportableTransactionAmountSql,
@@ -365,6 +364,7 @@ export class TransactionAnalyticsService {
 
       // A split's transfer line is a transfer of its parent's account, at the
       // line's own signed amount and the parent's currency (INV-REPORT-006).
+      // Same scope as the whole-row query above, so inbound and outbound net.
       const lineParams: unknown[] = [userId, startDate, endDate];
       let lineScope = "";
       if (accountIds && accountIds.length > 0) {
@@ -385,12 +385,6 @@ export class TransactionAnalyticsService {
             AND t.transaction_date >= $2
             AND t.transaction_date <= $3
             AND (t.status IS NULL OR t.status != 'VOID')
-            AND ts.amount <> 0
-            AND ${investmentExclusionSql({
-              accountAlias: "a",
-              transactionAlias: "t",
-              splitAlias: "ts",
-            })}
             ${lineScope}
           GROUP BY a.id, a.name, t.currency_code`,
         lineParams,

@@ -22,11 +22,16 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
   the same, by the line's parent account.
 - [x] Restate "reads the outgoing leg at 90 EUR" to 180; add the whole-vs-split
   parity case.
-- [ ] Follow-up (unverified): the breakdown's whole-row transfer branch has no
-  investment exclusion while its line branch must carry it
-  (`investment-filter.guard.spec.ts`), so a transfer line on an investment-linked
-  parent or in a brokerage sleeve is dropped while its counterpart counts; the
-  writes are not known to produce that shape.
+- [ ] Follow-up: the breakdown's whole-row transfer branch has no investment
+  exclusion while its line branch must carry it (`investment-filter.guard.spec.ts`),
+  so a transfer line on an investment-linked parent or in a brokerage sleeve is
+  dropped while its counterpart counts. Import writes whole transfer rows in
+  brokerage accounts; whether a split with a transfer line can live there is
+  unverified. `getTransfersByAccount`, which the guard does not scan, gives its
+  line branch the whole-row branch's scope, so its inbound and outbound net.
+  The fix is one investment scope for both branches of the breakdown (the
+  Sankey's, INV-SANKEY-003), which moves existing whole-row figures and needs
+  its own agreement.
 
 ## T2 the transfers filter
 
