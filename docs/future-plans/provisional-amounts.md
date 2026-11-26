@@ -158,6 +158,12 @@ Decided in issue #2397 (the badge and the action):
 - A refusal (most likely "not provisional", because the leg was confirmed elsewhere) is toasted and the page reloads, so the row shows the server's state.
 - After the endpoint answers, the page marks the row confirmed in place, then reloads through `loadAllData`, the path the register's delete takes: the rows, the accounts the account widget reads (where F2's count will live), and the reload key the widgets refetch on. A reload that fails therefore leaves no stale badge. `transactionsApi.confirmAmount` drops the cached balance reads. A second click on the same row before the reload lands sends nothing.
 
+Decided in issue #2398 (the mark and the note on accounts, the register header and net worth):
+
+- `ProvisionalMark` (`frontend/src/components/ui/`) is a `≈` with an `InfoTooltip` saying how many estimates the figure includes and that `is:provisional` lists them. `PartialTotal` draws it through its optional `provisionalCount` prop, after the partial marker when there is one, so a figure that is both partial and provisional carries both. `ProvisionalDataNotice` (`frontend/src/components/reports/`) is the note counterpart of `PartialDataNotice`. Both read the count through `provisionalCountOf` (`frontend/src/lib/provisional-amount.ts`): an absent or unreadable count is `0` and draws nothing.
+- A sum of balances sums its accounts' counts (`sumProvisionalCounts`): an account row (a folded pair counts both ledgers), a group header and the accounts page's summary cards. The register header (the bar and the full widget) reads the account's own count.
+- Net worth reads the month's `provisionalCount`, `assetsProvisionalCount` and `liabilitiesProvisionalCount`: the hero, the widget's headline and the report's headline mark the newest month, and the report's table marks each month. The report's note takes the largest month's count, because a provisional leg stays in every month from its date on and a sum would count it once per month.
+
 ## 10. Test matrix
 
 The discussion's ten scenarios, each owned by a task.
