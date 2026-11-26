@@ -300,6 +300,8 @@ Click **Create Report** to save it. It then appears on the Reports page under **
 - **Both** with **Total Amount** shows **Net amount**. Money coming in raises the total, and money going out lowers it. A purchase of 100 in September and its full refund in October show as −100 and +100 by month, with a total of 0 for both months. With **Include transfers**, the headline reads **Net cash movement** and each matching leg contributes its signed value. If a transaction appears under several tags, each tag shows its activity and the headline counts each underlying amount once.
 - **Both** with **Average Amount**, or with **No Aggregation** and a grouping, continues to use the magnitude of each category's net within the group.
 
+A signed pie uses cool colours for incoming amounts and warm colours for outgoing amounts. Its legend shows the signed value of every known row, including a cancellation at zero.
+
 **Previously saved reports.** On the next run, a saved **Both / Total Amount** report uses the signed calculation without editing or resaving. For example, salary of +1,000 in one category, a purchase of −100 and a refund of +30 in another previously showed 1,070. The same report now shows 930. Sorting by amount can change the order of the rows. Signed totals have no percentage shares. A report previously sorted by percentage now sorts by signed amount in the same ascending or descending order. When an exchange rate is missing, each grouping withholds the same incomplete category and currency from the known subtotal.
 
 To see one report of everything that came in and went out for a set of categories, in date order, choose **No Grouping**, **No Aggregation** and **Both**, and filter by those categories.

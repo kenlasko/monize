@@ -1,5 +1,7 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@/test/render';
+import { render, renderInLocale, screen, fireEvent, act } from '@/test/render';
+import frCommon from '@/i18n/messages/fr/common.json';
+import frReports from '@/i18n/messages/fr/reports.json';
 import { ReportChart } from './ReportChart';
 import { ReportViewType, GroupByType, TableColumn, MetricType } from '@/types/custom-report';
 
@@ -22,6 +24,8 @@ vi.mock('@/hooks/useDateFormat', () => ({
 
 vi.mock('@/lib/chart-colours', () => ({
   CHART_COLOURS: ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b'],
+  CHART_COLOURS_ASSETS: ['positive'],
+  CHART_COLOURS_LIABILITIES: ['negative'],
 }));
 
 // The rows a test hands the mocked tooltip; null hands it the fixed three below.
@@ -33,7 +37,7 @@ vi.mock('recharts', () => ({
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
   Pie: ({ onClick, data, dataKey }: any) => (
-    <div data-testid="pie" data-sizes={data.map((row: Record<string, number>) => row[dataKey]).join(',')}>
+    <div data-testid="pie" data-colours={data.map((row: { color: string }) => row.color).join(',')} data-sizes={data.map((row: Record<string, number>) => row[dataKey]).join(',')}>
       <button data-testid="pie-click-with-id" onClick={() => onClick && onClick(data[0])}>click-id</button>
       <button data-testid="pie-click-no-id" onClick={() => onClick && onClick({ value: 1 })}>click-no-id</button>
     </div>
@@ -553,7 +557,7 @@ describe('ReportChart', () => {
     }
   });
 
-  it('renders totalCount as dash when zero', () => {
+  it('renders the count as unknown when no row supplies one', () => {
     const data = [{ label: 'A', value: 100 }];
     render(
       <ReportChart
@@ -565,6 +569,41 @@ describe('ReportChart', () => {
     );
     const dashes = screen.getAllByText('-');
     expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it.each([
+    { rows: [{ label: 'Known zero', value: 0, count: 0 }], cell: '0', total: '0', exported: 0 },
+    { rows: [{ label: 'No count', value: 0 }], cell: '-', total: '-', exported: '' },
+  ])('preserves the difference between a zero count and an absent count for $cell', async ({ rows, cell, total, exported }) => {
+    const { exportToCsv } = await import('@/lib/csv-export');
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    const { container } = render(<ReportChart viewType={ReportViewType.TABLE} data={rows}
+      groupBy={GroupByType.TAG} tableColumns={[TableColumn.LABEL, TableColumn.COUNT]} />);
+    expect(screen.getByRole('columnheader', { name: 'Tag' })).toBeInTheDocument();
+    expect(container.querySelector('tbody tr td:last-child')).toHaveTextContent(cell);
+    expect(container.querySelector('tfoot tr td:last-child')).toHaveTextContent(total);
+
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+    await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
+    const csv = vi.mocked(exportToCsv).mock.lastCall;
+    expect(csv?.[1]).toEqual(['Tag', 'Count']);
+    expect(csv?.[2].map(row => row[1])).toEqual([exported, exported]);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
+    await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
+    const pdf = vi.mocked(exportToPdf).mock.lastCall?.[0].tableData;
+    expect(pdf?.headers).toEqual(['Tag', 'Count']);
+    expect(pdf?.rows[0][1]).toBe(String(exported));
+    expect(pdf?.totalRow?.[1]).toBe(String(exported));
+  });
+
+  it('labels the group, amount and count in the selected language', () => {
+    renderInLocale(<ReportChart viewType={ReportViewType.TABLE} groupBy={GroupByType.TAG}
+        data={[{ label: 'Travel', value: -50, count: 1 }]}
+        tableColumns={[TableColumn.LABEL, TableColumn.VALUE, TableColumn.COUNT]} />,
+      { locale: 'fr', messages: { reports: frReports, common: frCommon } });
+    for (const name of ['Étiquette', 'Montant', 'Nombre']) {
+      expect(screen.getByRole('columnheader', { name })).toBeInTheDocument();
+    }
   });
 
   // Discussion #1978: a both-direction list keeps its signs, so a share of the
@@ -648,6 +687,7 @@ describe('ReportChart', () => {
       render(<ReportChart viewType={ReportViewType.PIE_CHART} data={signedData} groupBy={GroupByType.CATEGORY} signed />);
 
       expect(screen.getByTestId('pie')).toHaveAttribute('data-sizes', '1000,300');
+      expect(screen.getByTestId('pie')).toHaveAttribute('data-colours', 'positive,negative');
       expect(screen.getByTestId('tooltip')).toHaveTextContent('$-300.00');
     });
 

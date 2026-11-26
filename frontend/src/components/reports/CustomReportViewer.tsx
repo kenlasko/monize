@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { DateInput } from '@/components/ui/DateInput';
 import { Select } from '@/components/ui/Select';
 import { customReportsApi } from '@/lib/custom-reports';
-import { CHART_COLOURS } from '@/lib/chart-colours';
+import { colourReportRows } from './custom-report-colours';
 import {
   CustomReport,
   ReportResult,
@@ -155,19 +155,6 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     ...Object.keys(TIMEFRAME_LABELS).map((value) => ({ value, label: t(`customReportLabels.timeframe.${value}`) })),
   ];
 
-  // Mirror ReportChart's colour assignment so legend swatches match chart
-  // slices/bars, and its plotting: a row with no converted value is not drawn.
-  const legendData = useMemo(() => {
-    if (!result) return [];
-    let colourIndex = 0;
-    return result.data
-      .map((item) => ({
-        ...item,
-        color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
-      }))
-      .filter((item): item is typeof item & { value: number } => item.value !== null);
-  }, [result]);
-
   // The headline, per metric: a count is a number, every other metric money. A
   // withheld total (a missing rate, or the row limit) is the known part, marked.
   const metric = report?.config.metric;
@@ -179,7 +166,13 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
   const signed = measure === 'netAmount' || measure === 'netCashMovement';
   const signedTotal = signed && metric === MetricType.TOTAL_AMOUNT;
   // A pie encodes only magnitudes, and a zero has no slice to hover or select.
-  const signedPie = signedTotal && result?.viewType === ReportViewType.PIE_CHART;
+  const signedPie = signed && result?.viewType === ReportViewType.PIE_CHART;
+  const legendData = useMemo(() => {
+    if (!result) return [];
+    return colourReportRows(result.data, signedPie).filter(
+      (item): item is typeof item & { value: number } => item.value !== null,
+    );
+  }, [result, signedPie]);
   const legendRows = signedPie ? legendData : legendData.slice(0, 15);
   const measureLabel = measure ? t(`customReportViewer.measure.${measure}`) : null;
   const summaryTotal: ConvertedTotal | null = result

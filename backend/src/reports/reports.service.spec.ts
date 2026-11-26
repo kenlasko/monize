@@ -4728,7 +4728,7 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        // Default case in aggregateData falls through to aggregateNoGrouping
+        // An unknown grouping uses the ungrouped report.
         expect(result.data).toEqual([]);
       });
 

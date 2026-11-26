@@ -19,7 +19,7 @@ import {
 import { ReportViewType, AggregatedDataPoint, GroupByType, TableColumn, MetricType } from '@/types/custom-report';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
-import { CHART_COLOURS } from '@/lib/chart-colours';
+import { colourReportRows } from './custom-report-colours';
 import { chartColors } from '@/lib/chart-colors';
 import { exportToCsv } from '@/lib/csv-export';
 import { getDecimalPlacesForCurrency } from '@/lib/format';
@@ -77,30 +77,28 @@ interface ReportChartProps {
 type ShareOf = (item: AggregatedDataPoint) => number | null;
 
 function getColumnMap(
-  labelHeader: string,
-  accountAmountHeader: string,
-  originalAmountHeader: string,
+  header: (col: TableColumn) => string,
   shareOf: ShareOf,
   signed: boolean,
 ): Record<TableColumn, { header: string; getValue: (item: AggregatedDataPoint) => string | number }> {
   return {
-    [TableColumn.DATE]: { header: 'Date', getValue: (item) => item.date || '' },
-    [TableColumn.LABEL]: { header: labelHeader, getValue: (item) => item.label },
-    [TableColumn.PAYEE]: { header: 'Payee', getValue: (item) => item.payee || '' },
-    [TableColumn.DESCRIPTION]: { header: 'Description', getValue: (item) => item.description || '' },
-    [TableColumn.MEMO]: { header: 'Memo', getValue: (item) => item.memo || '' },
-    [TableColumn.CATEGORY]: { header: 'Category', getValue: (item) => item.category || '' },
-    [TableColumn.ACCOUNT]: { header: 'Account', getValue: (item) => item.account || '' },
+    [TableColumn.DATE]: { header: header(TableColumn.DATE), getValue: (item) => item.date || '' },
+    [TableColumn.LABEL]: { header: header(TableColumn.LABEL), getValue: (item) => item.label },
+    [TableColumn.PAYEE]: { header: header(TableColumn.PAYEE), getValue: (item) => item.payee || '' },
+    [TableColumn.DESCRIPTION]: { header: header(TableColumn.DESCRIPTION), getValue: (item) => item.description || '' },
+    [TableColumn.MEMO]: { header: header(TableColumn.MEMO), getValue: (item) => item.memo || '' },
+    [TableColumn.CATEGORY]: { header: header(TableColumn.CATEGORY), getValue: (item) => item.category || '' },
+    [TableColumn.ACCOUNT]: { header: header(TableColumn.ACCOUNT), getValue: (item) => item.account || '' },
     // A listed row with no rate has no converted figure: a blank cell, never 0.
-    [TableColumn.VALUE]: { header: 'Amount', getValue: (item) => item.value ?? '' },
-    [TableColumn.ACCOUNT_AMOUNT]: { header: accountAmountHeader, getValue: (item) => item.accountAmount ?? '' },
-    [TableColumn.ORIGINAL_AMOUNT]: { header: originalAmountHeader, getValue: (item) => item.originalAmount ?? '' },
+    [TableColumn.VALUE]: { header: header(TableColumn.VALUE), getValue: (item) => item.value ?? '' },
+    [TableColumn.ACCOUNT_AMOUNT]: { header: header(TableColumn.ACCOUNT_AMOUNT), getValue: (item) => item.accountAmount ?? '' },
+    [TableColumn.ORIGINAL_AMOUNT]: { header: header(TableColumn.ORIGINAL_AMOUNT), getValue: (item) => item.originalAmount ?? '' },
     [TableColumn.PERCENTAGE]: {
-      header: '%',
+      header: header(TableColumn.PERCENTAGE),
       getValue: (item) => (signed ? null : shareOf(item)) ?? '',
     },
-    [TableColumn.COUNT]: { header: 'Count', getValue: (item) => item.count || 0 },
-    [TableColumn.TAG]: { header: 'Tag', getValue: (item) => item.tags || '' },
+    [TableColumn.COUNT]: { header: header(TableColumn.COUNT), getValue: (item) => item.count ?? '' },
+    [TableColumn.TAG]: { header: header(TableColumn.TAG), getValue: (item) => item.tags || '' },
   };
 }
 
@@ -115,6 +113,7 @@ interface ReportChartTooltipProps {
 }
 
 function ReportChartTooltip({ active, payload, shareOf, formatCurrency, formatPercent, signed }: ReportChartTooltipProps) {
+  const t = useTranslations('reports');
   if (active && payload && payload.length) {
     const item = payload[0].payload;
     const percentage = signed ? null : shareOf(item);
@@ -125,9 +124,9 @@ function ReportChartTooltip({ active, payload, shareOf, formatCurrency, formatPe
           {formatCurrency(item.value)}
           {percentage !== null && <> ({formatPercent(percentage, 1)})</>}
         </p>
-        {item.count !== undefined && (
+        {item.count != null && (
           <p className="text-sm text-gray-500 dark:text-gray-500">
-            {item.count} transaction{item.count !== 1 ? 's' : ''}
+            {t('customReportViewer.transactionCount', { count: item.count })}
           </p>
         )}
       </div>
@@ -136,22 +135,19 @@ function ReportChartTooltip({ active, payload, shareOf, formatCurrency, formatPe
   return null;
 }
 
-export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, totalRowCount, partialTotal, totalLabel = 'Total', signed = false }: ReportChartProps) {
+export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableColumns, exportFilename, reportTitle, reportSubtitle, metric, totalRowValue, totalRowCount, partialTotal, totalLabel: caption, signed = false }: ReportChartProps) {
   const t = useTranslations('reports');
+  const totalLabel = caption ?? t('spendingByCategory.total');
   const { formatCurrency, formatNumber, formatPercent } = useNumberFormat();
   const { cellFor } = usePartialTotalNote();
   const { formatDate } = useDateFormat();
   const columns = tableColumns && tableColumns.length > 0 ? tableColumns : DEFAULT_TABLE_COLUMNS;
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  // Assign colours to data points without one
-  const chartData = useMemo(() => {
-    let colourIndex = 0;
-    return data.map((item) => ({
-      ...item,
-      color: item.color || CHART_COLOURS[colourIndex++ % CHART_COLOURS.length],
-    }));
-  }, [data]);
+  const chartData = useMemo(
+    () => colourReportRows(data, signed && viewType === ReportViewType.PIE_CHART),
+    [data, signed, viewType],
+  );
   // A listed row with no rate stays in the table and the exports under its own
   // amount (issue #2342), but a chart has nothing to draw for it, and it is in
   // no total or share.
@@ -172,7 +168,8 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
     item.value === null ? null : (item.percentage ?? null);
   // The Total row's 100% only over rows that carry a share.
   const showsShares = !signed && chartData.some((item) => shareOf(item) !== null);
-  const totalCount = totalRowCount ?? (chartData.reduce((sum, item) => sum + (item.count ?? 0), 0) || null);
+  const counts = chartData.flatMap(item => item.count == null ? [] : [item.count]);
+  const totalCount = totalRowCount ?? (counts.length ? counts.reduce((sum, count) => sum + count, 0) : null);
   const formatValue = (value: number) =>
     metric === MetricType.COUNT ? formatNumber(value, 0) : formatCurrency(value);
   // The Total row prints the headline the server settled for the metric (a mean
@@ -203,12 +200,19 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       : formatInItsCurrency(item.originalAmount, item.originalCurrency);
   const originalAmountHeader = t('customReportLabels.tableColumn.ORIGINAL_AMOUNT');
 
-  const labelHeader = groupBy === GroupByType.CATEGORY ? 'Category' :
-                      groupBy === GroupByType.PAYEE ? 'Payee' :
-                      groupBy === GroupByType.NONE ? 'Item' : 'Period';
-
+  const labelHeader = groupBy === GroupByType.NONE
+    ? t('statement.item')
+    : groupBy === GroupByType.CATEGORY || groupBy === GroupByType.PAYEE || groupBy === GroupByType.TAG
+      ? t(`customReportLabels.groupBy.${groupBy}`)
+      : t('monthlyComparison.pdfPeriod');
+  const header = (col: TableColumn) => {
+    if (col === TableColumn.LABEL) return labelHeader;
+    if (col === TableColumn.VALUE) return t('statement.amount');
+    if (col === TableColumn.PERCENTAGE) return t('portfolioValue.csvUnitPercent');
+    return t(`customReportLabels.tableColumn.${col}`);
+  };
   const handleExportCsv = () => {
-    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, shareOf, signed);
+    const columnMap = getColumnMap(header, shareOf, signed);
     // An account- or original-currency amount is a raw number in a
     // spreadsheet, so its currency travels in a column of its own beside it.
     const csvColumns = columns.flatMap((col): CsvColumn[] => {
@@ -244,7 +248,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
 
   const handleExportPdf = async () => {
     const { exportToPdf } = await import('@/lib/pdf-export');
-    const columnMap = getColumnMap(labelHeader, accountAmountHeader, originalAmountHeader, shareOf, signed);
+    const columnMap = getColumnMap(header, shareOf, signed);
     const headers = columns.map((col) => columnMap[col]?.header || col);
     // The PDF prints what the screen prints: formatted figures, never raw numbers.
     const pdfCell = (col: TableColumn, item: AggregatedDataPoint) => {
@@ -267,7 +271,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
       return '';
     });
     await exportToPdf({
-      title: reportTitle || exportFilename || 'Report',
+      title: reportTitle || exportFilename || t('page.tableReport'),
       subtitle: reportSubtitle,
       chartContainer: viewType !== ReportViewType.TABLE ? chartContainerRef.current : null,
       tableData: { headers, rows, totalRow },
@@ -401,7 +405,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
               <tr>
                 {columns.includes(TableColumn.DATE) && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Date
+                    {header(TableColumn.DATE)}
                   </th>
                 )}
                 {columns.includes(TableColumn.LABEL) && (
@@ -411,49 +415,49 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                 )}
                 {columns.includes(TableColumn.PAYEE) && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Payee
+                    {header(TableColumn.PAYEE)}
                   </th>
                 )}
                 {columns.includes(TableColumn.DESCRIPTION) && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Description
+                    {header(TableColumn.DESCRIPTION)}
                   </th>
                 )}
                 {columns.includes(TableColumn.MEMO) && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Memo
+                    {header(TableColumn.MEMO)}
                   </th>
                 )}
                 {columns.includes(TableColumn.CATEGORY) && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Category
+                    {header(TableColumn.CATEGORY)}
                   </th>
                 )}
                 {columns.includes(TableColumn.ACCOUNT) && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Account
+                    {header(TableColumn.ACCOUNT)}
                   </th>
                 )}
                 {columns.includes(TableColumn.VALUE) && (
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Amount
+                    {header(TableColumn.VALUE)}
                   </th>
                 )}
                 {columns.includes(TableColumn.ACCOUNT_AMOUNT) && <Th align="right">{accountAmountHeader}</Th>}
                 {columns.includes(TableColumn.ORIGINAL_AMOUNT) && <Th align="right">{originalAmountHeader}</Th>}
                 {columns.includes(TableColumn.PERCENTAGE) && (
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    %
+                    {header(TableColumn.PERCENTAGE)}
                   </th>
                 )}
                 {columns.includes(TableColumn.COUNT) && (
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Count
+                    {header(TableColumn.COUNT)}
                   </th>
                 )}
                 {columns.includes(TableColumn.TAG) && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Tag
+                    {header(TableColumn.TAG)}
                   </th>
                 )}
               </tr>
@@ -537,7 +541,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                   )}
                   {columns.includes(TableColumn.COUNT) && (
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                      {item.count || '-'}
+                      {item.count == null ? '-' : formatNumber(item.count, 0)}
                     </td>
                   )}
                   {columns.includes(TableColumn.TAG) && (
@@ -596,7 +600,7 @@ export function ReportChart({ viewType, data, groupBy, onDataPointClick, tableCo
                 )}
                 {columns.includes(TableColumn.COUNT) && (
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                    {totalCount ?? '-'}
+                    {totalCount === null ? '-' : formatNumber(totalCount, 0)}
                   </td>
                 )}
                 {columns.includes(TableColumn.TAG) && (

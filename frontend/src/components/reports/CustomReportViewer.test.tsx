@@ -807,16 +807,16 @@ describe("CustomReportViewer", () => {
     });
 
     it.each([
-      { name: "mixed signs", values: [-70, 100, ...Array<number>(14).fill(0)] },
-      { name: "all zero", values: [0, 0] },
-    ])("exposes every signed pie amount in the keyboard-accessible legend for $name", async ({ values }) => {
+      { name: "mixed signs", values: [-70, 100, ...Array<number>(14).fill(0)], metric: "TOTAL_AMOUNT", groupBy: "CATEGORY" },
+      { name: "an ungrouped signed transaction list", values: [-300, 300, ...Array<number>(20).fill(0)], metric: "NONE", groupBy: "NONE" },
+      { name: "all zero", values: [0, 0], metric: "TOTAL_AMOUNT", groupBy: "CATEGORY" },
+    ])("exposes every signed pie amount in the keyboard-accessible legend for $name", async ({ values, metric, groupBy }) => {
       const viewType = "PIE_CHART";
-      const groupBy = "CATEGORY";
       const data = values.map((value, index) => ({
         label: `Group ${index + 1}`, id: `cat-${index}`, value, count: 2,
       }));
       const total = values.reduce((sum, value) => sum + value, 0);
-      mockGetById.mockResolvedValue({ ...report({ metric: "TOTAL_AMOUNT" }), viewType, groupBy });
+      mockGetById.mockResolvedValue({ ...report({ metric }), viewType, groupBy });
       mockExecute.mockResolvedValue({
         ...executed, viewType, groupBy, data, signedTotal: true, summary: { total, knownTotal: total, count: data.length * 2 },
       });
