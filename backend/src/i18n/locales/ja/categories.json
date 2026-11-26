@@ -367,6 +367,16 @@
         "tips": "チップ",
         "vacationPay": "有給休暇手当"
       }
+    },
+    "transfers": {
+      "name": "Transfers",
+      "sub": {
+        "betweenOwnAccounts": "Between Own Accounts",
+        "cashWithdrawals": "Cash Withdrawals",
+        "creditCardPayments": "Credit Card Payments",
+        "investmentContributions": "Investment Contributions",
+        "savingsContributions": "Savings Contributions"
+      }
     }
   }
 }

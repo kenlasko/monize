@@ -367,6 +367,16 @@
         "tips": "小费",
         "vacationPay": "带薪休假工资"
       }
+    },
+    "transfers": {
+      "name": "Transfers",
+      "sub": {
+        "betweenOwnAccounts": "Between Own Accounts",
+        "cashWithdrawals": "Cash Withdrawals",
+        "creditCardPayments": "Credit Card Payments",
+        "investmentContributions": "Investment Contributions",
+        "savingsContributions": "Savings Contributions"
+      }
     }
   }
 }

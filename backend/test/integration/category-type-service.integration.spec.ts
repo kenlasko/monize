@@ -200,4 +200,32 @@ describe("Category type, through the service (integration)", () => {
     );
     expect((await typeOf(food.id)).type).toBe("expense");
   });
+
+  it("seeds the default Transfer set under one parent, and the mirror keeps the flag false", async () => {
+    await asUser(() => service.importDefaults(userId, {}));
+
+    const rows = await db.query(
+      `SELECT c.name, c.category_type AS "type", c.is_income AS "isIncome", p.name AS "parent"
+         FROM categories c LEFT JOIN categories p ON p.id = c.parent_id
+        WHERE c.user_id = $1 AND c.category_type = 'transfer'
+        ORDER BY c.name`,
+      [userId],
+    );
+    expect(rows.map((r: { name: string }) => r.name)).toEqual([
+      "Between Own Accounts",
+      "Cash Withdrawals",
+      "Credit Card Payments",
+      "Investment Contributions",
+      "Savings Contributions",
+      "Transfers",
+    ]);
+    expect(rows.every((r: { isIncome: boolean }) => r.isIncome === false)).toBe(
+      true,
+    );
+    expect(
+      rows
+        .filter((r: { parent: string | null }) => r.parent)
+        .every((r: { parent: string }) => r.parent === "Transfers"),
+    ).toBe(true);
+  });
 });

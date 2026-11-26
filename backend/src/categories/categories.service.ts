@@ -1024,55 +1024,41 @@ export class CategoriesService {
     // Country-specific additions (tax lines, benefits, local charges) are
     // layered over the country-neutral baseline; an omitted or unknown country
     // yields the generic catalog.
-    const { income, expense } = getDefaultCategories(options.country);
+    const { income, expense, transfer } = getDefaultCategories(options.country);
 
     return withScopedDb(this.dataSource, async (m) => {
       const repo = m.getRepository(Category);
       let categoryCount = 0;
 
-      for (const cat of income) {
-        const parentCategory = repo.create({
-          userId,
-          name: localizeCategory(cat.name),
-          categoryType: "income",
-          isIncome: true,
-        });
-        const savedParent = await repo.save(parentCategory);
-        categoryCount++;
-
-        for (const subName of cat.subcategories) {
-          const subCategory = repo.create({
-            userId,
-            parentId: savedParent.id,
-            name: localizeSubcategory(cat.name, subName),
-            categoryType: "income",
-            isIncome: true,
-          });
-          await repo.save(subCategory);
+      const branches: ReadonlyArray<readonly [CategoryType, typeof income]> = [
+        ["income", income],
+        ["expense", expense],
+        ["transfer", transfer],
+      ];
+      for (const [type, definitions] of branches) {
+        for (const cat of definitions) {
+          const savedParent = await repo.save(
+            repo.create({
+              userId,
+              name: localizeCategory(cat.name),
+              categoryType: type,
+              isIncome: incomeFlagOfType(type),
+            }),
+          );
           categoryCount++;
-        }
-      }
 
-      for (const cat of expense) {
-        const parentCategory = repo.create({
-          userId,
-          name: localizeCategory(cat.name),
-          categoryType: "expense",
-          isIncome: false,
-        });
-        const savedParent = await repo.save(parentCategory);
-        categoryCount++;
-
-        for (const subName of cat.subcategories) {
-          const subCategory = repo.create({
-            userId,
-            parentId: savedParent.id,
-            name: localizeSubcategory(cat.name, subName),
-            categoryType: "expense",
-            isIncome: false,
-          });
-          await repo.save(subCategory);
-          categoryCount++;
+          for (const subName of cat.subcategories) {
+            await repo.save(
+              repo.create({
+                userId,
+                parentId: savedParent.id,
+                name: localizeSubcategory(cat.name, subName),
+                categoryType: type,
+                isIncome: incomeFlagOfType(type),
+              }),
+            );
+            categoryCount++;
+          }
         }
       }
 

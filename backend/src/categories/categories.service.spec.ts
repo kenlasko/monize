@@ -1947,6 +1947,32 @@ describe("CategoriesService", () => {
       expect(qrRepo.save).toHaveBeenCalled();
     });
 
+    it("seeds the short Transfer set under one parent, typed as Transfer", async () => {
+      categoriesRepository.count.mockResolvedValue(0);
+      let idCounter = 0;
+      categoriesRepository.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
+        id: `gen-${++idCounter}`,
+      }));
+      categoriesRepository.save.mockImplementation((data: unknown) =>
+        Promise.resolve(data),
+      );
+
+      await service.importDefaults("user-1");
+
+      const created = categoriesRepository.create.mock.calls.map(
+        (c: unknown[]) => c[0] as Record<string, unknown>,
+      );
+      const transfers = created.filter((c) => c.categoryType === "transfer");
+      const parent = transfers.filter((c) => !c.parentId);
+      expect(parent.map((c) => c.name)).toEqual(["Transfers"]);
+      expect(transfers.length).toBe(6);
+      expect(transfers.every((c) => c.isIncome === false)).toBe(true);
+      expect(transfers.filter((c) => c.parentId).map((c) => c.name)).toContain(
+        "Savings Contributions",
+      );
+    });
+
     it("throws BadRequestException when user already has categories", async () => {
       categoriesRepository.count.mockResolvedValue(5);
 
