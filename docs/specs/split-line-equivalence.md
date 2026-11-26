@@ -134,7 +134,7 @@ section 8.2).
 | Both accounts in scope: transfers-only net is 0 | integration | same file |
 | Only the sending account: the outgoing amount; only the receiving: the incoming | integration | same file |
 | A mixed split with transfers excluded keeps its category line | integration | already covered (`getLlmFlowTotals`, 48) |
-| A line matching two tags, its parent matching one: counts once | integration | analytics summary and register filtered total |
+| A line matching two tags, its parent matching one: counts once | integration | `tag-filter-sum-once.integration.spec.ts`: analytics summary and register filtered total |
 | Budget Health: a split with a positive transfer line adds nothing to income | unit + integration | `budget-health-reports.service.spec.ts` |
 | No `is_transfer = true` transfers-only read without the split-line arm | guard | a source scan beside `report-rounding.guard.spec.ts`, if the arms share one helper |
 

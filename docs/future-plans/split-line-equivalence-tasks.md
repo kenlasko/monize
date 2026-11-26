@@ -10,7 +10,7 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 | T2 | The transfers filter reads the split transfer line, in analytics and the register | S0 | visible | opus, high | done |
 | T3 | Tag filters select a line once (`EXISTS`) | S0 | visible | sonnet, high | done |
 | T4 | Budget Health's income fallback drops the split transfer line | S0 | visible | sonnet, medium | done |
-| T5 | Close: INV-REPORT-006 status, user guide, plan retired | T1-T4 | none | sonnet, medium | open |
+| T5 | Close: INV-REPORT-006 status, user guide, plan retired | T1-T4 | none | sonnet, medium | done, plan kept for the open follow-ups |
 
 ## T1 transfer rollups
 
@@ -83,8 +83,8 @@ Spec: [`docs/specs/split-line-equivalence.md`](../specs/split-line-equivalence.m
 
 ## T5 close
 
-- [ ] INV-REPORT-006 status and known gap.
-- [ ] `website/docs/reports.md` where a figure changes.
-- [ ] Follow-up recorded: whether `externalFlowSubtotalsSql` should read split
+- [x] INV-REPORT-006 status and known gap (stays `partial`: the follow-ups above).
+- [x] `website/docs/reports.md`, `budgets.md` and `transactions.md` where a figure changes.
+- [x] Follow-up recorded in INV-REPORT-006's known gap: whether `externalFlowSubtotalsSql` should read split
   lines (spec section 5).
-- [ ] This plan pair retired.
+- [ ] This plan pair retired, once the follow-ups above are decided.
