@@ -661,10 +661,12 @@ repository settings and fails at its start if any is missing:
 | `SIGNPATH_PROJECT_SLUG` | variable | the project's slug |
 | `SIGNPATH_SIGNING_POLICY_SLUG` | variable | `test-signing` now; `release-signing` once the Foundation grants the certificate |
 
-Moving to the release certificate is a change to the variable. Also check
-then: whether the release policy needs a manual approval for each request
-(each wait is capped at 20 minutes), whether betas should stay on
-`test-signing`, `publisherName` for the updater (see "Updates" above), and
+Moving to the release certificate is a change to the variable. Every request
+under the release certificate needs a manual approval in the SignPath UI
+(SignPath Foundation's rule for open-source projects), so a release is
+watched: the job waits up to 60 minutes for each of its two requests and
+fails if either is not approved by then. Also check then: whether betas
+should stay on `test-signing`, `publisherName` for the updater (see "Updates" above), and
 the "not code-signed yet" lines in the root README and
 `website/docs/windows.md`.
 
