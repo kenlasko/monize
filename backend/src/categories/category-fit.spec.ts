@@ -1,8 +1,13 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import {
   assertCategoriesTakeCategoryRows,
   assertCategoryTakesCategoryRow,
+  categoryFits,
+  fitCategories,
+  fitCategory,
+  holderOfRow,
+  holderOfSplitLine,
 } from "./category-fit";
 
 describe("category fit refusals", () => {
@@ -68,5 +73,134 @@ describe("category fit refusals", () => {
     await expect(
       assertCategoriesTakeCategoryRows(m, "user-1", ["c1", "c2", "c1"]),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe("the fit helper (INV-CATEGORY-001)", () => {
+  let categories: { find: jest.Mock; findOne: jest.Mock };
+  let query: jest.Mock;
+  let m: EntityManager;
+  const savings = {
+    id: "t1",
+    name: "Savings",
+    categoryType: "transfer" as const,
+  };
+  const food = { id: "e1", name: "Food", categoryType: "expense" as const };
+  const salary = { id: "i1", name: "Salary", categoryType: "income" as const };
+
+  beforeEach(() => {
+    categories = { find: jest.fn(), findOne: jest.fn() };
+    query = jest.fn().mockResolvedValue([]);
+    m = {
+      query,
+      getRepository: jest.fn().mockReturnValue(categories),
+    } as unknown as EntityManager;
+  });
+
+  describe("categoryFits, the fit table of section 3", () => {
+    it.each([
+      [savings, "transfer", true],
+      [food, "transfer", true],
+      [salary, "transfer", true],
+      [savings, "category", false],
+      [food, "category", true],
+      [salary, "category", true],
+      // A value of the previous shape is Income or Expense.
+      [{ isIncome: false }, "category", true],
+    ] as const)("%o on a %s row: %s", (category, holder, fits) => {
+      expect(categoryFits(category, holder)).toBe(fits);
+    });
+  });
+
+  it("reads a row's holder from its kind", () => {
+    expect(holderOfRow({ isTransfer: true })).toBe("transfer");
+    expect(holderOfRow({ isTransfer: false })).toBe("category");
+    expect(holderOfRow({ isTransfer: null })).toBe("category");
+    expect(holderOfSplitLine({ transferAccountId: "a2" })).toBe("transfer");
+    expect(holderOfSplitLine({ transferAccountId: null })).toBe("category");
+    expect(holderOfSplitLine({})).toBe("category");
+  });
+
+  it("takes the shared owner lock, then returns the category that fits", async () => {
+    categories.findOne.mockImplementation(async () => {
+      expect(query).toHaveBeenCalledWith(
+        "SELECT pg_advisory_xact_lock_shared($1::int, hashtext($2))",
+        [10, "user-1"],
+      );
+      return savings;
+    });
+
+    await expect(fitCategory(m, "user-1", "t1", "transfer")).resolves.toBe(
+      savings,
+    );
+    expect(categories.findOne).toHaveBeenCalledWith({
+      where: { id: "t1", userId: "user-1" },
+    });
+  });
+
+  it("refuses a Transfer category on a category row, naming it", async () => {
+    categories.findOne.mockResolvedValue(savings);
+
+    const refusal = fitCategory(m, "user-1", "t1", "category");
+    await expect(refusal).rejects.toBeInstanceOf(BadRequestException);
+    await expect(refusal).rejects.toThrow(/Transfer category/);
+  });
+
+  it("refuses a category the person does not own, with the caller's error", async () => {
+    categories.findOne.mockResolvedValue(null);
+
+    await expect(
+      fitCategory(m, "user-1", "x", "category"),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      fitCategory(m, "user-1", "x", "transfer", {
+        notFound: () => new BadRequestException("nope"),
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("asks nothing for no category", async () => {
+    await expect(fitCategory(m, "user-1", null, "category")).resolves.toBe(
+      null,
+    );
+    await expect(
+      fitCategories(m, "user-1", [{ categoryId: "", holder: "category" }]),
+    ).resolves.toEqual(new Map());
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("reads many lines once and refuses the line that does not fit", async () => {
+    categories.find.mockResolvedValue([food, savings]);
+
+    const lines = [
+      { categoryId: "e1", holder: "category" as const },
+      { categoryId: "t1", holder: "transfer" as const },
+    ];
+    const found = await fitCategories(m, "user-1", lines);
+    expect([...found.keys()].sort()).toEqual(["e1", "t1"]);
+    expect(categories.find).toHaveBeenCalledTimes(1);
+
+    await expect(
+      fitCategories(m, "user-1", [
+        ...lines,
+        { categoryId: "t1", holder: "category" },
+      ]),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("names the categories the person does not own", async () => {
+    categories.find.mockResolvedValue([food]);
+
+    await expect(
+      fitCategories(m, "user-1", [
+        { categoryId: "e1", holder: "category" },
+        { categoryId: "zz", holder: "transfer" },
+      ]),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      fitCategories(m, "user-1", [{ categoryId: "zz", holder: "transfer" }], {
+        notFound: (ids) => new BadRequestException(ids.join()),
+      }),
+    ).rejects.toMatchObject({ message: "zz" });
   });
 });
