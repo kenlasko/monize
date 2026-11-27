@@ -259,7 +259,12 @@ export class TransactionBulkUpdateService {
       // superset is discovered structurally (every mirror leg and split-parent
       // leg, whatever its status), locked, and only then is the crossing read.
       const lockSet = isUpdatingStatus
-        ? await this.discoverStatusLockSet(m, userId, eligibleIds)
+        ? await this.discoverStatusLockSet(
+            m,
+            userId,
+            eligibleIds,
+            isUpdatingCategory,
+          )
         : { parentIds: [], rowIds: [] };
       if (isUpdatingStatus) {
         // First lock of the transaction: advisory before row locks
@@ -1779,11 +1784,17 @@ export class TransactionBulkUpdateService {
    * leg of each selected split parent. The crossing is decided later, on the
    * locked rows; this set only has to contain whatever that decision can pick.
    * Split parents come back apart from the rest so they can be locked first.
+   *
+   * `withOwningParents`, when the same batch sets a category: the split parent
+   * whose transfer line a selected row links is among the parents too, since
+   * the category write reaches that line (INV-CATEGORY-002) and a parent is
+   * locked before any of its legs.
    */
   private async discoverStatusLockSet(
     m: EntityManager,
     userId: string,
     eligibleIds: string[],
+    withOwningParents = false,
   ): Promise<{ parentIds: string[]; rowIds: string[] }> {
     const rows = await m
       .getRepository(Transaction)
@@ -1792,7 +1803,7 @@ export class TransactionBulkUpdateService {
       .where("t.id IN (:...ids)", { ids: eligibleIds })
       .andWhere("t.userId = :userId", { userId })
       .getMany();
-    const parentIds = rows.filter((t) => t.isSplit).map((t) => t.id);
+    const selectedParentIds = rows.filter((t) => t.isSplit).map((t) => t.id);
 
     // A split-transfer leg's link names its split PARENT, which the expansion
     // never writes (see expandTransferCounterparts), so only a plain leg's
@@ -1804,10 +1815,18 @@ export class TransactionBulkUpdateService {
       transferLegIds.length > 0
         ? await m.find(TransactionSplit, {
             where: { linkedTransactionId: In(transferLegIds) },
-            select: ["id", "linkedTransactionId"],
+            select: ["id", "linkedTransactionId", "transactionId"],
           })
         : [];
     const splitLegIds = new Set(owningSplits.map((s) => s.linkedTransactionId));
+    const parentIds = [
+      ...new Set([
+        ...selectedParentIds,
+        ...(withOwningParents
+          ? owningSplits.map((split) => split.transactionId)
+          : []),
+      ]),
+    ];
     const mirrorIds = rows
       .filter(
         (t) => t.isTransfer && t.linkedTransactionId && !splitLegIds.has(t.id),
@@ -1815,10 +1834,10 @@ export class TransactionBulkUpdateService {
       .map((t) => t.linkedTransactionId as string);
 
     const parentLegIds =
-      parentIds.length > 0
+      selectedParentIds.length > 0
         ? (
             await m.find(TransactionSplit, {
-              where: { transactionId: In(parentIds) },
+              where: { transactionId: In(selectedParentIds) },
               select: ["id", "linkedTransactionId"],
             })
           )

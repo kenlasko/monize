@@ -506,6 +506,27 @@ describe("Category fit and one category per transfer: transactions (integration)
     );
 
     row(
+      "bulk update: a status and a category together on a split's linked row write the row and its line",
+      async () => {
+        // The status pass locks the line's split parent with the parents,
+        // before the linked row, as the category write needs it.
+        const split = await createSplit();
+        await asUser(() =>
+          transactions.bulkUpdate(userId, {
+            mode: "ids",
+            transactionIds: [split.linkedRowId],
+            categoryId: transferCat,
+            status: "CLEARED",
+          } as never),
+        );
+        expect(await categoryOf(split.linkedRowId)).toBe(transferCat);
+        expect((await lineOf(split.transferLineId)).category_id).toBe(
+          transferCat,
+        );
+      },
+    );
+
+    row(
       "bulk update: skips a split parent's category lines with a reason and leaves its transfer line alone",
       async () => {
         const split = await createSplit({ categoryId: feesCat });
