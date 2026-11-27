@@ -1,3 +1,4 @@
+import type { CategoryType } from '@/lib/category-type';
 export type BudgetType = 'MONTHLY' | 'ANNUAL' | 'PAY_PERIOD';
 export type BudgetStrategy = 'FIXED' | 'ROLLOVER' | 'ZERO_BASED' | 'FIFTY_THIRTY_TWENTY' | 'BUCKET';
 export type RolloverType = 'NONE' | 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
@@ -169,7 +170,15 @@ export interface BudgetPeriod {
   budgetId: string;
   periodStart: string;
   periodEnd: string;
+  /** Total Budget Funding, frozen at the close. */
   actualIncome: number;
+  /**
+   * The Transfer Funding part of `actualIncome`, frozen at the close; `null`
+   * for an open period and one closed before it was recorded (unknown).
+   */
+  transferFunding?: number | string | null;
+  /** Actual Income, `actualIncome` less `transferFunding`; `null` with it. */
+  categoryIncome?: number | null;
   actualExpenses: number;
   totalBudgeted: number;
   status: PeriodStatus;
@@ -203,6 +212,8 @@ export interface CategoryAnalysis {
   categoryId: string;
   categoryName: string;
   isIncome: boolean;
+  /** A `transfer` suggestion is a Transfer category's outgoing line. */
+  categoryType?: CategoryType;
   average: number;
   median: number;
   p25: number;
@@ -347,6 +358,11 @@ export interface CategoryBreakdown {
   isIncome: boolean;
   /** A transfer line: savings out, or transfer income when `isIncome`. */
   isTransfer: boolean;
+  /**
+   * An income line whose actual is Transfer Funding: a transfer income line or
+   * one on a Transfer category. Absent is no information.
+   */
+  isTransferFunding?: boolean;
   percentage: number | null;
   /**
    * Provisional transfer legs (an imported estimate) inside `spent`; 0 on a
@@ -364,6 +380,17 @@ export interface BudgetSummary {
   percentUsed: number;
   incomeLinked: boolean;
   actualIncome: number | null;
+  /**
+   * Actual Income: the income lines on an Income or Expense category. With
+   * `transferFunding` it makes `totalIncome`, Total Budget Funding
+   * (docs/specs/transfer-categories.md section 6.2).
+   */
+  categoryIncome: number;
+  /**
+   * Transfer Funding: transfer income lines, income lines on a Transfer
+   * category and `outsideTransferIncome`. Never income.
+   */
+  transferFunding: number;
   /**
    * Income from transfers in from the excluded accounts (`transfersInAsIncome`),
    * included in `totalIncome`; `0` with the option off.

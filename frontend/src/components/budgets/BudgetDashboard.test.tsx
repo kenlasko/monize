@@ -89,6 +89,8 @@ const mockSummary: BudgetSummary = {
   incomeLinked: false,
   actualIncome: null,
   outsideTransferIncome: 0,
+  categoryIncome: 6000,
+  transferFunding: 0,
   periodStart: '2026-02-01',
   periodEnd: '2026-02-28',
   categoryBreakdown: [

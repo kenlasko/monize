@@ -41,6 +41,12 @@ export interface CategoryAnalysis {
   categoryId: string;
   categoryName: string;
   isIncome: boolean;
+  /**
+   * The category's own type: a `transfer` suggestion is a Transfer category's
+   * outgoing line, read with the transfers, never as spending
+   * (docs/specs/transfer-categories.md section 6.1).
+   */
+  categoryType: CategoryType;
   average: number;
   median: number;
   p25: number;
@@ -545,6 +551,7 @@ export class BudgetGeneratorService {
         categoryId: entry.categoryId,
         categoryName: entry.categoryName,
         isIncome: isIncomeCategory(entry),
+        categoryType: entry.categoryType,
         average: roundMoney(this.mean(monthlyAmounts)),
         median: roundMoney(this.percentile(sortedForPercentiles, 50)),
         p25: roundMoney(this.percentile(sortedForPercentiles, 25)),

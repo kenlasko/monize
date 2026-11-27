@@ -310,6 +310,7 @@ describe("BudgetGeneratorService", () => {
       categoryId: "cat-1",
       categoryName: "Groceries",
       isIncome: false,
+      categoryType: "expense",
       average: 400,
       median: 350,
       p25: 250,

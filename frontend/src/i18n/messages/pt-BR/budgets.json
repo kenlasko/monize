@@ -293,6 +293,7 @@
       "income": "Receita",
       "expenses": "Despesas",
       "transfers": "Transferências / Poupanças",
+      "transferCategories": "Transfer Categories",
       "transfersIn": "Transferências recebidas (receita)",
       "trendMedian": "Tendência / Mediana",
       "amount": "Valor"
@@ -757,5 +758,13 @@
     "carriedOut": "Transição de saída",
     "targetPercent": "{percent} da receita",
     "targetAmount": "{amount} por período"
+  },
+  "funding": {
+    "actualIncome": "Actual Income",
+    "transferFunding": "Transfer Funding",
+    "totalFunding": "Total Budget Funding",
+    "hint": "Transfer Funding is money moved in from your own accounts. It funds the budget but is not income in your reports.",
+    "thisPeriod": "This period",
+    "parts": "Actual Income {income}, Transfer Funding {transfers}"
   }
 }

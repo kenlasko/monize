@@ -7,6 +7,7 @@ import { useDateFormat } from '@/hooks/useDateFormat';
 import { useChartDateFormat } from '@/hooks/useChartDateFormat';
 import { BudgetProgressBar } from './BudgetProgressBar';
 import { budgetLineName } from './utils/budget-line-name';
+import { BudgetFundingFigures } from './BudgetFundingFigures';
 import { Card, CARD_CLASS } from '@/components/ui/Card';
 import { TABLE_CLASS, TABLE_BODY_CLASS, Th, Td } from '@/components/ui/Table';
 import type { BudgetPeriod, BudgetPeriodCategory } from '@/types/budget';
@@ -69,6 +70,14 @@ export function BudgetPeriodDetail({
   const outsideTransferIncome = isClosed
     ? Math.max(0, roundMoney(totalIncome - lineIncome))
     : 0;
+  // The close froze the Transfer Funding part beside the total since transfer
+  // categories (docs/specs/transfer-categories.md section 6.6). A period closed
+  // before that has no split: its one figure stays under its own caption.
+  const categoryIncome = isClosed ? (period.categoryIncome ?? null) : null;
+  const transferFunding =
+    categoryIncome !== null && period.transferFunding != null
+      ? Number(period.transferFunding)
+      : null;
   const remaining = totalBudgeted - totalSpent;
   const percentUsed = totalBudgeted > 0
     ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
@@ -286,6 +295,16 @@ export function BudgetPeriodDetail({
               </div>
             )}
           </div>
+          {categoryIncome !== null && transferFunding !== null && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <BudgetFundingFigures
+                categoryIncome={categoryIncome}
+                transferFunding={transferFunding}
+                totalFunding={totalIncome}
+                formatCurrency={formatCurrency}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

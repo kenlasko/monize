@@ -327,10 +327,13 @@ describe("budget lines on a Transfer category (integration)", () => {
       const suggested = result.categories.map((c) => [
         c.categoryId,
         c.isIncome,
+        c.categoryType,
       ]);
+      // Typed, so the wizard files it with the transfers, not the expenses.
       expect(suggested).toContainEqual([
         categories["Savings contributions"],
         false,
+        "transfer",
       ]);
       // An Expense category on a transfer is no spending suggestion, as before.
       expect(suggested.map(([id]) => id)).not.toContain(categories.Mortgage);
