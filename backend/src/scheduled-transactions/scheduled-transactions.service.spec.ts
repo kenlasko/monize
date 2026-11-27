@@ -492,6 +492,22 @@ describe("ScheduledTransactionsService", () => {
       expect(scheduledRepo.save).not.toHaveBeenCalled();
     });
 
+    it("refuses a Transfer category on a split's category line before the schedule is saved (INV-CATEGORY-001)", async () => {
+      categoriesRepo.find.mockImplementation(
+        categoryFitRepoMock({ "cat-t": "transfer" }).find,
+      );
+      await expect(
+        service.create(userId, {
+          ...baseDto,
+          splits: [
+            { categoryId: "cat-t", amount: -700 },
+            { categoryId: "cat-b", amount: -500 },
+          ],
+        }),
+      ).rejects.toThrow(/Transfer category/);
+      expect(scheduledRepo.save).not.toHaveBeenCalled();
+    });
+
     it("sums BTC split lines against the parent at eight places, not four", async () => {
       accountsService.findOne.mockResolvedValue({
         id: "acc-1",

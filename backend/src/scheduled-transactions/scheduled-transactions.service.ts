@@ -633,6 +633,32 @@ export function tradeScheduleWindowDays(
   );
 }
 
+/**
+ * Every split line's category is the person's and fits the line: a category
+ * line takes only Income or Expense, a transfer line any type, which its
+ * posting writes to the row it links (INV-CATEGORY-001). An investment line
+ * holds none. A refusal writes nothing.
+ */
+async function fitScheduledSplitCategories(
+  m: EntityManager,
+  userId: string,
+  splits: readonly CreateScheduledTransactionSplitDto[],
+): Promise<void> {
+  await fitCategories(
+    m,
+    userId,
+    splits
+      .filter((split) => scheduledSplitKind(split) !== SplitKind.INVESTMENT)
+      .map((split) => ({
+        categoryId: split.categoryId,
+        holder:
+          scheduledSplitKind(split) === SplitKind.TRANSFER
+            ? ("transfer" as const)
+            : ("category" as const),
+      })),
+  );
+}
+
 @Injectable()
 export class ScheduledTransactionsService {
   private readonly logger = new Logger(ScheduledTransactionsService.name);
@@ -1295,7 +1321,8 @@ export class ScheduledTransactionsService {
       // The schedule's category is the person's and fits what the schedule
       // posts (INV-CATEGORY-001): a scheduled transfer takes any type, a
       // scheduled ordinary transaction only Income or Expense. Its split lines
-      // are fitted where they are written (`createSplits`).
+      // fit theirs, before the schedule is saved.
+      if (hasSplits) await fitScheduledSplitCategories(m, userId, splits);
       if (!(hasSplits || isInvestment)) {
         await fitCategory(
           m,
@@ -1958,23 +1985,9 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduledTransactionSplit[]> {
     const savedSplits: ScheduledTransactionSplit[] = [];
 
-    // Every line's category is the person's and fits the line: a category
-    // line takes only Income or Expense, a transfer line any type, which its
-    // posting writes to the row it links (INV-CATEGORY-001). An investment
-    // line holds none. Refused before the first line is written.
-    await fitCategories(
-      manager,
-      userId,
-      splits
-        .filter((split) => scheduledSplitKind(split) !== SplitKind.INVESTMENT)
-        .map((split) => ({
-          categoryId: split.categoryId,
-          holder:
-            scheduledSplitKind(split) === SplitKind.TRANSFER
-              ? ("transfer" as const)
-              : ("category" as const),
-        })),
-    );
+    // The callers fit the lines before their first write; again here, for
+    // the lines this writes (re-entrant, and what the category-fit guard reads).
+    await fitScheduledSplitCategories(manager, userId, splits);
 
     // Batch-fetch every tag referenced across all splits so the per-split
     // tag assignment doesn't trigger one `findBy(Tag, ...)` query per row
@@ -3525,6 +3538,10 @@ export class ScheduledTransactionsService {
         if (held && !categoryFits(held, "category")) {
           fieldsToUpdate.categoryId = null;
         }
+      }
+      // The new split lines fit theirs, before the first write below.
+      if (Array.isArray(splits) && splits.length > 0) {
+        await fitScheduledSplitCategories(m, userId, splits);
       }
       if (switchesToOrdinary) {
         await clearTransferCategoriesFromOverrides(m, userId, id);
