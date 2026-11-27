@@ -78,13 +78,21 @@ from one of three new read models built out of those endpoints' services.
    shows is a fact about the screen, not the user, and a laptop and a desktop
    need not agree. It is not a `user_preferences` column and not a URL param.
 2. **The calendar's month is its own state, not the register's date filter.**
-   Prev / next / Today controls. On the Transactions page the two follow each
-   other at the switch (issue #2473, `useRegisterCalendarMonth`): the calendar
-   opens on the month the register's range points at (`monthForDateRange`:
-   today's month moved into the range, so a one-month range opens on that
-   month and no range on today's), and a month the reader turned to becomes
-   the register's range (that whole month, Custom) on the way back to the
-   table. A calendar left on the month it opened on leaves the range alone. In
+   Prev / next / Today controls. On the Transactions page the calendar and
+   the register's PAGE follow each other at the switch (issues #2473 and
+   #2475, `useRegisterCalendarMonth`); no date filter is written. The
+   calendar opens on the earliest month any row on the register's page falls
+   in (`earliestMonthOf`; a page spanning two months opens on the older), or,
+   for an empty page, on the month the range points at (`monthForDateRange`).
+   A month the reader turned to sends the register, on the way back to the
+   table, to the page holding that month's first row, oldest first, under the
+   register's filters and range (`firstRegisterRowInMonth`, then the
+   `targetTransactionId` page lookup a deep link uses). Only the date order
+   can place a row, so under another order, or for a month with no rows, the
+   register keeps its page. While the landed row is on the page the calendar
+   reopens on the month it came from, so a round trip stays put even when
+   that page reaches into the previous month. A calendar left on the month it
+   opened on leaves the page alone. In
    calendar mode the date-range selector is hidden (the month is the date
    filter); every other filter (accounts, categories, payees, search, statuses,
    tags, attachments) still applies to the Transactions layer because the

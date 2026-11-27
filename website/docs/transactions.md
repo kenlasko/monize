@@ -248,7 +248,7 @@ The **Table** and **Calendar** buttons at the left of the bar above the list swi
 ![The Transactions page in calendar view](images/transactions-calendar.png)
 
 - **Previous month** and **Next month** move through the months; click the month heading to jump to any month by typing it (for example `Mar 1998` or `2026-03`). On a phone, swipe left and right
-- The calendar opens on the month your date filter covers (today's month when there is none), and switching back to **Table** after moving to another month filters the list to that month, so going back and forth keeps you on the same period
+- The calendar opens on the earliest month shown on the list's current page, and switching back to **Table** after moving to another month turns the list to the page where that month's first transaction is, without changing your date filter, so going back and forth keeps you on the same period
 - The **Layers** buttons show or hide each day's **Transactions** and its end-of-day **Balances**; days after today show the projected balance, marked as such
 - Scheduled transactions from [Bills & Deposits](bills-and-deposits.md) appear on their due days, marked **Scheduled** (or **Overdue**)
 - Click a day to see everything on it, add a **New transaction on this day**, or **Add a note**: day notes are sticky notes that can cover one day or a span of days

@@ -131,6 +131,7 @@ import { preferredCurrency } from '@/lib/default-currency';
 import { ViewModeToggle } from '@/components/ui/ViewModeToggle';
 import { useViewMode, type ViewMode } from '@/store/viewModeStore';
 import { useRegisterCalendarMonth } from '@/hooks/useRegisterCalendarMonth';
+import { firstRegisterRowInMonth } from '@/lib/register-month-landing';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
 
 const logger = createLogger('Transactions');
@@ -333,32 +334,17 @@ function TransactionsContent() {
     ],
   );
 
-  // The calendar's month and the register's date range follow each other: the
-  // calendar opens on the range's month, and a month the reader turned to
-  // becomes the range on the way back to the table.
+  // The calendar's month and the register's page follow each other (issue
+  // #2475): the calendar opens on the earliest month the page's rows fall in,
+  // and a month the reader turned to sends the register, on the way back to
+  // the table, to the page holding that month's first row. Declared here and
+  // wired up below, once the register's loader exists.
   const calendarMonth = useRegisterCalendarMonth(
+    transactions,
     filters.filterStartDate,
     filters.filterEndDate,
     financialToday,
   );
-  const { setFilterStartDate, setFilterEndDate, setFilterTimePeriod } = filters;
-  const { leaveCalendar } = calendarMonth;
-  const handleViewChange = useCallback(
-    (next: ViewMode) => {
-      if (view === 'calendar' && next !== 'calendar') {
-        const range = leaveCalendar();
-        if (range !== null) {
-          isFilterChangeRef.current = true;
-          setFilterStartDate(range.startDate);
-          setFilterEndDate(range.endDate);
-          setFilterTimePeriod('custom');
-        }
-      }
-      setView(next);
-    },
-    [view, leaveCalendar, isFilterChangeRef, setFilterStartDate, setFilterEndDate, setFilterTimePeriod, setView],
-  );
-
 
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [startingBalance, setStartingBalance] = useState<number | undefined>();
@@ -735,6 +721,43 @@ function TransactionsContent() {
     };
     return run();
   }, [accountIdsForQuery, calendarFilters, filters.filterAccountStatus, filters.filterCategoryIds, filters.filterPayeeIds, filters.filterTagIds, filters.filterStartDate, filters.filterEndDate, filters.filterSearch, filters.filterAmountFrom, filters.filterAmountTo, filters.filterStatuses, filters.filterOriginalCurrencyCodes, filters.filterTagKey, filters.filterTagKeyOp, filters.filterTagKeyValue, filters.filterHasAttachments, t]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The switch back to the table from a calendar the reader turned: find the
+  // month's first row under the register's filters and range, and let the
+  // server resolve its page, exactly as a deep link to a row does. Only the
+  // date order can place a row (the server refuses the pair otherwise), so
+  // under any other order the register keeps its page rather than having its
+  // sort changed by a view switch. A newer switch, or a register that moved
+  // while the row was being found, supersedes the lookup.
+  const { leaveCalendar, landedOn } = calendarMonth;
+  const calendarLandingSeqRef = useRef(0);
+  const registerKeyRef = useRef(registerKey);
+  useLayoutEffect(() => {
+    registerKeyRef.current = registerKey;
+  });
+  const handleViewChange = useCallback(
+    (next: ViewMode) => {
+      const seq = ++calendarLandingSeqRef.current;
+      const month = view === 'calendar' && next !== 'calendar' ? leaveCalendar() : null;
+      setView(next);
+      if (month === null || registerSortRef.current.field !== 'date') return;
+      const keyAtSwitch = registerKeyRef.current;
+      firstRegisterRowInMonth(calendarFilters, month, filters.filterStartDate, filters.filterEndDate)
+        .then((transactionId) => {
+          if (transactionId === null) return;
+          if (seq !== calendarLandingSeqRef.current || registerKeyRef.current !== keyAtSwitch) return;
+          landedOn(month, transactionId);
+          targetTransactionIdRef.current = transactionId;
+          void loadTransactions(filters.currentPage);
+        })
+        .catch((error) => {
+          if (seq !== calendarLandingSeqRef.current) return;
+          showErrorToast(error, t('toasts.loadFailed'));
+          logger.error(error);
+        });
+    },
+    [view, leaveCalendar, landedOn, setView, calendarFilters, filters.filterStartDate, filters.filterEndDate, filters.currentPage, targetTransactionIdRef, loadTransactions, t],
+  );
 
   const loadData = useCallback(async (page: number = filters.currentPage) => {
     await loadTransactions(page);
