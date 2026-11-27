@@ -695,7 +695,7 @@ function InvestmentsContent() {
               : t('page.newInvestmentTransaction')
         }>
         <InvestmentTransactionForm
-          key={`${data.editingTransaction?.id ?? 'new'}-${data.duplicatingTransaction?.id ?? ''}-${createOnDate ?? ''}`}
+          key={`${data.editingTransaction?.id ?? 'new'}-${createOnDate ?? ''}`}
           accounts={data.accounts}
           allAccounts={data.allAccounts}
           transaction={data.editingTransaction}

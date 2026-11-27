@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { investmentsApi } from '@/lib/investments';
 import { InvestmentTransaction } from '@/types/investment';
+import { TransactionStatus } from '@/types/transaction';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -63,10 +64,19 @@ export function RecentInvestmentTransactionsPopover({
   const actionInfoFor = useInvestmentActionInfo();
   const limit = usePreferencesStore((s) => s.preferences?.recentTransactionsLimit ?? 5);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
-  // Mounted on open by the parent, so every open starts a fresh request.
-  const [isLoading, setIsLoading] = useState(true);
-  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
-  const [failed, setFailed] = useState(false);
+  // Each answer is kept with the request that produced it: the account or the
+  // security can change while the list is open, and the previous scope's rows
+  // (or its failure) must not stand under the new heading. `rows` null is a
+  // failed request, never an empty history.
+  const requestKey = `${accountId ?? ''}|${securityId ?? ''}|${limit}`;
+  const [answer, setAnswer] = useState<{
+    key: string;
+    rows: InvestmentTransaction[] | null;
+  } | null>(null);
+  const current = answer?.key === requestKey ? answer : null;
+  const isLoading = current === null;
+  const failed = current !== null && current.rows === null;
+  const transactions = current?.rows ?? [];
 
   useEffect(() => {
     const anchor = anchorRef.current;
@@ -90,27 +100,27 @@ export function RecentInvestmentTransactionsPopover({
       })
       .then((result) => {
         if (cancelled) return;
-        setTransactions(result.data);
-        setIsLoading(false);
+        setAnswer({ key: requestKey, rows: result.data });
       })
       .catch((err) => {
         if (cancelled) return;
         logger.warn('Failed to load recent investment transactions', err);
-        setFailed(true);
-        setIsLoading(false);
+        setAnswer({ key: requestKey, rows: null });
       });
     return () => {
       cancelled = true;
     };
-  }, [accountId, securityId, limit]);
+  }, [accountId, securityId, limit, requestKey]);
 
   useClickOutside([popoverRef, anchorRef], onClose, { onEscape: onClose });
 
   if (!position) return null;
 
   const scopedToSecurity = !!securityId;
-  const heading = scopedToSecurity
-    ? t('recentPopover.recentForSecurity', { name: securityLabel || '' })
+  // A security whose label has not resolved yet keeps the plain heading
+  // rather than reading "Recent for" and nothing.
+  const heading = scopedToSecurity && securityLabel
+    ? t('recentPopover.recentForSecurity', { name: securityLabel })
     : t('recentPopover.recentTransactions');
 
   const content = (
@@ -146,12 +156,15 @@ export function RecentInvestmentTransactionsPopover({
               const actionInfo = actionInfoFor(tx.action);
               const hasShares = tx.quantity !== null && tx.quantity !== undefined;
               const accountName = accountId ? undefined : accountNameFor(tx.accountId);
+              // Struck through and dimmed, as the register draws a VOID row:
+              // it records something that did not happen.
+              const isVoid = tx.status === TransactionStatus.VOID;
               return (
                 <li key={tx.id}>
                   <button
                     type="button"
                     onClick={() => onSelect(tx)}
-                    className={`w-full text-left px-3 py-2 ${HOVER_ROW_ON_CARD} focus:outline-none focus-visible:bg-gray-50 dark:focus-visible:bg-gray-700/50 border-b last:border-b-0 border-gray-100 dark:border-gray-700`}
+                    className={`w-full text-left px-3 py-2 ${HOVER_ROW_ON_CARD} focus:outline-none focus-visible:bg-gray-50 dark:focus-visible:bg-gray-700/50 border-b last:border-b-0 border-gray-100 dark:border-gray-700 ${isVoid ? 'opacity-50 line-through' : ''}`}
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">

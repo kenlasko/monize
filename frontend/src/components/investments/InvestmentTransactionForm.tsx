@@ -1176,7 +1176,8 @@ function InvestmentTransactionFormFields({
    * account, as the cash form's history does: the row's action, security,
    * amounts, funding account and memo; never the account or the date on
    * screen, which are the entry's own (the account is what the list was
-   * scoped to, and the source row's date is when THAT trade happened). Status
+   * scoped to, and the source row's date is when THAT trade happened). Only
+   * an empty account is filled, from the picked row. Status
    * starts unreconciled. A transfer leg becomes a new Transfer from the
    * account on screen, its destination left to choose.
    */
@@ -1191,6 +1192,11 @@ function InvestmentTransactionFormFields({
       setSecurities((prev) => [...prev, source.security!]);
     }
     const dirty = { shouldDirty: true, shouldValidate: true } as const;
+    // With no account chosen the list spans every account, so the picked row
+    // names one; a transfer's IN leg names the destination, not the source.
+    if (!getValues('accountId') && source.action !== 'TRANSFER_IN') {
+      setValue('accountId', source.accountId, dirty);
+    }
     setValue('action', copied.action, dirty);
     setValue('securityId', copied.securityId, dirty);
     setValue('fundingAccountId', copied.fundingAccountId, { shouldDirty: true });
@@ -1202,7 +1208,9 @@ function InvestmentTransactionFormFields({
     setValue('splitOldShares', copied.splitOldShares, dirty);
     setValue('description', copied.description, { shouldDirty: true });
     setValue('status', TransactionStatus.UNRECONCILED, { shouldDirty: true });
-    // What the person had typed belonged to the entry being replaced.
+    // What the person had typed belonged to the entry being replaced, the
+    // exchange rate included: the new row's pair and date are looked up again.
+    rateEditedRef.current = false;
     priceEditedByPerson.current = false;
     interestEditedByPerson.current = false;
     typedPriceBasis.current = null;

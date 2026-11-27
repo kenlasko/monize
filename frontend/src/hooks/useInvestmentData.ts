@@ -649,6 +649,8 @@ export function useInvestmentData() {
   // "Create & New" keeps the form open, so the page only refreshes what it
   // shows behind it -- everything `handleFormSuccess` does bar the close.
   const handleFormCreateAndNew = () => {
+    // The form restarts blank, so the modal stops calling it a duplicate.
+    setDuplicatingTransaction(undefined);
     refreshAfterWrite();
   };
 

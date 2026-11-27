@@ -430,7 +430,7 @@ export function InvestmentTransactionList({
   const { getRowHandlers } = useLongPress<InvestmentTransaction>({
     onLongPress: setContextTx,
     onClick: (transaction) => onEdit?.(transaction),
-    enabled: !!(onDelete || onEdit),
+    enabled: !!(onDelete || onEdit || onDuplicate),
   });
 
   const handleDeleteConfirm = useCallback(() => {
@@ -527,7 +527,7 @@ export function InvestmentTransactionList({
 
   // Eight data columns less the hidden ones, plus Actions when this surface
   // offers any. Loop invariant, so it is resolved once rather than per row.
-  const colCount = 8 - hiddenColumns.size + (onDelete || onEdit ? 1 : 0);
+  const colCount = 8 - hiddenColumns.size + (onDelete || onEdit || onDuplicate ? 1 : 0);
 
   if (isLoading) {
     return (
@@ -792,7 +792,7 @@ export function InvestmentTransactionList({
                   {tStatus('list.header.status')}
                 </th>
               )}
-              {(onDelete || onEdit) && (
+              {(onDelete || onEdit || onDuplicate) && (
                 <th className={`${headerPadding} text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden min-[480px]:table-cell sticky right-0 bg-gray-50 dark:bg-gray-800`}>
                   {t('transactionList.actionsColumn')}
                 </th>
@@ -842,7 +842,7 @@ export function InvestmentTransactionList({
                     onDuplicate={onDuplicate}
                     onDeleteClick={handleDeleteClick}
                     onCycleStatus={handleCycleStatus}
-                    hasActions={!!(onDelete || onEdit)}
+                    hasActions={!!(onDelete || onEdit || onDuplicate)}
                     hidden={hiddenColumns}
                     wrapped={wrapped}
                   />

@@ -459,7 +459,6 @@ export function InvestmentRegisterPanel({
         }
       >
         <InvestmentTransactionForm
-          key={`${brokerageForm.editingItem?.id ?? 'new'}-${duplicatingFrom?.id ?? ''}`}
           accounts={accountsForForm}
           allAccounts={allAccounts}
           transaction={brokerageForm.editingItem}

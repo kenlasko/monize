@@ -353,10 +353,11 @@ vi.mock('@/components/ui/LoadingSpinner', () => ({
 }));
 
 vi.mock('@/components/investments/InvestmentTransactionForm', () => ({
-  InvestmentTransactionForm: ({ duplicateFrom }: any) => (
+  InvestmentTransactionForm: ({ duplicateFrom, onCreateAndNew }: any) => (
     <div data-testid="transaction-form">
       Form
       <span data-testid="form-duplicate-from">{duplicateFrom?.id ?? ''}</span>
+      <button data-testid="form-create-and-new" onClick={() => onCreateAndNew?.()}>Create and new</button>
     </div>
   ),
 }));
@@ -848,6 +849,25 @@ describe('InvestmentsPage', () => {
       expect(mockOpenEdit).not.toHaveBeenCalled();
       expect(screen.getByTestId('form-duplicate-from')).toHaveTextContent('itx-1');
       expect(screen.getByLabelText('Duplicate Investment Transaction')).toBeInTheDocument();
+    });
+
+    it('stops calling the form a duplicate once Create & New has restarted it', async () => {
+      mockShowForm = true;
+      await renderPage();
+      await waitFor(() => {
+        expect(screen.getByTestId('duplicate-itx-1')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('duplicate-itx-1'));
+      });
+      expect(screen.getByLabelText('Duplicate Investment Transaction')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('form-create-and-new'));
+      });
+
+      expect(screen.queryByLabelText('Duplicate Investment Transaction')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('New Investment Transaction')).toBeInTheDocument();
     });
 
     it('drops the copy when the form is next opened for a new entry', async () => {

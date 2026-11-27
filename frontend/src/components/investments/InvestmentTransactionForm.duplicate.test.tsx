@@ -92,6 +92,7 @@ const accounts = [brokerage, otherBrokerage, chequing];
 const securities = [
   { id: 'sec-cad', symbol: 'XEQT', name: 'iShares Equity', securityType: 'ETF', currencyCode: 'CAD' },
   { id: 'sec-usd', symbol: 'AAPL', name: 'Apple Inc.', securityType: 'STOCK', currencyCode: 'USD' },
+  { id: 'sec-eur', symbol: 'SAP', name: 'SAP SE', securityType: 'STOCK', currencyCode: 'EUR' },
 ];
 
 function row(overrides: Partial<InvestmentTransaction>): InvestmentTransaction {
@@ -343,6 +344,87 @@ describe('the history button on a new investment transaction', () => {
       description: 'Monthly distribution',
       status: 'UNRECONCILED',
     });
+  });
+
+  it('drops a rate the person typed for the entry it replaces', async () => {
+    // 1.36 was typed for a USD trade; the picked row is a EUR one, so the
+    // EUR->CAD rate for the date on screen is looked up rather than kept.
+    getRateForDateMock.mockImplementation(async (from) => (from === 'EUR' ? 1.5 : 1.35));
+    api.getTransactions.mockResolvedValue({
+      data: [
+        row({
+          id: 'tx-eur',
+          action: 'BUY',
+          securityId: 'sec-eur',
+          security: securities[2] as any,
+          quantity: 2,
+          price: 200,
+          commission: 0,
+          totalAmount: 400,
+          description: 'SAP purchase',
+        }),
+      ],
+      pagination: { page: 1, limit: 5, total: 1, totalPages: 1, hasMore: false },
+    } as any);
+    await act(async () => {
+      render(
+        <InvestmentTransactionForm accounts={accounts} defaultAccountId="a1" defaultDate="2026-11-02" />,
+      );
+    });
+    await chooseComboboxOption('Security', 'AAPL - ');
+    const usdRate = await screen.findByLabelText(/Exchange rate \(1 USD =\)/);
+    await act(async () => {
+      fireEvent.change(usdRate, { target: { value: '1.36' } });
+    });
+
+    await openHistory('Show recent transactions for this security');
+    await act(async () => {
+      fireEvent.click(await screen.findByText('SAP purchase'));
+    });
+
+    await waitFor(() =>
+      expect(getRateForDateMock).toHaveBeenCalledWith('EUR', 'CAD', '2026-11-02'),
+    );
+    await waitFor(() =>
+      expect(screen.getByLabelText(/Exchange rate \(1 EUR =\)/)).toHaveValue('1.500000'),
+    );
+  });
+
+  it('fills the account from the picked row when none was chosen', async () => {
+    api.getTransactions.mockResolvedValue({
+      data: [row({ id: 'tx-tfsa', accountId: 'a4', description: 'TFSA distribution' })],
+      pagination: { page: 1, limit: 5, total: 1, totalPages: 1, hasMore: false },
+    } as any);
+    await act(async () => {
+      render(<InvestmentTransactionForm accounts={accounts} />);
+    });
+
+    await openHistory('Show recent transactions for this account');
+    // Spanning every account, each row says whose it is.
+    expect(await screen.findByText('TFSA Brokerage')).toBeInTheDocument();
+    expect(api.getTransactions).toHaveBeenCalledWith(
+      expect.objectContaining({ accountIds: undefined }),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByText('TFSA distribution'));
+    });
+
+    await waitFor(() => expect(getSelectByLabel('Brokerage Account').value).toBe('a4'));
+  });
+
+  it('marks a voided row as void', async () => {
+    api.getTransactions.mockResolvedValue({
+      data: [row({ id: 'tx-void', status: 'VOID', description: 'Entered by mistake' })],
+      pagination: { page: 1, limit: 5, total: 1, totalPages: 1, hasMore: false },
+    } as any);
+    await act(async () => {
+      render(<InvestmentTransactionForm accounts={accounts} defaultAccountId="a1" />);
+    });
+
+    await openHistory('Show recent transactions for this account');
+
+    const option = (await screen.findByText('Entered by mistake')).closest('button')!;
+    expect(option.className).toContain('line-through');
   });
 
   it('says so when the history cannot be loaded, rather than showing an empty list', async () => {
