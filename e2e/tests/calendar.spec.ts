@@ -304,6 +304,67 @@ test.describe('Transactions calendar', () => {
   });
 });
 
+test.describe('Transactions calendar and register pages', () => {
+  /** `YYYY-MM` of the month `n` months before today's. */
+  function monthsAgo(n: number): string {
+    const [year, month] = todayYmd().split('-').map(Number);
+    const index = year * 12 + (month - 1) - n;
+    return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+  }
+
+  test('opens on the earliest month of the page and turns the register to the page a month begins on', async ({
+    authedPage: page,
+    api,
+  }) => {
+    const account = await createAccount(api, { name: `Cal Pages ${uniqueId()}` });
+    // 30 rows a month ago, 30 two months ago, 10 three months ago: newest
+    // first at 50 a page, page 1 runs from last month back into the month
+    // before, and page 2 holds the rest of that month and all of the oldest.
+    const recent = monthsAgo(1);
+    const middle = monthsAgo(2);
+    const oldest = monthsAgo(3);
+    const firstOfOldest = `Cal First ${uniqueId()}`;
+    const seed: Array<{ date: string; payee: string }> = [];
+    for (let i = 0; i < 30; i += 1) {
+      seed.push({ date: `${recent}-${String((i % 28) + 1).padStart(2, '0')}`, payee: `Cal Recent ${i}` });
+      seed.push({ date: `${middle}-${String((i % 28) + 1).padStart(2, '0')}`, payee: `Cal Middle ${i}` });
+    }
+    for (let i = 0; i < 10; i += 1) {
+      seed.push({
+        date: `${oldest}-${String(i + 1).padStart(2, '0')}`,
+        payee: i === 0 ? firstOfOldest : `Cal Oldest ${i}`,
+      });
+    }
+    for (const row of seed) {
+      await createTransaction(api, {
+        accountId: account.id,
+        amount: -1,
+        payeeName: row.payee,
+        transactionDate: row.date,
+      });
+    }
+
+    await page.goto('/transactions');
+    await expect(page.locator('tr', { hasText: 'Cal Recent 0' }).first()).toBeVisible();
+    await switchToCalendar(page);
+
+    // Table to calendar: the earliest month the register's page shows.
+    await expect(monthHeading(page)).toHaveText(monthHeadingText(`${middle}-01`));
+
+    // Calendar to table: the page holding the turned-to month's first row,
+    // with no date filter written.
+    await showPreviousMonth(page, `${oldest}-15`);
+    await page.getByRole('button', { name: 'Table', exact: true }).click();
+    await expect(page.locator('tr', { hasText: firstOfOldest })).toBeVisible();
+    await expect(page).toHaveURL(/[?&]page=2(&|$)/);
+    expect(page.url()).not.toContain('startDate');
+
+    // And back: the calendar opens on that month again.
+    await switchToCalendar(page);
+    await expect(monthHeading(page)).toHaveText(monthHeadingText(`${oldest}-01`));
+  });
+});
+
 test.describe('Investments calendar', () => {
   test('values the portfolio, prices the day that moved and leaves the rest blank', async ({
     authedPage: page,
