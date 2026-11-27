@@ -1,7 +1,10 @@
 import { BadRequestException } from "@nestjs/common";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
-import { settlePendingHistoryWrites } from "@/action-history/action-history.service";
+import {
+  ActionHistoryService,
+  settlePendingHistoryWrites,
+} from "@/action-history/action-history.service";
 import { CategoriesModule } from "@/categories/categories.module";
 import { CategoriesService } from "@/categories/categories.service";
 import { withUserContext } from "@/common/db/with-context";
@@ -38,15 +41,6 @@ describe("Category fit and one category per transfer: transactions (integration)
   const NOT_YET_BUILT = new Set<string>([
     "transfer route: writes a Transfer category on the linked row of a split's transfer line and on the line",
     "transfer route: writes an Expense category on the linked row of a split's transfer line and on the line",
-    "plain patch: writes a Transfer category on both legs of a transfer",
-    "plain patch: writes an Expense category on both legs of a transfer",
-    "plain patch: writes no category on both legs of a transfer",
-    "plain patch: writes a Transfer category on the linked row of a split's transfer line and on the line",
-    "plain patch: writes an Expense category on the linked row of a split's transfer line and on the line",
-    "bulk update: writes a Transfer category to each transfer leg and its other leg, and skips each category row with a reason",
-    "bulk update: writes an Expense category to every selected row, and a transfer's other leg follows",
-    "bulk update: writes no category to every selected row, and a transfer's other leg follows",
-    "bulk update: writes a split transfer line's linked row together with its line",
     "bulk update: skips a split parent's category lines with a reason and leaves its transfer line alone",
     "split create: a transfer line holds a Transfer category, and so does its linked row",
     "split create: a transfer line holds an Expense category, and so does its linked row",
@@ -72,6 +66,7 @@ describe("Category fit and one category per transfer: transactions (integration)
   let transactions: TransactionsService;
   let conversion: TransactionConversionService;
   let categories: CategoriesService;
+  let history: ActionHistoryService;
 
   let userId: string;
   let chequingId: string;
@@ -95,6 +90,7 @@ describe("Category fit and one category per transfer: transactions (integration)
     transactions = module.get(TransactionsService);
     conversion = module.get(TransactionConversionService, { strict: false });
     categories = module.get(CategoriesService);
+    history = module.get(ActionHistoryService, { strict: false });
   });
 
   afterAll(async () => {
@@ -232,6 +228,40 @@ describe("Category fit and one category per transfer: transactions (integration)
       transferLineId: transferLineRow.id,
       linkedRowId: transferLineRow.linked_transaction_id!,
       categoryLineId: categoryLineRow.id,
+    };
+  };
+  /**
+   * A transfer between two owners, written as the transfer service writes
+   * one: each leg its owner's, linked to the other, the other owner's leg
+   * holding a category of its own.
+   */
+  const createCrossOwnerPair = async () => {
+    const otherId = (await createTestUserDirect(db)).id;
+    const otherAccount = (
+      await createTestAccount(db, otherId, { name: "Their savings" })
+    ).id;
+    const [theirCategory] = await db.query(
+      `INSERT INTO categories (user_id, name) VALUES ($1, 'Theirs') RETURNING id`,
+      [otherId],
+    );
+    const [mine] = await db.query(
+      `INSERT INTO transactions (user_id, account_id, transaction_date, amount, currency_code, is_transfer, category_id)
+       VALUES ($1, $2, '2026-03-05', -40, 'USD', true, $3) RETURNING id`,
+      [userId, chequingId, feesCat],
+    );
+    const [theirs] = await db.query(
+      `INSERT INTO transactions (user_id, account_id, transaction_date, amount, currency_code, is_transfer, category_id, linked_transaction_id)
+       VALUES ($1, $2, '2026-03-05', 40, 'USD', true, $3, $4) RETURNING id`,
+      [otherId, otherAccount, theirCategory.id, mine.id],
+    );
+    await db.query(
+      `UPDATE transactions SET linked_transaction_id = $2 WHERE id = $1`,
+      [mine.id, theirs.id],
+    );
+    return {
+      mineId: mine.id,
+      theirsId: theirs.id,
+      theirCategory: theirCategory.id,
     };
   };
   const refusedWithNothingWritten = async (
@@ -381,6 +411,18 @@ describe("Category fit and one category per transfer: transactions (integration)
     }
 
     row(
+      "plain patch: across two owners writes the writer's leg only",
+      async () => {
+        const pair = await createCrossOwnerPair();
+        await asUser(() =>
+          transactions.update(userId, pair.mineId, { categoryId: transferCat }),
+        );
+        expect(await categoryOf(pair.mineId)).toBe(transferCat);
+        expect(await categoryOf(pair.theirsId)).toBe(pair.theirCategory);
+      },
+    );
+
+    row(
       "plain patch: leaves both legs alone when the patch names no category",
       async () => {
         const { fromId, toId } = await createTransfer(feesCat);
@@ -452,6 +494,16 @@ describe("Category fit and one category per transfer: transactions (integration)
         },
       );
     }
+
+    row(
+      "bulk update: across two owners writes the writer's leg only",
+      async () => {
+        const pair = await createCrossOwnerPair();
+        await bulk([pair.mineId], transferCat);
+        expect(await categoryOf(pair.mineId)).toBe(transferCat);
+        expect(await categoryOf(pair.theirsId)).toBe(pair.theirCategory);
+      },
+    );
 
     row(
       "bulk update: writes a split transfer line's linked row together with its line",
@@ -720,6 +772,63 @@ describe("Category fit and one category per transfer: transactions (integration)
           ),
         );
         expect(await categoryOf(split.parentId)).toBe(expenseCat);
+      },
+    );
+  });
+  describe("4.7 undo", () => {
+    const undo = async () => {
+      await settlePendingHistoryWrites();
+      await asUser(() => history.undo(userId));
+    };
+    const redo = async () => {
+      await settlePendingHistoryWrites();
+      await asUser(() => history.redo(userId));
+    };
+
+    row(
+      "undo: a plain patch that wrote both legs returns each to the value it held",
+      async () => {
+        const { fromId, toId } = await createTransfer(feesCat);
+        await setCategory(toId, expenseCat);
+        await asUser(() =>
+          transactions.update(userId, fromId, { categoryId: transferCat }),
+        );
+        await undo();
+        expect(await categoryOf(fromId)).toBe(feesCat);
+        expect(await categoryOf(toId)).toBe(expenseCat);
+        await redo();
+        expect(await categoryOf(fromId)).toBe(transferCat);
+        expect(await categoryOf(toId)).toBe(transferCat);
+      },
+    );
+
+    row("undo: a bulk update returns the other legs it wrote", async () => {
+      const { fromId, toId } = await createTransfer(feesCat);
+      await asUser(() =>
+        transactions.bulkUpdate(userId, {
+          mode: "ids",
+          transactionIds: [fromId],
+          categoryId: transferCat,
+        } as never),
+      );
+      expect(await categoryOf(toId)).toBe(transferCat);
+      await undo();
+      expect(await categoryOf(fromId)).toBe(feesCat);
+      expect(await categoryOf(toId)).toBe(feesCat);
+    });
+
+    row(
+      "undo: a plain patch of a split's linked row returns its line",
+      async () => {
+        const split = await createSplit();
+        await asUser(() =>
+          transactions.update(userId, split.linkedRowId, {
+            categoryId: transferCat,
+          }),
+        );
+        await undo();
+        expect(await categoryOf(split.linkedRowId)).toBeNull();
+        expect((await lineOf(split.transferLineId)).category_id).toBeNull();
       },
     );
   });

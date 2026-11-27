@@ -40,6 +40,10 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
+import {
+  isCategoryPartnerRecord,
+  restoreCategoryPartner,
+} from "../transactions/transfer-category-partner";
 import { Account } from "../accounts/entities/account.entity";
 import { withResolvedMortgageTypeProperty } from "../accounts/legacy-mortgage-type.util";
 import { Category } from "../categories/entities/category.entity";
@@ -1243,6 +1247,15 @@ export class ActionHistoryService {
 
     if (Object.keys(updateFields).length > 0) {
       await manager.update(Transaction, action.entityId, updateFields);
+    }
+    // The other side of a transfer the edit's category reached returns to
+    // the value it held (INV-CATEGORY-002, specification section 4.7).
+    if (isCategoryPartnerRecord(before.categoryPartner)) {
+      await restoreCategoryPartner(
+        manager,
+        action.userId,
+        before.categoryPartner,
+      );
     }
 
     // Restore splits if they were captured and the edit changed them

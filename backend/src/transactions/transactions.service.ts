@@ -163,6 +163,12 @@ import {
   type LockedTransactionRow,
 } from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
+import {
+  type CategoryPartnerRecord,
+  findCategoryPartner,
+  lockWithCategoryPartner,
+  writeCategoryPartner,
+} from "./transfer-category-partner";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import { hasForeignEntryRequest } from "../common/foreign-entry.util";
@@ -3741,7 +3747,12 @@ export class TransactionsService {
     // (A holder, not a `let`: it is set inside the transaction's callback.)
     const written: {
       splitTags: { before: SplitTagPlace[]; after: SplitTagPlace[] } | null;
-    } = { splitTags: null };
+      /** The other side of a transfer this edit's category reached. */
+      categoryPartner: {
+        before: CategoryPartnerRecord;
+        after: CategoryPartnerRecord;
+      } | null;
+    } = { splitTags: null, categoryPartner: null };
 
     // One transaction: split rebuild, field update, tags, and balance
     // adjustments commit or roll back together. Nested service calls join it.
@@ -3785,7 +3796,20 @@ export class TransactionsService {
       // balance 100.00, one -10.00 row, A updates it to -20.00 and B to -30.00:
       // the ledger ends at -30.00 while the stored balance says 60.00 instead
       // of 70.00 (audit P4-003).
-      const locked = await lockTransactionRow(m, id, userId);
+      //
+      // A category write on a transfer row sets its other side too
+      // (INV-CATEGORY-002): the other leg, or the split's transfer line whose
+      // linked row this is. It is locked with the row, in the protocol's
+      // order (a split parent first, two legs ascending).
+      const categoryPartner = writesCategory
+        ? await findCategoryPartner(m, userId, transaction)
+        : null;
+      const locked = await lockWithCategoryPartner(
+        m,
+        userId,
+        id,
+        categoryPartner,
+      );
       if (!locked) {
         throw new NotFoundException(
           tr(
@@ -4149,6 +4173,16 @@ export class TransactionsService {
       if (Object.keys(transactionUpdateData).length > 0) {
         await m.update(Transaction, id, transactionUpdateData);
       }
+      // The other side of a transfer follows the category this row now holds,
+      // when it holds another (INV-CATEGORY-002).
+      if (writesCategory && !(splits && splits.length > 0)) {
+        written.categoryPartner = await writeCategoryPartner(
+          m,
+          userId,
+          categoryPartner,
+          updateData.categoryId ?? null,
+        );
+      }
 
       // Update transaction-level tags
       if (tagIds !== undefined) {
@@ -4335,16 +4369,27 @@ export class TransactionsService {
       entityId: id,
       action: "update",
       // A split-line tag change rides along as its exact record, so undo and
-      // redo set back the links it touched and no others.
-      beforeData: written.splitTags
-        ? { ...beforeSnapshot, splitTagPlaces: written.splitTags.before }
-        : beforeSnapshot,
-      afterData: written.splitTags
-        ? {
-            ...this.snapshotTransaction(finalTransaction),
-            splitTagPlaces: written.splitTags.after,
-          }
-        : this.snapshotTransaction(finalTransaction),
+      // redo set back the links it touched and no others; so does the other
+      // side of a transfer the category reached, which undo returns to the
+      // value it held (specification section 4.7).
+      beforeData: {
+        ...beforeSnapshot,
+        ...(written.splitTags
+          ? { splitTagPlaces: written.splitTags.before }
+          : {}),
+        ...(written.categoryPartner
+          ? { categoryPartner: written.categoryPartner.before }
+          : {}),
+      },
+      afterData: {
+        ...this.snapshotTransaction(finalTransaction),
+        ...(written.splitTags
+          ? { splitTagPlaces: written.splitTags.after }
+          : {}),
+        ...(written.categoryPartner
+          ? { categoryPartner: written.categoryPartner.after }
+          : {}),
+      },
       description: `Updated transaction ${finalTransaction.payeeName || ""} ${formatCurrency(Number(finalTransaction.amount), finalTransaction.currencyCode)}`,
       descriptionKey: "updatedTransaction",
       descriptionParams: {

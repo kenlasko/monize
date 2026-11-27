@@ -17,6 +17,11 @@ import {
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { TransactionSplitService } from "./transaction-split.service";
+import {
+  categoryFits,
+  fitCategory,
+  holderOfRow,
+} from "../categories/category-fit";
 import { Category } from "../categories/entities/category.entity";
 import {
   brokerageExclusionForEntity,
@@ -37,7 +42,15 @@ import { todayYMD } from "../common/date-utils";
 import { applyTransactionSearch } from "./apply-transaction-search";
 import { tr } from "../i18n/translate";
 import { withScopedDb } from "../common/db/scoped-db";
-import { lockTransactionRows } from "../common/db/locks";
+import {
+  lockCategoryOwnerShared,
+  lockTransactionRows,
+} from "../common/db/locks";
+import {
+  type CategoryPartner,
+  findCategoryPartner,
+  writeCategoryPartner,
+} from "./transfer-category-partner";
 import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import { MONEY_SCALE, sumMoney } from "../common/round.util";
 import { investmentCashLegLockedError } from "./void-status-transition.util";
@@ -61,6 +74,24 @@ export interface BulkUpdateResult {
    */
   splitLinesUpdated?: number;
 }
+
+/** What a bulk category write does to each selected row. */
+interface BulkCategoryPlan {
+  /** Category rows the category does not fit: they keep theirs. */
+  readonly refusedIds: readonly string[];
+  /** The other side of each selected transfer row the category reaches. */
+  readonly partners: readonly CategoryPartner[];
+  /** A Transfer category: no split parent's category line takes it. */
+  readonly skipsCategoryLines: boolean;
+  readonly categoryName: string | null;
+}
+
+const EMPTY_CATEGORY_PLAN: BulkCategoryPlan = {
+  refusedIds: [],
+  partners: [],
+  skipsCategoryLines: false,
+  categoryName: null,
+};
 
 /** One changed split line, as returned by bulkRecategorizeCategorySplits. */
 interface ChangedSplitLine {
@@ -125,19 +156,15 @@ export class TransactionBulkUpdateService {
       );
     }
 
-    // H4: Validate ownership of categoryId and payeeId before applying
+    // H4: Validate ownership of categoryId and payeeId before applying, so a
+    // category that is not the person's refuses even an empty selection. The
+    // category's fit to each row is decided inside the write's transaction
+    // below, and its ownership again with it.
     if ("categoryId" in dto && dto.categoryId) {
       const categoryId = dto.categoryId;
-      const cat = await withScopedDb(this.dataSource, (m) =>
-        m.getRepository(Category).findOne({
-          where: { id: categoryId, userId },
-        }),
+      await withScopedDb(this.dataSource, (m) =>
+        fitCategory(m, userId, categoryId, "transfer"),
       );
-      if (!cat) {
-        throw new NotFoundException(
-          tr("errors.transactions.categoryNotFound", "Category not found"),
-        );
-      }
     }
     if ("payeeId" in dto && dto.payeeId) {
       const payeeId = dto.payeeId;
@@ -187,6 +214,7 @@ export class TransactionBulkUpdateService {
 
     const splitParentIdSet = new Set(splitParentIds);
     let changedLines: ChangedSplitLine[] = [];
+    let partnerWrites: BulkUpdateSnapshot = { before: [], after: [] };
     let snapshot: BulkUpdateSnapshot = { before: [], after: [] };
     // Rows whose status is being changed: the selection plus any transfer
     // counterpart pulled in with it. Declared out here so the post-commit
@@ -197,8 +225,27 @@ export class TransactionBulkUpdateService {
     const counterpartAccountIds = new Set<string>();
     const touchedSecurityIds = new Set<string>();
 
+    // Rows the category does not fit (an ordinary row given a Transfer
+    // category), skipped with a reason; and the other side of each transfer
+    // row the category reaches (INV-CATEGORY-001, INV-CATEGORY-002).
+    let categoryPlan: BulkCategoryPlan = EMPTY_CATEGORY_PLAN;
+
     // Balance changes and the batch update commit in a single transaction.
     await withScopedDb(this.dataSource, async (m) => {
+      // First, before any row lock: the category is the person's, and which
+      // selected rows it fits. A category row takes only Income or Expense,
+      // so the shared category-owner lock comes before any row lock
+      // (`common/db/locks.ts`).
+      if (isUpdatingCategory) {
+        categoryPlan = await this.planCategoryWrite(
+          m,
+          userId,
+          dto.categoryId ?? null,
+          eligibleIds,
+          splitParentIdSet,
+        );
+      }
+
       // Lock every row this batch could write before anything reads the
       // statuses the VOID crossing is decided on.
       //
@@ -404,8 +451,14 @@ export class TransactionBulkUpdateService {
           // When the run sets a category, split parents must not receive it
           // (their category_id stays NULL -- invariant I1), so their UPDATE
           // drops categoryId below.
+          // Nor do the rows the category does not fit: they keep theirs and
+          // take the other fields.
+          const keepsCategory = new Set([
+            ...splitParentIds,
+            ...categoryPlan.refusedIds,
+          ]);
           const fullFieldIds = isUpdatingCategory
-            ? eligibleIds.filter((id) => !splitParentIdSet.has(id))
+            ? eligibleIds.filter((id) => !keepsCategory.has(id))
             : eligibleIds;
           if (fullFieldIds.length > 0) {
             await m
@@ -417,18 +470,29 @@ export class TransactionBulkUpdateService {
               .execute();
           }
 
-          if (isUpdatingCategory && splitParentIds.length > 0) {
-            const splitParentFields = { ...nonStatusFields };
-            delete splitParentFields.categoryId;
-            if (Object.keys(splitParentFields).length > 0) {
+          if (isUpdatingCategory && keepsCategory.size > 0) {
+            const keptCategoryFields = { ...nonStatusFields };
+            delete keptCategoryFields.categoryId;
+            if (Object.keys(keptCategoryFields).length > 0) {
               await m
                 .createQueryBuilder()
                 .update(Transaction)
-                .set(splitParentFields as Partial<Transaction>)
-                .where("id IN (:...ids)", { ids: splitParentIds })
+                .set(keptCategoryFields as Partial<Transaction>)
+                .where("id IN (:...ids)", { ids: [...keepsCategory] })
                 .andWhere("userId = :userId", { userId })
                 .execute();
             }
+          }
+
+          // One category per transfer: the other side of every selected
+          // transfer row follows, when it holds another (INV-CATEGORY-002).
+          if (isUpdatingCategory) {
+            partnerWrites = await this.writeCategoryPartners(
+              m,
+              userId,
+              categoryPlan.partners,
+              dto.categoryId ?? null,
+            );
           }
         }
 
@@ -497,7 +561,11 @@ export class TransactionBulkUpdateService {
       // Step 4d: Recategorize the split parents' category-kind lines, joined
       // to this transaction. The restriction set is computed with the same
       // expansion the selection uses, so update and selection cannot drift.
-      if (isUpdatingCategory && splitParentIds.length > 0) {
+      if (
+        isUpdatingCategory &&
+        splitParentIds.length > 0 &&
+        !categoryPlan.skipsCategoryLines
+      ) {
         const restriction = await this.resolveCategoryRestriction(
           m,
           userId,
@@ -511,17 +579,21 @@ export class TransactionBulkUpdateService {
         );
       }
 
-      snapshot = this.buildSnapshots(
+      const built = this.buildSnapshots(
         parentSnapshot,
         updateFields,
         isUpdatingCategory,
-        splitParentIdSet,
+        new Set([...splitParentIdSet, ...categoryPlan.refusedIds]),
         isUpdatingTags,
         dto.tagIds,
         changedLines,
         dto.categoryId ?? null,
         new Set(snapshotIds.filter((id) => !eligibleIds.includes(id))),
       );
+      snapshot = {
+        before: [...built.before, ...partnerWrites.before],
+        after: [...built.after, ...partnerWrites.after],
+      };
     });
 
     // Step 5: Trigger net worth recalc for affected accounts (after commit).
@@ -551,13 +623,51 @@ export class TransactionBulkUpdateService {
       Object.keys(updateFields).some((k) => k !== "categoryId") ||
       isUpdatingTags;
     const changedParentIds = new Set(changedLines.map((l) => l.transactionId));
+    // With a Transfer category every split parent's category lines are
+    // skipped for that reason, not for a filter that matched none.
     const skippedSplitParents =
-      isUpdatingCategory && !parentLevelChangesApply
+      isUpdatingCategory &&
+      !parentLevelChangesApply &&
+      !categoryPlan.skipsCategoryLines
         ? splitParentIds.filter((id) => !changedParentIds.has(id))
         : [];
-    const updated = eligibleIds.length - skippedSplitParents.length;
+    const transferSkippedParents =
+      isUpdatingCategory &&
+      !parentLevelChangesApply &&
+      categoryPlan.skipsCategoryLines
+        ? splitParentIds
+        : [];
+    const skippedRefusedRows =
+      isUpdatingCategory && !parentLevelChangesApply
+        ? categoryPlan.refusedIds
+        : [];
+    const skippedIds = new Set([
+      ...skippedSplitParents,
+      ...transferSkippedParents,
+      ...skippedRefusedRows,
+    ]);
+    const updated = eligibleIds.length - skippedIds.size;
 
     const skippedReasons: string[] = [...classifySkippedReasons];
+    const transferName = categoryPlan.categoryName ?? "";
+    if (categoryPlan.refusedIds.length > 0) {
+      skippedReasons.push(
+        tr(
+          "errors.transactions.bulkTransferCategoryOnCategoryRows",
+          `${categoryPlan.refusedIds.length} transactions kept their category: ${transferName} is a Transfer category; it can go only on a transfer`,
+          { count: categoryPlan.refusedIds.length, name: transferName },
+        ),
+      );
+    }
+    if (categoryPlan.skipsCategoryLines && splitParentIds.length > 0) {
+      skippedReasons.push(
+        tr(
+          "errors.transactions.bulkTransferCategoryOnSplitLines",
+          `${splitParentIds.length} split transactions kept their split lines' categories: ${transferName} is a Transfer category; it can go only on a transfer`,
+          { count: splitParentIds.length, name: transferName },
+        ),
+      );
+    }
     if (skippedSplitParents.length === 1) {
       skippedReasons.push(
         tr(
@@ -580,9 +690,8 @@ export class TransactionBulkUpdateService {
     // see derived-state-writers.guard.spec.ts). Skipped parents received no
     // write, so they are excluded from the snapshot.
     if (updated > 0) {
-      const skippedSet = new Set(skippedSplitParents);
       const keep = (row: Record<string, unknown>) =>
-        !skippedSet.has(row.id as string);
+        !skippedIds.has(row.id as string);
       void this.actionHistoryService.record(userId, {
         entityType: "bulk_transaction",
         entityId: null,
@@ -597,7 +706,7 @@ export class TransactionBulkUpdateService {
 
     const result: BulkUpdateResult = {
       updated,
-      skipped: classifySkipped + skippedSplitParents.length,
+      skipped: classifySkipped + skippedIds.size,
       skippedReasons,
     };
     if (changedLines.length > 0) {
@@ -935,6 +1044,7 @@ export class TransactionBulkUpdateService {
       fields.payeeName = dto.payeeName ?? null;
     }
     if ("categoryId" in dto) {
+      // category-fit-ok: bulkUpdate fits it per row (planCategoryWrite)
       fields.categoryId = dto.categoryId ?? null;
     }
     if ("description" in dto) {
@@ -1229,6 +1339,103 @@ export class TransactionBulkUpdateService {
    * parent category onto a split -- invariant I1); their changed lines ride
    * along as `splits: [{ id, categoryId }]`.
    */
+  /**
+   * Which selected rows the category fits, and the other side of each
+   * transfer row it reaches (`docs/specs/transfer-categories.md` section
+   * 4.1, "Bulk update"). A Transfer category is written to each selected
+   * transfer row; each selected category row (an ordinary row) keeps its
+   * category and is reported, as is each split parent's set of category
+   * lines. The category is checked for ownership in the same read.
+   */
+  private async planCategoryWrite(
+    m: EntityManager,
+    userId: string,
+    categoryId: string | null,
+    eligibleIds: readonly string[],
+    splitParentIds: ReadonlySet<string>,
+  ): Promise<BulkCategoryPlan> {
+    // Category rows may be written with it: the shared owner lock, before any
+    // row lock and before the type is read, as every category-row write
+    // takes it (specification section 12).
+    if (categoryId) await lockCategoryOwnerShared(m, userId);
+    const category = await fitCategory(m, userId, categoryId, "transfer");
+    const rows = (await m.query(
+      `SELECT id, is_transfer AS "isTransfer",
+              linked_transaction_id AS "linkedTransactionId"
+         FROM transactions WHERE id = ANY($1) AND user_id = $2`,
+      [eligibleIds, userId],
+    )) as { id: string; isTransfer: boolean; linkedTransactionId: string }[];
+    const refusedIds: string[] = [];
+    const partners: CategoryPartner[] = [];
+    for (const row of rows) {
+      if (splitParentIds.has(row.id)) continue;
+      const holder = holderOfRow(row);
+      if (category && !categoryFits(category, holder)) {
+        refusedIds.push(row.id);
+        continue;
+      }
+      const partner = await findCategoryPartner(m, userId, row);
+      if (partner) partners.push(partner);
+    }
+    const transferCategory =
+      category !== null && !categoryFits(category, "category");
+    return {
+      refusedIds,
+      partners,
+      skipsCategoryLines: transferCategory,
+      categoryName: category?.name ?? null,
+    };
+  }
+
+  /**
+   * Set the other side of each transfer row to the category, and return the
+   * undo snapshot of what changed: the other leg as a row, a split's transfer
+   * line as its parent's changed line.
+   */
+  private async writeCategoryPartners(
+    m: EntityManager,
+    userId: string,
+    partners: readonly CategoryPartner[],
+    categoryId: string | null,
+  ): Promise<BulkUpdateSnapshot> {
+    const before: Record<string, unknown>[] = [];
+    const after: Record<string, unknown>[] = [];
+    for (const partner of partners) {
+      const written = await writeCategoryPartner(
+        m,
+        userId,
+        partner,
+        categoryId,
+      );
+      if (!written) continue;
+      const rowId = partner.kind === "leg" ? partner.id : partner.parentId;
+      const [row] = (await m.query(
+        `SELECT account_id AS "accountId" FROM transactions WHERE id = $1`,
+        [rowId],
+      )) as { accountId: string }[];
+      if (partner.kind === "leg") {
+        before.push({
+          id: rowId,
+          accountId: row?.accountId,
+          categoryId: written.before.categoryId,
+        });
+        after.push({ id: rowId, accountId: row?.accountId, categoryId });
+      } else {
+        before.push({
+          id: rowId,
+          accountId: row?.accountId,
+          splits: [{ id: partner.id, categoryId: written.before.categoryId }],
+        });
+        after.push({
+          id: rowId,
+          accountId: row?.accountId,
+          splits: [{ id: partner.id, categoryId }],
+        });
+      }
+    }
+    return { before, after };
+  }
+
   private buildSnapshots(
     parentSnapshot: {
       rows: Record<string, unknown>[];
@@ -1301,9 +1508,9 @@ export class TransactionBulkUpdateService {
 
   /**
    * For transfer transactions in the batch, apply payee and description
-   * updates to their linked counterparts so both sides stay in sync.
-   * Category is NOT synced because each side of a transfer may use
-   * different categories (e.g. "Transfer In" vs "Transfer Out").
+   * updates to their linked counterparts so both sides stay in sync. The
+   * category follows by its own rule, one category per transfer, in
+   * `writeCategoryPartners` (INV-CATEGORY-002).
    */
   private async syncLinkedTransfers(
     m: EntityManager,
