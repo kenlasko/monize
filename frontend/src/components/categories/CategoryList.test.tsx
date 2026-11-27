@@ -362,12 +362,55 @@ describe('CategoryList', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1');
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', undefined);
     });
 
     await waitFor(() => {
       expect(onRefresh).toHaveBeenCalled();
     });
+  });
+
+  it('reassigns and deletes in one DELETE request when the category has transactions', async () => {
+    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(4);
+    const categories = [
+      makeCategory({ id: 'c1', name: 'Food', isSystem: false }),
+    ];
+
+    render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
+    fireEvent.click(screen.getByText('Delete'));
+    await waitFor(() => {
+      expect(screen.getByText('Delete "Food"')).toBeInTheDocument();
+    });
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', null);
+    });
+    expect(mockCategoriesApi.reassignTransactions).not.toHaveBeenCalled();
+  });
+
+  it('shows what still uses the category, linked, when the delete is refused with 409', async () => {
+    mockCategoriesApi.getTransactionCount.mockResolvedValueOnce(0);
+    mockCategoriesApi.delete.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          errorCode: 'RECORD_IN_USE',
+          errors: [{ kind: 'subcategories', count: 2 }, { kind: 'budgetLines', count: 1 }, { kind: 'payrollDeductionRules', count: 1 }],
+        },
+      },
+    });
+    render(<CategoryList categories={[makeCategory({ id: 'c1', name: 'Food', isSystem: false })]} onEdit={onEdit} onRefresh={onRefresh} />);
+    fireEvent.click(screen.getByText('Delete'));
+    await waitFor(() => expect(screen.getByText('Delete "Food"')).toBeInTheDocument());
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+
+    expect(await screen.findByText('Cannot delete "Food"')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '2 subcategories' })).toHaveAttribute('href', '/categories/c1');
+    expect(screen.getByRole('link', { name: '1 budget line' })).toHaveAttribute('href', '/budgets');
+    expect(onRefresh).not.toHaveBeenCalled();
   });
 
   it('calls onDelete instead of onRefresh when onDelete is provided', async () => {
@@ -389,7 +432,7 @@ describe('CategoryList', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1');
+      expect(mockCategoriesApi.delete).toHaveBeenCalledWith('c1', undefined);
     });
 
     await waitFor(() => {

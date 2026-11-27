@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, one {# konto kredytowe (odbiorca dodatkowych spłat)} few {# konta kredytowe (odbiorca dodatkowych spłat)} many {# kont kredytowych (odbiorca dodatkowych spłat)} other {# konta kredytowego (odbiorca dodatkowych spłat)}}",
       "sharedPeople": "{count, plural, one {# osoba we wspólnych wydatkach} few {# osoby we wspólnych wydatkach} many {# osób we wspólnych wydatkach} other {# osoby we wspólnych wydatkach}}",
       "sharedPostings": "{count, plural, one {# wpis wspólnych wydatków} few {# wpisy wspólnych wydatków} many {# wpisów wspólnych wydatków} other {# wpisu wspólnych wydatków}}",
-      "rules": "{count, plural, one {# reguła} few {# reguły} many {# reguł} other {# reguły}}"
-    }
+      "rules": "{count, plural, one {# reguła} few {# reguły} many {# reguł} other {# reguły}}",
+      "subcategories": "{count, plural, one {# podkategoria} few {# podkategorie} many {# podkategorii} other {# podkategorii}}",
+      "budgetLines": "{count, plural, one {# pozycja budżetu} few {# pozycje budżetu} many {# pozycji budżetu} other {# pozycji budżetu}}",
+      "budgetPeriods": "{count, plural, one {# okres budżetowy} few {# okresy budżetowe} many {# okresów budżetowych} other {# okresu budżetowego}}",
+      "payrollDeductionRules": "{count, plural, one {# reguła potrąceń z wynagrodzenia} few {# reguły potrąceń z wynagrodzenia} many {# reguł potrąceń z wynagrodzenia} other {# reguły potrąceń z wynagrodzenia}}",
+      "loanFees": "{count, plural, one {# opłata kredytowa} few {# opłaty kredytowe} many {# opłat kredytowych} other {# opłaty kredytowej}}",
+      "loanAccounts": "{count, plural, one {# konto kredytowe} few {# konta kredytowe} many {# kont kredytowych} other {# konta kredytowego}}",
+      "customReports": "{count, plural, one {# raport niestandardowy} few {# raporty niestandardowe} many {# raportów niestandardowych} other {# raportu niestandardowego}}",
+      "holdings": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
+      "investmentTransactions": "{count, plural, one {# transakcja inwestycyjna} few {# transakcje inwestycyjne} many {# transakcji inwestycyjnych} other {# transakcji inwestycyjnej}}",
+      "gemStrategies": "{count, plural, one {# strategia GEM} few {# strategie GEM} many {# strategii GEM} other {# strategii GEM}}",
+      "securityDocuments": "{count, plural, one {# dokument papieru wartościowego} few {# dokumenty papieru wartościowego} many {# dokumentów papieru wartościowego} other {# dokumentu papieru wartościowego}}",
+      "bankSyncLinks": "{count, plural, one {# powiązanie synchronizacji bankowej} few {# powiązania synchronizacji bankowej} many {# powiązań synchronizacji bankowej} other {# powiązania synchronizacji bankowej}}",
+      "sharedIntegrations": "{count, plural, one {# integracja wspólnych wydatków} few {# integracje wspólnych wydatków} many {# integracji wspólnych wydatków} other {# integracji wspólnych wydatków}}",
+      "linkedAccounts": "{count, plural, one {# powiązane konto} few {# powiązane konta} many {# powiązanych kont} other {# powiązanego konta}}",
+      "securities": "{count, plural, one {# papier wartościowy} few {# papiery wartościowe} many {# papierów wartościowych} other {# papieru wartościowego}}"
+    },
+    "title": "Nie można usunąć \"{name}\"",
+    "close": "Zamknij"
   }
 }

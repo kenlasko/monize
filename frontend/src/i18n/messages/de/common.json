@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, one {# Darlehenskonto (Zahlungsempfänger für Sonderzahlungen)} other {# Darlehenskonten (Zahlungsempfänger für Sonderzahlungen)}}",
       "sharedPeople": "{count, plural, one {# Person für geteilte Ausgaben} other {# Personen für geteilte Ausgaben}}",
       "sharedPostings": "{count, plural, one {# Buchung geteilter Ausgaben} other {# Buchungen geteilter Ausgaben}}",
-      "rules": "{count, plural, one {# Regel} other {# Regeln}}"
-    }
+      "rules": "{count, plural, one {# Regel} other {# Regeln}}",
+      "subcategories": "{count, plural, one {# Unterkategorie} other {# Unterkategorien}}",
+      "budgetLines": "{count, plural, one {# Budgetzeile} other {# Budgetzeilen}}",
+      "budgetPeriods": "{count, plural, one {# Budgetzeitraum} other {# Budgetzeiträume}}",
+      "payrollDeductionRules": "{count, plural, one {# Lohnabzugsregel} other {# Lohnabzugsregeln}}",
+      "loanFees": "{count, plural, one {# Darlehensgebühr} other {# Darlehensgebühren}}",
+      "loanAccounts": "{count, plural, one {# Darlehenskonto} other {# Darlehenskonten}}",
+      "customReports": "{count, plural, one {# benutzerdefinierter Bericht} other {# benutzerdefinierte Berichte}}",
+      "holdings": "{count, plural, one {# Bestand} other {# Bestände}}",
+      "investmentTransactions": "{count, plural, one {# Investmentbuchung} other {# Investmentbuchungen}}",
+      "gemStrategies": "{count, plural, one {# GEM-Strategie} other {# GEM-Strategien}}",
+      "securityDocuments": "{count, plural, one {# Wertpapierdokument} other {# Wertpapierdokumente}}",
+      "bankSyncLinks": "{count, plural, one {# Bankanbindung} other {# Bankanbindungen}}",
+      "sharedIntegrations": "{count, plural, one {# Integration für geteilte Ausgaben} other {# Integrationen für geteilte Ausgaben}}",
+      "linkedAccounts": "{count, plural, one {# verknüpftes Konto} other {# verknüpfte Konten}}",
+      "securities": "{count, plural, one {# Wertpapier} other {# Wertpapiere}}"
+    },
+    "title": "\"{name}\" kann nicht gelöscht werden",
+    "close": "Schließen"
   }
 }

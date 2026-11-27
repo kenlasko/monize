@@ -81,10 +81,8 @@
       "deleteFailed": "Alacaklı silinemedi"
     },
     "inUse": {
-      "title": "\"{name}\" silinemiyor",
       "mergeHint": "Bu öğeleri korumak için bu alıcıyı başka bir alıcıyla birleştirin. Birleştirme, tüm öğeleri seçtiğiniz alıcıya taşır.",
-      "mergeInstead": "Bunun yerine birleştir",
-      "close": "Kapat"
+      "mergeInstead": "Bunun yerine birleştir"
     }
   },
   "form": {

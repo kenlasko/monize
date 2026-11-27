@@ -81,10 +81,8 @@
       "deleteFailed": "Begunstigde verwijderen mislukt"
     },
     "inUse": {
-      "title": "\"{name}\" kan niet worden verwijderd",
       "mergeHint": "Wil je deze items behouden, voeg deze begunstigde dan samen met een andere. Bij het samenvoegen gaan alle items naar de begunstigde die je kiest.",
-      "mergeInstead": "In plaats daarvan samenvoegen",
-      "close": "Sluiten"
+      "mergeInstead": "In plaats daarvan samenvoegen"
     }
   },
   "form": {

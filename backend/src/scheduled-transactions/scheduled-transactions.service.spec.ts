@@ -2609,13 +2609,37 @@ describe("ScheduledTransactionsService", () => {
 
   // ==================== remove ====================
   describe("remove", () => {
+    beforeEach(() => {
+      mockDataSource.query.mockResolvedValue([]);
+    });
+
     it("should find and remove the scheduled transaction", async () => {
       const scheduled = makeScheduled();
       stubFindOne(scheduled);
 
       await service.remove(userId, stId);
 
+      expect(scheduledRepo.findOne).toHaveBeenLastCalledWith({
+        where: { id: stId, userId },
+        lock: { mode: "pessimistic_write" },
+      });
       expect(scheduledRepo.remove).toHaveBeenCalledWith(scheduled);
+    });
+
+    it("unlinks a loan from the schedule in the delete's transaction, before the delete", async () => {
+      stubFindOne(makeScheduled());
+
+      await service.remove(userId, stId);
+
+      expect(mockDataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "UPDATE accounts SET scheduled_transaction_id = NULL",
+        ),
+        [userId, stId],
+      );
+      expect(mockDataSource.query.mock.invocationCallOrder[0]).toBeLessThan(
+        scheduledRepo.remove.mock.invocationCallOrder[0],
+      );
     });
 
     it("should throw NotFoundException if not found", async () => {

@@ -1140,7 +1140,11 @@ Source of truth     transactions, investment_transactions, scheduled_transaction
                     scheduled_transaction_splits and scheduled_transaction_overrides
                     rows naming the account
 Enforcement         AccountsService.delete runs one transaction: the account's
-                    lockAccountsForBalanceWrite, assertAccountEmpty, the loan's own
+                    lockAccountsForBalanceWrite, assertAccountUnreferenced (one
+                    409 RECORD_IN_USE with a count per kind, from
+                    findAccountReferences over ACCOUNT_REFERENCES in
+                    accounts/account-references.ts, which the spec checks
+                    against schema.sql), the loan's own
                     schedule as the locked row names it (removeWithoutHistory),
                     then the account. A refusal, or a failure to remove that
                     schedule, writes nothing. After the commit the schedule's undo
@@ -7829,6 +7833,22 @@ Enforcement         PAYEE_REFERENCE_MOVES (backend/src/payees/payee-references.t
                     { kind, count } per kind and nothing written;
                     previewDeletePayee (AI/MCP) refuses the same way.
                     PAYEE_REFERENCE_COUNTS is typed to PAYEE_REFERENCE_MOVES' keys.
+                    Categories and securities are refused the same way (#2368):
+                    CATEGORY_REFERENCES and SECURITY_REFERENCES give every
+                    foreign key to the table a refuse, part or clear policy
+                    (each refuse entry carries its counting sql), and
+                    findCategoryReferences and findSecurityReferences count the
+                    refuse ones through countReferences
+                    (common/helpers/record-in-use.ts). Deleting a schedule
+                    refuses nothing: SCHEDULED_TRANSACTION_REFERENCES has only
+                    part and clear, and removeWithoutHistory unlinks a loan's
+                    payment schedule (accounts.scheduled_transaction_id) first;
+                    their specs parse schema.sql through foreignKeysTo
+                    (common/schema-references.test-helpers.ts). Accounts and
+                    tags have ACCOUNT_REFERENCES and TAG_REFERENCES the same way
+                    (findAccountReferences, findTagReferences); the undo of a
+                    create and the redo of a delete run the entity's finder
+                    first (action-history/undo-references.ts).
                     repointPayeeJsonReferences (payee-json-references.ts)
                     rewrites the JSON ids; payee-json-references.spec.ts fails
                     when a rule action type carrying a payeeId is missing from

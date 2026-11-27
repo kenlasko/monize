@@ -21,6 +21,7 @@ import { ActionHistory } from "./entities/action-history.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { UserPreference } from "../users/entities/user-preference.entity";
 import { Tag } from "../tags/entities/tag.entity";
+import { Account } from "../accounts/entities/account.entity";
 import { BondPriceService } from "../bonds/bond-price.service";
 import { HoldingsService } from "../securities/holdings.service";
 import { requestContextStorage } from "../common/request-context";
@@ -382,6 +383,63 @@ describe("ActionHistoryService", () => {
       expect(mockQueryRunner.manager.delete).toHaveBeenCalled();
     });
 
+    it("undoing a loan's creation clears the loan's link, then deletes its schedule", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        action: "create",
+        entityType: "scheduled_transaction",
+        entityId: "st-1",
+        afterData: { id: "st-1", name: "Loan payment" },
+      });
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      // Only the row lock answers; the schedule has no other reference.
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FOR UPDATE") ? [{ name: "Loan payment" }] : [],
+      );
+
+      await service.undo(userId);
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        Account,
+        { userId, scheduledTransactionId: "st-1" },
+        { scheduledTransactionId: null },
+      );
+      expect(
+        mockQueryRunner.manager.update.mock.invocationCallOrder[0],
+      ).toBeLessThan(
+        mockQueryRunner.manager.delete.mock.invocationCallOrder[0],
+      );
+    });
+
+    it("undoing a security create deletes its zero-quantity holdings first", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        action: "create",
+        entityType: "security",
+        entityId: "sec-1",
+        afterData: { id: "sec-1", symbol: "ABC" },
+      });
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).includes("FOR UPDATE") ? [{ name: "ABC" }] : [],
+      );
+
+      await service.undo(userId);
+
+      const calls: [string][] = mockQueryRunner.query.mock.calls;
+      const holdingsAt = calls.findIndex(([sql]) =>
+        String(sql).includes("DELETE FROM holdings"),
+      );
+      expect(holdingsAt).toBeGreaterThanOrEqual(0);
+      expect(
+        mockQueryRunner.query.mock.invocationCallOrder[holdingsAt],
+      ).toBeLessThan(
+        mockQueryRunner.manager.delete.mock.invocationCallOrder[0],
+      );
+    });
+
     it("should undo a simple entity delete (tag)", async () => {
       const deleteAction = {
         ...mockAction,
@@ -570,6 +628,143 @@ describe("ActionHistoryService", () => {
 
       expect(result.description).toContain("Redone");
       expect(mockDataSource.transaction).toHaveBeenCalled();
+    });
+  });
+
+  describe("a category delete that moved rows (reassignTo)", () => {
+    const moved = {
+      to: "cat-2",
+      transactions: ["t1"],
+      transactionSplits: [],
+      scheduled: ["s1"],
+      scheduledSplits: [],
+      overrides: [],
+      overrideSplits: [
+        { id: "o1", before: [{ c: "cat-1" }], after: [{ c: "cat-2" }] },
+      ],
+    };
+    const deleteAction = (isUndone: boolean) => ({
+      ...mockAction,
+      action: "delete",
+      entityType: "category",
+      entityId: "cat-1",
+      isUndone,
+      beforeData: { id: "cat-1", name: "Food", movedRows: moved },
+      afterData: null,
+    });
+    const sqls = () =>
+      mockQueryRunner.query.mock.calls.map(([sql]: [string]) => String(sql));
+
+    it("undo re-inserts the category without movedRows, then moves back only rows still on the target", async () => {
+      mockRepository.findOne.mockResolvedValue(deleteAction(false));
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      const insert = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        String(sql).includes(`INSERT INTO "categories"`),
+      );
+      expect(insert[0]).not.toContain("moved_rows");
+      expect(insert[1]).not.toContainEqual(moved);
+      const back = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        String(sql).startsWith("UPDATE transactions x"),
+      );
+      // CAS guard: only rows that still point at the target move back.
+      expect(back[0]).toContain("x.category_id IS NOT DISTINCT FROM $4::uuid");
+      expect(back[0]).toContain("x.user_id = $2");
+      expect(back[1]).toEqual(["cat-1", userId, ["t1"], "cat-2"]);
+      expect(
+        sqls().some((q) => q.startsWith("UPDATE scheduled_transactions x")),
+      ).toBe(true);
+      // The re-insert comes first.
+      expect(
+        sqls().findIndex((q) => q.includes(`INSERT INTO "categories"`)),
+      ).toBeLessThan(
+        sqls().findIndex((q) => q.startsWith("UPDATE transactions x")),
+      );
+    });
+
+    it("undo restores override JSON only where it still equals what the delete wrote", async () => {
+      mockRepository.findOne.mockResolvedValue(deleteAction(false));
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      const call = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        String(sql).includes("jsonb_to_recordset"),
+      );
+      expect(call[0]).toContain("o.splits = r.expect");
+      expect(JSON.parse(call[1][0])).toEqual([
+        { id: "o1", set: [{ c: "cat-1" }], expect: [{ c: "cat-2" }] },
+      ]);
+    });
+
+    it("undo of a delete without movedRows moves nothing", async () => {
+      mockRepository.findOne.mockResolvedValue({
+        ...deleteAction(false),
+        beforeData: { id: "cat-1", name: "Food" },
+      });
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      expect(sqls().some((q) => q.startsWith("UPDATE "))).toBe(false);
+    });
+
+    it("redo moves the same rows to the target again before the reference check and delete", async () => {
+      mockRepository.findOne.mockResolvedValue(deleteAction(true));
+      mockQueryRunner.query.mockImplementation(async (sql: string) =>
+        String(sql).startsWith("SELECT id FROM categories")
+          ? [{ id: "x" }]
+          : String(sql).includes("FOR UPDATE")
+            ? [{ name: "Food" }]
+            : [],
+      );
+      mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.redo(userId);
+
+      const move = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        String(sql).startsWith("UPDATE transactions x"),
+      );
+      // From the restored category to the target.
+      expect(move[1]).toEqual(["cat-2", userId, ["t1"], "cat-1"]);
+      const locks = mockQueryRunner.query.mock.calls
+        .filter(([sql]: [string]) =>
+          String(sql).startsWith("SELECT id FROM categories"),
+        )
+        .map(([, p]: [string, string[]]) => p[0]);
+      // Lock order by id: cat-1 before cat-2.
+      expect(locks.slice(0, 2)).toEqual(["cat-1", "cat-2"]);
+      expect(
+        mockQueryRunner.query.mock.invocationCallOrder[
+          mockQueryRunner.query.mock.calls.indexOf(move)
+        ],
+      ).toBeLessThan(
+        mockQueryRunner.manager.delete.mock.invocationCallOrder[0],
+      );
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalled();
+    });
+
+    it("redo refuses when the target category no longer exists, and deletes nothing", async () => {
+      mockRepository.findOne.mockResolvedValue(deleteAction(true));
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, p: string[]) =>
+          String(sql).startsWith("SELECT id FROM categories")
+            ? p[0] === "cat-2"
+              ? []
+              : [{ id: "cat-1" }]
+            : [],
+      );
+
+      await expect(service.redo(userId)).rejects.toThrow(NotFoundException);
+
+      expect(sqls().some((q) => q.startsWith("UPDATE "))).toBe(false);
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
     });
   });
 

@@ -44,6 +44,6 @@ describe("countSchedulesReferencingAccounts", () => {
     expect(sql).toContain("sto.is_split IS NOT FALSE");
     expect(sql).toContain("COUNT(DISTINCT refs.schedule_id)");
     expect(sql).toContain("a.scheduled_transaction_id");
-    expect(params).toEqual([["a"], ["LOAN", "MORTGAGE"]]);
+    expect(params).toEqual([["a"], ["LOAN", "MORTGAGE"], false]);
   });
 });

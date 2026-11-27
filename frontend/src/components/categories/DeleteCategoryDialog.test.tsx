@@ -63,6 +63,6 @@ describe('DeleteCategoryDialog', () => {
     );
     await screen.findByText('This category is not used. It can be safely deleted.');
     fireEvent.click(screen.getByText('Delete'));
-    expect(onConfirm).toHaveBeenCalledWith(null);
+    expect(onConfirm).toHaveBeenCalledWith(undefined);
   });
 });

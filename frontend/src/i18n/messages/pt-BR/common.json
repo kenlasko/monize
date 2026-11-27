@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, one {# conta de empréstimo (beneficiário de pagamentos extras)} other {# contas de empréstimo (beneficiário de pagamentos extras)}}",
       "sharedPeople": "{count, plural, one {# pessoa de despesas compartilhadas} other {# pessoas de despesas compartilhadas}}",
       "sharedPostings": "{count, plural, one {# lançamento de despesas compartilhadas} other {# lançamentos de despesas compartilhadas}}",
-      "rules": "{count, plural, one {# regra} other {# regras}}"
-    }
+      "rules": "{count, plural, one {# regra} other {# regras}}",
+      "subcategories": "{count, plural, one {# subcategoria} other {# subcategorias}}",
+      "budgetLines": "{count, plural, one {# linha de orçamento} other {# linhas de orçamento}}",
+      "budgetPeriods": "{count, plural, one {# período orçamentário} other {# períodos orçamentários}}",
+      "payrollDeductionRules": "{count, plural, one {# regra de desconto em folha} other {# regras de desconto em folha}}",
+      "loanFees": "{count, plural, one {# tarifa de empréstimo} other {# tarifas de empréstimo}}",
+      "loanAccounts": "{count, plural, one {# conta de empréstimo} other {# contas de empréstimo}}",
+      "customReports": "{count, plural, one {# relatório personalizado} other {# relatórios personalizados}}",
+      "holdings": "{count, plural, one {# posição} other {# posições}}",
+      "investmentTransactions": "{count, plural, one {# transação de investimento} other {# transações de investimento}}",
+      "gemStrategies": "{count, plural, one {# estratégia GEM} other {# estratégias GEM}}",
+      "securityDocuments": "{count, plural, one {# documento de valor mobiliário} other {# documentos de valor mobiliário}}",
+      "bankSyncLinks": "{count, plural, one {# vínculo de sincronização bancária} other {# vínculos de sincronização bancária}}",
+      "sharedIntegrations": "{count, plural, one {# integração de despesas compartilhadas} other {# integrações de despesas compartilhadas}}",
+      "linkedAccounts": "{count, plural, one {# conta vinculada} other {# contas vinculadas}}",
+      "securities": "{count, plural, one {# valor mobiliário} other {# valores mobiliários}}"
+    },
+    "title": "Não é possível excluir \"{name}\"",
+    "close": "Fechar"
   }
 }

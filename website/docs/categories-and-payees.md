@@ -71,7 +71,8 @@ Click **Edit** on a category's row, or **Edit** on its detail page, to change an
 Click **Delete** on a category's row or detail page. Monize first checks how many transactions and scheduled bills and deposits use the category:
 
 - If none do, the dialog says the category can be safely deleted.
-- If some do, choose where they go under **Reassign to:** another category, or **Leave uncategorized**. They are moved before the category is deleted.
+- If some do, choose where they go under **Reassign to:** another category, or **Leave uncategorized**. They are moved and the category is deleted in one step.
+- If something else still uses the category, the delete is refused and nothing is moved. The dialog lists what uses it, with a link to each kind: budgets, rules, reports, payroll deductions, loan accounts and shared-expense postings. Change or remove those, then delete the category again.
 
 ![The delete dialog for a category in use, offering to reassign its transactions to another category](images/categories-delete-dialog.png)
 

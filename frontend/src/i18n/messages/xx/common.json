@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "[XX-{count, plural, one {# loan account (overpayment payee)} other {# loan accounts (overpayment payee)}}-XX]",
       "sharedPeople": "[XX-{count, plural, one {# shared-expense person} other {# shared-expense people}}-XX]",
       "sharedPostings": "[XX-{count, plural, one {# shared-expense posting} other {# shared-expense postings}}-XX]",
-      "rules": "[XX-{count, plural, one {# rule} other {# rules}}-XX]"
-    }
+      "rules": "[XX-{count, plural, one {# rule} other {# rules}}-XX]",
+      "subcategories": "[XX-{count, plural, one {# subcategory} other {# subcategories}}-XX]",
+      "budgetLines": "[XX-{count, plural, one {# budget line} other {# budget lines}}-XX]",
+      "budgetPeriods": "[XX-{count, plural, one {# budget period} other {# budget periods}}-XX]",
+      "payrollDeductionRules": "[XX-{count, plural, one {# payroll deduction rule} other {# payroll deduction rules}}-XX]",
+      "loanFees": "[XX-{count, plural, one {# loan fee} other {# loan fees}}-XX]",
+      "loanAccounts": "[XX-{count, plural, one {# loan account} other {# loan accounts}}-XX]",
+      "customReports": "[XX-{count, plural, one {# custom report} other {# custom reports}}-XX]",
+      "holdings": "[XX-{count, plural, one {# holding} other {# holdings}}-XX]",
+      "investmentTransactions": "[XX-{count, plural, one {# investment transaction} other {# investment transactions}}-XX]",
+      "gemStrategies": "[XX-{count, plural, one {# GEM strategy} other {# GEM strategies}}-XX]",
+      "securityDocuments": "[XX-{count, plural, one {# security document} other {# security documents}}-XX]",
+      "bankSyncLinks": "[XX-{count, plural, one {# bank sync link} other {# bank sync links}}-XX]",
+      "sharedIntegrations": "[XX-{count, plural, one {# shared integration} other {# shared integrations}}-XX]",
+      "linkedAccounts": "[XX-{count, plural, one {# linked account} other {# linked accounts}}-XX]",
+      "securities": "[XX-{count, plural, one {# security} other {# securities}}-XX]"
+    },
+    "title": "[XX-Cannot delete \"{name}\"-XX]",
+    "close": "[XX-Close-XX]"
   }
 }

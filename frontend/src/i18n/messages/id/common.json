@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, other {# akun pinjaman (penerima pembayaran tambahan)}}",
       "sharedPeople": "{count, plural, other {# orang pengeluaran bersama}}",
       "sharedPostings": "{count, plural, other {# entri pengeluaran bersama}}",
-      "rules": "{count, plural, other {# aturan}}"
-    }
+      "rules": "{count, plural, other {# aturan}}",
+      "subcategories": "{count, plural, other {# subkategori}}",
+      "budgetLines": "{count, plural, other {# baris anggaran}}",
+      "budgetPeriods": "{count, plural, other {# periode anggaran}}",
+      "payrollDeductionRules": "{count, plural, other {# aturan potongan gaji}}",
+      "loanFees": "{count, plural, other {# biaya pinjaman}}",
+      "loanAccounts": "{count, plural, other {# akun pinjaman}}",
+      "customReports": "{count, plural, other {# laporan kustom}}",
+      "holdings": "{count, plural, other {# kepemilikan}}",
+      "investmentTransactions": "{count, plural, other {# transaksi investasi}}",
+      "gemStrategies": "{count, plural, other {# strategi GEM}}",
+      "securityDocuments": "{count, plural, other {# dokumen sekuritas}}",
+      "bankSyncLinks": "{count, plural, other {# tautan sinkronisasi bank}}",
+      "sharedIntegrations": "{count, plural, other {# integrasi pengeluaran bersama}}",
+      "linkedAccounts": "{count, plural, other {# akun tertaut}}",
+      "securities": "{count, plural, other {# sekuritas}}"
+    },
+    "title": "Tidak dapat menghapus \"{name}\"",
+    "close": "Tutup"
   }
 }

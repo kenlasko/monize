@@ -81,10 +81,8 @@
       "deleteFailed": "刪除收款人失敗"
     },
     "inUse": {
-      "title": "無法刪除「{name}」",
       "mergeHint": "若要保留這些項目，請將此收款方合併到另一個收款方。合併會把所有項目移到您選擇的收款方。",
-      "mergeInstead": "改為合併",
-      "close": "關閉"
+      "mergeInstead": "改為合併"
     }
   },
   "form": {

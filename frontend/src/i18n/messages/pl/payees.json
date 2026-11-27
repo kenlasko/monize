@@ -81,10 +81,8 @@
       "deleteFailed": "Nie udało się usunąć odbiorcy"
     },
     "inUse": {
-      "title": "Nie można usunąć „{name}”",
       "mergeHint": "Aby zachować te elementy, scal tego odbiorcę z innym. Scalenie przenosi wszystkie elementy do wybranego odbiorcy.",
-      "mergeInstead": "Scal zamiast tego",
-      "close": "Zamknij"
+      "mergeInstead": "Scal zamiast tego"
     }
   },
   "form": {

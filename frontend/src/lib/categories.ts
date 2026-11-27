@@ -55,9 +55,19 @@ export const categoriesApi = {
     return response.data;
   },
 
-  // Delete category
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`/categories/${id}`);
+  // Delete category. With `reassignTo` (a category id or null for
+  // uncategorized) its rows move first, in the same server transaction as the
+  // delete, so a refused delete has moved nothing.
+  delete: async (id: string, reassignTo?: string | null): Promise<void> => {
+    if (reassignTo === undefined) {
+      await apiClient.delete(`/categories/${id}`);
+    } else {
+      await apiClient.delete(`/categories/${id}`, {
+        params: { reassignTo: reassignTo ?? 'uncategorized' },
+      });
+      // The move rewrites category_id on transaction rows.
+      invalidateBalanceCaches();
+    }
     invalidateCache('categories:');
     // Removing a category moves budget roll-ups.
     invalidateCache('budgets:');

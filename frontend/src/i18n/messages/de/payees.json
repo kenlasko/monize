@@ -81,10 +81,8 @@
       "deleteFailed": "Zahlungsempfänger konnte nicht gelöscht werden"
     },
     "inUse": {
-      "title": "„{name}“ kann nicht gelöscht werden",
       "mergeHint": "Um diese Einträge zu behalten, führen Sie diesen Zahlungsempfänger mit einem anderen zusammen. Beim Zusammenführen werden alle Einträge auf den gewählten Zahlungsempfänger übertragen.",
-      "mergeInstead": "Stattdessen zusammenführen",
-      "close": "Schließen"
+      "mergeInstead": "Stattdessen zusammenführen"
     }
   },
   "form": {

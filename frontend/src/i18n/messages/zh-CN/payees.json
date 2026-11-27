@@ -81,10 +81,8 @@
       "deleteFailed": "删除收款人失败"
     },
     "inUse": {
-      "title": "无法删除“{name}”",
       "mergeHint": "要保留这些项目，请将此收款方合并到另一个收款方。合并会把所有项目移到您选择的收款方。",
-      "mergeInstead": "改为合并",
-      "close": "关闭"
+      "mergeInstead": "改为合并"
     }
   },
   "form": {

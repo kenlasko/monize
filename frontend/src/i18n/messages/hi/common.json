@@ -296,7 +296,24 @@
       "loanOverpaymentPayee": "{count, plural, one {# ऋण खाता (अतिरिक्त भुगतान का प्राप्तकर्ता)} other {# ऋण खाते (अतिरिक्त भुगतान का प्राप्तकर्ता)}}",
       "sharedPeople": "{count, plural, one {# साझा खर्च का व्यक्ति} other {# साझा खर्च के व्यक्ति}}",
       "sharedPostings": "{count, plural, one {# साझा खर्च की प्रविष्टि} other {# साझा खर्च की प्रविष्टियाँ}}",
-      "rules": "{count, plural, one {# नियम} other {# नियम}}"
-    }
+      "rules": "{count, plural, one {# नियम} other {# नियम}}",
+      "subcategories": "{count, plural, one {# उपश्रेणी} other {# उपश्रेणियाँ}}",
+      "budgetLines": "{count, plural, one {# बजट पंक्ति} other {# बजट पंक्तियाँ}}",
+      "budgetPeriods": "{count, plural, one {# बजट अवधि} other {# बजट अवधियाँ}}",
+      "payrollDeductionRules": "{count, plural, one {# वेतन कटौती नियम} other {# वेतन कटौती नियम}}",
+      "loanFees": "{count, plural, one {# ऋण शुल्क} other {# ऋण शुल्क}}",
+      "loanAccounts": "{count, plural, one {# ऋण खाता} other {# ऋण खाते}}",
+      "customReports": "{count, plural, one {# कस्टम रिपोर्ट} other {# कस्टम रिपोर्ट}}",
+      "holdings": "{count, plural, one {# होल्डिंग} other {# होल्डिंग}}",
+      "investmentTransactions": "{count, plural, one {# निवेश लेन-देन} other {# निवेश लेन-देन}}",
+      "gemStrategies": "{count, plural, one {# GEM रणनीति} other {# GEM रणनीतियाँ}}",
+      "securityDocuments": "{count, plural, one {# प्रतिभूति दस्तावेज़} other {# प्रतिभूति दस्तावेज़}}",
+      "bankSyncLinks": "{count, plural, one {# बैंक सिंक लिंक} other {# बैंक सिंक लिंक}}",
+      "sharedIntegrations": "{count, plural, one {# साझा-खर्च इंटीग्रेशन} other {# साझा-खर्च इंटीग्रेशन}}",
+      "linkedAccounts": "{count, plural, one {# लिंक किया गया खाता} other {# लिंक किए गए खाते}}",
+      "securities": "{count, plural, one {# प्रतिभूति} other {# प्रतिभूतियाँ}}"
+    },
+    "title": "\"{name}\" हटाया नहीं जा सकता",
+    "close": "बंद करें"
   }
 }

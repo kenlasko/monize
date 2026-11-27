@@ -81,10 +81,8 @@
       "deleteFailed": "[XX-Failed to delete payee-XX]"
     },
     "inUse": {
-      "title": "[XX-Cannot delete \"{name}\"-XX]",
       "mergeHint": "[XX-To keep these items, merge this payee into another payee. The merge moves every item to the payee you choose.-XX]",
-      "mergeInstead": "[XX-Merge instead-XX]",
-      "close": "[XX-Close-XX]"
+      "mergeInstead": "[XX-Merge instead-XX]"
     }
   },
   "form": {

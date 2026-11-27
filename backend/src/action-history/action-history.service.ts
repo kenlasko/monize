@@ -20,6 +20,12 @@ import { assertSecuritiesActiveIn } from "../securities/inactive-security.util";
 import { findBondLinkProblem } from "../securities/bond-link.util";
 import { ActionHistory } from "./entities/action-history.entity";
 import { assertUndoCurrencyKind } from "./undo-currency-kind";
+import { assertNoReferencesBeforeDelete } from "./undo-references";
+import {
+  moveListedRows,
+  movedRowsOf,
+  redoMovedRows,
+} from "../categories/category-moved-rows";
 import { withPairedScheduleRecurrence } from "./undo-custom-recurrence";
 import {
   RULE_RUN_ENTITY_TYPE,
@@ -851,7 +857,13 @@ export class ActionHistoryService {
   private async executeUndo(
     action: ActionHistory,
     manager: EntityManager,
+    isRedo = false,
   ): Promise<UndoAfterCommit> {
+    // Undoing a create (or redoing a delete) removes the row; the schema's
+    // CASCADE / SET NULL would take or orphan whatever now uses it (#2368).
+    if (action.action === "create") {
+      await assertNoReferencesBeforeDelete(action, manager, isRedo);
+    }
     switch (action.entityType) {
       case "transaction":
         await this.undoTransaction(action, manager);
@@ -860,7 +872,7 @@ export class ActionHistoryService {
         await this.undoTransfer(action, manager);
         break;
       case "category":
-        await this.undoSimpleEntity(action, manager, Category, "categories");
+        await this.undoCategory(action, manager);
         break;
       case "payee":
         await this.undoSimpleEntity(action, manager, Payee, "payees");
@@ -955,6 +967,15 @@ export class ActionHistoryService {
     if (action.entityType === "transaction" && action.action === "create") {
       assertTransactionCreateRedoable(action);
     }
+    // A delete that moved rows into another category: the undo moved them back,
+    // so the redo moves them again before the delete's reference check.
+    const moved =
+      action.entityType === "category" && action.action === "delete"
+        ? movedRowsOf(action.beforeData)
+        : null;
+    if (moved && action.entityId) {
+      await redoMovedRows(manager, action.userId, action.entityId, moved);
+    }
     // Redo is the inverse of undo: swap before/after and flip the action
     const invertedAction: ActionHistory = {
       ...action,
@@ -962,7 +983,7 @@ export class ActionHistoryService {
       afterData: action.beforeData,
       action: this.invertAction(action.action),
     };
-    return this.executeUndo(invertedAction, manager);
+    return this.executeUndo(invertedAction, manager, true);
   }
 
   private invertAction(action: string): string {
@@ -2365,6 +2386,41 @@ export class ActionHistoryService {
 
   // --- Simple entity undo (categories, payees, tags, accounts) ---
 
+  /**
+   * A category delete's snapshot may carry `movedRows` (the rows a delete with
+   * `reassignTo` moved). It is not a column, so it is stripped before the
+   * re-insert; the rows still on the target are then moved back to the
+   * restored category in the same transaction.
+   */
+  private async undoCategory(
+    action: ActionHistory,
+    manager: EntityManager,
+  ): Promise<void> {
+    const moved =
+      action.action === "delete" ? movedRowsOf(action.beforeData) : null;
+    if (!moved) {
+      await this.undoSimpleEntity(action, manager, Category, "categories");
+      return;
+    }
+    const { movedRows: _movedRows, ...snapshot } = action.beforeData ?? {};
+    await this.undoSimpleEntity(
+      { ...action, beforeData: snapshot },
+      manager,
+      Category,
+      "categories",
+    );
+    if (action.entityId) {
+      await moveListedRows(
+        manager,
+        action.userId,
+        moved,
+        moved.to,
+        action.entityId,
+        true,
+      );
+    }
+  }
+
   private async undoSimpleEntity(
     action: ActionHistory,
     manager: EntityManager,
@@ -2374,6 +2430,27 @@ export class ActionHistoryService {
     switch (action.action) {
       case "create":
         if (action.entityId) {
+          if (tableName === "scheduled_transactions") {
+            // Undoing a loan's creation deletes its payment schedule: clear
+            // the loan's link explicitly rather than lean on ON DELETE SET NULL.
+            await manager.update(
+              Account,
+              {
+                userId: action.userId,
+                scheduledTransactionId: action.entityId,
+              },
+              { scheduledTransactionId: null },
+            );
+          }
+          if (tableName === "securities") {
+            // The finder refused a nonzero position; a zero-quantity holding is
+            // bookkeeping and goes first, as SecuritiesService.remove does.
+            await manager.query(
+              `DELETE FROM holdings h USING accounts a
+                WHERE a.id = h.account_id AND a.user_id = $1 AND h.security_id = $2`,
+              [action.userId, action.entityId],
+            );
+          }
           await manager.delete(entityClass, {
             id: action.entityId,
           });

@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { ConflictException, NotFoundException } from "@nestjs/common";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { AccountsModule } from "@/accounts/accounts.module";
@@ -86,8 +86,15 @@ describe("Account delete refuses an account a schedule names (integration)", () 
     const deletion = withUserContext(userId, () =>
       accounts.delete(userId, accountId),
     );
-    await expect(deletion).rejects.toBeInstanceOf(BadRequestException);
-    await expect(deletion).rejects.toThrow(/scheduled transaction/);
+    await expect(deletion).rejects.toBeInstanceOf(ConflictException);
+    await expect(deletion).rejects.toMatchObject({
+      response: {
+        errorCode: "RECORD_IN_USE",
+        errors: expect.arrayContaining([
+          expect.objectContaining({ kind: "scheduledTransactions" }),
+        ]),
+      },
+    });
     const [{ n }] = await db.query(
       `SELECT count(*)::int AS n FROM accounts WHERE id = $1`,
       [accountId],
@@ -394,7 +401,7 @@ describe("Account delete refuses an account a schedule names (integration)", () 
       await overrideWrite.release();
     }
 
-    await expect(deletion).rejects.toBeInstanceOf(BadRequestException);
+    await expect(deletion).rejects.toBeInstanceOf(ConflictException);
     const [{ n }] = await db.query(
       `SELECT count(*)::int AS n FROM accounts WHERE id = $1`,
       [b],

@@ -3594,9 +3594,29 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduledTransaction> {
     const scheduled = await this.findOne(userId, id);
     const beforeData = { ...scheduled };
-    await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(ScheduledTransaction).remove(scheduled),
-    );
+    // Lock, unlink and delete in one transaction.
+    await withScopedDb(this.dataSource, async (m) => {
+      const repo = m.getRepository(ScheduledTransaction);
+      const locked = await repo.findOne({
+        where: { id, userId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!locked) {
+        throw new NotFoundException(
+          tr(
+            "errors.scheduled.notFound",
+            `Scheduled transaction with ID ${id} not found`,
+            { id },
+          ),
+        );
+      }
+      // A loan's payment schedule: unlink it explicitly, not by ON DELETE SET NULL.
+      await m.query(
+        "UPDATE accounts SET scheduled_transaction_id = NULL WHERE user_id = $1 AND scheduled_transaction_id = $2",
+        [userId, id],
+      );
+      await repo.remove(scheduled);
+    });
     return beforeData;
   }
 
