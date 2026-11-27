@@ -25,8 +25,6 @@ function usePlannerSkipReason(): (reason: string) => string {
   const t = useTranslations('import.preview.ruleTest.skipReasons');
   return (reason) => {
     switch (reason) {
-      case 'row_is_transfer_leg':
-        return runReason('transfer_leg_category');
       case 'category_does_not_fit':
         return runReason('transfer_category_on_category_row');
       case 'row_has_splits':
@@ -38,7 +36,8 @@ function usePlannerSkipReason(): (reason: string) => string {
       case 'payee_unresolved':
         return t(reason);
       default:
-        // `empty_render` and `payee_not_found` are the run's own; anything newer reads as "cannot change it".
+        // `empty_render`, `payee_not_found` and a structural action's
+        // `row_is_transfer_leg` are the run's own; anything newer reads as "cannot change it".
         return runReason(reason);
     }
   };

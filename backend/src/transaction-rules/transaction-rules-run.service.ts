@@ -101,7 +101,6 @@ function narrowToActiveWindow(
 
 /** The planner's refusals that a person can act on, in the words of the preview. */
 const REFUSAL_REASONS: Readonly<Record<string, RuleRunSkipReason>> = {
-  row_is_transfer_leg: "transfer_leg_category",
   category_does_not_fit: "transfer_category_on_category_row",
   row_has_splits: "split_category",
   cross_owner_transfer_leg: "cross_owner_transfer_payee",

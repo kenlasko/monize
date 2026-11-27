@@ -732,7 +732,8 @@ export class TransactionRulesApplierService {
    *
    * - Same owner: evaluated once over the outgoing leg's facts, and the
    *   result is written to BOTH legs (tags mirrored the way `syncTransferTags`
-   *   does, the payee on both). `set_category` is refused by the planner.
+   *   does, the payee on both, and a `set_category` category of any type on
+   *   both: one category per transfer, INV-CATEGORY-002).
    * - Cross owner: each owner's rules run on that owner's leg only, and the
    *   other owner's leg is never read or written. The partner account is not
    *   put in the facts, and `set_payee` is refused (`crossOwnerTransferLeg`).
