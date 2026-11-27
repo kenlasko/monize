@@ -15,6 +15,7 @@ import {
   QuickAddUsage,
   accountRef,
   field,
+  rankByRecentFrequency,
   rankByUsage,
   withoutIds,
 } from "./quick-add-fill-shared.util";
@@ -44,21 +45,24 @@ function fromMention(
 }
 
 /**
- * The default account: the context account, the payee's last account, the
- * reader's last created transaction's account, skipping `exclude` (the
- * other side of a transfer) so a transfer never defaults onto itself.
+ * The default account: the context account; else the account most of the
+ * payee's last rows were on, the most recent winning a tie, with the payee's
+ * other recent accounts offered next; else the reader's last created
+ * transaction's account. `exclude` (the other side of a transfer) is
+ * skipped, so a transfer never defaults onto itself.
  */
 function defaultAccount(
   input: QuickAddFillInput,
   exclude: string | null,
   collisions: readonly QuickAddCandidateAccount[],
 ): Picked {
-  const historyAccount =
-    input.history.recent.find((row) => input.accounts.has(row.accountId))
-      ?.accountId ?? null;
+  const historyAccounts = rankByRecentFrequency(
+    input.history.recent.map((row) => row.accountId),
+    (id) => input.accounts.has(id),
+  );
   const chain: Array<[string | null, QuickAddSource]> = [
     [input.contextAccountId, "default"],
-    [historyAccount, "inferred"],
+    ...historyAccounts.map((id): [string, QuickAddSource] => [id, "inferred"]),
     [input.mostRecentAccountId, "default"],
   ];
   const usable = chain.filter(
