@@ -73,6 +73,8 @@ const FIT_HELPERS = new Set([
   "fitCategories",
   "categoryFits",
   "categoryIdForCategoryRow",
+  // fitCategory for a transfer leg, with the transfer routes' 400.
+  "fitTransferCategory",
 ]);
 
 const ROW_TABLES =
@@ -96,7 +98,6 @@ const NOT_YET_CONVERTED = new Set<string>([
   "action-history/rule-run-undo.ts undoRuleRun",
   "bank-sync/bank-sync-writer.service.ts applyRulePayeeCategories",
   "bank-sync/bank-sync-writer.service.ts write",
-  "categories/categories.service.ts reassignTransactions",
   "database/demo-reset.service.ts generateIntradayTransactionsWithinContext",
   "database/demo-seed.service.ts seedScheduledTransactions",
   "database/demo-seed.service.ts seedTransactions",
@@ -123,13 +124,7 @@ const NOT_YET_CONVERTED = new Set<string>([
   "transactions/transaction-split.service.ts bulkRecategorizeCategorySplits",
   "transactions/transaction-split.service.ts createSplitsInternal",
   "transactions/transaction-split.service.ts removeSplit",
-  "transactions/transaction-transfer.service.ts buildFromUpdateData",
-  "transactions/transaction-transfer.service.ts buildToUpdateData",
-  "transactions/transaction-transfer.service.ts updateFrozenTransferLeg",
   "transactions/transaction-transfer.service.ts updateSplitTransferLeg",
-  "transactions/transactions.service.ts createNew",
-  "transactions/transactions.service.ts update",
-  "transactions/transfer-leg-columns.ts transferLegColumns",
 ]);
 
 export interface CategoryWrite {

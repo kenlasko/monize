@@ -74,11 +74,14 @@ export interface FitCategoryOptions {
  * category is the person's, and it fits what holds it (INV-CATEGORY-001).
  *
  * Runs inside the transaction that writes, before the first write
- * (`docs/financial-calculation-contract.md` section 7). The shared
- * category-owner lock is taken first, so a concurrent type change either
- * commits before the type is read or waits for this transaction's commit
- * (specification section 12). The lock is re-entrant; the database backstop
- * takes it again on a category row and adds nothing.
+ * (`docs/financial-calculation-contract.md` section 7). On a category row the
+ * shared category-owner lock is taken first, so a concurrent type change
+ * either commits before the type is read or waits for this transaction's
+ * commit (specification section 12); it is re-entrant, and the database
+ * backstop takes it again and adds nothing. A transfer row takes a category of
+ * any type, so no type change can make it stop fitting and it takes no lock:
+ * the transfer writers lock their legs first, and an advisory lock after a row
+ * lock is the order `common/db/locks.ts` forbids.
  *
  * Returns the category to write, or `null` when the request names none.
  */
@@ -90,7 +93,7 @@ export async function fitCategory(
   options: FitCategoryOptions = {},
 ): Promise<Category | null> {
   if (!categoryId) return null;
-  await lockCategoryOwnerShared(m, userId);
+  if (holder === "category") await lockCategoryOwnerShared(m, userId);
   const category = await m
     .getRepository(Category)
     .findOne({ where: { id: categoryId, userId } });
@@ -130,7 +133,9 @@ export async function fitCategories(
   ];
   const byId = new Map<string, Category>();
   if (ids.length === 0) return byId;
-  await lockCategoryOwnerShared(m, userId);
+  if (lines.some((line) => line.categoryId && line.holder === "category")) {
+    await lockCategoryOwnerShared(m, userId);
+  }
   const found = await m
     .getRepository(Category)
     .find({ where: { id: In(ids), userId } });

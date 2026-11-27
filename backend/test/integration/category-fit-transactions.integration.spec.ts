@@ -36,11 +36,8 @@ describe("Category fit and one category per transfer: transactions (integration)
    * Shrink-only, and empty when PR 3 is done.
    */
   const NOT_YET_BUILT = new Set<string>([
-    "create: refuses a Transfer category, writing nothing",
-    "create: skips a payee default that is a Transfer category, writing the row uncategorized",
     "transfer route: writes a Transfer category on the linked row of a split's transfer line and on the line",
     "transfer route: writes an Expense category on the linked row of a split's transfer line and on the line",
-    "plain patch: refuses a Transfer category on an ordinary row, writing nothing",
     "plain patch: writes a Transfer category on both legs of a transfer",
     "plain patch: writes an Expense category on both legs of a transfer",
     "plain patch: writes no category on both legs of a transfer",
@@ -51,10 +48,6 @@ describe("Category fit and one category per transfer: transactions (integration)
     "bulk update: writes no category to every selected row, and a transfer's other leg follows",
     "bulk update: writes a split transfer line's linked row together with its line",
     "bulk update: skips a split parent's category lines with a reason and leaves its transfer line alone",
-    "convert: to a transaction clears the kept leg's Transfer category",
-    "convert: to a transaction refuses a request naming a Transfer category, writing nothing",
-    "reassign: to a Transfer category is refused, nothing moved, when a category row would move",
-    "reassign: to a Transfer category is refused when a split's category line would move",
     "split create: a transfer line holds a Transfer category, and so does its linked row",
     "split create: a transfer line holds an Expense category, and so does its linked row",
     "split create: a category line refuses a Transfer category, writing nothing",

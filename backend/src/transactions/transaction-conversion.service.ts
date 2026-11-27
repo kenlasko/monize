@@ -8,6 +8,8 @@ import {
 } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
 import { AccountsService } from "../accounts/accounts.service";
+import { categoryFits } from "../categories/category-fit";
+import type { CategoryType } from "../categories/category-type.util";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import { isTransactionInFuture } from "../common/date-utils";
 import {
@@ -30,6 +32,7 @@ import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import { removeLockedTransactionLeg } from "./remove-transaction-leg";
 import { TransactionSplitService } from "./transaction-split.service";
 import {
+  fitTransferCategory,
   TransactionTransferService,
   TransferResult,
 } from "./transaction-transfer.service";
@@ -118,6 +121,9 @@ export class TransactionConversionService {
       });
       if (!row) throw notFound(transactionId);
       if (row.isTransfer || row.linkedTransactionId) throw alreadyATransfer();
+      // Both legs take the request's category, of any type
+      // (INV-CATEGORY-001, INV-CATEGORY-002), checked before the first write.
+      await fitTransferCategory(m, userId, dto.categoryId);
 
       affectedAccountIds.add(locked.accountId);
       affectedAccountIds.add(dto.fromAccountId);
@@ -376,6 +382,18 @@ export class TransactionConversionService {
       // does not have, so it goes back to 1 with the flag. A provisional
       // amount is a transfer leg's (design P3): the row leaves that state in
       // the write that ends its life as a leg.
+      // An ordinary row takes only an Income or Expense category
+      // (INV-CATEGORY-001): a Transfer category the leg held is cleared in the
+      // same statement that clears `is_transfer`, so the database backstop
+      // never sees the row hold one. An Income or Expense category is kept.
+      const [heldCategory] = (await m.query(
+        `SELECT c.category_type AS "categoryType"
+           FROM transactions t JOIN categories c ON c.id = t.category_id
+          WHERE t.id = $1`,
+        [transactionId],
+      )) as { categoryType: CategoryType }[];
+      const clearsCategory =
+        heldCategory !== undefined && !categoryFits(heldCategory, "category");
       await m.update(
         Transaction,
         { id: transactionId, userId },
@@ -384,6 +402,7 @@ export class TransactionConversionService {
           linkedTransactionId: null,
           exchangeRate: 1,
           amountIsProvisional: false,
+          ...(clearsCategory ? { categoryId: null } : {}),
         },
       );
 

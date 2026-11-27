@@ -10,6 +10,7 @@ import {
 import { DataSource, EntityManager } from "typeorm";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
+import { fitCategory } from "../categories/category-fit";
 import { Category } from "../categories/entities/category.entity";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
 import { UpdateTransferDto } from "./dto/update-transfer.dto";
@@ -240,6 +241,24 @@ export type TransferEditHook = (
  * estimate in it at all -- the two legs conserve -- so the leg is confirmed
  * whatever was supplied.
  */
+/**
+ * A transfer leg's category: the person's, and of any type, since a transfer
+ * row takes Income, Expense and Transfer categories alike (INV-CATEGORY-001).
+ * The transfer routes answer a category that is not the person's with 400.
+ */
+export async function fitTransferCategory(
+  m: EntityManager,
+  userId: string,
+  categoryId: string | null | undefined,
+): Promise<void> {
+  await fitCategory(m, userId, categoryId, "transfer", {
+    notFound: () =>
+      new BadRequestException(
+        tr("errors.transactions.categoryNotFound", "Category not found"),
+      ),
+  });
+}
+
 export function confirmedBySuppliedAmount(
   leg: Pick<Transaction, "amount" | "amountIsProvisional" | "currencyCode">,
   suppliedAmount: number | undefined,
@@ -767,25 +786,20 @@ export class TransactionTransferService {
   }
 
   /**
-   * Ensure a category belongs to the user before it is stored on a transfer
-   * leg. Mirrors the check in transactions.service.create(). A null/undefined
-   * id is allowed (no category / clearing it).
+   * The early answer of `prepareTransfer`, before any transaction opens: the
+   * category belongs to the user. A transfer leg takes a category of any type
+   * (INV-CATEGORY-001), so ownership is all a transfer's category is refused
+   * for. Each write asks `fitTransferCategory` again inside its own
+   * transaction. A null/undefined id is allowed (no category / clearing it).
    */
   private async assertCategoryOwned(
     userId: string,
     categoryId: string | null | undefined,
   ): Promise<void> {
     if (!categoryId) return;
-    const category = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Category).findOne({
-        where: { id: categoryId, userId },
-      }),
+    await withScopedDb(this.dataSource, (m) =>
+      fitTransferCategory(m, userId, categoryId),
     );
-    if (!category) {
-      throw new BadRequestException(
-        tr("errors.transactions.categoryNotFound", "Category not found"),
-      );
-    }
   }
 
   async createTransfer(
@@ -1095,6 +1109,9 @@ export class TransactionTransferService {
         ),
         "toAmount",
       );
+      // The category is the effective user's, read in the write's own
+      // transaction; a transfer takes one of any type (INV-CATEGORY-001).
+      await fitTransferCategory(m, prepared.effectiveUserId, dto.categoryId);
       // Advisory, in the write's own transaction and identity: the unique
       // index refuses a second leg holding the key (caught below).
       if (externalId) {
@@ -2174,8 +2191,6 @@ export class TransactionTransferService {
     const dateChanged = oldDate !== newDate;
     const anyFuture = oldIsFuture || newIsFuture;
 
-    await this.assertCategoryOwned(userId, updateDto.categoryId);
-
     const fromUpdateData = this.buildFromUpdateData(
       updateDto,
       newAmount,
@@ -2265,6 +2280,9 @@ export class TransactionTransferService {
       // Strict reconciled lock, before the concurrency check and before any
       // write: either leg being reconciled refuses the edit of the pair.
       await assertReconciledRowsMutable(m, userId, [lockedFrom, lockedTo]);
+      // The category both legs take: the user's, of any type
+      // (INV-CATEGORY-001), checked before the first write.
+      await fitTransferCategory(m, userId, updateDto.categoryId);
 
       const unchanged =
         Math.abs(lockedFrom.amount) === oldFromAmount &&
@@ -2557,14 +2575,14 @@ export class TransactionTransferService {
       );
     }
 
-    await this.assertCategoryOwned(effectiveUserId, updateDto.categoryId);
-
     const legData: Partial<Transaction> = {};
     if (updateDto.description !== undefined)
       legData.description = updateDto.description ?? null;
     if (updateDto.referenceNumber !== undefined)
       legData.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) legData.status = updateDto.status;
+    // Across two owners the writer's leg only: a category is one person's
+    // (INV-CATEGORY-002). Fitted in the write below.
     if (updateDto.categoryId !== undefined)
       legData.categoryId = updateDto.categoryId || null;
     if (updateDto.payeeId !== undefined)
@@ -2603,6 +2621,7 @@ export class TransactionTransferService {
         }
         // Strict reconciled lock on the one row this path writes (A26-M11).
         await assertReconciledRowsMutable(m, effectiveUserId, [lockedLeg]);
+        await fitTransferCategory(m, effectiveUserId, updateDto.categoryId);
         const wasVoid = lockedLeg.status === TransactionStatus.VOID;
         const isVoid =
           updateDto.status !== undefined
@@ -2679,8 +2698,6 @@ export class TransactionTransferService {
         ),
       );
     }
-
-    await this.assertCategoryOwned(effectiveUserId, updateDto.categoryId);
 
     const oldFromAmount = Math.abs(Number(fromTransaction.amount));
     const oldToAmount = Number(toTransaction.amount);
@@ -2878,6 +2895,10 @@ export class TransactionTransferService {
             ),
           );
         }
+        // The category goes on the effective user's leg only (the foreign
+        // leg's is stripped above): the user's, of any type
+        // (INV-CATEGORY-001), checked before the first write.
+        await fitTransferCategory(m, effectiveUserId, updateDto.categoryId);
         // The VOID transition for the status-only branch below is decided from
         // the row THIS write replaces, read under its lock BEFORE the status
         // write -- two concurrent voids each deriving wasVoid from their
@@ -3497,6 +3518,7 @@ export class TransactionTransferService {
       data.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) data.status = updateDto.status;
     if (updateDto.categoryId !== undefined)
+      // category-fit-ok: a column bag; each caller fits it in its write
       data.categoryId = updateDto.categoryId || null;
     // Only the derived code ever reaches the row: a supplied code either
     // matched the account (so it equals derivedCurrencyCode) or already threw
@@ -3577,6 +3599,7 @@ export class TransactionTransferService {
       data.referenceNumber = updateDto.referenceNumber ?? null;
     if (updateDto.status !== undefined) data.status = updateDto.status;
     if (updateDto.categoryId !== undefined)
+      // category-fit-ok: a column bag; each caller fits it in its write
       data.categoryId = updateDto.categoryId || null;
     // Same as the from-side: derived only, no client fallback.
     if (derivedCurrencyCode && derivedCurrencyCode !== existingCurrencyCode)

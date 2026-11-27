@@ -121,21 +121,33 @@ describe("the fit helper (INV-CATEGORY-001)", () => {
     expect(holderOfSplitLine({})).toBe("category");
   });
 
-  it("takes the shared owner lock, then returns the category that fits", async () => {
+  it("on a category row takes the shared owner lock, then returns the category that fits", async () => {
     categories.findOne.mockImplementation(async () => {
       expect(query).toHaveBeenCalledWith(
         "SELECT pg_advisory_xact_lock_shared($1::int, hashtext($2))",
         [10, "user-1"],
       );
-      return savings;
+      return food;
     });
 
+    await expect(fitCategory(m, "user-1", "e1", "category")).resolves.toBe(
+      food,
+    );
+    expect(categories.findOne).toHaveBeenCalledWith({
+      where: { id: "e1", userId: "user-1" },
+    });
+  });
+
+  it("on a transfer row takes any type and no lock", async () => {
+    categories.findOne.mockResolvedValue(savings);
     await expect(fitCategory(m, "user-1", "t1", "transfer")).resolves.toBe(
       savings,
     );
-    expect(categories.findOne).toHaveBeenCalledWith({
-      where: { id: "t1", userId: "user-1" },
-    });
+    categories.find.mockResolvedValue([savings]);
+    await fitCategories(m, "user-1", [
+      { categoryId: "t1", holder: "transfer" },
+    ]);
+    expect(query).not.toHaveBeenCalled();
   });
 
   it("refuses a Transfer category on a category row, naming it", async () => {

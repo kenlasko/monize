@@ -30,6 +30,11 @@ import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
 import { lockCategoryOwnerExclusive } from "../common/db/locks";
 import {
+  categoryFits,
+  fitCategory,
+  transferCategoryRefusal,
+} from "./category-fit";
+import {
   CategoryType,
   categoryTypeOf,
   incomeFlagOfType,
@@ -866,12 +871,30 @@ export class CategoriesService {
   }> {
     await this.findOne(userId, fromCategoryId);
 
-    if (toCategoryId) {
-      await this.findOne(userId, toCategoryId);
-    }
-
     // M22: All UPDATE operations run in a single transaction.
     return withScopedDb(this.dataSource, async (m) => {
+      // The target is the person's (ownership, under the shared owner lock),
+      // and a Transfer category goes only on a transfer (INV-CATEGORY-001): a
+      // reassign to one is refused, with nothing moved, while any row it
+      // would move is a category row. Decided before the first write.
+      const target = await fitCategory(m, userId, toCategoryId, "transfer", {
+        notFound: () =>
+          new NotFoundException(
+            tr(
+              "errors.categories.notFound",
+              `Category with ID ${toCategoryId} not found`,
+              { id: toCategoryId },
+            ),
+          ),
+      });
+      if (
+        target &&
+        !categoryFits(target, "category") &&
+        (await this.categoryRowsHold(m, userId, fromCategoryId))
+      ) {
+        throw transferCategoryRefusal(target.name);
+      }
+
       const transactionResult = await m.update(
         Transaction,
         { userId, categoryId: fromCategoryId },
@@ -930,6 +953,36 @@ export class CategoriesService {
         scheduledUpdated: scheduledResult.affected || 0,
       };
     });
+  }
+
+  /**
+   * Whether a row a reassign moves is a category row holding the category:
+   * an ordinary transaction, a split's category line, a scheduled ordinary
+   * transaction or a scheduled split's category line.
+   */
+  private async categoryRowsHold(
+    m: EntityManager,
+    userId: string,
+    categoryId: string,
+  ): Promise<boolean> {
+    const [row] = await m.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM transactions
+          WHERE user_id = $1 AND category_id = $2 AND is_transfer IS NOT TRUE
+         UNION ALL SELECT 1 FROM transaction_splits s
+           JOIN transactions t ON t.id = s.transaction_id
+          WHERE t.user_id = $1 AND s.category_id = $2
+            AND s.transfer_account_id IS NULL
+         UNION ALL SELECT 1 FROM scheduled_transactions
+          WHERE user_id = $1 AND category_id = $2 AND is_transfer IS NOT TRUE
+         UNION ALL SELECT 1 FROM scheduled_transaction_splits ss
+           JOIN scheduled_transactions st ON st.id = ss.scheduled_transaction_id
+          WHERE st.user_id = $1 AND ss.category_id = $2
+            AND ss.transfer_account_id IS NULL
+       ) AS held`,
+      [userId, categoryId],
+    );
+    return row?.held === true;
   }
 
   async getStats(userId: string): Promise<{
