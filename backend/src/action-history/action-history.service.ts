@@ -2119,12 +2119,33 @@ export class ActionHistoryService {
     // INV-RECONCILE-001: the restore rewrites every row's status and fields
     // (redo reaches here too, via `executeRedo`), so a reconciled locked row
     // refuses the whole batch, as the single-row undo does. Locked first, and
-    // checked before the first write.
-    const locked = await lockTransactionRows(
+    // checked before the first write. Split parents (a recategorized parent,
+    // the parent of a transfer line the batch wrote) are locked on their own
+    // before the rest, the by-role order of `common/db/locks.ts`; which ids
+    // are parents is read without a lock, as the bulk update reads it.
+    const ids: string[] = action.beforeData.transactions.map(
+      (txData: { id: string }) => txData.id,
+    );
+    const parentIds = (
+      (await manager.query(
+        `SELECT id FROM transactions
+          WHERE id = ANY($1) AND user_id = $2 AND is_split = true`,
+        [ids, action.userId],
+      )) as { id: string }[]
+    ).map((row) => row.id);
+    const lockedParents = await lockTransactionRows(
       manager,
-      action.beforeData.transactions.map((txData: { id: string }) => txData.id),
+      parentIds,
       action.userId,
     );
+    const locked = new Map([
+      ...lockedParents,
+      ...(await lockTransactionRows(
+        manager,
+        ids.filter((id) => !lockedParents.has(id)),
+        action.userId,
+      )),
+    ]);
     await assertReconciledRowsMutable(manager, action.userId, [
       ...locked.values(),
     ]);
