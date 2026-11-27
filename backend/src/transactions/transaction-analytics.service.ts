@@ -1798,16 +1798,23 @@ export class TransactionAnalyticsService {
         select: ["id", "name", "parentId", "categoryType"],
       }),
     );
-    const match = (list: readonly Category[]) =>
-      resolveCategoryNamePaths(list, [categoryName])[0]?.id ?? null;
+    // The first group, in order, the name resolves in. A name ambiguous in a
+    // group stops there, unresolved: it is never guessed from the next group
+    // (`resolveCategoryNamePaths` refuses to pick between candidates).
+    const firstMatch = (
+      ...groups: readonly (readonly Category[])[]
+    ): string | null => {
+      for (const group of groups) {
+        const [found] = resolveCategoryNamePaths(group, [categoryName]);
+        if (found?.id) return found.id;
+        if (found?.failure === "ambiguous") return null;
+      }
+      return null;
+    };
     const transfers = all.filter((c) => isTransferCategory(c));
     const others = all.filter((c) => !isTransferCategory(c));
-    if (holder === "transfer") {
-      return match(transfers) ?? match(others) ?? match(all);
-    }
-    const fitting = match(others);
-    if (fitting) return fitting;
-    const named = match(all) ?? match(transfers);
+    if (holder === "transfer") return firstMatch(transfers, others, all);
+    const named = firstMatch(others, all, transfers);
     const category = named ? all.find((c) => c.id === named) : undefined;
     if (category && !categoryFits(category, "category")) {
       throw transferCategoryRefusal(category.name);
