@@ -327,6 +327,30 @@ describe('CustomReportForm', () => {
     expect(submitData.config.tableColumns).toBeUndefined();
   });
 
+  it('saves independent movement and category filters and restores them on edit', async () => {
+    mockGetAllAccounts.mockResolvedValue([]);
+    mockGetAllCategories.mockResolvedValue([]);
+    mockGetAllPayees.mockResolvedValue([]);
+    const form = render(<CustomReportForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+    const direction = await screen.findByLabelText('Direction');
+    const category = screen.getByLabelText('Category Type');
+    expect(direction).toHaveValue('BOTH');
+    expect(category).toHaveValue('EXPENSE');
+    fireEvent.change(screen.getByPlaceholderText('e.g., Monthly Food Spending'), {
+      target: { value: 'Uncategorized deposits' },
+    });
+    fireEvent.change(direction, { target: { value: 'INCOMING' } });
+    fireEvent.change(category, { target: { value: 'UNCATEGORIZED' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Report' }));
+    await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledOnce());
+    const saved = mockOnSubmit.mock.calls[0][0];
+    expect(saved.config).toMatchObject({ direction: 'INCOMING', categoryType: 'UNCATEGORIZED' });
+    form.unmount();
+    render(<CustomReportForm report={{ ...saved, id: 'report-1' }} onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
+    expect(await screen.findByLabelText('Direction')).toHaveValue('INCOMING');
+    expect(screen.getByLabelText('Category Type')).toHaveValue('UNCATEGORIZED');
+  });
+
   it('submits form with CUSTOM timeframe dates', async () => {
     mockGetAllAccounts.mockResolvedValue([]);
     mockGetAllCategories.mockResolvedValue([]);

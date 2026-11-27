@@ -49,9 +49,19 @@ export enum MetricType {
 }
 
 export enum DirectionFilter {
+  INCOMING = "INCOMING",
+  OUTGOING = "OUTGOING",
+  // Earlier clients and backups used these two combined movement/category filters.
   INCOME_ONLY = "INCOME_ONLY",
   EXPENSES_ONLY = "EXPENSES_ONLY",
   BOTH = "BOTH",
+}
+
+export enum ReportCategoryType {
+  ALL = "ALL",
+  INCOME = "INCOME",
+  EXPENSE = "EXPENSE",
+  UNCATEGORIZED = "UNCATEGORIZED",
 }
 
 // Table column options - aggregation columns
@@ -103,6 +113,7 @@ export interface ReportConfig {
   metric: MetricType;
   includeTransfers: boolean;
   direction: DirectionFilter;
+  categoryType?: ReportCategoryType;
   customStartDate?: string;
   customEndDate?: string;
   tableColumns?: TableColumn[];

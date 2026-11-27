@@ -4,11 +4,9 @@ import { DirectionFilter, GroupByType, MetricType, type CustomReport } from '@/t
  * What a custom report's headline measures, when a plain "Total" would not say
  * (discussion #1978). The server decides the figures; this only names them.
  *
- * - A server that returns `signedTotal` nets postings for Both / Total Amount.
- *   An ungrouped transaction list also keeps signs. With transfers included, the net
- *   measures cash movement (INV-REPORT-003).
- * - Both / Average and grouped No Aggregation use unsigned category amounts.
- * - One direction, a count or a budget variance keeps the default caption.
+ * Signed totals and individual posting lists keep the sign of each movement.
+ * With transfers included, their net measures cash movement (INV-REPORT-003).
+ * Average and grouped No Aggregation retain their unsigned measure.
  */
 export type CustomReportMeasure =
   | 'netAmount'
@@ -27,13 +25,14 @@ export function isSignedTransactionList({ groupBy, config }: MeasureReport): boo
   return (
     groupBy === GroupByType.NONE &&
     config.metric === MetricType.NONE &&
-    config.direction === DirectionFilter.BOTH
+    config.direction !== DirectionFilter.EXPENSES_ONLY &&
+    config.direction !== DirectionFilter.INCOME_ONLY
   );
 }
 
 export function customReportMeasure(report: MeasureReport, signedTotal = false): CustomReportMeasure | null {
   const { config } = report;
-  if (config.direction !== DirectionFilter.BOTH) return null;
+  if (config.direction === DirectionFilter.EXPENSES_ONLY || config.direction === DirectionFilter.INCOME_ONLY) return null;
   if ((config.metric === MetricType.TOTAL_AMOUNT && signedTotal) || isSignedTransactionList(report)) {
     return config.includeTransfers ? 'netCashMovement' : 'netAmount';
   }

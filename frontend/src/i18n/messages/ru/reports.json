@@ -447,6 +447,7 @@
     "labelEndDate": "Конечная дата",
     "labelMetric": "Метрика",
     "labelDirection": "Направление",
+    "labelCategoryType": "Тип категории",
     "checkboxTransfers": "Включить переводы",
     "checkboxFavourites": "Добавить в избранное",
     "sortByPlaceholder": "По умолчанию",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Средняя сумма",
       "BUDGET_VARIANCE": "Отклонение от бюджета"
     },
+    "categoryType": {
+      "ALL": "Все",
+      "INCOME": "Доход",
+      "EXPENSE": "Расход",
+      "UNCATEGORIZED": "Без категории"
+    },
     "direction": {
       "INCOME_ONLY": "Только доходы",
       "EXPENSES_ONLY": "Только расходы",
-      "BOTH": "Оба"
+      "BOTH": "Оба",
+      "INCOMING": "Поступления",
+      "OUTGOING": "Списания"
     },
     "sortDirection": {
       "ASC": "По возрастанию",

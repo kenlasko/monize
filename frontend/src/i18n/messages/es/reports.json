@@ -447,6 +447,7 @@
     "labelEndDate": "Fecha de fin",
     "labelMetric": "Métrica",
     "labelDirection": "Dirección",
+    "labelCategoryType": "Tipo de categoría",
     "checkboxTransfers": "Incluir transferencias",
     "checkboxFavourites": "Agregar a favoritos",
     "sortByPlaceholder": "Predeterminado",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Monto promedio",
       "BUDGET_VARIANCE": "Variación del presupuesto"
     },
+    "categoryType": {
+      "ALL": "Todas",
+      "INCOME": "Ingreso",
+      "EXPENSE": "Gasto",
+      "UNCATEGORIZED": "Sin categoría"
+    },
     "direction": {
       "INCOME_ONLY": "Solo ingresos",
       "EXPENSES_ONLY": "Solo gastos",
-      "BOTH": "Ambos"
+      "BOTH": "Ambos",
+      "INCOMING": "Entrante",
+      "OUTGOING": "Saliente"
     },
     "sortDirection": {
       "ASC": "Ascendente",
