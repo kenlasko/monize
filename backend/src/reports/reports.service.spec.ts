@@ -956,7 +956,7 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        expect(result.data[0].value).toBe(50); // (60+40)/2
+        expect(result.data[0].value).toBe(-50); // (-60 - 40) / 2
       });
 
       it("returns individual transaction rows with NONE metric", async () => {
@@ -1415,7 +1415,7 @@ describe("ReportsService", () => {
         );
       });
 
-      it("calculates percentages for category aggregation with the unsigned average", async () => {
+      it("returns signed category averages without shares", async () => {
         const transactions = [
           createMockTransaction({
             id: "tx-1",
@@ -1445,8 +1445,10 @@ describe("ReportsService", () => {
 
         const groceries = result.data.find((d) => d.label === "Groceries");
         const dining = result.data.find((d) => d.label === "Dining");
-        expect(groceries!.percentage).toBe(75);
-        expect(dining!.percentage).toBe(25);
+        expect(groceries).toMatchObject({ value: -75, count: 1 });
+        expect(dining).toMatchObject({ value: -25, count: 1 });
+        expect(groceries!.percentage).toBeUndefined();
+        expect(dining!.percentage).toBeUndefined();
       });
 
       it("fetches categories only when groupBy is CATEGORY", async () => {
@@ -1971,9 +1973,9 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        // Group means are 20 and 100 (sum 120); the mean of the four rows is 40.
-        expect(result.summary.total).toBe(40);
-        expect(result.summary.average).toBe(40);
+        // The four postings average −40 across two groups of different sizes.
+        expect(result.summary.total).toBe(-40);
+        expect(result.summary.average).toBe(-40);
         expect(result.summary.count).toBe(4);
       });
 
@@ -2414,7 +2416,7 @@ describe("ReportsService", () => {
             MetricType.AVERAGE,
           );
 
-          expect(result.data[0].value).toBe(145);
+          expect(result.data[0].value).toBe(-145);
         });
 
         it("converts the lines of a split transaction", async () => {
@@ -2674,7 +2676,7 @@ describe("ReportsService", () => {
           expect(result.summary.average).toBe(124.76);
         });
 
-        it("calculates shares from unrounded values for the unsigned average", async () => {
+        it("calculates shares from unrounded values for a metric with shares", async () => {
           const result = await runIncome(
             GroupByType.PAYEE,
             [
@@ -2686,7 +2688,7 @@ describe("ReportsService", () => {
                 payeeName: "Employer",
               } as Partial<Transaction>),
             ],
-            MetricType.AVERAGE,
+            MetricType.BUDGET_VARIANCE,
           );
 
           // 300.03 of 400.04 EUR is three quarters exactly. Read from the
@@ -4873,10 +4875,10 @@ describe("ReportsService", () => {
 
         const result = await service.execute("user-1", "report-1");
 
-        // Average of 33.33, 33.33, 33.34 = 33.3333..., rounded once at USD's
+        // Average of the three debits is -33.3333..., rounded once at USD's
         // two places (issue #2410): the screen's rounding changes nothing.
         const value = result.data[0].value!;
-        expect(value).toBe(33.33);
+        expect(value).toBe(-33.33);
         const decimals = value.toString().split(".")[1] || "";
         expect(decimals.length).toBeLessThanOrEqual(2);
       });
@@ -5024,12 +5026,15 @@ describe("ReportsService", () => {
         expect(luxury!.count).toBe(1);
       });
 
-      it("calculates percentages for tag aggregation with the unsigned average", async () => {
+      it("preserves the signed numerator and existing group counts for overlapping tags", async () => {
         const transactions = [
           createMockTransaction({
             id: "tx-1",
             amount: -75,
-            tags: [{ id: "tag-1", name: "A" }] as any,
+            tags: [
+              { id: "tag-1", name: "A" },
+              { id: "tag-2", name: "B" },
+            ] as any,
           }),
           createMockTransaction({
             id: "tx-2",
@@ -5049,8 +5054,11 @@ describe("ReportsService", () => {
 
         const tagA = result.data.find((d) => d.label === "A");
         const tagB = result.data.find((d) => d.label === "B");
-        expect(tagA!.percentage).toBe(75);
-        expect(tagB!.percentage).toBe(25);
+        expect(tagA).toMatchObject({ value: -75, count: 1 });
+        expect(tagB).toMatchObject({ value: -50, count: 2 });
+        expect(tagA!.percentage).toBeUndefined();
+        expect(tagB!.percentage).toBeUndefined();
+        expect(result.summary).toMatchObject({ total: -58.33, count: 3 });
       });
 
       it("handles transactions with no tags array (undefined)", async () => {
@@ -6067,7 +6075,7 @@ describe("ReportsService", () => {
 
         expect(result.data).toHaveLength(1);
         expect(result.data[0].label).toBe("Groceries");
-        expect(result.data[0].value).toBe(50);
+        expect(result.data[0].value).toBe(-50);
       });
 
       it("handles BUDGET_VARIANCE metric in calculateMetricValue", async () => {

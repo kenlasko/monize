@@ -22,7 +22,7 @@ import { uncategorizedSql } from "../transactions/transaction-search.util";
 import { ParsedSearch } from "../transactions/transaction-search-query.util";
 import {
   createNetCells,
-  isSignedTotal,
+  isSignedMoney,
   netLinesOf,
   shareDenominator,
   type NetGroup,
@@ -488,13 +488,18 @@ export class ReportsService {
       );
     }
 
+    const signedMeasure =
+      !(
+        report.groupBy === GroupByType.NONE &&
+        report.config.metric === MetricType.NONE
+      ) && isSignedMoney(report.config.direction, report.config.metric);
+
     // Apply custom sorting if configured
     if (report.config.sortBy) {
       // A saved percentage sort keeps its direction after signed totals stop
       // exposing shares. Rank by the monetary value those shares used to order.
       const sortBy =
-        report.config.sortBy === TableColumn.PERCENTAGE &&
-        isSignedTotal(report.config.direction, report.config.metric)
+        report.config.sortBy === TableColumn.PERCENTAGE && signedMeasure
           ? TableColumn.VALUE
           : report.config.sortBy;
       rows = this.sortData(
@@ -516,9 +521,7 @@ export class ReportsService {
 
     return {
       reportId: report.id,
-      ...(isSignedTotal(report.config.direction, report.config.metric)
-        ? { signedTotal: true as const }
-        : {}),
+      ...(signedMeasure ? { signedTotal: true as const } : {}),
       name: report.name,
       viewType: report.viewType,
       groupBy: report.groupBy,
@@ -1267,7 +1270,7 @@ export class ReportsService {
           id: "total",
           label: "Total",
           value: metricValue(bucket.agg, bucket.count, metric, conv.places),
-          percentage: isSignedTotal(config.direction, metric) ? undefined : 100,
+          percentage: isSignedMoney(config.direction, metric) ? undefined : 100,
           count: bucket.count,
         },
         sum: bucket.agg,
@@ -1400,9 +1403,14 @@ export class ReportsService {
     const metric = config.metric;
     // A tagged line is one financial component even if several tag rows show it.
     // Settle the same population as the ungrouped total, with its FX-gap policy.
-    const uniqueCells = isSignedTotal(config.direction, metric)
-      ? createNetCells(config.direction, metric, this.leftOutWithItsPart(conv))
-      : undefined;
+    const uniqueCells =
+      metric !== MetricType.AVERAGE && isSignedMoney(config.direction, metric)
+        ? createNetCells(
+            config.direction,
+            metric,
+            this.leftOutWithItsPart(conv),
+          )
+        : undefined;
     const cells = createNetCells(
       config.direction,
       metric,

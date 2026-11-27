@@ -6,12 +6,13 @@ import { DirectionFilter, GroupByType, MetricType, type CustomReport } from '@/t
  *
  * Signed totals and individual posting lists keep the sign of each movement.
  * With transfers included, their net measures cash movement (INV-REPORT-003).
- * Average and grouped No Aggregation retain their unsigned measure.
+ * A signed average divides the net by the unit count of the grouping.
  */
 export type CustomReportMeasure =
   | 'netAmount'
   | 'netCashMovement'
   | 'unsignedTotal'
+  | 'average'
   | 'unsignedAverage';
 
 type MeasureReport = Pick<CustomReport, 'groupBy'> & {
@@ -33,7 +34,8 @@ export function isSignedTransactionList({ groupBy, config }: MeasureReport): boo
 export function customReportMeasure(report: MeasureReport, signedTotal = false): CustomReportMeasure | null {
   const { config } = report;
   if (config.direction === DirectionFilter.EXPENSES_ONLY || config.direction === DirectionFilter.INCOME_ONLY) return null;
-  if ((config.metric === MetricType.TOTAL_AMOUNT && signedTotal) || isSignedTransactionList(report)) {
+  const sum = config.metric === MetricType.TOTAL_AMOUNT || config.metric === MetricType.NONE;
+  if (isSignedTransactionList(report) || (signedTotal && sum)) {
     return config.includeTransfers ? 'netCashMovement' : 'netAmount';
   }
   switch (config.metric) {
@@ -42,7 +44,7 @@ export function customReportMeasure(report: MeasureReport, signedTotal = false):
       // Grouped No Aggregation and Total Amount from older servers are unsigned.
       return 'unsignedTotal';
     case MetricType.AVERAGE:
-      return 'unsignedAverage';
+      return signedTotal ? 'average' : 'unsignedAverage';
     default:
       return null;
   }

@@ -220,7 +220,7 @@ export interface ReportResult {
   timeframe: ReportTimeframe;
   data: AggregatedDataPoint[];
   summary: ReportSummary;
-  /** Present when Both / Total Amount used signed postings. Older servers return unsigned totals. */
+  /** Present for aggregates computed from signed postings, including average numerators. */
   signedTotal?: true;
   /** Reporting currency every money figure is expressed in. */
   currency: string;
