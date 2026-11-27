@@ -5476,6 +5476,84 @@ describe("ReportsService", () => {
         });
       };
 
+      it.each([
+        [150, -50, -150],
+        [100, 0, -100],
+        [30, 70, -30],
+      ])(
+        "preserves a refund of %s when comparing actual cost to an expense budget",
+        async (refund, actual, variance) => {
+          setupExecuteMocks(
+            {
+              groupBy: GroupByType.CATEGORY,
+              timeframeType: TimeframeType.LAST_MONTH,
+              config: { ...defaultConfig, metric: MetricType.BUDGET_VARIANCE },
+            },
+            [
+              createMockTransaction({
+                id: "purchase",
+                categoryId: "cat-1",
+                amount: -100,
+              }),
+              createMockTransaction({
+                id: "refund",
+                categoryId: "cat-1",
+                amount: refund,
+              }),
+            ],
+          );
+          categoriesRepository.find.mockResolvedValue([mockCategory]);
+          budgetOf([{ categoryId: "cat-1", amount: 100, isIncome: false }]);
+          const result = await service.execute("user-1", "report-1");
+          expect(result.data).toEqual([
+            expect.objectContaining({
+              id: "cat-1",
+              actual,
+              budgeted: 100,
+              value: variance,
+            }),
+          ]);
+          expect(result.summary.total).toBe(variance);
+        },
+      );
+
+      it("withholds percentage shares when one expense category has a net credit", async () => {
+        setupExecuteMocks(
+          {
+            groupBy: GroupByType.CATEGORY,
+            timeframeType: TimeframeType.LAST_MONTH,
+            config: { ...defaultConfig, metric: MetricType.BUDGET_VARIANCE },
+          },
+          [
+            createMockTransaction({
+              id: "refund",
+              categoryId: "cat-1",
+              amount: 50,
+            }),
+            createMockTransaction({
+              id: "purchase",
+              categoryId: "cat-2",
+              amount: -100,
+            }),
+          ],
+        );
+        categoriesRepository.find.mockResolvedValue([
+          mockCategory,
+          { ...mockCategory, id: "cat-2" },
+          { ...mockCategory, id: "cat-3" },
+        ]);
+        budgetOf([{ categoryId: "cat-3", amount: 25, isIncome: false }]);
+        const result = await service.execute("user-1", "report-1");
+        expect(
+          result.data
+            .map((row) => row.actual)
+            .sort((a, b) => Number(a) - Number(b)),
+        ).toEqual([-50, 0, 100]);
+        expect(result.data.every((row) => row.percentage === undefined)).toBe(
+          true,
+        );
+      });
+
       it("scales the monthly budget to the months of the report window", async () => {
         setupExecuteMocks(
           {

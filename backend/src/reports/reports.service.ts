@@ -1296,7 +1296,11 @@ export class ReportsService {
         );
       }
     }
-    const dataMap = cells.settle();
+    const dataMap = cells.settle(
+      metric === MetricType.BUDGET_VARIANCE
+        ? (id) => categoryMap.get(id)?.isIncome
+        : undefined,
+    );
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
@@ -1629,6 +1633,11 @@ export class ReportsService {
       // Only where nothing but the category filter narrowed the rows: under an
       // account, payee, search or advanced-group filter a zero means "filtered
       // out", not "unspent", and would enter the headline as an invented gap.
+      const zeroShare = data.every(
+        ({ point }) => point.percentage !== undefined,
+      )
+        ? 0
+        : undefined;
       for (const [categoryId, budgeted] of budgetMap) {
         const category = categoryMap.get(categoryId);
         if (seen.has(categoryId) || !category) continue;
@@ -1647,7 +1656,7 @@ export class ReportsService {
             ) as string,
             value: sum.knownSubtotalAt(conv.places),
             color: category.color || undefined,
-            percentage: 0,
+            percentage: zeroShare,
             count: 0,
             budgeted: reportFigure(budgeted, conv.places),
             actual: 0,

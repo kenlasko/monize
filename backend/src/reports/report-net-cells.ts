@@ -151,7 +151,14 @@ export function shareDenominator(
   config: ReportConfig,
 ): FxAggregate | undefined {
   if (isSignedTotal(config.direction, config.metric)) return undefined;
-  return FxAggregate.sum(Array.from(groups.values(), (group) => group.agg));
+  const amounts = Array.from(groups.values(), (group) => group.agg);
+  if (
+    config.metric === MetricType.BUDGET_VARIANCE &&
+    amounts.some((amount) => amount.sign < 0)
+  ) {
+    return undefined;
+  }
+  return FxAggregate.sum(amounts);
 }
 
 /** A report's cells for one execution; built per call, never shared. */
@@ -159,7 +166,9 @@ export interface NetCells {
   /** Adds one line, already converted (signed), to its cell in `group`. */
   add(group: string, line: NetLine, converted: number | null): void;
   /** Each group's settled sum and count; a group with no kept cell is absent. */
-  settle(): Map<string, NetGroup>;
+  settle(
+    budgetCategoryIsIncome?: (id: string) => boolean | null | undefined,
+  ): Map<string, NetGroup>;
 }
 
 /**
@@ -226,7 +235,7 @@ export function createNetCells(
     part.units.add(line.unit);
   };
 
-  const settle = (): Map<string, NetGroup> => {
+  const settle: NetCells["settle"] = (budgetCategoryIsIncome) => {
     const settled = new Map<string, NetGroup>();
     // Units a part kept, and the converted units a part left out for want of
     // a rate elsewhere in it: a unit is left out only where no part kept it
@@ -236,6 +245,7 @@ export function createNetCells(
     // A provisional row in a sum, once however many groups hold it.
     const provisional = new Set<string>();
     for (const [group, cells] of groups) {
+      const isIncome = budgetCategoryIsIncome?.(group);
       const agg = new FxAggregate();
       const units = new Set<string>();
       let kept = false;
@@ -267,6 +277,9 @@ export function createNetCells(
         } else if (direction === DirectionFilter.INCOME_ONLY) {
           if (!(net.sign > 0)) continue;
           spent = false;
+        } else if (metric === MetricType.BUDGET_VARIANCE && isIncome != null) {
+          // An expense budget measures cost: even a net credit is negated.
+          spent = !isIncome;
         } else {
           spent = !signedTotal && net.sign < 0;
         }

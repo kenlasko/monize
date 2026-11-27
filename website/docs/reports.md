@@ -322,6 +322,8 @@ Your existing reports open with the following filters. An individual transaction
 
 The signs, totals, and transactions included can change. For a purchase of −100 and a refund of +30 in the same expense category, an outgoing transaction list shows the purchase at −100. A **Total Amount** report for expense categories includes both postings and shows −70. An uncategorized payment appears in the outgoing list and is excluded from the expense-category total.
 
+In a category-grouped **Budget Variance** report, an expense refund reduces the actual cost. With a budget of 100, a purchase of 100 and a refund of 150, actual spending is −50. The variance (actual spending minus budget) is −150.
+
 On the next run, a saved **Both / Total Amount** report uses the signed calculation without editing or resaving. For example, salary of +1,000 in one category, a purchase of −100 and a refund of +30 in another previously showed 1,070. The same report now shows 930. Sorting by amount can change the order of the rows. Signed totals have no percentage shares. A report previously sorted by percentage now sorts by signed amount in the same ascending or descending order. When an exchange rate is missing, each grouping withholds the same incomplete category and currency from the known subtotal.
 
 To see one report of everything that came in and went out for a set of categories, in date order, choose **No Grouping**, **No Aggregation** and **Both**, and filter by those categories.
