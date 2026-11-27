@@ -1591,6 +1591,113 @@ describe("UsersService", () => {
       );
     });
 
+    it("erases shared-expense rows in the delete transaction, before the user row", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.deleteAccount("user-1", { password: "CorrectPass123!" });
+
+      const sqls = mockQueryRunner.query.mock.calls.map((c) => String(c[0]));
+      const memberships = sqls.findIndex((q) =>
+        q.includes("DELETE FROM shared_memberships WHERE user_id"),
+      );
+      const groups = sqls.findIndex((q) =>
+        q.includes("DELETE FROM shared_groups WHERE owner_user_id"),
+      );
+      expect(memberships).toBeGreaterThanOrEqual(0);
+      expect(groups).toBeGreaterThanOrEqual(0);
+      const erased = mockQueryRunner.query.mock.invocationCallOrder;
+      expect(Math.max(erased[memberships], erased[groups])).toBeLessThan(
+        usersRepository.remove.mock.invocationCallOrder[0],
+      );
+    });
+
+    it("refuses before revoking any token when the user owns a group others joined", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      mockQueryRunner.query.mockImplementation((sql: unknown) =>
+        Promise.resolve(
+          String(sql).includes("FROM shared_groups") ? [{ id: "group-1" }] : [],
+        ),
+      );
+
+      await expect(
+        service.deleteAccount("user-1", { password: "CorrectPass123!" }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(refreshTokensRepository.update).not.toHaveBeenCalled();
+      expect(patRepository.update).not.toHaveBeenCalled();
+      expect(usersRepository.remove).not.toHaveBeenCalled();
+      expect(oauthProviderService.revokeAllForUser).not.toHaveBeenCalled();
+    });
+
+    it("revokes OAuth grants after a successful delete", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+
+      await service.deleteAccount("user-1", { password: "CorrectPass123!" });
+
+      expect(oauthProviderService.revokeAllForUser).toHaveBeenCalledWith(
+        "user-1",
+      );
+      expect(usersRepository.remove.mock.invocationCallOrder[0]).toBeLessThan(
+        oauthProviderService.revokeAllForUser.mock.invocationCallOrder[0],
+      );
+    });
+
+    it("still reports success when the OAuth revoke fails after the user row is gone", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      oauthProviderService.revokeAllForUser.mockRejectedValue(
+        new Error("revoke down"),
+      );
+
+      await expect(
+        service.deleteAccount("user-1", { password: "CorrectPass123!" }),
+      ).resolves.toEqual({ downgraded: false });
+      expect(usersRepository.remove).toHaveBeenCalled();
+    });
+
+    it("revokes OAuth grants on the downgrade branch and fails closed when the revoke fails", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      mockDataSource.query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM account_delegates") &&
+        sql.trimStart().startsWith("SELECT")
+          ? [{ "?column?": 1 }]
+          : [],
+      );
+
+      await expect(
+        service.deleteAccount("user-1", { password: "CorrectPass123!" }),
+      ).resolves.toEqual({ downgraded: true });
+      expect(oauthProviderService.revokeAllForUser).toHaveBeenCalledWith(
+        "user-1",
+      );
+
+      oauthProviderService.revokeAllForUser.mockRejectedValue(
+        new Error("revoke down"),
+      );
+      await expect(
+        service.deleteAccount("user-1", { password: "CorrectPass123!" }),
+      ).rejects.toThrow("revoke down");
+    });
+
     it("throws when user not found", async () => {
       usersRepository.findOne.mockResolvedValue(null);
 

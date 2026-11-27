@@ -210,6 +210,13 @@ const WITH_CONTEXT_ALLOWLIST = [
   // caller's own identity -- the table is RLS-exempt, so a request transaction
   // sees it without a bypass.
   "src/updates/updates.service.ts",
+  // Self-service account deletion: eraseSharedUser and its ownership pre-flight
+  // read and delete other members' shared rows, which the departing user's own
+  // identity cannot see under RLS -- system context for that one delete, as
+  // AdminService.deleteUser does; the id is the JWT subject. Only deleteAccount
+  // and purgeForDowngrade use system context here, for the shared-expense
+  // erasure; any other use in this file needs its own review.
+  "src/users/users.service.ts",
   // Two genuinely cross-user pieces of work, and only those: generating the
   // deployment's one VAPID key pair on the bootstrap hook (no request behind
   // it), and counting the devices that key pair serves across every account.
