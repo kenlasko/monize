@@ -291,6 +291,66 @@ describe("Category fit and one category per transfer: rules (integration)", () =
         expect(await lineCategory()).toBeNull();
       },
     );
+
+    row(
+      "set_category in a run: a split's linked row whose parent is reconciled is skipped under the strict lock, the rest written",
+      async () => {
+        // The category would reach the reconciled parent's line
+        // (INV-CATEGORY-002), so the row is kept as it is with a reason, not
+        // a refusal of the whole run.
+        await db.query(
+          `INSERT INTO user_preferences (user_id, lock_reconciled_transactions)
+           VALUES ($1, true)
+           ON CONFLICT (user_id) DO UPDATE SET lock_reconciled_transactions = true`,
+          [userId],
+        );
+        const parent = await asUser(() =>
+          transactions.create(userId, {
+            accountId: chequingId,
+            transactionDate: "2026-03-04",
+            amount: -150,
+            currencyCode: "USD",
+            splits: [
+              { amount: -100, transferAccountId: savingsId },
+              { amount: -50, categoryId: expenseCat },
+            ],
+          } as never),
+        );
+        await db.query(
+          `UPDATE transactions SET status = 'RECONCILED' WHERE id = $1`,
+          [parent.id],
+        );
+        const [line] = await db.query(
+          `SELECT id, linked_transaction_id FROM transaction_splits
+          WHERE transaction_id = $1 AND transfer_account_id IS NOT NULL`,
+          [parent.id],
+        );
+        const { fromId, toId } = await createTransfer();
+        const created = await rule(
+          ["import"],
+          [
+            {
+              type: "set_category",
+              categoryId: transferCat,
+              onlyIfEmpty: false,
+            },
+          ],
+          { field: "type", op: "eq", value: "TRANSFER" },
+        );
+        const preview = await runNow(created.id);
+        expect(preview.skipped).toEqual(
+          expect.arrayContaining([
+            {
+              transactionId: line.linked_transaction_id,
+              reason: "reconciled_locked",
+            },
+          ]),
+        );
+        expect(await categoryOf(line.linked_transaction_id)).toBeNull();
+        expect(await categoryOf(fromId)).toBe(transferCat);
+        expect(await categoryOf(toId)).toBe(transferCat);
+      },
+    );
   });
 
   describe("convert_to_transfer", () => {

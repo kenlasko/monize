@@ -539,9 +539,9 @@ export class TransactionRulesRunService {
     const settles = rule.actions.some(
       (action) => action.type === SETTLE_LOAN_INSTALLMENT,
     );
-    const { units, truncated } =
+    const { units, truncated, lineParentStatus } =
       scan === null
-        ? { units: [], truncated: false }
+        ? { units: [], truncated: false, lineParentStatus: undefined }
         : await loadCandidateUnits(
             m,
             userId,
@@ -623,9 +623,14 @@ export class TransactionRulesRunService {
         }
       }
       if (entry && Object.keys(entry.changes).length > 0) {
-        const reconciled = unit.legs.some(
-          (leg) => leg.status === TransactionStatus.RECONCILED,
-        );
+        // A category written onto a split's linked row is written onto its
+        // line too (INV-CATEGORY-002): a reconciled parent keeps it.
+        const reconciled =
+          unit.legs.some(
+            (leg) => leg.status === TransactionStatus.RECONCILED,
+          ) ||
+          (entry.changes.categoryId !== undefined &&
+            lineParentStatus?.get(primary.id) === TransactionStatus.RECONCILED);
         if (reconciled && (await strictLock())) {
           skipped.push({
             transactionId: primary.id,

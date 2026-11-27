@@ -33,6 +33,13 @@ export interface CandidateUnit {
 export interface CandidateSet {
   readonly units: CandidateUnit[];
   readonly truncated: boolean;
+  /**
+   * For each candidate a split's transfer line links, the status of that
+   * split's parent: a category written onto the row is written onto the line
+   * too (INV-CATEGORY-002), so a reconciled parent keeps the row as it is
+   * under the strict lock. Absent: no candidate is such a row.
+   */
+  readonly lineParentStatus?: ReadonlyMap<string, string | null>;
 }
 
 /** The limit a caller asked for, inside 1..max (the run's ceiling unless the caller names its own). */
@@ -176,6 +183,42 @@ export async function loadCandidateUnits(
       .map((row) => [row.id, row]),
   );
 
+  // The split parents whose transfer lines link a candidate. A category the
+  // run writes onto such a row reaches its line too, so with `lock` each
+  // parent is locked before any candidate: a split parent before its legs
+  // (`common/db/locks.ts`).
+  const transferIds = rows.filter((row) => row.isTransfer).map((r) => r.id);
+  const lineParents =
+    transferIds.length > 0
+      ? ((await m.query(
+          `SELECT s.linked_transaction_id AS "rowId", s.transaction_id AS "parentId"
+             FROM transaction_splits s
+             JOIN transactions p ON p.id = s.transaction_id
+            WHERE s.linked_transaction_id = ANY($1) AND p.user_id = $2`,
+          [transferIds, userId],
+        )) as { rowId: string; parentId: string }[])
+      : [];
+  const parentIds = [...new Set(lineParents.map((line) => line.parentId))];
+  if (options.lock && parentIds.length > 0) {
+    await lockTransactionRows(m, parentIds, userId);
+  }
+  const parentStatus = new Map(
+    parentIds.length > 0
+      ? (
+          (await m.query(
+            `SELECT id, status FROM transactions WHERE id = ANY($1) AND user_id = $2`,
+            [parentIds, userId],
+          )) as { id: string; status: string | null }[]
+        ).map((parent) => [parent.id, parent.status])
+      : [],
+  );
+  const lineParentStatus = new Map(
+    lineParents.map((line) => [
+      line.rowId,
+      parentStatus.get(line.parentId) ?? null,
+    ]),
+  );
+
   let usable: ReadonlyMap<string, Transaction> = partners;
   let ordered = rows;
   if (options.lock) {
@@ -204,7 +247,11 @@ export async function loadCandidateUnits(
     seen.add(unit.primary.id);
     units.push(unit);
   }
-  return { units, truncated };
+  return {
+    units,
+    truncated,
+    ...(lineParentStatus.size > 0 ? { lineParentStatus } : {}),
+  };
 }
 
 /**
