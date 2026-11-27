@@ -631,6 +631,32 @@ describe("Category fit and one category per transfer: transactions (integration)
     );
 
     row(
+      "delete with reassign: to a Transfer category is refused, nothing moved and the category kept, when a category row would move",
+      async () => {
+        const ordinary = await createOrdinary(feesCat);
+        await expect(
+          asUser(() => categories.remove(userId, feesCat, transferCat)),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(await categoryOf(ordinary.id)).toBe(feesCat);
+        const [kept] = await db.query(
+          `SELECT count(*)::int AS n FROM categories WHERE id = $1`,
+          [feesCat],
+        );
+        expect(kept.n).toBe(1);
+      },
+    );
+
+    row(
+      "delete with reassign: to a Transfer category moves transfers when only transfer rows hold the category",
+      async () => {
+        const { fromId, toId } = await createTransfer(feesCat);
+        await asUser(() => categories.remove(userId, feesCat, transferCat));
+        expect(await categoryOf(fromId)).toBe(transferCat);
+        expect(await categoryOf(toId)).toBe(transferCat);
+      },
+    );
+
+    row(
       "reassign: to an Income or Expense category moves every row, transfers included",
       async () => {
         const ordinary = await createOrdinary(feesCat);
