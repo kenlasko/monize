@@ -35,7 +35,7 @@ Navigate to **Tools > Categories** to access the category management page.
 
 ![The Categories page: totals for all, income, expense and top-level categories above the category tree, each row with its icon, type, transaction count and actions](images/categories-page.png)
 
-Four cards at the top count your **Total Categories**, **Income Categories**, **Expense Categories** and **Top-Level** categories. Below them, **Search categories** finds a category by name (a matching subcategory brings its parent along, and a matching parent brings all of its subcategories), and the **All**, **Expenses** and **Income** buttons narrow the list by type.
+Four cards at the top count your **Total Categories**, **Income Categories**, **Expense Categories** and **Top-Level** categories. Below them, **Search categories** finds a category by name (a matching subcategory brings its parent along, and a matching parent brings all of its subcategories), and the **All**, **Expenses**, **Income** and **Transfer** buttons narrow the list by type.
 
 The list shows each category's icon and colour, its **Name**, its **Type**, its transaction **Count** and its **Description**. Click a column header to sort by it. Click a row to open the category's [detail page](#category-detail-page); click the category's name to see its transactions instead (see [Viewing a Category's Transactions](#viewing-a-categorys-transactions)). **Edit** and **Delete** are at the end of each row (on a phone, press and hold the row, or right-click it, to open its actions).
 
@@ -48,7 +48,7 @@ The list shows each category's icon and colour, its **Name**, its **Type**, its 
 |-------|-------------|
 | **Category Name** | Category name (e.g., "Groceries") |
 | **Parent Category** | Optional parent for nesting; leave it on **No parent (top-level)** for a top-level category |
-| **Type** | **Expense** or **Income**. A subcategory always has its parent's type (**Type inherited from parent**) |
+| **Type** | **Expense**, **Income** or **Transfer**. A subcategory always has its parent's type (**Type inherited from parent**) |
 | **Automatic sign** | Whether an amount you type is given the category's sign (see [Automatic Sign](#automatic-sign)) |
 | **Colour** | A colour for reports and charts, picked from the palette, or none. A subcategory can **Inherit from parent** |
 | **Icon** | An icon drawn beside the category's name, or **No icon** |
@@ -62,7 +62,7 @@ A category's colour and icon appear in the category list, on its detail page, in
 
 #### Editing a Category
 
-Click **Edit** on a category's row, or **Edit** on its detail page, to change any of the fields above, then click **Update Category**. Changing a top-level category's type changes the type of all of its subcategories too. A category cannot be moved under itself or under one of its own subcategories.
+Click **Edit** on a category's row, or **Edit** on its detail page, to change any of the fields above, then click **Update Category**. Changing a top-level category's type changes the type of all of its subcategories too. A category's type cannot be changed, nor the category moved under a parent of another type, while a transaction, a scheduled transaction or a setting (a payee's default, an asset account's category, a loan's interest category) holds it or one of its subcategories and would no longer fit; Monize refuses and nothing changes. A category cannot be moved under itself or under one of its own subcategories.
 
 ![The Edit Category dialog for a subcategory, with its type, colour and automatic sign inherited from its parent](images/categories-edit-dialog.png)
 
@@ -98,14 +98,17 @@ Amounts in another currency are converted to your default currency, and the page
 
 Click a category's name on the Categories page (or **View Transactions** on its detail page) to open the Transactions page filtered to that category, so you can review every transaction assigned to it without setting up the filter by hand.
 
-### Income vs Expense Categories
+### Income, Expense and Transfer Categories
 
-Each category is marked as either **Income** or **Expense**:
+Each category has one of three types:
 
 - **Income categories** -- Salary, freelance income, investment returns, etc.
 - **Expense categories** -- Groceries, rent, utilities, entertainment, etc.
+- **Transfer categories** -- what a movement between your own accounts was for: Investment Contributions, Credit Card Payments, Savings Contributions and the like.
 
-This classification determines how transactions are counted in reports (income vs. expenses charts).
+Income and Expense determine how transactions are counted in reports (income vs. expenses charts). A Transfer category is neither: a transfer is not income or spending, so it never enters those totals. A Transfer category goes **only on a transfer**; Monize does not offer it on an ordinary transaction or on a split's category line, and refuses it there. A new account's default categories include a short **Transfers** set; you can rename, recolour or delete it like any other, and **Create Your Own** works for Transfer categories too. A subcategory takes its parent's type, so a Transfer category's children are Transfer categories.
+
+Nothing about your existing data changes: your Income and Expense categories, and the categories your transfers already carry, stay as they are.
 
 ### Automatic Sign
 
@@ -113,7 +116,14 @@ With **Automatic sign** on, an amount you type for a transaction in the category
 
 ### Categories on Transfers
 
-Transfers move money between your own accounts, so they are never counted as income or expense. You can still optionally assign a category to a transfer. When you do, the transfer appears under that category in the monthly category breakdown, giving you visibility into where transferred money goes, while remaining excluded from income and expense totals.
+Transfers move money between your own accounts, so they are never counted as income or expense. You can still optionally assign a category to a transfer, and it may be either a **Transfer category** or, as before, an Income or Expense category.
+
+- **One category per transfer.** The category belongs to the transfer as a whole: set, change or remove it on either side and both sides follow. A transfer to another person's account, shared with you, keeps one category for each of you: your change affects your side only.
+- **A split's transfer line can carry a category too**, in the split editor, the same as a transfer entered on its own. Its category line counterpart rules do not change: an ordinary row or a split's category line takes only Income or Expense.
+- **Where it shows.** In the [Monthly & Yearly Breakdown](reports.md#spending-reports) a transfer with a Transfer category appears in the **Transfers** group under that category, as an outgoing and an incoming row; every other transfer stays in its per-account row. A budget line can name a Transfer category (see [Budgets](budgets.md#a-budget-line-on-a-transfer-category)). The category's detail page and the Transactions page filter treat it as a transfer category, and its detail page shows **Outgoing This Year**, **Incoming This Year** and **Net This Year**.
+- **Rules** can set a category of any type on a transfer. A payee's default category is never applied to a transfer.
+
+A transfer that holds an Income or Expense category keeps counting wherever it counted before; Monize does not warn about it or change it.
 
 ### System Categories
 

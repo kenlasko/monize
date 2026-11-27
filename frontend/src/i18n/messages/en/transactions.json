@@ -451,7 +451,7 @@
       "optionLabel": "{name} ({currency}) — {owner}"
     },
     "crossOwnerLockedNote": "The other side of this transfer is in an account that's no longer shared with you. Its amount, date, and accounts are locked, but you can still edit this transaction's own details.",
-    "transferCategoryNote": "Optional. The transfer still won't count as income or expense, but this category lets it appear in the monthly category breakdown (e.g. monthly investment contributions).",
+    "transferCategoryNote": "Optional. The transfer still won't count as income or expense. A Transfer category lists it under that category in the monthly category breakdown (e.g. monthly investment contributions); an Income or Expense category keeps counting as before.",
     "amountReceivedNote": "Amount received after currency conversion",
     "splitTransaction": "Split Transaction",
     "splitDisabledDuringTour": "Not available during the guided tour",

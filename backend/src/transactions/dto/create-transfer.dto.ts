@@ -99,7 +99,7 @@ export class CreateTransferDto {
 
   @ApiPropertyOptional({
     description:
-      "Optional spending category for the transfer. The transfer still does not count as income/expense or affect net worth; it only lets the amount surface under this category in the monthly category breakdown (e.g. tracking monthly investment contributions).",
+      "Optional category for the transfer, of any type: a Transfer category, or an Income or Expense one. Stored on both legs. The transfer still does not count as income/expense or affect net worth; a Transfer category lists it under that category in the monthly category breakdown (e.g. tracking monthly investment contributions).",
   })
   @IsOptional()
   @IsUUID()

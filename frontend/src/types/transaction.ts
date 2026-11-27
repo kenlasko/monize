@@ -463,7 +463,7 @@ export interface CreateTransferData {
   description?: string | null;
   referenceNumber?: string | null;
   status?: TransactionStatus;
-  /** Optional category; surfaces the transfer in the monthly category breakdown without counting as income/expense. null clears it. */
+  /** Optional category of any type, set on both legs; a Transfer category lists the transfer in the monthly category breakdown without counting as income/expense. null clears it. */
   categoryId?: string | null;
   /** Destination amount for a cross-currency transfer; overrides the rate. */
   toAmount?: number;
