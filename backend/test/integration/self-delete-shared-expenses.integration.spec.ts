@@ -150,6 +150,43 @@ describe("self-service account deletion with shared expenses under enforced RLS"
     expect(revokeAllForUser).toHaveBeenCalledWith(guest);
   });
 
+  // Without withSystemContext in purgeForDowngrade, eraseSharedUser runs as the
+  // departing member: shared_memberships_delete lets only the group owner delete
+  // memberships, so the member's own row matches 0 rows and survives, and the
+  // membership assertion below fails.
+  it("downgrades a delegate who is a group member and removes only their membership", async () => {
+    await guestJoins();
+    await h.owner.query(
+      `INSERT INTO account_delegates (owner_user_id, delegate_user_id, status)
+       VALUES ($1, $2, 'active')`,
+      [owner, guest],
+    );
+
+    await expect(del(guest)).resolves.toEqual({ downgraded: true });
+
+    expect(
+      await h.owner.query("SELECT 1 FROM users WHERE id = $1", [guest]),
+    ).toHaveLength(1);
+    expect(
+      await h.owner.query(
+        "SELECT 1 FROM shared_memberships WHERE user_id = $1",
+        [guest],
+      ),
+    ).toHaveLength(0);
+    expect(
+      await h.owner.query("SELECT 1 FROM shared_groups WHERE id = $1", [
+        groupId,
+      ]),
+    ).toHaveLength(1);
+    expect(
+      await h.owner.query(
+        "SELECT 1 FROM shared_memberships WHERE user_id = $1",
+        [owner],
+      ),
+    ).toHaveLength(1);
+    expect(revokeAllForUser).toHaveBeenCalledWith(guest);
+  });
+
   it("deletes an owner whose group has no other members and removes the group", async () => {
     await expect(del(owner)).resolves.toEqual({ downgraded: false });
 
