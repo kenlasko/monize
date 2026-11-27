@@ -78,7 +78,13 @@ from one of three new read models built out of those endpoints' services.
    shows is a fact about the screen, not the user, and a laptop and a desktop
    need not agree. It is not a `user_preferences` column and not a URL param.
 2. **The calendar's month is its own state, not the register's date filter.**
-   Prev / next / Today controls; opens on the current month each visit. In
+   Prev / next / Today controls. On the Transactions page the two follow each
+   other at the switch (issue #2473, `useRegisterCalendarMonth`): the calendar
+   opens on the month the register's range points at (`monthForDateRange`:
+   today's month moved into the range, so a one-month range opens on that
+   month and no range on today's), and a month the reader turned to becomes
+   the register's range (that whole month, Custom) on the way back to the
+   table. A calendar left on the month it opened on leaves the range alone. In
    calendar mode the date-range selector is hidden (the month is the date
    filter); every other filter (accounts, categories, payees, search, statuses,
    tags, attachments) still applies to the Transactions layer because the
