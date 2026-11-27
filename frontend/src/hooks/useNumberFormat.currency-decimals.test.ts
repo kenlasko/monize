@@ -208,7 +208,8 @@ describe('useNumberFormat and the currency decimals registry', () => {
       const { result } = renderHook(() => useNumberFormat());
       expect(result.current.formatCurrencyCompact(1234.5, 'CAD')).toBe('$1,235');
       expect(result.current.formatCurrencyCompact(0.5, 'USD')).toBe('$1');
-      expect(result.current.formatCurrencyTight(0.4, 'USD')).toBe('$0');
+      // A nonzero amount under half a unit keeps its cents rather than read as zero.
+      expect(result.current.formatCurrencyTight(0.4, 'USD')).toBe('$0.40');
       expect(result.current.formatCurrencyTight(344.33, 'USD')).toBe('$344');
     });
   });

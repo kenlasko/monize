@@ -184,6 +184,37 @@ function coinPlacesBelowThousand(currency: string, amount: number): number | und
   return registered !== undefined && Math.abs(amount) < 1000 ? registered : undefined;
 }
 
+/** A currency's own decimal places: a registered coin's row, else Intl's. */
+function currencyPlaces(locale: string | undefined, currency: string): number {
+  return (
+    decimalPlacesForCurrency(currency) ??
+    getNumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    }).resolvedOptions().maximumFractionDigits ??
+    2
+  );
+}
+
+/**
+ * The places and value for a figure a formatter would draw in whole units, so
+ * a nonzero amount never reads as zero (report-rounding spec, rule 8). An
+ * amount that is zero at the currency's places is an unsigned zero (-0.004 USD
+ * reads "$0", not "-$0"); a nonzero one under half a unit keeps the currency's
+ * places ("$0.01", "-$0.40"); anything larger stays whole, drawn from the raw
+ * amount so it is rounded once.
+ */
+function wholeUnitFigure(
+  amount: number,
+  currencyDigits: number,
+): { places: number; value: number } {
+  const atPrecision = roundToDecimals(amount, currencyDigits) || 0;
+  if (atPrecision === 0) return { places: 0, value: 0 };
+  if (Math.abs(amount) < 0.5) return { places: currencyDigits, value: atPrecision };
+  return { places: 0, value: amount };
+}
+
 /**
  * Hook to format numbers according to user preferences.
  * Returns formatCurrency and formatNumber functions that use the user's preferred number format.
@@ -279,16 +310,20 @@ export function useNumberFormat() {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
       const coinPlaces = coinPlacesBelowThousand(currency, amount);
+      const { places, value } =
+        coinPlaces !== undefined
+          ? { places: coinPlaces, value: amount }
+          : wholeUnitFigure(amount, currencyPlaces(locale, currency));
       return formatMoneyFigure(
         locale,
         {
           style: 'currency',
           currency,
           currencyDisplay: 'narrowSymbol',
-          minimumFractionDigits: coinPlaces ?? 0,
-          maximumFractionDigits: coinPlaces ?? 0,
+          minimumFractionDigits: places,
+          maximumFractionDigits: places,
         },
-        amount,
+        value,
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -327,7 +362,8 @@ export function useNumberFormat() {
   /**
    * As much of a money figure as a narrow cell can hold: compact notation, and
    * no fraction digits at all below the first thousand (a registered coin keeps
-   * its own places there, see `coinPlacesBelowThousand`).
+   * its own places there, see `coinPlacesBelowThousand`), except where whole
+   * units would show a nonzero figure as zero (`wholeUnitFigure`).
    *
    * A calendar day on a phone is a column about fifty pixels wide, and a
    * balance rendered in full simply does not fit in one -- a figure that
@@ -342,19 +378,28 @@ export function useNumberFormat() {
       const currency = currencyCode || defaultCurrency;
       const locale = getEffectiveLocale(numberFormat, language);
       const coinPlaces = coinPlacesBelowThousand(currency, amount);
+      const options: Intl.NumberFormatOptions = {
+        style: 'currency',
+        currency,
+        currencyDisplay: 'narrowSymbol',
+        notation: 'compact',
+        compactDisplay: 'short',
+      };
+      if (coinPlaces !== undefined) {
+        return formatMoneyFigure(
+          locale,
+          { ...options, minimumFractionDigits: coinPlaces, maximumFractionDigits: coinPlaces },
+          amount,
+        );
+      }
+      if (Math.abs(amount) >= 1000) {
+        return formatMoneyFigure(locale, { ...options, maximumFractionDigits: 1 }, amount);
+      }
+      const { places, value } = wholeUnitFigure(amount, currencyPlaces(locale, currency));
       return formatMoneyFigure(
         locale,
-        {
-          style: 'currency',
-          currency,
-          currencyDisplay: 'narrowSymbol',
-          notation: 'compact',
-          compactDisplay: 'short',
-          ...(coinPlaces !== undefined
-            ? { minimumFractionDigits: coinPlaces, maximumFractionDigits: coinPlaces }
-            : { maximumFractionDigits: Math.abs(amount) < 1000 ? 0 : 1 }),
-        },
-        amount,
+        { ...options, minimumFractionDigits: places, maximumFractionDigits: places },
+        value,
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -542,7 +587,13 @@ export function useNumberFormat() {
       else if (abs >= 1e3) { divisor = 1e3; suffix = 'K'; decimals = 1; }
       else { divisor = 1; suffix = ''; decimals = 0; }
 
-      const scaled = value / divisor;
+      let scaled = value / divisor;
+      if (divisor === 1) {
+        ({ places: decimals, value: scaled } = wholeUnitFigure(
+          value,
+          currencyPlaces(locale, defaultCurrency),
+        ));
+      }
       const formatted = getNumberFormat(locale, {
         style: 'currency',
         currency: defaultCurrency,
@@ -552,7 +603,8 @@ export function useNumberFormat() {
       }).format(scaled);
       return formatted + suffix;
     },
-    [numberFormat, defaultCurrency, language]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numberFormat, defaultCurrency, language, currencyDecimals]
   );
 
   /** Compact currency for chart flag/callout bubbles: same K/M/B/T notation

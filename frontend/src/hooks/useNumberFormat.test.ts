@@ -105,6 +105,51 @@ describe('useNumberFormat', () => {
     expect(formatted).not.toContain('.00');
   });
 
+  it('formatCurrencyCompact never shows a nonzero amount as zero', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    const compact = result.current.formatCurrencyCompact;
+    // Nonzero at the currency's places: keeps them, both signs alike.
+    expect(compact(0.01, 'USD')).toBe('$0.01');
+    expect(compact(-0.01, 'USD')).toBe('-$0.01');
+    expect(compact(0.4, 'USD')).toBe('$0.40');
+    expect(compact(-0.4, 'USD')).toBe('-$0.40');
+    expect(compact(0.4999, 'USD')).toBe('$0.50');
+    // Zero at the currency's places: an unsigned zero.
+    expect(compact(0.004, 'USD')).toBe('$0');
+    expect(compact(-0.004, 'USD')).toBe('$0');
+    expect(compact(0, 'USD')).toBe('$0');
+    // Half a unit or more: whole units, as before.
+    expect(compact(0.5, 'USD')).toBe('$1');
+    expect(compact(-0.6, 'USD')).toBe('-$1');
+    expect(compact(1234.49, 'USD')).toBe('$1,234');
+    // A zero-decimal currency has nothing smaller to show.
+    expect(compact(0.4, 'JPY')).toBe('¥0');
+  });
+
+  it('formatCurrencyTight never shows a nonzero amount as zero', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    const tight = result.current.formatCurrencyTight;
+    expect(tight(0.01, 'USD')).toBe('$0.01');
+    expect(tight(-0.01, 'USD')).toBe('-$0.01');
+    expect(tight(-0.4, 'USD')).toBe('-$0.40');
+    expect(tight(-0.004, 'USD')).toBe('$0');
+    // Unchanged above half a unit and in the compact range.
+    expect(tight(344.3, 'USD')).toBe('$344');
+    expect(tight(13344.33, 'USD')).toBe('$13.3K');
+  });
+
+  it('formatCurrencyLabel never shows a nonzero amount as zero', () => {
+    const { result } = renderHook(() => useNumberFormat());
+    const label = result.current.formatCurrencyLabel;
+    expect(label(0.01)).toBe('$0.01');
+    expect(label(-0.01)).toBe('-$0.01');
+    expect(label(-0.4)).toBe('-$0.40');
+    expect(label(-0.004)).toBe('$0');
+    // Unchanged above half a unit and in the K range.
+    expect(label(344.3)).toBe('$344');
+    expect(label(123456)).toBe('$123.5K');
+  });
+
   it('formatNumber formats with specified decimals', () => {
     const { result } = renderHook(() => useNumberFormat());
     expect(result.current.formatNumber(1234.5678, 2)).toBe('1,234.57');
