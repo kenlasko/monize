@@ -227,21 +227,6 @@ export type TransferEditHook = (
 ) => Promise<void>;
 
 /**
- * The write that confirms a provisional leg through a transfer edit: the
- * request supplied an amount for THAT leg (`amount` for the source, `toAmount`
- * for the destination) and it differs from the stored one. A reprice the
- * server computed from the other side is still an estimate, and a form
- * resending the stored figure changed nothing, so both leave the flag
- * (docs/specs/provisional-amounts.md, decision 4 and section 6).
- *
- * `next` is the pair the edit leaves behind, where an account can move (the
- * same-owner path). An amount is compared with its currency: a figure
- * supplied for a leg that now sits in another currency is a different amount
- * even when the number is the same. And a pair left in one currency has no
- * estimate in it at all -- the two legs conserve -- so the leg is confirmed
- * whatever was supplied.
- */
-/**
  * A transfer leg's category: the person's, and of any type, since a transfer
  * row takes Income, Expense and Transfer categories alike (INV-CATEGORY-001).
  * The transfer routes answer a category that is not the person's with 400.
@@ -259,6 +244,21 @@ export async function fitTransferCategory(
   });
 }
 
+/**
+ * The write that confirms a provisional leg through a transfer edit: the
+ * request supplied an amount for THAT leg (`amount` for the source, `toAmount`
+ * for the destination) and it differs from the stored one. A reprice the
+ * server computed from the other side is still an estimate, and a form
+ * resending the stored figure changed nothing, so both leave the flag
+ * (docs/specs/provisional-amounts.md, decision 4 and section 6).
+ *
+ * `next` is the pair the edit leaves behind, where an account can move (the
+ * same-owner path). An amount is compared with its currency: a figure
+ * supplied for a leg that now sits in another currency is a different amount
+ * even when the number is the same. And a pair left in one currency has no
+ * estimate in it at all -- the two legs conserve -- so the leg is confirmed
+ * whatever was supplied.
+ */
 export function confirmedBySuppliedAmount(
   leg: Pick<Transaction, "amount" | "amountIsProvisional" | "currencyCode">,
   suppliedAmount: number | undefined,

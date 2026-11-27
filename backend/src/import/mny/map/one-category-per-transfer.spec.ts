@@ -57,6 +57,19 @@ describe("withOneCategoryPerTransfer", () => {
     ).toEqual([7, 7]);
   });
 
+  it("makes one choice from either leg when the signs are not opposite", () => {
+    // A zero leg beside a positive one: each leg used to pick the other as
+    // outgoing, and the two categories swapped instead of agreeing.
+    expect(
+      categories(
+        withOneCategoryPerTransfer([
+          leg("r1", 0, 7, "p1"),
+          leg("p1", 100, 5, "r1"),
+        ]),
+      ),
+    ).toEqual([7, 7]);
+  });
+
   it("leaves a lone leg, an ordinary row and a pair that agrees as mapped", () => {
     const rows = [
       leg("out1", -100, 5, "missing"),

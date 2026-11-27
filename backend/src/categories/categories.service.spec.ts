@@ -1705,6 +1705,8 @@ describe("CategoriesService", () => {
         // findOne() runs through the same re-mocked transaction, so route
         // getRepository at the shared Category repo mock.
         getRepository: jest.fn(() => categoriesRepository),
+        // The shared category-owner lock the reassign takes first.
+        query: jest.fn().mockResolvedValue([]),
         update: jest
           .fn()
           .mockResolvedValueOnce({ affected: 5 }) // Transaction update
@@ -1799,6 +1801,8 @@ describe("CategoriesService", () => {
         // findOne() runs through the same re-mocked transaction, so route
         // getRepository at the shared Category repo mock.
         getRepository: jest.fn(() => categoriesRepository),
+        // The shared category-owner lock the reassign takes first.
+        query: jest.fn().mockResolvedValue([]),
         update: jest
           .fn()
           .mockResolvedValueOnce({ affected: 0 }) // Transaction update

@@ -1,6 +1,6 @@
 import {
   isCategoryPartnerRecord,
-  restoreCategoryPartner,
+  undoCategoryPartner,
 } from "../transactions/transfer-category-partner";
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
@@ -207,7 +207,7 @@ export async function undoRuleRun(
     // value it held (INV-CATEGORY-002).
     const partner = (row as { categoryPartner?: unknown }).categoryPartner;
     if (isCategoryPartnerRecord(partner)) {
-      await restoreCategoryPartner(manager, action.userId, partner);
+      await undoCategoryPartner(manager, action.userId, partner);
     }
     if (Array.isArray(row.tagIds)) {
       tagOwners.push(row.id);

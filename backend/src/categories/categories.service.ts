@@ -28,7 +28,10 @@ import { ImportDefaultsDto } from "./dto/import-defaults.dto";
 import { withScopedDb } from "../common/db/scoped-db";
 import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
-import { lockCategoryOwnerExclusive } from "../common/db/locks";
+import {
+  lockCategoryOwnerExclusive,
+  lockCategoryOwnerShared,
+} from "../common/db/locks";
 import {
   categoryFits,
   fitCategory,
@@ -873,10 +876,12 @@ export class CategoriesService {
 
     // M22: All UPDATE operations run in a single transaction.
     return withScopedDb(this.dataSource, async (m) => {
-      // The target is the person's (ownership, under the shared owner lock),
-      // and a Transfer category goes only on a transfer (INV-CATEGORY-001): a
+      // The target is the person's, read under the shared owner lock (taken
+      // first, before any row lock), and a Transfer category goes only on a
+      // transfer (INV-CATEGORY-001): a
       // reassign to one is refused, with nothing moved, while any row it
       // would move is a category row. Decided before the first write.
+      if (toCategoryId) await lockCategoryOwnerShared(m, userId);
       const target = await fitCategory(m, userId, toCategoryId, "transfer", {
         notFound: () =>
           new NotFoundException(

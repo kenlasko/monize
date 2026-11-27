@@ -919,6 +919,11 @@ export class TransactionRulesApplierService {
     for (const rule of rules) {
       for (const action of rule.actions) {
         if (action.type === "set_category") wanted.add(action.categoryId);
+        // The category a conversion names, so a later rule's subtree test
+        // sees its ancestors.
+        if (action.type === "convert_to_transfer" && action.categoryId) {
+          wanted.add(action.categoryId);
+        }
       }
     }
     return loadCategoryChains(m, userId, [...wanted]);

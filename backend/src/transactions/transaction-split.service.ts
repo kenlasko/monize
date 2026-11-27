@@ -59,6 +59,7 @@ import { validateSplitAmountSum } from "../common/split-amount.util";
 import { tr } from "../i18n/translate";
 import { withScopedDb } from "../common/db/scoped-db";
 import {
+  lockCategoryOwnerShared,
   lockTransactionRow,
   lockTransactionRows,
   LockedTransactionRow,
@@ -1169,6 +1170,13 @@ export class TransactionSplitService {
     // the bond engine after the commit (INV-BOND-005, INV-CACHE-001).
     const touchedSecurityIds = new Set<string>();
     const newSplits = await withScopedDb(this.dataSource, async (m) => {
+      // A category line's category is read under the shared category-owner
+      // lock, before any row lock (`common/db/locks.ts`).
+      if (
+        splits.some((split) => split.categoryId && !split.transferAccountId)
+      ) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // First statement of the transaction: advisory before row locks
       // (`common/db/locks.ts`). A replacement tears the parent's existing
       // embedded investment rows down (`deleteSplitSideEffects` ->
@@ -1403,6 +1411,11 @@ export class TransactionSplitService {
     // own account once the line re-totals it.
     const affectedAccountIds = new Set<string>();
     const savedSplitId = await withScopedDb(this.dataSource, async (m) => {
+      // A category line's category is read under the shared category-owner
+      // lock, taken before any row lock (`common/db/locks.ts`).
+      if (splitDto.categoryId && !splitDto.transferAccountId) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // The aggregate check and the insert are one serialized unit.
       //
       // Reading the split set, validating in application code, and inserting in

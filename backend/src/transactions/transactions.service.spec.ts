@@ -396,6 +396,19 @@ describe("TransactionsService", () => {
     });
     manager.findOne.mockImplementation((_Entity: any, opts: any) => {
       if (_Entity === TransactionSplit) return splitsRepository.findOne(opts);
+      // The row gate's read of a stored default (`categoryIdForCategoryRow`):
+      // the user's Expense category.
+      if (_Entity === Category) {
+        return Promise.resolve(
+          opts?.where?.id
+            ? {
+                id: opts.where.id,
+                name: opts.where.id,
+                categoryType: "expense",
+              }
+            : null,
+        );
+      }
       return transactionsRepository.findOne(opts);
     });
     manager.find.mockImplementation((_Entity: any, opts: any) => {

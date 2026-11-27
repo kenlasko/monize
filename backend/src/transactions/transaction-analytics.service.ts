@@ -1780,29 +1780,6 @@ export class TransactionAnalyticsService {
   }
 
   /**
-   * Resolve LLM-supplied category names into the IDs used by the transaction
-   * filters. The matching itself lives in `resolveCategoryNamePaths`
-   * (`categories/category-name.util.ts`), which is also what qualifies the
-   * names these tools *emit* -- one definition, so a name the model reads back
-   * to us means the category we showed it.
-   *
-   * Accepts a bare name ("Dining Out"), a parent/child path in any separator
-   * and spacing ("Food: Dining Out", "Food/Dining Out", "Food -> Dining Out"),
-   * and forgives a wrong parent when the leaf is unique.
-   *
-   * Returns the matched category IDs (expanded to include descendants so a
-   * filter on "Food" naturally catches its subcategories) plus any names we
-   * could not match. Callers should treat any `unresolved` entry as a hard
-   * failure rather than silently dropping the filter -- otherwise a mistyped
-   * category yields "all transactions" instead of an honest error.
-   *
-   * A name matching several categories -- "Cell Phone" under both "Bills" and
-   * "Business" -- is unresolved too, and `suggestions` carries the qualified
-   * names it could have meant so the model can ask again precisely. Picking one
-   * silently is what this replaces: the answer that comes back is about a
-   * category the user never named, and nothing downstream can tell.
-   */
-  /**
    * The category a name a model wrote lands as on a row of `holder`
    * (`docs/specs/transfer-categories.md` section 4.4): resolved among the
    * categories that fit the row (INV-CATEGORY-001), and on a transfer a
@@ -1838,6 +1815,29 @@ export class TransactionAnalyticsService {
     return named;
   }
 
+  /**
+   * Resolve LLM-supplied category names into the IDs used by the transaction
+   * filters. The matching itself lives in `resolveCategoryNamePaths`
+   * (`categories/category-name.util.ts`), which is also what qualifies the
+   * names these tools *emit* -- one definition, so a name the model reads back
+   * to us means the category we showed it.
+   *
+   * Accepts a bare name ("Dining Out"), a parent/child path in any separator
+   * and spacing ("Food: Dining Out", "Food/Dining Out", "Food -> Dining Out"),
+   * and forgives a wrong parent when the leaf is unique.
+   *
+   * Returns the matched category IDs (expanded to include descendants so a
+   * filter on "Food" naturally catches its subcategories) plus any names we
+   * could not match. Callers should treat any `unresolved` entry as a hard
+   * failure rather than silently dropping the filter -- otherwise a mistyped
+   * category yields "all transactions" instead of an honest error.
+   *
+   * A name matching several categories -- "Cell Phone" under both "Bills" and
+   * "Business" -- is unresolved too, and `suggestions` carries the qualified
+   * names it could have meant so the model can ask again precisely. Picking one
+   * silently is what this replaces: the answer that comes back is about a
+   * category the user never named, and nothing downstream can tell.
+   */
   async resolveLlmCategoryIds(
     userId: string,
     categoryNames: string[],

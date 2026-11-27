@@ -42,7 +42,7 @@ import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
 import {
   isCategoryPartnerRecord,
-  restoreCategoryPartner,
+  undoCategoryPartner,
 } from "../transactions/transfer-category-partner";
 import { Account } from "../accounts/entities/account.entity";
 import { withResolvedMortgageTypeProperty } from "../accounts/legacy-mortgage-type.util";
@@ -1251,7 +1251,7 @@ export class ActionHistoryService {
     // The other side of a transfer the edit's category reached returns to
     // the value it held (INV-CATEGORY-002, specification section 4.7).
     if (isCategoryPartnerRecord(before.categoryPartner)) {
-      await restoreCategoryPartner(
+      await undoCategoryPartner(
         manager,
         action.userId,
         before.categoryPartner,

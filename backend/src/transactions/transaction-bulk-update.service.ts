@@ -232,17 +232,17 @@ export class TransactionBulkUpdateService {
 
     // Balance changes and the batch update commit in a single transaction.
     await withScopedDb(this.dataSource, async (m) => {
-      // First, before any row lock: the category is the person's, and which
-      // selected rows it fits. A category row takes only Income or Expense,
-      // so the shared category-owner lock comes before any row lock
-      // (`common/db/locks.ts`).
+      // First, before any row lock: the category is the person's, read under
+      // the shared category-owner lock, which comes before every row lock
+      // (`common/db/locks.ts`) since category rows may be written with it.
+      let category: Category | null = null;
       if (isUpdatingCategory) {
-        categoryPlan = await this.planCategoryWrite(
+        if (dto.categoryId) await lockCategoryOwnerShared(m, userId);
+        category = await fitCategory(
           m,
           userId,
           dto.categoryId ?? null,
-          eligibleIds,
-          splitParentIdSet,
+          "transfer",
         );
       }
 
@@ -391,6 +391,19 @@ export class TransactionBulkUpdateService {
         ...mirrorTargets.plainLinkedIds,
         ...mirrorTargets.owningSplitParentIds,
       ]);
+
+      // Which selected rows the category fits, and the other side of each
+      // transfer row it reaches, decided on rows locked for this write
+      // (INV-CATEGORY-001, INV-CATEGORY-002), before the first write.
+      if (isUpdatingCategory) {
+        categoryPlan = await this.planCategoryWrite(
+          m,
+          userId,
+          category,
+          eligibleIds,
+          splitParentIdSet,
+        );
+      }
 
       // WP1b: read the pre-write values of exactly the fields this run changes,
       // before ANY update runs -- including the counterpart and propagated rows
@@ -1334,12 +1347,6 @@ export class TransactionBulkUpdateService {
   }
 
   /**
-   * Assemble the before/after snapshots for the Action History record. Split
-   * parents never carry `categoryId` in either side (undo/redo must not write a
-   * parent category onto a split -- invariant I1); their changed lines ride
-   * along as `splits: [{ id, categoryId }]`.
-   */
-  /**
    * Which selected rows the category fits, and the other side of each
    * transfer row it reaches (`docs/specs/transfer-categories.md` section
    * 4.1, "Bulk update"). A Transfer category is written to each selected
@@ -1350,33 +1357,58 @@ export class TransactionBulkUpdateService {
   private async planCategoryWrite(
     m: EntityManager,
     userId: string,
-    categoryId: string | null,
+    category: Category | null,
     eligibleIds: readonly string[],
     splitParentIds: ReadonlySet<string>,
   ): Promise<BulkCategoryPlan> {
-    // Category rows may be written with it: the shared owner lock, before any
-    // row lock and before the type is read, as every category-row write
-    // takes it (specification section 12).
-    if (categoryId) await lockCategoryOwnerShared(m, userId);
-    const category = await fitCategory(m, userId, categoryId, "transfer");
-    const rows = (await m.query(
-      `SELECT id, is_transfer AS "isTransfer",
-              linked_transaction_id AS "linkedTransactionId"
-         FROM transactions WHERE id = ANY($1) AND user_id = $2`,
-      [eligibleIds, userId],
-    )) as { id: string; isTransfer: boolean; linkedTransactionId: string }[];
+    const readRows = async () =>
+      (await m.query(
+        `SELECT id, is_transfer AS "isTransfer",
+                linked_transaction_id AS "linkedTransactionId"
+           FROM transactions WHERE id = ANY($1) AND user_id = $2`,
+        [eligibleIds, userId],
+      )) as { id: string; isTransfer: boolean; linkedTransactionId: string }[];
+    const partnersOf = async (
+      rows: Awaited<ReturnType<typeof readRows>>,
+    ): Promise<CategoryPartner[]> => {
+      const found: CategoryPartner[] = [];
+      for (const row of rows) {
+        if (splitParentIds.has(row.id)) continue;
+        const partner = await findCategoryPartner(m, userId, row);
+        if (partner) found.push(partner);
+      }
+      return found;
+    };
+    // The rows a category write reaches are locked before their kind is read
+    // for it, in the protocol's order: split parents (the selected ones and
+    // those whose transfer line a selected row links) first, then every other
+    // row ascending. The unlocked read only says which rows those are.
+    const discovered = await partnersOf(await readRows());
+    const parents = new Set([
+      ...splitParentIds,
+      ...discovered.flatMap((p) => (p.kind === "line" ? [p.parentId] : [])),
+    ]);
+    await lockTransactionRows(m, [...parents], userId);
+    await lockTransactionRows(
+      m,
+      [
+        ...eligibleIds,
+        ...discovered.flatMap((p) => (p.kind === "leg" ? [p.id] : [])),
+      ].filter((id) => !parents.has(id)),
+      userId,
+    );
+    const rows = await readRows();
     const refusedIds: string[] = [];
-    const partners: CategoryPartner[] = [];
     for (const row of rows) {
       if (splitParentIds.has(row.id)) continue;
-      const holder = holderOfRow(row);
-      if (category && !categoryFits(category, holder)) {
+      if (category && !categoryFits(category, holderOfRow(row))) {
         refusedIds.push(row.id);
-        continue;
       }
-      const partner = await findCategoryPartner(m, userId, row);
-      if (partner) partners.push(partner);
     }
+    const refused = new Set(refusedIds);
+    const partners = await partnersOf(
+      rows.filter((row) => !refused.has(row.id)),
+    );
     const transferCategory =
       category !== null && !categoryFits(category, "category");
     return {
@@ -1436,6 +1468,12 @@ export class TransactionBulkUpdateService {
     return { before, after };
   }
 
+  /**
+   * Assemble the before/after snapshots for the Action History record. Split
+   * parents never carry `categoryId` in either side (undo/redo must not write a
+   * parent category onto a split -- invariant I1); their changed lines ride
+   * along as `splits: [{ id, categoryId }]`.
+   */
   private buildSnapshots(
     parentSnapshot: {
       rows: Record<string, unknown>[];

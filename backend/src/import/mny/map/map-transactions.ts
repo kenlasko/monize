@@ -1021,11 +1021,12 @@ export function withOneCategoryPerTransfer(
     if (partner === undefined || partner.linkedTransactionId !== row.id) {
       continue;
     }
-    const outgoing =
-      row.amount < 0 || (row.amount === partner.amount && row.id < partner.id)
-        ? row
-        : partner;
-    const incoming = outgoing === row ? partner : row;
+    // One answer from either side: the leg with the lower amount (the
+    // outgoing one of a pair with opposite signs), the lower id on a tie.
+    const [first, second] =
+      row.id < partner.id ? [row, partner] : [partner, row];
+    const outgoing = second.amount < first.amount ? second : first;
+    const incoming = outgoing === first ? second : first;
     chosen.set(row.id, outgoing.categoryHandle ?? incoming.categoryHandle);
   }
   return transactions.map((row) => {

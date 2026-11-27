@@ -103,6 +103,7 @@ import {
   NotificationType,
 } from "../notification-center/entities/notification.entity";
 import {
+  lockCategoryOwnerShared,
   acquireAdvisoryLocks,
   LockScope,
   lockAccountsForBalanceWrite,
@@ -408,13 +409,6 @@ const INVESTMENT_RELATIONS = [
   "splits.investmentSecurity",
 ];
 
-/**
- * On an update, an omitted key means "leave the stored value"; an explicit null
- * means "clear it". `??` collapses the two, which let a `{ field: null }` PATCH
- * pass validation against the stored value and then persist the null anyway
- * (issue #1154 review). Use this so validation sees the value that will be
- * written.
- */
 /** The kind a scheduled split line is written as, from what the request names. */
 function scheduledSplitKind(
   split: CreateScheduledTransactionSplitDto,
@@ -424,6 +418,13 @@ function scheduledSplitKind(
   return split.transferAccountId ? SplitKind.TRANSFER : SplitKind.CATEGORY;
 }
 
+/**
+ * On an update, an omitted key means "leave the stored value"; an explicit null
+ * means "clear it". `??` collapses the two, which let a `{ field: null }` PATCH
+ * pass validation against the stored value and then persist the null anyway
+ * (issue #1154 review). Use this so validation sees the value that will be
+ * written.
+ */
 function suppliedOrStored<T>(supplied: T | undefined, stored: T): T {
   return supplied === undefined ? stored : supplied;
 }
@@ -1259,6 +1260,14 @@ export class ScheduledTransactionsService {
       : { from: null, to: null };
 
     const saved = await withScopedDb(this.dataSource, async (m) => {
+      // Categories are fitted below under the shared category-owner lock,
+      // taken first, before any row lock (`common/db/locks.ts`).
+      if (
+        transactionData.categoryId ||
+        (hasSplits && splits.some((split) => split.categoryId))
+      ) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       const moneyDecimals = await this.assertScheduleAmountsPrecision(
         m,
         account.currencyCode,
@@ -3343,6 +3352,16 @@ export class ScheduledTransactionsService {
     // row update atomically so a partial failure cannot leave the row and its
     // splits in an inconsistent state.
     await withScopedDb(this.dataSource, async (m) => {
+      // A category this write fits, or clears on a switch to an ordinary
+      // schedule, is read under the shared category-owner lock, taken before
+      // any row lock (`common/db/locks.ts`).
+      if (
+        updateData.categoryId ||
+        isTransfer === false ||
+        (Array.isArray(splits) && splits.some((split) => split.categoryId))
+      ) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // The effective action, validation and the action-dependent clears above
       // were derived from `scheduled`, read before this transaction. Re-read the
       // row under the lock and refuse if the mutation basis changed in between:

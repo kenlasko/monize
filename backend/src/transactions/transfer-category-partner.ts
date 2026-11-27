@@ -154,6 +154,36 @@ async function readPartnerCategory(
 }
 
 /**
+ * An undo or redo returning the other side of a transfer to the value its
+ * history recorded. The other side answers the strict reconciled lock as the
+ * forward write did (the other leg, or the parent a line belongs to), so an
+ * undo cannot reach a row the edit itself could not.
+ */
+export async function undoCategoryPartner(
+  m: EntityManager,
+  userId: string,
+  record: CategoryPartnerRecord,
+): Promise<void> {
+  const owner =
+    record.kind === "leg"
+      ? record.id
+      : (record.parentId ?? (await lineParentOf(m, record.id)));
+  if (owner) await assertReconciledIdsMutable(m, userId, [owner]);
+  await restoreCategoryPartner(m, userId, record);
+}
+
+async function lineParentOf(
+  m: EntityManager,
+  lineId: string,
+): Promise<string | null> {
+  const [row] = (await m.query(
+    `SELECT transaction_id AS "parentId" FROM transaction_splits WHERE id = $1`,
+    [lineId],
+  )) as { parentId: string }[];
+  return row?.parentId ?? null;
+}
+
+/**
  * Write a partner's category: the write above, and an undo restoring the
  * value its history recorded. `transaction_splits` has no `user_id`, so a
  * line is scoped through its parent.

@@ -17,6 +17,7 @@ import {
   lockTransactionRows,
   LockedTransactionRow,
 } from "../common/db/locks";
+import { lockCategoryOwnerShared } from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
 import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import { formatCurrency } from "../common/format-currency.util";
@@ -332,6 +333,10 @@ export class TransactionConversionService {
     const touchedSecurityIds = new Set<string>();
 
     const updated = await withScopedDb(this.dataSource, async (m) => {
+      // The kept leg's category type is read, and the body's category fitted
+      // to an ordinary row, under the shared category-owner lock, taken before
+      // any row lock (`common/db/locks.ts`).
+      await lockCategoryOwnerShared(m, userId);
       // Both legs, ascending id, the order every transfer writer takes.
       const legIds = [
         transactionId,

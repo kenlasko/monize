@@ -750,6 +750,15 @@ export class TransactionsService {
     let savedTransactionId: string;
     try {
       savedTransactionId = await withScopedDb(this.dataSource, async (m) => {
+        // A category row's category is read under the shared category-owner
+        // lock, taken before any row lock (`common/db/locks.ts`).
+        if (
+          transactionData.categoryId ||
+          payeeDefaultCategoryId ||
+          splits?.some((split) => split.categoryId && !split.transferAccountId)
+        ) {
+          await lockCategoryOwnerShared(m, userId);
+        }
         // Precision refusals first, inside the write's transaction and before
         // anything (the caller's hook included) is written: the amount and
         // every split line are in the account's currency and carry at most its
@@ -3558,15 +3567,6 @@ export class TransactionsService {
     }
   }
 
-  /**
-   * A transfer leg's amount, account, date and rate belong to the pair, so the
-   * generic row update refuses a change to any of them on one leg; the
-   * transfer routes write both legs together (A26-M10, MON-H11). Judged on the
-   * row the caller has locked: a row converted to a transfer since the caller
-   * looked carries its link by now (`convertToTransfer` sets it with the
-   * flag), and the stored rate is read under that lock. A change is a value
-   * difference: a form re-sending the figures the row already holds is not one.
-   */
   /** Whether a row locked by this transaction is a transfer leg. */
   private async lockedRowKind(
     m: EntityManager,
@@ -3579,6 +3579,15 @@ export class TransactionsService {
     return { isTransfer: row?.isTransfer === true };
   }
 
+  /**
+   * A transfer leg's amount, account, date and rate belong to the pair, so the
+   * generic row update refuses a change to any of them on one leg; the
+   * transfer routes write both legs together (A26-M10, MON-H11). Judged on the
+   * row the caller has locked: a row converted to a transfer since the caller
+   * looked carries its link by now (`convertToTransfer` sets it with the
+   * flag), and the stored rate is read under that lock. A change is a value
+   * difference: a form re-sending the figures the row already holds is not one.
+   */
   private async assertNoStructuralTransferLegEdit(
     m: EntityManager,
     userId: string,
@@ -3762,7 +3771,10 @@ export class TransactionsService {
       // lock (`common/db/locks.ts`, specification section 12), so a concurrent
       // type change either commits before the fit below reads the type or
       // waits for this commit. Re-entrant: the fit takes it again.
-      if (writesCategory && updateData.categoryId) {
+      if (
+        (writesCategory && updateData.categoryId) ||
+        splits?.some((split) => split.categoryId && !split.transferAccountId)
+      ) {
         await lockCategoryOwnerShared(m, userId);
       }
       // First lock of the transaction: advisory before row locks

@@ -35,7 +35,7 @@ export async function categoryIdForCategoryRow(
       const category = await manager.findOne(Category, {
         where: { id: categoryId, userId },
       });
-      return category == null || !isTransferCategory(category);
+      return category != null && !isTransferCategory(category);
     })();
     cache.set(categoryId, usable);
   }
