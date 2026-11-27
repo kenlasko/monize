@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { rawApiRequest, uniqueId, type ApiClient } from '../helpers/api';
 import {
   addBudgetCategory,
@@ -34,6 +34,25 @@ async function seedAccounts(api: ApiClient) {
     openingBalance: 1000,
   });
   return { checking, savings };
+}
+
+/** Open the row of a transaction by a distinctive amount; retried until the dialog hydrates. */
+async function openRowDialog(page: Page, amountText: string) {
+  const dialog = page.getByRole('dialog');
+  await page.goto('/transactions');
+  await expect(async () => {
+    await page.locator('tr', { hasText: amountText }).first().getByText(amountText).first().click();
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30000 });
+  return dialog;
+}
+
+/** Pick a category in a custom combobox by typing its name and clicking the option. */
+async function pickCategory(field: Locator, name: string) {
+  await field.click();
+  await field.pressSequentially(name.slice(0, 12));
+  // The list's rows are plain elements, not role=option.
+  await field.page().getByText(name, { exact: true }).last().click();
 }
 
 async function openBreakdown(page: Page) {
@@ -77,14 +96,17 @@ test.describe('Transfer categories', () => {
     const transfer = await createTransfer(api, {
       fromAccountId: checking.id,
       toAccountId: savings.id,
-      amount: 100,
+      amount: 137.42,
     });
 
-    // Categorize the outgoing leg; the incoming leg follows (one category per
-    // transfer).
-    await api.patch(`/transactions/${transfer.fromTransaction.id}`, {
-      categoryId: category.id,
-    });
+    // Categorize the transfer through its form; both legs follow (one
+    // category per transfer).
+    const dialog = await openRowDialog(page, '137.42');
+    await pickCategory(dialog.getByPlaceholder('Select or create category...'), category.name);
+    await dialog.getByRole('button', { name: /^update/i }).click();
+    await expect(dialog).toBeHidden();
+    await page.reload();
+    await expect(page.locator('tr', { hasText: category.name }).first()).toBeVisible();
     const out = await api.get<TransactionRead>(`/transactions/${transfer.fromTransaction.id}`);
     const inc = await api.get<TransactionRead>(`/transactions/${transfer.toTransaction.id}`);
     expect(out.categoryId).toBe(category.id);
@@ -119,13 +141,20 @@ test.describe('Transfer categories', () => {
     const fees = await createCategory(api, { name: `Bank fees ${uniqueId()}` });
     const split = await createSplitTransaction(api, {
       accountId: checking.id,
-      amount: -105,
+      amount: -138.37,
       payeeName: `Bank ${uniqueId()}`,
       splits: [
-        { amount: -100, transferAccountId: savings.id, categoryId: transferCategory.id },
+        { amount: -133.37, transferAccountId: savings.id },
         { amount: -5, categoryId: fees.id },
       ],
     });
+
+    // Categorize the transfer line in the split editor.
+    const dialog = await openRowDialog(page, '138.37');
+    await pickCategory(dialog.getByLabel('Category for split 2').locator('visible=true').first(), transferCategory.name);
+    await dialog.getByRole('button', { name: /^update/i }).click();
+    await expect(dialog).toBeHidden();
+    await page.reload();
 
     const read = await api.get<TransactionRead>(`/transactions/${split.id}`);
     const transferLine = read.splits?.find((s) => s.transferAccountId === savings.id);
@@ -145,9 +174,6 @@ test.describe('Transfer categories', () => {
     });
     expect(refused.status()).toBe(400);
 
-    // The register shows the line's category on the split.
-    await page.goto('/transactions');
-    await expect(page.locator('tr', { hasText: split.payeeName! }).first()).toBeVisible();
   });
 
   test('the Monthly Category Breakdown lists a categorized transfer under its category', async ({
@@ -214,12 +240,14 @@ test.describe('Transfer categories', () => {
     await expect(page.getByRole('heading', { name: budget.name })).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByText(category.name).first()).toBeVisible();
-    await expect(page.getByText(/\$300/).first()).toBeVisible();
+    // Both figures are on the Transfer category's own line: the transfers
+    // that hold it, of the planned amount.
+    const line = () => page.getByRole('button', { name: new RegExp(category.name) });
+    await expect(line()).toContainText('$300.00');
     // The period summary is recomputed on load; poll until the actual shows.
     await expect(async () => {
       await page.reload();
-      await expect(page.getByText(/\$125/).first()).toBeVisible({ timeout: 5000 });
+      await expect(line()).toContainText('$125.00/$300.00', { timeout: 5000 });
     }).toPass({ timeout: 30000 });
   });
 });
