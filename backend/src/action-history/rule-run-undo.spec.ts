@@ -1,6 +1,9 @@
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
-import { lockTransactionRows } from "../common/db/locks";
+import {
+  lockCategoryOwnerShared,
+  lockTransactionRows,
+} from "../common/db/locks";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
 import { ActionHistory } from "./entities/action-history.entity";
@@ -8,7 +11,11 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
 import { rewindScheduleCursor } from "../scheduled-transactions/schedule-cursor";
 import { assertRuleRunRedoable, undoRuleRun } from "./rule-run-undo";
 
-jest.mock("../common/db/locks", () => ({ lockTransactionRows: jest.fn() }));
+jest.mock("../common/db/locks", () => ({
+  lockTransactionRows: jest.fn(),
+  // The shared category-owner lock a category restore takes first.
+  lockCategoryOwnerShared: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock("../scheduled-transactions/schedule-cursor", () => ({
   rewindScheduleCursor: jest.fn(),
 }));
@@ -76,6 +83,14 @@ describe("undoRuleRun", () => {
       balances,
     );
 
+    // A category restore takes the shared category-owner lock before the
+    // row locks (`common/db/locks.ts`).
+    expect(lockCategoryOwnerShared).toHaveBeenCalledWith(em, USER);
+    expect(
+      (lockCategoryOwnerShared as jest.Mock).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      (lockTransactionRows as jest.Mock).mock.invocationCallOrder[0],
+    );
     expect(manager.update).toHaveBeenCalledTimes(2);
     expect(manager.update).toHaveBeenCalledWith(
       Transaction,

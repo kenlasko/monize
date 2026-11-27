@@ -4425,10 +4425,19 @@ describe("ScheduledTransactionsService", () => {
       const sqls = mockDataSource.query.mock.calls.map((c: unknown[]) =>
         String(c[0]),
       );
-      const lock = sqls.findIndex((q: string) =>
-        q.includes("pg_advisory_xact_lock"),
+      const params = (i: number) =>
+        mockDataSource.query.mock.calls[i][1] as unknown[] | undefined;
+      // The payroll category's lock (scope 9), after the shared
+      // category-owner lock the posting takes as its first statement.
+      const lock = sqls.findIndex(
+        (q: string, i: number) =>
+          q.includes("pg_advisory_xact_lock") && params(i)?.[0] === 9,
+      );
+      const ownerLock = sqls.findIndex((q: string) =>
+        q.includes("pg_advisory_xact_lock_shared"),
       );
       const paid = sqls.findIndex((q: string) => q.includes("foreign_rows"));
+      expect(ownerLock).toBe(0);
       expect(lock).toBeGreaterThanOrEqual(0);
       expect(lock).toBeLessThan(paid);
       expect(mockDataSource.query.mock.calls[lock][1]).toEqual([

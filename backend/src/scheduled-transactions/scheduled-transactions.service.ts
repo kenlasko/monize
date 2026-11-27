@@ -4600,6 +4600,11 @@ export class ScheduledTransactionsService {
     // (a revolving line of credit stays active, since it can be drawn again).
     let skipFinancialWrite = false;
     const removedAfterOnce = await withScopedDb(this.dataSource, async (m) => {
+      // First lock: the posted row's category (and its lines') is fitted under
+      // the shared category-owner lock, which comes before the schedule's and
+      // the override's row locks below (`common/db/locks.ts`); the create's
+      // own fit takes it again, re-entrant.
+      await lockCategoryOwnerShared(m, userId);
       // Lock the schedule and confirm this occurrence is still the due one. A
       // poster that lost the race finds next_due_date already advanced.
       const current = await m.findOne(ScheduledTransaction, {

@@ -62,6 +62,7 @@ import { repriceSettledLoanTemplates } from "../loan-installments/reprice-templa
 import {
   LockedTransactionRow,
   lockAccountsForBalanceWrite,
+  lockCategoryOwnerShared,
   lockTransactionRows,
 } from "../common/db/locks";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
@@ -1171,6 +1172,14 @@ export class ActionHistoryService {
   ): Promise<void> {
     if (!action.entityId || !action.beforeData) return;
 
+    // A category the undo restores is written under the shared category-owner
+    // lock, which comes before every row lock (`common/db/locks.ts`).
+    if (
+      "categoryId" in action.beforeData ||
+      action.beforeData.categoryPartner !== undefined
+    ) {
+      await lockCategoryOwnerShared(manager, action.userId);
+    }
     // The other side of a transfer this undo returns is locked with the row,
     // in the order the edit took them (a split parent first, two legs
     // ascending), so an undo and an edit of the other leg cannot deadlock.
@@ -2123,6 +2132,16 @@ export class ActionHistoryService {
     // the parent of a transfer line the batch wrote) are locked on their own
     // before the rest, the by-role order of `common/db/locks.ts`; which ids
     // are parents is read without a lock, as the bulk update reads it.
+    // A category the undo restores (a row's, or a split line's) is written
+    // under the shared category-owner lock, before every row lock.
+    if (
+      action.beforeData.transactions.some(
+        (txData: Record<string, unknown>) =>
+          "categoryId" in txData || Array.isArray(txData.splits),
+      )
+    ) {
+      await lockCategoryOwnerShared(manager, action.userId);
+    }
     const ids: string[] = action.beforeData.transactions.map(
       (txData: { id: string }) => txData.id,
     );

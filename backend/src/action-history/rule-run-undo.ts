@@ -5,7 +5,11 @@ import {
 } from "../transactions/transfer-category-partner";
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
-import { LockedTransactionRow, lockTransactionRows } from "../common/db/locks";
+import {
+  LockedTransactionRow,
+  lockCategoryOwnerShared,
+  lockTransactionRows,
+} from "../common/db/locks";
 import { tr } from "../i18n/translate";
 import {
   ScheduleCursorChange,
@@ -138,6 +142,17 @@ export async function undoRuleRun(
     snapshots.flatMap((row) =>
       row.structure?.kind === kind ? row.structure.counterpartIds : [],
     );
+  // A category the undo restores is written under the shared category-owner
+  // lock, before every row lock (`common/db/locks.ts`).
+  if (
+    snapshots.some(
+      (row) =>
+        "categoryId" in row ||
+        (row as { categoryPartner?: unknown }).categoryPartner !== undefined,
+    )
+  ) {
+    await lockCategoryOwnerShared(manager, action.userId);
+  }
   // The other sides of transfers the run's category reached are locked with
   // the rows, in the order the run took them (a partner line's split parent
   // first, the other legs ascending with the rows), before any write.

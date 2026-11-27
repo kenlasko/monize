@@ -750,14 +750,10 @@ export class TransactionsService {
     try {
       savedTransactionId = await withScopedDb(this.dataSource, async (m) => {
         // A category row's category is read under the shared category-owner
-        // lock, taken before any row lock (`common/db/locks.ts`).
-        if (
-          transactionData.categoryId ||
-          payeeDefaultCategoryId ||
-          splits?.some((split) => split.categoryId && !split.transferAccountId)
-        ) {
-          await lockCategoryOwnerShared(m, userId);
-        }
+        // lock, taken before any row lock (`common/db/locks.ts`). Always: the
+        // create rules below may set one even when the request names none,
+        // and the split lines' balance writes lock rows before they run.
+        await lockCategoryOwnerShared(m, userId);
         // Precision refusals first, inside the write's transaction and before
         // anything (the caller's hook included) is written: the amount and
         // every split line are in the account's currency and carry at most its
