@@ -584,7 +584,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
               categoryName: {
                 type: "string",
                 description:
-                  'Optional category (standard create/update, or transfer create/update -- on a transfer it is stored on both legs). Exact name from the user\'s category list, qualified as "Parent: Child" -- a bare subcategory name shared by two parents is rejected, not guessed.',
+                  'Optional category (standard create/update, or transfer create/update -- on a transfer it is stored on both legs). Exact name from the user\'s category list, qualified as "Parent: Child" -- a bare subcategory name shared by two parents is rejected, not guessed. A standard transaction takes an Income or Expense category only: a Transfer category (type transfer in list_categories) goes only on a transfer and is refused elsewhere. A transfer takes a category of any type, a Transfer category of that name first.',
               },
               description: {
                 type: "string",
@@ -628,7 +628,7 @@ export const FINANCIAL_TOOLS: AiToolDefinition[] = [
                     categoryName: {
                       type: "string",
                       description:
-                        'Category for this split line. Exact name, qualified as "Parent: Child" for a subcategory (required when the subcategory name is shared by more than one parent).',
+                        'Category for this split line: an Income or Expense category (a Transfer category goes only on a transfer). Exact name, qualified as "Parent: Child" for a subcategory (required when the subcategory name is shared by more than one parent).',
                     },
                     amount: {
                       type: "number",

@@ -1,5 +1,13 @@
+import {
+  type CategoryHolder,
+  categoryFits,
+  transferCategoryRefusal,
+} from "../categories/category-fit";
 import { Injectable, Logger } from "@nestjs/common";
-import { categoryTypeOf } from "../categories/category-type.util";
+import {
+  categoryTypeOf,
+  isTransferCategory,
+} from "../categories/category-type.util";
 import {
   Brackets,
   DataSource,
@@ -1794,6 +1802,42 @@ export class TransactionAnalyticsService {
    * silently is what this replaces: the answer that comes back is about a
    * category the user never named, and nothing downstream can tell.
    */
+  /**
+   * The category a name a model wrote lands as on a row of `holder`
+   * (`docs/specs/transfer-categories.md` section 4.4): resolved among the
+   * categories that fit the row (INV-CATEGORY-001), and on a transfer a
+   * Transfer category of that path first. `null` when the name names no
+   * category; a name that names only a category the row cannot hold (a
+   * Transfer category on an ordinary row) is refused with the reason.
+   */
+  async resolveLlmCategoryIdFor(
+    userId: string,
+    categoryName: string,
+    holder: CategoryHolder,
+  ): Promise<string | null> {
+    const all = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(Category).find({
+        where: { userId },
+        select: ["id", "name", "parentId", "categoryType", "isIncome"],
+      }),
+    );
+    const match = (list: readonly Category[]) =>
+      resolveCategoryNamePaths(list, [categoryName])[0]?.id ?? null;
+    const transfers = all.filter((c) => isTransferCategory(c));
+    const others = all.filter((c) => !isTransferCategory(c));
+    if (holder === "transfer") {
+      return match(transfers) ?? match(others) ?? match(all);
+    }
+    const fitting = match(others);
+    if (fitting) return fitting;
+    const named = match(all) ?? match(transfers);
+    const category = named ? all.find((c) => c.id === named) : undefined;
+    if (category && !categoryFits(category, "category")) {
+      throw transferCategoryRefusal(category.name);
+    }
+    return named;
+  }
+
   async resolveLlmCategoryIds(
     userId: string,
     categoryNames: string[],

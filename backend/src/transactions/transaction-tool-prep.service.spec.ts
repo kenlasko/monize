@@ -123,6 +123,16 @@ describe("TransactionToolPrepService", () => {
       resolveLlmCategoryIds: jest
         .fn()
         .mockResolvedValue({ categoryIds: ["c1"], unresolved: [] }),
+      // The holder-aware lookup the tool prep calls (`resolveLlmCategoryIdFor`):
+      // this double's first match, as `resolveLlmCategoryIds` answers it.
+      resolveLlmCategoryIdFor: jest.fn(async function (
+        this: { resolveLlmCategoryIds: jest.Mock },
+        userId: string,
+        name: string,
+      ) {
+        const resolved = await this.resolveLlmCategoryIds(userId, [name]);
+        return resolved?.categoryIds?.[0] ?? null;
+      }),
     };
     splitService = {
       validateSplitsInCurrency: jest.fn().mockResolvedValue(undefined),

@@ -529,8 +529,11 @@ export class ForecastAggregatorService {
       // Otherwise the occurrence's own direction decides -- and `null` there is
       // "not derivable", which travels to the prompt rather than collapsing to
       // "expense".
+      // A transfer's category never makes it income: a transfer takes a
+      // category of any type (INV-CATEGORY-001) and is a named flow, never
+      // income or spending (INV-REPORT-003), so only its direction is read.
       const isIncome =
-        st.category && isIncomeCategory(st.category)
+        !st.isTransfer && st.category && isIncomeCategory(st.category)
           ? true
           : occurrence.directionAmount === null
             ? null
