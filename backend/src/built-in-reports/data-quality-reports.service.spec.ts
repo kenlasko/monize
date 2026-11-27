@@ -66,6 +66,26 @@ describe("DataQualityReportsService", () => {
   // getUncategorizedTransactions
   // ---------------------------------------------------------------------------
   describe("getUncategorizedTransactions", () => {
+    it("reads a split's transfer line holding a category as a transfer, not as its category line", async () => {
+      scopedManager.query.mockResolvedValue([]);
+
+      await service.getUncategorizedTransactions(
+        mockUserId,
+        undefined,
+        "2025-12-31",
+      );
+
+      // Both the list and the summary: a split is categorized only by a
+      // category line (INV-CATEGORY-001, INV-REPORT-006).
+      const sql = scopedManager.query.mock.calls.map(([text]) => String(text));
+      expect(sql).toHaveLength(2);
+      for (const text of sql) {
+        expect(text).toMatch(
+          /FROM transaction_splits ts\s+WHERE ts\.transaction_id = t\.id\s+AND ts\.category_id IS NOT NULL[\s\S]*?AND ts\.transfer_account_id IS NULL/,
+        );
+      }
+    });
+
     it("leaves a currency's summary out whole when one of its days has no rate (issue #2106)", async () => {
       currencyService.convertRow.mockImplementation(
         (amount: number, row: RawRateBasis) =>

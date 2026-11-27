@@ -1,3 +1,8 @@
+import {
+  categoryFits,
+  transferCategoryRefusal,
+} from "../categories/category-fit";
+import type { CategoryType } from "../categories/category-type.util";
 import { EntityManager } from "typeorm";
 import { ExchangeRateService } from "../currencies/exchange-rate.service";
 import {
@@ -197,13 +202,25 @@ export async function planSharedFinance(
     ),
   ];
   if (categoryIds.length) {
-    const categories: { id: string; category_type: string }[] =
+    const categories: { id: string; name: string; category_type: string }[] =
       await manager.query(
-        "SELECT id, category_type FROM categories WHERE id = ANY($1::uuid[]) AND user_id = $2",
+        "SELECT id, name, category_type FROM categories WHERE id = ANY($1::uuid[]) AND user_id = $2",
         [categoryIds, userId],
       );
     if (categories.length !== categoryIds.length)
       sharedError("financeCategory");
+    // Every category a posting writes goes on a category row or line (the
+    // cost row, the private remainder, the FX difference, the kept private
+    // lines), which takes only Income or Expense (INV-CATEGORY-001); the
+    // refusal names the category and why.
+    const transfer = categories.find(
+      (c) =>
+        !categoryFits(
+          { categoryType: c.category_type as CategoryType },
+          "category",
+        ),
+    );
+    if (transfer) throw transferCategoryRefusal(transfer.name);
     if (
       personal !== 0n &&
       categories.find((c) => c.id === categoryId)?.category_type !==

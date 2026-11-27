@@ -46,6 +46,11 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
+import {
+  isCategoryPartnerRecord,
+  lockRowsWithCategoryPartners,
+  undoCategoryPartner,
+} from "../transactions/transfer-category-partner";
 import { Account } from "../accounts/entities/account.entity";
 import { withResolvedMortgageTypeProperty } from "../accounts/legacy-mortgage-type.util";
 import { Category } from "../categories/entities/category.entity";
@@ -63,6 +68,7 @@ import { repriceSettledLoanTemplates } from "../loan-installments/reprice-templa
 import {
   LockedTransactionRow,
   lockAccountsForBalanceWrite,
+  lockCategoryOwnerShared,
   lockTransactionRows,
 } from "../common/db/locks";
 import { LEDGER_MOVEMENT_PREDICATE } from "../common/ledger-balance.sql";
@@ -1187,6 +1193,27 @@ export class ActionHistoryService {
   ): Promise<void> {
     if (!action.entityId || !action.beforeData) return;
 
+    // A category the undo restores is written under the shared category-owner
+    // lock, which comes before every row lock (`common/db/locks.ts`).
+    if (
+      "categoryId" in action.beforeData ||
+      action.beforeData.categoryPartner !== undefined
+    ) {
+      await lockCategoryOwnerShared(manager, action.userId);
+    }
+    // The other side of a transfer this undo returns is locked with the row,
+    // in the order the edit took them (a split parent first, two legs
+    // ascending), so an undo and an edit of the other leg cannot deadlock.
+    // The row's own lock below is then re-entrant.
+    const partner = action.beforeData.categoryPartner;
+    if (isCategoryPartnerRecord(partner)) {
+      await lockRowsWithCategoryPartners(
+        manager,
+        action.userId,
+        [action.entityId],
+        [partner],
+      );
+    }
     const transaction = await manager.findOne(Transaction, {
       where: { id: action.entityId, userId: action.userId },
       lock: { mode: "pessimistic_write" },
@@ -1265,6 +1292,11 @@ export class ActionHistoryService {
     if (Object.keys(updateFields).length > 0) {
       await manager.update(Transaction, action.entityId, updateFields);
     }
+    // The other side of a transfer the edit's category reached returns to
+    // the value it held (INV-CATEGORY-002, specification section 4.7).
+    if (isCategoryPartnerRecord(before.categoryPartner)) {
+      await undoCategoryPartner(manager, action.userId, before.categoryPartner);
+    }
 
     // Restore splits if they were captured and the edit changed them
     if (restoreSplits) {
@@ -1278,6 +1310,7 @@ export class ActionHistoryService {
             id: splitData.id,
             transactionId: action.entityId,
             kind: splitKindOf(splitData),
+            // category-fit-ok: the undo restores the line as its history recorded it
             categoryId: splitData.categoryId,
             transferAccountId: splitData.transferAccountId || null,
             linkedTransactionId: splitData.linkedTransactionId || null,
@@ -1478,6 +1511,7 @@ export class ActionHistoryService {
 
     // Re-insert the transaction
     await manager.query(
+      // category-fit-ok: the undo restores the row as its history recorded it
       `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
         payee_id, payee_name, category_id, description, reference_number, status, is_split,
         parent_transaction_id, is_transfer, linked_transaction_id, reconciled_date, created_at,
@@ -1520,6 +1554,7 @@ export class ActionHistoryService {
       );
       for (const splitData of before.splits) {
         await manager.query(
+          // category-fit-ok: the undo restores the lines as their history recorded them
           `INSERT INTO transaction_splits (id, transaction_id, category_id, transfer_account_id, linked_transaction_id, amount, memo)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
@@ -1638,6 +1673,7 @@ export class ActionHistoryService {
     // Re-insert both transactions without linked IDs first
     for (const txData of [fromTransaction, toTransaction]) {
       await manager.query(
+        // category-fit-ok: the undo restores the legs as their history recorded them
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
           is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code,
@@ -2065,6 +2101,7 @@ export class ActionHistoryService {
 
     for (const txData of action.beforeData.transactions) {
       await manager.query(
+        // category-fit-ok: the undo restores the rows as their history recorded them
         `INSERT INTO transactions (id, user_id, account_id, transaction_date, amount, currency_code, exchange_rate,
           payee_id, payee_name, category_id, description, reference_number, status, is_split,
           is_transfer, linked_transaction_id, created_at, original_amount, original_currency_code,
@@ -2112,12 +2149,43 @@ export class ActionHistoryService {
     // INV-RECONCILE-001: the restore rewrites every row's status and fields
     // (redo reaches here too, via `executeRedo`), so a reconciled locked row
     // refuses the whole batch, as the single-row undo does. Locked first, and
-    // checked before the first write.
-    const locked = await lockTransactionRows(
+    // checked before the first write. Split parents (a recategorized parent,
+    // the parent of a transfer line the batch wrote) are locked on their own
+    // before the rest, the by-role order of `common/db/locks.ts`; which ids
+    // are parents is read without a lock, as the bulk update reads it.
+    // A category the undo restores (a row's, or a split line's) is written
+    // under the shared category-owner lock, before every row lock.
+    if (
+      action.beforeData.transactions.some(
+        (txData: Record<string, unknown>) =>
+          "categoryId" in txData || Array.isArray(txData.splits),
+      )
+    ) {
+      await lockCategoryOwnerShared(manager, action.userId);
+    }
+    const ids: string[] = action.beforeData.transactions.map(
+      (txData: { id: string }) => txData.id,
+    );
+    const parentIds = (
+      (await manager.query(
+        `SELECT id FROM transactions
+          WHERE id = ANY($1) AND user_id = $2 AND is_split = true`,
+        [ids, action.userId],
+      )) as { id: string }[]
+    ).map((row) => row.id);
+    const lockedParents = await lockTransactionRows(
       manager,
-      action.beforeData.transactions.map((txData: { id: string }) => txData.id),
+      parentIds,
       action.userId,
     );
+    const locked = new Map([
+      ...lockedParents,
+      ...(await lockTransactionRows(
+        manager,
+        ids.filter((id) => !lockedParents.has(id)),
+        action.userId,
+      )),
+    ]);
     await assertReconciledRowsMutable(manager, action.userId, [
       ...locked.values(),
     ]);
@@ -2166,6 +2234,7 @@ export class ActionHistoryService {
       if (Array.isArray(txData.splits)) {
         for (const split of txData.splits) {
           await manager.query(
+            // category-fit-ok: the undo restores the lines as their history recorded them
             `UPDATE transaction_splits SET category_id = $1
               WHERE id = $2
                 AND EXISTS (

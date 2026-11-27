@@ -549,6 +549,7 @@ export class BankSyncWriterService {
             currencyCode,
             payeeId: payee.payeeId,
             payeeName: payee.payeeName ?? row.payeeText,
+            // category-fit-ok: the payee lookup leaves out a Transfer default
             categoryId: payee.defaultCategoryId,
             description: row.description,
             referenceNumber: row.referenceNumber,
@@ -822,6 +823,7 @@ export class BankSyncWriterService {
       await m.update(
         Transaction,
         { id: transactionId, userId, isSplit: false, isTransfer: false },
+        // category-fit-ok: loadPayeeDefaultCategories leaves out a Transfer default
         { categoryId: category.categoryId },
       );
     }

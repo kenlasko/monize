@@ -1,3 +1,4 @@
+import type { CategoryPartnerRecord } from "../transactions/transfer-category-partner";
 import type { ClaimedLoanOccurrence } from "../loan-installments/claim-loan-occurrence";
 import type {
   LoanSettlementPlan,
@@ -69,6 +70,12 @@ export type RuleActionSkipReason =
   | "no_change"
   | "row_has_splits"
   | "row_is_transfer_leg"
+  /**
+   * `set_category` with a Transfer category on a category row (an ordinary
+   * row), or a `split` part naming one for a category line: a Transfer
+   * category goes only on a transfer (INV-CATEGORY-001).
+   */
+  | "category_does_not_fit"
   | "cross_owner_transfer_leg"
   /** The template rendered to nothing (design 10.2). */
   | "empty_render"
@@ -132,6 +139,21 @@ export interface RulePlanContext {
    * no I/O; a missing entry falls back to the category alone.
    */
   readonly categoryChains?: ReadonlyMap<string, readonly string[]>;
+  /**
+   * The categories among those a rule may set that are Transfer categories,
+   * so `set_category` skips a category row it does not fit
+   * (INV-CATEGORY-001). The planner does no I/O; absent, nothing is skipped
+   * for its type and the write's own fit check is the backstop.
+   */
+  readonly transferCategoryIds?: ReadonlySet<string>;
+  /**
+   * The category the other side of this transfer holds, when the write sets
+   * that side too (a same-owner pair's other leg, a split's transfer line):
+   * one category per transfer (INV-CATEGORY-002), so a `set_category` naming
+   * the category the row holds is still a write while the other side holds
+   * another. Absent: there is no other side the write reaches.
+   */
+  readonly otherSideCategoryId?: string | null;
   /**
    * The owner's accounts a structural action may target, with their currency.
    * The planner does no I/O; an account missing here is refused as
@@ -255,6 +277,15 @@ export interface RuleNetChanges {
 
 export interface RuleEffects {
   readonly changes: RuleNetChanges;
+  /**
+   * Set by the write, never by the plan: the other side of a transfer the
+   * category reached (a split transfer line, or an other leg the run did not
+   * write itself) and what it held, so the run's undo returns it.
+   */
+  readonly categoryPartner?: {
+    readonly before: CategoryPartnerRecord;
+    readonly after: CategoryPartnerRecord;
+  };
   readonly trace: readonly RuleTraceEntry[];
   readonly aiReviewRequests: readonly AiReviewRequest[];
   /** Rendered payee names the plan needed and `payeeResolutions` did not hold. */
@@ -285,6 +316,8 @@ interface WorkingState {
   readonly structure: RuleStructurePlan | null;
   /** The settlement a `settle_loan_installment` planned with `structure`. */
   readonly loanSettlement: LoanSettlementPlan | null;
+  /** `RulePlanContext.otherSideCategoryId`, then what the write leaves on it. */
+  readonly otherSideCategoryId?: string | null;
 }
 
 const NO_CHANGES: RuleTraceChanges = Object.freeze({});
@@ -348,7 +381,14 @@ function refusal(
 ): RuleActionSkipReason | null {
   if (action.type === "set_category") {
     if (facts.hasSplits) return "row_has_splits";
-    if (facts.type === "TRANSFER") return "row_is_transfer_leg";
+    // A transfer takes a category of any type, written to both of its legs
+    // (INV-CATEGORY-002); a category row takes only Income or Expense.
+    if (
+      facts.type !== "TRANSFER" &&
+      context.transferCategoryIds?.has(action.categoryId) === true
+    ) {
+      return "category_does_not_fit";
+    }
   }
   if (
     (action.type === "set_payee" ||
@@ -375,7 +415,15 @@ function step(
       if (action.onlyIfEmpty && state.categoryId !== null) {
         return skip(state, action, "already_set");
       }
-      if (state.categoryId === action.categoryId) {
+      // A value difference against either side of a transfer
+      // (INV-CATEGORY-002): the category both sides already hold writes
+      // nothing; the one the row holds, while the other side holds another,
+      // is a write that sets that side.
+      if (
+        state.categoryId === action.categoryId &&
+        (state.otherSideCategoryId === undefined ||
+          state.otherSideCategoryId === action.categoryId)
+      ) {
         return skip(state, action, "no_change");
       }
       const chain = context.categoryChains?.get(action.categoryId);
@@ -384,6 +432,9 @@ function step(
           ...state,
           categoryId: action.categoryId,
           categoryAncestorIds: chain ?? [action.categoryId],
+          ...(state.otherSideCategoryId === undefined
+            ? {}
+            : { otherSideCategoryId: action.categoryId }),
         },
         applied: { type: action.type },
       };
@@ -456,6 +507,20 @@ function structural(
   if (action.type === "settle_loan_installment") {
     return settleLoan(state, action, input);
   }
+  // A split's category line takes only Income or Expense (INV-CATEGORY-001):
+  // a part naming a Transfer category is skipped with the reason, never
+  // planned as a change the write would refuse. A transfer part takes any.
+  if (
+    action.type === "split" &&
+    action.parts.some(
+      (part) =>
+        !part.transferAccountId &&
+        part.categoryId !== undefined &&
+        input.context.transferCategoryIds?.has(part.categoryId) === true,
+    )
+  ) {
+    return skip(state, action, "category_does_not_fit");
+  }
   const planned = planStructure(
     action,
     input.facts,
@@ -468,10 +533,21 @@ function structural(
     action.payeeId === undefined
       ? {}
       : { payeeId: action.payeeId, payeeName: null, payeeCreate: null };
+  // A conversion naming a category gives both legs that one, of any type; one
+  // that clears it leaves none; one that keeps it keeps the row's on both.
+  const namedCategory =
+    structure.kind === "transfer" ? structure.categoryId : undefined;
   const category =
-    structure.kind === "split" || structure.clearCategory
-      ? { categoryId: null, categoryAncestorIds: [] }
-      : {};
+    namedCategory !== undefined
+      ? {
+          categoryId: namedCategory,
+          categoryAncestorIds: input.context.categoryChains?.get(
+            namedCategory,
+          ) ?? [namedCategory],
+        }
+      : structure.kind === "split" || structure.clearCategory
+        ? { categoryId: null, categoryAncestorIds: [] }
+        : {};
   return {
     state: {
       ...state,
@@ -599,9 +675,17 @@ function diffState(
   after: WorkingState,
 ): RuleTraceChanges {
   return {
-    ...(before.categoryId !== after.categoryId
+    ...(categoryWritten(before, after)
       ? {
-          categoryId: { before: before.categoryId, after: after.categoryId },
+          // When only the other side moves, its category is the one that
+          // changes, and the trace says so.
+          categoryId: {
+            before:
+              before.categoryId === after.categoryId
+                ? (before.otherSideCategoryId ?? null)
+                : before.categoryId,
+            after: after.categoryId,
+          },
         }
       : {}),
     ...(before.payeeId !== after.payeeId
@@ -684,11 +768,17 @@ export function ruleConditionMatches(
   );
 }
 
+/** Whether the pass moved the category of the row or of the other side. */
+function categoryWritten(first: WorkingState, last: WorkingState): boolean {
+  return (
+    first.categoryId !== last.categoryId ||
+    first.otherSideCategoryId !== last.otherSideCategoryId
+  );
+}
+
 function netChanges(first: WorkingState, last: WorkingState): RuleNetChanges {
   return {
-    ...(first.categoryId !== last.categoryId
-      ? { categoryId: last.categoryId }
-      : {}),
+    ...(categoryWritten(first, last) ? { categoryId: last.categoryId } : {}),
     ...(last.payeeCreate !== null
       ? { createPayee: last.payeeCreate, payeeName: last.payeeCreate }
       : first.payeeId !== last.payeeId
@@ -740,6 +830,9 @@ export function planRuleEffects(
     hasSplits: facts.hasSplits,
     structure: null,
     loanSettlement: null,
+    ...(context.otherSideCategoryId === undefined
+      ? {}
+      : { otherSideCategoryId: context.otherSideCategoryId }),
   };
   let state = initial;
   const trace: RuleTraceEntry[] = [];

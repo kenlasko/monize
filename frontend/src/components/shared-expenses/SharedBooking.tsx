@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 import { accountsApi } from "@/lib/accounts";
 import { categoriesApi } from "@/lib/categories";
 import { payeesApi } from "@/lib/payees";
-import { getCategorySelectOptions } from "@/lib/categoryUtils";
+import { getCategorySelectOptionsFor } from "@/lib/categoryUtils";
 import { sharedCommand, sharedExpensesApi } from "@/lib/shared-expenses";
 import type {
   SharedBankPaymentInput,
@@ -102,7 +102,9 @@ export function SharedBooking({
       ),
   );
   const categoryOptions = withCategoryIcons(
-    getCategorySelectOptions(options.data?.categories ?? [], {
+    // Every category a posting writes goes on a category row or line: Income
+    // or Expense only (INV-CATEGORY-001).
+    getCategorySelectOptionsFor(options.data?.categories ?? [], "category", {
       includeEmpty: true,
       emptyLabel: t("choose"),
     }),

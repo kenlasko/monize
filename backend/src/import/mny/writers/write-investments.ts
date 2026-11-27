@@ -1,3 +1,4 @@
+import { fitMnyCategory, type MnyCategoryInput } from "./fit-mny-category";
 import { randomUUID } from "node:crypto";
 import { BondProgramCache } from "../../../bonds/bond-series-resolver";
 import {
@@ -128,7 +129,7 @@ function resolveReference(
   return written === undefined || written.has(id) ? id : null;
 }
 
-export interface WriteInvestmentsInput {
+export interface WriteInvestmentsInput extends MnyCategoryInput {
   readonly transactions: readonly MappedInvestmentTransaction[];
   /** Import-local account key -> Monize account id. */
   readonly accountIdByKey: ReadonlyMap<string, string>;
@@ -321,11 +322,12 @@ export async function writeInvestments(
           // is an unlinked name, exactly as the native and QIF paths write it.
           payeeId: hasMoneyPayee ? moneyPayeeId : null,
           payeeName: hasMoneyPayee ? moneyPayeeName : activityPayeeName,
-          categoryId:
-            transaction.categoryHandle === null
-              ? null
-              : (input.categoryIdByHandle.get(transaction.categoryHandle) ??
-                null),
+          // An ordinary cash row: a category row (INV-CATEGORY-001).
+          categoryId: fitMnyCategory(
+            input,
+            transaction.categoryHandle,
+            "category",
+          ),
           description,
           isSplit: false,
           isTransfer: false,

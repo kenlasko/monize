@@ -24,6 +24,12 @@ import { CreateScheduledTransactionDto } from "./dto/create-scheduled-transactio
 import { UpdateScheduledTransactionDto } from "./dto/update-scheduled-transaction.dto";
 import { CreateScheduledTransactionSplitDto } from "./dto/create-scheduled-transaction-split.dto";
 import {
+  categoryFits,
+  fitCategories,
+  fitCategory,
+} from "../categories/category-fit";
+import { clearTransferCategoriesFromOverrides } from "./scheduled-category-fit";
+import {
   CreateScheduledTransactionOverrideDto,
   UpdateScheduledTransactionOverrideDto,
   OverrideSplitDto,
@@ -97,6 +103,7 @@ import {
   NotificationType,
 } from "../notification-center/entities/notification.entity";
 import {
+  lockCategoryOwnerShared,
   acquireAdvisoryLocks,
   LockScope,
   lockAccountsForBalanceWrite,
@@ -402,6 +409,15 @@ const INVESTMENT_RELATIONS = [
   "splits.investmentSecurity",
 ];
 
+/** The kind a scheduled split line is written as, from what the request names. */
+function scheduledSplitKind(
+  split: CreateScheduledTransactionSplitDto,
+): SplitKind {
+  if (split.splitKind) return split.splitKind;
+  if (split.investment) return SplitKind.INVESTMENT;
+  return split.transferAccountId ? SplitKind.TRANSFER : SplitKind.CATEGORY;
+}
+
 /**
  * On an update, an omitted key means "leave the stored value"; an explicit null
  * means "clear it". `??` collapses the two, which let a `{ field: null }` PATCH
@@ -614,6 +630,32 @@ export function tradeScheduleWindowDays(
   return Math.max(
     0,
     Math.min(TRADE_SCHEDULE_WINDOW_DAYS, Math.floor((cycle - 1) / 2)),
+  );
+}
+
+/**
+ * Every split line's category is the person's and fits the line: a category
+ * line takes only Income or Expense, a transfer line any type, which its
+ * posting writes to the row it links (INV-CATEGORY-001). An investment line
+ * holds none. A refusal writes nothing.
+ */
+async function fitScheduledSplitCategories(
+  m: EntityManager,
+  userId: string,
+  splits: readonly CreateScheduledTransactionSplitDto[],
+): Promise<void> {
+  await fitCategories(
+    m,
+    userId,
+    splits
+      .filter((split) => scheduledSplitKind(split) !== SplitKind.INVESTMENT)
+      .map((split) => ({
+        categoryId: split.categoryId,
+        holder:
+          scheduledSplitKind(split) === SplitKind.TRANSFER
+            ? ("transfer" as const)
+            : ("category" as const),
+      })),
   );
 }
 
@@ -1244,6 +1286,14 @@ export class ScheduledTransactionsService {
       : { from: null, to: null };
 
     const saved = await withScopedDb(this.dataSource, async (m) => {
+      // Categories are fitted below under the shared category-owner lock,
+      // taken first, before any row lock (`common/db/locks.ts`).
+      if (
+        transactionData.categoryId ||
+        (hasSplits && splits.some((split) => split.categoryId))
+      ) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       const moneyDecimals = await this.assertScheduleAmountsPrecision(
         m,
         account.currencyCode,
@@ -1268,6 +1318,19 @@ export class ScheduledTransactionsService {
               : [],
         });
       }
+      // The schedule's category is the person's and fits what the schedule
+      // posts (INV-CATEGORY-001): a scheduled transfer takes any type, a
+      // scheduled ordinary transaction only Income or Expense. Its split lines
+      // fit theirs, before the schedule is saved.
+      if (hasSplits) await fitScheduledSplitCategories(m, userId, splits);
+      if (!(hasSplits || isInvestment)) {
+        await fitCategory(
+          m,
+          userId,
+          transactionData.categoryId,
+          isTransfer ? "transfer" : "category",
+        );
+      }
       const repo = m.getRepository(ScheduledTransaction);
       const scheduledTransaction = repo.create({
         ...transactionData,
@@ -1278,10 +1341,10 @@ export class ScheduledTransactionsService {
         nextDueDate,
         startDate,
         totalOccurrences: transactionData.occurrencesRemaining,
-        // A transfer may carry an optional spending category (see #743): it is
-        // stored on the schedule and applied to both legs when posted, surfacing
-        // the transfer in the monthly category breakdown. Only splits (category
-        // lives on each split) and investments null it out here.
+        // A transfer may carry an optional category of any type (see #743):
+        // it is stored on the schedule and applied to both legs when posted
+        // (INV-CATEGORY-002). Only splits (category lives on each split) and
+        // investments null it out here.
         categoryId:
           hasSplits || isInvestment ? null : transactionData.categoryId,
         originalAmount: scheduleFx.originalAmount,
@@ -1922,6 +1985,10 @@ export class ScheduledTransactionsService {
   ): Promise<ScheduledTransactionSplit[]> {
     const savedSplits: ScheduledTransactionSplit[] = [];
 
+    // The callers fit the lines before their first write; again here, for
+    // the lines this writes (re-entrant, and what the category-fit guard reads).
+    await fitScheduledSplitCategories(manager, userId, splits);
+
     // Batch-fetch every tag referenced across all splits so the per-split
     // tag assignment doesn't trigger one `findBy(Tag, ...)` query per row
     // (the prior N+1 pattern).
@@ -1939,13 +2006,7 @@ export class ScheduledTransactionsService {
         : new Map<string, Tag>();
 
     for (const split of splits) {
-      const inferredKind: SplitKind = split.splitKind
-        ? split.splitKind
-        : split.investment
-          ? SplitKind.INVESTMENT
-          : split.transferAccountId
-            ? SplitKind.TRANSFER
-            : SplitKind.CATEGORY;
+      const inferredKind = scheduledSplitKind(split);
 
       const isInvestmentSplit =
         inferredKind === SplitKind.INVESTMENT && !!split.investment;
@@ -1989,8 +2050,12 @@ export class ScheduledTransactionsService {
       const entity = manager.create(ScheduledTransactionSplit, {
         scheduledTransactionId,
         kind: inferredKind,
+        // A category line's category, and a transfer line's (of any type);
+        // an investment line holds none.
         categoryId:
-          inferredKind === SplitKind.CATEGORY ? split.categoryId || null : null,
+          inferredKind === SplitKind.INVESTMENT
+            ? null
+            : split.categoryId || null,
         transferAccountId:
           inferredKind === SplitKind.TRANSFER
             ? split.transferAccountId || null
@@ -2812,6 +2877,7 @@ export class ScheduledTransactionsService {
       fieldsToUpdate.payeeId = updateData.payeeId || null;
     if (updateData.payeeName !== undefined)
       fieldsToUpdate.payeeName = updateData.payeeName || null;
+    // Fitted to the kind the schedule will have, under the lock below.
     if (updateData.categoryId !== undefined)
       fieldsToUpdate.categoryId = updateData.categoryId || null;
     if (updateData.amount !== undefined)
@@ -3299,6 +3365,16 @@ export class ScheduledTransactionsService {
     // row update atomically so a partial failure cannot leave the row and its
     // splits in an inconsistent state.
     await withScopedDb(this.dataSource, async (m) => {
+      // A category this write fits, or clears on a switch to an ordinary
+      // schedule, is read under the shared category-owner lock, taken before
+      // any row lock (`common/db/locks.ts`).
+      if (
+        updateData.categoryId ||
+        isTransfer === false ||
+        (Array.isArray(splits) && splits.some((split) => split.categoryId))
+      ) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // The effective action, validation and the action-dependent clears above
       // were derived from `scheduled`, read before this transaction. Re-read the
       // row under the lock and refuse if the mutation basis changed in between:
@@ -3428,6 +3504,47 @@ export class ScheduledTransactionsService {
           updateData.amount ?? scheduled.amount,
           moneyDecimals,
         );
+      }
+
+      // The category the schedule will hold fits what it will post
+      // (INV-CATEGORY-001), decided on the locked row before the first write:
+      // one the request names is the person's and fits; a Transfer category
+      // the schedule kept while switching from a transfer to an ordinary
+      // transaction is cleared in this same write, on the schedule and on
+      // each override that can still post.
+      const switchesToOrdinary =
+        current.isTransfer === true && fieldsToUpdate.isTransfer === false;
+      const willBeTransfer =
+        (fieldsToUpdate.isTransfer as boolean | undefined) ??
+        current.isTransfer === true;
+      if (fieldsToUpdate.categoryId) {
+        await fitCategory(
+          m,
+          userId,
+          fieldsToUpdate.categoryId as string,
+          willBeTransfer ? "transfer" : "category",
+        );
+      } else if (
+        switchesToOrdinary &&
+        fieldsToUpdate.categoryId === undefined &&
+        current.categoryId
+      ) {
+        const held = await fitCategory(
+          m,
+          userId,
+          current.categoryId,
+          "transfer",
+        );
+        if (held && !categoryFits(held, "category")) {
+          fieldsToUpdate.categoryId = null;
+        }
+      }
+      // The new split lines fit theirs, before the first write below.
+      if (Array.isArray(splits) && splits.length > 0) {
+        await fitScheduledSplitCategories(m, userId, splits);
+      }
+      if (switchesToOrdinary) {
+        await clearTransferCategoriesFromOverrides(m, userId, id);
       }
 
       if (splits !== undefined) {
@@ -4520,6 +4637,11 @@ export class ScheduledTransactionsService {
     // (a revolving line of credit stays active, since it can be drawn again).
     let skipFinancialWrite = false;
     const removedAfterOnce = await withScopedDb(this.dataSource, async (m) => {
+      // First lock: the posted row's category (and its lines') is fitted under
+      // the shared category-owner lock, which comes before the schedule's and
+      // the override's row locks below (`common/db/locks.ts`); the create's
+      // own fit takes it again, re-entrant.
+      await lockCategoryOwnerShared(m, userId);
       // Lock the schedule and confirm this occurrence is still the due one. A
       // poster that lost the race finds next_due_date already advanced.
       const current = await m.findOne(ScheduledTransaction, {

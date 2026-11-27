@@ -424,12 +424,8 @@ describe("Transaction rules manual run (integration)", () => {
     expect(preview.scanned).toBe(1);
     expect(preview.matched).toHaveLength(1);
     expect(preview.matched[0].transactionId).toBe(result.fromTransaction.id);
-    expect(preview.skipped).toEqual([
-      {
-        transactionId: result.fromTransaction.id,
-        reason: "transfer_leg_category",
-      },
-    ]);
+    // A transfer takes a category of any type (INV-CATEGORY-001).
+    expect(preview.skipped).toEqual([]);
 
     const done = await asAlice(() =>
       run.run(aliceId, rule.id, {
@@ -440,7 +436,13 @@ describe("Transaction rules manual run (integration)", () => {
     expect(done.changed).toBe(2);
     expect(await tagsOf(result.fromTransaction.id)).toEqual([foodTagId]);
     expect(await tagsOf(result.toTransaction.id)).toEqual([foodTagId]);
-    expect((await rowOf(result.fromTransaction.id)).category_id).toBeNull();
+    // One category per transfer: both legs take it (INV-CATEGORY-002).
+    expect((await rowOf(result.fromTransaction.id)).category_id).toBe(
+      groceriesId,
+    );
+    expect((await rowOf(result.toTransaction.id)).category_id).toBe(
+      groceriesId,
+    );
     expect(await count("transaction_rule_applications")).toBe(2);
     // No balance moved.
     const balances = await db.query(

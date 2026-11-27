@@ -351,6 +351,7 @@
     "viewInvestments": "Zobacz inwestycje",
     "viewTransactions": "Pokaż transakcje",
     "importMoreFiles": "Importuj kolejne pliki",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# zakup obligacji zaimportowano bez serii. Wybierz serię w partiach obligacji tego papieru.} few {# zakupy obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.} many {# zakupów obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.} other {# zakupu obligacji zaimportowano bez serii. Wybierz serie w partiach obligacji tego papieru.}}",
     "skipReasonKeptExisting": "zamiast tego zachowano istniejącą transakcję",
     "skipReasonPossibleDuplicate": "wygląda jak transakcja, która jest już na koncie",

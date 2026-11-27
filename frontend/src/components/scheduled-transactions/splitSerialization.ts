@@ -10,7 +10,9 @@ import { OverrideSplit } from '@/types/scheduled-transaction';
 export function toOverrideSplits(splits: SplitRow[]): OverrideSplit[] {
   return splits.map((s) => ({
     splitKind: s.splitType,
-    categoryId: s.splitType === 'category' ? (s.categoryId ?? null) : null,
+    // A category line's category, and a transfer line's, of any type, which
+    // its linked row holds too (INV-CATEGORY-002); an investment line has none.
+    categoryId: s.splitType === 'investment' ? null : (s.categoryId ?? null),
     transferAccountId:
       s.splitType === 'transfer' ? (s.transferAccountId ?? null) : null,
     investment: s.splitType === 'investment' ? s.investment : undefined,

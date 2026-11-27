@@ -233,6 +233,7 @@
       "directionFrom": "收入:资金来自另一个账户",
       "clearCategory": "清除分类",
       "clearCategoryHelp": "转账没有分类。关闭此项可保留交易已有的分类。",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "交易的收款方(可选)",
       "splitHint": "每个部分的金额取自上方模式中的捕获值,或取剩余部分。各部分之和必须等于交易金额,否则规则不会改动该交易。",
       "splitNoCaptures": "尚未定义任何捕获值。请在上方的模式中用花括号写一个名称,例如 PRINCIPAL: {example},即可在此用作金额。",
@@ -458,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "已对账并被锁定",
-      "transfer_leg_category": "是转账，转账没有分类",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "已拆分，因此分类属于各拆分项",
       "cross_owner_transfer_payee": "是转给其他所有者的转账，此规则不能更改其收款方",
       "empty_render": "某个操作的文本对它而言为空",

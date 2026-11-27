@@ -10,6 +10,10 @@ import { AccountType } from "../accounts/entities/account.entity";
 import { Payee } from "../payees/entities/payee.entity";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { ImportResultDto } from "./dto/import.dto";
+import {
+  answerCategoryFindOne,
+  categoryFitRepoMock,
+} from "../test-helpers/category-fit-testing";
 
 describe("ImportRegularProcessorService", () => {
   let service: ImportRegularProcessorService;
@@ -70,7 +74,11 @@ describe("ImportRegularProcessorService", () => {
       return Promise.resolve(entity);
     }),
     find: jest.fn().mockResolvedValue([]),
-    findOne: jest.fn().mockResolvedValue(null),
+    // A category the file maps to is the person's (`categoryIdForCategoryRow`
+    // reads it); every other read finds nothing.
+    findOne: jest
+      .fn()
+      .mockImplementation(answerCategoryFindOne(categoryFitRepoMock())),
     update: jest.fn().mockResolvedValue({ affected: 1 }),
     // `updateAccountBalance` moves a balance with one atomic
     // `current_balance = current_balance + $1` statement.
@@ -406,6 +414,41 @@ describe("ImportRegularProcessorService", () => {
 
       const createCall = managerOf(ctx).create.mock.calls[0];
       expect(createCall[1].categoryId).toBe("cat-groceries");
+    });
+
+    it("counts a file category that is a Transfer category, and not one that is missing", async () => {
+      const categoryMap = new Map<string, string | null>([
+        ["Savings", "cat-t"],
+        ["Gone", "cat-gone"],
+      ]);
+      const ctx = makeContext({ categoryMap });
+      managerOf(ctx).findOne.mockImplementation(
+        answerCategoryFindOne(
+          categoryFitRepoMock({ "cat-t": "transfer" }, ["cat-gone"]),
+        ),
+      );
+
+      await service.processTransaction(ctx, {
+        date: "2025-01-15",
+        amount: -50,
+        category: "Savings",
+      });
+      await service.processTransaction(ctx, {
+        date: "2025-01-16",
+        amount: -20,
+        category: "Gone",
+      });
+
+      const rows = managerOf(ctx).create.mock.calls.filter(
+        ([entity]: [{ name?: string }]) => entity?.name === "Transaction",
+      );
+      expect(
+        rows.map(
+          ([, data]: [unknown, { categoryId: unknown }]) => data.categoryId,
+        ),
+      ).toEqual([null, null]);
+      // Only the Transfer category is what the notice describes.
+      expect(ctx.importResult.categoriesNotFitting).toBe(1);
     });
 
     it("skips a stored Transfer payee default, importing the row uncategorized", async () => {

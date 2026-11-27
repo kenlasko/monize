@@ -22,6 +22,8 @@ describe("categoryIdForCategoryRow", () => {
     expect(await categoryIdForCategoryRow(manager, "u", "t")).toBeNull();
     expect(await categoryIdForCategoryRow(manager, "u", null)).toBeNull();
     expect(await categoryIdForCategoryRow(manager, "u", undefined)).toBeNull();
+    // A category that is not the person's (or is gone) is no category.
+    expect(await categoryIdForCategoryRow(manager, "u", "missing")).toBeNull();
   });
 
   it("asks the database once for each distinct category per manager", async () => {

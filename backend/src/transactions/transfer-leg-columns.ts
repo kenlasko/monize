@@ -56,8 +56,11 @@ export function transferLegColumns(
 
   // Per-user reference data (category, payee link) is written only onto the
   // effective user's own legs; a cross-owner leg carries none of it.
+  // One category per transfer: both of the effective user's legs take the
+  // same one, of any type (INV-CATEGORY-001, INV-CATEGORY-002).
   const ownReference = (ownerId: string) => ({
     payeeId: ownerId === userId ? payeeId || null : null,
+    // category-fit-ok: a column bag; writeTransferLegs and the conversion fit it
     categoryId: ownerId === userId ? categoryId || null : null,
   });
 

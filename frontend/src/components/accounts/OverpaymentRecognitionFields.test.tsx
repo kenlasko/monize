@@ -3,7 +3,8 @@ import { render, screen, waitFor, act, fireEvent } from '@/test/render';
 import { OverpaymentRecognitionFields } from './OverpaymentRecognitionFields';
 import type { Category } from '@/types/category';
 
-vi.mock('@/lib/categoryUtils', () => ({
+vi.mock('@/lib/categoryUtils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/categoryUtils')>()),
   buildCategoryTree: (cats: Category[]) => cats.map((category) => ({ category })),
 }));
 
@@ -85,6 +86,19 @@ describe('OverpaymentRecognitionFields', () => {
     });
     // The category appears in both the interest and overpayment pickers.
     expect(screen.getAllByRole('option', { name: 'Loan Overpayment' }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('offers the interest picker Income and Expense only, and the overpayment picker every type (INV-CATEGORY-001)', async () => {
+    await renderFields({
+      categories: [
+        ...categories,
+        { id: 'ct', name: 'Savings moves', parentId: null, categoryType: 'transfer' } as Category,
+      ],
+    });
+    const optionsOf = (label: string) =>
+      Array.from((screen.getByLabelText(label) as HTMLSelectElement).options).map((o) => o.value);
+    expect(optionsOf('Interest Category (optional)')).toEqual(['', 'c1']);
+    expect(optionsOf('Overpayment category')).toEqual(expect.arrayContaining(['c1', 'ct']));
   });
 
   it('labels the interest category with no marker when it is required', async () => {

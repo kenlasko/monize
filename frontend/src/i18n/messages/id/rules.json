@@ -233,6 +233,7 @@
       "directionFrom": "Pemasukan: uang datang dari akun lain",
       "clearCategory": "Hapus kategori",
       "clearCategoryHelp": "Transfer tidak memiliki kategori. Matikan untuk mempertahankan kategori yang sudah dimiliki transaksi.",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "Penerima transaksi (opsional)",
       "splitHint": "Setiap bagian mengambil jumlahnya dari tangkapan pada pola di atas, atau mengambil sisanya. Bagian-bagian harus berjumlah sama dengan jumlah transaksi, jika tidak aturan tidak akan mengubahnya.",
       "splitNoCaptures": "Belum ada tangkapan yang didefinisikan. Tulis nama dalam kurung kurawal pada pola di atas, misalnya PRINCIPAL: {example}, untuk memakainya di sini sebagai jumlah.",
@@ -458,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "sudah direkonsiliasi dan terkunci",
-      "transfer_leg_category": "merupakan transfer, yang tidak memiliki kategori",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "dipecah, sehingga kategori milik pecahannya",
       "cross_owner_transfer_payee": "merupakan transfer ke pemilik lain, yang penerimanya tidak boleh diubah aturan ini",
       "empty_render": "teks sebuah tindakan menjadi kosong untuknya",

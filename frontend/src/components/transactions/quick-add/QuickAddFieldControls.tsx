@@ -12,7 +12,7 @@ import { SEGMENTED_GROUP_CLASS, segmentClass } from '@/components/ui/segmented-c
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { buildAccountDropdownOptions } from '@/lib/account-utils';
-import { buildCategoryTree } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions } from '@/lib/categoryUtils';
 import { entryDecimalPlaces, getCurrencySymbol } from '@/lib/format';
 import type { Account } from '@/types/account';
 import type { Category } from '@/types/category';
@@ -311,16 +311,15 @@ function CategoryControl({
 }) {
   const t = useTranslations('transactions');
   const category = reading.category.value;
+  // The category chip is an ordinary row's (a transfer shows a to-account
+  // instead): Income or Expense only (INV-CATEGORY-001).
   const options = useMemo(
     () =>
-      buildCategoryTree(categories).map(({ category: c }) => {
-        const parent = c.parentId ? categories.find((p) => p.id === c.parentId) : null;
-        return {
-          value: c.id,
-          label: parent ? `${parent.name}: ${c.name}` : c.name,
-          icon: <CategoryPickerIcon category={c} />,
-        };
-      }),
+      buildCategoryPickerOptions(categories, 'category', (c, label) => ({
+        value: c.id,
+        label,
+        icon: <CategoryPickerIcon category={c} />,
+      })),
     [categories],
   );
   return (

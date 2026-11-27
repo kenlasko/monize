@@ -189,7 +189,7 @@ describe("Transaction rules on the transfer create path (integration)", () => {
     ).toBe(true);
   });
 
-  it("mirrors set_payee onto both legs and refuses set_category on a transfer", async () => {
+  it("mirrors set_payee and set_category onto both legs of a transfer", async () => {
     const payee = await createTestPayee(db, aliceId, { name: "Landlord" });
     // A category the user owns, so the rule itself validates.
     const [{ id: categoryId }] = await db.query(
@@ -217,9 +217,11 @@ describe("Transaction rules on the transfer create path (integration)", () => {
       [result.fromTransaction.id, result.toTransaction.id],
     );
     expect(legs).toHaveLength(2);
+    // A transfer takes a category of any type, on both legs
+    // (INV-CATEGORY-001, INV-CATEGORY-002).
     for (const leg of legs) {
       expect(leg.payee_id).toBe(payee.id);
-      expect(leg.category_id).toBeNull();
+      expect(leg.category_id).toBe(categoryId);
     }
   });
 

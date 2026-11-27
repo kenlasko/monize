@@ -123,6 +123,16 @@ describe("TransactionToolPrepService", () => {
       resolveLlmCategoryIds: jest
         .fn()
         .mockResolvedValue({ categoryIds: ["c1"], unresolved: [] }),
+      // The holder-aware lookup the tool prep calls (`resolveLlmCategoryIdFor`):
+      // this double's first match, as `resolveLlmCategoryIds` answers it.
+      resolveLlmCategoryIdFor: jest.fn(async function (
+        this: { resolveLlmCategoryIds: jest.Mock },
+        userId: string,
+        name: string,
+      ) {
+        const resolved = await this.resolveLlmCategoryIds(userId, [name]);
+        return resolved?.categoryIds?.[0] ?? null;
+      }),
     };
     splitService = {
       validateSplitsInCurrency: jest.fn().mockResolvedValue(undefined),
@@ -177,6 +187,42 @@ describe("TransactionToolPrepService", () => {
       expect(result.skipped[0].reason).toContain("Unknown category");
     });
 
+    it("skips the row whose category is a Transfer category with the reason, and keeps the others (INV-CATEGORY-001)", async () => {
+      // The resolver refuses a Transfer category on an ordinary row.
+      analytics.resolveLlmCategoryIdFor.mockImplementation(
+        async (_userId: string, name: string) => {
+          if (name === "Savings moves") {
+            throw new BadRequestException(
+              "Savings moves is a Transfer category; it can go only on a transfer",
+            );
+          }
+          return "c1";
+        },
+      );
+      const result = await service.prepareCreate(userId, [
+        {
+          accountName: "Checking",
+          amount: -10,
+          date: "2026-01-15",
+          categoryName: "Savings moves",
+        },
+        {
+          accountName: "Checking",
+          amount: -20,
+          date: "2026-01-15",
+          categoryName: "Dining",
+        },
+      ]);
+      expect(result.okIndex).toEqual([1]);
+      expect(result.skipped).toHaveLength(1);
+      expect(result.skipped[0].reason).toContain("is a Transfer category");
+      expect(analytics.resolveLlmCategoryIdFor).toHaveBeenCalledWith(
+        userId,
+        "Savings moves",
+        "category",
+      );
+    });
+
     it("skips a row when previewCreate throws (best-effort catch)", async () => {
       transactions.previewCreate.mockRejectedValueOnce(
         new BadRequestException("Amount out of range"),
@@ -226,6 +272,12 @@ describe("TransactionToolPrepService", () => {
         createPayeeIfMissing: false,
       });
       expect(result.createPayee).toBe(false);
+      // An ordinary row's category resolves among Income and Expense first.
+      expect(analytics.resolveLlmCategoryIdFor).toHaveBeenCalledWith(
+        userId,
+        "Dining",
+        "category",
+      );
       expect(transactions.previewCreate).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({
@@ -449,6 +501,12 @@ describe("TransactionToolPrepService", () => {
         date: "2026-01-15",
         categoryName: "Savings Goal",
       });
+      // A transfer's category resolves with Transfer categories first.
+      expect(analytics.resolveLlmCategoryIdFor).toHaveBeenCalledWith(
+        userId,
+        "Savings Goal",
+        "transfer",
+      );
       expect(transfer.previewCreateTransfer).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ categoryId: "cat-1" }),

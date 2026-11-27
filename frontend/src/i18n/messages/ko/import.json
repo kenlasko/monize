@@ -351,6 +351,7 @@
     "viewInvestments": "투자 보기",
     "viewTransactions": "거래 보기",
     "importMoreFiles": "파일 더 가져오기",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, other {채권 매수 #건이 시리즈 없이 가져와졌습니다. 증권의 채권 로트에서 시리즈를 선택하세요.}}",
     "skipReasonKeptExisting": "대신 기존 거래를 유지함",
     "skipReasonPossibleDuplicate": "계정에 이미 있는 거래와 같아 보임",

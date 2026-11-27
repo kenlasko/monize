@@ -43,6 +43,8 @@ export interface BulkImportResult {
   accountsCreated: number;
   payeesCreated: number;
   securitiesCreated: number;
+  /** Rows and split lines left without a Transfer category, every file's. */
+  categoriesNotFitting?: number;
   fileResults: Array<{
     fileName: string;
     accountName: string;
@@ -51,6 +53,7 @@ export interface BulkImportResult {
     skippedRows?: ImportSkippedRow[];
     errors: number;
     errorMessages: string[];
+    categoriesNotFitting?: number;
     loanAccountsNeedingSetup?: Array<{
       accountId: string;
       accountName: string;

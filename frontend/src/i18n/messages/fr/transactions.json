@@ -545,6 +545,8 @@
     },
     "splitLabel": "Répartition {number}",
     "accountForSplit": "Compte de la ventilation {number}",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "Type",
       "categoryAccount": "Catégorie / Compte",

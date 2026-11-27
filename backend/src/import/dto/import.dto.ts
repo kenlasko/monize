@@ -573,6 +573,12 @@ export class ImportResultDto {
 
   @ApiPropertyOptional({
     description:
+      "Rows and split lines imported uncategorized because the category the file named maps to a Transfer category, which goes only on a transfer. Absent when zero.",
+  })
+  categoriesNotFitting?: number;
+
+  @ApiPropertyOptional({
+    description:
       "Possible duplicates merged into the existing transaction they pair with. Absent when zero.",
   })
   duplicatesMerged?: number;

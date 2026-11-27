@@ -6,6 +6,12 @@ import { Payee } from "../payees/entities/payee.entity";
 import { PayeesService } from "../payees/payees.service";
 import { AccountsService } from "../accounts/accounts.service";
 import { convertRowToTransfer } from "../transactions/convert-to-transfer";
+import { fitCategory, holderOfRow } from "../categories/category-fit";
+import { lockCategoryOwnerShared } from "../common/db/locks";
+import {
+  findCategoryPartner,
+  writeCategoryPartner,
+} from "../transactions/transfer-category-partner";
 import { CreateTransactionSplitDto } from "../transactions/dto/create-transaction-split.dto";
 import { TransactionSplitService } from "../transactions/transaction-split.service";
 import { Tag } from "../tags/entities/tag.entity";
@@ -40,6 +46,7 @@ import {
   recordAiReviewQueued,
 } from "./rule-effects";
 import {
+  type CategoryChains,
   RuleFactsInput,
   buildRuleFacts,
   loadCategoryChains,
@@ -627,6 +634,12 @@ export class TransactionRulesApplierService {
         source === "import" ? "import" : "create",
       ));
     if (rules.length === 0) return [];
+    // A rule's category is fitted under the shared category-owner lock, which
+    // comes before the row locks this path takes (the loan facts' schedule
+    // and account locks below; `common/db/locks.ts`). Re-entrant: the write's
+    // fit takes it again. The rows it applies to are the caller's own new
+    // rows, which no other transaction can hold.
+    await lockCategoryOwnerShared(m, userId);
 
     const rows = chronological(
       await m.find(Transaction, { where: { id: In(ids), userId } }),
@@ -719,7 +732,8 @@ export class TransactionRulesApplierService {
    *
    * - Same owner: evaluated once over the outgoing leg's facts, and the
    *   result is written to BOTH legs (tags mirrored the way `syncTransferTags`
-   *   does, the payee on both). `set_category` is refused by the planner.
+   *   does, the payee on both, and a `set_category` category of any type on
+   *   both: one category per transfer, INV-CATEGORY-002).
    * - Cross owner: each owner's rules run on that owner's leg only, and the
    *   other owner's leg is never read or written. The partner account is not
    *   put in the facts, and `set_payee` is refused (`crossOwnerTransferLeg`).
@@ -889,6 +903,9 @@ export class TransactionRulesApplierService {
       planRuleEffects(facts, rules, {
         ...context,
         categoryChains: chains,
+        // Which categories a rule sets are Transfer ones, read with the
+        // chains (`loadCategoryChains`).
+        transferCategoryIds: (chains as CategoryChains).transferCategoryIds,
         // A row not stored yet (the preview) has no stored name; the text the
         // create will store is the payee text, so the trace agrees with the commit.
         payeeName:
@@ -910,6 +927,18 @@ export class TransactionRulesApplierService {
     for (const rule of rules) {
       for (const action of rule.actions) {
         if (action.type === "set_category") wanted.add(action.categoryId);
+        // The category a conversion names, so a later rule's subtree test
+        // sees its ancestors.
+        if (action.type === "convert_to_transfer" && action.categoryId) {
+          wanted.add(action.categoryId);
+        }
+        // A split part's category, so the planner knows a Transfer one and
+        // skips a category line that names it (INV-CATEGORY-001).
+        if (action.type === "split") {
+          for (const part of action.parts) {
+            if (part.categoryId) wanted.add(part.categoryId);
+          }
+        }
       }
     }
     return loadCategoryChains(m, userId, [...wanted]);
@@ -1061,12 +1090,32 @@ export class TransactionRulesApplierService {
   ): Promise<RuleEffects> {
     const resolved = await this.resolveCreatedPayee(m, userId, planned);
     const { changes } = resolved;
+    // A conversion writes the category onto both legs itself, once the row is
+    // a transfer (`convertRowToTransfer`); written here first, a Transfer
+    // category would land on the row while it is still a category row.
+    const converts = changes.structure?.kind === "transfer";
+    const writesCategory = changes.categoryId !== undefined && !converts;
+    // The category fits the row it lands on (INV-CATEGORY-001): the planner
+    // skipped a Transfer category on a category row, so a refusal here means
+    // the row changed kind since the plan, and the run rolls back.
+    const row = writesCategory
+      ? await m.findOne(Transaction, {
+          where: { id: transactionId, userId },
+          select: { id: true, isTransfer: true, linkedTransactionId: true },
+        })
+      : null;
+    if (writesCategory) {
+      await fitCategory(
+        m,
+        userId,
+        changes.categoryId,
+        holderOfRow(row ?? { isTransfer: false }),
+      );
+    }
     const patch: Partial<
       Pick<Transaction, "categoryId" | "payeeId" | "payeeName" | "description">
     > = {
-      ...(changes.categoryId !== undefined
-        ? { categoryId: changes.categoryId }
-        : {}),
+      ...(writesCategory ? { categoryId: changes.categoryId } : {}),
       ...(changes.description !== undefined
         ? { description: changes.description }
         : {}),
@@ -1088,6 +1137,23 @@ export class TransactionRulesApplierService {
     if (Object.keys(patch).length > 0) {
       await m.update(Transaction, { id: transactionId, userId }, patch);
     }
+    // One category per transfer (INV-CATEGORY-002): the other leg follows,
+    // and a split transfer line's linked row takes its line with it. A run
+    // writes both legs of a same-owner pair itself: the first leg's write sets
+    // the other leg here, and that leg's own write then stores the same value
+    // again, its history recording the same prior value as this partner
+    // record (the undo restores it from either). Across two owners there is
+    // no partner.
+    let categoryPartner: RuleEffects["categoryPartner"];
+    if (writesCategory && row) {
+      categoryPartner =
+        (await writeCategoryPartner(
+          m,
+          userId,
+          await findCategoryPartner(m, userId, row),
+          changes.categoryId ?? null,
+        )) ?? undefined;
+    }
     if (changes.addTagIds.length > 0) {
       await this.tagsService.addTransactionTags(
         m,
@@ -1104,7 +1170,9 @@ export class TransactionRulesApplierService {
         changes.removeTagIds,
       );
     }
-    let effects = resolved;
+    let effects: RuleEffects = categoryPartner
+      ? { ...resolved, categoryPartner }
+      : resolved;
     if (changes.structure !== undefined) {
       const written = await this.writeStructure(
         m,
@@ -1112,6 +1180,7 @@ export class TransactionRulesApplierService {
         transactionId,
         changes.structure,
         placesCache,
+        changes.categoryId,
       );
       for (const id of written.affectedAccountIds) affectedAccountIds?.add(id);
       effects = withWrittenStructure(resolved, written.structure);
@@ -1166,6 +1235,11 @@ export class TransactionRulesApplierService {
     transactionId: string,
     structure: RuleStructurePlan,
     placesCache: CurrencyPlacesCache,
+    /**
+     * The rules' net change to the row's category, for a conversion:
+     * `undefined` when they left it as stored.
+     */
+    categoryAfterConversion?: string | null,
   ): Promise<{
     structure: RuleStructurePlan;
     affectedAccountIds: readonly string[];
@@ -1180,8 +1254,14 @@ export class TransactionRulesApplierService {
         transactionId,
         structure.accountId,
         {
-          clearCategory: structure.clearCategory,
+          // The plan has already applied the conversion's own choice (the
+          // category it names, or none when it clears) and every later
+          // action's, and planned from the stored row: its net change is what
+          // both legs take, and no change keeps the row's own on both.
+          // `clearCategory` is not asked a second time.
+          clearCategory: false,
           expectedCounterpartAmount: structure.amount,
+          categoryId: categoryAfterConversion,
         },
       );
       return {

@@ -1,6 +1,7 @@
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { AccountsService } from "../accounts/accounts.service";
+import { fitCategory } from "../categories/category-fit";
 import { Account } from "../accounts/entities/account.entity";
 import { isTransactionInFuture } from "../common/date-utils";
 import { lockTransactionRow } from "../common/db/locks";
@@ -22,8 +23,14 @@ export type ConvertBalanceWriter = Pick<
 >;
 
 export interface ConvertToTransferOptions {
-  /** Clear the row's category: a transfer leg carries none of its own. */
+  /** Clear the row's category; false keeps it, on both legs. */
   readonly clearCategory: boolean;
+  /**
+   * The category both legs take, of any type (a transfer accepts Income,
+   * Expense and Transfer categories, INV-CATEGORY-001); absent,
+   * `clearCategory` decides between none and the row's own.
+   */
+  readonly categoryId?: string | null;
   /**
    * The counterpart amount the rule planned. The write refuses when the row,
    * read under its lock, would now produce a different one: the plan (and a
@@ -64,7 +71,8 @@ function refuse(reason: string): ConflictException {
  * Runs on the caller's `EntityManager`, in the transaction that wrote the row
  * or locked it. It creates the counterpart leg in `targetAccountId` exactly the
  * way `writeTransferLegs` creates the receiving leg (amount `-row.amount`,
- * same date, description, reference, status and payee, no category), links the
+ * same date, description, reference, status and payee), gives both legs the
+ * one category the options name (INV-CATEGORY-002), links the
  * two legs, marks the row a transfer leg, mirrors its tags onto the
  * counterpart, and moves the TARGET account's balance by the counterpart's
  * amount. The row's own account never moves: its amount did not change
@@ -117,6 +125,16 @@ export async function convertRowToTransfer(
     "amount",
   );
   const counterpartAmount = roundMoney(-Number(row.amount), decimals);
+  // One category per transfer (INV-CATEGORY-002): the row's, or the one the
+  // rules named, on both legs; none when it is cleared. The row's own was
+  // fitted to it as a category row, and a transfer takes any type.
+  const legCategoryId =
+    options.categoryId !== undefined
+      ? options.categoryId
+      : options.clearCategory
+        ? null
+        : (row.categoryId ?? null);
+  await fitCategory(m, userId, legCategoryId, "transfer");
   if (
     options.expectedCounterpartAmount !== undefined &&
     roundMoney(options.expectedCounterpartAmount, decimals) !==
@@ -140,7 +158,7 @@ export async function convertRowToTransfer(
       // label is resolved at read time (transfer-payee-label.util.ts, #1214).
       payeeId: row.payeeId,
       payeeName: row.payeeName,
-      categoryId: null,
+      categoryId: legCategoryId,
     }),
   );
 
@@ -155,7 +173,7 @@ export async function convertRowToTransfer(
     {
       linkedTransactionId: counterpart.id,
       isTransfer: true,
-      ...(options.clearCategory ? { categoryId: null } : {}),
+      categoryId: legCategoryId,
     },
   );
 

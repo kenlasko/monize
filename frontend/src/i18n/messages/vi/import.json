@@ -351,6 +351,7 @@
     "viewInvestments": "Xem Đầu Tư",
     "viewTransactions": "Xem Giao Dịch",
     "importMoreFiles": "Nhập Khẩu Thêm Tệp",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, other {# giao dịch mua trái phiếu đã được nhập mà không có sê-ri. Hãy chọn sê-ri trong các lô trái phiếu của chứng khoán.}}",
     "skipReasonKeptExisting": "Đã giữ giao dịch hiện có của bạn thay vào đó",
     "skipReasonPossibleDuplicate": "Trông giống một giao dịch đã có trong tài khoản",

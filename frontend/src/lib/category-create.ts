@@ -1,5 +1,5 @@
 import { categoriesApi } from './categories';
-import type { CategoryType } from '@/lib/category-type';
+import { isTransferCategory, type CategoryType } from '@/lib/category-type';
 import { delegationApi } from './delegation';
 import { Category } from '@/types/category';
 
@@ -99,13 +99,23 @@ export async function createCategoryFromInput(
       const childName = toTitleCase(parts[1]);
 
       // Match an existing top-level category case-insensitively; a child
-      // category cannot itself be a parent.
+      // category cannot itself be a parent. A child takes its parent's type,
+      // so a Transfer child goes under a Transfer parent and an Income or
+      // Expense child under one of those (INV-CATEGORY-003): a parent of the
+      // other kind is not reused, and a created parent takes the child's type.
+      const wantsTransfer = options.type === 'transfer';
       let parentCategory = categories.find(
-        (c) => c.name.toLowerCase() === typedParentName.toLowerCase() && !c.parentId,
+        (c) =>
+          c.name.toLowerCase() === typedParentName.toLowerCase() &&
+          !c.parentId &&
+          isTransferCategory(c) === wantsTransfer,
       );
 
       if (!parentCategory) {
-        parentCategory = await createCategory({ name: typedParentName });
+        parentCategory = await createCategory({
+          name: typedParentName,
+          ...(options.type !== undefined ? { type: options.type } : {}),
+        });
         created.push(parentCategory);
       }
 

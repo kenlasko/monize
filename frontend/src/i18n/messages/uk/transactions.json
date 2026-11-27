@@ -545,6 +545,8 @@
     },
     "splitLabel": "Розподіл {number}",
     "accountForSplit": "Рахунок для частини {number}",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "Тип",
       "categoryAccount": "Категорія / Рахунок",

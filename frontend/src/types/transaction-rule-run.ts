@@ -141,7 +141,7 @@ export type RuleLoanSettlementSkipReason = (typeof RULE_LOAN_SETTLEMENT_SKIP_REA
  */
 export const RULE_SKIP_REASONS = [
   'reconciled_locked',
-  'transfer_leg_category',
+  'transfer_category_on_category_row',
   'split_category',
   'cross_owner_transfer_payee',
   'empty_render',

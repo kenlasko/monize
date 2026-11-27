@@ -35,7 +35,15 @@ import { UNCATEGORIZED } from "./dto/remove-category-query.dto";
 import { findCategoryReferences } from "./category-references";
 import { qualifiedCategoryName } from "./category-name.util";
 import { searchIncludes } from "../common/helpers/search-match";
-import { lockCategoryOwnerExclusive } from "../common/db/locks";
+import {
+  lockCategoryOwnerExclusive,
+  lockCategoryOwnerShared,
+} from "../common/db/locks";
+import {
+  categoryFits,
+  fitCategory,
+  transferCategoryRefusal,
+} from "./category-fit";
 import {
   CategoryType,
   categoryTypeOf,
@@ -790,9 +798,14 @@ export class CategoriesService {
     // failure cannot leave a payee pointing at a category that is gone.
     let movedRows: MovedCategoryRows | undefined;
     await withScopedDb(this.dataSource, async (m) => {
+      // Rows moved onto a category are fitted under the shared category-owner
+      // lock, taken before any row lock (`common/db/locks.ts`).
+      const targetId = reassignTo?.toLowerCase();
+      if (targetId && targetId !== UNCATEGORIZED) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // Both rows are locked in id order, so two deletes that each move rows
       // into the other cannot deadlock; the target's lookup below re-takes it.
-      const targetId = reassignTo?.toLowerCase();
       if (
         targetId &&
         targetId !== UNCATEGORIZED &&
@@ -843,6 +856,9 @@ export class CategoriesService {
           }
           target = reassignTo;
         }
+        // A Transfer target takes no category row (INV-CATEGORY-001): the
+        // delete is refused with nothing moved, as the reassign route is.
+        await this.assertReassignTargetFits(m, userId, id, target);
         const result = await this.reassignCategoryRows(m, userId, id, target);
         if (hasMovedRows(result.moved)) movedRows = result.moved;
       }
@@ -938,12 +954,18 @@ export class CategoriesService {
   }> {
     await this.findOne(userId, fromCategoryId);
 
-    if (toCategoryId) {
-      await this.findOne(userId, toCategoryId);
-    }
-
     // M22: All UPDATE operations run in a single transaction.
     return withScopedDb(this.dataSource, async (m) => {
+      // The target is the person's, read under the shared owner lock (taken
+      // first, before any row lock), and fits the rows the reassign moves
+      // (INV-CATEGORY-001). Decided before the first write.
+      if (toCategoryId) await lockCategoryOwnerShared(m, userId);
+      await this.assertReassignTargetFits(
+        m,
+        userId,
+        fromCategoryId,
+        toCategoryId,
+      );
       const r = await this.reassignCategoryRows(
         m,
         userId,
@@ -956,6 +978,67 @@ export class CategoriesService {
         scheduledUpdated: r.scheduledUpdated,
       };
     });
+  }
+
+  /**
+   * Whether a row a reassign moves is a category row holding the category:
+   * an ordinary transaction, a split's category line, a scheduled ordinary
+   * transaction or a scheduled split's category line.
+   */
+  private async categoryRowsHold(
+    m: EntityManager,
+    userId: string,
+    categoryId: string,
+  ): Promise<boolean> {
+    const [row] = await m.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM transactions
+          WHERE user_id = $1 AND category_id = $2 AND is_transfer IS NOT TRUE
+         UNION ALL SELECT 1 FROM transaction_splits s
+           JOIN transactions t ON t.id = s.transaction_id
+          WHERE t.user_id = $1 AND s.category_id = $2
+            AND s.transfer_account_id IS NULL
+         UNION ALL SELECT 1 FROM scheduled_transactions
+          WHERE user_id = $1 AND category_id = $2 AND is_transfer IS NOT TRUE
+         UNION ALL SELECT 1 FROM scheduled_transaction_splits ss
+           JOIN scheduled_transactions st ON st.id = ss.scheduled_transaction_id
+          WHERE st.user_id = $1 AND ss.category_id = $2
+            AND ss.transfer_account_id IS NULL
+       ) AS held`,
+      [userId, categoryId],
+    );
+    return row?.held === true;
+  }
+
+  /**
+   * A reassign's target fits the rows it moves (INV-CATEGORY-001): the
+   * person's category, and a Transfer category only while no category row
+   * holds `fromCategoryId` (a transfer takes any type). A refusal moves
+   * nothing. The caller holds the shared category-owner lock.
+   */
+  private async assertReassignTargetFits(
+    m: EntityManager,
+    userId: string,
+    fromCategoryId: string,
+    toCategoryId: string | null,
+  ): Promise<void> {
+    const target = await fitCategory(m, userId, toCategoryId, "transfer", {
+      notFound: () =>
+        new NotFoundException(
+          tr(
+            "errors.categories.notFound",
+            `Category with ID ${toCategoryId} not found`,
+            { id: toCategoryId },
+          ),
+        ),
+    });
+    if (
+      target &&
+      !categoryFits(target, "category") &&
+      (await this.categoryRowsHold(m, userId, fromCategoryId))
+    ) {
+      throw transferCategoryRefusal(target.name);
+    }
   }
 
   /**
@@ -982,21 +1065,25 @@ export class CategoriesService {
     // Each UPDATE returns the ids it moved, for the delete's undo. The two
     // entity tables keep the `updated_at` the entity update used to stamp.
     const transactions = await ids(
+      // category-fit-ok: the caller fitted the target (assertReassignTargetFits)
       `UPDATE transactions SET category_id = $1, updated_at = CURRENT_TIMESTAMP
         WHERE user_id = $2 AND category_id = $3 RETURNING id`,
     );
     // Joins, not an id list: a user's ids can exceed the 65535 bind limit.
     const transactionSplits = await ids(
+      // category-fit-ok: the caller fitted the target (assertReassignTargetFits)
       `UPDATE transaction_splits s SET category_id = $1
            FROM transactions t
           WHERE t.id = s.transaction_id AND t.user_id = $2
             AND s.category_id = $3 RETURNING s.id`,
     );
     const scheduled = await ids(
+      // category-fit-ok: the caller fitted the target (assertReassignTargetFits)
       `UPDATE scheduled_transactions SET category_id = $1, updated_at = CURRENT_TIMESTAMP
         WHERE user_id = $2 AND category_id = $3 RETURNING id`,
     );
     const scheduledSplits = await ids(
+      // category-fit-ok: the caller fitted the target (assertReassignTargetFits)
       `UPDATE scheduled_transaction_splits s SET category_id = $1
            FROM scheduled_transactions t
           WHERE t.id = s.scheduled_transaction_id AND t.user_id = $2
@@ -1006,6 +1093,7 @@ export class CategoriesService {
     // Overrides keep a category of their own and, in `splits` JSON, one per
     // split line; neither is reached by the updates above.
     const overrides = await ids(
+      // category-fit-ok: the caller fitted the target (assertReassignTargetFits)
       `UPDATE scheduled_transaction_overrides o SET category_id = $1
            FROM scheduled_transactions t
           WHERE t.id = o.scheduled_transaction_id AND t.user_id = $2

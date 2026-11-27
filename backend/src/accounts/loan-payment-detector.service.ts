@@ -386,8 +386,11 @@ export class LoanPaymentDetectorService {
                     amount: splitAmount,
                     memo: split.memo,
                   });
-                } else if (split.categoryId) {
-                  // Categorized split = interest expense
+                } else if (split.categoryId && !split.transferAccountId) {
+                  // A category line = interest expense. A transfer line to
+                  // another account can carry a category too (a Transfer
+                  // category, INV-CATEGORY-001), and that is money moved, not
+                  // interest paid.
                   interestAmount = splitAmount;
                   interestCategoryId = split.categoryId;
                   interestCategoryName = split.category?.name || null;

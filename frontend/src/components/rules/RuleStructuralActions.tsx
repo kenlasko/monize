@@ -68,6 +68,7 @@ interface ConvertFieldsProps {
  */
 export function ConvertToTransferFields({ action, options, onChange, fields }: ConvertFieldsProps) {
   const t = useTranslations('rules.editor.action');
+  const tRules = useTranslations('rules.editor');
   const tx = useTranslations('transactions.form');
   const fieldError = useFieldError(fields);
   const toSide = action.direction === 'to';
@@ -112,12 +113,25 @@ export function ConvertToTransferFields({ action, options, onChange, fields }: C
         valueIsId
         usePortal
       />
-      <RuleSwitchRow
-        checked={action.clearCategory}
-        onChange={(clearCategory) => onChange({ ...action, clearCategory })}
-        label={t('clearCategory')}
-        help={t('clearCategoryHelp')}
+      <Combobox
+        label={t('convertCategory')}
+        placeholder={tRules('value.category')}
+        options={options.transferCategories}
+        value={action.categoryId}
+        onChange={(categoryId) => onChange({ ...action, categoryId })}
+        error={fieldError('categoryId')}
+        valueIsId
+        usePortal
       />
+      {/* A named category goes on both legs; only without one does the switch decide. */}
+      {action.categoryId === '' && (
+        <RuleSwitchRow
+          checked={action.clearCategory}
+          onChange={(clearCategory) => onChange({ ...action, clearCategory })}
+          label={t('clearCategory')}
+          help={t('clearCategoryHelp')}
+        />
+      )}
     </div>
   );
 }
@@ -198,7 +212,7 @@ function SplitPartRow({ part, index, parts, captures, options, onChange, onRemov
         <Combobox
           label={ts('columns.category')}
           placeholder={ts('selectCategory')}
-          options={options.categories}
+          options={options.lineCategories}
           value={part.categoryId}
           onChange={(categoryId) => onChange({ ...part, categoryId })}
           error={fieldError(`${at}.categoryId`)}

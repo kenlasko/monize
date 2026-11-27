@@ -1397,6 +1397,28 @@ describe('TransactionForm', () => {
       });
     });
 
+    it.each([
+      ['a Transfer category is cleared', 'Savings moves', ''],
+      ['an Expense category stays', 'Groceries', 'cat-1'],
+    ])('leaving a transfer for an ordinary row: %s (INV-CATEGORY-001)', async (_case, picked, kept) => {
+      mockCategoriesGetAll.mockResolvedValue([
+        ...mockCategories,
+        { ...mockCategories[0], id: 'cat-t', name: 'Savings moves', categoryType: 'transfer', isIncome: false },
+      ]);
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+      await waitFor(() => expect(screen.getByText('Transfer')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByText('Transfer'));
+      await waitFor(() =>
+        expect(screen.getByTestId('combobox-Category (optional)').dataset.options?.split('\n')).toContain(picked),
+      );
+      fireEvent.change(screen.getByTestId('combobox-input-Category (optional)'), { target: { value: picked } });
+
+      fireEvent.click(screen.getByText('Transaction'));
+      await waitFor(() => expect(screen.getByTestId('combobox-value-Category')).toBeInTheDocument());
+      expect(screen.getByTestId('combobox-value-Category').textContent).toBe(kept);
+    });
+
     it('switches from normal to split mode and shows SplitEditor', async () => {
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
 
@@ -2480,6 +2502,47 @@ describe('TransactionForm', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('combobox-create-Category')).toBeInTheDocument();
+      });
+    });
+
+    it('offers a transfer every type, Transfer categories first, and an ordinary row none (INV-CATEGORY-001)', async () => {
+      mockCategoriesGetAll.mockResolvedValue([
+        ...mockCategories,
+        { ...mockCategories[0], id: 'cat-t', name: 'Savings contributions', categoryType: 'transfer', isIncome: false },
+      ]);
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-Category')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('combobox-Category').dataset.options?.split('\n')).not.toContain(
+        'Savings contributions',
+      );
+
+      fireEvent.click(screen.getByText('Transfer'));
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-Category (optional)')).toBeInTheDocument();
+      });
+      const transferOptions = screen.getByTestId('combobox-Category (optional)').dataset.options?.split('\n');
+      expect(transferOptions?.[0]).toBe('Savings contributions');
+      expect(transferOptions).toContain('Groceries');
+    });
+
+    it('creates a Transfer category from text typed on a transfer', async () => {
+      mockCategoryCreate.mockResolvedValueOnce({ ...mockCategories[0], id: 'new-t', name: 'New Item', categoryType: 'transfer' });
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Transfer')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText('Transfer'));
+      await waitFor(() => {
+        expect(screen.getByTestId('combobox-create-Category (optional)')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('combobox-create-Category (optional)'));
+
+      await waitFor(() => {
+        expect(mockCategoryCreate).toHaveBeenCalledWith({ name: 'New Item', type: 'transfer' });
       });
     });
 

@@ -181,6 +181,11 @@ export function CompleteStep({
                 <li><strong>{t('complete.payeesCreated')}</strong> {bulkImportResult.payeesCreated}</li>
                 <li><strong>{t('complete.securitiesCreated')}</strong> {bulkImportResult.securitiesCreated}</li>
               </ul>
+              {(bulkImportResult.categoriesNotFitting ?? 0) > 0 && (
+                <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">
+                  {t('complete.categoriesNotFitting', { count: bulkImportResult.categoriesNotFitting ?? 0 })}
+                </p>
+              )}
             </div>
 
             {/* Per-file results */}
@@ -258,6 +263,11 @@ export function CompleteStep({
                   merged: importResult.duplicatesMerged ?? 0,
                   replaced: importResult.duplicatesReplaced ?? 0,
                 })}
+              </p>
+            )}
+            {(importResult.categoriesNotFitting ?? 0) > 0 && (
+              <p className="mt-4 text-sm text-amber-800 dark:text-amber-300">
+                {t('complete.categoriesNotFitting', { count: importResult.categoriesNotFitting ?? 0 })}
               </p>
             )}
             {(importResult.bondRowsWithoutSeries ?? 0) > 0 && (

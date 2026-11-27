@@ -31,6 +31,7 @@ import { useBillsOutlook } from '@/components/scheduled-transactions/useBillsOut
 import { scheduledTransactionsApi } from '@/lib/scheduled-transactions';
 import { categoriesApi } from '@/lib/categories';
 import { createCategoryFromInput } from '@/lib/category-create';
+import type { CategoryHolder } from '@/lib/category-type';
 import { buildCategoryColorMap, buildCategoryLabelMap } from '@/lib/categoryUtils';
 import { accountsApi } from '@/lib/accounts';
 import { SelectedLoanOccurrence, ScheduledTransaction, ScheduledTransactionOverride } from '@/types/scheduled-transaction';
@@ -456,9 +457,15 @@ function BillsContent() {
   // row is returned so the dialog can select it, and appended here so it
   // appears in the picker.
   const createCategoryFromTypedName = useCallback(
-    async (name: string): Promise<Category | null> => {
+    async (name: string, holder: CategoryHolder = 'category'): Promise<Category | null> => {
       try {
-        const result = await createCategoryFromInput(name, categories);
+        // Typed on a transfer (a scheduled transfer's occurrence, or a split's
+        // transfer line), the new category is a Transfer one (INV-CATEGORY-001).
+        const result = await createCategoryFromInput(
+          name,
+          categories,
+          holder === 'transfer' ? { type: 'transfer' } : {},
+        );
         if (!result) return null;
         setCategories((prev) => [...prev, ...result.created]);
         toast.success(tsched('form.toasts.categoryCreated', { name: result.displayName }));

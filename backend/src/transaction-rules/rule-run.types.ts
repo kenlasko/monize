@@ -13,7 +13,8 @@ export interface RuleRunFilters {
 /** Why a row the rule reached was left alone. */
 export type RuleRunSkipReason =
   | "reconciled_locked"
-  | "transfer_leg_category"
+  /** `set_category` with a Transfer category on a row that is not a transfer. */
+  | "transfer_category_on_category_row"
   | "split_category"
   | "cross_owner_transfer_payee"
   /** A text action rendered to nothing for this row (design 10.2). */

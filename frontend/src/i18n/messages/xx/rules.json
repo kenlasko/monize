@@ -232,7 +232,8 @@
       "directionTo": "[XX-Expense: the money goes to another account-XX]",
       "directionFrom": "[XX-Income: the money comes from another account-XX]",
       "clearCategory": "[XX-Clear the category-XX]",
-      "clearCategoryHelp": "[XX-A transfer has no category. Turn this off to keep the category the transaction already has.-XX]",
+      "clearCategoryHelp": "[XX-Turn this off to keep the category the transaction already has, on both sides of the transfer.-XX]",
+      "convertCategory": "[XX-Category for the transfer (optional)-XX]",
       "splitPayee": "[XX-Payee of the transaction (optional)-XX]",
       "splitHint": "[XX-Each part takes its amount from a capture in the patterns above, or takes the rest. The parts must add up to the amount of the transaction, otherwise the rule leaves it alone.-XX]",
       "splitNoCaptures": "[XX-No capture is defined yet. Put a name in braces in a pattern above, for example PRINCIPAL: {example}, to use it as an amount here.-XX]",
@@ -458,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "[XX-it is reconciled and locked-XX]",
-      "transfer_leg_category": "[XX-it is a transfer, which has no category-XX]",
+      "transfer_category_on_category_row": "[XX-it is not a transfer, and a Transfer category goes only on a transfer-XX]",
       "split_category": "[XX-it is split, so the category belongs to the splits-XX]",
       "cross_owner_transfer_payee": "[XX-it is a transfer to another owner, whose payee this rule may not change-XX]",
       "empty_render": "[XX-the text of an action came out empty for it-XX]",

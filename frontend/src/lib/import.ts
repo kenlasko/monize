@@ -475,6 +475,11 @@ export interface ImportResult {
    * lots report such a row until its series is chosen. Absent when zero.
    */
   bondRowsWithoutSeries?: number;
+  /**
+   * Rows and split lines imported uncategorized because the category the file
+   * named maps to a Transfer category, which goes only on a transfer. Absent when zero.
+   */
+  categoriesNotFitting?: number;
   /** Possible duplicates merged into the transaction each pairs with. Absent when zero. */
   duplicatesMerged?: number;
   /** Possible duplicates imported after the transaction each pairs with was deleted. Absent when zero. */

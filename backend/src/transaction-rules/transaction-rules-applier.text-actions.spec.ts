@@ -102,6 +102,8 @@ function harness(
   ]);
   const m = {
     getRepository: jest.fn((entity: unknown) => repos.get(entity)),
+    // The shared category-owner lock `applyToNew` takes first.
+    query: jest.fn().mockResolvedValue([]),
     find: jest.fn(async (entity: unknown) => {
       if (entity === Transaction) return rows;
       if (entity === TransactionTag) return [];
@@ -248,6 +250,12 @@ describe("the text actions in the applier", () => {
 
     await h.service.applyToNew(h.m, USER, [TX], "create");
 
+    // The shared category-owner lock is its first statement, before any row
+    // lock it takes (`common/db/locks.ts`).
+    expect(h.mock.query.mock.calls[0]).toEqual([
+      expect.stringContaining("pg_advisory_xact_lock_shared"),
+      expect.arrayContaining([USER]),
+    ]);
     expect(h.payees.resolveByName).not.toHaveBeenCalled();
     expect(h.mock.update).toHaveBeenCalledWith(
       Transaction,

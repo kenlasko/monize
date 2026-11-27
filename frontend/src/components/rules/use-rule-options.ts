@@ -8,7 +8,7 @@ import { useInstitutionLogos } from '@/hooks/useInstitutionLogos';
 import { useAccountOptionLabel } from '@/hooks/useMainAccountName';
 import type { RuleLookups } from '@/hooks/useRuleLookups';
 import { buildAccountDropdownOptions, SEPARATOR_VALUE } from '@/lib/account-utils';
-import { getCategorySelectOptions } from '@/lib/categoryUtils';
+import { getCategorySelectOptions, getCategorySelectOptionsFor } from '@/lib/categoryUtils';
 import type { Account } from '@/types/account';
 import type { Category } from '@/types/category';
 
@@ -31,6 +31,16 @@ export interface RuleOptions {
   readonly loanAccounts: RuleOption[];
   readonly payees: RuleOption[];
   readonly categories: RuleOption[];
+  /**
+   * The categories a transfer may take: every type, Transfer categories
+   * first (INV-CATEGORY-001), for a conversion's category.
+   */
+  readonly transferCategories: RuleOption[];
+  /**
+   * The categories a split's category line may take: Income and Expense only
+   * (INV-CATEGORY-001), for a split part's category.
+   */
+  readonly lineCategories: RuleOption[];
   readonly tags: RuleOption[];
   readonly currencyCodes: readonly string[];
 }
@@ -77,6 +87,14 @@ export function useRuleOptions(lookups: RuleLookups): RuleOptions {
       ),
       categories: withCategoryIcons(
         getCategorySelectOptions(lookups.categories as Category[]),
+        lookups.categories,
+      ),
+      transferCategories: withCategoryIcons(
+        getCategorySelectOptionsFor(lookups.categories as Category[], 'transfer'),
+        lookups.categories,
+      ),
+      lineCategories: withCategoryIcons(
+        getCategorySelectOptionsFor(lookups.categories as Category[], 'category'),
         lookups.categories,
       ),
       tags: lookups.tags.map((t) => ({ value: t.id, label: t.name })),

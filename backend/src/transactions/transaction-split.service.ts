@@ -11,7 +11,7 @@ import {
   Inject,
   forwardRef,
 } from "@nestjs/common";
-import { DataSource, EntityManager, In } from "typeorm";
+import { DataSource, EntityManager } from "typeorm";
 import {
   BondWriteGuard,
   createBondWriteGuard,
@@ -23,7 +23,11 @@ import {
 } from "./provisional-split-legs";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { SplitKind } from "./entities/split-kind.enum";
-import { Category } from "../categories/entities/category.entity";
+import {
+  fitCategories,
+  fitCategory,
+  holderOfSplitLine,
+} from "../categories/category-fit";
 import { CreateTransactionSplitDto } from "./dto/create-transaction-split.dto";
 import { AccountsService } from "../accounts/accounts.service";
 import { AccountSubType } from "../accounts/entities/account.entity";
@@ -55,6 +59,7 @@ import { validateSplitAmountSum } from "../common/split-amount.util";
 import { tr } from "../i18n/translate";
 import { withScopedDb } from "../common/db/scoped-db";
 import {
+  lockCategoryOwnerShared,
   lockTransactionRow,
   lockTransactionRows,
   LockedTransactionRow,
@@ -329,22 +334,6 @@ export class TransactionSplitService {
     }
   }
 
-  private async validateCategoryOwnership(
-    userId: string,
-    categoryId: string,
-  ): Promise<void> {
-    const category = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Category).findOne({
-        where: { id: categoryId, userId },
-      }),
-    );
-    if (!category) {
-      throw new NotFoundException(
-        tr("errors.transactions.categoryNotFound", "Category not found"),
-      );
-    }
-  }
-
   /**
    * Refuse a split set that cannot be written: too few lines, lines that do
    * not sum to the parent, a line with more places than the parent's currency
@@ -553,28 +542,17 @@ export class TransactionSplitService {
     affectedAccountIds?: Set<string>,
   ): Promise<TransactionSplit[]> {
     if (userId) {
-      const categoryIds = [
-        ...new Set(
-          splits.map((s) => s.categoryId).filter((id): id is string => !!id),
-        ),
-      ];
-      if (categoryIds.length > 0) {
-        const found = await m.find(Category, {
-          where: { id: In(categoryIds), userId },
-          select: ["id"],
-        });
-        const foundIds = new Set(found.map((c) => c.id));
-        const invalid = categoryIds.filter((id) => !foundIds.has(id));
-        if (invalid.length > 0) {
-          throw new NotFoundException(
-            tr(
-              "errors.transactions.categoriesNotFound",
-              `Categories not found: ${invalid.join(", ")}`,
-              { ids: invalid.join(", ") },
-            ),
-          );
-        }
-      }
+      // Every line's category is the person's and fits the line: a category
+      // line takes only Income or Expense, a transfer line any type
+      // (INV-CATEGORY-001). Refused before the first line is written.
+      await fitCategories(
+        m,
+        userId,
+        splits.map((split) => ({
+          categoryId: split.categoryId,
+          holder: holderOfSplitLine(split),
+        })),
+      );
     }
 
     const hasInvestment = splits.some(
@@ -676,10 +654,13 @@ export class TransactionSplitService {
     // name them (`withCurrencyPlaces`).
     let places: ReadonlyMap<string, number> = new Map();
     for (const { split, index } of transferSplits) {
+      // A transfer line carries a category, and the row it links holds the
+      // same one (INV-CATEGORY-002).
+      const lineCategoryId = split.categoryId || null;
       const splitEntity = m.create(TransactionSplit, {
         transactionId,
         kind: SplitKind.TRANSFER,
-        categoryId: null,
+        categoryId: lineCategoryId,
         transferAccountId: split.transferAccountId,
         amount: split.amount,
         memo: split.memo || null,
@@ -737,6 +718,7 @@ export class TransactionSplitService {
         exchangeRate: counterpart.exchangeRate,
         description: split.memo || null,
         isTransfer: true,
+        categoryId: lineCategoryId,
         status: options?.parentStatus,
         payeeId: parentPayeeId || null,
         // A blank payee is persisted blank (issue #1214): the display resolves
@@ -868,6 +850,11 @@ export class TransactionSplitService {
       return [];
 
     return withScopedDb(this.dataSource, async (m) => {
+      // Only category lines are written here, and a category line takes only
+      // Income or Expense (INV-CATEGORY-001): a Transfer category is refused,
+      // and bulk update skips every split parent before it comes here with
+      // one. Before the row locks, as the shared owner lock goes.
+      await fitCategory(m, userId, newCategoryId, "category");
       // Parents only, never the full eligible set: locking a parent together
       // with its own counterpart leg is refused by lockTransactionRows.
       await lockTransactionRows(m, parentIds, userId);
@@ -1183,6 +1170,13 @@ export class TransactionSplitService {
     // the bond engine after the commit (INV-BOND-005, INV-CACHE-001).
     const touchedSecurityIds = new Set<string>();
     const newSplits = await withScopedDb(this.dataSource, async (m) => {
+      // A category line's category is read under the shared category-owner
+      // lock, before any row lock (`common/db/locks.ts`).
+      if (
+        splits.some((split) => split.categoryId && !split.transferAccountId)
+      ) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // First statement of the transaction: advisory before row locks
       // (`common/db/locks.ts`). A replacement tears the parent's existing
       // embedded investment rows down (`deleteSplitSideEffects` ->
@@ -1401,9 +1395,6 @@ export class TransactionSplitService {
       );
     }
     assertTargetAmountOnTransfer(splitDto);
-    if (splitDto.categoryId) {
-      await this.validateCategoryOwnership(userId, splitDto.categoryId);
-    }
 
     // Provider rate lookups happen out here, never while holding the parent
     // lock below; see prewarmSplitTransferRates.
@@ -1420,6 +1411,11 @@ export class TransactionSplitService {
     // own account once the line re-totals it.
     const affectedAccountIds = new Set<string>();
     const savedSplitId = await withScopedDb(this.dataSource, async (m) => {
+      // A category line's category is read under the shared category-owner
+      // lock, taken before any row lock (`common/db/locks.ts`).
+      if (splitDto.categoryId && !splitDto.transferAccountId) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // The aggregate check and the insert are one serialized unit.
       //
       // Reading the split set, validating in application code, and inserting in
@@ -1445,6 +1441,17 @@ export class TransactionSplitService {
 
       // Strict reconciled lock, before the split set is read or written.
       await assertReconciledRowsMutable(m, userId, [parent]);
+
+      // The line's category is the person's and fits the line: a category
+      // line takes only Income or Expense, a transfer line any type
+      // (INV-CATEGORY-001), before anything is written.
+      await fitCategory(
+        m,
+        userId,
+        splitDto.categoryId,
+        holderOfSplitLine(splitDto),
+      );
+      const lineCategoryId = splitDto.categoryId || null;
 
       // The line is in the parent account's currency, held to its places.
       let places = await withCurrencyPlaces(m, new Map(), [
@@ -1506,7 +1513,7 @@ export class TransactionSplitService {
       const split = m.create(TransactionSplit, {
         transactionId: transaction.id,
         kind: splitKind,
-        categoryId: splitDto.categoryId || null,
+        categoryId: lineCategoryId,
         transferAccountId: splitDto.transferAccountId || null,
         amount: splitDto.amount,
         memo: splitDto.memo || null,
@@ -1550,6 +1557,9 @@ export class TransactionSplitService {
           exchangeRate: counterpart.exchangeRate,
           description: splitDto.memo || null,
           isTransfer: true,
+          // The line's category: the row a transfer line links holds the same
+          // one (INV-CATEGORY-002).
+          categoryId: lineCategoryId,
           // A VOID parent's counterpart is VOID and moves no balance, exactly as
           // on the bulk creation path (FR-002 family). The status and the payee
           // come off the locked parent, not the caller's snapshot (FV4-002): a
@@ -1836,10 +1846,14 @@ export class TransactionSplitService {
         // The pair links both ways, as a created transfer's legs do; the
         // parent keeps its own currency at rate 1 and the leg its own
         // converted amount and rate, which is the plain transfer's shape.
+        // The parent becomes a transfer holding the line's category, of any
+        // type, which the row the line linked already holds
+        // (INV-CATEGORY-002); a line that held none leaves it none.
         await m.update(Transaction, transaction.id, {
           isSplit: false,
           isTransfer: true,
-          categoryId: null,
+          // category-fit-ok: the transfer line's own, onto the transfer it becomes
+          categoryId: collapseInto.categoryId ?? null,
           linkedTransactionId: keptLeg.id,
         });
         await m.update(Transaction, keptLeg.id, {
@@ -1850,6 +1864,7 @@ export class TransactionSplitService {
 
       await m.update(Transaction, transaction.id, {
         isSplit: false,
+        // category-fit-ok: the category line's own, which fitted a category row
         categoryId: collapseInto.categoryId,
       });
       await m.remove(collapseInto);

@@ -259,6 +259,7 @@ export class LoanFeesService {
           splitRepo.create({
             scheduledTransactionId: schedule.id,
             kind: SplitKind.CATEGORY,
+            // category-fit-ok: a fee's category, refused as a Transfer one when set (loan-fee-terms.ts)
             categoryId: line.categoryId,
             transferAccountId: null,
             amount: -line.amount,

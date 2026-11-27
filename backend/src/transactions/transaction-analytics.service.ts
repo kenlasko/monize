@@ -1,5 +1,13 @@
+import {
+  type CategoryHolder,
+  categoryFits,
+  transferCategoryRefusal,
+} from "../categories/category-fit";
 import { Injectable, Logger } from "@nestjs/common";
-import { categoryTypeOf } from "../categories/category-type.util";
+import {
+  categoryTypeOf,
+  isTransferCategory,
+} from "../categories/category-type.util";
 import {
   Brackets,
   DataSource,
@@ -1769,6 +1777,42 @@ export class TransactionAnalyticsService {
         excludedCount,
       };
     });
+  }
+
+  /**
+   * The category a name a model wrote lands as on a row of `holder`
+   * (`docs/specs/transfer-categories.md` section 4.4): resolved among the
+   * categories that fit the row (INV-CATEGORY-001), and on a transfer a
+   * Transfer category of that path first. `null` when the name names no
+   * category; a name that names only a category the row cannot hold (a
+   * Transfer category on an ordinary row) is refused with the reason.
+   */
+  async resolveLlmCategoryIdFor(
+    userId: string,
+    categoryName: string,
+    holder: CategoryHolder,
+  ): Promise<string | null> {
+    const all = await withScopedDb(this.dataSource, (m) =>
+      m.getRepository(Category).find({
+        where: { userId },
+        select: ["id", "name", "parentId", "categoryType"],
+      }),
+    );
+    // Exact names and paths resolve against every category first, so a path
+    // that names one category means that one; the type the row prefers only
+    // chooses between several candidates of one tier (spec section 4.4: on a
+    // transfer, a Transfer category of that path first). A name still
+    // ambiguous is unresolved, never guessed.
+    const [found] = resolveCategoryNamePaths(all, [categoryName], {
+      prefer: (c) =>
+        holder === "transfer" ? isTransferCategory(c) : !isTransferCategory(c),
+    });
+    const named = found?.id ?? null;
+    const category = named ? all.find((c) => c.id === named) : undefined;
+    if (category && !categoryFits(category, holder)) {
+      throw transferCategoryRefusal(category.name);
+    }
+    return named;
   }
 
   /**

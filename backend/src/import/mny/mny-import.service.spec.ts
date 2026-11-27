@@ -83,6 +83,12 @@ jest.mock("./writers/write-tags", () => ({
   writeTags: jest.fn(),
 }));
 
+// The writers are doubles here; which reused categories are Transfer ones is
+// read for them, and none is.
+jest.mock("./writers/fit-mny-category", () => ({
+  transferCategoryIdsAmong: jest.fn().mockResolvedValue(new Set()),
+}));
+
 const mockedScopedDb = withScopedDb as jest.MockedFunction<typeof withScopedDb>;
 const mockedWriteAccounts = writeAccounts as jest.MockedFunction<
   typeof writeAccounts
@@ -351,6 +357,7 @@ describe("MnyImportService", () => {
     mockedWriteTransactions.mockResolvedValue({
       transactionsCreated: 7,
       splitsCreated: 2,
+      categoriesNotFitting: 0,
       linksApplied: 4,
       tagLinksApplied: 0,
       affectedAccountIds: new Set(["account-1"]),
@@ -1099,6 +1106,7 @@ describe("MnyImportService", () => {
       mockedWriteTransactions.mockResolvedValue({
         transactionsCreated: 4,
         splitsCreated: 0,
+        categoriesNotFitting: 0,
         linksApplied: 0,
         tagLinksApplied: 0,
         affectedAccountIds: new Set(["account-1"]),
@@ -1158,6 +1166,7 @@ describe("MnyImportService", () => {
       mockedWriteTransactions.mockResolvedValue({
         transactionsCreated: 1,
         splitsCreated: 0,
+        categoriesNotFitting: 0,
         linksApplied: 0,
         tagLinksApplied: 0,
         affectedAccountIds: new Set(["account-1"]),
@@ -1822,6 +1831,7 @@ describe("MnyImportService", () => {
         mockedWriteTransactions.mockResolvedValue({
           transactionsCreated: 1,
           splitsCreated: 0,
+          categoriesNotFitting: 0,
           linksApplied: 0,
           tagLinksApplied: 0,
           affectedAccountIds: new Set(["account-1"]),

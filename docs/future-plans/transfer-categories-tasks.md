@@ -19,7 +19,7 @@
 |----|----------|-----------|------------------|--------|
 | 1 | Specification | -- | none | [ ] |
 | 2 | The category type, end to end | 1 | none while no Transfer category exists | [x] |
-| 3 | Rules for what a row may hold, on every write path | 2 | yes | [ ] |
+| 3 | Rules for what a row may hold, on every write path | 2 | yes | [x] |
 | 4 | Reports and budgets | 3 | yes | [ ] |
 | 5 | Docs, end-to-end tests, locales, release notes | 4 | none | [ ] |
 
@@ -52,15 +52,15 @@ Done when the existing specs of every touched module pass unchanged and a Transf
 
 FIT and ONE on every path that writes a category, with the screens that drive them.
 
-- [ ] The fit helper and the entry-point integration matrix, written failing first.
-- [ ] Standalone transfers and ordinary rows: create, update, plain patch, conversion both ways, reassign.
-- [ ] Both sides together: bulk update, plain patch, the assistant's categorize action; the cross-owner rule.
-- [ ] Split transfer lines carry a category: create, add, remove, collapse, linked row, bulk recategorize, undo; the loan payment detector's interest line.
-- [ ] Scheduled transfers, scheduled split lines, overrides and posting.
-- [ ] Rules: `set_category` on a transfer with a category of any type, skip reasons, `convert_to_transfer` naming a category; the rules editor.
-- [ ] Importers: QIF payee default off transfers, Money's category on a transfer written to both sides, split lines.
-- [ ] Assistant and MCP write tools: schemas, descriptions, refusals; context and forecast.
-- [ ] Frontend: pickers by row kind across transaction, scheduled, bulk, quick-add, payee and import screens; inline create; the split editor's transfer line.
+- [x] The fit helper and the entry-point integration matrix, written failing first. (6ec3d83a6)
+- [x] Standalone transfers and ordinary rows: create, update, plain patch, conversion both ways, reassign. (369cc8ff4)
+- [x] Both sides together: bulk update, plain patch, the assistant's categorize action; the cross-owner rule. (e3fdeeffc)
+- [x] Split transfer lines carry a category: create, add, remove, collapse, linked row, bulk recategorize, undo; the loan payment detector's interest line. (ee5a4a270)
+- [x] Scheduled transfers, scheduled split lines, overrides and posting. (5229383db)
+- [x] Rules: `set_category` on a transfer with a category of any type, skip reasons, `convert_to_transfer` naming a category; the rules editor. (df426e253)
+- [x] Importers: QIF payee default off transfers, Money's category on a transfer written to both sides, split lines. (b46182f79)
+- [x] Assistant and MCP write tools: schemas, descriptions, refusals; context and forecast. (2eb95fb98)
+- [x] Frontend: pickers by row kind across transaction, scheduled, bulk, quick-add, payee and import screens; inline create; the split editor's transfer line. (a719f9d31)
 
 Done when the entry-point matrix is green and each importer's existing fixtures import as they did before.
 

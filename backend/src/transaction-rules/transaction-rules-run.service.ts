@@ -16,7 +16,10 @@ import {
   MAX_JSONB_SIZE_BYTES,
 } from "../action-history/action-history.service";
 import { RULE_RUN_ENTITY_TYPE } from "../action-history/rule-run-undo";
-import { lockAccountsForBalanceWrite } from "../common/db/locks";
+import {
+  lockAccountsForBalanceWrite,
+  lockCategoryOwnerShared,
+} from "../common/db/locks";
 import { withScopedDb } from "../common/db/scoped-db";
 import { PriorSettlement } from "../loan-installments/loan-settlement.types";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
@@ -32,6 +35,8 @@ import { withActionDefaults } from "./rule-references";
 import { PayeeResolution, PlannableRule } from "./rule-effects";
 import { loadAttachmentPresence } from "./rule-facts";
 import {
+  type CandidateSet,
+  type CandidateUnit,
   effectiveRunLimit,
   loadCandidateUnits,
   unitRowInput,
@@ -96,9 +101,24 @@ function narrowToActiveWindow(
   return { ...filters, startDate, endDate };
 }
 
+/**
+ * The category the other side of a unit's transfer holds, for the plan
+ * (`RulePlanContext.otherSideCategoryId`): a same-owner pair's other leg, or
+ * the split's transfer line that links the row. None across two owners.
+ */
+function otherSide(
+  unit: CandidateUnit,
+  lineOfRow: CandidateSet["lineOfRow"],
+): { otherSideCategoryId?: string | null } {
+  const otherLeg = unit.legs.find((leg) => leg !== unit.primary);
+  if (otherLeg) return { otherSideCategoryId: otherLeg.categoryId ?? null };
+  const line = lineOfRow?.get(unit.primary.id);
+  return line ? { otherSideCategoryId: line.categoryId } : {};
+}
+
 /** The planner's refusals that a person can act on, in the words of the preview. */
 const REFUSAL_REASONS: Readonly<Record<string, RuleRunSkipReason>> = {
-  row_is_transfer_leg: "transfer_leg_category",
+  category_does_not_fit: "transfer_category_on_category_row",
   row_has_splits: "split_category",
   cross_owner_transfer_leg: "cross_owner_transfer_payee",
   empty_render: "empty_render",
@@ -144,6 +164,11 @@ export function runSkipReason(refused: {
   type: string;
   reason: string;
 }): RuleRunSkipReason | undefined {
+  // A Transfer category where a category row or line holds it: a
+  // `set_category`, or a `split` part (INV-CATEGORY-001).
+  if (refused.reason === "category_does_not_fit") {
+    return "transfer_category_on_category_row";
+  }
   if (isStructuralActionType(refused.type)) {
     return refused.reason === "row_is_transfer_leg" ||
       refused.reason === "row_has_splits" ||
@@ -278,6 +303,11 @@ export class TransactionRulesRunService {
   ): Promise<RuleRunResult> {
     this.assertRange(dto);
     const done = await withScopedDb(this.dataSource, async (m) => {
+      // First lock of the transaction: a category the run writes onto a
+      // category row is fitted under the shared category-owner lock, which
+      // comes before every row lock (`common/db/locks.ts`); re-entrant, so
+      // the write's fit takes it again.
+      await lockCategoryOwnerShared(m, userId);
       const rule = await this.usableRule(m, userId, ruleId, true);
       const plan = await this.plan(m, userId, rule, dto, true);
       if (plan.preview.fingerprint !== dto.fingerprint) {
@@ -530,9 +560,9 @@ export class TransactionRulesRunService {
     const settles = rule.actions.some(
       (action) => action.type === SETTLE_LOAN_INSTALLMENT,
     );
-    const { units, truncated } =
+    const { units, truncated, lineOfRow } =
       scan === null
-        ? { units: [], truncated: false }
+        ? { units: [], truncated: false, lineOfRow: undefined }
         : await loadCandidateUnits(
             m,
             userId,
@@ -597,6 +627,9 @@ export class TransactionRulesRunService {
           accounts,
           transactionId: primary.id,
           priorSettlements: prior,
+          // The other side the category write sets (INV-CATEGORY-002): a
+          // same-owner pair's other leg, or the line that links this row.
+          ...otherSide(unit, lineOfRow),
         },
         payeeLookups,
         loans,
@@ -614,9 +647,15 @@ export class TransactionRulesRunService {
         }
       }
       if (entry && Object.keys(entry.changes).length > 0) {
-        const reconciled = unit.legs.some(
-          (leg) => leg.status === TransactionStatus.RECONCILED,
-        );
+        // A category written onto a split's linked row is written onto its
+        // line too (INV-CATEGORY-002): a reconciled parent keeps it.
+        const reconciled =
+          unit.legs.some(
+            (leg) => leg.status === TransactionStatus.RECONCILED,
+          ) ||
+          (entry.changes.categoryId !== undefined &&
+            lineOfRow?.get(primary.id)?.parentStatus ===
+              TransactionStatus.RECONCILED);
         if (reconciled && (await strictLock())) {
           skipped.push({
             transactionId: primary.id,

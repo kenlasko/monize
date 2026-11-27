@@ -233,6 +233,7 @@
       "directionFrom": "Przychód: pieniądze pochodzą z innego konta",
       "clearCategory": "Usuń kategorię",
       "clearCategoryHelp": "Przelew nie ma kategorii. Wyłącz, aby zachować kategorię, którą transakcja już ma.",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "Odbiorca transakcji (opcjonalnie)",
       "splitHint": "Kwota każdej części pochodzi z przechwyconej wartości we wzorcach powyżej albo jest resztą. Części muszą sumować się do kwoty transakcji, w przeciwnym razie reguła jej nie zmieni.",
       "splitNoCaptures": "Nie zdefiniowano jeszcze żadnej przechwyconej wartości. Wpisz nazwę w nawiasach klamrowych we wzorcu powyżej, na przykład PRINCIPAL: {example}, aby użyć jej tutaj jako kwoty.",
@@ -458,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "jest uzgodniona i zablokowana",
-      "transfer_leg_category": "jest przelewem, który nie ma kategorii",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "jest podzielona, więc kategoria należy do podziałów",
       "cross_owner_transfer_payee": "jest przelewem do innego właściciela, którego odbiorcy ta reguła nie może zmieniać",
       "empty_render": "tekst akcji okazał się dla niej pusty",

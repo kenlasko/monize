@@ -271,6 +271,65 @@ describe("LoanPaymentDetectorService", () => {
       expect(result!.interestCategoryName).toBe("Interest");
     });
 
+    it("does not read a transfer line holding a category as the interest line", async () => {
+      accountsRepository.findOne.mockResolvedValue(mockLoanAccount);
+      const payments: any[] = [];
+      for (let i = 0; i < 4; i++) {
+        payments.push({
+          id: `tx-${i}`,
+          accountId: "loan-1",
+          userId: "user-1",
+          transactionDate: `2025-0${i + 1}-15`,
+          amount: 500,
+          isTransfer: true,
+          isSplit: false,
+          linkedTransactionId: `linked-${i}`,
+        });
+      }
+      transactionRepository.find.mockResolvedValue(payments);
+      transactionRepository.findOne.mockImplementation(({ where }) =>
+        Promise.resolve(
+          where?.id?.startsWith("linked-")
+            ? {
+                id: where.id,
+                accountId: "chequing-1",
+                amount: -600,
+                account: { name: "Checking" },
+                isSplit: true,
+              }
+            : null,
+        ),
+      );
+      // Principal to the loan, interest on a category line, and a transfer
+      // line to savings holding a Transfer category (INV-CATEGORY-001): the
+      // savings line is money moved, never the interest.
+      transactionRepository.manager.find.mockResolvedValue([
+        {
+          transferAccountId: "loan-1",
+          categoryId: null,
+          amount: -420,
+          category: null,
+        },
+        {
+          transferAccountId: null,
+          categoryId: "interest-cat-1",
+          amount: -80,
+          category: { name: "Interest" },
+        },
+        {
+          transferAccountId: "savings-1",
+          categoryId: "transfer-cat-1",
+          amount: -100,
+          category: { name: "Savings contributions" },
+        },
+      ]);
+
+      const result = await service.detectPaymentPattern("user-1", "loan-1");
+
+      expect(result!.interestCategoryId).toBe("interest-cat-1");
+      expect(result!.interestCategoryName).toBe("Interest");
+    });
+
     it("handles single payment with low confidence", async () => {
       accountsRepository.findOne.mockResolvedValue(mockLoanAccount);
 

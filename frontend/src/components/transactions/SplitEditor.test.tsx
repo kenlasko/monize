@@ -22,6 +22,19 @@ vi.mock('@/lib/format', async (importOriginal) => ({
 }));
 
 vi.mock('@/lib/categoryUtils', () => ({
+  // The holder-aware builders, as the real ones shape them: "Parent: Child"
+  // labels, Transfer categories only where a transfer holds the category.
+  buildCategoryPickerOptions: (cats: any[], holder: string, toOption: (c: any, label: string) => unknown) =>
+    (cats || [])
+      .filter((c: any) => holder === 'transfer' || c.categoryType !== 'transfer')
+      .map((c: any) => {
+        const p = (cats || []).find((x: any) => x.id === c.parentId);
+        return toOption(c, p ? `${p.name}: ${c.name}` : c.name);
+      }),
+  getCategorySelectOptionsFor: (cats: any[], holder: string) =>
+    (cats || [])
+      .filter((c: any) => holder === 'transfer' || c.categoryType !== 'transfer')
+      .map((c: any) => ({ value: c.id, label: c.name })),
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, children: [] })),
 }));
 
@@ -797,6 +810,34 @@ describe('SplitEditor', () => {
 
       // Total is already negative, expense category → no change needed
       expect(mockOnAmountChange).not.toHaveBeenCalled();
+    });
+
+    it('flips a transfer line with the total, whatever category it holds', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: 50 }),
+        createSplitRow({ id: 'split-2', amount: 50, splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-2' }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Groceries'));
+
+      expect(mockOnAmountChange).toHaveBeenCalledWith(-100);
+      const newSplits = mockOnChange.mock.calls[0][0];
+      expect(newSplits[0].amount).toBe(-50);
+      // A transfer line's sign follows the total, as an uncategorized line's.
+      expect(newSplits[1].amount).toBe(-50);
     });
 
     it('only flips uncategorized splits when total sign changes', () => {
@@ -2645,7 +2686,8 @@ describe('SplitEditor — creating a category from a split line', () => {
       fireEvent.click(screen.getByText('Create "Vet Bills"'));
     });
 
-    expect(onCreateCategory).toHaveBeenCalledWith('Vet Bills');
+    // A category typed on an ordinary row or a category line is an Income or Expense one.
+    expect(onCreateCategory).toHaveBeenCalledWith('Vet Bills', 'category');
     const updated = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
     expect(updated[0].categoryId).toBe('cat-new');
     expect(updated[1].categoryId).toBeUndefined();
@@ -2807,5 +2849,84 @@ describe('SplitEditor — creating a category from a split line', () => {
     // Nothing is assigned -- and in particular nothing lands on split-2, which
     // is what an index-based apply would have done.
     expect(mockOnChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('SplitEditor: what a line may hold (INV-CATEGORY-001)', () => {
+  const onChange = vi.fn();
+  const categories = [
+    { id: 'cat-food', name: 'Groceries', parentId: null, categoryType: 'expense' },
+    { id: 'cat-save', name: 'Savings contributions', parentId: null, categoryType: 'transfer' },
+  ] as any[];
+  const accounts = [
+    { id: 'acc-1', name: 'Chequing', isClosed: false, accountSubType: null, isFavourite: false, favouriteSortOrder: 0, currencyCode: 'CAD' },
+    { id: 'acc-2', name: 'Savings', isClosed: false, accountSubType: null, isFavourite: false, favouriteSortOrder: 0, currencyCode: 'CAD' },
+  ] as any[];
+  const renderLines = (splits: SplitRow[]) =>
+    render(
+      <SplitEditor
+        splits={splits}
+        onChange={onChange}
+        categories={categories}
+        accounts={accounts}
+        sourceAccountId="acc-1"
+        transactionAmount={-50}
+      />,
+    );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("gives a transfer line a category of its own, the Transfer category it holds shown", () => {
+    renderLines([
+      createSplitRow({ id: 's1', splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-save', amount: -30 }),
+      createSplitRow({ id: 's2', categoryId: 'cat-food', amount: -20 }),
+    ]);
+    // One picker per layout (mobile and desktop) on the transfer line.
+    const pickers = screen.getAllByLabelText('Category for split 1');
+    expect(pickers.length).toBeGreaterThan(0);
+    expect((pickers[0] as HTMLInputElement).value).toBe('Savings contributions');
+  });
+
+  it('clears a Transfer category when the line becomes a category line, and keeps an Expense one', () => {
+    renderLines([
+      createSplitRow({ id: 's1', splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-save', amount: -30 }),
+      createSplitRow({ id: 's2', splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-food', amount: -20 }),
+    ]);
+    const typeSelects = screen.getAllByDisplayValue('Transfer');
+    fireEvent.change(typeSelects[0], { target: { value: 'category' } });
+    expect(onChange.mock.calls[0][0][0]).toMatchObject({ splitType: 'category', categoryId: undefined });
+    fireEvent.change(typeSelects[1], { target: { value: 'category' } });
+    expect(onChange.mock.calls[1][0][1]).toMatchObject({ splitType: 'category', categoryId: 'cat-food' });
+  });
+
+  it('keeps the category when a category line becomes a transfer line', () => {
+    renderLines([
+      createSplitRow({ id: 's1', categoryId: 'cat-food', amount: -30 }),
+      createSplitRow({ id: 's2', amount: -20 }),
+    ]);
+    fireEvent.change(screen.getAllByDisplayValue('Category')[0], { target: { value: 'transfer' } });
+    expect(onChange.mock.calls[0][0][0]).toMatchObject({ splitType: 'transfer', categoryId: 'cat-food' });
+  });
+
+  it("keeps the sign typed on a transfer line, whatever its category's type", () => {
+    // A transfer line's sign is its direction; an Expense category on it
+    // never turns an incoming amount into an outgoing one.
+    renderLines([
+      createSplitRow({ id: 's1', splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-food', amount: -30 }),
+      createSplitRow({ id: 's2', categoryId: 'cat-food', amount: -20 }),
+    ]);
+    fireEvent.change(screen.getAllByDisplayValue('-30.00')[0], { target: { value: '500' } });
+    expect(onChange.mock.calls[0][0][0].amount).toBe(500);
+  });
+
+  it("sends a transfer line's category, and none for an investment line", () => {
+    const data = toCreateSplitData([
+      createSplitRow({ splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-save', amount: -30 }),
+      createSplitRow({ splitType: 'investment', categoryId: 'stale', amount: -20 }),
+    ]);
+    expect(data[0]).toMatchObject({ transferAccountId: 'acc-2', categoryId: 'cat-save' });
+    expect(data[1].categoryId).toBeUndefined();
   });
 });

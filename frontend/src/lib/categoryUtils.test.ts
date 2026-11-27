@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCategoryTree, getCategorySelectOptions, buildCategoryColorMap, buildCategoryLabelMap, buildDescendantIdSet, rollupToDirectChildren, buildCategoryFilterOptions, canonicalizeCategoryFilter, resolveSelectedCategories, SpecialCategoryFilterLabels, signAmountByCategory } from './categoryUtils';
+import { buildCategoryTree, buildCategoryPickerOptions, getCategorySelectOptions, getCategorySelectOptionsFor, buildCategoryColorMap, buildCategoryLabelMap, buildDescendantIdSet, rollupToDirectChildren, buildCategoryFilterOptions, canonicalizeCategoryFilter, resolveSelectedCategories, SpecialCategoryFilterLabels, signAmountByCategory } from './categoryUtils';
 import { Category } from '@/types/category';
 
 function makeCategory(overrides: Partial<Category> & { id: string; name: string }): Category {
@@ -366,5 +366,48 @@ describe('signAmountByCategory', () => {
   it('returns the value unchanged with no category', () => {
     expect(signAmountByCategory(25, undefined, undefined)).toBe(25);
     expect(signAmountByCategory(-25, 10, undefined)).toBe(-25);
+  });
+});
+
+describe('getCategorySelectOptionsFor (INV-CATEGORY-001)', () => {
+  const transfers = makeCategory({ id: 't', name: 'Transfers', categoryType: 'transfer' });
+  const brokerage = makeCategory({ id: 't2', name: 'Brokerage', parentId: 't', categoryType: 'transfer' });
+  const list = [groceries, transfers, brokerage, dining];
+
+  it('offers a transfer every type, Transfer categories first, each with its path', () => {
+    expect(getCategorySelectOptionsFor(list, 'transfer').map((o) => o.label)).toEqual([
+      'Transfers',
+      'Transfers: Brokerage',
+      'Dining',
+      'Groceries',
+    ]);
+  });
+
+  it('leaves out the ids a transfer picker excludes, in either group', () => {
+    expect(
+      getCategorySelectOptionsFor(list, 'transfer', { excludeIds: new Set(['t2', 'cat-1']) }).map((o) => o.value),
+    ).toEqual(['t', 'cat-2']);
+  });
+
+  it('offers a category row only Income and Expense, after the pseudo entries it asks for', () => {
+    expect(
+      getCategorySelectOptionsFor(list, 'category', { includeEmpty: true, emptyLabel: 'None' }).map((o) => o.value),
+    ).toEqual(['', 'cat-2', 'cat-1']);
+  });
+});
+
+describe('buildCategoryPickerOptions (INV-CATEGORY-001)', () => {
+  const transfers = makeCategory({ id: 't', name: 'Transfers', categoryType: 'transfer' });
+  const brokerage = makeCategory({ id: 't2', name: 'Brokerage', parentId: 't', categoryType: 'transfer' });
+  const list = [groceries, transfers, brokerage, dining];
+  const labels = (holder: 'transfer' | 'category') =>
+    buildCategoryPickerOptions(list, holder, (_c, label) => label);
+
+  it('lists a transfer every type, Transfer categories first', () => {
+    expect(labels('transfer')).toEqual(['Transfers', 'Transfers: Brokerage', 'Dining', 'Groceries']);
+  });
+
+  it('lists a category row Income and Expense only', () => {
+    expect(labels('category')).toEqual(['Dining', 'Groceries']);
   });
 });

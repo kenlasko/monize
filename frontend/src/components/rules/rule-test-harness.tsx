@@ -15,6 +15,14 @@ export const testOptions: RuleOptions = {
     { value: FOOD_ID, label: 'Food' },
     { value: COFFEE_ID, label: 'Food: Coffee' },
   ],
+  transferCategories: [
+    { value: FOOD_ID, label: 'Food' },
+    { value: COFFEE_ID, label: 'Food: Coffee' },
+  ],
+  lineCategories: [
+    { value: FOOD_ID, label: 'Food' },
+    { value: COFFEE_ID, label: 'Food: Coffee' },
+  ],
   tags: [
     { value: TAG_ID, label: 'Coffee run' },
     { value: TAG_WORK_ID, label: 'Work' },

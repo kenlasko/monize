@@ -2998,6 +2998,51 @@ describe("ActionHistoryService", () => {
       expect(splitCalls).toHaveLength(0);
     });
 
+    it("locks the split parents of a bulk update on their own, before the other rows", async () => {
+      // A bulk category write records a split's transfer line under its
+      // parent's id beside the row the line links (INV-CATEGORY-002): the
+      // parent is locked first, a split parent before its legs
+      // (`common/db/locks.ts`), whatever the two ids' order.
+      mockRepository.findOne.mockResolvedValue({
+        ...mockAction,
+        entityType: "bulk_transaction",
+        action: "bulk_update",
+        entityId: null,
+        beforeData: {
+          transactions: [
+            { id: "a-linked", accountId: "acc-2", categoryId: null },
+            {
+              id: "z-parent",
+              accountId: "acc-1",
+              splits: [{ id: "line-1", categoryId: null }],
+            },
+          ],
+        },
+      });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+      mockLockedRows({
+        "a-linked": { account_id: "acc-2", amount: "100" },
+        "z-parent": { account_id: "acc-1", amount: "-150" },
+      });
+      const answerLocks = mockQueryRunner.query.getMockImplementation()!;
+      mockQueryRunner.query.mockImplementation(
+        async (sql: string, params: unknown[]) =>
+          /is_split = true/.test(sql)
+            ? [{ id: "z-parent" }]
+            : answerLocks(sql, params),
+      );
+
+      await service.undo(userId);
+
+      const locks = mockQueryRunner.query.mock.calls
+        .filter(
+          ([sql]: [string]) =>
+            /FROM transactions/.test(sql) && /FOR UPDATE/.test(sql),
+        )
+        .map(([, params]: [string, unknown[]]) => params[0]);
+      expect(locks.slice(0, 2)).toEqual([["z-parent"], ["a-linked"]]);
+    });
+
     it.each(["undo", "redo"] as const)(
       "refuses the %s of a bulk update that touches a reconciled row under the lock, before any write",
       async (which) => {

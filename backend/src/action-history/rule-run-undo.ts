@@ -1,6 +1,15 @@
+import {
+  isCategoryPartnerRecord,
+  lockRowsWithCategoryPartners,
+  undoCategoryPartner,
+} from "../transactions/transfer-category-partner";
 import { ConflictException } from "@nestjs/common";
 import { EntityManager } from "typeorm";
-import { LockedTransactionRow, lockTransactionRows } from "../common/db/locks";
+import {
+  LockedTransactionRow,
+  lockCategoryOwnerShared,
+  lockTransactionRows,
+} from "../common/db/locks";
 import { tr } from "../i18n/translate";
 import {
   ScheduleCursorChange,
@@ -133,10 +142,28 @@ export async function undoRuleRun(
     snapshots.flatMap((row) =>
       row.structure?.kind === kind ? row.structure.counterpartIds : [],
     );
-  const locked = await lockTransactionRows(
+  // A category the undo restores is written under the shared category-owner
+  // lock, before every row lock (`common/db/locks.ts`).
+  if (
+    snapshots.some(
+      (row) =>
+        "categoryId" in row ||
+        (row as { categoryPartner?: unknown }).categoryPartner !== undefined,
+    )
+  ) {
+    await lockCategoryOwnerShared(manager, action.userId);
+  }
+  // The other sides of transfers the run's category reached are locked with
+  // the rows, in the order the run took them (a partner line's split parent
+  // first, the other legs ascending with the rows), before any write.
+  const partners = snapshots
+    .map((row) => (row as { categoryPartner?: unknown }).categoryPartner)
+    .filter(isCategoryPartnerRecord);
+  const locked = await lockRowsWithCategoryPartners(
     manager,
-    [...snapshots.map((row) => row.id), ...counterpartIdsOf("transfer")],
     action.userId,
+    [...snapshots.map((row) => row.id), ...counterpartIdsOf("transfer")],
+    partners,
   );
   const splitLegIds = counterpartIdsOf("split");
   // After the parents: a split parent is locked before any of its legs.
@@ -187,6 +214,7 @@ export async function undoRuleRun(
     if ("linkedTransactionId" in row) {
       fields.linkedTransactionId = row.linkedTransactionId ?? null;
     }
+    // category-fit-ok: the undo restores the value the run recorded
     if ("categoryId" in row) fields.categoryId = row.categoryId ?? null;
     if ("payeeId" in row) fields.payeeId = row.payeeId ?? null;
     if ("payeeName" in row) fields.payeeName = row.payeeName ?? null;
@@ -197,6 +225,12 @@ export async function undoRuleRun(
         { id: row.id, userId: action.userId },
         fields,
       );
+    }
+    // The other side of a transfer the run's category reached returns to the
+    // value it held (INV-CATEGORY-002).
+    const partner = (row as { categoryPartner?: unknown }).categoryPartner;
+    if (isCategoryPartnerRecord(partner)) {
+      await undoCategoryPartner(manager, action.userId, partner);
     }
     if (Array.isArray(row.tagIds)) {
       tagOwners.push(row.id);

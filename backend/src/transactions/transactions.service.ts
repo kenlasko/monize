@@ -27,6 +27,12 @@ import {
 } from "./provisional-split-legs";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
+import { categoryIdForCategoryRow } from "../categories/category-row-gate";
+import {
+  categoryNotFound,
+  fitCategory,
+  holderOfRow,
+} from "../categories/category-fit";
 import { repriceSettledLoanTemplates } from "../loan-installments/reprice-template";
 import { InvestmentTransaction } from "../securities/entities/investment-transaction.entity";
 import { TransactionAttachment } from "../attachments/entities/transaction-attachment.entity";
@@ -151,11 +157,17 @@ import { deletionBalanceEffect } from "../common/deletion-balance.util";
 import { getActiveScopedManager, withScopedDb } from "../common/db/scoped-db";
 import { isExternalIdConflict } from "./transaction-external-id";
 import {
+  lockCategoryOwnerShared,
   lockTransactionRow,
   lockTransactionRows,
   type LockedTransactionRow,
 } from "../common/db/locks";
 import { assertReconciledRowsMutable } from "./reconciled-lock.util";
+import {
+  type CategoryPartnerRecord,
+  findCategoryPartner,
+  writeCategoryPartner,
+} from "./transfer-category-partner";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
 import { assertAmountPrecision } from "../common/amount-precision.util";
 import { hasForeignEntryRequest } from "../common/foreign-entry.util";
@@ -699,26 +711,14 @@ export class TransactionsService {
       resolvedPayeeId = payee.id;
       resolvedPayeeName = payee.name;
     }
-    if (transactionData.categoryId) {
-      const cat = await withScopedDb(this.dataSource, (m) =>
-        m.getRepository(Category).findOne({
-          where: { id: transactionData.categoryId, userId },
-        }),
-      );
-      if (!cat) {
-        throw new NotFoundException(
-          tr("errors.transactions.categoryNotFound", "Category not found"),
-        );
-      }
-    }
-
-    let categoryId = transactionData.categoryId;
-    if (!hasSplits && !categoryId && resolvedPayeeId) {
+    // The payee's default applies only when the request names no category; a
+    // stored default that does not fit an ordinary row (a Transfer category a
+    // pod of the previous release wrote) is skipped inside the write below.
+    let payeeDefaultCategoryId: string | null = null;
+    if (!hasSplits && !transactionData.categoryId && resolvedPayeeId) {
       try {
         const payee = await this.payeesService.findOne(userId, resolvedPayeeId);
-        if (payee.defaultCategoryId) {
-          categoryId = payee.defaultCategoryId;
-        }
+        payeeDefaultCategoryId = payee.defaultCategoryId ?? null;
       } catch {
         // Payee already validated above; this is for default category lookup
       }
@@ -749,6 +749,11 @@ export class TransactionsService {
     let savedTransactionId: string;
     try {
       savedTransactionId = await withScopedDb(this.dataSource, async (m) => {
+        // A category row's category is read under the shared category-owner
+        // lock, taken before any row lock (`common/db/locks.ts`). Always: the
+        // create rules below may set one even when the request names none,
+        // and the split lines' balance writes lock rows before they run.
+        await lockCategoryOwnerShared(m, userId);
         // Precision refusals first, inside the write's transaction and before
         // anything (the caller's hook included) is written: the amount and
         // every split line are in the account's currency and carry at most its
@@ -781,6 +786,24 @@ export class TransactionsService {
             accountCurrency,
           );
         }
+        // The category is the person's and fits an ordinary row: a Transfer
+        // category goes only on a transfer (INV-CATEGORY-001). Refused here,
+        // inside the write's transaction and before anything is written.
+        const categoryId = hasSplits
+          ? null
+          : ((
+              await fitCategory(
+                m,
+                userId,
+                transactionData.categoryId,
+                "category",
+              )
+            )?.id ??
+            (await categoryIdForCategoryRow(
+              m,
+              userId,
+              payeeDefaultCategoryId,
+            )));
         if (options?.beforeWrite) await options.beforeWrite(m);
         this.assertAccountOpen(account);
         const transaction = m.create(Transaction, {
@@ -791,7 +814,7 @@ export class TransactionsService {
           currencyCode: primaryCurrencyCode,
           payeeId: resolvedPayeeId,
           payeeName: resolvedPayeeName,
-          categoryId: hasSplits ? null : categoryId,
+          categoryId,
           isSplit: hasSplits,
           userId,
           exchangeRate: transactionData.exchangeRate || 1,
@@ -1035,18 +1058,14 @@ export class TransactionsService {
     let categoryId: string | null = input.categoryId ?? null;
     let categoryName: string | null = null;
     if (categoryId) {
+      // The commit's own check: the person's, and Income or Expense on an
+      // ordinary row (INV-CATEGORY-001), so the preview refuses what the
+      // commit would.
       const requestedCategoryId = categoryId;
       const cat = await withScopedDb(this.dataSource, (m) =>
-        m.getRepository(Category).findOne({
-          where: { id: requestedCategoryId, userId },
-        }),
+        fitCategory(m, userId, requestedCategoryId, "category"),
       );
-      if (!cat) {
-        throw new NotFoundException(
-          tr("errors.transactions.categoryNotFound", "Category not found"),
-        );
-      }
-      categoryName = cat.name;
+      categoryName = cat?.name ?? null;
     }
 
     // Resolve the payee name to an existing payee so the created transaction
@@ -1080,8 +1099,16 @@ export class TransactionsService {
       payeeName = payee.name;
       // Mirror create(): when the caller gave no category, adopt the matched
       // payee's default so the preview equals what create() will persist.
-      if (!categoryId && payee.defaultCategoryId) {
-        categoryId = payee.defaultCategoryId;
+      // A default the row cannot hold is skipped, as create() skips it.
+      const defaultCategoryId = payee.defaultCategoryId;
+      if (
+        !categoryId &&
+        defaultCategoryId &&
+        (await withScopedDb(this.dataSource, (m) =>
+          categoryIdForCategoryRow(m, userId, defaultCategoryId),
+        ))
+      ) {
+        categoryId = defaultCategoryId;
         categoryName = payee.defaultCategory?.name ?? null;
       }
     }
@@ -1152,16 +1179,12 @@ export class TransactionsService {
     categoryId: string,
   ): Promise<CategorizeTransactionPreview> {
     const transaction = await this.findOne(userId, transactionId);
+    // The categorize action writes through the plain patch, so it fits the
+    // category to the row the way that write will (INV-CATEGORY-001).
     const cat = await withScopedDb(this.dataSource, (m) =>
-      m.getRepository(Category).findOne({
-        where: { id: categoryId, userId },
-      }),
+      fitCategory(m, userId, categoryId, holderOfRow(transaction)),
     );
-    if (!cat) {
-      throw new NotFoundException(
-        tr("errors.transactions.categoryNotFound", "Category not found"),
-      );
-    }
+    if (!cat) throw categoryNotFound();
 
     return {
       transactionId,
@@ -1417,16 +1440,13 @@ export class TransactionsService {
     let categoryId: string | null = existing.categoryId ?? null;
     let categoryName: string | null = existing.category?.name ?? null;
     if (input.categoryId !== undefined) {
+      // As update() fits it: the person's, and one that fits this row
+      // (INV-CATEGORY-001).
+      const requested = input.categoryId;
       const cat = await withScopedDb(this.dataSource, (m) =>
-        m.getRepository(Category).findOne({
-          where: { id: input.categoryId, userId },
-        }),
+        fitCategory(m, userId, requested, holderOfRow(existing)),
       );
-      if (!cat) {
-        throw new NotFoundException(
-          tr("errors.transactions.categoryNotFound", "Category not found"),
-        );
-      }
+      if (!cat) throw categoryNotFound();
       categoryId = cat.id;
       categoryName = cat.name;
     }
@@ -3542,6 +3562,18 @@ export class TransactionsService {
     }
   }
 
+  /** Whether a row locked by this transaction is a transfer leg. */
+  private async lockedRowKind(
+    m: EntityManager,
+    id: string,
+  ): Promise<{ isTransfer: boolean }> {
+    const [row] = await m.query(
+      `SELECT is_transfer AS "isTransfer" FROM transactions WHERE id = $1`,
+      [id],
+    );
+    return { isTransfer: row?.isTransfer === true };
+  }
+
   /**
    * A transfer leg's amount, account, date and rate belong to the pair, so the
    * generic row update refuses a change to any of them on one leg; the
@@ -3715,28 +3747,31 @@ export class TransactionsService {
       );
     }
 
-    if ("categoryId" in updateData && updateData.categoryId) {
-      const cat = await withScopedDb(this.dataSource, (m) =>
-        m.getRepository(Category).findOne({
-          where: { id: updateData.categoryId, userId },
-        }),
-      );
-      if (!cat) {
-        throw new NotFoundException(
-          tr("errors.transactions.categoryNotFound", "Category not found"),
-        );
-      }
-    }
-
     // What a split-line tag change wrote, for the history entry.
     // (A holder, not a `let`: it is set inside the transaction's callback.)
     const written: {
       splitTags: { before: SplitTagPlace[]; after: SplitTagPlace[] } | null;
-    } = { splitTags: null };
+      /** The other side of a transfer this edit's category reached. */
+      categoryPartner: {
+        before: CategoryPartnerRecord;
+        after: CategoryPartnerRecord;
+      } | null;
+    } = { splitTags: null, categoryPartner: null };
 
     // One transaction: split rebuild, field update, tags, and balance
     // adjustments commit or roll back together. Nested service calls join it.
+    const writesCategory = "categoryId" in updateData;
     await withScopedDb(this.dataSource, async (m) => {
+      // A category write takes the category-owner lock shared before any row
+      // lock (`common/db/locks.ts`, specification section 12), so a concurrent
+      // type change either commits before the fit below reads the type or
+      // waits for this commit. Re-entrant: the fit takes it again.
+      if (
+        (writesCategory && updateData.categoryId) ||
+        splits?.some((split) => split.categoryId && !split.transferAccountId)
+      ) {
+        await lockCategoryOwnerShared(m, userId);
+      }
       // First lock of the transaction: advisory before row locks
       // (`common/db/locks.ts`). If this row is a split parent carrying embedded
       // investment rows, this edit reaches the holdings advisory lock later --
@@ -3768,7 +3803,24 @@ export class TransactionsService {
       // balance 100.00, one -10.00 row, A updates it to -20.00 and B to -30.00:
       // the ledger ends at -30.00 while the stored balance says 60.00 instead
       // of 70.00 (audit P4-003).
-      const locked = await lockTransactionRow(m, id, userId);
+      //
+      // A category write on a transfer row sets its other side too
+      // (INV-CATEGORY-002): the other leg, or the split's transfer line whose
+      // linked row this is. It is locked with the row, in the protocol's
+      // order (`common/db/locks.ts`): a split parent before its legs, a
+      // transfer's two legs ascending.
+      const categoryPartner = writesCategory
+        ? await findCategoryPartner(m, userId, transaction)
+        : null;
+      if (categoryPartner?.kind === "line") {
+        await lockTransactionRow(m, categoryPartner.parentId, userId);
+      }
+      const locked =
+        categoryPartner?.kind === "leg"
+          ? ((
+              await lockTransactionRows(m, [id, categoryPartner.id], userId)
+            ).get(id) ?? null)
+          : await lockTransactionRow(m, id, userId);
       if (!locked) {
         throw new NotFoundException(
           tr(
@@ -3781,6 +3833,16 @@ export class TransactionsService {
       // Strict reconciled lock, against the LOCKED row and before any write:
       // an edit refused here must not already have happened.
       await assertReconciledRowsMutable(m, userId, [locked]);
+      // The category is the person's and fits this row, read under the lock:
+      // a Transfer category goes only on a transfer (INV-CATEGORY-001).
+      if (writesCategory && updateData.categoryId) {
+        await fitCategory(
+          m,
+          userId,
+          updateData.categoryId,
+          holderOfRow(await this.lockedRowKind(m, id)),
+        );
+      }
       // The same for the split lines a tag change names: still on this row,
       // and their counterpart legs locked and held to the reconciled lock, all
       // before anything is written.
@@ -4122,6 +4184,16 @@ export class TransactionsService {
       if (Object.keys(transactionUpdateData).length > 0) {
         await m.update(Transaction, id, transactionUpdateData);
       }
+      // The other side of a transfer follows the category this row now holds,
+      // when it holds another (INV-CATEGORY-002).
+      if (writesCategory && !(splits && splits.length > 0)) {
+        written.categoryPartner = await writeCategoryPartner(
+          m,
+          userId,
+          categoryPartner,
+          updateData.categoryId ?? null,
+        );
+      }
 
       // Update transaction-level tags
       if (tagIds !== undefined) {
@@ -4308,16 +4380,27 @@ export class TransactionsService {
       entityId: id,
       action: "update",
       // A split-line tag change rides along as its exact record, so undo and
-      // redo set back the links it touched and no others.
-      beforeData: written.splitTags
-        ? { ...beforeSnapshot, splitTagPlaces: written.splitTags.before }
-        : beforeSnapshot,
-      afterData: written.splitTags
-        ? {
-            ...this.snapshotTransaction(finalTransaction),
-            splitTagPlaces: written.splitTags.after,
-          }
-        : this.snapshotTransaction(finalTransaction),
+      // redo set back the links it touched and no others; so does the other
+      // side of a transfer the category reached, which undo returns to the
+      // value it held (specification section 4.7).
+      beforeData: {
+        ...beforeSnapshot,
+        ...(written.splitTags
+          ? { splitTagPlaces: written.splitTags.before }
+          : {}),
+        ...(written.categoryPartner
+          ? { categoryPartner: written.categoryPartner.before }
+          : {}),
+      },
+      afterData: {
+        ...this.snapshotTransaction(finalTransaction),
+        ...(written.splitTags
+          ? { splitTagPlaces: written.splitTags.after }
+          : {}),
+        ...(written.categoryPartner
+          ? { categoryPartner: written.categoryPartner.after }
+          : {}),
+      },
       description: `Updated transaction ${finalTransaction.payeeName || ""} ${formatCurrency(Number(finalTransaction.amount), finalTransaction.currencyCode)}`,
       descriptionKey: "updatedTransaction",
       descriptionParams: {

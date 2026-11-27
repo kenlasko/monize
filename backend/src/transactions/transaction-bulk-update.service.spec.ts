@@ -4548,4 +4548,58 @@ describe("TransactionBulkUpdateService", () => {
       );
     });
   });
+
+  describe("the status lock set when the batch sets a category too", () => {
+    // A selected row a split's transfer line links: the category reaches that
+    // line (INV-CATEGORY-002), so its split parent is locked with the parents,
+    // before any leg (`common/db/locks.ts`), not after the row.
+    const discover = (withOwningParents: boolean) => {
+      const m = {
+        getRepository: () => ({
+          createQueryBuilder: () =>
+            createMockQueryBuilder({
+              getMany: jest.fn().mockResolvedValue([
+                {
+                  id: "leg-c",
+                  isSplit: false,
+                  isTransfer: true,
+                  linkedTransactionId: "parent-1",
+                },
+              ]),
+            }),
+        }),
+        find: jest.fn(async () => [
+          {
+            id: "s-c",
+            linkedTransactionId: "leg-c",
+            transactionId: "parent-1",
+          },
+        ]),
+      };
+      return (
+        service as unknown as {
+          discoverStatusLockSet: (
+            m: unknown,
+            userId: string,
+            ids: string[],
+            withOwningParents: boolean,
+          ) => Promise<{ parentIds: string[]; rowIds: string[] }>;
+        }
+      ).discoverStatusLockSet(m, userId, ["leg-c"], withOwningParents);
+    };
+
+    it("puts the split parent owning a selected linked row among the parents", async () => {
+      await expect(discover(true)).resolves.toEqual({
+        parentIds: ["parent-1"],
+        rowIds: ["leg-c"],
+      });
+    });
+
+    it("leaves it out of a status-only batch, which never writes that line", async () => {
+      await expect(discover(false)).resolves.toEqual({
+        parentIds: [],
+        rowIds: ["leg-c"],
+      });
+    });
+  });
 });

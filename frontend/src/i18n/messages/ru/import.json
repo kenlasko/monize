@@ -351,6 +351,7 @@
     "viewInvestments": "Просмотреть инвестиции",
     "viewTransactions": "Просмотреть проводки",
     "importMoreFiles": "Импортировать ещё файлы",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# покупка облигаций импортирована без серии. Выберите серию в лотах облигаций бумаги.} few {# покупки облигаций импортированы без серии. Выберите серии в лотах облигаций бумаги.} many {# покупок облигаций импортировано без серии. Выберите серии в лотах облигаций бумаги.} other {# покупки облигаций импортировано без серии. Выберите серии в лотах облигаций бумаги.}}",
     "skipReasonKeptExisting": "Вместо неё оставлена ваша существующая проводка",
     "skipReasonPossibleDuplicate": "Похоже на проводку, уже имеющуюся на счёте",

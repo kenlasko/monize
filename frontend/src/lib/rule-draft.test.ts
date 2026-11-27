@@ -343,6 +343,14 @@ describe('the structural actions', () => {
     expect(split.parts[2]).toMatchObject({ amount: 'rest', categoryId: '', transferAccountId: '', description: '' });
   });
 
+  it('round-trips the category a conversion names for both legs', () => {
+    const stored = { type: 'convert_to_transfer', toAccountId: ACCOUNT, clearCategory: true, categoryId: UUID };
+    const { draft, repaired } = read({ actions: [stored] as never });
+    expect(repaired).toBe(0);
+    expect(draft.actions[0]).toMatchObject({ categoryId: UUID });
+    expect(actionToApi(draft.actions[0])).toEqual(stored);
+  });
+
   it('writes the income side as fromAccountId and a card with no payee without one', () => {
     const stored = { type: 'convert_to_transfer', fromAccountId: ACCOUNT, clearCategory: false };
     const { draft, repaired } = read({ actions: [stored] as never });

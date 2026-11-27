@@ -131,6 +131,8 @@ export type EditorAction =
       /** The other account of the transfer; empty until chosen. */
       readonly accountId: string;
       readonly clearCategory: boolean;
+      /** The category both legs take, of any type; empty for none named. */
+      readonly categoryId: string;
       /** The payee of both legs; empty for none. */
       readonly payeeId: string;
     }
@@ -187,7 +189,7 @@ export function createAction(type: EditableActionType = 'add_tags'): EditableAct
       return { uid, type, instruction: '' };
     case 'convert_to_transfer':
       // The server's default: the category goes, because a transfer has none.
-      return { uid, type, direction: 'to', accountId: '', clearCategory: true, payeeId: '' };
+      return { uid, type, direction: 'to', accountId: '', clearCategory: true, categoryId: '', payeeId: '' };
     case 'split':
       return { uid, type, payeeId: '', parts: [createSplitPart(), createSplitPart()] };
     case 'settle_loan_installment':

@@ -351,6 +351,7 @@
     "viewInvestments": "查看投資",
     "viewTransactions": "查看交易",
     "importMoreFiles": "匯入更多檔案",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, other {有 # 筆債券買入在沒有系列的情況下匯入。請在該證券的債券批次中選擇系列。}}",
     "skipReasonKeptExisting": "已改為保留您現有的交易",
     "skipReasonPossibleDuplicate": "看起來與帳戶中已有的交易相似",

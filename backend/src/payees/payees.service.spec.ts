@@ -11,6 +11,7 @@ import { PayeeAlias } from "./entities/payee-alias.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { Category } from "../categories/entities/category.entity";
+import { answerCategoryFindOne } from "../test-helpers/category-fit-testing";
 import { ActionHistoryService } from "../action-history/action-history.service";
 import {
   createScopedDbMocks,
@@ -164,7 +165,13 @@ describe("PayeesService", () => {
 
     categoriesRepository = {
       find: jest.fn().mockResolvedValue([]),
-      findOne: jest.fn(),
+      // The backfill's fit check (`fitCategory`): the user's Expense category
+      // unless a test says otherwise.
+      findOne: jest.fn(async (opts?: { where?: { id?: string } }) =>
+        opts?.where?.id
+          ? { id: opts.where.id, name: opts.where.id, categoryType: "expense" }
+          : null,
+      ),
       createQueryBuilder: jest.fn(() => categoryQueryBuilderMock),
     };
 
@@ -213,6 +220,11 @@ describe("PayeesService", () => {
     mockDataSource = dataSource;
     txManager = manager;
     txManager.find.mockResolvedValue([]);
+    // The backfill's category read (`categoryIdForCategoryRow`) goes through
+    // the manager; it answers from the Category repository mock.
+    txManager.findOne.mockImplementation(
+      answerCategoryFindOne(categoriesRepository as { findOne: jest.Mock }),
+    );
     // No row references the payee (delete's reference count); a test overrides it.
     txManager.query.mockImplementation(async (sql: string) =>
       sql.includes("FROM accounts") ? [] : [{ count: 0 }],

@@ -545,6 +545,8 @@
     },
     "splitLabel": "विभाजन {number}",
     "accountForSplit": "विभाजन {number} का खाता",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "प्रकार",
       "categoryAccount": "श्रेणी / खाता",

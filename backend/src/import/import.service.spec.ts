@@ -20,6 +20,7 @@ import {
   AccountSubType,
 } from "../accounts/entities/account.entity";
 import { Category } from "../categories/entities/category.entity";
+import { categoryFitRepoMock } from "../test-helpers/category-fit-testing";
 import { Payee } from "../payees/entities/payee.entity";
 import { Security } from "../securities/entities/security.entity";
 import {
@@ -630,6 +631,10 @@ describe("ImportService", () => {
         ) => {
           if (entity === Account && options?.where?.id === "acct-1") {
             return Promise.resolve({ ...mockChequingAccount });
+          }
+          // A mapped category is the person's (`categoryIdForCategoryRow`).
+          if (entity === Category) {
+            return categoryFitRepoMock().findOne(options);
           }
           return Promise.resolve(null);
         },
@@ -5008,7 +5013,7 @@ describe("ImportService", () => {
       parsed.accountBlocks[0].categories = ["Interest", "Mortgage:Extra"];
       parsed.accountBlocks[0].transactions[0].category = "Interest";
       mockedParseQifFull.mockReturnValue(parsed);
-      mockQueryRunner.manager.findOne.mockImplementation((entity) => {
+      mockQueryRunner.manager.findOne.mockImplementation((entity, options) => {
         if (entity === Account) {
           return Promise.resolve({
             id: "acct-1",
@@ -5017,6 +5022,10 @@ describe("ImportService", () => {
             accountType: AccountType.CHEQUING,
             currencyCode: "CAD",
           });
+        }
+        // A created category is the person's (`categoryIdForCategoryRow`).
+        if (entity === Category) {
+          return categoryFitRepoMock().findOne(options);
         }
         return Promise.resolve(null);
       });

@@ -29,6 +29,7 @@ import { categoriesApi } from '@/lib/categories';
 import { investmentsApi } from '@/lib/investments';
 import { exchangeRatesApi, CurrencyInfo } from '@/lib/exchange-rates';
 import { buildCategoryTree } from '@/lib/categoryUtils';
+import { categoriesForHolder } from '@/lib/category-type';
 import { getErrorMessage } from '@/lib/errors';
 import { Account, AccountType } from '@/types/account';
 import { Category } from '@/types/category';
@@ -620,7 +621,13 @@ export function useImportWizard() {
         }
 
         if (detectedFormat) setDateFormat(detectedFormat);
-        const newCatMappings = buildCategoryMappings(allCats, categories, accounts);
+        // A file's category lands on category rows: it is matched among
+        // Income and Expense categories only (INV-CATEGORY-001).
+        const newCatMappings = buildCategoryMappings(
+          allCats,
+          categoriesForHolder(categories, 'category'),
+          accounts,
+        );
         const newAccMappings = buildAccountMappings(allTransferAccounts, accounts, defaultCurrency);
         const newSecMappings = buildSecurityMappings(allSecs, securities, defaultCurrency);
         setImportFiles(fileDataArray);
@@ -791,7 +798,12 @@ export function useImportWizard() {
       const isInvestment = fileDataArray.some((f) => f.parsedData?.accountType === 'INVESTMENT');
 
       if (detectedFormat) setDateFormat(detectedFormat);
-      const newCatMappings = buildCategoryMappings(allCats, categories, accounts);
+      // Matched among Income and Expense categories only (INV-CATEGORY-001).
+      const newCatMappings = buildCategoryMappings(
+        allCats,
+        categoriesForHolder(categories, 'category'),
+        accounts,
+      );
       const newAccMappings = buildAccountMappings(allTransferAccounts, accounts, defaultCurrency);
       const newSecMappings = isInvestment
         ? buildSecurityMappings(allSecs, securities, defaultCurrency)
@@ -1158,6 +1170,7 @@ export function useImportWizard() {
 
       if (isBulkImport) {
         const fileResults: BulkImportResult['fileResults'] = [];
+        let totalCategoriesNotFitting = 0;
         let totalImported = 0;
         let totalSkipped = 0;
         let totalErrors = 0;
@@ -1184,8 +1197,10 @@ export function useImportWizard() {
               errors: result.errors,
               errorMessages: result.errorMessages,
               loanAccountsNeedingSetup: result.loanAccountsNeedingSetup,
+              categoriesNotFitting: result.categoriesNotFitting,
             });
 
+            totalCategoriesNotFitting += result.categoriesNotFitting ?? 0;
             totalImported += result.imported;
             totalSkipped += result.skipped;
             totalErrors += result.errors;
@@ -1257,6 +1272,7 @@ export function useImportWizard() {
 
         setBulkImportResult({
           totalImported, totalSkipped, totalErrors, categoriesCreated, accountsCreated, payeesCreated, securitiesCreated, fileResults,
+          ...(totalCategoriesNotFitting > 0 ? { categoriesNotFitting: totalCategoriesNotFitting } : {}),
           loanAccountsNeedingSetup: allLoanAccountsNeedingSetup.length > 0 ? allLoanAccountsNeedingSetup : undefined,
         });
         setStep('complete');
@@ -1288,9 +1304,13 @@ export function useImportWizard() {
     }
   };
 
+  // A file's category lands on ordinary rows and split category lines (a
+  // transfer names its account instead), so a mapping offers Income and
+  // Expense only; a Transfer category would be left off every row it reached
+  // (INV-CATEGORY-001).
   const categoryOptions = useMemo(() => {
     const options = [{ value: '', label: 'Skip (no category)' }];
-    const tree = buildCategoryTree(categories);
+    const tree = buildCategoryTree(categoriesForHolder(categories, 'category'));
     tree.forEach(({ category }) => {
       options.push({ value: category.id, label: getCategoryPath(category, categories) });
     });
@@ -1298,10 +1318,12 @@ export function useImportWizard() {
   }, [categories]);
 
   // Every category, not only the top-level ones: a QIF path three or four
-  // levels deep is suggested under its deepest existing level.
+  // levels deep is suggested under its deepest existing level. Income and
+  // Expense only: a child takes its parent's type, and a file's category goes
+  // on category rows (INV-CATEGORY-001).
   const parentCategoryOptions = useMemo(() => {
     const options = [{ value: '', label: 'No parent (top-level)' }];
-    buildCategoryTree(categories).forEach(({ category }) => {
+    buildCategoryTree(categoriesForHolder(categories, 'category')).forEach(({ category }) => {
       options.push({ value: category.id, label: getCategoryPath(category, categories) });
     });
     return withCategoryIcons(options, categories);

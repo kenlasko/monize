@@ -507,7 +507,7 @@ export class McpTransactionsTools {
                 .max(100)
                 .optional()
                 .describe(
-                  "The category. On a transfer it is stored on both legs and surfaces it in the category breakdown without counting as income or expense.",
+                  "The category: Income or Expense on an ordinary row; on a transfer any type, stored on both legs.",
                 ),
               description: z
                 .string()
@@ -552,7 +552,7 @@ export class McpTransactionsTools {
                       .string()
                       .min(1)
                       .max(100)
-                      .describe("Category for this line."),
+                      .describe("An Income or Expense category."),
                     amount: numberArg(
                       z.number().min(-999999999999).max(999999999999),
                     ).describe("Signed amount for this line."),

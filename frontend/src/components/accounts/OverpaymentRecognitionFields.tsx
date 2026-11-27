@@ -10,7 +10,7 @@ import { LoanBookingHelp } from './LoanBookingHelp';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 import { InterestBookingMode, INTEREST_BOOKING_MODES } from '@/types/account';
-import { buildCategoryTree } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions, buildCategoryTree } from '@/lib/categoryUtils';
 import { payeesApi } from '@/lib/payees';
 import { createLogger } from '@/lib/logger';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
@@ -89,6 +89,18 @@ export function OverpaymentRecognitionFields({
       }),
     [categories],
   );
+  // The loan's interest is booked on a split's category line, which takes
+  // Income and Expense only (INV-CATEGORY-001); the overpayment category keeps
+  // every type (specification section 3).
+  const interestCategoryOptions = useMemo(
+    () =>
+      buildCategoryPickerOptions(categories, 'category', (category, label) => ({
+        value: category.id,
+        label,
+        icon: categoryPickerIcon(category),
+      })),
+    [categories],
+  );
   const payeeOptions = useMemo(
     () =>
       [...payees]
@@ -124,7 +136,7 @@ export function OverpaymentRecognitionFields({
           interestCategoryRequired ? 'mortgageFields.interestCategoryRequired' : 'mortgageFields.interestCategory',
         )}
         placeholder={t('mortgageFields.selectCategory')}
-        options={categoryOptions}
+        options={interestCategoryOptions}
         value={selectedInterestCategoryId}
         initialDisplayValue={initialInterestCategoryName}
         onChange={onInterestCategoryChange}

@@ -79,6 +79,19 @@ describe('AssetFields', () => {
     expect(optionsCount.textContent).toBe('2');
   });
 
+  it('offers Income and Expense categories only: value changes are category rows (INV-CATEGORY-001)', () => {
+    render(
+      <AssetFields
+        {...defaultProps}
+        categories={[
+          ...mockCategories,
+          { ...mockCategories[0], id: 'cat-t', name: 'Savings moves', categoryType: 'transfer' } as Category,
+        ]}
+      />,
+    );
+    expect(screen.getByTestId('combobox-options-count').textContent).toBe('2');
+  });
+
   it('passes selected category id to combobox', () => {
     render(<AssetFields {...defaultProps} selectedAssetCategoryId="cat-1" />);
     const comboboxValue = screen.getByTestId('combobox-value');

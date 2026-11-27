@@ -3,6 +3,22 @@ import { toOverrideSplits } from './splitSerialization';
 import { toSplitRows, type SplitRow } from '@/components/transactions/SplitEditor';
 
 describe('toOverrideSplits', () => {
+  it("sends a transfer line's category, and none for an investment line (INV-CATEGORY-002)", () => {
+    const out = toOverrideSplits([
+      { id: '1', splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-save', amount: -30, memo: '' },
+      { id: '2', splitType: 'category', categoryId: 'cat-food', amount: -20, memo: '' },
+      {
+        id: '3',
+        splitType: 'investment',
+        categoryId: 'stale',
+        amount: -10,
+        memo: '',
+        investment: { action: 'BUY', securityId: 'sec-1', quantity: 1, price: 10, commission: 0, exchangeRate: 1 },
+      },
+    ] as SplitRow[]);
+    expect(out.map((line) => line.categoryId)).toEqual(['cat-save', 'cat-food', null]);
+  });
+
   it('preserves splitKind and the investment payload for investment-kind rows', () => {
     const rows: SplitRow[] = [
       {
@@ -50,14 +66,14 @@ describe('toOverrideSplits', () => {
     });
   });
 
-  it('clears categoryId/transferAccountId for non-matching kinds', () => {
+  it("clears a category line's transferAccountId, and keeps a transfer line's category", () => {
     const rows: SplitRow[] = [
       {
         id: '1',
         splitType: 'transfer',
         transferAccountId: 'acc-2',
-        // categoryId stale leftover; should be cleared on output
-        categoryId: 'cat-stale',
+        // A transfer line carries a category of any type (INV-CATEGORY-002).
+        categoryId: 'cat-kept',
         amount: -50,
         memo: '',
       },
@@ -75,7 +91,7 @@ describe('toOverrideSplits', () => {
     expect(out[0]).toMatchObject({
       splitKind: 'transfer',
       transferAccountId: 'acc-2',
-      categoryId: null,
+      categoryId: 'cat-kept',
     });
     expect(out[1]).toMatchObject({
       splitKind: 'category',

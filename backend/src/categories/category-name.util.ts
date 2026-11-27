@@ -1,3 +1,4 @@
+import { isTransferCategory } from "./category-type.util";
 import { EntityManager } from "typeorm";
 import { Category } from "./entities/category.entity";
 import { escapeRegExp } from "../common/escape-regexp.util";
@@ -112,12 +113,25 @@ export function qualifiedNamesById(
 export async function loadQualifiedCategoryNames(
   m: EntityManager,
   userId: string,
+  options: {
+    /**
+     * `"category"`: only the categories a category row or line may hold,
+     * Income and Expense (INV-CATEGORY-001), for a list offered to choose
+     * from. A child's name still names its parent.
+     */
+    readonly holder?: "category";
+  } = {},
 ): Promise<Map<string, string>> {
   const categories = await m.getRepository(Category).find({
     where: { userId },
-    select: ["id", "name", "parentId"],
+    select: ["id", "name", "parentId", "categoryType"],
   });
-  return qualifiedNamesById(categories);
+  const qualified = qualifiedNamesById(categories);
+  if (options.holder !== "category") return qualified;
+  const transfer = new Set(
+    categories.filter((c) => isTransferCategory(c)).map((c) => c.id),
+  );
+  return new Map([...qualified].filter(([id]) => !transfer.has(id)));
 }
 
 /**
@@ -191,9 +205,18 @@ export interface CategoryNameMatch {
  *    stale parent; it must never pick between two candidates, which is exactly
  *    what it used to do.
  */
-export function resolveCategoryNamePaths(
-  categories: readonly CategoryNameRef[],
+export function resolveCategoryNamePaths<C extends CategoryNameRef>(
+  categories: readonly C[],
   names: readonly string[],
+  options: {
+    /**
+     * Chooses between several candidates of one tier (an exact name, a path,
+     * the last segment): when exactly one of them is preferred, it is the
+     * match. Never reaches into another tier, so a path that names a category
+     * exactly wins over a preferred category of the same last segment.
+     */
+    readonly prefer?: (category: C) => boolean;
+  } = {},
 ): CategoryNameMatch[] {
   const byId = new Map(categories.map((c) => [c.id, c]));
   const qualified = qualifiedNamesById(categories);
@@ -226,15 +249,26 @@ export function resolveCategoryNamePaths(
   const describe = (cats: readonly CategoryNameRef[]): string[] =>
     cats.map((c) => qualified.get(c.id) ?? c.name);
 
+  // The one candidate of a tier, the one preferred among several, or none.
+  const single = (cats: readonly CategoryNameRef[]): CategoryNameRef | null => {
+    if (cats.length === 1) return cats[0];
+    const { prefer } = options;
+    if (cats.length < 2 || !prefer) return null;
+    const preferred = cats.filter((c) => prefer(c as C));
+    return preferred.length === 1 ? preferred[0] : null;
+  };
+
   return names.map((input) => {
     const exact = byExactName.get(norm(input)) ?? [];
-    if (exact.length === 1) {
-      return { input, id: exact[0].id, candidates: [] };
+    const exactOne = single(exact);
+    if (exactOne) {
+      return { input, id: exactOne.id, candidates: [] };
     }
 
     const path = byPath.get(canonicalCategoryPath(input)) ?? [];
-    if (path.length === 1) {
-      return { input, id: path[0].id, candidates: [] };
+    const pathOne = single(path);
+    if (pathOne) {
+      return { input, id: pathOne.id, candidates: [] };
     }
     if (path.length > 1) {
       return {
@@ -258,8 +292,9 @@ export function resolveCategoryNamePaths(
     if (canonical.includes(":")) {
       const lastSegment = canonical.split(":").pop() ?? "";
       const leaf = lastSegment ? (byExactName.get(lastSegment) ?? []) : [];
-      if (leaf.length === 1) {
-        return { input, id: leaf[0].id, candidates: [] };
+      const leafOne = single(leaf);
+      if (leafOne) {
+        return { input, id: leafOne.id, candidates: [] };
       }
       if (leaf.length > 1) {
         return {

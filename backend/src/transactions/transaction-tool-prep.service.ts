@@ -1,3 +1,4 @@
+import type { CategoryHolder } from "../categories/category-fit";
 import {
   Injectable,
   Inject,
@@ -264,14 +265,42 @@ export class TransactionToolPrepService {
     }
   }
 
+  /**
+   * The category a model's name lands as, on a row of `holder`: among the
+   * categories that fit it, a Transfer category first on a transfer; a name
+   * that names only a Transfer category is refused on an ordinary row or a
+   * split's category line, with the reason (INV-CATEGORY-001).
+   */
   private async resolveCategoryId(
     userId: string,
     categoryName: string,
+    holder: CategoryHolder,
   ): Promise<string | null> {
-    const resolved = await this.analyticsService.resolveLlmCategoryIds(userId, [
+    return this.analyticsService.resolveLlmCategoryIdFor(
+      userId,
       categoryName,
-    ]);
-    return resolved.categoryIds[0] ?? null;
+      holder,
+    );
+  }
+
+  /**
+   * `resolveCategoryId` for a row of a batch: a refusal is the row's skip
+   * reason, never a throw that loses the other rows.
+   */
+  private async resolveRowCategory(
+    userId: string,
+    categoryName: string,
+    holder: CategoryHolder,
+  ): Promise<{ id: string } | { reason: string }> {
+    try {
+      const id = await this.resolveCategoryId(userId, categoryName, holder);
+      return id ? { id } : { reason: `Unknown category: ${categoryName}` };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return { reason: error.message };
+      }
+      throw error;
+    }
   }
 
   /**
@@ -292,6 +321,7 @@ export class TransactionToolPrepService {
       const categoryId = await this.resolveCategoryId(
         userId,
         line.categoryName,
+        "category",
       );
       if (!categoryId) throw this.unknownCategoryError(line.categoryName);
       resolved.push({
@@ -390,14 +420,18 @@ export class TransactionToolPrepService {
 
       let categoryId: string | undefined;
       if (row.categoryName) {
-        const resolved = await this.resolveCategoryId(userId, row.categoryName);
-        if (!resolved) {
-          const reason = `Unknown category: ${row.categoryName}`;
+        const resolved = await this.resolveRowCategory(
+          userId,
+          row.categoryName,
+          "category",
+        );
+        if ("reason" in resolved) {
+          const { reason } = resolved;
           skipped.push({ index: i, reason });
           previewRows.push({ ...base, error: reason });
           continue;
         }
-        categoryId = resolved;
+        categoryId = resolved.id;
       }
 
       try {
@@ -472,14 +506,18 @@ export class TransactionToolPrepService {
 
       let categoryId: string | undefined;
       if (row.categoryName) {
-        const resolved = await this.resolveCategoryId(userId, row.categoryName);
-        if (!resolved) {
-          const reason = `Unknown category: ${row.categoryName}`;
+        const resolved = await this.resolveRowCategory(
+          userId,
+          row.categoryName,
+          "transfer",
+        );
+        if ("reason" in resolved) {
+          const { reason } = resolved;
           skipped.push({ index: i, reason });
           previewRows.push({ ...base, error: reason });
           continue;
         }
-        categoryId = resolved;
+        categoryId = resolved.id;
       }
 
       try {
@@ -541,7 +579,11 @@ export class TransactionToolPrepService {
     }
     let categoryId: string | undefined;
     if (row.categoryName) {
-      const resolved = await this.resolveCategoryId(userId, row.categoryName);
+      const resolved = await this.resolveCategoryId(
+        userId,
+        row.categoryName,
+        "transfer",
+      );
       if (!resolved) throw this.unknownCategoryError(row.categoryName);
       categoryId = resolved;
     }
@@ -584,7 +626,11 @@ export class TransactionToolPrepService {
     // single category.
     let categoryId: string | undefined;
     if (!row.splits && row.categoryName) {
-      const resolved = await this.resolveCategoryId(userId, row.categoryName);
+      const resolved = await this.resolveCategoryId(
+        userId,
+        row.categoryName,
+        "category",
+      );
       if (!resolved) throw this.unknownCategoryError(row.categoryName);
       categoryId = resolved;
     }
@@ -668,6 +714,7 @@ export class TransactionToolPrepService {
           const resolved = await this.resolveCategoryId(
             userId,
             item.categoryName,
+            "transfer",
           );
           if (!resolved) throw this.unknownCategoryError(item.categoryName);
           categoryId = resolved;
@@ -724,7 +771,11 @@ export class TransactionToolPrepService {
     const createPayee = item.createPayeeIfMissing ?? true;
     let categoryId: string | undefined;
     if (item.splits === undefined && item.categoryName !== undefined) {
-      const resolved = await this.resolveCategoryId(userId, item.categoryName);
+      const resolved = await this.resolveCategoryId(
+        userId,
+        item.categoryName,
+        "category",
+      );
       if (!resolved) throw this.unknownCategoryError(item.categoryName);
       categoryId = resolved;
     }

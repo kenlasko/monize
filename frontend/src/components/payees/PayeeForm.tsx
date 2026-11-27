@@ -19,7 +19,7 @@ import {
   CONTACT_LOOKUP_FIELDS,
 } from '@/types/payee';
 import { Category } from '@/types/category';
-import { buildCategoryTree } from '@/lib/categoryUtils';
+import { buildCategoryPickerOptions } from '@/lib/categoryUtils';
 import { payeesApi } from '@/lib/payees';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useContactLookupAvailable } from '@/hooks/useContactLookupAvailable';
@@ -406,19 +406,17 @@ export function PayeeForm({ payee, categories, onSubmit, onCancel, onDirtyChange
 
   useFormSubmitRef(submitRef, handleSubmit, handleFormSubmit);
 
-  const categoryOptions = useMemo(() => {
-    const treeOptions = buildCategoryTree(categories).map(({ category }) => {
-      const parentCategory = category.parentId
-        ? categories.find(c => c.id === category.parentId)
-        : null;
-      return {
+  // A payee's default goes on ordinary rows, so it is Income or Expense only;
+  // the server refuses a Transfer category here (INV-CATEGORY-001).
+  const categoryOptions = useMemo(
+    () =>
+      buildCategoryPickerOptions(categories, 'category', (category, label) => ({
         value: category.id,
-        label: parentCategory ? `${parentCategory.name}: ${category.name}` : category.name,
+        label,
         icon: categoryPickerIcon(category),
-      };
-    });
-    return treeOptions;
-  }, [categories]);
+      })),
+    [categories],
+  );
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategoryId(categoryId);

@@ -4,7 +4,8 @@ import { MortgageFields } from './MortgageFields';
 import { Account, MortgageType } from '@/types/account';
 import { Category } from '@/types/category';
 
-vi.mock('@/lib/categoryUtils', () => ({
+vi.mock('@/lib/categoryUtils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/categoryUtils')>()),
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, depth: 0 })),
   buildCategoryLabelMap: (cats: any[]) => new Map(cats.map((c: any) => [c.id, c.name])),
 }));

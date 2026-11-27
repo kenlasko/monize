@@ -233,6 +233,7 @@
       "directionFrom": "Gelir: para başka bir hesaptan gelir",
       "clearCategory": "Kategoriyi temizle",
       "clearCategoryHelp": "Havalenin kategorisi olmaz. İşlemin mevcut kategorisini korumak için kapatın.",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "İşlemin alıcısı (isteğe bağlı)",
       "splitHint": "Her parça tutarını yukarıdaki desenlerdeki bir yakalamadan alır ya da kalanı alır. Parçaların toplamı işlem tutarına eşit olmalıdır, aksi halde kural işleme dokunmaz.",
       "splitNoCaptures": "Henüz tanımlı bir yakalama yok. Tutar olarak kullanmak için yukarıdaki bir desende küme parantezi içine bir ad yazın, örneğin PRINCIPAL: {example}.",
@@ -458,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "mutabık kılınmış ve kilitli",
-      "transfer_leg_category": "bir transfer ve transferlerin kategorisi yok",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "bölünmüş, bu yüzden kategori bölümlere ait",
       "cross_owner_transfer_payee": "başka bir sahibe yapılan bir transfer ve bu kural onun alıcısını değiştiremez",
       "empty_render": "bir eylemin metni bunun için boş çıktı",

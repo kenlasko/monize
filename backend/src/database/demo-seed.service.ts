@@ -744,6 +744,7 @@ export class DemoSeedService {
             : null;
           await withScopedDb(this.dataSource, (manager) =>
             manager.query(
+              // category-fit-ok: the demo's own Income and Expense categories
               `INSERT INTO transaction_splits (transaction_id, category_id, amount, memo)
              VALUES ($1, $2, $3, $4)`,
               [parentTx.id, splitCategoryId, split.amount, split.memo],
@@ -757,6 +758,7 @@ export class DemoSeedService {
         // Regular transaction
         await withScopedDb(this.dataSource, (manager) =>
           manager.query(
+            // category-fit-ok: the demo's own Income and Expense categories
             `INSERT INTO transactions (
             user_id, account_id, transaction_date, payee_id, payee_name,
             category_id, amount, currency_code, description, status
@@ -924,6 +926,7 @@ export class DemoSeedService {
         this.dataSource,
         async (manager) => {
           const [row] = await manager.query(
+            // category-fit-ok: the demo's own Income and Expense categories
             `INSERT INTO scheduled_transactions (
           user_id, account_id, name, payee_id, payee_name,
           category_id, amount, currency_code, frequency,
@@ -951,6 +954,7 @@ export class DemoSeedService {
           );
           for (const split of st.splits ?? []) {
             await manager.query(
+              // category-fit-ok: the demo's own Income and Expense categories
               `INSERT INTO scheduled_transaction_splits
                (scheduled_transaction_id, kind, category_id, amount, memo)
              VALUES ($1, 'category', $2, $3, $4)`,

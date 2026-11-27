@@ -2826,6 +2826,165 @@ describe("TransactionAnalyticsService", () => {
     });
   });
 
+  describe("resolveLlmCategoryIdFor", () => {
+    // INV-CATEGORY-001: a model's category lands where it fits, and a name
+    // ambiguous among the categories asked is never guessed from another group.
+    const savings = {
+      id: "id-savings",
+      name: "Savings",
+      parentId: null,
+      categoryType: "transfer",
+    };
+    const brokerage = {
+      id: "id-brokerage",
+      name: "Brokerage",
+      parentId: null,
+      categoryType: "transfer",
+    };
+    const savingsMove = {
+      id: "id-savings-move",
+      name: "Move",
+      parentId: "id-savings",
+      categoryType: "transfer",
+    };
+    const brokerageMove = {
+      id: "id-brokerage-move",
+      name: "Move",
+      parentId: "id-brokerage",
+      categoryType: "transfer",
+    };
+    const fees = {
+      id: "id-fees",
+      name: "Fees",
+      parentId: null,
+      categoryType: "expense",
+    };
+    const feesMove = {
+      id: "id-fees-move",
+      name: "Move",
+      parentId: "id-fees",
+      categoryType: "expense",
+    };
+    const refunds = {
+      id: "id-refunds",
+      name: "Refunds",
+      parentId: null,
+      categoryType: "income",
+    };
+    const refundsMove = {
+      id: "id-refunds-move",
+      name: "Move",
+      parentId: "id-refunds",
+      categoryType: "income",
+    };
+    const rent = {
+      id: "id-rent",
+      name: "Rent",
+      parentId: null,
+      categoryType: "expense",
+    };
+    const rentTransfer = {
+      id: "id-rent-t",
+      name: "Rent",
+      parentId: null,
+      categoryType: "transfer",
+    };
+
+    it("on a transfer, prefers the Transfer category a name names", async () => {
+      categoriesRepository.find.mockResolvedValue([rent, rentTransfer]);
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Rent", "transfer"),
+      ).resolves.toBe("id-rent-t");
+    });
+
+    it("on a transfer, never resolves a name ambiguous among Transfer categories to another type's", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        savings,
+        brokerage,
+        savingsMove,
+        brokerageMove,
+        fees,
+        feesMove,
+      ]);
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Move", "transfer"),
+      ).resolves.toBeNull();
+    });
+
+    it("on an ordinary row, never reports an ambiguous name as a Transfer category", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        fees,
+        feesMove,
+        refunds,
+        refundsMove,
+        savings,
+        savingsMove,
+      ]);
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Move", "category"),
+      ).resolves.toBeNull();
+    });
+
+    it("on an ordinary row, refuses an exact Transfer path rather than a same-named Expense leaf", async () => {
+      const transfersRoot = {
+        id: "id-transfers",
+        name: "Transfers",
+        parentId: null,
+        categoryType: "transfer",
+      };
+      const transferSavings = {
+        id: "id-t-savings",
+        name: "Savings",
+        parentId: "id-transfers",
+        categoryType: "transfer",
+      };
+      const banking = {
+        id: "id-banking",
+        name: "Banking",
+        parentId: null,
+        categoryType: "expense",
+      };
+      const bankingSavings = {
+        id: "id-b-savings",
+        name: "Savings",
+        parentId: "id-banking",
+        categoryType: "expense",
+      };
+      categoriesRepository.find.mockResolvedValue([
+        transfersRoot,
+        transferSavings,
+        banking,
+        bankingSavings,
+      ]);
+      await expect(
+        service.resolveLlmCategoryIdFor(
+          userId,
+          "Transfers: Savings",
+          "category",
+        ),
+      ).rejects.toThrow(/Transfer category/);
+      // On a transfer, an exact Expense path is that category, not a
+      // Transfer category of the same last segment.
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Banking: Savings", "transfer"),
+      ).resolves.toBe("id-b-savings");
+      // A bare name both share is chosen by the row's type.
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Savings", "transfer"),
+      ).resolves.toBe("id-t-savings");
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Savings", "category"),
+      ).resolves.toBe("id-b-savings");
+    });
+
+    it("on an ordinary row, refuses a name that names only a Transfer category", async () => {
+      categoriesRepository.find.mockResolvedValue([savings, fees]);
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Savings", "category"),
+      ).rejects.toThrow(/Transfer category/);
+    });
+  });
+
   describe("getLlmQueryTransactions", () => {
     it("returns summary fields without breakdown when groupBy is not set", async () => {
       mockQueryBuilder.getRawMany.mockResolvedValue([

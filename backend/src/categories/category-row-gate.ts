@@ -12,7 +12,43 @@ import { isTransferCategory } from "./category-type.util";
  * One lookup per category per manager, so an import of thousands of rows asks
  * the database once for each distinct default.
  */
-const gates = new WeakMap<EntityManager, Map<string, Promise<boolean>>>();
+const gates = new WeakMap<
+  EntityManager,
+  Map<string, Promise<CategoryRowFit>>
+>();
+
+/**
+ * What a category row may make of `categoryId`: `fits` (the person's Income
+ * or Expense category), `transfer` (the person's Transfer category, which
+ * goes only on a transfer), or `none` (no category, or one that is not the
+ * person's or is gone).
+ */
+export type CategoryRowFit = "fits" | "transfer" | "none";
+
+export async function categoryRowFit(
+  manager: EntityManager,
+  userId: string,
+  categoryId: string | null | undefined,
+): Promise<CategoryRowFit> {
+  if (!categoryId) return "none";
+  let cache = gates.get(manager);
+  if (!cache) {
+    cache = new Map();
+    gates.set(manager, cache);
+  }
+  let fit = cache.get(categoryId);
+  if (fit === undefined) {
+    fit = (async () => {
+      const category = await manager.findOne(Category, {
+        where: { id: categoryId, userId },
+      });
+      if (category == null) return "none";
+      return isTransferCategory(category) ? "transfer" : "fits";
+    })();
+    cache.set(categoryId, fit);
+  }
+  return fit;
+}
 
 /**
  * `categoryId` when a category row may hold it, otherwise `null`: no category,
@@ -23,21 +59,7 @@ export async function categoryIdForCategoryRow(
   userId: string,
   categoryId: string | null | undefined,
 ): Promise<string | null> {
-  if (!categoryId) return null;
-  let cache = gates.get(manager);
-  if (!cache) {
-    cache = new Map();
-    gates.set(manager, cache);
-  }
-  let usable = cache.get(categoryId);
-  if (usable === undefined) {
-    usable = (async () => {
-      const category = await manager.findOne(Category, {
-        where: { id: categoryId, userId },
-      });
-      return category == null || !isTransferCategory(category);
-    })();
-    cache.set(categoryId, usable);
-  }
-  return (await usable) ? categoryId : null;
+  return (await categoryRowFit(manager, userId, categoryId)) === "fits"
+    ? (categoryId as string)
+    : null;
 }

@@ -472,15 +472,16 @@ describe("TransactionRulesRunService", () => {
 
       const preview = await service.previewRun(USER, RULE_ID, {});
 
-      expect(preview.skipped).toEqual(
-        expect.arrayContaining([
-          { transactionId: "tr", reason: "transfer_leg_category" },
-          { transactionId: "co", reason: "transfer_leg_category" },
-          { transactionId: "co", reason: "cross_owner_transfer_payee" },
-        ]),
-      );
-      // The same-owner transfer takes the payee; the cross-owner leg does not.
-      expect(preview.matched.map((m) => m.transactionId)).toEqual(["tr"]);
+      // A transfer takes the category, of any type (INV-CATEGORY-001), the
+      // cross-owner leg on its own side only; the cross-owner leg is refused
+      // the payee.
+      expect(preview.skipped).toEqual([
+        { transactionId: "co", reason: "cross_owner_transfer_payee" },
+      ]);
+      expect(preview.matched.map((m) => m.transactionId).sort()).toEqual([
+        "co",
+        "tr",
+      ]);
     });
   });
 
@@ -685,6 +686,16 @@ describe("TransactionRulesRunService", () => {
         USER,
         RULE_ID,
         { share: true },
+      );
+      // The shared category-owner lock is the commit's first lock, before the
+      // rule's share lock and the rows' (`common/db/locks.ts`).
+      const ownerLock = s.manager.query.mock.calls.findIndex(([sql]) =>
+        String(sql).includes("pg_advisory_xact_lock_shared"),
+      );
+      expect(ownerLock).toBeGreaterThanOrEqual(0);
+      const ruleCalls = s.rulesService.getOwnedRule.mock.invocationCallOrder;
+      expect(s.manager.query.mock.invocationCallOrder[ownerLock]).toBeLessThan(
+        ruleCalls[ruleCalls.length - 1],
       );
       expect(s.writeEffects).toHaveBeenCalledTimes(2);
       expect(s.writeEffects).toHaveBeenCalledWith(

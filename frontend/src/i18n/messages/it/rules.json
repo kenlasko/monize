@@ -233,6 +233,7 @@
       "directionFrom": "Entrata: il denaro arriva da un altro conto",
       "clearCategory": "Rimuovi la categoria",
       "clearCategoryHelp": "Un trasferimento non ha categoria. Disattiva per mantenere la categoria che la transazione ha già.",
+      "convertCategory": "Category for the transfer (optional)",
       "splitPayee": "Beneficiario della transazione (facoltativo)",
       "splitHint": "Ogni parte prende il proprio importo da una cattura nei criteri sopra, oppure prende il resto. Le parti devono sommare l'importo della transazione, altrimenti la regola la lascia invariata.",
       "splitNoCaptures": "Nessuna cattura è ancora definita. Inserisci un nome tra parentesi graffe in un criterio sopra, ad esempio PRINCIPAL: {example}, per usarlo qui come importo.",
@@ -458,7 +459,7 @@
     },
     "skipReasons": {
       "reconciled_locked": "è riconciliata e bloccata",
-      "transfer_leg_category": "è un trasferimento, che non ha categoria",
+      "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "è suddivisa, quindi la categoria appartiene alle suddivisioni",
       "cross_owner_transfer_payee": "è un trasferimento verso un altro proprietario, il cui beneficiario questa regola non può modificare",
       "empty_render": "il testo di un'azione è risultato vuoto per essa",

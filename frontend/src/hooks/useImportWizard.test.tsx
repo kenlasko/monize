@@ -86,6 +86,19 @@ vi.mock('@/lib/exchange-rates', () => ({
 }));
 
 vi.mock('@/lib/categoryUtils', () => ({
+  // The holder-aware builders, as the real ones shape them: "Parent: Child"
+  // labels, Transfer categories only where a transfer holds the category.
+  buildCategoryPickerOptions: (cats: any[], holder: string, toOption: (c: any, label: string) => unknown) =>
+    (cats || [])
+      .filter((c: any) => holder === 'transfer' || c.categoryType !== 'transfer')
+      .map((c: any) => {
+        const p = (cats || []).find((x: any) => x.id === c.parentId);
+        return toOption(c, p ? `${p.name}: ${c.name}` : c.name);
+      }),
+  getCategorySelectOptionsFor: (cats: any[], holder: string) =>
+    (cats || [])
+      .filter((c: any) => holder === 'transfer' || c.categoryType !== 'transfer')
+      .map((c: any) => ({ value: c.id, label: c.name })),
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, children: [] })),
 }));
 
@@ -308,6 +321,27 @@ describe('useImportWizard - QIF file upload', () => {
     expect(result.current.step).toBe('selectAccount');
     expect(result.current.fileType).toBe('qif');
     expect(result.current.importFiles).toHaveLength(1);
+  });
+
+  it("never maps a file's category onto a Transfer category, nor offers one as a parent (INV-CATEGORY-001)", async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockGetCategories.mockResolvedValue([
+      { id: 'cat-food', name: 'Food', parentId: null, categoryType: 'expense' },
+      { id: 'cat-save', name: 'Savings', parentId: null, categoryType: 'transfer' },
+    ]);
+    mockParseQif.mockResolvedValue(baseParsedQif({ categories: ['Food', 'Savings', 'Savings:Monthly'] }));
+
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('test.qif', 'data')]));
+    });
+
+    const byName = new Map(result.current.categoryMappings.map((m) => [m.originalName, m]));
+    expect(byName.get('Food')?.categoryId).toBe('cat-food');
+    expect(byName.get('Savings')?.categoryId).toBeUndefined();
+    expect(byName.get('Savings:Monthly')?.parentCategoryId).toBeUndefined();
+    expect(result.current.parentCategoryOptions.map((o) => o.value)).not.toContain('cat-save');
   });
 
   it('skips selectAccount step when single file with preselected account', async () => {
@@ -1578,6 +1612,28 @@ describe('useImportWizard - import handlers', () => {
       undefined,
       [skippedRow],
     ]);
+  });
+
+  it("sums each file's rows left without a Transfer category in a bulk import", async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockParseQif.mockResolvedValue(baseParsedQif({ categories: [] }));
+    mockImportQif.mockResolvedValueOnce(importResult({ imported: 2, categoriesNotFitting: 1 }))
+                  .mockResolvedValueOnce(importResult({ imported: 3, categoriesNotFitting: 2 }));
+
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('a.qif', '1'), makeFile('b.qif', '2')]));
+    });
+    act(() => {
+      result.current.setFileAccountId(0, 'acc-1');
+      result.current.setFileAccountId(1, 'acc-1');
+    });
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    expect(result.current.bulkImportResult?.fileResults.map((r) => r.categoriesNotFitting)).toEqual([1, 2]);
+    expect(result.current.bulkImportResult?.categoriesNotFitting).toBe(3);
   });
 
   it('bulk import handles thrown error per file', async () => {

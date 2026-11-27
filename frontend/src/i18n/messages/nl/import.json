@@ -351,6 +351,7 @@
     "viewInvestments": "Beleggingen bekijken",
     "viewTransactions": "Transacties bekijken",
     "importMoreFiles": "Meer bestanden importeren",
+    "categoriesNotFitting": "{count, plural, one {# transaction was} other {# transactions were}} imported without a category: the category in the file is a Transfer category, which goes only on a transfer.",
     "bondRowsWithoutSeries": "{count, plural, one {# obligatieaankoop is zonder serie geïmporteerd. Kies de serie in de obligatieposten van het effect.} other {# obligatieaankopen zijn zonder serie geïmporteerd. Kies de series in de obligatieposten van het effect.}}",
     "skipReasonKeptExisting": "je bestaande transactie is in plaats daarvan behouden",
     "skipReasonPossibleDuplicate": "lijkt op een transactie die al in de rekening staat",

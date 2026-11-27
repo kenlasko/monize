@@ -624,6 +624,28 @@ describe("ForecastAggregatorService", () => {
       expect(result.scheduledTransactions[1].isIncome).toBe(false);
     });
 
+    it("never reads a scheduled transfer as income because of its category (INV-CATEGORY-001)", async () => {
+      mockScheduledTransactionRepo.find.mockResolvedValue([
+        {
+          id: "st-savings",
+          name: "Monthly savings",
+          amount: -500,
+          frequency: "MONTHLY",
+          nextDueDate: new Date("2026-03-01"),
+          // A transfer takes a category of any type, an Income one included.
+          category: { name: "Interest", categoryType: "income" },
+          isTransfer: true,
+        },
+      ]);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.scheduledTransactions[0]).toMatchObject({
+        isTransfer: true,
+        isIncome: false,
+      });
+    });
+
     it("spells out a Custom schedule's rule instead of the bare word", async () => {
       mockScheduledTransactionRepo.find.mockResolvedValue([
         {

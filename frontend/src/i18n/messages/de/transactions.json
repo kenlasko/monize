@@ -545,6 +545,8 @@
     },
     "splitLabel": "Buchungsteil {number}",
     "accountForSplit": "Konto für Aufteilung {number}",
+    "transferCategoryForSplit": "Category for split {number}",
+    "transferCategoryPlaceholder": "Category (optional)",
     "columns": {
       "type": "Typ",
       "categoryAccount": "Kategorie / Konto",

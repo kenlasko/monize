@@ -233,6 +233,7 @@ describe('ImportPreviewRuleTest', () => {
                 { type: 'set_description', reason: 'empty_render' },
                 { type: 'set_payee_from_text', reason: 'payee_not_found' },
                 { type: 'add_tags', reason: 'something_newer' },
+                { type: 'convert_to_transfer', reason: 'row_is_transfer_leg' },
               ],
               changes: {},
               stopped: true,
@@ -248,6 +249,9 @@ describe('ImportPreviewRuleTest', () => {
       text('Set the description: skipped (the text of an action came out empty for it)');
       text('Set the payee from text: skipped (no payee has the name the rule built, and it does not create one)');
       text('Add tags: skipped (the rule cannot change it)');
+      // Only a structural action refuses a transfer now: a transfer takes a
+      // category (INV-CATEGORY-002).
+      text('Convert to transfer: skipped (it is already a transfer)');
       expect(screen.getByText('Stops the rules after it.')).toBeInTheDocument();
     });
 

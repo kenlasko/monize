@@ -292,6 +292,11 @@ export interface MnyImportResult {
    * lots report such a row until its series is chosen. Absent when zero.
    */
   bondRowsWithoutSeries?: number;
+  /**
+   * Rows and split lines imported without the file's category because it is
+   * a Transfer category, which goes only on a transfer. Absent when zero.
+   */
+  categoriesNotFitting?: number;
   /** Payee aliases written; absent for a Money import. */
   payeeAliasesCreated?: number;
   /** Payees given a default category; absent for a Money import. */

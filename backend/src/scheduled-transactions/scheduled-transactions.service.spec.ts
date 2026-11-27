@@ -49,7 +49,12 @@ import {
   DataSourceMock,
 } from "../test-helpers/scoped-db-testing";
 import { Currency } from "../currencies/entities/currency.entity";
+import { Category } from "../categories/entities/category.entity";
 import { currencyPlacesRepoMock } from "../test-helpers/currency-places-testing";
+import {
+  answerCategoryFinds,
+  categoryFitRepoMock,
+} from "../test-helpers/category-fit-testing";
 
 jest.mock("../common/db/scoped-db", () =>
   jest.requireActual("../test-helpers/scoped-db-testing").scopedDbMockModule(),
@@ -58,6 +63,7 @@ jest.mock("../common/db/scoped-db", () =>
 describe("ScheduledTransactionsService", () => {
   let service: ScheduledTransactionsService;
   let scheduledRepo: Record<string, jest.Mock>;
+  let categoriesRepo: ReturnType<typeof categoryFitRepoMock>;
   let splitsRepo: Record<string, any>;
   let overridesRepo: Record<string, jest.Mock>;
   let accountsRepo: Record<string, jest.Mock>;
@@ -247,7 +253,11 @@ describe("ScheduledTransactionsService", () => {
     };
     payrollRulesRepo = { find: jest.fn().mockResolvedValue([]) };
 
+    // Every category a schedule names is the owner's Expense category unless
+    // a test says otherwise (the fit helper's reads).
+    categoriesRepo = categoryFitRepoMock();
     const tenantMocks = createScopedDbMocks([
+      [Category, categoriesRepo],
       [Currency, currencyPlacesRepoMock({ BTC: 8 })],
       [ScheduledTransaction, scheduledRepo],
       [ScheduledTransactionSplit, splitsRepo],
@@ -279,7 +289,7 @@ describe("ScheduledTransactionsService", () => {
     txManager.findBy.mockResolvedValue([]);
     // The update split-rewrite reads the existing splits (to carry their FX pair
     // provenance forward, issue #1167) before deleting them; default to none.
-    txManager.find.mockResolvedValue([]);
+    txManager.find.mockImplementation(answerCategoryFinds(categoriesRepo));
     txManager.createQueryBuilder.mockImplementation(() => ({
       delete: jest.fn().mockReturnThis(),
       from: jest.fn().mockReturnThis(),
@@ -479,6 +489,22 @@ describe("ScheduledTransactionsService", () => {
           ],
         }),
       ).rejects.toThrow(/"splits\[0\]\.amount" has more decimal places/);
+      expect(scheduledRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses a Transfer category on a split's category line before the schedule is saved (INV-CATEGORY-001)", async () => {
+      categoriesRepo.find.mockImplementation(
+        categoryFitRepoMock({ "cat-t": "transfer" }).find,
+      );
+      await expect(
+        service.create(userId, {
+          ...baseDto,
+          splits: [
+            { categoryId: "cat-t", amount: -700 },
+            { categoryId: "cat-b", amount: -500 },
+          ],
+        }),
+      ).rejects.toThrow(/Transfer category/);
       expect(scheduledRepo.save).not.toHaveBeenCalled();
     });
 
@@ -2278,10 +2304,20 @@ describe("ScheduledTransactionsService", () => {
 
       it("refuses a moved split schedule whose unsent stored lines do not fit", async () => {
         stubFindOne(btcSchedule(-0.12, { isSplit: true }));
-        mockQueryRunner.manager.find.mockResolvedValue([
-          { id: "split-1", scheduledTransactionId: stId, amount: -0.11999999 },
-          { id: "split-2", scheduledTransactionId: stId, amount: -0.00000001 },
-        ]);
+        mockQueryRunner.manager.find.mockImplementation(
+          answerCategoryFinds(categoriesRepo, async () => [
+            {
+              id: "split-1",
+              scheduledTransactionId: stId,
+              amount: -0.11999999,
+            },
+            {
+              id: "split-2",
+              scheduledTransactionId: stId,
+              amount: -0.00000001,
+            },
+          ]),
+        );
 
         await expect(
           service.update(userId, stId, { accountId: "acc-2" }),
@@ -4429,10 +4465,19 @@ describe("ScheduledTransactionsService", () => {
       const sqls = mockDataSource.query.mock.calls.map((c: unknown[]) =>
         String(c[0]),
       );
-      const lock = sqls.findIndex((q: string) =>
-        q.includes("pg_advisory_xact_lock"),
+      const params = (i: number) =>
+        mockDataSource.query.mock.calls[i][1] as unknown[] | undefined;
+      // The payroll category's lock (scope 9), after the shared
+      // category-owner lock the posting takes as its first statement.
+      const lock = sqls.findIndex(
+        (q: string, i: number) =>
+          q.includes("pg_advisory_xact_lock") && params(i)?.[0] === 9,
+      );
+      const ownerLock = sqls.findIndex((q: string) =>
+        q.includes("pg_advisory_xact_lock_shared"),
       );
       const paid = sqls.findIndex((q: string) => q.includes("foreign_rows"));
+      expect(ownerLock).toBe(0);
       expect(lock).toBeGreaterThanOrEqual(0);
       expect(lock).toBeLessThan(paid);
       expect(mockDataSource.query.mock.calls[lock][1]).toEqual([
@@ -9275,15 +9320,17 @@ describe("ScheduledTransactionsService", () => {
         } as any),
       );
       // The existing (pre-edit) split recorded EUR->CAD for sec-eur at rate 1.5.
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          kind: "investment",
-          investmentSecurityId: "sec-eur",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: "EUR",
-          investmentExchangeRateToCurrency: "CAD",
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            kind: "investment",
+            investmentSecurityId: "sec-eur",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: "EUR",
+            investmentExchangeRateToCurrency: "CAD",
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -9332,16 +9379,18 @@ describe("ScheduledTransactionsService", () => {
           amount: -685,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "split-x",
-          kind: "investment",
-          investmentSecurityId: "sec-x",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: "EUR",
-          investmentExchangeRateToCurrency: "CAD",
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "split-x",
+            kind: "investment",
+            investmentSecurityId: "sec-x",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: "EUR",
+            investmentExchangeRateToCurrency: "CAD",
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -9393,7 +9442,9 @@ describe("ScheduledTransactionsService", () => {
       // No existing split for sec-usd -> a fresh rate for the current pair. The
       // client marks the line new (rateExplicit), so the current pair is stamped
       // -- an unmarked line with no id would instead be left unprovenanced (R8-F2).
-      mockQueryRunner.manager.find.mockResolvedValue([]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => []),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -9638,22 +9689,24 @@ describe("ScheduledTransactionsService", () => {
           amount: -1525,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          kind: "investment",
-          investmentSecurityId: "sec-1",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: "EUR",
-          investmentExchangeRateToCurrency: "CAD",
-        },
-        {
-          kind: "investment",
-          investmentSecurityId: "sec-1",
-          investmentExchangeRate: 1.55,
-          investmentExchangeRateFromCurrency: "EUR",
-          investmentExchangeRateToCurrency: "CAD",
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            kind: "investment",
+            investmentSecurityId: "sec-1",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: "EUR",
+            investmentExchangeRateToCurrency: "CAD",
+          },
+          {
+            kind: "investment",
+            investmentSecurityId: "sec-1",
+            investmentExchangeRate: 1.55,
+            investmentExchangeRateFromCurrency: "EUR",
+            investmentExchangeRateToCurrency: "CAD",
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -9718,24 +9771,26 @@ describe("ScheduledTransactionsService", () => {
           amount: -1500,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "split-A",
-          kind: "investment",
-          investmentSecurityId: "sec-1",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: "EUR",
-          investmentExchangeRateToCurrency: "CAD",
-        },
-        {
-          id: "split-B",
-          kind: "investment",
-          investmentSecurityId: "sec-1",
-          investmentExchangeRate: 1.55,
-          investmentExchangeRateFromCurrency: "EUR",
-          investmentExchangeRateToCurrency: "CAD",
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "split-A",
+            kind: "investment",
+            investmentSecurityId: "sec-1",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: "EUR",
+            investmentExchangeRateToCurrency: "CAD",
+          },
+          {
+            id: "split-B",
+            kind: "investment",
+            investmentSecurityId: "sec-1",
+            investmentExchangeRate: 1.55,
+            investmentExchangeRateFromCurrency: "EUR",
+            investmentExchangeRateToCurrency: "CAD",
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -9874,16 +9929,18 @@ describe("ScheduledTransactionsService", () => {
           amount: -1500,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "split-legacy",
-          kind: "investment",
-          investmentSecurityId: "sec-usd",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: null,
-          investmentExchangeRateToCurrency: null,
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "split-legacy",
+            kind: "investment",
+            investmentSecurityId: "sec-usd",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: null,
+            investmentExchangeRateToCurrency: null,
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -9938,16 +9995,18 @@ describe("ScheduledTransactionsService", () => {
           amount: -1600,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "split-legacy",
-          kind: "investment",
-          investmentSecurityId: "sec-usd",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: null,
-          investmentExchangeRateToCurrency: null,
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "split-legacy",
+            kind: "investment",
+            investmentSecurityId: "sec-usd",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: null,
+            investmentExchangeRateToCurrency: null,
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -10127,16 +10186,18 @@ describe("ScheduledTransactionsService", () => {
           amount: -1500,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "split-legacy",
-          kind: "investment",
-          investmentSecurityId: "sec-usd",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: null,
-          investmentExchangeRateToCurrency: null,
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "split-legacy",
+            kind: "investment",
+            investmentSecurityId: "sec-usd",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: null,
+            investmentExchangeRateToCurrency: null,
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -10183,7 +10244,9 @@ describe("ScheduledTransactionsService", () => {
           amount: -1370,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => []),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -10284,16 +10347,18 @@ describe("ScheduledTransactionsService", () => {
           amount: -1500,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "split-e",
-          kind: "investment",
-          investmentSecurityId: "sec-1",
-          investmentExchangeRate: 1.5,
-          investmentExchangeRateFromCurrency: "EUR",
-          investmentExchangeRateToCurrency: "CAD",
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "split-e",
+            kind: "investment",
+            investmentSecurityId: "sec-1",
+            investmentExchangeRate: 1.5,
+            investmentExchangeRateFromCurrency: "EUR",
+            investmentExchangeRateToCurrency: "CAD",
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -10480,17 +10545,19 @@ describe("ScheduledTransactionsService", () => {
           amount: -1370,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "cat-split",
-          kind: "category",
-          categoryId: "cat-1",
-          investmentSecurityId: null,
-          investmentExchangeRate: null,
-          investmentExchangeRateFromCurrency: null,
-          investmentExchangeRateToCurrency: null,
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "cat-split",
+            kind: "category",
+            categoryId: "cat-1",
+            investmentSecurityId: null,
+            investmentExchangeRate: null,
+            investmentExchangeRateFromCurrency: null,
+            investmentExchangeRateToCurrency: null,
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });
@@ -10542,16 +10609,18 @@ describe("ScheduledTransactionsService", () => {
           amount: -1000,
         } as any),
       );
-      mockQueryRunner.manager.find.mockResolvedValue([
-        {
-          id: "leg-null",
-          kind: "investment",
-          investmentSecurityId: "sec-usd",
-          investmentExchangeRate: null,
-          investmentExchangeRateFromCurrency: null,
-          investmentExchangeRateToCurrency: null,
-        },
-      ]);
+      mockQueryRunner.manager.find.mockImplementation(
+        answerCategoryFinds(categoriesRepo, async () => [
+          {
+            id: "leg-null",
+            kind: "investment",
+            investmentSecurityId: "sec-usd",
+            investmentExchangeRate: null,
+            investmentExchangeRateFromCurrency: null,
+            investmentExchangeRateToCurrency: null,
+          },
+        ]),
+      );
       mockQueryRunner.manager.delete = jest
         .fn()
         .mockResolvedValue({ affected: 1 });

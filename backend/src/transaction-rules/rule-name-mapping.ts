@@ -81,6 +81,8 @@ const ACTION_NAME_KEYS: Readonly<Record<string, readonly ActionNameKey[]>> = {
     { kind: "accounts", nameKey: "toAccountName", idKey: "toAccountId" },
     { kind: "accounts", nameKey: "fromAccountName", idKey: "fromAccountId" },
     PAYEE_NAME,
+    // The category both legs take, of any type (INV-CATEGORY-001).
+    { kind: "categories", nameKey: "categoryName", idKey: "categoryId" },
   ],
   split: [PAYEE_NAME],
   settle_loan_installment: [

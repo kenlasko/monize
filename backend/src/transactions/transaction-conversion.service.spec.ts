@@ -140,6 +140,9 @@ describe("TransactionConversionService", () => {
     manager.update.mockResolvedValue({ affected: 1 });
     manager.delete.mockResolvedValue({ affected: 1 });
     manager.find.mockResolvedValue([]);
+    // A raw read answers rows: none unless a test says otherwise (the kept
+    // leg's category type, read under the lock).
+    manager.query.mockResolvedValue([]);
 
     transactionsService = {
       findOne: jest.fn(),
@@ -527,6 +530,36 @@ describe("TransactionConversionService", () => {
       );
       return leg;
     }
+
+    it("clears a Transfer category the kept leg held, in the statement that detaches it (INV-CATEGORY-001)", async () => {
+      arrangeLeg({ categoryId: "cat-transfer" });
+      manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("category_type") ? [{ categoryType: "transfer" }] : [],
+      );
+
+      await service.convertToTransaction(USER, ROW, {});
+
+      expect(updateOf(ROW)).toEqual([
+        {
+          isTransfer: false,
+          linkedTransactionId: null,
+          exchangeRate: 1,
+          amountIsProvisional: false,
+          categoryId: null,
+        },
+      ]);
+    });
+
+    it("keeps an Income or Expense category the kept leg held", async () => {
+      arrangeLeg({ categoryId: "cat-1" });
+      manager.query.mockImplementation(async (sql: string) =>
+        sql.includes("category_type") ? [{ categoryType: "expense" }] : [],
+      );
+
+      await service.convertToTransaction(USER, ROW, {});
+
+      expect(updateOf(ROW)[0]).not.toHaveProperty("categoryId");
+    });
 
     it("removes and reverses the counterpart, detaches the leg and applies the body in one transaction", async () => {
       arrangeLeg();

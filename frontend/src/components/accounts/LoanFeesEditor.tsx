@@ -12,6 +12,7 @@ import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { Category } from '@/types/category';
 import { LOAN_FEE_BASES, LOAN_FEE_CALCULATIONS, MAX_LOAN_FEES } from '@/types/loan-fee';
 import { buildCategoryLabelMap, buildCategoryTree } from '@/lib/categoryUtils';
+import { categoriesForHolder } from '@/lib/category-type';
 import { getCurrencySymbol, getDecimalPlacesForCurrency } from '@/lib/format';
 import {
   LOAN_FEE_CALCULATION_KEYS,
@@ -61,7 +62,8 @@ export function LoanFeesEditor({
   const t = useTranslations('accounts');
   const categoryOptions = useMemo(() => {
     const labels = buildCategoryLabelMap(categories);
-    return buildCategoryTree(categories).map(({ category }) => ({
+    // A fee goes on the payment's category line: Income or Expense only.
+    return buildCategoryTree(categoriesForHolder(categories, 'category')).map(({ category }) => ({
       value: category.id,
       label: labels.get(category.id) ?? category.name,
       icon: categoryPickerIcon(category),
