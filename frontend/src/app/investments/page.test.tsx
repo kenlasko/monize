@@ -234,7 +234,7 @@ vi.mock('@/components/ui/Button', async (importOriginal) => ({
 }));
 
 vi.mock('@/components/ui/Modal', () => ({
-  Modal: ({ children, isOpen }: any) => isOpen ? <div data-testid="modal">{children}</div> : null,
+  Modal: ({ children, isOpen, title }: any) => isOpen ? <div data-testid="modal" aria-label={title}>{children}</div> : null,
 }));
 
 vi.mock('@/components/ui/UnsavedChangesDialog', () => ({
@@ -300,7 +300,7 @@ vi.mock('@/components/investments/GroupedHoldingsList', () => ({
 vi.mock('@/components/investments/InvestmentTransactionList', () => ({
   // The pager and the density toggle live in the list's own strip now, so the
   // stub reports the paging it was handed rather than the page drawing one.
-  InvestmentTransactionList: ({ transactions, onDelete, onEdit, onNewTransaction, onFiltersChange, filters, viewToggle, currentPage, totalPages, totalItems, availableActions, availableSymbols }: any) => (
+  InvestmentTransactionList: ({ transactions, onDelete, onEdit, onDuplicate, onNewTransaction, onFiltersChange, filters, viewToggle, currentPage, totalPages, totalItems, availableActions, availableSymbols }: any) => (
     <div data-testid="transaction-list">
       {viewToggle}
       <span>{transactions.length} transactions</span>
@@ -311,6 +311,9 @@ vi.mock('@/components/investments/InvestmentTransactionList', () => ({
         <div key={t.id} data-testid={`itx-${t.id}`}>
           <button data-testid={`delete-${t.id}`} onClick={() => onDelete(t.id)}>Delete</button>
           <button data-testid={`edit-${t.id}`} onClick={() => onEdit(t)}>Edit</button>
+          {onDuplicate && (
+            <button data-testid={`duplicate-${t.id}`} onClick={() => onDuplicate(t)}>Duplicate</button>
+          )}
         </div>
       ))}
       {onNewTransaction && <button data-testid="new-tx-btn" onClick={onNewTransaction}>New</button>}
@@ -350,7 +353,12 @@ vi.mock('@/components/ui/LoadingSpinner', () => ({
 }));
 
 vi.mock('@/components/investments/InvestmentTransactionForm', () => ({
-  InvestmentTransactionForm: () => <div data-testid="transaction-form">Form</div>,
+  InvestmentTransactionForm: ({ duplicateFrom }: any) => (
+    <div data-testid="transaction-form">
+      Form
+      <span data-testid="form-duplicate-from">{duplicateFrom?.id ?? ''}</span>
+    </div>
+  ),
 }));
 
 // The page asks for the "Portfolio performance" batch once and hands the one
@@ -822,6 +830,43 @@ describe('InvestmentsPage', () => {
       fireEvent.click(screen.getByTestId('edit-itx-1'));
 
       expect(mockOpenEdit).toHaveBeenCalled();
+    });
+
+    it('opens a new entry copied from the row when Duplicate is clicked', async () => {
+      mockShowForm = true;
+      await renderPage();
+      await waitFor(() => {
+        expect(screen.getByTestId('duplicate-itx-1')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('form-duplicate-from')).toHaveTextContent('');
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('duplicate-itx-1'));
+      });
+
+      expect(mockOpenCreate).toHaveBeenCalled();
+      expect(mockOpenEdit).not.toHaveBeenCalled();
+      expect(screen.getByTestId('form-duplicate-from')).toHaveTextContent('itx-1');
+      expect(screen.getByLabelText('Duplicate Investment Transaction')).toBeInTheDocument();
+    });
+
+    it('drops the copy when the form is next opened for a new entry', async () => {
+      mockShowForm = true;
+      await renderPage();
+      await waitFor(() => {
+        expect(screen.getByTestId('duplicate-itx-1')).toBeInTheDocument();
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('duplicate-itx-1'));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ New Transaction'));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Investment Transaction'));
+      });
+
+      expect(screen.getByTestId('form-duplicate-from')).toHaveTextContent('');
     });
 
     it('deletes transaction when confirmed', async () => {

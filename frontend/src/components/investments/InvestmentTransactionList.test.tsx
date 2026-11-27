@@ -153,6 +153,36 @@ describe('InvestmentTransactionList', () => {
     expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 't1' }));
   });
 
+  it('offers Duplicate, handing the row to onDuplicate without editing it', () => {
+    const onEdit = vi.fn();
+    const onDuplicate = vi.fn();
+    const tx = makeTx();
+    render(
+      <InvestmentTransactionList
+        transactions={[tx] as any[]}
+        isLoading={false}
+        onEdit={onEdit}
+        onDuplicate={onDuplicate}
+        onDelete={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByText('Duplicate'));
+    expect(onDuplicate).toHaveBeenCalledWith(expect.objectContaining({ id: 't1' }));
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
+  it('offers no Duplicate when the surface cannot create', () => {
+    render(
+      <InvestmentTransactionList
+        transactions={[makeTx()] as any[]}
+        isLoading={false}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+    expect(screen.queryByText('Duplicate')).not.toBeInTheDocument();
+  });
+
   it('shows delete confirmation dialog when Delete is clicked', () => {
     const onDelete = vi.fn();
     const tx = makeTx();

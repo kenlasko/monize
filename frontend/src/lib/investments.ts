@@ -398,6 +398,8 @@ export const investmentsApi = {
     limit?: number;
     symbol?: string;
     action?: string;
+    /** One security's rows, where a symbol can name two. */
+    securityId?: string;
   }): Promise<PaginatedInvestmentTransactions> => {
     const response = await apiClient.get<PaginatedInvestmentTransactions>(
       '/investment-transactions',

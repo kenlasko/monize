@@ -31,8 +31,12 @@ import type { HideableColumn } from '@/lib/hidden-columns';
  */
 export function buildInvestmentTxActions(
   tx: InvestmentTransaction,
-  labels: { edit: string; delete: string },
-  handlers: { onEdit?: (tx: InvestmentTransaction) => void; onDeleteClick: (tx: InvestmentTransaction) => void },
+  labels: { edit: string; duplicate: string; delete: string },
+  handlers: {
+    onEdit?: (tx: InvestmentTransaction) => void;
+    onDuplicate?: (tx: InvestmentTransaction) => void;
+    onDeleteClick: (tx: InvestmentTransaction) => void;
+  },
 ): RowAction[] {
   return [
     {
@@ -42,6 +46,14 @@ export function buildInvestmentTxActions(
       tone: 'primary',
       onClick: () => handlers.onEdit?.(tx),
       hidden: !handlers.onEdit,
+    },
+    {
+      key: 'duplicate',
+      label: labels.duplicate,
+      icon: 'duplicate',
+      tone: 'neutral',
+      onClick: () => handlers.onDuplicate?.(tx),
+      hidden: !handlers.onDuplicate,
     },
     {
       key: 'delete',

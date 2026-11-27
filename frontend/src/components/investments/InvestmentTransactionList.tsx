@@ -55,6 +55,8 @@ interface InvestmentTransactionListProps {
   isLoading: boolean;
   onDelete?: (id: string) => void;
   onEdit?: (transaction: InvestmentTransaction) => void;
+  /** Opens a new entry pre-filled from the row (the row itself is untouched). */
+  onDuplicate?: (transaction: InvestmentTransaction) => void;
   onNewTransaction?: () => void;
   /**
    * Called after a status change committed. A VOID crossing moves holdings
@@ -113,6 +115,7 @@ interface InvestmentTransactionRowProps {
   formatQuantity: (value: number) => string;
   getRowHandlers: (tx: InvestmentTransaction) => LongPressRowHandlers;
   onEdit?: (tx: InvestmentTransaction) => void;
+  onDuplicate?: (tx: InvestmentTransaction) => void;
   onDeleteClick: (tx: InvestmentTransaction) => void;
   onCycleStatus: (tx: InvestmentTransaction) => void;
   hasActions: boolean;
@@ -190,6 +193,7 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
   formatQuantity,
   getRowHandlers,
   onEdit,
+  onDuplicate,
   onDeleteClick,
   onCycleStatus,
   hasActions,
@@ -202,8 +206,8 @@ const InvestmentTransactionRow = memo(function InvestmentTransactionRow({
 
   const actions = buildInvestmentTxActions(
     tx,
-    { edit: tc('actions.edit'), delete: tc('actions.delete') },
-    { onEdit, onDeleteClick },
+    { edit: tc('actions.edit'), duplicate: tc('actions.duplicate'), delete: tc('actions.delete') },
+    { onEdit, onDuplicate, onDeleteClick },
   );
 
   // Same treatment as the cash register: a VOID row is struck through and
@@ -330,6 +334,7 @@ export function InvestmentTransactionList({
   isLoading,
   onDelete,
   onEdit,
+  onDuplicate,
   onNewTransaction,
   onStatusChanged,
   filters,
@@ -834,6 +839,7 @@ export function InvestmentTransactionList({
                     formatQuantity={formatQuantity}
                     getRowHandlers={getRowHandlers}
                     onEdit={onEdit}
+                    onDuplicate={onDuplicate}
                     onDeleteClick={handleDeleteClick}
                     onCycleStatus={handleCycleStatus}
                     hasActions={!!(onDelete || onEdit)}
@@ -871,8 +877,8 @@ export function InvestmentTransactionList({
         actions={contextTx
           ? buildInvestmentTxActions(
               contextTx,
-              { edit: tc('actions.edit'), delete: tc('actions.delete') },
-              { onEdit, onDeleteClick: handleDeleteClick },
+              { edit: tc('actions.edit'), duplicate: tc('actions.duplicate'), delete: tc('actions.delete') },
+              { onEdit, onDuplicate, onDeleteClick: handleDeleteClick },
             )
           : []}
         onClose={() => setContextTx(null)}

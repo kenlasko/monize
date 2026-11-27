@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { DateInput } from '@/components/ui/DateInput';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { NumericInput } from '@/components/ui/NumericInput';
@@ -74,6 +75,7 @@ import { TRANSACTION_NOTE_MAX_LENGTH } from '@/lib/transaction-note';
 import { accountSelectOption } from '@/lib/account-utils';
 import { AccountSelect } from '@/components/accounts/shared/AccountSelect';
 import { useForeignCurrencyLabel } from '@/hooks/useMainAccountName';
+import { RecentInvestmentTransactionsPopover } from './RecentInvestmentTransactionsPopover';
 
 const logger = createLogger('InvestmentTxForm');
 
@@ -137,6 +139,12 @@ interface InvestmentTransactionFormProps {
   accounts: Account[];
   allAccounts?: Account[];  // All accounts for funding dropdown (if not provided, uses accounts)
   transaction?: InvestmentTransaction;
+  /**
+   * A row to copy into a NEW entry (the register's Duplicate). The form is in
+   * create mode: the source row is never written, the date is today and the
+   * status starts unreconciled. Ignored when `transaction` is set.
+   */
+  duplicateFrom?: InvestmentTransaction;
   defaultAccountId?: string;
   /**
    * The day a new trade is filed under, `YYYY-MM-DD`.
@@ -265,10 +273,42 @@ function deriveSplitOldSharesDefault(
   return deriveSplitNewSharesDefault(storedQuantity) === undefined ? undefined : 1;
 }
 
+/**
+ * What a new entry copies from an existing row, shared by Duplicate and the
+ * history button's quick-fill so the two cannot copy different things.
+ *
+ * Left out on purpose: the account and the date (each caller decides those),
+ * the status (a copy starts unreconciled), the exchange rate (it belongs to the
+ * source's trade date, so the new date's rate is looked up, INV-FX-001) and the
+ * bond series (the form re-derives it from the new date). A transfer leg comes
+ * back as the create-only 'TRANSFER', the one way a new transfer is entered.
+ */
+function copiedFieldsFrom(source: InvestmentTransaction) {
+  const isTransferLeg = source.action === 'TRANSFER_IN' || source.action === 'TRANSFER_OUT';
+  const amountOnly = actionIn(source.action, amountOnlyActions);
+  const isSplitRow = source.action === 'SPLIT';
+  return {
+    action: (isTransferLeg ? 'TRANSFER' : source.action) as InvestmentFormAction,
+    securityId: source.securityId || source.security?.id || '',
+    fundingAccountId: isTransferLeg ? '' : source.fundingAccountId || '',
+    quantity: amountOnly ? undefined : (source.quantity ?? undefined),
+    // An amount-only action keeps its amount in the price field, as editing does.
+    price: amountOnly ? (source.totalAmount ?? undefined) : (source.price ?? undefined),
+    commission: source.commission ?? undefined,
+    accruedInterest: supportsAccruedInterest(source.action)
+      ? source.accruedInterest
+      : undefined,
+    description: source.description || '',
+    splitNewShares: isSplitRow ? deriveSplitNewSharesDefault(source.quantity) : undefined,
+    splitOldShares: isSplitRow ? deriveSplitOldSharesDefault(source.quantity) : undefined,
+  };
+}
+
 function InvestmentTransactionFormFields({
   accounts,
   allAccounts,
   transaction,
+  duplicateFrom: duplicateFromProp,
   defaultAccountId,
   defaultDate,
   onSuccess,
@@ -286,6 +326,10 @@ function InvestmentTransactionFormFields({
   // Embedded inside a split transaction: the parent owns account, date and
   // status; the backend refuses direct changes to them.
   const isEmbedded = !!transaction?.transactionSplitId;
+  // Editing wins over duplicating; a duplicate is otherwise a create.
+  const duplicateFrom = transaction ? undefined : duplicateFromProp;
+  // The row whose security the form opens on, whether edited or copied.
+  const initSource = transaction ?? duplicateFrom;
   const actionLabels: Record<InvestmentAction, string> = {
     BUY: t('transactionForm.actionBuy'),
     SELL: t('transactionForm.actionSell'),
@@ -318,6 +362,11 @@ function InvestmentTransactionFormFields({
     INVESTMENT_TRANSACTION_SUBMIT_MODE_KEY,
   );
   const canCreateAnother = !transaction && !!onCreateAnother;
+  // The history button fills a fresh entry; an edit or a duplicate already
+  // carries a row of its own, as in the cash form.
+  const canQuickFill = !transaction && !duplicateFrom;
+  const [showRecentPopover, setShowRecentPopover] = useState(false);
+  const historyButtonRef = useRef<HTMLButtonElement>(null);
   const [securities, setSecurities] = useState<Security[]>([]);
   const [securitiesLoaded, setSecuritiesLoaded] = useState(false);
   // The new-security dialog, opened from the Security field's "+ Create";
@@ -435,23 +484,36 @@ function InvestmentTransactionFormFields({
               ? deriveSplitOldSharesDefault(transaction.quantity)
               : undefined,
         }
-      : {
-          accountId: defaultAccountId || '',
-          action: defaultAction ?? 'BUY',
-          transactionDate:
-            defaultDate ||
-            getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY, userToday),
-          fundingAccountId: '',
-          destinationAccountId: '',
-          quantity: undefined,
-          price: undefined,
-          commission: undefined,
-          exchangeRate: undefined,
-          description: '',
-          status: TransactionStatus.UNRECONCILED,
-          splitNewShares: undefined,
-          splitOldShares: undefined,
-        },
+      : duplicateFrom
+        ? {
+            ...copiedFieldsFrom(duplicateFrom),
+            // A transfer is entered from its source: the OUT leg's account is
+            // the source, the IN leg's the destination; the other side is read
+            // from the paired leg once it loads.
+            accountId: duplicateFrom.action === 'TRANSFER_IN' ? '' : duplicateFrom.accountId,
+            destinationAccountId:
+              duplicateFrom.action === 'TRANSFER_IN' ? duplicateFrom.accountId : '',
+            transactionDate: userToday,
+            exchangeRate: undefined,
+            status: TransactionStatus.UNRECONCILED,
+          }
+        : {
+            accountId: defaultAccountId || '',
+            action: defaultAction ?? 'BUY',
+            transactionDate:
+              defaultDate ||
+              getRememberedTransactionDate(LAST_INVESTMENT_TRANSACTION_DATE_KEY, userToday),
+            fundingAccountId: '',
+            destinationAccountId: '',
+            quantity: undefined,
+            price: undefined,
+            commission: undefined,
+            exchangeRate: undefined,
+            description: '',
+            status: TransactionStatus.UNRECONCILED,
+            splitNewShares: undefined,
+            splitOldShares: undefined,
+          },
   });
 
   useFormDirtyNotify(isDirty, onDirtyChange);
@@ -495,6 +557,10 @@ function InvestmentTransactionFormFields({
     watchedSplitOldShares > 0 ? watchedSplitNewShares / watchedSplitOldShares : 0;
 
   const allAccountsSource = allAccounts || accounts;
+  const accountsById = useMemo(
+    () => new Map(allAccountsSource.map((a) => [a.id, a])),
+    [allAccountsSource],
+  );
 
   // Derive currency from selected account
   const accountCurrency = useMemo(() => {
@@ -873,8 +939,8 @@ function InvestmentTransactionFormFields({
     const loadSecurities = async () => {
       try {
         const data = await investmentsApi.getSecurities();
-        if (transaction?.security && !data.some((s) => s.id === transaction.security!.id)) {
-          data.push(transaction.security);
+        if (initSource?.security && !data.some((s) => s.id === initSource.security!.id)) {
+          data.push(initSource.security);
         }
         setSecurities(data);
       } catch (error) {
@@ -1068,15 +1134,80 @@ function InvestmentTransactionFormFields({
     [transferSourceHoldings, foreignCurrencyLabel],
   );
 
-  // Re-sync form values when editing and securities are loaded
+  // Re-sync form values when editing (or duplicating) and securities are loaded
   useEffect(() => {
-    if (transaction && securities.length > 0) {
-      const securityId = transaction.securityId || transaction.security?.id;
+    if (initSource && securities.length > 0) {
+      const securityId = initSource.securityId || initSource.security?.id;
       if (securityId) {
         setValue('securityId', securityId);
       }
     }
-  }, [transaction, securities, setValue]);
+  }, [initSource, securities, setValue]);
+
+  // A duplicated transfer leg names one side of the pair; the other side is
+  // the paired leg's account. Read once, into whichever side the copy lacks.
+  useEffect(() => {
+    if (
+      !duplicateFrom?.linkedTransactionId ||
+      (duplicateFrom.action !== 'TRANSFER_IN' && duplicateFrom.action !== 'TRANSFER_OUT')
+    ) {
+      return;
+    }
+    let cancelled = false;
+    investmentsApi
+      .getTransaction(duplicateFrom.linkedTransactionId)
+      .then((linked) => {
+        if (cancelled) return;
+        setValue(
+          duplicateFrom.action === 'TRANSFER_OUT' ? 'destinationAccountId' : 'accountId',
+          linked.accountId,
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) logger.error('Failed to load the duplicated transfer\'s paired leg:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [duplicateFrom, setValue]);
+
+  /**
+   * Fill the entry from a row picked in the history popover beside the
+   * account, as the cash form's history does: the row's action, security,
+   * amounts, funding account and memo; never the account or the date on
+   * screen, which are the entry's own (the account is what the list was
+   * scoped to, and the source row's date is when THAT trade happened). Status
+   * starts unreconciled. A transfer leg becomes a new Transfer from the
+   * account on screen, its destination left to choose.
+   */
+  const selectedSecurity = securities.find((s) => s.id === watchedSecurityId);
+  const selectedSecurityLabel = selectedSecurity
+    ? securityOptionLabel(selectedSecurity, foreignCurrencyLabel)
+    : undefined;
+
+  const handleQuickFill = (source: InvestmentTransaction) => {
+    const copied = copiedFieldsFrom(source);
+    if (source.security && !securities.some((s) => s.id === source.security!.id)) {
+      setSecurities((prev) => [...prev, source.security!]);
+    }
+    const dirty = { shouldDirty: true, shouldValidate: true } as const;
+    setValue('action', copied.action, dirty);
+    setValue('securityId', copied.securityId, dirty);
+    setValue('fundingAccountId', copied.fundingAccountId, { shouldDirty: true });
+    setValue('quantity', copied.quantity, dirty);
+    setValue('price', copied.price, dirty);
+    setValue('commission', copied.commission, dirty);
+    setValue('accruedInterest', copied.accruedInterest, dirty);
+    setValue('splitNewShares', copied.splitNewShares, dirty);
+    setValue('splitOldShares', copied.splitOldShares, dirty);
+    setValue('description', copied.description, { shouldDirty: true });
+    setValue('status', TransactionStatus.UNRECONCILED, { shouldDirty: true });
+    // What the person had typed belonged to the entry being replaced.
+    priceEditedByPerson.current = false;
+    interestEditedByPerson.current = false;
+    typedPriceBasis.current = null;
+    commissionFromTotal.current = false;
+  };
 
   const handleSecurityCreated = async (data: CreateSecurityData) => {
     try {
@@ -1441,19 +1572,71 @@ function InvestmentTransactionFormFields({
   return (
     <>
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {/* Account Selection */}
-      <AccountSelect
-        label={transferMode ? t('transactionForm.fromAccount') : t('transactionForm.brokerageAccount')}
-        error={errors.accountId?.message}
-        value={watchedAccountId || ''}
-        options={[
-          { value: '', label: t('transactionForm.selectAccount') },
-          ...brokerageAccounts.map((a) =>
-            accountSelectOption(a, foreignCurrencyLabel(a.name, a.currencyCode)),
-          ),
-        ]}
-        {...register('accountId')}
-      />
+      {/* Account Selection, with the history of what was entered in it */}
+      <div className="flex items-stretch space-x-2">
+        <div className="flex-1 min-w-0">
+          <AccountSelect
+            label={transferMode ? t('transactionForm.fromAccount') : t('transactionForm.brokerageAccount')}
+            error={errors.accountId?.message}
+            value={watchedAccountId || ''}
+            options={[
+              { value: '', label: t('transactionForm.selectAccount') },
+              ...brokerageAccounts.map((a) =>
+                accountSelectOption(a, foreignCurrencyLabel(a.name, a.currencyCode)),
+              ),
+            ]}
+            {...register('accountId')}
+          />
+        </div>
+        {canQuickFill && (
+          // mt-6 clears the select's label line, as the cash form's history
+          // button clears the Payee label; the row's stretch gives the height.
+          <Button
+            ref={historyButtonRef}
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={() => setShowRecentPopover((open) => !open)}
+            aria-label={
+              watchedSecurityId
+                ? t('transactionForm.ariaHistoryForSecurity')
+                : t('transactionForm.ariaHistory')
+            }
+            aria-haspopup="dialog"
+            aria-expanded={showRecentPopover}
+            title={t('transactionForm.historyTitle')}
+            className="flex-shrink-0 mt-6 px-2.5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .2.08.39.22.53l3 3a.75.75 0 101.06-1.06L10.75 9.69V5z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </Button>
+        )}
+        {canQuickFill && showRecentPopover && (
+          <RecentInvestmentTransactionsPopover
+            anchorRef={historyButtonRef}
+            accountId={watchedAccountId || undefined}
+            securityId={watchedSecurityId || undefined}
+            securityLabel={selectedSecurityLabel}
+            accountNameFor={(id) => accountsById.get(id)?.name}
+            onSelect={(row) => {
+              handleQuickFill(row);
+              setShowRecentPopover(false);
+            }}
+            onClose={() => setShowRecentPopover(false)}
+          />
+        )}
+      </div>
 
       {/* Date and Transaction Type */}
       <div className="grid grid-cols-2 gap-4">
@@ -1558,7 +1741,7 @@ function InvestmentTransactionFormFields({
                 }))
           }
           value={watchedSecurityId || ''}
-          initialDisplayValue={transaction?.security ? securityOptionLabel(transaction.security, foreignCurrencyLabel) : ''}
+          initialDisplayValue={initSource?.security ? securityOptionLabel(initSource.security, foreignCurrencyLabel) : ''}
           onChange={(securityId) =>
             setValue('securityId', securityId, { shouldDirty: true, shouldValidate: true })
           }
@@ -2115,6 +2298,8 @@ export function InvestmentTransactionForm(props: InvestmentTransactionFormProps)
     <InvestmentTransactionFormFields
       {...props}
       key={restart?.n ?? 0}
+      // "Create & New" after a duplicate starts a blank entry, not a second copy.
+      duplicateFrom={restart ? undefined : props.duplicateFrom}
       defaultAccountId={restart?.accountId ?? defaultAccountId}
       defaultAction={restart?.action}
       onCreateAnother={onCreateAndNew ? handleCreateAnother : undefined}
