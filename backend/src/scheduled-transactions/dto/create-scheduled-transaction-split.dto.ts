@@ -53,22 +53,24 @@ export class CreateScheduledTransactionSplitDto {
   @IsEnum(SplitKind)
   splitKind?: SplitKind;
 
+  // Each id is validated on its own: a transfer line carries both its
+  // account and, optionally, a category of any type (INV-CATEGORY-002), so
+  // neither may skip the other's check.
   @ApiPropertyOptional({
     description:
-      "Category ID for expense/income splits (mutually exclusive with transferAccountId / investment)",
+      "Category ID: a category line's (Income or Expense), or a transfer line's (any type, which the line's linked row holds too). None on an investment line.",
   })
   @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
   @IsUUID()
-  @ValidateIf((o) => !o.transferAccountId && !o.investment)
   categoryId?: string;
 
   @ApiPropertyOptional({
-    description:
-      "Target account ID for transfer splits (mutually exclusive with categoryId / investment)",
+    description: "Target account ID for transfer splits (not with investment)",
   })
   @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
   @IsUUID()
-  @ValidateIf((o) => !o.categoryId && !o.investment)
   transferAccountId?: string;
 
   @ApiPropertyOptional({
