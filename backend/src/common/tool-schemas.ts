@@ -72,30 +72,37 @@ export const isoDateSchema = z
  * value and the user doesn't see a failed tool call for a cosmetic
  * difference.
  */
+function normalizeDirection(val: unknown, debit: "outgoing" | "expenses") {
+  if (typeof val !== "string") return val;
+  const normalized = val.toLowerCase().trim();
+  const aliases: Record<string, string> = {
+    expense: "expenses",
+    expenditure: "expenses",
+    expenditures: "expenses",
+    spending: "expenses",
+    out: debit,
+    outgoing: debit,
+    debit,
+    debits: debit,
+    earnings: "income",
+    revenue: "income",
+    in: "income",
+    incoming: "income",
+    credit: "income",
+    credits: "income",
+    all: "both",
+    any: "both",
+  };
+  return aliases[normalized] ?? normalized;
+}
+
+export const listDirectionSchema = z.preprocess(
+  (val) => normalizeDirection(val, "outgoing"),
+  z.enum(["expenses", "outgoing", "income", "both"]),
+);
+
 export const directionSchema = z.preprocess(
-  (val) => {
-    if (typeof val !== "string") return val;
-    const normalized = val.toLowerCase().trim();
-    const aliases: Record<string, string> = {
-      expense: "expenses",
-      expenditure: "expenses",
-      expenditures: "expenses",
-      spending: "expenses",
-      out: "expenses",
-      outgoing: "expenses",
-      debit: "expenses",
-      debits: "expenses",
-      earnings: "income",
-      revenue: "income",
-      in: "income",
-      incoming: "income",
-      credit: "income",
-      credits: "income",
-      all: "both",
-      any: "both",
-    };
-    return aliases[normalized] ?? normalized;
-  },
+  (val) => normalizeDirection(val, "expenses"),
   z.enum(["expenses", "income", "both"]),
 );
 

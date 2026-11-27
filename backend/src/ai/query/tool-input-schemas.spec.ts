@@ -197,10 +197,13 @@ describe("tool-input-schemas", () => {
     });
 
     it("normalizes common direction aliases to canonical values", () => {
-      const cases: Array<[string, "expenses" | "income" | "both"]> = [
+      const cases: Array<
+        [string, "expenses" | "outgoing" | "income" | "both"]
+      > = [
         ["expense", "expenses"],
         ["spending", "expenses"],
-        ["debit", "expenses"],
+        ["debit", "outgoing"],
+        ["outgoing", "outgoing"],
         ["EXPENSES", "expenses"],
         ["earnings", "income"],
         ["revenue", "income"],

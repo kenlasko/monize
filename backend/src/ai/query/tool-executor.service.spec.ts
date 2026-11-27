@@ -1276,7 +1276,7 @@ describe("ToolExecutorService", () => {
 
       const result = await service.execute(userId, "list_transactions", {});
 
-      expect(result.summary).toContain("Expenses: 7650.00 PLN");
+      expect(result.summary).toContain("outgoing 7650.00 PLN");
       expect(result.summary).not.toContain("withheld");
     });
 
@@ -1298,7 +1298,7 @@ describe("ToolExecutorService", () => {
 
       const result = await service.execute(userId, "list_transactions", {});
 
-      expect(result.summary).toContain("Income: 1.005 BHD");
+      expect(result.summary).toContain("incoming 1.005 BHD");
       expect(result.summary).toContain("Net: 1.005 BHD");
     });
 
@@ -1321,8 +1321,8 @@ describe("ToolExecutorService", () => {
       expect(result.summary).toContain(
         "Totals withheld: no exchange rate for USD->PLN; add it under Currencies.",
       );
-      expect(result.summary).toContain("expenses 4000.00 PLN");
-      expect(result.summary).not.toContain("Expenses: ");
+      expect(result.summary).toContain("outgoing 4000.00 PLN");
+      expect(result.summary).not.toContain("Cash flow: incoming");
     });
 
     it("compare_periods names the currency of its totals", async () => {

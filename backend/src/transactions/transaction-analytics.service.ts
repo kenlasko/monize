@@ -6,6 +6,7 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import {
   type CategoryType,
+  categoryTypeIs,
   categoryTypeOf,
   isCategoryType,
   isTransferCategory,
@@ -188,7 +189,7 @@ export interface TransfersByAccountResult {
  */
 export const MIN_AGGREGATION_COUNT = 3;
 
-export type LlmQueryDirection = "expenses" | "income" | "both";
+export type LlmQueryDirection = "expenses" | "outgoing" | "income" | "both";
 export type LlmQueryGroupBy = "category" | "payee" | "year" | "month" | "week";
 
 /**
@@ -2341,19 +2342,32 @@ export class TransactionAnalyticsService {
       joinSplitsForAnalytics(qb);
       applyInvestmentTransactionFilters(qb, "breakdownAccount", "t");
 
-      // A category's cost is its signed sum over rows of both signs, so the
-      // category branch reads credits too and judges the direction on the net
-      // after folding (`isNetSpending`); the payee branch stays row-level.
-      const netByCategory = groupBy === "category";
+      // Select the posting population before grouping it. In particular, a
+      // refund in an expense category keeps its sign even in a later month.
       if (direction === "expenses") {
-        qb.andWhere(
-          netByCategory ? `${SPLIT_AMOUNT} <> 0` : `${SPLIT_AMOUNT} < 0`,
-        );
+        qb.innerJoin(
+          Category,
+          "expenseCategory",
+          `expenseCategory.id = ${SPLIT_CATEGORY_ID} AND expenseCategory.userId = t.userId`,
+        )
+          .andWhere(categoryTypeIs("expenseCategory", "expense"))
+          .andWhere(`${SPLIT_AMOUNT} <> 0`);
+      } else if (direction === "outgoing") {
+        qb.andWhere(`${SPLIT_AMOUNT} < 0`);
       } else if (direction === "income") {
         qb.andWhere(
-          netByCategory ? `${SPLIT_AMOUNT} <> 0` : `${SPLIT_AMOUNT} > 0`,
+          groupBy === "category"
+            ? `${SPLIT_AMOUNT} <> 0`
+            : `${SPLIT_AMOUNT} > 0`,
         );
       }
+
+      const amount =
+        direction === "expenses" || direction === "outgoing"
+          ? `-${SPLIT_AMOUNT}`
+          : groupBy === "category"
+            ? SPLIT_AMOUNT
+            : `ABS(${SPLIT_AMOUNT})`;
 
       if (accountIds && accountIds.length > 0) {
         qb.andWhere("t.accountId IN (:...accountIds)", { accountIds });
@@ -2415,10 +2429,7 @@ export class TransactionAnalyticsService {
           // and the label carries the parent so two rows named "Cell Phone" can
           // be told apart. The "Uncategorized" bucket groups on a NULL id.
           qb.select(`${SPLIT_CATEGORY_ID}::text`, "categoryId")
-            .addSelect(
-              `SUM(${direction === "expenses" ? `-${SPLIT_AMOUNT}` : SPLIT_AMOUNT})`,
-              "total",
-            )
+            .addSelect(`SUM(${amount})`, "total")
             .addSelect("COUNT(*)", "count")
             .groupBy(`${SPLIT_CATEGORY_ID}::text`);
           byCurrencyAndDay();
@@ -2431,27 +2442,14 @@ export class TransactionAnalyticsService {
             startDate,
             endDate,
           );
-          const { names, typeById } = await this.loadReportCategories(
-            m,
-            userId,
-          );
+          const names = await loadQualifiedCategoryNames(m, userId);
           let groups = this.foldGroups(
             rows,
             (r) => r.categoryId ?? "",
             reporting,
             rates,
           );
-          if (direction === "expenses") {
-            // A group with a part still unconverted is kept: its net is
-            // unknown, not spent-in-nothing.
-            groups = groups.filter(
-              (g) =>
-                includesSpendingCategory(
-                  g.agg.sign,
-                  typeById.get(g.first.categoryId),
-                ) || !g.agg.isComplete,
-            );
-          } else if (direction === "income") {
+          if (direction === "income") {
             // Salary +5000 / -200 correction is 4800 income, like the report.
             groups = groups.filter((g) => g.agg.sign > 0 || !g.agg.isComplete);
           }
@@ -2483,14 +2481,19 @@ export class TransactionAnalyticsService {
         }
 
         case "payee": {
-          // Grouping stays on the denormalized name string; MIN() attaches a
-          // payee id where one exists. Free-text payees (no payee record) and
-          // the "Unknown" bucket yield null, so no deep-link is offered.
-          qb.select("COALESCE(t.payeeName, 'Unknown')", "label")
-            .addSelect("MIN(t.payeeId::text)", "payeeId")
-            .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
-            .addSelect("COUNT(*)", "count")
-            .groupBy("t.payeeName");
+          // A linked payee may have no stored transaction name. Free-text
+          // names and the anonymous catch-all keep their existing labels.
+          const label = "COALESCE(t.payeeName, breakdownPayee.name, 'Unknown')";
+          qb.leftJoin(
+            "t.payee",
+            "breakdownPayee",
+            "breakdownPayee.userId = t.userId",
+          )
+            .select(label, "label")
+            .addSelect("MIN(CAST(t.payeeId AS text))", "payeeId")
+            .addSelect(`SUM(${amount})`, "total")
+            .addSelect("COUNT(DISTINCT t.id)", "count")
+            .groupBy(label);
           byCurrencyAndDay();
 
           const rows = await qb.getRawMany();
@@ -2541,7 +2544,7 @@ export class TransactionAnalyticsService {
                 ? "TO_CHAR(t.transactionDate, 'YYYY-MM')"
                 : "TO_CHAR(DATE_TRUNC('week', t.transactionDate), 'YYYY-MM-DD')";
           qb.select(periodExpr, "period")
-            .addSelect(`SUM(ABS(${SPLIT_AMOUNT}))`, "total")
+            .addSelect(`SUM(${amount})`, "total")
             .addSelect("COUNT(*)", "count")
             .groupBy(periodExpr);
           byCurrencyAndDay();

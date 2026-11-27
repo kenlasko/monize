@@ -241,9 +241,8 @@ export class McpTransactionsTools {
         title: "List transactions",
         annotations: READ_ONLY,
         description:
-          "Cash income, expenses and net totals with optional grouping. " +
-          "Own-account transfers are excluded; transfersOnly adds their " +
-          "per-account rollup. Prefer totals; includeTransactions adds costly raw rows.",
+          "Cash-flow totals exclude transfers. transfersOnly adds their per-account rollup. " +
+          "Prefer totals; includeTransactions adds raw rows.",
         inputSchema: z.object({
           searchText: z
             .string()
@@ -280,9 +279,11 @@ export class McpTransactionsTools {
             .optional()
             .describe("Maximum signed amount."),
           direction: z
-            .enum(["expenses", "income", "both"])
+            .enum(["expenses", "outgoing", "income", "both"])
             .optional()
-            .describe("Narrows the grouped breakdown."),
+            .describe(
+              "Grouped expenses net refunds in expense categories; outgoing sums debits.",
+            ),
           groupBy: z
             .enum(["category", "payee", "year", "month", "week", "none"])
             .optional()
