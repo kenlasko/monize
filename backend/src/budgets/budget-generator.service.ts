@@ -437,7 +437,14 @@ export class BudgetGeneratorService {
         .andWhere("t.transaction_date <= :endDate", { endDate })
         .andWhere("t.status != :void", { void: "VOID" })
         .andWhere("t.is_split = false")
-        .andWhere("t.is_transfer = false")
+        // A transfer leg is never income or spending, except that the
+        // outgoing legs of a Transfer category are suggested as its outgoing
+        // line (docs/specs/transfer-categories.md section 6.1).
+        .andWhere(
+          isIncome
+            ? "t.is_transfer = false"
+            : "(t.is_transfer = false OR c.category_type = 'transfer')",
+        )
         .andWhere("t.category_id IS NOT NULL")
         .andWhere(amountCondition)
         .groupBy("t.category_id")
@@ -470,6 +477,16 @@ export class BudgetGeneratorService {
         .andWhere("t.transaction_date <= :endDate", { endDate })
         .andWhere("t.status != :void", { void: "VOID" })
         .andWhere("t.is_transfer = false")
+        // A split's transfer line is a transfer even when it holds a
+        // category, as a whole transfer leg is left out above
+        // (docs/specs/transfer-categories.md section 9); a Transfer
+        // category's outgoing lines are suggested as its line, as its whole
+        // legs are.
+        .andWhere(
+          isIncome
+            ? "s.transfer_account_id IS NULL"
+            : "(s.transfer_account_id IS NULL OR c.category_type = 'transfer')",
+        )
         .andWhere("s.category_id IS NOT NULL")
         .andWhere(isIncome ? "s.amount > 0" : "s.amount < 0")
         .groupBy("s.category_id")
