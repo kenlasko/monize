@@ -56,9 +56,9 @@ function createSplitRow(overrides: Partial<SplitRow> = {}): SplitRow {
 describe('SplitEditor', () => {
   const mockOnChange = vi.fn();
   const mockCategories = [
-    { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
-    { id: 'cat-2', name: 'Dining', parentId: null, isIncome: false },
-    { id: 'cat-3', name: 'Salary', parentId: null, isIncome: true },
+    { id: 'cat-1', name: 'Groceries', parentId: null, categoryType: 'expense' as const },
+    { id: 'cat-2', name: 'Dining', parentId: null, categoryType: 'expense' as const },
+    { id: 'cat-3', name: 'Salary', parentId: null, categoryType: 'income' as const },
   ] as any[];
 
   const mockAccounts = [
@@ -955,8 +955,8 @@ describe('SplitEditor — convert to regular transaction', () => {
   const mockOnChange = vi.fn();
   const mockOnConvert = vi.fn();
   const mockCategories = [
-    { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
-    { id: 'cat-2', name: 'Dining', parentId: null, isIncome: false },
+    { id: 'cat-1', name: 'Groceries', parentId: null, categoryType: 'expense' as const },
+    { id: 'cat-2', name: 'Dining', parentId: null, categoryType: 'expense' as const },
   ] as any[];
   const mockAccounts = [
     { id: 'acc-1', name: 'Chequing', isClosed: false, accountSubType: null },
@@ -1234,9 +1234,9 @@ describe('toSplitRows', () => {
 describe('SplitEditor — desktop layout interactions', () => {
   const mockOnChange = vi.fn();
   const mockCategories = [
-    { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
-    { id: 'cat-2', name: 'Dining', parentId: null, isIncome: false },
-    { id: 'cat-3', name: 'Salary', parentId: null, isIncome: true },
+    { id: 'cat-1', name: 'Groceries', parentId: null, categoryType: 'expense' as const },
+    { id: 'cat-2', name: 'Dining', parentId: null, categoryType: 'expense' as const },
+    { id: 'cat-3', name: 'Salary', parentId: null, categoryType: 'income' as const },
   ] as any[];
 
   const mockAccounts = [
@@ -1642,9 +1642,9 @@ describe('SplitEditor — desktop layout interactions', () => {
 describe('SplitEditor — additional branch coverage', () => {
   const mockOnChange = vi.fn();
   const mockCategories = [
-    { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
-    { id: 'cat-2', name: 'Dining', parentId: null, isIncome: false },
-    { id: 'cat-3', name: 'Salary', parentId: null, isIncome: true },
+    { id: 'cat-1', name: 'Groceries', parentId: null, categoryType: 'expense' as const },
+    { id: 'cat-2', name: 'Dining', parentId: null, categoryType: 'expense' as const },
+    { id: 'cat-3', name: 'Salary', parentId: null, categoryType: 'income' as const },
   ] as any[];
 
   beforeEach(() => {
@@ -2404,7 +2404,7 @@ describe('toSplitRows — investment shapes', () => {
 describe('SplitEditor — foreign-currency toggle', () => {
   const mockOnChange = vi.fn();
   const mockCategories = [
-    { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
+    { id: 'cat-1', name: 'Groceries', parentId: null, categoryType: 'expense' as const },
   ] as any[];
 
   beforeEach(() => {
@@ -2595,14 +2595,14 @@ describe('SplitEditor — foreign-currency toggle', () => {
 describe('SplitEditor — creating a category from a split line', () => {
   const mockOnChange = vi.fn();
   const mockCategories = [
-    { id: 'cat-1', name: 'Groceries', parentId: null, isIncome: false },
+    { id: 'cat-1', name: 'Groceries', parentId: null, categoryType: 'expense' as const },
   ] as any[];
 
   const newCategory = {
     id: 'cat-new',
     name: 'Vet Bills',
     parentId: null,
-    isIncome: false,
+    categoryType: 'expense' as const,
   } as any;
 
   beforeEach(() => {

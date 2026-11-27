@@ -128,7 +128,7 @@ describe('PayeeList', () => {
           icon: null,
           color: '#22c55e',
           effectiveColor: '#22c55e', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false,
+          categoryType: 'expense',
           isSystem: false,
           createdAt: '2026-01-01T00:00:00Z',
         },
@@ -155,7 +155,7 @@ describe('PayeeList', () => {
           icon: null,
           color: '#22c55e',
           effectiveColor: '#22c55e', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false,
+          categoryType: 'expense',
           isSystem: false,
           createdAt: '2026-01-01T00:00:00Z',
         },
@@ -191,7 +191,7 @@ describe('PayeeList', () => {
           icon: null,
           color: '#22c55e',
           effectiveColor: '#22c55e', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false,
+          categoryType: 'expense',
           isSystem: false,
           createdAt: '2026-01-01T00:00:00Z',
         },
@@ -490,7 +490,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Groceries', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
       makePayee({ id: 'p2', name: 'Netflix', defaultCategory: null }),
@@ -513,7 +513,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: 'zoo', parent: null, children: [],
           name: 'Apples', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
       makePayee({
@@ -522,7 +522,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-2', userId: 'u', parentId: 'animals', parent: null, children: [],
           name: 'Zebra', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
     ];
@@ -718,7 +718,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Groceries', description: null, icon: null, color: '#ef4444', effectiveColor: '#ef4444', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
     ];
@@ -884,7 +884,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Groceries', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
     ];
@@ -905,7 +905,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Groceries', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
     ];
@@ -995,7 +995,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Zoning', description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
       makePayee({ id: 'p2', name: 'Amazon', defaultCategory: null }),
@@ -1059,7 +1059,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Groceries', description: null, icon: null, color: '#000000', effectiveColor: '#000000', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
     ];
@@ -1086,7 +1086,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Groceries', description: null, icon: null, color: '#123456', effectiveColor: '#123456', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
     ];
@@ -1112,7 +1112,7 @@ describe('PayeeList', () => {
         defaultCategory: {
           id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
           name: 'Groceries', description: null, icon: null, color: '#abcdef', effectiveColor: '#abcdef', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false, isSystem: false, createdAt: '',
+          categoryType: 'expense', isSystem: false, createdAt: '',
         },
       }),
     ];
@@ -1140,7 +1140,7 @@ describe('PayeeList', () => {
       id: 'cat-1', userId: 'u', parentId: null, parent: null, children: [],
       name: 'Groceries', description: null, icon: null, color: '#22c55e',
       effectiveColor: '#22c55e', effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-      isIncome: false, isSystem: false, createdAt: '',
+      categoryType: 'expense', isSystem: false, createdAt: '',
       ...over,
     },
   });

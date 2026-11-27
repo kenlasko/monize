@@ -54,7 +54,7 @@ const makeCategory = (overrides: Partial<Category> = {}): Category =>
     icon: null,
     color: '#ff8800',
     effectiveColor: '#ff8800',
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2024-01-01',
     ...overrides,
@@ -196,7 +196,7 @@ describe('CategoryInfoWidget', () => {
         },
       },
     });
-    await renderWidget({ category: makeCategory({ isIncome: true }) });
+    await renderWidget({ category: makeCategory({ categoryType: 'income' }) });
 
     expect(screen.getByText('CAD 4750.00')).toBeInTheDocument();
     expect(screen.queryByText('CAD 5000.00')).not.toBeInTheDocument();
@@ -215,7 +215,7 @@ describe('CategoryInfoWidget', () => {
 
   it('shows earned labels for income categories and hides the budget bar', async () => {
     await renderWidget({
-      category: makeCategory({ isIncome: true }),
+      category: makeCategory({ categoryType: 'income' }),
     });
 
     expect(screen.getByText('Income')).toBeInTheDocument();

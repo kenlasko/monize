@@ -4,9 +4,9 @@ import { describe, it, expect } from 'vitest';
  * INV-CATEGORY-004 (READ), client side: "expense" is `type = 'expense'`, never
  * "not income" (`docs/specs/transfer-categories.md` sections 2 and 9).
  *
- * The API's `isIncome` is the previous release's flag, read-only and true only
- * for an Income category. Reading it as "is it spending?" counts a Transfer
- * category as spending, so every read of a category's type goes through
+ * A category's type is `categoryType`; the API no longer sends the old
+ * `isIncome` flag (#2478). Reading "not income" as "is it spending?" counts a
+ * Transfer category as spending, so every read of a category's type goes through
  * `@/lib/category-type` (`categoryTypeOf`, `isIncomeCategory`,
  * `isExpenseCategory`, `isTransferCategory`, `signByCategoryType`). This scan
  * fails a new raw read, with no file allowlist.

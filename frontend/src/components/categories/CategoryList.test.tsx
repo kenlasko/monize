@@ -53,7 +53,7 @@ function makeCategory(overrides: Partial<Category> & { id: string; name: string 
     effectiveIcon: null,
     autoSign: null,
     effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2026-01-01T00:00:00Z',
     transactionCount: 0,
@@ -114,8 +114,8 @@ describe('CategoryList', () => {
   // Rendering categories
   it('renders categories table with data', () => {
     const categories = [
-      makeCategory({ id: 'c1', name: 'Food', isIncome: false, transactionCount: 5 }),
-      makeCategory({ id: 'c2', name: 'Salary', isIncome: true, transactionCount: 12 }),
+      makeCategory({ id: 'c1', name: 'Food', categoryType: 'expense', transactionCount: 5 }),
+      makeCategory({ id: 'c2', name: 'Salary', categoryType: 'income', transactionCount: 12 }),
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
@@ -140,8 +140,8 @@ describe('CategoryList', () => {
 
   it('shows income/expense badge for each category', () => {
     const categories = [
-      makeCategory({ id: 'c1', name: 'Food', isIncome: false }),
-      makeCategory({ id: 'c2', name: 'Salary', isIncome: true }),
+      makeCategory({ id: 'c1', name: 'Food', categoryType: 'expense' }),
+      makeCategory({ id: 'c2', name: 'Salary', categoryType: 'income' }),
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
@@ -151,7 +151,7 @@ describe('CategoryList', () => {
 
   it('marks a Transfer category as one, never as an expense', () => {
     const categories = [
-      makeCategory({ id: 'c1', name: 'Savings', categoryType: 'transfer', isIncome: false }),
+      makeCategory({ id: 'c1', name: 'Savings', categoryType: 'transfer' }),
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
@@ -472,7 +472,7 @@ describe('CategoryList', () => {
   it('toggles sort direction when clicking same column header', () => {
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', transactionCount: 5 }),
-      makeCategory({ id: 'c2', name: 'Salary', transactionCount: 12, isIncome: true }),
+      makeCategory({ id: 'c2', name: 'Salary', transactionCount: 12, categoryType: 'income' }),
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
@@ -487,8 +487,8 @@ describe('CategoryList', () => {
 
   it('sorts by type when Type header is clicked', () => {
     const categories = [
-      makeCategory({ id: 'c1', name: 'Food', isIncome: false }),
-      makeCategory({ id: 'c2', name: 'Salary', isIncome: true }),
+      makeCategory({ id: 'c1', name: 'Food', categoryType: 'expense' }),
+      makeCategory({ id: 'c2', name: 'Salary', categoryType: 'income' }),
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);
@@ -501,7 +501,7 @@ describe('CategoryList', () => {
   it('sorts by count when Count header is clicked', () => {
     const categories = [
       makeCategory({ id: 'c1', name: 'Food', transactionCount: 5 }),
-      makeCategory({ id: 'c2', name: 'Salary', transactionCount: 12, isIncome: true }),
+      makeCategory({ id: 'c2', name: 'Salary', transactionCount: 12, categoryType: 'income' }),
     ];
 
     render(<CategoryList categories={categories} onEdit={onEdit} onRefresh={onRefresh} />);

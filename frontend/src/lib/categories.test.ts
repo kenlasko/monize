@@ -138,7 +138,7 @@ describe('categoriesApi derived caches (INV-CACHE-001)', () => {
 
   it('update drops budgets:dashboard', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'cat-1' } });
-    await categoriesApi.update('cat-1', { isIncome: true } as any);
+    await categoriesApi.update('cat-1', { type: 'income' });
     expect(getCached('budgets:dashboard')).toBeUndefined();
   });
 

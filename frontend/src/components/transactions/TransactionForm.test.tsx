@@ -136,7 +136,7 @@ const mockCategories = [
     icon: null,
     color: null,
     effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense' as const,
     isSystem: false,
     createdAt: '2024-01-01T00:00:00Z',
   },
@@ -151,7 +151,7 @@ const mockCategories = [
     icon: null,
     color: null,
     effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-    isIncome: true,
+    categoryType: 'income' as const,
     isSystem: false,
     createdAt: '2024-01-01T00:00:00Z',
   },
@@ -163,7 +163,7 @@ const mockPayees = [
     userId: 'user-1',
     name: 'Grocery Store',
     defaultCategoryId: 'cat-1',
-    defaultCategory: { id: 'cat-1', name: 'Groceries', userId: 'user-1', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true, isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z' },
+    defaultCategory: { id: 'cat-1', name: 'Groceries', userId: 'user-1', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true, categoryType: 'expense' as const, isSystem: false, createdAt: '2024-01-01T00:00:00Z' },
     notes: null,
     createdAt: '2024-01-01T00:00:00Z',
   },
@@ -495,7 +495,7 @@ function createExistingTransaction(overrides = {}) {
     payeeName: 'Grocery Store',
     payee: null,
     categoryId: 'cat-1',
-    category: { id: 'cat-1', name: 'Groceries', userId: 'user-1', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true, isIncome: false, isSystem: false, createdAt: '2024-01-01T00:00:00Z' },
+    category: { id: 'cat-1', name: 'Groceries', userId: 'user-1', parentId: null, parent: null, children: [], description: null, icon: null, color: null, effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true, categoryType: 'expense' as const, isSystem: false, createdAt: '2024-01-01T00:00:00Z' },
     amount: -50.0,
     currencyCode: 'CAD',
     exchangeRate: 1,
@@ -862,7 +862,7 @@ describe('TransactionForm', () => {
     } as any;
 
     const ownerCategories = [
-      { id: 'own-cat-1', name: 'Owner Groceries', parentId: null, isIncome: false, isSystem: false, icon: null, color: null },
+      { id: 'own-cat-1', name: 'Owner Groceries', parentId: null, categoryType: 'expense' as const, isSystem: false, icon: null, color: null },
     ];
 
     beforeEach(() => {
@@ -956,7 +956,7 @@ describe('TransactionForm', () => {
         icon: null,
         color: null,
         effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-        isIncome: false,
+        categoryType: 'expense' as const,
         isSystem: false,
         createdAt: '2024-01-01T00:00:00Z',
       };
@@ -1145,7 +1145,7 @@ describe('TransactionForm', () => {
     it("signs the amount from the owner's category on a joint account", async () => {
       mockGetJointReferenceData.mockResolvedValue({
         categories: [
-          { id: 'own-inc', name: 'Owner Salary', parentId: null, isIncome: true, isSystem: false, icon: null, color: null },
+          { id: 'own-inc', name: 'Owner Salary', parentId: null, categoryType: 'income' as const, isSystem: false, icon: null, color: null },
         ],
         payees: [],
         payeesCanCreate: false,
@@ -1403,7 +1403,7 @@ describe('TransactionForm', () => {
     ])('leaving a transfer for an ordinary row: %s (INV-CATEGORY-001)', async (_case, picked, kept) => {
       mockCategoriesGetAll.mockResolvedValue([
         ...mockCategories,
-        { ...mockCategories[0], id: 'cat-t', name: 'Savings moves', categoryType: 'transfer', isIncome: false },
+        { ...mockCategories[0], id: 'cat-t', name: 'Savings moves', categoryType: 'transfer' as const },
       ]);
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
       await waitFor(() => expect(screen.getByText('Transfer')).toBeInTheDocument());
@@ -2508,7 +2508,7 @@ describe('TransactionForm', () => {
     it('offers a transfer every type, Transfer categories first, and an ordinary row none (INV-CATEGORY-001)', async () => {
       mockCategoriesGetAll.mockResolvedValue([
         ...mockCategories,
-        { ...mockCategories[0], id: 'cat-t', name: 'Savings contributions', categoryType: 'transfer', isIncome: false },
+        { ...mockCategories[0], id: 'cat-t', name: 'Savings contributions', categoryType: 'transfer' as const },
       ]);
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
 
@@ -2529,7 +2529,7 @@ describe('TransactionForm', () => {
     });
 
     it('creates a Transfer category from text typed on a transfer', async () => {
-      mockCategoryCreate.mockResolvedValueOnce({ ...mockCategories[0], id: 'new-t', name: 'New Item', categoryType: 'transfer' });
+      mockCategoryCreate.mockResolvedValueOnce({ ...mockCategories[0], id: 'new-t', name: 'New Item', categoryType: 'transfer' as const });
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
 
       await waitFor(() => {
@@ -2558,7 +2558,7 @@ describe('TransactionForm', () => {
         icon: null,
         color: null,
         effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-        isIncome: false,
+        categoryType: 'expense' as const,
         isSystem: false,
         createdAt: '2024-01-01T00:00:00Z',
       });
@@ -2588,7 +2588,7 @@ describe('TransactionForm', () => {
         icon: null,
         color: null,
         effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-        isIncome: false,
+        categoryType: 'expense' as const,
         isSystem: false,
         createdAt: '2024-01-01T00:00:00Z',
       });
@@ -3463,7 +3463,7 @@ describe('TransactionForm', () => {
           icon: null,
           color: null,
           effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false,
+          categoryType: 'expense' as const,
           isSystem: false,
           createdAt: '2024-01-01T00:00:00Z',
         })
@@ -3478,7 +3478,7 @@ describe('TransactionForm', () => {
           icon: null,
           color: null,
           effectiveColor: null, effectiveIcon: null, autoSign: null, effectiveAutoSign: true,
-          isIncome: false,
+          categoryType: 'expense' as const,
           isSystem: false,
           createdAt: '2024-01-01T00:00:00Z',
         });
@@ -5358,7 +5358,7 @@ describe('TransactionForm', () => {
   describe('handleCategoryCreate (coverage)', () => {
     it('creates a simple category and shows a success toast', async () => {
       mockFindInactiveByName.mockResolvedValue(null);
-      mockCategoryCreate.mockResolvedValueOnce({ id: 'cat-new', name: 'New Item', parentId: null, isIncome: false });
+      mockCategoryCreate.mockResolvedValueOnce({ id: 'cat-new', name: 'New Item', parentId: null, categoryType: 'expense' as const });
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
       await waitFor(() => expect(screen.getByTestId('combobox-create-Category')).toBeInTheDocument());
 
@@ -5375,7 +5375,7 @@ describe('TransactionForm', () => {
       // Use an existing parent (Groceries) by typing "Groceries: Fruit".
       // The mock always sends 'New Item', so we assert the simple-create path returns the
       // child id. This still exercises handleCategoryCreate's success branch.
-      mockCategoryCreate.mockResolvedValueOnce({ id: 'cat-child', name: 'New Item', parentId: null, isIncome: false });
+      mockCategoryCreate.mockResolvedValueOnce({ id: 'cat-child', name: 'New Item', parentId: null, categoryType: 'expense' as const });
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
       await waitFor(() => expect(screen.getByTestId('combobox-create-Category')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('combobox-create-Category'));

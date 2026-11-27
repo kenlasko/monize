@@ -77,7 +77,7 @@ const GROCERIES = {
   color: '#22c55e',
   effectiveColor: '#22c55e',
   effectiveIcon: null,
-  isIncome: false,
+  categoryType: 'expense' as const,
   isSystem: false,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',

@@ -2,35 +2,34 @@
  * The category type, and the one way to read it (INV-CATEGORY-003,
  * INV-CATEGORY-004, `docs/specs/transfer-categories.md`).
  *
- * A category is Income, Expense or Transfer. The API's `isIncome` is the
- * previous release's flag, read-only and true only for Income: reading it as
- * "is it spending?" counts a Transfer category as spending, so every read goes
- * through these helpers. `src/lib/category-type.guard.test.ts` fails a new raw
- * read.
+ * A category is Income, Expense or Transfer, and `categoryType` is the only
+ * statement of it (the legacy `isIncome` flag is gone, #2478). "Expense" is the
+ * expense type, never "not income": a Transfer category is neither, so every
+ * read goes through these helpers. `src/lib/category-type.guard.test.ts` fails a
+ * new raw read.
  */
 export const CATEGORY_TYPES = ['income', 'expense', 'transfer'] as const;
 
 export type CategoryType = (typeof CATEGORY_TYPES)[number];
 
-/** What a category says about its type: the type, or, for a value built before the type existed, the legacy flag. */
+/** What a category says about its type. */
 export interface CategoryTypeSource {
-  categoryType?: CategoryType | null;
-  isIncome?: boolean | null;
+  categoryType: CategoryType;
 }
 
 export function categoryTypeOf(category: CategoryTypeSource): CategoryType {
-  // income-flag-ok: the one place the legacy flag is read, as a fallback
-  return category.categoryType ?? (category.isIncome === true ? 'income' : 'expense');
+  return category.categoryType;
 }
 
 /**
- * `categoryTypeOf`, or `undefined` when the value names neither a type nor a
- * legacy flag (a stored value of unknown type). A filter that collapses a whole
- * type into a pseudo-id counts only categories of a known type.
+ * The type, or `undefined` when the value carries none (a stored value of
+ * unknown type). A filter that collapses a whole type into a pseudo-id counts
+ * only categories of a known type.
  */
-export function categoryTypeOrUndefined(category: CategoryTypeSource): CategoryType | undefined {
-  if (category.categoryType == null && category.isIncome == null) return undefined;
-  return categoryTypeOf(category);
+export function categoryTypeOrUndefined(category: {
+  categoryType?: CategoryType | null;
+}): CategoryType | undefined {
+  return category.categoryType ?? undefined;
 }
 
 export function isIncomeCategory(category: CategoryTypeSource): boolean {

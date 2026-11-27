@@ -116,8 +116,8 @@ vi.mock('@/components/categories/CategoryForm', () => ({
     <div data-testid="category-form">
       CategoryForm
       {category && <span data-testid="editing-category">{category.name}</span>}
-      <button data-testid="submit-form" onClick={() => Promise.resolve(onSubmit({ name: 'Test', isIncome: false })).catch(() => {})}>Submit</button>
-      <button data-testid="submit-form-full" onClick={() => Promise.resolve(onSubmit({ name: 'Full', isIncome: true, parentId: 'cat-1', description: 'desc', icon: 'star', color: '#fff' })).catch(() => {})}>SubmitFull</button>
+      <button data-testid="submit-form" onClick={() => Promise.resolve(onSubmit({ name: 'Test', type: 'expense' })).catch(() => {})}>Submit</button>
+      <button data-testid="submit-form-full" onClick={() => Promise.resolve(onSubmit({ name: 'Full', type: 'income', parentId: 'cat-1', description: 'desc', icon: 'star', color: '#fff' })).catch(() => {})}>SubmitFull</button>
     </div>
   ),
 }));
@@ -192,10 +192,10 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 }));
 
 const mockCategories = [
-  { id: 'cat-1', name: 'Salary', isIncome: true, parentId: null, description: null, icon: null, color: null },
-  { id: 'cat-2', name: 'Groceries', isIncome: false, parentId: null, description: null, icon: null, color: null },
-  { id: 'cat-3', name: 'Rent', isIncome: false, parentId: null, description: null, icon: null, color: null },
-  { id: 'cat-4', name: 'Organic', isIncome: false, parentId: 'cat-2', description: null, icon: null, color: null },
+  { id: 'cat-1', name: 'Salary', categoryType: 'income' as const, parentId: null, description: null, icon: null, color: null },
+  { id: 'cat-2', name: 'Groceries', categoryType: 'expense' as const, parentId: null, description: null, icon: null, color: null },
+  { id: 'cat-3', name: 'Rent', categoryType: 'expense' as const, parentId: null, description: null, icon: null, color: null },
+  { id: 'cat-4', name: 'Organic', categoryType: 'expense' as const, parentId: 'cat-2', description: null, icon: null, color: null },
 ];
 
 describe('CategoriesPage', () => {
@@ -345,7 +345,7 @@ describe('CategoriesPage', () => {
 
     mockGetAll.mockResolvedValue([
       ...mockCategories,
-      { ...mockCategories[1], id: 'cat-t', name: 'Savings', categoryType: 'transfer', isIncome: false },
+      { ...mockCategories[1], id: 'cat-t', name: 'Savings', categoryType: 'transfer' },
     ]);
     render(<CategoriesPage />);
     await waitFor(() => {
@@ -586,14 +586,14 @@ describe('CategoriesPage', () => {
   });
 
   it('creates category when form is submitted', async () => {
-    mockCreate.mockResolvedValue({ id: 'cat-new', name: 'Test', isIncome: false });
+    mockCreate.mockResolvedValue({ id: 'cat-new', name: 'Test', categoryType: 'expense' });
     render(<CategoriesPage />);
     await waitFor(() => expect(screen.getByText('+ New Category')).toBeInTheDocument());
     await act(async () => { fireEvent.click(screen.getByText('+ New Category')); });
     await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
     await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({ name: 'Test', isIncome: false, parentId: null, description: null, icon: null, color: null });
+      expect(mockCreate).toHaveBeenCalledWith({ name: 'Test', type: 'expense', parentId: null, description: null, icon: null, color: null });
       expect(toast.success).toHaveBeenCalledWith('Category created successfully');
     });
   });
@@ -606,7 +606,7 @@ describe('CategoriesPage', () => {
     await waitFor(() => expect(screen.getByTestId('submit-form-full')).toBeInTheDocument());
     await act(async () => { fireEvent.click(screen.getByTestId('submit-form-full')); });
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({ name: 'Full', isIncome: true, parentId: 'cat-1', description: 'desc', icon: 'star', color: '#fff' });
+      expect(mockCreate).toHaveBeenCalledWith({ name: 'Full', type: 'income', parentId: 'cat-1', description: 'desc', icon: 'star', color: '#fff' });
     });
   });
 
@@ -619,7 +619,7 @@ describe('CategoriesPage', () => {
     await waitFor(() => expect(screen.getByTestId('submit-form')).toBeInTheDocument());
     await act(async () => { fireEvent.click(screen.getByTestId('submit-form')); });
     await waitFor(() => {
-      expect(mockUpdate).toHaveBeenCalledWith('cat-1', expect.objectContaining({ name: 'Test', isIncome: false }));
+      expect(mockUpdate).toHaveBeenCalledWith('cat-1', expect.objectContaining({ name: 'Test', type: 'expense' }));
       expect(toast.success).toHaveBeenCalledWith('Category updated successfully');
     });
   });

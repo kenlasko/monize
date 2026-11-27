@@ -139,7 +139,7 @@ export interface BudgetCategory {
   category: {
     id: string;
     name: string;
-    isIncome: boolean;
+    categoryType: CategoryType;
     parentId?: string | null;
     parent?: { id: string; name: string } | null;
   } | null;
@@ -202,7 +202,7 @@ export interface BudgetPeriodCategory {
   category?: {
     id: string;
     name: string;
-    isIncome: boolean;
+    categoryType: CategoryType;
   } | null;
   createdAt: string;
   updatedAt: string;

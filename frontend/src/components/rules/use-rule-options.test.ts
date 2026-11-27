@@ -13,7 +13,6 @@ const category = (id: string, name: string, categoryType: string) => ({
   name,
   parentId: null,
   categoryType,
-  isIncome: categoryType === 'income',
 });
 
 describe('useRuleOptions: the category pickers by what holds the category (INV-CATEGORY-001)', () => {

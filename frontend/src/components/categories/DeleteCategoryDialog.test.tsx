@@ -15,8 +15,8 @@ vi.mock('@/lib/categoryUtils', () => ({
 
 describe('DeleteCategoryDialog', () => {
   const categories = [
-    { id: 'c1', name: 'Food', parentId: null, isIncome: false },
-    { id: 'c2', name: 'Transport', parentId: null, isIncome: false },
+    { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const },
+    { id: 'c2', name: 'Transport', parentId: null, categoryType: 'expense' as const },
   ] as any[];
 
   const onConfirm = vi.fn();

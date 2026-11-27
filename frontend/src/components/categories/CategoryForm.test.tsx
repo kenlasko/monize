@@ -13,8 +13,8 @@ vi.mock('@hookform/resolvers/zod', () => ({
 
 describe('CategoryForm', () => {
   const categories = [
-    { id: 'c1', name: 'Food', parentId: null, isIncome: false },
-    { id: 'c2', name: 'Salary', parentId: null, isIncome: true },
+    { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const },
+    { id: 'c2', name: 'Salary', parentId: null, categoryType: 'income' as const },
   ] as any[];
 
   const onSubmit = vi.fn().mockResolvedValue(undefined);
@@ -29,7 +29,7 @@ describe('CategoryForm', () => {
   });
 
   it('renders update form when editing a category', () => {
-    const category = { id: 'c1', name: 'Food', parentId: null, isIncome: false, description: 'Meals', icon: '', color: '' } as any;
+    const category = { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const, description: 'Meals', icon: '', color: '' } as any;
     render(<CategoryForm category={category} categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
     expect(screen.getByText('Update Category')).toBeInTheDocument();
   });
@@ -56,8 +56,8 @@ describe('CategoryForm', () => {
 
   it('shows "Inherit from parent" title when parent is selected', async () => {
     const categoriesWithColor = [
-      { id: 'c1', name: 'Food', parentId: null, isIncome: false, effectiveColor: '#ef4444', color: '#ef4444' },
-      { id: 'c2', name: 'Salary', parentId: null, isIncome: true, effectiveColor: null, color: null },
+      { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const, effectiveColor: '#ef4444', color: '#ef4444' },
+      { id: 'c2', name: 'Salary', parentId: null, categoryType: 'income' as const, effectiveColor: null, color: null },
     ] as any[];
 
     render(<CategoryForm categories={categoriesWithColor} onSubmit={onSubmit} onCancel={onCancel} />);
@@ -72,7 +72,7 @@ describe('CategoryForm', () => {
 
   it('shows inheritance message when parent has colour and child has none', async () => {
     const categoriesWithColor = [
-      { id: 'c1', name: 'Food', parentId: null, isIncome: false, effectiveColor: '#ef4444', color: '#ef4444' },
+      { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const, effectiveColor: '#ef4444', color: '#ef4444' },
     ] as any[];
 
     render(<CategoryForm categories={categoriesWithColor} onSubmit={onSubmit} onCancel={onCancel} />);
@@ -95,9 +95,9 @@ describe('CategoryForm', () => {
 
   it('filters parent options as the user types', async () => {
     const cats = [
-      { id: 'c1', name: 'Food', parentId: null, isIncome: false },
-      { id: 'c2', name: 'Salary', parentId: null, isIncome: true },
-      { id: 'c3', name: 'Shopping', parentId: null, isIncome: false },
+      { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const },
+      { id: 'c2', name: 'Salary', parentId: null, categoryType: 'income' as const },
+      { id: 'c3', name: 'Shopping', parentId: null, categoryType: 'expense' as const },
     ] as any[];
     render(<CategoryForm categories={cats} onSubmit={onSubmit} onCancel={onCancel} />);
 
@@ -116,9 +116,9 @@ describe('CategoryForm', () => {
 
   it('excludes the edited category and its descendants from the parent options', async () => {
     const cats = [
-      { id: 'c1', name: 'Food', parentId: null, isIncome: false },
-      { id: 'c2', name: 'Groceries', parentId: 'c1', isIncome: false },
-      { id: 'c3', name: 'Salary', parentId: null, isIncome: true },
+      { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const },
+      { id: 'c2', name: 'Groceries', parentId: 'c1', categoryType: 'expense' as const },
+      { id: 'c3', name: 'Salary', parentId: null, categoryType: 'income' as const },
     ] as any[];
     // Editing "Food": neither it nor its child "Groceries" may be offered as a
     // parent (that would create a cycle), but an unrelated category still is.
@@ -186,7 +186,7 @@ describe('CategoryForm', () => {
 
 describe('CategoryForm icon field', () => {
   const categories = [
-    { id: 'c1', name: 'Food', parentId: null, isIncome: false },
+    { id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const },
   ] as any[];
   const onSubmit = vi.fn().mockResolvedValue(undefined);
   const onCancel = vi.fn();
@@ -209,7 +209,7 @@ describe('CategoryForm icon field', () => {
 
   it('clears the icon back to none', async () => {
     const category = {
-      id: 'c1', name: 'Food', parentId: null, isIncome: false,
+      id: 'c1', name: 'Food', parentId: null, categoryType: 'expense' as const,
       description: '', color: '', icon: 'shopping-cart',
     } as any;
     const { container } = render(
@@ -225,11 +225,11 @@ describe('CategoryForm icon field', () => {
 
 describe('CategoryForm automatic sign', () => {
   const parent = {
-    id: 'p1', name: 'Food', parentId: null, isIncome: false,
+    id: 'p1', name: 'Food', parentId: null, categoryType: 'expense' as const,
     autoSign: false, effectiveAutoSign: false,
   };
   const other = {
-    id: 'p2', name: 'Travel', parentId: null, isIncome: false,
+    id: 'p2', name: 'Travel', parentId: null, categoryType: 'expense' as const,
     autoSign: null, effectiveAutoSign: true,
   };
   const categories = [parent, other] as any[];
@@ -241,7 +241,7 @@ describe('CategoryForm automatic sign', () => {
     Array.from(autoSignSelect().options).map((o) => o.textContent);
 
   const subcategory = (autoSign: boolean | null, parentId = 'p1') => ({
-    id: 'child', name: 'Groceries', parentId, isIncome: false,
+    id: 'child', name: 'Groceries', parentId, categoryType: 'expense' as const,
     description: '', color: '', icon: '',
     autoSign, effectiveAutoSign: autoSign ?? false,
   }) as any;
@@ -338,8 +338,8 @@ describe('CategoryForm automatic sign', () => {
     });
 
     it('opens a Transfer category as one, and locks a child to its parent', () => {
-      const transferParent = { id: 't1', name: 'Transfers', parentId: null, categoryType: 'transfer', isIncome: false };
-      const child = { id: 't2', name: 'Brokerage', parentId: 't1', categoryType: 'transfer', isIncome: false } as any;
+      const transferParent = { id: 't1', name: 'Transfers', parentId: null, categoryType: 'transfer' };
+      const child = { id: 't2', name: 'Brokerage', parentId: 't1', categoryType: 'transfer' } as any;
       render(
         <CategoryForm category={child} categories={[...categories, transferParent] as any[]} onSubmit={vi.fn()} onCancel={onCancel} />,
       );

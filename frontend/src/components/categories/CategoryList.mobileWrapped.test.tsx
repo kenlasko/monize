@@ -61,7 +61,7 @@ function makeCategory(overrides: Partial<Category> & { id: string; name: string 
     effectiveIcon: null,
     autoSign: null,
     effectiveAutoSign: true,
-    isIncome: false,
+    categoryType: 'expense',
     isSystem: false,
     createdAt: '2026-01-01T00:00:00Z',
     transactionCount: 0,
@@ -90,7 +90,7 @@ describe('the categories list on a phone', () => {
     const { container } = render(
       <CategoryList
         categories={[
-          makeCategory({ id: 'c1', name: 'Salary', isIncome: true, transactionCount: 12, description: 'Paycheque' }),
+          makeCategory({ id: 'c1', name: 'Salary', categoryType: 'income', transactionCount: 12, description: 'Paycheque' }),
         ]}
         onEdit={vi.fn()}
         onRefresh={vi.fn()}

@@ -261,9 +261,9 @@ const mockAccounts = [
 ];
 
 const mockCategories = [
-  { id: 'cat-1', name: 'Rent', parentId: null, isIncome: false, color: null },
-  { id: 'cat-2', name: 'Salary', parentId: null, isIncome: true, color: null },
-  { id: 'cat-3', name: 'Sub Category', parentId: 'cat-1', isIncome: false, color: null },
+  { id: 'cat-1', name: 'Rent', parentId: null, categoryType: 'expense' as const, color: null },
+  { id: 'cat-2', name: 'Salary', parentId: null, categoryType: 'income' as const, color: null },
+  { id: 'cat-3', name: 'Sub Category', parentId: 'cat-1', categoryType: 'expense' as const, color: null },
 ];
 
 const mockPayees = [
@@ -2407,7 +2407,7 @@ describe('ScheduledTransactionForm', () => {
       expect(screen.getByTestId('option-cat-2')).toBeInTheDocument();
     });
 
-    // Select income category (cat-2 = Salary, isIncome: true) - amount is -100
+    // Select income category (cat-2 = Salary, an income category) - amount is -100
     await act(async () => { fireEvent.click(screen.getByTestId('option-cat-2')); });
 
     // Amount should now be adjusted to positive
