@@ -1913,15 +1913,6 @@ export class TransactionTransferService {
         if (!(err instanceof NotFoundException)) throw err;
       }
       if (!scopedLinked) {
-        // The own leg of a cross-owner pair can be an investment cash leg too:
-        // refuse it here, under its row lock, for the connected and frozen
-        // branches alike (neither checks investment_transactions).
-        await withScopedDb(this.dataSource, async (m) => {
-          await lockTransactionRow(m, transactionId, userId);
-          if (await isInvestmentCashLeg(m, transactionId)) {
-            throw investmentCashLegLockedError();
-          }
-        });
         return this.removeCrossOwnerTransfer(realUserId, transaction);
       }
     }
@@ -1958,12 +1949,11 @@ export class TransactionTransferService {
 
       // An investment cash leg belongs to its trade: refuse the pair, as the
       // single and bulk deletes do (before anything is written).
-      const ownedLegs: { transaction_id: string }[] = await m.query(
-        // includes VOID rows: records read -- ownership, not effect.
-        `SELECT transaction_id FROM investment_transactions WHERE transaction_id = ANY($1)`,
-        [[...locked.keys()]],
-      );
-      if (ownedLegs.length > 0) throw investmentCashLegLockedError();
+      for (const legId of locked.keys()) {
+        if (await isInvestmentCashLeg(m, legId)) {
+          throw investmentCashLegLockedError();
+        }
+      }
 
       // Strict reconciled lock. Both legs are one movement of money, so a
       // reconciled leg refuses the deletion of the pair -- deleting only the
@@ -2016,6 +2006,12 @@ export class TransactionTransferService {
     const removeLeg = async (m: EntityManager, leg: Transaction) => {
       const locked = await lockTransactionRow(m, leg.id, leg.userId);
       if (!locked) return;
+      // An investment cash leg belongs to its trade, on either side of the
+      // pair: refuse under this leg's lock, before any write (both legs share
+      // one transaction, so a refusal on the second rolls back the first).
+      if (await isInvestmentCashLeg(m, leg.id)) {
+        throw investmentCashLegLockedError();
+      }
       // Strict reconciled lock, under the leg's own owner's setting: a
       // reconciled leg refuses the deletion of the pair, as on the same-owner
       // path (A26-M11). Both legs run in one transaction, so a refusal on the

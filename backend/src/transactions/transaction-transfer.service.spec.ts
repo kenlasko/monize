@@ -6113,6 +6113,21 @@ describe("TransactionTransferService", () => {
         }
       });
 
+      it("connected: refuses when the COUNTERPART leg is an investment cash leg, writing nothing", async () => {
+        connect();
+        mockQueryRunner.manager.query.mockImplementation(
+          async (_sql: string, params?: unknown[]) =>
+            params?.[0] === "foreign-leg" ? [{ id: "inv-1" }] : [],
+        );
+
+        await expect(
+          service.removeTransfer("user-1", "own-leg", mockFindOne, actor),
+        ).rejects.toThrow(/cash side of an investment transaction/);
+
+        expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+        expect(accountsService.updateBalance).not.toHaveBeenCalled();
+      });
+
       it("frozen: removes the own leg only and reverses only the own balance", async () => {
         freeze();
 

@@ -1849,6 +1849,16 @@ export class TransactionsController {
   })
   @ApiParam({ name: "id", description: "Transaction UUID" })
   @ApiResponse({ status: 200, description: "Transaction deleted successfully" })
+  @ApiResponse({
+    status: 400,
+    description:
+      "The transaction is the cash side of an investment transaction",
+  })
+  @ApiResponse({
+    status: 409,
+    description:
+      "One side of a transfer, refused because it was converted to a transfer while the request ran; delete the transfer instead",
+  })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({
     status: 403,
