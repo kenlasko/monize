@@ -286,10 +286,11 @@ export class McpHttpController implements OnModuleDestroy {
   /**
    * Seed the bearer's user as the ambient identity together with their
    * timezone, so `todayYMD()` in a tool, resource, prompt or the server
-   * instructions is the user's day. Resolved once per POST, as
-   * `RequestContextInterceptor` does for REST: a real stored or cached zone
-   * only, otherwise none (the server's day, as on REST). A failed lookup is
-   * logged and the request is served without a timezone.
+   * instructions is the user's day. Resolved once per POST with
+   * `getStoredTimezoneOfUser`: the first valid IANA zone of the stored
+   * preference, then the cached client zone, otherwise none (the server's
+   * day). MCP carries no client timezone header, so the cached zone stands in
+   * for it. A failed lookup is logged and the request is served without one.
    */
   private async runAsUser<T>(userId: string, fn: () => Promise<T>): Promise<T> {
     let timezone: string | undefined;

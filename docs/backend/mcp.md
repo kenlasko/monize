@@ -56,7 +56,7 @@ A 2026-07-28 request has no session at all, and even on a 2025-era connection th
 
 **"Which session is this" became "which caller is this"** (`callerKey`): the session id on a 2025-era connection, the credential id where there is no session. Only two things ask -- the relay claim and the observed-elicitation record -- and on a 2025-era connection nothing changes. The cost on 2026-07-28 is that two clients sharing one token share a caller key, so a user who wants the web-chat relay and a direct client at once should mint a token for the agent alone (the connect instructions say so).
 
-The transport also seeds the caller's timezone on every POST (a real stored or cached zone, else none, as REST does), so `todayYMD()` is the user's day. A tool that re-seeds the same user with a nested `withUserContext` replaces the store and must pass `getRequestTimezone()` as the third argument, or the timezone is lost.
+The transport also seeds the caller's timezone on every POST (`getStoredTimezoneOfUser`: the first valid IANA zone of the stored preference, then the cached `last_client_timezone`, else none and the server's day; MCP has no `X-Client-Timezone` header, so it reads the cached zone where REST reads the header), so `todayYMD()` is the user's day. A tool that re-seeds the same user with a nested `withUserContext` replaces the store and must pass `getRequestTimezone()` as the third argument, or the timezone is lost.
 
 An MCP credential (PAT or OAuth token) is always the owner's own: no MCP request acts as a delegate, so a read tool whose domain method narrows by a delegate's account scope (`list_warranties` over `WarrantiesService.getLlmWarranties`) passes none.
 
