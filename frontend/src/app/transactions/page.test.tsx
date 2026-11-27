@@ -159,11 +159,17 @@ vi.mock('next/dynamic', () => ({
         );
       }
       // The calendar is loaded through `dynamic()`, and it too draws the
-      // switch -- at the right-hand end of its own toolbar row.
+      // switch -- at the right-hand end of its own toolbar row. Its month is
+      // the page's, so the mock shows it and offers a turn to a fixed month.
       return (
-        <div data-testid="dynamic-component">
+        <div data-testid="dynamic-component" data-month={props.month ?? ''}>
           DynamicComponent
           {props.viewToggle}
+          {props.onMonthChange && (
+            <button type="button" onClick={() => props.onMonthChange('2025-02')}>
+              Turn to February 2025
+            </button>
+          )}
         </div>
       );
     };
@@ -792,11 +798,55 @@ describe('TransactionsPage', () => {
       );
       expect(screen.getByTestId('dynamic-component')).toBeInTheDocument();
 
+      // With no date range the calendar opens on today's month.
+      expect(screen.getByTestId('dynamic-component')).toHaveAttribute(
+        'data-month',
+        expect.stringMatching(/^\d{4}-\d{2}$/),
+      );
+
+      // The month the reader turned to is the register's range on the way back.
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Turn to February 2025' }));
+      });
+      expect(screen.getByTestId('dynamic-component')).toHaveAttribute('data-month', '2025-02');
+
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Table' }));
       });
 
       await waitFor(() => expect(screen.getByTestId('transaction-list')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(mockGetAll.mock.calls.at(-1)?.[0]).toMatchObject({
+          startDate: '2025-02-01',
+          endDate: '2025-02-28',
+        }),
+      );
+
+      // And the calendar reopens on it, so switching back and forth stays put.
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Calendar' }));
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('dynamic-component')).toHaveAttribute('data-month', '2025-02'),
+      );
+      const readsBefore = mockGetAll.mock.calls.length;
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Table' }));
+      });
+      await waitFor(() => expect(screen.getByTestId('transaction-list')).toBeInTheDocument());
+      // An untouched calendar leaves the range as it was, so the register is
+      // not asked again for a range it already holds.
+      expect(mockGetAll.mock.calls.length).toBe(readsBefore);
+      expect(mockGetAll.mock.calls.at(-1)?.[0]).toMatchObject({
+        startDate: '2025-02-01',
+        endDate: '2025-02-28',
+      });
+
+      // The range this left in storage must not open the next test.
+      for (const key of ['startDate', 'endDate', 'timePeriod']) {
+        window.localStorage.removeItem(`transactions.filter.${key}`);
+      }
     });
   });
 

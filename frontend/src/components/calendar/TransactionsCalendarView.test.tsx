@@ -616,6 +616,57 @@ describe('TransactionsCalendarView', () => {
       expect(screen.queryByRole('complementary', { name: '06/10/2026' })).not.toBeInTheDocument();
     });
 
+    it('opens on the month the page holds, not on today', async () => {
+      renderView({ month: '2026-03', onMonthChange: vi.fn() });
+      expect(await screen.findByRole('heading', { name: '03/2026' })).toBeInTheDocument();
+      expect(mockGetAllPages.mock.calls[0][0]).toMatchObject({
+        startDate: '2026-03-01',
+        endDate: '2026-04-04',
+      });
+    });
+
+    it('tells the page every month the reader turns to', async () => {
+      const onMonthChange = vi.fn();
+      renderView({ month: '2026-03', onMonthChange });
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+
+      fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+      expect(onMonthChange).toHaveBeenLastCalledWith('2026-04');
+
+      await swipeGrid(400);
+      expect(onMonthChange).toHaveBeenLastCalledWith('2026-02');
+    });
+
+    it('drops the selected day when the page moves the month under it', async () => {
+      const view = renderView({ month: '2026-06', onMonthChange: vi.fn() });
+      await waitFor(() => expect(mockGetAllPages).toHaveBeenCalledTimes(1));
+      fireEvent.click(cell('06/10/2026'));
+      expect(await screen.findByRole('complementary', { name: '06/10/2026' })).toBeInTheDocument();
+
+      await act(async () => {
+        view.rerender(
+          <TransactionsCalendarView
+            accounts={accounts}
+            scheduledTransactions={[schedule()]}
+            filters={{ accountIds: ['chequing-1', 'card-1'] }}
+            scopeAccountIds={['chequing-1', 'card-1']}
+            weekStartsOn={0}
+            today={TODAY}
+            month="2026-03"
+            onMonthChange={vi.fn()}
+            categoryColorMap={new Map()}
+            categoryIconMap={new Map()}
+            categoryLabelMap={new Map()}
+            onEditTransaction={onEditTransaction}
+            onCreateOnDay={onCreateOnDay}
+          />,
+        );
+      });
+
+      expect(await screen.findByRole('heading', { name: '03/2026' })).toBeInTheDocument();
+      expect(screen.queryByRole('complementary', { name: '06/10/2026' })).not.toBeInTheDocument();
+    });
+
     it('claims the horizontal gesture, so a swipe does not leave the page instead', async () => {
       // `useSwipeNavigation` pages between whole sections of the app and cedes a
       // touch that starts inside a pagination zone. Without the marker a swipe

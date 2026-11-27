@@ -7,6 +7,8 @@ import {
   daysInMonth,
   isCalendarDate,
   isCalendarMonth,
+  monthDateRange,
+  monthForDateRange,
   monthFromPageNumber,
   monthGridDays,
   monthOf,
@@ -336,5 +338,48 @@ describe('calendarDaysBetween', () => {
   it('reports a backwards range as negative, so a caller cannot read it as one day', () => {
     expect(calendarDaysBetween('2026-06-18', '2026-06-14')).toBe(-5);
     expect(calendarDaysBetween('2026-06-11', '2026-06-10')).toBe(-2);
+  });
+});
+
+describe('monthDateRange', () => {
+  it.each([
+    ['2026-06', '2026-06-01', '2026-06-30'],
+    ['2026-12', '2026-12-01', '2026-12-31'],
+    ['2024-02', '2024-02-01', '2024-02-29'],
+    ['2100-02', '2100-02-01', '2100-02-28'],
+  ])('%s runs from %s to %s', (month, startDate, endDate) => {
+    expect(monthDateRange(month)).toEqual({ startDate, endDate });
+  });
+
+  it('refuses a malformed month', () => {
+    expect(() => monthDateRange('2026-13')).toThrow(/calendar month/);
+  });
+});
+
+describe('monthForDateRange', () => {
+  const today = '2026-11-27';
+
+  it("opens on today's month with no range", () => {
+    expect(monthForDateRange('', '', today)).toBe('2026-11');
+  });
+
+  it('opens on the month of a one-month range', () => {
+    expect(monthForDateRange('2026-06-01', '2026-06-30', today)).toBe('2026-06');
+  });
+
+  it("opens on today's month for a range that runs through it", () => {
+    expect(monthForDateRange('2026-10-29', '2026-11-27', today)).toBe('2026-11');
+    expect(monthForDateRange('2026-01-01', '2026-12-31', today)).toBe('2026-11');
+  });
+
+  it('opens on the month nearest today for a range in the past or the future', () => {
+    expect(monthForDateRange('2025-01-01', '2025-12-31', today)).toBe('2025-12');
+    expect(monthForDateRange('2027-03-01', '2027-05-31', today)).toBe('2027-03');
+  });
+
+  it('treats a missing or malformed bound as no bound', () => {
+    expect(monthForDateRange('', '2025-04-15', today)).toBe('2025-04');
+    expect(monthForDateRange('2027-02-10', '', today)).toBe('2027-02');
+    expect(monthForDateRange('2027-02-30', 'garbage', today)).toBe('2026-11');
   });
 });
