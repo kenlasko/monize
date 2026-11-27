@@ -999,33 +999,69 @@ function collectInvestmentCashSources(
  * `docs/specs/transfer-categories.md` section 4.5): both legs of a linked
  * pair take the file's category. Money records one per row, so when the two
  * legs name different ones the outgoing leg's is kept; when only one names a
- * category, both take it. A row that is not one leg of a two-way pair is left
- * as mapped.
+ * category, both take it. A split's transfer line and the row it links are
+ * one transfer the same way: Money records the category on the linked row,
+ * and the line takes it. A row that is neither is left as mapped.
  */
 export function withOneCategoryPerTransfer(
   transactions: readonly MappedTransaction[],
 ): MappedTransaction[] {
   const byId = new Map(transactions.map((row) => [row.id, row]));
   const chosen = new Map<string, number | null>();
+  const chosenLine = new Map<string, number | null>();
+  // One answer from either side: the side with the lower amount (the
+  // outgoing one of a pair with opposite signs), `first` on a tie.
+  const pick = (
+    first: { amount: number; categoryHandle: number | null },
+    second: { amount: number; categoryHandle: number | null },
+  ): number | null => {
+    const outgoing = second.amount < first.amount ? second : first;
+    const incoming = outgoing === first ? second : first;
+    return outgoing.categoryHandle ?? incoming.categoryHandle;
+  };
   for (const row of transactions) {
+    for (const line of row.splits) {
+      if (line.kind !== SplitKind.TRANSFER || !line.linkedTransactionId) {
+        continue;
+      }
+      const linked = byId.get(line.linkedTransactionId);
+      if (linked === undefined || linked.linkedTransactionId !== row.id) {
+        continue;
+      }
+      const categoryHandle = pick(line, linked);
+      chosenLine.set(line.id, categoryHandle);
+      chosen.set(linked.id, categoryHandle);
+    }
     if (!row.isTransfer || row.linkedTransactionId === null) continue;
     const partner = byId.get(row.linkedTransactionId);
     if (partner === undefined || partner.linkedTransactionId !== row.id) {
       continue;
     }
-    // One answer from either side: the leg with the lower amount (the
-    // outgoing one of a pair with opposite signs), the lower id on a tie.
-    const [first, second] =
-      row.id < partner.id ? [row, partner] : [partner, row];
-    const outgoing = second.amount < first.amount ? second : first;
-    const incoming = outgoing === first ? second : first;
-    chosen.set(row.id, outgoing.categoryHandle ?? incoming.categoryHandle);
+    // The lower id first, so both legs make the same choice.
+    chosen.set(
+      row.id,
+      row.id < partner.id ? pick(row, partner) : pick(partner, row),
+    );
   }
   return transactions.map((row) => {
     const categoryHandle = chosen.get(row.id);
-    return categoryHandle === undefined || categoryHandle === row.categoryHandle
+    const splits = row.splits.some((line) => chosenLine.has(line.id))
+      ? row.splits.map((line) => {
+          const lineHandle = chosenLine.get(line.id);
+          return lineHandle === undefined || lineHandle === line.categoryHandle
+            ? line
+            : { ...line, categoryHandle: lineHandle };
+        })
+      : row.splits;
+    return (categoryHandle === undefined ||
+      categoryHandle === row.categoryHandle) &&
+      splits === row.splits
       ? row
-      : { ...row, categoryHandle };
+      : {
+          ...row,
+          ...(categoryHandle === undefined ? {} : { categoryHandle }),
+          splits,
+        };
   });
 }
 

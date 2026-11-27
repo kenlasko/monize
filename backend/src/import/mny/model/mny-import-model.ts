@@ -194,7 +194,11 @@ export interface MappedSplit {
    */
   readonly id: string;
   readonly kind: SplitKind;
-  /** Money `hcat` for a category split; null for a transfer or investment split. */
+  /**
+   * Money `hcat` for a category split; for a transfer split, the category of
+   * the row it links (one category per transfer, INV-CATEGORY-002); null for
+   * an investment split.
+   */
   readonly categoryHandle: number | null;
   /** Account key for a transfer split -- the loan or destination account. */
   readonly transferAccountKey: string | null;

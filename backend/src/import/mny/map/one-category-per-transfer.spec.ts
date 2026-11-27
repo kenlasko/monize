@@ -1,4 +1,5 @@
-import type { MappedTransaction } from "../model/mny-import-model";
+import { SplitKind } from "../../../transactions/entities/split-kind.enum";
+import type { MappedSplit, MappedTransaction } from "../model/mny-import-model";
 import { withOneCategoryPerTransfer } from "./map-transactions";
 
 /**
@@ -81,5 +82,57 @@ describe("withOneCategoryPerTransfer", () => {
     expect(categories(mapped)).toEqual([5, 3, 4, 4]);
     // Nothing that already agrees is copied.
     mapped.forEach((row, i) => expect(row).toBe(rows[i]));
+  });
+
+  describe("a split's transfer line and the row it links", () => {
+    const line = (
+      id: string,
+      amount: number,
+      categoryHandle: number | null,
+      linkedTransactionId: string | null,
+    ): MappedSplit =>
+      ({
+        id,
+        kind: SplitKind.TRANSFER,
+        categoryHandle,
+        transferAccountKey: "savings",
+        linkedTransactionId,
+        investmentHandle: null,
+        amount,
+        memo: null,
+        tagHandles: [],
+      }) as unknown as MappedSplit;
+    const parentWith = (...lines: MappedSplit[]): MappedTransaction =>
+      ({
+        ...leg("parent1", -150, null, null, false),
+        splits: lines,
+      }) as MappedTransaction;
+
+    it("gives the line the category Money records on the linked row", () => {
+      const mapped = withOneCategoryPerTransfer([
+        parentWith(line("s1", -100, null, "far1")),
+        leg("far1", 100, 7, "parent1"),
+      ]);
+      expect(mapped[0].splits[0].categoryHandle).toBe(7);
+      expect(mapped[1].categoryHandle).toBe(7);
+    });
+
+    it("keeps the outgoing line's category on both when the two differ", () => {
+      const mapped = withOneCategoryPerTransfer([
+        parentWith(line("s1", -100, 5, "far1")),
+        leg("far1", 100, 7, "parent1"),
+      ]);
+      expect(mapped[0].splits[0].categoryHandle).toBe(5);
+      expect(mapped[1].categoryHandle).toBe(5);
+    });
+
+    it("leaves a line whose row does not link back as mapped", () => {
+      const rows = [
+        parentWith(line("s1", -100, null, "far1")),
+        leg("far1", 100, 7, "elsewhere"),
+      ];
+      const mapped = withOneCategoryPerTransfer(rows);
+      mapped.forEach((row, i) => expect(row).toBe(rows[i]));
+    });
   });
 });
