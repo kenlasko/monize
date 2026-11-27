@@ -228,18 +228,7 @@ describe("McpHttpController", () => {
       modernNode.mockImplementation(async () => {
         seen = getRequestTimezone();
       });
-      const req = {
-        method: "POST",
-        headers: { authorization: "Bearer pat_test" },
-        body: {
-          jsonrpc: "2.0",
-          id: 1,
-          method: "tools/list",
-          params: {
-            _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" },
-          },
-        },
-      } as any;
+      const req = modernReq();
 
       await controller.handlePost(req, mockRes());
 

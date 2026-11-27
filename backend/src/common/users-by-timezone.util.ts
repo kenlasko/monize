@@ -1,5 +1,6 @@
 import { DataSource, EntityManager } from "typeorm";
 import { withScopedDb } from "./db/scoped-db";
+import { isValidIanaTimezone } from "./date-utils";
 
 /**
  * Group all users by their effective IANA timezone so cron jobs that operate
@@ -48,15 +49,10 @@ export async function getUsersByEffectiveTimezone(
   return userIdsByTz;
 }
 
-/**
- * The effective IANA timezone of one user, by the rule `getUsersByEffectiveTimezone`
- * applies to everyone: the explicit preference, else the last client timezone
- * seen, else UTC. Runs on the caller's transaction.
- */
-export async function getEffectiveTimezoneOfUser(
+async function queryTimezoneColumns(
   m: EntityManager,
   userId: string,
-): Promise<string> {
+): Promise<[string | null | undefined, string | null | undefined]> {
   const rows: {
     timezone: string | null;
     last_client_timezone: string | null;
@@ -66,21 +62,46 @@ export async function getEffectiveTimezoneOfUser(
       WHERE user_id = $1`,
     [userId],
   );
-  return resolveEffectiveTimezone(
-    rows[0]?.timezone,
-    rows[0]?.last_client_timezone,
-  );
+  return [rows[0]?.timezone, rows[0]?.last_client_timezone];
+}
+
+/**
+ * The effective IANA timezone of one user, by the rule `getUsersByEffectiveTimezone`
+ * applies to everyone: the explicit preference, else the last client timezone
+ * seen, else UTC. Runs on the caller's transaction.
+ */
+export async function getEffectiveTimezoneOfUser(
+  m: EntityManager,
+  userId: string,
+): Promise<string> {
+  return resolveEffectiveTimezone(...(await queryTimezoneColumns(m, userId)));
+}
+
+/**
+ * The user's own stored or cached timezone, or `undefined` when neither is a
+ * real zone (no UTC default), for a request that must leave the zone unset as
+ * REST does. Runs on the caller's transaction.
+ */
+export async function getStoredTimezoneOfUser(
+  m: EntityManager,
+  userId: string,
+): Promise<string | undefined> {
+  return resolveStoredTimezone(...(await queryTimezoneColumns(m, userId)));
+}
+
+/** The first value that is a valid IANA zone; "browser" and blank are skipped. */
+export function resolveStoredTimezone(
+  timezone: string | null | undefined,
+  lastClientTimezone: string | null | undefined,
+): string | undefined {
+  return [timezone, lastClientTimezone]
+    .map((z) => z?.trim())
+    .find((z): z is string => isValidIanaTimezone(z));
 }
 
 function resolveEffectiveTimezone(
   timezone: string | null | undefined,
   lastClientTimezone: string | null | undefined,
 ): string {
-  const explicit = timezone?.trim();
-  const cached = lastClientTimezone?.trim();
-  return explicit && explicit !== "browser"
-    ? explicit
-    : cached && cached !== "browser"
-      ? cached
-      : "UTC";
+  return resolveStoredTimezone(timezone, lastClientTimezone) ?? "UTC";
 }

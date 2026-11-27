@@ -35,6 +35,7 @@ import { ConfigService } from "@nestjs/config";
 import { DataSource } from "typeorm";
 import { withUserContext } from "../common/db/with-context";
 import { withScopedDb } from "../common/db/scoped-db";
+import { getStoredTimezoneOfUser } from "../common/users-by-timezone.util";
 
 const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 
@@ -53,7 +54,9 @@ const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
  * request as the SDK's `AuthInfo`, which is how a tool handler learns who is
  * calling (`resolveUserContext`) -- identity is a property of the request, not
  * of a session. Individual tools may still re-seed the same id locally
- * (see `transactions.tool.ts`) -- a nested seed of the same user is a no-op.
+ * (see `transactions.tool.ts`), and must pass `getRequestTimezone()` as the
+ * third argument: a nested seed replaces the store, so it would drop the
+ * timezone seeded here.
  */
 @ApiExcludeController()
 @ApiTags("MCP")
@@ -292,19 +295,9 @@ export class McpHttpController implements OnModuleDestroy {
     let timezone: string | undefined;
     try {
       timezone = await withUserContext(userId, () =>
-        withScopedDb(this.dataSource, async (m) => {
-          const rows: {
-            timezone: string | null;
-            last_client_timezone: string | null;
-          }[] = await m.query(
-            `SELECT timezone, last_client_timezone
-               FROM user_preferences WHERE user_id = $1`,
-            [userId],
-          );
-          return [rows[0]?.timezone, rows[0]?.last_client_timezone]
-            .map((z) => z?.trim())
-            .find((z) => z && z !== "browser");
-        }),
+        withScopedDb(this.dataSource, (m) =>
+          getStoredTimezoneOfUser(m, userId),
+        ),
       );
     } catch (error) {
       this.logger.warn(
