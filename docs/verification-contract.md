@@ -227,6 +227,10 @@ INV-LOAN-002's entry names the missing source scan while its row said `--`.
 | INV-HA-003 a single-use artifact is spent once | supporting | -- | required | **required** | optional | required | -- | optional |
 | INV-HA-004 one OIDC signing key set | supporting | -- | required | optional | **required** | -- | -- | optional |
 | INV-HA-005 one claimant, one answer | supporting | -- | required | **required** | **required** | -- | -- | optional |
+| INV-CATEGORY-001 a Transfer category only on a transfer row | required | **required** | **required** | required | -- | -- | -- | optional |
+| INV-CATEGORY-002 one category per transfer | supporting | supporting | **required** | supporting | -- | -- | -- | optional |
+| INV-CATEGORY-003 a category's type is its parent's | required | -- | **required** | -- | -- | -- | -- | -- |
+| INV-CATEGORY-004 an expense is a category of type expense | required | **required** | -- | -- | -- | -- | -- | -- |
 | INV-RULE-001 a rule moves only a structural action's counterpart | **required** | -- | **required** | -- | -- | -- | -- | -- |
 | INV-RULE-003 a rule run commits only the plan that was previewed | **required** | -- | **required** | -- | -- | -- | -- | -- |
 | INV-RULE-004 a rule runs only inside its active window | **required** | -- | **required** | -- | -- | -- | -- | -- |

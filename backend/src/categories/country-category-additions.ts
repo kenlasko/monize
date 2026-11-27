@@ -196,6 +196,8 @@ export function getDefaultCategories(
   return {
     income: mergeBranch(GENERIC_CATEGORY_SET.income, additions.income ?? []),
     expense: mergeBranch(GENERIC_CATEGORY_SET.expense, additions.expense ?? []),
+    // Moving one's own money is the same in every country.
+    transfer: GENERIC_CATEGORY_SET.transfer,
   };
 }
 
@@ -205,5 +207,9 @@ export function allDefaultCategoryDefinitions(): DefaultCategoryDefinition[] {
     GENERIC_CATEGORY_SET,
     ...DEFAULT_CATEGORY_COUNTRY_CODES.map((c) => getDefaultCategories(c)),
   ];
-  return sets.flatMap((set) => [...set.income, ...set.expense]);
+  return sets.flatMap((set) => [
+    ...set.income,
+    ...set.expense,
+    ...set.transfer,
+  ]);
 }

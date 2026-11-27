@@ -154,6 +154,55 @@ describe("buildRankedTriviaFacts", () => {
     ).toEqual({ kind: "percent", value: 50 });
   });
 
+  it("reads the category share computed before rounding", () => {
+    const input = withReport(rankedInput("d90", 2), "d90", {
+      category: {
+        netSpending: true,
+        totalSpending: 2.49,
+        data: [
+          {
+            categoryId: "a",
+            categoryName: "Rent",
+            color: null,
+            total: 1.25,
+            percentage: 50,
+          },
+          {
+            categoryId: "b",
+            categoryName: "Food",
+            color: null,
+            total: 1.25,
+            percentage: 50,
+          },
+        ],
+      },
+    });
+    expect(
+      byId(input, "spendingTopCategoryWindow")?.figures.topCategoryPercent
+        .value,
+    ).toBe(50);
+    expect(
+      byId(input, "spendingRankedCategory")?.figures.rankedCategoryPercent
+        .value,
+    ).toBe(50);
+  });
+
+  it("omits ranked percentage facts for a mix of spending and refunds", () => {
+    const input = withReport(rankedInput("d90", 2), "d90", {
+      category: {
+        netSpending: true,
+        totalSpending: 100,
+        data: [
+          { categoryId: "a", categoryName: "Rent", color: null, total: 120 },
+          { categoryId: "b", categoryName: "Food", color: null, total: 10 },
+          { categoryId: "c", categoryName: "Clothes", color: null, total: -30 },
+        ],
+      },
+    });
+    expect(byId(input, "spendingTopCategoryWindow")).toBeUndefined();
+    expect(byId(input, "spendingRankedCategory")).toBeUndefined();
+  });
+
   it("gives no rank 3 fact when only two rows exist", () => {
     const two = withReport(rankedInput("d90", 3), "d90", {
       category: {

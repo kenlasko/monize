@@ -325,7 +325,7 @@
     "notAvailable": "N/D",
     "monthlyCashFlow": "Fluxo de Caixa Mensal",
     "inflowsByCategory": "Entradas por Categoria",
-    "outflowsByCategory": "Saídas por Categoria",
+    "outflowsByCategory": "Despesas por categoria após reembolsos",
     "noIncome": "Sem receitas neste período",
     "noExpenses": "Sem despesas neste período",
     "seriesInflows": "Entradas",
@@ -447,6 +447,7 @@
     "labelEndDate": "Data de Fim",
     "labelMetric": "Métrica",
     "labelDirection": "Direção",
+    "labelCategoryType": "Tipo de categoria",
     "checkboxTransfers": "Incluir transferências",
     "checkboxFavourites": "Adicionar aos favoritos",
     "sortByPlaceholder": "Padrão",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Valor Médio",
       "BUDGET_VARIANCE": "Variação do Orçamento"
     },
+    "categoryType": {
+      "ALL": "Todas",
+      "INCOME": "Receita",
+      "EXPENSE": "Despesa",
+      "UNCATEGORIZED": "Sem categoria"
+    },
     "direction": {
       "INCOME_ONLY": "Apenas Receitas",
       "EXPENSES_ONLY": "Apenas Despesas",
-      "BOTH": "Ambos"
+      "BOTH": "Ambos",
+      "INCOMING": "Entradas",
+      "OUTGOING": "Saídas"
     },
     "sortDirection": {
       "ASC": "Ascendente",
@@ -2045,6 +2054,7 @@
     "unknown": "Desconhecido",
     "knownPartOnly": "Só a parte que pôde ser convertida é desenhada.",
     "roundingNote": "O total de cada lado é arredondado uma única vez e distribuído entre seus fluxos, para que o diagrama feche exatamente. Por isso, uma categoria aqui pode diferir em um centavo, ou na menor unidade da sua moeda, da mesma categoria em Despesas por Categoria ou Receitas por Fonte, que arredondam cada categoria separadamente.",
+    "expenseRefund": "{category} (reembolso de despesas)",
     "netRefund": "Reembolso líquido: esta subcategoria recebeu mais do que gastou.",
     "excludedCount": "{count, plural, one {# valor não pôde ser convertido e ficou de fora dos números acima.} other {# valores não puderam ser convertidos e ficaram de fora dos números acima.}}",
     "noData": "Nenhuma renda, despesa ou transferência neste período",

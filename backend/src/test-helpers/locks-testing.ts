@@ -58,6 +58,8 @@ export function locksMockModule() {
     lockHoldingScope: jest.fn().mockResolvedValue(undefined),
     lockTokenFamily: jest.fn().mockResolvedValue(undefined),
     lockTransactionRuleList: jest.fn().mockResolvedValue(undefined),
+    lockCategoryOwnerShared: jest.fn().mockResolvedValue(undefined),
+    lockCategoryOwnerExclusive: jest.fn().mockResolvedValue(undefined),
     lockAccountsForBalanceWrite: jest.fn().mockResolvedValue(undefined),
     lockTransactionRow: jest.fn().mockResolvedValue(null),
     lockTransactionRows: jest.fn().mockResolvedValue(new Map()),

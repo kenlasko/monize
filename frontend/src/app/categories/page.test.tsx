@@ -334,6 +334,32 @@ describe('CategoriesPage', () => {
     });
   });
 
+  it('offers a Transfers filter only once a Transfer category exists, and counts it apart from expenses', async () => {
+    mockGetAll.mockResolvedValue(mockCategories);
+    const { unmount } = render(<CategoriesPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/Expenses \(3\)/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Transfers \(/)).not.toBeInTheDocument();
+    unmount();
+
+    mockGetAll.mockResolvedValue([
+      ...mockCategories,
+      { ...mockCategories[1], id: 'cat-t', name: 'Savings', categoryType: 'transfer', isIncome: false },
+    ]);
+    render(<CategoriesPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/Transfers \(1\)/)).toBeInTheDocument();
+    });
+    // The Transfer category is in no other filter's count.
+    expect(screen.getByText(/Expenses \(3\)/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Transfers \(1\)/));
+    await waitFor(() => {
+      expect(screen.getByTestId('category-cat-t')).toBeInTheDocument();
+      expect(screen.queryByTestId('category-cat-2')).not.toBeInTheDocument();
+    });
+  });
+
   it('renders search input', async () => {
     mockGetAll.mockResolvedValue(mockCategories);
     render(<CategoriesPage />);

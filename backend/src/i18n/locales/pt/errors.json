@@ -354,15 +354,20 @@
     "billCustomFrequency": "Uma regra de dedução salarial requer uma conta a pagar com frequência fixa; esta conta repete-se segundo um calendário personalizado."
   },
   "categories": {
-    "reassignOwnerOnly": "Só o proprietário pode mover transações para outra categoria",
     "notFound": "Categoria com ID {{ id }} não encontrada",
     "cannotModifySystem": "Não é possível modificar categorias do sistema",
     "selfParent": "A categoria não pode ser a sua própria categoria-mãe",
     "circularParent": "Referência circular de categoria-mãe detetada",
     "cannotDeleteSystem": "Não é possível eliminar categorias do sistema",
     "hasSubcategories": "Não é possível eliminar a categoria com subcategorias. Elimine ou reatribua as subcategorias primeiro.",
-    "inUse": "Não é possível eliminar a categoria \"{{ name }}\": ainda é usada por {{ summary }}. Reatribua-os ou remova-os primeiro.",
-    "alreadyHasCategories": "Não é possível importar predefinições: o utilizador já tem categorias. Elimine as categorias existentes primeiro ou comece do zero."
+    "alreadyHasCategories": "Não é possível importar predefinições: o utilizador já tem categorias. Elimine as categorias existentes primeiro ou comece do zero.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.",
+    "reassignOwnerOnly": "Só o proprietário pode mover transações para outra categoria",
+    "inUse": "Não é possível eliminar a categoria \"{{ name }}\": ainda é usada por {{ summary }}. Reatribua-os ou remova-os primeiro."
   },
   "common": {
     "invalidUuid": "UUID inválido: {{ id }}",
@@ -523,9 +528,6 @@
     "internal": "Erro interno do servidor"
   },
   "import": {
-    "duplicatesChanged": "Os possíveis duplicados mudaram desde que foram verificados. Nada foi importado; verifique novamente.",
-    "duplicateDecisionRepeated": "Uma linha do ficheiro só pode ter uma decisão sobre o seu possível duplicado.",
-    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser unida nem substituída, e uma transferência ou uma transação com parcelas não pode ser substituída. Nada foi importado.",
     "accountClosed": "A conta está encerrada. Reabra-a ou escolha outra conta.",
     "noAccountBlocks": "Nenhum bloco de conta encontrado no ficheiro QIF. Este ficheiro pode não ser uma exportação multi-conta.",
     "accountTypeRequired": "Escolha um tipo de conta para estas contas antes de importar: {{ accounts }}",
@@ -569,7 +571,10 @@
     "mnyJobNotFound": "Tarefa de importação não encontrada",
     "mnyFileTooLarge": "Este ficheiro do Money excede o limite de importação de {{ limit }} MB.",
     "noRateForSplitTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: uma linha dividida transfere para uma conta noutra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente.",
-    "noRateForTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: a outra conta da transferência está em outra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente."
+    "noRateForTransfer": "Não há taxa de câmbio para {{ pair }} em {{ date }}: a outra conta da transferência está em outra moeda. Adicione uma taxa de câmbio para esse par e essa data e importe novamente.",
+    "duplicatesChanged": "Os possíveis duplicados mudaram desde que foram verificados. Nada foi importado; verifique novamente.",
+    "duplicateDecisionRepeated": "Uma linha do ficheiro só pode ter uma decisão sobre o seu possível duplicado.",
+    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser unida nem substituída, e uma transferência ou uma transação com parcelas não pode ser substituída. Nada foi importado."
   },
   "monteCarlo": {
     "scenarioNotFound": "Cenário {{ id }} não encontrado",
@@ -652,7 +657,7 @@
     "updateSplitOverrideRequiresAmount": "O montante é obrigatório para substituição de parcela",
     "dateMustBeYMD": "date deve estar no formato YYYY-MM-DD",
     "loanLedgerUnreadable": "Não foi possível calcular este pagamento do empréstimo porque não foi possível ler o saldo do seu livro-razão. Tente novamente.",
-    "estimateRequiresPlain": "Um montante estimado só está disponível para uma transação de categoria única ou uma transferência na moeda da conta, não para uma divisão, um investimento ou um montante em moeda estrangeira",
+    "estimateRequiresPlain": "Um montante estimado só está disponível para uma transação de categoria única ou uma transferência, não para uma divisão ou um investimento",
     "estimateNoAutoPost": "Uma transação agendada com um montante estimado não pode ser lançada automaticamente",
     "overrideAutoPostNeedsAmount": "Uma ocorrência de uma transação agendada com um montante estimado só pode ser lançada automaticamente depois de introduzido o seu próprio montante",
     "estimateRequiresPayeeAndCategory": "Um montante estimado precisa de um beneficiário e de uma categoria para corresponder ao histórico de pagamentos",
@@ -1029,10 +1034,6 @@
     "needsPreview": "Abra a pré-visualização desta conta bancária e confirme a primeira importação antes de ser sincronizada automaticamente.",
     "selectionNotNew": "Uma transação selecionada não é uma linha nova dos dados do banco. Nada foi importado; volte a pré-visualizar.",
     "selectionOverlap": "Uma transação não pode ser importada e adicionada às exceções ao mesmo tempo.",
-    "selectionConflict": "Uma transação só pode ter uma decisão: importá-la, adicioná-la às exceções, uni-la, manter a sua ou substituir a sua.",
-    "duplicateNeedsPreview": "Uma decisão sobre um possível duplicado precisa da pré-visualização que o mostrou. Nada foi importado; volte a pré-visualizar.",
-    "selectionNotDuplicate": "Uma transação escolhida para unir, manter ou substituir já não é um possível duplicado. Nada foi importado; volte a pré-visualizar.",
-    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser unida nem substituída, e uma transferência ou uma transação com parcelas não pode ser substituída. Nada foi importado; mantenha a sua ou importe a linha do banco ao lado dela.",
     "nothingToUpdate": "Envie autoSync, notifySuccess ou tagOperationType para alterar uma ligação bancária.",
     "simplefinCredentialsMissing": "Conecte o SimpleFIN antes de sincronizar contas.",
     "simplefinAccessInvalid": "O SimpleFIN devolveu um URL de acesso inválido. Gere um novo token de configuração no SimpleFIN Bridge.",
@@ -1050,7 +1051,11 @@
     "simplefinSubscriptionRequired": "O SimpleFIN Bridge requer uma subscrição ativa. Verifique a faturação no SimpleFIN Bridge.",
     "simplefinReadFailed": "O SimpleFIN não forneceu os dados completos das contas. Verifique a ligação no SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "A quota de pedidos SimpleFIN foi esgotada. Aguarde a reposição e tente novamente o lote atual.",
-    "simplefinClaimNotSent": "O SimpleFIN está temporariamente indisponível. O token de configuração não foi enviado; tente mais tarde com o mesmo token."
+    "simplefinClaimNotSent": "O SimpleFIN está temporariamente indisponível. O token de configuração não foi enviado; tente mais tarde com o mesmo token.",
+    "selectionConflict": "Uma transação só pode ter uma decisão: importá-la, adicioná-la às exceções, uni-la, manter a sua ou substituir a sua.",
+    "duplicateNeedsPreview": "Uma decisão sobre um possível duplicado precisa da pré-visualização que o mostrou. Nada foi importado; volte a pré-visualizar.",
+    "selectionNotDuplicate": "Uma transação escolhida para unir, manter ou substituir já não é um possível duplicado. Nada foi importado; volte a pré-visualizar.",
+    "duplicateActionNotAllowed": "Uma transação reconciliada não pode ser unida nem substituída, e uma transferência ou uma transação com parcelas não pode ser substituída. Nada foi importado; mantenha a sua ou importe a linha do banco ao lado dela."
   },
   "warranties": {
     "notFound": "Garantia com ID {{ id }} não encontrada",

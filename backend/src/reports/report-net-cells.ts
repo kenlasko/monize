@@ -1,7 +1,11 @@
 import { FxAggregate } from "../common/fx-aggregate";
 import { ordinarySplitLines } from "../common/investment-filter.util";
 import { isNetSpending } from "../built-in-reports/spending-reports.service";
-import { DirectionFilter } from "./entities/custom-report.entity";
+import {
+  DirectionFilter,
+  MetricType,
+  type ReportConfig,
+} from "./entities/custom-report.entity";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 
@@ -19,12 +23,12 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
  *   (`isNetSpending`), so a refund lowers the cost and an income category is
  *   not a row;
  * - INCOME_ONLY reports `net` for a cell that is positive;
- * - BOTH reports the magnitude of each category's net, `Math.abs(net)`.
+ * - BOTH / TOTAL_AMOUNT keeps the signed net. For other grouped BOTH metrics
+ *   the magnitude of each category's net remains their calculation basis.
  *
- * Netted within one category, never across two: a group (a month, a payee, a
- * tag) sums its settled cells, so Groceries' refund cannot cancel Rent. A
- * transfer is not netted at all: each transfer line is a cell of its own, so a
- * -200 / +200 pair is two cells judged separately, never one cell of zero.
+ * Each group (a month, a payee, a tag) sums its settled cells. Each transfer
+ * leg is its own cell. Both in-scope legs of a consistently valued transfer
+ * cancel in a signed total and are judged separately for one-direction reports.
  *
  * A cell also remembers which "units" fed it, so a group's count is the number
  * of distinct units across its kept cells: a transaction counts once per group
@@ -35,7 +39,8 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
  * `wholeGroups` to their (group, category, currency) aggregates: keeping the
  * lines that converted would report a category whose debit is in and whose
  * refund, struck on a day with no rate, is out. The cell's other currencies
- * still net.
+ * still net. Signed totals apply that eligibility to the whole report before
+ * grouping, so regrouping cannot change the known part of a partial total.
  *
  * A provisional transfer leg (`amountIsProvisional`, an amount the importer
  * estimated) is in a figure exactly when its line converted and its part and
@@ -54,6 +59,8 @@ export interface NetLine {
   amount: number;
   /** What a group counts: the row, or the line when grouped by category. */
   unit: string;
+  /** Posting identity, independent of how its group counts a split parent. */
+  component: string;
   /** The row's currency, which `amount` is in. */
   currency: string;
   /** The split line this is, for a split parent; absent for a whole row. */
@@ -86,6 +93,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
         category,
         amount: Number(split.amount),
         unit: unitOf(index),
+        component: `${tx.id}:${index}`,
         currency: tx.currencyCode,
         split,
       };
@@ -99,6 +107,7 @@ export function netLinesOf(tx: Transaction, perLine: boolean): NetLine[] {
       category,
       amount: Number(tx.amount),
       unit: unitOf(0),
+      component: tx.id,
       currency: tx.currencyCode,
       ...(tx.amountIsProvisional === true ? { provisionalRow: tx.id } : {}),
     },
@@ -120,17 +129,51 @@ interface CellPart {
 /** One cell's parts, by the currency their lines are in. */
 type Cell = Map<string, CellPart>;
 
+export interface NetGroup {
+  agg: FxAggregate;
+  count: number;
+}
+
+export function isSignedTotal(
+  direction: DirectionFilter,
+  metric: MetricType,
+): boolean {
+  return (
+    direction !== DirectionFilter.EXPENSES_ONLY &&
+    direction !== DirectionFilter.INCOME_ONLY &&
+    metric === MetricType.TOTAL_AMOUNT
+  );
+}
+
+/** A signed net is not a parts-of-a-whole measure, just as on a BOTH transaction list. */
+export function shareDenominator(
+  groups: ReadonlyMap<string, NetGroup>,
+  config: ReportConfig,
+): FxAggregate | undefined {
+  if (isSignedTotal(config.direction, config.metric)) return undefined;
+  const amounts = Array.from(groups.values(), (group) => group.agg);
+  if (
+    config.metric === MetricType.BUDGET_VARIANCE &&
+    amounts.some((amount) => amount.sign < 0)
+  ) {
+    return undefined;
+  }
+  return FxAggregate.sum(amounts);
+}
+
 /** A report's cells for one execution; built per call, never shared. */
 export interface NetCells {
   /** Adds one line, already converted (signed), to its cell in `group`. */
   add(group: string, line: NetLine, converted: number | null): void;
   /** Each group's settled sum and count; a group with no kept cell is absent. */
-  settle(): Map<string, { agg: FxAggregate; count: number }>;
+  settle(
+    budgetCategoryIsIncome?: (id: string) => boolean | null | undefined,
+  ): Map<string, NetGroup>;
 }
 
 /**
- * @param keepsUnconverted whether a line with no rate still counts (the count
- *   metric); every money figure leaves it out of the sum and the count alike.
+ * @param metric determines whether cells contribute their signed value or a
+ *   magnitude and whether a line with no rate still counts (the count metric).
  * @param onLeftOut told, once, of each unit whose line converted but which no
  *   part kept, because every part it sits in holds a line with no rate, so the
  *   report counts it among what it left out; a line with no rate was already
@@ -140,11 +183,14 @@ export interface NetCells {
  */
 export function createNetCells(
   direction: DirectionFilter,
-  keepsUnconverted: boolean,
+  metric: MetricType,
   onLeftOut: (currency: string, unit: string) => void = () => undefined,
   onProvisional: (row: string) => void = () => undefined,
 ): NetCells {
   const groups = new Map<string, Map<string, Cell>>();
+  const signedTotal = isSignedTotal(direction, metric);
+  // Each category/currency has one eligibility decision for the signed total.
+  const incompleteCells = new Map<string, Set<string>>();
 
   const add = (
     group: string,
@@ -172,10 +218,16 @@ export function createNetCells(
       };
       cell.set(line.currency, part);
     }
-    if (converted === null) part.unconverted = true;
-    else {
+    if (converted === null) {
+      part.unconverted = true;
+      if (signedTotal) {
+        const missing = incompleteCells.get(line.currency) ?? new Set<string>();
+        missing.add(line.cell);
+        incompleteCells.set(line.currency, missing);
+      }
+    } else {
       part.agg.addConverted(converted);
-      part.convertedUnits.add(line.unit);
+      part.convertedUnits.add(signedTotal ? line.component : line.unit);
       if (line.provisionalRow !== undefined) {
         part.provisionalRows.add(line.provisionalRow);
       }
@@ -183,8 +235,8 @@ export function createNetCells(
     part.units.add(line.unit);
   };
 
-  const settle = (): Map<string, { agg: FxAggregate; count: number }> => {
-    const settled = new Map<string, { agg: FxAggregate; count: number }>();
+  const settle: NetCells["settle"] = (budgetCategoryIsIncome) => {
+    const settled = new Map<string, NetGroup>();
     // Units a part kept, and the converted units a part left out for want of
     // a rate elsewhere in it: a unit is left out only where no part kept it
     // (a row under two tags may leave one group and stay in the other).
@@ -193,14 +245,17 @@ export function createNetCells(
     // A provisional row in a sum, once however many groups hold it.
     const provisional = new Set<string>();
     for (const [group, cells] of groups) {
+      const isIncome = budgetCategoryIsIncome?.(group);
       const agg = new FxAggregate();
       const units = new Set<string>();
       let kept = false;
-      for (const cell of cells.values()) {
+      for (const [cellKey, cell] of cells) {
         // The count metric keeps every line; a money figure keeps only the
         // parts whose every line converted.
         const parts = [...cell.entries()].flatMap(([currency, part]) => {
-          if (keepsUnconverted || !part.unconverted) {
+          const incomplete =
+            part.unconverted || incompleteCells.get(currency)?.has(cellKey);
+          if (metric === MetricType.COUNT || !incomplete) {
             for (const unit of part.units) keptUnits.add(unit);
             return [part];
           }
@@ -222,8 +277,11 @@ export function createNetCells(
         } else if (direction === DirectionFilter.INCOME_ONLY) {
           if (!(net.sign > 0)) continue;
           spent = false;
+        } else if (metric === MetricType.BUDGET_VARIANCE && isIncome != null) {
+          // An expense budget measures cost: even a net credit is negated.
+          spent = !isIncome;
         } else {
-          spent = net.sign < 0;
+          spent = !signedTotal && net.sign < 0;
         }
         kept = true;
         if (spent) agg.mergeNegated(net);
@@ -236,7 +294,7 @@ export function createNetCells(
       if (kept) settled.set(group, { agg, count: units.size });
     }
     for (const [unit, currency] of leftOut) {
-      if (!keptUnits.has(unit)) onLeftOut(currency, unit);
+      if (signedTotal || !keptUnits.has(unit)) onLeftOut(currency, unit);
     }
     for (const row of provisional) onProvisional(row);
     return settled;

@@ -6,14 +6,14 @@
       "WANT": "Wünsche",
       "SAVING": "Ersparnisse"
     },
-    "target": "Ziel: {percent}%",
-    "budgeted": "Budgetiert: {percent}% ({amount})"
+    "target": "Ziel: {percent}",
+    "budgeted": "Budgetiert: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Bearbeiten: {name}",
     "budgetAmount": "Budget-Betrag",
     "rolloverType": "Übertragungsart",
-    "rolloverTypeTooltip": "Nicht genutztes Budget dieser Kategorie wird in die nächste Periode übertragen, statt zurückgesetzt zu werden. Überausgaben werden nie als Schuld übertragen, und eine Übertragungsgrenze begrenzt, wie viel sich ansammeln kann.",
+    "rolloverTypeTooltip": "Ein Überschuss in einer Ausgabenkategorie erhöht das Budget der nächsten Periode. Mehrausgaben verringern es. Die Übertragsgrenze gilt nur für Überschüsse.",
     "rolloverCap": "Übertragungsgrenze (optional)",
     "rolloverCapPlaceholder": "Keine Grenze",
     "flexGroup": "Flex-Gruppe (optional)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Ausgabenkategorien",
     "incomeCategories": "Einnahmenkategorien",
     "categorySublabel": "{count} Kategorien",
-    "rolloverBadge": "+{amount} Übertrag",
+    "rolloverBadge": "{amount} Übertrag",
     "underBudgetLabel": "{amount} unter Budget",
     "overBudgetLabel": "{amount} über Budget",
     "carriedForward": "{amount} übertragen",
@@ -151,8 +151,8 @@
     "projected": "{label} (Prognose)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% verwendet",
-    "paceMarkerTitle": "Erwartetes Tempo: {percent}%"
+    "ariaLabel": "{percent} verwendet",
+    "paceMarkerTitle": "Erwartetes Tempo: {percent}"
   },
   "scenarioPlanner": {
     "title": "Was-wäre-wenn-Szenarioplaner",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Aus Analyse geschätzt: {amount}/Monat",
     "defaultRolloverType": "Standard-Übertragungsart",
     "rolloverHint": "Legt den Standard für alle Kategorien fest. Sie können einzelne Kategorien nach der Budgeterstellung anpassen.",
-    "rolloverTooltip": "Nicht genutztes Budget einer Kategorie wird in die nächste Periode übertragen, statt zurückgesetzt zu werden. Überausgaben werden nie als Schuld übertragen, und eine Übertragungsgrenze begrenzt, wie viel sich für eine Kategorie ansammeln kann.",
+    "rolloverTooltip": "Ein Überschuss in einer Ausgabenkategorie erhöht das Budget der nächsten Periode. Mehrausgaben verringern es. Die Übertragsgrenze gilt nur für Überschüsse.",
     "rolloverOptions": {
       "NONE": "Kein -- Wird jede Periode zurückgesetzt",
       "MONTHLY": "Monatlich -- Wird jeden Monat übertragen",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Ein Prozentziel ist ein Anteil am Einkommen des Budgets: bei einem einkommensverknüpften Budget das in dieser Periode erhaltene Einkommen, sonst das Basiseinkommen, sonst die Beträge der Einkommenskategorien. Ein fester Betrag gilt in jeder Periode gleich.",
       "targetPercent": "Prozent des Einkommens",
       "targetAmount": "Betrag pro Periode",
-      "carryOver": "Rest übertragen",
-      "carryOverTooltip": "Was beim Abschluss einer Periode im Topf übrig bleibt, wird zur nächsten Periode addiert. Ein überzogener Topf überträgt nichts.",
+      "carryOver": "Saldo übertragen",
+      "carryOverTooltip": "Ein positiver Saldo erhöht die nächste Zuweisung für den Topf. Ein negativer Saldo verringert sie. Die Übertragsgrenze gilt nur für positive Salden.",
       "carryCap": "Übertragungsgrenze (optional)",
       "carryCapPlaceholder": "Keine Grenze",
       "save": "Speichern",

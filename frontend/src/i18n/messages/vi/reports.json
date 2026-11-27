@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "Lưu chuyển tiền hàng tháng",
     "inflowsByCategory": "Dòng tiền vào theo danh mục",
-    "outflowsByCategory": "Dòng tiền ra theo danh mục",
+    "outflowsByCategory": "Chi tiêu theo danh mục sau khi trừ tiền hoàn",
     "noIncome": "Không có thu nhập trong kỳ này",
     "noExpenses": "Không có chi phí trong kỳ này",
     "seriesInflows": "Dòng vào",
@@ -447,6 +447,7 @@
     "labelEndDate": "Ngày kết thúc",
     "labelMetric": "Chỉ số",
     "labelDirection": "Hướng",
+    "labelCategoryType": "Loại danh mục",
     "checkboxTransfers": "Bao gồm chuyển tiền",
     "checkboxFavourites": "Thêm vào mục yêu thích",
     "sortByPlaceholder": "Mặc định",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Số tiền trung bình",
       "BUDGET_VARIANCE": "Phương sai ngân sách"
     },
+    "categoryType": {
+      "ALL": "Tất cả",
+      "INCOME": "Thu nhập",
+      "EXPENSE": "Chi phí",
+      "UNCATEGORIZED": "Chưa phân loại"
+    },
     "direction": {
       "INCOME_ONLY": "Chỉ thu nhập",
       "EXPENSES_ONLY": "Chỉ chi phí",
-      "BOTH": "Cả hai"
+      "BOTH": "Cả hai",
+      "INCOMING": "Tiền vào",
+      "OUTGOING": "Tiền ra"
     },
     "sortDirection": {
       "ASC": "Tăng dần",
@@ -2045,6 +2054,7 @@
     "unknown": "Không xác định",
     "knownPartOnly": "Chỉ phần quy đổi được mới được vẽ.",
     "roundingNote": "Tổng của mỗi phía được làm tròn một lần rồi chia cho các dòng tiền của nó, nên biểu đồ khớp chính xác. Vì vậy, một danh mục ở đây có thể chênh một xu, hoặc đơn vị nhỏ nhất của tiền tệ của bạn, so với cùng danh mục đó trong Chi tiêu theo danh mục hoặc Thu nhập theo nguồn, nơi mỗi danh mục được làm tròn riêng.",
+    "expenseRefund": "{category} (hoàn tiền chi tiêu)",
     "netRefund": "Hoàn tiền ròng: danh mục con này nhận về nhiều hơn số đã chi.",
     "excludedCount": "{count, plural, other {# khoản tiền không thể quy đổi và bị loại khỏi các số liệu ở trên.}}",
     "noData": "Không có thu nhập, chi tiêu hoặc chuyển khoản trong kỳ này",

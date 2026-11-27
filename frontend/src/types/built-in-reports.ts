@@ -8,10 +8,14 @@ export interface CategorySpendingItem {
    * non-empty this is the part that converted.
    */
   total: number;
+  /** Share of the whole, calculated before monetary rounding when the categories form a composition. */
+  percentage?: number;
 }
 
 export interface SpendingByCategoryResponse {
-  /** Every net-spent category, largest first. The caller decides how many to draw. */
+  /** Signed category totals and server-calculated shares. Older responses omit this flag. */
+  netSpending?: true;
+  /** Every reported category, largest first. The caller decides how many to draw. */
   data: CategorySpendingItem[];
   /**
    * Total spent, or `null` when a row could not be converted -- a missing rate
@@ -48,6 +52,7 @@ export interface PayeeSpendingItem {
   payeeId: string | null;
   payeeName: string;
   total: number;
+  percentage?: number | null;
 }
 
 export interface SpendingByPayeeResponse {
@@ -79,7 +84,7 @@ export interface IncomeSourceItem {
    * the server from the unrounded figures (rule 8). Optional: an older backend
    * mid-deploy sends none.
    */
-  percentage?: number;
+  percentage?: number | null;
 }
 
 export interface IncomeBySourceResponse {
@@ -766,6 +771,7 @@ export interface CashFlowSankeyNode {
    */
   id: string;
   kind: CashFlowSankeyNodeKind;
+  expenseRefund?: boolean;
   label: string;
   categoryId: string | null;
   parentCategoryId: string | null;

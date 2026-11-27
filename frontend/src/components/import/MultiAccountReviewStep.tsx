@@ -40,7 +40,9 @@ export function MultiAccountReviewStep({
 }: MultiAccountReviewStepProps) {
   const t = useTranslations('import');
   const { categoryDefs, tagDefs = [], accounts, totalTransactionCount } = multiAccountData;
+  // income-flag-ok: the parsed file's own income/expense flag
   const incomeCategories = categoryDefs.filter((c) => c.isIncome);
+  // income-flag-ok: the parsed file's own income/expense flag
   const expenseCategories = categoryDefs.filter((c) => !c.isIncome);
   // The file names no type for these; the import is not offered until the
   // user has chosen one for each, rather than assume chequing.

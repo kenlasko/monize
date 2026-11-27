@@ -41,10 +41,15 @@ vi.mock('@/hooks/useWidgetConfig', () => ({
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
-  Pie: ({ data, onClick }: any) => (
+  Pie: ({ data, dataKey, onClick }: any) => (
     <div data-testid="pie" style={{ display: 'none' }}>
       {data?.map((d: any, i: number) => (
-        <button key={i} data-testid={`pie-slice-${d.name}`} onClick={() => onClick?.(d, i)} />
+        <button
+          key={i}
+          data-testid={`pie-slice-${d.name}`}
+          data-weight={typeof dataKey === 'function' ? dataKey(d) : d[dataKey]}
+          onClick={() => onClick?.(d, i)}
+        />
       ))}
     </div>
   ),
@@ -142,6 +147,37 @@ describe('ExpensesPieChart', () => {
     expect(screen.getByTestId('pie-slice-Transport')).toBeInTheDocument();
     expect(screen.getByText('Food')).toBeInTheDocument();
     expect(screen.getByText('Transport')).toBeInTheDocument();
+  });
+
+  it('draws the supplied shares even when the rounded currency amounts match', async () => {
+    await renderChart(report([
+      { ...category('one', 'First', 1), percentage: 50.2 },
+      { ...category('two', 'Second', 1), percentage: 49.8 },
+    ], { netSpending: true }));
+    expect(screen.getByTestId('pie-slice-First')).toHaveAttribute('data-weight', '50.2');
+    expect(screen.getByTestId('pie-slice-Second')).toHaveAttribute('data-weight', '49.8');
+  });
+
+  it('keeps every returned group visible for a refund-dominated period', async () => {
+    await renderChart(report([
+      category('cat1', 'Food', 30), category('cat2', 'Clothes', -50),
+      category('cat3', 'Travel', 0),
+    ], { netSpending: true }));
+    expect(screen.queryByTestId('pie-chart')).not.toBeInTheDocument();
+    for (const amount of ['$30.00', '$-50.00', '$0.00', '$-20.00']) {
+      expect(screen.getByText(amount)).toBeInTheDocument();
+    }
+    expect(screen.queryAllByText(/%/)).toHaveLength(0);
+  });
+
+  it('does not let the Other slice conceal a refund in an otherwise positive period', async () => {
+    const positive = Array.from({ length: 12 }, (_, i) => category(String(i), `Category ${i}`, 10));
+    await renderChart(report([...positive, category('credit', 'Clothes', -1)], { netSpending: true }));
+
+    expect(screen.queryByTestId('pie-chart')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Clothes/ })).toHaveTextContent('$-1.00');
+    expect(screen.getByText('$119.00')).toBeInTheDocument();
+    expect(screen.queryByText('Other')).not.toBeInTheDocument();
   });
 
   it('shows each category total beside its legend row', async () => {

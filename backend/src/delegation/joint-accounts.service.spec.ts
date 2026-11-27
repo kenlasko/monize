@@ -388,7 +388,9 @@ describe("JointAccountsService", () => {
 
       const result = await service.jointReferenceData(GRANTEE, ACCOUNT_ID);
 
-      expect(result.categories).toEqual([{ id: "c1", name: "Groceries" }]);
+      expect(result.categories).toEqual([
+        { id: "c1", name: "Groceries", isIncome: false },
+      ]);
       expect(result.payees).toEqual([{ id: "p1", name: "Metro" }]);
       expect(result.payeesCanCreate).toBe(true);
       expect(result.categoriesCanCreate).toBe(false);

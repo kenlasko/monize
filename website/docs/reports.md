@@ -76,10 +76,12 @@ The figures a report receives are worked out from the converted amounts themselv
 | Report | Description |
 |--------|-------------|
 | **Spending by Category** | See where your money goes with a breakdown of expenses by category over time |
-| **Spending by Payee** | Track how much you spend with each merchant or vendor over time |
+| **Spending by Payee** | See spending after refunds by merchant. A purchase of 100 and refund of 150 at the same merchant show −50. The total includes every qualifying merchant. |
 | **Monthly Spending Trend** | View your spending patterns month over month to identify trends |
 | **Monthly & Yearly Breakdown** | Expense and income by category, month by month or year by year, with subtotals, a total, and an average per month or per year. Choose **Monthly** or **Yearly** for the columns: the monthly view offers the 3M, 6M, 1Y and YTD ranges, the yearly view 2Y, 5Y, 10Y and All, and both take a **Custom** range. A yearly column covers whole calendar years, so 5Y shows the five years before the current one. A category with no parent and no subcategories is a line of its own, in alphabetical order among the parent categories. Spending recorded directly on a parent category is a row inside that parent's section, counted in its subtotal; only uncategorized transactions are left under **Other expenses** or **Other income**. Switches turn on **Summary only** (just the Summary at the bottom), **Include current month** (**Include current year** in the yearly view), **Show percentages**, and **Highlight deviations** (months or years well above or below the category's average). Transfers are listed separately, click **Income**, **Expenses**, or **Transfers** to fold that group down to its total, and a cell opens its transactions |
 | **Year Over Year Comparison** | Compare this year's income, expenses, and savings with up to four previous years |
+
+In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund.
 
 ![The Spending by Category report](images/report-spending-category.png)
 
@@ -90,12 +92,14 @@ The figures a report receives are worked out from the converted amounts themselv
 | Report | Description |
 |--------|-------------|
 | **Income vs Expenses** | Compare your income to expenses and track your savings rate over time |
-| **Income by Source** | Break down your income streams to understand where your money comes from |
+| **Income by Source** | See income after reversals by source. Receiving 100 and reversing 150 against the same source shows −50. An exact reversal leaves a visible zero row. |
 | **Cash Flow Statement** | Detailed view of money coming in and going out across all accounts |
 
 ![The Income vs Expenses report](images/report-income-expenses.png)
 
 #### Tag Breakdowns
+
+In **Cash Flow Statement**, **Spending After Refunds by Category** shows the net for each expense category. A 100 purchase and a 150 refund in the same category appear as −50 on screen and in the PDF. The cash inflow and outflow summaries still describe money moving in and out.
 
 **Income vs Expenses** and **Cash Flow Statement** can split their figures by a [tag key](tags.md#keyvalue-tags). Choose a key in **Break down by tag key** (for example `project`) and the report adds a breakdown with a tab for each of the key's values (and one for untagged rows), showing that value's income, expenses, tagged inflows and outflows, **Balance**, and **Balance %**. Tick **Include tagged transfers** to count transfers that carry the tag as well.
 
@@ -118,7 +122,7 @@ Payroll deductions with yearly maximums are tracked on the [Taxes](taxes.md) pag
 
 | Report | Description |
 |--------|-------------|
-| **Tax Summary** | Annual summary of tax-deductible expenses and taxable income, for reference |
+| **Tax Summary** | Annual summary of potentially deductible expenses and income. A refund of 150 against a deductible expense of 100 shows −50 in expenses and deductions. A reversal of 150 against income of 100 shows −50 in income. Uncategorized payments and receipts follow their movement direction |
 | **Payroll Deductions** | For each payroll deduction category, the year's total against its maximum, paycheque by paycheque, and every year on record. Pick the **Year** to show. Until you have set up a payroll deduction rule, it offers **Open Payroll Deductions** |
 
 ### Debt & Loans Reports
@@ -204,7 +208,7 @@ The **GEM Strategy** report follows the Global Equities Momentum strategy: at ea
 | **Spending Anomalies** | Detect unusually large transactions and spending spikes that need attention |
 | **Weekend vs Weekday Spending** | Analyze your spending patterns based on day of week to understand habits |
 | **Monthly Comparison** | Compare any month to the previous month across income, expenses, net worth, and investments |
-| **Cash Flow Sankey** | See where your money came from and where it went: income flowing into spending, savings, investments and debt payments, with what was left over or drawn from your balances. The **Detail** switch shows categories or subcategories; click a flow to open its transactions. Each side's total is shared out between its flows so the diagram adds up exactly, which can leave a category a cent off the same category in Spending by Category or Income by Source; the report says so under the diagram |
+| **Cash Flow Sankey** | See where your money came from and where it went: income flowing into spending, savings, investments and debt payments, with what was left over or drawn from your balances. A purchase of 100 and a refund of 150 show 50 coming in, labelled as an expense refund. A refund of 100 leaves a zero row in the table and exports. The **Detail** switch shows categories or subcategories; click a flow to open its transactions. Each side's total is shared out between its flows so the diagram adds up exactly, which can leave a category a cent off the same category in Spending by Category or Income by Source; the report says so under the diagram |
 | **Foreign Currency Transaction Fees** | Track the foreign-transaction fees charged by accounts that apply a conversion fee. See [Currency Management](currency-management.md#foreign-transaction-fees) |
 
 ![The Cash Flow Sankey report](images/report-cash-flow-sankey.png)
@@ -287,17 +291,40 @@ Create your own reports with flexible filtering, grouping, and visualization opt
 | | **Sort By** / **Sort Direction** | Default or any column, Ascending or Descending |
 | **Time Period** | **Timeframe** | Last 7 Days, Last 30 Days, Last Month, Last 3 Months, Last 6 Months, Last 12 Months, Last Year, Year to Date, or Custom Range (with **Start Date** and **End Date**) |
 | **Aggregation Options** | **Metric** | No Aggregation, Total Amount, Transaction Count, Average Amount, or Budget Variance |
-| | **Direction** | Income Only, Expenses Only, or Both |
+| | **Direction** | Both, Incoming, or Outgoing |
+| | **Category Type** | All, Income, Expense, or Uncategorized |
 | | **Include transfers** | Count transfers between your accounts |
 | | **Add to favourites** | Star the report as soon as it is created |
 
 Click **Create Report** to save it. It then appears on the Reports page under **Custom**.
 
-#### How Direction Affects Amounts
+#### Direction and Category Type
 
-- **Income Only** and **Expenses Only** show positive amounts: what came in, or what was spent. A refund lowers its category's spending.
-- **Both** with **No Grouping** and **No Aggregation** lists every matching transaction with its own sign: money coming into an account is positive, money leaving it is negative, and a refund stays positive even in an expense category. The headline is the **Net amount** of the listed rows. With **Include transfers** ticked it is the **Net cash movement**: a transfer between two accounts you both included shows as a negative and a positive row that cancel out, and a transfer with only one side in the report counts only that side. A transfer between accounts in two different currencies counts at the amounts it actually moved when one side is in your default currency: the other side converts to what was received or sent, even when only one of the two accounts is in the report, so both sides cancel out. Until the receiving side of an imported transfer is confirmed by importing that account's file or by choosing **Confirm amount** on it (until then the row carries an **Estimated amount** badge, and you can list such rows with `is:provisional`), the other side converts at the exchange rate of its own date instead, so the two sides can leave a difference. A transfer between two currencies that are both different from your default currency is the exception: each side is converted at the exchange rate of its own date, so the two sides can leave a small difference.
-- **Both** with **Total Amount** or **Average Amount**, or with **No Aggregation** and any grouping, adds up each category's net as a positive amount, so income and spending add together rather than cancel. The headline says so (*Total of unsigned category amounts*) so it is not mistaken for a net figure.
+**Direction** selects money moving into the account (Incoming), out of it (Outgoing), or in either direction (Both). **Category Type** selects postings by the type of their assigned category. Each line of a split transaction uses its own amount and category. You can combine the two filters. For example, **Incoming + Expense** selects refunds credited to expense categories.
+
+- With **No Grouping** and **No Aggregation**, the report lists individual postings with their signs. With **Include transfers** ticked it is the **Net cash movement**: a transfer between two accounts you both included shows as a negative and a positive row that cancel out, and a transfer with only one side in the report counts only that side. A transfer between accounts in two different currencies counts at the amounts it actually moved when one side is in your default currency: the other side converts to what was received or sent, even when only one of the two accounts is in the report, so both sides cancel out. Until the receiving side of an imported transfer is confirmed by importing that account's file or by choosing **Confirm amount** on it (until then the row carries an **Estimated amount** badge, and you can list such rows with `is:provisional`), the other side converts at the exchange rate of its own date instead, so the two sides can leave a difference. A transfer between two currencies that are both different from your default currency is the exception: each side is converted at the exchange rate of its own date, so the two sides can leave a small difference.
+- **Total Amount** shows the signed sum of the selected postings. Money coming in raises the total, and money going out lowers it. A purchase of 100 in September and its full refund in October show as −100 and +100 by month, with a total of 0 for both months. With **Include transfers**, the headline reads **Net cash movement** and each matching leg contributes its signed value. If a transaction appears under several tags, each tag shows its activity and the headline counts each underlying amount once.
+- **Both** with **Average Amount**, or with **No Aggregation** and a grouping, continues to use the magnitude of each category's net within the group.
+
+A signed pie uses cool colours for incoming amounts and warm colours for outgoing amounts. Its legend shows the signed value of every known row, including a cancellation at zero.
+
+#### Previously saved reports
+
+Your existing reports open with the following filters. An individual transaction list uses **No Grouping** and **No Aggregation** together. A grouped report using **No Aggregation** follows the aggregated-report rule.
+
+| Saved setting | Direction | Category Type |
+| --- | --- | --- |
+| Expenses Only, individual transaction list | Outgoing | All |
+| Income Only, individual transaction list | Incoming | All |
+| Expenses Only, aggregated report | Both | Expense |
+| Income Only, aggregated report | Both | Income |
+| Both, any layout | Both | All |
+
+The signs, totals, and transactions included can change. For a purchase of −100 and a refund of +30 in the same expense category, an outgoing transaction list shows the purchase at −100. A **Total Amount** report for expense categories includes both postings and shows −70. An uncategorized payment appears in the outgoing list and is excluded from the expense-category total.
+
+In a category-grouped **Budget Variance** report, an expense refund reduces the actual cost. With a budget of 100, a purchase of 100 and a refund of 150, actual spending is −50. The variance (actual spending minus budget) is −150.
+
+On the next run, a saved **Both / Total Amount** report uses the signed calculation without editing or resaving. For example, salary of +1,000 in one category, a purchase of −100 and a refund of +30 in another previously showed 1,070. The same report now shows 930. Sorting by amount can change the order of the rows. Signed totals have no percentage shares. A report previously sorted by percentage now sorts by signed amount in the same ascending or descending order. When an exchange rate is missing, each grouping withholds the same incomplete category and currency from the known subtotal.
 
 To see one report of everything that came in and went out for a set of categories, in date order, choose **No Grouping**, **No Aggregation** and **Both**, and filter by those categories.
 

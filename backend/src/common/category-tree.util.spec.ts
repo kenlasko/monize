@@ -56,7 +56,7 @@ describe("getAllCategoryIdsWithChildren", () => {
     await getAllCategoryIdsWithChildren(r, "u1", ["food"]);
     expect(r.find).toHaveBeenCalledWith({
       where: { userId: "u1" },
-      select: ["id", "parentId", "isIncome"],
+      select: ["id", "parentId", "categoryType"],
     });
   });
 });

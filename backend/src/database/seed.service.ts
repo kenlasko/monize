@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { categoryTypeFromIncomeFlag } from "../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import * as bcrypt from "bcryptjs";
@@ -232,9 +233,16 @@ export class SeedService {
     for (const cat of incomeCategories) {
       await withScopedDb(this.dataSource, (manager) =>
         manager.query(
-          `INSERT INTO categories (user_id, name, icon, color, is_income)
+          `INSERT INTO categories (user_id, name, icon, color, category_type)
          VALUES ($1, $2, $3, $4, $5)`,
-          [userId, cat.name, cat.icon, cat.color, cat.isIncome],
+          [
+            userId,
+            cat.name,
+            cat.icon,
+            cat.color,
+            // income-flag-ok: the seed list's own flag
+            categoryTypeFromIncomeFlag(cat.isIncome),
+          ],
         ),
       );
       categoryCount++;
@@ -244,10 +252,10 @@ export class SeedService {
     for (const cat of expenseCategories) {
       const parentResult = await withScopedDb(this.dataSource, (manager) =>
         manager.query(
-          `INSERT INTO categories (user_id, name, icon, color, is_income)
+          `INSERT INTO categories (user_id, name, icon, color, category_type)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id`,
-          [userId, cat.name, cat.icon, cat.color, false],
+          [userId, cat.name, cat.icon, cat.color, "expense"],
         ),
       );
       categoryCount++;
@@ -258,9 +266,9 @@ export class SeedService {
       for (const subName of cat.subcategories) {
         await withScopedDb(this.dataSource, (manager) =>
           manager.query(
-            `INSERT INTO categories (user_id, parent_id, name, is_income)
+            `INSERT INTO categories (user_id, parent_id, name, category_type)
            VALUES ($1, $2, $3, $4)`,
-            [userId, parentId, subName, false],
+            [userId, parentId, subName, "expense"],
           ),
         );
         categoryCount++;

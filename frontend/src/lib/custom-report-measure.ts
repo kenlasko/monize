@@ -4,16 +4,9 @@ import { DirectionFilter, GroupByType, MetricType, type CustomReport } from '@/t
  * What a custom report's headline measures, when a plain "Total" would not say
  * (discussion #1978). The server decides the figures; this only names them.
  *
- * - `netAmount` / `netCashMovement`: an ungrouped list of transactions in both
- *   directions keeps each row's sign, so its total is the signed net of the
- *   listed rows. With transfers included, a transfer leg is in that sum, so it
- *   is cash movement rather than income less expenses (INV-REPORT-003).
- * - `unsignedTotal` / `unsignedAverage`: an aggregate in both directions adds
- *   the magnitude of each category's net (INV-REPORT-004), so income and
- *   spending add up instead of cancelling. A grouped No Aggregation report is
- *   one of these: the server sums each group's cells, it lists no rows.
- * - `null`: one direction, a count or a budget variance, where "Total" is
- *   already accurate.
+ * Signed totals and individual posting lists keep the sign of each movement.
+ * With transfers included, their net measures cash movement (INV-REPORT-003).
+ * Average and grouped No Aggregation retain their unsigned measure.
  */
 export type CustomReportMeasure =
   | 'netAmount'
@@ -26,27 +19,27 @@ type MeasureReport = Pick<CustomReport, 'groupBy'> & {
 };
 
 /**
- * A list of transactions in both directions, whose rows keep their signs. Only
- * the ungrouped No Aggregation report lists rows; grouped, the same metric
- * returns one unsigned cell per group (`aggregateNoGrouping` in
- * backend/src/reports/reports.service.ts is the only path that signs).
+ * Only ungrouped No Aggregation lists individual signed transactions.
  */
 export function isSignedTransactionList({ groupBy, config }: MeasureReport): boolean {
   return (
     groupBy === GroupByType.NONE &&
     config.metric === MetricType.NONE &&
-    config.direction === DirectionFilter.BOTH
+    config.direction !== DirectionFilter.EXPENSES_ONLY &&
+    config.direction !== DirectionFilter.INCOME_ONLY
   );
 }
 
-export function customReportMeasure(report: MeasureReport): CustomReportMeasure | null {
+export function customReportMeasure(report: MeasureReport, signedTotal = false): CustomReportMeasure | null {
   const { config } = report;
-  if (config.direction !== DirectionFilter.BOTH) return null;
+  if (config.direction === DirectionFilter.EXPENSES_ONLY || config.direction === DirectionFilter.INCOME_ONLY) return null;
+  if ((config.metric === MetricType.TOTAL_AMOUNT && signedTotal) || isSignedTransactionList(report)) {
+    return config.includeTransfers ? 'netCashMovement' : 'netAmount';
+  }
   switch (config.metric) {
     case MetricType.NONE:
-      if (!isSignedTransactionList(report)) return 'unsignedTotal';
-      return config.includeTransfers ? 'netCashMovement' : 'netAmount';
     case MetricType.TOTAL_AMOUNT:
+      // Grouped No Aggregation and Total Amount from older servers are unsigned.
       return 'unsignedTotal';
     case MetricType.AVERAGE:
       return 'unsignedAverage';

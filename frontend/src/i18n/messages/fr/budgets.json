@@ -6,14 +6,14 @@
       "WANT": "Envies",
       "SAVING": "Épargne"
     },
-    "target": "Cible : {percent}%",
-    "budgeted": "Budgété : {percent}% ({amount})"
+    "target": "Cible : {percent}",
+    "budgeted": "Budgété : {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Modifier : {name}",
     "budgetAmount": "Montant du budget",
     "rolloverType": "Type de report",
-    "rolloverTypeTooltip": "Le budget inutilisé de cette catégorie est reporté sur la période suivante plutôt que remis à zéro. Le dépassement n'est jamais reporté comme une dette, et un plafond de report limite ce qui peut être accumulé.",
+    "rolloverTypeTooltip": "Un excédent dans une catégorie de dépenses augmente le budget de la période suivante. Un dépassement le réduit. Le plafond de report s’applique uniquement à un excédent.",
     "rolloverCap": "Plafond de report (facultatif)",
     "rolloverCapPlaceholder": "Sans plafond",
     "flexGroup": "Groupe flexible (facultatif)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Catégories de dépenses",
     "incomeCategories": "Catégories de revenus",
     "categorySublabel": "{count} catégories",
-    "rolloverBadge": "+{amount} de report",
+    "rolloverBadge": "{amount} de report",
     "underBudgetLabel": "{amount} sous le budget",
     "overBudgetLabel": "{amount} de dépassement",
     "carriedForward": "{amount} reporté",
@@ -151,8 +151,8 @@
     "projected": "{label} (Projetée)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% utilisé",
-    "paceMarkerTitle": "Rythme prévu : {percent}%"
+    "ariaLabel": "{percent} utilisé",
+    "paceMarkerTitle": "Rythme prévu : {percent}"
   },
   "scenarioPlanner": {
     "title": "Planificateur de scénarios hypothétiques",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Estimé depuis l'analyse : {amount}/mois",
     "defaultRolloverType": "Type de report par défaut",
     "rolloverHint": "Cela définit la valeur par défaut pour toutes les catégories. Vous pouvez personnaliser les catégories individuelles après la création du budget.",
-    "rolloverTooltip": "Le budget inutilisé d'une catégorie est reporté sur la période suivante plutôt que remis à zéro. Le dépassement n'est jamais reporté comme une dette, et un plafond de report limite ce qu'une catégorie peut accumuler.",
+    "rolloverTooltip": "Un excédent dans une catégorie de dépenses augmente le budget de la période suivante. Un dépassement le réduit. Le plafond de report s’applique uniquement à un excédent.",
     "rolloverOptions": {
       "NONE": "Aucun -- Réinitialise chaque période",
       "MONTHLY": "Mensuel -- Reporté chaque mois",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Un objectif en pourcentage est une part des revenus du budget : les revenus reçus sur cette période pour un budget lié aux revenus, sinon le revenu de base, sinon les montants des catégories de revenus. Un montant fixe est identique à chaque période.",
       "targetPercent": "Pourcentage des revenus",
       "targetAmount": "Montant par période",
-      "carryOver": "Reporter ce qui reste",
-      "carryOverTooltip": "Ce qui reste dans l'enveloppe à la clôture d'une période est ajouté à la période suivante. Une enveloppe en dépassement ne reporte rien.",
+      "carryOver": "Reporter le solde",
+      "carryOverTooltip": "Un solde positif augmente le montant alloué à l’enveloppe pour la période suivante. Un solde négatif le réduit. Le plafond de report s’applique uniquement à un solde positif.",
       "carryCap": "Plafond de report (facultatif)",
       "carryCapPlaceholder": "Sans plafond",
       "save": "Enregistrer",

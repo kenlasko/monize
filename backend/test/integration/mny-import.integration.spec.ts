@@ -426,9 +426,10 @@ describe("mny writers (integration)", () => {
       const bonus = rows.find((row) => row.name === "Bonus")!;
       const rent = rows.find((row) => row.name === "Rent")!;
       expect(bonus.parentId).toBe(salary.id);
-      expect(salary.isIncome).toBe(true);
-      // The QIF entity creator hardcodes isIncome false; this pipeline must not.
-      expect(rent.isIncome).toBe(false);
+      // The type is what the writer stores; the legacy flag is the trigger's.
+      expect(salary.categoryType).toBe("income");
+      // The QIF entity creator hardcodes expense; this pipeline must not.
+      expect(rent.categoryType).toBe("expense");
     });
 
     it("reuses an existing category with the same name and parent", async () => {

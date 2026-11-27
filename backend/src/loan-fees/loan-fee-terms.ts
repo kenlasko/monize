@@ -1,5 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
 import { EntityManager, In } from "typeorm";
+import { assertCategoriesTakeCategoryRows } from "../categories/category-fit";
 import { Category } from "../categories/entities/category.entity";
 import { tr } from "../i18n/translate";
 import {
@@ -87,6 +88,9 @@ export async function assertLoanFeeCategories(
       ),
     );
   }
+  // A fee's line is a category line, which refuses a Transfer category
+  // (INV-CATEGORY-001).
+  await assertCategoriesTakeCategoryRows(m, userId, ids);
 }
 
 /** One fee's line of a new template: unsigned amount, memo the fee's name. */

@@ -354,15 +354,20 @@
     "billCustomFrequency": "Aturan potongan gaji memerlukan tagihan dengan frekuensi tetap; tagihan ini berulang menurut jadwal kustom."
   },
   "categories": {
-    "reassignOwnerOnly": "Hanya pemilik yang dapat memindahkan transaksi ke kategori lain",
     "notFound": "Kategori dengan ID {{ id }} tidak ditemukan",
     "cannotModifySystem": "Tidak dapat mengubah kategori sistem",
     "selfParent": "Kategori tidak dapat menjadi induk dari dirinya sendiri",
     "circularParent": "Referensi induk melingkar terdeteksi",
     "cannotDeleteSystem": "Tidak dapat menghapus kategori sistem",
     "hasSubcategories": "Tidak dapat menghapus kategori yang memiliki subkategori. Hapus atau pindahkan subkategori terlebih dahulu.",
-    "inUse": "Kategori \"{{ name }}\" tidak dapat dihapus: masih digunakan oleh {{ summary }}. Tetapkan ulang atau hapus semuanya terlebih dahulu.",
-    "alreadyHasCategories": "Tidak dapat mengimpor default: pengguna sudah memiliki kategori. Hapus kategori yang ada terlebih dahulu atau mulai dari awal."
+    "alreadyHasCategories": "Tidak dapat mengimpor default: pengguna sudah memiliki kategori. Hapus kategori yang ada terlebih dahulu atau mulai dari awal.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.",
+    "reassignOwnerOnly": "Hanya pemilik yang dapat memindahkan transaksi ke kategori lain",
+    "inUse": "Kategori \"{{ name }}\" tidak dapat dihapus: masih digunakan oleh {{ summary }}. Tetapkan ulang atau hapus semuanya terlebih dahulu."
   },
   "common": {
     "invalidUuid": "UUID tidak valid: {{ id }}",
@@ -523,9 +528,6 @@
     "internal": "Kesalahan server internal"
   },
   "import": {
-    "duplicatesChanged": "Kemungkinan duplikat telah berubah sejak diperiksa. Tidak ada yang diimpor; periksa lagi.",
-    "duplicateDecisionRepeated": "Satu baris file hanya dapat memiliki satu keputusan tentang kemungkinan duplikatnya.",
-    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor.",
     "accountClosed": "Akun ditutup. Buka kembali atau pilih akun lain.",
     "noAccountBlocks": "Tidak ada blok akun yang ditemukan dalam file QIF. File ini mungkin bukan ekspor multi-akun.",
     "accountTypeRequired": "Pilih jenis akun untuk akun-akun ini sebelum mengimpor: {{ accounts }}",
@@ -569,7 +571,10 @@
     "mnyJobNotFound": "Tugas impor tidak ditemukan",
     "mnyFileTooLarge": "Berkas Money itu lebih besar dari batas impor {{ limit }} MB.",
     "noRateForSplitTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: sebuah baris pecahan mentransfer ke akun dengan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi.",
-    "noRateForTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: akun lain dari transfer ini menggunakan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi."
+    "noRateForTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: akun lain dari transfer ini menggunakan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi.",
+    "duplicatesChanged": "Kemungkinan duplikat telah berubah sejak diperiksa. Tidak ada yang diimpor; periksa lagi.",
+    "duplicateDecisionRepeated": "Satu baris file hanya dapat memiliki satu keputusan tentang kemungkinan duplikatnya.",
+    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor."
   },
   "monteCarlo": {
     "scenarioNotFound": "Skenario {{ id }} tidak ditemukan",
@@ -652,7 +657,7 @@
     "updateSplitOverrideRequiresAmount": "Jumlah diperlukan untuk penggantian terbagi",
     "dateMustBeYMD": "tanggal harus dalam format YYYY-MM-DD",
     "loanLedgerUnreadable": "Pembayaran pinjaman ini tidak dapat dihitung karena saldo buku besarnya tidak dapat dibaca. Coba lagi.",
-    "estimateRequiresPlain": "Jumlah perkiraan hanya tersedia untuk transaksi satu kategori atau transfer dalam mata uang akun, bukan untuk pecahan, investasi, atau jumlah mata uang asing",
+    "estimateRequiresPlain": "Jumlah perkiraan hanya tersedia untuk transaksi satu kategori atau transfer, bukan untuk pecahan atau investasi",
     "estimateNoAutoPost": "Transaksi terjadwal dengan jumlah perkiraan tidak dapat diposting secara otomatis",
     "overrideAutoPostNeedsAmount": "Kemunculan transaksi terjadwal dengan jumlah perkiraan hanya dapat diposting secara otomatis setelah jumlahnya sendiri dimasukkan",
     "estimateRequiresPayeeAndCategory": "Jumlah perkiraan memerlukan penerima dan kategori untuk mencocokkan riwayat pembayaran",
@@ -1029,10 +1034,6 @@
     "needsPreview": "Buka pratinjau untuk akun bank ini dan konfirmasikan impor pertama sebelum disinkronkan secara otomatis.",
     "selectionNotNew": "Transaksi yang dipilih bukan baris baru dari data bank. Tidak ada yang diimpor; pratinjau lagi.",
     "selectionOverlap": "Sebuah transaksi tidak bisa diimpor sekaligus ditambahkan ke pengecualian.",
-    "selectionConflict": "Satu transaksi hanya dapat memiliki satu keputusan: impor, tambahkan ke pengecualian, gabungkan, simpan milik Anda, atau ganti milik Anda.",
-    "duplicateNeedsPreview": "Keputusan tentang kemungkinan duplikat memerlukan pratinjau yang menampilkannya. Tidak ada yang diimpor; buat pratinjau lagi.",
-    "selectionNotDuplicate": "Transaksi yang dipilih untuk digabungkan, disimpan, atau diganti tidak lagi merupakan kemungkinan duplikat. Tidak ada yang diimpor; buat pratinjau lagi.",
-    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor; simpan transaksi itu atau impor baris dari bank di sampingnya.",
     "nothingToUpdate": "Kirim autoSync, notifySuccess atau tagOperationType untuk mengubah koneksi bank.",
     "simplefinCredentialsMissing": "Hubungkan SimpleFIN sebelum menyinkronkan rekening.",
     "simplefinAccessInvalid": "SimpleFIN mengembalikan URL akses yang tidak valid. Buat token penyiapan baru di SimpleFIN Bridge.",
@@ -1050,7 +1051,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge memerlukan langganan aktif. Periksa penagihan di SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN tidak dapat menyediakan data rekening lengkap. Periksa koneksi di SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Kuota permintaan SimpleFIN habis. Tunggu hingga kuota tersedia kembali lalu coba ulang kelompok saat ini.",
-    "simplefinClaimNotSent": "SimpleFIN sementara tidak tersedia. Token penyiapan belum dikirim; coba lagi nanti dengan token yang sama."
+    "simplefinClaimNotSent": "SimpleFIN sementara tidak tersedia. Token penyiapan belum dikirim; coba lagi nanti dengan token yang sama.",
+    "selectionConflict": "Satu transaksi hanya dapat memiliki satu keputusan: impor, tambahkan ke pengecualian, gabungkan, simpan milik Anda, atau ganti milik Anda.",
+    "duplicateNeedsPreview": "Keputusan tentang kemungkinan duplikat memerlukan pratinjau yang menampilkannya. Tidak ada yang diimpor; buat pratinjau lagi.",
+    "selectionNotDuplicate": "Transaksi yang dipilih untuk digabungkan, disimpan, atau diganti tidak lagi merupakan kemungkinan duplikat. Tidak ada yang diimpor; buat pratinjau lagi.",
+    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor; simpan transaksi itu atau impor baris dari bank di sampingnya."
   },
   "warranties": {
     "notFound": "Garansi dengan ID {{ id }} tidak ditemukan",

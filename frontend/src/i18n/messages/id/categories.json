@@ -17,7 +17,9 @@
     "summaryIncome": "Kategori Pendapatan",
     "summaryExpense": "Kategori Pengeluaran",
     "summaryTopLevel": "Tingkat Atas",
-    "eyebrow": "Bagan kategori"
+    "eyebrow": "Bagan kategori",
+    "filterTransfers": "Transfers ({count})",
+    "summaryTransfer": "Transfer Categories"
   },
   "empty": {
     "heading": "Belum ada kategori",
@@ -70,7 +72,8 @@
     "iconNone": "Tanpa ikon",
     "descriptionLabel": "Deskripsi (opsional)",
     "submitCreate": "Buat Kategori",
-    "submitUpdate": "Perbarui Kategori"
+    "submitUpdate": "Perbarui Kategori",
+    "typeTransfer": "Transfer"
   },
   "list": {
     "emptyHeading": "Tidak ada kategori ditemukan",
@@ -84,7 +87,8 @@
     "badgeExpense": "Pengeluaran",
     "systemBadge": "(Sistem)",
     "inheritedColorTitle": "Diwarisi dari induk",
-    "viewTransactionsTitle": "Lihat transaksi dalam kategori ini"
+    "viewTransactionsTitle": "Lihat transaksi dalam kategori ini",
+    "badgeTransfer": "Transfer"
   },
   "deleteDialog": {
     "title": "Hapus \"{name}\"",

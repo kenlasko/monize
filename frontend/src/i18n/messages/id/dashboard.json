@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Terakhir kali Anda berbelanja di {sincePayeeName} adalah pada {sincePayeeDay}, {sincePayeeDays} yang lalu.",
       "activityBillsDueThisWeek": "Tagihan yang jatuh tempo dalam tujuh hari ke depan: {billsDueCount}, totalnya {billsDueTotal}.",
       "activityNextBill": "Tagihan Anda berikutnya adalah {nextBillName}, sebesar {nextBillAmount}, jatuh tempo {nextBillDate}.",
-      "spendingBudgetPace": "Anda telah memakai {budgetUsedPercent} dari anggaran {budgetName} ({budgetSpent} dari {budgetTotal}), saat bulan ini sudah berjalan {budgetMonthPercent}.",
+      "spendingBudgetPace": "{budgetName} — Pengeluaran bersih: {budgetSpent} ({budgetUsedPercent}). Anggaran: {budgetTotal}. Bulan berjalan: {budgetMonthPercent}.",
       "investmentsTopMoverUp": "Pergerakan terbesar Anda pada {moverSession} adalah {moverSymbol}, naik {moverPercent}, yang menambah {moverValueChange} pada posisi Anda.",
       "investmentsTopMoverDown": "Pergerakan terbesar Anda pada {moverSession} adalah {moverSymbol}, turun {moverPercent}, yang mengurangi {moverValueChange} dari posisi Anda.",
       "activityAnniversary": "Minggu ini genap {anniversaryYears} sejak transaksi pertama Anda di Monize, pada {anniversaryFirstDate}.",
@@ -272,8 +272,8 @@
         "c": "Jatuh tempo {nextBillDate}, tagihan Anda berikutnya adalah {nextBillName} sebesar {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "Saat bulan ini sudah berjalan {budgetMonthPercent}, Anda telah membelanjakan {budgetSpent} dari anggaran {budgetName} sebesar {budgetTotal}, atau {budgetUsedPercent}.",
-        "c": "Anggaran {budgetName} Anda terpakai {budgetUsedPercent} ({budgetSpent} dari {budgetTotal}), dan bulan ini sudah berjalan {budgetMonthPercent}."
+        "b": "{budgetName} — Anggaran: {budgetTotal}. Pengeluaran bersih: {budgetSpent} ({budgetUsedPercent}). Bulan berjalan: {budgetMonthPercent}.",
+        "c": "{budgetName} — Bulan berjalan: {budgetMonthPercent}. Anggaran: {budgetTotal}. Pengeluaran bersih: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSymbol} adalah pergerakan terbesar di portofolio Anda pada {moverSession}: naik {moverPercent}, menambah {moverValueChange} pada posisi Anda.",

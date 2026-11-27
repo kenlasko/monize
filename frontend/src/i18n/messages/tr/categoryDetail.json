@@ -16,7 +16,8 @@
     "switchCategory": "Başka bir kategoriye geç",
     "switchPlaceholder": "Kategorileri filtrele...",
     "switchNoMatches": "Eşleşen kategori yok",
-    "since": "{date} tarihinden beri kategori"
+    "since": "{date} tarihinden beri kategori",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "Bu Yıl Harcanan",
@@ -29,7 +30,8 @@
     "sinceYear": "{year} yılından beri",
     "lastTransaction": "Son İşlem",
     "convertedNote": "{currency} birimine çevrildi",
-    "partialRatesNote": "Bazı aylar için döviz kuru yok"
+    "partialRatesNote": "Bazı aylar için döviz kuru yok",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "En Çok Kullanılan Alacaklılar",
@@ -77,7 +79,8 @@
     "largestValue": "{date} tarihinde {amount}",
     "defaultFor": "Şunların Varsayılan Kategorisi",
     "defaultForMore": "+{count} daha",
-    "description": "Açıklama"
+    "description": "Açıklama",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "Kategori bölümleri",

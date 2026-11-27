@@ -49,7 +49,9 @@
     "editAria": "Chỉnh sửa danh mục",
     "collapseAria": "Ẩn thông tin danh mục",
     "show": "Hiển thị thông tin danh mục",
-    "amountUnavailable": "Không có tỷ giá"
+    "amountUnavailable": "Không có tỷ giá",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Số tiền còn lại",

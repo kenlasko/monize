@@ -84,7 +84,7 @@
     "labelBudgeted": "Ngân sách",
     "labelSpent": "Đã chi",
     "labelRemaining": "Còn lại",
-    "percentUsed": "Đã dùng {{ percent }}%",
+    "percentUsed": "Đã dùng {{ percent }}",
     "topCategories": "Danh mục hàng đầu",
     "button": "Xem bảng điều khiển ngân sách"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "Nhóm linh hoạt “{{ group }}” đã sử dụng {{ spent }} trong tổng ngân sách {{ budgeted }} ({{ percent }}%).",
       "incomeTitle": "Thu nhập thấp hơn dự kiến",
       "incomeMessage": "Thu nhập thực tế của bạn ({{ actual }}) bằng {{ ratio }}% thu nhập dự kiến ({{ expected }}) tại thời điểm này của kỳ.",
+      "netActivityTitle": "Tình hình ngân sách",
+      "netSpendingMessage": "Chi tiêu ròng: {{ spent }}. Ngân sách: {{ budgeted }}.",
+      "netIncomeMessage": "Thu nhập ròng: {{ actual }}. Thu nhập dự kiến đến nay: {{ expected }}.",
       "milestoneTitle": "Ngân sách đang đúng kế hoạch",
       "milestoneMessage": "Đã qua {{ progress }}% kỳ và bạn mới sử dụng {{ percent }}% tổng ngân sách. Hãy tiếp tục phát huy!",
       "seasonalTitle": "Dự kiến chi tiêu cho {{ category }} tăng theo mùa",

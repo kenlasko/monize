@@ -325,7 +325,7 @@
     "notAvailable": "[XX-N/A-XX]",
     "monthlyCashFlow": "[XX-Monthly Cash Flow-XX]",
     "inflowsByCategory": "[XX-Inflows by Category-XX]",
-    "outflowsByCategory": "[XX-Outflows by Category-XX]",
+    "outflowsByCategory": "[XX-Spending After Refunds by Category-XX]",
     "noIncome": "[XX-No income in this period-XX]",
     "noExpenses": "[XX-No expenses in this period-XX]",
     "seriesInflows": "[XX-Inflows-XX]",
@@ -447,6 +447,7 @@
     "labelEndDate": "[XX-End Date-XX]",
     "labelMetric": "[XX-Metric-XX]",
     "labelDirection": "[XX-Direction-XX]",
+    "labelCategoryType": "[XX-Category Type-XX]",
     "checkboxTransfers": "[XX-Include transfers-XX]",
     "checkboxFavourites": "[XX-Add to favourites-XX]",
     "sortByPlaceholder": "[XX-Default-XX]",
@@ -1969,7 +1970,15 @@
       "AVERAGE": "[XX-Average Amount-XX]",
       "BUDGET_VARIANCE": "[XX-Budget Variance-XX]"
     },
+    "categoryType": {
+      "ALL": "[XX-All-XX]",
+      "INCOME": "[XX-Income-XX]",
+      "EXPENSE": "[XX-Expense-XX]",
+      "UNCATEGORIZED": "[XX-Uncategorized-XX]"
+    },
     "direction": {
+      "INCOMING": "[XX-Incoming-XX]",
+      "OUTGOING": "[XX-Outgoing-XX]",
       "INCOME_ONLY": "[XX-Income Only-XX]",
       "EXPENSES_ONLY": "[XX-Expenses Only-XX]",
       "BOTH": "[XX-Both-XX]"
@@ -2045,6 +2054,7 @@
     "unknown": "[XX-Unknown-XX]",
     "knownPartOnly": "[XX-Only the part that could be converted is drawn.-XX]",
     "roundingNote": "[XX-Each side's total is rounded once and shared out between its flows, so the diagram adds up exactly. A category here can therefore differ by one cent, or the smallest unit of your currency, from the same category in Spending by Category or Income by Source, which round each category on its own.-XX]",
+    "expenseRefund": "[XX-{category} (expense refund)-XX]",
     "netRefund": "[XX-Net refund: this subcategory took in more than it spent.-XX]",
     "excludedCount": "[XX-{count, plural, one {# amount could not be converted and is left out of the figures above.} other {# amounts could not be converted and are left out of the figures above.}}-XX]",
     "noData": "[XX-No income, spending or transfers in this period-XX]",

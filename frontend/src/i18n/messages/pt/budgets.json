@@ -6,14 +6,14 @@
       "WANT": "Desejos",
       "SAVING": "Poupanças"
     },
-    "target": "Meta: {percent}%",
-    "budgeted": "Orçamentado: {percent}% ({amount})"
+    "target": "Meta: {percent}",
+    "budgeted": "Orçamentado: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Editar: {name}",
     "budgetAmount": "Montante do Orçamento",
     "rolloverType": "Tipo de Transição",
-    "rolloverTypeTooltip": "O orçamento não utilizado desta categoria transita para o período seguinte em vez de ser reiniciado. O excesso de despesa nunca transita como dívida, e um Limite de Transição limita quanto se pode acumular.",
+    "rolloverTypeTooltip": "Um excedente numa categoria de despesas aumenta o orçamento do período seguinte. Um excesso de despesa reduz esse orçamento. O limite de transição aplica-se apenas aos excedentes.",
     "rolloverCap": "Limite de Transição (opcional)",
     "rolloverCapPlaceholder": "Sem limite",
     "flexGroup": "Grupo Flexível (opcional)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Categorias de Despesa",
     "incomeCategories": "Categorias de Receita",
     "categorySublabel": "{count} categorias",
-    "rolloverBadge": "+{amount} transição",
+    "rolloverBadge": "{amount} transição",
     "underBudgetLabel": "{amount} abaixo do orçamento",
     "overBudgetLabel": "{amount} acima do orçamento",
     "carriedForward": "{amount} transitado",
@@ -151,8 +151,8 @@
     "projected": "{label} (Projetado)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% utilizado",
-    "paceMarkerTitle": "Ritmo esperado: {percent}%"
+    "ariaLabel": "{percent} utilizado",
+    "paceMarkerTitle": "Ritmo esperado: {percent}"
   },
   "scenarioPlanner": {
     "title": "Planeador de Cenários Hipotéticos",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Estimado a partir da análise: {amount}/mês",
     "defaultRolloverType": "Tipo de Transição Predefinido",
     "rolloverHint": "Define o padrão para todas as categorias. Pode personalizar categorias individualmente após criar o orçamento.",
-    "rolloverTooltip": "O orçamento não utilizado de uma categoria transita para o período seguinte em vez de ser reiniciado. O excesso de despesa nunca transita como dívida, e um Limite de Transição limita quanto uma categoria pode acumular.",
+    "rolloverTooltip": "Um excedente numa categoria de despesas aumenta o orçamento do período seguinte. Um excesso de despesa reduz esse orçamento. O limite de transição aplica-se apenas aos excedentes.",
     "rolloverOptions": {
       "NONE": "Nenhuma -- Reinicia em cada período",
       "MONTHLY": "Mensal -- Transita todos os meses",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Um objetivo em percentagem é uma parte da receita do orçamento: a receita recebida neste período num orçamento associado à receita, caso contrário a receita base, caso contrário os montantes das categorias de receita. Um montante fixo é igual em todos os períodos.",
       "targetPercent": "Percentagem da Receita",
       "targetAmount": "Montante por Período",
-      "carryOver": "Transitar o Que Sobrar",
-      "carryOverTooltip": "O que sobrar no cofre quando um período fecha é somado ao período seguinte. Um cofre com excesso de despesa não transita nada.",
+      "carryOver": "Transitar saldo",
+      "carryOverTooltip": "Um saldo positivo aumenta a dotação do cofre para o período seguinte. Um saldo negativo reduz essa dotação. O limite de transição aplica-se apenas aos saldos positivos.",
       "carryCap": "Limite de Transição (opcional)",
       "carryCapPlaceholder": "Sem limite",
       "save": "Guardar",

@@ -14,7 +14,7 @@ interface BudgetVelocityWidgetProps {
   formatCurrency: (amount: number) => string;
 }
 
-function getPaceColor(paceStatus: BudgetVelocity['paceStatus']): string {
+function getPaceColor(paceStatus: NonNullable<BudgetVelocity['paceStatus']>): string {
   switch (paceStatus) {
     case 'under':
       return 'text-green-600 dark:text-green-400';
@@ -25,7 +25,7 @@ function getPaceColor(paceStatus: BudgetVelocity['paceStatus']): string {
   }
 }
 
-function getPaceBgColor(paceStatus: BudgetVelocity['paceStatus']): string {
+function getPaceBgColor(paceStatus: NonNullable<BudgetVelocity['paceStatus']>): string {
   switch (paceStatus) {
     case 'under':
       return 'bg-green-50 dark:bg-green-900/20';
@@ -54,8 +54,11 @@ function BudgetVelocityWidgetStandard({
   formatCurrency,
 }: BudgetVelocityWidgetProps) {
   const t = useTranslations('budgets');
-  const paceColor = getPaceColor(velocity.paceStatus);
-  const paceBgColor = getPaceBgColor(velocity.paceStatus);
+  const tr = useTranslations('reports');
+  const pairs = velocity.projectionMissingRatePairs;
+  const missingRate = pairs?.length ? tr('partialData.weightingNoRate', { pairs: pairs.join(', ') }) : undefined;
+  const paceColor = velocity.paceStatus && getPaceColor(velocity.paceStatus);
+  const paceBgColor = velocity.paceStatus && getPaceBgColor(velocity.paceStatus);
   // Why the figure is missing decides which screen fixes it: a named pair is a
   // display rate to refresh on Currencies, an unnamed shortfall is the
   // occurrence's own settlement rate. Read defensively -- an older backend
@@ -64,7 +67,7 @@ function BudgetVelocityWidgetStandard({
     (velocity.upcomingBillsMissingRates?.length ?? 0) > 0
       ? 'displayFx'
       : 'scheduledFx';
-  const paceLabel = t(`velocity.paceStatus.${velocity.paceStatus}`);
+  const paceLabel = velocity.paceStatus && t(`velocity.paceStatus.${velocity.paceStatus}`);
 
   return (
     <div className={`${CARD_CLASS} p-4 sm:p-6`}>
@@ -73,9 +76,9 @@ function BudgetVelocityWidgetStandard({
           {t('velocity.title')}
           <InfoTooltip text={t('velocity.titleTooltip')} learnMore="budgetVelocity" />
         </h2>
-        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${paceColor} ${paceBgColor}`}>
+        {paceLabel && <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${paceColor} ${paceBgColor}`}>
           {paceLabel}
-        </span>
+        </span>}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -83,7 +86,7 @@ function BudgetVelocityWidgetStandard({
             {t('velocity.dailyBurnRate')}
           </div>
           <div className="ui-bud-fig text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {formatCurrency(velocity.dailyBurnRate)}/day
+            {velocity.dailyBurnRate === null ? <UnknownAmount reason="displayFx" reasonText={missingRate} /> : <>{formatCurrency(velocity.dailyBurnRate)}/day</>}
           </div>
         </div>
         <div>
@@ -106,11 +109,11 @@ function BudgetVelocityWidgetStandard({
             {t('velocity.projectedMonthEnd')}
           </div>
           <div className={`ui-bud-fig text-lg font-semibold ${
-            velocity.projectedVariance > 0
+            velocity.projectedVariance !== null && velocity.projectedVariance > 0
               ? 'text-red-600 dark:text-red-400'
               : 'text-gray-900 dark:text-gray-100'
           }`}>
-            {formatCurrency(velocity.projectedTotal)}
+            {velocity.projectedTotal === null ? <UnknownAmount reason="displayFx" reasonText={missingRate} /> : formatCurrency(velocity.projectedTotal)}
           </div>
         </div>
         <div>

@@ -86,6 +86,18 @@ describe("loan interest category", () => {
       });
     });
 
+    it("refuses a Transfer category: the interest line is a category line", async () => {
+      categories.findOne.mockResolvedValue({
+        id: B,
+        userId: USER,
+        name: "Savings",
+        categoryType: "transfer",
+      });
+      await expect(assertLoanInterestCategory(m, USER, B)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it("refuses a category that is unknown or another user's", async () => {
       categories.findOne.mockResolvedValue(null);
       await expect(assertLoanInterestCategory(m, USER, B)).rejects.toThrow(

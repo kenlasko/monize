@@ -16,7 +16,8 @@
     "switchCategory": "切換到其他分類",
     "switchPlaceholder": "篩選分類...",
     "switchNoMatches": "沒有符合的分類",
-    "since": "自 {date} 起的分類"
+    "since": "自 {date} 起的分類",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "今年支出",
@@ -29,7 +30,8 @@
     "sinceYear": "自 {year} 年起",
     "lastTransaction": "最近交易",
     "convertedNote": "已換算為 {currency}",
-    "partialRatesNote": "部分月份沒有匯率"
+    "partialRatesNote": "部分月份沒有匯率",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "主要收款人",
@@ -77,7 +79,8 @@
     "largestValue": "{date} 的 {amount}",
     "defaultFor": "作為以下收款人的預設分類",
     "defaultForMore": "還有 {count} 個",
-    "description": "說明"
+    "description": "說明",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "分類各區塊",

@@ -1122,9 +1122,9 @@ jobs:
         needs.prepare-release.result == 'success' ||
         (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
       )
-    # About 35 minutes of build and smoke test, plus up to 20 for each of the
-    # two signing requests.
-    timeout-minutes: 115
+    # About 35 minutes of build and smoke test, plus up to 60 for each of the
+    # two signing requests (the release policy needs a manual approval for each).
+    timeout-minutes: 160
     permissions:
       contents: read
       actions: read # the SignPath action reads this job's details and its artifacts
@@ -1315,7 +1315,7 @@ jobs:
           artifact-configuration-slug: monize-exe
           github-artifact-id: ${{ steps.unsigned-exe.outputs.artifact-id }}
           wait-for-completion: true
-          wait-for-completion-timeout-in-seconds: 1200
+          wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: ${{ runner.temp }}/signed-exe
 
       # The same application with the signed Monize.exe in it, packed again by
@@ -1358,7 +1358,7 @@ jobs:
           artifact-configuration-slug: monize-installer
           github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
           wait-for-completion: true
-          wait-for-completion-timeout-in-seconds: 1200
+          wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: ${{ runner.temp }}/signed-installer
 
       # Signing appended the signature to the installer, so the sha512 and

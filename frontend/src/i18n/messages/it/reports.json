@@ -325,7 +325,7 @@
     "notAvailable": "N/D",
     "monthlyCashFlow": "Flusso di cassa mensile",
     "inflowsByCategory": "Entrate per categoria",
-    "outflowsByCategory": "Uscite per categoria",
+    "outflowsByCategory": "Spese per categoria al netto dei rimborsi",
     "noIncome": "Nessuna entrata in questo periodo",
     "noExpenses": "Nessuna uscita in questo periodo",
     "seriesInflows": "Entrate",
@@ -447,6 +447,7 @@
     "labelEndDate": "Data di fine",
     "labelMetric": "Metrica",
     "labelDirection": "Direzione",
+    "labelCategoryType": "Tipo di categoria",
     "checkboxTransfers": "Includi trasferimenti",
     "checkboxFavourites": "Aggiungi ai preferiti",
     "sortByPlaceholder": "Predefinito",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Importo medio",
       "BUDGET_VARIANCE": "Varianza budget"
     },
+    "categoryType": {
+      "ALL": "Tutte",
+      "INCOME": "Entrata",
+      "EXPENSE": "Spesa",
+      "UNCATEGORIZED": "Senza categoria"
+    },
     "direction": {
       "INCOME_ONLY": "Solo entrate",
       "EXPENSES_ONLY": "Solo uscite",
-      "BOTH": "Entrambe"
+      "BOTH": "Entrambe",
+      "INCOMING": "In entrata",
+      "OUTGOING": "In uscita"
     },
     "sortDirection": {
       "ASC": "Crescente",
@@ -2045,6 +2054,7 @@
     "unknown": "Sconosciuto",
     "knownPartOnly": "Viene disegnata solo la parte che è stato possibile convertire.",
     "roundingNote": "Il totale di ogni lato viene arrotondato una sola volta e ripartito tra i suoi flussi, così il diagramma torna esattamente. Una categoria qui può quindi differire di un centesimo, o della più piccola unità della tua valuta, dalla stessa categoria in «Uscite per categoria» o «Entrate per fonte», che arrotondano ogni categoria per conto suo.",
+    "expenseRefund": "{category} (rimborso spese)",
     "netRefund": "Rimborso netto: questa sottocategoria ha ricevuto più di quanto ha speso.",
     "excludedCount": "{count, plural, one {# importo non è stato convertito ed è escluso dalle cifre sopra.} other {# importi non sono stati convertiti e sono esclusi dalle cifre sopra.}}",
     "noData": "Nessuna entrata, spesa o trasferimento in questo periodo",

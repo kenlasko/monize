@@ -117,6 +117,16 @@ export enum LockScope {
    * and caps against it one after the other (INV-PAYROLL-002).
    */
   PayrollCategory = 9,
+  /**
+   * One person's categories (id = the owner's user id): every write that puts a
+   * category on a row takes it shared, a type change or a move of a category
+   * takes it exclusive, so a Transfer category cannot reach a category row
+   * between the check and the commit (INV-CATEGORY-001). The database's FIT
+   * triggers take the same lock shared (`database/schema.sql`, the FIT
+   * backstop), which is why the value is permanent and equals the literal in
+   * them.
+   */
+  CategoryOwner = 10,
 }
 
 /**
@@ -182,6 +192,33 @@ export function lockTransactionRuleList(
   userId: string,
 ): Promise<void> {
   return acquireAdvisoryLock(manager, LockScope.TransactionRules, userId);
+}
+
+/**
+ * Take the category-owner lock shared: a write that sets a category on a row.
+ * Many such writes proceed together; they wait only for a type change.
+ */
+export async function lockCategoryOwnerShared(
+  manager: EntityManager,
+  ownerUserId: string,
+): Promise<void> {
+  await manager.query(
+    "SELECT pg_advisory_xact_lock_shared($1::int, hashtext($2))",
+    [LockScope.CategoryOwner, ownerUserId],
+  );
+}
+
+/**
+ * Take the category-owner lock exclusive: a type change or a move of a
+ * category. It waits for the owner's open category writes and holds new ones
+ * back until it commits. Call it as the first statement of the transaction,
+ * before any row lock.
+ */
+export function lockCategoryOwnerExclusive(
+  manager: EntityManager,
+  ownerUserId: string,
+): Promise<void> {
+  return acquireAdvisoryLock(manager, LockScope.CategoryOwner, ownerUserId);
 }
 
 /** Serialize refresh-token rotation against family revocation. */

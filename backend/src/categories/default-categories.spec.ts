@@ -1,13 +1,16 @@
 import {
   DEFAULT_INCOME_CATEGORIES,
   DEFAULT_EXPENSE_CATEGORIES,
+  DEFAULT_TRANSFER_CATEGORIES,
   GENERIC_CATEGORY_SET,
   DefaultCategoryDefinition,
 } from "./default-categories";
+import { getDefaultCategories } from "./country-category-additions";
 
 const ALL_CATEGORIES = [
   ...DEFAULT_INCOME_CATEGORIES,
   ...DEFAULT_EXPENSE_CATEGORIES,
+  ...DEFAULT_TRANSFER_CATEGORIES,
 ];
 
 describe("default-categories", () => {
@@ -330,6 +333,15 @@ describe("default-categories", () => {
   });
 
   describe("GENERIC_CATEGORY_SET", () => {
+    it("carries the Transfer set into every country's catalog unchanged", () => {
+      expect(GENERIC_CATEGORY_SET.transfer).toBe(DEFAULT_TRANSFER_CATEGORIES);
+      for (const country of ["CA", "GB", "US"]) {
+        expect(getDefaultCategories(country).transfer).toBe(
+          DEFAULT_TRANSFER_CATEGORIES,
+        );
+      }
+    });
+
     it("exposes the baseline income and expense branches", () => {
       expect(GENERIC_CATEGORY_SET.income).toBe(DEFAULT_INCOME_CATEGORIES);
       expect(GENERIC_CATEGORY_SET.expense).toBe(DEFAULT_EXPENSE_CATEGORIES);

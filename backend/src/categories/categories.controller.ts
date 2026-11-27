@@ -201,6 +201,18 @@ export class CategoriesController {
     return this.categoriesService.findByType(req.user.id, false);
   }
 
+  @Get("transfer")
+  @AllowDelegate()
+  @ApiOperation({ summary: "Get all transfer categories" })
+  @ApiResponse({
+    status: 200,
+    description: "Transfer categories retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  getTransferCategories(@Request() req) {
+    return this.categoriesService.findByCategoryType(req.user.id, "transfer");
+  }
+
   @Get(":id/detail")
   @AllowDelegate()
   @ApiOperation({ summary: "Get the category detail page aggregate" })

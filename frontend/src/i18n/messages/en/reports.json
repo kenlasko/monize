@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "Monthly Cash Flow",
     "inflowsByCategory": "Inflows by Category",
-    "outflowsByCategory": "Outflows by Category",
+    "outflowsByCategory": "Spending After Refunds by Category",
     "noIncome": "No income in this period",
     "noExpenses": "No expenses in this period",
     "seriesInflows": "Inflows",
@@ -447,6 +447,7 @@
     "labelEndDate": "End Date",
     "labelMetric": "Metric",
     "labelDirection": "Direction",
+    "labelCategoryType": "Category Type",
     "checkboxTransfers": "Include transfers",
     "checkboxFavourites": "Add to favourites",
     "sortByPlaceholder": "Default",
@@ -1969,7 +1970,15 @@
       "AVERAGE": "Average Amount",
       "BUDGET_VARIANCE": "Budget Variance"
     },
+    "categoryType": {
+      "ALL": "All",
+      "INCOME": "Income",
+      "EXPENSE": "Expense",
+      "UNCATEGORIZED": "Uncategorized"
+    },
     "direction": {
+      "INCOMING": "Incoming",
+      "OUTGOING": "Outgoing",
       "INCOME_ONLY": "Income Only",
       "EXPENSES_ONLY": "Expenses Only",
       "BOTH": "Both"
@@ -2045,6 +2054,7 @@
     "unknown": "Unknown",
     "knownPartOnly": "Only the part that could be converted is drawn.",
     "roundingNote": "Each side's total is rounded once and shared out between its flows, so the diagram adds up exactly. A category here can therefore differ by one cent, or the smallest unit of your currency, from the same category in Spending by Category or Income by Source, which round each category on its own.",
+    "expenseRefund": "{category} (expense refund)",
     "netRefund": "Net refund: this subcategory took in more than it spent.",
     "excludedCount": "{count, plural, one {# amount could not be converted and is left out of the figures above.} other {# amounts could not be converted and are left out of the figures above.}}",
     "noData": "No income, spending or transfers in this period",

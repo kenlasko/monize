@@ -17,11 +17,10 @@ export class IncomeSourceItem {
    * The source's share of the income that converted (`knownIncome`), in
    * percent, divided from the unrounded figures before either is rounded
    * (docs/specs/report-rounding-and-aggregation.md rule 8): two equal sources
-   * read 50 each, never `total / knownIncome` over the two readings. 0 while
-   * there is no income.
+   * read 50 each, never `total / knownIncome` over the two readings. Null when the signed rows do not form a positive whole.
    */
-  @ApiProperty({ example: 62.5 })
-  percentage: number;
+  @ApiProperty({ type: Number, example: 62.5, nullable: true })
+  percentage: number | null;
 }
 
 export class IncomeBySourceResponse {

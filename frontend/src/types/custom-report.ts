@@ -37,9 +37,18 @@ export enum MetricType {
 }
 
 export enum DirectionFilter {
+  INCOMING = 'INCOMING',
+  OUTGOING = 'OUTGOING',
   INCOME_ONLY = 'INCOME_ONLY',
   EXPENSES_ONLY = 'EXPENSES_ONLY',
   BOTH = 'BOTH',
+}
+
+export enum ReportCategoryType {
+  ALL = 'ALL',
+  INCOME = 'INCOME',
+  EXPENSE = 'EXPENSE',
+  UNCATEGORIZED = 'UNCATEGORIZED',
 }
 
 export enum TableColumn {
@@ -91,6 +100,7 @@ export interface ReportConfig {
   metric: MetricType;
   includeTransfers: boolean;
   direction: DirectionFilter;
+  categoryType?: ReportCategoryType;
   customStartDate?: string;
   customEndDate?: string;
   tableColumns?: TableColumn[];
@@ -181,12 +191,16 @@ export interface ReportTimeframe {
 
 export interface ReportSummary {
   /**
-   * `null` while any row was left out for want of an exchange rate; read
-   * `knownTotal` and mark it partial. Never render `null` as zero.
+   * A truncated read or a missing exchange rate withholds the full amount.
+   * Counts require no rate and are withheld only for a truncated read.
    */
   total: number | null;
-  /** Sum of the rows that converted: the total when nothing was excluded. */
+  /** The same metric over the known population, rounded once. Show it as a subtotal when total is null. */
   knownTotal: number;
+  /**
+   * Signed totals count a posting once across overlapping tags. An unconverted
+   * posting is excluded from a monetary aggregate but remains on a transaction list.
+   */
   count: number;
   /** `null` with `total`. */
   average: number | null;
@@ -206,6 +220,8 @@ export interface ReportResult {
   timeframe: ReportTimeframe;
   data: AggregatedDataPoint[];
   summary: ReportSummary;
+  /** Present when Both / Total Amount used signed postings. Older servers return unsigned totals. */
+  signedTotal?: true;
   /** Reporting currency every money figure is expressed in. */
   currency: string;
   /** Source currencies with no rate into `currency`; their rows are in no figure. */
@@ -258,9 +274,9 @@ export const METRIC_LABELS: Record<MetricType, string> = {
   [MetricType.BUDGET_VARIANCE]: 'Budget Variance',
 };
 
-export const DIRECTION_LABELS: Record<DirectionFilter, string> = {
-  [DirectionFilter.INCOME_ONLY]: 'Income Only',
-  [DirectionFilter.EXPENSES_ONLY]: 'Expenses Only',
+export const DIRECTION_LABELS = {
+  [DirectionFilter.INCOMING]: 'Incoming',
+  [DirectionFilter.OUTGOING]: 'Outgoing',
   [DirectionFilter.BOTH]: 'Both',
 };
 

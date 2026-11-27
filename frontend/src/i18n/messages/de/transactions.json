@@ -49,7 +49,9 @@
     "editAria": "Kategorie bearbeiten",
     "collapseAria": "Kategorie-Informationen ausblenden",
     "show": "Kategorie-Informationen anzeigen",
-    "amountUnavailable": "Kein Kurs"
+    "amountUnavailable": "Kein Kurs",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Aktueller Saldo",

@@ -1,5 +1,6 @@
 'use client';
 
+import { isIncomeCategory as isIncomeCategoryType } from '@/lib/category-type';
 import { useTranslations } from 'next-intl';
 import { gainLossColor, roundMoney, sumMoney } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -30,7 +31,7 @@ function getCategoryName(
 
 function isIncomeCategory(pc: BudgetPeriodCategory): boolean {
   if (pc.budgetCategory?.isIncome) return true;
-  if (pc.category?.isIncome) return true;
+  if (pc.category && isIncomeCategoryType(pc.category)) return true;
   return false;
 }
 
@@ -72,6 +73,9 @@ export function BudgetPeriodDetail({
   const percentUsed = totalBudgeted > 0
     ? Math.round((totalSpent / totalBudgeted) * 10000) / 100
     : 0;
+  const hasRollover = expenseCategories.some(
+    (pc) => Number(pc.rolloverIn) !== 0 || Number(pc.rolloverOut) !== 0,
+  );
   const totalRolloverIn = expenseCategories.reduce(
     (sum, pc) => sum + Number(pc.rolloverIn),
     0,
@@ -134,7 +138,7 @@ export function BudgetPeriodDetail({
       </div>
 
       {/* Rollover Summary */}
-      {(totalRolloverIn > 0 || totalRolloverOut > 0) && (
+      {hasRollover && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
             {t('periodDetail.rolloverSummary.title')}
@@ -345,7 +349,7 @@ function PeriodCategoryRow({
           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {name}
           </span>
-          {rolloverIn > 0 && (
+          {rolloverIn !== 0 && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
               {t('periodDetail.rolloverBadge', { amount: formatCurrency(rolloverIn) })}
             </span>
@@ -379,7 +383,7 @@ function PeriodCategoryRow({
               : t('periodDetail.overBudgetLabel', { amount: formatCurrency(Math.abs(remaining)) })
           )}
         </div>
-        {rolloverOut > 0 && (
+        {rolloverOut !== 0 && (
           <span className="text-xs text-gray-400 dark:text-gray-500">
             {t('periodDetail.carriedForward', { amount: formatCurrency(rolloverOut) })}
           </span>

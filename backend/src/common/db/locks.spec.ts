@@ -4,6 +4,8 @@ import {
   acquireAdvisoryLock,
   acquireAdvisoryLocks,
   lockAccountsForBalanceWrite,
+  lockCategoryOwnerExclusive,
+  lockCategoryOwnerShared,
   lockHoldingScope,
   lockTokenFamily,
   lockTransactionRow,
@@ -30,6 +32,29 @@ describe("common/db/locks", () => {
   });
 
   const asManager = () => manager as unknown as EntityManager;
+
+  describe("category-owner lock", () => {
+    it("takes the shared form for a write and the exclusive form for a type change, on one key", async () => {
+      await lockCategoryOwnerShared(asManager(), "user-1");
+      await lockCategoryOwnerExclusive(asManager(), "user-1");
+
+      expect(manager.query.mock.calls).toEqual([
+        [
+          "SELECT pg_advisory_xact_lock_shared($1::int, hashtext($2))",
+          [LockScope.CategoryOwner, "user-1"],
+        ],
+        [
+          "SELECT pg_advisory_xact_lock($1::int, hashtext($2))",
+          [LockScope.CategoryOwner, "user-1"],
+        ],
+      ]);
+    });
+
+    it("uses the namespace the database triggers hard-code", () => {
+      // database/schema.sql: pg_advisory_xact_lock_shared(10, hashtext(owner)).
+      expect(LockScope.CategoryOwner).toBe(10);
+    });
+  });
 
   describe("advisory locks", () => {
     it("keys the lock on a namespace and a hashed id", async () => {

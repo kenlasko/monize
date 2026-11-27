@@ -89,6 +89,12 @@ vi.mock('@/components/ui/ExportDropdown', () => ({
 vi.mock('recharts', async () => {
   const { rechartsMock } = await import('@/test/recharts-mock');
   const base = rechartsMock();
+  const { createContext, useContext } = await import('react');
+  const FirstNode = createContext<unknown>(null);
+  function NodeTooltip({ content }: { content: (props: unknown) => React.ReactNode }) {
+    const payload = useContext(FirstNode);
+    return content(asRecharts({ active: true, payload: [{ payload }] }));
+  }
   // The entry shape recharts 3 builds for a Sankey (combineTooltipPayload over
   // sankeyPayloadSearcher): the hovered item's data is one level deeper than
   // in the other charts, under `payload.payload`.
@@ -105,12 +111,13 @@ vi.mock('recharts', async () => {
     // The base stub, plus the margin the diagram was laid out with.
     Sankey: ({ margin, ...props }: { margin?: object } & Parameters<typeof base.Sankey>[0]) => (
       <div data-testid="sankey-margin" data-margin={JSON.stringify(margin ?? null)}>
-        {base.Sankey(props)}
+        <FirstNode.Provider value={props.data?.nodes[0]}>{base.Sankey(props)}</FirstNode.Provider>
       </div>
     ),
     Tooltip: ({ content }: { content?: (props: unknown) => React.ReactNode }) =>
       typeof content === 'function' ? (
         <div data-testid="tooltip">
+          <NodeTooltip content={content} />
           {content(asRecharts({
             active: true,
             payload: [
@@ -563,6 +570,43 @@ describe('CashFlowSankeyReport', () => {
     // Every node but the hub, from the response rather than the drawing.
     expect(options.tableData?.rows).toHaveLength(example().nodes.length - 1);
     expect(options.tableData?.rows[0]).toEqual(['Salary', 'Money in', '$5,000.00']);
+  });
+
+  it.each([50, 0])('shows an expense refund netting to %i in the table and exports', async (net) => {
+    const id = net ? 'income:groceries' : 'expense:groceries';
+    const label = net ? 'Groceries (expense refund)' : 'Groceries';
+    const direction = net ? 'Money in' : 'Money out';
+    const response: CashFlowSankeyResponse = {
+      ...example(),
+      nodes: [
+        node(id, 'Groceries', net, { categoryId: 'groceries', expenseRefund: net > 0 }),
+        node('hub', 'Income', net),
+        ...(net ? [node('residual:unspent', 'Unspent', net)] : []),
+      ],
+      links: net ? [
+        { source: id, target: 'hub', amount: net, knownAmount: net },
+        { source: 'hub', target: 'residual:unspent', amount: net, knownAmount: net },
+      ] : [],
+      totals: { income: net, inflows: 0, expenses: 0, outflows: 0, unspent: net, deficit: 0 },
+      knownTotals: { income: net, inflows: 0, expenses: 0, outflows: 0 },
+    };
+    await renderReport(response);
+    if (net) {
+      expect(screen.getByTestId('tooltip')).toHaveTextContent(label);
+      expect(screen.getByTestId('tooltip')).toHaveTextContent('Amount: $50.00');
+    } else {
+      expect(screen.queryByTestId('sankey')?.dataset.nodes ?? '[]').not.toContain('Groceries');
+    }
+    fireEvent.click(screen.getByTitle('Table'));
+    const row = screen.getByTestId(`sankey-row-${id}`);
+    expect(row).toHaveTextContent(label);
+    expect(row).toHaveTextContent(`$${net}.00`);
+    fireEvent.click(screen.getByTestId('export-csv'));
+    expect(mockExportCsvSections.mock.calls[0][1][0].rows).toContainEqual([label, direction, net, net]);
+    const { exportToPdf } = await import('@/lib/pdf-export');
+    await act(async () => { fireEvent.click(screen.getByTestId('export-pdf')); });
+    expect(vi.mocked(exportToPdf).mock.calls[0][0].tableData?.rows)
+      .toContainEqual([label, direction, `$${net}.00`]);
   });
 
   it('marks a partial figure in the PDF cards rather than printing it as a total', async () => {

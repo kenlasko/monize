@@ -23,13 +23,13 @@ export class McpCategoriesTools {
         title: "List categories",
         annotations: READ_ONLY,
         description:
-          "The user's categories with their hierarchy and transaction counts. " +
+          "The user's categories with their hierarchy, type and transaction counts. " +
           'Pass a row\'s `qualifiedName` ("Parent: Child") back to any other ' +
           "tool -- a bare child name shared by two parents is rejected, not " +
           "guessed.",
         inputSchema: z.object({
           type: z
-            .enum(["expense", "income", "all"])
+            .enum(["expense", "income", "transfer", "all"])
             .optional()
             .describe("Defaults to 'all'."),
           search: z

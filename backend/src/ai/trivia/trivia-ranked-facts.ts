@@ -48,6 +48,8 @@ interface Row {
   total: number;
 }
 
+type RowWithShare = Row & { percentage: number };
+
 /**
  * A report total is a total only with every currency converted (null
  * otherwise): a share of a partial sum would be a share of nothing the reader
@@ -55,16 +57,20 @@ interface Row {
  */
 function categoryRows(
   report: SpendingByCategoryResponse | null,
-): { rows: Row[]; total: number } | null {
+): RowWithShare[] {
   const total = report?.totalSpending ?? null;
-  if (!report || total === null || total <= 0) return null;
-  return {
-    total,
-    rows: report.data
-      .filter((r) => r.categoryId !== null && r.total > 0)
-      .map((r) => ({ name: r.categoryName, total: r.total }))
-      .sort((a, b) => b.total - a.total),
-  };
+  if (!report || total === null || total <= 0) return [];
+  return report.data
+    .filter((r) => r.categoryId !== null && r.total > 0)
+    .flatMap((r) => {
+      const percentage = report.netSpending
+        ? r.percentage
+        : (r.total / total) * 100;
+      return percentage === undefined
+        ? []
+        : [{ name: r.categoryName, total: r.total, percentage }];
+    })
+    .sort((a, b) => b.total - a.total);
 }
 
 function payeeRows(
@@ -82,27 +88,19 @@ function payeeRows(
   };
 }
 
-/**
- * A source with the report's own share of the income, divided on the server
- * from the unrounded figures: two equal sources are 50% each, where their
- * readings over the income's (1.25 over 2.49) are 50.2% (issue #2414).
- */
-type SourceRow = Row & { percentage: number };
-
 function sourceRows(
   report: IncomeBySourceResponse | null,
-): { rows: SourceRow[]; total: number } | null {
+): { rows: RowWithShare[]; total: number } | null {
   const total = report?.totalIncome ?? null;
   if (!report || total === null || total <= 0) return null;
   return {
     total,
     rows: report.data
-      .filter((r) => r.categoryId !== null && r.total > 0)
-      .map((r) => ({
-        name: r.categoryName,
-        total: r.total,
-        percentage: r.percentage,
-      }))
+      .flatMap((r) =>
+        r.categoryId !== null && r.total > 0 && r.percentage !== null
+          ? [{ name: r.categoryName, total: r.total, percentage: r.percentage }]
+          : [],
+      )
       .sort((a, b) => b.total - a.total),
   };
 }
@@ -116,9 +114,8 @@ function spendingFacts(input: TriviaRankedInput): TriviaFact[] {
     "spendingByCategory",
     "spendingTopCategory",
   );
-  const categories = categoryRows(topCategory.read);
-  if (categories?.rows[0]) {
-    const top = categories.rows[0];
+  const top = categoryRows(topCategory.read)[0];
+  if (top) {
     facts.push(
       fact(
         topCategory.window === "m12"
@@ -128,7 +125,7 @@ function spendingFacts(input: TriviaRankedInput): TriviaFact[] {
         {
           topCategoryName: text(top.name),
           topCategoryAmount: money(top.total, currency),
-          topCategoryPercent: percent((top.total / categories.total) * 100),
+          topCategoryPercent: percent(top.percentage),
         },
         paramsOf(topCategory.window),
       ),
@@ -159,10 +156,9 @@ function spendingFacts(input: TriviaRankedInput): TriviaFact[] {
     "spendingByCategory",
     "spendingRankedCategory",
   );
-  const rankedCategories = categoryRows(rankedCategory.read);
   const categoryRank = input.picks.spendingRankedCategory.rank;
-  const pickedCategory = rankedCategories?.rows[categoryRank - 1];
-  if (rankedCategories && pickedCategory) {
+  const pickedCategory = categoryRows(rankedCategory.read)[categoryRank - 1];
+  if (pickedCategory) {
     facts.push(
       fact(
         "spendingRankedCategory",
@@ -171,9 +167,7 @@ function spendingFacts(input: TriviaRankedInput): TriviaFact[] {
           rankedCategoryName: text(pickedCategory.name),
           rankedCategoryRank: count(categoryRank),
           rankedCategoryAmount: money(pickedCategory.total, currency),
-          rankedCategoryPercent: percent(
-            (pickedCategory.total / rankedCategories.total) * 100,
-          ),
+          rankedCategoryPercent: percent(pickedCategory.percentage),
         },
         { window: rankedCategory.window },
       ),

@@ -354,15 +354,20 @@
     "billCustomFrequency": "Reguła potrącenia z wynagrodzenia wymaga rachunku o stałej częstotliwości; ten rachunek powtarza się według niestandardowego harmonogramu."
   },
   "categories": {
-    "reassignOwnerOnly": "Tylko właściciel może przenosić transakcje do innej kategorii",
     "notFound": "Nie znaleziono kategorii o ID {{ id }}",
     "cannotModifySystem": "Nie można modyfikować kategorii systemowych",
     "selfParent": "Kategoria nie może być swoim własnym rodzicem",
     "circularParent": "Wykryto cykliczne odwołanie do rodzica",
     "cannotDeleteSystem": "Nie można usuwać kategorii systemowych",
     "hasSubcategories": "Nie można usunąć kategorii z podkategoriami. Najpierw usuń lub ponownie przypisz podkategorie.",
-    "inUse": "Nie można usunąć kategorii „{{ name }}”: nadal używają jej {{ summary }}. Najpierw przypisz te elementy ponownie albo je usuń.",
-    "alreadyHasCategories": "Nie można zaimportować domyślnych: użytkownik ma już kategorie. Najpierw usuń istniejące kategorie lub zacznij od nowa."
+    "alreadyHasCategories": "Nie można zaimportować domyślnych: użytkownik ma już kategorie. Najpierw usuń istniejące kategorie lub zacznij od nowa.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.",
+    "reassignOwnerOnly": "Tylko właściciel może przenosić transakcje do innej kategorii",
+    "inUse": "Nie można usunąć kategorii „{{ name }}”: nadal używają jej {{ summary }}. Najpierw przypisz te elementy ponownie albo je usuń."
   },
   "common": {
     "invalidUuid": "Nieprawidłowy UUID: {{ id }}",
@@ -523,9 +528,6 @@
     "internal": "Wewnętrzny błąd serwera"
   },
   "import": {
-    "duplicatesChanged": "Możliwe duplikaty zmieniły się od czasu ich sprawdzenia. Nic nie zaimportowano; sprawdź ponownie.",
-    "duplicateDecisionRepeated": "Wiersz pliku może mieć tylko jedną decyzję dotyczącą jego możliwego duplikatu.",
-    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano.",
     "accountClosed": "Konto jest zamknięte. Otwórz je ponownie lub wybierz inne konto.",
     "noAccountBlocks": "Nie znaleziono bloków kont w pliku QIF. Ten plik może nie być eksportem wielokontowym.",
     "accountTypeRequired": "Przed importem wybierz typ konta dla tych kont: {{ accounts }}",
@@ -569,7 +571,10 @@
     "mnyJobNotFound": "Nie znaleziono zadania importu",
     "mnyFileTooLarge": "Ten plik Money jest większy niż limit importu wynoszący {{ limit }} MB.",
     "noRateForSplitTransfer": "Brak kursu wymiany dla {{ pair }} na dzień {{ date }}: pozycja podziału przelewa na konto w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie.",
-    "noRateForTransfer": "Brak kursu wymiany dla {{ pair }} na {{ date }}: drugie konto przelewu jest w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie."
+    "noRateForTransfer": "Brak kursu wymiany dla {{ pair }} na {{ date }}: drugie konto przelewu jest w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie.",
+    "duplicatesChanged": "Możliwe duplikaty zmieniły się od czasu ich sprawdzenia. Nic nie zaimportowano; sprawdź ponownie.",
+    "duplicateDecisionRepeated": "Wiersz pliku może mieć tylko jedną decyzję dotyczącą jego możliwego duplikatu.",
+    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano."
   },
   "monteCarlo": {
     "scenarioNotFound": "Nie znaleziono scenariusza {{ id }}",
@@ -652,7 +657,7 @@
     "updateSplitOverrideRequiresAmount": "Kwota jest wymagana dla nadpisania podziału",
     "dateMustBeYMD": "date musi być w formacie YYYY-MM-DD",
     "loanLedgerUnreadable": "Nie można obliczyć tej raty kredytu, ponieważ nie udało się odczytać salda księgi. Spróbuj ponownie.",
-    "estimateRequiresPlain": "Szacowana kwota jest dostępna tylko dla transakcji z jedną kategorią lub przelewu w walucie konta, a nie dla podziału, inwestycji ani kwoty w obcej walucie",
+    "estimateRequiresPlain": "Szacowana kwota jest dostępna tylko dla transakcji z jedną kategorią lub przelewu, a nie dla podziału ani inwestycji",
     "estimateNoAutoPost": "Zaplanowanej transakcji z szacowaną kwotą nie można zaksięgować automatycznie",
     "overrideAutoPostNeedsAmount": "Wystąpienie zaplanowanej transakcji z szacowaną kwotą można zaksięgować automatycznie dopiero po wpisaniu jego własnej kwoty",
     "estimateRequiresPayeeAndCategory": "Szacowana kwota wymaga odbiorcy i kategorii, aby dopasować historię płatności",
@@ -1029,10 +1034,6 @@
     "needsPreview": "Otwórz podgląd tego konta bankowego i potwierdź pierwszy import, zanim zostanie zsynchronizowane automatycznie.",
     "selectionNotNew": "Wybrana transakcja nie jest nowym wierszem w danych banku. Nic nie zaimportowano; wygeneruj podgląd ponownie.",
     "selectionOverlap": "Transakcja nie może być jednocześnie zaimportowana i dodana do wyjątków.",
-    "selectionConflict": "Transakcja może mieć tylko jedną decyzję: zaimportuj ją, dodaj do wyjątków, scal ją, zachowaj swoją lub zastąp swoją.",
-    "duplicateNeedsPreview": "Decyzja dotycząca możliwego duplikatu wymaga podglądu, w którym został pokazany. Nic nie zaimportowano; wyświetl podgląd ponownie.",
-    "selectionNotDuplicate": "Transakcja wybrana do scalenia, zachowania lub zastąpienia nie jest już możliwym duplikatem. Nic nie zaimportowano; wyświetl podgląd ponownie.",
-    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano; zachowaj swoją transakcję lub zaimportuj obok niej wiersz z banku.",
     "nothingToUpdate": "Wyślij autoSync, notifySuccess lub tagOperationType, aby zmienić połączenie bankowe.",
     "simplefinCredentialsMissing": "Połącz SimpleFIN przed synchronizacją kont.",
     "simplefinAccessInvalid": "SimpleFIN zwrócił nieprawidłowy adres dostępu. Wygeneruj nowy token konfiguracji w SimpleFIN Bridge.",
@@ -1050,7 +1051,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge wymaga aktywnej subskrypcji. Sprawdź rozliczenia w SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN nie dostarczył pełnych danych kont. Sprawdź połączenie w SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Wyczerpano limit żądań SimpleFIN. Poczekaj na jego odnowienie i ponów bieżącą partię.",
-    "simplefinClaimNotSent": "SimpleFIN jest chwilowo niedostępny. Token konfiguracji nie został wysłany; spróbuj później ponownie z tym samym tokenem."
+    "simplefinClaimNotSent": "SimpleFIN jest chwilowo niedostępny. Token konfiguracji nie został wysłany; spróbuj później ponownie z tym samym tokenem.",
+    "selectionConflict": "Transakcja może mieć tylko jedną decyzję: zaimportuj ją, dodaj do wyjątków, scal ją, zachowaj swoją lub zastąp swoją.",
+    "duplicateNeedsPreview": "Decyzja dotycząca możliwego duplikatu wymaga podglądu, w którym został pokazany. Nic nie zaimportowano; wyświetl podgląd ponownie.",
+    "selectionNotDuplicate": "Transakcja wybrana do scalenia, zachowania lub zastąpienia nie jest już możliwym duplikatem. Nic nie zaimportowano; wyświetl podgląd ponownie.",
+    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano; zachowaj swoją transakcję lub zaimportuj obok niej wiersz z banku."
   },
   "warranties": {
     "notFound": "Nie znaleziono gwarancji o ID {{ id }}",

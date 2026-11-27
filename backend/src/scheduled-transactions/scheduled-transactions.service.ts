@@ -137,6 +137,7 @@ import {
   estimateBasisOf,
   estimateReadModel,
   estimatedAmountFor,
+  estimatedOccurrenceFor,
   occurrenceFollowsEstimate,
 } from "./scheduled-amount-estimate.service";
 import {
@@ -1188,15 +1189,14 @@ export class ScheduledTransactionsService {
         isSplit: !!(hasSplits && !isTransfer),
         isTransfer: !!isTransfer,
         isInvestment: !!isInvestment,
-        isForeign: fx.originalCurrencyCode !== null,
         autoPost: !!createDto.autoPost,
         payeeId: createDto.payeeId ?? null,
         categoryId: createDto.categoryId ?? null,
         transferAccountId: isTransfer ? (transferAccountId ?? null) : null,
       });
     }
-    const scheduleAmount = createDto.amountIsEstimated
-      ? ((await this.estimatedSnapshot(
+    const snapshot = createDto.amountIsEstimated
+      ? await this.estimatedSnapshot(
           userId,
           estimateBasisOf({
             payeeId: createDto.payeeId ?? null,
@@ -1207,10 +1207,22 @@ export class ScheduledTransactionsService {
             transferAccountId: transferAccountId ?? null,
             frequency: createDto.frequency,
             nextDueDate,
+            originalCurrencyCode: fx.originalCurrencyCode,
           }),
           nextDueDate,
-        )) ?? createDto.amount)
-      : createDto.amount;
+        )
+      : null;
+    const scheduleAmount = snapshot?.amount ?? createDto.amount;
+    // A foreign-currency bill's snapshot is its biller-currency estimate too
+    // (issue #2458), at the rate it was converted at; unknown, the entry sent.
+    const scheduleFx =
+      snapshot && snapshot.originalAmount !== null && fx.originalCurrencyCode
+        ? {
+            ...fx,
+            originalAmount: snapshot.originalAmount,
+            exchangeRate: snapshot.exchangeRate ?? fx.exchangeRate,
+          }
+        : fx;
 
     // Record the currency pair a stored investment rate belongs to (issue
     // #1167). Only resolved when a rate is actually supplied, so a rateless
@@ -1237,8 +1249,8 @@ export class ScheduledTransactionsService {
         account.currencyCode,
         {
           amount: scheduleAmount,
-          originalAmount: fx.originalAmount,
-          originalCurrencyCode: fx.originalCurrencyCode,
+          originalAmount: scheduleFx.originalAmount,
+          originalCurrencyCode: scheduleFx.originalCurrencyCode,
           splits: hasSplits && !isTransfer ? splits : undefined,
         },
       );
@@ -1272,9 +1284,9 @@ export class ScheduledTransactionsService {
         // lives on each split) and investments null it out here.
         categoryId:
           hasSplits || isInvestment ? null : transactionData.categoryId,
-        originalAmount: fx.originalAmount,
-        originalCurrencyCode: fx.originalCurrencyCode,
-        exchangeRate: fx.exchangeRate,
+        originalAmount: scheduleFx.originalAmount,
+        originalCurrencyCode: scheduleFx.originalCurrencyCode,
+        exchangeRate: scheduleFx.exchangeRate,
         isSplit: hasSplits && !isTransfer,
         isTransfer: isTransfer || false,
         transferAccountId: isTransfer ? transferAccountId : null,
@@ -1340,17 +1352,17 @@ export class ScheduledTransactionsService {
 
   /**
    * Refuse a schedule an estimate cannot price (issue #2096,
-   * docs/specs/scheduled-amount-estimate.md 2): only a plain, single-category,
-   * account-currency schedule with a payee, or a transfer to another account
-   * (issue #2164, section 10), is estimated, and never auto-posted, because
-   * the estimate is a forecast a person confirms when posting.
+   * docs/specs/scheduled-amount-estimate.md 2): only a plain, single-category
+   * schedule with a payee, in the account's currency or another (issue #2458,
+   * section 11), or a transfer to another account (issue #2164, section 10),
+   * is estimated, and never auto-posted, because the estimate is a forecast a
+   * person confirms when posting.
    */
   private assertEstimatable(
     shape: {
       isSplit: boolean;
       isTransfer: boolean;
       isInvestment: boolean;
-      isForeign: boolean;
       autoPost: boolean;
       payeeId: string | null;
       categoryId: string | null;
@@ -1358,11 +1370,11 @@ export class ScheduledTransactionsService {
     },
     { requireBasis = true }: { requireBasis?: boolean } = {},
   ): void {
-    if (shape.isSplit || shape.isInvestment || shape.isForeign) {
+    if (shape.isSplit || shape.isInvestment) {
       throw new BadRequestException(
         tr(
           "errors.scheduled.estimateRequiresPlain",
-          "An estimated amount is only available for a single-category transaction or a transfer in the account's currency, not a split, an investment or a foreign-currency amount",
+          "An estimated amount is only available for a single-category transaction or a transfer, not a split or an investment",
         ),
       );
     }
@@ -1399,15 +1411,27 @@ export class ScheduledTransactionsService {
   /**
    * The estimate for the occurrence due on `dueDate`, the snapshot an estimated
    * schedule stores in `amount`; `null` when the estimate is unknown, in which
-   * case the caller keeps the amount it has.
+   * case the caller keeps the amount it has. A foreign-currency bill's
+   * (issue #2458) carries the biller-currency figure stored in
+   * `original_amount` and the rate it was converted at; null otherwise.
    */
   private async estimatedSnapshot(
     userId: string,
     basis: ScheduleEstimateBasis,
     dueDate: string,
-  ): Promise<number | null> {
+  ): Promise<{
+    amount: number;
+    originalAmount: number | null;
+    exchangeRate: number | null;
+  } | null> {
     const estimate = await this.amountEstimates.estimateFor(userId, basis);
-    return estimatedAmountFor(estimate, ensureYMD(dueDate));
+    const occurrence = estimatedOccurrenceFor(estimate, ensureYMD(dueDate));
+    if (!occurrence) return null;
+    return {
+      amount: occurrence.amount,
+      originalAmount: occurrence.originalAmount ?? null,
+      exchangeRate: estimate.entry ? roundFxRate(estimate.entry.rate) : null,
+    };
   }
 
   /**
@@ -2266,6 +2290,8 @@ export class ScheduledTransactionsService {
       frequency?: FrequencyType;
       /** The form's next due date, so an overdue one has its month. */
       nextDueDate?: string;
+      /** A bill's foreign entry currency (issue #2458). */
+      originalCurrencyCode?: string | null;
     },
   ): Promise<ScheduleAmountEstimateReadModel> {
     const account = await this.accountsService.findOne(userId, query.accountId);
@@ -2293,6 +2319,9 @@ export class ScheduledTransactionsService {
         transferAccountId: query.transferAccountId ?? null,
         frequency: query.frequency ?? "MONTHLY",
         nextDueDate: query.nextDueDate ?? todayYMD(),
+        originalCurrencyCode: query.transferAccountId
+          ? null
+          : (query.originalCurrencyCode ?? null),
       }),
     );
     return estimateReadModel(estimate, todayYMD(), query.nextDueDate);
@@ -2896,9 +2925,10 @@ export class ScheduledTransactionsService {
     );
 
     // The estimate flag (issue #2096). Asked for explicitly, an unpriceable
-    // shape is refused; carried over from the stored row, a switch to a split,
-    // investment or foreign-currency amount drops it -- as that switch drops
-    // the foreign-currency trio -- while turning auto-post on, this request
+    // shape is refused; carried over from the stored row, a switch to a split
+    // or an investment drops it -- as that switch drops the foreign-currency
+    // trio -- while a foreign-currency amount is estimated in the biller's
+    // currency (issue #2458); turning auto-post on, this request
     // clearing the payee or category, or a switch between a transfer and a
     // transaction without the new kind's basis, is refused. A payee or
     // category that went away on its own (a deleted category is SET NULL)
@@ -2915,10 +2945,6 @@ export class ScheduledTransactionsService {
       isSplit: effectiveIsSplit,
       isTransfer: !!effectiveIsTransfer,
       isInvestment: !!effectiveIsInvestment,
-      isForeign:
-        (fieldsToUpdate.originalCurrencyCode !== undefined
-          ? fieldsToUpdate.originalCurrencyCode
-          : scheduled.originalCurrencyCode) != null,
       autoPost: updateData.autoPost ?? scheduled.autoPost,
       payeeId:
         fieldsToUpdate.payeeId !== undefined
@@ -2936,11 +2962,7 @@ export class ScheduledTransactionsService {
     if (updateData.amountIsEstimated === true) {
       this.assertEstimatable(estimateShape);
     } else if (effectiveEstimated) {
-      if (
-        estimateShape.isSplit ||
-        estimateShape.isInvestment ||
-        estimateShape.isForeign
-      ) {
+      if (estimateShape.isSplit || estimateShape.isInvestment) {
         effectiveEstimated = false;
       } else {
         // Only this request's own clearing of the basis is refused.
@@ -2958,6 +2980,19 @@ export class ScheduledTransactionsService {
     if (effectiveEstimated !== (scheduled.amountIsEstimated ?? false)) {
       fieldsToUpdate.amountIsEstimated = effectiveEstimated;
     }
+    // A foreign-currency bill's estimate is in its entry currency (issue
+    // #2458) and its conversion applies the paying account's FX fee, so a
+    // change of either moves the snapshot. Neither is what the history is
+    // matched on, so a delegate may make it.
+    const effectiveOriginalCurrencyCode =
+      fieldsToUpdate.originalCurrencyCode !== undefined
+        ? (fieldsToUpdate.originalCurrencyCode as string | null)
+        : (scheduled.originalCurrencyCode ?? null);
+    const entryConversionChanged =
+      effectiveOriginalCurrencyCode !==
+        (scheduled.originalCurrencyCode ?? null) ||
+      (effectiveOriginalCurrencyCode !== null &&
+        effectiveAccountId !== scheduled.accountId);
     const basisChanged =
       kindChanged ||
       accountCurrencyCode !== scheduled.currencyCode ||
@@ -2982,6 +3017,7 @@ export class ScheduledTransactionsService {
     const snapshotMayMove =
       fieldsToUpdate.amountIsEstimated === true ||
       basisChanged ||
+      entryConversionChanged ||
       (estimateShape.isTransfer &&
         fieldsToUpdate.frequency !== undefined &&
         fieldsToUpdate.frequency !== scheduled.frequency) ||
@@ -2989,8 +3025,13 @@ export class ScheduledTransactionsService {
         ensureYMD(fieldsToUpdate.nextDueDate as string) !==
           ensureYMD(scheduled.nextDueDate));
     if (effectiveEstimated && !snapshotMayMove) {
-      // A form resends the amount it loaded: not a change.
+      // A form resends the amount it loaded: not a change. A foreign-currency
+      // bill's biller-currency figure and rate are the same snapshot.
       delete fieldsToUpdate.amount;
+      if (effectiveOriginalCurrencyCode !== null) {
+        delete fieldsToUpdate.originalAmount;
+        delete fieldsToUpdate.exchangeRate;
+      }
     }
     if (effectiveEstimated && snapshotMayMove) {
       const snapshotDueDate =
@@ -3009,6 +3050,7 @@ export class ScheduledTransactionsService {
             (fieldsToUpdate.frequency as FrequencyType | undefined) ??
             scheduled.frequency,
           nextDueDate: snapshotDueDate,
+          originalCurrencyCode: effectiveOriginalCurrencyCode,
         }),
         snapshotDueDate,
       );
@@ -3016,11 +3058,17 @@ export class ScheduledTransactionsService {
       // change worth writing.
       if (
         snapshot !== null &&
-        !sameNullableNumber(snapshot, Number(scheduled.amount))
+        !sameNullableNumber(snapshot.amount, Number(scheduled.amount))
       ) {
-        fieldsToUpdate.amount = snapshot;
+        fieldsToUpdate.amount = snapshot.amount;
       } else if (snapshot !== null) {
         delete fieldsToUpdate.amount;
+      }
+      // A foreign-currency bill stores its biller-currency estimate and the
+      // rate it was converted at beside it (issue #2458).
+      if (snapshot !== null && snapshot.originalAmount !== null) {
+        fieldsToUpdate.originalAmount = snapshot.originalAmount;
+        fieldsToUpdate.exchangeRate = snapshot.exchangeRate ?? undefined;
       }
     }
 
@@ -3692,7 +3740,8 @@ export class ScheduledTransactionsService {
    *   3. The stored rate for the posting date (`getRateForDate`, which
    *      carry-forwards over weekends and backfills from the quote provider).
    *
-   * The foreign amount comes from `postDto.originalAmount`, else the schedule's
+   * The foreign amount comes from `postDto.originalAmount`, else an estimated
+   * occurrence's biller-currency estimate (issue #2458), else the schedule's
    * own `originalAmount`.
    */
   private async resolveFxForPosting(
@@ -3703,6 +3752,11 @@ export class ScheduledTransactionsService {
       overrideAmount: number | null;
       /** The money precision of the schedule's (account) currency. */
       moneyDecimals: number;
+      /**
+       * An estimated occurrence's biller-currency estimate (issue #2458), the
+       * foreign amount when the post sends none.
+       */
+      estimatedOriginalAmount?: number | null;
     },
   ): Promise<{
     originalAmount: number;
@@ -3716,7 +3770,10 @@ export class ScheduledTransactionsService {
     const originalAmount =
       postDto?.originalAmount !== undefined && postDto?.originalAmount !== null
         ? Number(postDto.originalAmount)
-        : Number(scheduled.originalAmount);
+        : context.estimatedOriginalAmount !== null &&
+            context.estimatedOriginalAmount !== undefined
+          ? context.estimatedOriginalAmount
+          : Number(scheduled.originalAmount);
 
     const fxFeePercent = scheduled.account?.fxFeePercent ?? null;
 
@@ -4015,30 +4072,33 @@ export class ScheduledTransactionsService {
       scheduled.currencyCode,
     );
 
-    const fx = await this.resolveFxForPosting(scheduled, postDto, {
-      postDate,
-      overrideAmount: storedOverride?.amount ?? null,
-      moneyDecimals,
-    });
-
     // An estimated occurrence with no amount of its own posts the estimate for
     // the month it falls in -- the figure the bills list and the forecast
     // showed for it (issue #2096) -- never the stored snapshot. An unknown
-    // estimate is refused: the person enters the amount instead.
+    // estimate is refused: the person enters the amount instead. A
+    // foreign-currency bill's estimate is the biller-currency amount, which
+    // is converted at the posting date's rate below (issue #2458).
     const overrideStatesAmount =
       storedOverride?.amount !== null && storedOverride?.amount !== undefined;
     // Lines sent with the post, or an override's own split, carry the amount
     // themselves: the estimate is for a plain occurrence nobody priced.
     const postStatesLines =
       (hasInlineIsSplit && postDto?.isSplit === true) || !!hasInlineSplits;
+    const isForeignSchedule =
+      !!scheduled.originalCurrencyCode && scheduled.originalAmount !== null;
+    const postStatesOriginalAmount =
+      postDto?.originalAmount !== undefined && postDto?.originalAmount !== null;
     let estimatedAmount: number | null = null;
+    let estimatedOriginalAmount: number | null = null;
+    // A foreign bill's inline account-currency amount still needs a foreign
+    // figure to derive its rate from: the month's estimate, not the snapshot.
     if (
-      !fx &&
-      !hasInlineAmount &&
+      (!hasInlineAmount || isForeignSchedule) &&
       !postStatesLines &&
+      !(isForeignSchedule && postStatesOriginalAmount) &&
       occurrenceFollowsEstimate(scheduled, storedOverride)
     ) {
-      estimatedAmount = await this.estimatedSnapshot(
+      const estimated = await this.estimatedSnapshot(
         userId,
         estimateBasisOf(
           scheduled,
@@ -4050,7 +4110,17 @@ export class ScheduledTransactionsService {
           ? ensureYMD(storedOverride.overrideDate)
           : nextDueDateStr,
       );
-      if (estimatedAmount === null) {
+      if (isForeignSchedule) {
+        estimatedOriginalAmount = estimated?.originalAmount ?? null;
+      } else {
+        estimatedAmount = estimated?.amount ?? null;
+      }
+      if (
+        !hasInlineAmount &&
+        (isForeignSchedule
+          ? estimatedOriginalAmount === null
+          : estimatedAmount === null)
+      ) {
         throw new BadRequestException(
           tr(
             "errors.scheduled.estimateUnknown",
@@ -4059,6 +4129,13 @@ export class ScheduledTransactionsService {
         );
       }
     }
+
+    const fx = await this.resolveFxForPosting(scheduled, postDto, {
+      postDate,
+      overrideAmount: storedOverride?.amount ?? null,
+      moneyDecimals,
+      estimatedOriginalAmount,
+    });
 
     const finalAmount = fx
       ? fx.amount
@@ -4952,6 +5029,18 @@ export class ScheduledTransactionsService {
             ...(cursor && current.amountIsEstimated
               ? { estimatedAmount: Number(current.amount) }
               : {}),
+            ...(cursor &&
+            current.amountIsEstimated &&
+            current.originalCurrencyCode &&
+            current.originalAmount !== null
+              ? {
+                  estimatedEntry: {
+                    originalAmount: Number(current.originalAmount),
+                    originalCurrencyCode: current.originalCurrencyCode,
+                    exchangeRate: Number(current.exchangeRate),
+                  },
+                }
+              : {}),
             ...(removedSchedule ? { removedSchedule } : {}),
           },
         };
@@ -5076,13 +5165,38 @@ export class ScheduledTransactionsService {
       estimateBasisOf(row),
       ensureYMD(row.nextDueDate),
     );
-    if (snapshot === null || sameNullableNumber(snapshot, Number(row.amount))) {
+    if (snapshot === null) return;
+    // A foreign-currency bill's snapshot is its biller-currency figure as
+    // well, under the same entry currency (issue #2458).
+    const foreign =
+      snapshot.originalAmount !== null && row.originalCurrencyCode !== null;
+    if (
+      sameNullableNumber(snapshot.amount, Number(row.amount)) &&
+      (!foreign ||
+        sameNullableNumber(snapshot.originalAmount, row.originalAmount))
+    ) {
       return;
     }
     await withScopedDb(this.dataSource, (m) =>
-      m
-        .getRepository(ScheduledTransaction)
-        .update({ id, userId, amountIsEstimated: true }, { amount: snapshot }),
+      m.getRepository(ScheduledTransaction).update(
+        foreign
+          ? {
+              id,
+              userId,
+              amountIsEstimated: true,
+              originalCurrencyCode: row.originalCurrencyCode!,
+            }
+          : { id, userId, amountIsEstimated: true },
+        foreign
+          ? {
+              amount: snapshot.amount,
+              originalAmount: snapshot.originalAmount,
+              ...(snapshot.exchangeRate !== null
+                ? { exchangeRate: snapshot.exchangeRate }
+                : {}),
+            }
+          : { amount: snapshot.amount },
+      ),
     );
   }
 

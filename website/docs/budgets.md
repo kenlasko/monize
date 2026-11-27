@@ -119,6 +119,8 @@ Four cards at the top provide an at-a-glance overview:
 | **Remaining** | Budget remaining, with the number of days left in the period (or **Period ended**) |
 | **Savings** | Income received so far minus spending, marked **On track** or **Over budget** |
 
+Purchases add to **Spent** and refunds in the same expense category reduce it. For a budget of 100, a purchase of 100 and a refund of 150 show **Spent −50** and **Remaining 150**. An ordinary income line likewise shows negative income if reversals exceed receipts. Open periods use these signed figures, and closing a period records them. Previously closed periods keep their saved figures.
+
 ### Health Score
 
 A circular gauge from 0 to 100 summarizing how well you are sticking to your budget.
@@ -142,9 +144,9 @@ The [Budget Health Score report](#budget-reports) gives a more detailed version 
 
 Shows your spending pace and whether you will finish the period within budget:
 
-- **Daily burn rate** -- How much you are spending per day
+- **Daily burn rate** -- Purchases divided by elapsed days. Refunds do not reduce the purchase pace.
 - **Safe to spend** -- How much you can spend per day and stay on track
-- **Projected month-end** -- Where you will land at the current pace
+- **Projected month-end** -- Net spending so far, plus expected purchases over the remaining days. If you buy 50 and receive a refund of 300 in the first five days of a 30-day month, the purchase pace is 10 per day. The remaining 25 days add 250, giving projected net spending of zero. Projected-overspend alerts use the same calculation for each category.
 - **Pace status** -- **Under budget pace** (green), **On track** (yellow), or **Over budget pace** (red)
 - **Budget total**, **Bills coming** and **Truly available** -- your budget less the scheduled bills still to come this period
 - A progress bar showing **Day X of Y** and the days remaining
@@ -165,6 +167,8 @@ Each row shows:
 - **Amount spent** of the **budgeted amount**, and the percentage used
 - **Pace status** -- **Under pace**, **On pace**, or **Over pace** compared with how far through the period you are
 - **Amount left**, or how much you are **over**
+
+If refunds exceed purchases in the period, net spending and the percentage used can be negative. For a budget of 100 and net spending of −50, the progress bar is empty and the amount left is 150. Above 100% the bar stays full while the figure shows the actual percentage.
 
 Use the **Sort** dropdown to sort by **% Used** (the default), **Spent**, **Remaining**, or **Name**, and the arrow beside it to reverse the order. On mobile, the sort controls stack below the heading.
 
@@ -204,7 +208,7 @@ If none of these is known, the card shows **Unknown** and **No income found**, a
 
 **What each bucket shows.** Its target, **Carried in** (when not zero), **Spent**, and **Available**: the allocation plus what was carried in, less what was spent. A bucket that has gone past that shows **Overspent**.
 
-**Carry-over.** Turn on **Carry Over What Is Left** for a bucket and, when a period closes, what is left in it is added to the next period. An optional **Carry Cap (optional)** limits how much can be carried; a cap needs carry-over turned on. An overspent bucket carries nothing, not a debt. With carry-over off, the bucket starts each period fresh.
+**Carry-over.** Turn on **Carry Over Balance** to carry a bucket’s closing balance into the next period. A surplus adds to the next allocation. A shortfall reduces it, even if the bucket starts the period below zero. **Carry Cap (optional)** limits how much surplus can carry over. With carry-over off, the bucket starts each period fresh.
 
 A bucket's carry-over and a category's [rollover](#rollover-rules) are independent. A bucket's balance comes from its allocation and its categories' spending only; a category's own rollover does not enter it. To build balances at the bucket level, leave the categories' rollover on **None**.
 
@@ -252,7 +256,7 @@ Monize supports five budget strategies, each suited to a different financial sty
 | Strategy | Description |
 |----------|-------------|
 | **Fixed** | Set fixed amounts per category. Simple and predictable. Unused budget resets at the end of each period. |
-| **Rollover** | Unused budget carries forward to the next period based on per-category rollover rules. Good for saving toward irregular expenses. |
+| **Rollover** | An expense category can carry its surplus or shortfall into the next period. Good for saving toward irregular expenses. |
 | **Zero-Based** | Every dollar of income is assigned a purpose: income minus all budgeted amounts should equal zero. The dashboard shows how much is still unassigned. |
 | **50/30/20** | Categories are grouped as Needs (50%), Wants (30%), or Savings (20%) of your income. The wizard and dashboard compare each group with its target. |
 | **Bucket** | Income is split into a few named buckets, each with a target that is a share of income or a fixed amount. Every category belongs to one bucket, so you watch the bucket instead of each category, and a bucket can carry what is left into the next period. See [Buckets](#buckets). |
@@ -268,13 +272,13 @@ Each category can have its own rollover setting:
 | Rollover Type | Description |
 |---------------|-------------|
 | **None** | The budget resets each period -- no carry-forward |
-| **Monthly** | Unused budget rolls forward into the next period |
-| **Quarterly** | Unused budget rolls forward, intended for quarterly saving |
-| **Annual** | Unused budget rolls forward, intended for saving across the year |
+| **Monthly** | The closing balance rolls into the next period |
+| **Quarterly** | The closing balance rolls forward for quarterly saving |
+| **Annual** | The closing balance rolls forward for saving across the year |
 
-Whichever rolling type you choose, the unused amount carries into the next period when the current one closes. Overspending is not carried forward as a debt.
+When an expense category rolls over, its closing balance increases or reduces what you can spend next period. Refunds count in full in the month you receive them. For example, with 100 budgeted per month and no cap, buying a TV for 300 in January carries −200 into February. February starts at −100. A full refund of 300 brings the balance to 200, so March starts at 300.
 
-You can also set a **Rollover Cap** to limit how much accumulates. For example, a clothing category might roll over monthly with a $500 cap.
+You can also set a **Rollover Cap** to limit how much surplus accumulates. A shortfall carries forward in full. For example, a clothing category might roll over monthly with a $500 cap.
 
 **Common patterns:**
 - **Groceries** -- None (no point accumulating)

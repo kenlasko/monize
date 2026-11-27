@@ -1,4 +1,5 @@
 import { EntityManager, IsNull } from "typeorm";
+import { categoryTypeFromIncomeFlag } from "../categories/category-type.util";
 import { returnedRows } from "../common/db/query-result";
 import { Category } from "../categories/entities/category.entity";
 
@@ -36,13 +37,14 @@ export async function insertCategoryIfAbsent(
   manager: EntityManager,
   category: CategoryToInsert,
 ): Promise<{ id: string; inserted: boolean }> {
-  const { userId, name, parentId, isIncome } = category;
+  const { userId, name, parentId } = category;
+  // The file says income or expense; no importer creates a Transfer category.
   const rows: unknown = await manager.query(
-    `INSERT INTO categories (user_id, name, parent_id, is_income)
+    `INSERT INTO categories (user_id, name, parent_id, category_type)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT DO NOTHING
      RETURNING id`,
-    [userId, name, parentId, isIncome],
+    [userId, name, parentId, categoryTypeFromIncomeFlag(category.isIncome)], // income-flag-ok: the file's own flag
   );
   const insertedId = returnedRows<{ id: string }>(rows)[0]?.id;
   if (insertedId) {

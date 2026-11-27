@@ -26,6 +26,8 @@ type PieRadius = number | string;
 
 interface DonutCalloutChartProps<T extends DonutCalloutSlice> {
   slices: readonly T[];
+  /** Slice geometry may use an unrounded share while its label shows money. */
+  sliceWeight?: (slice: T) => number;
   view: DonutCalloutView;
   /** Accessible name of the list of callout boxes. */
   label: string;
@@ -131,6 +133,7 @@ function radiusInPixels(radius: PieRadius, size: Size): number {
  */
 export function DonutCalloutChart<T extends DonutCalloutSlice>({
   slices,
+  sliceWeight,
   view,
   label,
   formatValue,
@@ -149,13 +152,13 @@ export function DonutCalloutChart<T extends DonutCalloutSlice>({
     () =>
       view === 'callouts' && size
         ? layoutCallouts(
-            slices.map((s) => s.value),
+            slices.map((s) => sliceWeight ? sliceWeight(s) : s.value),
             size.width,
             size.height,
             hasCenter ? WITH_CENTER_OPTIONS : {},
           )
         : null,
-    [view, size, slices, hasCenter],
+    [view, size, slices, hasCenter, sliceWeight],
   );
   // Until the area is measured the callout view draws only the donut, so a
   // legend does not flash up and vanish again.
@@ -185,7 +188,7 @@ export function DonutCalloutChart<T extends DonutCalloutSlice>({
     paddingAngle: DEFAULT_CALLOUT_OPTIONS.paddingAngle,
     startAngle: DEFAULT_CALLOUT_OPTIONS.startAngle,
     endAngle: DEFAULT_CALLOUT_OPTIONS.endAngle,
-    dataKey: 'value',
+    dataKey: sliceWeight ?? 'value',
     nameKey: 'name',
     cursor: 'pointer',
     onClick: (_: unknown, index: number) => slices[index]?.onClick?.(),

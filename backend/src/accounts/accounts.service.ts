@@ -6,6 +6,7 @@ import {
   forwardRef,
   Logger,
 } from "@nestjs/common";
+import { assertCategoryTakesCategoryRow } from "../categories/category-fit";
 import { DataSource, EntityManager, In } from "typeorm";
 
 const UUID_RE =
@@ -555,6 +556,13 @@ export class AccountsService {
       await assertAccountAmountsPrecision(m, accountData.currencyCode, {
         openingBalance,
       });
+      // The importers write the asset category on this account's ordinary rows,
+      // which refuse a Transfer category (INV-CATEGORY-001).
+      await assertCategoryTakesCategoryRow(
+        m,
+        userId,
+        accountData.assetCategoryId,
+      );
       const repo = m.getRepository(Account);
       const account = repo.create({
         ...accountData,
@@ -1438,8 +1446,20 @@ export class AccountsService {
           account.overpaymentPayeeId = updateAccountDto.overpaymentPayeeId;
         if (updateAccountDto.fxFeePercent !== undefined)
           account.fxFeePercent = updateAccountDto.fxFeePercent;
-        if (updateAccountDto.assetCategoryId !== undefined)
+        if (updateAccountDto.assetCategoryId !== undefined) {
+          // A value difference: a form resends the category the account holds.
+          if (
+            updateAccountDto.assetCategoryId !==
+            (account.assetCategoryId ?? undefined)
+          ) {
+            await assertCategoryTakesCategoryRow(
+              m,
+              userId,
+              updateAccountDto.assetCategoryId,
+            );
+          }
           account.assetCategoryId = updateAccountDto.assetCategoryId;
+        }
         if (updateAccountDto.dateAcquired !== undefined)
           account.dateAcquired = updateAccountDto.dateAcquired
             ? new Date(updateAccountDto.dateAcquired)

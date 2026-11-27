@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  categoryTypeOf,
+  isExpenseCategory,
+  isIncomeCategory,
+  isTransferCategory,
+} from '@/lib/category-type';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -19,6 +25,7 @@ import { sumMoney } from '@/lib/format';
 import { getNextScheduled } from '@/lib/scheduled-utils';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
 import { buildDescendantIdSet, rollupToDirectChildren } from '@/lib/categoryUtils';
+import { clamp } from '@/lib/clamp';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -76,6 +83,19 @@ export function CategoryInfoWidget({
   onPayeeClick,
 }: CategoryInfoWidgetProps) {
   const t = useTranslations('transactions');
+  const type = categoryTypeOf(category);
+  const typeBadge =
+    type === 'income'
+      ? t('categoryWidget.income')
+      : type === 'transfer'
+        ? t('categoryWidget.transfer')
+        : t('categoryWidget.expense');
+  const headlineLabel =
+    type === 'income'
+      ? t('categoryWidget.totalEarned')
+      : type === 'transfer'
+        ? t('categoryWidget.totalTransferred')
+        : t('categoryWidget.totalSpent');
   const tCommon = useTranslations('common');
   const router = useRouter();
   const { formatCurrency, formatPercentTrimmed } = useNumberFormat();
@@ -212,12 +232,12 @@ export function CategoryInfoWidget({
     return elapsedMonths > 0 ? sum / elapsedMonths : null;
   }, [monthlyTotals]);
 
-  const headlineTotal = totals ? netEntityTotal(totals, category.isIncome) : null;
+  const headlineTotal = totals ? netEntityTotal(totals, isIncomeCategory(category)) : null;
   const swatchColor = category.effectiveColor ?? category.color;
   // Same inheritance the list and the detail header use: show this category's
   // own icon, or the nearest ancestor's.
   const glyphIcon = category.effectiveIcon ?? category.icon;
-  const budgetPercent = budgetStatus ? Math.min(budgetStatus.percentUsed, 100) : 0;
+  const budgetPercent = budgetStatus ? clamp(budgetStatus.percentUsed, 0, 100) : 0;
   const budgetBarColor = budgetStatus
     ? budgetStatus.percentUsed >= 100
       ? 'bg-red-500'
@@ -248,7 +268,7 @@ export function CategoryInfoWidget({
                 </p>
               )}
               <span className="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                {category.isIncome ? t('categoryWidget.income') : t('categoryWidget.expense')}
+                {typeBadge}
               </span>
             </div>
           </div>
@@ -286,13 +306,15 @@ export function CategoryInfoWidget({
 
       <div className="mb-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {category.isIncome ? t('categoryWidget.totalEarned') : t('categoryWidget.totalSpent')}
+          {headlineLabel}
         </p>
         <p
           className={`text-2xl font-bold ${
-            category.isIncome
+            isIncomeCategory(category)
               ? 'text-green-600 dark:text-green-400'
-              : 'text-red-600 dark:text-red-400'
+              : isTransferCategory(category)
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-red-600 dark:text-red-400'
           }`}
         >
           {headlineTotal !== null ? (
@@ -313,7 +335,7 @@ export function CategoryInfoWidget({
         </p>
       </div>
 
-      {budgetStatus && !category.isIncome && (
+      {budgetStatus && isExpenseCategory(category) && (
         <div className="mb-4">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -329,7 +351,9 @@ export function CategoryInfoWidget({
           <div
             className="ui-meter mt-1 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
             role="progressbar"
-            aria-valuenow={Math.round(budgetStatus.percentUsed)}
+            aria-label={t('categoryWidget.budgetThisMonth')}
+            aria-valuenow={Math.round(budgetPercent)}
+            aria-valuetext={budgetStatus.percentUsed === budgetPercent ? undefined : formatPercentTrimmed(budgetStatus.percentUsed)}
             aria-valuemin={0}
             aria-valuemax={100}
           >

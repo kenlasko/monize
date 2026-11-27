@@ -220,8 +220,8 @@ export class DemoSeedService {
     for (const cat of incomeCategories) {
       const result = await withScopedDb(this.dataSource, (manager) =>
         manager.query(
-          `INSERT INTO categories (user_id, name, icon, color, is_income)
-         VALUES ($1, $2, $3, $4, true) RETURNING id`,
+          `INSERT INTO categories (user_id, name, icon, color, category_type)
+         VALUES ($1, $2, $3, $4, 'income') RETURNING id`,
           [userId, cat.name, cat.icon, cat.color],
         ),
       );
@@ -307,8 +307,8 @@ export class DemoSeedService {
     for (const cat of expenseCategories) {
       const parentResult = await withScopedDb(this.dataSource, (manager) =>
         manager.query(
-          `INSERT INTO categories (user_id, name, icon, color, is_income)
-         VALUES ($1, $2, $3, $4, false) RETURNING id`,
+          `INSERT INTO categories (user_id, name, icon, color, category_type)
+         VALUES ($1, $2, $3, $4, 'expense') RETURNING id`,
           [userId, cat.name, cat.icon, cat.color],
         ),
       );
@@ -318,8 +318,8 @@ export class DemoSeedService {
       for (const subName of cat.subs) {
         const subResult = await withScopedDb(this.dataSource, (manager) =>
           manager.query(
-            `INSERT INTO categories (user_id, parent_id, name, is_income)
-           VALUES ($1, $2, $3, false) RETURNING id`,
+            `INSERT INTO categories (user_id, parent_id, name, category_type)
+           VALUES ($1, $2, $3, 'expense') RETURNING id`,
             [userId, parentId, subName],
           ),
         );

@@ -325,7 +325,7 @@
     "notAvailable": "N/D",
     "monthlyCashFlow": "Fluxo de Caixa Mensal",
     "inflowsByCategory": "Entradas por Categoria",
-    "outflowsByCategory": "Saídas por Categoria",
+    "outflowsByCategory": "Despesas por categoria após reembolsos",
     "noIncome": "Sem receitas neste período",
     "noExpenses": "Sem despesas neste período",
     "seriesInflows": "Entradas",
@@ -447,6 +447,7 @@
     "labelEndDate": "Data de Fim",
     "labelMetric": "Métrica",
     "labelDirection": "Direção",
+    "labelCategoryType": "Tipo de categoria",
     "checkboxTransfers": "Incluir transferências",
     "checkboxFavourites": "Adicionar aos favoritos",
     "sortByPlaceholder": "Predefinição",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Montante Médio",
       "BUDGET_VARIANCE": "Variação do Orçamento"
     },
+    "categoryType": {
+      "ALL": "Todas",
+      "INCOME": "Receita",
+      "EXPENSE": "Despesa",
+      "UNCATEGORIZED": "Sem categoria"
+    },
     "direction": {
       "INCOME_ONLY": "Apenas Receitas",
       "EXPENSES_ONLY": "Apenas Despesas",
-      "BOTH": "Ambos"
+      "BOTH": "Ambos",
+      "INCOMING": "Entradas",
+      "OUTGOING": "Saídas"
     },
     "sortDirection": {
       "ASC": "Ascendente",
@@ -2045,6 +2054,7 @@
     "unknown": "Desconhecido",
     "knownPartOnly": "Só é desenhada a parte que foi possível converter.",
     "roundingNote": "O total de cada lado é arredondado uma única vez e repartido pelos seus fluxos, para que o diagrama bata certo. Por isso, uma categoria aqui pode diferir um cêntimo, ou a unidade mais pequena da sua moeda, da mesma categoria em Despesas por Categoria ou Receitas por Fonte, que arredondam cada categoria à parte.",
+    "expenseRefund": "{category} (reembolso de despesas)",
     "netRefund": "Reembolso líquido: esta subcategoria recebeu mais do que gastou.",
     "excludedCount": "{count, plural, one {# montante não pôde ser convertido e fica de fora dos valores acima.} other {# montantes não puderam ser convertidos e ficam de fora dos valores acima.}}",
     "noData": "Sem rendimentos, despesas ou transferências neste período",

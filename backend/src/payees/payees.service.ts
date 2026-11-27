@@ -14,6 +14,12 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../scheduled-transactions/entities/scheduled-transaction.entity";
 import { Category } from "../categories/entities/category.entity";
 import {
+  assertCategoryTakesCategoryRow,
+  transferCategoryRefusal,
+} from "../categories/category-fit";
+import { categoryIdForCategoryRow } from "../categories/category-row-gate";
+import { isTransferCategory } from "../categories/category-type.util";
+import {
   loadQualifiedCategoryNames,
   qualifiedNamesById,
   resolveCategoryNamePaths,
@@ -344,6 +350,14 @@ export class PayeesService {
         );
       }
 
+      // A Transfer category goes only on a transfer, and a payee's default is
+      // copied onto ordinary rows (INV-CATEGORY-001).
+      await assertCategoryTakesCategoryRow(
+        m,
+        userId,
+        createPayeeDto.defaultCategoryId,
+      );
+
       const payee = repo.create({
         ...createPayeeDto,
         website,
@@ -502,6 +516,7 @@ export class PayeesService {
             tr("errors.transactions.categoryNotFound", "Category not found"),
           );
         }
+        if (isTransferCategory(cat)) throw transferCategoryRefusal(cat.name);
         // Qualified: this name goes on a confirmation card the user approves,
         // and "Cell Phone" alone does not say which "Cell Phone" they are
         // about to file every future transaction under.
@@ -533,10 +548,16 @@ export class PayeesService {
     const match = await withScopedDb(this.dataSource, async (m) => {
       const categories = await m.getRepository(Category).find({
         where: { userId },
-        select: ["id", "name", "parentId"],
+        select: ["id", "name", "parentId", "categoryType"],
       });
       const [resolution] = resolveCategoryNamePaths(categories, [categoryName]);
       const names = qualifiedNamesById(categories);
+      // A payee's default lands on ordinary rows, which refuse a Transfer
+      // category (INV-CATEGORY-001): say so rather than "unknown".
+      const resolved = categories.find((c) => c.id === resolution.id);
+      if (resolved && isTransferCategory(resolved)) {
+        throw transferCategoryRefusal(resolved.name);
+      }
       return resolution.id
         ? { id: resolution.id, name: names.get(resolution.id) ?? categoryName }
         : null;
@@ -1238,6 +1259,18 @@ export class PayeesService {
     const transactionsCategorized = await withScopedDb(
       this.dataSource,
       async (m) => {
+        // A change of default is a value difference: a form resends the one
+        // the payee holds, and a stored one is never refused again.
+        if (
+          updatePayeeDto.defaultCategoryId !== undefined &&
+          updatePayeeDto.defaultCategoryId !== payee.defaultCategoryId
+        ) {
+          await assertCategoryTakesCategoryRow(
+            m,
+            userId,
+            updatePayeeDto.defaultCategoryId,
+          );
+        }
         if (Object.keys(updateFields).length > 0) {
           await m.update(Payee, { id, userId }, updateFields);
         }
@@ -1256,9 +1289,17 @@ export class PayeesService {
         }
 
         if (applyMode !== "none" && effectiveCategoryId) {
+          // A stored Transfer default (a previous release's write) is skipped:
+          // the rows it would reach are ordinary rows (INV-CATEGORY-001).
+          const usableCategoryId = await categoryIdForCategoryRow(
+            m,
+            userId,
+            effectiveCategoryId,
+          );
+          if (usableCategoryId === null) return 0;
           return applyMode === "all"
-            ? applyPayeeCategoryToAll(m, userId, id, effectiveCategoryId)
-            : backfillPayeeCategory(m, userId, id, effectiveCategoryId);
+            ? applyPayeeCategoryToAll(m, userId, id, usableCategoryId)
+            : backfillPayeeCategory(m, userId, id, usableCategoryId);
         }
         return 0;
       },
@@ -1765,9 +1806,13 @@ export class PayeesService {
       const ownedCategories = await withScopedDb(this.dataSource, (m) =>
         m.getRepository(Category).find({
           where: { id: In(uniqueCategoryIds), userId },
-          select: ["id"],
+          select: ["id", "name", "categoryType"],
         }),
       );
+      const transferCategory = ownedCategories.find(isTransferCategory);
+      if (transferCategory) {
+        throw transferCategoryRefusal(transferCategory.name);
+      }
       const ownedCategoryIds = new Set(ownedCategories.map((c) => c.id));
       const invalidIds = uniqueCategoryIds.filter(
         (id) => !ownedCategoryIds.has(id),

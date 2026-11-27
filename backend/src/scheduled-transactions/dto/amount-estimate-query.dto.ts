@@ -2,11 +2,13 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsEnum, IsOptional, IsUUID, ValidateIf } from "class-validator";
 import { FrequencyType } from "./create-scheduled-transaction.dto";
 import { IsCalendarDate } from "../../common/validators/is-calendar-date.validator";
+import { IsCurrencyCode } from "../../common/validators/is-currency-code.validator";
 
 /**
  * The query of `GET /scheduled-transactions/amount-estimate/:accountId`: the
  * payee and category a schedule's estimate is matched on (issue #2096), or
- * for a transfer the account it transfers to (issue #2164).
+ * for a transfer the account it transfers to (issue #2164), and the
+ * currency a foreign-currency bill is entered in (issue #2458).
  */
 export class AmountEstimateQueryDto {
   @ApiPropertyOptional({
@@ -59,4 +61,13 @@ export class AmountEstimateQueryDto {
   @ValidateIf((_o, v) => v !== null && v !== "")
   @IsCalendarDate()
   nextDueDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "For a bill entered in another currency than the account's: that currency (ISO code), the one the estimate is worked out in and converted from",
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null && v !== "")
+  @IsCurrencyCode()
+  originalCurrencyCode?: string;
 }

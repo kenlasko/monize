@@ -16,7 +16,8 @@
     "switchCategory": "別のカテゴリに切り替える",
     "switchPlaceholder": "カテゴリを絞り込む...",
     "switchNoMatches": "一致するカテゴリはありません",
-    "since": "{date} からのカテゴリ"
+    "since": "{date} からのカテゴリ",
+    "transferPill": "Transfer"
   },
   "summary": {
     "spentThisYear": "今年の支出",
@@ -29,7 +30,8 @@
     "sinceYear": "{year} 年から",
     "lastTransaction": "最終取引",
     "convertedNote": "{currency} に換算",
-    "partialRatesNote": "為替レートのない月があります"
+    "partialRatesNote": "為替レートのない月があります",
+    "transferredThisYear": "Transferred this year"
   },
   "topPayees": {
     "title": "上位支払先",
@@ -77,7 +79,8 @@
     "largestValue": "{date} に {amount}",
     "defaultFor": "デフォルトカテゴリとして設定されている支払先",
     "defaultForMore": "他 {count} 件",
-    "description": "説明"
+    "description": "説明",
+    "transfer": "Transfer"
   },
   "tabs": {
     "ariaLabel": "カテゴリのセクション",

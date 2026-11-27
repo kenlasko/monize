@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "月次キャッシュフロー",
     "inflowsByCategory": "カテゴリ別流入",
-    "outflowsByCategory": "カテゴリ別流出",
+    "outflowsByCategory": "カテゴリ別の返金差引後の支出",
     "noIncome": "この期間に収入がありません",
     "noExpenses": "この期間に支出がありません",
     "seriesInflows": "流入",
@@ -447,6 +447,7 @@
     "labelEndDate": "終了日",
     "labelMetric": "指標",
     "labelDirection": "方向",
+    "labelCategoryType": "カテゴリの種類",
     "checkboxTransfers": "振替を含める",
     "checkboxFavourites": "お気に入りに追加",
     "sortByPlaceholder": "デフォルト",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "平均金額",
       "BUDGET_VARIANCE": "予算差異"
     },
+    "categoryType": {
+      "ALL": "すべて",
+      "INCOME": "収入",
+      "EXPENSE": "支出",
+      "UNCATEGORIZED": "未分類"
+    },
     "direction": {
       "INCOME_ONLY": "収入のみ",
       "EXPENSES_ONLY": "支出のみ",
-      "BOTH": "両方"
+      "BOTH": "両方",
+      "INCOMING": "入金",
+      "OUTGOING": "出金"
     },
     "sortDirection": {
       "ASC": "昇順",
@@ -2045,6 +2054,7 @@
     "unknown": "不明",
     "knownPartOnly": "換算できた部分のみを表示しています。",
     "roundingNote": "各側の合計は一度だけ丸められてフローに配分されるため、図の数字はぴったり合います。そのため、ここでのカテゴリは、カテゴリごとに個別に丸める「カテゴリ別支出」や「収入源別収入」の同じカテゴリと、1セント（または通貨の最小単位）異なることがあります。",
+    "expenseRefund": "{category}（支出の返金）",
     "netRefund": "純返金: このサブカテゴリは支出より受け取った金額のほうが多くなっています。",
     "excludedCount": "{count, plural, other {# 件の金額を換算できなかったため、上記の数値から除外しています。}}",
     "noData": "この期間の収入、支出、振替はありません",

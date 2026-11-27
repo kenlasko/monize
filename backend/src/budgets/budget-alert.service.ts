@@ -1,3 +1,9 @@
+import { todayYMD } from "../common/date-utils";
+import {
+  budgetPaceWindow,
+  projectBudgetSpending,
+  type BudgetPaceInput,
+} from "./budget-velocity";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { DataSource, In } from "typeorm";
@@ -36,6 +42,10 @@ import {
   budgetAlertImmediateTemplate,
   budgetWeeklyDigestTemplate,
 } from "../notifications/email-templates";
+import {
+  effectiveLineBudget,
+  loadExpenseRolloverIn,
+} from "./budget-rollover.util";
 import {
   getCurrentMonthPeriodDates,
   PeriodDateRange,
@@ -297,13 +307,18 @@ export class BudgetAlertService {
       return { alertsCreated: 0, emailsSent: 0 };
     }
 
-    const { lines: actuals, outsideTransferIncome } =
-      await this.computeCategoryActuals(
-        budget.userId,
-        budget,
-        periodStart,
-        periodEnd,
-      );
+    const todayStr = todayYMD();
+    const {
+      lines: actuals,
+      outsideTransferIncome,
+      paceByLine,
+    } = await this.computeCategoryActuals(
+      budget.userId,
+      budget,
+      periodStart,
+      periodEnd,
+      todayStr,
+    );
 
     // Every figure below is read by this budget's owner, so it is rendered in
     // their number locale rather than the server's (issue #1316). Resolved once
@@ -315,21 +330,11 @@ export class BudgetAlertService {
     );
     const n = numberFormatterFor(prefs?.numberFormat, prefs?.language);
 
-    const today = new Date();
-    const startDate = new Date(periodStart);
-    const endDate = new Date(periodEnd);
-    // periodEnd is the inclusive last day, so the period spans one more day.
-    const totalDays =
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ) + 1;
-    const daysElapsed = Math.max(
-      1,
-      Math.ceil(
-        (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ),
+    const { totalDays, daysElapsed, daysRemaining } = budgetPaceWindow(
+      periodStart,
+      periodEnd,
+      todayStr,
     );
-    const daysRemaining = Math.max(0, totalDays - daysElapsed);
     const periodProgress = daysElapsed / totalDays;
 
     const candidates: AlertCandidate[] = [];
@@ -349,10 +354,11 @@ export class BudgetAlertService {
     for (const cat of expenseActuals) {
       if (cat.budgeted <= 0 || daysElapsed < 3) continue;
 
+      const line = paceByLine?.get(cat.budgetCategoryId);
+      if (!line) continue;
       const velocityAlert = this.checkVelocityAlert(
         cat,
-        daysElapsed,
-        totalDays,
+        projectBudgetSpending([line], daysElapsed, daysRemaining),
         n,
       );
       if (velocityAlert) {
@@ -555,12 +561,11 @@ export class BudgetAlertService {
 
   checkVelocityAlert(
     cat: CategoryActual,
-    daysElapsed: number,
-    totalDays: number,
+    projection: { dailyBurnRate: number | null; projectedTotal: number | null },
     n: NumberT = defaultNumberT,
   ): AlertCandidate | null {
-    const dailyRate = cat.spent / daysElapsed;
-    const projectedTotal = dailyRate * totalDays;
+    const { dailyBurnRate: dailyRate, projectedTotal } = projection;
+    if (dailyRate === null || projectedTotal === null) return null;
     const projectedPercent = (projectedTotal / cat.budgeted) * 100;
 
     if (projectedPercent > 110 && cat.percentUsed < 100) {
@@ -666,13 +671,10 @@ export class BudgetAlertService {
         type: NotificationType.INCOME_SHORTFALL,
         severity: NotificationSeverity.CRITICAL,
         title: "Income below expected",
-        message: `Your actual income (${n.formatCurrency(
-          totalActualIncome,
-          currencyCode,
-        )}) is below ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(
-          expectedSoFar,
-          currencyCode,
-        )}) at this point in the period.`,
+        message:
+          totalActualIncome < 0
+            ? `Net income: ${n.formatCurrency(totalActualIncome, currencyCode)}. Expected income to date: ${n.formatCurrency(expectedSoFar, currencyCode)}.`
+            : `Your actual income (${n.formatCurrency(totalActualIncome, currencyCode)}) is at ${n.formatPercent(Math.round(incomeRatio * 100), 0)} of expected income (${n.formatCurrency(expectedSoFar, currencyCode)}) at this point in the period.`,
         data: {
           actualIncome: totalActualIncome,
           expectedIncome: expectedSoFar,
@@ -701,14 +703,21 @@ export class BudgetAlertService {
     const overallPercent = (totalSpent / totalBudgeted) * 100;
 
     if (overallPercent < 60) {
+      const currency = actuals[0].currencyCode;
       return [
         {
           budgetId: "",
           budgetCategoryId: null,
           type: NotificationType.POSITIVE_MILESTONE,
-          severity: NotificationSeverity.SUCCESS,
-          title: "Budget on track",
-          message: `You are ${n.formatPercent(Math.round(periodProgress * 100), 0)} through the period and have only used ${n.formatPercent(overallPercent, 1)} of your total budget. Keep it up!`,
+          severity:
+            totalSpent < 0
+              ? NotificationSeverity.INFO
+              : NotificationSeverity.SUCCESS,
+          title: totalSpent < 0 ? "Budget activity" : "Budget on track",
+          message:
+            totalSpent < 0
+              ? `Net spending: ${n.formatCurrency(totalSpent, currency)}. Budget: ${n.formatCurrency(totalBudgeted, currency)}.`
+              : `You are ${n.formatPercent(Math.round(periodProgress * 100), 0)} through the period and have only used ${n.formatPercent(overallPercent, 1)} of your total budget. Keep it up!`,
           data: {
             periodProgress: Math.round(periodProgress * 100),
             percentUsed: Math.round(overallPercent * 10) / 10,
@@ -1216,7 +1225,12 @@ export class BudgetAlertService {
     budget: Budget,
     periodStart: string,
     periodEnd: string,
-  ): Promise<{ lines: CategoryActual[]; outsideTransferIncome: number }> {
+    paceThrough?: string,
+  ): Promise<{
+    lines: CategoryActual[];
+    outsideTransferIncome: number;
+    paceByLine?: ReadonlyMap<string, BudgetPaceInput>;
+  }> {
     const budgetCategories = budget.categories || [];
 
     if (budgetCategories.length === 0) {
@@ -1225,16 +1239,22 @@ export class BudgetAlertService {
 
     // The two spending queries share one scoped transaction so the direct and
     // split halves of a category's total come from the same snapshot.
-    const spending = await withScopedDb(this.dataSource, (m) =>
-      queryCategorySpending(
-        m.getRepository(Transaction),
-        m.getRepository(TransactionSplit),
-        userId,
-        budgetCategories,
-        periodStart,
-        periodEnd,
-        budget.id,
-      ),
+    const { spending, rolloverIn } = await withScopedDb(
+      this.dataSource,
+      async (m) => {
+        const spending = await queryCategorySpending(
+          m.getRepository(Transaction),
+          m.getRepository(TransactionSplit),
+          userId,
+          budgetCategories,
+          periodStart,
+          periodEnd,
+          budget.id,
+          paceThrough,
+        );
+        const rolloverIn = await loadExpenseRolloverIn(m, budget, periodStart);
+        return { spending, rolloverIn };
+      },
     );
 
     // An income-linked budget's expense line holds a percentage of the
@@ -1245,11 +1265,12 @@ export class BudgetAlertService {
       : 0;
 
     const lines = budgetCategories.map((bc) => {
-      const budgeted = resolveBudgetLineBudgeted(
+      const planned = resolveBudgetLineBudgeted(
         bc,
         budget.incomeLinked,
         actualIncome,
       );
+      const budgeted = effectiveLineBudget(planned, rolloverIn.get(bc.id));
       const spent = resolveCategorySpent(
         bc,
         spending.spendingMap,
@@ -1276,6 +1297,7 @@ export class BudgetAlertService {
     });
     return {
       lines,
+      paceByLine: spending.paceByLine,
       outsideTransferIncome: resolveOutsideTransferIncome(spending),
     };
   }

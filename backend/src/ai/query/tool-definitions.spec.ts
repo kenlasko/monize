@@ -204,13 +204,13 @@ describe("FINANCIAL_TOOLS", () => {
       expect(tool.inputSchema.required).toBeUndefined();
     });
 
-    it("supports type filter with expense/income/all", () => {
+    it("supports type filter with expense/income/transfer/all", () => {
       const tool = FINANCIAL_TOOLS.find((t) => t.name === "list_categories")!;
       const props = tool.inputSchema.properties as Record<
         string,
         Record<string, unknown>
       >;
-      expect(props.type.enum).toEqual(["expense", "income", "all"]);
+      expect(props.type.enum).toEqual(["expense", "income", "transfer", "all"]);
     });
 
     it("exposes an optional search parameter", () => {

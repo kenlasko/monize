@@ -3799,10 +3799,137 @@ describe('ScheduledTransactionForm: Estimate', () => {
     expect(mockGetAmountEstimate).toHaveBeenCalledTimes(2);
   });
 
-  it('disables the currency picker while estimating', async () => {
+  // Issue #2458: an estimate follows the entry currency, so choosing one
+  // while estimating is not a switch that drops the estimate.
+  it('keeps the currency picker enabled while estimating', async () => {
     render(<ScheduledTransactionForm scheduledTransaction={estimatedSt} />);
     await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
-    expect(screen.getByTestId('currency-picker')).toHaveAttribute('data-disabled', 'true');
+    expect(screen.getByTestId('currency-picker')).toHaveAttribute('data-disabled', 'false');
+  });
+
+  describe('a bill entered in another currency (issue #2458)', () => {
+    const foreignEstimate = {
+      ...estimate,
+      originalCurrencyCode: 'USD',
+      exchangeRate: 1.4,
+      months: { '2024-03': { amount: -154, basis: 'recent', originalAmount: -110 } },
+    };
+    const foreignSt = {
+      ...estimatedSt,
+      amount: -140,
+      originalAmount: -100,
+      originalCurrencyCode: 'USD',
+      exchangeRate: 1.4,
+      amountEstimate: foreignEstimate,
+    };
+
+    beforeEach(() => {
+      mockGetAmountEstimate.mockResolvedValue(foreignEstimate);
+      mockGetRateForDate.mockResolvedValue(1.35);
+    });
+
+    it('offers the toggle, asks in the entry currency and shows the biller-currency estimate', async () => {
+      render(<ScheduledTransactionForm scheduledTransaction={foreignSt} />);
+      await waitFor(() =>
+        expect(mockGetAmountEstimate).toHaveBeenCalledWith(
+          'acc-1',
+          { payeeId: 'payee-1', categoryId: 'cat-1', originalCurrencyCode: 'USD' },
+          '2024-03-01',
+        ),
+      );
+
+      expectToggle(screen.getByRole('switch', { name: 'Estimate' }), true);
+      const amount = screen.getByLabelText('Amount in USD') as HTMLInputElement;
+      expect(amount).toBeDisabled();
+      expect(amount.value).toContain('110');
+      expect(screen.getByText(/About .*154.* at 1 USD = 1\.4.* CAD/)).toBeInTheDocument();
+    });
+
+    it('saves both figures of the estimate and its rate', async () => {
+      const { container } = render(<ScheduledTransactionForm scheduledTransaction={foreignSt} />);
+      await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
+
+      await act(async () => {
+        fireEvent.click(container.querySelector('button[type="submit"]')!);
+      });
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          's1',
+          expect.objectContaining({
+            amountIsEstimated: true,
+            amount: -154,
+            originalAmount: -110,
+            originalCurrencyCode: 'USD',
+            exchangeRate: 1.4,
+          }),
+        );
+      });
+    });
+
+    it('keeps the foreign amount and the latest rate while the estimate is unknown', async () => {
+      mockGetAmountEstimate.mockResolvedValue({
+        ...foreignEstimate,
+        status: 'no-history',
+        months: {},
+        originalCurrencyCode: null,
+        exchangeRate: null,
+      });
+      const { container } = render(
+        <ScheduledTransactionForm scheduledTransaction={{ ...foreignSt, amountEstimate: null }} />,
+      );
+      await waitFor(() => expect(mockGetAmountEstimate).toHaveBeenCalled());
+      await waitFor(() => expect(mockGetRateForDate).toHaveBeenCalled());
+
+      await act(async () => {
+        fireEvent.click(container.querySelector('button[type="submit"]')!);
+      });
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          's1',
+          expect.objectContaining({
+            amountIsEstimated: true,
+            originalAmount: -100,
+            originalCurrencyCode: 'USD',
+            exchangeRate: 1.35,
+          }),
+        );
+      });
+    });
+
+    it('turns the estimate on for a foreign bill without asking for a typed amount', async () => {
+      const { container } = render(
+        <ScheduledTransactionForm
+          scheduledTransaction={{ ...foreignSt, amountIsEstimated: false, amountEstimate: null }}
+        />,
+      );
+      await waitFor(() => expect(mockAccountsGetAll).toHaveBeenCalled());
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('switch', { name: 'Estimate' }));
+      });
+      await waitFor(() =>
+        expect(mockGetAmountEstimate).toHaveBeenCalledWith(
+          'acc-1',
+          expect.objectContaining({ originalCurrencyCode: 'USD' }),
+          '2024-03-01',
+        ),
+      );
+      await waitFor(() =>
+        expect((screen.getByLabelText('Amount in USD') as HTMLInputElement).value).toContain('110'),
+      );
+
+      await act(async () => {
+        fireEvent.click(container.querySelector('button[type="submit"]')!);
+      });
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          's1',
+          expect.objectContaining({ amountIsEstimated: true, originalAmount: -110, amount: -154 }),
+        );
+      });
+    });
   });
 
   it('does not let a delegate turn the estimate on, and asks for no preview', async () => {

@@ -325,7 +325,7 @@
     "notAvailable": "Brak",
     "monthlyCashFlow": "Miesięczne przepływy pieniężne",
     "inflowsByCategory": "Wpływy według kategorii",
-    "outflowsByCategory": "Wypływy według kategorii",
+    "outflowsByCategory": "Wydatki według kategorii po uwzględnieniu zwrotów",
     "noIncome": "Brak przychodów w tym okresie",
     "noExpenses": "Brak wydatków w tym okresie",
     "seriesInflows": "Wpływy",
@@ -447,6 +447,7 @@
     "labelEndDate": "Data końcowa",
     "labelMetric": "Metryka",
     "labelDirection": "Kierunek",
+    "labelCategoryType": "Typ kategorii",
     "checkboxTransfers": "Uwzględnij przelewy",
     "checkboxFavourites": "Dodaj do ulubionych",
     "sortByPlaceholder": "Domyślna",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Średnia kwota",
       "BUDGET_VARIANCE": "Odchylenie od budżetu"
     },
+    "categoryType": {
+      "ALL": "Wszystkie",
+      "INCOME": "Przychód",
+      "EXPENSE": "Wydatek",
+      "UNCATEGORIZED": "Bez kategorii"
+    },
     "direction": {
       "INCOME_ONLY": "Tylko przychody",
       "EXPENSES_ONLY": "Tylko wydatki",
-      "BOTH": "Oba"
+      "BOTH": "Oba",
+      "INCOMING": "Wpływy",
+      "OUTGOING": "Wypływy"
     },
     "sortDirection": {
       "ASC": "Rosnąco",
@@ -2045,6 +2054,7 @@
     "unknown": "Nieznane",
     "knownPartOnly": "Rysowana jest tylko część, którą udało się przeliczyć.",
     "roundingNote": "Suma każdej strony jest zaokrąglana raz i rozdzielana między jej przepływy, aby diagram zgadzał się dokładnie. Dlatego kategoria może się tu różnić o najmniejszą jednostkę Twojej waluty (np. jeden grosz) od tej samej kategorii w raporcie „Wydatki według kategorii” lub „Przychody według źródła”, które zaokrąglają każdą kategorię osobno.",
+    "expenseRefund": "{category} (zwrot wydatków)",
     "netRefund": "Zwrot netto: ta podkategoria przyjęła więcej, niż wydała.",
     "excludedCount": "{count, plural, one {# kwoty nie udało się przeliczyć i pominięto ją w powyższych liczbach.} few {# kwot nie udało się przeliczyć i pominięto je w powyższych liczbach.} many {# kwot nie udało się przeliczyć i pominięto je w powyższych liczbach.} other {# kwoty nie udało się przeliczyć i pominięto je w powyższych liczbach.}}",
     "noData": "Brak dochodów, wydatków i przelewów w tym okresie",

@@ -197,17 +197,17 @@ export async function planSharedFinance(
     ),
   ];
   if (categoryIds.length) {
-    const categories: { id: string; is_income: boolean }[] =
+    const categories: { id: string; category_type: string }[] =
       await manager.query(
-        "SELECT id, is_income FROM categories WHERE id = ANY($1::uuid[]) AND user_id = $2",
+        "SELECT id, category_type FROM categories WHERE id = ANY($1::uuid[]) AND user_id = $2",
         [categoryIds, userId],
       );
     if (categories.length !== categoryIds.length)
       sharedError("financeCategory");
     if (
       personal !== 0n &&
-      categories.find((c) => c.id === categoryId)?.is_income !==
-        (entry.type === "INCOME")
+      categories.find((c) => c.id === categoryId)?.category_type !==
+        (entry.type === "INCOME" ? "income" : "expense")
     )
       sharedError("financeCategory");
   }

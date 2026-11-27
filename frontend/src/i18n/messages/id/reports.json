@@ -325,7 +325,7 @@
     "notAvailable": "T/A",
     "monthlyCashFlow": "Arus Kas Bulanan",
     "inflowsByCategory": "Arus Masuk per Kategori",
-    "outflowsByCategory": "Arus Keluar per Kategori",
+    "outflowsByCategory": "Pengeluaran per Kategori Setelah Pengembalian Dana",
     "noIncome": "Tidak ada pendapatan dalam periode ini",
     "noExpenses": "Tidak ada pengeluaran dalam periode ini",
     "seriesInflows": "Arus Masuk",
@@ -447,6 +447,7 @@
     "labelEndDate": "Tanggal Akhir",
     "labelMetric": "Metrik",
     "labelDirection": "Arah",
+    "labelCategoryType": "Jenis kategori",
     "checkboxTransfers": "Sertakan transfer",
     "checkboxFavourites": "Tambah ke favorit",
     "sortByPlaceholder": "Bawaan",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Rata-rata Jumlah",
       "BUDGET_VARIANCE": "Varians Anggaran"
     },
+    "categoryType": {
+      "ALL": "Semua",
+      "INCOME": "Pendapatan",
+      "EXPENSE": "Pengeluaran",
+      "UNCATEGORIZED": "Tanpa kategori"
+    },
     "direction": {
       "INCOME_ONLY": "Pendapatan Saja",
       "EXPENSES_ONLY": "Pengeluaran Saja",
-      "BOTH": "Keduanya"
+      "BOTH": "Keduanya",
+      "INCOMING": "Masuk",
+      "OUTGOING": "Keluar"
     },
     "sortDirection": {
       "ASC": "Menaik",
@@ -2045,6 +2054,7 @@
     "unknown": "Tidak diketahui",
     "knownPartOnly": "Hanya bagian yang dapat dikonversi yang digambar.",
     "roundingNote": "Total setiap sisi dibulatkan sekali lalu dibagi ke alirannya, sehingga diagram pas dengan tepat. Karena itu, sebuah kategori di sini dapat berbeda satu sen, atau satuan terkecil mata uang Anda, dari kategori yang sama di Pengeluaran per Kategori atau Pendapatan per Sumber, yang membulatkan setiap kategori secara terpisah.",
+    "expenseRefund": "{category} (pengembalian dana pengeluaran)",
     "netRefund": "Pengembalian bersih: subkategori ini menerima lebih banyak daripada yang dibelanjakan.",
     "excludedCount": "{count, plural, other {# jumlah tidak dapat dikonversi dan tidak termasuk dalam angka di atas.}}",
     "noData": "Tidak ada pemasukan, pengeluaran, atau transfer pada periode ini",

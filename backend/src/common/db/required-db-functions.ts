@@ -113,6 +113,13 @@ export const REQUIRED_DB_FUNCTIONS: readonly RequiredDbFunction[] = [
       "the currency first-price-symbol gate, which must see every other user's use of a shared coin (INV-CRYPTO-001)",
   },
   {
+    name: "category_held_by_category_row",
+    identity: "public.category_held_by_category_row(uuid)",
+    migration: "20261126214741_category_type_transfer.sql",
+    usedBy:
+      "the category type change and move, which refuse while a category row, a schedule or a setting that takes only an Income or Expense category holds the category (INV-CATEGORY-001)",
+  },
+  {
     name: "currency_codes_referenced_by_user_data",
     identity: "public.currency_codes_referenced_by_user_data(uuid)",
     migration: "137_currency_codes_referenced_by_user.sql",

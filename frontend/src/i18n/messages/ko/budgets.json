@@ -6,14 +6,14 @@
       "WANT": "선택 지출",
       "SAVING": "저축"
     },
-    "target": "목표: {percent}%",
-    "budgeted": "예산 설정: {percent}% ({amount})"
+    "target": "목표: {percent}",
+    "budgeted": "예산 설정: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "편집: {name}",
     "budgetAmount": "예산 금액",
     "rolloverType": "이월 유형",
-    "rolloverTypeTooltip": "이 카테고리의 미사용 예산은 초기화되지 않고 다음 기간으로 이월됩니다. 초과 지출은 절대 빚으로 이월되지 않으며, 이월 한도가 쌓일 수 있는 금액을 제한합니다.",
+    "rolloverTypeTooltip": "지출 카테고리에서 남은 금액은 다음 기간의 예산에 더해집니다. 초과 지출액은 다음 기간의 예산에서 차감됩니다. 이월 한도는 남은 금액에만 적용됩니다.",
     "rolloverCap": "이월 한도 (선택)",
     "rolloverCapPlaceholder": "한도 없음",
     "flexGroup": "플렉스 그룹 (선택)",
@@ -138,7 +138,7 @@
     "expenseCategories": "지출 카테고리",
     "incomeCategories": "소득 카테고리",
     "categorySublabel": "{count}개 카테고리",
-    "rolloverBadge": "+{amount} 이월",
+    "rolloverBadge": "{amount} 이월",
     "underBudgetLabel": "{amount} 예산 절감",
     "overBudgetLabel": "{amount} 예산 초과",
     "carriedForward": "{amount} 이월됨",
@@ -151,8 +151,8 @@
     "projected": "{label} (예상)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% 사용됨",
-    "paceMarkerTitle": "예상 진도: {percent}%"
+    "ariaLabel": "{percent} 사용됨",
+    "paceMarkerTitle": "예상 진도: {percent}"
   },
   "scenarioPlanner": {
     "title": "가상 시나리오 플래너",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "분석 기준 예상: {amount}/월",
     "defaultRolloverType": "기본 이월 유형",
     "rolloverHint": "모든 카테고리의 기본값을 설정합니다. 예산 생성 후 개별 카테고리를 사용자 정의할 수 있습니다.",
-    "rolloverTooltip": "카테고리의 미사용 예산은 초기화되지 않고 다음 기간으로 이월됩니다. 초과 지출은 절대 빚으로 이월되지 않으며, 이월 한도가 카테고리에 쌓일 수 있는 금액을 제한합니다.",
+    "rolloverTooltip": "지출 카테고리에서 남은 금액은 다음 기간의 예산에 더해집니다. 초과 지출액은 다음 기간의 예산에서 차감됩니다. 이월 한도는 남은 금액에만 적용됩니다.",
     "rolloverOptions": {
       "NONE": "없음 -- 매 기간 초기화",
       "MONTHLY": "월별 -- 매월 이월",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "비율 목표는 예산 소득에 대한 비율입니다. 소득 연동 예산은 이번 기간에 받은 소득, 그렇지 않으면 기준 소득, 그것도 없으면 소득 카테고리의 금액을 기준으로 합니다. 고정 금액은 매 기간 동일합니다.",
       "targetPercent": "소득 대비 비율",
       "targetAmount": "기간당 금액",
-      "carryOver": "남은 금액 이월",
-      "carryOverTooltip": "기간이 끝날 때 버킷에 남은 금액이 다음 기간에 더해집니다. 초과 지출한 버킷은 아무것도 이월되지 않습니다.",
+      "carryOver": "잔액 이월",
+      "carryOverTooltip": "잔액이 양수이면 다음 기간의 버킷 배정액에 더해지고 음수이면 차감됩니다. 이월 한도는 양수 잔액에만 적용됩니다.",
       "carryCap": "이월 한도 (선택)",
       "carryCapPlaceholder": "한도 없음",
       "save": "저장",

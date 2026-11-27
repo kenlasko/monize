@@ -49,7 +49,9 @@
     "editAria": "Kategoriyi düzenle",
     "collapseAria": "Kategori bilgisini gizle",
     "show": "Kategori bilgisini göster",
-    "amountUnavailable": "Kur yok"
+    "amountUnavailable": "Kur yok",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Mevcut Bakiye",

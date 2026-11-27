@@ -78,6 +78,12 @@ export interface EstimatedMonth {
    * three; `balance`: what a transfer's destination owes raised it (issue #2164).
    */
   basis: 'seasonal' | 'recent' | 'balance';
+  /**
+   * A foreign-currency bill's estimate in the biller's currency, the figure
+   * `amount` (in the account's) is converted from (issue #2458); absent
+   * otherwise.
+   */
+  originalAmount?: number;
 }
 
 /**
@@ -100,6 +106,13 @@ export interface EstimateFloor {
 export interface ScheduleAmountEstimate {
   status: ScheduleAmountEstimateStatus;
   currencyCode: string;
+  /**
+   * A foreign-currency bill's currency, each month's `originalAmount`'s
+   * (issue #2458); null otherwise, absent from an older server.
+   */
+  originalCurrencyCode?: string | null;
+  /** The rate `originalAmount` was converted at, account units per biller unit. */
+  exchangeRate?: number | null;
   months: Record<string, EstimatedMonth>;
   /** `null` when withheld: a delegate is not told how often the owner paid. */
   paymentCount: number | null;

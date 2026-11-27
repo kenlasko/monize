@@ -1,5 +1,6 @@
 'use client';
 
+import { categoryTypeOf } from '@/lib/category-type';
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { SummaryCardGrid, SummaryCardItem } from '@/components/accounts/shared/SummaryCardGrid';
@@ -57,7 +58,8 @@ export function CategorySummaryCards({
 
   const { stats, category } = detail;
   const displayCurrency = currencyStrategy.displayCurrency;
-  const isIncome = category.isIncome;
+  const type = categoryTypeOf(category);
+  const isIncome = type === 'income';
 
   const headlineOf = (totals: CategoryPeriodTotals | null) =>
     totals === null ? null : netEntityTotal(totals, isIncome);
@@ -103,11 +105,19 @@ export function CategorySummaryCards({
   const cards: SummaryCardItem[] = [
     {
       lead: true,
-      label: isIncome ? t('summary.receivedThisYear') : t('summary.spentThisYear'),
+      label:
+        type === 'income'
+          ? t('summary.receivedThisYear')
+          : type === 'transfer'
+            ? t('summary.transferredThisYear')
+            : t('summary.spentThisYear'),
       value: thisYear !== null ? formatCurrency(thisYear, displayCurrency) : '—',
-      valueClass: isIncome
-        ? 'text-green-600 dark:text-green-400'
-        : 'text-red-600 dark:text-red-400',
+      valueClass:
+        type === 'income'
+          ? 'text-green-600 dark:text-green-400'
+          : type === 'transfer'
+            ? 'text-blue-600 dark:text-blue-400'
+            : 'text-red-600 dark:text-red-400',
       note: yoyNote ?? convertedNote,
     },
     {

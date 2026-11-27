@@ -90,6 +90,7 @@ describe("InsightsAggregatorService", () => {
     ) => ({
       categoryId: "cat-1",
       categoryName: "Dining",
+      categoryType: "expense",
       currencyCode: "USD",
       net: "100",
       txnCount: "2",
@@ -167,25 +168,37 @@ describe("InsightsAggregatorService", () => {
       expect(result.categorySpending[0].averageMonthlyTotal).toBe(100.0033);
     });
 
-    it("nets refunds within a category and drops a category that nets to a credit", async () => {
+    it("keeps a net-credit expense category and excludes salary", async () => {
       withRows([
         row({ month: "2026-01", net: "500" }),
         row({ month: "2026-02", net: "-100" }), // refund month
-        // Income category: negated credits are negative, so it is not spending.
         row({
           month: "2026-01",
-          categoryId: "cat-inc",
-          categoryName: "Salary",
-          net: "-4000",
+          categoryId: "cat-travel",
+          categoryName: "Travel",
+          net: "-50",
         }),
+        // Income category: negated credits are negative, so it is not spending.
+        {
+          ...row({
+            month: "2026-01",
+            categoryId: "cat-inc",
+            categoryName: "Salary",
+            net: "-4000",
+          }),
+          categoryType: "income",
+        },
       ]);
 
       const result = await service.computeAggregates(userId, "USD");
 
-      expect(result.categorySpending).toHaveLength(1);
+      expect(result.categorySpending.map((c) => c.categoryName)).toEqual([
+        "Dining",
+        "Travel",
+      ]);
       expect(result.categorySpending[0].averageMonthlyTotal).toBe(200); // 400 / 2
       const [jan, feb] = result.monthlySpending;
-      expect(jan.total).toBe(500);
+      expect(jan.total).toBe(450);
       expect(feb.total).toBe(-100);
       expect(
         result.monthlySpending.flatMap((m) => m.categoryBreakdown),

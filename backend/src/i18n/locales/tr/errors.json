@@ -354,15 +354,20 @@
     "billCustomFrequency": "Bordro kesinti kuralı için sabit sıklıkta bir fatura gerekir; bu fatura özel bir takvime göre tekrarlanıyor."
   },
   "categories": {
-    "reassignOwnerOnly": "İşlemleri başka bir kategoriye yalnızca sahibi taşıyabilir",
     "notFound": "{{ id }} kimliğine sahip kategori bulunamadı",
     "cannotModifySystem": "Sistem kategorileri değiştirilemez",
     "selfParent": "Kategori kendi üst kategorisi olamaz",
     "circularParent": "Döngüsel üst kategori referansı tespit edildi",
     "cannotDeleteSystem": "Sistem kategorileri silinemez",
     "hasSubcategories": "Alt kategorileri olan kategori silinemez. Önce alt kategorileri silin veya yeniden atayın.",
-    "inUse": "\"{{ name }}\" kategorisi silinemez: hâlâ {{ summary }} tarafından kullanılıyor. Önce bunları yeniden atayın veya kaldırın.",
-    "alreadyHasCategories": "Varsayılanlar içe aktarılamıyor: kullanıcının zaten kategorileri var. Önce mevcut kategorileri silin veya sıfırdan başlayın."
+    "alreadyHasCategories": "Varsayılanlar içe aktarılamıyor: kullanıcının zaten kategorileri var. Önce mevcut kategorileri silin veya sıfırdan başlayın.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.",
+    "reassignOwnerOnly": "İşlemleri başka bir kategoriye yalnızca sahibi taşıyabilir",
+    "inUse": "\"{{ name }}\" kategorisi silinemez: hâlâ {{ summary }} tarafından kullanılıyor. Önce bunları yeniden atayın veya kaldırın."
   },
   "common": {
     "invalidUuid": "Geçersiz UUID: {{ id }}",
@@ -523,9 +528,6 @@
     "internal": "Dahili sunucu hatası"
   },
   "import": {
-    "duplicatesChanged": "Olası mükerrerler denetlendikten sonra değişti. Hiçbir şey içe aktarılmadı; yeniden denetleyin.",
-    "duplicateDecisionRepeated": "Dosyanın bir satırı için olası mükerreriyle ilgili yalnızca bir karar verilebilir.",
-    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı.",
     "accountClosed": "Hesap kapalı. Yeniden açın veya başka bir hesap seçin.",
     "noAccountBlocks": "QIF dosyasında hesap bloğu bulunamadı. Bu dosya çok hesaplı dışa aktarma olmayabilir.",
     "accountTypeRequired": "İçe aktarmadan önce bu hesaplar için bir hesap türü seçin: {{ accounts }}",
@@ -569,7 +571,10 @@
     "mnyJobNotFound": "İçe aktarma görevi bulunamadı",
     "mnyFileTooLarge": "Bu Money dosyası {{ limit }} MB içe aktarma sınırından büyük.",
     "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın.",
-    "noRateForTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: transferin diğer hesabı başka bir para biriminde. Bu çift ve tarih için bir döviz kuru ekleyin, sonra yeniden içe aktarın."
+    "noRateForTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: transferin diğer hesabı başka bir para biriminde. Bu çift ve tarih için bir döviz kuru ekleyin, sonra yeniden içe aktarın.",
+    "duplicatesChanged": "Olası mükerrerler denetlendikten sonra değişti. Hiçbir şey içe aktarılmadı; yeniden denetleyin.",
+    "duplicateDecisionRepeated": "Dosyanın bir satırı için olası mükerreriyle ilgili yalnızca bir karar verilebilir.",
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı."
   },
   "monteCarlo": {
     "scenarioNotFound": "{{ id }} senaryosu bulunamadı",
@@ -652,7 +657,7 @@
     "updateSplitOverrideRequiresAmount": "Bölünmüş geçersiz kılma için tutar gereklidir",
     "dateMustBeYMD": "tarih YYYY-AA-GG biçiminde olmalıdır",
     "loanLedgerUnreadable": "Defter bakiyesi okunamadığı için bu kredi ödemesi hesaplanamadı. Tekrar deneyin.",
-    "estimateRequiresPlain": "Tahmini tutar yalnızca hesap para biriminde tek kategorili bir işlem veya transfer için kullanılabilir; bölünmüş işlem, yatırım veya döviz tutarı için kullanılamaz",
+    "estimateRequiresPlain": "Tahmini tutar yalnızca tek kategorili bir işlem veya transfer için kullanılabilir; bölünmüş işlem veya yatırım için kullanılamaz",
     "estimateNoAutoPost": "Tahmini tutarlı planlı bir işlem otomatik olarak kaydedilemez",
     "overrideAutoPostNeedsAmount": "Tahmini tutarlı planlı bir işlemin bir tekrarı, ancak kendi tutarı girildikten sonra otomatik olarak kaydedilebilir",
     "estimateRequiresPayeeAndCategory": "Tahmini tutar, ödeme geçmişinin eşleştirileceği bir alıcı ve kategori gerektirir",
@@ -1029,10 +1034,6 @@
     "needsPreview": "Bu banka hesabının önizlemesini açın ve otomatik olarak senkronize edilmeden önce ilk içe aktarmayı onaylayın.",
     "selectionNotNew": "Seçilen bir işlem bankanın verilerinde yeni bir satır değil. Hiçbir şey içe aktarılmadı; önizlemeyi yeniden yapın.",
     "selectionOverlap": "Bir işlem aynı anda hem içe aktarılıp hem de istisnalara eklenemez.",
-    "selectionConflict": "Bir işlem için yalnızca bir karar verilebilir: içe aktarmak, istisnalara eklemek, birleştirmek, sizinkini tutmak veya sizinkini değiştirmek.",
-    "duplicateNeedsPreview": "Olası bir mükerrerle ilgili karar, onu gösteren önizlemeyi gerektirir. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
-    "selectionNotDuplicate": "Birleştirmek, tutmak veya değiştirmek için seçilen bir işlem artık olası bir mükerrer değil. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
-    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı; işlemi tutun ya da bankanın satırını yanına içe aktarın.",
     "nothingToUpdate": "Bir banka bağlantısını değiştirmek için autoSync, notifySuccess veya tagOperationType gönderin.",
     "simplefinCredentialsMissing": "Hesapları eşitlemeden önce SimpleFIN'i bağlayın.",
     "simplefinAccessInvalid": "SimpleFIN geçersiz bir erişim URL'si döndürdü. SimpleFIN Bridge'de yeni bir kurulum belirteci oluşturun.",
@@ -1050,7 +1051,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge için etkin bir abonelik gerekir. SimpleFIN Bridge üzerinden faturalandırmayı kontrol edin.",
     "simplefinReadFailed": "SimpleFIN eksiksiz hesap verileri sağlayamadı. SimpleFIN Bridge bağlantısını kontrol edin.",
     "simplefinQuotaExhausted": "SimpleFIN istek kotası tükendi. Kota yenilendiğinde geçerli grubu yeniden deneyin.",
-    "simplefinClaimNotSent": "SimpleFIN geçici olarak kullanılamıyor. Kurulum belirteci gönderilmedi; aynı belirteçle daha sonra yeniden deneyin."
+    "simplefinClaimNotSent": "SimpleFIN geçici olarak kullanılamıyor. Kurulum belirteci gönderilmedi; aynı belirteçle daha sonra yeniden deneyin.",
+    "selectionConflict": "Bir işlem için yalnızca bir karar verilebilir: içe aktarmak, istisnalara eklemek, birleştirmek, sizinkini tutmak veya sizinkini değiştirmek.",
+    "duplicateNeedsPreview": "Olası bir mükerrerle ilgili karar, onu gösteren önizlemeyi gerektirir. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
+    "selectionNotDuplicate": "Birleştirmek, tutmak veya değiştirmek için seçilen bir işlem artık olası bir mükerrer değil. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı; işlemi tutun ya da bankanın satırını yanına içe aktarın."
   },
   "warranties": {
     "notFound": "{{ id }} kimliğine sahip garanti bulunamadı",

@@ -1,5 +1,6 @@
 'use client';
 
+import { amountWithShare, reportBreakdownShare } from '@/lib/report-breakdown-share';
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -71,6 +72,7 @@ export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps)
         id: item.payeeId || '',
         name: item.payeeName,
         value: item.total,
+        percentage: item.percentage,
       })),
     [response],
   );
@@ -130,13 +132,13 @@ export function SpendingByPayeeWidget({ isLoading }: SpendingByPayeeWidgetProps)
                 <Tooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
-                    const d = payload[0].payload as { name: string; value: number };
-                    const pct = totalExpenses > 0 ? (d.value / totalExpenses) * 100 : 0;
+                    const d = payload[0].payload as { name: string; value: number; percentage?: number | null };
+                    const pct = reportBreakdownShare(d, totalExpenses);
                     return (
                       <ChartTooltipPanel>
                         <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
                         <p className="text-gray-600 dark:text-gray-400">
-                          {formatCurrency(d.value)} ({formatPercent(pct, 1)})
+                          {amountWithShare(formatCurrency(d.value), pct, formatPercent)}
                         </p>
                       </ChartTooltipPanel>
                     );

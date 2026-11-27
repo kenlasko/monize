@@ -450,7 +450,23 @@ describe("ScheduledTransactionsController", () => {
           payeeId: "payee-1",
           categoryId: "cat-1",
           transferAccountId: null,
+          originalCurrencyCode: null,
         },
+      );
+    });
+
+    it("passes a foreign bill's entry currency through (issue #2458)", async () => {
+      mockService.previewAmountEstimate.mockResolvedValue({});
+
+      await controller.previewAmountEstimate(mockReq, "acc-1", {
+        payeeId: "payee-1",
+        categoryId: "cat-1",
+        originalCurrencyCode: "USD",
+      });
+
+      expect(mockService.previewAmountEstimate).toHaveBeenCalledWith(
+        mockReq.user.id,
+        expect.objectContaining({ originalCurrencyCode: "USD" }),
       );
     });
 
@@ -472,6 +488,7 @@ describe("ScheduledTransactionsController", () => {
           transferAccountId: "acc-card",
           frequency: "MONTHLY",
           nextDueDate: "2026-11-26",
+          originalCurrencyCode: null,
         },
       );
     });

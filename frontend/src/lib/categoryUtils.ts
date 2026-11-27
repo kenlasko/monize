@@ -1,4 +1,5 @@
 import { Category } from '@/types/category';
+import { categoryTypeOrUndefined, signByCategoryType } from '@/lib/category-type';
 import type { MultiSelectOption } from '@/components/ui/MultiSelect';
 
 interface CategoryOption {
@@ -292,8 +293,9 @@ export function buildCategoryFilterOptions(
  */
 export function canonicalizeCategoryFilter(ids: string[], categories: Category[]): string[] {
   let result = ids;
-  for (const [pseudoId, wantIncome] of [['income', true], ['expense', false]] as const) {
-    const typeIds = new Set(categories.filter((c) => c.isIncome === wantIncome).map((c) => c.id));
+  for (const pseudoId of ['income', 'expense'] as const) {
+    // `income` and `expense` are types: a Transfer category is in neither.
+    const typeIds = new Set(categories.filter((c) => categoryTypeOrUndefined(c) === pseudoId).map((c) => c.id));
     if (typeIds.size === 0) continue;
     const selected = new Set(result);
     const covered = selected.has(pseudoId) || [...typeIds].every((id) => selected.has(id));
@@ -338,11 +340,11 @@ export function resolveSelectedCategories(
 export function signAmountByCategory(
   value: number,
   reference: number | undefined,
-  category: Pick<Category, 'isIncome' | 'effectiveAutoSign'> | undefined,
+  category: Pick<Category, 'categoryType' | 'isIncome' | 'effectiveAutoSign'> | undefined,
 ): number {
   const referenceAbs = reference !== undefined ? Math.abs(reference) : 0;
   const isJustSignChange = referenceAbs === Math.abs(value) && referenceAbs !== 0;
   if (isJustSignChange || !category) return value;
   if (category.effectiveAutoSign === false) return value;
-  return category.isIncome ? Math.abs(value) : -Math.abs(value);
+  return signByCategoryType(category, value);
 }

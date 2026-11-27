@@ -325,7 +325,7 @@
     "notAvailable": "不适用",
     "monthlyCashFlow": "月度现金流",
     "inflowsByCategory": "按分类流入",
-    "outflowsByCategory": "按分类流出",
+    "outflowsByCategory": "扣除退款后的分类支出",
     "noIncome": "此期间无收入",
     "noExpenses": "此期间无支出",
     "seriesInflows": "流入",
@@ -447,6 +447,7 @@
     "labelEndDate": "结束日期",
     "labelMetric": "指标",
     "labelDirection": "方向",
+    "labelCategoryType": "类别类型",
     "checkboxTransfers": "包含转账",
     "checkboxFavourites": "添加到收藏",
     "sortByPlaceholder": "默认",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "平均金额",
       "BUDGET_VARIANCE": "预算偏差"
     },
+    "categoryType": {
+      "ALL": "全部",
+      "INCOME": "收入",
+      "EXPENSE": "支出",
+      "UNCATEGORIZED": "未分类"
+    },
     "direction": {
       "INCOME_ONLY": "仅收入",
       "EXPENSES_ONLY": "仅支出",
-      "BOTH": "两者"
+      "BOTH": "两者",
+      "INCOMING": "流入",
+      "OUTGOING": "流出"
     },
     "sortDirection": {
       "ASC": "升序",
@@ -2045,6 +2054,7 @@
     "unknown": "未知",
     "knownPartOnly": "仅绘制可以换算的部分。",
     "roundingNote": "每一侧的合计只舍入一次，再分配到各个流向，因此图表能够精确对上。所以，这里的某个分类可能与“按分类支出”或“按来源收入”中的同一分类相差一分钱（或您货币的最小单位），因为这些报表会分别对每个分类进行舍入。",
+    "expenseRefund": "{category}（支出退款）",
     "netRefund": "净退款：此子类别收到的金额多于支出。",
     "excludedCount": "{count, plural, other {# 笔金额无法换算，未计入上述数字。}}",
     "noData": "此期间没有收入、支出或转账",

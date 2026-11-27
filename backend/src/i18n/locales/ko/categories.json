@@ -367,6 +367,7 @@
         "tips": "팁",
         "vacationPay": "휴가 수당"
       }
-    }
+    },
+    "transfers": {"name": "Transfers", "sub": {"betweenOwnAccounts": "Between Own Accounts", "cashWithdrawals": "Cash Withdrawals", "creditCardPayments": "Credit Card Payments", "investmentContributions": "Investment Contributions", "savingsContributions": "Savings Contributions"}}
   }
 }

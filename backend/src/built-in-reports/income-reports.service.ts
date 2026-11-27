@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { categoryTypeIs } from "../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
@@ -126,7 +127,7 @@ export class IncomeReportsService {
       INNER JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id)
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
-        AND c.is_income = true
+        AND ${categoryTypeIs("c", "income")}
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
@@ -228,14 +229,8 @@ export class IncomeReportsService {
       }
     }
 
-    // Signed net within the category (INV-REPORT-004): a correction lowers
-    // the source, and a source whose debits meet its credits earned nothing.
-    // Judged on the net's sign before rounding, so a source that earned
-    // 0.00003 is still one (docs/specs/report-rounding-and-aggregation.md
-    // rule 5).
-    const earned = Array.from(categoryTotals.entries()).filter(
-      ([, { agg }]) => agg.sign > 0,
-    );
+    // Classification was selected in SQL. A reversal stays with its source.
+    const earned = Array.from(categoryTotals.entries());
     // Every source, not a top-N: the caller decides how many to draw. Cutting
     // here made `totalIncome` the sum of the largest fifteen. The sources fold
     // as aggregates, so the total is rounded once (rule 2).
@@ -247,13 +242,15 @@ export class IncomeReportsService {
     // aggregates before either is rounded (rule 8): two equal sources of
     // 1.2474 read 1.25 each over 2.49, and 1.25 / 2.49 is 50.2% where each is
     // half. Over the income that converted, the figure the page shows.
+    const hasShares =
+      income.sign > 0 && earned.every(([, { agg }]) => agg.sign >= 0);
     const data: IncomeSourceItem[] = earned
       .map(([id, { agg, category }]) => ({
         categoryId: id,
         categoryName: category.name,
         color: category.color || null,
         total: agg.knownSubtotalAt(places),
-        percentage: shareOf(agg, income),
+        percentage: hasShares ? shareOf(agg, income) : null,
       }))
       .sort((a, b) => b.total - a.total);
 
@@ -404,14 +401,16 @@ export class IncomeReportsService {
         t.currency_code,
         ${rateBasisColumnsSql(currencyParam)},
         SUM(CASE
-          WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)
-          WHEN c.is_income = false THEN 0
+          WHEN ${categoryTypeIs("c", "income")} THEN COALESCE(ts.amount, t.amount)
+          WHEN ${categoryTypeIs("c", "expense")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
           WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount)
           ELSE 0
         END) as income,
         SUM(CASE
-          WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)
-          WHEN c.is_income = true THEN 0
+          WHEN ${categoryTypeIs("c", "expense")} THEN -1 * COALESCE(ts.amount, t.amount)
+          WHEN ${categoryTypeIs("c", "income")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
           WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount))
           ELSE 0
         END) as expenses
@@ -702,14 +701,16 @@ export class IncomeReportsService {
           t.currency_code,
           ${rateBasisColumnsSql(valueCurrencyParam)},
           CASE
-            WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)
-            WHEN c.is_income = false THEN 0
+            WHEN ${categoryTypeIs("c", "income")} THEN COALESCE(ts.amount, t.amount)
+            WHEN ${categoryTypeIs("c", "expense")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
             WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount)
             ELSE 0
           END as income,
           CASE
-            WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)
-            WHEN c.is_income = true THEN 0
+            WHEN ${categoryTypeIs("c", "expense")} THEN -1 * COALESCE(ts.amount, t.amount)
+            WHEN ${categoryTypeIs("c", "income")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
             WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount))
             ELSE 0
           END as expenses,

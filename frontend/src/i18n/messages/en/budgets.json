@@ -6,14 +6,14 @@
       "WANT": "Wants",
       "SAVING": "Savings"
     },
-    "target": "Target: {percent}%",
-    "budgeted": "Budgeted: {percent}% ({amount})"
+    "target": "Target: {percent}",
+    "budgeted": "Budgeted: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Edit: {name}",
     "budgetAmount": "Budget Amount",
     "rolloverType": "Rollover Type",
-    "rolloverTypeTooltip": "Unused budget for this category carries forward into the next period rather than resetting. Overspending is never carried forward as a debt, and a Rollover Cap limits how much can accumulate.",
+    "rolloverTypeTooltip": "A surplus in an expense category increases the next period’s budget. Overspending reduces it. The rollover cap applies only to a surplus.",
     "rolloverCap": "Rollover Cap (optional)",
     "rolloverCapPlaceholder": "No cap",
     "flexGroup": "Flex Group (optional)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Expense Categories",
     "incomeCategories": "Income Categories",
     "categorySublabel": "{count} categories",
-    "rolloverBadge": "+{amount} rollover",
+    "rolloverBadge": "{amount} rollover",
     "underBudgetLabel": "{amount} under budget",
     "overBudgetLabel": "{amount} over budget",
     "carriedForward": "{amount} carried forward",
@@ -151,8 +151,8 @@
     "projected": "{label} (Projected)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% used",
-    "paceMarkerTitle": "Expected pace: {percent}%"
+    "ariaLabel": "{percent} used",
+    "paceMarkerTitle": "Expected pace: {percent}"
   },
   "scenarioPlanner": {
     "title": "What-If Scenario Planner",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Estimated from analysis: {amount}/mo",
     "defaultRolloverType": "Default Rollover Type",
     "rolloverHint": "This sets the default for all categories. You can customize individual categories after creating the budget.",
-    "rolloverTooltip": "Unused budget for a category carries forward into the next period rather than resetting. Overspending is never carried forward as a debt, and a Rollover Cap limits how much a category can accumulate.",
+    "rolloverTooltip": "A surplus in an expense category increases the next period’s budget. Overspending reduces it. The rollover cap applies only to a surplus.",
     "rolloverOptions": {
       "NONE": "None -- Resets each period",
       "MONTHLY": "Monthly -- Rolls forward every month",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "A percent target is a share of the budget's income: the income received this period for an income-linked budget, otherwise the base income, otherwise the income categories' amounts. A fixed amount is the same every period.",
       "targetPercent": "Percent of Income",
       "targetAmount": "Amount per Period",
-      "carryOver": "Carry Over What Is Left",
-      "carryOverTooltip": "What is left in the bucket when a period closes is added to the next period. An overspent bucket carries nothing.",
+      "carryOver": "Carry Over Balance",
+      "carryOverTooltip": "A positive balance increases the bucket’s next allocation. A negative balance reduces it. The carry cap applies only to a positive balance.",
       "carryCap": "Carry Cap (optional)",
       "carryCapPlaceholder": "No cap",
       "save": "Save",

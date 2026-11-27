@@ -411,12 +411,22 @@ export function budgetMonthlySummaryTemplate(
 
   const budgetSections = summaries
     .map((s) => {
+      const percentUsed = n.formatPercent(s.percentUsed, 1);
       const percentColor =
-        s.percentUsed > 100
+        s.remaining < 0 || s.percentUsed > 100
           ? "#dc2626"
           : s.percentUsed > 80
             ? "#d97706"
             : "#059669";
+
+      const usageSummary =
+        s.totalBudgeted > 0
+          ? `
+          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 8px;">
+            <div style="background: ${percentColor}; border-radius: 4px; height: 8px; width: ${Math.max(0, Math.min(s.percentUsed, 100))}%;"></div>
+          </div>
+          <p style="margin: 0 0 8px 0; color: ${percentColor}; font-weight: 600; font-size: 14px;">${t("emails.budgetMonthlySummary.percentUsed", `${percentUsed} used`, { percent: percentUsed })}</p>`
+          : "";
 
       const overBudgetRows =
         s.overBudgetCategories.length > 0
@@ -428,7 +438,7 @@ export function budgetMonthlySummaryTemplate(
                 (c) =>
                   `<tr>
                     <td style="padding: 4px 8px; color: #374151; font-size: 14px;">${escapeHtml(c.categoryName)}</td>
-                    <td style="padding: 4px 8px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 600;">${n.formatPercent(c.percentUsed, 0)}</td>
+                    <td style="padding: 4px 8px; text-align: right; color: #dc2626; font-size: 14px; font-weight: 600;">${c.budgeted > 0 ? n.formatPercent(c.percentUsed, 0) : "—"}</td>
                     <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">${n.formatCurrency(c.actual, s.currencyCode)} / ${n.formatCurrency(c.budgeted, s.currencyCode)}</td>
                   </tr>`,
               )
@@ -442,7 +452,7 @@ export function budgetMonthlySummaryTemplate(
             `<tr>
               <td style="padding: 4px 8px; color: #374151; font-size: 14px;">${escapeHtml(c.categoryName)}</td>
               <td style="padding: 4px 8px; text-align: right; font-size: 14px;">
-                <span style="color: ${c.percentUsed > 100 ? "#dc2626" : c.percentUsed > 80 ? "#d97706" : "#059669"}; font-weight: 600;">${n.formatPercent(c.percentUsed, 0)}</span>
+                <span style="color: ${c.percentUsed > 100 ? "#dc2626" : c.percentUsed > 80 ? "#d97706" : "#059669"}; font-weight: 600;">${c.budgeted > 0 ? n.formatPercent(c.percentUsed, 0) : "—"}</span>
               </td>
               <td style="padding: 4px 8px; text-align: right; color: #6b7280; font-size: 14px;">${n.formatCurrency(c.actual, s.currencyCode)} / ${n.formatCurrency(c.budgeted, s.currencyCode)}</td>
             </tr>`,
@@ -476,10 +486,7 @@ export function budgetMonthlySummaryTemplate(
             </div>
           </div>
 
-          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 8px;">
-            <div style="background: ${percentColor}; border-radius: 4px; height: 8px; width: ${Math.min(s.percentUsed, 100)}%;"></div>
-          </div>
-          <p style="margin: 0 0 8px 0; color: ${percentColor}; font-weight: 600; font-size: 14px;">${t("emails.budgetMonthlySummary.percentUsed", `${n.formatPercent(s.percentUsed, 1)} used`, { percent: n.formatNumber(s.percentUsed, 1) })}</p>
+          ${usageSummary}
 
           ${healthSection}
           ${overBudgetRows}

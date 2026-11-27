@@ -6,14 +6,14 @@
       "WANT": "Desejos",
       "SAVING": "Poupanças"
     },
-    "target": "Meta: {percent}%",
-    "budgeted": "Orçamentado: {percent}% ({amount})"
+    "target": "Meta: {percent}",
+    "budgeted": "Orçamentado: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Editar: {name}",
     "budgetAmount": "Valor do Orçamento",
     "rolloverType": "Tipo de Transição",
-    "rolloverTypeTooltip": "O orçamento não utilizado desta categoria é transferido para o próximo período em vez de ser reiniciado. Gastos excessivos nunca são transferidos como dívida, e um Limite de Transição limita quanto pode se acumular.",
+    "rolloverTypeTooltip": "Uma sobra em uma categoria de despesas aumenta o orçamento do período seguinte. Os gastos acima do orçamento reduzem esse valor. O limite de transferência só se aplica às sobras.",
     "rolloverCap": "Limite de Transição (opcional)",
     "rolloverCapPlaceholder": "Sem limite",
     "flexGroup": "Grupo Flexível (opcional)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Categorias de Despesa",
     "incomeCategories": "Categorias de Receita",
     "categorySublabel": "{count} categorias",
-    "rolloverBadge": "+{amount} transição",
+    "rolloverBadge": "{amount} transição",
     "underBudgetLabel": "{amount} abaixo do orçamento",
     "overBudgetLabel": "{amount} acima do orçamento",
     "carriedForward": "{amount} transitado",
@@ -151,8 +151,8 @@
     "projected": "{label} (Projetado)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% utilizado",
-    "paceMarkerTitle": "Ritmo esperado: {percent}%"
+    "ariaLabel": "{percent} utilizado",
+    "paceMarkerTitle": "Ritmo esperado: {percent}"
   },
   "scenarioPlanner": {
     "title": "Planejador de Cenários Hipotéticos",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Estimado a partir da análise: {amount}/mês",
     "defaultRolloverType": "Tipo de Transição Padrão",
     "rolloverHint": "Define o padrão para todas as categorias. Você pode personalizar categorias individualmente após criar o orçamento.",
-    "rolloverTooltip": "O orçamento não utilizado de uma categoria é transferido para o próximo período em vez de ser reiniciado. Gastos excessivos nunca são transferidos como dívida, e um Limite de Transição limita quanto uma categoria pode acumular.",
+    "rolloverTooltip": "Uma sobra em uma categoria de despesas aumenta o orçamento do período seguinte. Os gastos acima do orçamento reduzem esse valor. O limite de transferência só se aplica às sobras.",
     "rolloverOptions": {
       "NONE": "Nenhuma -- Redefine em cada período",
       "MONTHLY": "Mensal -- Transita todos os meses",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Uma meta em percentual é uma parte da receita do orçamento: a receita recebida neste período em um orçamento vinculado à receita, senão a receita base, senão os valores das categorias de receita. Um valor fixo é igual em todos os períodos.",
       "targetPercent": "Percentual da Receita",
       "targetAmount": "Valor por Período",
-      "carryOver": "Transferir o Que Sobrar",
-      "carryOverTooltip": "O que sobrar na caixinha quando um período fecha é somado ao próximo período. Uma caixinha com gasto excessivo não transfere nada.",
+      "carryOver": "Transferir saldo",
+      "carryOverTooltip": "Um saldo positivo aumenta o valor destinado à caixinha no período seguinte. Um saldo negativo reduz esse valor. O limite de transferência só se aplica a saldos positivos.",
       "carryCap": "Limite de Transição (opcional)",
       "carryCapPlaceholder": "Sem limite",
       "save": "Salvar",

@@ -226,6 +226,10 @@ implied.
 | INV-HA-003 | A single-use artifact is consumed at most once across every replica | enforced |
 | INV-HA-004 | One deployment publishes one OIDC signing key set, stable across restarts | enforced |
 | INV-HA-005 | A relay prompt is claimed by exactly one agent poll of the credential serving the chat, and answered at most once, by that credential | enforced |
+| INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | partial |
+| INV-CATEGORY-002 | A category write on a transfer sets both of its legs, the writer's leg only across two owners | unenforced |
+| INV-CATEGORY-003 | A category's type is its parent's, and `is_income` mirrors it while the column exists | partial |
+| INV-CATEGORY-004 | An expense is a category of type expense, never one that is merely not income | enforced |
 | INV-RULE-001 | A transaction rule never changes the matched row's amount, account, date or status; the only balance it moves is a structural action's counterpart | partial |
 | INV-RULE-002 | A transaction rule applies inside the transaction that inserts the row, on every creation path | partial |
 | INV-RULE-003 | The preview, the draft test and the commit of a transaction rule are one planner, and a run commits only the plan the person previewed | partial |
@@ -3092,7 +3096,8 @@ Enforcement         One predicate, in backend/src/common/investment-filter.util.
                     so it derives its figure through
                     reportableTransactionAmountSql: the sum of the children that
                     are neither transfer nor investment, NULL when the row
-                    represents no ordinary cash. Spending by Payee, Recurring
+                    represents no ordinary cash. Spending by Payee now reads qualifying split
+                    lines directly, like Spending by Category. Recurring
                     Expenses, Bill Payment History and the Uncategorized list
                     and summary read that instead of t.amount. Duplicate
                     Transactions is the one declared exception, marked in its SQL
@@ -3448,19 +3453,15 @@ destination classes. The half that matters -- a transfer is never income -- is
 unchanged: the Sankey reports a savings transfer as an outflow beside the
 expenses, never as one of them.
 
-A custom report's list of transactions (metric NONE) with **Include transfers**
-is not an income or expense figure, so this invariant does not reach it: it
-lists each matching leg by its own account and its own sign, and under BOTH its
-total is the signed sum of the listed rows, captioned "Net cash movement"
-rather than net (`customReportMeasure`, discussion #1978). Both legs of a
-same-currency transfer inside the report's scope cancel, because each is
-converted by the one converter of the report execution (`createConverter` in
-reports.service.ts); a cross-currency transfer's legs are each converted at
-its own rate or the market rate on its own date (issue #2106), not at the
-rate the two amounts imply, so they can leave a residual. A leg whose counterpart does not match the filters
-counts alone, and no counterpart is added. Only the ungrouped list signs its
-rows: grouped, metric NONE sums each group's unsigned cells like
-TOTAL_AMOUNT, and the client names it so (`isSignedTransactionList`).
+A custom report with direction BOTH measures account movement in its ungrouped
+transaction list (metric NONE) and its TOTAL_AMOUNT groups and headline.
+With **Include transfers**, the client labels that measure "Net cash movement"
+(`customReportMeasure`). Each qualifying leg counts with its own sign. A
+same-currency pair in scope cancels. When one side is in the reporting currency
+and a settled counterleg is available, the report values the pair at the
+amounts transferred (INV-FX-002). Independent market valuations can leave a
+residual. A transfer with just one side selected contributes that side alone.
+Grouped metric NONE retains its unsigned category amounts (INV-REPORT-004).
 
 ### INV-SANKEY-001 -- the Cash Flow Sankey closes
 
@@ -3537,37 +3538,50 @@ Status              enforced
 ```text
 Statement           A category's figure in a report is the signed sum of its
                     rows of both signs, netted within that one category and
-                    never across two: a refund lowers the category's cost, and a
-                    category whose credits meet its debits is not spending.
+                    never across two. In Spending by Category a refund lowers
+                    the cost of an expense category already assigned to the
+                    posting. Activity with zero net stays visible; when refunds
+                    exceed debits the category has negative net spending.
                     Transfers are not a category and are not netted.
 Source of truth     The signed amounts on transactions and transaction_splits.
-Enforcement         Built-in reports: NET_SPEND_AMOUNT / isNetSpending
+Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
+                    group. An assigned expense category with qualifying activity
+                    keeps its row at any sign. Income reversals are excluded from
+                    spending. Tax Summary retains each classified leaf in its
+                    income or expense section at any sign. Unclassified
+                    spending groups use isNetSpending
                     (backend/src/built-in-reports/spending-reports.service.ts);
                     client summaries: netEntityTotal. Custom report engine
                     (backend/src/reports/reports.service.ts): each line lands in
                     a (group, category) cell, signed; a cell is kept only when
                     its net is in the report's direction (EXPENSES_ONLY:
                     isNetSpending of the negated net; INCOME_ONLY: a positive
-                    net; BOTH: the magnitude of the net), and a group is the sum
-                    of its kept cells (audit A26-M33). The metric NONE list keeps
-                    its row-level direction filter; ungrouped and under BOTH it
-                    lists each row with its own sign, so its total is the signed
-                    net of the listed rows (discussion #1978). The client names a
-                    BOTH headline (`customReportMeasure`,
-                    frontend/src/lib/custom-report-measure.ts): a signed list's
-                    "Net amount" ("Net cash movement" with transfers included),
-                    an aggregate's or a grouped metric NONE report's "Total of
-                    unsigned category amounts".
+                    net). Under BOTH / TOTAL_AMOUNT a group sums signed cells.
+                    Its complete headline nets the eligible components before
+                    display rounding. Its known subtotal excludes incomplete
+                    category/currency parts consistently across groupings.
+                    Tag rows can overlap: their headline
+                    uses each component once, and counts a parent transaction
+                    once even if distinct splits contribute. Under BOTH,
+                    AVERAGE and grouped NONE retain category magnitudes.
+                    The ungrouped BOTH / NONE list preserves each row's sign.
+                    The signed measures use "Net amount" or "Net cash movement"
+                    with transfers. See customReportMeasure in
+                    frontend/src/lib/custom-report-measure.ts.
                     The loan history's Interest Paid
                     (frontend/src/lib/loan-history.ts) sums each interest row
                     signed, so a lender's refund nets (A26-S15-05).
 Concurrency scope   --
 Failure response    --
 Required tests      Integration:
+                    backend/test/integration/report-signed-expense-categories.integration.spec.ts
+                    (purchase of 100, refunds of 30, 100 and 150: category and
+                    headline read 70, 0 and -50 respectively);
                     backend/test/integration/report-custom-net-and-search.integration.spec.ts
-                    (Groceries -100 and +30: 70 under EXPENSES_ONLY and BOTH, by
-                    category and by month; and the BOTH list's signed rows in
-                    date order) and the reports.service.spec.ts cases;
+                    (Groceries -100 and +30: expense magnitude 70, signed BOTH
+                    total -70. A saved BOTH / TOTAL_AMOUNT report re-executes
+                    with signed groups.) reports.service.spec.ts also covers
+                    signed tag totals over overlapping groups;
                     frontend/src/lib/loan-history.test.ts "nets an interest
                     refund".
 Known gap           No source scan holds the rule: a new aggregator summing
@@ -6378,7 +6392,11 @@ Statement           An occurrence of a schedule with amount_is_estimated, which
                     estimated transfer's occurrence is its month's estimate of
                     the transfers between its two accounts, raised (never
                     lowered) to what the destination owes for the occurrences
-                    its balance floor governs (section 10, issue #2164).
+                    its balance floor governs (section 10, issue #2164). A bill
+                    entered in another currency is estimated in that currency
+                    and converted into the account's at the newest stored
+                    rate, and posts its month's estimate at the posting date's
+                    rate (section 11, issue #2458).
 Source of truth     The ledger (non-void payments to the payee in the category,
                     24 months; for a transfer, the transfers between its
                     accounts and the destination's as-of balances) read by
@@ -9541,6 +9559,167 @@ Required tests      Two connections and two instances:
 Status              enforced
 ```
 
+## Categories
+
+Design: `docs/specs/transfer-categories.md` (discussion #2387). A category gains
+a type, `income`, `expense` or `transfer`; the four entries below are what the
+type must not break. All four are `unenforced` until the pull request that
+builds each mechanism (the specification's section 2) moves it.
+
+### INV-CATEGORY-001 -- a Transfer category is held only by a transfer row
+
+```text
+Statement           No category row holds a category whose type is transfer.
+                    A category row is an ordinary transaction, a split's
+                    category line, a scheduled ordinary transaction, a
+                    scheduled split's category line, or an override line of
+                    one. A transfer row (a transfer leg, a split's transfer
+                    line and the row it links, and their scheduled forms)
+                    accepts a category of any type. A payee's default
+                    category, an asset account's asset category, a payroll
+                    deduction rule's category and a loan's interest and fee
+                    categories are never a Transfer category, and are refused
+                    from the release that can first create one (PR 2).
+Source of truth     The category's type (categories.category_type, added in
+                    PR 2) against the row's own kind: transactions.is_transfer,
+                    transaction_splits.transfer_account_id, their scheduled
+                    counterparts, and for an override its schedule's
+                    is_transfer.
+Enforcement         None today. Planned: one server fit helper called by every
+                    path that writes a category (PR 3), a source scan that
+                    fails a category write bypassing it, and a BEFORE row
+                    trigger under an advisory lock per category owner on
+                    transactions,
+                    transaction_splits, scheduled_transactions and
+                    scheduled_transaction_splits, and an override's
+                    category_id checked against its schedule, shipped with
+                    the type in PR 2 (specification sections 11 and 13; its
+                    cost is measured in section 13.1). The override's split
+                    JSON is held by the service and refused at the post at
+                    the latest.
+Concurrency scope   category owner: every category write takes the owner's
+                    advisory lock shared and a type change takes it
+                    exclusive (specification section 12; the mechanism the
+                    maintainer approved on issue #2452).
+Retry semantics     A refused write wrote nothing, and a retry is refused
+                    again.
+Crash semantics     -- (the check and the write share one transaction)
+Failure response    400 from the service; from the backstop, SQLSTATE 23514
+                    with constraint name category_fits_row, which alone is
+                    answered as 400 (every other 23514 stays a 500).
+Required tests      The entry-point integration matrix of specification
+                    section 4; the backstop on each table; a two-connection
+                    race of a type change against a row write.
+Status              unenforced
+```
+
+No category has a type of its own yet, so no row violates the statement today.
+Nothing would refuse a violation either: every write path checks only that the
+category belongs to the caller (`assertCategoryOwned`,
+`validateCategoryOwnership`), and the scheduled write paths not even that. The
+first release that can create a Transfer category must already refuse it on a
+category row, which is why the backstop ships with the type.
+
+### INV-CATEGORY-002 -- one category per transfer
+
+```text
+Statement           A category write on a transfer sets both of its legs to
+                    that category in one transaction, and a split's transfer
+                    line together with the row it links. Across two owners it
+                    sets the writer's leg only: a category belongs to one
+                    person. A request whose category both legs already hold is
+                    not a write; one that differs from either leg's is. Legs that differ before this work keep their
+                    values until the next category write.
+Source of truth     transactions.category_id on both legs (linked by
+                    linked_transaction_id); transaction_splits.category_id and
+                    the linked row's category_id.
+Enforcement         None as a rule. Some paths happen to hold it:
+                    transferLegColumns (create) and updateTransfer write both
+                    legs of a same-owner transfer, and the scheduled post
+                    passes one category to both. Planned: every category write
+                    on a transfer through the transfer write helpers, held by
+                    the same integration matrix (PR 3).
+Concurrency scope   transfer: both legs locked in ascending account id,
+                    transactions before splits
+                    (docs/concurrency-and-idempotency.md section 5).
+Retry semantics     Idempotent: a repeated write sets the same values.
+Crash semantics     -- (both legs in one transaction)
+Failure response    -- (a write either sets both legs or refuses)
+Required tests      The entry-point integration matrix of specification
+                    section 4, each row checking both legs.
+Status              unenforced
+```
+
+Paths that write one leg today, each cited by the specification's section 4:
+the plain `PATCH /transactions/:id`, bulk update (deliberately, per its
+comment), `updateSplitTransferLeg` (the linked row without its line), a rule's
+`convert_to_transfer` with `clearCategory: false` (the kept row only), the QIF
+import's payee default (this file's leg only), the Money importer (each leg its
+own category from the file), and the removal of a split line that collapses the
+split into a transfer. No constraint keeps the legs equal.
+
+### INV-CATEGORY-003 -- a category's type is its parent's
+
+```text
+Statement           A category's type is income, expense or transfer and
+                    equals its parent's type, for every category written from
+                    PR 2 on. While categories.is_income exists (nullable
+                    today), it is true exactly when the type is income.
+Source of truth     categories.category_type (PR 2), categories.parent_id.
+Enforcement         None in the database. Today only is_income exists, and
+                    backend/src/categories/categories.service.ts gives a new
+                    child its parent's isIncome; a direct SQL write can break
+                    it. Planned: the same service rule over the type, a type
+                    change or a move refused while a holder would no longer
+                    fit (INV-CATEGORY-001), and a categories trigger that
+                    keeps is_income and category_type in step and gives a
+                    child its parent's type on every insert and move, since
+                    the previous release's pods write is_income alone (PR 2,
+                    specification section 11).
+Concurrency scope   category
+Retry semantics     --
+Crash semantics     -- (one transaction)
+Failure response    400 on a type change or a move that a holder refuses.
+Required tests      Integration: the backfill makes income exactly the
+                    categories whose is_income is true (false and NULL become
+                    expense); a write of either column sets the other; a child
+                    takes its parent's type, including on a previous-release
+                    write that sets is_income alone or moves a category.
+Status              unenforced
+```
+
+The violation exists in today's data: a moved category is re-typed alone and
+its children keep their flag (`CategoriesService.update`), and the Money
+importer stores each category's own flag. The backfill keeps each child's own
+type, because re-typing it would move figures (no migration, decision 3), and
+the migration counts the mismatches (specification section 11). A mismatch
+lasts until the category or an ancestor is next moved or re-typed.
+
+### INV-CATEGORY-004 -- an expense is a category of type expense
+
+```text
+Statement           A reader that means "expense" tests the type for expense,
+                    through one typed helper per layer, and never reads "not
+                    income" as expense. A Transfer category is never counted
+                    as spending or as income.
+Source of truth     categories.category_type (PR 2).
+Enforcement         None. About 60 backend and 40 frontend source files read
+                    isIncome, many as !isIncome meaning expense
+                    (docs/future-plans/transfer-categories.md section 2).
+                    Planned: the typed helpers and a source scan failing a new
+                    raw isIncome read (PR 2).
+Concurrency scope   -- (read path)
+Retry semantics     -- (read path)
+Crash semantics     -- (read path)
+Failure response    --
+Required tests      Unit tests of the helpers; the source scan.
+Status              unenforced
+```
+
+The violation is latent: while no Transfer category exists, "not income" and
+"expense" pick the same categories. From the first Transfer category on, every
+reader the sweep misses counts it as spending.
+
 ## Transaction rules
 
 Design: `docs/future-plans/transaction-rules.md` (invariants I1 and I2 there).
@@ -10797,7 +10976,7 @@ Enforcement         BudgetPeriodService.closePeriod writes both inside its one
                     carry_in 0; a row with a NULL bucket_id (bucket deleted)
                     is left as it is, which is why the write is not an
                     ON CONFLICT on (budget_period_id, bucket_id), where NULLs
-                    are distinct. Each positive carry_out is handed to
+                    are distinct. Each nonzero carry_out is handed to
                     createPeriodForBudget, which inserts the next period's
                     carry_in rows only in the branch that won the
                     ON CONFLICT claim on budget_periods. Outside the close and
@@ -10815,7 +10994,7 @@ Failure response    a second close is NoOpenPeriodError (a skip for the cron)
 Required tests      Present: budget-period.service.spec.ts (truth table C
                     through a mocked close with the section 8 figures; the
                     carry reaching the next period's creation; rows only for a
-                    positive carry and only when the claim was won; a bucket
+                    nonzero carry and only when the claim was won; a bucket
                     created mid-period inserted with carry_in 0; a NULL
                     bucket_id row untouched; no bucket read or write for a
                     budget without buckets), budget-period-lifecycle.spec.ts

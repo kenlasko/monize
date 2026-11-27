@@ -1,4 +1,5 @@
 import { statusFromQifFlags } from "./qif-status.util";
+import { categoryIdForCategoryRow } from "../categories/category-row-gate";
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { Account, AccountType } from "../accounts/entities/account.entity";
 import {
@@ -116,9 +117,16 @@ export class ImportRegularProcessorService {
       this.resolveTransactionTarget(ctx, qifTx, isSplit);
 
     // If payee has a default category and no category was resolved from the import, use the payee's default
+    // A stored Transfer category (a payee default or an asset category written
+    // by a pod of the previous release) is skipped: the row is imported
+    // uncategorized (INV-CATEGORY-001).
     const effectiveCategoryId = isSplit
       ? null
-      : categoryId || resolvedPayee.defaultCategoryId || null;
+      : await categoryIdForCategoryRow(
+          ctx.manager,
+          ctx.userId,
+          categoryId || resolvedPayee.defaultCategoryId || null,
+        );
 
     // Generate unique createdAt timestamp
     const counter = ctx.dateCounters.get(qifTx.date) || 0;

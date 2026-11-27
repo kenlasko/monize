@@ -148,10 +148,16 @@ describe("resolveCategorySpent", () => {
     );
   });
 
-  it("clamps to 0 when refunds exceed spending for expense categories", () => {
+  it("reports zero when purchases and refunds cancel exactly", () => {
     const bc = makeBudgetCategory();
-    const spending = new Map([["cat-1", 50]]); // refunds > spending => positive raw
+    const spending = new Map([["cat-1", 0]]);
     expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(0);
+  });
+
+  it("reports negative spending when refunds exceed purchases", () => {
+    const bc = makeBudgetCategory();
+    const spending = new Map([["cat-1", 50]]); // Purchase -100 and refund +150.
+    expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(-50);
   });
 
   it("returns the positive amount for income categories", () => {
@@ -160,10 +166,10 @@ describe("resolveCategorySpent", () => {
     expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(1500);
   });
 
-  it("clamps to 0 when income deductions exceed income", () => {
+  it("reports negative income when reversals exceed receipts", () => {
     const bc = makeBudgetCategory({ isIncome: true } as any);
     const spending = new Map([["cat-1", -75]]);
-    expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(0);
+    expect(resolveCategorySpent(bc, spending, new Map(), new Map())).toBe(-75);
   });
 
   it("returns 0 when categoryId is missing", () => {
@@ -795,7 +801,7 @@ describe("resolveCategorySpentOrNull", () => {
     expect(resolveCategorySpentOrNull(bc, spending)).toBeNull();
   });
 
-  it("matches resolveCategorySpent for complete data, clamping included", () => {
+  it("matches the signed actuals for complete data", () => {
     const spending = spendingOf({
       spendingMap: new Map([
         ["cat-1", -123.45],
@@ -808,9 +814,9 @@ describe("resolveCategorySpentOrNull", () => {
     const at = (o: Partial<BudgetCategory>) =>
       resolveCategorySpentOrNull(makeBudgetCategory(o), spending);
     expect(at({ categoryId: "cat-1" })).toBe(123.45);
-    expect(at({ categoryId: "cat-2" })).toBe(0);
+    expect(at({ categoryId: "cat-2" })).toBe(-50);
     expect(at({ categoryId: "cat-3", isIncome: true } as any)).toBe(1500);
-    expect(at({ categoryId: "cat-4", isIncome: true } as any)).toBe(0);
+    expect(at({ categoryId: "cat-4", isIncome: true } as any)).toBe(-75);
     expect(at({ categoryId: null } as any)).toBe(0);
     expect(at({ isTransfer: true, transferAccountId: "acc-1" } as any)).toBe(
       250.5,

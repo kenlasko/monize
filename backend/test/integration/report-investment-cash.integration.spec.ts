@@ -237,6 +237,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
   async function createEmbeddedInvestmentParent(options: {
     date?: string;
     ordinaryAmount?: number;
+    ordinaryCategoryId?: string;
     investmentAmount?: number;
     payeeName?: string;
     action?: InvestmentAction;
@@ -257,7 +258,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         dataSource.manager.create(TransactionSplit, {
           transactionId: parent.id,
           kind: SplitKind.CATEGORY,
-          categoryId: groceriesCategoryId,
+          categoryId: options.ordinaryCategoryId ?? groceriesCategoryId,
           amount: ordinary,
         } as Partial<TransactionSplit>),
       );
@@ -525,7 +526,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
           config: {
             metric: overrides.metric ?? MetricType.TOTAL_AMOUNT,
             includeTransfers: overrides.includeTransfers ?? false,
-            direction: overrides.direction ?? DirectionFilter.EXPENSES_ONLY,
+            direction: overrides.direction ?? DirectionFilter.BOTH,
             customStartDate: START,
             customEndDate: END,
           },
@@ -548,9 +549,9 @@ describe("built-in reports and investment cash accounts (integration)", () => {
       const result = await runCustomReport({ groupBy: GroupByType.CATEGORY });
 
       expect(result.data).toEqual([
-        expect.objectContaining({ id: groceriesCategoryId, value: 60 }),
+        expect.objectContaining({ id: groceriesCategoryId, value: -60 }),
       ]);
-      expect(result.summary.total).toBe(60);
+      expect(result.summary.total).toBe(-60);
     });
 
     it("does not report a generated leg in an ordinary funding account either", async () => {
@@ -568,7 +569,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
 
       const result = await runCustomReport({ groupBy: GroupByType.CATEGORY });
 
-      expect(result.summary.total).toBe(40);
+      expect(result.summary.total).toBe(-40);
     });
 
     it("counts only the ordinary line of a mixed split, grouped by category", async () => {
@@ -579,11 +580,11 @@ describe("built-in reports and investment cash accounts (integration)", () => {
 
       const result = await runCustomReport({ groupBy: GroupByType.CATEGORY });
 
-      // Not 560, and not 0: the groceries line survives its investment sibling.
+      // Only the groceries posting contributes to the signed result.
       expect(result.data).toEqual([
-        expect.objectContaining({ id: groceriesCategoryId, value: 60 }),
+        expect.objectContaining({ id: groceriesCategoryId, value: -60 }),
       ]);
-      expect(result.summary.total).toBe(60);
+      expect(result.summary.total).toBe(-60);
     });
 
     it("counts only the ordinary line when grouped by payee, month and tag", async () => {
@@ -599,7 +600,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         GroupByType.TAG,
       ]) {
         const result = await runCustomReport({ groupBy });
-        expect(result.summary.total).toBe(60);
+        expect(result.summary.total).toBe(-60);
       }
     });
 
@@ -634,7 +635,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         metric: MetricType.NONE,
       });
 
-      expect(result.data).toEqual([expect.objectContaining({ value: 60 })]);
+      expect(result.data).toEqual([expect.objectContaining({ value: -60 })]);
     });
 
     it("leaves a transfer split line out when the report excludes transfers", async () => {
@@ -671,16 +672,18 @@ describe("built-in reports and investment cash accounts (integration)", () => {
 
       const excluded = await runCustomReport({
         groupBy: GroupByType.CATEGORY,
+        direction: DirectionFilter.OUTGOING,
         includeTransfers: false,
       });
-      expect(excluded.summary.total).toBe(60);
+      expect(excluded.summary.total).toBe(-60);
 
       // ...and the user can still ask for them.
       const included = await runCustomReport({
         groupBy: GroupByType.CATEGORY,
+        direction: DirectionFilter.OUTGOING,
         includeTransfers: true,
       });
-      expect(included.summary.total).toBe(260);
+      expect(included.summary.total).toBe(-260);
     });
 
     it("honours a brokerage account named inside a mixed OR group", async () => {
@@ -709,7 +712,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         },
       });
 
-      expect(result.summary.total).toBe(75);
+      expect(result.summary.total).toBe(-75);
     });
 
     it("does not admit the sleeve through an unrelated OR arm", async () => {
@@ -742,7 +745,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         },
       });
 
-      expect(result.summary.total).toBe(40);
+      expect(result.summary.total).toBe(-40);
     });
 
     it("keeps an expense whose parent an embedded SELL turned positive", async () => {
@@ -769,14 +772,14 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         spending.getSpendingByCategory(userId, START, END),
       );
 
-      expect(custom.summary.total).toBe(60);
-      // The same ledger through the other engine: same answer.
-      expect(custom.summary.total).toBe(builtIn.totalSpending);
+      expect(custom.summary.total).toBe(-60);
+      expect(builtIn.totalSpending).toBe(60);
     });
 
     it("keeps income whose parent an embedded BUY turned negative", async () => {
       const parent = await createEmbeddedInvestmentParent({
         ordinaryAmount: 60,
+        ordinaryCategoryId: salaryCategoryId,
         investmentAmount: -500,
         payeeName: "Brokerage statement",
       });
@@ -803,9 +806,8 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         spending.getSpendingByCategory(userId, START, END),
       );
 
-      // The two engines answer the same question about one ledger, so a
-      // divergence here is the defect whichever side moved.
-      expect(custom.summary.total).toBe(builtIn.totalSpending);
+      expect(custom.summary.total).toBe(-60);
+      expect(builtIn.totalSpending).toBe(60);
     });
   });
 

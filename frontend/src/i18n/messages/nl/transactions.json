@@ -49,7 +49,9 @@
     "editAria": "Categorie bewerken",
     "collapseAria": "Categorie-info verbergen",
     "show": "Categorie-info tonen",
-    "amountUnavailable": "Geen koers"
+    "amountUnavailable": "Geen koers",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Huidig saldo",

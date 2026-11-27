@@ -91,7 +91,7 @@ function positive(value: number | null | undefined): value is number {
 function monthToDateFacts(input: TriviaDailyInput): TriviaFact[] {
   const { monthToDate: mtd, currency, today } = input;
   if (!mtd || Number(today.slice(8, 10)) < 2) return [];
-  if (mtd.spent === null || !positive(mtd.previousSpent)) return [];
+  if (!positive(mtd.spent) || !positive(mtd.previousSpent)) return [];
   const difference = roundMoney(mtd.spent - mtd.previousSpent);
   if (difference === 0) return [];
   return [
@@ -152,7 +152,8 @@ function streakFacts(input: TriviaDailyInput): TriviaFact[] {
   // The report must agree that nothing was spent on the streak's days.
   if (
     input.lastSpendDate &&
-    input.streakSpent === 0 &&
+    input.streakSpent !== null &&
+    input.streakSpent <= 0 &&
     isStreakLength(input.lastSpendDate, asOf)
   ) {
     facts.push(

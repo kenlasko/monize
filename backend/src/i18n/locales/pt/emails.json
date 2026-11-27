@@ -84,7 +84,7 @@
     "labelBudgeted": "Orçamentado",
     "labelSpent": "Gasto",
     "labelRemaining": "Restante",
-    "percentUsed": "{{ percent }}% utilizado",
+    "percentUsed": "{{ percent }} utilizado",
     "topCategories": "Principais categorias",
     "button": "Ver painel de orçamento"
   },
@@ -302,6 +302,9 @@
       "flexMessage": "O grupo flexível «{{ group }}» utilizou {{ spent }} do orçamento conjunto de {{ budgeted }} ({{ percent }}%).",
       "incomeTitle": "Rendimento abaixo do esperado",
       "incomeMessage": "O seu rendimento real ({{ actual }}) corresponde a {{ ratio }}% do rendimento esperado ({{ expected }}) nesta fase do período.",
+      "netActivityTitle": "Atividade do orçamento",
+      "netSpendingMessage": "Despesa líquida: {{ spent }}. Orçamento: {{ budgeted }}.",
+      "netIncomeMessage": "Rendimento líquido: {{ actual }}. Rendimento previsto até à data: {{ expected }}.",
       "milestoneTitle": "Orçamento dentro do previsto",
       "milestoneMessage": "Decorreu {{ progress }}% do período e utilizou apenas {{ percent }}% do orçamento total. Continue assim!",
       "seasonalTitle": "Prevê-se um aumento sazonal em {{ category }}",

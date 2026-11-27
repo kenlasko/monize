@@ -316,8 +316,13 @@ describe("tool-input-schemas", () => {
     });
 
     it("rejects unknown type values", () => {
-      const result = getCategoriesSchema.safeParse({ type: "transfer" });
+      const result = getCategoriesSchema.safeParse({ type: "savings" });
       expect(result.success).toBe(false);
+    });
+
+    it("accepts the transfer type", () => {
+      const result = getCategoriesSchema.safeParse({ type: "transfer" });
+      expect(result.success).toBe(true);
     });
 
     it("accepts a search string", () => {

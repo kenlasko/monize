@@ -49,7 +49,9 @@
     "editAria": "编辑分类",
     "collapseAria": "隐藏分类信息",
     "show": "显示分类信息",
-    "amountUnavailable": "无汇率"
+    "amountUnavailable": "无汇率",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "当前余额",

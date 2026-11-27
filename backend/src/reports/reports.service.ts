@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
+import { categoryTypeOfOrUndefined } from "../categories/category-type.util";
 import { tr } from "../i18n/translate";
 import { Brackets, DataSource, Repository } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -17,8 +18,15 @@ import {
   resolveTransactionSearch,
   searchNarrows,
 } from "../transactions/apply-transaction-search";
+import { uncategorizedSql } from "../transactions/transaction-search.util";
 import { ParsedSearch } from "../transactions/transaction-search-query.util";
-import { createNetCells, netLinesOf } from "./report-net-cells";
+import {
+  createNetCells,
+  isSignedTotal,
+  netLinesOf,
+  shareDenominator,
+  type NetGroup,
+} from "./report-net-cells";
 import {
   convertAtTransferAmounts,
   transferCounterpartOf,
@@ -30,10 +38,12 @@ import {
   MetricType,
   DirectionFilter,
   ReportConfig,
+  ReportCategoryType,
   ReportFilters,
   TableColumn,
   SortDirection,
 } from "./entities/custom-report.entity";
+import { resolveReportConfig } from "./report-config";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -116,6 +126,12 @@ interface RowConverter {
     row: Transaction,
     split?: TransactionSplit,
   ): number | null;
+}
+
+interface ReportGroups {
+  rows: ReportRow[];
+  /** When tag groups overlap, the signed headline counts the population once. */
+  uniquePopulation?: NetGroup;
 }
 
 /**
@@ -252,24 +268,15 @@ export class ReportsService {
   ): Promise<CustomReport> {
     this.validateCustomTimeframe(dto.timeframeType, dto.config);
 
-    // Set default config values if not provided
-    const config: ReportConfig = {
-      metric: dto.config?.metric || MetricType.TOTAL_AMOUNT,
-      includeTransfers: dto.config?.includeTransfers ?? false,
-      direction: dto.config?.direction || DirectionFilter.EXPENSES_ONLY,
-      customStartDate: dto.config?.customStartDate,
-      customEndDate: dto.config?.customEndDate,
-      tableColumns: dto.config?.tableColumns,
-      sortBy: dto.config?.sortBy,
-      sortDirection: dto.config?.sortDirection,
-    };
-
     const saved = await withScopedDb(this.dataSource, (m) => {
       const repo = m.getRepository(CustomReport);
+      // Use the stored layout default for API callers that omit groupBy.
+      const groupBy = dto.groupBy ?? GroupByType.CATEGORY;
       const report = repo.create({
         ...dto,
         userId,
-        config,
+        groupBy,
+        config: resolveReportConfig(groupBy, dto.config),
         filters: dto.filters || {},
       });
       return repo.save(report);
@@ -289,12 +296,16 @@ export class ReportsService {
   }
 
   async findAll(userId: string): Promise<CustomReport[]> {
-    return withScopedDb(this.dataSource, (m) =>
+    const reports = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(CustomReport).find({
         where: { userId },
         order: { sortOrder: "ASC", createdAt: "DESC" },
       }),
     );
+    return reports.map((report) => ({
+      ...report,
+      config: resolveReportConfig(report.groupBy, report.config),
+    }));
   }
 
   async findOne(userId: string, id: string): Promise<CustomReport> {
@@ -310,7 +321,10 @@ export class ReportsService {
       );
     }
 
-    return report;
+    return {
+      ...report,
+      config: resolveReportConfig(report.groupBy, report.config),
+    };
   }
 
   async update(
@@ -343,7 +357,10 @@ export class ReportsService {
 
     // Replace config if provided (full replacement so cleared fields take effect)
     if (dto.config) {
-      report.config = { ...report.config, ...dto.config };
+      report.config = resolveReportConfig(report.groupBy, {
+        ...report.config,
+        ...dto.config,
+      });
     }
 
     // Replace filters if provided (full replacement so cleared filters take effect)
@@ -441,16 +458,20 @@ export class ReportsService {
 
     const converter = await this.createConverter(userId, transactions);
 
-    // Aggregate data based on groupBy type
-    let rows = this.aggregateData(
-      transactions,
-      report.groupBy,
-      report.config,
-      categoryMap,
-      payeeMap,
-      converter,
-    );
-
+    const groups: ReportGroups =
+      report.groupBy === GroupByType.TAG
+        ? this.aggregateByTag(transactions, report.config, converter)
+        : {
+            rows: this.aggregateDisjointGroups(
+              transactions,
+              report.groupBy,
+              report.config,
+              categoryMap,
+              payeeMap,
+              converter,
+            ),
+          };
+    let rows = groups.rows;
     // For BUDGET_VARIANCE metric with CATEGORY grouping, enrich with budget data
     if (
       report.config.metric === MetricType.BUDGET_VARIANCE &&
@@ -463,15 +484,22 @@ export class ReportsService {
         endDate,
         categoryMap,
         converter,
-        report.filters,
+        report,
       );
     }
 
     // Apply custom sorting if configured
     if (report.config.sortBy) {
+      // A saved percentage sort keeps its direction after signed totals stop
+      // exposing shares. Rank by the monetary value those shares used to order.
+      const sortBy =
+        report.config.sortBy === TableColumn.PERCENTAGE &&
+        isSignedTotal(report.config.direction, report.config.metric)
+          ? TableColumn.VALUE
+          : report.config.sortBy;
       rows = this.sortData(
         rows,
-        report.config.sortBy,
+        sortBy,
         report.config.sortDirection || SortDirection.DESC,
       );
     }
@@ -482,11 +510,15 @@ export class ReportsService {
       converter,
       report.config.metric,
       truncated,
+      groups.uniquePopulation,
     );
     const data = rows.map((row) => row.point);
 
     return {
       reportId: report.id,
+      ...(isSignedTotal(report.config.direction, report.config.metric)
+        ? { signedTotal: true as const }
+        : {}),
       name: report.name,
       viewType: report.viewType,
       groupBy: report.groupBy,
@@ -618,28 +650,16 @@ export class ReportsService {
     transactions: Transaction[],
     config: ReportConfig,
   ): Transaction[] {
-    // Only the list of single transactions judges a line by its own sign; every
-    // other metric nets a category's lines of both signs (audit A26-M33).
-    const narrowsDirection =
-      config.metric === MetricType.NONE &&
-      config.direction !== DirectionFilter.BOTH;
-    if (!narrowsDirection && config.includeTransfers) return transactions;
-
-    const wanted = (split: TransactionSplit): boolean => {
-      if (!config.includeTransfers && split.transferAccountId != null) {
-        return false;
-      }
-      if (!narrowsDirection) return true;
-      const amount = Number(split.amount);
-      return config.direction === DirectionFilter.INCOME_ONLY
-        ? amount > 0
-        : amount < 0;
-    };
+    // The query selects direction and category on the joined posting. Transfer
+    // splits still require their own eligibility check before aggregation.
+    if (config.includeTransfers) return transactions;
 
     return transactions.flatMap((tx) => {
       if (!tx.isSplit || !tx.splits || tx.splits.length === 0) return [tx];
 
-      const splits = tx.splits.filter(wanted);
+      const splits = tx.splits.filter(
+        (split) => split.transferAccountId == null,
+      );
       if (splits.length === 0) return [];
 
       // A shallow copy: the entity is not re-saved, and the aggregators read
@@ -845,24 +865,34 @@ export class ReportsService {
         });
       }
 
-      // Filter by direction, for the list of single transactions only: every
-      // other metric nets a category's rows of both signs, so a refund must
-      // reach the aggregators (audit A26-M33). A split parent's own amount is
-      // the SUM of its lines, so its sign is not the direction of any
-      // particular line: a -60 expense beside a +500 embedded SELL is a +440
-      // parent, and rejecting it here threw away the expense before provenance
-      // ever ran (audit F-CUSTOM-DIR-001). Split parents therefore pass this
-      // gate and are narrowed per line in `narrowSplitLines`.
-      if (config.metric === MetricType.NONE) {
-        if (config.direction === DirectionFilter.INCOME_ONLY) {
-          queryBuilder.andWhere(
-            "(transaction.isSplit = true OR transaction.amount > 0)",
-          );
-        } else if (config.direction === DirectionFilter.EXPENSES_ONLY) {
-          queryBuilder.andWhere(
-            "(transaction.isSplit = true OR transaction.amount < 0)",
-          );
-        }
+      // Select the posting that supplies the amount. A split parent can carry
+      // both directions and both category types in the same transaction.
+      const amount =
+        "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END";
+      if (config.direction === DirectionFilter.INCOMING)
+        queryBuilder.andWhere(`${amount} > 0`);
+      if (config.direction === DirectionFilter.OUTGOING)
+        queryBuilder.andWhere(`${amount} < 0`);
+      const categoryType = config.categoryType;
+      if (
+        categoryType === ReportCategoryType.INCOME ||
+        categoryType === ReportCategoryType.EXPENSE
+      ) {
+        queryBuilder.andWhere(
+          "CASE WHEN transaction.isSplit THEN splitCategory.categoryType ELSE category.categoryType END = :reportCategoryType",
+          {
+            reportCategoryType:
+              categoryType === ReportCategoryType.INCOME ? "income" : "expense",
+          },
+        );
+      } else if (categoryType === ReportCategoryType.UNCATEGORIZED) {
+        queryBuilder.andWhere(
+          uncategorizedSql({
+            transaction: "transaction",
+            splits: "splits",
+            grain: "split",
+          }),
+        );
       }
 
       // Filter transfers
@@ -1021,9 +1051,9 @@ export class ReportsService {
     }
   }
 
-  private aggregateData(
+  private aggregateDisjointGroups(
     transactions: Transaction[],
-    groupBy: GroupByType,
+    groupBy: Exclude<GroupByType, GroupByType.TAG>,
     config: ReportConfig,
     categoryMap: Map<string, Category>,
     payeeMap: Map<string, Payee>,
@@ -1063,8 +1093,6 @@ export class ReportsService {
         return this.aggregateByTime(transactions, metric, config, "week", conv);
       case GroupByType.DAY:
         return this.aggregateByTime(transactions, metric, config, "day", conv);
-      case GroupByType.TAG:
-        return this.aggregateByTag(transactions, metric, config, conv);
       default:
         return this.aggregateNoGrouping(transactions, metric, config, conv);
     }
@@ -1101,20 +1129,7 @@ export class ReportsService {
     // For NONE metric, return individual transactions as data points
     if (metric === MetricType.NONE) {
       const result: ReportRow[] = [];
-      // A one-direction list holds rows of one sign and shows their magnitude.
-      // BOTH lists rows of either sign, so each keeps its own: money in is
-      // positive, money out negative, and the headline is the signed net of
-      // the listed rows (discussion #1978). A transfer leg keeps its sign too,
-      // so both legs of an in-scope same-currency transfer net to zero, and
-      // so do a cross-currency pair's when one leg is in the reporting
-      // currency: the other converts at the amounts the transfer moved. A pair
-      // in two other currencies converts each leg at the market rate on its
-      // date and can leave a residual.
-      const lineAmount = (amount: string | number): number =>
-        config.direction === DirectionFilter.BOTH
-          ? Number(amount)
-          : Math.abs(Number(amount));
-
+      // Preserve each posting's sign in the reporting, account and original currencies.
       for (const tx of transactions) {
         // A blank-payee transfer leg reads "Transfer to/from <account>"
         // resolved from its (same-owner) linked leg, exactly as the register
@@ -1131,7 +1146,7 @@ export class ReportsService {
           // Only the lines that are ordinary cash: an embedded investment line
           // is the trade's own cash side, not a row of this report.
           for (const split of ordinarySplitLines(tx)) {
-            const accountAmount = lineAmount(split.amount);
+            const accountAmount = Number(split.amount);
             // A line with no rate stays listed, its converted value unknown,
             // so it can still be matched against a statement (issue #2342).
             const value = conv.convert(accountAmount, tx, split);
@@ -1163,7 +1178,7 @@ export class ReportsService {
             });
           }
         } else {
-          const accountAmount = lineAmount(tx.amount);
+          const accountAmount = Number(tx.amount);
           const value = conv.convert(accountAmount, tx);
           // A listed row with no rate is in no total, so not counted either.
           if (value !== null && tx.amountIsProvisional === true) {
@@ -1197,7 +1212,7 @@ export class ReportsService {
               tx.originalAmount !== undefined &&
               tx.originalCurrencyCode
                 ? {
-                    originalAmount: lineAmount(tx.originalAmount),
+                    originalAmount: Number(tx.originalAmount),
                     originalCurrency: tx.originalCurrencyCode,
                   }
                 : {}),
@@ -1218,7 +1233,14 @@ export class ReportsService {
           ? row
           : {
               ...row,
-              point: { ...row.point, percentage: shareOf(row.sum, whole) },
+              point: {
+                ...row.point,
+                percentage:
+                  whole.sign === 0
+                    ? 0
+                    : (row.sum.unroundedSubtotal / whole.unroundedSubtotal) *
+                      100,
+              },
             },
       );
     }
@@ -1226,7 +1248,7 @@ export class ReportsService {
     // For other metrics, aggregate into a single total
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1245,7 +1267,7 @@ export class ReportsService {
           id: "total",
           label: "Total",
           value: metricValue(bucket.agg, bucket.count, metric, conv.places),
-          percentage: 100,
+          percentage: isSignedTotal(config.direction, metric) ? undefined : 100,
           count: bucket.count,
         },
         sum: bucket.agg,
@@ -1262,7 +1284,7 @@ export class ReportsService {
   ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1278,11 +1300,18 @@ export class ReportsService {
         );
       }
     }
-    const dataMap = cells.settle();
+    const dataMap = cells.settle(
+      metric === MetricType.BUDGET_VARIANCE
+        ? (id) => {
+            const type = categoryTypeOfOrUndefined(categoryMap.get(id));
+            return type === undefined ? undefined : type === "income";
+          }
+        : undefined,
+    );
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
+    const whole = shareDenominator(dataMap, config);
 
     const result: ReportRow[] = [];
     for (const [categoryId, data] of dataMap) {
@@ -1301,7 +1330,7 @@ export class ReportsService {
           label,
           value: metricValue(data.agg, data.count, metric, conv.places),
           color: category?.color || undefined,
-          percentage: shareOf(data.agg, whole),
+          percentage: whole && shareOf(data.agg, whole),
           count: data.count,
         },
         sum: data.agg,
@@ -1320,7 +1349,7 @@ export class ReportsService {
   ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1343,7 +1372,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
+    const whole = shareDenominator(dataMap, config);
 
     const result: ReportRow[] = [];
     for (const [payeeId, data] of dataMap) {
@@ -1353,7 +1382,7 @@ export class ReportsService {
           id: payeeId,
           label: payee?.name || payeeNames.get(payeeId) || "Unknown",
           value: metricValue(data.agg, data.count, metric, conv.places),
-          percentage: shareOf(data.agg, whole),
+          percentage: whole && shareOf(data.agg, whole),
           count: data.count,
         },
         sum: data.agg,
@@ -1365,14 +1394,19 @@ export class ReportsService {
 
   private aggregateByTag(
     transactions: Transaction[],
-    metric: MetricType,
     config: ReportConfig,
     conv: RowConverter,
-  ): ReportRow[] {
+  ): ReportGroups {
+    const metric = config.metric;
+    // A tagged line is one financial component even if several tag rows show it.
+    // Settle the same population as the ungrouped total, with its FX-gap policy.
+    const uniqueCells = isSignedTotal(config.direction, metric)
+      ? createNetCells(config.direction, metric, this.leftOutWithItsPart(conv))
+      : undefined;
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
-      this.leftOutWithItsPart(conv),
+      metric,
+      uniqueCells ? undefined : this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
     const tagInfo = new Map<string, { tagName: string; color?: string }>();
@@ -1407,6 +1441,7 @@ export class ReportsService {
                 }
                 return tag.id;
               });
+        uniqueCells?.add("total", line, value);
         for (const group of groups) cells.add(group, line, value);
       }
     }
@@ -1414,7 +1449,7 @@ export class ReportsService {
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
-    const whole = FxAggregate.sum([...dataMap.values()].map((v) => v.agg));
+    const whole = shareDenominator(dataMap, config);
 
     const result: ReportRow[] = [];
     for (const [tagId, data] of dataMap) {
@@ -1425,14 +1460,22 @@ export class ReportsService {
           label: info?.tagName ?? "Untagged",
           value: metricValue(data.agg, data.count, metric, conv.places),
           color: info?.color,
-          percentage: shareOf(data.agg, whole),
+          percentage: whole && shareOf(data.agg, whole),
           count: data.count,
         },
         sum: data.agg,
       });
     }
 
-    return byValueDescending(result);
+    return {
+      rows: byValueDescending(result),
+      uniquePopulation: uniqueCells
+        ? (uniqueCells.settle().get("total") ?? {
+            agg: new FxAggregate(),
+            count: 0,
+          })
+        : undefined,
+    };
   }
 
   private aggregateByTime(
@@ -1444,7 +1487,7 @@ export class ReportsService {
   ): ReportRow[] {
     const cells = createNetCells(
       config.direction,
-      this.keepsUnconverted(metric),
+      metric,
       this.leftOutWithItsPart(conv),
       this.inAFigure(conv),
     );
@@ -1507,7 +1550,7 @@ export class ReportsService {
     endDate: string,
     categoryMap: Map<string, Category>,
     conv: RowConverter,
-    filters: CustomReport["filters"],
+    { config, filters }: Pick<CustomReport, "config" | "filters">,
   ): Promise<ReportRow[]> {
     try {
       const budgets = await this.budgetsService.findAll(userId);
@@ -1542,8 +1585,23 @@ export class ReportsService {
       );
       const budgetMap = new Map<string, number>();
       const unconvertible = new Set<string>();
+      const narrowed =
+        config.direction !== DirectionFilter.BOTH ||
+        (filters?.accountIds?.length ?? 0) > 0 ||
+        (filters?.payeeIds?.length ?? 0) > 0 ||
+        !!filters?.searchText ||
+        (filters?.filterGroups?.length ?? 0) > 0;
+      const inScope = new Set(filters?.categoryIds ?? []);
+      const seen = new Set(data.map((row) => row.point.id));
       for (const bc of budget.categories || []) {
-        if (bc.categoryId && !bc.isIncome) {
+        if (
+          bc.categoryId &&
+          !bc.isIncome &&
+          config.categoryType !== ReportCategoryType.INCOME &&
+          config.categoryType !== ReportCategoryType.UNCATEGORIZED &&
+          (!narrowed || seen.has(bc.categoryId)) &&
+          (!inScope.size || inScope.has(bc.categoryId))
+        ) {
           const amount = (Number(bc.amount) || 0) * periodsInWindow;
           // Zero converts to zero at any rate, so it records no gap.
           const converted =
@@ -1582,17 +1640,14 @@ export class ReportsService {
       // Only where nothing but the category filter narrowed the rows: under an
       // account, payee, search or advanced-group filter a zero means "filtered
       // out", not "unspent", and would enter the headline as an invented gap.
-      const narrowed =
-        (filters?.accountIds?.length ?? 0) > 0 ||
-        (filters?.payeeIds?.length ?? 0) > 0 ||
-        !!filters?.searchText ||
-        (filters?.filterGroups?.length ?? 0) > 0;
-      const inScope = new Set(filters?.categoryIds ?? []);
-      const seen = new Set(data.map((row) => row.point.id));
-      for (const [categoryId, budgeted] of narrowed ? [] : budgetMap) {
+      const zeroShare = data.every(
+        ({ point }) => point.percentage !== undefined,
+      )
+        ? 0
+        : undefined;
+      for (const [categoryId, budgeted] of budgetMap) {
         const category = categoryMap.get(categoryId);
         if (seen.has(categoryId) || !category) continue;
-        if (inScope.size > 0 && !inScope.has(categoryId)) continue;
         const sum = new FxAggregate();
         sum.addConverted(-budgeted);
         enriched.push({
@@ -1608,7 +1663,7 @@ export class ReportsService {
             ) as string,
             value: sum.knownSubtotalAt(conv.places),
             color: category.color || undefined,
-            percentage: 0,
+            percentage: zeroShare,
             count: 0,
             budgeted: reportFigure(budgeted, conv.places),
             actual: 0,
@@ -1628,13 +1683,14 @@ export class ReportsService {
     conv: RowConverter,
     metric: MetricType,
     truncated: boolean,
+    uniquePopulation?: NetGroup,
   ): ReportSummary {
     // A listed row with no rate counts as listed but adds to no sum; its gap
     // is already in `gaps`, so the total is withheld.
     const complete =
       !truncated && (this.keepsUnconverted(metric) || conv.gaps.isComplete);
     return {
-      ...summarizeRows(rows, metric, complete, conv.places),
+      ...summarizeRows(rows, metric, complete, conv.places, uniquePopulation),
       provisionalCount: this.provisionalCount(conv, metric),
     };
   }

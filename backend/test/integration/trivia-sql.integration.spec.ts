@@ -38,7 +38,7 @@ import {
  * loaders swallow a failing read into `null` (each source fails on its own), so
  * "it executed" is asserted as "its logger did not warn", not as "it returned".
  *
- * The purchase predicate is shared with Spending by Payee
+ * The purchase predicate and net Spending by Payee share ledger exclusions
  * (`purchase-rows-sql.ts`, INV-REPORT-001); the ledger below puts a row on each
  * side of every clause, larger than any real purchase, so a clause that stopped
  * excluding it would change the biggest purchase, and the report is called on

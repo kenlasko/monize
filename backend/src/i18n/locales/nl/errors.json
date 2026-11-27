@@ -354,15 +354,20 @@
     "billCustomFrequency": "Een looninhoudingsregel vereist een betaling met een vaste frequentie; deze betaling herhaalt zich volgens een aangepast schema."
   },
   "categories": {
-    "reassignOwnerOnly": "Alleen de eigenaar kan transacties naar een andere categorie verplaatsen",
     "notFound": "Categorie met ID {{ id }} niet gevonden",
     "cannotModifySystem": "Systeemcategorieën kunnen niet worden gewijzigd",
     "selfParent": "Categorie kan niet zijn eigen bovenliggende zijn",
     "circularParent": "Circulaire bovenliggende verwijzing gedetecteerd",
     "cannotDeleteSystem": "Systeemcategorieën kunnen niet worden verwijderd",
     "hasSubcategories": "Kan categorie met subcategorieën niet verwijderen. Verwijder of herwijs subcategorieën eerst.",
-    "inUse": "Categorie \"{{ name }}\" kan niet worden verwijderd: ze wordt nog gebruikt door {{ summary }}. Wijs deze eerst opnieuw toe of verwijder ze.",
-    "alreadyHasCategories": "Kan standaardwaarden niet importeren: gebruiker heeft al categorieën. Verwijder bestaande categorieën eerst of begin opnieuw."
+    "alreadyHasCategories": "Kan standaardwaarden niet importeren: gebruiker heeft al categorieën. Verwijder bestaande categorieën eerst of begin opnieuw.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.",
+    "reassignOwnerOnly": "Alleen de eigenaar kan transacties naar een andere categorie verplaatsen",
+    "inUse": "Categorie \"{{ name }}\" kan niet worden verwijderd: ze wordt nog gebruikt door {{ summary }}. Wijs deze eerst opnieuw toe of verwijder ze."
   },
   "common": {
     "invalidUuid": "Ongeldige UUID: {{ id }}",
@@ -523,9 +528,6 @@
     "internal": "Interne serverfout"
   },
   "import": {
-    "duplicatesChanged": "De mogelijke duplicaten zijn gewijzigd sinds ze werden gecontroleerd. Er is niets geïmporteerd; controleer opnieuw.",
-    "duplicateDecisionRepeated": "Een regel uit het bestand kan maar één beslissing over zijn mogelijke duplicaat hebben.",
-    "duplicateActionNotAllowed": "Een afgestemde transactie kan niet worden samengevoegd of vervangen, en een overboeking of een gesplitste transactie kan niet worden vervangen. Er is niets geïmporteerd.",
     "accountClosed": "De rekening is gesloten. Heropen deze of kies een andere rekening.",
     "noAccountBlocks": "Geen rekeningblokken gevonden in QIF-bestand. Dit bestand is mogelijk geen export met meerdere rekeningen.",
     "accountTypeRequired": "Kies een rekeningtype voor deze rekeningen voordat u importeert: {{ accounts }}",
@@ -569,7 +571,10 @@
     "mnyJobNotFound": "Importtaak niet gevonden",
     "mnyFileTooLarge": "Dit Money-bestand is groter dan de importlimiet van {{ limit }} MB.",
     "noRateForSplitTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: een gesplitste regel boekt over naar een rekening in een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw.",
-    "noRateForTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: de andere rekening van de overboeking gebruikt een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw."
+    "noRateForTransfer": "Geen wisselkoers voor {{ pair }} op {{ date }}: de andere rekening van de overboeking gebruikt een andere valuta. Voeg een wisselkoers toe voor dat paar en die datum en importeer opnieuw.",
+    "duplicatesChanged": "De mogelijke duplicaten zijn gewijzigd sinds ze werden gecontroleerd. Er is niets geïmporteerd; controleer opnieuw.",
+    "duplicateDecisionRepeated": "Een regel uit het bestand kan maar één beslissing over zijn mogelijke duplicaat hebben.",
+    "duplicateActionNotAllowed": "Een afgestemde transactie kan niet worden samengevoegd of vervangen, en een overboeking of een gesplitste transactie kan niet worden vervangen. Er is niets geïmporteerd."
   },
   "monteCarlo": {
     "scenarioNotFound": "Scenario {{ id }} niet gevonden",
@@ -652,7 +657,7 @@
     "updateSplitOverrideRequiresAmount": "Bedrag is vereist voor splitsingsoverschrijving",
     "dateMustBeYMD": "datum moet in JJJJ-MM-DD-formaat zijn",
     "loanLedgerUnreadable": "Deze leningbetaling kon niet worden berekend omdat het grootboeksaldo niet kon worden gelezen. Probeer het opnieuw.",
-    "estimateRequiresPlain": "Een geschat bedrag is alleen beschikbaar voor een transactie met één categorie of een overboeking in de valuta van de rekening, niet voor een splitsing, een belegging of een bedrag in vreemde valuta",
+    "estimateRequiresPlain": "Een geschat bedrag is alleen beschikbaar voor een transactie met één categorie of een overboeking, niet voor een splitsing of een belegging",
     "estimateNoAutoPost": "Een geplande transactie met een geschat bedrag kan niet automatisch worden geboekt",
     "overrideAutoPostNeedsAmount": "Een termijn van een geplande transactie met een geschat bedrag kan pas automatisch worden geboekt als het eigen bedrag is ingevuld",
     "estimateRequiresPayeeAndCategory": "Een geschat bedrag heeft een begunstigde en een categorie nodig om de betalingsgeschiedenis op te matchen",
@@ -1029,10 +1034,6 @@
     "needsPreview": "Open het voorbeeld voor deze bankrekening en bevestig de eerste import voordat deze automatisch wordt gesynchroniseerd.",
     "selectionNotNew": "Een geselecteerde transactie is geen nieuwe regel in de gegevens van de bank. Er is niets geïmporteerd; maak het voorbeeld opnieuw.",
     "selectionOverlap": "Een transactie kan niet tegelijk worden geïmporteerd en aan de uitzonderingen worden toegevoegd.",
-    "selectionConflict": "Een transactie kan maar één beslissing hebben: importeren, toevoegen aan uitzonderingen, samenvoegen, die van jou houden of die van jou vervangen.",
-    "duplicateNeedsPreview": "Een beslissing over een mogelijk duplicaat heeft het voorbeeld nodig waarin het werd getoond. Er is niets geïmporteerd; bekijk het voorbeeld opnieuw.",
-    "selectionNotDuplicate": "Een transactie die is gekozen om samen te voegen, te houden of te vervangen, is geen mogelijk duplicaat meer. Er is niets geïmporteerd; bekijk het voorbeeld opnieuw.",
-    "duplicateActionNotAllowed": "Een afgestemde transactie kan niet worden samengevoegd of vervangen, en een overboeking of een gesplitste transactie kan niet worden vervangen. Er is niets geïmporteerd; houd je transactie of importeer de regel van de bank ernaast.",
     "nothingToUpdate": "Stuur autoSync, notifySuccess of tagOperationType om een bankkoppeling te wijzigen.",
     "simplefinCredentialsMissing": "Verbind SimpleFIN voordat je rekeningen synchroniseert.",
     "simplefinAccessInvalid": "SimpleFIN heeft een ongeldige toegangs-URL teruggegeven. Genereer een nieuw insteltoken in SimpleFIN Bridge.",
@@ -1050,7 +1051,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge vereist een actief abonnement. Controleer de facturering in SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN kon geen volledige rekeninggegevens leveren. Controleer de verbinding in SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Het SimpleFIN-verzoekquotum is opgebruikt. Wacht tot het is aangevuld en probeer de huidige batch opnieuw.",
-    "simplefinClaimNotSent": "SimpleFIN is tijdelijk niet beschikbaar. Het installatietoken is niet verzonden; probeer later hetzelfde token opnieuw."
+    "simplefinClaimNotSent": "SimpleFIN is tijdelijk niet beschikbaar. Het installatietoken is niet verzonden; probeer later hetzelfde token opnieuw.",
+    "selectionConflict": "Een transactie kan maar één beslissing hebben: importeren, toevoegen aan uitzonderingen, samenvoegen, die van jou houden of die van jou vervangen.",
+    "duplicateNeedsPreview": "Een beslissing over een mogelijk duplicaat heeft het voorbeeld nodig waarin het werd getoond. Er is niets geïmporteerd; bekijk het voorbeeld opnieuw.",
+    "selectionNotDuplicate": "Een transactie die is gekozen om samen te voegen, te houden of te vervangen, is geen mogelijk duplicaat meer. Er is niets geïmporteerd; bekijk het voorbeeld opnieuw.",
+    "duplicateActionNotAllowed": "Een afgestemde transactie kan niet worden samengevoegd of vervangen, en een overboeking of een gesplitste transactie kan niet worden vervangen. Er is niets geïmporteerd; houd je transactie of importeer de regel van de bank ernaast."
   },
   "warranties": {
     "notFound": "Garantie met ID {{ id }} niet gevonden",

@@ -3,6 +3,7 @@ import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { BudgetCategory } from "./entities/budget-category.entity";
 import { FxAggregate } from "../common/fx-aggregate";
+import type { BudgetPaceInput } from "./budget-velocity";
 import { roundMoney, sumMoney } from "../common/round.util";
 import { buildRateIndex } from "../common/time-series/rate-index.util";
 import {
@@ -235,6 +236,7 @@ export function isTransferIncomeLine(bc: BudgetCategory): boolean {
 
 /** What `queryCategorySpending` returns: converted sums plus what is unknown. */
 export interface CategorySpending {
+  paceByLine?: ReadonlyMap<string, BudgetPaceInput>;
   /** categoryId -> signed net sum of the rows that converted, in `currency`. */
   spendingMap: Map<string, number>;
   /** destination accountId -> outgoing total of the rows that converted. */
@@ -286,6 +288,7 @@ export interface CategorySpending {
 }
 
 interface SpendingRow {
+  purchases?: string;
   key: string;
   currencyCode: string;
   txDate: string;
@@ -336,6 +339,7 @@ export async function queryCategorySpending(
   periodStart: string,
   periodEnd: string,
   budgetId?: string,
+  paceThrough?: string,
 ): Promise<CategorySpending> {
   const { currency, buckets } = await queryCategorySpendingBuckets(
     transactionsRepository,
@@ -346,6 +350,7 @@ export async function queryCategorySpending(
     periodEnd,
     () => "",
     budgetId,
+    paceThrough,
   );
   return buckets.get("") ?? emptyCategorySpending(currency);
 }
@@ -404,6 +409,7 @@ export async function queryCategorySpendingBuckets(
   periodEnd: string,
   bucketOf: (txDate: string) => string,
   budgetId: string | undefined = budgetCategories[0]?.budgetId,
+  paceThrough?: string,
 ): Promise<{ currency: string; buckets: Map<string, CategorySpending> }> {
   const buckets = new Map<string, CategorySpending>();
 
@@ -475,6 +481,8 @@ export async function queryCategorySpendingBuckets(
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" })
       .andWhere("t.is_split = false");
+    if (paceThrough)
+      directQb.addSelect("SUM(-LEAST(t.amount, 0))", "purchases");
     excludeBudgetAccounts(directQb, excludedAccountIds)
       .groupBy("t.category_id")
       .addGroupBy("t.currency_code")
@@ -495,6 +503,7 @@ export async function queryCategorySpendingBuckets(
       .andWhere("t.transaction_date >= :periodStart", { periodStart })
       .andWhere("t.transaction_date <= :periodEnd", { periodEnd })
       .andWhere("t.status != :void", { void: "VOID" });
+    if (paceThrough) splitQb.addSelect("SUM(-LEAST(s.amount, 0))", "purchases");
     excludeBudgetAccounts(splitQb, excludedAccountIds)
       .groupBy("s.category_id")
       .addGroupBy("t.currency_code")
@@ -748,6 +757,38 @@ export async function queryCategorySpendingBuckets(
         ...outsideIncome.pairs,
       ]),
     ].sort();
+    if (paceThrough) {
+      const elapsedRows = (categoryByBucket.get(bucket) ?? []).filter(
+        (row) => row.txDate <= paceThrough,
+      );
+      const net = fold(elapsedRows).totals;
+      const purchases = fold(
+        elapsedRows.map((row) => ({ ...row, total: row.purchases! })),
+      ).totals;
+      const outgoing = fold(
+        (transferByBucket.get(bucket) ?? []).filter(
+          (row) => row.txDate <= paceThrough,
+        ),
+      ).totals;
+      const byLine = new Map<string, BudgetPaceInput>();
+      for (const line of budgetCategories) {
+        if (line.isIncome) continue;
+        if (isTransferLine(line) && line.transferAccountId) {
+          const amount =
+            outgoing.get(line.transferAccountId) ?? new FxAggregate();
+          byLine.set(line.id, { purchases: amount, spent: amount });
+        } else if (line.categoryId) {
+          const spent = new FxAggregate();
+          const ledger = net.get(line.categoryId);
+          if (ledger) spent.mergeNegated(ledger);
+          byLine.set(line.id, {
+            spent,
+            purchases: purchases.get(line.categoryId) ?? new FxAggregate(),
+          });
+        }
+      }
+      spending.paceByLine = byLine;
+    }
     buckets.set(bucket, spending);
   }
 
@@ -755,8 +796,8 @@ export async function queryCategorySpendingBuckets(
 }
 
 /**
- * A budget's actual income from its spending maps: the signed net of its
- * income lines, converted into the budget's currency by `queryCategorySpending`
+ * Funding for income-linked budget allocations: the signed net of income
+ * lines, converted into the budget's currency by `queryCategorySpending`
  * and clamped at zero as a whole, so a deduction in one income category nets
  * against another's pay. Each category counts once however many lines name
  * it. The figure is the KNOWN converted part (`incompleteCategoryIds` names an
@@ -797,7 +838,7 @@ export function resolveBudgetIncome(
 
 /**
  * The income `config.transfersInAsIncome` adds, as a line reads it: the net
- * change clamped at zero, like an income line's actual (issue #2141).
+ * change clamped at zero, like a transfer income line (issue #2141).
  */
 export function resolveOutsideTransferIncome(
   spending: Pick<CategorySpending, "outsideTransferIncome">,
@@ -849,18 +890,19 @@ export function resolveCategoryName(bc: BudgetCategory): string {
     : "Uncategorized";
 }
 
+/** Signed spending in an ordinary expense category, including a net refund. */
+export function categoryExpenseActual(
+  spendingMap: ReadonlyMap<string, number>,
+  categoryId: string,
+): number {
+  const net = spendingMap.get(categoryId) ?? 0;
+  return net === 0 ? 0 : -net;
+}
+
 /**
- * Resolves the actual spent/earned amount for a budget category from the
- * spending maps.  The maps now contain signed net sums (expenses negative,
- * income positive).  We convert to a non-negative "spent" / "earned" value:
- *   - Expense categories: negate the sum so spending is positive, clamp to 0
- *     when refunds exceed spending.
- *   - Income categories: keep the positive sum, clamp to 0 when deductions
- *     exceed income.
- *   - Transfers: already filtered to outgoing (amount < 0), returned as a
- *     positive value by the query.
- *   - Transfer income lines: the signed net in from the source, clamped to 0
- *     when more went back to it than came out (issue #2141).
+ * Ordinary expense lines report the negative of their signed ledger sum;
+ * ordinary income lines report the signed sum itself. Transfer funding has
+ * its own direction and availability rules (issue #2141).
  *
  * The figure is the KNOWN converted part: a row with no exchange rate is not in
  * it. A caller that can show "unknown" uses `resolveCategorySpentOrNull`.
@@ -880,8 +922,10 @@ export function resolveCategorySpent(
   if (bc.isTransfer && bc.transferAccountId) {
     return transferSpendingMap.get(bc.transferAccountId) || 0;
   }
-  const raw = bc.categoryId ? spendingMap.get(bc.categoryId) || 0 : 0;
-  return bc.isIncome ? Math.max(raw, 0) : Math.max(-raw, 0);
+  if (!bc.categoryId) return 0;
+  return bc.isIncome
+    ? (spendingMap.get(bc.categoryId) ?? 0)
+    : categoryExpenseActual(spendingMap, bc.categoryId);
 }
 
 /**
@@ -912,7 +956,7 @@ export function resolveCategoryProvisionalCount(
 /**
  * `resolveCategorySpent` for a caller that can show "unknown": `null` when a
  * row of this line had no rate to the budget currency (a partial sum is not the
- * line's spent), otherwise the same clamped value.
+ * line's spent), otherwise the same actual.
  */
 export function resolveCategorySpentOrNull(
   bc: BudgetCategory,

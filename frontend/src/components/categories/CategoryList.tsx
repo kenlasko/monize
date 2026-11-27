@@ -1,5 +1,6 @@
 'use client';
 
+import { type CategoryType, categoryTypeOf } from '@/lib/category-type';
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -82,22 +83,33 @@ const SORT_FIELD_ORDER: Record<SortField, number> = {
   count: 2,
 };
 
+const TYPE_SORT_ORDER: Record<CategoryType, number> = { income: 0, expense: 1, transfer: 2 };
+
 const SORT_FIELDS: readonly SortField[] = (
   Object.keys(SORT_FIELD_ORDER) as SortField[]
 ).sort((a, b) => SORT_FIELD_ORDER[a] - SORT_FIELD_ORDER[b]);
 
-/** The Income/Expense pill, in both layouts. */
+const TYPE_PILL_CLASS: Record<CategoryType, string> = {
+  income: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  expense: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  transfer: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+};
+
+/** The Income/Expense/Transfer pill, in both layouts. */
 function CategoryTypePill({ category, density }: { category: Category; density: DensityLevel }) {
   const t = useTranslations('categories');
+  const type = categoryTypeOf(category);
   return (
     <span
-      className={`inline-flex text-xs leading-5 font-semibold rounded-full ${
-        category.isIncome
-          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      } ${density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}
+      className={`inline-flex text-xs leading-5 font-semibold rounded-full ${TYPE_PILL_CLASS[type]} ${
+        density === 'dense' ? 'px-1.5 py-0.5' : 'px-2 py-1'
+      }`}
     >
-      {category.isIncome ? t('list.badgeIncome') : t('list.badgeExpense')}
+      {type === 'income'
+        ? t('list.badgeIncome')
+        : type === 'transfer'
+          ? t('list.badgeTransfer')
+          : t('list.badgeExpense')}
     </span>
   );
 }
@@ -392,8 +404,8 @@ export function CategoryList({
       if (sortField === 'name') {
         comparison = a.name.localeCompare(b.name);
       } else if (sortField === 'type') {
-        // Income comes before Expense when ascending
-        comparison = (a.isIncome === b.isIncome) ? 0 : (a.isIncome ? -1 : 1);
+        // Income, then Expense, then Transfer when ascending
+        comparison = TYPE_SORT_ORDER[categoryTypeOf(a)] - TYPE_SORT_ORDER[categoryTypeOf(b)];
       } else if (sortField === 'count') {
         comparison = (a.transactionCount ?? 0) - (b.transactionCount ?? 0);
       }

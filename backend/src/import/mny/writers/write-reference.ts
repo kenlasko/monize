@@ -250,6 +250,7 @@ export async function writeCategories(
       userId,
       name: category.name,
       parentId,
+      // income-flag-ok: the Money file's own flag
       isIncome: category.isIncome,
     });
     idByFullName.set(category.fullName, id);

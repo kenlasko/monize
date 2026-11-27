@@ -6,14 +6,14 @@
       "WANT": "Zachcianki",
       "SAVING": "Oszczędności"
     },
-    "target": "Cel: {percent}%",
-    "budgeted": "Zabudżetowane: {percent}% ({amount})"
+    "target": "Cel: {percent}",
+    "budgeted": "Zabudżetowane: {percent} ({amount})"
   },
   "categoryForm": {
     "editTitle": "Edytuj: {name}",
     "budgetAmount": "Kwota budżetu",
     "rolloverType": "Typ przenoszenia",
-    "rolloverTypeTooltip": "Niewykorzystany budżet tej kategorii jest przenoszony na następny okres, a nie resetowany. Przekroczenie wydatków nigdy nie jest przenoszone jako dług, a limit przenoszenia ogranicza, ile można zgromadzić.",
+    "rolloverTypeTooltip": "Nadwyżka w kategorii wydatków zwiększa budżet na następny okres. Przekroczenie budżetu go zmniejsza. Limit przeniesienia dotyczy tylko nadwyżek.",
     "rolloverCap": "Limit przenoszenia (opcjonalnie)",
     "rolloverCapPlaceholder": "Bez limitu",
     "flexGroup": "Grupa elastyczna (opcjonalnie)",
@@ -138,7 +138,7 @@
     "expenseCategories": "Kategorie wydatków",
     "incomeCategories": "Kategorie przychodów",
     "categorySublabel": "{count} kategorii",
-    "rolloverBadge": "+{amount} przeniesione",
+    "rolloverBadge": "{amount} przeniesione",
     "underBudgetLabel": "{amount} poniżej budżetu",
     "overBudgetLabel": "{amount} powyżej budżetu",
     "carriedForward": "{amount} przeniesione dalej",
@@ -151,8 +151,8 @@
     "projected": "{label} (prognoza)"
   },
   "progressBar": {
-    "ariaLabel": "{percent}% wykorzystane",
-    "paceMarkerTitle": "Oczekiwane tempo: {percent}%"
+    "ariaLabel": "{percent} wykorzystane",
+    "paceMarkerTitle": "Oczekiwane tempo: {percent}"
   },
   "scenarioPlanner": {
     "title": "Planer scenariuszy „co jeśli”",
@@ -343,7 +343,7 @@
     "estimatedFromAnalysis": "Szacowane na podstawie analizy: {amount}/mies.",
     "defaultRolloverType": "Domyślny typ przenoszenia",
     "rolloverHint": "To ustawia wartość domyślną dla wszystkich kategorii. Poszczególne kategorie możesz dostosować po utworzeniu budżetu.",
-    "rolloverTooltip": "Niewykorzystany budżet kategorii jest przenoszony na następny okres, a nie resetowany. Przekroczenie wydatków nigdy nie jest przenoszone jako dług, a limit przenoszenia ogranicza, ile może się zgromadzić dla kategorii.",
+    "rolloverTooltip": "Nadwyżka w kategorii wydatków zwiększa budżet na następny okres. Przekroczenie budżetu go zmniejsza. Limit przeniesienia dotyczy tylko nadwyżek.",
     "rolloverOptions": {
       "NONE": "Brak -- Zeruje się co okres",
       "MONTHLY": "Miesięcznie -- Przechodzi dalej co miesiąc",
@@ -672,8 +672,8 @@
       "targetTypeTooltip": "Cel procentowy to udział w przychodzie budżetu: przychód otrzymany w tym okresie dla budżetu powiązanego z przychodem, w przeciwnym razie przychód bazowy, a jeśli go brak, kwoty kategorii przychodów. Stała kwota jest taka sama w każdym okresie.",
       "targetPercent": "Procent przychodu",
       "targetAmount": "Kwota na okres",
-      "carryOver": "Przenieś to, co zostało",
-      "carryOverTooltip": "To, co zostanie w kopercie po zamknięciu okresu, jest dodawane do następnego okresu. Przekroczona koperta nie przenosi niczego.",
+      "carryOver": "Przenieś saldo",
+      "carryOverTooltip": "Dodatnie saldo zwiększa kwotę przydzieloną do koperty na następny okres. Ujemne saldo ją zmniejsza. Limit przeniesienia dotyczy tylko salda dodatniego.",
       "carryCap": "Limit przenoszenia (opcjonalnie)",
       "carryCapPlaceholder": "Bez limitu",
       "save": "Zapisz",

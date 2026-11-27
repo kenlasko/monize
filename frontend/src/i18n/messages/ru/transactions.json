@@ -49,7 +49,9 @@
     "editAria": "Редактировать категорию",
     "collapseAria": "Скрыть информацию о категории",
     "show": "Показать информацию о категории",
-    "amountUnavailable": "Нет курса"
+    "amountUnavailable": "Нет курса",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Текущий остаток",

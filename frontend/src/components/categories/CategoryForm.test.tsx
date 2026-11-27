@@ -318,4 +318,33 @@ describe('CategoryForm automatic sign', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0].autoSign).toBe(expected);
   });
+
+  describe('the category type', () => {
+    const typeSelect = () => screen.getByLabelText('Type') as HTMLSelectElement;
+
+    it('offers Income, Expense and Transfer', () => {
+      render(<CategoryForm categories={categories} onSubmit={vi.fn()} onCancel={onCancel} />);
+      expect(Array.from(typeSelect().options).map((o) => o.value)).toEqual(['expense', 'income', 'transfer']);
+    });
+
+    it('submits the chosen type', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<CategoryForm categories={categories} onSubmit={onSubmit} onCancel={onCancel} />);
+      await act(async () => {
+        fireEvent.change(typeSelect(), { target: { value: 'transfer' } });
+      });
+      await act(async () => { fireEvent.click(screen.getByText('Create Category')); });
+      expect(onSubmit.mock.calls[0][0].type).toBe('transfer');
+    });
+
+    it('opens a Transfer category as one, and locks a child to its parent', () => {
+      const transferParent = { id: 't1', name: 'Transfers', parentId: null, categoryType: 'transfer', isIncome: false };
+      const child = { id: 't2', name: 'Brokerage', parentId: 't1', categoryType: 'transfer', isIncome: false } as any;
+      render(
+        <CategoryForm category={child} categories={[...categories, transferParent] as any[]} onSubmit={vi.fn()} onCancel={onCancel} />,
+      );
+      expect(typeSelect().value).toBe('transfer');
+      expect(typeSelect()).toBeDisabled();
+    });
+  });
 });

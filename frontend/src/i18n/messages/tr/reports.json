@@ -325,7 +325,7 @@
     "notAvailable": "Y/A",
     "monthlyCashFlow": "Aylık Nakit Akışı",
     "inflowsByCategory": "Kategoriye Göre Girişler",
-    "outflowsByCategory": "Kategoriye Göre Çıkışlar",
+    "outflowsByCategory": "İadeler Sonrası Kategoriye Göre Harcamalar",
     "noIncome": "Bu dönemde gelir yok",
     "noExpenses": "Bu dönemde gider yok",
     "seriesInflows": "Girişler",
@@ -447,6 +447,7 @@
     "labelEndDate": "Bitiş Tarihi",
     "labelMetric": "Ölçüt",
     "labelDirection": "Yön",
+    "labelCategoryType": "Kategori türü",
     "checkboxTransfers": "Transferleri dahil et",
     "checkboxFavourites": "Favorilere ekle",
     "sortByPlaceholder": "Varsayılan",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Ortalama Tutar",
       "BUDGET_VARIANCE": "Bütçe Sapması"
     },
+    "categoryType": {
+      "ALL": "Tümü",
+      "INCOME": "Gelir",
+      "EXPENSE": "Gider",
+      "UNCATEGORIZED": "Kategorisiz"
+    },
     "direction": {
       "INCOME_ONLY": "Yalnızca Gelir",
       "EXPENSES_ONLY": "Yalnızca Giderler",
-      "BOTH": "Her İkisi"
+      "BOTH": "Her İkisi",
+      "INCOMING": "Gelen",
+      "OUTGOING": "Giden"
     },
     "sortDirection": {
       "ASC": "Artan",
@@ -2045,6 +2054,7 @@
     "unknown": "Bilinmiyor",
     "knownPartOnly": "Yalnızca dönüştürülebilen kısım çizilir.",
     "roundingNote": "Her tarafın toplamı bir kez yuvarlanır ve akışlarına paylaştırılır; böylece diyagram tam olarak tutar. Bu yüzden buradaki bir kategori, her kategoriyi ayrı yuvarlayan Kategoriye Göre Harcama ya da Kaynağa Göre Gelir raporundaki aynı kategoriden bir sent ya da para biriminizin en küçük birimi kadar farklı olabilir.",
+    "expenseRefund": "{category} (gider iadesi)",
     "netRefund": "Net iade: bu alt kategori harcadığından fazlasını aldı.",
     "excludedCount": "{count, plural, one {# tutar dönüştürülemedi ve yukarıdaki rakamlara dahil edilmedi.} other {# tutar dönüştürülemedi ve yukarıdaki rakamlara dahil edilmedi.}}",
     "noData": "Bu dönemde gelir, harcama veya transfer yok",

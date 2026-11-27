@@ -33,6 +33,21 @@ const makeBreakdown = (overrides: Partial<CategoryBreakdown> = {}): CategoryBrea
   }) as CategoryBreakdown;
 
 describe('Budget503020Summary', () => {
+  it.each([[-50, '0%'], [150, '100%']])('bounds group geometry while retaining the signed %s percent', (spent, width) => {
+    render(
+      <Budget503020Summary
+        budgetCategories={[makeBudgetCategory({ categoryGroup: 'NEED' })]}
+        categoryBreakdown={[makeBreakdown({ spent })]}
+        totalIncome={100}
+        formatCurrency={formatCurrency}
+      />,
+    );
+    expect(screen.getByText(`${spent}%`)).toBeInTheDocument();
+    expect(screen.getByText(formatCurrency(spent))).toBeInTheDocument();
+    const marker = screen.getByTitle('Target: 50%');
+    expect(marker.previousElementSibling).toHaveStyle({ width });
+  });
+
   it('renders all three group labels', () => {
     render(
       <Budget503020Summary

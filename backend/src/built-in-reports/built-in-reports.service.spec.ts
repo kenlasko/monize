@@ -493,7 +493,7 @@ describe("BuiltInReportsService", () => {
       expect(result.data[0].total).toBe(25);
     });
 
-    it("sorts by total descending and limits to top 20", async () => {
+    it("sorts all payees by total descending", async () => {
       const rawResults = Array.from({ length: 25 }, (_, i) => ({
         payee_id: `payee-${i}`,
         payee_name: `Payee ${i}`,
@@ -515,7 +515,8 @@ describe("BuiltInReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.data).toHaveLength(20);
+      expect(result.data).toHaveLength(25);
+      expect(result.totalSpending).toBe(3250);
       expect(result.data[0].total).toBeGreaterThanOrEqual(result.data[1].total);
     });
 

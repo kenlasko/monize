@@ -160,6 +160,34 @@ describe("SpendingReportsService", () => {
       expect(result.totalSpending).toBe(0);
     });
 
+    it("uses the net direction when a stored category has no type", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        { ...mockParentCategory, isIncome: null },
+      ]);
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: mockParentCategory.id,
+          bucket_id: mockParentCategory.id,
+          classified: false,
+          payee_id: null,
+          payee_name: "Co-op",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "-50",
+        },
+      ]);
+      expect(
+        await service.getSpendingByCategory(
+          mockUserId,
+          undefined,
+          "2026-12-31",
+        ),
+      ).toMatchObject({ data: [], totalSpending: 0 });
+      expect(
+        await service.getSpendingByPayee(mockUserId, undefined, "2026-12-31"),
+      ).toMatchObject({ data: [], totalSpending: 0 });
+    });
+
     it("aggregates spending by parent category with rollup", async () => {
       scopedManager.query.mockResolvedValue([
         {
@@ -222,6 +250,7 @@ describe("SpendingReportsService", () => {
       expect(result.totalSpending).toBeNull();
       expect(result.knownSpending).toBe(100);
       expect(result.data[0].total).toBe(100);
+      expect(result.data[0].percentage).toBeUndefined();
       expect(result.missingCurrencies).toEqual(["JPY"]);
       expect(result.excludedCount).toBe(1);
       expect(result.currency).toBe("USD");
@@ -841,7 +870,7 @@ describe("SpendingReportsService", () => {
         expect(result.totalSpending).toBe(23206.07);
       });
 
-      it("drops a category whose credits outweigh its debits", async () => {
+      it("retains expense categories whose credits outweigh their debits", async () => {
         scopedManager.query.mockResolvedValue([
           {
             category_id: "cat-parent",
@@ -873,11 +902,18 @@ describe("SpendingReportsService", () => {
           "2025-12-31",
         );
 
-        expect(result.data.map((d) => d.categoryId)).toEqual([null]);
-        expect(result.totalSpending).toBe(40);
+        expect(result.data.map((d) => d.categoryId)).toEqual([
+          null,
+          "cat-child",
+          "cat-parent",
+        ]);
+        expect(result.totalSpending).toBe(-485);
+        expect(result.data.every((row) => row.percentage === undefined)).toBe(
+          true,
+        );
       });
 
-      it("drops a category refunded back to exactly zero", async () => {
+      it("retains an expense category refunded back to exactly zero", async () => {
         scopedManager.query.mockResolvedValue([
           {
             category_id: "cat-parent",
@@ -894,7 +930,10 @@ describe("SpendingReportsService", () => {
           "2025-12-31",
         );
 
-        expect(result.data).toEqual([]);
+        expect(result.data).toMatchObject([
+          { categoryId: "cat-parent", total: 0 },
+        ]);
+        expect(result.data[0].percentage).toBeUndefined();
         expect(result.totalSpending).toBe(0);
       });
 
@@ -1172,6 +1211,43 @@ describe("SpendingReportsService", () => {
       expect(result.totalSpending).toBe(0);
     });
 
+    it("derives category shares from the unrounded parts and whole", async () => {
+      scopedManager.query.mockResolvedValue([
+        eur({ category_id: "cat-parent", total: "1" }),
+        eur({ category_id: "cat-child", total: "1" }),
+      ]);
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        undefined,
+        "2026-12-31",
+        { rollupToParent: false },
+      );
+      expect(result.totalSpending).toBe(2.49);
+      expect(
+        result.data.map(({ total, percentage }) => ({ total, percentage })),
+      ).toEqual([
+        { total: 1.25, percentage: 50 },
+        { total: 1.25, percentage: 50 },
+      ]);
+    });
+
+    it("omits every share when a net credit rounds to zero", async () => {
+      scopedManager.query.mockResolvedValue([
+        eur({ category_id: "cat-parent", total: "10" }),
+        eur({ category_id: "cat-child", total: "-0.001" }),
+      ]);
+      const result = await service.getSpendingByCategory(
+        mockUserId,
+        undefined,
+        "2026-12-31",
+        { rollupToParent: false },
+      );
+      expect(result.data.map((row) => row.total)).toEqual([12.47, 0]);
+      expect(result.data.every((row) => row.percentage === undefined)).toBe(
+        true,
+      );
+    });
+
     it.each([
       ["100.0100", 124.75, 249.5],
       ["1.0000", 1.25, 2.49],
@@ -1385,7 +1461,7 @@ describe("SpendingReportsService", () => {
       expect(result.data[0].total).toBe(25);
     });
 
-    it("sorts by total descending and limits to top 20", async () => {
+    it("sorts all payees by total descending", async () => {
       const rawResults = Array.from({ length: 25 }, (_, i) => ({
         payee_id: `payee-${i}`,
         payee_name: `Payee ${i}`,
@@ -1407,7 +1483,8 @@ describe("SpendingReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.data).toHaveLength(20);
+      expect(result.data).toHaveLength(25);
+      expect(result.totalSpending).toBe(3250);
       expect(result.data[0].total).toBeGreaterThanOrEqual(result.data[1].total);
     });
 
@@ -1471,7 +1548,7 @@ describe("SpendingReportsService", () => {
       expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
     });
 
-    it("calculates totalSpending from the top 20 results", async () => {
+    it("calculates totalSpending from every qualifying payee", async () => {
       scopedManager.query.mockResolvedValue([
         {
           payee_id: "payee-1",
@@ -1510,7 +1587,9 @@ describe("SpendingReportsService", () => {
       const sql = scopedManager.query.mock.calls[0][0];
       expect(sql).toContain("NOT EXISTS");
       expect(sql).toContain("asset_category_id");
-      expect(sql).toMatch(/ax\.asset_category_id\s*=\s*t\.category_id/);
+      expect(sql).toContain(
+        "ax.asset_category_id = COALESCE(ts.category_id, t.category_id)",
+      );
     });
   });
 
@@ -1768,7 +1847,7 @@ describe("SpendingReportsService", () => {
         expect(result.data.map((m) => m.totalSpending)).toEqual([100, -30]);
       });
 
-      it("keeps a net-credit category out of the series", async () => {
+      it("includes a net-credit expense category in the series and the monthly total", async () => {
         scopedManager.query.mockResolvedValue([
           {
             month: "2025-01",
@@ -1798,7 +1877,9 @@ describe("SpendingReportsService", () => {
 
         expect(result.data[0].categories.map((c) => c.categoryId)).toEqual([
           "cat-parent",
+          "cat-child",
         ]);
+        expect(result.data[0].totalSpending).toBe(20);
       });
 
       it("drops a month that holds only credits", async () => {

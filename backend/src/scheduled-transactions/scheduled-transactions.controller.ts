@@ -241,7 +241,8 @@ export class ScheduledTransactionsController {
       "Preview the estimated amount a schedule paying this payee in this category would carry",
     description:
       "The per-month estimate from the payee and category's payment history " +
-      "over the last 24 months, in the account's currency (issue #2096). The " +
+      "over the last 24 months, in the account's currency (issue #2096), and " +
+      "for a bill entered in another currency in that one too (issue #2458). The " +
       "same estimate a saved schedule with the Estimate option reads.",
   })
   @ApiParam({ name: "accountId", description: "Account UUID" })
@@ -264,6 +265,7 @@ export class ScheduledTransactionsController {
         transferAccountId: query.transferAccountId || null,
         frequency: query.frequency || undefined,
         nextDueDate: query.nextDueDate || undefined,
+        originalCurrencyCode: query.originalCurrencyCode || null,
       },
     );
   }

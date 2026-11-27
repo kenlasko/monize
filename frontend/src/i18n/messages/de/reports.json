@@ -325,7 +325,7 @@
     "notAvailable": "k. A.",
     "monthlyCashFlow": "Monatlicher Cashflow",
     "inflowsByCategory": "Zuflüsse nach Kategorie",
-    "outflowsByCategory": "Abflüsse nach Kategorie",
+    "outflowsByCategory": "Ausgaben nach Erstattungen je Kategorie",
     "noIncome": "Keine Einnahmen in diesem Zeitraum",
     "noExpenses": "Keine Ausgaben in diesem Zeitraum",
     "seriesInflows": "Zuflüsse",
@@ -447,6 +447,7 @@
     "labelEndDate": "Enddatum",
     "labelMetric": "Kennzahl",
     "labelDirection": "Richtung",
+    "labelCategoryType": "Kategorietyp",
     "checkboxTransfers": "Überweisungen einbeziehen",
     "checkboxFavourites": "Zu Favoriten hinzufügen",
     "sortByPlaceholder": "Standard",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Durchschnittsbetrag",
       "BUDGET_VARIANCE": "Budgetabweichung"
     },
+    "categoryType": {
+      "ALL": "Alle",
+      "INCOME": "Einnahme",
+      "EXPENSE": "Ausgabe",
+      "UNCATEGORIZED": "Ohne Kategorie"
+    },
     "direction": {
       "INCOME_ONLY": "Nur Einnahmen",
       "EXPENSES_ONLY": "Nur Ausgaben",
-      "BOTH": "Beides"
+      "BOTH": "Beides",
+      "INCOMING": "Eingehend",
+      "OUTGOING": "Ausgehend"
     },
     "sortDirection": {
       "ASC": "Aufsteigend",
@@ -2045,6 +2054,7 @@
     "unknown": "Unbekannt",
     "knownPartOnly": "Nur der umrechenbare Teil wird gezeichnet.",
     "roundingNote": "Die Summe jeder Seite wird einmal gerundet und auf ihre Flüsse verteilt, damit das Diagramm genau aufgeht. Eine Kategorie kann hier daher um einen Cent bzw. die kleinste Einheit Ihrer Währung von derselben Kategorie in „Ausgaben nach Kategorie“ oder „Einnahmen nach Quelle“ abweichen, wo jede Kategorie für sich gerundet wird.",
+    "expenseRefund": "{category} (Ausgabenerstattung)",
     "netRefund": "Nettoerstattung: Diese Unterkategorie hat mehr eingenommen als ausgegeben.",
     "excludedCount": "{count, plural, one {# Betrag konnte nicht umgerechnet werden und fehlt in den obigen Zahlen.} other {# Beträge konnten nicht umgerechnet werden und fehlen in den obigen Zahlen.}}",
     "noData": "Keine Einnahmen, Ausgaben oder Überweisungen in diesem Zeitraum",

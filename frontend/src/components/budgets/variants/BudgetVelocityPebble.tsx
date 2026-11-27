@@ -13,7 +13,7 @@ interface BudgetVelocityPebbleProps {
   formatCurrency: (amount: number) => string;
 }
 
-const PACE_BADGE: Record<BudgetVelocity['paceStatus'], BadgeVariant> = {
+const PACE_BADGE: Record<NonNullable<BudgetVelocity['paceStatus']>, BadgeVariant> = {
   under: 'green',
   on_track: 'blue',
   over: 'red',
@@ -28,6 +28,9 @@ const PACE_BADGE: Record<BudgetVelocity['paceStatus'], BadgeVariant> = {
  */
 export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocityPebbleProps) {
   const t = useTranslations('budgets');
+  const tr = useTranslations('reports');
+  const pairs = velocity.projectionMissingRatePairs;
+  const missingRate = pairs?.length ? tr('partialData.weightingNoRate', { pairs: pairs.join(', ') }) : undefined;
   const unknownReason =
     (velocity.upcomingBillsMissingRates?.length ?? 0) > 0 ? 'displayFx' : 'scheduledFx';
   return (
@@ -37,9 +40,9 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
           {t('velocity.title')}
           <InfoTooltip text={t('velocity.titleTooltip')} learnMore="budgetVelocity" />
         </h2>
-        <Badge variant={PACE_BADGE[velocity.paceStatus]}>
+        {velocity.paceStatus && <Badge variant={PACE_BADGE[velocity.paceStatus]}>
           {t(`velocity.paceStatus.${velocity.paceStatus}`)}
-        </Badge>
+        </Badge>}
       </div>
       <div className="ui-block-accent ui-bud-lead rounded-(--ui-radius-card) p-5">
         <div className="ui-figure-label">{t('velocity.safeToSpend')}</div>
@@ -58,17 +61,17 @@ export function BudgetVelocityPebble({ velocity, formatCurrency }: BudgetVelocit
         <div>
           <dt className="text-sm text-gray-500 dark:text-gray-400">{t('velocity.dailyBurnRate')}</dt>
           <dd className="ui-bud-block-figure text-xl text-gray-900 dark:text-gray-100">
-            {formatCurrency(velocity.dailyBurnRate)}/day
+            {velocity.dailyBurnRate === null ? <UnknownAmount reason="displayFx" reasonText={missingRate} /> : <>{formatCurrency(velocity.dailyBurnRate)}/day</>}
           </dd>
         </div>
         <div>
           <dt className="text-sm text-gray-500 dark:text-gray-400">{t('velocity.projectedMonthEnd')}</dt>
           <dd
             className={`ui-bud-block-figure text-xl ${
-              velocity.projectedVariance > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'
+              velocity.projectedVariance !== null && velocity.projectedVariance > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'
             }`}
           >
-            {formatCurrency(velocity.projectedTotal)}
+            {velocity.projectedTotal === null ? <UnknownAmount reason="displayFx" reasonText={missingRate} /> : formatCurrency(velocity.projectedTotal)}
           </dd>
         </div>
         <div>

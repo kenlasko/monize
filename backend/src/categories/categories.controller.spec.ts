@@ -29,6 +29,7 @@ describe("CategoriesController", () => {
       getStats: jest.fn(),
       importDefaults: jest.fn(),
       findByType: jest.fn(),
+      findByCategoryType: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
@@ -217,6 +218,20 @@ describe("CategoriesController", () => {
       expect(mockCategoriesService.findByType).toHaveBeenCalledWith(
         "user-1",
         false,
+      );
+    });
+  });
+
+  describe("getTransferCategories()", () => {
+    it("delegates to categoriesService.findByCategoryType with the transfer type", () => {
+      mockCategoriesService.findByCategoryType!.mockReturnValue("transfer");
+
+      const result = controller.getTransferCategories(mockReq);
+
+      expect(result).toBe("transfer");
+      expect(mockCategoriesService.findByCategoryType).toHaveBeenCalledWith(
+        "user-1",
+        "transfer",
       );
     });
   });

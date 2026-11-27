@@ -325,7 +325,7 @@
     "notAvailable": "N/A",
     "monthlyCashFlow": "Flux de trésorerie mensuels",
     "inflowsByCategory": "Entrées par catégorie",
-    "outflowsByCategory": "Sorties par catégorie",
+    "outflowsByCategory": "Dépenses par catégorie après remboursements",
     "noIncome": "Aucun revenu sur cette période",
     "noExpenses": "Aucune dépense sur cette période",
     "seriesInflows": "Entrées",
@@ -447,6 +447,7 @@
     "labelEndDate": "Date de fin",
     "labelMetric": "Mesure",
     "labelDirection": "Direction",
+    "labelCategoryType": "Type de catégorie",
     "checkboxTransfers": "Inclure les virements",
     "checkboxFavourites": "Ajouter aux favoris",
     "sortByPlaceholder": "Par défaut",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Montant moyen",
       "BUDGET_VARIANCE": "Écart budgétaire"
     },
+    "categoryType": {
+      "ALL": "Toutes",
+      "INCOME": "Revenu",
+      "EXPENSE": "Dépense",
+      "UNCATEGORIZED": "Sans catégorie"
+    },
     "direction": {
       "INCOME_ONLY": "Revenus uniquement",
       "EXPENSES_ONLY": "Dépenses uniquement",
-      "BOTH": "Les deux"
+      "BOTH": "Les deux",
+      "INCOMING": "Entrant",
+      "OUTGOING": "Sortant"
     },
     "sortDirection": {
       "ASC": "Croissant",
@@ -2045,6 +2054,7 @@
     "unknown": "Inconnu",
     "knownPartOnly": "Seule la partie convertible est dessinée.",
     "roundingNote": "Le total de chaque côté est arrondi une seule fois puis réparti entre ses flux, afin que le diagramme tombe juste. Une catégorie peut donc différer ici d’un centime, ou de la plus petite unité de votre devise, de la même catégorie dans « Dépenses par catégorie » ou « Revenus par source », qui arrondissent chaque catégorie séparément.",
+    "expenseRefund": "{category} (remboursement de dépenses)",
     "netRefund": "Remboursement net : cette sous-catégorie a reçu plus qu’elle n’a dépensé.",
     "excludedCount": "{count, plural, one {# montant n’a pas pu être converti et est exclu des chiffres ci-dessus.} other {# montants n’ont pas pu être convertis et sont exclus des chiffres ci-dessus.}}",
     "noData": "Aucun revenu, dépense ni virement pour cette période",

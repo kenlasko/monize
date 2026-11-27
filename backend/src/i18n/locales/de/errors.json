@@ -354,15 +354,20 @@
     "billCustomFrequency": "Eine Lohnabzugsregel erfordert eine Rechnung mit fester Häufigkeit; diese Rechnung wiederholt sich nach einem benutzerdefinierten Zeitplan."
   },
   "categories": {
-    "reassignOwnerOnly": "Nur der Eigentümer kann Buchungen in eine andere Kategorie verschieben",
     "notFound": "Kategorie mit ID {{ id }} nicht gefunden",
     "cannotModifySystem": "Systemkategorien können nicht geändert werden",
     "selfParent": "Kategorie kann nicht ihre eigene übergeordnete Kategorie sein",
     "circularParent": "Zirkuläre übergeordnete Referenz erkannt",
     "cannotDeleteSystem": "Systemkategorien können nicht gelöscht werden",
     "hasSubcategories": "Kategorie mit Unterkategorien kann nicht gelöscht werden. Löschen oder verschieben Sie zuerst die Unterkategorien.",
-    "inUse": "Die Kategorie \"{{ name }}\" kann nicht gelöscht werden: Sie wird noch von {{ summary }} verwendet. Weisen Sie diese zuerst neu zu oder entfernen Sie sie.",
-    "alreadyHasCategories": "Standardkategorien können nicht importiert werden: Benutzer hat bereits Kategorien. Löschen Sie vorhandene Kategorien zuerst oder beginnen Sie neu."
+    "alreadyHasCategories": "Standardkategorien können nicht importiert werden: Benutzer hat bereits Kategorien. Löschen Sie vorhandene Kategorien zuerst oder beginnen Sie neu.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.",
+    "reassignOwnerOnly": "Nur der Eigentümer kann Buchungen in eine andere Kategorie verschieben",
+    "inUse": "Die Kategorie \"{{ name }}\" kann nicht gelöscht werden: Sie wird noch von {{ summary }} verwendet. Weisen Sie diese zuerst neu zu oder entfernen Sie sie."
   },
   "common": {
     "invalidUuid": "Ungültige UUID: {{ id }}",
@@ -523,9 +528,6 @@
     "internal": "Interner Serverfehler"
   },
   "import": {
-    "duplicatesChanged": "Die möglichen Duplikate haben sich seit der Prüfung geändert. Es wurde nichts importiert; prüfen Sie erneut.",
-    "duplicateDecisionRepeated": "Für eine Zeile der Datei ist nur eine Entscheidung über ihr mögliches Duplikat möglich.",
-    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert.",
     "accountClosed": "Das Konto ist geschlossen. Öffnen Sie es wieder oder wählen Sie ein anderes Konto.",
     "noAccountBlocks": "Keine Kontoblöcke in der QIF-Datei gefunden. Diese Datei ist möglicherweise kein Multi-Konto-Export.",
     "accountTypeRequired": "Wählen Sie vor dem Import eine Kontoart für diese Konten: {{ accounts }}",
@@ -569,7 +571,10 @@
     "mnyJobNotFound": "Import-Auftrag nicht gefunden",
     "mnyFileTooLarge": "Diese Money-Datei ist größer als das Importlimit von {{ limit }} MB.",
     "noRateForSplitTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Eine Splitzeile überweist auf ein Konto in einer anderen Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut.",
-    "noRateForTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Das andere Konto der Überweisung führt eine andere Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut."
+    "noRateForTransfer": "Kein Wechselkurs für {{ pair }} am {{ date }}: Das andere Konto der Überweisung führt eine andere Währung. Fügen Sie einen Wechselkurs für dieses Paar und Datum hinzu und importieren Sie erneut.",
+    "duplicatesChanged": "Die möglichen Duplikate haben sich seit der Prüfung geändert. Es wurde nichts importiert; prüfen Sie erneut.",
+    "duplicateDecisionRepeated": "Für eine Zeile der Datei ist nur eine Entscheidung über ihr mögliches Duplikat möglich.",
+    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert."
   },
   "monteCarlo": {
     "scenarioNotFound": "Szenario {{ id }} nicht gefunden",
@@ -652,7 +657,7 @@
     "updateSplitOverrideRequiresAmount": "Betrag ist für Buchungsteil-Überschreibung erforderlich",
     "dateMustBeYMD": "Datum muss im Format YYYY-MM-DD sein",
     "loanLedgerUnreadable": "Diese Kreditrate konnte nicht berechnet werden, da ihr Kontosaldo nicht gelesen werden konnte. Bitte erneut versuchen.",
-    "estimateRequiresPlain": "Ein geschätzter Betrag ist nur für eine Buchung mit einer Kategorie oder eine Überweisung in der Kontowährung verfügbar, nicht für eine Aufteilung, eine Investition oder einen Betrag in Fremdwährung",
+    "estimateRequiresPlain": "Ein geschätzter Betrag ist nur für eine Buchung mit einer Kategorie oder eine Überweisung verfügbar, nicht für eine Aufteilung oder eine Investition",
     "estimateNoAutoPost": "Eine geplante Buchung mit geschätztem Betrag kann nicht automatisch gebucht werden",
     "overrideAutoPostNeedsAmount": "Ein Termin einer geplanten Buchung mit geschätztem Betrag kann erst automatisch gebucht werden, wenn sein eigener Betrag eingegeben ist",
     "estimateRequiresPayeeAndCategory": "Ein geschätzter Betrag braucht einen Zahlungsempfänger und eine Kategorie, um den Zahlungsverlauf abzugleichen",
@@ -1029,10 +1034,6 @@
     "needsPreview": "Öffnen Sie die Vorschau für dieses Bankkonto und bestätigen Sie den ersten Import, bevor es automatisch synchronisiert wird.",
     "selectionNotNew": "Eine ausgewählte Transaktion ist keine neue Zeile der Bankdaten. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
     "selectionOverlap": "Eine Transaktion kann nicht gleichzeitig importiert und zu den Ausnahmen hinzugefügt werden.",
-    "selectionConflict": "Für eine Buchung ist nur eine Entscheidung möglich: importieren, zu den Ausnahmen hinzufügen, zusammenführen, Ihre behalten oder Ihre ersetzen.",
-    "duplicateNeedsPreview": "Eine Entscheidung über ein mögliches Duplikat erfordert die Vorschau, in der es angezeigt wurde. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
-    "selectionNotDuplicate": "Eine Buchung, die zum Zusammenführen, Behalten oder Ersetzen gewählt wurde, ist kein mögliches Duplikat mehr. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
-    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert; behalten Sie sie oder importieren Sie die Zeile der Bank daneben.",
     "nothingToUpdate": "Senden Sie autoSync, notifySuccess oder tagOperationType, um eine Bankverbindung zu ändern.",
     "simplefinCredentialsMissing": "Verbinde SimpleFIN, bevor du Konten synchronisierst.",
     "simplefinAccessInvalid": "SimpleFIN hat eine ungültige Zugriffs-URL zurückgegeben. Erstelle in SimpleFIN Bridge ein neues Einrichtungstoken.",
@@ -1050,7 +1051,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge erfordert ein aktives Abonnement. Prüfen Sie die Abrechnung in SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN konnte keine vollständigen Kontodaten liefern. Prüfen Sie die Verbindung in SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Das SimpleFIN-Anfragelimit ist erreicht. Warten Sie, bis wieder Anfragen verfügbar sind, und versuchen Sie den aktuellen Abschnitt erneut.",
-    "simplefinClaimNotSent": "SimpleFIN ist vorübergehend nicht verfügbar. Das Einrichtungstoken wurde nicht gesendet; versuchen Sie es später mit demselben Token erneut."
+    "simplefinClaimNotSent": "SimpleFIN ist vorübergehend nicht verfügbar. Das Einrichtungstoken wurde nicht gesendet; versuchen Sie es später mit demselben Token erneut.",
+    "selectionConflict": "Für eine Buchung ist nur eine Entscheidung möglich: importieren, zu den Ausnahmen hinzufügen, zusammenführen, Ihre behalten oder Ihre ersetzen.",
+    "duplicateNeedsPreview": "Eine Entscheidung über ein mögliches Duplikat erfordert die Vorschau, in der es angezeigt wurde. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
+    "selectionNotDuplicate": "Eine Buchung, die zum Zusammenführen, Behalten oder Ersetzen gewählt wurde, ist kein mögliches Duplikat mehr. Es wurde nichts importiert; erstellen Sie die Vorschau erneut.",
+    "duplicateActionNotAllowed": "Eine abgeglichene Buchung kann nicht zusammengeführt oder ersetzt werden, und eine Überweisung oder eine Splitbuchung kann nicht ersetzt werden. Es wurde nichts importiert; behalten Sie sie oder importieren Sie die Zeile der Bank daneben."
   },
   "warranties": {
     "notFound": "Garantie mit ID {{ id }} nicht gefunden",

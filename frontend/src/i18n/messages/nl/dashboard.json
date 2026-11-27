@@ -108,7 +108,7 @@
       "spendingDaysSincePayee": "Het is {sincePayeeDays} geleden dat je voor het laatst uitgaf bij {sincePayeeName}, op {sincePayeeDay}.",
       "activityBillsDueThisWeek": "Rekeningen die in de komende zeven dagen verschuldigd zijn: {billsDueCount}, samen {billsDueTotal}.",
       "activityNextBill": "Je volgende rekening is {nextBillName}, van {nextBillAmount}, te betalen op {nextBillDate}.",
-      "spendingBudgetPace": "Je hebt {budgetUsedPercent} van je budget {budgetName} gebruikt ({budgetSpent} van {budgetTotal}), en {budgetMonthPercent} van de maand is voorbij.",
+      "spendingBudgetPace": "{budgetName} — Netto-uitgaven: {budgetSpent} ({budgetUsedPercent}). Budget: {budgetTotal}. {budgetMonthPercent} van de maand is verstreken.",
       "investmentsTopMoverUp": "Je grootste beweger op {moverSession} was {moverSymbol}, {moverPercent} omhoog, wat {moverValueChange} aan je positie toevoegde.",
       "investmentsTopMoverDown": "Je grootste beweger op {moverSession} was {moverSymbol}, {moverPercent} omlaag, wat {moverValueChange} van je positie afhaalde.",
       "activityAnniversary": "Deze week is het {anniversaryYears} geleden dat je je eerste transactie in Monize registreerde, op {anniversaryFirstDate}.",
@@ -272,8 +272,8 @@
         "c": "Te betalen op {nextBillDate}: je volgende rekening is {nextBillName}, van {nextBillAmount}."
       },
       "spendingBudgetPace": {
-        "b": "{budgetMonthPercent} van de maand is voorbij en je hebt {budgetSpent} van je budget {budgetName} van {budgetTotal} gebruikt, oftewel {budgetUsedPercent}.",
-        "c": "Je budget {budgetName} is voor {budgetUsedPercent} gebruikt ({budgetSpent} van {budgetTotal}), en {budgetMonthPercent} van de maand is verstreken."
+        "b": "{budgetName} — Budget: {budgetTotal}. Netto-uitgaven: {budgetSpent} ({budgetUsedPercent}). {budgetMonthPercent} van de maand is verstreken.",
+        "c": "{budgetName} — {budgetMonthPercent} van de maand is verstreken. Budget: {budgetTotal}. Netto-uitgaven: {budgetSpent} ({budgetUsedPercent})."
       },
       "investmentsTopMoverUp": {
         "b": "{moverSymbol} was de grootste beweger in je portefeuille op {moverSession}: {moverPercent} omhoog, wat {moverValueChange} aan je positie toevoegde.",
