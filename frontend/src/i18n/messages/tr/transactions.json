@@ -212,6 +212,11 @@
       "inspectorLabel": "Seçili işlem",
       "balanceAfter": "Sonraki bakiye",
       "yesterday": "Dün"
+    },
+    "dayHeading": {
+      "closingBalance": "Gün sonu bakiyesi",
+      "continuedPrevious": "Önceki sayfada devam ediyor",
+      "continuedNext": "Sonraki sayfada devam ediyor"
     }
   },
   "row": {

@@ -212,6 +212,11 @@
       "inspectorLabel": "[XX-Selected transaction-XX]",
       "balanceAfter": "[XX-Balance after-XX]",
       "yesterday": "[XX-Yesterday-XX]"
+    },
+    "dayHeading": {
+      "closingBalance": "[XX-Balance at end of day-XX]",
+      "continuedPrevious": "[XX-Continues on the previous page-XX]",
+      "continuedNext": "[XX-Continues on the next page-XX]"
     }
   },
   "row": {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   balanceByDate,
+  hasNewerPage,
   balanceRulePercents,
   netByDate,
   pageTotals,
@@ -27,19 +28,47 @@ describe('register style data', () => {
       ['v', 875.1],
     ]);
     const desc = balanceByDate(rows, balances, 'desc');
-    expect(desc.get('2024-01-16')).toBe(1000);
-    expect(desc.get('2024-01-15')).toBe(800);
+    expect(desc.continuedDate).toBeNull();
+    expect(desc.balances.get('2024-01-16')).toBe(1000);
+    expect(desc.balances.get('2024-01-15')).toBe(800);
     const asc = balanceByDate([...rows].reverse(), balances, 'asc');
-    expect([...asc.entries()]).toEqual([
+    expect([...asc.balances.entries()]).toEqual([
       ['2024-01-16', 1000],
       ['2024-01-15', 800],
     ]);
   });
 
+  it('withholds the newest date when a newer page may hold the rest of it', () => {
+    const balances = new Map([
+      ['a', 1000],
+      ['b', 800],
+      ['c', 850],
+    ]);
+    const desc = balanceByDate(rows, balances, 'desc', true);
+    expect(desc.continuedDate).toBe('2024-01-16');
+    expect(desc.balances.has('2024-01-16')).toBe(false);
+    // An older date's later rows are all above it on this page.
+    expect(desc.balances.get('2024-01-15')).toBe(800);
+    const asc = balanceByDate([...rows].reverse(), balances, 'asc', true);
+    expect(asc.continuedDate).toBe('2024-01-16');
+    expect([...asc.balances.entries()]).toEqual([['2024-01-15', 800]]);
+    expect(balanceByDate([], balances, 'desc', true).continuedDate).toBeNull();
+  });
+
+  it.each([
+    ['desc', 1, 3, false],
+    ['desc', 2, 3, true],
+    ['asc', 1, 3, true],
+    ['asc', 3, 3, false],
+    ['desc', undefined, undefined, false],
+  ] as const)('a %s register on page %s of %s has a newer page: %s', (direction, page, pages, expected) => {
+    expect(hasNewerPage(direction, page, pages)).toBe(expected);
+  });
+
   it('leaves a date out when its newest row has no balance, rather than closing it on another', () => {
     const closing = balanceByDate(rows, new Map([['c', 850]]), 'desc');
-    expect(closing.has('2024-01-15')).toBe(false);
-    expect(balanceByDate(rows, new Map(), 'desc').size).toBe(0);
+    expect(closing.balances.has('2024-01-15')).toBe(false);
+    expect(balanceByDate(rows, new Map(), 'desc').balances.size).toBe(0);
   });
 
   it('nets each date and skips rows that move no money', () => {

@@ -212,6 +212,11 @@
       "inspectorLabel": "Вибрана транзакція",
       "balanceAfter": "Баланс після",
       "yesterday": "Учора"
+    },
+    "dayHeading": {
+      "closingBalance": "Залишок на кінець дня",
+      "continuedPrevious": "Продовження на попередній сторінці",
+      "continuedNext": "Продовження на наступній сторінці"
     }
   },
   "row": {

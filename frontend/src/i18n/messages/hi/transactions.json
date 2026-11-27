@@ -212,6 +212,11 @@
       "inspectorLabel": "चयनित लेनदेन",
       "balanceAfter": "इसके बाद शेष",
       "yesterday": "कल"
+    },
+    "dayHeading": {
+      "closingBalance": "दिन के अंत में शेष राशि",
+      "continuedPrevious": "पिछले पृष्ठ पर जारी",
+      "continuedNext": "अगले पृष्ठ पर जारी"
     }
   },
   "row": {

@@ -212,6 +212,11 @@
       "inspectorLabel": "Ausgewählte Transaktion",
       "balanceAfter": "Saldo danach",
       "yesterday": "Gestern"
+    },
+    "dayHeading": {
+      "closingBalance": "Kontostand am Tagesende",
+      "continuedPrevious": "Wird auf der vorherigen Seite fortgesetzt",
+      "continuedNext": "Wird auf der nächsten Seite fortgesetzt"
     }
   },
   "row": {

@@ -21,8 +21,11 @@ import {
   registerGroupLabel,
   rowAmount,
   previousDay,
+  type DayClosingBalances,
   type RegisterFigure,
 } from '../register-style-data';
+import type { SortDirection } from '@/hooks/useSortableTable';
+import { DayClosingBalance } from './DayClosingBalance';
 
 /**
  * The transactions register in the Pebble UI style: rows grouped by day in
@@ -50,7 +53,9 @@ export interface PebbleRegisterProps {
    * balance. A phone's day heading prints it in place of the net, since the
    * rows' balance is not drawn below `md` (issue #2486).
    */
-  dayBalance: ReadonlyMap<string, number> | null;
+  dayBalance: DayClosingBalances | null;
+  /** The register's order, which says which page holds a continued day's close. */
+  registerDirection: SortDirection;
   inspectorVisible: boolean;
   inspectedId: string | null;
   deletingId: string | null;
@@ -527,7 +532,6 @@ export function PebbleRegister(p: PebbleRegisterProps) {
     const currency =
       figure?.currency ?? p.transactions.find((x) => x.transactionDate === open.date)?.currencyCode;
     const title = groupTitle(open.date);
-    const closing = p.dayBalance?.get(open.date);
     // One account's register is one currency: the balance is in the rows'.
     const closingCurrency = p.transactions.find((x) => x.transactionDate === open.date)?.currencyCode;
     nodes.push(
@@ -548,12 +552,13 @@ export function PebbleRegister(p: PebbleRegisterProps) {
             )}
           </span>
           {p.dayBalance && (
-            <span
-              data-testid="pebble-day-balance"
-              className={`md:hidden ${closing !== undefined && closing < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}
-            >
-              {closing !== undefined ? formatCurrency(closing, closingCurrency) : '-'}
-            </span>
+            <DayClosingBalance
+              className="md:hidden"
+              date={open.date}
+              closing={p.dayBalance}
+              currencyCode={closingCurrency}
+              direction={p.registerDirection}
+            />
           )}
         </div>
         <ul className="rounded-2xl bg-white p-1 shadow-card dark:bg-gray-900 dark:shadow-card-dark">

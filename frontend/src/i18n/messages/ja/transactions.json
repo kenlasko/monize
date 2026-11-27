@@ -212,6 +212,11 @@
       "inspectorLabel": "選択中の取引",
       "balanceAfter": "取引後の残高",
       "yesterday": "昨日"
+    },
+    "dayHeading": {
+      "closingBalance": "日末残高",
+      "continuedPrevious": "前のページに続きます",
+      "continuedNext": "次のページに続きます"
     }
   },
   "row": {

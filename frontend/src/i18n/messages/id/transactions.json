@@ -212,6 +212,11 @@
       "inspectorLabel": "Transaksi yang dipilih",
       "balanceAfter": "Saldo setelahnya",
       "yesterday": "Kemarin"
+    },
+    "dayHeading": {
+      "closingBalance": "Saldo di akhir hari",
+      "continuedPrevious": "Berlanjut di halaman sebelumnya",
+      "continuedNext": "Berlanjut di halaman berikutnya"
     }
   },
   "row": {

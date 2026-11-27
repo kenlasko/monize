@@ -108,6 +108,17 @@ export function netByDate(
   return net;
 }
 
+/** Each date's closing balance, and the date whose close lies on another page. */
+export interface DayClosingBalances {
+  balances: Map<string, number>;
+  /**
+   * The page's newest date when a newer page exists: its last rows may sit on
+   * that page, so the balance beside its newest row here can be a mid-day
+   * one. It is withheld and named, never printed as the day's close.
+   */
+  continuedDate: string | null;
+}
+
 /**
  * The balance at the end of each date on the page, for the date group's
  * right-hand figure on a phone (issue #2486): the running balance beside the
@@ -117,22 +128,44 @@ export function netByDate(
  * newest row first, so the newest row of a date is its first row on a
  * newest-first page and its last on an oldest-first one. A date whose newest
  * row has no balance is absent: unknown, never zero.
+ *
+ * A page is a slice of the register, and a date can straddle the break. Only
+ * the page's NEWEST date can have rows past this page's newer edge (an older
+ * date's later rows are all above it on this page), so when `hasNewerPage`
+ * that date is reported in `continuedDate` instead of closed.
  */
 export function balanceByDate(
   rows: readonly { id: string; transactionDate: string }[],
   runningBalances: ReadonlyMap<string, number>,
   direction: SortDirection,
-): Map<string, number> {
+  hasNewerPage = false,
+): DayClosingBalances {
   const newestFirst = direction === 'asc' ? [...rows].reverse() : rows;
+  const continuedDate = hasNewerPage ? (newestFirst[0]?.transactionDate ?? null) : null;
   const seen = new Set<string>();
-  const out = new Map<string, number>();
+  const balances = new Map<string, number>();
   for (const row of newestFirst) {
     if (seen.has(row.transactionDate)) continue;
     seen.add(row.transactionDate);
+    if (row.transactionDate === continuedDate) continue;
     const balance = runningBalances.get(row.id);
-    if (balance !== undefined) out.set(row.transactionDate, balance);
+    if (balance !== undefined) balances.set(row.transactionDate, balance);
   }
-  return out;
+  return { balances, continuedDate };
+}
+
+/**
+ * Whether the register holds rows newer than this page's newest: the page
+ * before on a newest-first register, the page after on an oldest-first one.
+ * An unpaged register has neither.
+ */
+export function hasNewerPage(
+  direction: SortDirection,
+  currentPage: number | undefined,
+  totalPages: number | undefined,
+): boolean {
+  if (currentPage === undefined || totalPages === undefined) return false;
+  return direction === 'asc' ? currentPage < totalPages : currentPage > 1;
 }
 
 /** What the page paid out and took in, and the difference, for the Folio footer. */

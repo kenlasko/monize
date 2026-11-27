@@ -213,7 +213,7 @@ The transaction list displays your transactions in a table with the following co
 
 Click a row to open it in the edit form. Click a payee, category, account, date, or tag in a row to filter the list by it. On a phone, each transaction is a card, and a long press opens its actions.
 
-In the Folio and Pebble [UI styles](settings-and-security.md#theme-and-colour-theme) the list is grouped by day. On a phone, the figure beside each day is the balance at the end of that day while the running balance is shown, and the day's net amount otherwise; on a wider screen Pebble shows the day's net amount beside the day and the balance on each row.
+In the Folio and Pebble [UI styles](settings-and-security.md#theme-and-colour-theme) the list is grouped by day. On a phone, the figure beside each day is the balance at the end of that day while the running balance is shown, and the day's net amount otherwise. When a day's later transactions are on another page, its heading names that page instead, because the day's end-of-day balance is shown there; on a wider screen Pebble shows the day's net amount beside the day and the balance on each row.
 
 ### Sorting
 
