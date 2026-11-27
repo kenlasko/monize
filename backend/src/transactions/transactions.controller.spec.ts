@@ -3,6 +3,10 @@ import { Test, TestingModule } from "@nestjs/testing";
 import type { Response } from "express";
 import { TransactionsController } from "./transactions.controller";
 import { TransactionsService } from "./transactions.service";
+import {
+  DELEGATE_OPERATION_KEY,
+  DELEGATED_TRANSFER_PARAM_KEY,
+} from "../delegation/decorators/delegate-access.decorator";
 import { DelegateTransferMaskInterceptor } from "../delegation/interceptors/delegate-transfer-mask.interceptor";
 import { DelegationService } from "../delegation/delegation.service";
 import { TransactionBulkCreateService } from "./transaction-bulk-create.service";
@@ -1173,6 +1177,23 @@ describe("TransactionsController", () => {
 
       expect(result).toEqual(expected);
       expect(mockService.update).toHaveBeenCalledWith("user-1", "tx-1", dto);
+    });
+  });
+
+  describe("remove() delegate gate", () => {
+    it("requires the delete grant on both legs of a transfer, like DELETE :id/transfer", () => {
+      expect(
+        Reflect.getMetadata(
+          DELEGATED_TRANSFER_PARAM_KEY,
+          TransactionsController.prototype.remove,
+        ),
+      ).toBe("id");
+      expect(
+        Reflect.getMetadata(
+          DELEGATE_OPERATION_KEY,
+          TransactionsController.prototype.remove,
+        ),
+      ).toBe("delete");
     });
   });
 

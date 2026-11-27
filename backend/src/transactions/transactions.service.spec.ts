@@ -3090,6 +3090,30 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    it("refuses a lone transfer leg with a 409 and writes nothing", async () => {
+      // removeAny decides from an unlocked read; the locked row is the truth.
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        isTransfer: true,
+        linkedTransactionId: "tx-2",
+        splits: [],
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+      mockQueryRunner.manager.query.mockResolvedValue([]);
+
+      await expect(service.remove("user-1", "tx-1")).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
+      expect(accountsService.updateBalance).not.toHaveBeenCalled();
+    });
+
     it("reverts balance and removes transaction", async () => {
       transactionsRepository.findOne.mockResolvedValue({
         id: "tx-1",
@@ -3887,6 +3911,19 @@ describe("TransactionsService", () => {
         "tx-from",
         actor,
       );
+    });
+
+    it("falls through to remove (not found) when the row is not visible", async () => {
+      transactionsRepository.findOne.mockResolvedValue(null);
+      const removeTransferSpy = jest
+        .spyOn(service, "removeTransfer")
+        .mockResolvedValue(undefined);
+      const removeSpy = jest.spyOn(service, "remove").mockResolvedValue();
+
+      await service.removeAny("user-1", "missing");
+
+      expect(removeSpy).toHaveBeenCalledWith("user-1", "missing");
+      expect(removeTransferSpy).not.toHaveBeenCalled();
     });
 
     it("routes a plain transaction to remove", async () => {

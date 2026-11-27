@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "이 이체는 분할 거래의 일부입니다. 양쪽이 함께 변경되도록, 이 이체가 속한 분할 거래를 편집하여 무효화하거나 복원하세요.",
     "splitTransferLegAmountIsParentTotal": "이 금액은 분할 전체의 합계이며 이 이체 줄의 금액이 아닙니다. 줄 금액을 바꾸려면 원본 거래에서 분할을 편집하세요.",
     "investmentCashLegLocked": "이 거래는 투자 거래의 현금 측입니다. 양쪽이 함께 바뀌도록 투자 거래를 변경하거나 삭제하세요.",
+    "transferLegDeleteTransfer": "이것은 이체의 한쪽입니다. 대신 이체를 삭제하세요.",
     "investmentCashLegStatusLocked": "이 거래는 투자 거래의 현금 측면입니다. 양쪽이 함께 변경되도록, 투자 거래의 상태를 변경하여 무효화하거나 복원하세요.",
     "notFoundById": "ID가 {{ id }}인 거래를 찾을 수 없습니다",
     "bulkUpdateNoFields": "하나 이상의 업데이트 필드를 제공해야 합니다",

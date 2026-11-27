@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "Transfer ini merupakan bagian dari transaksi terpisah. Batalkan atau pulihkan dengan mengedit transaksi terpisah yang memuatnya, agar kedua sisi berubah bersama-sama.",
     "splitTransferLegAmountIsParentTotal": "Jumlah ini adalah total seluruh pemisahan, bukan total baris transfer ini. Ubah pemisahan di transaksi sumber untuk mengganti jumlah baris.",
     "investmentCashLegLocked": "Transaksi ini adalah sisi kas dari transaksi investasi. Ubah atau hapus transaksi investasinya, agar kedua sisi berubah bersama.",
+    "transferLegDeleteTransfer": "Ini adalah satu sisi dari sebuah transfer. Hapus transfernya.",
     "investmentCashLegStatusLocked": "Transaksi ini adalah sisi kas dari sebuah transaksi investasi. Batalkan atau pulihkan dengan mengubah status transaksi investasi tersebut, agar kedua sisi berubah bersama-sama.",
     "notFoundById": "Transaksi dengan ID {{ id }} tidak ditemukan",
     "bulkUpdateNoFields": "Minimal satu kolom pembaruan harus diberikan",

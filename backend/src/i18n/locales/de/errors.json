@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "Diese Übertragung ist Teil einer aufgeteilten Transaktion. Stornieren oder wiederherstellen Sie sie, indem Sie die zugehörige aufgeteilte Transaktion bearbeiten, damit sich beide Seiten gemeinsam ändern.",
     "splitTransferLegAmountIsParentTotal": "Dieser Betrag ist die Summe der gesamten Aufteilung, nicht dieser Übertragungszeile. Bearbeiten Sie die Aufteilung in der Quelltransaktion, um den Betrag der Zeile zu ändern.",
     "investmentCashLegLocked": "Diese Buchung ist die Geldseite einer Wertpapierbuchung. Ändern oder löschen Sie stattdessen die Wertpapierbuchung, damit sich beide Seiten gemeinsam ändern.",
+    "transferLegDeleteTransfer": "Dies ist eine Seite einer Überweisung. Löschen Sie stattdessen die Überweisung.",
     "investmentCashLegStatusLocked": "Diese Buchung ist die Geldseite einer Investmentbuchung. Stornieren oder wiederherstellen Sie sie, indem Sie den Status der Investmentbuchung ändern, damit sich beide Seiten gemeinsam ändern.",
     "notFoundById": "Buchung mit ID {{ id }} nicht gefunden",
     "bulkUpdateNoFields": "Mindestens ein Aktualisierungsfeld muss angegeben werden",

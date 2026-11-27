@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "Questo trasferimento fa parte di una transazione suddivisa. Annullalo o ripristinalo modificando la transazione suddivisa a cui appartiene, in modo che entrambi i lati cambino insieme.",
     "splitTransferLegAmountIsParentTotal": "Questo importo è il totale dell'intera suddivisione, non quello di questa riga di trasferimento. Modifica la suddivisione nella transazione di origine per cambiare l'importo della riga.",
     "investmentCashLegLocked": "Questa transazione è la parte in contanti di una transazione di investimento. Modifica o elimina invece la transazione di investimento, così entrambe le parti cambiano insieme.",
+    "transferLegDeleteTransfer": "Questo è un lato di un trasferimento. Elimina invece il trasferimento.",
     "investmentCashLegStatusLocked": "Questa transazione è il lato liquidità di una transazione di investimento. Annullala o ripristinala modificando lo stato della transazione di investimento, in modo che entrambi i lati cambino insieme.",
     "notFoundById": "Transazione con ID {{ id }} non trovata",
     "bulkUpdateNoFields": "Deve essere fornito almeno un campo di aggiornamento",

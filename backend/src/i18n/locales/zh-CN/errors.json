@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "此转账属于拆分交易的一部分。请编辑其所属的拆分交易来作废或恢复它，使两侧一并变更。",
     "splitTransferLegAmountIsParentTotal": "此金额是整个拆分的合计，而不是这一转账行的金额。要更改该行金额，请在来源交易中编辑拆分。",
     "investmentCashLegLocked": "此交易是投资交易的现金部分。请改为修改或删除投资交易，使双方一起更改。",
+    "transferLegDeleteTransfer": "这是转账的一侧。请改为删除该转账。",
     "investmentCashLegStatusLocked": "此交易是某笔投资交易的现金侧。请通过更改该投资交易的状态来作废或恢复它，使两侧一并变更。",
     "notFoundById": "未找到 ID 为 {{ id }} 的交易",
     "bulkUpdateNoFields": "至少需要提供一个更新字段",

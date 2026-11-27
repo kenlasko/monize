@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "この送金は分割取引の一部です。両側が一緒に変更されるよう、所属する分割取引を編集して無効化または復元してください。",
     "splitTransferLegAmountIsParentTotal": "この金額は分割全体の合計であり、この振替行の金額ではありません。行の金額を変更するには、元の取引で分割を編集してください。",
     "investmentCashLegLocked": "この取引は投資取引の現金側です。両方が一緒に変わるように、投資取引を変更または削除してください。",
+    "transferLegDeleteTransfer": "これは振替の片側です。代わりに振替を削除してください。",
     "investmentCashLegStatusLocked": "この取引は投資取引の現金側です。両側が一緒に変更されるよう、投資取引のステータスを変更して無効化または復元してください。",
     "notFoundById": "ID {{ id }} の取引が見つかりません",
     "bulkUpdateNoFields": "少なくとも1つの更新フィールドが必要です",

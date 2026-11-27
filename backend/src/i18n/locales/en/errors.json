@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "This transfer is part of a split transaction. Void or restore it by editing the split transaction it belongs to, so both sides change together.",
     "splitTransferLegAmountIsParentTotal": "This amount is the total of the whole split, not of this transfer line. Edit the split on the source transaction to change the line's amount.",
     "investmentCashLegLocked": "This transaction is the cash side of an investment transaction. Change or delete the investment transaction instead, so both sides change together.",
+    "transferLegDeleteTransfer": "This is one side of a transfer. Delete the transfer instead.",
     "investmentCashLegStatusLocked": "This transaction is the cash side of an investment transaction. Void or restore it by changing the investment transaction's status, so both sides change together.",
     "notFoundById": "Transaction with ID {{ id }} not found",
     "bulkUpdateNoFields": "At least one update field must be provided",

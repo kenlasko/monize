@@ -8,6 +8,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
+import { investmentCashLegLockedError } from "./void-status-transition.util";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { fitCategory } from "../categories/category-fit";
@@ -1942,6 +1943,15 @@ export class TransactionTransferService {
       const linkedLeg = transaction.linkedTransactionId
         ? locked.get(transaction.linkedTransactionId)
         : undefined;
+
+      // An investment cash leg belongs to its trade: refuse the pair, as the
+      // single and bulk deletes do (before anything is written).
+      const ownedLegs: { transaction_id: string }[] = await m.query(
+        // includes VOID rows: records read -- ownership, not effect.
+        `SELECT transaction_id FROM investment_transactions WHERE transaction_id = ANY($1)`,
+        [[...locked.keys()]],
+      );
+      if (ownedLegs.length > 0) throw investmentCashLegLockedError();
 
       // Strict reconciled lock. Both legs are one movement of money, so a
       // reconciled leg refuses the deletion of the pair -- deleting only the

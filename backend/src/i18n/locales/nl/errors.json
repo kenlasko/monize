@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "Deze overboeking maakt deel uit van een gesplitste transactie. Maak deze ongeldig of herstel deze door de gesplitste transactie waartoe deze behoort te bewerken, zodat beide zijden samen wijzigen.",
     "splitTransferLegAmountIsParentTotal": "Dit bedrag is het totaal van de hele splitsing, niet van deze overboekingsregel. Bewerk de splitsing in de brontransactie om het bedrag van de regel te wijzigen.",
     "investmentCashLegLocked": "Deze transactie is de geldzijde van een beleggingstransactie. Wijzig of verwijder in plaats daarvan de beleggingstransactie, zodat beide zijden samen veranderen.",
+    "transferLegDeleteTransfer": "Dit is één kant van een overboeking. Verwijder in plaats daarvan de overboeking.",
     "investmentCashLegStatusLocked": "Deze transactie is de geldzijde van een beleggingstransactie. Maak deze ongeldig of herstel deze door de status van de beleggingstransactie te wijzigen, zodat beide zijden samen wijzigen.",
     "notFoundById": "Transactie met ID {{ id }} niet gevonden",
     "bulkUpdateNoFields": "Er moet minimaal één bijwerkveld worden opgegeven",

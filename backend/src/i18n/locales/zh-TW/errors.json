@@ -896,6 +896,7 @@
     "splitTransferLegStatusLocked": "此轉帳屬於拆分交易的一部分。請編輯其所屬的拆分交易來作廢或還原它，使兩側一併變更。",
     "splitTransferLegAmountIsParentTotal": "此金額是整個拆分的合計，而不是這一轉帳列的金額。要變更該列金額，請在來源交易中編輯拆分。",
     "investmentCashLegLocked": "此交易是投資交易的現金部分。請改為修改或刪除投資交易，讓兩邊一起變更。",
+    "transferLegDeleteTransfer": "這是轉帳的一側。請改為刪除該轉帳。",
     "investmentCashLegStatusLocked": "此交易是某筆投資交易的現金側。請透過變更該投資交易的狀態來作廢或還原它，使兩側一併變更。",
     "notFoundById": "找不到 ID 為 {{ id }} 的交易",
     "bulkUpdateNoFields": "至少需要提供一個更新欄位",
