@@ -806,6 +806,30 @@ describe("Category fit and one category per transfer: transactions (integration)
     });
 
     row(
+      "undo: a bulk update that skipped a split parent still returns the transfer line it wrote",
+      async () => {
+        // The parent is selected with its line's linked row: the parent is
+        // skipped (a Transfer category fits none of its category lines), the
+        // linked row and the line take the category, and undo returns both.
+        const split = await createSplit();
+        const result = await asUser(() =>
+          transactions.bulkUpdate(userId, {
+            mode: "ids",
+            transactionIds: [split.parentId, split.linkedRowId],
+            categoryId: transferCat,
+          } as never),
+        );
+        expect(result.updated).toBe(1);
+        expect((await lineOf(split.transferLineId)).category_id).toBe(
+          transferCat,
+        );
+        await undo();
+        expect(await categoryOf(split.linkedRowId)).toBeNull();
+        expect((await lineOf(split.transferLineId)).category_id).toBeNull();
+      },
+    );
+
+    row(
       "undo: a plain patch of a split's linked row returns its line",
       async () => {
         const split = await createSplit();

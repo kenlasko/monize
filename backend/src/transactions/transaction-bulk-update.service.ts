@@ -603,10 +603,7 @@ export class TransactionBulkUpdateService {
         dto.categoryId ?? null,
         new Set(snapshotIds.filter((id) => !eligibleIds.includes(id))),
       );
-      snapshot = {
-        before: [...built.before, ...partnerWrites.before],
-        after: [...built.after, ...partnerWrites.after],
-      };
+      snapshot = built;
     });
 
     // Step 5: Trigger net worth recalc for affected accounts (after commit).
@@ -701,7 +698,9 @@ export class TransactionBulkUpdateService {
     // WP1b: record the undo entry AFTER the transaction committed (record
     // swallows its own failures, which is only safe outside a transaction --
     // see derived-state-writers.guard.spec.ts). Skipped parents received no
-    // write, so they are excluded from the snapshot.
+    // write, so they are excluded from the snapshot. The other sides of
+    // transfers were written, and are kept even when one is a line of a
+    // skipped parent: its record carries that parent's id.
     if (updated > 0) {
       const keep = (row: Record<string, unknown>) =>
         !skippedIds.has(row.id as string);
@@ -709,8 +708,18 @@ export class TransactionBulkUpdateService {
         entityType: "bulk_transaction",
         entityId: null,
         action: "bulk_update",
-        beforeData: { transactions: snapshot.before.filter(keep) },
-        afterData: { transactions: snapshot.after.filter(keep) },
+        beforeData: {
+          transactions: [
+            ...snapshot.before.filter(keep),
+            ...partnerWrites.before,
+          ],
+        },
+        afterData: {
+          transactions: [
+            ...snapshot.after.filter(keep),
+            ...partnerWrites.after,
+          ],
+        },
         description: `Bulk updated ${updated} transaction${updated === 1 ? "" : "s"}`,
         descriptionKey: "bulkUpdatedTransactions",
         descriptionParams: { count: updated },
