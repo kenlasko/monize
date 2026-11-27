@@ -32,7 +32,10 @@ import { PatService } from "../auth/pat.service";
 import { McpUserContext, toAuthInfo } from "./mcp-context";
 import { OAuthProviderService } from "../oauth/oauth-provider.service";
 import { ConfigService } from "@nestjs/config";
+import { DataSource } from "typeorm";
 import { withUserContext } from "../common/db/with-context";
+import { withScopedDb } from "../common/db/scoped-db";
+import { getEffectiveTimezoneOfUser } from "../common/users-by-timezone.util";
 
 const SkipPasswordCheck = () => SetMetadata(SKIP_PASSWORD_CHECK_KEY, true);
 
@@ -127,6 +130,7 @@ export class McpHttpController implements OnModuleDestroy {
     private readonly patService: PatService,
     private readonly oauthProviderService: OAuthProviderService,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {
     this.cleanupTimer = setInterval(
       () => this.cleanupExpiredSessions(),
@@ -277,6 +281,21 @@ export class McpHttpController implements OnModuleDestroy {
     return isLegacyRequest(await toWebRequest(req, req.body), req.body);
   }
 
+  /**
+   * Seed the bearer's user as the ambient identity together with their
+   * effective timezone, so `todayYMD()` in a tool, resource, prompt or the
+   * server instructions is the user's day, not the server's. Resolved once per
+   * request, as `RequestContextInterceptor` does for REST.
+   */
+  private async runAsUser<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+    const timezone = await withUserContext(userId, () =>
+      withScopedDb(this.dataSource, (m) =>
+        getEffectiveTimezoneOfUser(m, userId),
+      ),
+    );
+    return withUserContext(userId, fn, timezone);
+  }
+
   private bearerToken(req: Request): string {
     const auth = req.headers.authorization ?? "";
     return auth.startsWith("Bearer ") ? auth.substring(7) : "";
@@ -292,7 +311,7 @@ export class McpHttpController implements OnModuleDestroy {
     if (!authResult) return;
 
     if (!(await this.isLegacy(req))) {
-      await withUserContext(authResult.userId, () =>
+      await this.runAsUser(authResult.userId, () =>
         this.modernNode(req, res, req.body),
       );
       return;
@@ -322,7 +341,7 @@ export class McpHttpController implements OnModuleDestroy {
       if (!this.authorizeExistingSession(sessionId, authResult, res)) {
         return;
       }
-      await withUserContext(authResult.userId, () =>
+      await this.runAsUser(authResult.userId, () =>
         transport.handleRequest(req, res, req.body),
       );
       return;
@@ -355,11 +374,14 @@ export class McpHttpController implements OnModuleDestroy {
       }
     };
 
-    const server = this.mcpServerService.createServer();
-    await server.connect(transport);
-    await withUserContext(authResult.userId, () =>
-      transport.handleRequest(req, res, req.body),
-    );
+    // createServer() reads the user's day for the instructions, so it runs
+    // inside the seeded context too.
+    const server = await this.runAsUser(authResult.userId, async () => {
+      const created = this.mcpServerService.createServer();
+      await created.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      return created;
+    });
 
     if (transport.sessionId) {
       this.transports.set(transport.sessionId, transport);
@@ -409,7 +431,7 @@ export class McpHttpController implements OnModuleDestroy {
       return;
     }
 
-    await withUserContext(authResult.userId, () =>
+    await this.runAsUser(authResult.userId, () =>
       transport.handleRequest(req, res),
     );
   }
@@ -450,7 +472,7 @@ export class McpHttpController implements OnModuleDestroy {
       return;
     }
 
-    await withUserContext(authResult.userId, () =>
+    await this.runAsUser(authResult.userId, () =>
       transport.handleRequest(req, res),
     );
     this.destroySession(sessionId);

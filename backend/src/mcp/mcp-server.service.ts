@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { todayYMD } from "../common/date-utils";
 import { McpServer } from "@modelcontextprotocol/server";
 import { AiRelayService } from "../ai/relay/ai-relay.service";
 import { installRelayToolActivity } from "./mcp-relay-tool-activity";
@@ -91,7 +92,7 @@ export class McpServerService {
     // month", "last 30 days") into YYYY-MM-DD without an extra round trip. A
     // server is built per 2025-era session and per 2026-07-28 request, so this
     // is never staler than the connection.
-    const today = new Date().toISOString().substring(0, 10);
+    const today = todayYMD();
     const server = new McpServer(
       { name: "monize", version: backendPkg.version },
       {

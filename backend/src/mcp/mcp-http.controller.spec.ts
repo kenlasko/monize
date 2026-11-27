@@ -8,6 +8,9 @@ import { OAuthProviderService } from "../oauth/oauth-provider.service";
 import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server";
 import type { AuthInfo } from "@modelcontextprotocol/server";
+import { DataSource } from "typeorm";
+import { createScopedDbMocks } from "../test-helpers/scoped-db-testing";
+import { getRequestTimezone } from "../common/request-context";
 
 describe("McpHttpController", () => {
   let controller: McpHttpController;
@@ -15,6 +18,7 @@ describe("McpHttpController", () => {
   let mcpServerService: Record<string, jest.Mock>;
   let oauthProviderService: Record<string, jest.Mock>;
   let configService: Record<string, jest.Mock>;
+  let userPrefsQuery: jest.Mock;
 
   beforeEach(async () => {
     patService = {
@@ -35,6 +39,12 @@ describe("McpHttpController", () => {
       get: jest.fn().mockReturnValue("https://app.monize.test"),
     };
 
+    const { manager, dataSource } = createScopedDbMocks([]);
+    userPrefsQuery = manager.query;
+    userPrefsQuery.mockResolvedValue([
+      { timezone: "Pacific/Kiritimati", last_client_timezone: null },
+    ]);
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [McpHttpController],
       providers: [
@@ -42,6 +52,7 @@ describe("McpHttpController", () => {
         { provide: PatService, useValue: patService },
         { provide: OAuthProviderService, useValue: oauthProviderService },
         { provide: ConfigService, useValue: configService },
+        { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
 
@@ -193,6 +204,94 @@ describe("McpHttpController", () => {
       // No session is created, looked up, or bound.
       expect((controller as any).transports.size).toBe(0);
       expect((controller as any).sessionUsers.size).toBe(0);
+    });
+
+    // todayYMD() falls back to the server's day without a timezone in the
+    // ambient context; every transport entry must carry the user's.
+    it("seeds the user's timezone on the modern path", async () => {
+      let seen: string | undefined;
+      modernNode.mockImplementation(async () => {
+        seen = getRequestTimezone();
+      });
+      const req = {
+        method: "POST",
+        headers: { authorization: "Bearer pat_test" },
+        body: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/list",
+          params: {
+            _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" },
+          },
+        },
+      } as any;
+
+      await controller.handlePost(req, mockRes());
+
+      expect(seen).toBe("Pacific/Kiritimati");
+      expect(userPrefsQuery).toHaveBeenCalledTimes(1);
+      expect(userPrefsQuery.mock.calls[0][1]).toEqual([PAT.userId]);
+    });
+
+    it("seeds the user's timezone around createServer and the first request of a 2025-era session", async () => {
+      const seen: Array<string | undefined> = [];
+      mcpServerService.createServer.mockImplementation(() => {
+        seen.push(getRequestTimezone());
+        return { connect: jest.fn() };
+      });
+      const handleRequest = jest
+        .spyOn(NodeStreamableHTTPServerTransport.prototype, "handleRequest")
+        .mockImplementation(async () => {
+          seen.push(getRequestTimezone());
+        });
+      const req = {
+        method: "POST",
+        headers: { authorization: "Bearer pat_test" },
+        body: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: { protocolVersion: "2025-06-18", capabilities: {} },
+        },
+      } as any;
+
+      try {
+        await controller.handlePost(req, mockNodeRes());
+      } finally {
+        handleRequest.mockRestore();
+      }
+
+      expect(seen).toEqual(["Pacific/Kiritimati", "Pacific/Kiritimati"]);
+    });
+
+    it("seeds the user's timezone on an existing session's POST, GET and DELETE", async () => {
+      const sessionId = "tz-session";
+      const seen: Array<string | undefined> = [];
+      (controller as any).transports.set(sessionId, {
+        sessionId,
+        handleRequest: jest.fn(async () => {
+          seen.push(getRequestTimezone());
+        }),
+        close: jest.fn().mockResolvedValue(undefined),
+      });
+      (controller as any).servers.set(sessionId, {});
+      (controller as any).sessionUsers.set(sessionId, {
+        userId: PAT.userId,
+        scopes: "read",
+        credentialId: "pat:tok-a",
+      });
+      (controller as any).sessionCreatedAt.set(sessionId, Date.now());
+      const headers = {
+        authorization: "Bearer pat_test",
+        "mcp-session-id": sessionId,
+      };
+      const body = { jsonrpc: "2.0", id: 2, method: "tools/list" };
+
+      await controller.handlePost({ headers, body } as any, mockRes());
+      await controller.handleGet({ headers } as any, mockRes());
+      await controller.handleDelete({ headers } as any, mockRes());
+
+      expect(seen).toEqual(Array(3).fill("Pacific/Kiritimati"));
     });
 
     it("keeps a 2025-era initialize on the sessionful path", async () => {
