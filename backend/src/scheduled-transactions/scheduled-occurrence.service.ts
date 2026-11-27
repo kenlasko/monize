@@ -12,6 +12,7 @@ import {
   expandOccurrenceSlots,
 } from "../common/scheduled-occurrences";
 import { SplitKind } from "../transactions/entities/split-kind.enum";
+import { FIAT_MONEY_DECIMALS, sumMoney } from "../common/round.util";
 import { withScopedDb } from "../common/db/scoped-db";
 import { addDaysYMD, todayYMD } from "../common/date-utils";
 import { ensureYMD } from "../common/recurrence";
@@ -155,6 +156,36 @@ export interface ResolvedScheduledOccurrence extends EffectiveScheduledOccurrenc
    * (INV-OCCURRENCE-003). Empty for a non-split or a split without such a line.
    */
   transferLines: { transferAccountId: string; amount: number }[];
+  /**
+   * `transferLines` could not be priced for this occurrence (a loan bill whose
+   * projection states the amount but not its principal): a consumer withholds
+   * what depends on them instead of reading the template's lines.
+   */
+  transferLinesUnknown: boolean;
+}
+
+/**
+ * The signed sum of an occurrence's transfer lines (negative: money leaves the
+ * source account into another of the user's accounts).
+ */
+export function transferLineTotal(o: ResolvedScheduledOccurrence): number {
+  return sumMoney(
+    o.transferLines.map((l) => l.amount),
+    FIAT_MONEY_DECIMALS,
+  );
+}
+
+/**
+ * What the occurrence contributes as real income or spending: its amount less
+ * the transfer lines, which only move money between the user's own accounts.
+ * `null` when the amount is unknown.
+ */
+export function nonTransferAmount(
+  o: ResolvedScheduledOccurrence,
+): number | null {
+  return o.amount === null || o.transferLinesUnknown
+    ? null
+    : sumMoney([o.amount, -transferLineTotal(o)], FIAT_MONEY_DECIMALS);
 }
 
 function effectiveTransferLines(
@@ -256,6 +287,7 @@ export class ScheduledOccurrenceService {
           estimateStatus: null,
           autoPosts: occurrenceAutoPosts(row, slot.override),
           schedule: row,
+          transferLinesUnknown: false,
           transferLines: effectiveTransferLines(
             row,
             slot.override ?? undefined,
@@ -598,10 +630,37 @@ function withLoanAmount(
     };
   }
   const signed = amount === 0 ? 0 : sign * amount;
+  // The credit to the loan is the projected principal (with any extra), never
+  // the template's line: the last, smaller payment would credit the loan more
+  // than it pays. A row that states the amount but not its division (an
+  // override on a settled debt) leaves the credit unknown, which the forecast
+  // reports as a gap rather than crediting the template's figure.
+  const loanId = projection?.loanAccountId;
+  const principalKnown =
+    !!row && !!loanId && row.principal !== null && row.extraPrincipal !== null;
+  const transferLines =
+    principalKnown && row && loanId
+      ? [
+          ...occurrence.transferLines.filter(
+            (l) => l.transferAccountId !== loanId,
+          ),
+          {
+            transferAccountId: loanId,
+            amount:
+              sign *
+              sumMoney(
+                [row.principal ?? 0, row.extraPrincipal ?? 0],
+                FIAT_MONEY_DECIMALS,
+              ),
+          },
+        ]
+      : occurrence.transferLines;
   return {
     ...occurrence,
     amount: signed,
     directionAmount: signed,
     complete: true,
+    transferLines,
+    transferLinesUnknown: !principalKnown,
   };
 }

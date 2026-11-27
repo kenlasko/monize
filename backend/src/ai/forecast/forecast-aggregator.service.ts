@@ -13,7 +13,10 @@ import {
 } from "../../common/investment-filter.util";
 import { Transaction } from "../../transactions/entities/transaction.entity";
 import { ScheduledTransaction } from "../../scheduled-transactions/entities/scheduled-transaction.entity";
-import { ScheduledOccurrenceService } from "../../scheduled-transactions/scheduled-occurrence.service";
+import {
+  ScheduledOccurrenceService,
+  nonTransferAmount,
+} from "../../scheduled-transactions/scheduled-occurrence.service";
 import { addDaysYMD, todayYMD } from "../../common/date-utils";
 import { AccountsService } from "../../accounts/accounts.service";
 import { TransactionAnalyticsService } from "../../transactions/transaction-analytics.service";
@@ -535,17 +538,29 @@ export class ForecastAggregatorService {
       // A transfer's category never makes it income: a transfer takes a
       // category of any type (INV-CATEGORY-001) and is a named flow, never
       // income or spending (INV-REPORT-003), so only its direction is read.
+      // A split's transfer lines are internal, not income or spending: the
+      // amount and the direction are the non-transfer part's.
+      const spending =
+        occurrence.transferLines.length > 0
+          ? nonTransferAmount(occurrence)
+          : null;
       const isIncome =
         !st.isTransfer && st.category && isIncomeCategory(st.category)
           ? true
-          : occurrence.directionAmount === null
-            ? null
-            : occurrence.directionAmount > 0;
+          : spending !== null
+            ? spending > 0
+            : occurrence.directionAmount === null
+              ? null
+              : occurrence.directionAmount > 0;
 
       return {
         name: st.name,
-        amount: occurrence.amount === null ? null : Math.abs(occurrence.amount),
-        amountComplete: occurrence.amount !== null,
+        amount:
+          occurrence.amount === null || occurrence.transferLinesUnknown
+            ? null
+            : Math.abs(spending ?? occurrence.amount),
+        amountComplete:
+          occurrence.amount !== null && !occurrence.transferLinesUnknown,
         amountEstimated: occurrence.estimated,
         estimateStatus: occurrence.estimateStatus,
         // A Custom schedule is spelled out ("custom: every week on Mon,

@@ -693,6 +693,44 @@ describe('buildForecast', () => {
       expect(result.find(dp => dp.date === '2025-01-20')?.balance).toBe(1090);
     });
 
+    it('withholds the target series when the line crosses currencies', () => {
+      const t = makeScheduled({ ...splitWithTransfer(), currencyCode: 'USD' });
+      const result = buildForecast(
+        [makeAccount({ id: 'acc-2', currentBalance: 1000, currencyCode: 'CAD' } as any)],
+        [t], 'month', 'acc-2',
+      );
+      expect(result.points).toEqual([]);
+      expect(result.missingCurrencies).toEqual(['USD']);
+    });
+
+    it('is not withheld by an occurrence whose lines no longer reach the account', () => {
+      // An unresolved-FX split, its next occurrence restated to pay acc-3 only.
+      const t = makeScheduled({
+        ...splitWithTransfer(),
+        splits: [
+          { transferAccountId: 'acc-2', amount: -70, investmentAction: 'BUY' } as any,
+        ],
+        investmentForecastAmount: null,
+        nextOverride: {
+          overrideDate: '2025-01-20',
+          originalDate: '2025-01-20',
+          amount: -100,
+          isSplit: true,
+          splits: [{ transferAccountId: 'acc-3', amount: -100 }],
+        } as any,
+      });
+      const result = buildForecast(
+        [makeAccount({ id: 'acc-2', currentBalance: 1000 })], [t], 'month', 'acc-2',
+      );
+      expect(result.points.length).toBeGreaterThan(0);
+      expect(result.missingCurrencies).toEqual([]);
+    });
+
+    it('credits an inbound line to the projected balance at a date', () => {
+      const account = makeAccount({ id: 'acc-2', currentBalance: 1000 });
+      expect(getProjectedBalanceAtDate(account, '2025-01-25', [splitWithTransfer()], [])).toBe(1070);
+    });
+
     it('includes transfers when filtering by source account', () => {
       const accounts = [makeAccount({ currentBalance: 5000 })];
       const transactions = [makeScheduled({

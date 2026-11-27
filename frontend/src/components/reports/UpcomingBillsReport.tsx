@@ -31,7 +31,11 @@ import { exportToCsv } from '@/lib/csv-export';
 import { useReportData } from '@/hooks/useReportData';
 import { ReportError } from '@/components/reports/ReportError';
 import { UnknownAmount } from '@/components/ui/UnknownAmount';
-import { nonTransferAmount, sumEffectiveOccurrences } from '@/lib/scheduled-effective-amount';
+import {
+  sumEffectiveOccurrences,
+  templateTransferLineTotal,
+  withoutTransferLines,
+} from '@/lib/scheduled-effective-amount';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { isComplete, type ConvertedTotal } from '@/lib/currency-total';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -85,6 +89,12 @@ interface UpcomingBill {
    * falling back to the schedule's snapshot sign.
    */
   directionAmount: number | null;
+  /**
+   * The signed sum of the split's transfer lines (server, per occurrence;
+   * the template's only for an older backend). The direction above is the
+   * non-transfer part's, so a refund beside a larger transfer is a deposit.
+   */
+  transferLineTotal: number;
   /** The amount is the schedule's history estimate (issue #2096). */
   estimated: boolean;
   isOverdue: boolean;
@@ -156,6 +166,8 @@ export function UpcomingBillsReport() {
       const scheduledTransaction = byId.get(occurrence.scheduledTransactionId);
       if (!scheduledTransaction) return [];
       const dueDate = parseLocalDate(occurrence.dueDate);
+      const transferLineTotal =
+        occurrence.transferLineTotal ?? templateTransferLineTotal(scheduledTransaction);
       return [
         {
           scheduledTransaction,
@@ -163,7 +175,16 @@ export function UpcomingBillsReport() {
           autoPosts: occurrence.autoPosts ?? scheduledTransaction.autoPost,
           amount: occurrence.amount,
           currencyCode: occurrence.currencyCode,
-          directionAmount: occurrence.directionAmount,
+          directionAmount: withoutTransferLines(
+            {
+              ...occurrence,
+              // An older backend sends none: the amount decides, as `occurrenceKind` does.
+              directionAmount:
+                occurrence.directionAmount === undefined ? occurrence.amount : occurrence.directionAmount,
+            },
+            transferLineTotal,
+          ).directionAmount,
+          transferLineTotal,
           estimated: occurrence.estimated === true,
           isOverdue: dueDate < today,
         },
@@ -228,7 +249,7 @@ export function UpcomingBillsReport() {
             bills.filter((b) => !b.scheduledTransaction.isTransfer),
             (b) => {
               // A split's transfer lines are not spending.
-              const amount = nonTransferAmount(b.amount, b.scheduledTransaction);
+              const amount = withoutTransferLines(b, b.transferLineTotal).amount;
               return { amount, currencyCode: b.currencyCode, complete: amount !== null };
             },
             convertToDefault,

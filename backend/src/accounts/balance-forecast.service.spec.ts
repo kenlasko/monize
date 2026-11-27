@@ -578,6 +578,62 @@ describe("BalanceForecastService", () => {
       });
     });
 
+    describe("a mortgage-shaped schedule", () => {
+      const loanProjection = (principal: number | null) => ({
+        scheduledTransactionId: "st-split",
+        loanAccountId: "acc-2",
+        status: "priced",
+        currencyCode: "CAD",
+        occurrences: [
+          {
+            originalDate: "2024-08-20",
+            dueDate: "2024-08-20",
+            overrideId: null,
+            amount: 80,
+            principal,
+            interest: 20,
+            extraPrincipal: principal === null ? null : 0,
+          },
+        ],
+      });
+      const arrange = (principal: number | null) => {
+        accountsRepo.findOne.mockResolvedValue({ ...chequing, id: "acc-2" });
+        stubBalances("1000");
+        dataSource.query.mockResolvedValueOnce([{ id: "st-split" }]);
+        scheduledRepo.find.mockResolvedValue([splitSchedule]);
+        (
+          module.get(ScheduledTransactionLoanService) as unknown as {
+            projectLoanOccurrencesMany: jest.Mock;
+          }
+        ).projectLoanOccurrencesMany.mockResolvedValue(
+          new Map([["st-split", loanProjection(principal)]]),
+        );
+      };
+
+      it("credits the loan the projected principal, not the template's line", async () => {
+        arrange(60);
+        const result = await service.getBalanceForecast("user-1", "acc-2", 60);
+        // The next occurrence keeps the template's 70; the one after is 60.
+        expect(result.points).toContainEqual({
+          date: "2024-07-20",
+          balance: 1070,
+        });
+        expect(result.points).toContainEqual({
+          date: "2024-08-20",
+          balance: 1130,
+        });
+      });
+
+      it("reports a gap when the projection cannot give the principal", async () => {
+        arrange(null);
+        const result = await service.getBalanceForecast("user-1", "acc-2", 60);
+        expect(result.complete).toBe(false);
+        expect(result.gaps.map((g) => g.scheduledTransactionId)).toEqual([
+          "st-split",
+        ]);
+      });
+    });
+
     it("reads the override's lines, not the template's", async () => {
       accountsRepo.findOne.mockResolvedValue({ ...chequing, id: "acc-2" });
       stubBalances("1000");

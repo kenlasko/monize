@@ -135,12 +135,14 @@ function deltaFor(
   o: ForecastOccurrenceInput,
   accountId: string,
   amount: number,
+  decimals: number,
 ): number {
   let delta = 0;
   if (o.accountId === accountId) delta += amount;
   if (o.transferAccountId === accountId) delta += Math.abs(amount);
   for (const l of o.transferLines ?? []) {
-    if (l.transferAccountId === accountId) delta -= l.amount;
+    if (l.transferAccountId === accountId)
+      delta = roundMoney(delta - l.amount, decimals);
   }
   return delta;
 }
@@ -193,7 +195,7 @@ export function accumulateForecastDeltas(
       addGap(occurrence);
       continue;
     }
-    const delta = deltaFor(occurrence, accountId, occurrence.amount);
+    const delta = deltaFor(occurrence, accountId, occurrence.amount, decimals);
     if (occurrence.overdue)
       overdue.amount = roundMoney(overdue.amount + delta, decimals);
     // A zero delta contributes nothing, and emitting it would add a flat point

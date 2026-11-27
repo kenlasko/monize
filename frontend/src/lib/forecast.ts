@@ -1102,6 +1102,14 @@ export function buildForecast(
     const occurrences = occurrencesById.get(tx.id) ?? [];
     const txAccountId = isInbound ? (tx.transferAccountId ?? tx.accountId) : tx.accountId;
     for (const occ of occurrences) {
+      // Split transfer lines: the target gets the negated line amount; in the
+      // all-accounts view the lines are internal and cancel, so only the rest counts.
+      const lines = occ.transferLines ?? [];
+      const lineSum = (to?: string) =>
+        sumMoney(lines.filter(l => to === undefined || l.accountId === to).map(l => l.amount), unitDecimals);
+      // An occurrence whose lines do not reach this account (an override
+      // restated them) touches it not at all, so it must not withhold its series.
+      if (lineInbound && !lines.some(l => l.accountId === accountId)) continue;
       const existing = transactionsByDate.get(occ.date) || [];
       // An investment occurrence with an unresolved current FX rate makes the
       // running balance unknown from here on (issue #1167): record the missing
@@ -1119,19 +1127,20 @@ export function buildForecast(
             tx.currencyCode,
         );
       }
-      // Split transfer lines: the target gets the negated line amount; in the
-      // all-accounts view the lines are internal and cancel, so only the rest counts.
-      const lines = occ.transferLines ?? [];
-      const lineSum = (to?: string) =>
-        sumMoney(lines.filter(l => to === undefined || l.accountId === to).map(l => l.amount), unitDecimals);
+      // A line is in the SOURCE's currency and arrives in the target's at a
+      // rate fixed when it posts, which is not known here (the backend reports
+      // the same case as `crossCurrencyTransfer`): withhold, never relabel it.
+      const targetCurrency = accountCurrencyMap.get(accountId as string);
+      if (lineInbound && targetCurrency && tx.currencyCode && tx.currencyCode !== targetCurrency) {
+        missingRateCurrencies.add(tx.currencyCode);
+      }
       const signed = lineInbound
         ? -lineSum(accountId as string)
         : accountId === 'all' && lines.length > 0
-          ? occ.amount - lineSum()
+          ? sumMoney([occ.amount, -lineSum()], unitDecimals)
           : isInbound
             ? -occ.amount
             : occ.amount;
-      if (lineInbound && signed === 0 && !lines.some(l => l.accountId === accountId)) continue;
       existing.push({
         name: tx.name,
         amount: occ.unknown
@@ -1451,7 +1460,8 @@ export function getProjectedBalanceAtDate(
     if (t.accountId === account.id) return true;
     // Inbound transfer: this account is the destination
     if (isTransfer(t) && t.transferAccountId === account.id && t.accountId !== account.id) return true;
-    return false;
+    // A split with a transfer line into this account
+    return hasLineInto(t, account.id);
   });
 
   const inboundTransferIds = new Set(
@@ -1468,7 +1478,16 @@ export function getProjectedBalanceAtDate(
   for (const tx of relevant) {
     const occurrences = occurrencesById.get(tx.id) ?? [];
     const isInbound = inboundTransferIds.has(tx.id);
+    const lineInbound = tx.accountId !== account.id && !isInbound;
     for (const occ of occurrences) {
+      if (lineInbound) {
+        const lines = (occ.transferLines ?? []).filter(l => l.accountId === account.id);
+        if (lines.length === 0) continue;
+        // Arrives at a rate fixed when it posts: unknown, as in `buildForecast`.
+        if (occ.unknown || (tx.currencyCode && tx.currencyCode !== account.currencyCode)) return null;
+        units += toUnits(-sumMoney(lines.map(l => l.amount), decimals), decimals);
+        continue;
+      }
       // An investment occurrence whose current FX rate is unknown (issue #1167)
       // makes the balance at/after its date unknowable, exactly as it withholds
       // the whole series in `buildForecast`. Return null rather than folding a

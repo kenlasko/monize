@@ -1519,6 +1519,43 @@ describe("ScheduledTransactionsService", () => {
     });
   });
 
+  describe("findEffectiveOccurrences", () => {
+    it("exposes the signed sum of a split's transfer lines", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s-loan",
+          amount: -100,
+          isSplit: true,
+          splits: [
+            { id: "sp-1", kind: "category", amount: -30 },
+            {
+              id: "sp-2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+            },
+          ] as never,
+        }),
+        makeScheduled({ id: "s-plain", amount: -50 }),
+      ];
+      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
+
+      const result = await service.findEffectiveOccurrences(userId, {
+        through: "2099-01-01",
+        maxPerSchedule: 1,
+      });
+
+      expect(
+        result
+          .map((o) => [o.scheduledTransactionId, o.transferLineTotal])
+          .sort(),
+      ).toEqual([
+        ["s-loan", -70],
+        ["s-plain", 0],
+      ]);
+    });
+  });
+
   describe("getLlmUpcomingBillsAndDeposits", () => {
     it("classifies bills, deposits, transfers, and investments", async () => {
       const rows = [
@@ -1561,6 +1598,48 @@ describe("ScheduledTransactionsService", () => {
       expect(kinds).toEqual(["bill", "deposit", "investment", "transfer"]);
       expect(result.totalUpcomingBills).toBe(1200);
       expect(result.totalUpcomingDeposits).toBe(3000);
+    });
+
+    it("does not count a split's transfer lines as a bill or a deposit", async () => {
+      const rows = [
+        makeScheduled({
+          id: "s-loan",
+          name: "Loan payment",
+          amount: -100,
+          isSplit: true,
+          splits: [
+            { id: "sp-1", kind: "category", amount: -30 },
+            {
+              id: "sp-2",
+              kind: "category",
+              amount: -70,
+              transferAccountId: "acc-2",
+            },
+          ] as never,
+        }),
+        // A refund of +500 beside a -600 transfer line is a 500 deposit, not a bill.
+        makeScheduled({
+          id: "s-refund",
+          name: "Refund",
+          amount: -100,
+          isSplit: true,
+          splits: [
+            { id: "sp-3", kind: "category", amount: 500 },
+            {
+              id: "sp-4",
+              kind: "category",
+              amount: -600,
+              transferAccountId: "acc-2",
+            },
+          ] as never,
+        }),
+      ];
+      scheduledRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder(rows));
+
+      const result = await service.getLlmUpcomingBillsAndDeposits(userId);
+
+      expect(result.totalUpcomingBills).toBe(30);
+      expect(result.totalUpcomingDeposits).toBe(500);
     });
 
     it("classifies an item from its occurrence, not the stored parent sign", async () => {

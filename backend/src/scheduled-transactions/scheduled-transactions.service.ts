@@ -63,6 +63,8 @@ import {
 import {
   ResolvedScheduledOccurrence,
   ScheduledOccurrenceService,
+  nonTransferAmount,
+  transferLineTotal,
 } from "./scheduled-occurrence.service";
 import { ScheduledTransactionOverrideService } from "./scheduled-transaction-override.service";
 import {
@@ -393,6 +395,12 @@ export interface ScheduledOccurrenceReadModel {
   accountId: string;
   transferAccountId: string | null;
   isTransfer: boolean;
+  /**
+   * The signed sum of the occurrence's EFFECTIVE split transfer lines, in
+   * `currencyCode` (an override's own lines when it restates them). A client
+   * counts `amount - transferLineTotal` as spending; 0 without such a line.
+   */
+  transferLineTotal: number;
 }
 
 const INVESTMENT_RELATIONS = [
@@ -2740,6 +2748,7 @@ export class ScheduledTransactionsService {
       accountId: occurrence.schedule.accountId,
       transferAccountId: occurrence.schedule.transferAccountId ?? null,
       isTransfer: !!occurrence.schedule.isTransfer,
+      transferLineTotal: transferLineTotal(occurrence),
     }));
   }
 
@@ -5818,6 +5827,13 @@ function classifyScheduledKind(
   const row = occurrence.schedule;
   if (row.isTransfer) return "transfer";
   if (row.isInvestment) return "investment";
+  // A split's transfer lines are not spending: the side is the non-transfer
+  // part's, and a split made only of transfer lines is a transfer.
+  const spending =
+    occurrence.transferLines.length > 0 ? nonTransferAmount(occurrence) : null;
+  if (spending !== null) {
+    return spending < 0 ? "bill" : spending > 0 ? "deposit" : "transfer";
+  }
   if (occurrence.directionAmount === null) return "unknown";
   return occurrence.directionAmount < 0 ? "bill" : "deposit";
 }
@@ -5848,8 +5864,9 @@ function toLlmScheduledItem(
     accountName: row.account?.name ?? "",
     payeeName: row.payee?.name ?? row.payeeName ?? null,
     categoryName: row.category?.name ?? null,
-    amount: occurrence.amount,
-    amountComplete: occurrence.complete,
+    // Without the split's transfer lines: the rollups sum this.
+    amount: nonTransferAmount(occurrence),
+    amountComplete: occurrence.complete && !occurrence.transferLinesUnknown,
     amountEstimated: occurrence.estimated,
     estimateStatus: occurrence.estimateStatus,
     currency: occurrence.currencyCode,

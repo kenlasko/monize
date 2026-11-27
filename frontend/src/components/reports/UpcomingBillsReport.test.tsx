@@ -261,6 +261,43 @@ describe('UpcomingBillsReport', () => {
     expect(card?.textContent).not.toContain('$100');
   });
 
+  it("uses the server occurrence's effective transfer lines, not the template's", async () => {
+    // The template has a -70 transfer line, but this occurrence's override
+    // dropped it (`transferLineTotal: 0`): the whole -100 is spending.
+    const st = makeTransaction({
+      id: 'st-1', name: 'Loan payment', amount: -100, nextDueDate: '2026-02-20',
+      isSplit: true,
+      splits: [{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }],
+    });
+    mockGetAll.mockResolvedValue([st]);
+    mockGetOccurrences.mockResolvedValue([
+      { ...occurrencesFrom([st])[0], transferLineTotal: 0 },
+    ]);
+    render(<UpcomingBillsReport />);
+    await waitFor(() => {
+      expect(screen.getByText('This Month')).toBeInTheDocument();
+    });
+    expect(screen.getByText('This Month').parentElement?.textContent).toContain('$100');
+  });
+
+  it('classifies a split by its non-transfer part (refund +500 beside a -600 transfer line)', async () => {
+    const st = makeTransaction({
+      id: 'st-1', name: 'Refund', amount: -100, nextDueDate: '2026-02-20',
+      isSplit: true,
+      splits: [{ transferAccountId: null, amount: 500 }, { transferAccountId: 'acc-2', amount: -600 }],
+    });
+    mockGetAll.mockResolvedValue([st]);
+    render(<UpcomingBillsReport />);
+    await waitFor(() => {
+      expect(screen.getByText('This Month')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('List'));
+    await waitFor(() => expect(screen.getAllByText('Refund').length).toBeGreaterThan(0));
+    expect(screen.getByText('This Month').parentElement?.textContent).toContain('$500');
+    // Coloured as a deposit, not as the bill the whole -100 reads as.
+    expect(screen.getByText('$100').className).toContain('green');
+  });
+
   it('renders summary cards and view controls with data', async () => {
     const futureDateStr = '2026-02-19';
     mockGetAll.mockResolvedValue([makeTransaction({ nextDueDate: futureDateStr })]);

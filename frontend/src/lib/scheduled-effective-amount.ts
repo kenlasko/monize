@@ -114,28 +114,45 @@ export function overrideEffectiveAmount(
 }
 
 /**
- * What counts as spending in a bills total: an occurrence amount less the
- * split's transfer lines, which move money between the user's own accounts.
- * `override` is the occurrence's override when it replaces the lines; without
- * it the template's lines are read (a later occurrence's own override lines are
- * not on the client). `null` stays `null`.
+ * The signed sum of a split's transfer lines, read from the TEMPLATE (or from
+ * `override` when it restates the lines). Only for a surface with no server
+ * occurrence; one that has it reads `ScheduledOccurrence.transferLineTotal`.
  */
-export function nonTransferAmount(
-  amount: number | null,
+export function templateTransferLineTotal(
   st: ScheduledTransaction,
   override?: ScheduledTransactionOverride | null,
-): number | null {
-  if (amount === null) return null;
+): number {
   const lines =
     override?.isSplit === true && override.splits?.length
       ? override.splits
       : override?.isSplit === false || !st.isSplit
         ? []
         : (st.splits ?? []);
-  const transfers = lines.filter((l) => l.transferAccountId).map((l) => Number(l.amount));
-  return transfers.length === 0
-    ? amount
-    : sumMoney([amount, ...transfers.map((a) => -a)], moneyDecimalsForCurrency(st.currencyCode));
+  return sumMoney(
+    lines.filter((l) => l.transferAccountId).map((l) => Number(l.amount)),
+    moneyDecimalsForCurrency(st.currencyCode),
+  );
+}
+
+/**
+ * The occurrence as real income or spending: its amount (and the direction it
+ * decides) less the split's transfer lines, which move money between the user's
+ * own accounts. `lineTotal` is signed (negative: out of the source account).
+ * Rounded at the occurrence's own currency; an unknown amount stays unknown.
+ */
+export function withoutTransferLines<
+  T extends { amount: number | null; currencyCode: string; directionAmount?: number | null },
+>(occurrence: T, lineTotal: number): T {
+  if (lineTotal === 0 || occurrence.amount === null) return occurrence;
+  const amount = sumMoney(
+    [occurrence.amount, -lineTotal],
+    moneyDecimalsForCurrency(occurrence.currencyCode),
+  );
+  return {
+    ...occurrence,
+    amount,
+    ...(occurrence.directionAmount !== undefined && { directionAmount: amount }),
+  };
 }
 
 /**

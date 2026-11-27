@@ -215,7 +215,16 @@ export class BalanceForecastService {
         continue;
       }
 
-      const gap = this.gapFor(occurrence, account, isTransferTarget);
+      // A loan bill whose principal the projection does not state: the credit
+      // to the loan is unknown, so this chart is withheld, never the template's.
+      const gap =
+        isLineTarget && occurrence.transferLinesUnknown
+          ? ({
+              reason: "unresolvedSettlementRate",
+              from: null,
+              to: occurrence.currencyCode,
+            } as const)
+          : this.gapFor(occurrence, account, isTransferTarget);
       const landing = forecastLanding(occurrence.dueDate, today);
       inputs.push({
         scheduledTransactionId: occurrence.scheduledTransactionId,

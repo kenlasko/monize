@@ -554,4 +554,46 @@ describe('BudgetUpcomingBills', () => {
     expect(screen.queryByText('Overridden Positive')).not.toBeInTheDocument();
     expect(screen.getByText('No bills due this period.')).toBeInTheDocument();
   });
+
+  describe('a split with a transfer line', () => {
+    const render1 = (bills: ScheduledTransaction[]) =>
+      render(
+        <BudgetUpcomingBills
+          scheduledTransactions={bills}
+          currentSpent={0}
+          totalBudgeted={1000}
+          periodEnd="2026-02-28"
+          displayCurrency="USD"
+          formatCurrency={mockFormat}
+        />,
+      );
+    const split = (lines: { transferAccountId: string | null; amount: number }[]) =>
+      createBill({
+        id: 'st-split', name: 'Loan', amount: -100, isSplit: true, nextDueDate: '2026-02-25',
+        splits: lines as never,
+      });
+
+    it('shows and totals only the non-transfer part', () => {
+      render1([split([{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }])]);
+      // The row and the total add up: both are the 30.
+      expect(screen.getAllByText('$30.00').length).toBeGreaterThan(0);
+      expect(screen.queryByText('$100.00')).not.toBeInTheDocument();
+    });
+
+    it('leaves out a split whose real part has the deposit sign', () => {
+      render1([split([{ transferAccountId: null, amount: 500 }, { transferAccountId: 'acc-2', amount: -600 }])]);
+      expect(screen.getByText('No bills due this period.')).toBeInTheDocument();
+    });
+
+    it('leaves out a split made only of transfer lines', () => {
+      render1([split([{ transferAccountId: 'acc-2', amount: -100 }])]);
+      expect(screen.getByText('No bills due this period.')).toBeInTheDocument();
+    });
+
+    it('reads an override that restates the lines', () => {
+      const bill = split([{ transferAccountId: null, amount: -30 }, { transferAccountId: 'acc-2', amount: -70 }]);
+      render1([{ ...bill, nextOverride: { overrideDate: '2026-02-25', originalDate: '2026-02-25', amount: -100, isSplit: false, splits: null } as never }]);
+      expect(screen.getAllByText('$100.00').length).toBeGreaterThan(0);
+    });
+  });
 });

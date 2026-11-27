@@ -608,6 +608,30 @@ describe("ForecastAggregatorService", () => {
       ]);
     });
 
+    it("does not count a split's transfer lines as spending", async () => {
+      mockScheduledTransactionRepo.find.mockResolvedValue([
+        {
+          id: "st-split",
+          name: "Loan payment",
+          amount: -100,
+          frequency: "MONTHLY",
+          nextDueDate: new Date("2026-03-01"),
+          category: null,
+          isTransfer: false,
+          isSplit: true,
+          splits: [
+            { transferAccountId: null, amount: -30 },
+            { transferAccountId: "acc-2", amount: -70 },
+          ],
+        },
+      ]);
+
+      const result = await service.computeAggregates(userId, "USD");
+
+      expect(result.scheduledTransactions[0].amount).toBe(30);
+      expect(result.scheduledTransactions[0].isIncome).toBe(false);
+    });
+
     it("fetches active scheduled transactions with categories", async () => {
       mockScheduledTransactionRepo.find.mockResolvedValue([
         {
