@@ -1251,11 +1251,7 @@ export class ActionHistoryService {
     // The other side of a transfer the edit's category reached returns to
     // the value it held (INV-CATEGORY-002, specification section 4.7).
     if (isCategoryPartnerRecord(before.categoryPartner)) {
-      await undoCategoryPartner(
-        manager,
-        action.userId,
-        before.categoryPartner,
-      );
+      await undoCategoryPartner(manager, action.userId, before.categoryPartner);
     }
 
     // Restore splits if they were captured and the edit changed them
