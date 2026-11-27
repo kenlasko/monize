@@ -346,6 +346,8 @@
     "skippedRowLineDate": "[XX-Row {line}, \"{rawDate}\"-XX]",
     "skippedRowLine": "[XX-Row {line}-XX]",
     "skippedRowLineAt": "[XX-Row {line}, {date}-XX]",
+    "skippedRowQifLineAt": "[XX-Line {line}, {date}-XX]",
+    "skippedRowOfxLineAt": "[XX-Transaction {line}, {date}-XX]",
     "andMoreSkipped": "[XX-...and {count} more skipped rows-XX]",
     "loanSetupHeading": "[XX-Set Up Recurring Payments-XX]",
     "loanSetupDescription": "[XX-The following loan/mortgage accounts were imported without scheduled payments. Set up recurring payments to continue tracking your loan progress.-XX]",

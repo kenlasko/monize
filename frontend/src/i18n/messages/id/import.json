@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Baris {line}, \"{rawDate}\"",
     "skippedRowLine": "Baris {line}",
     "skippedRowLineAt": "Baris {line}, {date}",
+    "skippedRowQifLineAt": "Baris {line}, {date}",
+    "skippedRowOfxLineAt": "Transaksi {line}, {date}",
     "andMoreSkipped": "...dan {count} baris lain yang dilewati",
     "loanSetupHeading": "Siapkan Pembayaran Berulang",
     "loanSetupDescription": "Akun pinjaman/KPR berikut diimpor tanpa pembayaran terjadwal. Siapkan pembayaran berulang untuk terus melacak kemajuan pinjaman Anda.",

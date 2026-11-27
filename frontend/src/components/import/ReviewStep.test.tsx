@@ -360,6 +360,15 @@ describe('ReviewStep', () => {
       expect(screen.getAllByText('b.csv')).toHaveLength(1);
     });
 
+    it('gives both pieces of advice in a bulk import of a CSV and an OFX file', () => {
+      const one = { count: 1, rows: [{ rowNumber: 3, rawAmount: 'abc' }] };
+      const ofx = { ...csvFile(one, 'b.ofx'), fileType: 'ofx' as const };
+      render(<ReviewStep {...defaultProps} isBulkImport={true} importFiles={[csvFile(one, 'a.csv'), ofx] as any[]} />);
+
+      expect(screen.getByText(/Check that the amount columns are mapped correctly/)).toBeInTheDocument();
+      expect(screen.getByText('Correct these amounts in the file and import it again.')).toBeInTheDocument();
+    });
+
     it('names an OFX transaction by position and gives advice that fits a file with no mapping', () => {
       const file = { ...csvFile({ count: 1, rows: [{ rowNumber: 3, rawAmount: 'abc' }] }), fileType: 'ofx' as const };
       render(<ReviewStep {...defaultProps} importFiles={[file] as any[]} />);

@@ -346,6 +346,8 @@
     "skippedRowLineDate": "{line}행, \"{rawDate}\"",
     "skippedRowLine": "{line}행",
     "skippedRowLineAt": "{line}행, {date}",
+    "skippedRowQifLineAt": "{line}번째 줄, {date}",
+    "skippedRowOfxLineAt": "거래 {line}, {date}",
     "andMoreSkipped": "...외 {count}개 행 건너뜀",
     "loanSetupHeading": "정기 상환 설정",
     "loanSetupDescription": "다음 대출/모기지 계정은 예약된 상환 없이 가져왔습니다. 대출 진행 상황을 계속 추적하려면 정기 상환을 설정하세요.",

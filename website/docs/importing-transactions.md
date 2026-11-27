@@ -150,7 +150,7 @@ Select the amount type based on how your CSV represents transaction amounts:
 
 ![The transaction type column settings](images/import-csv-type-column.png)
 
-> **Amount Parsing:** Monize handles currency symbols ($, £, €, ¥, ₹ and others) and currency codes or abbreviations before or after the number (`CHF 12.34`, `12.34 kr`, `Fr. 12.34`), thousands separators (including spaces and apostrophes, `1'234.56`), European decimal commas (`18,36` is 18.36 and `1.234,56` is 1234.56), parenthesized negatives (`($50.00)` is `-$50.00`), a minus sign before or after the number (`-12.34`, `12.34-`, including the typographic minus `−12.34`), and `DR` / `CR` markers (`12.34 DR` is -12.34, `12.34 CR` is 12.34). A single separator followed by exactly three digits, such as `1,234`, is read as a thousands separator. An empty amount, or one that is only a dash, is read as zero. A row whose amount cannot be read any of these ways (`N/A`, `12.34 pending`) is not imported: the review step lists it by row and the text the file gave, and the import result counts it among the skipped rows, so it is never imported as 0.00. The same holds for a QIF record whose `T`, `U`, split, price, commission or quantity cannot be read (a blank `T` on an investment record reads as 0) (`abc`, an empty `T`, `1,2,3.4.5`) and an OFX transaction whose `TRNAMT` cannot be read: QIF names the line the record starts on, OFX the transaction's position in the file.
+> **Amount Parsing:** Monize handles currency symbols ($, £, €, ¥, ₹ and others) and currency codes or abbreviations before or after the number (`CHF 12.34`, `12.34 kr`, `Fr. 12.34`), thousands separators (including spaces and apostrophes, `1'234.56`), European decimal commas (`18,36` is 18.36 and `1.234,56` is 1234.56), parenthesized negatives (`($50.00)` is `-$50.00`), a minus sign before or after the number (`-12.34`, `12.34-`, including the typographic minus `−12.34`), and `DR` / `CR` markers (`12.34 DR` is -12.34, `12.34 CR` is 12.34). A single separator followed by exactly three digits, such as `1,234`, is read as a thousands separator. An empty amount, or one that is only a dash, is read as zero. A row whose amount cannot be read any of these ways (`N/A`, `12.34 pending`) is not imported: the review step lists it by row and the text the file gave, and the import result counts it among the skipped rows, so it is never imported as 0.00.
 
 #### Transfer Detection Rules
 
@@ -363,6 +363,14 @@ Key Quicken QIF features supported:
 - **Date padding** -- Quicken's space-padded dates (e.g., `2/ 4/19`) handled automatically
 - **Tags** -- extracted from the `/` separator in category fields
 - **Cleared status** -- Quicken's `*`/`c` (cleared) and `X`/`R` (reconciled) flags
+
+#### Amounts Monize Cannot Read
+
+Monize never imports an amount it cannot read as 0.00, and it never guesses. This applies to the `T` and `U` amount of a QIF record, to its split amounts, price, commission and quantity, and to the `TRNAMT` of an OFX transaction. A record with such an amount is not imported. The review step lists it, and the import result counts it among the skipped rows. A QIF record is named by the line where it starts. An OFX transaction is named by its place in the file.
+
+A QIF or OFX amount has fewer allowed forms than a CSV amount. It may have a sign before the number, a currency symbol, and thousands or decimal separators (`1,234.56`, `1.234,56`, `-18,36`). It may not have a minus sign after the number, parentheses, or a currency code (`12.34-`, `(12.34)`, `CHF 12.34`). Monize reports such an amount, as it does `abc` or `1,2,3.4.5`.
+
+A blank `T` on an investment record, such as a stock split, is read as 0.00. On a bank, cash or credit card record, a blank `T` is reported. If a record has both `T` and `U`, Monize reports it only when neither one can be read.
 
 For the complete step-by-step guide including exporting from Quicken, import order, and troubleshooting, see **[Importing from Quicken](importing-from-quicken.md)**.
 

@@ -346,6 +346,8 @@
     "skippedRowLineDate": "第 {line} 行，“{rawDate}”",
     "skippedRowLine": "第 {line} 行",
     "skippedRowLineAt": "第 {line} 行，{date}",
+    "skippedRowQifLineAt": "第 {line} 行，{date}",
+    "skippedRowOfxLineAt": "交易 {line}，{date}",
     "andMoreSkipped": "...以及另外 {count} 行已跳过",
     "loanSetupHeading": "设置定期还款",
     "loanSetupDescription": "以下贷款/抵押贷款账户已导入但未配置定期还款。设置定期还款以继续追踪贷款进度。",

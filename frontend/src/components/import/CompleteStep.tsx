@@ -206,7 +206,12 @@ export function CompleteStep({
                       {'\u2192'} {result.accountName}: {result.imported} {t('complete.importedSuffix')}, {result.skipped} {t('complete.totalSkippedSuffix')}
                       {result.errors > 0 && <span className="text-red-600 dark:text-red-400">, {result.errors} {t('complete.errorsLabel')}</span>}
                     </p>
-                    <SkippedRowsList rows={result.skippedRows} total={result.skipped} limit={3} />
+                    <SkippedRowsList
+                      rows={result.skippedRows}
+                      total={result.skipped}
+                      limit={3}
+                      fileType={importFiles.find((f) => f.fileName === result.fileName)?.fileType}
+                    />
                     {result.errorMessages.length > 0 && (
                       <ul className="text-xs text-red-500 dark:text-red-400 mt-1">
                         {result.errorMessages.slice(0, 3).map((msg, i) => (
@@ -256,7 +261,12 @@ export function CompleteStep({
                 <strong>{t('complete.securitiesCreated')}</strong> {importResult.securitiesCreated}
               </li>
             </ul>
-            <SkippedRowsList rows={importResult.skippedRows} total={importResult.skipped} />
+            {/* No file in the wizard means the multi-account QIF import, which keeps its content apart. */}
+            <SkippedRowsList
+              rows={importResult.skippedRows}
+              total={importResult.skipped}
+              fileType={importFiles[0]?.fileType ?? 'qif'}
+            />
             {((importResult.duplicatesMerged ?? 0) > 0 || (importResult.duplicatesReplaced ?? 0) > 0) && (
               <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                 {t('complete.duplicatesDecided', {

@@ -241,6 +241,41 @@ export function parseQif(
     readQifAmount(value, blankIsZero, (raw) => {
       currentBadAmount ??= raw;
     });
+  // T and U are one amount written twice: the record is bad only when none of
+  // them reads, so a failure is held in `currentAmountBad` until the record ends.
+  let currentAmountBad: string | null = null;
+  let amountRead = false;
+  const setAmount = (
+    tx: Partial<QifTransaction>,
+    value: string,
+    blankIsZero: boolean,
+  ): void => {
+    if (blankIsZero && value === "") {
+      if (!amountRead) tx.amount = 0;
+      return;
+    }
+    const amount = parseQifAmount(value);
+    if (amount !== null) {
+      tx.amount = amount;
+      amountRead = true;
+      currentAmountBad = null;
+    } else if (!amountRead) {
+      currentAmountBad ??= truncate(value, 50);
+    }
+  };
+  // The names a record uses reach the file's lists only when the record is kept.
+  let recordCategories = new Set<string>();
+  let recordTransfers = new Set<string>();
+  let recordSecurities = new Set<string>();
+  const settleBad = (): void => {
+    currentBadAmount ??= currentAmountBad;
+  };
+  const keepRecordNames = (): void => {
+    if (currentBadAmount !== null) return;
+    recordCategories.forEach((v) => categoriesSet.add(v));
+    recordTransfers.forEach((v) => transferAccountsSet.add(v));
+    recordSecurities.forEach((v) => securitiesSet.add(v));
+  };
   // A blank Q keeps reading as 0; a Q with text that is no quantity is reported.
   const quantityOf = (raw: string, isSplit = false): number => {
     const quantity = parseQifQuantity(raw, isSplit);
@@ -362,6 +397,11 @@ export function parseQif(
       currentSplits = [];
       currentSplit = null;
       currentBadAmount = null;
+      currentAmountBad = null;
+      amountRead = false;
+      recordCategories = new Set();
+      recordTransfers = new Set();
+      recordSecurities = new Set();
       currentStartLine = lineIndex + 1;
     }
 
@@ -377,10 +417,7 @@ export function parseQif(
       case "U": // Amount (alternative)
         // Exporters write a blank cash field on an investment record
         // (StkSplit, ShrsIn); on a cash record a blank T is unreadable.
-        currentTransaction.amount = amountOf(
-          value,
-          accountType === "INVESTMENT",
-        );
+        setAmount(currentTransaction, value, accountType === "INVESTMENT");
         break;
 
       case "P": {
@@ -436,11 +473,9 @@ export function parseQif(
         );
 
         if (isTransfer) {
-          transferAccountsSet.add(
-            truncate(transferAccount, FIELD_LIMITS.CATEGORY),
-          );
+          recordTransfers.add(truncate(transferAccount, FIELD_LIMITS.CATEGORY));
         } else if (category) {
-          categoriesSet.add(truncate(category, FIELD_LIMITS.CATEGORY));
+          recordCategories.add(truncate(category, FIELD_LIMITS.CATEGORY));
         }
         break;
       }
@@ -466,11 +501,11 @@ export function parseQif(
         };
 
         if (splitParsed.isTransfer) {
-          transferAccountsSet.add(
+          recordTransfers.add(
             truncate(splitParsed.transferAccount, FIELD_LIMITS.CATEGORY),
           );
         } else if (splitParsed.category) {
-          categoriesSet.add(
+          recordCategories.add(
             truncate(splitParsed.category, FIELD_LIMITS.CATEGORY),
           );
         }
@@ -493,7 +528,7 @@ export function parseQif(
       case "Y": // Security name/symbol
         currentTransaction.security = truncate(value, FIELD_LIMITS.SECURITY);
         if (value) {
-          securitiesSet.add(truncate(value, FIELD_LIMITS.SECURITY));
+          recordSecurities.add(truncate(value, FIELD_LIMITS.SECURITY));
         }
         break;
 
@@ -526,13 +561,16 @@ export function parseQif(
           currentTransaction.quantity = quantityOf(currentQRaw, true);
         }
 
+        settleBad();
+
         settleMoneyActivityAccount(
           currentTransaction,
           currentMoneyAccount,
-          transferAccountsSet,
+          recordTransfers,
         );
 
         if (currentTransaction.date) {
+          keepRecordNames();
           // Check if this is an Opening Balance record
           // Opening Balance records have Payee="Opening Balance" and typically a transfer category [AccountName]
           const isOpeningBalance =
@@ -579,11 +617,13 @@ export function parseQif(
     ) {
       currentTransaction.quantity = quantityOf(currentQRaw, true);
     }
+    settleBad();
     settleMoneyActivityAccount(
       currentTransaction,
       currentMoneyAccount,
-      transferAccountsSet,
+      recordTransfers,
     );
+    keepRecordNames();
     if (currentSplit && currentSplit.category !== undefined) {
       currentSplits.push(currentSplit as QifSplit);
     }
@@ -1092,6 +1132,41 @@ export function parseQifFull(
     readQifAmount(value, blankIsZero, (raw) => {
       currentBadAmount ??= raw;
     });
+  // T and U are one amount written twice: the record is bad only when none of
+  // them reads, so a failure is held in `currentAmountBad` until the record ends.
+  let currentAmountBad: string | null = null;
+  let amountRead = false;
+  const setAmount = (
+    tx: Partial<QifTransaction>,
+    value: string,
+    blankIsZero: boolean,
+  ): void => {
+    if (blankIsZero && value === "") {
+      if (!amountRead) tx.amount = 0;
+      return;
+    }
+    const amount = parseQifAmount(value);
+    if (amount !== null) {
+      tx.amount = amount;
+      amountRead = true;
+      currentAmountBad = null;
+    } else if (!amountRead) {
+      currentAmountBad ??= truncate(value, 50);
+    }
+  };
+  // The names a record uses reach the file's lists only when the record is kept.
+  let recordCategories = new Set<string>();
+  let recordTransfers = new Set<string>();
+  let recordSecurities = new Set<string>();
+  const settleBad = (): void => {
+    currentBadAmount ??= currentAmountBad;
+  };
+  const keepRecordNames = (): void => {
+    if (currentBadAmount !== null) return;
+    recordCategories.forEach((v) => blockCategoriesSet.add(v));
+    recordTransfers.forEach((v) => blockTransferAccountsSet.add(v));
+    recordSecurities.forEach((v) => blockSecuritiesSet.add(v));
+  };
   // A blank Q keeps reading as 0; a Q with text that is no quantity is reported.
   const quantityOf = (raw: string, isSplit = false): number => {
     const quantity = parseQifQuantity(raw, isSplit);
@@ -1155,11 +1230,14 @@ export function parseQifFull(
         currentTransaction.quantity = quantityOf(currentQRaw, true);
       }
 
+      settleBad();
+
       settleMoneyActivityAccount(
         currentTransaction,
         currentMoneyAccount,
-        blockTransferAccountsSet,
+        recordTransfers,
       );
+      keepRecordNames();
 
       const isOB =
         currentTransaction.payee?.toLowerCase() === "opening balance" ||
@@ -1208,6 +1286,11 @@ export function parseQifFull(
     blockTransactionRawDates = [];
     blockUnreadableAmountRows = [];
     currentBadAmount = null;
+    currentAmountBad = null;
+    amountRead = false;
+    recordCategories = new Set();
+    recordTransfers = new Set();
+    recordSecurities = new Set();
   }
 
   for (const [lineIndex, line] of lines.entries()) {
@@ -1349,7 +1432,12 @@ export function parseQifFull(
       } else if (code === "D") {
         pendingAccountDesc = truncate(value, FIELD_LIMITS.MEMO);
       } else if (code === "L") {
-        pendingAccountLimit = parseQifAmount(value);
+        // The limit keeps the lenient read it always had (the leading number,
+        // so "5000.00 CAD" is 5000): it is account metadata, not a posted amount.
+        const limit = parseFloat(
+          normalizeAmountSeparators(value.replace(/[$£€\s]/g, "")),
+        );
+        pendingAccountLimit = Number.isNaN(limit) ? null : limit;
       }
       continue;
     }
@@ -1442,6 +1530,11 @@ export function parseQifFull(
       currentSplits = [];
       currentSplit = null;
       currentBadAmount = null;
+      currentAmountBad = null;
+      amountRead = false;
+      recordCategories = new Set();
+      recordTransfers = new Set();
+      recordSecurities = new Set();
       currentStartLine = lineIndex + 1;
     }
 
@@ -1456,7 +1549,8 @@ export function parseQifFull(
 
       case "T":
       case "U":
-        currentTransaction.amount = amountOf(
+        setAmount(
+          currentTransaction,
           value,
           currentBlock.accountType === "INVESTMENT",
         );
@@ -1515,11 +1609,9 @@ export function parseQifFull(
         );
 
         if (isTransfer) {
-          blockTransferAccountsSet.add(
-            truncate(transferAccount, FIELD_LIMITS.CATEGORY),
-          );
+          recordTransfers.add(truncate(transferAccount, FIELD_LIMITS.CATEGORY));
         } else if (category) {
-          blockCategoriesSet.add(truncate(category, FIELD_LIMITS.CATEGORY));
+          recordCategories.add(truncate(category, FIELD_LIMITS.CATEGORY));
         }
         break;
       }
@@ -1543,11 +1635,11 @@ export function parseQifFull(
         };
 
         if (splitParsed.isTransfer) {
-          blockTransferAccountsSet.add(
+          recordTransfers.add(
             truncate(splitParsed.transferAccount, FIELD_LIMITS.CATEGORY),
           );
         } else if (splitParsed.category) {
-          blockCategoriesSet.add(
+          recordCategories.add(
             truncate(splitParsed.category, FIELD_LIMITS.CATEGORY),
           );
         }
@@ -1569,7 +1661,7 @@ export function parseQifFull(
       case "Y":
         currentTransaction.security = truncate(value, FIELD_LIMITS.SECURITY);
         if (value) {
-          blockSecuritiesSet.add(truncate(value, FIELD_LIMITS.SECURITY));
+          recordSecurities.add(truncate(value, FIELD_LIMITS.SECURITY));
         }
         break;
 
@@ -1600,13 +1692,16 @@ export function parseQifFull(
           currentTransaction.quantity = quantityOf(currentQRaw, true);
         }
 
+        settleBad();
+
         settleMoneyActivityAccount(
           currentTransaction,
           currentMoneyAccount,
-          blockTransferAccountsSet,
+          recordTransfers,
         );
 
         if (currentTransaction.date) {
+          keepRecordNames();
           const isOB =
             currentTransaction.payee?.toLowerCase() === "opening balance" ||
             (currentTransaction.isTransfer &&

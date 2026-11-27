@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Ligne {line}, « {rawDate} »",
     "skippedRowLine": "Ligne {line}",
     "skippedRowLineAt": "Ligne {line}, {date}",
+    "skippedRowQifLineAt": "Ligne {line}, {date}",
+    "skippedRowOfxLineAt": "Transaction {line}, {date}",
     "andMoreSkipped": "…et {count} ligne(s) ignorée(s) de plus",
     "loanSetupHeading": "Configurer les paiements récurrents",
     "loanSetupDescription": "Les comptes de prêt/prêt hypothécaire suivants ont été importés sans paiements récurrents. Configurez des paiements récurrents pour continuer à suivre votre remboursement.",

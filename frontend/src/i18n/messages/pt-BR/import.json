@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Linha {line}, \"{rawDate}\"",
     "skippedRowLine": "Linha {line}",
     "skippedRowLineAt": "Linha {line}, {date}",
+    "skippedRowQifLineAt": "Linha {line}, {date}",
+    "skippedRowOfxLineAt": "Transação {line}, {date}",
     "andMoreSkipped": "...e mais {count} linhas ignoradas",
     "loanSetupHeading": "Configurar Pagamentos Recorrentes",
     "loanSetupDescription": "As seguintes contas de empréstimo/hipoteca foram importadas sem pagamentos agendados. Configure pagamentos recorrentes para continuar acompanhando o progresso do seu empréstimo.",

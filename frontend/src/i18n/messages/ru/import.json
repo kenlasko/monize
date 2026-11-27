@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Строка {line}, \"{rawDate}\"",
     "skippedRowLine": "Строка {line}",
     "skippedRowLineAt": "Строка {line}, {date}",
+    "skippedRowQifLineAt": "Строка {line}, {date}",
+    "skippedRowOfxLineAt": "Операция {line}, {date}",
     "andMoreSkipped": "...и ещё {count} пропущенных строк",
     "loanSetupHeading": "Настройка регулярных платежей",
     "loanSetupDescription": "Следующие счета кредитов/ипотеки были импортированы без запланированных платежей. Настройте регулярные платежи для продолжения отслеживания займа.",

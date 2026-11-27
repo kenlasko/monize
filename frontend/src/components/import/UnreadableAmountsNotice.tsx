@@ -34,6 +34,7 @@ export function UnreadableAmountsNotice({ importFiles, showFileNames }: Unreadab
   const rowKey = (type: ImportFileType) =>
     type === 'qif' ? 'review.unreadableAmountLine' : type === 'ofx' ? 'review.unreadableAmountTransaction' : 'review.unreadableAmountRow';
   const hasCsv = files.some((f) => f.fileType === 'csv');
+  const hasOther = files.some((f) => f.fileType !== 'csv');
 
   return (
     <div className="rounded-lg p-4 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-300 space-y-2">
@@ -56,7 +57,8 @@ export function UnreadableAmountsNotice({ importFiles, showFileNames }: Unreadab
           </div>
         );
       })}
-      <p>{t(hasCsv ? 'review.unreadableAmountsGoBack' : 'review.unreadableAmountsFileGoBack')}</p>
+      {hasCsv && <p>{t('review.unreadableAmountsGoBack')}</p>}
+      {hasOther && <p>{t('review.unreadableAmountsFileGoBack')}</p>}
     </div>
   );
 }

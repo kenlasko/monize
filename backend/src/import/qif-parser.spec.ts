@@ -2829,6 +2829,84 @@ describe("unreadable amounts", () => {
     ]);
   });
 
+  describe("names of a dropped record, T and U, account limit", () => {
+    const rec = (...f: string[]) => [...f, "^"].join("\n");
+
+    it("keeps the category, transfer and security of a dropped record out of the lists", () => {
+      const dropped = rec(
+        "D01/02/2026",
+        "Tabc",
+        "NBuy",
+        "YGHOST",
+        "LFood:Snacks",
+      );
+      const droppedTransfer = rec("D01/02/2026", "Tabc", "L[Ghost Acct]");
+      const kept = rec("D01/03/2026", "T5", "LFood:Meals");
+      const single = parseQif(
+        ["!Type:Bank", dropped, droppedTransfer, kept].join("\n"),
+      );
+      expect(single.categories).toEqual(["Food:Meals"]);
+      expect(single.transferAccounts).toEqual([]);
+      expect(single.securities).toEqual([]);
+      const full = parseQifFull(
+        [
+          "!Account",
+          "NAcct",
+          "TBank",
+          "^",
+          "!Type:Bank",
+          dropped,
+          droppedTransfer,
+          kept,
+        ].join("\n"),
+      );
+      expect(full.accountBlocks[0].categories).toEqual(["Food:Meals"]);
+      expect(full.accountBlocks[0].transferAccounts).toEqual([]);
+      expect(full.accountBlocks[0].securities).toEqual([]);
+    });
+
+    it.each([
+      [["T-45.00", "U"]],
+      [["T-45.00", "Uxyz"]],
+      [["Tabc", "U-45.00"]],
+      [["U", "T-45.00"]],
+    ])("treats T and U as one amount: %j reads -45", (lines) => {
+      const body = ["D01/02/2026", ...lines];
+      const single = parseQif(["!Type:Bank", rec(...body)].join("\n"));
+      expect(single.unreadableAmountRows).toBeUndefined();
+      expect(single.transactions[0].amount).toBe(-45);
+      const full = parseQifFull(
+        ["!Account", "NAcct", "TBank", "^", "!Type:Bank", rec(...body)].join(
+          "\n",
+        ),
+      );
+      expect(full.accountBlocks[0].unreadableAmountRows).toBeUndefined();
+      expect(full.accountBlocks[0].transactions[0].amount).toBe(-45);
+    });
+
+    it("still reports a record whose T and U both fail", () => {
+      const result = parseQif(
+        ["!Type:Bank", rec("D01/02/2026", "Tabc", "Uxyz")].join("\n"),
+      );
+      expect(result.unreadableAmountRows).toHaveLength(1);
+    });
+
+    it("reads an account credit limit with a currency code after it", () => {
+      const full = parseQifFull(
+        [
+          "!Account",
+          "NCard",
+          "TCCard",
+          "L5000.00 CAD",
+          "^",
+          "!Type:CCard",
+          rec("D01/02/2026", "T-5"),
+        ].join("\n"),
+      );
+      expect(full.accountBlocks[0].creditLimit).toBe(5000);
+    });
+  });
+
   describe("blank T and unreadable Q", () => {
     const invst = (...fields: string[]) =>
       ["!Type:Invst", ...fields, "^"].join("\n");

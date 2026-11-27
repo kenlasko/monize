@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Рядок {line}, \"{rawDate}\"",
     "skippedRowLine": "Рядок {line}",
     "skippedRowLineAt": "Рядок {line}, {date}",
+    "skippedRowQifLineAt": "Рядок {line}, {date}",
+    "skippedRowOfxLineAt": "Операція {line}, {date}",
     "andMoreSkipped": "...і ще {count} пропущених рядків",
     "loanSetupHeading": "Налаштувати регулярні платежі",
     "loanSetupDescription": "Наступні кредитні/іпотечні рахунки були імпортовані без запланованих платежів. Налаштуйте регулярні платежі, щоб продовжити відстеження прогресу кредиту.",

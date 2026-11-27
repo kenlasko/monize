@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Hàng {line}, \"{rawDate}\"",
     "skippedRowLine": "Hàng {line}",
     "skippedRowLineAt": "Hàng {line}, {date}",
+    "skippedRowQifLineAt": "Dòng {line}, {date}",
+    "skippedRowOfxLineAt": "Giao dịch {line}, {date}",
     "andMoreSkipped": "...và {count} dòng bị bỏ qua khác",
     "loanSetupHeading": "Thiết Lập Thanh Toán Định Kỳ",
     "loanSetupDescription": "Các tài khoản vay/thế chấp sau đây đã được nhập khẩu mà không có thanh toán định kỳ. Thiết lập thanh toán định kỳ để tiếp tục theo dõi tiến trình vay của bạn.",

@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Wiersz {line}, \"{rawDate}\"",
     "skippedRowLine": "Wiersz {line}",
     "skippedRowLineAt": "Wiersz {line}, {date}",
+    "skippedRowQifLineAt": "Wiersz {line}, {date}",
+    "skippedRowOfxLineAt": "Transakcja {line}, {date}",
     "andMoreSkipped": "...i jeszcze {count} pominiętych wierszy",
     "loanSetupHeading": "Skonfiguruj płatności cykliczne",
     "loanSetupDescription": "Poniższe konta pożyczek/kredytów hipotecznych zostały zaimportowane bez zaplanowanych płatności. Skonfiguruj płatności cykliczne, aby dalej śledzić postęp spłaty pożyczki.",

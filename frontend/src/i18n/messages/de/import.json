@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Zeile {line}, \"{rawDate}\"",
     "skippedRowLine": "Zeile {line}",
     "skippedRowLineAt": "Zeile {line}, {date}",
+    "skippedRowQifLineAt": "Zeile {line}, {date}",
+    "skippedRowOfxLineAt": "Buchung {line}, {date}",
     "andMoreSkipped": "...und {count} weitere übersprungene Zeilen",
     "loanSetupHeading": "Wiederkehrende Zahlungen einrichten",
     "loanSetupDescription": "Die folgenden Darlehens-/Hypothekenkonten wurden ohne terminierte Zahlungen importiert. Richten Sie wiederkehrende Zahlungen ein, um Ihre Darlehensrückzahlung weiter zu verfolgen.",

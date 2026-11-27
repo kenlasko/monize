@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useDateFormat } from '@/hooks/useDateFormat';
 import { useNumberFormat } from '@/hooks/useNumberFormat';
 import type { ImportSkippedRow, ImportSkipReason } from '@/lib/import';
+import type { ImportFileType } from '@/app/import/import-utils';
 
 /** How many rows the list shows before it counts the rest. */
 const DEFAULT_LIMIT = 50;
@@ -31,6 +32,11 @@ interface SkippedRowsListProps {
    * the first of them, so the count of the rest comes from here.
    */
   total?: number;
+  /**
+   * The file's format. A QIF record is named by its line and an OFX
+   * transaction by its position; any other file's row by its row.
+   */
+  fileType?: ImportFileType;
 }
 
 /**
@@ -40,7 +46,7 @@ interface SkippedRowsListProps {
  * read, the file's text), payee and why, so a person can check them against
  * the file.
  */
-export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedRowsListProps) {
+export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total, fileType }: SkippedRowsListProps) {
   const t = useTranslations('import');
   const { formatDate } = useDateFormat();
   const { formatCurrency } = useNumberFormat();
@@ -54,8 +60,14 @@ export function SkippedRowsList({ rows, limit = DEFAULT_LIMIT, total }: SkippedR
   // left out (an investment row missing data) has both its line and its date.
   const describeDate = (row: ImportSkippedRow) => {
     if (row.reason !== 'unreadableDate') {
+      const lineKey =
+        row.reason === 'unreadableAmount' && fileType === 'qif'
+          ? 'complete.skippedRowQifLineAt'
+          : row.reason === 'unreadableAmount' && fileType === 'ofx'
+            ? 'complete.skippedRowOfxLineAt'
+            : 'complete.skippedRowLineAt';
       return row.rowNumber !== undefined
-        ? t('complete.skippedRowLineAt', { line: row.rowNumber, date: formatDate(row.date) })
+        ? t(lineKey, { line: row.rowNumber, date: formatDate(row.date) })
         : formatDate(row.date);
     }
     return row.rawDate

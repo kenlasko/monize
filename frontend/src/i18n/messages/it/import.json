@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Riga {line}, \"{rawDate}\"",
     "skippedRowLine": "Riga {line}",
     "skippedRowLineAt": "Riga {line}, {date}",
+    "skippedRowQifLineAt": "Riga {line}, {date}",
+    "skippedRowOfxLineAt": "Transazione {line}, {date}",
     "andMoreSkipped": "...e altre {count} righe saltate",
     "loanSetupHeading": "Configura pagamenti ricorrenti",
     "loanSetupDescription": "I seguenti conti prestito/mutuo sono stati importati senza pagamenti pianificati. Configura i pagamenti ricorrenti per continuare a monitorare il tuo prestito.",

@@ -346,6 +346,8 @@
     "skippedRowLineDate": "Rij {line}, \"{rawDate}\"",
     "skippedRowLine": "Rij {line}",
     "skippedRowLineAt": "Rij {line}, {date}",
+    "skippedRowQifLineAt": "Regel {line}, {date}",
+    "skippedRowOfxLineAt": "Transactie {line}, {date}",
     "andMoreSkipped": "...en nog {count} overgeslagen regels",
     "loanSetupHeading": "Terugkerende betalingen instellen",
     "loanSetupDescription": "De volgende lening-/hypotheekrekeningen zijn geïmporteerd zonder geplande betalingen. Stel terugkerende betalingen in om jouw leningvoortgang bij te houden.",

@@ -346,6 +346,8 @@
     "skippedRowLineDate": "{line} 行目、「{rawDate}」",
     "skippedRowLine": "{line} 行目",
     "skippedRowLineAt": "{line} 行目、{date}",
+    "skippedRowQifLineAt": "{line} 行目、{date}",
+    "skippedRowOfxLineAt": "取引 {line}、{date}",
     "andMoreSkipped": "...さらに {count} 行をスキップ",
     "loanSetupHeading": "定期支払いの設定",
     "loanSetupDescription": "以下のローン/住宅ローン勘定科目は定期支払いなしでインポートされました。ローンの進捗状況を引き続き追跡するために定期支払いを設定してください。",
