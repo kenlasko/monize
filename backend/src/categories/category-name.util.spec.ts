@@ -1,4 +1,6 @@
+import { EntityManager } from "typeorm";
 import {
+  loadQualifiedCategoryNames,
   CATEGORY_PATH_SEPARATOR,
   canonicalCategoryPath,
   qualifiedCategoryName,
@@ -214,5 +216,27 @@ describe("the round trip", () => {
     const names = qualifiedNamesById(TREE);
     expect(resolveOne(names.get("bills-cell") as string).id).toBe("bills-cell");
     expect(resolveOne(names.get("biz-cell") as string).id).toBe("biz-cell");
+  });
+});
+
+describe("loadQualifiedCategoryNames", () => {
+  const rows = [
+    { id: "t", name: "Transfers", parentId: null, categoryType: "transfer" },
+    { id: "t-save", name: "Savings", parentId: "t", categoryType: "transfer" },
+    { id: "food", name: "Food", parentId: null, categoryType: "expense" },
+  ];
+  const manager = {
+    getRepository: () => ({ find: jest.fn().mockResolvedValue(rows) }),
+  } as unknown as EntityManager;
+
+  it("names every category, and only Income and Expense ones for a category line (INV-CATEGORY-001)", async () => {
+    expect(
+      [...(await loadQualifiedCategoryNames(manager, "u")).values()].sort(),
+    ).toEqual(["Food", "Transfers", "Transfers: Savings"]);
+    expect([
+      ...(
+        await loadQualifiedCategoryNames(manager, "u", { holder: "category" })
+      ).values(),
+    ]).toEqual(["Food"]);
   });
 });

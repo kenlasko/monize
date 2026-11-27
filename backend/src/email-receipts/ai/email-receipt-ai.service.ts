@@ -217,8 +217,10 @@ export class EmailReceiptAiService {
         ),
       );
     }
+    // The categories a parser may file an item under: a category line's,
+    // Income and Expense only (INV-CATEGORY-001).
     const categories = await withScopedDb(this.dataSource, (m) =>
-      loadQualifiedCategoryNames(m, userId),
+      loadQualifiedCategoryNames(m, userId, { holder: "category" }),
     );
 
     const reply = await this.ai.complete(
@@ -536,8 +538,10 @@ export class EmailReceiptAiService {
           "A transfer cannot be reviewed by proposal.",
         );
       }
+      // The model picks an item line's category: Income and Expense only
+      // (INV-CATEGORY-001).
       const categories = await withScopedDb(this.dataSource, (m) =>
-        loadQualifiedCategoryNames(m, userId),
+        loadQualifiedCategoryNames(m, userId, { holder: "category" }),
       );
 
       let content: string;

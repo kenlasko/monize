@@ -888,7 +888,11 @@ export class EmailReceiptPipelineService {
       matchKind = match.matchKind;
     }
 
-    const categoryNames = await loadQualifiedCategoryNames(m, userId);
+    // A receipt's items land on split category lines: Income and Expense only
+    // (INV-CATEGORY-001), so a Transfer category is never offered or matched.
+    const categoryNames = await loadQualifiedCategoryNames(m, userId, {
+      holder: "category",
+    });
 
     // What the user already filed an item of the same name under comes first;
     // the profile's rules, then the AI, cover what history does not.

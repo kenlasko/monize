@@ -1,3 +1,4 @@
+import { isTransferCategory } from "./category-type.util";
 import { EntityManager } from "typeorm";
 import { Category } from "./entities/category.entity";
 import { escapeRegExp } from "../common/escape-regexp.util";
@@ -112,12 +113,25 @@ export function qualifiedNamesById(
 export async function loadQualifiedCategoryNames(
   m: EntityManager,
   userId: string,
+  options: {
+    /**
+     * `"category"`: only the categories a category row or line may hold,
+     * Income and Expense (INV-CATEGORY-001), for a list offered to choose
+     * from. A child's name still names its parent.
+     */
+    readonly holder?: "category";
+  } = {},
 ): Promise<Map<string, string>> {
   const categories = await m.getRepository(Category).find({
     where: { userId },
-    select: ["id", "name", "parentId"],
+    select: ["id", "name", "parentId", "categoryType"],
   });
-  return qualifiedNamesById(categories);
+  const qualified = qualifiedNamesById(categories);
+  if (options.holder !== "category") return qualified;
+  const transfer = new Set(
+    categories.filter((c) => isTransferCategory(c)).map((c) => c.id),
+  );
+  return new Map([...qualified].filter(([id]) => !transfer.has(id)));
 }
 
 /**
