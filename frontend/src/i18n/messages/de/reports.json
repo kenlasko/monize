@@ -447,6 +447,7 @@
     "labelEndDate": "Enddatum",
     "labelMetric": "Kennzahl",
     "labelDirection": "Richtung",
+    "labelCategoryType": "Kategorietyp",
     "checkboxTransfers": "Überweisungen einbeziehen",
     "checkboxFavourites": "Zu Favoriten hinzufügen",
     "sortByPlaceholder": "Standard",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Durchschnittsbetrag",
       "BUDGET_VARIANCE": "Budgetabweichung"
     },
+    "categoryType": {
+      "ALL": "Alle",
+      "INCOME": "Einnahme",
+      "EXPENSE": "Ausgabe",
+      "UNCATEGORIZED": "Ohne Kategorie"
+    },
     "direction": {
       "INCOME_ONLY": "Nur Einnahmen",
       "EXPENSES_ONLY": "Nur Ausgaben",
-      "BOTH": "Beides"
+      "BOTH": "Beides",
+      "INCOMING": "Eingehend",
+      "OUTGOING": "Ausgehend"
     },
     "sortDirection": {
       "ASC": "Aufsteigend",

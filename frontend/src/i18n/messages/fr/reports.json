@@ -447,6 +447,7 @@
     "labelEndDate": "Date de fin",
     "labelMetric": "Mesure",
     "labelDirection": "Direction",
+    "labelCategoryType": "Type de catégorie",
     "checkboxTransfers": "Inclure les virements",
     "checkboxFavourites": "Ajouter aux favoris",
     "sortByPlaceholder": "Par défaut",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Montant moyen",
       "BUDGET_VARIANCE": "Écart budgétaire"
     },
+    "categoryType": {
+      "ALL": "Toutes",
+      "INCOME": "Revenu",
+      "EXPENSE": "Dépense",
+      "UNCATEGORIZED": "Sans catégorie"
+    },
     "direction": {
       "INCOME_ONLY": "Revenus uniquement",
       "EXPENSES_ONLY": "Dépenses uniquement",
-      "BOTH": "Les deux"
+      "BOTH": "Les deux",
+      "INCOMING": "Entrant",
+      "OUTGOING": "Sortant"
     },
     "sortDirection": {
       "ASC": "Croissant",

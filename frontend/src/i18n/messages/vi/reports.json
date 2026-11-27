@@ -447,6 +447,7 @@
     "labelEndDate": "Ngày kết thúc",
     "labelMetric": "Chỉ số",
     "labelDirection": "Hướng",
+    "labelCategoryType": "Loại danh mục",
     "checkboxTransfers": "Bao gồm chuyển tiền",
     "checkboxFavourites": "Thêm vào mục yêu thích",
     "sortByPlaceholder": "Mặc định",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Số tiền trung bình",
       "BUDGET_VARIANCE": "Phương sai ngân sách"
     },
+    "categoryType": {
+      "ALL": "Tất cả",
+      "INCOME": "Thu nhập",
+      "EXPENSE": "Chi phí",
+      "UNCATEGORIZED": "Chưa phân loại"
+    },
     "direction": {
       "INCOME_ONLY": "Chỉ thu nhập",
       "EXPENSES_ONLY": "Chỉ chi phí",
-      "BOTH": "Cả hai"
+      "BOTH": "Cả hai",
+      "INCOMING": "Tiền vào",
+      "OUTGOING": "Tiền ra"
     },
     "sortDirection": {
       "ASC": "Tăng dần",
