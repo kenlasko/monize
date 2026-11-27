@@ -1654,6 +1654,50 @@ describe("UsersService", () => {
       );
     });
 
+    it("still reports success when the OAuth revoke fails after the user row is gone", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      oauthProviderService.revokeAllForUser.mockRejectedValue(
+        new Error("revoke down"),
+      );
+
+      await expect(
+        service.deleteAccount("user-1", { password: "CorrectPass123!" }),
+      ).resolves.toEqual({ downgraded: false });
+      expect(usersRepository.remove).toHaveBeenCalled();
+    });
+
+    it("revokes OAuth grants on the downgrade branch and rethrows a failure", async () => {
+      const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
+      usersRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        passwordHash: hashedPassword,
+      });
+      mockDataSource.query.mockImplementation(async (sql: string) =>
+        sql.includes("FROM account_delegates") &&
+        sql.trimStart().startsWith("SELECT")
+          ? [{ "?column?": 1 }]
+          : [],
+      );
+
+      await expect(
+        service.deleteAccount("user-1", { password: "CorrectPass123!" }),
+      ).resolves.toEqual({ downgraded: true });
+      expect(oauthProviderService.revokeAllForUser).toHaveBeenCalledWith(
+        "user-1",
+      );
+
+      oauthProviderService.revokeAllForUser.mockRejectedValue(
+        new Error("revoke down"),
+      );
+      await expect(
+        service.deleteAccount("user-1", { password: "CorrectPass123!" }),
+      ).rejects.toThrow("revoke down");
+    });
+
     it("throws when user not found", async () => {
       usersRepository.findOne.mockResolvedValue(null);
 

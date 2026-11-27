@@ -20,6 +20,7 @@ import {
 } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { withScopedDb } from "../common/db/scoped-db";
+import { withSystemContext } from "../common/db/with-context";
 import * as bcrypt from "bcryptjs";
 import { tr } from "../i18n/translate";
 import { User } from "./entities/user.entity";
@@ -651,8 +652,13 @@ export class UsersService {
     // Pre-flight only, like the last-admin check: a group others joined must be
     // transferred first, and refusing here does not revoke the caller's sessions.
     // `eraseSharedUser` in the delete transaction is the authoritative check.
-    await withScopedDb(this.dataSource, (manager) =>
-      assertSharedOwnershipTransferred(manager, userId),
+    // System context, as in AdminService.deleteUser: under RLS the shared
+    // tables hide other members' rows from the departing user's own identity.
+    // `userId` is the JWT subject, never a request value.
+    await withSystemContext(() =>
+      withScopedDb(this.dataSource, (manager) =>
+        assertSharedOwnershipTransferred(manager, userId),
+      ),
     );
 
     // Revoke all refresh tokens and PATs (forces re-login either way).
@@ -669,6 +675,8 @@ export class UsersService {
     // they can keep acting as a delegate.
     if (await this.isActingDelegate(userId)) {
       await this.purgeForDowngrade(userId);
+      // The user still exists, so a failed revoke is rethrown, not hidden.
+      await revokeOAuthGrantsAfterCommit(this.moduleRef, userId, this.logger);
       return { downgraded: true };
     }
 
@@ -678,46 +686,56 @@ export class UsersService {
     // and preferences are worthless once the account is gone either way.
     // Delegate sessions acting *as* this user go too -- the owner they point
     // at is about to disappear.
-    await withScopedDb(this.dataSource, async (manager) => {
-      // The authoritative last-admin check, in the transaction that removes the
-      // row and while the lock over the admin set is still held.
-      if (
-        user.role === "admin" &&
-        wouldRemoveLastAdmin(await lockAdminsForUpdate(manager), userId)
-      ) {
-        throw new ForbiddenException(
-          tr(
-            "errors.users.deleteLastAdmin",
-            "Cannot delete the last admin account. Promote another user first.",
-          ),
+    // System context for the same reason as the pre-flight above.
+    await withSystemContext(() =>
+      withScopedDb(this.dataSource, async (manager) => {
+        // The authoritative last-admin check, in the transaction that removes the
+        // row and while the lock over the admin set is still held.
+        if (
+          user.role === "admin" &&
+          wouldRemoveLastAdmin(await lockAdminsForUpdate(manager), userId)
+        ) {
+          throw new ForbiddenException(
+            tr(
+              "errors.users.deleteLastAdmin",
+              "Cannot delete the last admin account. Promote another user first.",
+            ),
+          );
+        }
+
+        // shared_groups.owner_user_id and shared_memberships.user_id are ON DELETE
+        // RESTRICT; the admin path erases them the same way.
+        await eraseSharedUser(manager, userId);
+
+        const refreshTokens = manager.getRepository(RefreshToken);
+        await refreshTokens.delete({ userId });
+        await refreshTokens.delete({ actingAsUserId: userId });
+        await manager.getRepository(PersonalAccessToken).delete({ userId });
+        await manager.getRepository(UserPreference).delete({ userId });
+        // The user's custom currencies lose their creator when the row goes
+        // (ON DELETE SET NULL, and a trigger deactivates them): lock them first,
+        // then drop the ones nothing references, so none lingers as a system
+        // currency nobody can edit or delete.
+        const currencies = this.moduleRef.get(CurrenciesService, {
+          strict: false,
+        });
+        const createdCodes = await currencies.lockCurrenciesCreatedBy(
+          manager,
+          userId,
         );
-      }
-
-      // shared_groups.owner_user_id and shared_memberships.user_id are ON DELETE
-      // RESTRICT; the admin path erases them the same way.
-      await eraseSharedUser(manager, userId);
-
-      const refreshTokens = manager.getRepository(RefreshToken);
-      await refreshTokens.delete({ userId });
-      await refreshTokens.delete({ actingAsUserId: userId });
-      await manager.getRepository(PersonalAccessToken).delete({ userId });
-      await manager.getRepository(UserPreference).delete({ userId });
-      // The user's custom currencies lose their creator when the row goes
-      // (ON DELETE SET NULL, and a trigger deactivates them): lock them first,
-      // then drop the ones nothing references, so none lingers as a system
-      // currency nobody can edit or delete.
-      const currencies = this.moduleRef.get(CurrenciesService, {
-        strict: false,
-      });
-      const createdCodes = await currencies.lockCurrenciesCreatedBy(
-        manager,
-        userId,
-      );
-      await manager.getRepository(User).remove(user);
-      await currencies.removeUnreferencedCurrencies(manager, createdCodes);
-    });
+        await manager.getRepository(User).remove(user);
+        await currencies.removeUnreferencedCurrencies(manager, createdCodes);
+      }),
+    );
     // SECURITY: the account is gone; end the OAuth grants an MCP client holds.
-    await revokeOAuthGrantsAfterCommit(this.moduleRef, userId, this.logger);
+    // A failure is already logged by the helper and is not rethrown: the user
+    // row no longer exists, so findAccount and validateAccessToken both reject
+    // any remaining token ("not_found"), and a 500 would misreport a done delete.
+    try {
+      await revokeOAuthGrantsAfterCommit(this.moduleRef, userId, this.logger);
+    } catch {
+      // logged by the helper
+    }
     return { downgraded: false };
   }
 
@@ -1105,26 +1123,31 @@ export class UsersService {
    * admin User Management and no "self" context is offered.
    */
   async purgeForDowngrade(userId: string): Promise<void> {
-    await withScopedDb(this.dataSource, async (manager) => {
-      await eraseSharedUser(manager, userId);
-      await this.runOwnedDataDeletes(
-        userId,
-        {
-          deletePayees: true,
-          deleteAccounts: true,
-          deleteCategories: true,
-          deleteExchangeRates: true,
-        },
-        manager,
-      );
-      await manager.query(
-        "DELETE FROM account_delegates WHERE owner_user_id = $1",
-        [userId],
-      );
-      await manager.query(
-        "UPDATE users SET is_delegate_only = true WHERE id = $1",
-        [userId],
-      );
-    });
+    // System context: eraseSharedUser touches other members' shared rows, which
+    // RLS hides from the user's own identity (nesting inside AdminService's
+    // system context just re-enters the same context).
+    await withSystemContext(() =>
+      withScopedDb(this.dataSource, async (manager) => {
+        await eraseSharedUser(manager, userId);
+        await this.runOwnedDataDeletes(
+          userId,
+          {
+            deletePayees: true,
+            deleteAccounts: true,
+            deleteCategories: true,
+            deleteExchangeRates: true,
+          },
+          manager,
+        );
+        await manager.query(
+          "DELETE FROM account_delegates WHERE owner_user_id = $1",
+          [userId],
+        );
+        await manager.query(
+          "UPDATE users SET is_delegate_only = true WHERE id = $1",
+          [userId],
+        );
+      }),
+    );
   }
 }
