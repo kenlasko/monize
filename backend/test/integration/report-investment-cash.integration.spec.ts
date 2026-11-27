@@ -773,8 +773,7 @@ describe("built-in reports and investment cash accounts (integration)", () => {
       );
 
       expect(custom.summary.total).toBe(-60);
-      // Spending presents the same outgoing money as a positive cost.
-      expect(custom.summary.total).toBe(-builtIn.totalSpending);
+      expect(builtIn.totalSpending).toBe(60);
     });
 
     it("keeps income whose parent an embedded BUY turned negative", async () => {
@@ -807,8 +806,8 @@ describe("built-in reports and investment cash accounts (integration)", () => {
         spending.getSpendingByCategory(userId, START, END),
       );
 
-      // The built-in measure reports spending as a cost.
-      expect(custom.summary.total).toBe(-builtIn.totalSpending);
+      expect(custom.summary.total).toBe(-60);
+      expect(builtIn.totalSpending).toBe(60);
     });
   });
 
