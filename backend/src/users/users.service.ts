@@ -675,8 +675,10 @@ export class UsersService {
     // they can keep acting as a delegate.
     if (await this.isActingDelegate(userId)) {
       await this.purgeForDowngrade(userId);
-      // The user still exists, so a failed revoke is rethrown, not hidden.
-      await revokeOAuthGrantsAfterCommit(this.moduleRef, userId, this.logger);
+      // The purge is committed and irreversible, so a failed revoke is logged,
+      // not reported as a failed delete. MCP never acts as a delegate, so a
+      // surviving grant reaches only the user's own data, which is gone.
+      await this.revokeOAuthAfterDelete(userId);
       return { downgraded: true };
     }
 
@@ -728,15 +730,22 @@ export class UsersService {
       }),
     );
     // SECURITY: the account is gone; end the OAuth grants an MCP client holds.
-    // A failure is already logged by the helper and is not rethrown: the user
-    // row no longer exists, so findAccount and validateAccessToken both reject
-    // any remaining token ("not_found"), and a 500 would misreport a done delete.
+    // A failure is logged, not rethrown: the user row no longer exists, so
+    // findAccount and validateAccessToken both reject any remaining token
+    // ("not_found"), and a 500 would misreport a done delete.
+    await this.revokeOAuthAfterDelete(userId);
+    return { downgraded: false };
+  }
+
+  /** OAuth revoke after a committed self-delete; a failure is logged only. */
+  private async revokeOAuthAfterDelete(userId: string): Promise<void> {
     try {
       await revokeOAuthGrantsAfterCommit(this.moduleRef, userId, this.logger);
     } catch {
-      // logged by the helper
+      this.logger.error(
+        `Account ${userId} was deleted by its owner, but revoking its OAuth grants failed; revoke them by hand`,
+      );
     }
-    return { downgraded: false };
   }
 
   /**

@@ -1670,7 +1670,7 @@ describe("UsersService", () => {
       expect(usersRepository.remove).toHaveBeenCalled();
     });
 
-    it("revokes OAuth grants on the downgrade branch and rethrows a failure", async () => {
+    it("revokes OAuth grants on the downgrade branch and still reports the committed purge when the revoke fails", async () => {
       const hashedPassword = await bcrypt.hash("CorrectPass123!", 10);
       usersRepository.findOne.mockResolvedValue({
         ...mockUser,
@@ -1695,7 +1695,7 @@ describe("UsersService", () => {
       );
       await expect(
         service.deleteAccount("user-1", { password: "CorrectPass123!" }),
-      ).rejects.toThrow("revoke down");
+      ).resolves.toEqual({ downgraded: true });
     });
 
     it("throws when user not found", async () => {
