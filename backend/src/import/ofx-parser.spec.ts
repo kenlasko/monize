@@ -904,4 +904,42 @@ ${row("0", "-5.00")}${row("U-1", "-6.00")}${row("0", "-7.00")}
       expect(tx.commission).toBe(0);
     });
   });
+
+  describe("unreadable amounts", () => {
+    const ofx = (...amounts: string[]) => `OFXHEADER:100
+<OFX>
+<BANKMSGSRSV1>
+<STMTTRNRS><STMTRS><BANKTRANLIST>
+${amounts
+  .map(
+    (a, i) => `<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>2026010${i + 1}
+<TRNAMT>${a}
+<FITID>${i}
+<NAME>Row ${i + 1}
+</STMTTRN>`,
+  )
+  .join("\n")}
+</BANKTRANLIST></STMTRS></STMTTRNRS>
+</BANKMSGSRSV1>
+</OFX>`;
+
+    it("reports a TRNAMT that is not a number instead of dropping it", () => {
+      const result = parseOfx(ofx("-5.00", "abc", ""));
+      expect(result.transactions).toHaveLength(1);
+      expect(result.unreadableAmountRows).toEqual([
+        { rowNumber: 2, rawAmount: "abc", date: "2026-01-02", payee: "Row 2" },
+        { rowNumber: 3, rawAmount: "", date: "2026-01-03", payee: "Row 3" },
+      ]);
+    });
+
+    it("still reads zero, negative and decimal-comma amounts", () => {
+      const result = parseOfx(ofx("0.00", "-1234.5", "-18,36"));
+      expect(result.unreadableAmountRows).toBeUndefined();
+      expect(result.transactions.map((t) => t.amount)).toEqual([
+        0, -1234.5, -18.36,
+      ]);
+    });
+  });
 });

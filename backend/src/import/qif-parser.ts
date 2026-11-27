@@ -28,6 +28,7 @@
 import { applyQifClearedField } from "./qif-status.util";
 import { normalizeAmountSeparators } from "./amount-separators.util";
 import { isQifCashTransfer } from "./qif-cash-transfer-action";
+import type { CsvUnreadableAmountRow } from "./csv-parser";
 
 export interface QifTransaction {
   date: string;
@@ -107,8 +108,10 @@ export interface QifParseResult {
    */
   unreadableDateRows?: import("./csv-parser").CsvUnreadableDateRow[];
   /**
-   * CSV parses only: every row left out because its amount (or debit or
-   * credit) field holds text that cannot be read as an amount, in file order.
+   * Every row (CSV) or record (QIF, OFX) left out because its amount field
+   * holds text that cannot be read as an amount, in file order. QIF rows
+   * carry the line the record starts on, OFX rows the 1-based position of the
+   * transaction block.
    * The preview counts them and the import records each as a skipped row.
    */
   unreadableAmountRows?: import("./csv-parser").CsvUnreadableAmountRow[];
@@ -225,12 +228,22 @@ export function parseQif(
   let currentMoneyAccount: string | null = null;
   let currentSplits: QifSplit[] = [];
   let currentSplit: Partial<QifSplit> | null = null;
+  // The first amount field of the open record that cannot be read, and the
+  // line the record starts on. Such a record is reported, never imported at 0.
+  let currentBadAmount: string | null = null;
+  let currentStartLine = 0;
+  const unreadableAmountRows: CsvUnreadableAmountRow[] = [];
+  const unreadableRawDates: string[] = [];
+  const amountOf = (value: string, blankIsZero = false): number =>
+    readQifAmount(value, blankIsZero, (raw) => {
+      currentBadAmount ??= raw;
+    });
   let openingBalance: number | null = null;
   let openingBalanceDate: string | null = null;
   let skippingSection = false;
   let inAccountSection = false;
 
-  for (const line of lines) {
+  for (const [lineIndex, line] of lines.entries()) {
     if (!line.trim()) continue;
 
     const code = line[0];
@@ -338,6 +351,8 @@ export function parseQif(
       currentMoneyAccount = null;
       currentSplits = [];
       currentSplit = null;
+      currentBadAmount = null;
+      currentStartLine = lineIndex + 1;
     }
 
     if (!currentTransaction) continue;
@@ -350,7 +365,7 @@ export function parseQif(
 
       case "T": // Amount
       case "U": // Amount (alternative)
-        currentTransaction.amount = parseQifAmount(value) ?? 0;
+        currentTransaction.amount = amountOf(value);
         break;
 
       case "P": {
@@ -455,7 +470,7 @@ export function parseQif(
 
       case "$": // Split amount
         if (currentSplit) {
-          currentSplit.amount = parseQifAmount(value) ?? 0;
+          currentSplit.amount = amountOf(value, true);
         }
         break;
 
@@ -468,7 +483,7 @@ export function parseQif(
         break;
 
       case "I": // Price per share
-        currentTransaction.price = parseQifAmount(value) ?? 0;
+        currentTransaction.price = amountOf(value, true);
         break;
 
       case "Q": // Quantity (number of shares, or split ratio for StkSplit)
@@ -477,7 +492,7 @@ export function parseQif(
         break;
 
       case "O": // Commission
-        currentTransaction.commission = parseQifAmount(value) ?? 0;
+        currentTransaction.commission = amountOf(value, true);
         break;
 
       case "^": // End of record
@@ -513,7 +528,15 @@ export function parseQif(
                 ?.toLowerCase()
                 .includes("opening balance"));
 
-          if (isOpeningBalance && openingBalance === null) {
+          if (currentBadAmount !== null) {
+            unreadableAmountRows.push({
+              rowNumber: currentStartLine,
+              rawAmount: currentBadAmount,
+              date: currentTransaction.date,
+              payee: currentTransaction.payee ?? "",
+            });
+            unreadableRawDates.push(rawDates[rawDates.length - 1]);
+          } else if (isOpeningBalance && openingBalance === null) {
             // Extract opening balance - don't add as a transaction
             openingBalance = currentTransaction.amount || 0;
             openingBalanceDate = currentTransaction.date;
@@ -550,9 +573,19 @@ export function parseQif(
     if (currentSplit && currentSplit.category !== undefined) {
       currentSplits.push(currentSplit as QifSplit);
     }
-    currentTransaction.splits = currentSplits;
-    transactions.push(currentTransaction as QifTransaction);
-    transactionRawDates.push(rawDates[rawDates.length - 1]);
+    if (currentBadAmount !== null) {
+      unreadableAmountRows.push({
+        rowNumber: currentStartLine,
+        rawAmount: currentBadAmount,
+        date: currentTransaction.date,
+        payee: currentTransaction.payee ?? "",
+      });
+      unreadableRawDates.push(rawDates[rawDates.length - 1]);
+    } else {
+      currentTransaction.splits = currentSplits;
+      transactions.push(currentTransaction as QifTransaction);
+      transactionRawDates.push(rawDates[rawDates.length - 1]);
+    }
   }
 
   // Detect date format from raw dates
@@ -567,6 +600,9 @@ export function parseQif(
         detectedDateFormat,
       );
     }
+    unreadableAmountRows.forEach((row, i) => {
+      row.date = parseQifDate(unreadableRawDates[i], detectedDateFormat);
+    });
     if (openingBalanceRawDate !== null) {
       openingBalanceDate = parseQifDate(
         openingBalanceRawDate,
@@ -589,6 +625,7 @@ export function parseQif(
     sampleDates,
     openingBalance,
     openingBalanceDate,
+    ...(unreadableAmountRows.length > 0 ? { unreadableAmountRows } : {}),
   };
 }
 
@@ -712,8 +749,26 @@ function parseQifAmount(amountStr: string): number | null {
   // Remove currency symbols and spaces, then read the grouping and decimal
   // separators the way the CSV import does ("1,234.56", "-18,36").
   const cleaned = normalizeAmountSeparators(amountStr.replace(/[$£€\s]/g, ""));
-  const amount = parseFloat(cleaned);
-  return isNaN(amount) ? null : amount;
+  // The whole field has to be a number: "1,2,3.4.5" is not 123.4.
+  if (!/^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(cleaned)) return null;
+  return parseFloat(cleaned);
+}
+
+/**
+ * An amount field of a record: its value, or 0 with `onUnreadable` called with
+ * the field's text so the caller drops the record rather than import it at 0.
+ * `blankIsZero` keeps a blank optional field (split, price, commission) at 0.
+ */
+function readQifAmount(
+  value: string,
+  blankIsZero: boolean,
+  onUnreadable: (raw: string) => void,
+): number {
+  if (blankIsZero && value === "") return 0;
+  const amount = parseQifAmount(value);
+  if (amount !== null) return amount;
+  onUnreadable(value.slice(0, 50));
+  return 0;
 }
 
 /**
@@ -940,6 +995,8 @@ export interface QifAccountBlock {
   securities: string[];
   openingBalance: number | null;
   openingBalanceDate: string | null;
+  /** Records left out because an amount field cannot be read (see QifParseResult). */
+  unreadableAmountRows?: CsvUnreadableAmountRow[];
 }
 
 /**
@@ -1013,6 +1070,14 @@ export function parseQifFull(
   let currentMoneyAccount: string | null = null;
   let currentSplits: QifSplit[] = [];
   let currentSplit: Partial<QifSplit> | null = null;
+  // See parseQif: the open record's first unreadable amount and its line.
+  let currentBadAmount: string | null = null;
+  let currentStartLine = 0;
+  let blockUnreadableAmountRows: CsvUnreadableAmountRow[] = [];
+  const amountOf = (value: string, blankIsZero = false): number =>
+    readQifAmount(value, blankIsZero, (raw) => {
+      currentBadAmount ??= raw;
+    });
   let blockCategoriesSet = new Set<string>();
   let blockTransferAccountsSet = new Set<string>();
   let blockSecuritiesSet = new Set<string>();
@@ -1080,7 +1145,14 @@ export function parseQifFull(
         (currentTransaction.isTransfer &&
           currentTransaction.payee?.toLowerCase().includes("opening balance"));
 
-      if (isOB && blockOpeningBalance === null) {
+      if (currentBadAmount !== null) {
+        blockUnreadableAmountRows.push({
+          rowNumber: currentStartLine,
+          rawAmount: currentBadAmount,
+          date: currentTransaction.date,
+          payee: currentTransaction.payee ?? "",
+        });
+      } else if (isOB && blockOpeningBalance === null) {
         blockOpeningBalance = currentTransaction.amount || 0;
         blockOpeningBalanceDate = currentTransaction.date;
       } else {
@@ -1095,6 +1167,9 @@ export function parseQifFull(
     currentBlock.securities = Array.from(blockSecuritiesSet).sort();
     currentBlock.openingBalance = blockOpeningBalance;
     currentBlock.openingBalanceDate = blockOpeningBalanceDate;
+    if (blockUnreadableAmountRows.length > 0) {
+      currentBlock.unreadableAmountRows = blockUnreadableAmountRows;
+    }
     accountBlocks.push(currentBlock);
 
     // Reset per-block state
@@ -1110,9 +1185,11 @@ export function parseQifFull(
     blockOpeningBalanceDate = null;
     blockRawDates = [];
     blockTransactionRawDates = [];
+    blockUnreadableAmountRows = [];
+    currentBadAmount = null;
   }
 
-  for (const line of lines) {
+  for (const [lineIndex, line] of lines.entries()) {
     if (!line.trim()) continue;
 
     const code = line[0];
@@ -1343,6 +1420,8 @@ export function parseQifFull(
       currentMoneyAccount = null;
       currentSplits = [];
       currentSplit = null;
+      currentBadAmount = null;
+      currentStartLine = lineIndex + 1;
     }
 
     if (!currentTransaction) continue;
@@ -1356,7 +1435,7 @@ export function parseQifFull(
 
       case "T":
       case "U":
-        currentTransaction.amount = parseQifAmount(value) ?? 0;
+        currentTransaction.amount = amountOf(value);
         break;
 
       case "P": {
@@ -1459,7 +1538,7 @@ export function parseQifFull(
 
       case "$":
         if (currentSplit) {
-          currentSplit.amount = parseQifAmount(value) ?? 0;
+          currentSplit.amount = amountOf(value, true);
         }
         break;
 
@@ -1471,7 +1550,7 @@ export function parseQifFull(
         break;
 
       case "I":
-        currentTransaction.price = parseQifAmount(value) ?? 0;
+        currentTransaction.price = amountOf(value, true);
         break;
 
       case "Q":
@@ -1480,7 +1559,7 @@ export function parseQifFull(
         break;
 
       case "O":
-        currentTransaction.commission = parseQifAmount(value) ?? 0;
+        currentTransaction.commission = amountOf(value, true);
         break;
 
       case "^": {
@@ -1512,7 +1591,14 @@ export function parseQifFull(
                 ?.toLowerCase()
                 .includes("opening balance"));
 
-          if (isOB && blockOpeningBalance === null) {
+          if (currentBadAmount !== null) {
+            blockUnreadableAmountRows.push({
+              rowNumber: currentStartLine,
+              rawAmount: currentBadAmount,
+              date: currentTransaction.date,
+              payee: currentTransaction.payee ?? "",
+            });
+          } else if (isOB && blockOpeningBalance === null) {
             blockOpeningBalance = currentTransaction.amount || 0;
             blockOpeningBalanceDate = currentTransaction.date;
           } else {

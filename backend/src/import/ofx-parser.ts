@@ -19,6 +19,7 @@
  */
 
 import type { QifTransaction, QifParseResult } from "./qif-parser";
+import type { CsvUnreadableAmountRow } from "./csv-parser";
 import { MONEY_SCALE, roundMoney } from "../common/round.util";
 
 // Strip HTML angle brackets to prevent stored XSS.
@@ -197,6 +198,7 @@ export function parseOfx(content: string): QifParseResult {
   const transactions: QifTransaction[] = [];
   const transferAccountNames = new Set<string>();
   const sampleDates: string[] = [];
+  const unreadableAmountRows: CsvUnreadableAmountRow[] = [];
 
   // Determine if this is a credit card statement
   const upper = content.toUpperCase();
@@ -212,7 +214,7 @@ export function parseOfx(content: string): QifParseResult {
   // Extract transaction blocks
   const txBlocks = extractBlocks(content, "<STMTTRN>", "</STMTTRN>");
 
-  for (const block of txBlocks) {
+  for (const [blockIndex, block] of txBlocks.entries()) {
     const dateStr = getTagValue(block, "DTPOSTED");
     const date = parseOfxDate(dateStr);
     if (!date) continue;
@@ -225,8 +227,23 @@ export function parseOfx(content: string): QifParseResult {
     // separator and allows no digit grouping, so "-18,36" is -18.36; a bare
     // parseFloat stopped at the comma and imported -18.
     const amountStr = getTagValue(block, "TRNAMT");
-    const amount = parseFloat(amountStr.replace(",", "."));
-    if (isNaN(amount)) continue;
+    const amountText = amountStr.replace(",", ".");
+    const amount = /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(amountText)
+      ? parseFloat(amountText)
+      : NaN;
+    if (isNaN(amount)) {
+      // Never dropped silently: the preview counts it and the import lists it.
+      unreadableAmountRows.push({
+        rowNumber: blockIndex + 1,
+        rawAmount: amountStr.slice(0, 50),
+        date,
+        payee: truncate(
+          getTagValue(block, "NAME") || getTagValue(block, "MEMO"),
+          255,
+        ),
+      });
+      continue;
+    }
 
     const trnType = getTagValue(block, "TRNTYPE").toUpperCase();
     const name = getTagValue(block, "NAME");
@@ -284,5 +301,6 @@ export function parseOfx(content: string): QifParseResult {
     sampleDates,
     openingBalance: null,
     openingBalanceDate: null,
+    ...(unreadableAmountRows.length > 0 ? { unreadableAmountRows } : {}),
   };
 }

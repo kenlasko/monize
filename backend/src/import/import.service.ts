@@ -535,6 +535,22 @@ export class ImportService {
             importRules,
           };
 
+          // The parse left these records out; the result names them.
+          for (const row of block.unreadableAmountRows ?? []) {
+            recordSkippedRow(
+              importResult,
+              {
+                date: row.date,
+                amount: 0,
+                payee: row.payee,
+                rowNumber: row.rowNumber,
+                rawAmount: row.rawAmount,
+              },
+              "unreadableAmount",
+              account.currencyCode,
+            );
+          }
+
           // Apply opening balance
           if (block.openingBalance !== null) {
             assertImportAmountPrecision(
