@@ -23,8 +23,7 @@ import { TransactionSplit } from "../transactions/entities/transaction-split.ent
  *   (`isNetSpending`), so a refund lowers the cost and an income category is
  *   not a row;
  * - INCOME_ONLY reports `net` for a cell that is positive;
- * - BOTH / TOTAL_AMOUNT keeps the signed net. For other grouped BOTH metrics
- *   the magnitude of each category's net remains their calculation basis.
+ * - Both, Incoming and Outgoing keep the signed net in sums and averages.
  *
  * Each group (a month, a payee, a tag) sums its settled cells. Each transfer
  * leg is its own cell. Both in-scope legs of a consistently valued transfer
@@ -134,14 +133,16 @@ export interface NetGroup {
   count: number;
 }
 
-export function isSignedTotal(
+export function isSignedMoney(
   direction: DirectionFilter,
   metric: MetricType,
 ): boolean {
   return (
     direction !== DirectionFilter.EXPENSES_ONLY &&
     direction !== DirectionFilter.INCOME_ONLY &&
-    metric === MetricType.TOTAL_AMOUNT
+    (metric === MetricType.TOTAL_AMOUNT ||
+      metric === MetricType.NONE ||
+      metric === MetricType.AVERAGE)
   );
 }
 
@@ -150,7 +151,7 @@ export function shareDenominator(
   groups: ReadonlyMap<string, NetGroup>,
   config: ReportConfig,
 ): FxAggregate | undefined {
-  if (isSignedTotal(config.direction, config.metric)) return undefined;
+  if (isSignedMoney(config.direction, config.metric)) return undefined;
   const amounts = Array.from(groups.values(), (group) => group.agg);
   if (
     config.metric === MetricType.BUDGET_VARIANCE &&
@@ -188,7 +189,8 @@ export function createNetCells(
   onProvisional: (row: string) => void = () => undefined,
 ): NetCells {
   const groups = new Map<string, Map<string, Cell>>();
-  const signedTotal = isSignedTotal(direction, metric);
+  const signedMoney = isSignedMoney(direction, metric);
+  const signedTotal = signedMoney && metric !== MetricType.AVERAGE;
   // Each category/currency has one eligibility decision for the signed total.
   const incompleteCells = new Map<string, Set<string>>();
 
@@ -281,7 +283,7 @@ export function createNetCells(
           // An expense budget measures cost: even a net credit is negated.
           spent = !isIncome;
         } else {
-          spent = !signedTotal && net.sign < 0;
+          spent = !signedMoney && net.sign < 0;
         }
         kept = true;
         if (spent) agg.mergeNegated(net);

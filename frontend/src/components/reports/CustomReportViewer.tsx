@@ -163,8 +163,8 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
   // A plain "Total" does not say whether a both-direction figure is a signed
   // net or a sum of unsigned category amounts, so the headline names it.
   const measure = report ? customReportMeasure(report, result?.signedTotal) : null;
-  const signed = measure === 'netAmount' || measure === 'netCashMovement';
-  const signedTotal = signed && metric === MetricType.TOTAL_AMOUNT;
+  const signed = measure === 'netAmount' || measure === 'netCashMovement' || measure === 'average';
+  const signedTotal = result?.signedTotal && metric !== MetricType.AVERAGE;
   // A pie encodes only magnitudes, and a zero has no slice to hover or select.
   const signedPie = signed && result?.viewType === ReportViewType.PIE_CHART;
   const legendData = useMemo(() => {
@@ -174,7 +174,9 @@ export function CustomReportViewer({ reportId }: CustomReportViewerProps) {
     );
   }, [result, signedPie]);
   const legendRows = signedPie ? legendData : legendData.slice(0, 15);
-  const measureLabel = measure ? t(`customReportViewer.measure.${measure}`) : null;
+  const measureLabel = measure === 'average'
+    ? t('customReportLabels.metric.AVERAGE')
+    : measure ? t(`customReportViewer.measure.${measure}`) : null;
   const summaryTotal: ConvertedTotal | null = result
     ? (() => {
         const withheld = result.summary.total === null;

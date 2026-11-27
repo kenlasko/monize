@@ -248,9 +248,11 @@ Fixture, all in CAD, one person, March 2026. Expense category "Investments".
 | Category detail, Investments | all accounts | 3 transactions |
 | Budget line on Investments, Brokerage excluded | budget accounts | spent 1,020 |
 | Budget line on Investments, Brokerage in the budget | budget accounts | spent 20 |
-| Custom report, by category, Expenses only, Include transfers | all accounts | Investments 1,020 (F's cell 20 and T1's cell 1,000; T2's cell is not spending) |
-| Custom report, by category, Both, Include transfers | all accounts | Investments 2,020 (each transfer leg is its own cell, `backend/src/reports/report-net-cells.ts`) |
-| Custom report without Include transfers, Spending by Category, Income vs Expenses | any | Investments 20 |
+| Custom report, Investments, saved aggregated Expenses Only (Both + Expense), Include transfers | all accounts | signed total and grouped No Aggregation −20; Average Amount −6.67 over three postings |
+| Custom report, Investments, Outgoing, Include transfers | all accounts | signed total and grouped No Aggregation −1,020; Average Amount −510 over two postings |
+| Custom report, Investments, Incoming, Include transfers | all accounts | signed total and grouped No Aggregation +1,000; Average Amount +1,000 over one posting |
+| Custom report, Investments, Both, exclude transfers | all accounts | signed total −20 |
+| Spending by Category, Income vs Expenses | all accounts | Investments spending 20 |
 | Monthly Category Breakdown | all accounts | Investments row 20; Transfers group: Chequing out 1,000, Brokerage in -1,000 |
 | Cash Flow Sankey | Chequing | expenses: Investments 20; outflow to Savings & investments 1,000 |
 

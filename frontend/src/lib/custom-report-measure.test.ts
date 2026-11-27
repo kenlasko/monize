@@ -34,13 +34,11 @@ describe('customReportMeasure', () => {
     expect(customReportMeasure(report(MetricType.TOTAL_AMOUNT, DirectionFilter.BOTH))).toBe('unsignedTotal');
   });
 
-  it('keeps the Both / Average measure unsigned', () => {
+  it('keeps the Both / Average measure from older servers unsigned', () => {
     expect(customReportMeasure(report(MetricType.AVERAGE, DirectionFilter.BOTH))).toBe('unsignedAverage');
   });
 
-  // A grouped No Aggregation report sums each group's unsigned cells on the
-  // server; only the ungrouped list signs its rows.
-  it('names a grouped both-direction No Aggregation report an unsigned total, never a net', () => {
+  it('labels grouped No Aggregation from older servers as unsigned', () => {
     for (const groupBy of [GroupByType.CATEGORY, GroupByType.MONTH, GroupByType.PAYEE, GroupByType.TAG]) {
       expect(customReportMeasure(report(MetricType.NONE, DirectionFilter.BOTH, false, groupBy))).toBe('unsignedTotal');
       expect(customReportMeasure(report(MetricType.NONE, DirectionFilter.BOTH, true, groupBy))).toBe('unsignedTotal');

@@ -3457,7 +3457,7 @@ same-currency pair in scope cancels. When one side is in the reporting currency
 and a settled counterleg is available, the report values the pair at the
 amounts transferred (INV-FX-002). Independent market valuations can leave a
 residual. A transfer with just one side selected contributes that side alone.
-Grouped metric NONE retains its unsigned category amounts (INV-REPORT-004).
+Grouped NONE also sums signed postings. AVERAGE divides their signed sum by the existing group count (INV-REPORT-004).
 
 ### INV-SANKEY-001 -- the Cash Flow Sankey closes
 
@@ -3552,14 +3552,14 @@ Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
                     a (group, category) cell, signed; a cell is kept only when
                     its net is in the report's direction (EXPENSES_ONLY:
                     isNetSpending of the negated net; INCOME_ONLY: a positive
-                    net). Under BOTH / TOTAL_AMOUNT a group sums signed cells.
+                    net). After direction filtering, TOTAL_AMOUNT and grouped NONE sum signed cells.
                     Its complete headline nets the eligible components before
                     display rounding. Its known subtotal excludes incomplete
                     category/currency parts consistently across groupings.
                     Tag rows can overlap: their headline
                     uses each component once, and counts a parent transaction
-                    once even if distinct splits contribute. Under BOTH,
-                    AVERAGE and grouped NONE retain category magnitudes.
+                    once even if distinct splits contribute. AVERAGE divides the signed numerator by the existing count for each group.
+                    Its headline weights groups by these counts, including overlapping tags.
                     The ungrouped BOTH / NONE list preserves each row's sign.
                     The signed measures use "Net amount" or "Net cash movement"
                     with transfers. See customReportMeasure in

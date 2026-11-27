@@ -829,9 +829,26 @@ describe("CustomReportViewer", () => {
       }
     });
 
-    // Grouped, No Aggregation sums each group's unsigned cells on the server,
-    // so it is not a signed list and its headline is no net.
-    it("names a grouped both-direction No Aggregation report an unsigned total, unsigned rows", async () => {
+    it.each([
+      { metric: "NONE", value: -20, label: "Net cash movement" },
+      { metric: "AVERAGE", value: -6.67, label: "Average Amount" },
+    ])("shows the signed March CAD $metric figure and passes its label to the chart and exports", async ({ metric, value, label }) => {
+      const groupBy = "CATEGORY";
+      mockGetById.mockResolvedValue({ ...report({ metric, includeTransfers: true }), groupBy });
+      mockExecute.mockResolvedValue({
+        ...executed, groupBy, signedTotal: true,
+        data: [{ id: "investments", label: "Investments", value, count: 3 }],
+        summary: { total: value, knownTotal: value, count: 3 },
+      });
+      render(<CustomReportViewer reportId="rpt-1" />);
+      expect(await screen.findByTestId("report-measure")).toHaveTextContent(label);
+      const chart = screen.getByTestId("report-chart");
+      expect(chart).toHaveAttribute("data-signed", "true");
+      expect(chart).toHaveAttribute("data-total-label", label);
+      expect(screen.getByText(`$${value.toFixed(2)}`)).toBeInTheDocument();
+    });
+
+    it("labels grouped No Aggregation from an older server as unsigned", async () => {
       mockGetById.mockResolvedValue({ ...report({}), groupBy: "CATEGORY" });
       mockExecute.mockResolvedValue({ ...executed, groupBy: "CATEGORY" });
       render(<CustomReportViewer reportId="rpt-1" />);

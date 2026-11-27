@@ -691,12 +691,16 @@ describe('ReportChart', () => {
       expect(screen.getByTestId('tooltip')).toHaveTextContent('$-300.00');
     });
 
-    it('uses the unique posting count and net total for overlapping tags in the table, CSV and PDF', async () => {
+    it.each([
+      { metric: MetricType.TOTAL_AMOUNT, travel: -20, headline: -20, count: 2, label: 'Net amount' },
+      { metric: MetricType.NONE, travel: -20, headline: -20, count: 2, label: 'Net amount' },
+      { metric: MetricType.AVERAGE, travel: -10, headline: -23.33, count: 3, label: 'Average Amount' },
+    ])('keeps the signed $metric value and count for overlapping tags in the table, CSV and PDF', async ({ metric, travel, headline, count, label }) => {
       const { exportToCsv } = await import('@/lib/csv-export');
       const { exportToPdf } = await import('@/lib/pdf-export');
       // A -50 expense has both tags. Its +30 refund has only the Travel tag.
       const data = [
-        { label: 'Travel', value: -20, count: 2 },
+        { label: 'Travel', value: travel, count: 2 },
         { label: 'Summer', value: -50, count: 1 },
       ];
       const { container } = render(
@@ -704,31 +708,31 @@ describe('ReportChart', () => {
           viewType={ReportViewType.TABLE}
           data={data}
           groupBy={GroupByType.TAG}
-          metric={MetricType.TOTAL_AMOUNT}
+          metric={metric}
           tableColumns={columns}
-          totalRowValue={-20}
-          totalRowCount={2}
-          totalLabel="Net amount"
+          totalRowValue={headline}
+          totalRowCount={metric === MetricType.AVERAGE ? undefined : count}
+          totalLabel={label}
           signed
         />
       );
 
       expect(Array.from(container.querySelectorAll('tfoot td'), cell => cell.textContent)).toEqual([
-        'Net amount', '$-20.00', '', '2',
+        label, `$${headline.toFixed(2)}`, '', String(count),
       ]);
 
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/CSV/i)); });
       expect(vi.mocked(exportToCsv).mock.lastCall?.[2]).toEqual([
-        ['Travel', -20, '', 2],
+        ['Travel', travel, '', 2],
         ['Summer', -50, '', 1],
-        ['Net amount', -20, '', 2],
+        [label, headline, '', count],
       ]);
 
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: /export/i })); });
       await act(async () => { fireEvent.click(screen.getByText(/PDF/i)); });
       expect(vi.mocked(exportToPdf).mock.lastCall?.[0].tableData?.totalRow).toEqual([
-        'Net amount', '$-20.00', '', '2',
+        label, `$${headline.toFixed(2)}`, '', String(count),
       ]);
     });
 
