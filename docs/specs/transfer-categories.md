@@ -570,7 +570,9 @@ a category line; each such reader is listed below.
   column being nullable), so every existing category is Income or Expense and
   every existing row already fits. `is_income` stays one release for the
   previous pods and is dropped in the next release as a `contract-after` change; the API
-  field `isIncome` stays, derived.
+  field `isIncome` stays, derived, until then. #2478 dropped the column, the
+  trigger's mirror and the API field together
+  (`20261127205950_categories_drop_is_income.sql`, `contract-after: 1.22.0`).
 - **Children whose flag differs from their parent's exist today.** A moved
   category is re-typed alone and its children keep their flag
   (`CategoriesService.update`), and the Money importer stores each category's
@@ -915,7 +917,8 @@ revised that day; the introduction says why.
    plus an Outgoing / Incoming / Net measure for transfers.
 9. **Wire shape.** A new `type` field is the source of truth. Responses keep
    `isIncome` (true only for income) as a read-only derived field; requests may
-   send either, `type` winning.
+   send either, `type` winning. Superseded by #2478: from the release after
+   1.22.0 requests send `type` only and responses carry no `isIncome`.
 10. **Defaults.** The default category import gains a short Transfer set, for
     new users only.
 11. **Automation.** A rule's "Set the category" applies to a transfer with a
@@ -948,7 +951,7 @@ pages and their screenshots, the end-to-end specs
 (`e2e/tests/transfer-categories.spec.ts`), the corrected tool and DTO text,
 release notes and a What's new entry (`docs/release-notes/1.22.0.md`), the
 full-locale pass, and the owed follow-up to drop `categories.is_income` in the
-next release (the issue is still to be opened; its number goes here).
+next release (#2478).
 
 ###### PR 1: Specification
 
@@ -1006,5 +1009,5 @@ Done when a report or budget with no Transfer category returns the figures it re
 - [x] E2E specs from section 14. (8452e2264, 4b994c8e2)
 - [x] Full-locale i18n pass. (435d33b83)
 - [x] Release notes and What's new (the What's new digest is `docs/release-notes/1.22.0.md`). (70783f308)
-- [ ] A follow-up issue for the `is_income` column drop in the next release: pending, to be opened by the maintainer.
+- [x] The `is_income` column drop in the next release: #2478, with the trigger's mirror and the API's `isIncome`. (150c41cda, bb5980234, 0506aa399)
 - [x] Retire the plan pair into this specification. (0edb383cd)

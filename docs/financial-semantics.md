@@ -92,8 +92,8 @@ neither.
 
 ### A transfer's category: one per transfer, of any type
 
-A category has a type, Income, Expense or Transfer (`categories.category_type`;
-`is_income` stays a read-only mirror while the column exists). A Transfer
+A category has a type, Income, Expense or Transfer (`categories.category_type`,
+its only statement since the `is_income` flag was dropped, #2478). A Transfer
 category goes only on a transfer: a transfer leg, a split's transfer line and
 the row it links, and their scheduled forms. An ordinary row, a split's
 category line and a scheduled category row take only Income or Expense
