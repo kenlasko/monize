@@ -192,6 +192,12 @@ export function MnyVerificationReport({
         </p>
       )}
 
+      {(result.categoriesNotFitting ?? 0) > 0 && (
+        <p className="mb-6 text-sm text-amber-800 dark:text-amber-300">
+          {t('complete.categoriesNotFitting', { count: result.categoriesNotFitting ?? 0 })}
+        </p>
+      )}
+
       {(result.bondRowsWithoutSeries ?? 0) > 0 && (
         <p className="mb-6 text-sm text-amber-800 dark:text-amber-300">
           {t('mnyComplete.bondRowsWithoutSeries', { count: result.bondRowsWithoutSeries ?? 0 })}

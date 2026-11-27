@@ -1170,6 +1170,7 @@ export function useImportWizard() {
 
       if (isBulkImport) {
         const fileResults: BulkImportResult['fileResults'] = [];
+        let totalCategoriesNotFitting = 0;
         let totalImported = 0;
         let totalSkipped = 0;
         let totalErrors = 0;
@@ -1196,8 +1197,10 @@ export function useImportWizard() {
               errors: result.errors,
               errorMessages: result.errorMessages,
               loanAccountsNeedingSetup: result.loanAccountsNeedingSetup,
+              categoriesNotFitting: result.categoriesNotFitting,
             });
 
+            totalCategoriesNotFitting += result.categoriesNotFitting ?? 0;
             totalImported += result.imported;
             totalSkipped += result.skipped;
             totalErrors += result.errors;
@@ -1269,6 +1272,7 @@ export function useImportWizard() {
 
         setBulkImportResult({
           totalImported, totalSkipped, totalErrors, categoriesCreated, accountsCreated, payeesCreated, securitiesCreated, fileResults,
+          ...(totalCategoriesNotFitting > 0 ? { categoriesNotFitting: totalCategoriesNotFitting } : {}),
           loanAccountsNeedingSetup: allLoanAccountsNeedingSetup.length > 0 ? allLoanAccountsNeedingSetup : undefined,
         });
         setStep('complete');

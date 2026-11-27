@@ -543,7 +543,24 @@ describe('CompleteStep', () => {
         importResult={{ ...defaultProps.importResult!, categoriesNotFitting: 3 }}
       />,
     );
-    expect(screen.getByText(/3 transactions were imported without a category/)).toBeInTheDocument();
+    expect(screen.getByText(/3 transactions or split lines were imported without a category/)).toBeInTheDocument();
+  });
+
+  it('totals the rows left without a Transfer category across the files of a bulk import', () => {
+    render(
+      <CompleteStep
+        {...defaultProps}
+        importResult={null}
+        isBulkImport
+        bulkImportResult={{
+          totalImported: 5, totalSkipped: 0, totalErrors: 0,
+          categoriesCreated: 0, accountsCreated: 0, payeesCreated: 0, securitiesCreated: 0,
+          categoriesNotFitting: 4,
+          fileResults: [],
+        }}
+      />,
+    );
+    expect(screen.getByText(/4 transactions or split lines were imported without a category/)).toBeInTheDocument();
   });
 
   it('shows how many bond purchases were imported without a series', () => {

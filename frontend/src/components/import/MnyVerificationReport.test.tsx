@@ -188,6 +188,18 @@ describe('MnyVerificationReport', () => {
     ).toBeInTheDocument();
   });
 
+  it('says how many rows a Money file\'s Transfer category was left off', () => {
+    render(
+      <MnyVerificationReport
+        {...defaultProps}
+        result={result({ categoriesNotFitting: 2 })}
+      />,
+    );
+    expect(
+      screen.getByText(/2 transactions or split lines were imported without a category/),
+    ).toBeInTheDocument();
+  });
+
   it('shows no bond series line when the count is absent', () => {
     render(<MnyVerificationReport {...defaultProps} />);
     expect(screen.queryByText(/imported without a series/)).not.toBeInTheDocument();

@@ -181,6 +181,11 @@ export function CompleteStep({
                 <li><strong>{t('complete.payeesCreated')}</strong> {bulkImportResult.payeesCreated}</li>
                 <li><strong>{t('complete.securitiesCreated')}</strong> {bulkImportResult.securitiesCreated}</li>
               </ul>
+              {(bulkImportResult.categoriesNotFitting ?? 0) > 0 && (
+                <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">
+                  {t('complete.categoriesNotFitting', { count: bulkImportResult.categoriesNotFitting ?? 0 })}
+                </p>
+              )}
             </div>
 
             {/* Per-file results */}

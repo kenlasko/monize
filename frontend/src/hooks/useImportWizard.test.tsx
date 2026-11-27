@@ -1614,6 +1614,28 @@ describe('useImportWizard - import handlers', () => {
     ]);
   });
 
+  it("sums each file's rows left without a Transfer category in a bulk import", async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockParseQif.mockResolvedValue(baseParsedQif({ categories: [] }));
+    mockImportQif.mockResolvedValueOnce(importResult({ imported: 2, categoriesNotFitting: 1 }))
+                  .mockResolvedValueOnce(importResult({ imported: 3, categoriesNotFitting: 2 }));
+
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('a.qif', '1'), makeFile('b.qif', '2')]));
+    });
+    act(() => {
+      result.current.setFileAccountId(0, 'acc-1');
+      result.current.setFileAccountId(1, 'acc-1');
+    });
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    expect(result.current.bulkImportResult?.fileResults.map((r) => r.categoriesNotFitting)).toEqual([1, 2]);
+    expect(result.current.bulkImportResult?.categoriesNotFitting).toBe(3);
+  });
+
   it('bulk import handles thrown error per file', async () => {
     mockGetAllAccounts.mockResolvedValue([baseAccount()]);
     mockParseQif.mockResolvedValue(baseParsedQif({ categories: [] }));
