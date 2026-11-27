@@ -2,6 +2,8 @@ import { DataSource } from "typeorm";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { createGlobalValidationPipe } from "../common/pipes/global-validation.pipe";
+import { CreateCustomReportDto } from "./dto/create-custom-report.dto";
 import { ReportsService } from "./reports.service";
 import {
   CustomReport,
@@ -331,6 +333,27 @@ describe("ReportsService", () => {
       );
       expect(reportsRepository.save).toHaveBeenCalled();
       expect(result).toBeDefined();
+    });
+
+    it("applies the default report configuration to an explicit JSON null", async () => {
+      const dto: CreateCustomReportDto =
+        await createGlobalValidationPipe().transform(
+          { name: "Legacy report", config: null },
+          { type: "body", metatype: CreateCustomReportDto },
+        );
+      await service.create("user-1", dto);
+
+      expect(reportsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          groupBy: GroupByType.CATEGORY,
+          config: {
+            metric: MetricType.TOTAL_AMOUNT,
+            includeTransfers: false,
+            direction: DirectionFilter.BOTH,
+            categoryType: ReportCategoryType.EXPENSE,
+          },
+        }),
+      );
     });
 
     it("creates a report with provided config values", async () => {

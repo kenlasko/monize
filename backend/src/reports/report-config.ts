@@ -9,8 +9,9 @@ import {
 /** Resolve the stored population before changes to the layout can reinterpret it. */
 export function resolveReportConfig(
   groupBy: GroupByType,
-  stored: Partial<ReportConfig> = {},
+  input?: Partial<ReportConfig> | null,
 ): ReportConfig {
+  const stored = input ?? {};
   const config: ReportConfig = {
     ...stored,
     metric: stored.metric ?? MetricType.TOTAL_AMOUNT,
