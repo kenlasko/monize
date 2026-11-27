@@ -1,5 +1,5 @@
 import { Category } from '@/types/category';
-import { categoryTypeOf, signByCategoryType } from '@/lib/category-type';
+import { categoryTypeOrUndefined, signByCategoryType } from '@/lib/category-type';
 import type { MultiSelectOption } from '@/components/ui/MultiSelect';
 
 interface CategoryOption {
@@ -295,7 +295,7 @@ export function canonicalizeCategoryFilter(ids: string[], categories: Category[]
   let result = ids;
   for (const pseudoId of ['income', 'expense'] as const) {
     // `income` and `expense` are types: a Transfer category is in neither.
-    const typeIds = new Set(categories.filter((c) => categoryTypeOf(c) === pseudoId).map((c) => c.id));
+    const typeIds = new Set(categories.filter((c) => categoryTypeOrUndefined(c) === pseudoId).map((c) => c.id));
     if (typeIds.size === 0) continue;
     const selected = new Set(result);
     const covered = selected.has(pseudoId) || [...typeIds].every((id) => selected.has(id));

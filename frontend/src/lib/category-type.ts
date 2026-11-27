@@ -23,6 +23,16 @@ export function categoryTypeOf(category: CategoryTypeSource): CategoryType {
   return category.categoryType ?? (category.isIncome === true ? 'income' : 'expense');
 }
 
+/**
+ * `categoryTypeOf`, or `undefined` when the value names neither a type nor a
+ * legacy flag (a stored value of unknown type). A filter that collapses a whole
+ * type into a pseudo-id counts only categories of a known type.
+ */
+export function categoryTypeOrUndefined(category: CategoryTypeSource): CategoryType | undefined {
+  if (category.categoryType == null && category.isIncome == null) return undefined;
+  return categoryTypeOf(category);
+}
+
 export function isIncomeCategory(category: CategoryTypeSource): boolean {
   return categoryTypeOf(category) === 'income';
 }
