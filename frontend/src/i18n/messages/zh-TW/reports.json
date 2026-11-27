@@ -1220,6 +1220,8 @@
     "totalTransfers": "轉帳總計",
     "transferFrom": "來自",
     "transferTo": "至",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "整體總計",
     "includeCurrentMonth": "包含當月",
     "includeCurrentYear": "包含當年",

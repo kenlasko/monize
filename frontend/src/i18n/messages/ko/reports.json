@@ -1220,6 +1220,8 @@
     "totalTransfers": "총 이체",
     "transferFrom": "출금",
     "transferTo": "입금",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "전체 합계",
     "includeCurrentMonth": "현재 월 포함",
     "includeCurrentYear": "현재 연도 포함",

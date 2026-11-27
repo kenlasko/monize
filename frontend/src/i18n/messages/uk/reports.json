@@ -1220,6 +1220,8 @@
     "totalTransfers": "Усього переказів",
     "transferFrom": "Від",
     "transferTo": "До",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Загальний підсумок",
     "includeCurrentMonth": "Включати поточний місяць",
     "includeCurrentYear": "Включати поточний рік",

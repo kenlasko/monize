@@ -1220,6 +1220,8 @@
     "totalTransfers": "Überweisungen gesamt",
     "transferFrom": "Von",
     "transferTo": "Nach",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Gesamtsumme",
     "includeCurrentMonth": "Laufenden Monat einbeziehen",
     "includeCurrentYear": "Laufendes Jahr einbeziehen",

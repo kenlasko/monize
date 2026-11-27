@@ -1220,6 +1220,8 @@
     "totalTransfers": "Toplam transferler",
     "transferFrom": "Gönderen",
     "transferTo": "Alıcı",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Genel toplam",
     "includeCurrentMonth": "Mevcut ayı dahil et",
     "includeCurrentYear": "Mevcut yılı dahil et",

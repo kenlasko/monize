@@ -1220,6 +1220,8 @@
     "totalTransfers": "Total de transferências",
     "transferFrom": "De",
     "transferTo": "Para",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Total geral",
     "includeCurrentMonth": "Incluir mês atual",
     "includeCurrentYear": "Incluir ano atual",

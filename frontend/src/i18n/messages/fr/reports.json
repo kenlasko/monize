@@ -1220,6 +1220,8 @@
     "totalTransfers": "Total des virements",
     "transferFrom": "De",
     "transferTo": "Vers",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Total général",
     "includeCurrentMonth": "Inclure le mois en cours",
     "includeCurrentYear": "Inclure l’année en cours",

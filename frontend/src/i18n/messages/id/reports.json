@@ -1220,6 +1220,8 @@
     "totalTransfers": "Total transfer",
     "transferFrom": "Dari",
     "transferTo": "Ke",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Total keseluruhan",
     "includeCurrentMonth": "Sertakan bulan saat ini",
     "includeCurrentYear": "Sertakan tahun ini",

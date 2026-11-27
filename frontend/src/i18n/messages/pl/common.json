@@ -20,6 +20,7 @@
     "englishOnly": "Informacje o wydaniu poniżej są dostępne tylko w języku angielskim. Sam Monize, w tym przewodniki, używa wybranego przez Ciebie języka."
   },
   "transferPayee": "{direction, select, to {Przelew do {name}} other {Przelew z {name}}}",
+  "transferBadge": "Transfer",
   "save": "Zapisz",
   "cancel": "Anuluj",
   "delete": "Usuń",

@@ -1220,6 +1220,8 @@
     "totalTransfers": "Totaal overboekingen",
     "transferFrom": "Van",
     "transferTo": "Naar",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Totaal-generaal",
     "includeCurrentMonth": "Huidige maand opnemen",
     "includeCurrentYear": "Huidig jaar opnemen",

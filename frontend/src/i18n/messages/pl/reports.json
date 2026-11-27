@@ -1220,6 +1220,8 @@
     "totalTransfers": "Suma transferów",
     "transferFrom": "Z",
     "transferTo": "Do",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Suma całkowita",
     "includeCurrentMonth": "Uwzględnij bieżący miesiąc",
     "includeCurrentYear": "Uwzględnij bieżący rok",

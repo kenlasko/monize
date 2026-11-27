@@ -235,6 +235,12 @@ export interface TransactionSummary {
 export interface GroupedTotal {
   id: string | null;
   name: string | null;
+  /**
+   * The group's category type when grouped by category; `transfer` holds
+   * transfer legs, a named flow, never spending or income. Absent or null for
+   * the uncategorized group, a payee group or an older server.
+   */
+  categoryType?: 'income' | 'expense' | 'transfer' | null;
   currencyCode: string;
   total: number;
   count: number;

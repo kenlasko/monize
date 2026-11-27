@@ -397,6 +397,7 @@ function PayeeDetailContent() {
         currencyCode: currencyStrategy.displayCurrency,
         total: row.total,
         count: row.count,
+        categoryType: row.categoryType,
       }));
     return { rows, excludedCount: aggregated.length - rows.length };
   }, [

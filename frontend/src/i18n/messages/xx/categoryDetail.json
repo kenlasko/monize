@@ -31,7 +31,9 @@
     "lastTransaction": "[XX-Last Transaction-XX]",
     "convertedNote": "[XX-Converted to {currency}-XX]",
     "partialRatesNote": "[XX-Some months have no exchange rate-XX]",
-    "transferredThisYear": "[XX-Transferred this year-XX]"
+    "outgoingThisYear": "[XX-Outgoing This Year-XX]",
+    "incomingThisYear": "[XX-Incoming This Year-XX]",
+    "netThisYear": "[XX-Net This Year-XX]"
   },
   "topPayees": {
     "title": "[XX-Top Payees-XX]",

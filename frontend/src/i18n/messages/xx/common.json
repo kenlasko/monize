@@ -20,6 +20,7 @@
     "englishOnly": "[XX-The release notes below are in English only. Monize itself, including the guided tours, follows your language setting.-XX]"
   },
   "transferPayee": "[XX-{direction, select, to {Transfer to {name}} other {Transfer from {name}}}-XX]",
+  "transferBadge": "[XX-Transfer-XX]",
   "save": "[XX-Save-XX]",
   "cancel": "[XX-Cancel-XX]",
   "delete": "[XX-Delete-XX]",

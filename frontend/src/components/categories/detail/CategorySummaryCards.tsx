@@ -102,38 +102,73 @@ export function CategorySummaryCards({
     ? t('summary.convertedNote', { currency: displayCurrency })
     : undefined;
 
-  const cards: SummaryCardItem[] = [
+  // A Transfer category holds transfer legs, a named flow: what left, what
+  // arrived and their signed net this year, never spent or received
+  // (docs/specs/transfer-categories.md section 9). The legs' signs are the
+  // summary's buckets: money out is its expenses, money in its income.
+  const transferCards: SummaryCardItem[] = [
     {
       lead: true,
-      label:
-        type === 'income'
-          ? t('summary.receivedThisYear')
-          : type === 'transfer'
-            ? t('summary.transferredThisYear')
-            : t('summary.spentThisYear'),
-      value: thisYear !== null ? formatCurrency(thisYear, displayCurrency) : '—',
-      valueClass:
-        type === 'income'
-          ? 'text-green-600 dark:text-green-400'
-          : type === 'transfer'
-            ? 'text-blue-600 dark:text-blue-400'
-            : 'text-red-600 dark:text-red-400',
-      note: yoyNote ?? convertedNote,
+      label: t('summary.outgoingThisYear'),
+      value:
+        thisYearTotals !== null
+          ? formatCurrency(thisYearTotals.expenses, displayCurrency)
+          : '—',
+      valueClass: 'text-blue-600 dark:text-blue-400',
+      note: convertedNote,
     },
     {
-      label: t('summary.monthlyAverage'),
+      label: t('summary.incomingThisYear'),
       value:
-        monthlyAverage !== null ? formatCurrency(monthlyAverage, monthlyTotals.find((m) => m.currency)?.currency ?? displayCurrency) : '—',
-      note: monthlyAverageUnknown ? t('summary.partialRatesNote') : convertedNote,
-    },
-    {
-      label: t('summary.averageTransaction'),
-      value:
-        averageTransaction !== null
-          ? formatCurrency(averageTransaction, displayCurrency)
+        thisYearTotals !== null
+          ? formatCurrency(thisYearTotals.income, displayCurrency)
           : '—',
       note: convertedNote,
     },
+    {
+      label: t('summary.netThisYear'),
+      value:
+        thisYearTotals !== null
+          ? formatCurrency(thisYearTotals.net, displayCurrency)
+          : '—',
+      note: convertedNote,
+    },
+  ];
+
+  const headlineCards: SummaryCardItem[] = type === 'transfer'
+    ? transferCards
+    : [
+        {
+          lead: true,
+          label:
+            type === 'income'
+              ? t('summary.receivedThisYear')
+              : t('summary.spentThisYear'),
+          value: thisYear !== null ? formatCurrency(thisYear, displayCurrency) : '—',
+          valueClass:
+            type === 'income'
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400',
+          note: yoyNote ?? convertedNote,
+        },
+        {
+          label: t('summary.monthlyAverage'),
+          value:
+            monthlyAverage !== null ? formatCurrency(monthlyAverage, monthlyTotals.find((m) => m.currency)?.currency ?? displayCurrency) : '—',
+          note: monthlyAverageUnknown ? t('summary.partialRatesNote') : convertedNote,
+        },
+        {
+          label: t('summary.averageTransaction'),
+          value:
+            averageTransaction !== null
+              ? formatCurrency(averageTransaction, displayCurrency)
+              : '—',
+          note: convertedNote,
+        },
+      ];
+
+  const cards: SummaryCardItem[] = [
+    ...headlineCards,
     {
       label: t('summary.transactions'),
       value: formatNumber(stats.transactionCount, 0),

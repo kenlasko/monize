@@ -31,7 +31,9 @@
     "lastTransaction": "Letzte Buchung",
     "convertedNote": "Umgerechnet in {currency}",
     "partialRatesNote": "Für einige Monate fehlt ein Wechselkurs",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "Top-Zahlungsempfänger",

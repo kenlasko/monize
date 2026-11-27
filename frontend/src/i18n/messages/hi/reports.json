@@ -1220,6 +1220,8 @@
     "totalTransfers": "कुल स्थानांतरण",
     "transferFrom": "से",
     "transferTo": "तक",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "समग्र कुल",
     "includeCurrentMonth": "वर्तमान महीना शामिल करें",
     "includeCurrentYear": "वर्तमान वर्ष शामिल करें",

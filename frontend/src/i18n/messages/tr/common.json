@@ -20,6 +20,7 @@
     "englishOnly": "Aşağıdaki sürüm notları yalnızca İngilizcedir. Rehberli turlar dahil Monize'nin kendisi dil ayarınızı kullanır."
   },
   "transferPayee": "{direction, select, to {{name} hesabına transfer} other {{name} hesabından transfer}}",
+  "transferBadge": "Transfer",
   "save": "Kaydet",
   "cancel": "İptal",
   "delete": "Sil",

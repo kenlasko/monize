@@ -1220,6 +1220,8 @@
     "totalTransfers": "Tổng chuyển tiền",
     "transferFrom": "Từ",
     "transferTo": "Đến",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Tổng tổng cộng",
     "includeCurrentMonth": "Bao gồm tháng hiện tại",
     "includeCurrentYear": "Bao gồm năm hiện tại",

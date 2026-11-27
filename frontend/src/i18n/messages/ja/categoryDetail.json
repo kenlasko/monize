@@ -31,7 +31,9 @@
     "lastTransaction": "最終取引",
     "convertedNote": "{currency} に換算",
     "partialRatesNote": "為替レートのない月があります",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "上位支払先",

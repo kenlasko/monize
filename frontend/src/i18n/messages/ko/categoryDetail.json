@@ -31,7 +31,9 @@
     "lastTransaction": "마지막 거래",
     "convertedNote": "{currency}(으)로 환산",
     "partialRatesNote": "일부 월에는 환율이 없습니다",
-    "transferredThisYear": "Transferred this year"
+    "outgoingThisYear": "Outgoing This Year",
+    "incomingThisYear": "Incoming This Year",
+    "netThisYear": "Net This Year"
   },
   "topPayees": {
     "title": "상위 수취인",

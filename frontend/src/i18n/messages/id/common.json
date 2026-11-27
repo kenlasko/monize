@@ -20,6 +20,7 @@
     "englishOnly": "Catatan rilis di bawah ini hanya tersedia dalam bahasa Inggris. Monize sendiri, termasuk tur berpanduan, mengikuti pengaturan bahasa Anda."
   },
   "transferPayee": "{direction, select, to {Transfer ke {name}} other {Transfer dari {name}}}",
+  "transferBadge": "Transfer",
   "save": "Simpan",
   "cancel": "Batal",
   "delete": "Hapus",

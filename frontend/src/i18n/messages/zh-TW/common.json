@@ -20,6 +20,7 @@
     "englishOnly": "以下版本說明僅提供英文。Monize 本身（包括導覽教學）會依照你的語言設定。"
   },
   "transferPayee": "{direction, select, to {轉帳至 {name}} other {自 {name} 轉入}}",
+  "transferBadge": "Transfer",
   "save": "儲存",
   "cancel": "取消",
   "delete": "刪除",

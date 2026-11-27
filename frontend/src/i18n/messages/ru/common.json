@@ -20,6 +20,7 @@
     "englishOnly": "Примечания к выпуску ниже доступны только на английском языке. Сам Monize, включая обучающие туры, использует выбранный вами язык."
   },
   "transferPayee": "{direction, select, to {Перевод на {name}} other {Перевод из {name}}}",
+  "transferBadge": "Transfer",
   "save": "Сохранить",
   "cancel": "Отмена",
   "delete": "Удалить",

@@ -1220,6 +1220,8 @@
     "totalTransfers": "総振替",
     "transferFrom": "から",
     "transferTo": "へ",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "全体合計",
     "includeCurrentMonth": "今月を含める",
     "includeCurrentYear": "今年を含める",

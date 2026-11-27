@@ -1220,6 +1220,8 @@
     "totalTransfers": "Всего переводов",
     "transferFrom": "Из",
     "transferTo": "В",
+    "transferCategoryOut": "{name}, outgoing",
+    "transferCategoryIn": "{name}, incoming",
     "overallTotal": "Общий итог",
     "includeCurrentMonth": "Включить текущий месяц",
     "includeCurrentYear": "Включить текущий год",

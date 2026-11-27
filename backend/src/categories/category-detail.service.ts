@@ -138,9 +138,11 @@ export class CategoryDetailService {
   /**
    * Base query for every subtree figure: real transactions joined to their
    * split lines, kept when the transaction's own category or a split line's
-   * category is in the subtree. Transfer split lines are excluded exactly as
-   * the analytics summary excludes them -- they move money between own
-   * accounts and are not spending or income.
+   * category is in the subtree. A split's transfer line counts only when it
+   * holds a category of the subtree itself, exactly as a whole transfer leg
+   * holding it does (docs/specs/transfer-categories.md section 9,
+   * INV-REPORT-006); a transfer line holding none, or another, never rides in
+   * on its parent's match.
    *
    * The join can yield several rows per transaction (one per matching split),
    * so counts must use COUNT(DISTINCT t.id) while sums take the per-row
@@ -159,7 +161,15 @@ export class CategoryDetailService {
         .createQueryBuilder(Transaction, "t")
         .leftJoin("t.splits", "split")
         .where("t.user_id = :userId", { userId })
-        .andWhere("(split.transfer_account_id IS NULL OR split.id IS NULL)")
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where("split.id IS NULL")
+              .orWhere("split.transfer_account_id IS NULL")
+              .orWhere("split.category_id IN (:...subtreeIds)", {
+                subtreeIds,
+              });
+          }),
+        )
         .andWhere(
           new Brackets((qb) => {
             qb.where("t.category_id IN (:...subtreeIds)", {
