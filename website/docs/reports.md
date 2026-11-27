@@ -83,6 +83,8 @@ The figures a report receives are worked out from the converted amounts themselv
 
 In **Monthly & Yearly Breakdown**, the **Transfers** group lists money moved between your own accounts, outside income, expenses and the balance. A transfer that holds a [Transfer category](categories-and-payees.md#categories-on-transfers) is listed first under that category, with an outgoing and an incoming row and the category's subcategories nested, so a regular contribution between two accounts you included still shows what moved. Every other transfer, including one that holds an Income or Expense category, stays in its per-account row. Each side of a transfer is counted once, so the group's total does not change.
 
+![The Transfers group of the Monthly & Yearly Breakdown, with a Transfer category's outgoing and incoming rows above the per-account rows](images/report-monthly-breakdown-transfers.png)
+
 In **Spending by Category**, a refund reduces spending in the expense category assigned to it. A purchase of 100 and a refund of 150 show **−50** for that category. A full refund shows **0** and the category stays visible. A refund received this month can therefore give the month negative spending even when the purchase was in an earlier month. Monthly Spending Trend and the assistant’s category breakdown include that credit. Monthly Comparison shows the change in money and leaves percentage growth unavailable when the previous month had a net refund.
 
 ![The Spending by Category report](images/report-spending-category.png)

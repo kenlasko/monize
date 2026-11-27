@@ -117,6 +117,58 @@ test("report-monthly-breakdown", async () => {
   await docShot(page, "report-monthly-breakdown");
 });
 
+test("report-monthly-breakdown-transfers", async () => {
+  // A Transfer category and one transfer under it, seeded for this picture and
+  // removed afterwards so no other picture shows them.
+  const api = apiFor(page);
+  const accounts = await api.get<
+    { id: string; accountType: string; currencyCode: string }[]
+  >("/accounts");
+  const from = accounts.find((a) => a.accountType === "CHEQUING");
+  const to = accounts.find(
+    (a) =>
+      a.accountType === "SAVINGS" && a.currencyCode === from?.currencyCode,
+  );
+  if (!from || !to) throw new Error("The demo data has no chequing and savings pair.");
+  const category = await api.post<{ id: string }>("/categories", {
+    name: "Savings contributions",
+    type: "transfer",
+  });
+  const lastMonth = new Date();
+  lastMonth.setDate(1);
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const transfer = await api.post<{
+    fromTransaction: { id: string };
+    toTransaction: { id: string };
+  }>("/transactions/transfer", {
+    fromAccountId: from.id,
+    toAccountId: to.id,
+    amount: 500,
+    transactionDate: lastMonth.toISOString().slice(0, 10),
+    categoryId: category.id,
+  });
+  try {
+    await openReport(
+      "monthly-category-breakdown",
+      page.getByRole("table").first(),
+    );
+    const row = page
+      .getByRole("row")
+      .filter({ hasText: "Savings contributions" })
+      .first();
+    await expect(row).toBeVisible({ timeout: 60_000 });
+    await scrollUnderHeader(page, row, 200);
+    await docShot(page, "report-monthly-breakdown-transfers");
+  } finally {
+    // Each leg is a row of its own.
+    await api.delete(`/transactions/${transfer.fromTransaction.id}`);
+    await api
+      .delete(`/transactions/${transfer.toTransaction.id}`)
+      .catch(() => undefined);
+    await api.delete(`/categories/${category.id}`);
+  }
+});
+
 test("report-cash-flow-sankey", async () => {
   await openReport(
     "cash-flow-sankey",
