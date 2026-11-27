@@ -139,10 +139,12 @@ const LINKED_ACCOUNTS_SQL =
   "SELECT id FROM accounts WHERE user_id = $1 AND (source_account_id = $2 OR linked_loan_account_id = $2)";
 
 /**
- * Rules, custom reports and investment reports keep an account id inside JSONB with no foreign
- * key, so a delete leaves it dangling. A budget's `config.excludedAccountIds`
- * is not counted: a stale exclusion of a deleted account changes nothing.
- * shortcut: matches the id anywhere in the JSON text; fine for UUIDs.
+ * Rules, custom reports, investment reports and Monte Carlo scenarios keep an
+ * account id with no foreign key (inside JSONB, or in a UUID[] column), so a
+ * delete leaves it dangling. A budget's `config.excludedAccountIds` is not
+ * counted: a stale exclusion of a deleted account changes nothing.
+ * shortcut: the JSONB entries (`like`) match the id anywhere in the JSON text,
+ * fine for UUIDs; the UUID[] entry matches the element exactly.
  */
 const JSON_SQL: ReferenceCount[] = [
   {

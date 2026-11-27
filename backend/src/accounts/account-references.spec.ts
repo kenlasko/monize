@@ -135,6 +135,15 @@ describe("findAccountReferences", () => {
     );
   });
 
+  it("matches an investment report's config as a LIKE pattern", async () => {
+    const m = makeManager();
+    await run(m);
+    expect(m.query).toHaveBeenCalledWith(
+      expect.stringContaining("FROM investment_reports"),
+      ["u", "%a%"],
+    );
+  });
+
   it("matches the id inside JSON as a LIKE pattern", async () => {
     const m = makeManager();
     await run(m);

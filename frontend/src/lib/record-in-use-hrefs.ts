@@ -57,7 +57,7 @@ export function accountInUseHref(accountId: string, entry: RecordInUseEntry): st
     case 'monteCarloScenarios':
       return '/reports/monte-carlo-simulation';
     case 'investmentReports':
-      return '/reports/investment';
+      return '/reports';
     default:
       return undefined;
   }

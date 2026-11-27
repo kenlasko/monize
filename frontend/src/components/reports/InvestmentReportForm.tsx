@@ -70,6 +70,7 @@ export function InvestmentReportForm({
   onCancel,
 }: InvestmentReportFormProps) {
   const t = useTranslations('reports');
+  const tSecurity = useTranslations('securityDetail');
   const accountIcon = useAccountPickerIcon();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -118,11 +119,9 @@ export function InvestmentReportForm({
       try {
         const all = await accountsApi.getAll();
         setAccounts(
+          // Closed accounts are kept here; accountOptions lists one only while selected.
           all.filter(
-            (a) =>
-              a.accountType === 'INVESTMENT' &&
-              a.accountSubType !== 'INVESTMENT_CASH' &&
-              !a.isClosed,
+            (a) => a.accountType === 'INVESTMENT' && a.accountSubType !== 'INVESTMENT_CASH',
           ),
         );
       } catch (error) {
@@ -171,7 +170,13 @@ export function InvestmentReportForm({
       label: INVESTMENT_COLUMN_MAP[key]?.label ?? key,
     })),
   ];
-  const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name, icon: accountIcon(a) }));
+  const accountOptions = accounts
+    .filter((a) => !a.isClosed || accountIds.includes(a.id))
+    .map((a) => ({
+      value: a.id,
+      label: a.isClosed ? tSecurity('accounts.closedSuffix', { name: a.name }) : a.name,
+      icon: accountIcon(a),
+    }));
   const watchGroupBy = useWatch({ control, name: 'groupBy' });
 
   if (isLoadingData) {
