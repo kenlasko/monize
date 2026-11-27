@@ -7,6 +7,7 @@ import { investmentsApi } from '@/lib/investments';
 import { getLocalDateString } from '@/lib/utils';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import type { InvestmentTransaction } from '@/types/investment';
+import { TransactionStatus } from '@/types/transaction';
 
 /**
  * Duplicate (the register's row action) and the history button's quick-fill:
@@ -414,7 +415,7 @@ describe('the history button on a new investment transaction', () => {
 
   it('marks a voided row as void', async () => {
     api.getTransactions.mockResolvedValue({
-      data: [row({ id: 'tx-void', status: 'VOID', description: 'Entered by mistake' })],
+      data: [row({ id: 'tx-void', status: TransactionStatus.VOID, description: 'Entered by mistake' })],
       pagination: { page: 1, limit: 5, total: 1, totalPages: 1, hasMore: false },
     } as any);
     await act(async () => {
