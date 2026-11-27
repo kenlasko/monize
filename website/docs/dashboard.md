@@ -314,7 +314,7 @@ The Assets vs Liabilities widget compares your **current total assets** against 
 
 ## Spending by Payee
 
-The Spending by Payee widget (opt-in) ranks your spending by payee over the chosen timeframe (default: 3M).
+The Spending by Payee widget (opt-in) ranks spending after refunds by payee over the chosen timeframe (default: 3M). Its total includes payees outside the visible chart.
 
 ![The Spending by Payee widget](images/dashboard-spending-by-payee.png)
 
@@ -330,7 +330,7 @@ The Monthly Spending Trend widget (opt-in) trends your expenses and income month
 
 ## Income by Source
 
-The Income by Source widget (opt-in) breaks down your income by category over the chosen timeframe (default: 1Y), as a pie or a bar chart.
+The Income by Source widget (opt-in) breaks down your income by category over the chosen timeframe (default: 1Y), after reversals. When a source has negative net income, the widget uses bars so its sign is visible.
 
 ![The Income by Source widget](images/dashboard-income-by-source.png)
 

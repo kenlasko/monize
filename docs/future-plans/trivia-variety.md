@@ -133,7 +133,7 @@ For the three legacy families, `spendingTopCategory` etc. leave `buildLedgerTriv
 
 ### 3.5 The purchase predicate is written once
 
-The new row reads (biggest purchase, last spend, last spend at a payee) need "a purchase" to mean exactly what Spending by Payee means. Move the WHERE conjunction of `SpendingReportsService.getSpendingByPayee` (`backend/src/built-in-reports/spending-reports.service.ts`) into the new `backend/src/built-in-reports/purchase-rows-sql.ts`. Export it as `PURCHASE_ROW_CONDITIONS_SQL`: `REPORTABLE_TX_AMOUNT < 0`, `t.is_transfer = false`, not VOID, `t.parent_transaction_id IS NULL`, `INVESTMENT_EXCLUSION_NO_SPLITS`, and the asset-category `NOT EXISTS`, with the aliases `t` and `a` and no bound parameters. Also export `PURCHASE_AMOUNT_SQL` (the reportable amount). `getSpendingByPayee` uses them, which leaves its behaviour unchanged (its spec stays green untouched), and the trivia reads use them. This is INV-REPORT-001's "what a row is decides the filter", applied once.
+Biggest purchase, last spend and last spend at a payee share the purchase predicate in `backend/src/built-in-reports/purchase-rows-sql.ts`. It selects a negative reportable amount, excluding transfers, VOID rows, child rows, investment machinery and asset-value bookings. Spending by Payee now sums signed components for a different question: the amount spent after refunds.
 
 ### 3.6 Equivalence facts (evergreen, server-computed)
 

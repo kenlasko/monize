@@ -3,7 +3,10 @@ import {
   InternalServerErrorException,
   Logger,
 } from "@nestjs/common";
-import { isIncomeCategory } from "../categories/category-type.util";
+import {
+  categoryTypeOfOrUndefined,
+  isIncomeCategory,
+} from "../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
@@ -357,6 +360,7 @@ export class CashFlowSankeyService {
           parentId: c.parentId,
           color: c.color,
           isIncome: isIncomeCategory(c),
+          categoryType: categoryTypeOfOrUndefined(c),
         })),
         categorized,
         transfers,

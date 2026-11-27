@@ -2045,6 +2045,7 @@
     "unknown": "Unbekannt",
     "knownPartOnly": "Nur der umrechenbare Teil wird gezeichnet.",
     "roundingNote": "Die Summe jeder Seite wird einmal gerundet und auf ihre Flüsse verteilt, damit das Diagramm genau aufgeht. Eine Kategorie kann hier daher um einen Cent bzw. die kleinste Einheit Ihrer Währung von derselben Kategorie in „Ausgaben nach Kategorie“ oder „Einnahmen nach Quelle“ abweichen, wo jede Kategorie für sich gerundet wird.",
+    "expenseRefund": "{category} (Ausgabenerstattung)",
     "netRefund": "Nettoerstattung: Diese Unterkategorie hat mehr eingenommen als ausgegeben.",
     "excludedCount": "{count, plural, one {# Betrag konnte nicht umgerechnet werden und fehlt in den obigen Zahlen.} other {# Beträge konnten nicht umgerechnet werden und fehlen in den obigen Zahlen.}}",
     "noData": "Keine Einnahmen, Ausgaben oder Überweisungen in diesem Zeitraum",

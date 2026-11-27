@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@/test/render";
 import { IncomeBySourceReport } from "./IncomeBySourceReport";
 
+const { exportToCsv } = vi.hoisted(() => ({ exportToCsv: vi.fn() }));
+vi.mock("@/lib/csv-export", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/csv-export")>(),
+  exportToCsv,
+}));
+
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -134,6 +140,21 @@ describe("IncomeBySourceReport", () => {
     expect(document.querySelector(".animate-pulse")).toBeTruthy();
     // Flush the fetcher's resolution so its state update is wrapped in act().
     await act(async () => {});
+  });
+
+  it("shows the net credit in the table without a percentage", async () => {
+    mockGetIncomeBySource.mockResolvedValue({ data: [{ categoryId: "salary", categoryName: "Salary", color: "", total: -50, percentage: null }], totalIncome: -50 });
+    await act(async () => { render(<IncomeBySourceReport />); });
+    const row = screen.getByText("Salary").closest("tr");
+    expect(row).toHaveTextContent("$-50.00");
+    expect(row?.lastElementChild).toHaveTextContent(/^% of Total—$/);
+    fireEvent.click(screen.getByTestId("export-csv"));
+    expect(exportToCsv).toHaveBeenCalledWith("income-by-source", expect.any(Array), [["Salary", -50, ""]]);
+    fireEvent.click(screen.getByTestId("export-pdf"));
+    await waitFor(() => expect(mockExportToPdf).toHaveBeenCalledWith(expect.objectContaining({
+      chartLegend: [expect.objectContaining({ label: "Salary - $-50.00" })],
+      summaryCards: [expect.objectContaining({ value: "$-50.00" })],
+    })));
   });
 
   it("renders empty state when no data returned", async () => {

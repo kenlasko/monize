@@ -278,9 +278,11 @@ describe("IncomeReportsService", () => {
 
       const sql = scopedManager.query.mock.calls[0][0];
       expect(sql).not.toContain("COALESCE(ts.amount, t.amount) > 0");
-      expect(result.data).toHaveLength(1);
-      expect(result.data[0].total).toBe(4600);
-      expect(result.totalIncome).toBe(4600);
+      expect(result.data.map((row) => [row.total, row.percentage])).toEqual([
+        [4600, null],
+        [-100, null],
+      ]);
+      expect(result.totalIncome).toBe(4500);
     });
 
     it("skips uncategorized rows in JS (SQL already filters them out)", async () => {

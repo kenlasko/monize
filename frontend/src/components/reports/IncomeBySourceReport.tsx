@@ -1,5 +1,6 @@
 'use client';
 
+import { amountWithShare, reportBreakdownShare } from '@/lib/report-breakdown-share';
 import { useState, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/LoadingSkeleton';
 import { useRouter } from 'next/navigation';
@@ -61,19 +62,8 @@ type ChartDataItem = ChartDatum & {
   /** The funding entry: a transfer figure, never an income source (spec 11.3). */
   isTagged?: boolean;
   /** The server's share of the income; absent on the funding entry and from an older backend. */
-  percentage?: number;
+  percentage?: number | null;
 };
-
-/**
- * A source's share of the income: the server's, divided from the unrounded
- * figures (`docs/specs/report-rounding-and-aggregation.md` rule 8), never the
- * row's reading over the total's. Two equal sources of 1.2474 read 1.25 each
- * over 2.49, and 1.25 / 2.49 is 50.2% where each is half. A backend that
- * predates the field still gets the readings' ratio.
- */
-function sourceShare(item: { value: number; percentage?: number }, totalIncome: number): number {
-  return item.percentage ?? (totalIncome > 0 ? (item.value / totalIncome) * 100 : 0);
-}
 
 const ACCOUNTS_STORAGE_KEY = 'monize-reports-income-by-source-accounts';
 const INCLUDE_TRANSFERS_STORAGE_KEY = 'monize-reports-income-by-source-include-transfers';
@@ -134,7 +124,7 @@ const IDENTITY_CELL =
 interface IncomeSourceTooltipProps {
   active?: boolean;
   payload?: Array<{
-    payload: { id: string; name: string; value: number; isTagged?: boolean; percentage?: number };
+    payload: { id: string; name: string; value: number; isTagged?: boolean; percentage?: number | null };
   }>;
   totalIncome: number;
   formatCurrency: (value: number) => string;
@@ -153,14 +143,14 @@ function IncomeSourceTooltip({
 }: IncomeSourceTooltipProps) {
   if (!active || !payload || !payload.length) return null;
   const data = payload[0].payload;
-  const percentage = sourceShare(data, totalIncome);
+  const percentage = reportBreakdownShare(data, totalIncome);
   return (
     <ChartTooltipPanel>
       <p className="font-medium text-gray-900 dark:text-gray-100">{data.name}</p>
       <p className="text-gray-600 dark:text-gray-400">
         {data.isTagged === true
           ? `${formatCurrency(data.value)} (${notIncomeLabel})`
-          : `${formatCurrency(data.value)} (${formatPercent(percentage, 1)})`}
+          : amountWithShare(formatCurrency(data.value), percentage, formatPercent)}
       </p>
     </ChartTooltipPanel>
   );
@@ -173,7 +163,7 @@ export function IncomeBySourceReport() {
   const { formatCurrencyCompact: formatCurrency, formatPercent, defaultCurrency } = useNumberFormat();
   const tCommon = useTranslations('common');
   const { dateRange, setDateRange, startDate, setStartDate, endDate, setEndDate, resolvedRange, isValid } = useDateRange({ defaultRange: '1y', alignment: 'day' });
-  const [viewType, setViewType] = useState<'pie' | 'bar' | 'table'>('pie');
+  const [selectedView, setViewType] = useState<'pie' | 'bar' | 'table'>('pie');
   const { sortField, sortDirection, handleSort } = useSortableTable<IncomeSourceSortField>(
     'reports.income-by-source.table.sort',
     { field: 'value', direction: 'desc' },
@@ -262,6 +252,9 @@ export function IncomeBySourceReport() {
     () => (taggedItem ? [...chartData, taggedItem] : chartData),
     [chartData, taggedItem],
   );
+  const hasShares = chartData.every((item) => item.percentage !== null);
+  const canDrawPie = hasShares && plotData.every((item) => item.value >= 0);
+  const viewType = selectedView === 'pie' && !canDrawPie ? 'table' : selectedView;
   const fundsFigures: FundsFigure[] = fundsEntry
     ? [
         { key: 'income', label: t('tagBreakdown.fundsIncome'), value: totalIncome, kind: 'money', tone: 'green' },
@@ -282,9 +275,9 @@ export function IncomeBySourceReport() {
           comparison = compareValues(a.value, b.value);
           break;
         case 'percentage': {
-          const pa = sourceShare(a, totalIncome);
-          const pb = sourceShare(b, totalIncome);
-          comparison = compareValues(pa, pb);
+          const pa = reportBreakdownShare(a, totalIncome);
+          const pb = reportBreakdownShare(b, totalIncome);
+          comparison = compareValues(pa ?? a.value, pb ?? b.value);
           break;
         }
       }
@@ -319,10 +312,10 @@ export function IncomeBySourceReport() {
       if (item.isTagged) {
         return { color: item.colour, label: `${item.name} - ${formatCurrency(item.value)}` };
       }
-      const percentage = sourceShare(item, totalIncome);
+      const percentage = reportBreakdownShare(item, totalIncome);
       return {
         color: item.colour,
-        label: `${item.name} - ${formatCurrency(item.value)} (${formatPercent(percentage, 1)})`,
+        label: `${item.name} - ${amountWithShare(formatCurrency(item.value), percentage, formatPercent)}`,
       };
     });
 
@@ -350,8 +343,8 @@ export function IncomeBySourceReport() {
   const handleExportCsv = () => {
     const headers = [t('incomeBySource.colSource'), t('incomeBySource.colAmount'), t('incomeBySource.colPercentOfTotal')];
     const rows = sortedTableData.map((item) => {
-      const percentage = sourceShare(item, totalIncome);
-      return [item.name, item.value, formatPercent(percentage, 2)];
+      const percentage = reportBreakdownShare(item, totalIncome);
+      return [item.name, item.value, percentage === null ? '' : formatPercent(percentage, 2)];
     });
     // The funding rows follow the sources with an empty share: they are not income.
     const fundsRows = fundsEntry
@@ -396,7 +389,7 @@ export function IncomeBySourceReport() {
             <ChartViewToggle
               value={viewType}
               onChange={(v) => setViewType(v as 'pie' | 'bar' | 'table')}
-              options={['pie', 'bar', 'table']}
+              options={canDrawPie ? ['pie', 'bar', 'table'] : ['bar', 'table']}
             />
           </div>
           <ReportToolbarActions
@@ -499,7 +492,7 @@ export function IncomeBySourceReport() {
                 </thead>
                 <tbody role="rowgroup" className="block divide-y divide-gray-200 dark:divide-gray-700 sm:table-row-group">
                   {sortedTableData.map((item) => {
-                    const percentage = sourceShare(item, totalIncome);
+                    const percentage = reportBreakdownShare(item, totalIncome);
                     // The row is the click target where it names a category, so
                     // it is also a KEYBOARD target there (WCAG 2.1.1) --
                     // `tabIndex`, the focus ring and the key handler only when
@@ -544,7 +537,7 @@ export function IncomeBySourceReport() {
                             track; the caption wraps, the value never does. */}
                         <td role="cell" className={`${CELL_PLACEMENT.percentage} text-gray-600 dark:text-gray-400 ${FIGURE_CELL}`}>
                           <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
-                          {formatPercent(percentage, 1)}
+                          {percentage === null ? '—' : formatPercent(percentage, 1)}
                         </td>
                       </tr>
                     );
@@ -591,7 +584,7 @@ export function IncomeBySourceReport() {
                     </td>
                     <td role="cell" className={`${CELL_PLACEMENT.percentage} font-bold text-gray-900 dark:text-gray-100 ${FIGURE_CELL}`}>
                       <CellLabel className={CAPTION_CLASS}>{columns.percentage.label}</CellLabel>
-                      100%
+                      {hasShares ? formatPercent(100, 0) : '—'}
                     </td>
                   </tr>
                 </tfoot>
@@ -664,14 +657,14 @@ export function IncomeBySourceReport() {
               className="mt-6"
               columnsClassName="sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
               items={plotData.map((item, index) => {
-                const percentage = sourceShare(item, totalIncome);
+                const percentage = reportBreakdownShare(item, totalIncome);
                 return {
                   key: String(index),
                   name: item.name,
                   color: item.colour,
                   detail: item.isTagged
                     ? `${formatCurrency(item.value)} (${t('tagBreakdown.notIncome')})`
-                    : `${formatCurrency(item.value)} (${formatPercent(percentage, 1)})`,
+                    : amountWithShare(formatCurrency(item.value), percentage, formatPercent),
                   onClick: () => handleCategoryClick(item.id),
                   disabled: !item.id,
                 };

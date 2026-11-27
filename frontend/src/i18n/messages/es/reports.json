@@ -2045,6 +2045,7 @@
     "unknown": "Desconocido",
     "knownPartOnly": "Solo se dibuja la parte que se pudo convertir.",
     "roundingNote": "El total de cada lado se redondea una sola vez y se reparte entre sus flujos, para que el diagrama cuadre exactamente. Por eso una categoría puede diferir aquí en un céntimo, o en la unidad más pequeña de su moneda, de la misma categoría en «Gastos por categoría» o «Ingresos por fuente», que redondean cada categoría por separado.",
+    "expenseRefund": "{category} (reembolso de gastos)",
     "netRefund": "Reembolso neto: esta subcategoría recibió más de lo que gastó.",
     "excludedCount": "{count, plural, one {# importe no se pudo convertir y queda fuera de las cifras anteriores.} other {# importes no se pudieron convertir y quedan fuera de las cifras anteriores.}}",
     "noData": "No hay ingresos, gastos ni transferencias en este período",

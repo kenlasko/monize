@@ -3092,7 +3092,8 @@ Enforcement         One predicate, in backend/src/common/investment-filter.util.
                     so it derives its figure through
                     reportableTransactionAmountSql: the sum of the children that
                     are neither transfer nor investment, NULL when the row
-                    represents no ordinary cash. Spending by Payee, Recurring
+                    represents no ordinary cash. Spending by Payee now reads qualifying split
+                    lines directly, like Spending by Category. Recurring
                     Expenses, Bill Payment History and the Uncategorized list
                     and summary read that instead of t.amount. Duplicate
                     Transactions is the one declared exception, marked in its SQL
@@ -3541,7 +3542,10 @@ Statement           A category's figure in a report is the signed sum of its
 Source of truth     The signed amounts on transactions and transaction_splits.
 Enforcement         Spending by Category sums NET_SPEND_AMOUNT within each
                     group. An assigned expense category with qualifying activity
-                    keeps its row at any sign. Other groups use isNetSpending
+                    keeps its row at any sign. Income reversals are excluded from
+                    spending. Tax Summary retains each classified leaf in its
+                    income or expense section at any sign. Unclassified
+                    spending groups use isNetSpending
                     (backend/src/built-in-reports/spending-reports.service.ts);
                     client summaries: netEntityTotal. Custom report engine
                     (backend/src/reports/reports.service.ts): each line lands in

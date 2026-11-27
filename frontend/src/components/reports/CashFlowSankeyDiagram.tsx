@@ -127,6 +127,7 @@ export function useSankeyNodePresentation(categories: Category[] | null | undefi
   const categoryColors = useMemo(() => buildCategoryColorMap(categories ?? []), [categories]);
 
   const labelFor = (node: CashFlowSankeyNode): string => {
+    if (node.expenseRefund) return t('sankey.expenseRefund', { category: node.label });
     if (node.kind === 'child' && node.categoryId === node.parentCategoryId) {
       return t('sankey.noSubcategory');
     }

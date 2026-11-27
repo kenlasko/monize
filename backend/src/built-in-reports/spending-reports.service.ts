@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import {
   CategoryType,
-  categoryTypeOf,
+  categoryTypeIs,
   categoryTypeOfOrUndefined,
 } from "../categories/category-type.util";
 import { DataSource } from "typeorm";
@@ -29,12 +29,8 @@ import {
   MonthlySpendingItem,
   MonthlyCategorySpending,
 } from "./dto";
-import {
-  investmentExclusionSql,
-  reportableTransactionAmountSql,
-} from "../common/investment-filter.util";
+import { investmentExclusionSql } from "../common/investment-filter.util";
 import { tagValuesArrayExpr } from "./tag-values-sql";
-import { purchaseRowConditionsSql } from "./purchase-rows-sql";
 
 /**
  * Investment scope is LINKAGE, never account type (INV-REPORT-001, issue #1257):
@@ -48,18 +44,6 @@ const INVESTMENT_EXCLUSION = investmentExclusionSql({
   transactionAlias: "t",
   splitAlias: "ts",
 });
-const INVESTMENT_EXCLUSION_NO_SPLITS = investmentExclusionSql({
-  accountAlias: "a",
-  transactionAlias: "t",
-});
-
-/**
- * The ordinary cash the parent row represents. A payee total reads only the
- * parent, so a split's embedded investment or transfer line has to come out of
- * the amount rather than out of the row (branch audit F-RPT-001).
- */
-const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
-
 /**
  * Spending in a category is the DEBITS NET OF THE CREDITS filed against it: a
  * refund, a return or a chargeback is money that came back, so it reduces what
@@ -73,6 +57,32 @@ const REPORTABLE_TX_AMOUNT = reportableTransactionAmountSql("t");
  */
 export const NET_SPEND_AMOUNT = "-COALESCE(ts.amount, t.amount)";
 const NONZERO_AMOUNT = "COALESCE(ts.amount, t.amount) <> 0";
+
+// The ledger population is shared by category, payee and month. The optional
+// category joins for the payee view identify the same reporting parent.
+function spendingComponentsSql(parentJoin = ""): string {
+  return `
+      FROM transactions t
+      LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
+      LEFT JOIN accounts a ON a.id = t.account_id
+      LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id) AND c.user_id = t.user_id
+      ${parentJoin}
+      WHERE t.user_id = $1
+        AND t.transaction_date <= $2
+        AND (c.id IS NULL OR ${categoryTypeIs("c", "expense")})
+        AND ${NONZERO_AMOUNT}
+        AND t.is_transfer = false
+        AND (t.status IS NULL OR t.status != 'VOID')
+        AND t.parent_transaction_id IS NULL
+        AND ${INVESTMENT_EXCLUSION}
+        AND (ts.transfer_account_id IS NULL OR ts.id IS NULL)
+        AND NOT EXISTS (
+          SELECT 1 FROM accounts ax
+          WHERE ax.user_id = t.user_id
+            AND ax.asset_category_id IS NOT NULL
+            AND ax.asset_category_id = COALESCE(ts.category_id, t.category_id)
+        )`;
+}
 
 /** Positive-net inclusion for reports and fallback buckets defined by direction. */
 export function isNetSpending(total: number): boolean {
@@ -175,23 +185,7 @@ export class SpendingReportsService {
         t.currency_code,
         ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
-      FROM transactions t
-      LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
-      LEFT JOIN accounts a ON a.id = t.account_id
-      WHERE t.user_id = $1
-        AND t.transaction_date <= $2
-        AND ${NONZERO_AMOUNT}
-        AND t.is_transfer = false
-        AND (t.status IS NULL OR t.status != 'VOID')
-        AND t.parent_transaction_id IS NULL
-        AND ${INVESTMENT_EXCLUSION}
-        AND (ts.transfer_account_id IS NULL OR ts.id IS NULL)
-        AND NOT EXISTS (
-          SELECT 1 FROM accounts ax
-          WHERE ax.user_id = t.user_id
-            AND ax.asset_category_id IS NOT NULL
-            AND ax.asset_category_id = COALESCE(ts.category_id, t.category_id)
-        )
+      ${spendingComponentsSql()}
     `;
 
     const params: (string | string[] | undefined)[] = [
@@ -316,15 +310,12 @@ export class SpendingReportsService {
     }
 
     // An expense category identifies spending even when its refunds equal or
-    // exceed its purchases. Other buckets keep their existing positive-net
+    // exceed its purchases. Unclassified buckets keep their positive-net
     // inclusion rule, including Uncategorized. Zero-only postings are already
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
       ([, { agg, category }]) =>
-        includesSpendingCategory(
-          agg.sign,
-          category ? categoryTypeOf(category) : undefined,
-        ),
+        includesSpendingCategory(agg.sign, categoryTypeOfOrUndefined(category)),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -369,17 +360,16 @@ export class SpendingReportsService {
 
     let query = `
       SELECT
-        t.payee_id,
-        t.payee_name,
-        t.currency_code,
+        COALESCE(ts.category_id, t.category_id) AS category_id,
+        COALESCE(parent.id, c.id) AS bucket_id,
+        COALESCE(parent.category_type, c.category_type) IS NOT NULL AS classified,
+        t.payee_id, t.payee_name, t.currency_code,
         ${rateBasisColumnsSql("$3")},
-        SUM(ABS(${REPORTABLE_TX_AMOUNT})) as total
-      FROM transactions t
-      LEFT JOIN accounts a ON a.id = t.account_id
-      WHERE t.user_id = $1
-        AND t.transaction_date <= $2
-        AND ${purchaseRowConditionsSql(REPORTABLE_TX_AMOUNT, INVESTMENT_EXCLUSION_NO_SPLITS)}
-      `;
+        SUM(${NET_SPEND_AMOUNT}) as total
+      ${spendingComponentsSql(`
+        LEFT JOIN categories parent ON parent.id = c.parent_id AND parent.user_id = t.user_id
+      `)}
+    `;
 
     const params: (string | undefined)[] = [userId, endDate, defaultCurrency];
 
@@ -388,12 +378,13 @@ export class SpendingReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), COALESCE(parent.id, c.id), COALESCE(parent.category_type, c.category_type), t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
 
-    const rawResults: RawPayeeAggregate[] = await withScopedDb(
-      this.dataSource,
-      (m) => m.query(query, params),
-    );
+    const rawResults: (RawPayeeAggregate & {
+      category_id: string | null;
+      bucket_id: string | null;
+      classified: boolean;
+    })[] = await withScopedDb(this.dataSource, (m) => m.query(query, params));
 
     const payeeIds = rawResults
       .filter((r) => r.payee_id)
@@ -406,32 +397,40 @@ export class SpendingReportsService {
           )
         : [];
     const payeeMap = new Map(payees.map((p) => [p.id, p]));
+    const categoryCurrency = (row: (typeof rawResults)[number]) =>
+      `${row.category_id ?? ""}|${row.currency_code}`;
     const convert = wholeGroups(
       rawResults,
       await this.currencyService.buildConverter(rawResults, defaultCurrency),
-      (row) =>
-        `${row.payee_id ?? ""}|${row.payee_name ?? ""}|${row.currency_code}`,
+      categoryCurrency,
       (row) => [toMoneyNumber(row.total, MONEY_SCALE)],
     );
+    const gaps = new ConversionGaps();
+    const categories = new Map<string | null, FxAggregate>();
+    const convertedRows = rawResults.flatMap((row) => {
+      const total = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
+      if (total === null) {
+        gaps.record(row.currency_code, categoryCurrency(row));
+        return [];
+      }
+      const category = categories.get(row.bucket_id) ?? new FxAggregate();
+      category.addConverted(total);
+      categories.set(row.bucket_id, category);
+      return [{ row, total, category }];
+    });
 
     const payeeTotals = new Map<
       string,
       { payeeId: string | null; payeeName: string; agg: FxAggregate }
     >();
-    // A row with no rate is unknown, never its unconverted figure (INV-FX-001):
-    // it is in no payee, no ranking and no total. Excluding it can change which
-    // twenty payees make the list, so the total is withheld, not merely smaller.
-    const gaps = new ConversionGaps();
-    for (const row of rawResults) {
-      const total = convert(toMoneyNumber(row.total, MONEY_SCALE), row);
-      if (total === null) {
-        gaps.record(
-          row.currency_code,
-          `${row.payee_id ?? ""}|${row.payee_name ?? ""}|${row.currency_code}`,
-        );
-        continue;
-      }
-      const key = row.payee_id || row.payee_name || "unknown";
+    // Decide eligibility at category level before attributing each posting
+    // to its payee. A refund can come from a different payee than the purchase.
+    for (const { row, total, category } of convertedRows) {
+      if (!row.classified && !isNetSpending(category.sign)) continue;
+      const key = JSON.stringify([
+        row.payee_id,
+        row.payee_id ? null : row.payee_name,
+      ]);
       const payee = row.payee_id ? payeeMap.get(row.payee_id) : null;
       const existing = payeeTotals.get(key);
       if (existing) {
@@ -447,18 +446,18 @@ export class SpendingReportsService {
       }
     }
 
-    const top = Array.from(payeeTotals.values())
-      .sort((a, b) => b.agg.knownSubtotal - a.agg.knownSubtotal)
-      .slice(0, 20);
-    const data: PayeeSpendingItem[] = top.map((row) => ({
-      payeeId: row.payeeId,
-      payeeName: row.payeeName,
-      total: row.agg.knownSubtotalAt(places),
-    }));
-
-    // The listed payees' aggregates, folded and rounded once (rule 2).
-    const spending = new FxAggregate();
-    for (const row of top) spending.merge(row.agg);
+    const payeeRows = Array.from(payeeTotals.values());
+    const spending = FxAggregate.sum(payeeRows.map((row) => row.agg));
+    const hasShares =
+      spending.sign > 0 && payeeRows.every((row) => row.agg.sign >= 0);
+    const data: PayeeSpendingItem[] = payeeRows
+      .map((row) => ({
+        payeeId: row.payeeId,
+        payeeName: row.payeeName,
+        total: row.agg.knownSubtotalAt(places),
+        percentage: hasShares ? shareOf(row.agg, spending) : null,
+      }))
+      .sort((a, b) => b.total - a.total);
     const knownSpending = spending.knownSubtotalAt(places);
 
     return {
@@ -487,23 +486,7 @@ export class SpendingReportsService {
         t.currency_code,
         ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
-      FROM transactions t
-      LEFT JOIN transaction_splits ts ON ts.transaction_id = t.id
-      LEFT JOIN accounts a ON a.id = t.account_id
-      WHERE t.user_id = $1
-        AND t.transaction_date <= $2
-        AND ${NONZERO_AMOUNT}
-        AND t.is_transfer = false
-        AND (t.status IS NULL OR t.status != 'VOID')
-        AND t.parent_transaction_id IS NULL
-        AND ${INVESTMENT_EXCLUSION}
-        AND (ts.transfer_account_id IS NULL OR ts.id IS NULL)
-        AND NOT EXISTS (
-          SELECT 1 FROM accounts ax
-          WHERE ax.user_id = t.user_id
-            AND ax.asset_category_id IS NOT NULL
-            AND ax.asset_category_id = COALESCE(ts.category_id, t.category_id)
-        )
+      ${spendingComponentsSql()}
     `;
 
     const params: (string | undefined)[] = [userId, endDate, defaultCurrency];

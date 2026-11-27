@@ -36,11 +36,20 @@ export function categoryTypeOf(category: CategoryTypeSource): CategoryType {
   return category.categoryType ?? categoryTypeFromIncomeFlag(category.isIncome);
 }
 
-/** `categoryTypeOf`, or `undefined` for no category (an uncategorized row). */
+/**
+ * `categoryTypeOf`, or `undefined` when there is no category (an uncategorized
+ * row) or its type is unknown: a stored value with neither a type nor a legacy
+ * flag. A report then falls back to the sign of the movement, as it does for an
+ * uncategorized row, and never reads the unknown as an expense.
+ */
 export function categoryTypeOfOrUndefined(
   category: CategoryTypeSource | null | undefined,
 ): CategoryType | undefined {
-  return category ? categoryTypeOf(category) : undefined;
+  if (!category) return undefined;
+  if (category.categoryType == null && category.isIncome == null) {
+    return undefined;
+  }
+  return categoryTypeOf(category);
 }
 
 export function isIncomeCategory(category: CategoryTypeSource): boolean {

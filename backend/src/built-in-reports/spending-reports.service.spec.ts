@@ -160,6 +160,34 @@ describe("SpendingReportsService", () => {
       expect(result.totalSpending).toBe(0);
     });
 
+    it("uses the net direction when a stored category has no type", async () => {
+      categoriesRepository.find.mockResolvedValue([
+        { ...mockParentCategory, isIncome: null },
+      ]);
+      scopedManager.query.mockResolvedValue([
+        {
+          category_id: mockParentCategory.id,
+          bucket_id: mockParentCategory.id,
+          classified: false,
+          payee_id: null,
+          payee_name: "Co-op",
+          currency_code: "USD",
+          tx_date: FIXTURE_TX_DATE,
+          total: "-50",
+        },
+      ]);
+      expect(
+        await service.getSpendingByCategory(
+          mockUserId,
+          undefined,
+          "2026-12-31",
+        ),
+      ).toMatchObject({ data: [], totalSpending: 0 });
+      expect(
+        await service.getSpendingByPayee(mockUserId, undefined, "2026-12-31"),
+      ).toMatchObject({ data: [], totalSpending: 0 });
+    });
+
     it("aggregates spending by parent category with rollup", async () => {
       scopedManager.query.mockResolvedValue([
         {
@@ -1433,7 +1461,7 @@ describe("SpendingReportsService", () => {
       expect(result.data[0].total).toBe(25);
     });
 
-    it("sorts by total descending and limits to top 20", async () => {
+    it("sorts all payees by total descending", async () => {
       const rawResults = Array.from({ length: 25 }, (_, i) => ({
         payee_id: `payee-${i}`,
         payee_name: `Payee ${i}`,
@@ -1455,7 +1483,8 @@ describe("SpendingReportsService", () => {
         "2025-12-31",
       );
 
-      expect(result.data).toHaveLength(20);
+      expect(result.data).toHaveLength(25);
+      expect(result.totalSpending).toBe(3250);
       expect(result.data[0].total).toBeGreaterThanOrEqual(result.data[1].total);
     });
 
@@ -1519,7 +1548,7 @@ describe("SpendingReportsService", () => {
       expect(queryCall[1]).toEqual([mockUserId, "2025-12-31", "USD"]);
     });
 
-    it("calculates totalSpending from the top 20 results", async () => {
+    it("calculates totalSpending from every qualifying payee", async () => {
       scopedManager.query.mockResolvedValue([
         {
           payee_id: "payee-1",
@@ -1558,7 +1587,9 @@ describe("SpendingReportsService", () => {
       const sql = scopedManager.query.mock.calls[0][0];
       expect(sql).toContain("NOT EXISTS");
       expect(sql).toContain("asset_category_id");
-      expect(sql).toMatch(/ax\.asset_category_id\s*=\s*t\.category_id/);
+      expect(sql).toContain(
+        "ax.asset_category_id = COALESCE(ts.category_id, t.category_id)",
+      );
     });
   });
 

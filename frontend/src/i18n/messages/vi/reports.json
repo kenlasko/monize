@@ -2045,6 +2045,7 @@
     "unknown": "Không xác định",
     "knownPartOnly": "Chỉ phần quy đổi được mới được vẽ.",
     "roundingNote": "Tổng của mỗi phía được làm tròn một lần rồi chia cho các dòng tiền của nó, nên biểu đồ khớp chính xác. Vì vậy, một danh mục ở đây có thể chênh một xu, hoặc đơn vị nhỏ nhất của tiền tệ của bạn, so với cùng danh mục đó trong Chi tiêu theo danh mục hoặc Thu nhập theo nguồn, nơi mỗi danh mục được làm tròn riêng.",
+    "expenseRefund": "{category} (hoàn tiền chi tiêu)",
     "netRefund": "Hoàn tiền ròng: danh mục con này nhận về nhiều hơn số đã chi.",
     "excludedCount": "{count, plural, other {# khoản tiền không thể quy đổi và bị loại khỏi các số liệu ở trên.}}",
     "noData": "Không có thu nhập, chi tiêu hoặc chuyển khoản trong kỳ này",

@@ -52,6 +52,7 @@ export interface PayeeSpendingItem {
   payeeId: string | null;
   payeeName: string;
   total: number;
+  percentage?: number | null;
 }
 
 export interface SpendingByPayeeResponse {
@@ -83,7 +84,7 @@ export interface IncomeSourceItem {
    * the server from the unrounded figures (rule 8). Optional: an older backend
    * mid-deploy sends none.
    */
-  percentage?: number;
+  percentage?: number | null;
 }
 
 export interface IncomeBySourceResponse {
@@ -770,6 +771,7 @@ export interface CashFlowSankeyNode {
    */
   id: string;
   kind: CashFlowSankeyNodeKind;
+  expenseRefund?: boolean;
   label: string;
   categoryId: string | null;
   parentCategoryId: string | null;

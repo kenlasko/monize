@@ -109,6 +109,25 @@ describe('toRechartsSankey', () => {
     expect(drawnOut.reduce((a, b) => a + b, 0)).toBe(1050);
   });
 
+  it('keeps a smaller expense refund identifiable in the merged source tooltip', () => {
+    const salary = node('income:salary', 500);
+    const refund = node('income:food', 50, { label: 'Food', expenseRefund: true });
+    const drawing = toRechartsSankey(
+      response(
+        [salary, refund, node('hub', 550)],
+        [link(salary.id, 'hub', 500), link(refund.id, 'hub', 50)],
+      ),
+      {
+        ...OPTIONS,
+        maxNodesPerColumn: 1,
+        labelFor: (n) => n.expenseRefund ? `${n.label} (expense refund)` : n.label,
+      },
+    );
+    expect(drawing.nodes.find((n) => n.kind === 'other')).toMatchObject({
+      value: 50, members: ['Food (expense refund)'],
+    });
+  });
+
   it('merges nothing at or under the limit', () => {
     const drawing = toRechartsSankey(fourteenCategories(), { ...OPTIONS, maxNodesPerColumn: 14 });
     expect(drawing.nodes.some((n) => n.kind === 'other')).toBe(false);
