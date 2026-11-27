@@ -9,8 +9,18 @@ import {
 /** Resolve the stored population before changes to the layout can reinterpret it. */
 export function resolveReportConfig(
   groupBy: GroupByType,
-  config: ReportConfig,
+  stored: Partial<ReportConfig> = {},
 ): ReportConfig {
+  const config: ReportConfig = {
+    ...stored,
+    metric: stored.metric ?? MetricType.TOTAL_AMOUNT,
+    includeTransfers: stored.includeTransfers ?? false,
+    direction:
+      stored.direction ??
+      (stored.categoryType
+        ? DirectionFilter.BOTH
+        : DirectionFilter.EXPENSES_ONLY),
+  };
   const income = config.direction === DirectionFilter.INCOME_ONLY;
   if (!income && config.direction !== DirectionFilter.EXPENSES_ONLY) {
     return {

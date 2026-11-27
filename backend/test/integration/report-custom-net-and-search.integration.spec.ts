@@ -309,6 +309,46 @@ describe("custom report: signed category sums and escaped search (integration)",
     },
   );
 
+  it("uses the database's category-grouped layout when a legacy client omits groupBy", async () => {
+    const created = await withUserContext(userId, () =>
+      reports.create(userId, {
+        name: "Expenses",
+        config: {
+          metric: MetricType.NONE,
+          direction: DirectionFilter.EXPENSES_ONLY,
+        },
+      }),
+    );
+    const stored = await dataSource.manager.findOneByOrFail(CustomReport, {
+      id: created.id,
+    });
+    expect(stored).toMatchObject({
+      groupBy: GroupByType.CATEGORY,
+      config: {
+        metric: MetricType.NONE,
+        direction: DirectionFilter.BOTH,
+        categoryType: ReportCategoryType.EXPENSE,
+      },
+    });
+  });
+
+  it("restores the historical defaults of a sparse saved report without changing its other filters", async () => {
+    const report = await saveReport({ filters: { accountIds: [accountId] } });
+    await dataSource
+      .getRepository(CustomReport)
+      .update(report.id, { config: {} });
+    const reopened = await withUserContext(userId, () =>
+      reports.findOne(userId, report.id),
+    );
+    expect(reopened.config).toEqual({
+      metric: MetricType.TOTAL_AMOUNT,
+      includeTransfers: false,
+      direction: DirectionFilter.BOTH,
+      categoryType: ReportCategoryType.EXPENSE,
+    });
+    expect(reopened.filters).toEqual({ accountIds: [accountId] });
+  });
+
   it("keeps only uncategorized ordinary postings when the report includes transfers", async () => {
     const other = await createTestAccount(dataSource, userId, {
       name: "Savings",
@@ -339,7 +379,9 @@ describe("custom report: signed category sums and escaped search (integration)",
       metric: MetricType.NONE,
       includeTransfers: true,
     });
-    expect(result.data.map((row) => row.value).sort((a, b) => Number(a) - Number(b))).toEqual([-8, -4]);
+    expect(
+      result.data.map((row) => row.value).sort((a, b) => Number(a) - Number(b)),
+    ).toEqual([-8, -4]);
     expect(result.summary.total).toBe(-12);
   });
 

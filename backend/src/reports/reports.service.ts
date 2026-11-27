@@ -267,29 +267,15 @@ export class ReportsService {
   ): Promise<CustomReport> {
     this.validateCustomTimeframe(dto.timeframeType, dto.config);
 
-    // Set default config values if not provided
-    const config: ReportConfig = {
-      metric: dto.config?.metric || MetricType.TOTAL_AMOUNT,
-      includeTransfers: dto.config?.includeTransfers ?? false,
-      direction:
-        dto.config?.direction ??
-        (dto.config?.categoryType
-          ? DirectionFilter.BOTH
-          : DirectionFilter.EXPENSES_ONLY),
-      categoryType: dto.config?.categoryType,
-      customStartDate: dto.config?.customStartDate,
-      customEndDate: dto.config?.customEndDate,
-      tableColumns: dto.config?.tableColumns,
-      sortBy: dto.config?.sortBy,
-      sortDirection: dto.config?.sortDirection,
-    };
-
     const saved = await withScopedDb(this.dataSource, (m) => {
       const repo = m.getRepository(CustomReport);
+      // Use the stored layout default for API callers that omit groupBy.
+      const groupBy = dto.groupBy ?? GroupByType.CATEGORY;
       const report = repo.create({
         ...dto,
         userId,
-        config: resolveReportConfig(dto.groupBy ?? GroupByType.NONE, config),
+        groupBy,
+        config: resolveReportConfig(groupBy, dto.config),
         filters: dto.filters || {},
       });
       return repo.save(report);
