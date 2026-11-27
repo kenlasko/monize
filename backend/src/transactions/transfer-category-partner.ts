@@ -1,4 +1,6 @@
 import { EntityManager } from "typeorm";
+import { lockTransactionRows } from "../common/db/locks";
+import type { LockedTransactionRow } from "../common/db/locks";
 import { assertReconciledIdsMutable } from "./reconciled-lock.util";
 
 /**
@@ -128,6 +130,36 @@ async function readPartnerCategory(
         [partner.id, userId],
       ))) as { category_id: string | null }[];
   return rows.length === 0 ? undefined : rows[0].category_id;
+}
+
+/**
+ * Lock the rows an undo or redo restores together with the other sides of
+ * transfers it returns, in the order the forward write took them
+ * (`common/db/locks.ts`): the split parent of each partner line before any
+ * row, then the rows and the other legs together, ascending. Returns the
+ * locked rows, the other legs among them.
+ */
+export async function lockRowsWithCategoryPartners(
+  m: EntityManager,
+  userId: string,
+  rowIds: readonly string[],
+  records: readonly CategoryPartnerRecord[],
+): Promise<Map<string, LockedTransactionRow>> {
+  const parentIds: string[] = [];
+  for (const record of records) {
+    if (record.kind !== "line") continue;
+    const parentId = record.parentId ?? (await lineParentOf(m, record.id));
+    if (parentId) parentIds.push(parentId);
+  }
+  if (parentIds.length > 0) await lockTransactionRows(m, parentIds, userId);
+  return lockTransactionRows(
+    m,
+    [
+      ...rowIds,
+      ...records.filter((r) => r.kind === "leg").map((record) => record.id),
+    ],
+    userId,
+  );
 }
 
 /**

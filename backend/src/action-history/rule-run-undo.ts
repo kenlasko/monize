@@ -1,5 +1,6 @@
 import {
   isCategoryPartnerRecord,
+  lockRowsWithCategoryPartners,
   undoCategoryPartner,
 } from "../transactions/transfer-category-partner";
 import { ConflictException } from "@nestjs/common";
@@ -137,10 +138,17 @@ export async function undoRuleRun(
     snapshots.flatMap((row) =>
       row.structure?.kind === kind ? row.structure.counterpartIds : [],
     );
-  const locked = await lockTransactionRows(
+  // The other sides of transfers the run's category reached are locked with
+  // the rows, in the order the run took them (a partner line's split parent
+  // first, the other legs ascending with the rows), before any write.
+  const partners = snapshots
+    .map((row) => (row as { categoryPartner?: unknown }).categoryPartner)
+    .filter(isCategoryPartnerRecord);
+  const locked = await lockRowsWithCategoryPartners(
     manager,
-    [...snapshots.map((row) => row.id), ...counterpartIdsOf("transfer")],
     action.userId,
+    [...snapshots.map((row) => row.id), ...counterpartIdsOf("transfer")],
+    partners,
   );
   const splitLegIds = counterpartIdsOf("split");
   // After the parents: a split parent is locked before any of its legs.

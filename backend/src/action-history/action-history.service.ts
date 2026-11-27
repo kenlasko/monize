@@ -42,6 +42,7 @@ import { SplitKind } from "../transactions/entities/split-kind.enum";
 import { assertReconciledRowsMutable } from "../transactions/reconciled-lock.util";
 import {
   isCategoryPartnerRecord,
+  lockRowsWithCategoryPartners,
   undoCategoryPartner,
 } from "../transactions/transfer-category-partner";
 import { Account } from "../accounts/entities/account.entity";
@@ -1170,6 +1171,19 @@ export class ActionHistoryService {
   ): Promise<void> {
     if (!action.entityId || !action.beforeData) return;
 
+    // The other side of a transfer this undo returns is locked with the row,
+    // in the order the edit took them (a split parent first, two legs
+    // ascending), so an undo and an edit of the other leg cannot deadlock.
+    // The row's own lock below is then re-entrant.
+    const partner = action.beforeData.categoryPartner;
+    if (isCategoryPartnerRecord(partner)) {
+      await lockRowsWithCategoryPartners(
+        manager,
+        action.userId,
+        [action.entityId],
+        [partner],
+      );
+    }
     const transaction = await manager.findOne(Transaction, {
       where: { id: action.entityId, userId: action.userId },
       lock: { mode: "pessimistic_write" },

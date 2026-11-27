@@ -1,6 +1,7 @@
 import { EntityManager } from "typeorm";
 import {
   isCategoryPartnerRecord,
+  lockRowsWithCategoryPartners,
   undoCategoryPartner,
   writeCategoryPartner,
 } from "./transfer-category-partner";
@@ -65,6 +66,29 @@ describe("transfer category partner", () => {
       }),
     ).rejects.toThrow();
     expect(updates(query)).toHaveLength(0);
+  });
+
+  it("locks a partner line's split parent before the rows, and the other legs ascending with them", async () => {
+    // The order the forward write took them (`common/db/locks.ts`), so an
+    // undo and an edit of the other side cannot deadlock.
+    const query = jest.fn(async (_sql: string, params: unknown[]) =>
+      (params[0] as string[]).map((id) => ({ id })),
+    );
+    const m = { query } as unknown as EntityManager;
+    const locked = await lockRowsWithCategoryPartners(
+      m,
+      "user-1",
+      ["row-b"],
+      [
+        { kind: "line", id: "line-1", parentId: "parent-1", categoryId: null },
+        { kind: "leg", id: "leg-a", categoryId: null },
+      ],
+    );
+    const locks = query.mock.calls
+      .filter(([sql]) => sql.includes("FOR UPDATE"))
+      .map(([, params]) => params[0]);
+    expect(locks).toEqual([["parent-1"], ["leg-a", "row-b"]]);
+    expect([...locked.keys()]).toEqual(["leg-a", "row-b"]);
   });
 
   it("reads only a well-formed record from a history snapshot", () => {
