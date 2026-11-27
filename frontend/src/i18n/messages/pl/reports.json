@@ -447,6 +447,7 @@
     "labelEndDate": "Data końcowa",
     "labelMetric": "Metryka",
     "labelDirection": "Kierunek",
+    "labelCategoryType": "Typ kategorii",
     "checkboxTransfers": "Uwzględnij przelewy",
     "checkboxFavourites": "Dodaj do ulubionych",
     "sortByPlaceholder": "Domyślna",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Średnia kwota",
       "BUDGET_VARIANCE": "Odchylenie od budżetu"
     },
+    "categoryType": {
+      "ALL": "Wszystkie",
+      "INCOME": "Przychód",
+      "EXPENSE": "Wydatek",
+      "UNCATEGORIZED": "Bez kategorii"
+    },
     "direction": {
       "INCOME_ONLY": "Tylko przychody",
       "EXPENSES_ONLY": "Tylko wydatki",
-      "BOTH": "Oba"
+      "BOTH": "Oba",
+      "INCOMING": "Wpływy",
+      "OUTGOING": "Wypływy"
     },
     "sortDirection": {
       "ASC": "Rosnąco",

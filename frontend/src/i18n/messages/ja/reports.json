@@ -447,6 +447,7 @@
     "labelEndDate": "終了日",
     "labelMetric": "指標",
     "labelDirection": "方向",
+    "labelCategoryType": "カテゴリの種類",
     "checkboxTransfers": "振替を含める",
     "checkboxFavourites": "お気に入りに追加",
     "sortByPlaceholder": "デフォルト",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "平均金額",
       "BUDGET_VARIANCE": "予算差異"
     },
+    "categoryType": {
+      "ALL": "すべて",
+      "INCOME": "収入",
+      "EXPENSE": "支出",
+      "UNCATEGORIZED": "未分類"
+    },
     "direction": {
       "INCOME_ONLY": "収入のみ",
       "EXPENSES_ONLY": "支出のみ",
-      "BOTH": "両方"
+      "BOTH": "両方",
+      "INCOMING": "入金",
+      "OUTGOING": "出金"
     },
     "sortDirection": {
       "ASC": "昇順",

@@ -447,6 +447,7 @@
     "labelEndDate": "Bitiş Tarihi",
     "labelMetric": "Ölçüt",
     "labelDirection": "Yön",
+    "labelCategoryType": "Kategori türü",
     "checkboxTransfers": "Transferleri dahil et",
     "checkboxFavourites": "Favorilere ekle",
     "sortByPlaceholder": "Varsayılan",
@@ -1969,10 +1970,18 @@
       "AVERAGE": "Ortalama Tutar",
       "BUDGET_VARIANCE": "Bütçe Sapması"
     },
+    "categoryType": {
+      "ALL": "Tümü",
+      "INCOME": "Gelir",
+      "EXPENSE": "Gider",
+      "UNCATEGORIZED": "Kategorisiz"
+    },
     "direction": {
       "INCOME_ONLY": "Yalnızca Gelir",
       "EXPENSES_ONLY": "Yalnızca Giderler",
-      "BOTH": "Her İkisi"
+      "BOTH": "Her İkisi",
+      "INCOMING": "Gelen",
+      "OUTGOING": "Giden"
     },
     "sortDirection": {
       "ASC": "Artan",

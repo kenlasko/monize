@@ -17,6 +17,7 @@ import {
   resolveTransactionSearch,
   searchNarrows,
 } from "../transactions/apply-transaction-search";
+import { uncategorizedSql } from "../transactions/transaction-search.util";
 import { ParsedSearch } from "../transactions/transaction-search-query.util";
 import {
   createNetCells,
@@ -36,10 +37,12 @@ import {
   MetricType,
   DirectionFilter,
   ReportConfig,
+  ReportCategoryType,
   ReportFilters,
   TableColumn,
   SortDirection,
 } from "./entities/custom-report.entity";
+import { resolveReportConfig } from "./report-config";
 import { Transaction } from "../transactions/entities/transaction.entity";
 import { TransactionSplit } from "../transactions/entities/transaction-split.entity";
 import { Category } from "../categories/entities/category.entity";
@@ -264,24 +267,15 @@ export class ReportsService {
   ): Promise<CustomReport> {
     this.validateCustomTimeframe(dto.timeframeType, dto.config);
 
-    // Set default config values if not provided
-    const config: ReportConfig = {
-      metric: dto.config?.metric || MetricType.TOTAL_AMOUNT,
-      includeTransfers: dto.config?.includeTransfers ?? false,
-      direction: dto.config?.direction || DirectionFilter.EXPENSES_ONLY,
-      customStartDate: dto.config?.customStartDate,
-      customEndDate: dto.config?.customEndDate,
-      tableColumns: dto.config?.tableColumns,
-      sortBy: dto.config?.sortBy,
-      sortDirection: dto.config?.sortDirection,
-    };
-
     const saved = await withScopedDb(this.dataSource, (m) => {
       const repo = m.getRepository(CustomReport);
+      // Use the stored layout default for API callers that omit groupBy.
+      const groupBy = dto.groupBy ?? GroupByType.CATEGORY;
       const report = repo.create({
         ...dto,
         userId,
-        config,
+        groupBy,
+        config: resolveReportConfig(groupBy, dto.config),
         filters: dto.filters || {},
       });
       return repo.save(report);
@@ -301,12 +295,16 @@ export class ReportsService {
   }
 
   async findAll(userId: string): Promise<CustomReport[]> {
-    return withScopedDb(this.dataSource, (m) =>
+    const reports = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(CustomReport).find({
         where: { userId },
         order: { sortOrder: "ASC", createdAt: "DESC" },
       }),
     );
+    return reports.map((report) => ({
+      ...report,
+      config: resolveReportConfig(report.groupBy, report.config),
+    }));
   }
 
   async findOne(userId: string, id: string): Promise<CustomReport> {
@@ -322,7 +320,10 @@ export class ReportsService {
       );
     }
 
-    return report;
+    return {
+      ...report,
+      config: resolveReportConfig(report.groupBy, report.config),
+    };
   }
 
   async update(
@@ -355,7 +356,10 @@ export class ReportsService {
 
     // Replace config if provided (full replacement so cleared fields take effect)
     if (dto.config) {
-      report.config = { ...report.config, ...dto.config };
+      report.config = resolveReportConfig(report.groupBy, {
+        ...report.config,
+        ...dto.config,
+      });
     }
 
     // Replace filters if provided (full replacement so cleared filters take effect)
@@ -479,7 +483,7 @@ export class ReportsService {
         endDate,
         categoryMap,
         converter,
-        report.filters,
+        report,
       );
     }
 
@@ -645,28 +649,16 @@ export class ReportsService {
     transactions: Transaction[],
     config: ReportConfig,
   ): Transaction[] {
-    // Only the list of single transactions judges a line by its own sign; every
-    // other metric nets a category's lines of both signs (audit A26-M33).
-    const narrowsDirection =
-      config.metric === MetricType.NONE &&
-      config.direction !== DirectionFilter.BOTH;
-    if (!narrowsDirection && config.includeTransfers) return transactions;
-
-    const wanted = (split: TransactionSplit): boolean => {
-      if (!config.includeTransfers && split.transferAccountId != null) {
-        return false;
-      }
-      if (!narrowsDirection) return true;
-      const amount = Number(split.amount);
-      return config.direction === DirectionFilter.INCOME_ONLY
-        ? amount > 0
-        : amount < 0;
-    };
+    // The query selects direction and category on the joined posting. Transfer
+    // splits still require their own eligibility check before aggregation.
+    if (config.includeTransfers) return transactions;
 
     return transactions.flatMap((tx) => {
       if (!tx.isSplit || !tx.splits || tx.splits.length === 0) return [tx];
 
-      const splits = tx.splits.filter(wanted);
+      const splits = tx.splits.filter(
+        (split) => split.transferAccountId == null,
+      );
       if (splits.length === 0) return [];
 
       // A shallow copy: the entity is not re-saved, and the aggregators read
@@ -872,24 +864,31 @@ export class ReportsService {
         });
       }
 
-      // Filter by direction, for the list of single transactions only: every
-      // other metric nets a category's rows of both signs, so a refund must
-      // reach the aggregators (audit A26-M33). A split parent's own amount is
-      // the SUM of its lines, so its sign is not the direction of any
-      // particular line: a -60 expense beside a +500 embedded SELL is a +440
-      // parent, and rejecting it here threw away the expense before provenance
-      // ever ran (audit F-CUSTOM-DIR-001). Split parents therefore pass this
-      // gate and are narrowed per line in `narrowSplitLines`.
-      if (config.metric === MetricType.NONE) {
-        if (config.direction === DirectionFilter.INCOME_ONLY) {
-          queryBuilder.andWhere(
-            "(transaction.isSplit = true OR transaction.amount > 0)",
-          );
-        } else if (config.direction === DirectionFilter.EXPENSES_ONLY) {
-          queryBuilder.andWhere(
-            "(transaction.isSplit = true OR transaction.amount < 0)",
-          );
-        }
+      // Select the posting that supplies the amount. A split parent can carry
+      // both directions and both category types in the same transaction.
+      const amount =
+        "CASE WHEN transaction.isSplit THEN splits.amount ELSE transaction.amount END";
+      if (config.direction === DirectionFilter.INCOMING)
+        queryBuilder.andWhere(`${amount} > 0`);
+      if (config.direction === DirectionFilter.OUTGOING)
+        queryBuilder.andWhere(`${amount} < 0`);
+      const categoryType = config.categoryType;
+      if (
+        categoryType === ReportCategoryType.INCOME ||
+        categoryType === ReportCategoryType.EXPENSE
+      ) {
+        queryBuilder.andWhere(
+          "CASE WHEN transaction.isSplit THEN splitCategory.isIncome ELSE category.isIncome END = :reportIncome",
+          { reportIncome: categoryType === ReportCategoryType.INCOME },
+        );
+      } else if (categoryType === ReportCategoryType.UNCATEGORIZED) {
+        queryBuilder.andWhere(
+          uncategorizedSql({
+            transaction: "transaction",
+            splits: "splits",
+            grain: "split",
+          }),
+        );
       }
 
       // Filter transfers
@@ -1126,20 +1125,7 @@ export class ReportsService {
     // For NONE metric, return individual transactions as data points
     if (metric === MetricType.NONE) {
       const result: ReportRow[] = [];
-      // A one-direction list holds rows of one sign and shows their magnitude.
-      // BOTH lists rows of either sign, so each keeps its own: money in is
-      // positive, money out negative, and the headline is the signed net of
-      // the listed rows (discussion #1978). A transfer leg keeps its sign too,
-      // so both legs of an in-scope same-currency transfer net to zero, and
-      // so do a cross-currency pair's when one leg is in the reporting
-      // currency: the other converts at the amounts the transfer moved. A pair
-      // in two other currencies converts each leg at the market rate on its
-      // date and can leave a residual.
-      const lineAmount = (amount: string | number): number =>
-        config.direction === DirectionFilter.BOTH
-          ? Number(amount)
-          : Math.abs(Number(amount));
-
+      // Preserve each posting's sign in the reporting, account and original currencies.
       for (const tx of transactions) {
         // A blank-payee transfer leg reads "Transfer to/from <account>"
         // resolved from its (same-owner) linked leg, exactly as the register
@@ -1156,7 +1142,7 @@ export class ReportsService {
           // Only the lines that are ordinary cash: an embedded investment line
           // is the trade's own cash side, not a row of this report.
           for (const split of ordinarySplitLines(tx)) {
-            const accountAmount = lineAmount(split.amount);
+            const accountAmount = Number(split.amount);
             // A line with no rate stays listed, its converted value unknown,
             // so it can still be matched against a statement (issue #2342).
             const value = conv.convert(accountAmount, tx, split);
@@ -1188,7 +1174,7 @@ export class ReportsService {
             });
           }
         } else {
-          const accountAmount = lineAmount(tx.amount);
+          const accountAmount = Number(tx.amount);
           const value = conv.convert(accountAmount, tx);
           // A listed row with no rate is in no total, so not counted either.
           if (value !== null && tx.amountIsProvisional === true) {
@@ -1222,7 +1208,7 @@ export class ReportsService {
               tx.originalAmount !== undefined &&
               tx.originalCurrencyCode
                 ? {
-                    originalAmount: lineAmount(tx.originalAmount),
+                    originalAmount: Number(tx.originalAmount),
                     originalCurrency: tx.originalCurrencyCode,
                   }
                 : {}),
@@ -1243,7 +1229,14 @@ export class ReportsService {
           ? row
           : {
               ...row,
-              point: { ...row.point, percentage: shareOf(row.sum, whole) },
+              point: {
+                ...row.point,
+                percentage:
+                  whole.sign === 0
+                    ? 0
+                    : (row.sum.unroundedSubtotal / whole.unroundedSubtotal) *
+                      100,
+              },
             },
       );
     }
@@ -1303,7 +1296,11 @@ export class ReportsService {
         );
       }
     }
-    const dataMap = cells.settle();
+    const dataMap = cells.settle(
+      metric === MetricType.BUDGET_VARIANCE
+        ? (id) => categoryMap.get(id)?.isIncome
+        : undefined,
+    );
 
     // Shares of what converted: an excluded row is in no group's sum and in no
     // percentage, the same rule Spending by Category follows.
@@ -1546,7 +1543,7 @@ export class ReportsService {
     endDate: string,
     categoryMap: Map<string, Category>,
     conv: RowConverter,
-    filters: CustomReport["filters"],
+    { config, filters }: Pick<CustomReport, "config" | "filters">,
   ): Promise<ReportRow[]> {
     try {
       const budgets = await this.budgetsService.findAll(userId);
@@ -1581,8 +1578,23 @@ export class ReportsService {
       );
       const budgetMap = new Map<string, number>();
       const unconvertible = new Set<string>();
+      const narrowed =
+        config.direction !== DirectionFilter.BOTH ||
+        (filters?.accountIds?.length ?? 0) > 0 ||
+        (filters?.payeeIds?.length ?? 0) > 0 ||
+        !!filters?.searchText ||
+        (filters?.filterGroups?.length ?? 0) > 0;
+      const inScope = new Set(filters?.categoryIds ?? []);
+      const seen = new Set(data.map((row) => row.point.id));
       for (const bc of budget.categories || []) {
-        if (bc.categoryId && !bc.isIncome) {
+        if (
+          bc.categoryId &&
+          !bc.isIncome &&
+          config.categoryType !== ReportCategoryType.INCOME &&
+          config.categoryType !== ReportCategoryType.UNCATEGORIZED &&
+          (!narrowed || seen.has(bc.categoryId)) &&
+          (!inScope.size || inScope.has(bc.categoryId))
+        ) {
           const amount = (Number(bc.amount) || 0) * periodsInWindow;
           // Zero converts to zero at any rate, so it records no gap.
           const converted =
@@ -1621,17 +1633,14 @@ export class ReportsService {
       // Only where nothing but the category filter narrowed the rows: under an
       // account, payee, search or advanced-group filter a zero means "filtered
       // out", not "unspent", and would enter the headline as an invented gap.
-      const narrowed =
-        (filters?.accountIds?.length ?? 0) > 0 ||
-        (filters?.payeeIds?.length ?? 0) > 0 ||
-        !!filters?.searchText ||
-        (filters?.filterGroups?.length ?? 0) > 0;
-      const inScope = new Set(filters?.categoryIds ?? []);
-      const seen = new Set(data.map((row) => row.point.id));
-      for (const [categoryId, budgeted] of narrowed ? [] : budgetMap) {
+      const zeroShare = data.every(
+        ({ point }) => point.percentage !== undefined,
+      )
+        ? 0
+        : undefined;
+      for (const [categoryId, budgeted] of budgetMap) {
         const category = categoryMap.get(categoryId);
         if (seen.has(categoryId) || !category) continue;
-        if (inScope.size > 0 && !inScope.has(categoryId)) continue;
         const sum = new FxAggregate();
         sum.addConverted(-budgeted);
         enriched.push({
@@ -1647,7 +1656,7 @@ export class ReportsService {
             ) as string,
             value: sum.knownSubtotalAt(conv.places),
             color: category.color || undefined,
-            percentage: 0,
+            percentage: zeroShare,
             count: 0,
             budgeted: reportFigure(budgeted, conv.places),
             actual: 0,
