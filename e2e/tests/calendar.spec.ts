@@ -122,6 +122,28 @@ async function showNextMonth(page: Page, aDayInIt: string) {
   await expect(dayCell(page, aDayInIt)).toBeVisible();
 }
 
+/** The month heading, which is also the button that opens the month picker. */
+function monthHeading(page: Page) {
+  return page.getByRole('button', { name: /^\d{2}\/\d{4}$/ });
+}
+
+/** How the month heading reads for the month `ymd` is in. */
+function monthHeadingText(ymd: string): string {
+  return `${ymd.slice(5, 7)}/${ymd.slice(0, 4)}`;
+}
+
+/**
+ * Turn the open Transactions calendar to today's month, once it has opened on
+ * the month of the earliest row on the register's page, `earliestRow`. The
+ * heading is waited for first: until the register's rows arrive the calendar
+ * shows today's month, and a turn made before then would be overtaken.
+ */
+async function showTodaysMonthFrom(page: Page, earliestRow: string) {
+  await expect(monthHeading(page)).toHaveText(monthHeadingText(earliestRow));
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
+  await expect(monthHeading(page)).toHaveText(monthHeadingText(todayYmd()));
+}
+
 /**
  * The 15th of the month `ymd` is in: a day no adjacent month's grid can show as
  * a leading or trailing day, so waiting for it proves the month has changed.
@@ -141,9 +163,10 @@ test.describe('Transactions calendar', () => {
     const spendDay = shiftDays(today, -3);
     const billDay = shiftDays(today, 3);
     // Three days ahead crosses into the next month at a month's end (it did,
-    // on the 30th and 31st), and the grid opens on today's month. A day of its
-    // own month is always in that month's grid, so the spec steps forward for
-    // the bill and back for the rows (see `dayOfCurrentMonth`).
+    // on the 30th and 31st). The grid opens on the month of the earliest row
+    // on the register's page (payday's) and the spec turns it to today's. A
+    // day of its own month is always in that month's grid, so the spec steps
+    // forward for the bill (see `dayOfCurrentMonth`).
     const billNextMonth = billDay.slice(0, 7) !== today.slice(0, 7);
     const payee = `Cal Payee ${uniqueId()}`;
     const schedule = `Cal Rent ${uniqueId()}`;
@@ -169,6 +192,8 @@ test.describe('Transactions calendar', () => {
 
     await page.goto('/transactions');
     await switchToCalendar(page);
+    // The calendar opens on the earliest month the register's page shows.
+    await showTodaysMonthFrom(page, payday);
 
     // A row lands on the day it is dated, with its payee and its own amount.
     await expect(dayCell(page, spendDay)).toContainText(payee);
@@ -202,6 +227,7 @@ test.describe('Transactions calendar', () => {
     // calendar after a reload -- and so are its figures.
     await page.reload();
     await expect(page.getByRole('grid')).toBeVisible();
+    await showTodaysMonthFrom(page, payday);
     await expect(dayCell(page, spendDay).getByTestId('calendar-balance-actual')).toHaveText(
       '$457.50',
     );
