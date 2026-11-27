@@ -146,7 +146,7 @@ export interface ParsedQifResponse {
   investmentSummary?: CsvInvestmentSummary;
   /** CSV parses only: the rows the import will leave out because their date cannot be read. */
   unreadableDates?: CsvUnreadableDates;
-  /** CSV parses only: the rows the import will leave out because their amount cannot be read. */
+  /** The rows (CSV), records (QIF) or transactions (OFX) the import will leave out because their amount cannot be read. */
   unreadableAmounts?: CsvUnreadableAmounts;
 }
 
@@ -520,6 +520,8 @@ export interface ParsedQifMultiAccountResponse {
   securities: string[];
   detectedDateFormat: DateFormat;
   sampleDates: string[];
+  /** The QIF records, across all accounts, the import will leave out because an amount cannot be read. */
+  unreadableAmounts?: CsvUnreadableAmounts;
 }
 
 export interface ImportQifMultiAccountRequest {

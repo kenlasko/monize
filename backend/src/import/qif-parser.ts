@@ -26,7 +26,10 @@
  */
 
 import { applyQifClearedField } from "./qif-status.util";
-import { normalizeAmountSeparators } from "./amount-separators.util";
+import {
+  isPlainAmount,
+  normalizeAmountSeparators,
+} from "./amount-separators.util";
 import { isQifCashTransfer } from "./qif-cash-transfer-action";
 import type { CsvUnreadableAmountRow } from "./csv-parser";
 
@@ -238,6 +241,13 @@ export function parseQif(
     readQifAmount(value, blankIsZero, (raw) => {
       currentBadAmount ??= raw;
     });
+  // A blank Q keeps reading as 0; a Q with text that is no quantity is reported.
+  const quantityOf = (raw: string, isSplit = false): number => {
+    const quantity = parseQifQuantity(raw, isSplit);
+    if (quantity !== null) return quantity;
+    if (raw !== "") currentBadAmount ??= truncate(raw, 50);
+    return 0;
+  };
   let openingBalance: number | null = null;
   let openingBalanceDate: string | null = null;
   let skippingSection = false;
@@ -365,7 +375,12 @@ export function parseQif(
 
       case "T": // Amount
       case "U": // Amount (alternative)
-        currentTransaction.amount = amountOf(value);
+        // Exporters write a blank cash field on an investment record
+        // (StkSplit, ShrsIn); on a cash record a blank T is unreadable.
+        currentTransaction.amount = amountOf(
+          value,
+          accountType === "INVESTMENT",
+        );
         break;
 
       case "P": {
@@ -488,7 +503,7 @@ export function parseQif(
 
       case "Q": // Quantity (number of shares, or split ratio for StkSplit)
         currentQRaw = value;
-        currentTransaction.quantity = parseQifQuantity(value) ?? 0;
+        currentTransaction.quantity = quantityOf(value);
         break;
 
       case "O": // Commission
@@ -508,8 +523,7 @@ export function parseQif(
           currentQRaw !== null &&
           currentTransaction.action?.toLowerCase() === "stksplit"
         ) {
-          currentTransaction.quantity =
-            parseQifQuantity(currentQRaw, true) ?? 0;
+          currentTransaction.quantity = quantityOf(currentQRaw, true);
         }
 
         settleMoneyActivityAccount(
@@ -563,7 +577,7 @@ export function parseQif(
       currentQRaw !== null &&
       currentTransaction.action?.toLowerCase() === "stksplit"
     ) {
-      currentTransaction.quantity = parseQifQuantity(currentQRaw, true) ?? 0;
+      currentTransaction.quantity = quantityOf(currentQRaw, true);
     }
     settleMoneyActivityAccount(
       currentTransaction,
@@ -750,7 +764,7 @@ function parseQifAmount(amountStr: string): number | null {
   // separators the way the CSV import does ("1,234.56", "-18,36").
   const cleaned = normalizeAmountSeparators(amountStr.replace(/[$£€\s]/g, ""));
   // The whole field has to be a number: "1,2,3.4.5" is not 123.4.
-  if (!/^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(cleaned)) return null;
+  if (!isPlainAmount(cleaned)) return null;
   return parseFloat(cleaned);
 }
 
@@ -767,7 +781,7 @@ function readQifAmount(
   if (blankIsZero && value === "") return 0;
   const amount = parseQifAmount(value);
   if (amount !== null) return amount;
-  onUnreadable(value.slice(0, 50));
+  onUnreadable(truncate(value, 50));
   return 0;
 }
 
@@ -1078,6 +1092,13 @@ export function parseQifFull(
     readQifAmount(value, blankIsZero, (raw) => {
       currentBadAmount ??= raw;
     });
+  // A blank Q keeps reading as 0; a Q with text that is no quantity is reported.
+  const quantityOf = (raw: string, isSplit = false): number => {
+    const quantity = parseQifQuantity(raw, isSplit);
+    if (quantity !== null) return quantity;
+    if (raw !== "") currentBadAmount ??= truncate(raw, 50);
+    return 0;
+  };
   let blockCategoriesSet = new Set<string>();
   let blockTransferAccountsSet = new Set<string>();
   let blockSecuritiesSet = new Set<string>();
@@ -1131,7 +1152,7 @@ export function parseQifFull(
         currentQRaw !== null &&
         currentTransaction.action?.toLowerCase() === "stksplit"
       ) {
-        currentTransaction.quantity = parseQifQuantity(currentQRaw, true) ?? 0;
+        currentTransaction.quantity = quantityOf(currentQRaw, true);
       }
 
       settleMoneyActivityAccount(
@@ -1435,7 +1456,10 @@ export function parseQifFull(
 
       case "T":
       case "U":
-        currentTransaction.amount = amountOf(value);
+        currentTransaction.amount = amountOf(
+          value,
+          currentBlock.accountType === "INVESTMENT",
+        );
         break;
 
       case "P": {
@@ -1555,7 +1579,7 @@ export function parseQifFull(
 
       case "Q":
         currentQRaw = value;
-        currentTransaction.quantity = parseQifQuantity(value) ?? 0;
+        currentTransaction.quantity = quantityOf(value);
         break;
 
       case "O":
@@ -1573,8 +1597,7 @@ export function parseQifFull(
           currentQRaw !== null &&
           currentTransaction.action?.toLowerCase() === "stksplit"
         ) {
-          currentTransaction.quantity =
-            parseQifQuantity(currentQRaw, true) ?? 0;
+          currentTransaction.quantity = quantityOf(currentQRaw, true);
         }
 
         settleMoneyActivityAccount(

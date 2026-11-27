@@ -301,6 +301,9 @@
     "unreadableAmountRow": "{line}행: \"{rawAmount}\"",
     "unreadableAmountsMore": "...외 {count}개",
     "unreadableAmountsGoBack": "금액 열이 올바르게 매핑되었는지 확인하거나, 파일에서 이 행들을 수정한 후 다시 가져오세요.",
+    "unreadableAmountLine": "{line}번째 줄: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "거래 {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "파일에서 이 금액을 수정한 후 다시 가져오세요.",
     "importButton": "거래 가져오기"
   },
   "complete": {

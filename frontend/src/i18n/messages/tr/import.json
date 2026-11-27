@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Satır {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...ve {count} tane daha",
     "unreadableAmountsGoBack": "Tutar sütunlarının doğru eşlendiğini kontrol edin ya da bu satırları dosyada düzeltip yeniden içe aktarın.",
+    "unreadableAmountLine": "Satır {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "İşlem {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Bu tutarları dosyada düzeltin ve dosyayı yeniden içe aktarın.",
     "importButton": "İşlemleri İçe Aktar"
   },
   "complete": {

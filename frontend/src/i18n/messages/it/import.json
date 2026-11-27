@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Riga {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...e altre {count}",
     "unreadableAmountsGoBack": "Verifica che le colonne dell'importo siano mappate correttamente, oppure correggi queste righe nel file e importalo di nuovo.",
+    "unreadableAmountLine": "Riga {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transazione {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Correggi questi importi nel file e importalo di nuovo.",
     "importButton": "Importa transazioni"
   },
   "complete": {

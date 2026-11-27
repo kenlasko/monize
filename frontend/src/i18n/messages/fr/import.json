@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Ligne {line} : « {rawAmount} »",
     "unreadableAmountsMore": "...et {count} de plus",
     "unreadableAmountsGoBack": "Vérifiez que les colonnes de montant sont correctement associées, ou corrigez ces lignes dans le fichier et importez-le à nouveau.",
+    "unreadableAmountLine": "Ligne {line} : \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transaction {line} : \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Corrigez ces montants dans le fichier, puis importez-le de nouveau.",
     "importButton": "Importer les transactions"
   },
   "complete": {

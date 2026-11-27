@@ -301,6 +301,9 @@
     "unreadableAmountRow": "第 {line} 列：「{rawAmount}」",
     "unreadableAmountsMore": "...以及另外 {count} 列",
     "unreadableAmountsGoBack": "請檢查金額欄是否對應正確，或在檔案中更正這些列後重新匯入。",
+    "unreadableAmountLine": "第 {line} 行：\"{rawAmount}\"",
+    "unreadableAmountTransaction": "交易 {line}：\"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "請在檔案中更正這些金額後重新匯入。",
     "importButton": "匯入交易"
   },
   "complete": {

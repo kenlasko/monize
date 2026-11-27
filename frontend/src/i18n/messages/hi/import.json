@@ -301,6 +301,9 @@
     "unreadableAmountRow": "पंक्ति {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...और {count} अन्य",
     "unreadableAmountsGoBack": "जांचें कि राशि वाले कॉलम सही ढंग से मैप किए गए हैं, या फ़ाइल में इन पंक्तियों को ठीक करके उसे फिर से आयात करें।",
+    "unreadableAmountLine": "पंक्ति {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "लेन-देन {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "फ़ाइल में इन राशियों को सुधारें और उसे फिर से आयात करें।",
     "importButton": "लेनदेन आयात करें"
   },
   "complete": {

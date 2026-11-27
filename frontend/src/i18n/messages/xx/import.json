@@ -301,6 +301,9 @@
     "unreadableAmountRow": "[XX-Row {line}: \"{rawAmount}\"-XX]",
     "unreadableAmountsMore": "[XX-...and {count} more-XX]",
     "unreadableAmountsGoBack": "[XX-Check that the amount columns are mapped correctly, or correct these rows in the file and import it again.-XX]",
+    "unreadableAmountLine": "[XX-Line {line}: \"{rawAmount}\"-XX]",
+    "unreadableAmountTransaction": "[XX-Transaction {line}: \"{rawAmount}\"-XX]",
+    "unreadableAmountsFileGoBack": "[XX-Correct these amounts in the file and import it again.-XX]",
     "importButton": "[XX-Import Transactions-XX]"
   },
   "complete": {

@@ -1,4 +1,13 @@
 /**
+ * True when the text is nothing but a number once normalised: an optional
+ * sign, digits and at most one decimal point ("1234.5", "-.5"). A QIF or OFX
+ * amount that fails it is unreadable, never the number its first digits make.
+ */
+export function isPlainAmount(value: string): boolean {
+  return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(value);
+}
+
+/**
  * Rewrite an imported amount's grouping and decimal separators to the
  * `parseFloat` form: grouping removed, decimal separator a dot. The input has
  * already had its currency symbols and whitespace stripped.

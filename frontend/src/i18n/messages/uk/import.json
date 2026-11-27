@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Рядок {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...і ще {count}",
     "unreadableAmountsGoBack": "Перевірте, чи правильно зіставлено стовпці сум, або виправте ці рядки у файлі та імпортуйте його знову.",
+    "unreadableAmountLine": "Рядок {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Операція {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Виправте ці суми у файлі та імпортуйте його знову.",
     "importButton": "Імпортувати транзакції"
   },
   "complete": {

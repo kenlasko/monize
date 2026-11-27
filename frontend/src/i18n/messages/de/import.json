@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Zeile {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...und {count} weitere",
     "unreadableAmountsGoBack": "Prüfen Sie, ob die Betragsspalten richtig zugeordnet sind, oder korrigieren Sie diese Zeilen in der Datei und importieren Sie sie erneut.",
+    "unreadableAmountLine": "Zeile {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Buchung {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Korrigieren Sie diese Beträge in der Datei und importieren Sie sie erneut.",
     "importButton": "Buchungen importieren"
   },
   "complete": {

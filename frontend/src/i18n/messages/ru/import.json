@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Строка {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...и ещё {count}",
     "unreadableAmountsGoBack": "Проверьте, правильно ли сопоставлены столбцы сумм, или исправьте эти строки в файле и импортируйте его снова.",
+    "unreadableAmountLine": "Строка {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Операция {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Исправьте эти суммы в файле и импортируйте его снова.",
     "importButton": "Импортировать проводки"
   },
   "complete": {

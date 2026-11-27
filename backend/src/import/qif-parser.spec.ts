@@ -2572,16 +2572,18 @@ describe("parseQif - field edge cases", () => {
     expect(result.securities).toHaveLength(0);
   });
 
-  it("treats a StkSplit ratio with a zero denominator as zero quantity", () => {
+  it("reports a StkSplit ratio with a zero denominator", () => {
     const qif = `!Type:Invst\nD01/15/2026\nNStkSplit\nQ2:0\n^\n`;
     const result = parseQif(qif, "MM/DD/YYYY");
-    expect(result.transactions[0].quantity).toBe(0);
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows).toHaveLength(1);
   });
 
-  it("treats a non-numeric StkSplit quantity as zero", () => {
+  it("reports a non-numeric StkSplit quantity", () => {
     const qif = `!Type:Invst\nD01/15/2026\nNStkSplit\nQabc\n^\n`;
     const result = parseQif(qif, "MM/DD/YYYY");
-    expect(result.transactions[0].quantity).toBe(0);
+    expect(result.transactions).toHaveLength(0);
+    expect(result.unreadableAmountRows).toHaveLength(1);
   });
 
   it("disambiguates an ISO date format using a later unambiguous day-first date", () => {
@@ -2825,6 +2827,61 @@ describe("unreadable amounts", () => {
     expect(block.unreadableAmountRows).toMatchObject([
       { rowNumber: 9, rawAmount: "1,2,3.4.5", date: "2026-01-03" },
     ]);
+  });
+
+  describe("blank T and unreadable Q", () => {
+    const invst = (...fields: string[]) =>
+      ["!Type:Invst", ...fields, "^"].join("\n");
+    const multi = (type: string, ...fields: string[]) =>
+      [
+        "!Account",
+        "NAcct",
+        `T${type}`,
+        "^",
+        `!Type:${type}`,
+        ...fields,
+        "^",
+      ].join("\n");
+
+    it("reads a blank T on an investment record as 0, in both parsers", () => {
+      const fields = ["D01/02/2026", "NStkSplit", "YACME", "Q20", "T"];
+      const single = parseQif(invst(...fields));
+      expect(single.unreadableAmountRows).toBeUndefined();
+      expect(single.transactions[0].amount).toBe(0);
+      const full = parseQifFull(multi("Invst", ...fields));
+      expect(full.accountBlocks[0].unreadableAmountRows).toBeUndefined();
+      expect(full.accountBlocks[0].transactions[0].amount).toBe(0);
+    });
+
+    it("still reports a blank T on a cash record, in both parsers", () => {
+      const fields = ["D01/02/2026", "N1001", "T"];
+      expect(
+        parseQif(["!Type:Bank", ...fields, "^"].join("\n"))
+          .unreadableAmountRows,
+      ).toHaveLength(1);
+      expect(
+        parseQifFull(multi("Bank", ...fields)).accountBlocks[0]
+          .unreadableAmountRows,
+      ).toHaveLength(1);
+    });
+
+    it("reports a Q that is not a quantity, in both parsers", () => {
+      const fields = ["D01/02/2026", "NBuy", "YACME", "Qlots", "T10.00"];
+      const single = parseQif(invst(...fields));
+      expect(single.transactions).toHaveLength(0);
+      expect(single.unreadableAmountRows?.[0].rawAmount).toBe("lots");
+      const full = parseQifFull(multi("Invst", ...fields));
+      expect(full.accountBlocks[0].transactions).toHaveLength(0);
+      expect(full.accountBlocks[0].unreadableAmountRows).toHaveLength(1);
+    });
+
+    it("reports a StkSplit ratio that is no number and keeps a blank Q", () => {
+      const bad = parseQif(invst("D01/02/2026", "NStkSplit", "Qabc"));
+      expect(bad.unreadableAmountRows).toHaveLength(1);
+      const blank = parseQif(invst("D01/02/2026", "NBuy", "YACME", "Q", "T5"));
+      expect(blank.unreadableAmountRows).toBeUndefined();
+      expect(blank.transactions[0].quantity).toBe(0);
+    });
   });
 
   it.each([

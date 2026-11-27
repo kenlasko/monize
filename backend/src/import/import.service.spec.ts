@@ -4450,6 +4450,46 @@ describe("ImportService", () => {
     const validContent =
       "!Type:Cat\nNFood\nE\n^\n!Account\nNChecking\nTBank\n^\n!Type:Bank\nD01/15/2025\nT-50.00\nPGrocery\n^";
 
+    it("counts the unreadable records of every block and names them by line", async () => {
+      mockedValidateQifContent.mockReturnValue({ valid: true });
+      const block = (name: string, rowNumber: number, rawAmount: string) => ({
+        accountName: name,
+        accountType: "CHEQUING",
+        description: "",
+        creditLimit: null,
+        transactions: [],
+        categories: [],
+        transferAccounts: [],
+        securities: [],
+        openingBalance: null,
+        openingBalanceDate: null,
+        unreadableAmountRows: [
+          { rowNumber, rawAmount, date: "2025-01-15", payee: "Shop" },
+        ],
+      });
+      mockedParseQifFull.mockReturnValue({
+        categoryDefs: [],
+        tagDefs: [],
+        accountBlocks: [block("A", 9, "abc"), block("B", 4, "1,2,3.4.5")],
+        detectedDateFormat: "MM/DD/YYYY" as any,
+        sampleDates: [],
+        isMultiAccount: true,
+      });
+
+      const result = await service.parseQifMultiAccountFile(
+        userId,
+        validContent,
+      );
+
+      expect(result.unreadableAmounts).toEqual({
+        count: 2,
+        rows: [
+          { rowNumber: 4, rawAmount: "1,2,3.4.5" },
+          { rowNumber: 9, rawAmount: "abc" },
+        ],
+      });
+    });
+
     it("parses a multi-account QIF file and returns summary", async () => {
       mockedValidateQifContent.mockReturnValue({ valid: true });
       mockedParseQifFull.mockReturnValue({
@@ -4830,6 +4870,63 @@ describe("ImportService", () => {
         expect(call[4].rules).toBe(importRules);
         expect([...call[4].payeeTextById.values()]).toEqual(["Grocery"]);
       }
+    });
+
+    it("lists an unreadable record among the skipped rows with the account's currency", async () => {
+      mockedValidateQifContent.mockReturnValue({ valid: true });
+      const base = makeFullParseResult();
+      mockedParseQifFull.mockReturnValue(
+        makeFullParseResult({
+          categoryDefs: [],
+          accountBlocks: [
+            {
+              ...base.accountBlocks[0],
+              transactions: [],
+              unreadableAmountRows: [
+                {
+                  rowNumber: 9,
+                  rawAmount: "1,2,3.4.5",
+                  date: "2025-01-16",
+                  payee: "Shop",
+                },
+              ],
+            },
+          ],
+        }),
+      );
+      mockQueryRunner.manager.findOne.mockImplementation((entity, options) =>
+        Promise.resolve(
+          entity === Account && options?.where?.id
+            ? {
+                id: options.where.id,
+                userId,
+                accountType: AccountType.CHEQUING,
+                currencyCode: "CAD",
+              }
+            : null,
+        ),
+      );
+      let saveIdx = 0;
+      mockQueryRunner.manager.save.mockImplementation((entity) => {
+        saveIdx++;
+        return Promise.resolve({ ...entity, id: `saved-${saveIdx}` });
+      });
+
+      const result = await service.importQifMultiAccountFile(userId, baseDto);
+
+      expect(result.imported).toBe(0);
+      expect(result.skipped).toBe(1);
+      expect(result.skippedRows).toEqual([
+        {
+          date: "2025-01-16",
+          amount: 0,
+          currencyCode: "CAD",
+          payee: "Shop",
+          reason: "unreadableAmount",
+          rowNumber: 9,
+          rawAmount: "1,2,3.4.5",
+        },
+      ]);
     });
 
     it("processes each block's rows oldest first, keeping the file's order within a date (INV-RULE-005)", async () => {

@@ -244,4 +244,21 @@ describe('MultiAccountReviewStep', () => {
       expect(screen.getByText('Next: Map Securities').closest('button')).toBeDisabled();
     });
   });
+
+  it('lists the QIF records whose amount cannot be read by line, without column-mapping advice', () => {
+    const multiAccountData = {
+      ...defaultMultiAccountData,
+      unreadableAmounts: { count: 1, rows: [{ rowNumber: 9, rawAmount: '1,2,3.4.5' }] },
+    };
+    render(<MultiAccountReviewStep {...defaultProps} multiAccountData={multiAccountData} />);
+    expect(screen.getByText('1 row has an amount that cannot be read and will not be imported:')).toBeInTheDocument();
+    expect(screen.getByText('Line 9: "1,2,3.4.5"')).toBeInTheDocument();
+    expect(screen.getByText('Correct these amounts in the file and import it again.')).toBeInTheDocument();
+    expect(screen.queryByText(/mapped correctly/)).not.toBeInTheDocument();
+  });
+
+  it('shows no unreadable-amount notice when every amount reads', () => {
+    render(<MultiAccountReviewStep {...defaultProps} />);
+    expect(screen.queryByText(/cannot be read/)).not.toBeInTheDocument();
+  });
 });

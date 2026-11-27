@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Rij {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...en nog {count}",
     "unreadableAmountsGoBack": "Controleer of de bedragkolommen goed zijn toegewezen, of corrigeer deze rijen in het bestand en importeer het opnieuw.",
+    "unreadableAmountLine": "Regel {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transactie {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Corrigeer deze bedragen in het bestand en importeer het opnieuw.",
     "importButton": "Transacties importeren"
   },
   "complete": {

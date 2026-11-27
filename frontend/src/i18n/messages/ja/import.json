@@ -301,6 +301,9 @@
     "unreadableAmountRow": "{line} 行目: 「{rawAmount}」",
     "unreadableAmountsMore": "...ほか {count} 件",
     "unreadableAmountsGoBack": "金額の列が正しく割り当てられているか確認するか、ファイル内のこれらの行を修正してから再度インポートしてください。",
+    "unreadableAmountLine": "{line} 行目: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "取引 {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "ファイル内のこれらの金額を修正して、もう一度インポートしてください。",
     "importButton": "取引をインポート"
   },
   "complete": {

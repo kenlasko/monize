@@ -360,6 +360,15 @@ describe('ReviewStep', () => {
       expect(screen.getAllByText('b.csv')).toHaveLength(1);
     });
 
+    it('names an OFX transaction by position and gives advice that fits a file with no mapping', () => {
+      const file = { ...csvFile({ count: 1, rows: [{ rowNumber: 3, rawAmount: 'abc' }] }), fileType: 'ofx' as const };
+      render(<ReviewStep {...defaultProps} importFiles={[file] as any[]} />);
+
+      expect(screen.getByText('Transaction 3: "abc"')).toBeInTheDocument();
+      expect(screen.getByText('Correct these amounts in the file and import it again.')).toBeInTheDocument();
+      expect(screen.queryByText(/mapped correctly/)).not.toBeInTheDocument();
+    });
+
     it('shows nothing when every amount reads', () => {
       render(<ReviewStep {...defaultProps} importFiles={[csvFile({ count: 0, rows: [] })] as any[]} />);
 

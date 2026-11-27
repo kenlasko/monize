@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Fila {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...y {count} más",
     "unreadableAmountsGoBack": "Compruebe que las columnas de importe estén bien asignadas, o corrija estas filas en el archivo e impórtelo de nuevo.",
+    "unreadableAmountLine": "Línea {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transacción {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Corrija estos importes en el archivo e impórtelo de nuevo.",
     "importButton": "Importar Transacciones"
   },
   "complete": {

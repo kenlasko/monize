@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Wiersz {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...i jeszcze {count}",
     "unreadableAmountsGoBack": "Sprawdź, czy kolumny kwot są poprawnie przypisane, albo popraw te wiersze w pliku i zaimportuj go ponownie.",
+    "unreadableAmountLine": "Wiersz {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transakcja {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Popraw te kwoty w pliku i zaimportuj go ponownie.",
     "importButton": "Import transakcji"
   },
   "complete": {

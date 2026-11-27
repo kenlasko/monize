@@ -425,7 +425,7 @@ export class ParsedQifResponseDto {
   @ApiPropertyOptional({
     type: () => CsvUnreadableAmountsDto,
     description:
-      "CSV parses only: the rows the import will leave out because their amount cannot be read",
+      "The rows (CSV), records (QIF) or transactions (OFX) the import will leave out because their amount cannot be read; `rowNumber` is the line of a CSV row or QIF record, the position of an OFX transaction",
   })
   unreadableAmounts?: CsvUnreadableAmountsDto;
 }
@@ -436,7 +436,8 @@ export class ParsedQifResponseDto {
  * transfer is already recorded between the same two accounts,
  * `unreadableDate` when a CSV row's date cannot be read under the mapping's
  * date format (or the row has none), `unreadableAmount` when a CSV row's amount
- * (or debit or credit) field holds text that cannot be read as an amount. The
+ * (or debit or credit) field, a QIF record's amount, price, commission or
+ * quantity, or an OFX transaction's amount holds text that cannot be read. The
  * rest are an investment-mode CSV row
  * whose action needs data it does not carry (`InvestmentRejectReason`):
  * `missingSecurity`, `missingQuantity`, `missingAmount`, `missingProceeds`
@@ -483,7 +484,7 @@ export class ImportSkippedRowDto {
 
   @ApiPropertyOptional({
     description:
-      "The line of the file the row starts on, 1-based with the header; set for a CSV row the parse left out (`unreadableDate`, `unreadableAmount` and the investment-mode reasons)",
+      "The line of the file the row starts on, 1-based with the header; set for a CSV row the parse left out (`unreadableDate`, `unreadableAmount` and the investment-mode reasons); for a QIF record the line it starts on, for an OFX transaction its 1-based position (`unreadableAmount`)",
   })
   rowNumber?: number;
 
@@ -794,6 +795,13 @@ export class ParsedQifMultiAccountResponseDto {
 
   @ApiProperty({ type: [String], description: "Sample dates from the file" })
   sampleDates: string[];
+
+  @ApiPropertyOptional({
+    type: () => CsvUnreadableAmountsDto,
+    description:
+      "The QIF records, across all accounts, the import will leave out because an amount cannot be read; `rowNumber` is the line the record starts on",
+  })
+  unreadableAmounts?: CsvUnreadableAmountsDto;
 }
 
 // --- OFX DTOs ---

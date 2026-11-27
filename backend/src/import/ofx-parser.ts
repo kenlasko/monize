@@ -19,6 +19,7 @@
  */
 
 import type { QifTransaction, QifParseResult } from "./qif-parser";
+import { isPlainAmount } from "./amount-separators.util";
 import type { CsvUnreadableAmountRow } from "./csv-parser";
 import { MONEY_SCALE, roundMoney } from "../common/round.util";
 
@@ -228,14 +229,12 @@ export function parseOfx(content: string): QifParseResult {
     // parseFloat stopped at the comma and imported -18.
     const amountStr = getTagValue(block, "TRNAMT");
     const amountText = amountStr.replace(",", ".");
-    const amount = /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(amountText)
-      ? parseFloat(amountText)
-      : NaN;
+    const amount = isPlainAmount(amountText) ? parseFloat(amountText) : NaN;
     if (isNaN(amount)) {
       // Never dropped silently: the preview counts it and the import lists it.
       unreadableAmountRows.push({
         rowNumber: blockIndex + 1,
-        rawAmount: amountStr.slice(0, 50),
+        rawAmount: truncate(amountStr, 50),
         date,
         payee: truncate(
           getTagValue(block, "NAME") || getTagValue(block, "MEMO"),

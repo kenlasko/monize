@@ -301,6 +301,9 @@
     "unreadableAmountRow": "Baris {line}: \"{rawAmount}\"",
     "unreadableAmountsMore": "...dan {count} lainnya",
     "unreadableAmountsGoBack": "Periksa apakah kolom jumlah sudah dipetakan dengan benar, atau perbaiki baris-baris ini di file lalu impor lagi.",
+    "unreadableAmountLine": "Baris {line}: \"{rawAmount}\"",
+    "unreadableAmountTransaction": "Transaksi {line}: \"{rawAmount}\"",
+    "unreadableAmountsFileGoBack": "Perbaiki jumlah ini di dalam file, lalu impor lagi.",
     "importButton": "Impor Transaksi"
   },
   "complete": {
