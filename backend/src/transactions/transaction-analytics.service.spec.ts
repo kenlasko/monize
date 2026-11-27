@@ -2925,6 +2925,58 @@ describe("TransactionAnalyticsService", () => {
       ).resolves.toBeNull();
     });
 
+    it("on an ordinary row, refuses an exact Transfer path rather than a same-named Expense leaf", async () => {
+      const transfersRoot = {
+        id: "id-transfers",
+        name: "Transfers",
+        parentId: null,
+        categoryType: "transfer",
+      };
+      const transferSavings = {
+        id: "id-t-savings",
+        name: "Savings",
+        parentId: "id-transfers",
+        categoryType: "transfer",
+      };
+      const banking = {
+        id: "id-banking",
+        name: "Banking",
+        parentId: null,
+        categoryType: "expense",
+      };
+      const bankingSavings = {
+        id: "id-b-savings",
+        name: "Savings",
+        parentId: "id-banking",
+        categoryType: "expense",
+      };
+      categoriesRepository.find.mockResolvedValue([
+        transfersRoot,
+        transferSavings,
+        banking,
+        bankingSavings,
+      ]);
+      await expect(
+        service.resolveLlmCategoryIdFor(
+          userId,
+          "Transfers: Savings",
+          "category",
+        ),
+      ).rejects.toThrow(/Transfer category/);
+      // On a transfer, an exact Expense path is that category, not a
+      // Transfer category of the same last segment.
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Banking: Savings", "transfer"),
+      ).resolves.toBe("id-b-savings");
+      // A bare name both share is chosen by the row's type.
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Savings", "transfer"),
+      ).resolves.toBe("id-t-savings");
+      await expect(
+        service.resolveLlmCategoryIdFor(userId, "Savings", "category"),
+      ).resolves.toBe("id-b-savings");
+    });
+
     it("on an ordinary row, refuses a name that names only a Transfer category", async () => {
       categoriesRepository.find.mockResolvedValue([savings, fees]);
       await expect(

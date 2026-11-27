@@ -236,6 +236,12 @@ describe("TransactionToolPrepService", () => {
         createPayeeIfMissing: false,
       });
       expect(result.createPayee).toBe(false);
+      // An ordinary row's category resolves among Income and Expense first.
+      expect(analytics.resolveLlmCategoryIdFor).toHaveBeenCalledWith(
+        userId,
+        "Dining",
+        "category",
+      );
       expect(transactions.previewCreate).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({
@@ -459,6 +465,12 @@ describe("TransactionToolPrepService", () => {
         date: "2026-01-15",
         categoryName: "Savings Goal",
       });
+      // A transfer's category resolves with Transfer categories first.
+      expect(analytics.resolveLlmCategoryIdFor).toHaveBeenCalledWith(
+        userId,
+        "Savings Goal",
+        "transfer",
+      );
       expect(transfer.previewCreateTransfer).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({ categoryId: "cat-1" }),
