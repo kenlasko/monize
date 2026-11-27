@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "it is reconciled and locked",
-      "transfer_leg_category": "it is a transfer, which has no category",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "it is split, so the category belongs to the splits",
       "cross_owner_transfer_payee": "it is a transfer to another owner, whose payee this rule may not change",

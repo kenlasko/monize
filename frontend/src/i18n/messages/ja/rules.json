@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "照合済みでロックされています",
-      "transfer_leg_category": "振替であり、カテゴリがありません",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "分割されているため、カテゴリは分割行に属します",
       "cross_owner_transfer_payee": "他の所有者への振替で、その支払先はこのルールでは変更できません",

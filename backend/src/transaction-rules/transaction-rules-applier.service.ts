@@ -1139,9 +1139,11 @@ export class TransactionRulesApplierService {
     }
     // One category per transfer (INV-CATEGORY-002): the other leg follows,
     // and a split transfer line's linked row takes its line with it. A run
-    // writes both legs of a same-owner pair itself, so the other leg already
-    // holds it and nothing is written twice; across two owners there is no
-    // partner.
+    // writes both legs of a same-owner pair itself: the first leg's write sets
+    // the other leg here, and that leg's own write then stores the same value
+    // again, its history recording the same prior value as this partner
+    // record (the undo restores it from either). Across two owners there is
+    // no partner.
     let categoryPartner: RuleEffects["categoryPartner"];
     if (writesCategory && row) {
       categoryPartner =

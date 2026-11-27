@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "조정되어 잠겨 있습니다",
-      "transfer_leg_category": "이체이며 이체에는 카테고리가 없습니다",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "분할되어 있어 카테고리가 분할 항목에 속합니다",
       "cross_owner_transfer_payee": "다른 소유자에게 보내는 이체이며, 이 규칙으로 그 수취인을 변경할 수 없습니다",

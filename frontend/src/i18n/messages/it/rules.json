@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "è riconciliata e bloccata",
-      "transfer_leg_category": "è un trasferimento, che non ha categoria",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "è suddivisa, quindi la categoria appartiene alle suddivisioni",
       "cross_owner_transfer_payee": "è un trasferimento verso un altro proprietario, il cui beneficiario questa regola non può modificare",

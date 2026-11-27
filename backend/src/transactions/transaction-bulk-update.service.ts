@@ -665,7 +665,15 @@ export class TransactionBulkUpdateService {
 
     const skippedReasons: string[] = [...classifySkippedReasons];
     const transferName = categoryPlan.categoryName ?? "";
-    if (categoryPlan.refusedIds.length > 0) {
+    if (categoryPlan.refusedIds.length === 1) {
+      skippedReasons.push(
+        tr(
+          "errors.transactions.bulkTransferCategoryOnCategoryRowsOne",
+          `1 transaction kept its category: ${transferName} is a Transfer category; it can go only on a transfer`,
+          { name: transferName },
+        ),
+      );
+    } else if (categoryPlan.refusedIds.length > 1) {
       skippedReasons.push(
         tr(
           "errors.transactions.bulkTransferCategoryOnCategoryRows",
@@ -674,7 +682,15 @@ export class TransactionBulkUpdateService {
         ),
       );
     }
-    if (categoryPlan.skipsCategoryLines && splitParentIds.length > 0) {
+    if (categoryPlan.skipsCategoryLines && splitParentIds.length === 1) {
+      skippedReasons.push(
+        tr(
+          "errors.transactions.bulkTransferCategoryOnSplitLinesOne",
+          `1 split transaction kept its split lines' categories: ${transferName} is a Transfer category; it can go only on a transfer`,
+          { name: transferName },
+        ),
+      );
+    } else if (categoryPlan.skipsCategoryLines && splitParentIds.length > 1) {
       skippedReasons.push(
         tr(
           "errors.transactions.bulkTransferCategoryOnSplitLines",

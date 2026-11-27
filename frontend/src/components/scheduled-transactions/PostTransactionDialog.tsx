@@ -1454,10 +1454,9 @@ export function PostTransactionDialog({
                     onCreateNew={
                       onCreateCategory
                         ? async (name) => {
-                            const created = await onCreateCategory(
-                            name,
-                            scheduledTransaction.isTransfer ? 'transfer' : 'category',
-                          );
+                            // This picker is the ordinary transaction's: an
+                            // Income or Expense category (INV-CATEGORY-001).
+                            const created = await onCreateCategory(name, 'category');
                             if (created) setCategoryId(created.id);
                           }
                         : undefined

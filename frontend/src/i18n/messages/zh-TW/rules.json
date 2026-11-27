@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "已對帳並被鎖定",
-      "transfer_leg_category": "是轉帳，轉帳沒有分類",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "已拆分，因此分類屬於各拆分項",
       "cross_owner_transfer_payee": "是轉給其他擁有者的轉帳，此規則不能變更其收款對象",

@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "đã đối chiếu và bị khóa",
-      "transfer_leg_category": "là giao dịch chuyển khoản, không có danh mục",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "đã được chia nhỏ nên danh mục thuộc về các phần chia",
       "cross_owner_transfer_payee": "là chuyển khoản cho chủ sở hữu khác, người nhận của nó quy tắc này không được thay đổi",

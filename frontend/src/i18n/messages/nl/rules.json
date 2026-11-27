@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "ze is afgestemd en vergrendeld",
-      "transfer_leg_category": "ze is een overboeking, die geen categorie heeft",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "ze is gesplitst, dus de categorie hoort bij de splitsingen",
       "cross_owner_transfer_payee": "ze is een overboeking naar een andere eigenaar, van wie deze regel de begunstigde niet mag wijzigen",

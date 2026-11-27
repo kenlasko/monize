@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "она сверена и заблокирована",
-      "transfer_leg_category": "это перевод, у которого нет категории",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "она разбита, поэтому категория относится к частям",
       "cross_owner_transfer_payee": "это перевод другому владельцу, получателя которого это правило менять не может",

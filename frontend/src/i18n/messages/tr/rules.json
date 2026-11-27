@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "mutabık kılınmış ve kilitli",
-      "transfer_leg_category": "bir transfer ve transferlerin kategorisi yok",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "bölünmüş, bu yüzden kategori bölümlere ait",
       "cross_owner_transfer_payee": "başka bir sahibe yapılan bir transfer ve bu kural onun alıcısını değiştiremez",

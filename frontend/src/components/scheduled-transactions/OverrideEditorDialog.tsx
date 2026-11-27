@@ -594,21 +594,21 @@ export function OverrideEditorDialog({
     }
   };
 
-  // The occurrence's category fits its schedule's kind (INV-CATEGORY-001): a
-  // scheduled transfer every type, Transfer categories first; otherwise Income
-  // and Expense only. A split line's picker is the split editor's own.
+  // The picker is shown for a scheduled ordinary transaction only (a transfer
+  // shows its category read-only), so it offers Income and Expense
+  // (INV-CATEGORY-001). A split line's picker is the split editor's own.
   const categoryOptions = useMemo(
     () =>
       buildCategoryPickerOptions(
         categories,
-        scheduledTransaction.isTransfer ? 'transfer' : 'category',
+        'category',
         (category, label) => ({
           value: category.id,
           label,
           icon: categoryPickerIcon(category),
         }),
       ),
-    [categories, scheduledTransaction.isTransfer],
+    [categories],
   );
 
   // An estimate saved unchanged is not a stated amount: the occurrence
@@ -1003,7 +1003,7 @@ export function OverrideEditorDialog({
                       ? async (name) => {
                           const created = await onCreateCategory(
                             name,
-                            scheduledTransaction.isTransfer ? 'transfer' : 'category',
+                            'category',
                           );
                           if (created) setCategoryId(created.id);
                         }

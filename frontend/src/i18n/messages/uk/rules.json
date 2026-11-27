@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "її звірено й заблоковано",
-      "transfer_leg_category": "це переказ, який не має категорії",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "її розділено, тому категорія належить частинам",
       "cross_owner_transfer_payee": "це переказ іншому власнику, чиєго одержувача це правило змінювати не може",

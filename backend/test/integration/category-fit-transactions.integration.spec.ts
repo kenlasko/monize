@@ -32,15 +32,10 @@ describe("Category fit and one category per transfer: transactions (integration)
   jest.setTimeout(90000);
 
   /**
-   * Rows whose behaviour a later step of PR 3 builds
-   * (`docs/future-plans/transfer-categories-tasks.md`). Each runs as
-   * `it.failing`, so it fails the suite the moment it passes without being
-   * taken off this list: the step that builds a row removes it here.
-   * Shrink-only, and empty when PR 3 is done.
+   * One row of the specification's entry-point matrix (section 4). Every
+   * row was written failing first and built by a step of PR 3.
    */
-  const NOT_YET_BUILT = new Set<string>([]);
-  const row = (title: string, fn: () => Promise<void>) =>
-    (NOT_YET_BUILT.has(title) ? it.failing : it)(title, fn);
+  const row = (title: string, fn: () => Promise<void>) => it(title, fn);
   const EVERY_KIND: readonly [string, () => string | null][] = [
     ["a Transfer category", () => transferCat],
     ["an Expense category", () => expenseCat],

@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "elle est rapprochée et verrouillée",
-      "transfer_leg_category": "c’est un virement, qui n’a pas de catégorie",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "elle est ventilée, donc la catégorie appartient aux lignes de ventilation",
       "cross_owner_transfer_payee": "c’est un virement vers un autre propriétaire, dont la règle ne peut pas modifier le bénéficiaire",

@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "sudah direkonsiliasi dan terkunci",
-      "transfer_leg_category": "merupakan transfer, yang tidak memiliki kategori",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "dipecah, sehingga kategori milik pecahannya",
       "cross_owner_transfer_payee": "merupakan transfer ke pemilik lain, yang penerimanya tidak boleh diubah aturan ini",

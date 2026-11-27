@@ -17,18 +17,16 @@ import { createTestAccount } from "../helpers/test-factories";
  * a transfer gets no payee default, and a category row or split category
  * line whose category maps to a Transfer category is imported uncategorized
  * and counted. The Money mapper's rule is held by its unit specs
- * (`map-transactions.spec.ts`, `fit-mny-category.spec.ts`).
+ * (`one-category-per-transfer.spec.ts`, `fit-mny-category.spec.ts`).
  */
 describe("Category fit: importers (integration)", () => {
   jest.setTimeout(120000);
 
   /**
-   * Rows whose behaviour a later step of PR 3 builds. Each runs as
-   * `it.failing`; the step that builds a row removes it here. Shrink-only.
+   * One row of the specification's entry-point matrix (section 4). Every
+   * row was written failing first and built by a step of PR 3.
    */
-  const NOT_YET_BUILT = new Set<string>([]);
-  const row = (title: string, fn: () => Promise<void>) =>
-    (NOT_YET_BUILT.has(title) ? it.failing : it)(title, fn);
+  const row = (title: string, fn: () => Promise<void>) => it(title, fn);
 
   let module: TestingModule;
   let db: DataSource;

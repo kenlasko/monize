@@ -507,7 +507,7 @@ export class McpTransactionsTools {
                 .max(100)
                 .optional()
                 .describe(
-                  "The category: Income or Expense, as a Transfer category goes only on a transfer, where any type is stored on both legs.",
+                  "The category: Income or Expense on an ordinary row; on a transfer any type, stored on both legs.",
                 ),
               description: z
                 .string()

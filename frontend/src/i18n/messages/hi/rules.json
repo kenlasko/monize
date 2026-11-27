@@ -459,7 +459,6 @@
     },
     "skipReasons": {
       "reconciled_locked": "यह मिलान किया हुआ और लॉक है",
-      "transfer_leg_category": "यह एक ट्रांसफ़र है, जिसकी कोई श्रेणी नहीं होती",
       "transfer_category_on_category_row": "it is not a transfer, and a Transfer category goes only on a transfer",
       "split_category": "यह विभाजित है, इसलिए श्रेणी विभाजनों की है",
       "cross_owner_transfer_payee": "यह किसी अन्य स्वामी को ट्रांसफ़र है, जिसका प्राप्तकर्ता यह नियम नहीं बदल सकता",
