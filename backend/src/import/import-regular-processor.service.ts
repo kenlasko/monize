@@ -512,10 +512,18 @@ export class ImportRegularProcessorService {
     payeeDefaultCategoryId: string | null,
   ): Promise<string | null> {
     if (fileCategoryId) {
-      const fit = await categoryRowFit(ctx.manager, ctx.userId, fileCategoryId);
-      if (fit === "fits") return fileCategoryId;
-      // Counted only for a Transfer category: that is what the notice says.
-      if (fit === "transfer") {
+      const fitting = await categoryIdForCategoryRow(
+        ctx.manager,
+        ctx.userId,
+        fileCategoryId,
+      );
+      if (fitting) return fitting;
+      // Counted only for a Transfer category, which is what the notice says
+      // (the same cached lookup).
+      if (
+        (await categoryRowFit(ctx.manager, ctx.userId, fileCategoryId)) ===
+        "transfer"
+      ) {
         ctx.importResult.categoriesNotFitting =
           (ctx.importResult.categoriesNotFitting ?? 0) + 1;
       }

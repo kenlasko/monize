@@ -48,7 +48,8 @@ export function transferCategoryRefusal(name: string): BadRequestException {
   return new BadRequestException(
     tr(
       "errors.categories.transferCategoryOnCategoryRow",
-      "{{ name }} is a Transfer category; it can go only on a transfer",
+      // Interpolated here too: outside a request `tr` returns the fallback.
+      `${name} is a Transfer category; it can go only on a transfer`,
       { name },
     ),
   );

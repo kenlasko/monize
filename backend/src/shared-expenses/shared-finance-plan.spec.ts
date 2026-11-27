@@ -291,6 +291,16 @@ describe("Private finance planning before writing the bank register", () => {
       "own finances",
     );
   });
+  it("refuses a Transfer category on what a posting writes, naming it and why (INV-CATEGORY-001)", async () => {
+    categories = categories.map((c) =>
+      c.id === "food"
+        ? { ...c, name: "Savings moves", category_type: "transfer" }
+        : c,
+    );
+    await expect(plan()).rejects.toThrow(
+      /Savings moves is a Transfer category; it can go only on a transfer/,
+    );
+  });
   it("requires separate categorization for a private remainder and exchange difference", async () => {
     jest
       .mocked(sharedBankRows)
