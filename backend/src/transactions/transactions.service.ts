@@ -166,7 +166,6 @@ import { assertReconciledRowsMutable } from "./reconciled-lock.util";
 import {
   type CategoryPartnerRecord,
   findCategoryPartner,
-  lockWithCategoryPartner,
   writeCategoryPartner,
 } from "./transfer-category-partner";
 import { moneyDecimalsFor, roundMoney } from "../common/round.util";
@@ -3812,16 +3811,20 @@ export class TransactionsService {
       // A category write on a transfer row sets its other side too
       // (INV-CATEGORY-002): the other leg, or the split's transfer line whose
       // linked row this is. It is locked with the row, in the protocol's
-      // order (a split parent first, two legs ascending).
+      // order (`common/db/locks.ts`): a split parent before its legs, a
+      // transfer's two legs ascending.
       const categoryPartner = writesCategory
         ? await findCategoryPartner(m, userId, transaction)
         : null;
-      const locked = await lockWithCategoryPartner(
-        m,
-        userId,
-        id,
-        categoryPartner,
-      );
+      if (categoryPartner?.kind === "line") {
+        await lockTransactionRow(m, categoryPartner.parentId, userId);
+      }
+      const locked =
+        categoryPartner?.kind === "leg"
+          ? ((
+              await lockTransactionRows(m, [id, categoryPartner.id], userId)
+            ).get(id) ?? null)
+          : await lockTransactionRow(m, id, userId);
       if (!locked) {
         throw new NotFoundException(
           tr(

@@ -1795,7 +1795,7 @@ export class TransactionAnalyticsService {
     const all = await withScopedDb(this.dataSource, (m) =>
       m.getRepository(Category).find({
         where: { userId },
-        select: ["id", "name", "parentId", "categoryType", "isIncome"],
+        select: ["id", "name", "parentId", "categoryType"],
       }),
     );
     const match = (list: readonly Category[]) =>

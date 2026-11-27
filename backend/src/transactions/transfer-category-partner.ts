@@ -1,6 +1,4 @@
 import { EntityManager } from "typeorm";
-import { lockTransactionRow, lockTransactionRows } from "../common/db/locks";
-import type { LockedTransactionRow } from "../common/db/locks";
 import { assertReconciledIdsMutable } from "./reconciled-lock.util";
 
 /**
@@ -47,9 +45,10 @@ interface RowShape {
 
 /**
  * The other side of a transfer row, read without a lock: the caller locks it
- * (`lockWithCategoryPartner`) before it reads or writes a category. `null`
- * for an ordinary row, a split parent, and a leg whose other leg is another
- * person's or gone.
+ * with the row, in the order `common/db/locks.ts` sets (a split parent before
+ * its legs, a transfer's two legs ascending), before it reads or writes a
+ * category. `null` for an ordinary row, a split parent, and a leg whose other
+ * leg is another person's or gone.
  */
 export async function findCategoryPartner(
   m: EntityManager,
@@ -73,28 +72,6 @@ export async function findCategoryPartner(
     [row.linkedTransactionId, userId, row.id],
   )) as { id: string }[];
   return leg ? { kind: "leg", id: leg.id } : null;
-}
-
-/**
- * Lock `id` and its partner in the order `common/db/locks.ts` sets: a split
- * parent before any of its legs, and a transfer's two legs ascending. Returns
- * the locked row `id`, or `null` when it is gone.
- */
-export async function lockWithCategoryPartner(
-  m: EntityManager,
-  userId: string,
-  id: string,
-  partner: CategoryPartner | null,
-): Promise<LockedTransactionRow | null> {
-  if (partner?.kind === "leg") {
-    return (
-      (await lockTransactionRows(m, [id, partner.id], userId)).get(id) ?? null
-    );
-  }
-  if (partner?.kind === "line") {
-    await lockTransactionRow(m, partner.parentId, userId);
-  }
-  return lockTransactionRow(m, id, userId);
 }
 
 /**
