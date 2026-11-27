@@ -187,6 +187,42 @@ describe("TransactionToolPrepService", () => {
       expect(result.skipped[0].reason).toContain("Unknown category");
     });
 
+    it("skips the row whose category is a Transfer category with the reason, and keeps the others (INV-CATEGORY-001)", async () => {
+      // The resolver refuses a Transfer category on an ordinary row.
+      analytics.resolveLlmCategoryIdFor.mockImplementation(
+        async (_userId: string, name: string) => {
+          if (name === "Savings moves") {
+            throw new BadRequestException(
+              "Savings moves is a Transfer category; it can go only on a transfer",
+            );
+          }
+          return "c1";
+        },
+      );
+      const result = await service.prepareCreate(userId, [
+        {
+          accountName: "Checking",
+          amount: -10,
+          date: "2026-01-15",
+          categoryName: "Savings moves",
+        },
+        {
+          accountName: "Checking",
+          amount: -20,
+          date: "2026-01-15",
+          categoryName: "Dining",
+        },
+      ]);
+      expect(result.okIndex).toEqual([1]);
+      expect(result.skipped).toHaveLength(1);
+      expect(result.skipped[0].reason).toContain("is a Transfer category");
+      expect(analytics.resolveLlmCategoryIdFor).toHaveBeenCalledWith(
+        userId,
+        "Savings moves",
+        "category",
+      );
+    });
+
     it("skips a row when previewCreate throws (best-effort catch)", async () => {
       transactions.previewCreate.mockRejectedValueOnce(
         new BadRequestException("Amount out of range"),

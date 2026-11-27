@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { AccountsModule } from "@/accounts/accounts.module";
@@ -238,8 +238,12 @@ describe("Category fit and one category per transfer: scheduled transactions (in
     row(
       "scheduled create: refuses a category that is not the person's",
       async () => {
-        await expect(createOrdinary(strangerCat)).rejects.toThrow();
-        await expect(createTransfer(strangerCat)).rejects.toThrow();
+        await expect(createOrdinary(strangerCat)).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
+        await expect(createTransfer(strangerCat)).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
         expect(await scheduleCount()).toBe(0);
       },
     );
@@ -288,6 +292,62 @@ describe("Category fit and one category per transfer: scheduled transactions (in
           is_transfer: false,
         });
         expect((await overrideOf(override.id)).category_id).toBeNull();
+      },
+    );
+
+    row(
+      "switch to ordinary: clears a Transfer category from an override's split category lines only, and leaves another override untouched",
+      async () => {
+        const created = await createTransfer(expenseCat);
+        // Written as a previous release could have left them: a category
+        // line holding a Transfer category, beside a transfer line holding one.
+        const [held] = await db.query(
+          `INSERT INTO scheduled_transaction_overrides
+             (scheduled_transaction_id, original_date, override_date, is_split, splits)
+           VALUES ($1, $2, $2, true, $3::jsonb) RETURNING id`,
+          [
+            created.id,
+            DUE,
+            JSON.stringify([
+              { categoryId: transferCat, transferAccountId: null, amount: -40 },
+              {
+                categoryId: transferCat,
+                transferAccountId: savingsId,
+                amount: -60,
+              },
+            ]),
+          ],
+        );
+        const [untouched] = await db.query(
+          `INSERT INTO scheduled_transaction_overrides
+             (scheduled_transaction_id, original_date, override_date, is_split, splits)
+           VALUES ($1, '2026-05-01', '2026-05-01', true, $2::jsonb)
+           RETURNING id, updated_at`,
+          [
+            created.id,
+            JSON.stringify([
+              { categoryId: expenseCat, transferAccountId: null, amount: -100 },
+            ]),
+          ],
+        );
+        await asUser(() =>
+          scheduled.update(userId, created.id, {
+            isTransfer: false,
+            transferAccountId: null,
+          } as never),
+        );
+        const lines = (await overrideOf(held.id)).splits as {
+          categoryId: string | null;
+        }[];
+        expect(lines.map((line) => line.categoryId)).toEqual([
+          null,
+          transferCat,
+        ]);
+        const [after] = await db.query(
+          `SELECT updated_at FROM scheduled_transaction_overrides WHERE id = $1`,
+          [untouched.id],
+        );
+        expect(after.updated_at).toEqual(untouched.updated_at);
       },
     );
 
@@ -437,7 +497,7 @@ describe("Category fit and one category per transfer: scheduled transactions (in
       const created = await createTransfer(null);
       await expect(
         override(created.id, { categoryId: strangerCat }),
-      ).rejects.toThrow();
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 

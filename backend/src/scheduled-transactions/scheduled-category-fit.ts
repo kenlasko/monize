@@ -136,7 +136,13 @@ export async function clearTransferCategoriesFromOverrides(
             FROM jsonb_array_elements(o.splits) WITH ORDINALITY AS t(e, ord))
       WHERE o.scheduled_transaction_id = $1
         AND jsonb_typeof(o.splits) = 'array'
-        AND jsonb_array_length(o.splits) > 0`,
+        -- Only an override that holds such a line is rewritten.
+        AND EXISTS (
+          SELECT 1 FROM jsonb_array_elements(o.splits) AS x(e)
+           WHERE COALESCE(e->>'transferAccountId', '') = ''
+             AND e->>'categoryId' IN (
+               SELECT c.id::text FROM categories c
+                WHERE c.user_id = $2 AND c.category_type = 'transfer'))`,
     [scheduledTransactionId, userId],
   );
 }

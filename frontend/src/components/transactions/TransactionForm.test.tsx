@@ -1397,6 +1397,28 @@ describe('TransactionForm', () => {
       });
     });
 
+    it.each([
+      ['a Transfer category is cleared', 'Savings moves', ''],
+      ['an Expense category stays', 'Groceries', 'cat-1'],
+    ])('leaving a transfer for an ordinary row: %s (INV-CATEGORY-001)', async (_case, picked, kept) => {
+      mockCategoriesGetAll.mockResolvedValue([
+        ...mockCategories,
+        { ...mockCategories[0], id: 'cat-t', name: 'Savings moves', categoryType: 'transfer', isIncome: false },
+      ]);
+      render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+      await waitFor(() => expect(screen.getByText('Transfer')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByText('Transfer'));
+      await waitFor(() =>
+        expect(screen.getByTestId('combobox-Category (optional)').dataset.options?.split('\n')).toContain(picked),
+      );
+      fireEvent.change(screen.getByTestId('combobox-input-Category (optional)'), { target: { value: picked } });
+
+      fireEvent.click(screen.getByText('Transaction'));
+      await waitFor(() => expect(screen.getByTestId('combobox-value-Category')).toBeInTheDocument());
+      expect(screen.getByTestId('combobox-value-Category').textContent).toBe(kept);
+    });
+
     it('switches from normal to split mode and shows SplitEditor', async () => {
       render(<TransactionForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
 

@@ -263,6 +263,16 @@ describe("Category fit and one category per transfer: rules (integration)", () =
           WHERE transaction_id = $1 AND transfer_account_id IS NOT NULL`,
           [parent.id],
         );
+        // Both sides start on a category of their own, so the undo is seen
+        // restoring it, not clearing to what was never there.
+        await db.query(
+          `UPDATE transaction_splits SET category_id = $2 WHERE id = $1`,
+          [line.id, feesCat],
+        );
+        await db.query(
+          `UPDATE transactions SET category_id = $2 WHERE id = $1`,
+          [line.linked_transaction_id, feesCat],
+        );
         const created = await rule(
           ["import"],
           [
@@ -287,8 +297,8 @@ describe("Category fit and one category per transfer: rules (integration)", () =
 
         await settlePendingHistoryWrites();
         await asUser(() => history.undo(userId));
-        expect(await categoryOf(line.linked_transaction_id)).toBeNull();
-        expect(await lineCategory()).toBeNull();
+        expect(await categoryOf(line.linked_transaction_id)).toBe(feesCat);
+        expect(await lineCategory()).toBe(feesCat);
       },
     );
 
