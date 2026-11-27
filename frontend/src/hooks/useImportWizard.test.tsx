@@ -323,6 +323,27 @@ describe('useImportWizard - QIF file upload', () => {
     expect(result.current.importFiles).toHaveLength(1);
   });
 
+  it("never maps a file's category onto a Transfer category, nor offers one as a parent (INV-CATEGORY-001)", async () => {
+    mockGetAllAccounts.mockResolvedValue([baseAccount()]);
+    mockGetCategories.mockResolvedValue([
+      { id: 'cat-food', name: 'Food', parentId: null, categoryType: 'expense' },
+      { id: 'cat-save', name: 'Savings', parentId: null, categoryType: 'transfer' },
+    ]);
+    mockParseQif.mockResolvedValue(baseParsedQif({ categories: ['Food', 'Savings', 'Savings:Monthly'] }));
+
+    const { result } = renderHook(() => useImportWizard());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+    await act(async () => {
+      await result.current.handleFileSelect(fileEvent([makeFile('test.qif', 'data')]));
+    });
+
+    const byName = new Map(result.current.categoryMappings.map((m) => [m.originalName, m]));
+    expect(byName.get('Food')?.categoryId).toBe('cat-food');
+    expect(byName.get('Savings')?.categoryId).toBeUndefined();
+    expect(byName.get('Savings:Monthly')?.parentCategoryId).toBeUndefined();
+    expect(result.current.parentCategoryOptions.map((o) => o.value)).not.toContain('cat-save');
+  });
+
   it('skips selectAccount step when single file with preselected account', async () => {
     mockSearchParamsGet = (key) => (key === 'accountId' ? 'acc-1' : null);
     mockGetAllAccounts.mockResolvedValue([baseAccount({ id: 'acc-1' })]);
