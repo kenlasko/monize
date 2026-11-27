@@ -141,6 +141,63 @@ describe("QuickAddInterpretService", () => {
       });
     });
 
+    it("is the account most of the payee's last rows were on, not merely the latest", async () => {
+      loaders.loadPayeeHistory.mockResolvedValue({
+        recent: [
+          { accountId: CHQ, amount: -10 },
+          { accountId: SAV, amount: -20 },
+          { accountId: "acc-closed", amount: -5 },
+          { accountId: SAV, amount: -30 },
+          { accountId: "acc-closed", amount: -5 },
+          { accountId: "acc-closed", amount: -5 },
+        ],
+        categoryIds: [],
+      });
+      loaders.loadMostRecentAccountId.mockResolvedValue(CHQ);
+      const result = await service.interpret(USER, dto("43.55 loblaws"));
+      // A closed account is not a candidate, however often it was used.
+      expect(result.account).toMatchObject({
+        value: { id: SAV },
+        source: "inferred",
+      });
+      expect(result.account.alternatives.map((a) => a.id)).toEqual([CHQ]);
+    });
+
+    it("breaks a tie on account frequency with the most recent", async () => {
+      loaders.loadPayeeHistory.mockResolvedValue({
+        recent: [
+          { accountId: CHQ, amount: -10 },
+          { accountId: SAV, amount: -20 },
+          { accountId: SAV, amount: -30 },
+          { accountId: CHQ, amount: -10 },
+        ],
+        categoryIds: [],
+      });
+      loaders.loadMostRecentAccountId.mockResolvedValue(SAV);
+      const result = await service.interpret(USER, dto("43.55 loblaws"));
+      expect(result.account.value?.id).toBe(CHQ);
+      expect(result.account.alternatives.map((a) => a.id)).toEqual([SAV]);
+    });
+
+    it("keeps the register's account ahead of the payee's usual one", async () => {
+      loaders.loadPayeeHistory.mockResolvedValue({
+        recent: [
+          { accountId: SAV, amount: -20 },
+          { accountId: SAV, amount: -30 },
+        ],
+        categoryIds: [],
+      });
+      const result = await service.interpret(
+        USER,
+        dto("43.55 loblaws", { contextAccountId: CHQ }),
+      );
+      expect(result.account).toMatchObject({
+        value: { id: CHQ },
+        source: "default",
+      });
+      expect(result.account.alternatives.map((a) => a.id)).toEqual([SAV]);
+    });
+
     it("is missing, blocking the save, when nothing gives one", async () => {
       loaders.loadMostRecentAccountId.mockResolvedValue(null);
       const result = await service.interpret(USER, dto("84.37 loblaws"));

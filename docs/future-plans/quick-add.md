@@ -150,7 +150,7 @@ The pure reader is `backend/src/transactions/quick-add/quick-add-parse.util.ts`.
 | Field | When the text does not give it | Source |
 |---|---|---|
 | kind | `transfer` when two accounts were named, or one account with `to` or `from`. Otherwise `deposit` when the category is an income category, or when most of the payee's last 10 transactions are deposits. Otherwise `payment`. | `inferred`, or `default` for the final payment |
-| account | `contextAccountId` when it is an eligible account. Otherwise the account of the payee's most recent transaction. Otherwise the account of the reader's most recently created transaction. | `default`, `inferred`, `default` |
+| account | `contextAccountId` when it is an eligible account. Otherwise the payee's most frequent eligible account over its last 10 non-void, non-transfer transactions, the most recent winning a tie (its other recent accounts are the next alternatives). Otherwise the account of the reader's most recently created transaction. | `default`, `inferred`, `default` |
 | toAccount, for a transfer with one account named | That named account is the side `to` or `from` says. The other side is the default account above. | `default` |
 | category | Not filled for a transfer. Otherwise the payee's most frequent category over its last 10 non-void, unsplit, non-transfer transactions, the most recent winning a tie. Otherwise the payee's default category. | `inferred` |
 | date | `today` | `default` |

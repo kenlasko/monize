@@ -131,7 +131,7 @@ Quick Add is a one-line way to record a transaction. You type a sentence such as
 - On a phone, tap the **+** button while the Transactions page is showing. See [Mobile Navigation](settings-and-security.md#mobile-navigation) to make the **+** open the New Transaction form instead.
 - From any page, open the command palette and type a line that has an amount in it. A **Quick add** row appears, such as "Quick add: $84.37 Loblaws". Choose it and Monize goes to the Transactions page with Quick Add open on your line.
 
-If you are viewing the Transactions page filtered to one account, Quick Add starts with that account.
+If you are viewing the Transactions page filtered to one account, Quick Add starts with that account. Otherwise it guesses the account from the payee: if most of your recent transactions with that payee were on one account (say, `43.55 lcbo` when you usually pay the LCBO with your Visa), Quick Add suggests that account, with the payee's other recent accounts listed first when you click the chip.
 
 ### What to Type
 
@@ -156,7 +156,7 @@ Under **Read As**, each part of the entry is shown as a chip: the type (**Paymen
 | Chip | Look | Meaning |
 |------|------|---------|
 | **Typed** | Solid | You typed it, or you set it yourself. |
-| **Guessed** | Outlined, with an amber dot | Monize worked it out from your history, such as a category from the payee's recent transactions. |
+| **Guessed** | Outlined, with an amber dot | Monize worked it out from your history, such as a category or an account from the payee's recent transactions. |
 | **Assumed** | Dashed grey border | You did not type it, so Monize used a default, such as today's date or the account you used last. |
 | **Needs you** | Amber border with a badge: **Missing**, **2 matches** (or however many) or **New** | Monize cannot choose for you. Pick one before you save. |
 

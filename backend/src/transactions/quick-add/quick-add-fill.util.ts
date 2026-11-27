@@ -9,7 +9,8 @@
  *   any) does not own (`accountsImplyTransfer`); else the typed payment or
  *   deposit; else deposit for an income category or a payee whose last 10
  *   rows are mostly deposits (inferred); otherwise payment (default).
- * - account and toAccount: `quick-add-fill-accounts.util.ts`.
+ * - account and toAccount: `quick-add-fill-accounts.util.ts` (the payee's
+ *   most frequent recent account, the most recent winning a tie).
  * - category (not for a transfer): pinned; else, cleared by the reader, the
  *   payee's default category when it has one (default: the save adopts it),
  *   otherwise none; else the payee's most frequent category over its last 10
@@ -45,6 +46,7 @@ import {
   categoryRef,
   clearedField,
   field,
+  rankByRecentFrequency,
   rankByUsage,
   withoutIds,
 } from "./quick-add-fill-shared.util";
@@ -79,18 +81,9 @@ function entryDecimalsFor(
 function historyCategories(
   input: QuickAddFillInput,
 ): QuickAddCandidateCategory[] {
-  const counts = new Map<string, { count: number; newest: number }>();
-  for (const [index, id] of input.history.categoryIds.entries()) {
-    if (!id || !input.categories.has(id)) continue;
-    const seen = counts.get(id);
-    counts.set(id, {
-      count: (seen?.count ?? 0) + 1,
-      newest: seen?.newest ?? index,
-    });
-  }
-  return [...counts.entries()]
-    .sort((a, b) => b[1].count - a[1].count || a[1].newest - b[1].newest)
-    .map(([id]) => input.categories.get(id)!);
+  return rankByRecentFrequency(input.history.categoryIds, (id) =>
+    input.categories.has(id),
+  ).map((id) => input.categories.get(id)!);
 }
 
 /** The linked payee's default category, when the reader owns it. */

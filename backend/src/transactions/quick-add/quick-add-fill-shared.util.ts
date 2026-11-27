@@ -115,6 +115,28 @@ export function rankByUsage<T extends { id: string; name: string }>(
   );
 }
 
+/**
+ * The ids of a newest-first history, most frequent first, the most recent
+ * winning a tie on frequency. Ids `keep` refuses (and nulls) are not counted.
+ */
+export function rankByRecentFrequency(
+  ids: ReadonlyArray<string | null>,
+  keep: (id: string) => boolean,
+): string[] {
+  const counts = new Map<string, { count: number; newest: number }>();
+  for (const [index, id] of ids.entries()) {
+    if (!id || !keep(id)) continue;
+    const seen = counts.get(id);
+    counts.set(id, {
+      count: (seen?.count ?? 0) + 1,
+      newest: seen?.newest ?? index,
+    });
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1].count - a[1].count || a[1].newest - b[1].newest)
+    .map(([id]) => id);
+}
+
 export function withoutIds<T extends { id: string | null }>(
   items: readonly T[],
   ids: ReadonlyArray<string | null | undefined>,
