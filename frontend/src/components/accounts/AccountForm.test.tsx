@@ -94,7 +94,8 @@ vi.mock('@/lib/format', async (importOriginal) => {
   };
 });
 
-vi.mock('@/lib/categoryUtils', () => ({
+vi.mock('@/lib/categoryUtils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/categoryUtils')>()),
   buildCategoryTree: (cats: any[]) => cats.map((c: any) => ({ category: c, children: [] })),
   buildCategoryLabelMap: (cats: any[]) => new Map((cats || []).map((c: any) => [c.id, c.name])),
   getCategorySelectOptions: (cats: any[]) => (cats || []).map((c: any) => ({ value: c.id, label: c.name })),
