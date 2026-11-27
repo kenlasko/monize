@@ -89,6 +89,23 @@ describe("McpBudgetsTools", () => {
       expect(parsed.totalBudgeted).toBe(1000);
     });
 
+    it("keeps Actual Income and Transfer Funding beside Total Budget Funding", async () => {
+      ctx.setUser({ userId: "u1", scopes: "read" });
+      budgetReportsService.getLlmBudgetStatus.mockResolvedValue({
+        totalIncome: 6650,
+        categoryIncome: 5000,
+        transferFunding: 1650,
+      });
+
+      const result = await handlers["get_budget_status"]({}, ctx);
+
+      expect(result.structuredContent).toMatchObject({
+        totalIncome: 6650,
+        categoryIncome: 5000,
+        transferFunding: 1650,
+      });
+    });
+
     it("passes through period and budgetName arguments", async () => {
       ctx.setUser({ userId: "u1", scopes: "read" });
       budgetReportsService.getLlmBudgetStatus.mockResolvedValue({

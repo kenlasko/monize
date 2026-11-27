@@ -25,6 +25,7 @@ export interface BudgetFunding {
 /** What a line says about whether its actual is Transfer Funding. */
 type FundingLine = Pick<
   BudgetCategory,
+  // income-flag-ok: budget_categories.is_income, the line's own direction.
   "isIncome" | "isTransfer" | "transferAccountId"
 > & {
   category?: Parameters<typeof categoryTypeOfOrUndefined>[0];
