@@ -693,8 +693,9 @@ describe("TransactionRulesRunService", () => {
         String(sql).includes("pg_advisory_xact_lock_shared"),
       );
       expect(ownerLock).toBeGreaterThanOrEqual(0);
+      const ruleCalls = s.rulesService.getOwnedRule.mock.invocationCallOrder;
       expect(s.manager.query.mock.invocationCallOrder[ownerLock]).toBeLessThan(
-        s.rulesService.getOwnedRule.mock.invocationCallOrder.at(-1)!,
+        ruleCalls[ruleCalls.length - 1],
       );
       expect(s.writeEffects).toHaveBeenCalledTimes(2);
       expect(s.writeEffects).toHaveBeenCalledWith(
