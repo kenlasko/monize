@@ -13,7 +13,7 @@
  * can read one unit, a cent, off the same category rounded on its own, as
  * Spending by Category rounds it. The page says so beside the node.
  */
-import { isIncomeCategory } from "../categories/category-type.util";
+import type { CategoryType } from "../categories/category-type.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import type { SankeyNodeKind } from "./dto/cash-flow-sankey.dto";
 
@@ -55,7 +55,7 @@ export interface PlacedRoot<C> {
  * (rule 5); one whose net is unknown sits where its own type says, since the
  * sign that would move it is the figure that is missing.
  */
-export function placeRoots<C extends { isIncome: boolean }>(
+export function placeRoots<C extends { categoryType?: CategoryType }>(
   roots: ReadonlyMap<string, { agg: FxAggregate }>,
   byId: ReadonlyMap<string, C>,
 ): PlacedRoot<C>[] {
@@ -63,9 +63,10 @@ export function placeRoots<C extends { isIncome: boolean }>(
     const category = byId.get(rootId)!;
     const complete = bucket.agg.isComplete;
     const sign = bucket.agg.sign;
+    const incomeType = category.categoryType === "income";
     const isIncomeSide = complete
-      ? sign > 0 || (sign === 0 && isIncomeCategory(category))
-      : isIncomeCategory(category);
+      ? sign > 0 || (sign === 0 && incomeType)
+      : incomeType;
     const kind: SankeyNodeKind = isIncomeSide ? "income" : "expense";
     const oriented = isIncomeSide
       ? FxAggregate.sum([bucket.agg])

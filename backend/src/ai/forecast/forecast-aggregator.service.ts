@@ -42,6 +42,8 @@ export interface MonthlyHistoryEntry {
   netCashFlow: number;
   categoryBreakdown: Array<{
     categoryName: string;
+    /** The category's own type; `isIncome` is the side it was listed on. */
+    categoryType: CategoryType;
     total: number;
     isIncome: boolean;
   }>;
@@ -432,6 +434,7 @@ export class ForecastAggregatorService {
         if (incomeSide ? cat.net.sign > 0 : cat.net.sign < 0) {
           breakdown.push({
             categoryName: cat.categoryName,
+            categoryType: cat.categoryType,
             total,
             isIncome: incomeSide,
           });

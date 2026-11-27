@@ -20,8 +20,23 @@ ALTER TABLE categories ADD COLUMN IF NOT EXISTS category_type VARCHAR(10) NOT NU
 
 -- `is_income` is nullable: NULL and false are both Expense. Written against the
 -- pre-migration state, so a second pass matches nothing.
-UPDATE categories SET category_type = 'income'
- WHERE is_income IS TRUE AND category_type = 'expense';
+--
+-- Runs only while the flag exists: 20261127205950_categories_drop_is_income.sql
+-- drops it from schema.sql, and a fresh install replays this file on top of it.
+-- Wherever the flag exists it does what it always did, and the filename is
+-- unchanged, so no deployed database re-runs it.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'categories'
+          AND column_name = 'is_income'
+    ) THEN
+        UPDATE categories SET category_type = 'income'
+         WHERE is_income IS TRUE AND category_type = 'expense';
+    END IF;
+END $$;
 
 ALTER TABLE categories DROP CONSTRAINT IF EXISTS chk_categories_category_type;
 ALTER TABLE categories ADD CONSTRAINT chk_categories_category_type

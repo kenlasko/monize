@@ -44,7 +44,7 @@ describe("McpCategoriesTools", () => {
             id: "c1",
             name: "Food",
             parentName: null,
-            isIncome: false,
+            type: "expense",
             transactionCount: 0,
           },
         ],

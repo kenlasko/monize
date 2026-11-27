@@ -3441,6 +3441,65 @@ describe("ActionHistoryService", () => {
       expect(fields).not.toHaveProperty("isCanadianMortgage");
     });
 
+    it("re-inserts a deleted category recorded before 1.22.0 with the type its flag named", async () => {
+      // #2478: the snapshot carries only the dropped `isIncome` flag, which
+      // the column default would otherwise read as an Expense category.
+      const action = {
+        ...mockAction,
+        entityType: "category",
+        action: "delete",
+        entityId: "cat-1",
+        beforeData: {
+          id: "cat-1",
+          name: "Salary",
+          parentId: null,
+          isIncome: true,
+          isSystem: false,
+        },
+        afterData: null,
+      };
+      mockRepository.findOne.mockResolvedValue(action);
+      mockQueryRunner.query.mockResolvedValue([]);
+
+      await service.undo(userId);
+
+      const insert = mockQueryRunner.query.mock.calls.find(([sql]: [string]) =>
+        sql.includes('INSERT INTO "categories"'),
+      );
+      expect(insert[0]).toContain('"category_type"');
+      expect(insert[0]).not.toContain("is_income");
+      expect(insert[1]).toContain("income");
+    });
+
+    it("restores a category update recorded by 1.22.0 with its type, never the dropped flag", async () => {
+      const action = {
+        ...mockAction,
+        entityType: "category",
+        action: "update",
+        entityId: "cat-1",
+        beforeData: {
+          name: "Savings",
+          isIncome: false,
+          categoryType: "transfer",
+          parentId: null,
+        },
+        afterData: { name: "Savings plan" },
+      };
+      mockRepository.findOne.mockResolvedValue(action);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 });
+
+      await service.undo(userId);
+
+      const [, , fields] = mockQueryRunner.manager.update.mock.calls.find(
+        ([, id]: [unknown, string]) => id === "cat-1",
+      );
+      expect(fields).toMatchObject({
+        name: "Savings",
+        categoryType: "transfer",
+      });
+      expect(fields).not.toHaveProperty("isIncome");
+    });
+
     it("undoes an account edit without writing derived or lifecycle columns back (A26-H06)", async () => {
       const action = {
         ...mockAction,

@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { isIncomeCategory } from "../categories/category-type.util";
 import { DataSource, In } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { withSystemContext } from "../common/db/with-context";
@@ -477,7 +476,7 @@ export class JointAccountsService {
         | "color"
         | "categoryType"
         | "isSystem"
-      > & { isIncome: boolean }
+      >
     >;
     payees: Array<Pick<Payee, "id" | "name" | "defaultCategoryId">>;
     payeesCanCreate: boolean;
@@ -518,14 +517,7 @@ export class JointAccountsService {
           select: ["id", "name", "defaultCategoryId"],
           order: { name: "ASC" },
         });
-        // `isIncome` stays on the wire as a read-only derived field.
-        return [
-          ownerCategories.map((c) => ({
-            ...c,
-            isIncome: isIncomeCategory(c),
-          })),
-          ownerPayees,
-        ] as const;
+        return [ownerCategories, ownerPayees] as const;
       },
     );
 

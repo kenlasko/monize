@@ -108,9 +108,9 @@ describe("loadQuickAddCandidates", () => {
       { payeeId: "p-inactive", alias: "OLD*" },
     ]);
     s.categories.find.mockResolvedValue([
-      { id: "c1", name: "Food", parentId: null, isIncome: false },
-      { id: "c2", name: "Coffee", parentId: "c1", isIncome: false },
-      { id: "c3", name: "Salary", parentId: null, isIncome: true },
+      { id: "c1", name: "Food", parentId: null, categoryType: "expense" },
+      { id: "c2", name: "Coffee", parentId: "c1", categoryType: "expense" },
+      { id: "c3", name: "Salary", parentId: null, categoryType: "income" },
     ]);
     s.preferences.findOne.mockResolvedValue({
       numberFormat: "de-DE",
@@ -148,9 +148,14 @@ describe("loadQuickAddCandidates", () => {
       },
     ]);
     expect(loaded.categories).toEqual([
-      { id: "c1", name: "Food", path: "Food", isIncome: false },
-      { id: "c2", name: "Coffee", path: "Food: Coffee", isIncome: false },
-      { id: "c3", name: "Salary", path: "Salary", isIncome: true },
+      { id: "c1", name: "Food", path: "Food", categoryType: "expense" },
+      {
+        id: "c2",
+        name: "Coffee",
+        path: "Food: Coffee",
+        categoryType: "expense",
+      },
+      { id: "c3", name: "Salary", path: "Salary", categoryType: "income" },
     ]);
     expect(loaded.numberFormat).toBe("de-DE");
     expect(loaded.dateFormat).toBe("DD.MM.YYYY");

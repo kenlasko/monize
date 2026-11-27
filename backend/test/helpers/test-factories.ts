@@ -2,6 +2,10 @@ import * as bcrypt from "bcryptjs";
 import { DataSource, Repository } from "typeorm";
 import { Account } from "@/accounts/entities/account.entity";
 import { Category } from "@/categories/entities/category.entity";
+import {
+  CategoryType,
+  categoryTypeFromIncomeFlag,
+} from "@/categories/category-type.util";
 import { Payee } from "@/payees/entities/payee.entity";
 
 interface UserData {
@@ -133,14 +137,19 @@ export async function createTestCategory(
   dataSource: DataSource,
   userId: string,
   overrides: Partial<
-    CategoryData & { isIncome: boolean; parentId: string }
+    CategoryData & {
+      categoryType: CategoryType;
+      /** Shorthand for `categoryType`: true is Income, false is Expense. */
+      isIncome: boolean;
+      parentId: string;
+    }
   > = {},
 ): Promise<Category> {
-  const { isIncome, parentId, ...rest } = overrides;
+  const { categoryType, isIncome, parentId, ...rest } = overrides;
   const data = buildCategory(userId, rest);
   const category = dataSource.manager.create(Category, {
     ...data,
-    isIncome: isIncome ?? false,
+    categoryType: categoryType ?? categoryTypeFromIncomeFlag(isIncome),
     parentId: parentId ?? null,
   } as any);
   return dataSource.manager.save(category);

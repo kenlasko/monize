@@ -50,14 +50,16 @@ describe("category fit refusals", () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it("accepts Income, Expense, a category of the previous shape and none", async () => {
+  it("accepts Income, Expense and none", async () => {
     categories.findOne.mockResolvedValueOnce({
       id: "c1",
       categoryType: "income",
     });
     await assertCategoryTakesCategoryRow(m, "user-1", "c1");
-    // A value built before the type existed: only the legacy flag.
-    categories.findOne.mockResolvedValueOnce({ id: "c2", isIncome: false });
+    categories.findOne.mockResolvedValueOnce({
+      id: "c2",
+      categoryType: "expense",
+    });
     await assertCategoryTakesCategoryRow(m, "user-1", "c2");
     await assertCategoryTakesCategoryRow(m, "user-1", null);
     await assertCategoriesTakeCategoryRows(m, "user-1", [undefined, null]);
@@ -106,8 +108,6 @@ describe("the fit helper (INV-CATEGORY-001)", () => {
       [savings, "category", false],
       [food, "category", true],
       [salary, "category", true],
-      // A value of the previous shape is Income or Expense.
-      [{ isIncome: false }, "category", true],
     ] as const)("%o on a %s row: %s", (category, holder, fits) => {
       expect(categoryFits(category, holder)).toBe(fits);
     });

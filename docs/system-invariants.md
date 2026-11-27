@@ -228,7 +228,7 @@ implied.
 | INV-HA-005 | A relay prompt is claimed by exactly one agent poll of the credential serving the chat, and answered at most once, by that credential | enforced |
 | INV-CATEGORY-001 | A Transfer category is held only by a transfer row: no ordinary row, split category line, scheduled category row or override of one holds one | enforced |
 | INV-CATEGORY-002 | A category write on a transfer sets both of its legs, the writer's leg only across two owners | enforced |
-| INV-CATEGORY-003 | A category's type is its parent's, and `is_income` mirrors it while the column exists | partial |
+| INV-CATEGORY-003 | A category's type is its parent's, and `category_type` is the only statement of it | partial |
 | INV-CATEGORY-004 | An expense is a category of type expense, never one that is merely not income | enforced |
 | INV-RULE-001 | A transaction rule never changes the matched row's amount, account, date or status; the only balance it moves is a structural action's counterpart | partial |
 | INV-RULE-002 | A transaction rule applies inside the transaction that inserts the row, on every creation path | partial |
@@ -9705,39 +9705,47 @@ them.
 ```text
 Statement           A category's type is income, expense or transfer and
                     equals its parent's type, for every category written from
-                    PR 2 on. While categories.is_income exists (nullable
-                    today), it is true exactly when the type is income.
+                    PR 2 on. categories.category_type is the only statement of
+                    it: the legacy is_income flag and its mirror were dropped
+                    (#2478, 20261127205950_categories_drop_is_income.sql), and
+                    the API neither accepts nor returns isIncome.
 Source of truth     categories.category_type (PR 2), categories.parent_id.
 Enforcement         backend/src/categories/categories.service.ts gives a new
                     child its parent's type and refuses a type change or a
                     move while a holder would no longer fit (INV-CATEGORY-001).
                     In the database the categories triggers
-                    trg_categories_sync_type (keeps is_income and
-                    category_type in step, and gives a child its parent's type
+                    trg_categories_sync_type (gives a child its parent's type
                     on every insert and move) and trg_categories_cascade_type
-                    (a re-type reaches the subtree) hold it even for a write
-                    from a previous-release pod that sets is_income alone
-                    (specification section 11). Rows that existed before the
-                    type keep their own type, so a child may still differ from
-                    its parent until the category or an ancestor is next moved
-                    or re-typed; that is why the status is partial.
+                    (a re-type reaches the subtree) hold it for a write that
+                    bypasses the service. A backup or an undo snapshot taken
+                    before 1.22.0 carries only is_income; the restore and the
+                    undo give it the type the flag named
+                    (backend/src/categories/legacy-income-flag.util.ts). Rows
+                    that existed before the type keep their own type, so a
+                    child may still differ from its parent until the category
+                    or an ancestor is next moved or re-typed; that is why the
+                    status is partial.
 Concurrency scope   category
 Retry semantics     --
 Crash semantics     -- (one transaction)
-Failure response    400 on a type change or a move that a holder refuses.
-Required tests      Integration: the backfill makes income exactly the
-                    categories whose is_income is true (false and NULL become
-                    expense); a write of either column sets the other; a child
-                    takes its parent's type, including on a previous-release
-                    write that sets is_income alone or moves a category.
+Failure response    400 on a type change or a move that a holder refuses, and
+                    on a request that sends isIncome (forbidNonWhitelisted).
+Required tests      Integration: a child takes its parent's type on insert and
+                    on a move, and a re-type reaches the subtree
+                    (category-type-schema.integration.spec.ts); the schema has
+                    no is_income column. Unit: a pre-1.22.0 backup row and undo
+                    snapshot take the type their flag named
+                    (legacy-income-flag.util.spec.ts,
+                    legacy-category-type-restore.spec.ts,
+                    action-history.service.spec.ts).
 Status              partial
 ```
 
-The violation exists in today's data: a moved category is re-typed alone and
-its children keep their flag (`CategoriesService.update`), and the Money
-importer stores each category's own flag. The backfill keeps each child's own
-type, because re-typing it would move figures (no migration, decision 3), and
-the migration counts the mismatches (specification section 11). A mismatch
+The violation exists in today's data: a moved category was re-typed alone and
+its children kept their flag (`CategoriesService.update` before PR 2), and the
+Money importer stored each category's own flag. The backfill kept each child's
+own type, because re-typing it would move figures (no migration, decision 3),
+and the migration counted the mismatches (specification section 11). A mismatch
 lasts until the category or an ancestor is next moved or re-typed.
 
 ### INV-CATEGORY-004 -- an expense is a category of type expense

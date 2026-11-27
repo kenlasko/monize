@@ -434,8 +434,18 @@ describe("a row's own rate on every surface (integration)", () => {
     });
     expect(history?.categoryBreakdown).toEqual(
       expect.arrayContaining([
-        { categoryName: "Travel", total: EXPENSES, isIncome: false },
-        { categoryName: "Consulting", total: INCOME, isIncome: true },
+        {
+          categoryName: "Travel",
+          categoryType: "expense",
+          total: EXPENSES,
+          isIncome: false,
+        },
+        {
+          categoryName: "Consulting",
+          categoryType: "income",
+          total: INCOME,
+          isIncome: true,
+        },
       ]),
     );
     expect(

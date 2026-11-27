@@ -16,8 +16,7 @@ import { preferredCurrency } from "../../common/default-currency.util";
 interface CategoryNode {
   id: string;
   name: string;
-  categoryType?: CategoryType;
-  isIncome: boolean;
+  categoryType: CategoryType;
   children?: CategoryNode[];
 }
 

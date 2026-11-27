@@ -290,9 +290,6 @@ CREATE TABLE categories (
     description TEXT,
     icon VARCHAR(50),
     color VARCHAR(7), -- hex color
-    -- Superseded by category_type (income = true); kept one release for the
-    -- previous pods and mirrored by trg_categories_sync_type. Dropped later.
-    is_income BOOLEAN DEFAULT false,
     -- 'income', 'expense' or 'transfer'; a child has its parent's type. A
     -- Transfer category goes only on a transfer row (INV-CATEGORY-001).
     category_type VARCHAR(10) NOT NULL DEFAULT 'expense',
@@ -3896,24 +3893,6 @@ CREATE OR REPLACE FUNCTION categories_sync_type() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE parent_type text;
 BEGIN
-    IF TG_OP = 'INSERT' THEN
-        -- A pod of the previous release writes `is_income` alone, so the type
-        -- column holds its default; the flag is the only thing it said.
-        IF NEW.category_type = 'expense' AND NEW.is_income IS TRUE THEN
-            NEW.category_type := 'income';
-        END IF;
-    ELSIF NEW.category_type IS DISTINCT FROM OLD.category_type THEN
-        NULL; -- the type was written; it wins
-    ELSIF NEW.is_income IS DISTINCT FROM OLD.is_income THEN
-        -- Only the flag was written (previous release): true is Income, false
-        -- is Expense unless the category is a Transfer one.
-        IF NEW.is_income IS TRUE THEN
-            NEW.category_type := 'income';
-        ELSIF OLD.category_type = 'income' THEN
-            NEW.category_type := 'expense';
-        END IF;
-    END IF;
-
     -- A child takes its parent's type on insert and on a move.
     IF NEW.parent_id IS NOT NULL
        AND (TG_OP = 'INSERT' OR NEW.parent_id IS DISTINCT FROM OLD.parent_id) THEN
@@ -3922,8 +3901,6 @@ BEGIN
             NEW.category_type := parent_type;
         END IF;
     END IF;
-
-    NEW.is_income := (NEW.category_type = 'income');
 
     -- A category that becomes a Transfer one must not be held by a category
     -- row. Exclusive against every shared holder of the owner's lock.
@@ -3944,7 +3921,7 @@ CREATE TRIGGER trg_categories_sync_type
     FOR EACH ROW EXECUTE FUNCTION categories_sync_type();
 
 -- A type change or a move re-types the whole subtree. The BEFORE trigger of
--- each descendant mirrors its flag and checks its holders.
+-- each descendant checks its holders.
 CREATE OR REPLACE FUNCTION categories_cascade_type() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 BEGIN

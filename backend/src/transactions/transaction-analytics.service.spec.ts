@@ -100,12 +100,42 @@ describe("TransactionAnalyticsService", () => {
       // resolves its display name from this list, so a fixture without a
       // collision cannot show whether the right one was named.
       find: jest.fn().mockResolvedValue([
-        { id: "cat-food", name: "Food", parentId: null },
-        { id: "cat-travel", name: "Travel", parentId: null, isIncome: false },
-        { id: "cat-bills", name: "Bills", parentId: null },
-        { id: "cat-bills-cell", name: "Cell Phone", parentId: "cat-bills" },
-        { id: "cat-biz", name: "Business", parentId: null },
-        { id: "cat-biz-cell", name: "Cell Phone", parentId: "cat-biz" },
+        {
+          id: "cat-food",
+          name: "Food",
+          parentId: null,
+          categoryType: "expense",
+        },
+        {
+          id: "cat-travel",
+          name: "Travel",
+          parentId: null,
+          categoryType: "expense",
+        },
+        {
+          id: "cat-bills",
+          name: "Bills",
+          parentId: null,
+          categoryType: "expense",
+        },
+        {
+          id: "cat-bills-cell",
+          name: "Cell Phone",
+          parentId: "cat-bills",
+          categoryType: "expense",
+        },
+        {
+          id: "cat-biz",
+          name: "Business",
+          parentId: null,
+          categoryType: "expense",
+        },
+        {
+          id: "cat-biz-cell",
+          name: "Cell Phone",
+          parentId: "cat-biz",
+          categoryType: "expense",
+        },
       ]),
     };
 

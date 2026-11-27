@@ -9,11 +9,11 @@ import {
 } from "../helpers/integration-setup";
 import { createTestAccount } from "../helpers/test-factories";
 
-// docs/specs/transfer-categories.md sections 11 to 13: the category type, its
-// mirror of the legacy `is_income` flag (INV-CATEGORY-003), and the database
-// backstop that keeps a Transfer category off a category row
-// (INV-CATEGORY-001). These are raw-SQL tests of the triggers themselves, so a
-// pod of the previous release, which writes the flag alone, is covered too.
+// docs/specs/transfer-categories.md sections 11 to 13: the category type, a
+// child's type from its parent (INV-CATEGORY-003), and the database backstop
+// that keeps a Transfer category off a category row (INV-CATEGORY-001). These
+// are raw-SQL tests of the triggers themselves, so a write that bypasses the
+// service is covered too.
 describe("Category type schema (integration)", () => {
   let module: TestingModule;
   let dataSource: DataSource;
@@ -24,20 +24,13 @@ describe("Category type schema (integration)", () => {
     name: string,
     cols: {
       type?: string;
-      isIncome?: boolean;
       parentId?: string | null;
     } = {},
   ): Promise<string> => {
     const rows = await dataSource.query(
-      `INSERT INTO categories (user_id, name, parent_id, is_income, category_type)
-       VALUES ($1, $2, $3, $4, COALESCE($5, 'expense')) RETURNING id`,
-      [
-        userId,
-        name,
-        cols.parentId ?? null,
-        cols.isIncome ?? false,
-        cols.type ?? null,
-      ],
+      `INSERT INTO categories (user_id, name, parent_id, category_type)
+       VALUES ($1, $2, $3, COALESCE($4, 'expense')) RETURNING id`,
+      [userId, name, cols.parentId ?? null, cols.type ?? null],
     );
     return rows[0].id;
   };
@@ -45,7 +38,7 @@ describe("Category type schema (integration)", () => {
   const typeOf = async (id: string) =>
     (
       await dataSource.query(
-        `SELECT category_type AS "type", is_income AS "isIncome" FROM categories WHERE id = $1`,
+        `SELECT category_type AS "type" FROM categories WHERE id = $1`,
         [id],
       )
     )[0];
@@ -99,45 +92,21 @@ describe("Category type schema (integration)", () => {
     accountId = (await createTestAccount(dataSource, userId)).id;
   });
 
-  describe("type and is_income stay in step", () => {
-    it("a write of the flag alone sets the type (previous release)", async () => {
-      const salary = await category("Salary", { isIncome: true });
-      expect(await typeOf(salary)).toEqual({ type: "income", isIncome: true });
-
-      const food = await category("Food");
-      await dataSource.query(
-        `UPDATE categories SET is_income = true WHERE id = $1`,
-        [food],
+  describe("a category's type and its parent's", () => {
+    it("has no income flag beside the type (#2478)", async () => {
+      const columns = await dataSource.query(
+        `SELECT column_name FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'categories'
+            AND column_name IN ('is_income', 'category_type')`,
       );
-      expect(await typeOf(food)).toEqual({ type: "income", isIncome: true });
-      await dataSource.query(
-        `UPDATE categories SET is_income = false WHERE id = $1`,
-        [food],
-      );
-      expect(await typeOf(food)).toEqual({ type: "expense", isIncome: false });
-    });
-
-    it("a write of the type sets the flag, and a Transfer category is not income", async () => {
-      const id = await category("Savings", { type: "transfer" });
-      expect(await typeOf(id)).toEqual({ type: "transfer", isIncome: false });
-      // The previous release clearing the flag leaves a Transfer category alone.
-      await dataSource.query(
-        `UPDATE categories SET is_income = false, name = 'Savings 2' WHERE id = $1`,
-        [id],
-      );
-      expect(await typeOf(id)).toEqual({ type: "transfer", isIncome: false });
-      await dataSource.query(
-        `UPDATE categories SET category_type = 'income' WHERE id = $1`,
-        [id],
-      );
-      expect(await typeOf(id)).toEqual({ type: "income", isIncome: true });
+      expect(columns).toEqual([{ column_name: "category_type" }]);
     });
 
     it("a child takes its parent's type on insert and on a move, whatever the write said", async () => {
       const transferParent = await category("Transfers", { type: "transfer" });
       const child = await category("Brokerage", {
         parentId: transferParent,
-        isIncome: true,
+        type: "income",
       });
       expect((await typeOf(child)).type).toBe("transfer");
 
@@ -149,17 +118,14 @@ describe("Category type schema (integration)", () => {
         [moved, incomeParent],
       );
       // The moved category and its whole subtree take the new parent's type.
-      expect(await typeOf(moved)).toEqual({ type: "income", isIncome: true });
-      expect(await typeOf(grandchild)).toEqual({
-        type: "income",
-        isIncome: true,
-      });
+      expect(await typeOf(moved)).toEqual({ type: "income" });
+      expect(await typeOf(grandchild)).toEqual({ type: "income" });
     });
 
     it("a type change cascades to the subtree, existing mismatches included", async () => {
       const top = await category("Top", { type: "expense" });
       const mid = await category("Mid", { parentId: top });
-      // A child whose own flag differs from its parent's exists in real data.
+      // A child whose own type differs from its parent's exists in real data.
       await dataSource.query(
         `UPDATE categories SET category_type = 'income' WHERE id = $1`,
         [mid],
@@ -170,7 +136,7 @@ describe("Category type schema (integration)", () => {
         [top],
       );
       for (const id of [mid, leaf]) {
-        expect(await typeOf(id)).toEqual({ type: "transfer", isIncome: false });
+        expect(await typeOf(id)).toEqual({ type: "transfer" });
       }
     });
 

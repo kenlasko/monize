@@ -46,7 +46,12 @@ describe("AiForecastService", () => {
           totalExpenses: 3000,
           netCashFlow: 1000,
           categoryBreakdown: [
-            { categoryName: "Groceries", total: 500, isIncome: false },
+            {
+              categoryName: "Groceries",
+              categoryType: "expense",
+              total: 500,
+              isIncome: false,
+            },
           ],
         },
         {
@@ -55,7 +60,12 @@ describe("AiForecastService", () => {
           totalExpenses: 3200,
           netCashFlow: 800,
           categoryBreakdown: [
-            { categoryName: "Groceries", total: 550, isIncome: false },
+            {
+              categoryName: "Groceries",
+              categoryType: "expense",
+              total: 550,
+              isIncome: false,
+            },
           ],
         },
         {

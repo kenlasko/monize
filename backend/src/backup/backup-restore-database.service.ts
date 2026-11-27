@@ -12,6 +12,7 @@ import { tr } from "../i18n/translate";
 import { boundRestoredNotification } from "./notification-restore-bounds";
 import { withPairedCustomRecurrence } from "./restore-custom-recurrence";
 import { withResolvedMortgageTypeColumn } from "../accounts/legacy-mortgage-type.util";
+import { withResolvedCategoryTypeColumn } from "../categories/legacy-income-flag.util";
 import { deleteAllUserData } from "./restore-wipe";
 import {
   BackupData,
@@ -458,15 +459,18 @@ export class BackupRestoreDatabaseService {
       // An `accounts` row from a backup taken before the mortgage type was
       // required carries the legacy flags and a null or missing type; nothing
       // reads the flags now, so it is given the type the default migration
-      // would have given it, and the flags are left out.
+      // would have given it, and the flags are left out. A `categories` row
+      // from before 1.22.0 carries only `is_income`; its type is the flag's.
       const filteredRow =
         table === "notifications"
           ? boundRestoredNotification(row, this.logger)
           : table === "accounts"
             ? withResolvedMortgageTypeColumn(row)
-            : table === "scheduled_transactions"
-              ? withPairedCustomRecurrence(row)
-              : { ...row };
+            : table === "categories"
+              ? withResolvedCategoryTypeColumn(row)
+              : table === "scheduled_transactions"
+                ? withPairedCustomRecurrence(row)
+                : { ...row };
 
       // Override user_id to ensure data stays scoped to the restoring user
       if (userId !== null && "user_id" in filteredRow) {

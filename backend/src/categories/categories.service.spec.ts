@@ -47,7 +47,7 @@ describe("CategoriesService", () => {
     description: null,
     icon: null,
     color: null,
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-01"),
@@ -63,7 +63,7 @@ describe("CategoriesService", () => {
     description: null,
     icon: null,
     color: null,
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2025-01-02"),
@@ -191,7 +191,7 @@ describe("CategoriesService", () => {
 
   describe("create", () => {
     it("creates a category without parent", async () => {
-      const dto = { name: "Food", isIncome: false };
+      const dto = { name: "Food" };
       categoriesRepository.save.mockResolvedValue({
         ...dto,
         id: "new-cat",
@@ -216,7 +216,7 @@ describe("CategoriesService", () => {
         ...dto,
         id: "new-cat",
         userId: "user-1",
-        isIncome: false,
+        categoryType: "expense",
       });
 
       await service.create("user-1", dto);
@@ -228,16 +228,15 @@ describe("CategoriesService", () => {
       expect(categoriesRepository.create).toHaveBeenCalledWith({
         ...dto,
         categoryType: "expense",
-        isIncome: false,
         userId: "user-1",
       });
     });
 
-    it("inherits isIncome from parent category, ignoring provided value", async () => {
+    it("gives a subcategory its parent's type when the request names none", async () => {
       const incomeParent = {
         ...mockCategory,
         id: "income-parent",
-        isIncome: true,
+        categoryType: "income" as const,
       };
       categoriesRepository.findOne.mockResolvedValue(incomeParent);
       categoriesRepository.save.mockImplementation((data) => data);
@@ -245,21 +244,20 @@ describe("CategoriesService", () => {
       await service.create("user-1", {
         name: "Bonus",
         parentId: "income-parent",
-        isIncome: false,
       });
 
       expect(categoriesRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ isIncome: true }),
+        expect.objectContaining({ categoryType: "income" }),
       );
     });
 
-    it("keeps an explicit autoSign on a subcategory instead of inheriting it like isIncome", async () => {
-      // Contrast with the test above: isIncome is forced to the parent's
+    it("keeps an explicit autoSign on a subcategory instead of inheriting it like the type", async () => {
+      // Contrast with the test above: the type is forced to the parent's
       // value, autoSign is the subcategory's own choice and is never forced.
       const incomeParent = {
         ...mockCategory,
         id: "income-parent",
-        isIncome: true,
+        categoryType: "income" as const,
         autoSign: true,
       };
       categoriesRepository.findOne.mockResolvedValue(incomeParent);
@@ -268,12 +266,11 @@ describe("CategoriesService", () => {
       const result = await service.create("user-1", {
         name: "Refunds",
         parentId: "income-parent",
-        isIncome: false,
         autoSign: false,
       });
 
       expect(categoriesRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ isIncome: true, autoSign: false }),
+        expect.objectContaining({ categoryType: "income", autoSign: false }),
       );
       expect(result.autoSign).toBe(false);
     });
@@ -298,7 +295,7 @@ describe("CategoriesService", () => {
   });
 
   describe("category type", () => {
-    it("creates a Transfer category from `type`, with the legacy flag false", async () => {
+    it("creates a Transfer category from `type`, writing the type alone", async () => {
       categoriesRepository.save.mockImplementation((data) => data);
 
       await service.create("user-1", { name: "Savings", type: "transfer" });
@@ -306,33 +303,20 @@ describe("CategoriesService", () => {
       expect(categoriesRepository.create).toHaveBeenCalledWith({
         name: "Savings",
         categoryType: "transfer",
-        isIncome: false,
         userId: "user-1",
       });
     });
 
-    it("lets `type` win over the legacy isIncome flag", async () => {
+    it("creates an Income category from `type`", async () => {
       categoriesRepository.save.mockImplementation((data) => data);
 
-      await service.create("user-1", {
-        name: "Savings",
-        type: "transfer",
-        isIncome: true,
+      await service.create("user-1", { name: "Salary", type: "income" });
+
+      expect(categoriesRepository.create).toHaveBeenCalledWith({
+        name: "Salary",
+        categoryType: "income",
+        userId: "user-1",
       });
-
-      expect(categoriesRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
-      );
-    });
-
-    it("reads isIncome: true as an income category when no type is sent", async () => {
-      categoriesRepository.save.mockImplementation((data) => data);
-
-      await service.create("user-1", { name: "Salary", isIncome: true });
-
-      expect(categoriesRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ categoryType: "income", isIncome: true }),
-      );
     });
 
     it("gives a subcategory its parent's type, Transfer included", async () => {
@@ -345,7 +329,7 @@ describe("CategoriesService", () => {
       await service.create("user-1", { name: "Brokerage", parentId: "cat-1" });
 
       expect(categoriesRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
+        expect.objectContaining({ categoryType: "transfer" }),
       );
     });
 
@@ -365,7 +349,7 @@ describe("CategoriesService", () => {
       expect(categoriesRepository.save).not.toHaveBeenCalled();
     });
 
-    it("takes the category-owner lock exclusive before a type change, then writes the type and the flag", async () => {
+    it("takes the category-owner lock exclusive before a type change, then writes the type", async () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
       txManager.find.mockResolvedValue([]);
       txManager.query.mockResolvedValue([]);
@@ -383,7 +367,7 @@ describe("CategoriesService", () => {
       ]);
       expect(txManager.save).toHaveBeenCalledWith(
         Category,
-        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
+        expect.objectContaining({ categoryType: "transfer" }),
       );
       expect(result.categoryType).toBe("transfer");
     });
@@ -428,25 +412,11 @@ describe("CategoriesService", () => {
       ).toBe(false);
       expect(txManager.save).toHaveBeenCalledWith(
         Category,
-        expect.objectContaining({ categoryType: "expense", isIncome: false }),
+        expect.objectContaining({ categoryType: "expense" }),
       );
     });
 
-    it("leaves a Transfer category alone when the legacy flag says false", async () => {
-      categoriesRepository.findOne.mockResolvedValue({
-        ...mockCategory,
-        categoryType: "transfer",
-      });
-
-      await service.update("user-1", "cat-1", { isIncome: false });
-
-      expect(txManager.save).toHaveBeenCalledWith(
-        Category,
-        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
-      );
-    });
-
-    it("cascades a type change to every descendant, writing the type and the flag", async () => {
+    it("cascades a type change to every descendant, writing the type", async () => {
       categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
       txManager.find
         .mockResolvedValueOnce([{ id: "child-1" }])
@@ -457,7 +427,7 @@ describe("CategoriesService", () => {
       expect(txManager.update).toHaveBeenCalledWith(
         Category,
         { id: "child-1", userId: "user-1" },
-        { categoryType: "income", isIncome: true },
+        { categoryType: "income" },
       );
     });
 
@@ -467,7 +437,6 @@ describe("CategoriesService", () => {
         .mockResolvedValueOnce({
           ...mockChildCategory,
           categoryType: "income",
-          isIncome: true,
         })
         .mockResolvedValueOnce({
           ...mockCategory,
@@ -479,7 +448,7 @@ describe("CategoriesService", () => {
 
       expect(txManager.save).toHaveBeenCalledWith(
         Category,
-        expect.objectContaining({ categoryType: "income", isIncome: true }),
+        expect.objectContaining({ categoryType: "income" }),
       );
     });
 
@@ -492,7 +461,7 @@ describe("CategoriesService", () => {
       });
 
       jest.spyOn(service, "findAll").mockResolvedValue([
-        { ...mockCategory, categoryType: "income", isIncome: true },
+        { ...mockCategory, categoryType: "income" },
         { ...mockCategory, categoryType: "expense" },
         { ...mockCategory, categoryType: "transfer" },
       ] as never);
@@ -524,9 +493,9 @@ describe("CategoriesService", () => {
         expect.objectContaining({
           id: "t",
           type: "transfer",
-          isIncome: false,
         }),
       ]);
+      expect(result.categories[0]).not.toHaveProperty("isIncome");
     });
   });
 
@@ -1110,7 +1079,7 @@ describe("CategoriesService", () => {
   describe("findByType", () => {
     it("returns income categories", async () => {
       const incomeCategories = [
-        { ...mockCategory, isIncome: true, name: "Salary" },
+        { ...mockCategory, categoryType: "income" as const, name: "Salary" },
       ];
       categoriesRepository.find.mockResolvedValue(incomeCategories);
 
@@ -1171,7 +1140,7 @@ describe("CategoriesService", () => {
       id: "c4",
       name: "Salary",
       parentId: null,
-      isIncome: true,
+      categoryType: "income",
       transactionCount: 2,
     } as any;
 
@@ -1226,7 +1195,7 @@ describe("CategoriesService", () => {
       });
 
       expect(result.totalCount).toBe(3);
-      expect(result.categories.every((c) => !c.isIncome)).toBe(true);
+      expect(result.categories.every((c) => c.type === "expense")).toBe(true);
     });
 
     it("filters by income type", async () => {
@@ -1319,18 +1288,19 @@ describe("CategoriesService", () => {
         description: "New desc",
         icon: "cart",
         color: "#FF5733",
-        isIncome: true,
+        type: "income",
       });
 
       expect(result.name).toBe("Updated Name");
       expect(result.description).toBe("New desc");
       expect(result.icon).toBe("cart");
       expect(result.color).toBe("#FF5733");
-      expect(result.isIncome).toBe(true);
+      expect(result.categoryType).toBe("income");
+      expect(result).not.toHaveProperty("isIncome");
     });
 
     it("updates parentId when provided", async () => {
-      const parentCat = { ...mockCategory, id: "parent-1", isIncome: false };
+      const parentCat = { ...mockCategory, id: "parent-1" };
       categoriesRepository.findOne
         .mockResolvedValueOnce({ ...mockCategory })
         .mockResolvedValueOnce(parentCat)
@@ -1348,14 +1318,14 @@ describe("CategoriesService", () => {
       expect(result.parentId).toBe("parent-1");
     });
 
-    it("inherits isIncome from parent when parentId is set on update", async () => {
+    it("inherits the type from the parent when parentId is set on update", async () => {
       const incomeParent = {
         ...mockCategory,
         id: "income-parent",
-        isIncome: true,
+        categoryType: "income" as const,
       };
       categoriesRepository.findOne
-        .mockResolvedValueOnce({ ...mockCategory, isIncome: false })
+        .mockResolvedValueOnce({ ...mockCategory })
         .mockResolvedValueOnce(incomeParent)
         .mockResolvedValueOnce(incomeParent);
       categoriesRepository.find.mockResolvedValue([
@@ -1366,26 +1336,9 @@ describe("CategoriesService", () => {
 
       const result = await service.update("user-1", "cat-1", {
         parentId: "income-parent",
-        isIncome: false,
       });
 
-      expect(result.isIncome).toBe(true);
-    });
-
-    it("ignores isIncome in dto for existing child category", async () => {
-      const parentCat = { ...mockCategory, id: "parent-1", isIncome: false };
-      categoriesRepository.findOne
-        .mockResolvedValueOnce({ ...mockChildCategory, isIncome: false }) // findOne: load child
-        .mockResolvedValueOnce(parentCat) // findOne: parent chain color resolution
-        .mockResolvedValueOnce(parentCat) // update: load parent for isIncome inheritance
-        .mockResolvedValueOnce(parentCat); // update findOne: parent chain color resolution
-      categoriesRepository.save.mockImplementation((data) => data);
-
-      const result = await service.update("user-1", "cat-2", {
-        isIncome: true,
-      });
-
-      expect(result.isIncome).toBe(false);
+      expect(result.categoryType).toBe("income");
     });
 
     it("throws BadRequestException for system categories", async () => {
@@ -1447,11 +1400,10 @@ describe("CategoriesService", () => {
       expect(result.description).toBe("Keep me");
     });
 
-    it("cascades isIncome change to descendant subcategories", async () => {
+    it("cascades a type change to descendant subcategories", async () => {
       // Parent category changing from Expense to Income
       categoriesRepository.findOne.mockResolvedValue({
         ...mockCategory,
-        isIncome: false,
       });
       categoriesRepository.save.mockImplementation((data) => data);
 
@@ -1464,24 +1416,23 @@ describe("CategoriesService", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
-      await service.update("user-1", "cat-1", { isIncome: true });
+      await service.update("user-1", "cat-1", { type: "income" });
 
       expect(manager.update).toHaveBeenCalledWith(
         Category,
         { id: "child-1", userId: "user-1" },
-        { categoryType: "income", isIncome: true },
+        { categoryType: "income" },
       );
       expect(manager.update).toHaveBeenCalledWith(
         Category,
         { id: "child-2", userId: "user-1" },
-        { categoryType: "income", isIncome: true },
+        { categoryType: "income" },
       );
     });
 
-    it("does not cascade when isIncome is not changed", async () => {
+    it("does not cascade when the type is not changed", async () => {
       categoriesRepository.findOne.mockResolvedValue({
         ...mockCategory,
-        isIncome: false,
       });
 
       await service.update("user-1", "cat-1", { name: "Renamed" });
@@ -1490,17 +1441,16 @@ describe("CategoriesService", () => {
       expect(txManager.update).not.toHaveBeenCalled();
     });
 
-    it("stores a child's explicit autoSign instead of forcing it like isIncome", async () => {
+    it("stores a child's explicit autoSign instead of forcing it like the type", async () => {
       const parentCat = {
         ...mockCategory,
         id: "cat-1",
-        isIncome: false,
         autoSign: false,
       };
       categoriesRepository.findOne
         .mockResolvedValueOnce({ ...mockChildCategory, autoSign: null }) // load child
         .mockResolvedValueOnce(parentCat) // child's ancestor walk
-        .mockResolvedValueOnce(parentCat); // update: load parent for isIncome
+        .mockResolvedValueOnce(parentCat); // update: load parent for the type
       categoriesRepository.save.mockImplementation((data) => data);
 
       const result = await service.update("user-1", "cat-2", {
@@ -1525,7 +1475,7 @@ describe("CategoriesService", () => {
       });
 
       expect(result.autoSign).toBe(false);
-      // The isIncome cascade reads children through manager.find and writes
+      // The type cascade reads children through manager.find and writes
       // them through manager.update; neither runs for autoSign.
       expect(txManager.find).not.toHaveBeenCalled();
       expect(txManager.update).not.toHaveBeenCalled();
@@ -2069,11 +2019,36 @@ describe("CategoriesService", () => {
   describe("getStats", () => {
     it("calculates category statistics", async () => {
       const categories = [
-        { ...mockCategory, id: "c1", isIncome: false, parentId: null },
-        { ...mockCategory, id: "c2", isIncome: true, parentId: null },
-        { ...mockCategory, id: "c3", isIncome: false, parentId: "c1" },
-        { ...mockCategory, id: "c4", isIncome: true, parentId: "c2" },
-        { ...mockCategory, id: "c5", isIncome: false, parentId: "c1" },
+        {
+          ...mockCategory,
+          id: "c1",
+          categoryType: "expense" as const,
+          parentId: null,
+        },
+        {
+          ...mockCategory,
+          id: "c2",
+          categoryType: "income" as const,
+          parentId: null,
+        },
+        {
+          ...mockCategory,
+          id: "c3",
+          categoryType: "expense" as const,
+          parentId: "c1",
+        },
+        {
+          ...mockCategory,
+          id: "c4",
+          categoryType: "income" as const,
+          parentId: "c2",
+        },
+        {
+          ...mockCategory,
+          id: "c5",
+          categoryType: "expense" as const,
+          parentId: "c1",
+        },
       ];
       const catQb = createMockQueryBuilder({
         getMany: jest.fn().mockResolvedValue(categories),
@@ -2197,7 +2172,7 @@ describe("CategoriesService", () => {
       const parent = transfers.filter((c) => !c.parentId);
       expect(parent.map((c) => c.name)).toEqual(["Transfers"]);
       expect(transfers.length).toBe(6);
-      expect(transfers.every((c) => c.isIncome === false)).toBe(true);
+      expect(created.every((c) => !("isIncome" in c))).toBe(true);
       expect(transfers.filter((c) => c.parentId).map((c) => c.name)).toContain(
         "Savings Contributions",
       );
@@ -2225,10 +2200,12 @@ describe("CategoriesService", () => {
 
       const createCalls = qrRepo.create.mock.calls.map((c: unknown[]) => c[0]);
       const incomeParents = createCalls.filter(
-        (c: Record<string, unknown>) => c.isIncome === true && !c.parentId,
+        (c: Record<string, unknown>) =>
+          c.categoryType === "income" && !c.parentId,
       );
       const expenseParents = createCalls.filter(
-        (c: Record<string, unknown>) => c.isIncome === false && !c.parentId,
+        (c: Record<string, unknown>) =>
+          c.categoryType === "expense" && !c.parentId,
       );
 
       expect(incomeParents.length).toBeGreaterThan(0);

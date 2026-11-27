@@ -294,7 +294,12 @@ describe("Quick Add reading bounds", () => {
         "a category's name and path",
         {
           categories: [
-            { id: "p", name: "ああ", path: "ああ: ああ", isIncome: false },
+            {
+              id: "p",
+              name: "ああ",
+              path: "ああ: ああ",
+              categoryType: "expense" as const,
+            },
           ],
         },
       ],

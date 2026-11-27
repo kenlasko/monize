@@ -3,6 +3,7 @@
  * "Response"). The frontend keeps its own copy of these shapes; a change here
  * is a change to that contract.
  */
+import type { CategoryType } from "../../categories/category-type.util";
 import type { RuleEffectsPreview } from "../../transaction-rules/transaction-rules-applier.service";
 
 export const QUICK_ADD_KINDS = ["payment", "deposit", "transfer"] as const;
@@ -130,5 +131,6 @@ export interface QuickAddCandidateCategory {
   readonly name: string;
   /** "Parent: Child", or the leaf for a top-level category. */
   readonly path: string;
-  readonly isIncome: boolean;
+  /** Income or Expense: a Transfer category is never a quick-add candidate. */
+  readonly categoryType: CategoryType;
 }

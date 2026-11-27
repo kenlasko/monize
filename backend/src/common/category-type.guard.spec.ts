@@ -4,9 +4,9 @@ import { join, relative } from "path";
 /**
  * INV-CATEGORY-004 (READ): "expense" is `type = 'expense'`, never "not income".
  *
- * A category is Income, Expense or Transfer. `categories.is_income` is the
- * previous release's flag, kept in step by a trigger for one release; reading
- * it as "is it spending?" counts a Transfer category as spending
+ * A category is Income, Expense or Transfer. `categories.is_income` was the
+ * flag before the type (dropped, #2478); reading "not income" as "is it
+ * spending?" counts a Transfer category as spending
  * (`docs/specs/transfer-categories.md` sections 2 and 9). Every read of a
  * category's type goes through `src/categories/category-type.util.ts`
  * (`categoryTypeOf`, `isIncomeCategory`, `isExpenseCategory`, `categoryTypeIs`

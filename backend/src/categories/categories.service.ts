@@ -47,7 +47,6 @@ import {
 import {
   CategoryType,
   categoryTypeOf,
-  incomeFlagOfType,
   isExpenseCategory,
   isIncomeCategory,
   isTransferCategory,
@@ -60,25 +59,6 @@ export class CategoriesService {
     private actionHistoryService: ActionHistoryService,
     private readonly i18n: I18nService,
   ) {}
-
-  /**
-   * The type a request asks for: `type` when sent, else what the legacy
-   * `isIncome` flag means. `isIncome: false` on a Transfer category leaves it
-   * alone, as the previous release's flag could not name the third type.
-   */
-  private requestedType(
-    dto: { type?: CategoryType; isIncome?: boolean },
-    current: CategoryType | undefined,
-  ): CategoryType | undefined {
-    if (dto.type !== undefined) return dto.type;
-    // income-flag-ok: the request's legacy flag, which names only two types
-    if (dto.isIncome === true) return "income";
-    // income-flag-ok: the request's legacy flag
-    if (dto.isIncome === false) {
-      return current === "transfer" ? "transfer" : "expense";
-    }
-    return undefined;
-  }
 
   /** A subcategory has its parent's type; a request naming another is refused. */
   private assertChildTypeMatches(
@@ -102,8 +82,7 @@ export class CategoriesService {
     createCategoryDto: CreateCategoryDto,
   ): Promise<Category> {
     const { type: requestedType, ...rest } = createCategoryDto;
-    let type: CategoryType =
-      this.requestedType(createCategoryDto, undefined) ?? "expense";
+    let type: CategoryType = requestedType ?? "expense";
 
     if (createCategoryDto.parentId) {
       const parent = await this.findOne(userId, createCategoryDto.parentId);
@@ -117,7 +96,6 @@ export class CategoriesService {
       const category = repo.create({
         ...rest,
         categoryType: type,
-        isIncome: incomeFlagOfType(type),
         userId,
       });
       return repo.save(category);
@@ -133,7 +111,6 @@ export class CategoriesService {
         description: saved.description,
         icon: saved.icon,
         color: saved.color,
-        isIncome: saved.isIncome,
         categoryType: saved.categoryType,
         autoSign: saved.autoSign,
         parentId: saved.parentId,
@@ -198,7 +175,7 @@ export class CategoriesService {
   /**
    * Effective auto-sign per category: a category's own explicit value wins;
    * otherwise the nearest ancestor's explicit value; a root with none behaves
-   * as on. Unlike isIncome, a category's own `autoSign` is never rewritten to
+   * as on. Unlike the type, a category's own `autoSign` is never rewritten to
    * match an ancestor -- only this computed value is inherited.
    */
   private resolveEffectiveAutoSign<
@@ -384,7 +361,6 @@ export class CategoriesService {
       qualifiedName: string;
       /** income, expense or transfer: a Transfer category goes only on a transfer. */
       type: CategoryType;
-      isIncome: boolean;
       transactionCount: number;
     }>;
     totalCount: number;
@@ -423,7 +399,6 @@ export class CategoriesService {
           parentName,
           qualifiedName: qualifiedCategoryName(c.name, parentName),
           type: categoryTypeOf(c),
-          isIncome: isIncomeCategory(c),
           transactionCount: c.transactionCount,
         };
       })
@@ -515,7 +490,6 @@ export class CategoriesService {
     // section 5). The nested `withScopedDb` calls below join this transaction.
     const mayRetype =
       updateCategoryDto.type !== undefined ||
-      updateCategoryDto.isIncome !== undefined ||
       updateCategoryDto.parentId !== undefined;
     const { saved, beforeData } = await withScopedDb(
       this.dataSource,
@@ -535,7 +509,6 @@ export class CategoriesService {
         description: saved.description,
         icon: saved.icon,
         color: saved.color,
-        isIncome: saved.isIncome,
         categoryType: saved.categoryType,
         autoSign: saved.autoSign,
         parentId: saved.parentId,
@@ -560,7 +533,6 @@ export class CategoriesService {
       description: category.description,
       icon: category.icon,
       color: category.color,
-      isIncome: isIncomeCategory(category),
       categoryType: beforeType,
       autoSign: category.autoSign,
       parentId: category.parentId,
@@ -632,7 +604,7 @@ export class CategoriesService {
     // subtree (INV-CATEGORY-003). One that stays where it is keeps its own
     // type: an existing child whose type differs from its parent's stays as it
     // is until it, or an ancestor, is moved or re-typed. A top-level category
-    // takes the type the request names, `type` before the legacy flag.
+    // takes the type the request names.
     let newType: CategoryType = beforeType;
     if (category.parentId) {
       if (moved) {
@@ -652,10 +624,9 @@ export class CategoriesService {
         );
       }
     } else {
-      newType = this.requestedType(updateCategoryDto, beforeType) ?? beforeType;
+      newType = updateCategoryDto.type ?? beforeType;
     }
     category.categoryType = newType;
-    category.isIncome = incomeFlagOfType(newType);
 
     const retyped = newType !== beforeType;
     if (newType === "transfer" && (retyped || moved)) {
@@ -742,7 +713,7 @@ export class CategoriesService {
       await manager.update(
         Category,
         { id: child.id, userId },
-        { categoryType: type, isIncome: incomeFlagOfType(type) },
+        { categoryType: type },
       );
       await this.updateDescendantTypes(userId, child.id, type, manager);
     }
@@ -786,7 +757,6 @@ export class CategoriesService {
       description: category.description,
       icon: category.icon,
       color: category.color,
-      isIncome: isIncomeCategory(category),
       categoryType: categoryTypeOf(category),
       parentId: category.parentId,
       isSystem: category.isSystem,
@@ -1253,7 +1223,6 @@ export class CategoriesService {
               userId,
               name: localizeCategory(cat.name),
               categoryType: type,
-              isIncome: incomeFlagOfType(type),
             }),
           );
           categoryCount++;
@@ -1265,7 +1234,6 @@ export class CategoriesService {
                 parentId: savedParent.id,
                 name: localizeSubcategory(cat.name, subName),
                 categoryType: type,
-                isIncome: incomeFlagOfType(type),
               }),
             );
             categoryCount++;

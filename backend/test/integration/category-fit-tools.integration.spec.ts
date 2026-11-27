@@ -65,8 +65,8 @@ describe("Category fit: assistant and MCP write tools (integration)", () => {
     const category = async (name: string, type: string, parent?: string) =>
       (
         await db.query(
-          `INSERT INTO categories (user_id, name, category_type, is_income, parent_id)
-           VALUES ($1, $2, $3, false, $4) RETURNING id`,
+          `INSERT INTO categories (user_id, name, category_type, parent_id)
+           VALUES ($1, $2, $3, $4) RETURNING id`,
           [userId, name, type, parent ?? null],
         )
       )[0].id as string;

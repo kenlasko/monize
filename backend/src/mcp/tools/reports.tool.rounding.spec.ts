@@ -39,7 +39,7 @@ describe("generate_report reads the report's figures at the currency's places (i
               name: "Groceries",
               parentId: null,
               color: null,
-              isIncome: false,
+              categoryType: "expense",
             },
           ]),
         },

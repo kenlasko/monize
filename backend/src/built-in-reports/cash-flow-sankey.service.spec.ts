@@ -49,7 +49,7 @@ function category(
     description: null,
     icon: null,
     color: null,
-    isIncome: false,
+    categoryType: "expense",
     autoSign: null,
     isSystem: false,
     createdAt: new Date("2026-01-01"),
@@ -57,7 +57,7 @@ function category(
   };
 }
 
-const SALARY = category("cat-salary", "Salary", { isIncome: true });
+const SALARY = category("cat-salary", "Salary", { categoryType: "income" });
 const GROCERIES = category("cat-groceries", "Groceries", { color: "#00aa00" });
 const INTEREST = category("cat-interest", "Interest");
 const DINING = category("cat-dining", "Dining");
@@ -636,9 +636,9 @@ describe("CashFlowSankeyService", () => {
       expect(node(result, `expense:${GROCERIES.id}`)).toBeUndefined();
     });
 
-    it("leaves an inflow from a legacy untyped category unlabelled as a refund", async () => {
+    it("leaves an inflow from an untyped category unlabelled as a refund", async () => {
       categoriesRepository.find.mockResolvedValue([
-        { ...GROCERIES, isIncome: null },
+        { ...GROCERIES, categoryType: null },
       ]);
       useLedger({
         categorized: [
@@ -705,7 +705,7 @@ describe("CashFlowSankeyService", () => {
       });
       const rebates = category("cat-rebates", "Rebates", {
         parentId: "cat-food",
-        isIncome: true,
+        categoryType: "income",
       });
       const groceries = category("cat-food-groc", "Groceries", {
         parentId: "cat-food",

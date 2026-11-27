@@ -442,7 +442,7 @@ const cases: Array<{ name: string; schema: OutputSchema; raw: unknown }> = [
           name: "Cell Phone",
           parentName: "Business",
           qualifiedName: "Business: Cell Phone",
-          isIncome: false,
+          type: "expense",
           transactionCount: 3,
         },
       ],

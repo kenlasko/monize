@@ -202,7 +202,7 @@ describe("ToolExecutorService", () => {
             id: "cat-1",
             name: "Groceries",
             parentName: "Food",
-            isIncome: false,
+            type: "expense",
             transactionCount: 12,
           },
         ],

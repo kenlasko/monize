@@ -193,7 +193,7 @@ describe("Transaction rules on the transfer create path (integration)", () => {
     const payee = await createTestPayee(db, aliceId, { name: "Landlord" });
     // A category the user owns, so the rule itself validates.
     const [{ id: categoryId }] = await db.query(
-      `INSERT INTO categories (user_id, name, is_income) VALUES ($1, 'Housing', false) RETURNING id`,
+      `INSERT INTO categories (user_id, name, category_type) VALUES ($1, 'Housing', 'expense') RETURNING id`,
       [aliceId],
     );
     await asAlice(() =>

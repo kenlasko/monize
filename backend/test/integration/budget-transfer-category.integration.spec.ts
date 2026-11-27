@@ -105,9 +105,9 @@ describe("budget lines on a Transfer category (integration)", () => {
     ]) {
       categories[name] = (
         await db.query(
-          `INSERT INTO categories (user_id, name, category_type, is_income)
-           VALUES ($1, $2, $3, $4) RETURNING id`,
-          [userId, name, type, type === "income"],
+          `INSERT INTO categories (user_id, name, category_type)
+           VALUES ($1, $2, $3) RETURNING id`,
+          [userId, name, type],
         )
       )[0].id;
     }
