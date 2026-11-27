@@ -38,19 +38,7 @@ describe("Category fit and one category per transfer: transactions (integration)
    * taken off this list: the step that builds a row removes it here.
    * Shrink-only, and empty when PR 3 is done.
    */
-  const NOT_YET_BUILT = new Set<string>([
-    "transfer route: writes a Transfer category on the linked row of a split's transfer line and on the line",
-    "transfer route: writes an Expense category on the linked row of a split's transfer line and on the line",
-    "bulk update: skips a split parent's category lines with a reason and leaves its transfer line alone",
-    "split create: a transfer line holds a Transfer category, and so does its linked row",
-    "split create: a transfer line holds an Expense category, and so does its linked row",
-    "split create: a category line refuses a Transfer category, writing nothing",
-    "split replace: a transfer line's category reaches its new linked row",
-    "split replace: a category line refuses a Transfer category, writing nothing",
-    "split add: a transfer line holds its category, and so does the row it creates",
-    "split add: a category line refuses a Transfer category, writing nothing",
-    "split remove, leaving one transfer line: the parent becomes a transfer holding the line's category",
-  ]);
+  const NOT_YET_BUILT = new Set<string>([]);
   const row = (title: string, fn: () => Promise<void>) =>
     (NOT_YET_BUILT.has(title) ? it.failing : it)(title, fn);
   const EVERY_KIND: readonly [string, () => string | null][] = [

@@ -1,6 +1,7 @@
 import { EntityManager } from "typeorm";
 import { lockTransactionRow, lockTransactionRows } from "../common/db/locks";
 import type { LockedTransactionRow } from "../common/db/locks";
+import { assertReconciledIdsMutable } from "./reconciled-lock.util";
 
 /**
  * One category per transfer (INV-CATEGORY-002,
@@ -114,6 +115,12 @@ export async function writeCategoryPartner(
   if (!partner) return null;
   const held = await readPartnerCategory(m, userId, partner);
   if (held === undefined || held === categoryId) return null;
+  // The other side is written too, so it answers the strict reconciled lock
+  // as the row does: the other leg, or the parent a line belongs to (as
+  // updateTransfer refuses a reconciled mirror).
+  await assertReconciledIdsMutable(m, userId, [
+    partner.kind === "leg" ? partner.id : partner.parentId,
+  ]);
   await restoreCategoryPartner(m, userId, { ...partner, categoryId });
   const record = {
     kind: partner.kind,

@@ -3155,8 +3155,6 @@ export class TransactionTransferService {
       );
     }
 
-    await this.assertCategoryOwned(userId, updateDto.categoryId);
-
     // The leg's amount is in its own account's currency, the split row's and
     // the parent's in the parent's: each is held to and rounded at its own
     // currency's money precision (INV-MONEY-001).
@@ -3337,6 +3335,13 @@ export class TransactionTransferService {
     if (updateDto.description !== undefined)
       splitData.memo = updateDto.description ?? null;
     if (newSplitAmount !== undefined) splitData.amount = newSplitAmount as any;
+    // One category per transfer: the line follows the row it links, when it
+    // holds another (INV-CATEGORY-002). Fitted with the leg's below.
+    if (
+      updateDto.categoryId !== undefined &&
+      (updateDto.categoryId || null) !== (parentSplit.categoryId ?? null)
+    )
+      splitData.categoryId = updateDto.categoryId || null;
 
     // The leg edit, split-row mirror, parent re-total, and balance updates
     // commit atomically.
@@ -3390,6 +3395,9 @@ export class TransactionTransferService {
           ),
         );
       }
+      // The row and its line take the category, of any type
+      // (INV-CATEGORY-001), before the first write.
+      await fitTransferCategory(m, userId, updateDto.categoryId);
 
       if (Object.keys(legData).length > 0) {
         await m.update(Transaction, counterpart.id, legData);

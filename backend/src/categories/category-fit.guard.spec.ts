@@ -119,11 +119,6 @@ const NOT_YET_CONVERTED = new Set<string>([
   "shared-expenses/shared-finance-write.ts undoSharedPosting",
   "shared-expenses/shared-finance-write.ts writeSharedFinance",
   "transaction-rules/transaction-rules-applier.service.ts writeEffects",
-  "transactions/transaction-split.service.ts addSplit",
-  "transactions/transaction-split.service.ts bulkRecategorizeCategorySplits",
-  "transactions/transaction-split.service.ts createSplitsInternal",
-  "transactions/transaction-split.service.ts removeSplit",
-  "transactions/transaction-transfer.service.ts updateSplitTransferLeg",
 ]);
 
 export interface CategoryWrite {

@@ -92,6 +92,9 @@ export class DataQualityReportsService {
           SELECT 1 FROM transaction_splits ts
           WHERE ts.transaction_id = t.id
           AND ts.category_id IS NOT NULL
+          -- A transfer line can hold a category too (INV-CATEGORY-001); it
+          -- reads as a transfer leg, never as the split's category line.
+          AND ts.transfer_account_id IS NULL
         )
     `;
 
@@ -184,6 +187,9 @@ export class DataQualityReportsService {
           SELECT 1 FROM transaction_splits ts
           WHERE ts.transaction_id = t.id
           AND ts.category_id IS NOT NULL
+          -- A transfer line can hold a category too (INV-CATEGORY-001); it
+          -- reads as a transfer leg, never as the split's category line.
+          AND ts.transfer_account_id IS NULL
         )
     `;
 

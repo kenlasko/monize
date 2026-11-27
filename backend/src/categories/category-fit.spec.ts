@@ -94,6 +94,7 @@ describe("the fit helper (INV-CATEGORY-001)", () => {
     m = {
       query,
       getRepository: jest.fn().mockReturnValue(categories),
+      find: (_entity: unknown, options: unknown) => categories.find(options),
     } as unknown as EntityManager;
   });
 

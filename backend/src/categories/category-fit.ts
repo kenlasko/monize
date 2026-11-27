@@ -136,9 +136,7 @@ export async function fitCategories(
   if (lines.some((line) => line.categoryId && line.holder === "category")) {
     await lockCategoryOwnerShared(m, userId);
   }
-  const found = await m
-    .getRepository(Category)
-    .find({ where: { id: In(ids), userId } });
+  const found = await m.find(Category, { where: { id: In(ids), userId } });
   for (const category of found) byId.set(category.id, category);
   const missing = ids.filter((id) => !byId.has(id));
   if (missing.length > 0) {
