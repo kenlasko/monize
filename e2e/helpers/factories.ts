@@ -88,11 +88,13 @@ export function createCategory(
     isIncome?: boolean;
     parentId?: string;
     description?: string;
+    /** `transfer` makes a Transfer category; omit it and `isIncome` picks Income or Expense. */
+    type?: 'income' | 'expense' | 'transfer';
   } = {},
 ): Promise<CreatedCategory> {
   return api.post<CreatedCategory>('/categories', {
     name: data.name ?? `E2E Category ${uniqueId()}`,
-    isIncome: data.isIncome ?? false,
+    ...(data.type !== undefined ? { type: data.type } : { isIncome: data.isIncome ?? false }),
     ...(data.parentId !== undefined ? { parentId: data.parentId } : {}),
     ...(data.description !== undefined ? { description: data.description } : {}),
   });
@@ -198,6 +200,8 @@ export function createTransfer(
     amount: number;
     transactionDate?: string;
     tagIds?: string[];
+    /** A category of any type, written to both legs. */
+    categoryId?: string;
   },
 ): Promise<{ fromTransaction: { id: string }; toTransaction: { id: string } }> {
   return api.post('/transactions/transfer', {
@@ -206,6 +210,7 @@ export function createTransfer(
     amount: data.amount,
     transactionDate: data.transactionDate ?? new Date().toISOString().slice(0, 10),
     ...(data.tagIds !== undefined ? { tagIds: data.tagIds } : {}),
+    ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
   });
 }
 
@@ -220,6 +225,7 @@ export function createSplitTransaction(
     amount: number;
     splits: {
       amount: number;
+      /** On a transfer line (`transferAccountId`) a category of any type; on a category line Income or Expense. */
       categoryId?: string;
       transferAccountId?: string;
       tagIds?: string[];
