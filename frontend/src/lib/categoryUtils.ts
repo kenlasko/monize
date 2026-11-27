@@ -112,10 +112,11 @@ export function getCategorySelectOptionsFor(
   // group as a tree of its own; a child's label names its parent from the
   // whole list.
   const head = getCategorySelectOptions([], options);
+  const byId = new Map(categories.map((c) => [c.id, c]));
   const group = (list: Category[]) =>
-    getCategorySelectOptions(list).map((option) => ({
+    getCategorySelectOptions(list, { excludeIds: options?.excludeIds }).map((option) => ({
       ...option,
-      label: categoryPathLabel(categories, option.value) ?? option.label,
+      label: categoryPathLabel(byId, option.value) ?? option.label,
     }));
   return [
     ...head,
@@ -147,8 +148,7 @@ export function buildCategoryPickerOptions<T>(
 }
 
 /** "Parent: Child" for a category by id, read from the whole list. */
-function categoryPathLabel(categories: Category[], id: string): string | undefined {
-  const byId = new Map(categories.map((c) => [c.id, c]));
+function categoryPathLabel(byId: ReadonlyMap<string, Category>, id: string): string | undefined {
   const category = byId.get(id);
   if (!category) return undefined;
   const parent = category.parentId ? byId.get(category.parentId) : undefined;

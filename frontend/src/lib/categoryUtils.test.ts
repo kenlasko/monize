@@ -383,6 +383,12 @@ describe('getCategorySelectOptionsFor (INV-CATEGORY-001)', () => {
     ]);
   });
 
+  it('leaves out the ids a transfer picker excludes, in either group', () => {
+    expect(
+      getCategorySelectOptionsFor(list, 'transfer', { excludeIds: new Set(['t2', 'cat-1']) }).map((o) => o.value),
+    ).toEqual(['t', 'cat-2']);
+  });
+
   it('offers a category row only Income and Expense, after the pseudo entries it asks for', () => {
     expect(
       getCategorySelectOptionsFor(list, 'category', { includeEmpty: true, emptyLabel: 'None' }).map((o) => o.value),
