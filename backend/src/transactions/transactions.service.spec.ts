@@ -3114,6 +3114,60 @@ describe("TransactionsService", () => {
       expect(accountsService.updateBalance).not.toHaveBeenCalled();
     });
 
+    it("still deletes a row that has a link but is not a transfer", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-1",
+        userId: "user-1",
+        accountId: "account-1",
+        amount: -50,
+        status: TransactionStatus.UNRECONCILED,
+        isSplit: false,
+        isTransfer: false,
+        linkedTransactionId: "tx-2",
+        splits: [],
+      });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+
+      await service.remove("user-1", "tx-1");
+
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Transaction, {
+        id: "tx-1",
+        userId: "user-1",
+      });
+    });
+
+    it("still deletes a split's transfer line (a linked row with a parent split)", async () => {
+      transactionsRepository.findOne
+        .mockResolvedValueOnce({
+          id: "leg-tx",
+          userId: "user-1",
+          accountId: "account-2",
+          amount: 40,
+          status: TransactionStatus.UNRECONCILED,
+          isSplit: false,
+          isTransfer: true,
+          linkedTransactionId: "parent-tx",
+          splits: [],
+        })
+        .mockResolvedValueOnce({
+          id: "parent-tx",
+          userId: "user-1",
+          accountId: "account-1",
+          amount: -100,
+          status: TransactionStatus.UNRECONCILED,
+        });
+      transactionsRepository.find.mockResolvedValue([]);
+      const parentSplit = {
+        id: "parent-split-1",
+        transactionId: "parent-tx",
+        linkedTransactionId: "leg-tx",
+      };
+      splitsRepository.findOne.mockResolvedValue(parentSplit);
+      mockQueryRunner.manager.find.mockResolvedValueOnce([parentSplit]);
+
+      await expect(service.remove("user-1", "leg-tx")).resolves.toBeUndefined();
+    });
+
     it("reverts balance and removes transaction", async () => {
       transactionsRepository.findOne.mockResolvedValue({
         id: "tx-1",

@@ -4521,8 +4521,14 @@ export class TransactionsService {
       }
       // Safety net for removeAny's unlocked routing read: a transfer leg that
       // is not a split's line is deleted with its counterpart, never alone
-      // (a lone delete leaves a half transfer, INV-TRANSFER-001).
-      if (locked.linkedTransactionId && !parentSplit) {
+      // (a lone delete leaves a half transfer, INV-TRANSFER-001). Same
+      // predicate as removeAny (`isTransfer` and a link), so a row with a
+      // link but is_transfer = false still deletes here.
+      if (
+        transaction.isTransfer &&
+        locked.linkedTransactionId &&
+        !parentSplit
+      ) {
         throw new ConflictException(
           tr(
             "errors.transactions.transferLegDeleteTransfer",

@@ -8,7 +8,10 @@ import {
   Logger,
 } from "@nestjs/common";
 import { DataSource, EntityManager } from "typeorm";
-import { investmentCashLegLockedError } from "./void-status-transition.util";
+import {
+  investmentCashLegLockedError,
+  isInvestmentCashLeg,
+} from "./void-status-transition.util";
 import { Transaction, TransactionStatus } from "./entities/transaction.entity";
 import { TransactionSplit } from "./entities/transaction-split.entity";
 import { fitCategory } from "../categories/category-fit";
@@ -1910,6 +1913,15 @@ export class TransactionTransferService {
         if (!(err instanceof NotFoundException)) throw err;
       }
       if (!scopedLinked) {
+        // The own leg of a cross-owner pair can be an investment cash leg too:
+        // refuse it here, under its row lock, for the connected and frozen
+        // branches alike (neither checks investment_transactions).
+        await withScopedDb(this.dataSource, async (m) => {
+          await lockTransactionRow(m, transactionId, userId);
+          if (await isInvestmentCashLeg(m, transactionId)) {
+            throw investmentCashLegLockedError();
+          }
+        });
         return this.removeCrossOwnerTransfer(realUserId, transaction);
       }
     }
