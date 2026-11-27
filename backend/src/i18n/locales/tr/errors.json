@@ -92,8 +92,9 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Bu düzenleme, parayı başka hesaplara taşıyan bölme satırlarını değiştirdi, bu yüzden otomatik olarak geri alınamaz. Geri almak için işlemi düzenleyin.",
-    "undoDeletedSplitHasTransferLine": "Bu bölmede bir transfer satırı var ve geri alma diğer hesabın tarafını geri yükleyemez. Bölmeyi yeniden girin.",
-    "undoTransferPartnerChanged": "Bu transferin diğer tarafı silindi veya değiştirildi, bu yüzden geri alma iki tarafı yeniden bağlayamaz.",
+    "undoDeletedSplitHasTransferLine": "Bu bölmede başka bir hesapta para hareketi yapan bir satır var (transfer veya yatırım satırı) ve geri alma diğer hesabın tarafını geri yükleyemez. Bölmeyi yeniden girin.",
+    "undoTransferLegDeleted": "Bu bir transferin bir tarafıydı. Geri alma tek bir tarafı geri yükleyemez. Transferi yeniden girin.",
+    "undoBulkDeletedSplit": "Bu silme işlemi bölünmüş bir işlem içeriyordu ve toplu silmeyi geri alma bölme satırlarını geri yükleyemez. Bölmeyi yeniden girin.",
     "undoVoidWithLegs": "Bu değişiklik başka hesaplardaki kayıtları geçersiz kıldı veya geri yükledi, bu yüzden otomatik olarak geri alınamaz. Bunun yerine durumu geri değiştirin.",
     "loanEditNotUndoable": "Bu kredi değişikliği otomatik olarak geri alınamaz. Geri almak için krediyi düzenleyin.",
     "nothingToUndo": "Geri alınacak işlem yok",

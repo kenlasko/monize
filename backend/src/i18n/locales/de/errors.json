@@ -92,8 +92,9 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Diese Bearbeitung hat Aufteilungszeilen geändert, die Geld auf andere Konten verschieben, daher kann sie nicht automatisch rückgängig gemacht werden. Bearbeiten Sie die Transaktion, um sie zurückzusetzen.",
-    "undoDeletedSplitHasTransferLine": "Diese Aufteilung hat eine Überweisungszeile, und Rückgängig kann die Seite des anderen Kontos nicht wiederherstellen. Geben Sie die Aufteilung erneut ein.",
-    "undoTransferPartnerChanged": "Die andere Seite dieser Überweisung wurde inzwischen gelöscht oder geändert, daher kann Rückgängig die beiden Seiten nicht wieder verknüpfen.",
+    "undoDeletedSplitHasTransferLine": "Diese Aufteilung hat eine Zeile, die Geld auf einem anderen Konto bewegt (eine Überweisung oder eine Anlagezeile), und Rückgängig kann die Seite des anderen Kontos nicht wiederherstellen. Geben Sie die Aufteilung erneut ein.",
+    "undoTransferLegDeleted": "Dies war eine Seite einer Überweisung. Rückgängig kann eine Seite nicht allein wiederherstellen. Geben Sie die Überweisung erneut ein.",
+    "undoBulkDeletedSplit": "Diese Löschung enthielt eine aufgeteilte Transaktion, und Rückgängig einer Massenlöschung kann Aufteilungszeilen nicht wiederherstellen. Geben Sie die Aufteilung erneut ein.",
     "undoVoidWithLegs": "Diese Änderung hat Einträge in anderen Konten annulliert oder wiederhergestellt, daher kann sie nicht automatisch rückgängig gemacht werden. Setzen Sie stattdessen den Status zurück.",
     "loanEditNotUndoable": "Diese Kreditänderung kann nicht automatisch rückgängig gemacht werden. Bearbeiten Sie den Kredit, um sie zurückzusetzen.",
     "nothingToUndo": "Nichts rückgängig zu machen",

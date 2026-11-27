@@ -92,8 +92,9 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Chỉnh sửa này đã thay đổi các dòng chia nhỏ chuyển tiền sang tài khoản khác, nên không thể tự động hoàn tác. Hãy chỉnh sửa giao dịch để đổi lại.",
-    "undoDeletedSplitHasTransferLine": "Khoản chia này có một dòng chuyển khoản, và hoàn tác không thể khôi phục phía của tài khoản kia. Hãy nhập lại khoản chia.",
-    "undoTransferPartnerChanged": "Phía còn lại của giao dịch chuyển khoản này đã bị xóa hoặc thay đổi, nên hoàn tác không thể liên kết lại hai phía.",
+    "undoDeletedSplitHasTransferLine": "Khoản chia này có một dòng chuyển tiền ở tài khoản khác (chuyển khoản hoặc dòng đầu tư), và hoàn tác không thể khôi phục phía của tài khoản kia. Hãy nhập lại khoản chia.",
+    "undoTransferLegDeleted": "Đây là một phía của giao dịch chuyển khoản. Hoàn tác không thể khôi phục riêng một phía. Hãy nhập lại giao dịch chuyển khoản.",
+    "undoBulkDeletedSplit": "Lần xóa này gồm một giao dịch chia nhỏ, và hoàn tác xóa hàng loạt không thể khôi phục các dòng chia nhỏ. Hãy nhập lại khoản chia.",
     "undoVoidWithLegs": "Thay đổi này đã hủy hoặc khôi phục các mục ở tài khoản khác, nên không thể tự động hoàn tác. Hãy đổi lại trạng thái.",
     "loanEditNotUndoable": "Không thể tự động hoàn tác thay đổi khoản vay này. Hãy chỉnh sửa khoản vay để đổi lại.",
     "nothingToUndo": "Không có gì để hoàn tác",

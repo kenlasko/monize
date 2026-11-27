@@ -92,8 +92,9 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Questa modifica ha cambiato righe di suddivisione che spostano denaro su altri conti, quindi non può essere annullata automaticamente. Modifica la transazione per ripristinarla.",
-    "undoDeletedSplitHasTransferLine": "Questa suddivisione ha una riga di trasferimento, e l'annullamento non può ripristinare il lato dell'altro conto. Inserisci di nuovo la suddivisione.",
-    "undoTransferPartnerChanged": "L'altro lato di questo trasferimento è stato eliminato o modificato, quindi l'annullamento non può collegare di nuovo i due lati.",
+    "undoDeletedSplitHasTransferLine": "Questa suddivisione ha una riga che sposta denaro in un altro conto (un trasferimento o una riga di investimento), e l'annullamento non può ripristinare il lato dell'altro conto. Inserisci di nuovo la suddivisione.",
+    "undoTransferLegDeleted": "Questo era un lato di un trasferimento. L'annullamento non può ripristinare un lato da solo. Inserisci di nuovo il trasferimento.",
+    "undoBulkDeletedSplit": "Questa eliminazione includeva una transazione suddivisa, e l'annullamento di un'eliminazione multipla non può ripristinare le righe di suddivisione. Inserisci di nuovo la suddivisione.",
     "undoVoidWithLegs": "Questa modifica ha annullato o ripristinato voci in altri conti, quindi non può essere annullata automaticamente. Ripristina invece lo stato.",
     "loanEditNotUndoable": "Questa modifica al prestito non può essere annullata automaticamente. Modifica il prestito per ripristinarla.",
     "nothingToUndo": "Niente da annullare",

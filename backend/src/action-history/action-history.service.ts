@@ -279,6 +279,47 @@ function assertSplitLegsUndoable(
 }
 
 /**
+ * Refuses, before anything is written, the undo of a delete whose row had a
+ * counterpart that went with it and is not in history: one leg of a transfer
+ * (the other leg and its link are gone) or a split with a line that moves money
+ * in another account. `restoresSplits` is false for the bulk undo, which writes
+ * no split lines, so a split parent would come back without its lines.
+ */
+function assertDeletedRowRestorable(
+  row: Record<string, any>,
+  restoresSplits: boolean,
+): void {
+  if (row.linkedTransactionId) {
+    throw new ConflictException({
+      message: tr(
+        "errors.actionHistory.undoTransferLegDeleted",
+        "This was one side of a transfer. Undo cannot restore one side alone. Enter the transfer again.",
+      ),
+      errorCode: "UNDO_TRANSFER_LEG_DELETED",
+    });
+  }
+  const splits: SplitSnapshot[] = Array.isArray(row.splits) ? row.splits : [];
+  if (splits.some(isLegSplit)) {
+    throw new ConflictException({
+      message: tr(
+        "errors.actionHistory.undoDeletedSplitHasTransferLine",
+        "This split has a line that moves money in another account (a transfer or an investment line), and undo cannot restore the other account's side. Enter the split again.",
+      ),
+      errorCode: "UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE",
+    });
+  }
+  if (!restoresSplits && row.isSplit === true) {
+    throw new ConflictException({
+      message: tr(
+        "errors.actionHistory.undoBulkDeletedSplit",
+        "This delete included a split transaction, and undo of a bulk delete cannot restore split lines. Enter the split again.",
+      ),
+      errorCode: "UNDO_BULK_DELETED_SPLIT",
+    });
+  }
+}
+
+/**
  * Refuses, before anything is written, the undo or redo of a status edit that
  * voided or restored a row with legs: the edit propagated VOID to the
  * counterparts in other accounts, but history holds only the edited row, so a
@@ -1509,40 +1550,7 @@ export class ActionHistoryService {
       { currencyCode: account.currencyCode, ...before },
     ]);
 
-    // A transfer line's other-account leg went with the row and history does
-    // not hold it, so refuse before writing anything.
-    if (
-      Array.isArray(before.splits) &&
-      (before.splits as SplitSnapshot[]).some(isLegSplit)
-    ) {
-      throw new ConflictException({
-        message: tr(
-          "errors.actionHistory.undoDeletedSplitHasTransferLine",
-          "This split has a transfer line, and undo cannot restore the other account's side. Enter the split again.",
-        ),
-        errorCode: "UNDO_DELETED_SPLIT_HAS_TRANSFER_LINE",
-      });
-    }
-
-    // A deleted transfer leg: the FK (ON DELETE SET NULL) cleared the
-    // surviving partner's link. Link it back only if it is still unlinked; a
-    // missing or relinked partner would leave a one-way link, so refuse.
-    if (before.linkedTransactionId) {
-      const partner: { linked_transaction_id: string | null }[] =
-        await manager.query(
-          `SELECT linked_transaction_id FROM transactions WHERE id = $1 AND user_id = $2 FOR UPDATE`,
-          [before.linkedTransactionId, action.userId],
-        );
-      if (!partner?.[0] || partner[0].linked_transaction_id !== null) {
-        throw new ConflictException({
-          message: tr(
-            "errors.actionHistory.undoTransferPartnerChanged",
-            "The other side of this transfer was deleted or changed since, so undo cannot link the two sides again.",
-          ),
-          errorCode: "UNDO_TRANSFER_PARTNER_CHANGED",
-        });
-      }
-    }
+    assertDeletedRowRestorable(before, true);
 
     // Re-insert the transaction
     await manager.query(
@@ -1577,13 +1585,6 @@ export class ActionHistoryService {
         before.amountIsProvisional ?? false,
       ],
     );
-
-    if (before.linkedTransactionId) {
-      await manager.query(
-        `UPDATE transactions SET linked_transaction_id = $1 WHERE id = $2 AND user_id = $3 AND linked_transaction_id IS NULL`,
-        [before.id, before.linkedTransactionId, action.userId],
-      );
-    }
 
     // Re-insert splits
     if (Array.isArray(before.splits) && before.splits.length > 0) {
@@ -2139,6 +2140,11 @@ export class ActionHistoryService {
   ): Promise<void> {
     if (!action.beforeData || !Array.isArray(action.beforeData.transactions))
       return;
+
+    // Every row is checked before the first write.
+    for (const txData of action.beforeData.transactions) {
+      assertDeletedRowRestorable(txData, false);
+    }
 
     const accountIds = new Set<string>();
 

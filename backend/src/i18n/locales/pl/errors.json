@@ -92,8 +92,9 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Ta edycja zmieniła wiersze podziału, które przenoszą pieniądze na inne konta, więc nie można jej cofnąć automatycznie. Aby ją wycofać, edytuj transakcję.",
-    "undoDeletedSplitHasTransferLine": "Ten podział ma wiersz przelewu, a cofnięcie nie może przywrócić strony drugiego konta. Wprowadź podział ponownie.",
-    "undoTransferPartnerChanged": "Druga strona tego przelewu została usunięta lub zmieniona, więc cofnięcie nie może ponownie połączyć obu stron.",
+    "undoDeletedSplitHasTransferLine": "Ten podział ma wiersz, który przenosi pieniądze na innym koncie (przelew lub wiersz inwestycji), a cofnięcie nie może przywrócić strony drugiego konta. Wprowadź podział ponownie.",
+    "undoTransferLegDeleted": "To była jedna strona przelewu. Cofnięcie nie może przywrócić samej jednej strony. Wprowadź przelew ponownie.",
+    "undoBulkDeletedSplit": "To usunięcie obejmowało transakcję z podziałem, a cofnięcie usunięcia zbiorczego nie może przywrócić wierszy podziału. Wprowadź podział ponownie.",
     "undoVoidWithLegs": "Ta zmiana unieważniła lub przywróciła wpisy na innych kontach, więc nie można jej cofnąć automatycznie. Zamiast tego zmień status z powrotem.",
     "loanEditNotUndoable": "Tej zmiany pożyczki nie można cofnąć automatycznie. Aby ją wycofać, edytuj pożyczkę.",
     "nothingToUndo": "Nie ma nic do cofnięcia",

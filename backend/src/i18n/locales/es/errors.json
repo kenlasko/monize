@@ -92,8 +92,9 @@
   },
   "actionHistory": {
     "undoSplitLegsChanged": "Esta edición cambió líneas de división que mueven dinero a otras cuentas, por lo que no se puede deshacer automáticamente. Edita la transacción para revertirla.",
-    "undoDeletedSplitHasTransferLine": "Esta división tiene una línea de transferencia, y deshacer no puede restaurar el lado de la otra cuenta. Introduce la división de nuevo.",
-    "undoTransferPartnerChanged": "El otro lado de esta transferencia se eliminó o cambió después, por lo que deshacer no puede volver a vincular ambos lados.",
+    "undoDeletedSplitHasTransferLine": "Esta división tiene una línea que mueve dinero en otra cuenta (una transferencia o una línea de inversión), y deshacer no puede restaurar el lado de la otra cuenta. Introduce la división de nuevo.",
+    "undoTransferLegDeleted": "Este era un lado de una transferencia. Deshacer no puede restaurar un lado por sí solo. Introduce la transferencia de nuevo.",
+    "undoBulkDeletedSplit": "Esta eliminación incluía una transacción dividida, y deshacer una eliminación masiva no puede restaurar las líneas de división. Introduce la división de nuevo.",
     "undoVoidWithLegs": "Este cambio anuló o restauró asientos en otras cuentas, por lo que no se puede deshacer automáticamente. Cambia el estado de nuevo.",
     "loanEditNotUndoable": "Este cambio del préstamo no se puede deshacer automáticamente. Edita el préstamo para revertirlo.",
     "nothingToUndo": "Nada que deshacer",

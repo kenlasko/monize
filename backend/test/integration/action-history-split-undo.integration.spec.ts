@@ -174,6 +174,31 @@ describe("Undo of an edit of a split with a transfer line (integration)", () => 
     expect(await db.manager.countBy(Transaction, { id })).toBe(0);
   });
 
+  it("refuses the undo of deleting one leg of a plain transfer, before any write", async () => {
+    await asUser(() =>
+      transactions.createTransfer(userId, {
+        fromAccountId: accountA,
+        toAccountId: accountB,
+        transactionDate: "2026-01-15",
+        amount: 25,
+        fromCurrencyCode: "USD",
+      }),
+    );
+    const [leg] = await db.query(
+      `SELECT id FROM transactions WHERE account_id = $1`,
+      [accountB],
+    );
+    // The service method deletes this one row, not the pair.
+    await asUser(() => transactions.remove(userId, leg.id));
+    const settled = await balances();
+
+    await expect(settledUndo()).rejects.toMatchObject({
+      response: { errorCode: "UNDO_TRANSFER_LEG_DELETED" },
+    });
+    expect(await balances()).toEqual(settled);
+    expect(await db.manager.countBy(Transaction, { id: leg.id })).toBe(0);
+  });
+
   it("refuses the undo of a VOID that reached the legs, with every balance unchanged", async () => {
     const id = await createSplit();
     await asUser(() =>
