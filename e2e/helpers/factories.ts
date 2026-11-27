@@ -443,6 +443,8 @@ export function createBudget(
     budgetType?: 'MONTHLY' | 'ANNUAL' | 'PAY_PERIOD';
     strategy?: 'FIXED' | 'ROLLOVER' | 'ZERO_BASED' | 'FIFTY_THIRTY_TWENTY' | 'BUCKET';
     baseIncome?: number;
+    /** `budgets.config`, e.g. `{ excludedAccountIds: [...] }`. */
+    config?: Record<string, unknown>;
   } = {},
 ): Promise<CreatedBudget> {
   const now = new Date();
@@ -454,6 +456,7 @@ export function createBudget(
     budgetType: data.budgetType ?? 'MONTHLY',
     strategy: data.strategy ?? 'FIXED',
     ...(data.baseIncome !== undefined ? { baseIncome: data.baseIncome } : {}),
+    ...(data.config !== undefined ? { config: data.config } : {}),
   });
 }
 

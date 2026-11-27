@@ -193,7 +193,13 @@ test.describe('Transfer categories', () => {
       name: `Emergency fund ${uniqueId()}`,
       type: 'transfer',
     });
-    const budget = await createBudget(api, { name: `Plan ${uniqueId()}` });
+    // Savings sits outside the budget, so money moved there leaves it and the
+    // line reads the full amount (a transfer between two budget accounts nets
+    // to zero on its line).
+    const budget = await createBudget(api, {
+      name: `Plan ${uniqueId()}`,
+      config: { excludedAccountIds: [savings.id] },
+    });
     await addBudgetCategory(api, budget.id, { categoryId: category.id, amount: 300 });
     await createTransfer(api, {
       fromAccountId: checking.id,
