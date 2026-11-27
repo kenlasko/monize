@@ -675,10 +675,10 @@ export class UsersService {
     // they can keep acting as a delegate.
     if (await this.isActingDelegate(userId)) {
       await this.purgeForDowngrade(userId);
-      // The purge is committed and irreversible, so a failed revoke is logged,
-      // not reported as a failed delete. MCP never acts as a delegate, so a
-      // surviving grant reaches only the user's own data, which is gone.
-      await this.revokeOAuthAfterDelete(userId);
+      // The user row survives, so a surviving grant could still act as this
+      // user: a failed revoke is rethrown (fail closed), even though the purge
+      // has committed. A retry is safe: the purge and the revoke are idempotent.
+      await revokeOAuthGrantsAfterCommit(this.moduleRef, userId, this.logger);
       return { downgraded: true };
     }
 
