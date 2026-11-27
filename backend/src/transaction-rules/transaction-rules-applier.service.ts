@@ -7,6 +7,7 @@ import { PayeesService } from "../payees/payees.service";
 import { AccountsService } from "../accounts/accounts.service";
 import { convertRowToTransfer } from "../transactions/convert-to-transfer";
 import { fitCategory, holderOfRow } from "../categories/category-fit";
+import { lockCategoryOwnerShared } from "../common/db/locks";
 import {
   findCategoryPartner,
   writeCategoryPartner,
@@ -633,6 +634,12 @@ export class TransactionRulesApplierService {
         source === "import" ? "import" : "create",
       ));
     if (rules.length === 0) return [];
+    // A rule's category is fitted under the shared category-owner lock, which
+    // comes before the row locks this path takes (the loan facts' schedule
+    // and account locks below; `common/db/locks.ts`). Re-entrant: the write's
+    // fit takes it again. The rows it applies to are the caller's own new
+    // rows, which no other transaction can hold.
+    await lockCategoryOwnerShared(m, userId);
 
     const rows = chronological(
       await m.find(Transaction, { where: { id: In(ids), userId } }),

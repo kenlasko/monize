@@ -125,6 +125,8 @@ function harness(rows: Transaction[] = []) {
   ]);
   const m = {
     getRepository: jest.fn((entity: unknown) => repos.get(entity)),
+    // The shared category-owner lock `applyToNew` takes first.
+    query: jest.fn().mockResolvedValue([]),
     find: jest.fn(async (entity: unknown) =>
       entity === Transaction ? rows : entity === TransactionTag ? [] : [],
     ),
