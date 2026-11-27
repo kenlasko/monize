@@ -9708,16 +9708,19 @@ Statement           A category's type is income, expense or transfer and
                     PR 2 on. While categories.is_income exists (nullable
                     today), it is true exactly when the type is income.
 Source of truth     categories.category_type (PR 2), categories.parent_id.
-Enforcement         None in the database. Today only is_income exists, and
-                    backend/src/categories/categories.service.ts gives a new
-                    child its parent's isIncome; a direct SQL write can break
-                    it. Planned: the same service rule over the type, a type
-                    change or a move refused while a holder would no longer
-                    fit (INV-CATEGORY-001), and a categories trigger that
-                    keeps is_income and category_type in step and gives a
-                    child its parent's type on every insert and move, since
-                    the previous release's pods write is_income alone (PR 2,
-                    specification section 11).
+Enforcement         backend/src/categories/categories.service.ts gives a new
+                    child its parent's type and refuses a type change or a
+                    move while a holder would no longer fit (INV-CATEGORY-001).
+                    In the database the categories triggers
+                    trg_categories_sync_type (keeps is_income and
+                    category_type in step, and gives a child its parent's type
+                    on every insert and move) and trg_categories_cascade_type
+                    (a re-type reaches the subtree) hold it even for a write
+                    from a previous-release pod that sets is_income alone
+                    (specification section 11). Rows that existed before the
+                    type keep their own type, so a child may still differ from
+                    its parent until the category or an ancestor is next moved
+                    or re-typed; that is why the status is partial.
 Concurrency scope   category
 Retry semantics     --
 Crash semantics     -- (one transaction)
@@ -9727,7 +9730,7 @@ Required tests      Integration: the backfill makes income exactly the
                     expense); a write of either column sets the other; a child
                     takes its parent's type, including on a previous-release
                     write that sets is_income alone or moves a category.
-Status              unenforced
+Status              partial
 ```
 
 The violation exists in today's data: a moved category is re-typed alone and
@@ -9745,22 +9748,26 @@ Statement           A reader that means "expense" tests the type for expense,
                     income" as expense. A Transfer category is never counted
                     as spending or as income.
 Source of truth     categories.category_type (PR 2).
-Enforcement         None. About 60 backend and 40 frontend source files read
-                    isIncome, many as !isIncome meaning expense
-                    (docs/future-plans/transfer-categories.md section 2).
-                    Planned: the typed helpers and a source scan failing a new
-                    raw isIncome read (PR 2).
+Enforcement         One typed helper per layer: backend/src/categories/
+                    category-type.util.ts (categoryTypeOf, isIncomeCategory,
+                    isExpenseCategory, categoryTypeIs for SQL) and
+                    frontend/src/lib/category-type.ts. A source scan per
+                    layer (backend/src/common/category-type.guard.spec.ts,
+                    frontend/src/lib/category-type.guard.test.ts) fails a new
+                    raw isIncome or is_income read; a budget line's own
+                    column carries the income-flag-ok marker.
 Concurrency scope   -- (read path)
 Retry semantics     -- (read path)
 Crash semantics     -- (read path)
 Failure response    --
 Required tests      Unit tests of the helpers; the source scan.
-Status              unenforced
+Status              enforced
 ```
 
-The violation is latent: while no Transfer category exists, "not income" and
+The violation was latent: while no Transfer category exists, "not income" and
 "expense" pick the same categories. From the first Transfer category on, every
-reader the sweep misses counts it as spending.
+reader the sweep missed would count it as spending; the sweep and the two scans
+close that.
 
 ## Transaction rules
 
