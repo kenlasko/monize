@@ -54,6 +54,7 @@ describe("TransactionsController", () => {
       removeSplit: jest.fn(),
       getLinkedTransaction: jest.fn(),
       removeTransfer: jest.fn(),
+      removeAny: jest.fn(),
       updateTransfer: jest.fn(),
       getSummary: jest.fn(),
       getGroupedTotals: jest.fn(),
@@ -283,7 +284,7 @@ describe("TransactionsController", () => {
 
       await controller.remove(req, "tx-1");
       expect(mockJointRegister.remove).toHaveBeenCalledWith("user-1", "tx-1");
-      expect(mockService.remove).not.toHaveBeenCalled();
+      expect(mockService.removeAny).not.toHaveBeenCalled();
 
       await controller.markCleared(req, "tx-1", { isCleared: true } as never);
       expect(mockJointRegister.markCleared).toHaveBeenCalledWith(
@@ -1176,13 +1177,17 @@ describe("TransactionsController", () => {
   });
 
   describe("remove()", () => {
-    it("delegates to service.remove with userId and id", async () => {
-      mockService.remove.mockResolvedValue(undefined);
+    it("delegates to service.removeAny so a transfer leg deletes both legs", async () => {
+      mockService.removeAny.mockResolvedValue(undefined);
 
       const result = await controller.remove(mockReq, "tx-1");
 
       expect(result).toBeUndefined();
-      expect(mockService.remove).toHaveBeenCalledWith("user-1", "tx-1");
+      expect(mockService.removeAny).toHaveBeenCalledWith("user-1", "tx-1", {
+        effectiveUserId: "user-1",
+        realUserId: "user-1",
+      });
+      expect(mockService.remove).not.toHaveBeenCalled();
     });
   });
 

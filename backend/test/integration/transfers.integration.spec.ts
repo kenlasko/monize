@@ -266,6 +266,37 @@ describe("TransactionsService transfers (integration)", () => {
     });
   });
 
+  describe("removeAny() (the generic DELETE /transactions/:id path)", () => {
+    it("deletes both legs and reverses both balances when given one transfer leg", async () => {
+      const result = await withUserContext(userId, () =>
+        service.createTransfer(userId, {
+          fromAccountId,
+          toAccountId,
+          transactionDate: "2026-01-15",
+          amount: 300,
+          fromCurrencyCode: "USD",
+        }),
+      );
+
+      await withUserContext(userId, () =>
+        service.removeAny(userId, result.toTransaction.id),
+      );
+
+      const fromAccount = await dataSource.manager.findOne(Account, {
+        where: { id: fromAccountId },
+      });
+      const toAccount = await dataSource.manager.findOne(Account, {
+        where: { id: toAccountId },
+      });
+      expect(fromAccount!.currentBalance).toBe(5000);
+      expect(toAccount!.currentBalance).toBe(2000);
+      const remaining = await dataSource.manager.find(Transaction, {
+        where: { userId },
+      });
+      expect(remaining).toHaveLength(0);
+    });
+  });
+
   describe("removeTransfer()", () => {
     it("should delete both transactions and reverse both balances", async () => {
       const result = await withUserContext(userId, () =>

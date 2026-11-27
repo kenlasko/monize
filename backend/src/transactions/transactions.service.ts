@@ -5243,10 +5243,14 @@ export class TransactionsService {
    * AI Assistant / MCP manage_transactions delete path, where the caller does
    * not know up front whether the target is a transfer.
    */
-  async removeAny(userId: string, transactionId: string): Promise<void> {
+  async removeAny(
+    userId: string,
+    transactionId: string,
+    actor?: TransferActor,
+  ): Promise<void> {
     const transaction = await this.findOne(userId, transactionId);
     if (transaction.isTransfer && transaction.linkedTransactionId) {
-      return this.removeTransfer(userId, transactionId);
+      return this.removeTransfer(userId, transactionId, actor);
     }
     return this.remove(userId, transactionId);
   }

@@ -3859,8 +3859,34 @@ describe("TransactionsService", () => {
 
       await service.removeAny("user-1", "tx-from");
 
-      expect(removeTransferSpy).toHaveBeenCalledWith("user-1", "tx-from");
+      expect(removeTransferSpy).toHaveBeenCalledWith(
+        "user-1",
+        "tx-from",
+        undefined,
+      );
       expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it("passes the actor through to removeTransfer", async () => {
+      transactionsRepository.findOne.mockResolvedValue({
+        id: "tx-from",
+        userId: "user-1",
+        isTransfer: true,
+        linkedTransactionId: "tx-to",
+        splits: [],
+      });
+      const removeTransferSpy = jest
+        .spyOn(service, "removeTransfer")
+        .mockResolvedValue(undefined);
+      const actor = { effectiveUserId: "user-1", realUserId: "user-2" };
+
+      await service.removeAny("user-1", "tx-from", actor);
+
+      expect(removeTransferSpy).toHaveBeenCalledWith(
+        "user-1",
+        "tx-from",
+        actor,
+      );
     });
 
     it("routes a plain transaction to remove", async () => {
