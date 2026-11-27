@@ -526,9 +526,6 @@
     "internal": "Wewnętrzny błąd serwera"
   },
   "import": {
-    "duplicatesChanged": "Możliwe duplikaty zmieniły się od czasu ich sprawdzenia. Nic nie zaimportowano; sprawdź ponownie.",
-    "duplicateDecisionRepeated": "Wiersz pliku może mieć tylko jedną decyzję dotyczącą jego możliwego duplikatu.",
-    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano.",
     "accountClosed": "Konto jest zamknięte. Otwórz je ponownie lub wybierz inne konto.",
     "noAccountBlocks": "Nie znaleziono bloków kont w pliku QIF. Ten plik może nie być eksportem wielokontowym.",
     "accountTypeRequired": "Przed importem wybierz typ konta dla tych kont: {{ accounts }}",
@@ -572,7 +569,10 @@
     "mnyJobNotFound": "Nie znaleziono zadania importu",
     "mnyFileTooLarge": "Ten plik Money jest większy niż limit importu wynoszący {{ limit }} MB.",
     "noRateForSplitTransfer": "Brak kursu wymiany dla {{ pair }} na dzień {{ date }}: pozycja podziału przelewa na konto w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie.",
-    "noRateForTransfer": "Brak kursu wymiany dla {{ pair }} na {{ date }}: drugie konto przelewu jest w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie."
+    "noRateForTransfer": "Brak kursu wymiany dla {{ pair }} na {{ date }}: drugie konto przelewu jest w innej walucie. Dodaj kurs wymiany dla tej pary i daty, a następnie zaimportuj ponownie.",
+    "duplicatesChanged": "Możliwe duplikaty zmieniły się od czasu ich sprawdzenia. Nic nie zaimportowano; sprawdź ponownie.",
+    "duplicateDecisionRepeated": "Wiersz pliku może mieć tylko jedną decyzję dotyczącą jego możliwego duplikatu.",
+    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano."
   },
   "monteCarlo": {
     "scenarioNotFound": "Nie znaleziono scenariusza {{ id }}",
@@ -1033,10 +1033,6 @@
     "needsPreview": "Otwórz podgląd tego konta bankowego i potwierdź pierwszy import, zanim zostanie zsynchronizowane automatycznie.",
     "selectionNotNew": "Wybrana transakcja nie jest nowym wierszem w danych banku. Nic nie zaimportowano; wygeneruj podgląd ponownie.",
     "selectionOverlap": "Transakcja nie może być jednocześnie zaimportowana i dodana do wyjątków.",
-    "selectionConflict": "Transakcja może mieć tylko jedną decyzję: zaimportuj ją, dodaj do wyjątków, scal ją, zachowaj swoją lub zastąp swoją.",
-    "duplicateNeedsPreview": "Decyzja dotycząca możliwego duplikatu wymaga podglądu, w którym został pokazany. Nic nie zaimportowano; wyświetl podgląd ponownie.",
-    "selectionNotDuplicate": "Transakcja wybrana do scalenia, zachowania lub zastąpienia nie jest już możliwym duplikatem. Nic nie zaimportowano; wyświetl podgląd ponownie.",
-    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano; zachowaj swoją transakcję lub zaimportuj obok niej wiersz z banku.",
     "nothingToUpdate": "Wyślij autoSync, notifySuccess lub tagOperationType, aby zmienić połączenie bankowe.",
     "simplefinCredentialsMissing": "Połącz SimpleFIN przed synchronizacją kont.",
     "simplefinAccessInvalid": "SimpleFIN zwrócił nieprawidłowy adres dostępu. Wygeneruj nowy token konfiguracji w SimpleFIN Bridge.",
@@ -1054,7 +1050,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge wymaga aktywnej subskrypcji. Sprawdź rozliczenia w SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN nie dostarczył pełnych danych kont. Sprawdź połączenie w SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Wyczerpano limit żądań SimpleFIN. Poczekaj na jego odnowienie i ponów bieżącą partię.",
-    "simplefinClaimNotSent": "SimpleFIN jest chwilowo niedostępny. Token konfiguracji nie został wysłany; spróbuj później ponownie z tym samym tokenem."
+    "simplefinClaimNotSent": "SimpleFIN jest chwilowo niedostępny. Token konfiguracji nie został wysłany; spróbuj później ponownie z tym samym tokenem.",
+    "selectionConflict": "Transakcja może mieć tylko jedną decyzję: zaimportuj ją, dodaj do wyjątków, scal ją, zachowaj swoją lub zastąp swoją.",
+    "duplicateNeedsPreview": "Decyzja dotycząca możliwego duplikatu wymaga podglądu, w którym został pokazany. Nic nie zaimportowano; wyświetl podgląd ponownie.",
+    "selectionNotDuplicate": "Transakcja wybrana do scalenia, zachowania lub zastąpienia nie jest już możliwym duplikatem. Nic nie zaimportowano; wyświetl podgląd ponownie.",
+    "duplicateActionNotAllowed": "Uzgodnionej transakcji nie można scalić ani zastąpić, a przelewu ani transakcji podzielonej nie można zastąpić. Nic nie zaimportowano; zachowaj swoją transakcję lub zaimportuj obok niej wiersz z banku."
   },
   "warranties": {
     "notFound": "Nie znaleziono gwarancji o ID {{ id }}",

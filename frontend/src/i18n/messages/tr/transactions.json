@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Transferi Sil",
-      "splitLegTitle": "Aktarımı Bölmeden Kaldır",
       "transactionTitle": "İşlemi Sil",
       "transferMessage": "Bu transferi silmek istediğinizden emin misiniz? Bağlantılı her iki işlem de silinecektir.",
+      "splitLegTitle": "Aktarımı Bölmeden Kaldır",
       "splitLegMessage": "Bu aktarım, {date} tarihli bölünmüş işlemin {hasPayee, select, true {({payee}) } other {}}bir satırıdır. Silmek yalnızca bu satırı kaldırır ve bölmenin toplamını yeniden hesaplar. Bölme ve diğer satırları kalır.",
       "transactionMessage": "Bu işlemi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
       "investmentTitle": "Yatırım İşlemini Sil",

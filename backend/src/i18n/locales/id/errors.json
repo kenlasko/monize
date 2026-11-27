@@ -526,9 +526,6 @@
     "internal": "Kesalahan server internal"
   },
   "import": {
-    "duplicatesChanged": "Kemungkinan duplikat telah berubah sejak diperiksa. Tidak ada yang diimpor; periksa lagi.",
-    "duplicateDecisionRepeated": "Satu baris file hanya dapat memiliki satu keputusan tentang kemungkinan duplikatnya.",
-    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor.",
     "accountClosed": "Akun ditutup. Buka kembali atau pilih akun lain.",
     "noAccountBlocks": "Tidak ada blok akun yang ditemukan dalam file QIF. File ini mungkin bukan ekspor multi-akun.",
     "accountTypeRequired": "Pilih jenis akun untuk akun-akun ini sebelum mengimpor: {{ accounts }}",
@@ -572,7 +569,10 @@
     "mnyJobNotFound": "Tugas impor tidak ditemukan",
     "mnyFileTooLarge": "Berkas Money itu lebih besar dari batas impor {{ limit }} MB.",
     "noRateForSplitTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: sebuah baris pecahan mentransfer ke akun dengan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi.",
-    "noRateForTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: akun lain dari transfer ini menggunakan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi."
+    "noRateForTransfer": "Tidak ada kurs untuk {{ pair }} pada {{ date }}: akun lain dari transfer ini menggunakan mata uang lain. Tambahkan kurs untuk pasangan dan tanggal tersebut, lalu impor lagi.",
+    "duplicatesChanged": "Kemungkinan duplikat telah berubah sejak diperiksa. Tidak ada yang diimpor; periksa lagi.",
+    "duplicateDecisionRepeated": "Satu baris file hanya dapat memiliki satu keputusan tentang kemungkinan duplikatnya.",
+    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor."
   },
   "monteCarlo": {
     "scenarioNotFound": "Skenario {{ id }} tidak ditemukan",
@@ -1033,10 +1033,6 @@
     "needsPreview": "Buka pratinjau untuk akun bank ini dan konfirmasikan impor pertama sebelum disinkronkan secara otomatis.",
     "selectionNotNew": "Transaksi yang dipilih bukan baris baru dari data bank. Tidak ada yang diimpor; pratinjau lagi.",
     "selectionOverlap": "Sebuah transaksi tidak bisa diimpor sekaligus ditambahkan ke pengecualian.",
-    "selectionConflict": "Satu transaksi hanya dapat memiliki satu keputusan: impor, tambahkan ke pengecualian, gabungkan, simpan milik Anda, atau ganti milik Anda.",
-    "duplicateNeedsPreview": "Keputusan tentang kemungkinan duplikat memerlukan pratinjau yang menampilkannya. Tidak ada yang diimpor; buat pratinjau lagi.",
-    "selectionNotDuplicate": "Transaksi yang dipilih untuk digabungkan, disimpan, atau diganti tidak lagi merupakan kemungkinan duplikat. Tidak ada yang diimpor; buat pratinjau lagi.",
-    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor; simpan transaksi itu atau impor baris dari bank di sampingnya.",
     "nothingToUpdate": "Kirim autoSync, notifySuccess atau tagOperationType untuk mengubah koneksi bank.",
     "simplefinCredentialsMissing": "Hubungkan SimpleFIN sebelum menyinkronkan rekening.",
     "simplefinAccessInvalid": "SimpleFIN mengembalikan URL akses yang tidak valid. Buat token penyiapan baru di SimpleFIN Bridge.",
@@ -1054,7 +1050,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge memerlukan langganan aktif. Periksa penagihan di SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN tidak dapat menyediakan data rekening lengkap. Periksa koneksi di SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Kuota permintaan SimpleFIN habis. Tunggu hingga kuota tersedia kembali lalu coba ulang kelompok saat ini.",
-    "simplefinClaimNotSent": "SimpleFIN sementara tidak tersedia. Token penyiapan belum dikirim; coba lagi nanti dengan token yang sama."
+    "simplefinClaimNotSent": "SimpleFIN sementara tidak tersedia. Token penyiapan belum dikirim; coba lagi nanti dengan token yang sama.",
+    "selectionConflict": "Satu transaksi hanya dapat memiliki satu keputusan: impor, tambahkan ke pengecualian, gabungkan, simpan milik Anda, atau ganti milik Anda.",
+    "duplicateNeedsPreview": "Keputusan tentang kemungkinan duplikat memerlukan pratinjau yang menampilkannya. Tidak ada yang diimpor; buat pratinjau lagi.",
+    "selectionNotDuplicate": "Transaksi yang dipilih untuk digabungkan, disimpan, atau diganti tidak lagi merupakan kemungkinan duplikat. Tidak ada yang diimpor; buat pratinjau lagi.",
+    "duplicateActionNotAllowed": "Transaksi yang sudah direkonsiliasi tidak dapat digabungkan atau diganti, dan transfer atau transaksi terbagi tidak dapat diganti. Tidak ada yang diimpor; simpan transaksi itu atau impor baris dari bank di sampingnya."
   },
   "warranties": {
     "notFound": "Garansi dengan ID {{ id }} tidak ditemukan",

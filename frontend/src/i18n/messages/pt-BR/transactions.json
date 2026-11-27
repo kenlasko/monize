@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Excluir Transferência",
-      "splitLegTitle": "Remover transferência da divisão",
       "transactionTitle": "Excluir Transação",
       "transferMessage": "Tem certeza de que quer excluir esta transferência? Ambas as transações associadas serão excluídas.",
+      "splitLegTitle": "Remover transferência da divisão",
       "splitLegMessage": "Esta transferência é uma linha de uma transação dividida {hasPayee, select, true {com {payee} } other {}}de {date}. Excluí-la remove apenas esta linha e recalcula o total da divisão. A divisão e as outras linhas dela permanecem.",
       "transactionMessage": "Tem certeza de que quer excluir esta transação? Esta ação não pode ser desfeita.",
       "investmentTitle": "Excluir Transação de Investimento",

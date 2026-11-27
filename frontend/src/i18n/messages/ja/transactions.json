@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "振替を削除",
-      "splitLegTitle": "分割から振替を削除",
       "transactionTitle": "取引を削除",
       "transferMessage": "この振替を削除してもよろしいですか？リンクされた両方の取引が削除されます。",
+      "splitLegTitle": "分割から振替を削除",
       "splitLegMessage": "この振替は、{date}の分割取引{hasPayee, select, true {({payee})} other {}}の1行です。削除すると、この行だけが削除され、分割の合計が再計算されます。分割とその他の行は残ります。",
       "transactionMessage": "この取引を削除してもよろしいですか？この操作は元に戻せません。",
       "investmentTitle": "投資取引を削除",

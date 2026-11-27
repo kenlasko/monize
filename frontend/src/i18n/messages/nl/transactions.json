@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Overboeking verwijderen",
-      "splitLegTitle": "Overboeking uit splitsing verwijderen",
       "transactionTitle": "Transactie verwijderen",
       "transferMessage": "Weet je zeker dat je deze overboeking wilt verwijderen? Beide gekoppelde transacties worden verwijderd.",
+      "splitLegTitle": "Overboeking uit splitsing verwijderen",
       "splitLegMessage": "Deze overboeking is één regel van een gesplitste transactie {hasPayee, select, true {met {payee} } other {}}van {date}. Bij verwijderen wordt alleen deze regel verwijderd en wordt het totaal van de splitsing opnieuw berekend. De splitsing en de andere regels blijven staan.",
       "transactionMessage": "Weet je zeker dat je deze transactie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
       "investmentTitle": "Beleggingstransactie verwijderen",

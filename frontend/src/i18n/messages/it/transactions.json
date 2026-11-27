@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Elimina trasferimento",
-      "splitLegTitle": "Rimuovi trasferimento dalla suddivisione",
       "transactionTitle": "Elimina transazione",
       "transferMessage": "Sei sicuro di voler eliminare questo trasferimento? Entrambe le transazioni collegate verranno eliminate.",
+      "splitLegTitle": "Rimuovi trasferimento dalla suddivisione",
       "splitLegMessage": "Questo trasferimento è una riga di una transazione suddivisa {hasPayee, select, true {con {payee} } other {}}del {date}. L'eliminazione rimuove solo questa riga e ricalcola il totale della suddivisione. La suddivisione e le sue altre righe restano.",
       "transactionMessage": "Sei sicuro di voler eliminare questa transazione? Questa azione non può essere annullata.",
       "investmentTitle": "Elimina transazione di investimento",

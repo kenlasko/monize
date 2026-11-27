@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Usuń przelew",
-      "splitLegTitle": "Usuń przelew z podziału",
       "transactionTitle": "Usuń transakcję",
       "transferMessage": "Czy na pewno chcesz usunąć ten przelew? Obie powiązane transakcje zostaną usunięte.",
+      "splitLegTitle": "Usuń przelew z podziału",
       "splitLegMessage": "Ten przelew jest jedną linią transakcji podzielonej {hasPayee, select, true {z {payee} } other {}}z dnia {date}. Usunięcie usuwa tylko tę linię i przelicza sumę podziału. Podział i jego pozostałe linie zostają.",
       "transactionMessage": "Czy na pewno chcesz usunąć tę transakcję? Tej operacji nie można cofnąć.",
       "investmentTitle": "Usuń transakcję inwestycyjną",

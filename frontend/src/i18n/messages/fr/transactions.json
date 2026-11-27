@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Supprimer le virement",
-      "splitLegTitle": "Retirer le virement de la ventilation",
       "transactionTitle": "Supprimer la transaction",
       "transferMessage": "Êtes-vous sûr de vouloir supprimer ce virement ? Les deux transactions liées seront supprimées.",
+      "splitLegTitle": "Retirer le virement de la ventilation",
       "splitLegMessage": "Ce virement est une ligne d'une opération ventilée {hasPayee, select, true {avec {payee} } other {}}du {date}. La suppression retire uniquement cette ligne et recalcule le total de la ventilation. La ventilation et ses autres lignes sont conservées.",
       "transactionMessage": "Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible.",
       "investmentTitle": "Supprimer la transaction d'investissement",

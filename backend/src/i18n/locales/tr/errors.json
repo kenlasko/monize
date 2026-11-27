@@ -526,9 +526,6 @@
     "internal": "Dahili sunucu hatası"
   },
   "import": {
-    "duplicatesChanged": "Olası mükerrerler denetlendikten sonra değişti. Hiçbir şey içe aktarılmadı; yeniden denetleyin.",
-    "duplicateDecisionRepeated": "Dosyanın bir satırı için olası mükerreriyle ilgili yalnızca bir karar verilebilir.",
-    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı.",
     "accountClosed": "Hesap kapalı. Yeniden açın veya başka bir hesap seçin.",
     "noAccountBlocks": "QIF dosyasında hesap bloğu bulunamadı. Bu dosya çok hesaplı dışa aktarma olmayabilir.",
     "accountTypeRequired": "İçe aktarmadan önce bu hesaplar için bir hesap türü seçin: {{ accounts }}",
@@ -572,7 +569,10 @@
     "mnyJobNotFound": "İçe aktarma görevi bulunamadı",
     "mnyFileTooLarge": "Bu Money dosyası {{ limit }} MB içe aktarma sınırından büyük.",
     "noRateForSplitTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: bir bölünmüş satır başka para birimindeki bir hesaba transfer ediyor. Bu çift ve tarih için bir döviz kuru ekleyin, ardından yeniden içe aktarın.",
-    "noRateForTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: transferin diğer hesabı başka bir para biriminde. Bu çift ve tarih için bir döviz kuru ekleyin, sonra yeniden içe aktarın."
+    "noRateForTransfer": "{{ date }} tarihinde {{ pair }} için döviz kuru yok: transferin diğer hesabı başka bir para biriminde. Bu çift ve tarih için bir döviz kuru ekleyin, sonra yeniden içe aktarın.",
+    "duplicatesChanged": "Olası mükerrerler denetlendikten sonra değişti. Hiçbir şey içe aktarılmadı; yeniden denetleyin.",
+    "duplicateDecisionRepeated": "Dosyanın bir satırı için olası mükerreriyle ilgili yalnızca bir karar verilebilir.",
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı."
   },
   "monteCarlo": {
     "scenarioNotFound": "{{ id }} senaryosu bulunamadı",
@@ -1033,10 +1033,6 @@
     "needsPreview": "Bu banka hesabının önizlemesini açın ve otomatik olarak senkronize edilmeden önce ilk içe aktarmayı onaylayın.",
     "selectionNotNew": "Seçilen bir işlem bankanın verilerinde yeni bir satır değil. Hiçbir şey içe aktarılmadı; önizlemeyi yeniden yapın.",
     "selectionOverlap": "Bir işlem aynı anda hem içe aktarılıp hem de istisnalara eklenemez.",
-    "selectionConflict": "Bir işlem için yalnızca bir karar verilebilir: içe aktarmak, istisnalara eklemek, birleştirmek, sizinkini tutmak veya sizinkini değiştirmek.",
-    "duplicateNeedsPreview": "Olası bir mükerrerle ilgili karar, onu gösteren önizlemeyi gerektirir. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
-    "selectionNotDuplicate": "Birleştirmek, tutmak veya değiştirmek için seçilen bir işlem artık olası bir mükerrer değil. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
-    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı; işlemi tutun ya da bankanın satırını yanına içe aktarın.",
     "nothingToUpdate": "Bir banka bağlantısını değiştirmek için autoSync, notifySuccess veya tagOperationType gönderin.",
     "simplefinCredentialsMissing": "Hesapları eşitlemeden önce SimpleFIN'i bağlayın.",
     "simplefinAccessInvalid": "SimpleFIN geçersiz bir erişim URL'si döndürdü. SimpleFIN Bridge'de yeni bir kurulum belirteci oluşturun.",
@@ -1054,7 +1050,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge için etkin bir abonelik gerekir. SimpleFIN Bridge üzerinden faturalandırmayı kontrol edin.",
     "simplefinReadFailed": "SimpleFIN eksiksiz hesap verileri sağlayamadı. SimpleFIN Bridge bağlantısını kontrol edin.",
     "simplefinQuotaExhausted": "SimpleFIN istek kotası tükendi. Kota yenilendiğinde geçerli grubu yeniden deneyin.",
-    "simplefinClaimNotSent": "SimpleFIN geçici olarak kullanılamıyor. Kurulum belirteci gönderilmedi; aynı belirteçle daha sonra yeniden deneyin."
+    "simplefinClaimNotSent": "SimpleFIN geçici olarak kullanılamıyor. Kurulum belirteci gönderilmedi; aynı belirteçle daha sonra yeniden deneyin.",
+    "selectionConflict": "Bir işlem için yalnızca bir karar verilebilir: içe aktarmak, istisnalara eklemek, birleştirmek, sizinkini tutmak veya sizinkini değiştirmek.",
+    "duplicateNeedsPreview": "Olası bir mükerrerle ilgili karar, onu gösteren önizlemeyi gerektirir. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
+    "selectionNotDuplicate": "Birleştirmek, tutmak veya değiştirmek için seçilen bir işlem artık olası bir mükerrer değil. Hiçbir şey içe aktarılmadı; yeniden önizleyin.",
+    "duplicateActionNotAllowed": "Mutabakatı sağlanmış bir işlem birleştirilemez veya değiştirilemez, bir transfer veya bölünmüş bir işlem de değiştirilemez. Hiçbir şey içe aktarılmadı; işlemi tutun ya da bankanın satırını yanına içe aktarın."
   },
   "warranties": {
     "notFound": "{{ id }} kimliğine sahip garanti bulunamadı",

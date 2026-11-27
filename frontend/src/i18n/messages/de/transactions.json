@@ -152,9 +152,9 @@
     },
     "delete": {
       "transferTitle": "Überweisung löschen",
-      "splitLegTitle": "Überweisung aus Aufteilung entfernen",
       "transactionTitle": "Buchung löschen",
       "transferMessage": "Möchten Sie diese Überweisung wirklich löschen? Beide verknüpften Buchungen werden gelöscht.",
+      "splitLegTitle": "Überweisung aus Aufteilung entfernen",
       "splitLegMessage": "Diese Überweisung ist eine Zeile einer aufgeteilten Transaktion {hasPayee, select, true {mit {payee} } other {}}vom {date}. Beim Löschen wird nur diese Zeile entfernt und die Aufteilung neu summiert. Die Aufteilung und ihre anderen Zeilen bleiben bestehen.",
       "transactionMessage": "Möchten Sie diese Buchung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
       "investmentTitle": "Investmentbuchung löschen",

@@ -526,9 +526,6 @@
     "internal": "Lỗi máy chủ nội bộ"
   },
   "import": {
-    "duplicatesChanged": "Các giao dịch có thể trùng lặp đã thay đổi kể từ khi được kiểm tra. Chưa có gì được nhập; hãy kiểm tra lại.",
-    "duplicateDecisionRepeated": "Mỗi dòng của tệp chỉ có thể có một quyết định về giao dịch có thể trùng lặp của nó.",
-    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập.",
     "accountClosed": "Tài khoản đã đóng. Hãy mở lại hoặc chọn tài khoản khác.",
     "noAccountBlocks": "Không tìm thấy khối tài khoản trong tệp QIF. Tệp này có thể không phải là xuất khẩu nhiều tài khoản.",
     "accountTypeRequired": "Chọn loại tài khoản cho các tài khoản này trước khi nhập: {{ accounts }}",
@@ -572,7 +569,10 @@
     "mnyJobNotFound": "Không tìm thấy tác vụ nhập",
     "mnyFileTooLarge": "Tệp Money đó lớn hơn giới hạn nhập {{ limit }} MB.",
     "noRateForSplitTransfer": "Không có tỷ giá cho {{ pair }} vào ngày {{ date }}: một dòng chia tách chuyển sang tài khoản bằng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
-    "noRateForTransfer": "Không có tỷ giá cho {{ pair }} vào {{ date }}: tài khoản bên kia của giao dịch chuyển khoản dùng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại."
+    "noRateForTransfer": "Không có tỷ giá cho {{ pair }} vào {{ date }}: tài khoản bên kia của giao dịch chuyển khoản dùng loại tiền khác. Hãy thêm tỷ giá cho cặp tiền và ngày đó, rồi nhập lại.",
+    "duplicatesChanged": "Các giao dịch có thể trùng lặp đã thay đổi kể từ khi được kiểm tra. Chưa có gì được nhập; hãy kiểm tra lại.",
+    "duplicateDecisionRepeated": "Mỗi dòng của tệp chỉ có thể có một quyết định về giao dịch có thể trùng lặp của nó.",
+    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập."
   },
   "monteCarlo": {
     "scenarioNotFound": "Không tìm thấy kịch bản {{ id }}",
@@ -1033,10 +1033,6 @@
     "needsPreview": "Hãy mở bản xem trước của tài khoản ngân hàng này và xác nhận lần nhập đầu tiên trước khi nó được đồng bộ tự động.",
     "selectionNotNew": "Một giao dịch đã chọn không phải là dòng mới trong dữ liệu của ngân hàng. Chưa có gì được nhập; hãy xem trước lại.",
     "selectionOverlap": "Một giao dịch không thể vừa được nhập vừa được thêm vào danh sách ngoại lệ.",
-    "selectionConflict": "Mỗi giao dịch chỉ có thể có một quyết định: nhập, thêm vào ngoại lệ, gộp, giữ của bạn hoặc thay thế của bạn.",
-    "duplicateNeedsPreview": "Quyết định về một giao dịch có thể trùng lặp cần phần xem trước đã hiển thị nó. Chưa có gì được nhập; hãy xem trước lại.",
-    "selectionNotDuplicate": "Một giao dịch được chọn để gộp, giữ hoặc thay thế không còn là giao dịch có thể trùng lặp nữa. Chưa có gì được nhập; hãy xem trước lại.",
-    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập; hãy giữ nó hoặc nhập dòng của ngân hàng bên cạnh nó.",
     "nothingToUpdate": "Hãy gửi autoSync, notifySuccess hoặc tagOperationType để thay đổi một kết nối ngân hàng.",
     "simplefinCredentialsMissing": "Kết nối SimpleFIN trước khi đồng bộ tài khoản.",
     "simplefinAccessInvalid": "SimpleFIN trả về URL truy cập không hợp lệ. Hãy tạo mã thiết lập mới trong SimpleFIN Bridge.",
@@ -1054,7 +1050,11 @@
     "simplefinSubscriptionRequired": "SimpleFIN Bridge yêu cầu gói đăng ký đang hoạt động. Hãy kiểm tra thanh toán trong SimpleFIN Bridge.",
     "simplefinReadFailed": "SimpleFIN không cung cấp được dữ liệu tài khoản đầy đủ. Hãy kiểm tra kết nối trong SimpleFIN Bridge.",
     "simplefinQuotaExhausted": "Đã hết hạn mức yêu cầu SimpleFIN. Chờ hạn mức được bổ sung rồi thử lại lô hiện tại.",
-    "simplefinClaimNotSent": "SimpleFIN tạm thời không khả dụng. Mã thiết lập chưa được gửi; hãy thử lại sau bằng chính mã này."
+    "simplefinClaimNotSent": "SimpleFIN tạm thời không khả dụng. Mã thiết lập chưa được gửi; hãy thử lại sau bằng chính mã này.",
+    "selectionConflict": "Mỗi giao dịch chỉ có thể có một quyết định: nhập, thêm vào ngoại lệ, gộp, giữ của bạn hoặc thay thế của bạn.",
+    "duplicateNeedsPreview": "Quyết định về một giao dịch có thể trùng lặp cần phần xem trước đã hiển thị nó. Chưa có gì được nhập; hãy xem trước lại.",
+    "selectionNotDuplicate": "Một giao dịch được chọn để gộp, giữ hoặc thay thế không còn là giao dịch có thể trùng lặp nữa. Chưa có gì được nhập; hãy xem trước lại.",
+    "duplicateActionNotAllowed": "Không thể gộp hoặc thay thế giao dịch đã điều hoà, và không thể thay thế giao dịch chuyển khoản hoặc giao dịch chia nhỏ. Chưa có gì được nhập; hãy giữ nó hoặc nhập dòng của ngân hàng bên cạnh nó."
   },
   "warranties": {
     "notFound": "Không tìm thấy bảo hành với ID {{ id }}",
