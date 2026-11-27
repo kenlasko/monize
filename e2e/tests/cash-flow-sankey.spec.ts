@@ -23,7 +23,7 @@ test.describe('Cash Flow Sankey report', () => {
     });
     const salary = await createCategory(api, {
       name: `Salary ${uniqueId()}`,
-      isIncome: true,
+      type: 'income',
     });
     const groceries = await createCategory(api, {
       name: `Groceries ${uniqueId()}`,

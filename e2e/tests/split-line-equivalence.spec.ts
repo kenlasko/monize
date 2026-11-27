@@ -133,7 +133,7 @@ test.describe('Split lines read as their whole rows', () => {
   }) => {
     test.setTimeout(180000);
     const { a, b, groceries } = await seedTransfers(api);
-    const salary = await createCategory(api, { name: `Salary ${uniqueId()}`, isIncome: true });
+    const salary = await createCategory(api, { name: `Salary ${uniqueId()}`, type: 'income' });
     // An expense line only: with no income line the income is read from the
     // month's positive non-transfer deposits.
     const budget = await createBudget(api, { name: `Savings ${uniqueId()}` });
