@@ -6,6 +6,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import { Combobox } from '@/components/ui/Combobox';
 import { Category } from '@/types/category';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
+import { categoriesForHolder } from '@/lib/category-type';
 
 interface AssetFieldsProps {
   categories: Category[];
@@ -44,7 +45,9 @@ export function AssetFields({
       <Combobox
         label={t('assetFields.valueChangeCategory')}
         placeholder={t('assetFields.selectOrCreateCategory')}
-        options={categories.map(c => ({
+        // An asset's value changes are category rows: Income and Expense only
+        // (INV-CATEGORY-001).
+        options={categoriesForHolder(categories, 'category').map(c => ({
           value: c.id,
           label: c.parentId
             ? `${categories.find(p => p.id === c.parentId)?.name || ''}: ${c.name}`
