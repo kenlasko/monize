@@ -406,9 +406,11 @@ export function SplitEditor({
           const newTotal = signByCategoryType(category, transactionAmount);
           if (newTotal !== transactionAmount) {
             onTransactionAmountChange(newTotal);
-            // Flip uncategorized splits to keep them consistent with the new sign
+            // Flip uncategorized splits to keep them consistent with the new
+            // sign, and every transfer line: its category, of any type, says
+            // what the transfer is for, never which way it runs.
             for (let i = 0; i < newSplits.length; i++) {
-              if (i !== index && !newSplits[i].categoryId) {
+              if (i !== index && (newSplits[i].splitType === 'transfer' || !newSplits[i].categoryId)) {
                 const amt = Number(newSplits[i].amount) || 0;
                 if (amt !== 0) {
                   newSplits[i] = { ...newSplits[i], amount: -amt };

@@ -812,6 +812,34 @@ describe('SplitEditor', () => {
       expect(mockOnAmountChange).not.toHaveBeenCalled();
     });
 
+    it('flips a transfer line with the total, whatever category it holds', () => {
+      const mockOnAmountChange = vi.fn();
+      const splits: SplitRow[] = [
+        createSplitRow({ id: 'split-1', amount: 50 }),
+        createSplitRow({ id: 'split-2', amount: 50, splitType: 'transfer', transferAccountId: 'acc-2', categoryId: 'cat-2' }),
+      ];
+
+      render(
+        <SplitEditor
+          splits={splits}
+          onChange={mockOnChange}
+          categories={mockCategories}
+          transactionAmount={100}
+          onTransactionAmountChange={mockOnAmountChange}
+        />
+      );
+
+      const categoryInputs = screen.getAllByPlaceholderText('Select category...');
+      fireEvent.click(categoryInputs[0]);
+      fireEvent.click(screen.getByText('Groceries'));
+
+      expect(mockOnAmountChange).toHaveBeenCalledWith(-100);
+      const newSplits = mockOnChange.mock.calls[0][0];
+      expect(newSplits[0].amount).toBe(-50);
+      // A transfer line's sign follows the total, as an uncategorized line's.
+      expect(newSplits[1].amount).toBe(-50);
+    });
+
     it('only flips uncategorized splits when total sign changes', () => {
       const mockOnAmountChange = vi.fn();
       const splits: SplitRow[] = [
