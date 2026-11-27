@@ -1,6 +1,6 @@
 'use client';
 
-import { categoryTypeOf } from '@/lib/category-type';
+import { type CategoryType, categoryTypeOf } from '@/lib/category-type';
 import { useContext } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
@@ -58,6 +58,16 @@ export function CategoryDetailHeader({
   categories,
 }: CategoryDetailHeaderProps) {
   const t = useTranslations('categoryDetail');
+  const typePill = (type: CategoryType) => {
+    switch (type) {
+      case 'income':
+        return t('header.incomePill');
+      case 'transfer':
+        return t('header.transferPill');
+      default:
+        return t('header.expensePill');
+    }
+  };
   const tc = useTranslations('categories');
   const switcher = useCategorySwitcher(category.id, categories);
   const { formatDate } = useDateFormat();
@@ -115,7 +125,7 @@ export function CategoryDetailHeader({
           </div>
 
           <Badge className="ui-detail-pill">
-            {t(`header.${categoryTypeOf(category)}Pill`)}
+            {typePill(categoryTypeOf(category))}
           </Badge>
           {category.isSystem && (
             <Badge className="ui-detail-pill">

@@ -373,8 +373,7 @@ export function SplitEditor({
       if (category && category.effectiveAutoSign !== false) {
         const currentAmount = Number(newSplits[index].amount) || 0;
         if (currentAmount !== 0) {
-          const absAmount = Math.abs(currentAmount);
-          const newAmount = signByCategoryType(category, absAmount);
+          const newAmount = signByCategoryType(category, currentAmount);
           if (newAmount !== currentAmount) {
             newSplits[index] = { ...newSplits[index], amount: newAmount };
           }
@@ -383,8 +382,7 @@ export function SplitEditor({
         // When the first split's category is set, adjust the transaction total sign
         // to match (analogous to how normal transactions infer sign from category)
         if (index === 0 && onTransactionAmountChange && transactionAmount !== 0) {
-          const absTotal = Math.abs(transactionAmount);
-          const newTotal = signByCategoryType(category, absTotal);
+          const newTotal = signByCategoryType(category, transactionAmount);
           if (newTotal !== transactionAmount) {
             onTransactionAmountChange(newTotal);
             // Flip uncategorized splits to keep them consistent with the new sign
@@ -415,8 +413,7 @@ export function SplitEditor({
             const isJustSignChange = Math.abs(currentAmount) === Math.abs(newAmount) && Math.abs(currentAmount) !== 0;
 
             if (!isJustSignChange && category.effectiveAutoSign !== false) {
-              const absAmount = Math.abs(newAmount);
-              value = signByCategoryType(category, absAmount);
+              value = signByCategoryType(category, newAmount);
             }
           }
         }

@@ -10,7 +10,12 @@
     "cgroupMemoryLimitBytes": null,
     "totalSystemMemoryBytes": 16856150016
   },
-  "targetExpandedBytesSwept": [25165824, 29360128, 50331648, 100663296],
+  "targetExpandedBytesSwept": [
+    25165824,
+    29360128,
+    50331648,
+    100663296
+  ],
   "runsPerCase": 2,
   "sweeps": [
     {

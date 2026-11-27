@@ -346,5 +346,5 @@ export function signAmountByCategory(
   const isJustSignChange = referenceAbs === Math.abs(value) && referenceAbs !== 0;
   if (isJustSignChange || !category) return value;
   if (category.effectiveAutoSign === false) return value;
-  return signByCategoryType(category, Math.abs(value));
+  return signByCategoryType(category, value);
 }

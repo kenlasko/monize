@@ -36,13 +36,13 @@ export function isTransferCategory(category: CategoryTypeSource): boolean {
 }
 
 /**
- * The signed amount a typed magnitude takes under the category's type: income
+ * The signed amount a typed value takes under the category's type: income
  * positive, expense negative. A Transfer category has no automatic sign (the
- * sign of a transfer leg is its direction), so the magnitude is returned as
- * typed.
+ * sign of a transfer leg is its direction, and no category type restricts the
+ * sign of an amount), so the value is returned exactly as typed.
  */
-export function signByCategoryType(category: CategoryTypeSource, absolute: number): number {
+export function signByCategoryType(category: CategoryTypeSource, value: number): number {
   const type = categoryTypeOf(category);
-  if (type === 'transfer') return absolute;
-  return type === 'income' ? absolute : -absolute;
+  if (type === 'transfer') return value;
+  return type === 'income' ? Math.abs(value) : -Math.abs(value);
 }

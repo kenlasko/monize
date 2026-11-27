@@ -1214,7 +1214,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     if (category.effectiveAutoSign === false) return;
     if (isForeign) {
       if (foreignAmount === undefined || foreignAmount === 0) return;
-      const signed = signByCategoryType(category, Math.abs(foreignAmount));
+      const signed = signByCategoryType(category, foreignAmount);
       if (signed !== foreignAmount) {
         setForeignAmount(signed);
         recomputeFx(signed, fxRate);
@@ -1222,7 +1222,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       return;
     }
     if (watchedAmount === undefined || watchedAmount === 0) return;
-    const signed = signByCategoryType(category, Math.abs(watchedAmount));
+    const signed = signByCategoryType(category, watchedAmount);
     if (signed !== watchedAmount) {
       setValue('amount', signed, { shouldDirty: true, shouldValidate: true });
     }

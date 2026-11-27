@@ -23,9 +23,15 @@ describe('category type', () => {
     expect(isIncomeCategory(transfer)).toBe(false);
   });
 
-  it('signs income positive and expense negative, and leaves a Transfer amount as typed', () => {
+  it('signs income positive and expense negative, whatever sign was typed', () => {
     expect(signByCategoryType({ categoryType: 'income' }, 5)).toBe(5);
+    expect(signByCategoryType({ categoryType: 'income' }, -5)).toBe(5);
     expect(signByCategoryType({ categoryType: 'expense' }, 5)).toBe(-5);
-    expect(signByCategoryType({ categoryType: 'transfer' }, 5)).toBe(5);
+    expect(signByCategoryType({ categoryType: 'expense' }, -5)).toBe(-5);
+  });
+
+  it('leaves a Transfer category amount exactly as typed, negative or positive', () => {
+    expect(signByCategoryType({ categoryType: 'transfer' }, -1000)).toBe(-1000);
+    expect(signByCategoryType({ categoryType: 'transfer' }, 1000)).toBe(1000);
   });
 });

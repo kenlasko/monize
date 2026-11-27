@@ -83,6 +83,19 @@ export function CategoryInfoWidget({
   onPayeeClick,
 }: CategoryInfoWidgetProps) {
   const t = useTranslations('transactions');
+  const type = categoryTypeOf(category);
+  const typeBadge =
+    type === 'income'
+      ? t('categoryWidget.income')
+      : type === 'transfer'
+        ? t('categoryWidget.transfer')
+        : t('categoryWidget.expense');
+  const headlineLabel =
+    type === 'income'
+      ? t('categoryWidget.totalEarned')
+      : type === 'transfer'
+        ? t('categoryWidget.totalTransferred')
+        : t('categoryWidget.totalSpent');
   const tCommon = useTranslations('common');
   const router = useRouter();
   const { formatCurrency, formatPercentTrimmed } = useNumberFormat();
@@ -255,7 +268,7 @@ export function CategoryInfoWidget({
                 </p>
               )}
               <span className="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                {t(`categoryWidget.${categoryTypeOf(category)}`)}
+                {typeBadge}
               </span>
             </div>
           </div>
@@ -293,11 +306,7 @@ export function CategoryInfoWidget({
 
       <div className="mb-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {categoryTypeOf(category) === 'income'
-            ? t('categoryWidget.totalEarned')
-            : categoryTypeOf(category) === 'transfer'
-              ? t('categoryWidget.totalTransferred')
-              : t('categoryWidget.totalSpent')}
+          {headlineLabel}
         </p>
         <p
           className={`text-2xl font-bold ${
