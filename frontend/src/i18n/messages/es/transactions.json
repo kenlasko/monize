@@ -49,7 +49,9 @@
     "editAria": "Editar categoría",
     "collapseAria": "Ocultar información de la categoría",
     "show": "Mostrar información de la categoría",
-    "amountUnavailable": "Sin tipo"
+    "amountUnavailable": "Sin tipo",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Saldo actual",

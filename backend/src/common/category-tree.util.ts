@@ -1,9 +1,10 @@
 import { Repository } from "typeorm";
+import { categoryTypeOf } from "../categories/category-type.util";
 import { Category } from "../categories/entities/category.entity";
 
 /**
  * The category-filter pseudo-ids that name a whole category type. A filter
- * carrying one of them selects every category whose `isIncome` matches, so
+ * carrying one of them selects every category of that type, so
  * a client never enumerates a type's ids (a few hundred UUIDs overflow the
  * request line and the page URL). Resolved here, in the one helper every
  * category predicate expands its ids through, so no predicate site knows
@@ -29,7 +30,7 @@ export async function getAllCategoryIdsWithChildren(
 ): Promise<string[]> {
   const categories = await categoriesRepository.find({
     where: { userId },
-    select: ["id", "parentId", "isIncome"],
+    select: ["id", "parentId", "categoryType"],
   });
 
   const result = new Set<string>();
@@ -44,9 +45,10 @@ export async function getAllCategoryIdsWithChildren(
 
   for (const id of categoryIds) {
     if (isCategoryTypeFilterId(id)) {
-      const wantIncome = id === "income";
+      // `income` and `expense` are types, not a flag and its negation: a
+      // Transfer category is in neither.
       for (const cat of categories) {
-        if (cat.isIncome === wantIncome) addWithChildren(cat.id);
+        if (categoryTypeOf(cat) === id) addWithChildren(cat.id);
       }
     } else {
       addWithChildren(id);

@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "시스템 카테고리는 삭제할 수 없습니다",
     "hasSubcategories": "하위 카테고리가 있는 카테고리는 삭제할 수 없습니다. 먼저 하위 카테고리를 삭제하거나 재할당하세요.",
     "hasTransactions": "참조하는 거래가 {{ count }}건 있는 카테고리는 삭제할 수 없습니다. 먼저 거래를 재할당하세요.",
-    "alreadyHasCategories": "기본값을 가져올 수 없습니다: 사용자에게 이미 카테고리가 있습니다. 먼저 기존 카테고리를 삭제하거나 새로 시작하세요."
+    "alreadyHasCategories": "기본값을 가져올 수 없습니다: 사용자에게 이미 카테고리가 있습니다. 먼저 기존 카테고리를 삭제하거나 새로 시작하세요.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "유효하지 않은 UUID입니다: {{ id }}",

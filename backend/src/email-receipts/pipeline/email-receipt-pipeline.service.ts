@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
+import { categoryIdForCategoryRow } from "../../categories/category-row-gate";
 import { DataSource, EntityManager, QueryDeepPartialEntity } from "typeorm";
 import { AiActionsService } from "../../ai/actions/ai-actions.service";
 import type { PendingAiAction } from "../../ai/actions/ai-action.types";
@@ -640,7 +641,8 @@ export class EmailReceiptPipelineService {
         definition,
         receipt.subject,
         sources.forSource(definition.source),
-        payee?.defaultCategoryId ?? null,
+        // A stored Transfer default is skipped (INV-CATEGORY-001).
+        await categoryIdForCategoryRow(m, userId, payee?.defaultCategoryId),
       );
       // A component never looks for a bank transaction and never opens a
       // request (linked receipts spec 2.1); a person's own link is a command

@@ -18,10 +18,11 @@ export interface DefaultCategoryDefinition {
   subcategories: string[];
 }
 
-/** A complete catalog: the income tree plus the expense tree. */
+/** A complete catalog: the income, expense and transfer trees. */
 export interface DefaultCategorySet {
   income: DefaultCategoryDefinition[];
   expense: DefaultCategoryDefinition[];
+  transfer: DefaultCategoryDefinition[];
 }
 
 export const DEFAULT_INCOME_CATEGORIES: DefaultCategoryDefinition[] = [
@@ -293,8 +294,28 @@ export const DEFAULT_EXPENSE_CATEGORIES: DefaultCategoryDefinition[] = [
   },
 ];
 
+/**
+ * The short Transfer set a new user starts with: money moved between the
+ * person's own accounts, which is neither income nor spending. It sits under one
+ * parent so it groups in a picker; nothing requires a Transfer category to have
+ * a parent. A Transfer category goes only on a transfer.
+ */
+export const DEFAULT_TRANSFER_CATEGORIES: DefaultCategoryDefinition[] = [
+  {
+    name: "Transfers",
+    subcategories: [
+      "Between Own Accounts",
+      "Cash Withdrawals",
+      "Credit Card Payments",
+      "Investment Contributions",
+      "Savings Contributions",
+    ],
+  },
+];
+
 /** The country-neutral catalog, used when no country is selected. */
 export const GENERIC_CATEGORY_SET: DefaultCategorySet = {
   income: DEFAULT_INCOME_CATEGORIES,
   expense: DEFAULT_EXPENSE_CATEGORIES,
+  transfer: DEFAULT_TRANSFER_CATEGORIES,
 };

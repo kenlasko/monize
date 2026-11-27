@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
+import { categoryTypeOfOrUndefined } from "../categories/category-type.util";
 import { tr } from "../i18n/translate";
 import { Brackets, DataSource, Repository } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -878,8 +879,11 @@ export class ReportsService {
         categoryType === ReportCategoryType.EXPENSE
       ) {
         queryBuilder.andWhere(
-          "CASE WHEN transaction.isSplit THEN splitCategory.isIncome ELSE category.isIncome END = :reportIncome",
-          { reportIncome: categoryType === ReportCategoryType.INCOME },
+          "CASE WHEN transaction.isSplit THEN splitCategory.categoryType ELSE category.categoryType END = :reportCategoryType",
+          {
+            reportCategoryType:
+              categoryType === ReportCategoryType.INCOME ? "income" : "expense",
+          },
         );
       } else if (categoryType === ReportCategoryType.UNCATEGORIZED) {
         queryBuilder.andWhere(
@@ -1298,7 +1302,10 @@ export class ReportsService {
     }
     const dataMap = cells.settle(
       metric === MetricType.BUDGET_VARIANCE
-        ? (id) => categoryMap.get(id)?.isIncome
+        ? (id) => {
+            const type = categoryTypeOfOrUndefined(categoryMap.get(id));
+            return type === undefined ? undefined : type === "income";
+          }
         : undefined,
     );
 

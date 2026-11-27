@@ -1,4 +1,5 @@
 import apiClient from './api';
+import type { CategoryType } from '@/lib/category-type';
 import { Category } from '@/types/category';
 
 export interface DelegateContext {
@@ -81,6 +82,8 @@ export interface JointReferenceData {
     parentId: string | null;
     icon: string | null;
     color: string | null;
+    categoryType?: CategoryType;
+    /** Read-only, derived; read the type through `@/lib/category-type`. */
     isIncome: boolean;
     isSystem: boolean;
   }>;
@@ -179,7 +182,7 @@ export const delegationApi = {
    */
   createJointCategory: async (
     accountId: string,
-    data: { name: string; parentId?: string; isIncome?: boolean },
+    data: { name: string; parentId?: string; type?: CategoryType },
   ): Promise<Category> => {
     const res = await apiClient.post<Category>(
       `/categories/joint/${accountId}`,

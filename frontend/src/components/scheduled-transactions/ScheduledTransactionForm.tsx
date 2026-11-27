@@ -1,5 +1,6 @@
 'use client';
 
+import { signByCategoryType } from '@/lib/category-type';
 import { FALLBACK_DEFAULT_CURRENCY } from '@/lib/default-currency';
 import { useState, useEffect, useMemo, useRef, MutableRefObject } from 'react';
 import { useForm, useWatch, Controller, Resolver } from 'react-hook-form';
@@ -631,7 +632,7 @@ export function ScheduledTransactionForm({
   const resignForeignAmount = (category: Category) => {
     if (category.effectiveAutoSign === false) return;
     if (foreignAmount === undefined || foreignAmount === 0) return;
-    const signed = category.isIncome ? Math.abs(foreignAmount) : -Math.abs(foreignAmount);
+    const signed = signByCategoryType(category, foreignAmount);
     if (signed !== foreignAmount) {
       setForeignAmount(signed);
       recomputeFx(signed, fxRate);
@@ -1168,10 +1169,9 @@ export function ScheduledTransactionForm({
           if (category && isForeign) {
             resignForeignAmount(category);
           } else if (category && watchedAmount !== undefined && watchedAmount !== 0) {
-            const absAmount = Math.abs(watchedAmount);
             // Automatic sign off for this category: keep the typed sign.
             const newAmount = category.effectiveAutoSign !== false
-              ? (category.isIncome ? absAmount : -absAmount)
+              ? signByCategoryType(category, watchedAmount)
               : watchedAmount;
             if (newAmount !== watchedAmount) {
               const rounded = toAccountPlaces(newAmount);
@@ -1216,10 +1216,9 @@ export function ScheduledTransactionForm({
         // conversion re-derive the account-currency amount.
         resignForeignAmount(category);
       } else if (mode !== 'transfer' && category && watchedAmount !== undefined && watchedAmount !== 0) {
-        const absAmount = Math.abs(watchedAmount);
         // Automatic sign off for this category: keep the typed sign.
         const newAmount = category.effectiveAutoSign !== false
-          ? (category.isIncome ? absAmount : -absAmount)
+          ? signByCategoryType(category, watchedAmount)
           : watchedAmount;
         if (newAmount !== watchedAmount) {
           const rounded = toAccountPlaces(newAmount);

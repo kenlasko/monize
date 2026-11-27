@@ -483,6 +483,7 @@ function severBucketsOutsideTheirBudget(
       return line;
     }
     const sameBudget = budgetOfBucket.get(line.bucket_id) === line.budget_id;
+    // income-flag-ok: budget line direction, not a category's type
     if (sameBudget && line.is_income !== true) return line;
     severed += 1;
     return { ...line, bucket_id: null };

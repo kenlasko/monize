@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "No se pueden eliminar las categorías del sistema",
     "hasSubcategories": "No se puede eliminar una categoría con subcategorías. Elimina o reasigna las subcategorías primero.",
     "hasTransactions": "No se puede eliminar una categoría con {{ count }} transacción(es) referenciada(s). Reasigna las transacciones primero.",
-    "alreadyHasCategories": "No se pueden importar los valores predeterminados: el usuario ya tiene categorías. Elimina las categorías existentes primero o comienza desde cero."
+    "alreadyHasCategories": "No se pueden importar los valores predeterminados: el usuario ya tiene categorías. Elimina las categorías existentes primero o comienza desde cero.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "UUID no válido: {{ id }}",

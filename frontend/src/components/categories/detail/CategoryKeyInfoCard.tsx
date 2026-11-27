@@ -1,5 +1,6 @@
 'use client';
 
+import { type CategoryType, categoryTypeOf } from '@/lib/category-type';
 import { useTranslations } from 'next-intl';
 import { KeyValueList, type KeyValueRow } from '@/components/ui/KeyValueList';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -42,11 +43,22 @@ export function CategoryKeyInfoCard({
   const shownPayees = defaultCategoryForPayees.slice(0, MAX_DEFAULT_PAYEE_LINKS);
   const hiddenPayeeCount = defaultCategoryForPayees.length - shownPayees.length;
 
+  const typeLabel = (type: CategoryType) => {
+    switch (type) {
+      case 'income':
+        return t('keyInfo.income');
+      case 'transfer':
+        return t('keyInfo.transfer');
+      default:
+        return t('keyInfo.expense');
+    }
+  };
+
   const rows: KeyValueRow[] = [
     {
       key: 'type',
       label: t('keyInfo.type'),
-      value: category.isIncome ? t('keyInfo.income') : t('keyInfo.expense'),
+      value: typeLabel(categoryTypeOf(category)),
     },
     {
       key: 'parent',

@@ -17,7 +17,9 @@
     "summaryIncome": "[XX-Income Categories-XX]",
     "summaryExpense": "[XX-Expense Categories-XX]",
     "summaryTopLevel": "[XX-Top-Level-XX]",
-    "eyebrow": "[XX-Chart of categories-XX]"
+    "eyebrow": "[XX-Chart of categories-XX]",
+    "filterTransfers": "[XX-Transfers ({count})-XX]",
+    "summaryTransfer": "[XX-Transfer Categories-XX]"
   },
   "empty": {
     "heading": "[XX-No categories yet-XX]",
@@ -70,7 +72,8 @@
     "iconNone": "[XX-No icon-XX]",
     "descriptionLabel": "[XX-Description (optional)-XX]",
     "submitCreate": "[XX-Create Category-XX]",
-    "submitUpdate": "[XX-Update Category-XX]"
+    "submitUpdate": "[XX-Update Category-XX]",
+    "typeTransfer": "[XX-Transfer-XX]"
   },
   "list": {
     "emptyHeading": "[XX-No categories found-XX]",
@@ -84,7 +87,8 @@
     "badgeExpense": "[XX-Expense-XX]",
     "systemBadge": "[XX-(System)-XX]",
     "inheritedColorTitle": "[XX-Inherited from parent-XX]",
-    "viewTransactionsTitle": "[XX-View transactions in this category-XX]"
+    "viewTransactionsTitle": "[XX-View transactions in this category-XX]",
+    "badgeTransfer": "[XX-Transfer-XX]"
   },
   "deleteDialog": {
     "title": "[XX-Delete \"{name}\"-XX]",

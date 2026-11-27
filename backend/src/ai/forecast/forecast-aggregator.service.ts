@@ -1,4 +1,8 @@
 import type { ScheduleAmountEstimateStatus } from "../../scheduled-transactions/scheduled-amount-estimate.service";
+import {
+  CategoryType,
+  isIncomeCategory,
+} from "../../categories/category-type.util";
 import { Injectable, Inject, Logger, forwardRef } from "@nestjs/common";
 import { describeFrequencyForModel } from "../../common/custom-recurrence-describe";
 import { DataSource } from "typeorm";
@@ -324,7 +328,7 @@ export class ForecastAggregatorService {
         .select("TO_CHAR(t.transactionDate, 'YYYY-MM')", "month")
         .addSelect("cat.id", "categoryId")
         .addSelect("COALESCE(cat.name, 'Uncategorized')", "categoryName")
-        .addSelect("COALESCE(cat.isIncome, false)", "isIncome")
+        .addSelect("cat.categoryType", "categoryType")
         .addSelect("(cat.id IS NULL)", "uncategorized")
         .addSelect("t.currencyCode", "currencyCode")
         .addSelect(
@@ -348,7 +352,7 @@ export class ForecastAggregatorService {
         .groupBy("TO_CHAR(t.transactionDate, 'YYYY-MM')")
         .addGroupBy("cat.id")
         .addGroupBy("cat.name")
-        .addGroupBy("cat.isIncome")
+        .addGroupBy("cat.categoryType")
         .addGroupBy("t.currencyCode")
         .orderBy("month", "ASC");
       splitByRateBasis(qb, FORECAST_RATE_BASIS, currency);
@@ -373,7 +377,7 @@ export class ForecastAggregatorService {
         expenses: FxAggregate;
         categories: Map<
           string,
-          { categoryName: string; isIncome: boolean; net: FxAggregate }
+          { categoryName: string; categoryType: CategoryType; net: FxAggregate }
         >;
       }
     >();
@@ -388,7 +392,9 @@ export class ForecastAggregatorService {
       monthMap.set(row.month, entry);
       const income = Number(row.income) || 0;
       const expenses = Number(row.expenses) || 0;
-      const isIncome = row.isIncome === true || row.isIncome === "true";
+      // An uncategorized row has no category and so no type; it is neither
+      // an income nor a Transfer category (`COALESCE` was an expense).
+      const categoryType: CategoryType = row.categoryType ?? "expense";
       const uncategorized =
         row.uncategorized === true || row.uncategorized === "true";
 
@@ -398,7 +404,7 @@ export class ForecastAggregatorService {
       const key: string = row.categoryId ?? "uncategorized";
       const cat = entry.categories.get(key) ?? {
         categoryName: row.categoryName,
-        isIncome,
+        categoryType,
         net: new FxAggregate(),
       };
       entry.categories.set(key, cat);
@@ -418,15 +424,16 @@ export class ForecastAggregatorService {
         // the sign of its net before rounding says it moved money its way
         // (docs/specs/report-rounding-and-aggregation.md rules 2 and 5).
         const net = cat.net.knownSubtotal;
-        if (cat.isIncome) data.income.merge(cat.net);
+        const incomeSide = isIncomeCategory(cat);
+        if (incomeSide) data.income.merge(cat.net);
         else data.expenses.mergeNegated(cat.net);
         // `0 - net`, not `-net`: a net that reads 0 is listed as 0, never -0.
-        const total = cat.isIncome ? net : 0 - net;
-        if (cat.isIncome ? cat.net.sign > 0 : cat.net.sign < 0) {
+        const total = incomeSide ? net : 0 - net;
+        if (incomeSide ? cat.net.sign > 0 : cat.net.sign < 0) {
           breakdown.push({
             categoryName: cat.categoryName,
             total,
-            isIncome: cat.isIncome,
+            isIncome: incomeSide,
           });
         }
       }
@@ -523,7 +530,7 @@ export class ForecastAggregatorService {
       // "not derivable", which travels to the prompt rather than collapsing to
       // "expense".
       const isIncome =
-        st.category?.isIncome === true
+        st.category && isIncomeCategory(st.category)
           ? true
           : occurrence.directionAmount === null
             ? null

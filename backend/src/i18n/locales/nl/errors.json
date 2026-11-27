@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "Systeemcategorieën kunnen niet worden verwijderd",
     "hasSubcategories": "Kan categorie met subcategorieën niet verwijderen. Verwijder of herwijs subcategorieën eerst.",
     "hasTransactions": "Kan categorie met {{ count }} verwijzende transactie(s) niet verwijderen. Wijs transacties eerst opnieuw toe.",
-    "alreadyHasCategories": "Kan standaardwaarden niet importeren: gebruiker heeft al categorieën. Verwijder bestaande categorieën eerst of begin opnieuw."
+    "alreadyHasCategories": "Kan standaardwaarden niet importeren: gebruiker heeft al categorieën. Verwijder bestaande categorieën eerst of begin opnieuw.",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "Ongeldige UUID: {{ id }}",

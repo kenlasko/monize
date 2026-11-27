@@ -1123,7 +1123,7 @@ describe("TransactionAnalyticsService", () => {
 
         expect(categoriesRepository.find).toHaveBeenCalledWith({
           where: { userId },
-          select: ["id", "parentId", "isIncome"],
+          select: ["id", "parentId", "categoryType"],
         });
 
         // Should pass category IDs inline via Brackets

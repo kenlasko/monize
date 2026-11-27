@@ -1,5 +1,6 @@
 'use client';
 
+import { isIncomeCategory as isIncomeCategoryType } from '@/lib/category-type';
 import { useTranslations } from 'next-intl';
 import { gainLossColor, roundMoney, sumMoney } from '@/lib/format';
 import { useDateFormat } from '@/hooks/useDateFormat';
@@ -30,7 +31,7 @@ function getCategoryName(
 
 function isIncomeCategory(pc: BudgetPeriodCategory): boolean {
   if (pc.budgetCategory?.isIncome) return true;
-  if (pc.category?.isIncome) return true;
+  if (pc.category && isIncomeCategoryType(pc.category)) return true;
   return false;
 }
 

@@ -4,6 +4,7 @@ import {
   ConflictException,
   Logger,
 } from "@nestjs/common";
+import { assertCategoryTakesCategoryRow } from "../categories/category-fit";
 import { DataSource, EntityManager, In, QueryFailedError } from "typeorm";
 import { tr } from "../i18n/translate";
 import { Payee } from "./entities/payee.entity";
@@ -781,6 +782,11 @@ export class PayeeAutoMergeService {
       // Optionally set the chosen default category on the canonical. Ownership
       // was validated up front in applyAutoMerge.
       if (group.defaultCategoryId) {
+        await assertCategoryTakesCategoryRow(
+          m,
+          userId,
+          group.defaultCategoryId,
+        );
         await m.update(
           Payee,
           { id: canonical.id, userId },

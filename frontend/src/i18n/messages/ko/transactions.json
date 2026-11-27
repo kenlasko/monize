@@ -49,7 +49,9 @@
     "editAria": "카테고리 편집",
     "collapseAria": "카테고리 정보 숨기기",
     "show": "카테고리 정보 표시",
-    "amountUnavailable": "환율 없음"
+    "amountUnavailable": "환율 없음",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "현재 잔액",

@@ -220,8 +220,8 @@ export class ImportEntityCreatorService {
     parentId: string | null,
   ): Promise<{ id: string; inserted: boolean }> {
     const rows: unknown = await manager.query(
-      `INSERT INTO categories (user_id, name, parent_id, is_income)
-       VALUES ($1, $2, $3, false)
+      `INSERT INTO categories (user_id, name, parent_id, category_type)
+       VALUES ($1, $2, $3, 'expense')
        ON CONFLICT DO NOTHING
        RETURNING id`,
       [userId, name, parentId],

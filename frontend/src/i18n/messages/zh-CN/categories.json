@@ -17,7 +17,9 @@
     "summaryIncome": "收入分类",
     "summaryExpense": "支出分类",
     "summaryTopLevel": "顶级分类",
-    "eyebrow": "分类总表"
+    "eyebrow": "分类总表",
+    "filterTransfers": "Transfers ({count})",
+    "summaryTransfer": "Transfer Categories"
   },
   "empty": {
     "heading": "尚无分类",
@@ -70,7 +72,8 @@
     "iconNone": "无图标",
     "descriptionLabel": "描述（可选）",
     "submitCreate": "创建分类",
-    "submitUpdate": "更新分类"
+    "submitUpdate": "更新分类",
+    "typeTransfer": "Transfer"
   },
   "list": {
     "emptyHeading": "未找到分类",
@@ -84,7 +87,8 @@
     "badgeExpense": "支出",
     "systemBadge": "（系统）",
     "inheritedColorTitle": "继承自父分类",
-    "viewTransactionsTitle": "查看此分类的交易"
+    "viewTransactionsTitle": "查看此分类的交易",
+    "badgeTransfer": "Transfer"
   },
   "deleteDialog": {
     "title": "删除 \"{name}\"",

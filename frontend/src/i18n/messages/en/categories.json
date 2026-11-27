@@ -17,7 +17,9 @@
     "summaryIncome": "Income Categories",
     "summaryExpense": "Expense Categories",
     "summaryTopLevel": "Top-Level",
-    "eyebrow": "Chart of categories"
+    "eyebrow": "Chart of categories",
+    "filterTransfers": "Transfers ({count})",
+    "summaryTransfer": "Transfer Categories"
   },
   "empty": {
     "heading": "No categories yet",
@@ -70,7 +72,8 @@
     "iconNone": "No icon",
     "descriptionLabel": "Description (optional)",
     "submitCreate": "Create Category",
-    "submitUpdate": "Update Category"
+    "submitUpdate": "Update Category",
+    "typeTransfer": "Transfer"
   },
   "list": {
     "emptyHeading": "No categories found",
@@ -84,7 +87,8 @@
     "badgeExpense": "Expense",
     "systemBadge": "(System)",
     "inheritedColorTitle": "Inherited from parent",
-    "viewTransactionsTitle": "View transactions in this category"
+    "viewTransactionsTitle": "View transactions in this category",
+    "badgeTransfer": "Transfer"
   },
   "deleteDialog": {
     "title": "Delete \"{name}\"",

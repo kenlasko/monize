@@ -1,4 +1,8 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
+import {
+  CategoryType,
+  isIncomeCategory,
+} from "../categories/category-type.util";
 import { tr } from "../i18n/translate";
 import { In, DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
@@ -144,7 +148,7 @@ export class BudgetGeneratorService {
 
     for (const cat of expenseAnalysis) {
       const existing = categoryMap.get(cat.categoryId);
-      if (!existing || !cat.isIncome) {
+      if (!existing || !isIncomeCategory(cat)) {
         // New category, or an expense category — the expense query is
         // the authoritative source for expense categories.
         categoryMap.set(cat.categoryId, cat);
@@ -219,17 +223,17 @@ export class BudgetGeneratorService {
         transferLines.map((cat) => cat.transferAccountId as string),
       );
       const incomeSources = transferLines
-        .filter((cat) => cat.isIncome)
-        .map((cat) => cat.transferAccountId as string);
+        .filter((line) => line.isIncome)
+        .map((line) => line.transferAccountId as string);
       if (incomeSources.length > 0) {
         await assertTransferAccountsOwned(m, userId, incomeSources);
       }
 
       const buckets = this.checkedRequestBuckets(dto);
       const knownKeys = new Set(buckets.map((b) => b.key));
-      for (const cat of lines) {
-        if (cat.bucketKey === undefined) continue;
-        if (cat.isIncome) {
+      for (const line of lines) {
+        if (line.bucketKey === undefined) continue;
+        if (line.isIncome) {
           throw new BadRequestException(
             tr(
               "errors.budgets.bucketOnIncomeLine",
@@ -237,12 +241,12 @@ export class BudgetGeneratorService {
             ),
           );
         }
-        if (!knownKeys.has(cat.bucketKey)) {
+        if (!knownKeys.has(line.bucketKey)) {
           throw new BadRequestException(
             tr(
               "errors.budgets.bucketKeyUnknown",
-              `No bucket in this request has the key "${cat.bucketKey}"`,
-              { key: cat.bucketKey },
+              `No bucket in this request has the key "${line.bucketKey}"`,
+              { key: line.bucketKey },
             ),
           );
         }
@@ -311,26 +315,26 @@ export class BudgetGeneratorService {
       if (lines.length > 0) {
         const lineRepo = m.getRepository(BudgetCategory);
         await lineRepo.save(
-          lines.map((cat) =>
+          lines.map((line) =>
             lineRepo.create({
               budgetId: savedBudget.id,
-              categoryId: cat.transferAccountId
+              categoryId: line.transferAccountId
                 ? null
-                : (cat.categoryId ?? null),
-              transferAccountId: cat.transferAccountId ?? null,
-              isTransfer: !!cat.transferAccountId,
-              amount: cat.amount,
-              isIncome: cat.isIncome ?? false,
-              categoryGroup: cat.categoryGroup ?? null,
-              rolloverType: cat.rolloverType,
-              rolloverCap: cat.rolloverCap ?? null,
-              flexGroup: cat.flexGroup ?? null,
-              alertWarnPercent: cat.alertWarnPercent ?? 80,
-              alertCriticalPercent: cat.alertCriticalPercent ?? 95,
-              notes: cat.notes ?? null,
-              sortOrder: cat.sortOrder ?? 0,
-              ...(cat.bucketKey !== undefined
-                ? { bucketId: bucketIds.get(cat.bucketKey) }
+                : (line.categoryId ?? null),
+              transferAccountId: line.transferAccountId ?? null,
+              isTransfer: !!line.transferAccountId,
+              amount: line.amount,
+              isIncome: line.isIncome ?? false,
+              categoryGroup: line.categoryGroup ?? null,
+              rolloverType: line.rolloverType,
+              rolloverCap: line.rolloverCap ?? null,
+              flexGroup: line.flexGroup ?? null,
+              alertWarnPercent: line.alertWarnPercent ?? 80,
+              alertCriticalPercent: line.alertCriticalPercent ?? 95,
+              notes: line.notes ?? null,
+              sortOrder: line.sortOrder ?? 0,
+              ...(line.bucketKey !== undefined
+                ? { bucketId: bucketIds.get(line.bucketKey) }
                 : {}),
             }),
           ),
@@ -424,7 +428,7 @@ export class BudgetGeneratorService {
           "CASE WHEN p.name IS NOT NULL THEN p.name || ': ' || c.name ELSE c.name END",
           "categoryName",
         )
-        .addSelect("c.is_income", "isIncome")
+        .addSelect("c.category_type", "categoryType")
         .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
         .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
         .addSelect("ABS(SUM(t.amount))", "total")
@@ -439,7 +443,7 @@ export class BudgetGeneratorService {
         .groupBy("t.category_id")
         .addGroupBy("c.name")
         .addGroupBy("p.name")
-        .addGroupBy("c.is_income")
+        .addGroupBy("c.category_type")
         .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
         .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
         .getRawMany(),
@@ -457,7 +461,7 @@ export class BudgetGeneratorService {
           "CASE WHEN p.name IS NOT NULL THEN p.name || ': ' || c.name ELSE c.name END",
           "categoryName",
         )
-        .addSelect("c.is_income", "isIncome")
+        .addSelect("c.category_type", "categoryType")
         .addSelect("EXTRACT(YEAR FROM t.transaction_date)::int", "year")
         .addSelect("EXTRACT(MONTH FROM t.transaction_date)::int", "month")
         .addSelect("ABS(SUM(s.amount))", "total")
@@ -471,7 +475,7 @@ export class BudgetGeneratorService {
         .groupBy("s.category_id")
         .addGroupBy("c.name")
         .addGroupBy("p.name")
-        .addGroupBy("c.is_income")
+        .addGroupBy("c.category_type")
         .addGroupBy("EXTRACT(YEAR FROM t.transaction_date)")
         .addGroupBy("EXTRACT(MONTH FROM t.transaction_date)")
         .getRawMany(),
@@ -482,7 +486,7 @@ export class BudgetGeneratorService {
       {
         categoryId: string;
         categoryName: string;
-        isIncome: boolean;
+        categoryType: CategoryType;
         monthlyTotals: Map<string, number>;
       }
     >();
@@ -493,7 +497,7 @@ export class BudgetGeneratorService {
         categoryMap.set(key, {
           categoryId: row.categoryId,
           categoryName: row.categoryName,
-          isIncome: row.isIncome,
+          categoryType: row.categoryType,
           monthlyTotals: new Map(),
         });
       }
@@ -523,7 +527,7 @@ export class BudgetGeneratorService {
       results.push({
         categoryId: entry.categoryId,
         categoryName: entry.categoryName,
-        isIncome: entry.isIncome,
+        isIncome: isIncomeCategory(entry),
         average: roundMoney(this.mean(monthlyAmounts)),
         median: roundMoney(this.percentile(sortedForPercentiles, 50)),
         p25: roundMoney(this.percentile(sortedForPercentiles, 25)),

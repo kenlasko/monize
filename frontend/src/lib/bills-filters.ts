@@ -1,4 +1,5 @@
 import { ScheduledTransaction } from '@/types/scheduled-transaction';
+import { type CategoryTypeSource, isIncomeCategory } from '@/lib/category-type';
 import { Payee } from '@/types/payee';
 import { Account } from '@/types/account';
 
@@ -72,9 +73,12 @@ function scheduledTransactionMatchesCategories(
     if (topMatch || splitMatch) return true;
   }
   if (wantTypes.length > 0) {
-    const isIncome = (c: { isIncome: boolean } | null | undefined) =>
-      c ? wantTypes.includes(c.isIncome) : false;
-    if (isIncome(t.category) || (t.splits || []).some((sp) => isIncome(sp.category))) {
+    const hasWantedType = (c: CategoryTypeSource | null | undefined) =>
+      c ? wantTypes.includes(isIncomeCategory(c)) : false;
+    if (
+      hasWantedType(t.category) ||
+      (t.splits || []).some((sp) => hasWantedType(sp.category))
+    ) {
       return true;
     }
   }

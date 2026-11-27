@@ -5,6 +5,10 @@
  * account shared through a joint grant is not a candidate, and the full form
  * handles it.
  */
+import {
+  isIncomeCategory,
+  isTransferCategory,
+} from "../../categories/category-type.util";
 import { EntityManager, In, Not } from "typeorm";
 import {
   Account,
@@ -124,15 +128,25 @@ export async function loadQuickAddCandidates(
 
   const categoryRows = await m.getRepository(Category).find({
     where: { userId },
-    select: { id: true, name: true, parentId: true, isIncome: true },
+    select: {
+      id: true,
+      name: true,
+      parentId: true,
+      categoryType: true,
+      isIncome: true,
+    },
   });
   const paths = qualifiedNamesById(categoryRows);
-  const categories = categoryRows.map((c) => ({
-    id: c.id,
-    name: c.name,
-    path: paths.get(c.id) ?? c.name,
-    isIncome: c.isIncome === true,
-  }));
+  // A Transfer category goes only on a transfer, and a quick-add row that is
+  // not one is an ordinary row (INV-CATEGORY-001): it is never a candidate.
+  const categories = categoryRows
+    .filter((c) => !isTransferCategory(c))
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      path: paths.get(c.id) ?? c.name,
+      isIncome: isIncomeCategory(c),
+    }));
 
   const formats = await loadSearchFormats(m, userId);
   const codes = [...new Set(accounts.map((a) => a.currencyCode.toUpperCase()))];

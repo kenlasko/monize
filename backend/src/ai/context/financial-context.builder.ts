@@ -1,4 +1,8 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
+import {
+  CategoryType,
+  categoryTypeOf,
+} from "../../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../../common/db/scoped-db";
 import { AccountsService } from "../../accounts/accounts.service";
@@ -12,8 +16,20 @@ import { preferredCurrency } from "../../common/default-currency.util";
 interface CategoryNode {
   id: string;
   name: string;
+  categoryType?: CategoryType;
   isIncome: boolean;
   children?: CategoryNode[];
+}
+
+const CATEGORY_TYPE_LABELS: Record<CategoryType, string> = {
+  income: "Income",
+  expense: "Expense",
+  transfer: "Transfer",
+};
+
+/** The type a category prints in the assistant's context. */
+function categoryTypeLabel(category: CategoryNode): string {
+  return CATEGORY_TYPE_LABELS[categoryTypeOf(category)];
 }
 
 @Injectable()
@@ -80,7 +96,7 @@ ${categoryList || "(No categories configured)"}
     return categories
       .map((cat) => {
         const prefix = "  ".repeat(indent) + "- ";
-        const type = cat.isIncome ? "[Income]" : "[Expense]";
+        const type = `[${categoryTypeLabel(cat)}]`;
         const safeName = sanitizePromptValue(cat.name);
         const children =
           cat.children && cat.children.length > 0

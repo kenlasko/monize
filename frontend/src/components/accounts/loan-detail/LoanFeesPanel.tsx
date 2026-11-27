@@ -84,7 +84,7 @@ export function LoanFeesPanel({ account, onChanged }: LoanFeesPanelProps) {
   const createCategory = async (name: string): Promise<Category | null> => {
     if (answer?.loaded.status !== 'ready') return null;
     try {
-      const result = await createCategoryFromInput(name, answer.loaded.categories, { isIncome: false });
+      const result = await createCategoryFromInput(name, answer.loaded.categories, { type: 'expense' });
       if (!result) return null;
       setAnswer((prev) =>
         prev && prev.loaded.status === 'ready'

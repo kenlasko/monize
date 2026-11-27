@@ -49,7 +49,9 @@
     "editAria": "編輯分類",
     "collapseAria": "隱藏分類資訊",
     "show": "顯示分類資訊",
-    "amountUnavailable": "無匯率"
+    "amountUnavailable": "無匯率",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "目前結餘",

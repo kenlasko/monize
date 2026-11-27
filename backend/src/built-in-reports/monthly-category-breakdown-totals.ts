@@ -1,4 +1,5 @@
 import { FxAggregate } from "../common/fx-aggregate";
+import { isExpenseCategory } from "../categories/category-type.util";
 import { reportFigure } from "../common/report-figure";
 
 /**
@@ -174,9 +175,9 @@ export function breakdownTotals(
     };
     // Deposits less withdrawals is money in, so an expense section reads it
     // negated: positive is what it cost.
-    addColumns(section.sums, netByColumn, !section.isIncome);
+    addColumns(section.sums, netByColumn, isExpenseCategory(section));
     sections.set(key, section);
-    return rowFigures(netByColumn, columns, places, !row.isIncome);
+    return rowFigures(netByColumn, columns, places, isExpenseCategory(row));
   });
 
   for (const section of sections.values()) {

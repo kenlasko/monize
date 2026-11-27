@@ -8,6 +8,7 @@
  * (`cash-flow-sankey.property.spec.ts`); which rows reach this module is the
  * SQL's job and the integration suite's proof.
  */
+import type { CategoryType } from "../categories/category-type.util";
 import { FxAggregate } from "../common/fx-aggregate";
 import {
   apportionByKey,
@@ -78,6 +79,8 @@ export interface SankeyCategory {
   parentId: string | null;
   color: string | null;
   isIncome: boolean;
+  /** Undefined when the category's type is unknown, which is never a refund. */
+  categoryType?: CategoryType;
 }
 
 /**
@@ -416,7 +419,7 @@ export function assembleCashFlowSankey(
       id,
       kind,
       label: category.name,
-      expenseRefund: isIncomeSide && category.isIncome === false,
+      expenseRefund: isIncomeSide && category.categoryType === "expense",
       categoryId: rootId,
       parentCategoryId: null,
       accountId: null,

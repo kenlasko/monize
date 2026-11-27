@@ -49,7 +49,9 @@
     "editAria": "Edit kategori",
     "collapseAria": "Sembunyikan info kategori",
     "show": "Tampilkan info kategori",
-    "amountUnavailable": "Tidak ada kurs"
+    "amountUnavailable": "Tidak ada kurs",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Saldo Saat Ini",

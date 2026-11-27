@@ -49,7 +49,9 @@
     "editAria": "श्रेणी संपादित करें",
     "collapseAria": "श्रेणी जानकारी छुपाएं",
     "show": "श्रेणी जानकारी दिखाएं",
-    "amountUnavailable": "कोई दर नहीं"
+    "amountUnavailable": "कोई दर नहीं",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "वर्तमान शेष",

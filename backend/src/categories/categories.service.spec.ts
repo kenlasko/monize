@@ -198,6 +198,7 @@ describe("CategoriesService", () => {
 
       expect(categoriesRepository.create).toHaveBeenCalledWith({
         ...dto,
+        categoryType: "expense",
         userId: "user-1",
       });
       expect(categoriesRepository.save).toHaveBeenCalled();
@@ -222,6 +223,7 @@ describe("CategoriesService", () => {
       });
       expect(categoriesRepository.create).toHaveBeenCalledWith({
         ...dto,
+        categoryType: "expense",
         isIncome: false,
         userId: "user-1",
       });
@@ -288,6 +290,239 @@ describe("CategoriesService", () => {
       await expect(service.create("user-1", dto)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe("category type", () => {
+    it("creates a Transfer category from `type`, with the legacy flag false", async () => {
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      await service.create("user-1", { name: "Savings", type: "transfer" });
+
+      expect(categoriesRepository.create).toHaveBeenCalledWith({
+        name: "Savings",
+        categoryType: "transfer",
+        isIncome: false,
+        userId: "user-1",
+      });
+    });
+
+    it("lets `type` win over the legacy isIncome flag", async () => {
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      await service.create("user-1", {
+        name: "Savings",
+        type: "transfer",
+        isIncome: true,
+      });
+
+      expect(categoriesRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
+      );
+    });
+
+    it("reads isIncome: true as an income category when no type is sent", async () => {
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      await service.create("user-1", { name: "Salary", isIncome: true });
+
+      expect(categoriesRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ categoryType: "income", isIncome: true }),
+      );
+    });
+
+    it("gives a subcategory its parent's type, Transfer included", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        categoryType: "transfer",
+      });
+      categoriesRepository.save.mockImplementation((data) => data);
+
+      await service.create("user-1", { name: "Brokerage", parentId: "cat-1" });
+
+      expect(categoriesRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
+      );
+    });
+
+    it("refuses a subcategory whose request names another type than its parent's", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        categoryType: "expense",
+      });
+
+      await expect(
+        service.create("user-1", {
+          name: "Brokerage",
+          parentId: "cat-1",
+          type: "transfer",
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(categoriesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("takes the category-owner lock exclusive before a type change, then writes the type and the flag", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
+      txManager.find.mockResolvedValue([]);
+      txManager.query.mockResolvedValue([]);
+      categoriesRepository.find.mockResolvedValue([
+        { ...mockCategory, categoryType: "expense", parentId: null },
+      ]);
+
+      const result = await service.update("user-1", "cat-1", {
+        type: "transfer",
+      });
+
+      expect(txManager.query.mock.calls[0]).toEqual([
+        "SELECT pg_advisory_xact_lock($1::int, hashtext($2))",
+        [10, "user-1"],
+      ]);
+      expect(txManager.save).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
+      );
+      expect(result.categoryType).toBe("transfer");
+    });
+
+    it("takes no lock for an edit that cannot change the type", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
+
+      await service.update("user-1", "cat-1", { name: "Renamed" });
+
+      expect(txManager.query).not.toHaveBeenCalled();
+    });
+
+    it("refuses a change to Transfer while a category row holds the category or a descendant", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
+      categoriesRepository.find.mockResolvedValue([
+        { id: "cat-1", parentId: null, name: "Groceries" },
+        { id: "cat-2", parentId: "cat-1", name: "Organic" },
+      ]);
+      txManager.query.mockImplementation(async (sql: string) =>
+        sql.includes("category_held_by_category_row") ? [{ id: "cat-2" }] : [],
+      );
+
+      await expect(
+        service.update("user-1", "cat-1", { type: "transfer" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(txManager.save).not.toHaveBeenCalled();
+    });
+
+    it("allows a Transfer category to become Income or Expense without asking for holders", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        categoryType: "transfer",
+      });
+      txManager.find.mockResolvedValue([]);
+
+      await service.update("user-1", "cat-1", { type: "expense" });
+
+      expect(
+        txManager.query.mock.calls.some(([sql]) =>
+          String(sql).includes("category_held_by_category_row"),
+        ),
+      ).toBe(false);
+      expect(txManager.save).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({ categoryType: "expense", isIncome: false }),
+      );
+    });
+
+    it("leaves a Transfer category alone when the legacy flag says false", async () => {
+      categoriesRepository.findOne.mockResolvedValue({
+        ...mockCategory,
+        categoryType: "transfer",
+      });
+
+      await service.update("user-1", "cat-1", { isIncome: false });
+
+      expect(txManager.save).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({ categoryType: "transfer", isIncome: false }),
+      );
+    });
+
+    it("cascades a type change to every descendant, writing the type and the flag", async () => {
+      categoriesRepository.findOne.mockResolvedValue({ ...mockCategory });
+      txManager.find
+        .mockResolvedValueOnce([{ id: "child-1" }])
+        .mockResolvedValueOnce([]);
+
+      await service.update("user-1", "cat-1", { type: "income" });
+
+      expect(txManager.update).toHaveBeenCalledWith(
+        Category,
+        { id: "child-1", userId: "user-1" },
+        { categoryType: "income", isIncome: true },
+      );
+    });
+
+    it("keeps an existing child's own type when only its name changes", async () => {
+      // The child, then its parent for the colour and icon walk.
+      categoriesRepository.findOne
+        .mockResolvedValueOnce({
+          ...mockChildCategory,
+          categoryType: "income",
+          isIncome: true,
+        })
+        .mockResolvedValueOnce({
+          ...mockCategory,
+          color: "#112233",
+          icon: "x",
+        });
+
+      await service.update("user-1", "cat-2", { name: "Renamed" });
+
+      expect(txManager.save).toHaveBeenCalledWith(
+        Category,
+        expect.objectContaining({ categoryType: "income", isIncome: true }),
+      );
+    });
+
+    it("lists the transfer categories and counts them in the stats", async () => {
+      categoriesRepository.find.mockResolvedValue([]);
+      await service.findByCategoryType("user-1", "transfer");
+      expect(categoriesRepository.find).toHaveBeenCalledWith({
+        where: { userId: "user-1", categoryType: "transfer" },
+        order: { name: "ASC" },
+      });
+
+      jest.spyOn(service, "findAll").mockResolvedValue([
+        { ...mockCategory, categoryType: "income", isIncome: true },
+        { ...mockCategory, categoryType: "expense" },
+        { ...mockCategory, categoryType: "transfer" },
+      ] as never);
+      const stats = await service.getStats("user-1");
+      expect(stats).toMatchObject({
+        incomeCategories: 1,
+        expenseCategories: 1,
+        transferCategories: 1,
+      });
+    });
+
+    it("filters the assistant listing by type and names it on every entry", async () => {
+      jest.spyOn(service, "findAll").mockResolvedValue([
+        { ...mockCategory, id: "e", name: "Food", transactionCount: 1 },
+        {
+          ...mockCategory,
+          id: "t",
+          name: "Savings",
+          categoryType: "transfer",
+          transactionCount: 2,
+        },
+      ] as never);
+
+      const result = await service.getLlmCategories("user-1", {
+        type: "transfer",
+      });
+
+      expect(result.categories).toEqual([
+        expect.objectContaining({
+          id: "t",
+          type: "transfer",
+          isIncome: false,
+        }),
+      ]);
     });
   });
 
@@ -878,7 +1113,7 @@ describe("CategoriesService", () => {
       const result = await service.findByType("user-1", true);
 
       expect(categoriesRepository.find).toHaveBeenCalledWith({
-        where: { userId: "user-1", isIncome: true },
+        where: { userId: "user-1", categoryType: "income" },
         order: { name: "ASC" },
       });
       expect(result).toEqual(
@@ -896,7 +1131,7 @@ describe("CategoriesService", () => {
       const result = await service.findByType("user-1", false);
 
       expect(categoriesRepository.find).toHaveBeenCalledWith({
-        where: { userId: "user-1", isIncome: false },
+        where: { userId: "user-1", categoryType: "expense" },
         order: { name: "ASC" },
       });
       expect(result).toEqual([
@@ -1230,12 +1465,12 @@ describe("CategoriesService", () => {
       expect(manager.update).toHaveBeenCalledWith(
         Category,
         { id: "child-1", userId: "user-1" },
-        { isIncome: true },
+        { categoryType: "income", isIncome: true },
       );
       expect(manager.update).toHaveBeenCalledWith(
         Category,
         { id: "child-2", userId: "user-1" },
-        { isIncome: true },
+        { categoryType: "income", isIncome: true },
       );
     });
 
@@ -1641,6 +1876,7 @@ describe("CategoriesService", () => {
         totalCategories: 0,
         incomeCategories: 0,
         expenseCategories: 0,
+        transferCategories: 0,
         subcategories: 0,
       });
     });
@@ -1709,6 +1945,32 @@ describe("CategoriesService", () => {
       expect(result.categoriesCreated).toBeGreaterThan(100);
       expect(qrRepo.create).toHaveBeenCalled();
       expect(qrRepo.save).toHaveBeenCalled();
+    });
+
+    it("seeds the short Transfer set under one parent, typed as Transfer", async () => {
+      categoriesRepository.count.mockResolvedValue(0);
+      let idCounter = 0;
+      categoriesRepository.create.mockImplementation((data: unknown) => ({
+        ...(data as Record<string, unknown>),
+        id: `gen-${++idCounter}`,
+      }));
+      categoriesRepository.save.mockImplementation((data: unknown) =>
+        Promise.resolve(data),
+      );
+
+      await service.importDefaults("user-1");
+
+      const created = categoriesRepository.create.mock.calls.map(
+        (c: unknown[]) => c[0] as Record<string, unknown>,
+      );
+      const transfers = created.filter((c) => c.categoryType === "transfer");
+      const parent = transfers.filter((c) => !c.parentId);
+      expect(parent.map((c) => c.name)).toEqual(["Transfers"]);
+      expect(transfers.length).toBe(6);
+      expect(transfers.every((c) => c.isIncome === false)).toBe(true);
+      expect(transfers.filter((c) => c.parentId).map((c) => c.name)).toContain(
+        "Savings Contributions",
+      );
     });
 
     it("throws BadRequestException when user already has categories", async () => {

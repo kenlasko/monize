@@ -172,10 +172,10 @@ describe("ComparisonReportsService", () => {
         "LEFT JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id)",
       );
       expect(sql).toContain(
-        "WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)",
+        "WHEN c.category_type = 'income' THEN COALESCE(ts.amount, t.amount)",
       );
       expect(sql).toContain(
-        "WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)",
+        "WHEN c.category_type = 'expense' THEN -1 * COALESCE(ts.amount, t.amount)",
       );
     });
 

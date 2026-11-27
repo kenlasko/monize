@@ -1,5 +1,12 @@
 'use client';
 
+import {
+  type CategoryType,
+  categoryTypeOf,
+  isExpenseCategory,
+  isIncomeCategory,
+  isTransferCategory,
+} from '@/lib/category-type';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
@@ -48,7 +55,7 @@ function CategoriesContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [filterType, setFilterType] = useState<'all' | CategoryType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useLocalStorage<SortField>('monize-categories-sort-field', 'name');
   const [sortDirection, setSortDirection] = useLocalStorage<SortDirection>('monize-categories-sort-dir', 'asc');
@@ -137,7 +144,7 @@ function CategoriesContent() {
 
   const typeFilteredCategories = useMemo(() => {
     if (filterType === 'all') return categories;
-    return categories.filter((c) => (filterType === 'income' ? c.isIncome : !c.isIncome));
+    return categories.filter((c) => categoryTypeOf(c) === filterType);
   }, [categories, filterType]);
 
   const filteredCategories = useMemo(() => {
@@ -172,8 +179,9 @@ function CategoriesContent() {
     }
   }, [sortField, setSortField, setSortDirection]);
 
-  const incomeCount = categories.filter((c) => c.isIncome).length;
-  const expenseCount = categories.filter((c) => !c.isIncome).length;
+  const incomeCount = categories.filter(isIncomeCategory).length;
+  const expenseCount = categories.filter(isExpenseCategory).length;
+  const transferCount = categories.filter(isTransferCategory).length;
   const topLevelCount = categories.filter((c) => !c.parentId).length;
 
   useMobileAddAction(t('page.newButton'), openCreate);
@@ -189,7 +197,9 @@ function CategoriesContent() {
           actions={<Button onClick={openCreate}>{t('page.newButton')}</Button>}
         />
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+        <div
+          className={`grid grid-cols-2 gap-6 mb-6 ${transferCount > 0 ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}
+        >
           <SummaryCard
             lead
             label={t('page.summaryTotal')}
@@ -208,6 +218,14 @@ function CategoriesContent() {
             icon={SummaryIcons.minus}
             valueColor="red"
           />
+          {transferCount > 0 && (
+            <SummaryCard
+              label={t('page.summaryTransfer')}
+              value={transferCount}
+              icon={SummaryIcons.list}
+              valueColor="blue"
+            />
+          )}
           <SummaryCard
             label={t('page.summaryTopLevel')}
             value={topLevelCount}
@@ -227,7 +245,14 @@ function CategoriesContent() {
             className="block w-full sm:w-auto sm:flex-1 sm:max-w-md rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
           />
           <div role="group" aria-label={t('page.typeFilterLabel')} className={SEGMENTED_TOOLBAR_GROUP_CLASS}>
-            {(['all', 'expense', 'income'] as const).map((type) => (
+            {(
+              [
+                'all',
+                'expense',
+                'income',
+                ...(transferCount > 0 ? (['transfer'] as const) : []),
+              ] as const
+            ).map((type) => (
               <button
                 key={type}
                 type="button"
@@ -237,6 +262,7 @@ function CategoriesContent() {
               >
                 {type === 'all' ? t('page.filterAll', { count: categories.length }) :
                  type === 'expense' ? t('page.filterExpenses', { count: expenseCount }) :
+                 type === 'transfer' ? t('page.filterTransfers', { count: transferCount }) :
                  t('page.filterIncome', { count: incomeCount })}
               </button>
             ))}

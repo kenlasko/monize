@@ -69,7 +69,7 @@ describe("Private finance planning before writing the bank register", () => {
     managed: string | null;
     closed: boolean;
   } | null;
-  let categories: { id: string; is_income: boolean }[];
+  let categories: { id: string; category_type: string }[];
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(sharedIntegration).mockResolvedValue({
@@ -93,9 +93,9 @@ describe("Private finance planning before writing the bank register", () => {
       closed: false,
     };
     categories = [
-      { id: "food", is_income: false },
-      { id: "private", is_income: false },
-      { id: "fx", is_income: false },
+      { id: "food", category_type: "expense" },
+      { id: "private", category_type: "expense" },
+      { id: "fx", category_type: "expense" },
     ];
     query = jest.fn(async (sql: string, args: unknown[]) => {
       if (sql.includes("AND is_closed")) return [];
@@ -283,10 +283,10 @@ describe("Private finance planning before writing the bank register", () => {
       "own category",
     );
     categories = categories.map((c) =>
-      c.id === "food" ? { ...c, is_income: true } : c,
+      c.id === "food" ? { ...c, category_type: "income" } : c,
     );
     await expect(plan()).rejects.toThrow("own category");
-    categories = categories.map((c) => ({ ...c, is_income: false }));
+    categories = categories.map((c) => ({ ...c, category_type: "expense" }));
     await expect(plan(dto({ payeeId: "someone-elses" }))).rejects.toThrow(
       "own finances",
     );

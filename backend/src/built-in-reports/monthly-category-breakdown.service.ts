@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { isIncomeCategory } from "../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
@@ -528,7 +529,7 @@ export class MonthlyCategoryBreakdownService {
       : null;
 
     const isIncome = category
-      ? category.isIncome
+      ? isIncomeCategory(category)
       : FxAggregate.difference(acc.depositTotal, acc.withdrawalTotal).sign > 0;
 
     const valuesByMonth: Record<string, number> = {};
@@ -554,7 +555,7 @@ export class MonthlyCategoryBreakdownService {
       categoryName: category?.name ?? "Uncategorized",
       parentId: parent?.id ?? null,
       parentName: parent?.name ?? null,
-      parentIsIncome: parent?.isIncome ?? null,
+      parentIsIncome: parent ? isIncomeCategory(parent) : null,
       isIncome,
       valuesByMonth,
       depositTotal: acc.depositTotal.knownSubtotalAt(places),

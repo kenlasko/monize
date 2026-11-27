@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "無法刪除系統類別",
     "hasSubcategories": "無法刪除有子類別的類別。請先刪除或重新指派子類別。",
     "hasTransactions": "無法刪除有 {{ count }} 筆交易參照的類別。請先重新指派交易。",
-    "alreadyHasCategories": "無法匯入預設值：使用者已有類別。請先刪除現有類別或重新開始。"
+    "alreadyHasCategories": "無法匯入預設值：使用者已有類別。請先刪除現有類別或重新開始。",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "無效的 UUID：{{ id }}",

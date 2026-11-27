@@ -78,6 +78,7 @@ export class BudgetCategory {
   })
   amount: number;
 
+  // income-flag-ok: the budget line's own column, not a category's
   @Column({ name: "is_income", default: false })
   isIncome: boolean;
 

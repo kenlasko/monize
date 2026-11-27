@@ -1375,6 +1375,23 @@ describe("PayeesService", () => {
       );
     });
 
+    it("refuses a Transfer category as the payee's default, and writes nothing", async () => {
+      payeesRepository.findOne.mockResolvedValueOnce({
+        ...mockPayee,
+        defaultCategoryId: "cat-1",
+      });
+      categoriesRepository.findOne.mockResolvedValue({
+        id: "cat-9",
+        name: "Savings",
+        categoryType: "transfer",
+      });
+
+      await expect(
+        service.update(userId, "payee-1", { defaultCategoryId: "cat-9" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
     it("should update defaultCategoryId via explicit mapping", async () => {
       // Existing payee already has a loaded relation pointing at the old
       // category -- this is the scenario that exposed the persistence bug.

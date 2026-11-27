@@ -49,7 +49,9 @@
     "editAria": "Modifier la catégorie",
     "collapseAria": "Masquer les informations de la catégorie",
     "show": "Afficher les informations de la catégorie",
-    "amountUnavailable": "Pas de taux"
+    "amountUnavailable": "Pas de taux",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Solde actuel",

@@ -212,6 +212,13 @@ describe("signed expenses in Spending by Category (integration)", () => {
       name: "Medical",
       parentId: salary,
     });
+    // A legacy mixed-type tree: an INSERT takes its parent's type, so the child
+    // is given its own type afterwards. An update that leaves the parent alone
+    // keeps it, as the backfill keeps such children that exist today.
+    await db.query(
+      `UPDATE categories SET category_type = 'expense' WHERE id = $1`,
+      [medical.id],
+    );
     const parent = await post(-50, { isSplit: true, categoryId: null });
     await db.manager.save(TransactionSplit, [
       { transactionId: parent.id, categoryId: medical.id, amount: -100 },

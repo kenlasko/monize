@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { assertCategoryTakesCategoryRow } from "../categories/category-fit";
 import { DataSource, EntityManager } from "typeorm";
 import { todayYMD } from "../common/date-utils";
 import { returnedRows } from "../common/db/query-result";
@@ -501,6 +502,9 @@ export class PayrollDeductionsService {
     today: string,
   ): Promise<PreparedLine> {
     await this.ownedCategory(m, userId, line.categoryId);
+    // A rule names a category line of a scheduled paycheck, which refuses a
+    // Transfer category (INV-CATEGORY-001).
+    await assertCategoryTakesCategoryRow(m, userId, line.categoryId);
     const duplicate = await m.getRepository(PayrollDeductionRule).findOne({
       where: {
         userId,

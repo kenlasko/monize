@@ -1,5 +1,6 @@
 'use client';
 
+import { signByCategoryType } from '@/lib/category-type';
 import { SharedLinkedTransactionNotice } from "@/components/shared-expenses/SharedLinkedTransactionNotice";
 import { isSharedPaymentAccount } from "@/lib/shared-bank-eligibility";
 
@@ -1213,9 +1214,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
     if (category.effectiveAutoSign === false) return;
     if (isForeign) {
       if (foreignAmount === undefined || foreignAmount === 0) return;
-      const signed = category.isIncome
-        ? Math.abs(foreignAmount)
-        : -Math.abs(foreignAmount);
+      const signed = signByCategoryType(category, foreignAmount);
       if (signed !== foreignAmount) {
         setForeignAmount(signed);
         recomputeFx(signed, fxRate);
@@ -1223,9 +1222,7 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
       return;
     }
     if (watchedAmount === undefined || watchedAmount === 0) return;
-    const signed = category.isIncome
-      ? Math.abs(watchedAmount)
-      : -Math.abs(watchedAmount);
+    const signed = signByCategoryType(category, watchedAmount);
     if (signed !== watchedAmount) {
       setValue('amount', signed, { shouldDirty: true, shouldValidate: true });
     }
@@ -1377,7 +1374,8 @@ function TransactionFormFields({ transaction, duplicateFrom, defaultAccountId, d
                       parentId: c.parentId,
                       icon: c.icon,
                       color: c.color,
-                      isIncome: c.isIncome,
+                      categoryType: c.categoryType,
+                      isIncome: c.isIncome, // income-flag-ok: carried to the joint picker's own shape
                       isSystem: c.isSystem,
                     })),
                   ],

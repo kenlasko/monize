@@ -90,7 +90,7 @@ describe("InsightsAggregatorService", () => {
     ) => ({
       categoryId: "cat-1",
       categoryName: "Dining",
-      isIncome: false,
+      categoryType: "expense",
       currencyCode: "USD",
       net: "100",
       txnCount: "2",
@@ -186,7 +186,7 @@ describe("InsightsAggregatorService", () => {
             categoryName: "Salary",
             net: "-4000",
           }),
-          isIncome: true,
+          categoryType: "income",
         },
       ]);
 

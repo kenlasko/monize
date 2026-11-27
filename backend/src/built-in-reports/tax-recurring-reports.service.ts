@@ -25,6 +25,10 @@ import {
   type RecurringExpenseRange,
 } from "./dto/recurring-expenses.dto";
 import { includesSpendingCategory } from "./spending-reports.service";
+import {
+  CategoryType,
+  categoryTypeOfOrUndefined,
+} from "../categories/category-type.util";
 import { formatDateYMD } from "../common/date-utils";
 import { MONEY_SCALE, sumMoney, toMoneyNumber } from "../common/round.util";
 import { reportFigure } from "../common/report-figure";
@@ -242,7 +246,12 @@ export class TaxRecurringReportsService {
     // not cancel; the display name only groups the classified results.
     const netByCategory = new Map<
       string,
-      { name: string; leafName: string; isIncome?: boolean; net: FxAggregate }
+      {
+        name: string;
+        leafName: string;
+        categoryType?: CategoryType;
+        net: FxAggregate;
+      }
     >();
 
     rawResults.forEach((row) => {
@@ -276,7 +285,7 @@ export class TaxRecurringReportsService {
       const entry = netByCategory.get(key) ?? {
         name: catName,
         leafName: category?.name ?? catName,
-        isIncome: category?.isIncome,
+        categoryType: categoryTypeOfOrUndefined(category),
         net: new FxAggregate(),
       };
       entry.net.addConverted(amount);
@@ -296,11 +305,13 @@ export class TaxRecurringReportsService {
       else sum.merge(net);
       map.set(name, sum);
     };
-    netByCategory.forEach(({ name: catName, leafName, isIncome, net }) => {
-      if (isIncome ?? net.sign > 0) {
+    netByCategory.forEach(({ name: catName, leafName, categoryType, net }) => {
+      if (
+        categoryType === undefined ? net.sign > 0 : categoryType === "income"
+      ) {
         totalIncome.merge(net);
         addTo(incomeBySource, catName, net, false);
-      } else if (includesSpendingCategory(-net.sign, isIncome)) {
+      } else if (includesSpendingCategory(-net.sign, categoryType)) {
         totalExpenses.mergeNegated(net);
         addTo(allExpensesByCategory, catName, net, true);
         if (matchesKeywords(catName) || matchesKeywords(leafName))

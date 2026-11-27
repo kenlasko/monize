@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { categoryTypeOf } from "../categories/category-type.util";
 import {
   Brackets,
   DataSource,
@@ -2203,11 +2204,11 @@ export class TransactionAnalyticsService {
   private async loadReportCategories(m: EntityManager, userId: string) {
     const rows = await m.getRepository(Category).find({
       where: { userId },
-      select: ["id", "name", "parentId", "isIncome"],
+      select: ["id", "name", "parentId", "categoryType"],
     });
     return {
       names: qualifiedNamesById(rows),
-      incomeById: new Map(rows.map((row) => [row.id, row.isIncome])),
+      typeById: new Map(rows.map((row) => [row.id, categoryTypeOf(row)])),
     };
   }
 
@@ -2371,7 +2372,7 @@ export class TransactionAnalyticsService {
             startDate,
             endDate,
           );
-          const { names, incomeById } = await this.loadReportCategories(
+          const { names, typeById } = await this.loadReportCategories(
             m,
             userId,
           );
@@ -2388,7 +2389,7 @@ export class TransactionAnalyticsService {
               (g) =>
                 includesSpendingCategory(
                   g.agg.sign,
-                  incomeById.get(g.first.categoryId),
+                  typeById.get(g.first.categoryId),
                 ) || !g.agg.isComplete,
             );
           } else if (direction === "income") {
@@ -2742,7 +2743,7 @@ export class TransactionAnalyticsService {
             !g.agg.isComplete ||
             includesSpendingCategory(
               g.agg.sign,
-              categories?.incomeById.get(g.first.categoryId),
+              categories?.typeById.get(g.first.categoryId),
             ),
         );
       }

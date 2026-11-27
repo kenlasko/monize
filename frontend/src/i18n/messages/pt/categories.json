@@ -17,7 +17,9 @@
     "summaryIncome": "Categorias de receita",
     "summaryExpense": "Categorias de despesa",
     "summaryTopLevel": "Nível superior",
-    "eyebrow": "Plano de categorias"
+    "eyebrow": "Plano de categorias",
+    "filterTransfers": "Transfers ({count})",
+    "summaryTransfer": "Transfer Categories"
   },
   "empty": {
     "heading": "Ainda não há categorias",
@@ -70,7 +72,8 @@
     "iconNone": "Sem ícone",
     "descriptionLabel": "Descrição (opcional)",
     "submitCreate": "Criar categoria",
-    "submitUpdate": "Atualizar categoria"
+    "submitUpdate": "Atualizar categoria",
+    "typeTransfer": "Transfer"
   },
   "list": {
     "emptyHeading": "Nenhuma categoria encontrada",
@@ -84,7 +87,8 @@
     "badgeExpense": "Despesa",
     "systemBadge": "(Sistema)",
     "inheritedColorTitle": "Herdada da categoria-mãe",
-    "viewTransactionsTitle": "Ver transações nesta categoria"
+    "viewTransactionsTitle": "Ver transações nesta categoria",
+    "badgeTransfer": "Transfer"
   },
   "deleteDialog": {
     "title": "Eliminar \"{name}\"",

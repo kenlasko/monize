@@ -367,6 +367,16 @@
         "tips": "[XX-Tips-XX]",
         "vacationPay": "[XX-Vacation Pay-XX]"
       }
+    },
+    "transfers": {
+      "name": "[XX-Transfers-XX]",
+      "sub": {
+        "betweenOwnAccounts": "[XX-Between Own Accounts-XX]",
+        "cashWithdrawals": "[XX-Cash Withdrawals-XX]",
+        "creditCardPayments": "[XX-Credit Card Payments-XX]",
+        "investmentContributions": "[XX-Investment Contributions-XX]",
+        "savingsContributions": "[XX-Savings Contributions-XX]"
+      }
     }
   }
 }

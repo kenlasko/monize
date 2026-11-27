@@ -4,6 +4,10 @@ The client-side half of the financial contracts: scheduled occurrences, portfoli
 
 Paths beginning with `src/` or `scripts/`, and layer configuration filenames, are relative to `frontend/`; other source paths (including `test/...`) are relative to `frontend/src/`. Explicit repository prefixes are preserved. `frontend/CLAUDE.md` is the short index; this document is where the reasoning lives.
 
+## A category's type is read through `@/lib/category-type`, and "expense" is never "not income"
+
+A category is Income, Expense or Transfer (`categoryType`, INV-CATEGORY-003). The API's `isIncome` is the previous release's flag, read-only and true only for Income, so `!category.isIncome` counts a Transfer category as spending (INV-CATEGORY-004). Read the type with `categoryTypeOf`, `isIncomeCategory`, `isExpenseCategory` or `isTransferCategory`, and sign a typed amount with `signByCategoryType` (a Transfer category has no automatic sign). `src/lib/category-type.guard.test.ts` fails a new raw read with no file list; a line with a reason carries `income-flag-ok: <reason>`, and a budget line's own `isIncome` (its direction, under `budgets/`) is not read as a category's. A type filter is a type, not a flag and its negation: the `income` and `expense` pseudo-ids match their type and a Transfer category is in neither.
+
 ## A scheduled occurrence's amount is `nextOccurrenceEffectiveAmount`, never `nextOverride?.amount ?? amount`
 
 `ScheduledTransaction.amount` was computed at whatever FX rate was current when it was written, so for a top-level investment schedule (whose `amount` is the *security-currency* cash impact) or a split parent carrying an investment line it is a stale snapshot -- and it is labelled with the brokerage account's `currencyCode`, not the settlement currency the cash lands in. Read `effectiveAmount` / `effectiveAmountComplete` / `effectiveCurrencyCode` through `lib/scheduled-effective-amount.ts` (`scheduleEffectiveAmount`, `overrideEffectiveAmount`, `nextOccurrenceEffectiveAmount`, `sumEffectiveOccurrences`).

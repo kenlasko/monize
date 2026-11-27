@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { categoryTypeIs } from "../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
@@ -126,7 +127,7 @@ export class IncomeReportsService {
       INNER JOIN categories c ON c.id = COALESCE(ts.category_id, t.category_id)
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
-        AND c.is_income = true
+        AND ${categoryTypeIs("c", "income")}
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
         AND t.parent_transaction_id IS NULL
@@ -400,14 +401,16 @@ export class IncomeReportsService {
         t.currency_code,
         ${rateBasisColumnsSql(currencyParam)},
         SUM(CASE
-          WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)
-          WHEN c.is_income = false THEN 0
+          WHEN ${categoryTypeIs("c", "income")} THEN COALESCE(ts.amount, t.amount)
+          WHEN ${categoryTypeIs("c", "expense")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
           WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount)
           ELSE 0
         END) as income,
         SUM(CASE
-          WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)
-          WHEN c.is_income = true THEN 0
+          WHEN ${categoryTypeIs("c", "expense")} THEN -1 * COALESCE(ts.amount, t.amount)
+          WHEN ${categoryTypeIs("c", "income")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
           WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount))
           ELSE 0
         END) as expenses
@@ -698,14 +701,16 @@ export class IncomeReportsService {
           t.currency_code,
           ${rateBasisColumnsSql(valueCurrencyParam)},
           CASE
-            WHEN c.is_income = true THEN COALESCE(ts.amount, t.amount)
-            WHEN c.is_income = false THEN 0
+            WHEN ${categoryTypeIs("c", "income")} THEN COALESCE(ts.amount, t.amount)
+            WHEN ${categoryTypeIs("c", "expense")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
             WHEN COALESCE(ts.amount, t.amount) > 0 THEN COALESCE(ts.amount, t.amount)
             ELSE 0
           END as income,
           CASE
-            WHEN c.is_income = false THEN -1 * COALESCE(ts.amount, t.amount)
-            WHEN c.is_income = true THEN 0
+            WHEN ${categoryTypeIs("c", "expense")} THEN -1 * COALESCE(ts.amount, t.amount)
+            WHEN ${categoryTypeIs("c", "income")} THEN 0
+          WHEN ${categoryTypeIs("c", "transfer")} THEN 0
             WHEN COALESCE(ts.amount, t.amount) < 0 THEN ABS(COALESCE(ts.amount, t.amount))
             ELSE 0
           END as expenses,

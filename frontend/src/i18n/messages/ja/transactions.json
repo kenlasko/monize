@@ -49,7 +49,9 @@
     "editAria": "カテゴリを編集",
     "collapseAria": "カテゴリ情報を非表示",
     "show": "カテゴリ情報を表示",
-    "amountUnavailable": "レートなし"
+    "amountUnavailable": "レートなし",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "現在残高",

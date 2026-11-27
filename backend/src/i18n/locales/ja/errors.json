@@ -360,7 +360,12 @@
     "cannotDeleteSystem": "システムカテゴリは削除できません",
     "hasSubcategories": "サブカテゴリのあるカテゴリは削除できません。先にサブカテゴリを削除または再割り当てしてください。",
     "hasTransactions": "{{ count }} 件の取引が参照しているカテゴリは削除できません。先に取引を再割り当てしてください。",
-    "alreadyHasCategories": "デフォルトをインポートできません：ユーザーにはすでにカテゴリがあります。先に既存のカテゴリを削除するか、新たに始めてください。"
+    "alreadyHasCategories": "デフォルトをインポートできません：ユーザーにはすでにカテゴリがあります。先に既存のカテゴリを削除するか、新たに始めてください。",
+    "transferCategoryOnCategoryRow": "{{ name }} is a Transfer category; it can go only on a transfer",
+    "transferCategoryOnCategoryRowGeneric": "A Transfer category can go only on a transfer",
+    "childTypeMismatch": "A subcategory has the type of its parent, {{ parent }} ({{ type }})",
+    "typeChangeHeld": "{{ name }} cannot become a Transfer category: a transaction, a schedule or a setting that takes only an Income or Expense category uses it. Reassign them first.",
+    "undoTypeHeld": "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now."
   },
   "common": {
     "invalidUuid": "無効なUUID：{{ id }}",

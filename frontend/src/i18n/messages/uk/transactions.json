@@ -49,7 +49,9 @@
     "editAria": "Редагувати категорію",
     "collapseAria": "Приховати інформацію про категорію",
     "show": "Показати інформацію про категорію",
-    "amountUnavailable": "Немає курсу"
+    "amountUnavailable": "Немає курсу",
+    "transfer": "Transfer",
+    "totalTransferred": "Total transferred"
   },
   "accountWidget": {
     "currentBalance": "Поточний баланс",

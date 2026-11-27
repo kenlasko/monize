@@ -51,7 +51,11 @@ describe("PayeeAutoMergeService", () => {
 
   beforeEach(async () => {
     mockPayeesService = { findAll: jest.fn() };
-    mockCategoriesRepository = { find: jest.fn().mockResolvedValue([]) };
+    mockCategoriesRepository = {
+      find: jest.fn().mockResolvedValue([]),
+      // The default-category refusal reads the category once, after the lock.
+      findOne: jest.fn().mockResolvedValue(null),
+    };
     dominantRows = [];
     uncategorizedRows = [];
     const txQueryBuilder: any = {

@@ -550,6 +550,22 @@ describe("currency global liveness", () => {
     const definers = definitions.filter((d) => /SECURITY DEFINER/.test(d));
     const names = definers.map((d) => /FUNCTION\s+(\w+)/.exec(d)?.[1]).sort();
     expect(names).toEqual([
+      // The Transfer category FIT backstop (INV-CATEGORY-001): it reads a
+      // category's type and its owner under RLS, which the caller's scope would
+      // hide, and takes the per-owner advisory lock; one uuid and one table name
+      // in, nothing out, raising only when the category is a Transfer category.
+      "assert_category_fits_category_row",
+      // The categories triggers (INV-CATEGORY-003): the type mirror of the legacy
+      // flag and a child's type from its parent, and the subtree cascade of a
+      // type change. They read and write the owner's own categories, and run as
+      // the table owner so the cascade and the parent read are not hidden by the
+      // caller's scope.
+      "categories_cascade_type",
+      "categories_sync_type",
+      // Whether a category row or a setting that takes only an Income or Expense
+      // category holds a category, for the type-change gate; one uuid in, one
+      // boolean out, EXECUTE revoked from PUBLIC and granted to the runtime role.
+      "category_held_by_category_row",
       // Shared access helpers reviewed in docs/specs/shared-expenses-security.md.
       "check_attachment_pair_parent",
       // The global currency-liveness answer, evaluated across every tenant.
@@ -575,6 +591,10 @@ describe("currency global liveness", () => {
       // is captured under RLS whichever tenant's DELETE fired the trigger
       // (migration 140).
       "record_attachment_blob_tombstone",
+      // The FIT backstop's trigger functions: they call the helper above for the
+      // row's category (an override's, only when its schedule is not a transfer).
+      "refuse_transfer_category_on_category_row",
+      "refuse_transfer_category_on_override",
       "shared_document_group",
       "shared_entry_writable",
       "shared_group_role",

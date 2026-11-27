@@ -1,12 +1,13 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ConflictException,
   Logger,
 } from "@nestjs/common";
 import { tr } from "../i18n/translate";
 import { ModuleRef } from "@nestjs/core";
-import { DataSource, EntityManager, In } from "typeorm";
+import { DataSource, EntityManager, In, QueryFailedError } from "typeorm";
 import { Cron } from "@nestjs/schedule";
 import { BondPriceService } from "../bonds/bond-price.service";
 import type { HoldingsService } from "../securities/holdings.service";
@@ -417,7 +418,9 @@ const ALLOWED_COLUMNS: Record<string, Set<string>> = {
     "description",
     "icon",
     "color",
+    // income-flag-ok: column whitelist of the legacy column
     "is_income",
+    "category_type",
     "is_system",
     "created_at",
   ]),
@@ -2401,7 +2404,25 @@ export class ActionHistoryService {
           }
 
           if (Object.keys(updateFields).length > 0) {
-            await manager.update(entityClass, action.entityId, updateFields);
+            try {
+              await manager.update(entityClass, action.entityId, updateFields);
+            } catch (err) {
+              // Restoring a type a holder no longer fits is refused like the
+              // type change itself (docs/specs/transfer-categories.md 4.7).
+              if (
+                tableName === "categories" &&
+                err instanceof QueryFailedError &&
+                err.driverError?.constraint === "category_type_held"
+              ) {
+                throw new BadRequestException(
+                  tr(
+                    "errors.categories.undoTypeHeld",
+                    "This category's earlier type cannot be restored: a transaction, a schedule or a setting that takes only an Income or Expense category uses it now.",
+                  ),
+                );
+              }
+              throw err;
+            }
           }
         }
         break;

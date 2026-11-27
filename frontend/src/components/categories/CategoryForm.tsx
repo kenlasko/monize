@@ -15,6 +15,7 @@ import { useFormSubmitRef } from '@/hooks/useFormSubmitRef';
 import { useFormDirtyNotify } from '@/hooks/useFormDirtyNotify';
 import { FormActions } from '@/components/ui/FormActions';
 import { Category } from '@/types/category';
+import { CATEGORY_TYPES, type CategoryType, categoryTypeOf } from '@/lib/category-type';
 import { categoryPickerIcon } from '@/components/categories/CategoryPickerIcon';
 
 const buildCategorySchema = (t: (key: string) => string) => z.object({
@@ -23,7 +24,7 @@ const buildCategorySchema = (t: (key: string) => string) => z.object({
   description: z.string().optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
-  isIncome: z.boolean(),
+  type: z.enum(CATEGORY_TYPES),
   // null = no explicit choice, inherit the nearest ancestor's (a root behaves as on).
   autoSign: z.boolean().nullable(),
 });
@@ -68,12 +69,12 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
           description: category.description || '',
           color: category.color || '',
           icon: category.icon || '',
-          isIncome: category.isIncome,
+          type: categoryTypeOf(category),
           autoSign: category.autoSign ?? null,
         }
       : {
           parentId: '',
-          isIncome: false,
+          type: 'expense' as const,
           autoSign: null,
         },
   });
@@ -85,7 +86,7 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
   const watchedColor = useWatch({ control, name: 'color' });
   const watchedIcon = useWatch({ control, name: 'icon' });
   const watchedParentId = useWatch({ control, name: 'parentId' });
-  const watchedIsIncome = useWatch({ control, name: 'isIncome' });
+  const watchedType = useWatch({ control, name: 'type' });
   const watchedAutoSign = useWatch({ control, name: 'autoSign' });
 
   // When parent category changes, set type to match parent. The automatic
@@ -95,7 +96,7 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
     if (watchedParentId) {
       const parentCategory = categories.find(c => c.id === watchedParentId);
       if (parentCategory) {
-        setValue('isIncome', parentCategory.isIncome);
+        setValue('type', categoryTypeOf(parentCategory));
       }
     }
   }, [watchedParentId, categories, setValue]);
@@ -172,8 +173,9 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
       : String(watchedAutoSign);
 
   const typeOptions = [
-    { value: 'false', label: t('form.typeExpense') },
-    { value: 'true', label: t('form.typeIncome') },
+    { value: 'expense', label: t('form.typeExpense') },
+    { value: 'income', label: t('form.typeIncome') },
+    { value: 'transfer', label: t('form.typeTransfer') },
   ];
 
   return (
@@ -199,10 +201,12 @@ export function CategoryForm({ category, categories, onSubmit, onCancel, onDirty
           <Select
             label={t('form.typeLabel')}
             options={typeOptions}
-            error={errors.isIncome?.message}
+            error={errors.type?.message}
             disabled={hasParent}
-            value={watchedIsIncome ? 'true' : 'false'}
-            onChange={(e) => setValue('isIncome', e.target.value === 'true', { shouldDirty: true })}
+            value={watchedType}
+            onChange={(e) =>
+              setValue('type', e.target.value as CategoryType, { shouldDirty: true })
+            }
           />
           {hasParent && parentCategory && (
             <p className="mt-1 text-xs text-gray-500">

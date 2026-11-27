@@ -1,4 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import {
+  CategoryType,
+  categoryTypeIs,
+  categoryTypeOfOrUndefined,
+} from "../categories/category-type.util";
 import { DataSource } from "typeorm";
 import { withScopedDb } from "../common/db/scoped-db";
 import { Category } from "../categories/entities/category.entity";
@@ -64,7 +69,7 @@ function spendingComponentsSql(parentJoin = ""): string {
       ${parentJoin}
       WHERE t.user_id = $1
         AND t.transaction_date <= $2
-        AND c.is_income IS NOT TRUE
+        AND (c.id IS NULL OR ${categoryTypeIs("c", "expense")})
         AND ${NONZERO_AMOUNT}
         AND t.is_transfer = false
         AND (t.status IS NULL OR t.status != 'VOID')
@@ -84,12 +89,30 @@ export function isNetSpending(total: number): boolean {
   return total > 0;
 }
 
+/**
+ * A bucket whose category has a known type keeps its signed net, even after a
+ * full or excess refund; an uncategorized or unclassified bucket keeps the
+ * positive-net rule. The bucket's category may be the income parent of an
+ * expense leaf (a legacy mixed-type tree), so the type decides only whether it
+ * is known, never whether it is spending: the query already left income leaves
+ * out. A Transfer category is a named flow, never spending (INV-REPORT-003).
+ */
+export function includesClassifiedBucket(
+  total: number,
+  type?: CategoryType,
+): boolean {
+  if (type === "transfer") return false;
+  return type !== undefined || isNetSpending(total);
+}
+
 /** Classified expenses keep their signed net even after a full or excess refund. */
 export function includesSpendingCategory(
   total: number,
-  isIncome?: boolean,
+  type?: CategoryType,
 ): boolean {
-  return isIncome === false || isNetSpending(total);
+  // A Transfer category is a named flow, never spending (INV-REPORT-003).
+  if (type === "transfer") return false;
+  return type === "expense" || isNetSpending(total);
 }
 
 @Injectable()
@@ -308,7 +331,7 @@ export class SpendingReportsService {
     // excluded by the query, so an expense row at zero represents activity.
     const spent = Array.from(parentTotals.entries()).filter(
       ([, { agg, category }]) =>
-        category?.isIncome != null || isNetSpending(agg.sign),
+        includesClassifiedBucket(agg.sign, categoryTypeOfOrUndefined(category)),
     );
     const spending = FxAggregate.sum(spent.map(([, { agg }]) => agg));
     const knownSpending = spending.knownSubtotalAt(places);
@@ -355,7 +378,7 @@ export class SpendingReportsService {
       SELECT
         COALESCE(ts.category_id, t.category_id) AS category_id,
         COALESCE(parent.id, c.id) AS bucket_id,
-        COALESCE(parent.is_income, c.is_income) IS NOT NULL AS classified,
+        COALESCE(parent.category_type, c.category_type) IS NOT NULL AS classified,
         t.payee_id, t.payee_name, t.currency_code,
         ${rateBasisColumnsSql("$3")},
         SUM(${NET_SPEND_AMOUNT}) as total
@@ -371,7 +394,7 @@ export class SpendingReportsService {
       params.push(startDate);
     }
 
-    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), COALESCE(parent.id, c.id), COALESCE(parent.is_income, c.is_income), t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
+    query += ` GROUP BY COALESCE(ts.category_id, t.category_id), COALESCE(parent.id, c.id), COALESCE(parent.category_type, c.category_type), t.payee_id, t.payee_name, t.currency_code, ${RATE_BASIS_GROUP_BY}`;
 
     const rawResults: (RawPayeeAggregate & {
       category_id: string | null;
@@ -576,10 +599,11 @@ export class SpendingReportsService {
     // The fallback tests the sign before rounding (rules 2 and 5).
     const spendingCategories = new Set(
       Array.from(allCategoryTotals.entries())
-        .filter(
-          ([id, overall]) =>
-            categoryMap.get(id)?.isIncome != null ||
-            isNetSpending(overall.sign),
+        .filter(([id, overall]) =>
+          includesClassifiedBucket(
+            overall.sign,
+            categoryTypeOfOrUndefined(categoryMap.get(id)),
+          ),
         )
         .map(([id]) => id),
     );
