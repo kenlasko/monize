@@ -129,7 +129,8 @@ import { budgetsApi } from '@/lib/budgets';
 import { CategoryBudgetStatus } from '@/types/budget';
 import { preferredCurrency } from '@/lib/default-currency';
 import { ViewModeToggle } from '@/components/ui/ViewModeToggle';
-import { useViewMode } from '@/store/viewModeStore';
+import { useViewMode, type ViewMode } from '@/store/viewModeStore';
+import { useRegisterCalendarMonth } from '@/hooks/useRegisterCalendarMonth';
 import { useFinancialToday } from '@/hooks/useFinancialToday';
 
 const logger = createLogger('Transactions');
@@ -330,6 +331,32 @@ function TransactionsContent() {
       filters.filterTagKeyValue,
       filters.filterHasAttachments,
     ],
+  );
+
+  // The calendar's month and the register's date range follow each other: the
+  // calendar opens on the range's month, and a month the reader turned to
+  // becomes the range on the way back to the table.
+  const calendarMonth = useRegisterCalendarMonth(
+    filters.filterStartDate,
+    filters.filterEndDate,
+    financialToday,
+  );
+  const { setFilterStartDate, setFilterEndDate, setFilterTimePeriod } = filters;
+  const { leaveCalendar } = calendarMonth;
+  const handleViewChange = useCallback(
+    (next: ViewMode) => {
+      if (view === 'calendar' && next !== 'calendar') {
+        const range = leaveCalendar();
+        if (range !== null) {
+          isFilterChangeRef.current = true;
+          setFilterStartDate(range.startDate);
+          setFilterEndDate(range.endDate);
+          setFilterTimePeriod('custom');
+        }
+      }
+      setView(next);
+    },
+    [view, leaveCalendar, isFilterChangeRef, setFilterStartDate, setFilterEndDate, setFilterTimePeriod, setView],
   );
 
 
@@ -2081,13 +2108,15 @@ function TransactionsContent() {
             scopeAccountIds={accountIdsForQuery ?? []}
             weekStartsOn={weekStartsOn}
             today={financialToday}
+            month={calendarMonth.month}
+            onMonthChange={calendarMonth.setMonth}
             categoryColorMap={filters.categoryColorMap}
             categoryIconMap={filters.categoryIconMap}
             categoryLabelMap={filters.categoryLabelMap}
             onEditTransaction={handleEdit}
             onCreateOnDay={handleCreateOnDay}
             refreshKey={reloadKey}
-            viewToggle={<ViewModeToggle value={view} onChange={setView} />}
+            viewToggle={<ViewModeToggle value={view} onChange={handleViewChange} />}
           />
         ) : (
           <>
@@ -2119,7 +2148,7 @@ function TransactionsContent() {
               onPayeeFilterClick={filters.handlePayeeFilterClick}
               onExport={handleExport}
               isExporting={isExporting}
-              viewToggle={<ViewModeToggle value={view} onChange={setView} />}
+              viewToggle={<ViewModeToggle value={view} onChange={handleViewChange} />}
               isSingleAccountView={filters.filterAccountIds.length === 1}
               selectionMode={bulkSelectMode}
               selectedIds={selection.selectedIds}

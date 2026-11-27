@@ -234,3 +234,29 @@ export function classifyCalendarDay(date: string, today: string): CalendarDayPos
   if (date > today) return 'future';
   return 'today';
 }
+
+/** The first and last days of `month`, as a date range a register filter takes. */
+export function monthDateRange(month: string): { startDate: string; endDate: string } {
+  const [year, monthNumber] = requireMonth(month, 'month');
+  return {
+    startDate: formatYmd(year, monthNumber, 1),
+    endDate: formatYmd(year, monthNumber, daysInMonth(year, monthNumber)),
+  };
+}
+
+/**
+ * The month a calendar opens on for a register's date range: today's month,
+ * moved into the range when it falls outside it.
+ *
+ * So a range of one month opens on that month, a range that runs up to today
+ * (Last 30 Days, Year to Date) opens on today's, and a range wholly in the past
+ * or the future opens on the month nearest today. An empty or malformed bound
+ * is no bound, which is what the register makes of it too: no range at all
+ * opens on today's month.
+ */
+export function monthForDateRange(startDate: string, endDate: string, today: string): string {
+  let month = monthOf(today);
+  if (isCalendarDate(endDate) && monthOf(endDate) < month) month = monthOf(endDate);
+  if (isCalendarDate(startDate) && monthOf(startDate) > month) month = monthOf(startDate);
+  return month;
+}

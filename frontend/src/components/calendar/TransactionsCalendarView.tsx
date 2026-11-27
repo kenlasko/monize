@@ -65,6 +65,15 @@ interface TransactionsCalendarViewProps {
   weekStartsOn: WeekStart;
   /** Today, for the month the calendar opens on and for dimming a future row. */
   today: string;
+  /**
+   * The month on screen, when the page holds it: the Transactions page does,
+   * so the month a reader turned to becomes the register's date range when
+   * they switch back to the table. Without it the calendar holds its own month
+   * and opens on today's.
+   */
+  month?: string;
+  /** Called with every month the reader moves to, by any of the three ways. */
+  onMonthChange?: (month: string) => void;
   categoryColorMap: ReadonlyMap<string, string | null>;
   categoryIconMap: ReadonlyMap<string, string | null>;
   categoryLabelMap: ReadonlyMap<string, string>;
@@ -96,6 +105,8 @@ export function TransactionsCalendarView({
   scopeAccountIds,
   weekStartsOn,
   today,
+  month: monthProp,
+  onMonthChange,
   categoryColorMap,
   categoryIconMap,
   categoryLabelMap,
@@ -108,9 +119,19 @@ export function TransactionsCalendarView({
   const monthLabelId = useId();
   const { layers, toggleLayer } = useViewMode('transactions');
 
-  const [month, setMonth] = useState(() => monthOf(today));
+  const [ownMonth, setOwnMonth] = useState(() => monthOf(today));
+  const month = monthProp ?? ownMonth;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const gridRef = useRef<MonthGridHandle>(null);
+
+  // A month the page moved (its date range changed under a calendar it had not
+  // been turned away from) leaves no day selected from the month it replaced,
+  // as a turn of the reader's own does.
+  const [shownMonth, setShownMonth] = useState(month);
+  if (shownMonth !== month) {
+    setShownMonth(month);
+    setSelectedDate(null);
+  }
 
   const days = useMemo(() => monthGridDays(month, weekStartsOn), [month, weekStartsOn]);
   const gridStart = days[0];
@@ -135,11 +156,12 @@ export function TransactionsCalendarView({
   const goToMonth = useCallback(
     (next: string) => {
       notes.requestChange(() => {
-        setMonth(next);
+        setOwnMonth(next);
         setSelectedDate(null);
+        onMonthChange?.(next);
       });
     },
-    [notes],
+    [notes, onMonthChange],
   );
 
   // A horizontal swipe across the grid turns the month the way one turns a
